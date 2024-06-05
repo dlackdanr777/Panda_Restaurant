@@ -38,8 +38,6 @@ namespace Muks.PathFinding.AStar
         private int _sizeY;
 
 
-
-
         private void Awake()
         {
             if (_instance != null)
@@ -109,9 +107,25 @@ namespace Muks.PathFinding.AStar
         }
 
 
-        public Transform[] GetFloorTrs()
+        public int GetTransformFloor(Vector2 pos)
         {
-            return _stairsTr;
+            float tmpY = 10000;
+            int floor = 1;
+            int tmpFloor = 1;
+            foreach (Transform t in _stairsTr)
+            {
+                float y = pos.y - t.position.y;
+
+                if (Mathf.Abs(y) < Mathf.Abs(tmpY))
+                {
+                    tmpY = y;
+                    tmpFloor = floor;
+                }
+
+                floor++;
+            }
+
+            return tmpFloor;
         }
 
 
