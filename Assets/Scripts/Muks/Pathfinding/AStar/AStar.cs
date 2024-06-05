@@ -16,7 +16,6 @@ namespace Muks.PathFinding.AStar
                 {
                     GameObject obj = new GameObject("AStarManager");
                     _instance = obj.AddComponent<AStar>();
-                    DontDestroyOnLoad(obj);
                 }
 
                 return _instance;
@@ -27,6 +26,7 @@ namespace Muks.PathFinding.AStar
         public float NodeSize;
         public Vector2 MapBottomLeft;
         [SerializeField] private Vector2Int _mapSize;
+        [SerializeField] private Transform[] _stairsTr;
         [SerializeField] private bool _drawGizmos;
 
         private int[] _dirX = new int[8] { 0, 0, 1, -1, 1, 1, -1, -1 };
@@ -46,8 +46,13 @@ namespace Muks.PathFinding.AStar
                 return;
 
             _instance = this;
-            DontDestroyOnLoad(gameObject);
             Init();
+        }
+
+
+        private void OnDestroy()
+        {
+            _instance = null;
         }
 
 
@@ -66,29 +71,63 @@ namespace Muks.PathFinding.AStar
                 {
                     float posY = MapBottomLeft.y + (j + 0.5f) * NodeSize;
                     bool isWall = false;
+                    bool isGround = false;
                     foreach (Collider2D col in Physics2D.OverlapCircleAll(new Vector2(posX, posY), NodeSize * 0.4f))
-                        if (col.gameObject.layer == LayerMask.NameToLayer("Wall"))
+                    {
+                        if (col.gameObject.layer == LayerMask.NameToLayer("Wall") || col.gameObject.layer == LayerMask.NameToLayer("Ground"))
                             isWall = true;
 
-                    Node node = new Node(isWall, i, j);
+                    }
+
+                    if(j != 0)
+                    {
+                        float groundPosY = MapBottomLeft.y + (j - 1 + 0.5f) * NodeSize;
+                        foreach (Collider2D col in Physics2D.OverlapCircleAll(new Vector2(posX, groundPosY), NodeSize * 0.4f))
+                        {
+                            if (isWall)
+                                break;
+
+                            if (col.gameObject.layer == LayerMask.NameToLayer("Ground"))
+                                isGround = true;
+
+                        }
+                    }
+
+                    Node node = new Node(isWall, isGround, i, j);
                     _nodes[i, j] = node;
+
                 }
             }
         }
 
+        public Vector2 GetFloorPos(int i)
+        {
+            if (i <= 0)
+                return Vector2.zero;
+
+            return _stairsTr[--i].transform.position;
+        }
+
+
+        public Transform[] GetFloorTrs()
+        {
+            return _stairsTr;
+        }
+
+
         /// <summary> 멀티 스레드를 이용해 길찾기를 계산 후 콜백 함수를 실행하는 함수</summary>
-        public void RequestPath(Vector2 startPos, Vector2 targetPos, Action<List<Node>> callback)
+        public void RequestPath(Vector2 startPos, Vector2 targetPos, Action<List<Vector2>> callback)
         {
             PathfindingQueue.Instance.Enqueue(() =>
             {
-                List<Node> pathResult = PathFinding(startPos, targetPos);
+                List<Vector2> pathResult = PathFinding(startPos, targetPos);
                 MainThreadDispatcher.Instance.Enqueue(() => callback(pathResult));
             });
         }
 
 
         /// <summary>AStar 알고리즘을 이용, 출발지에서 목적지까지 최단거리를 List<Node> 형태로 반환</summary>
-        private List<Node> PathFinding(Vector2 startPos, Vector2 targetPos)
+        private List<Vector2> PathFinding(Vector2 startPos, Vector2 targetPos)
         {
             Vector2Int sPos = WorldToNodePos(startPos);
             Vector2Int tPos = WorldToNodePos(targetPos);
@@ -108,7 +147,8 @@ namespace Muks.PathFinding.AStar
 
             List<Node> openList = new List<Node>() { startNode };
             List<Node> closedList = new List<Node>();
-            List<Node> tmpList = new List<Node>();
+            List<Vector2> tmpList = new List<Vector2>();
+
 
             while (0 < openList.Count)
             {
@@ -127,14 +167,15 @@ namespace Muks.PathFinding.AStar
                     Node node = targetNode;
                     while (node != startNode)
                     {
-                        tmpList.Add(node);
+                        tmpList.Add(node.toWorldPosition());
                         node = node.ParentNode;
                     }
 
-                    tmpList.Add(startNode);
+                    tmpList.Add(startNode.toWorldPosition());
                     tmpList.Reverse();
                     return tmpList;
                 }
+  
 
                 int dirCnt = 4;
                 for (int i = 0; i < dirCnt; ++i)
@@ -146,7 +187,7 @@ namespace Muks.PathFinding.AStar
                     if (0 <= nextX && nextX < _sizeX && 0 <= nextY && nextY < _sizeY)
                     {
                         Node nextNode = _nodes[nextX, nextY];
-                        if (nextNode.IsWall)
+                        if (nextNode.IsWall || !nextNode.IsGround)
                             continue;
 
                         if (closedList.Contains(nextNode))
@@ -166,7 +207,7 @@ namespace Muks.PathFinding.AStar
                 }
             }
 
-            return new List<Node>();
+            return new List<Vector2>();
         }
 
         /// <summary> 월드 좌표를 노드 좌표로 변환하는 함수 </summary>
@@ -214,6 +255,13 @@ namespace Muks.PathFinding.AStar
                             Gizmos.color = Color.red;
                             Gizmos.DrawCube(new Vector2(posX, posY), Vector2.one * NodeSize);
                         }
+
+                        else if (_nodes[i, j].IsGround)
+                        {
+                            Gizmos.color = Color.green;
+                            Gizmos.DrawCube(new Vector2(posX, posY), Vector2.one * NodeSize);
+                        }
+
                         else
                         {
                             Gizmos.color = Color.white;

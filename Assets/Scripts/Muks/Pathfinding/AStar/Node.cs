@@ -11,12 +11,19 @@ namespace Muks.PathFinding.AStar
         public int Y;
         public int X;
         public bool IsWall;
+        public bool IsGround;
         public Node ParentNode;
 
         private float _nodeSize => AStar.Instance.NodeSize;
         private Vector2 _mapBottomLeft => AStar.Instance.MapBottomLeft;
 
-        public Node(bool isWall, int x, int y) { IsWall = isWall; X = x; Y = y; }
+        public Node(bool isWall, bool isGround, int x, int y)
+        {
+            IsWall = isWall;
+            IsGround = isGround;
+            X = x;
+            Y = y;
+        }
 
 
         /// <summary> 노드 좌표를 Vector2 형식으로 반환</summary>
