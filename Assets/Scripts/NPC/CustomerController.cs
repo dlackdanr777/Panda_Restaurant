@@ -1,4 +1,5 @@
 using Muks.PathFinding.AStar;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,9 +14,19 @@ public class CustomerController : MonoBehaviour
 
     private Coroutine _sortCoroutine;
 
+    public event Action AddCustomerHandler;
+    public event Action GuideCustomerHandler;
+
     public Customer GetFirstCustomer()
     {
         return _customers.Peek();
+    }
+
+
+    public bool IsEmpty()
+    {
+        bool result = _customers.Count == 0;
+        return result;
     }
 
 
@@ -28,13 +39,15 @@ public class CustomerController : MonoBehaviour
         Vector2 startLinePos = _startLine.position;
         startLinePos.x += _lineSpacing * _customers.Count;
         customer.Move(startLinePos);
+
+        AddCustomerHandler?.Invoke();
     }
 
 
-    public void CustomerGuide(Vector3 targetPos)
+    public bool GuideCustomer(Vector3 targetPos)
     {
         if (_customers.Count <= 0)
-            return;
+            return false;
 
         Customer customer = _customers.Dequeue();
 
@@ -44,6 +57,8 @@ public class CustomerController : MonoBehaviour
             StopCoroutine(_sortCoroutine);
 
         _sortCoroutine = StartCoroutine(SortCustomerLine());
+        GuideCustomerHandler.Invoke();
+        return true;
     }
 
     private IEnumerator SortCustomerLine()

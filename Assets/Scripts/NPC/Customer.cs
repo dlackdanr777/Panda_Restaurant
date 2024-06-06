@@ -7,7 +7,7 @@ using Muks.PathFinding.AStar;
 public class Customer : MonoBehaviour
 {
     [SerializeField] private GameObject _moveObj;
-    [SerializeField] private SpriteRenderer _sprite;
+    [SerializeField] private SpriteRenderer _spriteRenderer;
 
     private Coroutine _moveCoroutine;
     private Coroutine _teleportCoroutine;
@@ -16,11 +16,22 @@ public class Customer : MonoBehaviour
     private Vector2 _targetPos;
     private int _targetFloor;
     private int _moveObjFloor;
+    private float _scaleX;
+
+
+    private void Start()
+    {
+        _scaleX = transform.localScale.x;
+    }
+
 
     public void Init(CustomerData data)
     {
         _customerData = data;
-        _sprite.sprite = data.Sprite;
+        _spriteRenderer.sprite = data.Sprite;
+
+        float heightMul = (float)data.Sprite.textureRect.height * 0.005f - AStar.Instance.NodeSize;
+        _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
     }
 
 
@@ -60,7 +71,6 @@ public class Customer : MonoBehaviour
 
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
-
             _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(AStar.Instance.GetFloorPos(_targetFloor), _targetPos, Move)));
         }
         ));
@@ -75,6 +85,12 @@ public class Customer : MonoBehaviour
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
                 _moveObj.transform.Translate(dir * Time.deltaTime * _customerData.MoveSpeed, Space.World);
+
+                if(dir.x < 0)
+                    transform.localScale = new Vector3(_scaleX, transform.localScale.y, transform.localScale.z);
+                else if(0 < dir.x)
+                    transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
+
                 yield return null;
             }
         }
@@ -87,6 +103,7 @@ public class Customer : MonoBehaviour
     {
         yield return YieldCache.WaitForSeconds(1);
         _moveObj.transform.position = AStar.Instance.GetFloorPos(_targetFloor);
+        transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
         yield return YieldCache.WaitForSeconds(1);
         onCompleted?.Invoke();
     }
