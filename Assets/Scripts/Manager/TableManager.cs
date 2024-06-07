@@ -1,3 +1,4 @@
+using Muks.Tween;
 using UnityEngine;
 
 public class TableManager : MonoBehaviour
@@ -62,18 +63,20 @@ public class TableManager : MonoBehaviour
 
         _customerController.GuideCustomer(_tableDatas[index].CustomerMoveTr.position, 0, () => 
         {
-            _tableDatas[index].CurrentCustomer = currentCustomer;
-            _tableDatas[index].OrderButton.gameObject.SetActive(true);
+            Tween.Wait(1, () =>
+            {
+                _tableDatas[index].CurrentCustomer = currentCustomer;
+                _tableDatas[index].OrderButton.gameObject.SetActive(true);
 
-            int randInt = Random.Range(0, _tableDatas[index].ChairTrs.Length);
-            currentCustomer.transform.position = _tableDatas[index].ChairTrs[randInt].position;
+                int randInt = Random.Range(0, _tableDatas[index].ChairTrs.Length);
+                currentCustomer.transform.position = _tableDatas[index].ChairTrs[randInt].position;
 
-            int dir = randInt == 0 ? 1 : -1;
-            currentCustomer.SetSpriteDir(dir);
+                int dir = randInt == 0 ? 1 : -1;
+                currentCustomer.SetSpriteDir(dir);
 
-            UpdateTable();
+                UpdateTable();
+            });
         });
-
     }
 
 

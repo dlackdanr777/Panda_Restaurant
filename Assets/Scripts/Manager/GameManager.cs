@@ -21,7 +21,7 @@ public class GameManager : MonoBehaviour
     private static GameManager _instance;
 
 
-    public Vector2 OutDoorPos => new Vector2(19f, 3.32f);
+    public Vector2 OutDoorPos => new Vector2(30f, 3.32f);
 
     private void Awake()
     {
