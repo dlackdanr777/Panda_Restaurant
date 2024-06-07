@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ namespace Muks.Tween
     public class Tween : MonoBehaviour
     {
         private static List<Sequence> _sequenceUpdateList = new List<Sequence>();
-
+        private static List<TweenWait> _tweenWaitQueue = new List<TweenWait>();
 
 
         /// <summary> Tween Sequence 기능을 사용하기 위해 Sequence Class를 반환하는 함수 </summary>
@@ -19,6 +20,22 @@ namespace Muks.Tween
             return sequence;
         }
 
+        public static void Wait(float duration, Action onCompleted)
+        {
+            if(_tweenWaitQueue.Count == 0) 
+            {
+                GameObject obj = new GameObject("TweenWaitObj");
+                TweenWait tween = obj.AddComponent<TweenWait>();
+                tween.AddDataSequence(new TweenDataSequence(null, duration, TweenMode.Constant, null));
+                tween.OnComplete(() =>
+                {
+                    onCompleted?.Invoke();
+                    tween.enabled = false;
+                    _tweenWaitQueue.Add(tween);
+                });
+                return;
+            }
+        }
 
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -43,6 +60,9 @@ namespace Muks.Tween
                     _sequenceUpdateList.RemoveAt(i--);
                     count--;
             }
+
+
+
         }
     }
 

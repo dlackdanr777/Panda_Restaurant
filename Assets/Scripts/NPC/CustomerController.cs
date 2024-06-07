@@ -32,26 +32,26 @@ public class CustomerController : MonoBehaviour
 
     public void AddCustomer()
     {
-        Customer customer = ObjectPoolManager.Instance.SpawnCustomer(new Vector2(15, 3.5f), Quaternion.identity);
+        Customer customer = ObjectPoolManager.Instance.SpawnCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
         customer.Init(_data);
         _customers.Enqueue(customer);
 
         Vector2 startLinePos = _startLine.position;
         startLinePos.x += _lineSpacing * _customers.Count;
-        customer.Move(startLinePos);
+        customer.Move(startLinePos, -1);
 
         AddCustomerHandler?.Invoke();
     }
 
 
-    public bool GuideCustomer(Vector3 targetPos)
+    public bool GuideCustomer(Vector3 targetPos, int moveEndDir = 0, Action onCompleted = null)
     {
         if (_customers.Count <= 0)
             return false;
 
         Customer customer = _customers.Dequeue();
 
-        customer.Move(targetPos);
+        customer.Move(targetPos, moveEndDir, onCompleted);
 
         if (_sortCoroutine != null)
             StopCoroutine(_sortCoroutine);
@@ -60,14 +60,14 @@ public class CustomerController : MonoBehaviour
         GuideCustomerHandler.Invoke();
         return true;
     }
-
+     
     private IEnumerator SortCustomerLine()
     {
         yield return YieldCache.WaitForSeconds(0.5f);
         Vector2 startLinePos = _startLine.position;
         foreach (Customer c in _customers)
         {
-            c.Move(startLinePos);
+            c.Move(startLinePos, -1);
             startLinePos.x += _lineSpacing;
             yield return YieldCache.WaitForSeconds(0.05f);
         }

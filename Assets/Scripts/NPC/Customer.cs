@@ -13,10 +13,14 @@ public class Customer : MonoBehaviour
     private Coroutine _teleportCoroutine;
 
     private CustomerData _customerData;
+    private Action _moveCompleted;
+
     private Vector2 _targetPos;
     private int _targetFloor;
-    private int _moveObjFloor;
+    private int _moveEndDir;
     private float _scaleX;
+    private bool _isStairsMove;
+
 
 
     private void Start()
@@ -34,28 +38,39 @@ public class Customer : MonoBehaviour
         _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
     }
 
-
-    public void Move(Vector2 targetPos)
+    public void SetSpriteDir(float dir)
     {
-        _moveObjFloor = AStar.Instance.GetTransformFloor(_moveObj.transform.position);
-        _targetFloor = AStar.Instance.GetTransformFloor(targetPos);
-        _targetPos = targetPos;
-
-        if (_moveObjFloor == _targetFloor)
-            AStar.Instance.RequestPath(_moveObj.transform.position, targetPos, Move);
-
-        else
-            AStar.Instance.RequestPath(_moveObj.transform.position, AStar.Instance.GetFloorPos(_moveObjFloor), StairsMove);
+        if (dir < 0) transform.localScale = new Vector3(_scaleX, transform.localScale.y, transform.localScale.z);
+        else if (0 < dir) transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
     }
 
 
-    private void Move(List<Vector2> nodeList)
+    public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
+    {
+        int moveObjFloor = AStar.Instance.GetTransformFloor(_moveObj.transform.position);
+        _targetFloor = AStar.Instance.GetTransformFloor(targetPos);
+        _targetPos = targetPos;
+        _moveEndDir = moveEndDir;
+        _moveCompleted = onCompleted;
+
+
+        if (moveObjFloor == _targetFloor)
+            AStar.Instance.RequestPath(_moveObj.transform.position, targetPos, TargetMove);
+
+        else
+            AStar.Instance.RequestPath(_moveObj.transform.position, AStar.Instance.GetFloorPos(moveObjFloor), StairsMove);
+    }
+
+
+    private void TargetMove(List<Vector2> nodeList)
     {
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
 
         if (_teleportCoroutine != null)
             StopCoroutine(_teleportCoroutine);
+
+        _isStairsMove = false;
 
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList));
     }
@@ -69,9 +84,11 @@ public class Customer : MonoBehaviour
         if (_teleportCoroutine != null)
             StopCoroutine(_teleportCoroutine);
 
+        _isStairsMove = true;
+
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
-            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(AStar.Instance.GetFloorPos(_targetFloor), _targetPos, Move)));
+            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(AStar.Instance.GetFloorPos(_targetFloor), _targetPos, TargetMove)));
         }
         ));
     }
@@ -86,16 +103,25 @@ public class Customer : MonoBehaviour
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
                 _moveObj.transform.Translate(dir * Time.deltaTime * _customerData.MoveSpeed, Space.World);
 
-                if(dir.x < 0)
-                    transform.localScale = new Vector3(_scaleX, transform.localScale.y, transform.localScale.z);
-                else if(0 < dir.x)
-                    transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
+                SetSpriteDir(dir.x);
 
                 yield return null;
             }
         }
 
+        if (_moveEndDir < 0)
+            transform.localScale = new Vector3(_scaleX, transform.localScale.y, transform.localScale.z);
+
+        else if (0 < _moveEndDir)
+            transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
+
         onCompleted?.Invoke();
+
+        if (_isStairsMove)
+            yield break;
+
+        _moveCompleted?.Invoke();
+        _moveCompleted = null;
     }
 
 

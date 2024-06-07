@@ -16,7 +16,7 @@ public class TestButton : MonoBehaviour
 
     private void OnButtonClicked()
     {
-        _customerController.GuideCustomer(_targetTr.position);
+        _customerController.GuideCustomer(_targetTr.position, -1);
     }
 
 }
