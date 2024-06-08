@@ -6,10 +6,10 @@ public class Staff : MonoBehaviour
 {
     [SerializeField] private GameObject _moveObj;
     [SerializeField] private SpriteRenderer _spriteRenderer;
+    public SpriteRenderer SpriteRenderer => _spriteRenderer;
 
-    public static Action OnStaffActionHandler;
-
-    public bool _actionEnabled;
+    public bool ActionEnabled;
+    public bool IsUsed;
     private StaffData _staffData;
     private int _level = 1;
     private float _scaleX;
@@ -17,12 +17,6 @@ public class Staff : MonoBehaviour
 
     private EStaffType _staffType;
     public EStaffType StaffType => _staffType;
-
-    private void StaffAction(int index)
-    {
-
-        OnStaffActionHandler?.Invoke();
-    }
 
 
     public void SetStaffData(StaffData staffData)
@@ -37,7 +31,19 @@ public class Staff : MonoBehaviour
         _level = 1;
         if (_staffData is ServerStaffData)
             _staffType = EStaffType.Server;
+    }
 
+    public void SetAlpha(float alpha)
+    {
+        Color nowColor = _spriteRenderer.color;
+        _spriteRenderer.color = new Color(nowColor.r, nowColor.g, nowColor.b, alpha);
+    }
+
+    public void ResetAction()
+    {
+        _actionTimer = _staffData.GetActionTime(_level);
+        ActionEnabled = false;
+        IsUsed = false;
     }
 
 
@@ -57,19 +63,20 @@ public class Staff : MonoBehaviour
     {
         if (_staffData == null)
             return;
-        _staffData.Update();
-
 
         if(_actionTimer <= 0)
         {
-            _actionEnabled = true;
+            if (!IsUsed)
+                ActionEnabled = true;
         }
         else
         {
             _actionTimer -= Time.deltaTime;
-            _actionEnabled = false;
+            ActionEnabled = false;
         }
     }
+
+
 
 }
 

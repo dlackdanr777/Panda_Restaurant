@@ -12,7 +12,7 @@ public class ServerStaffData : StaffData
         if (_waiterLevelData.Length < level - 1 || level < 0)
             return 1000000;
 
-        return _waiterLevelData[level].ServingTime;
+        return _waiterLevelData[level - 1].ServingTime;
     }
 
 

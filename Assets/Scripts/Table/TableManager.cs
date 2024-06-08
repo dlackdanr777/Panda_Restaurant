@@ -18,6 +18,10 @@ public class TableManager : MonoBehaviour
     [SerializeField] private Button _servingButtonPrefab;
     [SerializeField] private Button _cleaningButtonPrefab;
 
+    [SerializeField] private Button[] _guideButtons;
+    [SerializeField] private Button[] _orderButtons;
+    [SerializeField] private Button[] _servingButtons;
+    [SerializeField] private Button[] _cleaningButtons;
 
     public void StaffAction(Staff staff)
     {
@@ -29,7 +33,12 @@ public class TableManager : MonoBehaviour
                 if (index == -1)
                     return;
 
+                staff.SetAlpha(0);
                 staff.transform.position = _tableDatas[index].CustomerMoveTr.position;
+                staff.SpriteRenderer.TweenAlpha(1, 0.5f, TweenMode.Constant).OnComplete(() => staff.SpriteRenderer.TweenAlpha(0, 0.5f, TweenMode.Constant).OnComplete(staff.ResetAction));
+                staff.IsUsed = true;
+                
+                OnServingButtonClicked(index);
                 break;
         }
     }
@@ -43,13 +52,16 @@ public class TableManager : MonoBehaviour
 
     private void Init()
     {
+        int tableLength = _tableDatas.Length;
+        _guideButtons = new Button[tableLength];
+        _orderButtons = new Button[tableLength];
+        _servingButtons = new Button[tableLength];
+        _cleaningButtons = new Button[tableLength];
 
-        _customerController.AddCustomerHandler += UpdateTable;
-        _customerController.GuideCustomerHandler += UpdateTable;
         GameObject parentObj = new GameObject("TableButtons");
         parentObj.transform.parent = _buttonCanvas.transform;
 
-        for (int i = 0, cnt = _tableDatas.Length; i < cnt; i++)
+        for (int i = 0; i < tableLength; i++)
         {
             int index = i;
 
@@ -71,7 +83,10 @@ public class TableManager : MonoBehaviour
             servingButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
             cleaningButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
 
-            _tableDatas[index].Init(guideButton, orderButton, servingButton, cleaningButton);
+            _orderButtons[i] = orderButton;
+            _guideButtons[i] = guideButton;
+            _servingButtons[i] = servingButton;
+            _cleaningButtons[i] = cleaningButton;
         }
 
         for(int i = 0; i < _ownedTableCount; i++)
@@ -80,6 +95,8 @@ public class TableManager : MonoBehaviour
         }
 
         UpdateTable();
+        _customerController.AddCustomerHandler += UpdateTable;
+        _customerController.GuideCustomerHandler += UpdateTable;
     }
 
 
@@ -102,39 +119,39 @@ public class TableManager : MonoBehaviour
             data = _tableDatas[i];
             if (data.TableState == ETableState.NotUse)
             {
-                data.GuideButton.gameObject.SetActive(true);
-                data.OrderButton.gameObject.SetActive(false);
-                data.CleaningButton.gameObject.SetActive(false);
-                data.ServingButton.gameObject.SetActive(false);
+                _guideButtons[i].gameObject.SetActive(true);
+                _orderButtons[i].gameObject.SetActive(false);
+                _servingButtons[i].gameObject.SetActive(false);
+                _cleaningButtons[i].gameObject.SetActive(false);
             }
             else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating)
             {
-                data.GuideButton.gameObject.SetActive(false);
-                data.CleaningButton.gameObject.SetActive(false);
-                data.OrderButton.gameObject.SetActive(false);
-                data.ServingButton.gameObject.SetActive(false);
+                _guideButtons[i].gameObject.SetActive(false);
+                _orderButtons[i].gameObject.SetActive(false);
+                _servingButtons[i].gameObject.SetActive(false);
+                _cleaningButtons[i].gameObject.SetActive(false);
             }
             else if (data.TableState == ETableState.Seating)
             {
-                data.OrderButton.gameObject.SetActive(true);
-                data.GuideButton.gameObject.SetActive(false);
-                data.CleaningButton.gameObject.SetActive(false);
-                data.ServingButton.gameObject.SetActive(false);
+                _orderButtons[i].gameObject.SetActive(true);
+                _guideButtons[i].gameObject.SetActive(false);
+                _servingButtons[i].gameObject.SetActive(false);
+                _cleaningButtons[i].gameObject.SetActive(false);
             }
             else if(data.TableState == ETableState.CanServing)
             {
-                data.ServingButton.gameObject.SetActive(true);
-                data.OrderButton.gameObject.SetActive(false);
-                data.GuideButton.gameObject.SetActive(false);
-                data.CleaningButton.gameObject.SetActive(false);
+                _servingButtons[i].gameObject.SetActive(true);
+                _guideButtons[i].gameObject.SetActive(false);
+                _orderButtons[i].gameObject.SetActive(false);
+                _cleaningButtons[i].gameObject.SetActive(false);
             }
 
             else if (data.TableState == ETableState.NeedCleaning)
             {
-                data.CleaningButton.gameObject.SetActive(true);
-                data.OrderButton.gameObject.SetActive(false);
-                data.GuideButton.gameObject.SetActive(false);
-                data.ServingButton.gameObject.SetActive(false);
+                _cleaningButtons[i].gameObject.SetActive(true);
+                _guideButtons[i].gameObject.SetActive(false);
+                _orderButtons[i].gameObject.SetActive(false);
+                _servingButtons[i].gameObject.SetActive(false);
             }
         }
     }

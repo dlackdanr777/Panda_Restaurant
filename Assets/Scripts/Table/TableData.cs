@@ -5,18 +5,6 @@ using UnityEngine.UI;
 [Serializable]
 public class TableData
 {
-    private Button _guideButton;
-    public Button GuideButton => _guideButton;
-
-    private Button _orderButton;
-    public Button OrderButton => _orderButton;
-
-    private Button _servingButton;
-    public Button ServingButton => _servingButton;
-
-    private Button _cleaningButton;
-    public Button CleaningButton => _cleaningButton;
-
     [SerializeField] private Transform _customerMoveTr;
     public Transform CustomerMoveTr => _customerMoveTr;
 
@@ -37,14 +25,4 @@ public class TableData
     {
         _tipValue += value;
     }
-
-    public void Init(Button guideButton, Button orderButton, Button servingButton, Button cleaningButton)
-    {
-        _guideButton = guideButton;
-        _orderButton = orderButton;
-        _servingButton = servingButton;
-        _cleaningButton = cleaningButton;
-    }
-
-
 }
