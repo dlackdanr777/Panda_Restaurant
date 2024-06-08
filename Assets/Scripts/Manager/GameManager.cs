@@ -22,6 +22,7 @@ public class GameManager : MonoBehaviour
 
 
     public Vector2 OutDoorPos => new Vector2(30f, 3.32f);
+    public int Tip;
 
     private void Awake()
     {

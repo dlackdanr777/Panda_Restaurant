@@ -10,6 +10,7 @@ public class KitchenSystem : MonoBehaviour
     private Queue<CookingData> _cookingQueue = new Queue<CookingData>();
 
     private float _cookingTimer;
+    private float _cookingTime;
     private CookingData _currentCookingData;
 
     // Update is called once per frame
@@ -18,11 +19,14 @@ public class KitchenSystem : MonoBehaviour
         if (_cookingTimer <= 0)
         {
             DequeueFood();
+            _testImage.fillAmount = 0;
         }
-           
+
         else
         {
             _cookingTimer -= Time.deltaTime;
+            float normalizedValue = 1 - (_cookingTimer / _cookingTime);
+            _testImage.fillAmount = normalizedValue;
         }
     }
 
@@ -47,5 +51,6 @@ public class KitchenSystem : MonoBehaviour
 
         _currentCookingData = _cookingQueue.Dequeue();
         _cookingTimer = _currentCookingData.CookingTime;
+        _cookingTime = _currentCookingData.CookingTime;
     }
 }

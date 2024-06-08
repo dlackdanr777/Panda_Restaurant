@@ -1,0 +1,214 @@
+using Muks.Tween;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class TableManager : MonoBehaviour
+{
+    [Range(0, 10)]
+    [SerializeField] private int _ownedTableCount;
+    [SerializeField] private TableData[] _tableDatas;
+    [SerializeField] private CustomerController _customerController;
+    [SerializeField] private KitchenSystem _kitchenSystem;
+
+    [Space]
+    [SerializeField] private Canvas _buttonCanvas;
+    [SerializeField] private Button _guideButtonPrefab;
+    [SerializeField] private Button _orderButtonPrefab;
+    [SerializeField] private Button _servingButtonPrefab;
+    [SerializeField] private Button _cleaningButtonPrefab;
+
+
+    public void StaffAction(Staff staff)
+    {
+        switch(staff.StaffType)
+        {
+            case (EStaffType.Server):
+                int index = GetTableType(ETableState.CanServing);
+
+                if (index == -1)
+                    return;
+
+                staff.transform.position = _tableDatas[index].CustomerMoveTr.position;
+                break;
+        }
+    }
+
+
+    private void Awake()
+    {
+        Init();
+    }
+
+
+    private void Init()
+    {
+
+        _customerController.AddCustomerHandler += UpdateTable;
+        _customerController.GuideCustomerHandler += UpdateTable;
+        GameObject parentObj = new GameObject("TableButtons");
+        parentObj.transform.parent = _buttonCanvas.transform;
+
+        for (int i = 0, cnt = _tableDatas.Length; i < cnt; i++)
+        {
+            int index = i;
+
+            GameObject obj = new GameObject("Table" + (index + 1));
+            obj.transform.parent = parentObj.transform;
+
+            Button orderButton = Instantiate(_orderButtonPrefab, obj.transform);
+            Button guideButton = Instantiate(_guideButtonPrefab, obj.transform);
+            Button servingButton = Instantiate(_servingButtonPrefab, obj.transform);
+            Button cleaningButton = Instantiate(_cleaningButtonPrefab, obj.transform);
+
+            orderButton.onClick.AddListener(() => OnOrderButtonClicked(index));
+            guideButton.onClick.AddListener(() => OnGuideButtonClicked(index));
+            servingButton.onClick.AddListener(() => OnServingButtonClicked(index));
+            cleaningButton.onClick.AddListener(() => OnCleanButtonClicked(index));
+
+            orderButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
+            guideButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
+            servingButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
+            cleaningButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
+
+            _tableDatas[index].Init(guideButton, orderButton, servingButton, cleaningButton);
+        }
+
+        for(int i = 0; i < _ownedTableCount; i++)
+        {
+            _tableDatas[i].TableState = ETableState.NotUse;
+        }
+
+        UpdateTable();
+    }
+
+
+    private int GetTableType(ETableState state)
+    {
+        for(int i = 0, cnt = _tableDatas.Length; i <  cnt; i++)
+        {
+            if (_tableDatas[i].TableState == state)
+                return i;
+        }
+
+        return -1;
+    }
+
+    private void UpdateTable()
+    {
+        TableData data = null;
+        for (int i = 0, cnt = _ownedTableCount; i < cnt; ++i)
+        {
+            data = _tableDatas[i];
+            if (data.TableState == ETableState.NotUse)
+            {
+                data.GuideButton.gameObject.SetActive(true);
+                data.OrderButton.gameObject.SetActive(false);
+                data.CleaningButton.gameObject.SetActive(false);
+                data.ServingButton.gameObject.SetActive(false);
+            }
+            else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating)
+            {
+                data.GuideButton.gameObject.SetActive(false);
+                data.CleaningButton.gameObject.SetActive(false);
+                data.OrderButton.gameObject.SetActive(false);
+                data.ServingButton.gameObject.SetActive(false);
+            }
+            else if (data.TableState == ETableState.Seating)
+            {
+                data.OrderButton.gameObject.SetActive(true);
+                data.GuideButton.gameObject.SetActive(false);
+                data.CleaningButton.gameObject.SetActive(false);
+                data.ServingButton.gameObject.SetActive(false);
+            }
+            else if(data.TableState == ETableState.CanServing)
+            {
+                data.ServingButton.gameObject.SetActive(true);
+                data.OrderButton.gameObject.SetActive(false);
+                data.GuideButton.gameObject.SetActive(false);
+                data.CleaningButton.gameObject.SetActive(false);
+            }
+
+            else if (data.TableState == ETableState.NeedCleaning)
+            {
+                data.CleaningButton.gameObject.SetActive(true);
+                data.OrderButton.gameObject.SetActive(false);
+                data.GuideButton.gameObject.SetActive(false);
+                data.ServingButton.gameObject.SetActive(false);
+            }
+        }
+    }
+
+
+    private void OnGuideButtonClicked(int index)
+    {
+        if (_customerController.IsEmpty())
+            return;
+
+        if (_tableDatas[index].TableState != ETableState.NotUse)
+            return;
+
+        Customer currentCustomer = _customerController.GetFirstCustomer();
+        _tableDatas[index].CurrentCustomer = currentCustomer;
+        _tableDatas[index].TableState = ETableState.Move;
+        UpdateTable();
+
+        _customerController.GuideCustomer(_tableDatas[index].CustomerMoveTr.position, 0, () =>
+        {
+            _tableDatas[index].TableState = ETableState.Seating;
+            int randInt = Random.Range(0, _tableDatas[index].ChairTrs.Length);
+            currentCustomer.transform.position = _tableDatas[index].ChairTrs[randInt].position;
+            int dir = randInt == 0 ? 1 : -1;
+            currentCustomer.SetSpriteDir(dir);
+            UpdateTable();
+        });
+    }
+
+
+    private void OnOrderButtonClicked(int index)
+    {
+        CookingData data = new CookingData("À½½Ä", 1, 100, () =>
+        {
+            _tableDatas[index].TableState = ETableState.CanServing;
+            UpdateTable();
+        });
+        _tableDatas[index].SetTipValue(10);
+        _tableDatas[index].TableState = ETableState.WaitFood;
+        _kitchenSystem.EqueueFood(data);
+        UpdateTable();
+    }
+
+    private void OnServingButtonClicked(int index)
+    {
+        _tableDatas[index].TableState = ETableState.Eating;
+        Tween.Wait(1, () => ExitCustomer(index));
+        UpdateTable();
+    }
+
+    private void OnCleanButtonClicked(int index)
+    {
+        GameManager.Instance.Tip += _tableDatas[index].TipValue;
+        _tableDatas[index].TableState = ETableState.NotUse;
+        UpdateTable();
+    }
+
+
+    private void ExitCustomer(int index)
+    {
+        _tableDatas[index].TableState = ETableState.NeedCleaning;
+        Customer exitCustomer = _tableDatas[index].CurrentCustomer;
+        exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
+        _tableDatas[index].CurrentCustomer = null;
+        UpdateTable();
+
+        exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () => 
+        {
+            ObjectPoolManager.Instance.DequeueCustomer(exitCustomer);
+            UpdateTable();
+        });
+    }
+
+
+
+
+}

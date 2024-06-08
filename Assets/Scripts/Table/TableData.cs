@@ -5,23 +5,46 @@ using UnityEngine.UI;
 [Serializable]
 public class TableData
 {
-    [SerializeField] private Button _guideButton;
+    private Button _guideButton;
     public Button GuideButton => _guideButton;
 
-    [SerializeField] private Button _orderButton;
+    private Button _orderButton;
     public Button OrderButton => _orderButton;
+
+    private Button _servingButton;
+    public Button ServingButton => _servingButton;
+
+    private Button _cleaningButton;
+    public Button CleaningButton => _cleaningButton;
 
     [SerializeField] private Transform _customerMoveTr;
     public Transform CustomerMoveTr => _customerMoveTr;
 
+    [SerializeField] private Transform _tableButtonTr;
+    public Transform TableButtonTr => _tableButtonTr;
+
     [SerializeField] private Transform[] _chairTrs;
     public Transform[] ChairTrs => _chairTrs;
 
+    private int _tipValue;
+    public int TipValue => _tipValue;
 
-
-    public bool IsUsed;
-
-    public bool IsOrderPlaced;
+    public ETableState TableState;
 
     public Customer CurrentCustomer;
+
+    public void SetTipValue(int value)
+    {
+        _tipValue += value;
+    }
+
+    public void Init(Button guideButton, Button orderButton, Button servingButton, Button cleaningButton)
+    {
+        _guideButton = guideButton;
+        _orderButton = orderButton;
+        _servingButton = servingButton;
+        _cleaningButton = cleaningButton;
+    }
+
+
 }

@@ -8,6 +8,11 @@ public class WorldToSceenPosition : MonoBehaviour
 
     private Camera _camera;
 
+    public void SetWorldTransform(Transform tr)
+    {
+        _worldTransform = tr;
+    }
+
     private void Awake()
     {
         _camera = Camera.main;
@@ -15,6 +20,9 @@ public class WorldToSceenPosition : MonoBehaviour
 
     private void Update()
     {
+        if (_worldTransform == null)
+            return;
+
         transform.position = _camera.WorldToScreenPoint(_worldTransform.position);
     }
 
