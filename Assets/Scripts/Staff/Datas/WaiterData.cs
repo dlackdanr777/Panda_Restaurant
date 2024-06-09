@@ -1,13 +1,13 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "ServerStaffData", menuName = "Scriptable Object/Staff/Server")]
+[CreateAssetMenu(fileName = "WaiterData", menuName = "Scriptable Object/Staff/Waiter")]
 public class WaiterData : StaffData
 {
     [SerializeField] private WaiterLevelData[] _waiterLevelData;
 
 
-    public override float GetActionTime(int level)
+    public override float GetActionValue(int level)
     {
         if (_waiterLevelData.Length < level - 1 || level < 0)
             throw new ArgumentOutOfRangeException("웨이터 레벨의 범위를 넘어섰습니다.");
@@ -15,18 +15,18 @@ public class WaiterData : StaffData
         return _waiterLevelData[level - 1].ServingTime;
     }
 
-    public override IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem)
+    public override IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         return new WaiterAction(tableManager);
     }
 
 
-    public override void AddSlot()
+    public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        throw new NotImplementedException();
+        staff.SetAlpha(0);
     }
 
-    public override void RemoveSlot()
+    public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         throw new NotImplementedException();
     }

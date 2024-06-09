@@ -1,5 +1,6 @@
 using Muks.PathFinding.AStar;
 using System;
+using UnityEditor.Rendering;
 using UnityEngine;
 
 
@@ -16,17 +17,23 @@ public class Staff : MonoBehaviour
     private int _level = 1;
     private float _scaleX;
     private float _actionTimer;
+    private float _speed;
+    public float Speed => _speed;
 
 
-    public void SetStaffData(StaffData staffData, TableManager tableManager, KitchenSystem kitchenSystem)
+    public void SetStaffData(StaffData staffData, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        _staffData = staffData;
-        _staffAction = staffData.GetStaffAction(tableManager, kitchenSystem);
-        _spriteRenderer.sprite = staffData.Sprite;
-        float heightMul = (float)staffData.Sprite.textureRect.height * 0.005f - AStar.Instance.NodeSize;
-        _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
+        if (_staffData != null)
+            _staffData.RemoveSlot(this, tableManager, kitchenSystem, customerController);
 
+        _staffData = staffData;
+        _staffAction = staffData.GetStaffAction(tableManager, kitchenSystem, customerController);
+        _spriteRenderer.sprite = staffData.Sprite;
+        float heightMul = staffData.Sprite.textureRect.height * 0.005f - AStar.Instance.NodeSize;
+        _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
+        _speed = staffData.Speed;
         _level = 1;
+        _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         ResetAction();
     }
 
@@ -38,7 +45,7 @@ public class Staff : MonoBehaviour
 
     public void ResetAction()
     {
-        _actionTimer = _staffData.GetActionTime(_level);
+        _actionTimer = _staffData.GetActionValue(_level);
         _state = EStaffState.None;
     }
 

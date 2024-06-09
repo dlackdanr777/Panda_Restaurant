@@ -7,5 +7,6 @@ public enum ETableState
     WaitFood,
     CanServing,
     Eating,
-    NeedCleaning
+    NeedCleaning,
+    UseStaff,
 }

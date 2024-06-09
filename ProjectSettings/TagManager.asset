@@ -41,3 +41,27 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Background
+    uniqueID: 1735462077
+    locked: 0
+  - name: Chair
+    uniqueID: 2526321389
+    locked: 0
+  - name: SitCustomer
+    uniqueID: 4098983017
+    locked: 0
+  - name: Table
+    uniqueID: 2218170019
+    locked: 0
+  - name: WaitCustomer
+    uniqueID: 3792127949
+    locked: 0
+  - name: Customer
+    uniqueID: 59168115
+    locked: 0
+  - name: Staff
+    uniqueID: 4254511221
+    locked: 0
+  - name: Building
+    uniqueID: 1031326663
+    locked: 0

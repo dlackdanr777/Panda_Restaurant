@@ -6,8 +6,10 @@ using UnityEngine;
 
 public class CustomerController : MonoBehaviour
 {
+    
+    [Range(1, 30)] [SerializeField] private int _maxCustomers;
+    [Range(1, 10)] [SerializeField] private int _lineSpacingGrid;
     [SerializeField] private Transform _startLine;
-    [SerializeField] private float _lineSpacing;
     [SerializeField] private CustomerData _data;
 
     private Queue<Customer> _customers = new Queue<Customer>();
@@ -32,14 +34,17 @@ public class CustomerController : MonoBehaviour
 
     public void AddCustomer()
     {
+        if (_maxCustomers <= _customers.Count)
+            return;
+
         Customer customer = ObjectPoolManager.Instance.SpawnCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
         customer.Init(_data);
         _customers.Enqueue(customer);
 
-        Vector2 startLinePos = _startLine.position;
-        startLinePos.x += _lineSpacing * _customers.Count;
-        customer.Move(startLinePos, -1);
+        if (_sortCoroutine != null)
+            StopCoroutine(_sortCoroutine);
 
+        _sortCoroutine = StartCoroutine(SortCustomerLine());
         AddCustomerHandler?.Invoke();
     }
 
@@ -65,10 +70,14 @@ public class CustomerController : MonoBehaviour
     {
         yield return YieldCache.WaitForSeconds(0.5f);
         Vector2 startLinePos = _startLine.position;
+        int orderLayer = 0;
+        float gridSize = AStar.Instance.NodeSize;
         foreach (Customer c in _customers)
         {
             c.Move(startLinePos, -1);
-            startLinePos.x += _lineSpacing;
+            c.SetLayer("WaitCustomer", orderLayer++);
+            startLinePos.x += (_lineSpacingGrid * gridSize);
+
             yield return YieldCache.WaitForSeconds(0.05f);
         }
     }

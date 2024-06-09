@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a377ea42dec1d4d4c9ea62112443872a, type: 3}
+  m_Name: CleanerData
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: -9098682166295574887, guid: b2183c4950c3077459325871ad78f895,
+    type: 3}
+  _id: Staff01
+  _name: asdasd
+  _description: 
+  _cleanerLevelData:
+  - _cleaningTime: 5
+    _tipAddPercent: 10
+    _scoreIncrement: 39
+    _nextLevelUpgradeMoney: 19999

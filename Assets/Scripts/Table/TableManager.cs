@@ -1,6 +1,4 @@
 using Muks.Tween;
-using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +6,8 @@ public class TableManager : MonoBehaviour
 {
     [Range(0, 10)]
     [SerializeField] private int _ownedTableCount;
+    [SerializeField] private Transform _cashRegisterTr;
+    public Transform CashRegisterTr => _cashRegisterTr;
     [SerializeField] private TableData[] _tableDatas;
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private KitchenSystem _kitchenSystem;
@@ -19,10 +19,10 @@ public class TableManager : MonoBehaviour
     [SerializeField] private Button _servingButtonPrefab;
     [SerializeField] private Button _cleaningButtonPrefab;
 
-    [SerializeField] private Button[] _guideButtons;
-    [SerializeField] private Button[] _orderButtons;
-    [SerializeField] private Button[] _servingButtons;
-    [SerializeField] private Button[] _cleaningButtons;
+    private Button[] _guideButtons;
+    private Button[] _orderButtons;
+    private Button[] _servingButtons;
+    private Button[] _cleaningButtons;
 
 
     private void Awake()
@@ -115,7 +115,7 @@ public class TableManager : MonoBehaviour
                 _servingButtons[i].gameObject.SetActive(false);
                 _cleaningButtons[i].gameObject.SetActive(false);
             }
-            else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating)
+            else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating || data.TableState == ETableState.UseStaff)
             {
                 _guideButtons[i].gameObject.SetActive(false);
                 _orderButtons[i].gameObject.SetActive(false);
@@ -168,6 +168,7 @@ public class TableManager : MonoBehaviour
             currentCustomer.transform.position = _tableDatas[index].ChairTrs[randInt].position;
             int dir = randInt == 0 ? 1 : -1;
             currentCustomer.SetSpriteDir(dir);
+            currentCustomer.SetLayer("SitCustomer", 0);
             UpdateTable();
         });
     }
@@ -200,6 +201,12 @@ public class TableManager : MonoBehaviour
         UpdateTable();
     }
 
+    public void OnUseStaff(int index)
+    {
+        _tableDatas[index].TableState = ETableState.UseStaff;
+        UpdateTable();
+    }
+
 
     private void ExitCustomer(int index)
     {
@@ -207,6 +214,7 @@ public class TableManager : MonoBehaviour
         Customer exitCustomer = _tableDatas[index].CurrentCustomer;
         exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
         _tableDatas[index].CurrentCustomer = null;
+        exitCustomer.SetLayer("Customer", 0);
         UpdateTable();
 
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () => 

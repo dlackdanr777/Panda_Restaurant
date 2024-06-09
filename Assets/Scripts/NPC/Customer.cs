@@ -44,6 +44,17 @@ public class Customer : MonoBehaviour
         else if (0 < dir) transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
     }
 
+    public void SetLayer(string sortingLayerName, int orderInLayer)
+    {
+        _spriteRenderer.sortingLayerName = sortingLayerName;
+        _spriteRenderer.sortingOrder = orderInLayer;
+    }
+
+    public void SetOrderLayer(int orderInLayer)
+    {
+        _spriteRenderer.sortingOrder = orderInLayer;
+    }
+
 
     public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
     {
@@ -96,9 +107,12 @@ public class Customer : MonoBehaviour
 
     private IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {
+        if (2 <= nodeList.Count)
+            nodeList.RemoveAt(0);
+
         foreach (Vector2 vec in nodeList)
         {
-            while (Vector3.Distance(_moveObj.transform.position, vec) > 0.02f)
+            while (Vector3.Distance(_moveObj.transform.position, vec) > 0.05f)
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
                 _moveObj.transform.Translate(dir * Time.deltaTime * _customerData.MoveSpeed, Space.World);

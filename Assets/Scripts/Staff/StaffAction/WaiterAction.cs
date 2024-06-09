@@ -17,17 +17,19 @@ public class WaiterAction : IStaffAction
 
         staff.SetAlpha(0);
         staff.SetStaffState(EStaffState.Used);
+        _tableManager.OnUseStaff(index);
         staff.transform.position = _tableManager.GetTablePos(index);
-        staff.SpriteRenderer.TweenAlpha(1, 0.5f).OnComplete(() =>
+        staff.SpriteRenderer.TweenAlpha(1, 0.25f).OnComplete(() =>
         {
             Tween.Wait(0.5f, () =>
             {
-                staff.SpriteRenderer.TweenAlpha(0, 0.5f).OnComplete(staff.ResetAction);
+                _tableManager.OnServing(index);
                 staff.ResetAction();
+                staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(staff.ResetAction);
             });
         });
 
-        _tableManager.OnServing(index);
+
         return true;
     }
 }
