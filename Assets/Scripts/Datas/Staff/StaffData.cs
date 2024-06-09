@@ -13,15 +13,14 @@ public abstract class StaffData : ScriptableObject
     [SerializeField] private string _description;
     public string Description => _description;
 
+
     public abstract float GetActionTime(int level);
 
     public abstract void AddSlot();
 
     public abstract void RemoveSlot();
 
-    public abstract void Update();
-
     public abstract void UseSkill();
 
-    public abstract bool IsUpgradeEnabed();
+    public abstract IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem);
 }

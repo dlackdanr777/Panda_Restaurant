@@ -8,12 +8,13 @@ public class StaffController : MonoBehaviour
     [SerializeField] private StaffData _staffData;
 
     [SerializeField] private TableManager _tableManager;
+    [SerializeField] private KitchenSystem _kitchenSystem;
 
     public void Awake()
     {
         for(int i = 0, cnt = _staffList.Count; i < cnt; ++i)
         {
-            _staffList[i].SetStaffData(_staffData);
+            _staffList[i].SetStaffData(_staffData, _tableManager, _kitchenSystem);
             _staffList[i].SetAlpha(0);
         }
     }
@@ -22,8 +23,7 @@ public class StaffController : MonoBehaviour
     {
         for (int i = 0, cnt = _staffList.Count; i < cnt; ++i)
         {
-            if (_staffList[i].ActionEnabled && !_staffList[i].IsUsed)
-                _tableManager.StaffAction(_staffList[i]);
+            _staffList[i].StaffAction();
         }
     }
 }

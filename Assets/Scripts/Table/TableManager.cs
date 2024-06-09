@@ -1,5 +1,6 @@
 using Muks.Tween;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -22,26 +23,6 @@ public class TableManager : MonoBehaviour
     [SerializeField] private Button[] _orderButtons;
     [SerializeField] private Button[] _servingButtons;
     [SerializeField] private Button[] _cleaningButtons;
-
-    public void StaffAction(Staff staff)
-    {
-        switch(staff.StaffType)
-        {
-            case (EStaffType.Server):
-                int index = GetTableType(ETableState.CanServing);
-
-                if (index == -1)
-                    return;
-
-                staff.SetAlpha(0);
-                staff.transform.position = _tableDatas[index].CustomerMoveTr.position;
-                staff.SpriteRenderer.TweenAlpha(1, 0.5f, TweenMode.Constant).OnComplete(() => staff.SpriteRenderer.TweenAlpha(0, 0.5f, TweenMode.Constant).OnComplete(staff.ResetAction));
-                staff.IsUsed = true;
-                
-                OnServingButtonClicked(index);
-                break;
-        }
-    }
 
 
     private void Awake()
@@ -73,10 +54,10 @@ public class TableManager : MonoBehaviour
             Button servingButton = Instantiate(_servingButtonPrefab, obj.transform);
             Button cleaningButton = Instantiate(_cleaningButtonPrefab, obj.transform);
 
-            orderButton.onClick.AddListener(() => OnOrderButtonClicked(index));
-            guideButton.onClick.AddListener(() => OnGuideButtonClicked(index));
-            servingButton.onClick.AddListener(() => OnServingButtonClicked(index));
-            cleaningButton.onClick.AddListener(() => OnCleanButtonClicked(index));
+            orderButton.onClick.AddListener(() => OnCustomerOrder(index));
+            guideButton.onClick.AddListener(() => OnCustomerGuide(index));
+            servingButton.onClick.AddListener(() => OnServing(index));
+            cleaningButton.onClick.AddListener(() => OnCleanTable(index));
 
             orderButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
             guideButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
@@ -100,7 +81,7 @@ public class TableManager : MonoBehaviour
     }
 
 
-    private int GetTableType(ETableState state)
+    public int GetTableType(ETableState state)
     {
         for(int i = 0, cnt = _tableDatas.Length; i <  cnt; i++)
         {
@@ -110,6 +91,16 @@ public class TableManager : MonoBehaviour
 
         return -1;
     }
+
+
+    public Vector2 GetTablePos(int index)
+    {
+        if (index < 0 || _tableDatas.Length <= index)
+            throw new System.Exception("테이블 범위를 벗어났습니다.");
+
+        return _tableDatas[index].CustomerMoveTr.position;
+    }
+
 
     private void UpdateTable()
     {
@@ -157,7 +148,7 @@ public class TableManager : MonoBehaviour
     }
 
 
-    private void OnGuideButtonClicked(int index)
+    public void OnCustomerGuide(int index)
     {
         if (_customerController.IsEmpty())
             return;
@@ -182,7 +173,7 @@ public class TableManager : MonoBehaviour
     }
 
 
-    private void OnOrderButtonClicked(int index)
+    public void OnCustomerOrder(int index)
     {
         CookingData data = new CookingData("음식", 1, 100, () =>
         {
@@ -195,14 +186,14 @@ public class TableManager : MonoBehaviour
         UpdateTable();
     }
 
-    private void OnServingButtonClicked(int index)
+    public void OnServing(int index)
     {
         _tableDatas[index].TableState = ETableState.Eating;
         Tween.Wait(1, () => ExitCustomer(index));
         UpdateTable();
     }
 
-    private void OnCleanButtonClicked(int index)
+    public void OnCleanTable(int index)
     {
         GameManager.Instance.Tip += _tableDatas[index].TipValue;
         _tableDatas[index].TableState = ETableState.NotUse;

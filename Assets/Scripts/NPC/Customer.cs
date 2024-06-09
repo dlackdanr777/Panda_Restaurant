@@ -1,8 +1,8 @@
+using Muks.PathFinding.AStar;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System;
-using Muks.PathFinding.AStar;
 
 public class Customer : MonoBehaviour
 {

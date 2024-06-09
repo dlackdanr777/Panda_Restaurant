@@ -2,35 +2,32 @@ using Muks.PathFinding.AStar;
 using System;
 using UnityEngine;
 
+
+
 public class Staff : MonoBehaviour
 {
     [SerializeField] private GameObject _moveObj;
     [SerializeField] private SpriteRenderer _spriteRenderer;
     public SpriteRenderer SpriteRenderer => _spriteRenderer;
 
-    public bool ActionEnabled;
-    public bool IsUsed;
     private StaffData _staffData;
+    private IStaffAction _staffAction;
+    private EStaffState _state;
     private int _level = 1;
     private float _scaleX;
     private float _actionTimer;
 
-    private EStaffType _staffType;
-    public EStaffType StaffType => _staffType;
 
-
-    public void SetStaffData(StaffData staffData)
+    public void SetStaffData(StaffData staffData, TableManager tableManager, KitchenSystem kitchenSystem)
     {
         _staffData = staffData;
-
+        _staffAction = staffData.GetStaffAction(tableManager, kitchenSystem);
         _spriteRenderer.sprite = staffData.Sprite;
-
         float heightMul = (float)staffData.Sprite.textureRect.height * 0.005f - AStar.Instance.NodeSize;
         _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
 
         _level = 1;
-        if (_staffData is ServerStaffData)
-            _staffType = EStaffType.Server;
+        ResetAction();
     }
 
     public void SetAlpha(float alpha)
@@ -42,8 +39,12 @@ public class Staff : MonoBehaviour
     public void ResetAction()
     {
         _actionTimer = _staffData.GetActionTime(_level);
-        ActionEnabled = false;
-        IsUsed = false;
+        _state = EStaffState.None;
+    }
+
+    public void SetStaffState(EStaffState state)
+    {
+        _state = state;
     }
 
 
@@ -52,6 +53,21 @@ public class Staff : MonoBehaviour
         if (dir < 0) transform.localScale = new Vector3(_scaleX, transform.localScale.y, transform.localScale.z);
         else if (0 < dir) transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
     }
+
+    public void StaffAction()
+    {
+        if(_staffAction == null)
+        {
+            Debug.LogError("직원 행동 데이터가 존재하지 않습니다.");
+            return;
+        }
+
+        if (_state != EStaffState.ActionEnable)
+            return;
+
+        _staffAction.PerformAction(this);
+    }
+
 
     private void Start()
     {
@@ -64,19 +80,17 @@ public class Staff : MonoBehaviour
         if (_staffData == null)
             return;
 
-        if(_actionTimer <= 0)
+        if (_state != EStaffState.None)
+            return;
+
+        if (_actionTimer <= 0)
         {
-            if (!IsUsed)
-                ActionEnabled = true;
+            _state = EStaffState.ActionEnable;
         }
         else
         {
             _actionTimer -= Time.deltaTime;
-            ActionEnabled = false;
         }
     }
-
-
-
 }
 
