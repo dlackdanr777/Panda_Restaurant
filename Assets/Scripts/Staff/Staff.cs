@@ -28,11 +28,13 @@ public class Staff : MonoBehaviour
 
         _staffData = staffData;
         _staffAction = staffData.GetStaffAction(tableManager, kitchenSystem, customerController);
-        _spriteRenderer.sprite = staffData.Sprite;
-        float heightMul = staffData.Sprite.textureRect.height * 0.005f - AStar.Instance.NodeSize;
-        _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
         _speed = staffData.Speed;
         _level = 1;
+
+        _spriteRenderer.sprite = staffData.Sprite;
+        float heightMul = staffData.Sprite.bounds.size.y * 0.5f - AStar.Instance.NodeSize;
+        _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
+
         _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         ResetAction();
     }

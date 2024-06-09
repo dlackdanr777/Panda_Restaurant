@@ -16,6 +16,7 @@ MonoBehaviour:
   _id: Staff03
   _name: "\uC9C0\uC9C0"
   _description: "\uAF2C\uC9C8\uAF2C\uC9C8"
+  _speed: 1
   _waiterLevelData:
   - _servingTime: 2.5
     _tipAddPercent: 20

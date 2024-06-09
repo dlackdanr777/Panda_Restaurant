@@ -16,6 +16,7 @@ MonoBehaviour:
   _id: Staff02
   _name: 
   _description: 
+  _speed: 1
   _marketerLevelData:
   - _marketingTime: 3
     _tipAddPercent: 19

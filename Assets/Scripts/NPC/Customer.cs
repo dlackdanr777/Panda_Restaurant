@@ -33,9 +33,9 @@ public class Customer : MonoBehaviour
     {
         _customerData = data;
         _spriteRenderer.sprite = data.Sprite;
-
-        float heightMul = (float)data.Sprite.textureRect.height * 0.005f - AStar.Instance.NodeSize;
+        float heightMul = data.Sprite.bounds.size.y * 0.5f - AStar.Instance.NodeSize;
         _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
+
     }
 
     public void SetSpriteDir(float dir)

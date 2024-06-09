@@ -17,6 +17,7 @@ MonoBehaviour:
   _id: Staff01
   _name: asdasd
   _description: 
+  _speed: 1
   _cleanerLevelData:
   - _cleaningTime: 5
     _tipAddPercent: 10
