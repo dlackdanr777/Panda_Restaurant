@@ -50,6 +50,9 @@ TagManager:
   - name: SitCustomer
     uniqueID: 4098983017
     locked: 0
+  - name: Manager
+    uniqueID: 3521634867
+    locked: 0
   - name: Table
     uniqueID: 2218170019
     locked: 0

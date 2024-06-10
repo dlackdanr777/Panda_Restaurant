@@ -17,8 +17,9 @@ MonoBehaviour:
   _name: "\uC9C0\uC9C0"
   _description: "\uAF2C\uC9C8\uAF2C\uC9C8"
   _speed: 1
+  _skill: {fileID: 11400000, guid: 71abd801ab8f9b34390c11362a90d61f, type: 2}
   _waiterLevelData:
   - _servingTime: 2.5
-    _tipAddPercent: 20
-    _scoreIncrement: 3
+    _tipAddPercent: 10
+    _scoreIncrement: 2
     _nextLevelUpgradeMoney: 10000

@@ -1,4 +1,5 @@
-using Muks.Tween;
+
+using Random = UnityEngine.Random;
 
 public class MarketerAction : IStaffAction
 {
@@ -10,7 +11,8 @@ public class MarketerAction : IStaffAction
 
     public bool PerformAction(Staff staff)
     {
-        _customerController.AddCustomer();
+        if(Random.Range(0f, 100f) < staff.SecondValue)
+            _customerController.AddCustomer();
         staff.ResetAction();
         return true;
     }

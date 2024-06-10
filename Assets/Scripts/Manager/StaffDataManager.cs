@@ -47,7 +47,6 @@ public class StaffDataManager : MonoBehaviour
     {
         _staffDataDic.Clear();
         _staffData = Resources.LoadAll<StaffData>("StaffData");
-        Debug.Log(_staffData.Length);
         for(int i = 0, cnt = _staffData.Length; i < cnt; i++)
         {
             _staffDataDic.Add(_staffData[i].Id, _staffData[i]);

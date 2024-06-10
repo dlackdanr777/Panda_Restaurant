@@ -18,8 +18,9 @@ MonoBehaviour:
   _name: asdasd
   _description: 
   _speed: 1
+  _skill: {fileID: 11400000, guid: 71abd801ab8f9b34390c11362a90d61f, type: 2}
   _cleanerLevelData:
-  - _cleaningTime: 5
-    _tipAddPercent: 10
-    _scoreIncrement: 39
+  - _cleaningTime: 3
+    _tipAddPercent: 20
+    _scoreIncrement: 12
     _nextLevelUpgradeMoney: 19999

@@ -4,8 +4,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "ChefData", menuName = "Scriptable Object/Staff/Chef")]
 public class ChefData : StaffData
 {
+    [Range(0f, 2f)] [SerializeField] private float _cookingSpeedMul;
     [SerializeField] private ChefLevelData[] _chefLevelData;
-
+    public override float SecondValue => 0;
 
     public override float GetActionValue(int level)
     {
@@ -24,13 +25,19 @@ public class ChefData : StaffData
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(1);
-        kitchenSystem.AddCooker(staff);
+        GameManager.Instance.AddCookingSpeedMul(_cookingSpeedMul);
+
+        GameManager.Instance.AddScore(_chefLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AddTipMul(_chefLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
-        kitchenSystem.RemoveCooker(staff);
+        GameManager.Instance.AddCookingSpeedMul(-_cookingSpeedMul);
+
+        GameManager.Instance.AddScore(-_chefLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AddTipMul(-_chefLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void UseSkill()
@@ -45,11 +52,11 @@ public class ChefLevelData
 {
     [SerializeField] private float _foodPriceMultiple;
     public float FoodPriceMultiple => _foodPriceMultiple;
-    [SerializeField] private float _tipAddPercent;
+    [Range(0f, 200f)] [SerializeField] private float _tipAddPercent;
     public float TipAddPercent => _tipAddPercent;
 
-    [SerializeField] private float _scoreIncrement;
-    public float ScoreIncrement => _scoreIncrement;
+    [SerializeField] private int _scoreIncrement;
+    public int ScoreIncrement => _scoreIncrement;
 
     [SerializeField] private int _nextLevelUpgradeMoney;
     public int NextLevelUpgradeMoney => _nextLevelUpgradeMoney;

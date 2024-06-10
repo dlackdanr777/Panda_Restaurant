@@ -18,7 +18,7 @@ public class CleanerAction : IStaffAction
         staff.SetAlpha(0);
         staff.SetStaffState(EStaffState.Used);
         _tableManager.OnUseStaff(index);
-        staff.transform.position = _tableManager.GetTablePos(index);
+        staff.transform.position = _tableManager.GetStaffPos(index, StaffType.Cleaner);
         staff.SpriteRenderer.TweenAlpha(1, 0.25f).OnComplete(() =>
         {
             Tween.Wait(0.5f, () =>

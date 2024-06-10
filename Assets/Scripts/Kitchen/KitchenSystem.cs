@@ -40,21 +40,21 @@ public class KitchenSystem : MonoBehaviour
     private Dictionary<Staff, KitchenStaffData> _cookerDic = new Dictionary<Staff, KitchenStaffData>();
     private Queue<CookingData> _cookingQueue = new Queue<CookingData>();
 
-    // Update is called once per frame
+    private float _cookingTimer;
+    private CookingData _currentCookingData;
+
     void Update()
     {
-        foreach(KitchenStaffData data in _cookerDic.Values)
-        {
-            Debug.Log(data.CookSpeedMultiple);
-            if (data.CookingTimer <= 0)
-            {
-                DequeueFood(data);
-            }
+        //TODO: 병렬 수행 제거, 음식 제작 속도만 증가
 
-            else
-            {
-                data.CookingTimer -= Time.deltaTime * data.CookSpeedMultiple;
-            }
+        if (_cookingTimer <= 0)
+        {
+            DequeueFood();
+        }
+
+        else
+        {
+            _cookingTimer -= Time.deltaTime * GameManager.Instance.CookingSpeedMul;
         }
 
     }
@@ -87,18 +87,18 @@ public class KitchenSystem : MonoBehaviour
     }
 
 
-    private void DequeueFood(KitchenStaffData data)
+    private void DequeueFood()
     {
-        if (!data.GetCookingData().IsDefault())
-            data.GetCookingData().OnCompleted();
+        if (!_currentCookingData.IsDefault())
+            _currentCookingData.OnCompleted();
 
         if(_cookingQueue.Count == 0)
         {
-            data.SetCookingData(default(CookingData));
-            data.CookingTimer = 0;
+            _currentCookingData = default(CookingData);
+            _cookingTimer = 0;
             return;
         }
 
-        data.SetCookingData(_cookingQueue.Dequeue());
+        _currentCookingData = _cookingQueue.Dequeue();
     }
 }

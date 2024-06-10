@@ -1,39 +1,42 @@
 using System;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "WaiterData", menuName = "Scriptable Object/Staff/Waiter")]
-public class WaiterData : StaffData
+[CreateAssetMenu(fileName = "ManagerData", menuName = "Scriptable Object/Staff/Manager")]
+public class ManagerData : StaffData
 {
-    [SerializeField] private WaiterLevelData[] _waiterLevelData;
+    [SerializeField] private ManagerLevelData[] _managerLevelData;
     public override float SecondValue => 0;
 
     public override float GetActionValue(int level)
     {
-        if (_waiterLevelData.Length < level - 1 || level < 0)
-            throw new ArgumentOutOfRangeException("웨이터 레벨의 범위를 넘어섰습니다.");
+        if (_managerLevelData.Length < level - 1 || level < 0)
+            throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
 
-        return _waiterLevelData[level - 1].ServingTime;
+        return _managerLevelData[level - 1].GuideTime;
     }
 
     public override IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        return new WaiterAction(tableManager);
+        return new ManagerAction(tableManager);
     }
 
 
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        staff.SetAlpha(0);
+        staff.SetAlpha(1);
+        staff.transform.position = tableManager.GetStaffPos(0, StaffType.Manager);
+        staff.SetLayer("Manager", 0);
 
-        GameManager.Instance.AddScore(_waiterLevelData[staff.Level - 1].ScoreIncrement);
-        GameManager.Instance.AddTipMul(_waiterLevelData[staff.Level - 1].TipAddPercent);
+        GameManager.Instance.AddScore(_managerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AddTipMul(_managerLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
-        GameManager.Instance.AddScore(-_waiterLevelData[staff.Level - 1].ScoreIncrement);
-        GameManager.Instance.AddTipMul(-_waiterLevelData[staff.Level - 1].TipAddPercent);
+
+        GameManager.Instance.AddScore(-_managerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AddTipMul(-_managerLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void UseSkill()
@@ -44,10 +47,10 @@ public class WaiterData : StaffData
 
 
 [Serializable]
-public class WaiterLevelData
+public class ManagerLevelData
 {
-    [SerializeField] private float _servingTime;
-    public float ServingTime => _servingTime;
+    [SerializeField] private float _guideTime;
+    public float GuideTime => _guideTime;
 
     [Range(0f, 200f)] [SerializeField] private float _tipAddPercent;
     public float TipAddPercent => _tipAddPercent;

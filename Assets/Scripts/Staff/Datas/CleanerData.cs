@@ -6,6 +6,7 @@ public class CleanerDataData : StaffData
 {
     [SerializeField] private CleanerLevelData[] _cleanerLevelData;
 
+    public override float SecondValue => 0;
 
     public override float GetActionValue(int level)
     {
@@ -24,11 +25,16 @@ public class CleanerDataData : StaffData
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
+
+        GameManager.Instance.AddScore(_cleanerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AddTipMul(_cleanerLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        throw new NotImplementedException();
+        staff.SetAlpha(0);
+        GameManager.Instance.AddScore(-_cleanerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AddTipMul(-_cleanerLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void UseSkill()
@@ -43,11 +49,12 @@ public class CleanerLevelData
 {
     [SerializeField] private float _cleaningTime;
     public float CleaningTime => _cleaningTime;
-    [SerializeField] private float _tipAddPercent;
+
+    [Range(0f, 200f)] [SerializeField] private float _tipAddPercent;
     public float TipAddPercent => _tipAddPercent;
 
-    [SerializeField] private float _scoreIncrement;
-    public float ScoreIncrement => _scoreIncrement;
+    [SerializeField] private int _scoreIncrement;
+    public int ScoreIncrement => _scoreIncrement;
 
     [SerializeField] private int _nextLevelUpgradeMoney;
     public int NextLevelUpgradeMoney => _nextLevelUpgradeMoney;

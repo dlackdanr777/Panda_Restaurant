@@ -17,6 +17,11 @@ public abstract class StaffData : ScriptableObject
     [Range(0.5f, 2.0f)] [SerializeField] private float _speed;
     public float Speed => _speed;
 
+    [SerializeField] private SkillBase _skill;
+    public SkillBase Skill => _skill;
+
+    public abstract float SecondValue { get; }
+
     public abstract float GetActionValue(int level);
 
     public abstract void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);

@@ -6,8 +6,11 @@ public class TableManager : MonoBehaviour
 {
     [Range(0, 10)]
     [SerializeField] private int _ownedTableCount;
-    [SerializeField] private Transform _cashRegisterTr;
-    public Transform CashRegisterTr => _cashRegisterTr;
+    [SerializeField] private Transform _cashTableTr;
+    [SerializeField] private Transform _marketerTr;
+    [SerializeField] private Transform _guardTr;
+
+    [Space]
     [SerializeField] private TableData[] _tableDatas;
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private KitchenSystem _kitchenSystem;
@@ -101,6 +104,31 @@ public class TableManager : MonoBehaviour
         return _tableDatas[index].CustomerMoveTr.position;
     }
 
+    public Vector2 GetStaffPos(int index, StaffType type)
+    {
+        if (index < 0 || _tableDatas.Length <= index)
+            throw new System.Exception("테이블 범위를 벗어났습니다.");
+
+        switch(type)
+        {
+            case StaffType.Waiter1:
+                return _tableDatas[index].LeftStaffTr.position;
+                case StaffType.Waiter2:
+                return _tableDatas[index].RightStaffTr.position;
+            case StaffType.Cleaner:
+                return _tableDatas[index].CustomerMoveTr.position;
+            case StaffType.Manager:
+                return _cashTableTr.position;
+            case StaffType.Marketer:
+                return _marketerTr.position;
+            case StaffType.Guard:
+                return _guardTr.position;
+        }
+
+        Debug.LogError("직원 종류 값이 잘못 입력되었습니다.");
+        return new Vector2(0,0);
+    }
+
 
     private void UpdateTable()
     {
@@ -158,6 +186,7 @@ public class TableManager : MonoBehaviour
 
         Customer currentCustomer = _customerController.GetFirstCustomer();
         _tableDatas[index].CurrentCustomer = currentCustomer;
+        currentCustomer.SetLayer("Customer", 0);
         _tableDatas[index].TableState = ETableState.Move;
         UpdateTable();
 
@@ -184,6 +213,7 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].SetTipValue(10);
         _tableDatas[index].TableState = ETableState.WaitFood;
         _kitchenSystem.EqueueFood(data);
+        _tableDatas[index].CurrentFood = data;
         UpdateTable();
     }
 
@@ -196,7 +226,7 @@ public class TableManager : MonoBehaviour
 
     public void OnCleanTable(int index)
     {
-        GameManager.Instance.Tip += _tableDatas[index].TipValue;
+        GameManager.Instance.AppendTip(_tableDatas[index].TipValue);
         _tableDatas[index].TableState = ETableState.NotUse;
         UpdateTable();
     }
@@ -214,6 +244,8 @@ public class TableManager : MonoBehaviour
         Customer exitCustomer = _tableDatas[index].CurrentCustomer;
         exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
         _tableDatas[index].CurrentCustomer = null;
+
+        GameManager.Instance.AppendTip((int)(_tableDatas[index].CurrentFood.Price * GameManager.Instance.FoodPriceMul));
         exitCustomer.SetLayer("Customer", 0);
         UpdateTable();
 

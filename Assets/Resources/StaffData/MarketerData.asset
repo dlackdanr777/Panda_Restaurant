@@ -17,8 +17,10 @@ MonoBehaviour:
   _name: 
   _description: 
   _speed: 1
+  _skill: {fileID: 11400000, guid: 71abd801ab8f9b34390c11362a90d61f, type: 2}
+  _customerCallPercentage: 10
   _marketerLevelData:
-  - _marketingTime: 3
-    _tipAddPercent: 19
-    _scoreIncrement: 4
+  - _marketingTime: 2
+    _tipAddPercent: 29
+    _scoreIncrement: 22
     _nextLevelUpgradeMoney: 3999
