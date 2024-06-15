@@ -78,6 +78,7 @@ public class StaffDataManager : MonoBehaviour
         for(int i = 0, cnt = (int)StaffType.Length; i < cnt; i++)
         {
             _staffTypeDataList[i] = new List<StaffData>();
+            _staffTypeDataList[i].AsReadOnly();
         }
 
         _staffData = Resources.LoadAll<StaffData>("StaffData");

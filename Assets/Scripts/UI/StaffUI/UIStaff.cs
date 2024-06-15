@@ -1,17 +1,19 @@
-using Muks.MobileUI;
-using UnityEngine;
-using System.Collections.Generic;
-using Muks.Tween;
 using Muks.DataBind;
+using Muks.MobileUI;
+using Muks.Tween;
+using System.Collections.Generic;
 using TMPro;
-using UnityEngine.UI;
+using UnityEngine;
 
 public class UIStaff : MobileUIView
 {
     [Header("Components")]
-    [SerializeField] private UIStaffPreview _preview;
+    [SerializeField] private UIStaffPreview _uiStaffPreview;
+    [SerializeField] private ButtonPressEffect _leftArrowButton;
+    [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
-    [SerializeField] private TextMeshProUGUI _staffTypeText;
+    [SerializeField] private TextMeshProUGUI _staffTypeText1;
+    [SerializeField] private TextMeshProUGUI _staffTypeText2;
 
     [Space]
     [Header("Animations")]
@@ -29,13 +31,14 @@ public class UIStaff : MobileUIView
     [SerializeField] private Transform _slotParnet;
     [SerializeField] private UIStaffSlot _slotPrefab;
 
-    private StaffType _type;
-
-
+    private StaffType _currentType;
     private UIStaffSlot[] _slots;
 
     public override void Init()
     {
+        _leftArrowButton.SetAction(() => ChangeStaffData(-1));
+        _rightArrowButton.SetAction(() => ChangeStaffData(1));
+
         _slots = new UIStaffSlot[_createSlotValue];
         for(int i = 0; i < _createSlotValue; ++i)
         {
@@ -43,14 +46,14 @@ public class UIStaff : MobileUIView
             _slots[i] = slot;
         }
 
-        gameObject.SetActive(false);
-
         DataBind.SetUnityActionValue("ExitUIStaff", ExitUIStaff);
         DataBind.SetUnityActionValue("ShowUIStaffManager", ShowUIStaffManager);
         DataBind.SetUnityActionValue("ShowUIStaffaiter", ShowUIStaffWaiter);
         DataBind.SetUnityActionValue("ShowUIStaffChef", ShowUIStaffChef);
         DataBind.SetUnityActionValue("ShowUIStaffCleaner", ShowUIStaffCleaner);
         DataBind.SetUnityActionValue("ShowUIStaffMarketer", ShowUIStaffMarketer);
+
+        gameObject.SetActive(false);
     }
 
 
@@ -86,15 +89,54 @@ public class UIStaff : MobileUIView
             VisibleState = VisibleState.Disappeared;
             gameObject.SetActive(false);
         });
-
     }
 
 
-    private void SetSaffData(StaffType type)
+    private void SetStaffData(StaffType type)
     {
+        _currentType = type;
+        _uiStaffPreview.SetStaff(UserInfo.GetSEquipStaff(type));
         List<StaffData> list = StaffDataManager.Instance.GetStaffDataList(type);
 
-        for(int i = 0, cnt = list.Count; i < cnt; ++i)
+        switch(type)
+        {
+            case StaffType.Manager:
+                _staffTypeText1.text = "매니저";
+                _staffTypeText2.text = "매니저";
+                break;
+
+            case StaffType.Waiter:
+                _staffTypeText1.text = "웨이터";
+                _staffTypeText2.text = "웨이터";
+                break;
+
+            case StaffType.Chef:
+                _staffTypeText1.text = "셰프";
+                _staffTypeText2.text = "셰프";
+                break;
+
+            case StaffType.Cleaner:
+                _staffTypeText1.text = "청소부";
+                _staffTypeText2.text = "청소부";
+                break;
+
+            case StaffType.Marketer:
+                _staffTypeText1.text = "마케터";
+                _staffTypeText2.text = "마케터";
+                break;
+
+            case StaffType.Guard:
+                _staffTypeText1.text = "가드";
+                _staffTypeText2.text = "가드";
+                break;
+
+            case StaffType.Server:
+                _staffTypeText1.text = "서버";
+                _staffTypeText2.text = "서버";
+                break;
+        }
+
+        for (int i = 0, cnt = list.Count; i < cnt; ++i)
         {
             _slots[i].gameObject.SetActive(true);
             _slots[i].SetUse(list[i]);
@@ -106,6 +148,15 @@ public class UIStaff : MobileUIView
         }
     }
 
+
+    private void ChangeStaffData(int dir)
+    {
+        StaffType newTypeIndex = _currentType + dir;
+        _currentType = newTypeIndex < 0 ? StaffType.Length - 1 : (StaffType)((int)newTypeIndex % (int)StaffType.Length);
+        SetStaffData(_currentType);
+    }
+
+
     private void ExitUIStaff()
     {
         _uiNav.PopNoAnime("UIStaff");
@@ -114,41 +165,30 @@ public class UIStaff : MobileUIView
     private void ShowUIStaffManager()
     {
         _uiNav.Push("UIStaff");
-        SetSaffData(StaffType.Manager);
-
-        _preview.SetStaff(UserInfo.GetSEquipStaff(StaffType.Manager));
-        _staffTypeText.text = "매니저";
+        SetStaffData(StaffType.Manager);
     }
 
     private void ShowUIStaffWaiter()
     {
         _uiNav.Push("UIStaff");
-        SetSaffData(StaffType.Waiter);
-        _preview.SetStaff(UserInfo.GetSEquipStaff(StaffType.Waiter));
-        _staffTypeText.text = "웨이터";
+        SetStaffData(StaffType.Waiter);
     }
 
     private void ShowUIStaffChef()
     {
         _uiNav.Push("UIStaff");
-        SetSaffData(StaffType.Chef);
-        _preview.SetStaff(UserInfo.GetSEquipStaff(StaffType.Chef));
-        _staffTypeText.text = "셰프";
+        SetStaffData(StaffType.Chef);
     }
 
     private void ShowUIStaffCleaner()
     {
         _uiNav.Push("UIStaff");
-        SetSaffData(StaffType.Cleaner);
-        _preview.SetStaff(UserInfo.GetSEquipStaff(StaffType.Cleaner));
-        _staffTypeText.text = "청소부";
+        SetStaffData(StaffType.Cleaner);
     }
 
     private void ShowUIStaffMarketer()
     {
         _uiNav.Push("UIStaff");
-        SetSaffData(StaffType.Marketer);
-        _preview.SetStaff(UserInfo.GetSEquipStaff(StaffType.Marketer));
-        _staffTypeText.text = "마케터";
+        SetStaffData(StaffType.Marketer);
     }
 }
