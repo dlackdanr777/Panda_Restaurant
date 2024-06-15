@@ -22,6 +22,8 @@ public class StaffDataManager : MonoBehaviour
 
     private static StaffData[] _staffData;
     private static Dictionary<string, StaffData> _staffDataDic = new Dictionary<string, StaffData>();
+    private static List<StaffData>[] _staffTypeDataList;
+
 
 
     public StaffData GetStaffData(string id)
@@ -30,6 +32,31 @@ public class StaffDataManager : MonoBehaviour
             throw new System.Exception("해당 id값이 존재하지 않습니다.");
 
         return data;
+    }
+
+    public List<StaffData> GetStaffDataList(StaffType type)
+    {
+        return _staffTypeDataList[(int)type];
+    }
+
+    public StaffType GetStaffType(StaffData data)
+    {
+        if (data is ManagerData)
+            return StaffType.Manager;
+
+        else if (data is WaiterData)
+            return StaffType.Waiter;
+
+        else if (data is CleanerData)
+            return StaffType.Cleaner;
+
+        else if (data is MarketerData)
+            return StaffType.Marketer;
+
+        else if (data is ChefData)
+            return StaffType.Chef;
+
+        else throw new System.Exception("해당 스태프의 종류가 존재하지 않습니다.");
     }
 
 
@@ -46,10 +73,18 @@ public class StaffDataManager : MonoBehaviour
     private static void Init()
     {
         _staffDataDic.Clear();
+        _staffTypeDataList = new List<StaffData>[(int)StaffType.Length];
+
+        for(int i = 0, cnt = (int)StaffType.Length; i < cnt; i++)
+        {
+            _staffTypeDataList[i] = new List<StaffData>();
+        }
+
         _staffData = Resources.LoadAll<StaffData>("StaffData");
         for(int i = 0, cnt = _staffData.Length; i < cnt; i++)
         {
             _staffDataDic.Add(_staffData[i].Id, _staffData[i]);
+            _staffTypeDataList[(int)_instance.GetStaffType(_staffData[i])].Add(_staffData[i]);
         }
     }
 }

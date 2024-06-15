@@ -120,6 +120,20 @@ namespace Muks.PcUI
             }
         }
 
+        public override void PopNoAnime(string viewName)
+        {
+            if (_viewDic.TryGetValue(viewName, out PcUIView uiView))
+            {
+                if (!_activeViewList.Contains(uiView))
+                    return;
+
+                _activeViewList.Remove(uiView);
+                uiView.gameObject.SetActive(false);
+                uiView.VisibleState = VisibleState.Disappeared;
+                OnFocusHandler?.Invoke();
+            }
+        }
+
 
         /// <summary> ²¨³ù´ø ¸ðµç UIView¸¦ SetActive(true)ÇÑ´Ù. </summary>
         public override void AllShow()

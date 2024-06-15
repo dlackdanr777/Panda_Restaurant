@@ -1,10 +1,11 @@
 public enum StaffType
 {
-    Waiter1,
-    Waiter2,
+    Waiter,
+    Server,
     Cleaner,
     Manager,
     Marketer,
     Chef,
     Guard,
+    Length
 }

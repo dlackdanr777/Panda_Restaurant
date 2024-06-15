@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "CleanerData", menuName = "Scriptable Object/Staff/Cleaner")]
-public class CleanerDataData : StaffData
+public class CleanerData : StaffData
 {
     [SerializeField] private CleanerLevelData[] _cleanerLevelData;
 

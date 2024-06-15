@@ -18,7 +18,7 @@ public class WaiterAction : IStaffAction
         staff.SetAlpha(0);
         staff.SetStaffState(EStaffState.Used);
         _tableManager.OnUseStaff(index);
-        staff.transform.position = _tableManager.GetStaffPos(index, StaffType.Waiter1);
+        staff.transform.position = _tableManager.GetStaffPos(index, StaffType.Waiter);
         staff.SpriteRenderer.TweenAlpha(1, 0.25f).OnComplete(() =>
         {
             Tween.Wait(0.5f, () =>

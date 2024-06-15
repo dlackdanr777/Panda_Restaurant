@@ -22,6 +22,9 @@ namespace Muks.UI
         /// <summary> viewName을 확인해 해당 UI 를 감추는 함수</summary>
         public abstract void Pop(string viewName);
 
+        /// <summary> viewName을 확인해 해당 UI 를 감추는 함수(즉시 닫기)</summary>
+        public abstract void PopNoAnime(string viewName);
+
         /// <summary> 꺼놨던 모든 UIView를 SetActive(true)한다. </summary>
         public abstract void AllShow();
 

@@ -14,11 +14,22 @@ public class StaffController : MonoBehaviour
 
     public void Awake()
     {
-        _staffList[0].SetStaffData(StaffDataManager.Instance.GetStaffData("Staff01"), _tableManager, _kitchenSystem, _customerController);
-        _staffList[1].SetStaffData(StaffDataManager.Instance.GetStaffData("Staff02"), _tableManager, _kitchenSystem, _customerController);
-        _staffList[2].SetStaffData(StaffDataManager.Instance.GetStaffData("Staff03"), _tableManager, _kitchenSystem, _customerController);
-        _staffList[3].SetStaffData(StaffDataManager.Instance.GetStaffData("Staff04"), _tableManager, _kitchenSystem, _customerController);
-        _staffList[4].SetStaffData(StaffDataManager.Instance.GetStaffData("Staff05"), _tableManager, _kitchenSystem, _customerController);
+        StaffData data1 = StaffDataManager.Instance.GetStaffData("Staff01");
+        StaffData data2 = StaffDataManager.Instance.GetStaffData("Staff02");
+        StaffData data3 = StaffDataManager.Instance.GetStaffData("Staff03");
+        StaffData data4 = StaffDataManager.Instance.GetStaffData("Staff04");
+        StaffData data5 = StaffDataManager.Instance.GetStaffData("Staff05");
+        _staffList[0].SetStaffData(data1, _tableManager, _kitchenSystem, _customerController);
+        _staffList[1].SetStaffData(data2, _tableManager, _kitchenSystem, _customerController);
+        _staffList[2].SetStaffData(data3, _tableManager, _kitchenSystem, _customerController);
+        _staffList[3].SetStaffData(data4, _tableManager, _kitchenSystem, _customerController);
+        _staffList[4].SetStaffData(data5, _tableManager, _kitchenSystem, _customerController);
+
+        UserInfo.SetEquipStaff(data1);
+        UserInfo.SetEquipStaff(data2);
+        UserInfo.SetEquipStaff(data3);
+        UserInfo.SetEquipStaff(data4);
+        UserInfo.SetEquipStaff(data5);
 
     }
 

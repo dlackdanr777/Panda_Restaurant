@@ -11,6 +11,12 @@ public abstract class StaffData : ScriptableObject
     [SerializeField] private string _name;
     public string Name => _name;
 
+    [SerializeField] private int _price;
+    public int Price => _price;
+
+    [SerializeField] private int _scoreIncrement;
+    public int ScoreIncrement => _scoreIncrement;
+
     [SerializeField] private string _description;
     public string Description => _description;
 

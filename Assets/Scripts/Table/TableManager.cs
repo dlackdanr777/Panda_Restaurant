@@ -111,9 +111,9 @@ public class TableManager : MonoBehaviour
 
         switch(type)
         {
-            case StaffType.Waiter1:
+            case StaffType.Waiter:
                 return _tableDatas[index].LeftStaffTr.position;
-                case StaffType.Waiter2:
+                case StaffType.Server:
                 return _tableDatas[index].RightStaffTr.position;
             case StaffType.Cleaner:
                 return _tableDatas[index].CustomerMoveTr.position;

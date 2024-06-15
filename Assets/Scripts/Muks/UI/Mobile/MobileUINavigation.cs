@@ -124,6 +124,20 @@ namespace Muks.MobileUI
             OnFocusHandler?.Invoke();
         }
 
+        public override void PopNoAnime(string viewName)
+        {
+            if (_viewDic.TryGetValue(viewName, out MobileUIView uiView))
+            {
+                if (!_activeViewList.Contains(uiView))
+                    return;
+
+                _activeViewList.Remove(uiView);
+                uiView.gameObject.SetActive(false);
+                uiView.VisibleState = VisibleState.Disappeared;
+                OnFocusHandler?.Invoke();
+            }
+        }
+
 
 
         /// <summary> ²¨³ù´ø ¸ðµç UIView¸¦ SetActive(true)ÇÑ´Ù. </summary>
