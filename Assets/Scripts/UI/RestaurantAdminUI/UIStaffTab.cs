@@ -19,10 +19,11 @@ public class UIStaffTab : MonoBehaviour
         _slots = new UIStaffTabSlot[(int)StaffType.Length];
         for(int i = 0, cnt = (int)StaffType.Length; i < cnt; i++)
         {
+            int index = i;
             UIStaffTabSlot slot = Instantiate(_slotPrefab, _slotParent);
-            _slots[i] = slot;
-            slot.Init(() => OnSlotClicked(StaffType.Manager + i));
-            slot.SetData(StaffType.Manager + i);
+            _slots[index] = slot;
+            slot.Init(() => OnSlotClicked(StaffType.Manager + index));
+            slot.SetData(StaffType.Manager + index);
         }
 
         UserInfo.OnChangeStaffHandler += SlotUpdate;

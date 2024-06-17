@@ -150,14 +150,12 @@ public class UIStaff : MobileUIView
 
             if (UserInfo.IsGiveStaff(list[i]))
             {
-                DebugLog.Log("보유중");
                 _slots[i].SetOperate(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data, OnEquipButtonClicked));
                 continue;
             }
 
             else
             {
-                DebugLog.Log("보유중아님");
                 _slots[i].SetEnoughMoney(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data, OnEquipButtonClicked));
                 continue;
             }
