@@ -4,10 +4,22 @@ using UnityEngine;
 
 public class UIRestaurantAdmin : MobileUIView
 {
+    [Header("Components")]
     [SerializeField] private UIStaff _staffUI;
-    [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private UIStaffTab _staffTab;
     [SerializeField] private GameObject _mainUI;
+    [SerializeField] private CanvasGroup _canvasGroup;
 
+
+    [Space]
+    [Header("Tabs")]
+    [SerializeField] private GameObject _furnitureTab;
+    [SerializeField] private GameObject _StaffTab;
+    [SerializeField] private GameObject _recipeTab;
+    [SerializeField] private GameObject _kitcheTab;
+
+
+    [Space]
     [Header("Animations")]
     [SerializeField] private float _showDuration;
     [SerializeField] private TweenMode _showTweenMode;
@@ -16,9 +28,11 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private float _hideDuration;
     [SerializeField] private TweenMode _hideTweenMode;
 
+
     public override void Init()
     {
         gameObject.SetActive(false);
+        _staffTab.Init();
     }
 
     public override void Show()
@@ -52,6 +66,8 @@ public class UIRestaurantAdmin : MobileUIView
             tween2.OnComplete(() => gameObject.SetActive(false));
         });
     }
+
+
 
 
 

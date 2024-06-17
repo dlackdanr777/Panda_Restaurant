@@ -47,6 +47,9 @@ public class StaffDataManager : MonoBehaviour
         else if (data is WaiterData)
             return StaffType.Waiter;
 
+        else if (data is ServerData)
+            return StaffType.Server;
+
         else if (data is CleanerData)
             return StaffType.Cleaner;
 

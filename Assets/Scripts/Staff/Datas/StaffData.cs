@@ -11,20 +11,17 @@ public abstract class StaffData : ScriptableObject
     [SerializeField] private string _name;
     public string Name => _name;
 
-    [SerializeField] private int _price;
-    public int Price => _price;
-
-    [SerializeField] private int _scoreIncrement;
-    public int ScoreIncrement => _scoreIncrement;
-
     [SerializeField] private string _description;
     public string Description => _description;
 
-    [Range(0.5f, 2.0f)] [SerializeField] private float _speed;
-    public float Speed => _speed;
-
     [SerializeField] private SkillBase _skill;
     public SkillBase Skill => _skill;
+
+    [SerializeField] private int _buyMinScore;
+    public int BuyMinScore => _buyMinScore;
+
+    [SerializeField] private StaffMoneyData _moneyData;
+    public StaffMoneyData MoneyData => _moneyData;
 
     public abstract float SecondValue { get; }
 
@@ -33,8 +30,6 @@ public abstract class StaffData : ScriptableObject
     public abstract void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
 
     public abstract void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
-
-    public abstract void UseSkill();
 
     public abstract IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
 }

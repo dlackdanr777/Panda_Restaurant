@@ -22,6 +22,11 @@ public class GameManager : MonoBehaviour
 
     public Vector2 OutDoorPos => new Vector2(30f, 3.32f);
     [SerializeField] private int _tip;
+    public int Tip => _tip;
+
+    [SerializeField] private int _maxTipValue;
+    public int MaxTipValue => _maxTipValue;
+
     [SerializeField] private float _cookingSpeedMul = 1;
     public float CookingSpeedMul => _cookingSpeedMul;
     [SerializeField] private float _tipMul = 1;
@@ -34,7 +39,12 @@ public class GameManager : MonoBehaviour
 
     public void AddFoodPriceMul(float value)
     {
-        _foodPriceMul += value;
+        _foodPriceMul += value * 0.01f;
+    }
+
+    public void AddMaxTipValue(int value)
+    {
+        _maxTipValue += value;
     }
 
     public void AddScore(int value)
@@ -58,6 +68,7 @@ public class GameManager : MonoBehaviour
     public void AppendTip(int value)
     { 
         _tip += (int)(value * _tipMul);
+        _tip = Mathf.Clamp(_tip, 0, _maxTipValue);
     }
 
 

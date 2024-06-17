@@ -42,10 +42,18 @@ public class Staff : MonoBehaviour
         if(_usingSkill)
             _staffData.Skill.Deactivate(this, tableManager, kitchenSystem, customerController);
 
+        if(staffData == null)
+        {
+            _staffData = null;
+            _staffAction = null;
+            return;
+        }
+
         _staffData = staffData;
+        _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         _staffAction = staffData.GetStaffAction(tableManager, kitchenSystem, customerController);
         _secondValue = staffData.SecondValue;
-        _speed = staffData.Speed;
+        _speed = 1;
         _usingSkill = false;
         _skillEnabled = false;
         _level = 1;
@@ -53,8 +61,6 @@ public class Staff : MonoBehaviour
         _spriteRenderer.sprite = staffData.Sprite;
         float heightMul = staffData.Sprite.bounds.size.y * 0.5f - AStar.Instance.NodeSize;
         _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
-
-        _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
 
         ResetAction();
         ResetSkill();
@@ -110,10 +116,7 @@ public class Staff : MonoBehaviour
     public void StaffAction()
     {
         if(_staffAction == null)
-        {
-            Debug.LogError("직원 행동 데이터가 존재하지 않습니다.");
             return;
-        }
 
         if (_state != EStaffState.ActionEnable)
             return;
@@ -121,13 +124,10 @@ public class Staff : MonoBehaviour
         _staffAction.PerformAction(this);
     }
 
-    public void StaffSkill(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public void UsingStaffSkill(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         if (_staffData == null)
-        {
-            Debug.LogError("직원 데이터가 존재하지 않습니다.");
             return;
-        }
 
         if (_staffData.Skill == null)
             return;
@@ -144,6 +144,20 @@ public class Staff : MonoBehaviour
         ResetSkill();
         _useSkillRoutine = StartCoroutine(UseSkillCoroutine(tableManager, kitchenSystem, customerController));
 
+    }
+
+    public void UpdateStaffSkill(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    {
+        if (_staffData == null)
+            return;
+
+        if (_staffData.Skill == null)
+            return;
+
+        if (!_usingSkill)
+            return;
+
+        _staffData.Skill.ActivateUpdate(this, tableManager, kitchenSystem, customerController);
     }
 
 

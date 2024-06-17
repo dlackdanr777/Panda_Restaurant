@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ff789b0d596fbf48bbe8ffa6b547eb0, type: 3}
+  m_Name: STAFF08Skill
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 0}
+  _skillName: "\uBD80\uC9C0\uB7F0\uD55C \uC9C1\uC6D0"
+  _description: "\uD301\uBC15\uC2A4 \uCD5C\uB300 \uB2EC\uC131\uC2DC \uC790\uB3D9
+    \uD68C\uC218"
+  _cooldown: 100
+  _duration: 20

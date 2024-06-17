@@ -36,26 +36,12 @@ public class CleanerData : StaffData
         GameManager.Instance.AddScore(-_cleanerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_cleanerLevelData[staff.Level - 1].TipAddPercent);
     }
-
-    public override void UseSkill()
-    {
-        throw new NotImplementedException();
-    }
 }
 
 
 [Serializable]
-public class CleanerLevelData
+public class CleanerLevelData : StaffLevelData
 {
     [SerializeField] private float _cleaningTime;
     public float CleaningTime => _cleaningTime;
-
-    [Range(0f, 200f)] [SerializeField] private float _tipAddPercent;
-    public float TipAddPercent => _tipAddPercent;
-
-    [SerializeField] private int _scoreIncrement;
-    public int ScoreIncrement => _scoreIncrement;
-
-    [SerializeField] private int _nextLevelUpgradeMoney;
-    public int NextLevelUpgradeMoney => _nextLevelUpgradeMoney;
 }

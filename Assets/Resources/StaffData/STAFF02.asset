@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
+  m_Name: STAFF02
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: -7340937073833519069, guid: 252bd6e9c79724c4f904b411310b2974,
+    type: 3}
+  _id: STAFF02
+  _name: "\uC9C0\uC9C0"
+  _description: "\uC74C\uC2DD \uC790\uB3D9 \uBC30\uB2EC(2.5\uCD08)"
+  _skill: {fileID: 11400000, guid: 04374f64e289b204c84ea921b9c17185, type: 2}
+  _buyMinScore: 35
+  _moneyData:
+    _moneyType: 0
+    _price: 15000
+  _waiterLevelData:
+  - _tipAddPercent: 20
+    _scoreIncrement: 12
+    _upgradeMinScore: 50
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 30000
+    _servingTime: 2.5
+  - _tipAddPercent: 22
+    _scoreIncrement: 14
+    _upgradeMinScore: 65
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 70000
+    _servingTime: 2.5
+  - _tipAddPercent: 24
+    _scoreIncrement: 16
+    _upgradeMinScore: 85
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 150000
+    _servingTime: 2.5
+  - _tipAddPercent: 26
+    _scoreIncrement: 18
+    _upgradeMinScore: 110
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 300000
+    _servingTime: 2.5
+  - _tipAddPercent: 28
+    _scoreIncrement: 20
+    _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _servingTime: 2.5

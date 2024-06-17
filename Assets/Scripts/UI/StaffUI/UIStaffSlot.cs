@@ -1,19 +1,23 @@
+using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class UIStaffSlot : MonoBehaviour
 {
     [SerializeField] private Image _image;
     [SerializeField] private TextMeshProUGUI _text;
+    [SerializeField] private Button _button;
     [SerializeField] private GameObject _useImage;
     [SerializeField] private GameObject _operateImage;
     [SerializeField] private GameObject _enoughMoneyImage;
     [SerializeField] private GameObject _notEnoughMoneyImage;
     [SerializeField] private GameObject _lowReputationImage;
 
+    private StaffData _staffData;
 
-    public void SetUse(StaffData data)
+    public void SetUse(StaffData data, Action<StaffData> OnButtonClicked)
     {
         _useImage.SetActive(true);
         _operateImage.SetActive(false);
@@ -21,12 +25,16 @@ public class UIStaffSlot : MonoBehaviour
         _lowReputationImage.SetActive(false);
         _enoughMoneyImage.SetActive(false);
 
+        _staffData = data;
         _image.sprite = data.Sprite;
         _image.color = new Color(1, 1, 1, 1);
-        _text.text = "사용 중";
+        _text.text = "사용중";
+
+        _button.onClick.RemoveAllListeners();
+        _button.onClick.AddListener(() => OnButtonClicked(data));
     }
 
-    public void SetOperate(StaffData data)
+    public void SetOperate(StaffData data, UnityAction<StaffData> OnButtonClicked)
     {
         _operateImage.SetActive(true);
         _notEnoughMoneyImage.SetActive(false);
@@ -34,12 +42,16 @@ public class UIStaffSlot : MonoBehaviour
         _useImage.SetActive(false);
         _enoughMoneyImage.SetActive(false);
 
+        _staffData = data;
         _image.sprite = data.Sprite;
         _image.color = new Color(1, 1, 1, 1);
-        _text.text = "보유 중";
+        _text.text = "보유중";
+
+        _button.onClick.RemoveAllListeners();
+        _button.onClick.AddListener(() => OnButtonClicked(data));
     }
 
-    public void SetNotEnoughMoney(StaffData data)
+    public void SetNotEnoughMoney(StaffData data, UnityAction<StaffData> OnButtonClicked)
     {
         _notEnoughMoneyImage.SetActive(true);
         _lowReputationImage.SetActive(false);
@@ -47,12 +59,16 @@ public class UIStaffSlot : MonoBehaviour
         _operateImage.SetActive(false);
         _enoughMoneyImage.SetActive(false);
 
+        _staffData = data;
         _image.sprite = data.Sprite;
         _image.color = new Color(1, 1, 1, 1);
-        _text.text = data.Price.ToString();
+        _text.text = data.MoneyData.Price.ToString();
+
+        _button.onClick.RemoveAllListeners();
+        _button.onClick.AddListener(() => OnButtonClicked(data));
     }
 
-    public void SetEnoughMoney(StaffData data)
+    public void SetEnoughMoney(StaffData data, UnityAction<StaffData> OnButtonClicked)
     {
         _enoughMoneyImage.SetActive(true);
         _lowReputationImage.SetActive(false);
@@ -60,12 +76,16 @@ public class UIStaffSlot : MonoBehaviour
         _operateImage.SetActive(false);
         _notEnoughMoneyImage.SetActive(false);
 
+        _staffData = data;
         _image.sprite = data.Sprite;
         _image.color = new Color(0, 0, 0, 1);
-        _text.text = data.Price.ToString();
+        _text.text = data.MoneyData.Price.ToString();
+
+        _button.onClick.RemoveAllListeners();
+        _button.onClick.AddListener(() => OnButtonClicked(data));
     }
 
-    public void SetLowReputation(StaffData data)
+    public void SetLowReputation(StaffData data, UnityAction<StaffData> OnButtonClicked)
     {
         _lowReputationImage.SetActive(true);
         _useImage.SetActive(false);
@@ -73,8 +93,12 @@ public class UIStaffSlot : MonoBehaviour
         _enoughMoneyImage.SetActive(false);
         _notEnoughMoneyImage.SetActive(false);
 
+        _staffData = data;
         _image.sprite = data.Sprite;
         _image.color = new Color(0, 0, 0, 1);
-        _text.text = data.ScoreIncrement.ToString() + "\n필요";
+        _text.text = data.BuyMinScore + "\n필요";
+
+        _button.onClick.RemoveAllListeners();
+        _button.onClick.AddListener(() => OnButtonClicked(data));
     }
 }

@@ -10,18 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 93bdf2a61116f5a4bbf3c395f44840da, type: 3}
-  m_Name: ChefData
+  m_Name: STAFF34
   m_EditorClassIdentifier: 
   _sprite: {fileID: -4518219749247232801, guid: b2183c4950c3077459325871ad78f895,
     type: 3}
-  _id: Staff04
-  _name: 
-  _description: 
-  _speed: 2
-  _skill: {fileID: 11400000, guid: 71abd801ab8f9b34390c11362a90d61f, type: 2}
-  _cookingSpeedMul: 1
+  _id: STAFF34
+  _name: "\uBBF8\uC2A4\uD130\uBC31"
+  _description: "\uC74C\uC2DD \uC81C\uC791 \uD6A8\uC728 [1.5%] \uC0C1\uC2B9"
+  _skill: {fileID: 11400000, guid: 728f87aca015bf34fbe7aa82872f6c5b, type: 2}
+  _buyMinScore: 4000
+  _moneyData:
+    _moneyType: 1
+    _price: 250
   _chefLevelData:
-  - _foodPriceMultiple: 1
-    _tipAddPercent: 50
+  - _tipAddPercent: 50
     _scoreIncrement: 300
-    _nextLevelUpgradeMoney: 10000
+    _upgradeMinScore: 45800
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 50
+    _foodSpeedAddPercent: 1.5

@@ -8,6 +8,7 @@ using UnityEngine;
 public class UIStaff : MobileUIView
 {
     [Header("Components")]
+    [SerializeField] private StaffController _staffController;
     [SerializeField] private UIStaffPreview _uiStaffPreview;
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
@@ -65,10 +66,8 @@ public class UIStaff : MobileUIView
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
-        Debug.Log("실행");
         tween.OnComplete(() => 
         {
-            Debug.Log("종료");
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true; 
         });
@@ -95,7 +94,10 @@ public class UIStaff : MobileUIView
     private void SetStaffData(StaffType type)
     {
         _currentType = type;
-        _uiStaffPreview.SetStaff(UserInfo.GetSEquipStaff(type));
+
+        StaffData equipStaffData = UserInfo.GetSEquipStaff(type);
+        _uiStaffPreview.SetStaff(equipStaffData, OnEquipButtonClicked);
+
         List<StaffData> list = StaffDataManager.Instance.GetStaffDataList(type);
 
         switch(type)
@@ -139,7 +141,26 @@ public class UIStaff : MobileUIView
         for (int i = 0, cnt = list.Count; i < cnt; ++i)
         {
             _slots[i].gameObject.SetActive(true);
-            _slots[i].SetUse(list[i]);
+            if (equipStaffData != null && list[i].Id == equipStaffData.Id)
+            {
+                _slots[i].transform.SetAsFirstSibling();
+                _slots[i].SetUse(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data, OnEquipButtonClicked));
+                continue;
+            }
+
+            if (UserInfo.IsGiveStaff(list[i]))
+            {
+                DebugLog.Log("보유중");
+                _slots[i].SetOperate(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data, OnEquipButtonClicked));
+                continue;
+            }
+
+            else
+            {
+                DebugLog.Log("보유중아님");
+                _slots[i].SetEnoughMoney(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data, OnEquipButtonClicked));
+                continue;
+            }
         }
 
         for(int i = list.Count; i < _createSlotValue; ++i)
@@ -156,39 +177,62 @@ public class UIStaff : MobileUIView
         SetStaffData(_currentType);
     }
 
+    
+    private void OnEquipButtonClicked(StaffData data)
+    {
+        if(UserInfo.IsEquipStaff(data))
+        {
+            _staffController.EquipStaff(null);
+        }
+        _staffController.EquipStaff(data);
+        SetStaffData(_currentType);
+    }
+
 
     private void ExitUIStaff()
     {
         _uiNav.PopNoAnime("UIStaff");
     }
 
-    private void ShowUIStaffManager()
+    public void ShowUIStaffManager()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Manager);
     }
 
-    private void ShowUIStaffWaiter()
+    public void ShowUIStaffWaiter()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Waiter);
     }
 
-    private void ShowUIStaffChef()
+    public void ShowUIStaffChef()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Chef);
     }
 
-    private void ShowUIStaffCleaner()
+    public void ShowUIStaffCleaner()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Cleaner);
     }
 
-    private void ShowUIStaffMarketer()
+    public void ShowUIStaffMarketer()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Marketer);
+    }
+
+    public void ShowUIStaffGuard()
+    {
+        _uiNav.Push("UIStaff");
+        SetStaffData(StaffType.Guard);
+    }
+
+    public void ShowUIStaffServer()
+    {
+        _uiNav.Push("UIStaff");
+        SetStaffData(StaffType.Server);
     }
 }

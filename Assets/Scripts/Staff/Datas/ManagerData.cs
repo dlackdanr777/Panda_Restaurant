@@ -38,26 +38,12 @@ public class ManagerData : StaffData
         GameManager.Instance.AddScore(-_managerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_managerLevelData[staff.Level - 1].TipAddPercent);
     }
-
-    public override void UseSkill()
-    {
-        throw new NotImplementedException();
-    }
 }
 
 
 [Serializable]
-public class ManagerLevelData
+public class ManagerLevelData : StaffLevelData
 {
     [SerializeField] private float _guideTime;
     public float GuideTime => _guideTime;
-
-    [Range(0f, 200f)] [SerializeField] private float _tipAddPercent;
-    public float TipAddPercent => _tipAddPercent;
-
-    [SerializeField] private int _scoreIncrement;
-    public int ScoreIncrement => _scoreIncrement;
-
-    [SerializeField] private int _nextLevelUpgradeMoney;
-    public int NextLevelUpgradeMoney => _nextLevelUpgradeMoney;
 }

@@ -26,4 +26,5 @@ public abstract class SkillBase : ScriptableObject, ISkill
 
     public abstract void Activate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
     public abstract void Deactivate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
+    public abstract void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
 }

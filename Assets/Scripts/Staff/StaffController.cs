@@ -3,42 +3,63 @@ using UnityEngine;
 
 public class StaffController : MonoBehaviour
 {
-    [SerializeField] private List<Staff> _staffList;
 
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private TableManager _tableManager;
     [SerializeField] private KitchenSystem _kitchenSystem;
+    private Staff[] _staffs;
 
-    private float[] _staffActionTimers;
-    private float[] _staffSkillTimers;
-
-    public void Awake()
+    public void EquipStaff(StaffData data)
     {
-        StaffData data1 = StaffDataManager.Instance.GetStaffData("Staff01");
-        StaffData data2 = StaffDataManager.Instance.GetStaffData("Staff02");
-        StaffData data3 = StaffDataManager.Instance.GetStaffData("Staff03");
-        StaffData data4 = StaffDataManager.Instance.GetStaffData("Staff04");
-        StaffData data5 = StaffDataManager.Instance.GetStaffData("Staff05");
-        _staffList[0].SetStaffData(data1, _tableManager, _kitchenSystem, _customerController);
-        _staffList[1].SetStaffData(data2, _tableManager, _kitchenSystem, _customerController);
-        _staffList[2].SetStaffData(data3, _tableManager, _kitchenSystem, _customerController);
-        _staffList[3].SetStaffData(data4, _tableManager, _kitchenSystem, _customerController);
-        _staffList[4].SetStaffData(data5, _tableManager, _kitchenSystem, _customerController);
-
-        UserInfo.SetEquipStaff(data1);
-        UserInfo.SetEquipStaff(data2);
-        UserInfo.SetEquipStaff(data3);
-        UserInfo.SetEquipStaff(data4);
-        UserInfo.SetEquipStaff(data5);
-
+        StaffType type = StaffDataManager.Instance.GetStaffType(data);
+        _staffs[(int)type].SetStaffData(data, _tableManager, _kitchenSystem, _customerController);
+        UserInfo.SetEquipStaff(data);
     }
+
+
+
+    private void Awake()
+    {
+        _staffs = new Staff[(int)StaffType.Length];
+        Staff staffPrefab = Resources.Load<Staff>("Staff");
+
+        for(int i = 0, cnt = _staffs.Length; i < cnt; ++i)
+        {
+            Staff staff = Instantiate(staffPrefab, transform);
+            _staffs[i] = staff;
+        }
+
+        StaffData data1 = StaffDataManager.Instance.GetStaffData("STAFF01");
+        StaffData data2 = StaffDataManager.Instance.GetStaffData("STAFF20");
+        StaffData data3 = StaffDataManager.Instance.GetStaffData("STAFF27");
+        StaffData data4 = StaffDataManager.Instance.GetStaffData("STAFF34");
+        StaffData data5 = StaffDataManager.Instance.GetStaffData("STAFF08");
+
+        EquipStaff(data1);
+        EquipStaff(data2);
+        EquipStaff(data3);
+        EquipStaff(data4);
+        EquipStaff(data5);
+
+        UserInfo.GiveStaff(data1);
+        UserInfo.GiveStaff(data2);
+        UserInfo.GiveStaff(data3);
+        UserInfo.GiveStaff(data4);
+        UserInfo.GiveStaff(data5);
+        UserInfo.GiveStaff(StaffDataManager.Instance.GetStaffData("STAFF02"));
+    }
+
 
     private void Update()
     {
-        for (int i = 0, cnt = _staffList.Count; i < cnt; ++i)
+        for (int i = 0, cnt = _staffs.Length; i < cnt; ++i)
         {
-            _staffList[i].StaffAction();
-            _staffList[i].StaffSkill(_tableManager, _kitchenSystem, _customerController);
+            if (_staffs[i] == null)
+                continue;
+
+            _staffs[i].StaffAction();
+            _staffs[i].UsingStaffSkill(_tableManager, _kitchenSystem, _customerController);
+            _staffs[i].UpdateStaffSkill(_tableManager, _kitchenSystem, _customerController);
         }
     }
 }
