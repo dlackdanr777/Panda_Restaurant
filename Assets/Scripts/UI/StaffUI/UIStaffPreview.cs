@@ -38,6 +38,7 @@ public class UIStaffPreview : MonoBehaviour
             _equipButton.gameObject.SetActive(true);
             _equipButton.interactable = false;
             _equipButtonText.text = "사용중";
+            _staffImage.color = new Color(1, 1, 1);
         }
         else
         {
@@ -49,10 +50,12 @@ public class UIStaffPreview : MonoBehaviour
 
                 _equipButton.interactable = true;
                 _equipButtonText.text = "배치하기";
+                _staffImage.color = new Color(1, 1, 1);
             }
             else
             {
                 _equipButton.gameObject.SetActive(false);
+                _staffImage.color = new Color(0, 0, 0);
             }
         }
     }

@@ -1,12 +1,12 @@
 using Muks.MobileUI;
 using Muks.Tween;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIRestaurantAdmin : MobileUIView
 {
     [Header("Components")]
     [SerializeField] private UIStaff _staffUI;
-    [SerializeField] private UIStaffTab _staffTab;
     [SerializeField] private GameObject _mainUI;
     [SerializeField] private CanvasGroup _canvasGroup;
 
@@ -14,10 +14,16 @@ public class UIRestaurantAdmin : MobileUIView
     [Space]
     [Header("Tabs")]
     [SerializeField] private GameObject _furnitureTab;
-    [SerializeField] private GameObject _StaffTab;
+    [SerializeField] private UIStaffTab _staffTab;
     [SerializeField] private GameObject _recipeTab;
-    [SerializeField] private GameObject _kitcheTab;
+    [SerializeField] private GameObject _kitchenTab;
 
+    [Space]
+    [Header("Buttons")]
+    [SerializeField] private Button _furnitureButton;
+    [SerializeField] private Button _staffButton;
+    [SerializeField] private Button _recipeButton;
+    [SerializeField] private Button _kitchenButton;
 
     [Space]
     [Header("Animations")]
@@ -31,8 +37,14 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Init()
     {
-        gameObject.SetActive(false);
+        _staffButton.onClick.AddListener(() => _staffTab.transform.SetAsLastSibling());
+        _furnitureButton.onClick.AddListener(() => _furnitureTab.transform.SetAsLastSibling());
+        _recipeButton.onClick.AddListener(() => _recipeTab.transform.SetAsLastSibling());
+        _kitchenButton.onClick.AddListener(() => _kitchenTab.transform.SetAsLastSibling());
+
         _staffTab.Init();
+
+        gameObject.SetActive(false);
     }
 
     public override void Show()
@@ -40,6 +52,7 @@ public class UIRestaurantAdmin : MobileUIView
         gameObject.SetActive(true);
         _staffUI.gameObject.SetActive(false);
         _mainUI.SetActive(false);
+        _furnitureTab.transform.SetAsLastSibling();
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
 
@@ -66,10 +79,5 @@ public class UIRestaurantAdmin : MobileUIView
             tween2.OnComplete(() => gameObject.SetActive(false));
         });
     }
-
-
-
-
-
 
 }
