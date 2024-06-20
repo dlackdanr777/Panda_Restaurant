@@ -20,7 +20,7 @@ public class GameManager : MonoBehaviour
     }
     private static GameManager _instance;
 
-    public Vector2 OutDoorPos => new Vector2(30f, 3.32f);
+    public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
     [SerializeField] private int _tip;
     public int Tip => _tip;
 

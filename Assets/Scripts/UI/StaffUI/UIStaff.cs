@@ -47,13 +47,6 @@ public class UIStaff : MobileUIView
             _slots[i] = slot;
         }
 
-        DataBind.SetUnityActionValue("ExitUIStaff", ExitUIStaff);
-        DataBind.SetUnityActionValue("ShowUIStaffManager", ShowUIStaffManager);
-        DataBind.SetUnityActionValue("ShowUIStaffaiter", ShowUIStaffWaiter);
-        DataBind.SetUnityActionValue("ShowUIStaffChef", ShowUIStaffChef);
-        DataBind.SetUnityActionValue("ShowUIStaffCleaner", ShowUIStaffCleaner);
-        DataBind.SetUnityActionValue("ShowUIStaffMarketer", ShowUIStaffMarketer);
-
         gameObject.SetActive(false);
     }
 

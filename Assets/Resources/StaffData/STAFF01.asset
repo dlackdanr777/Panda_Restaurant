@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
   m_Name: STAFF01
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: bf048b4a4b58b93489ab69dffdabb7a9, type: 3}
+  _sprite: {fileID: -1629956381, guid: bf048b4a4b58b93489ab69dffdabb7a9, type: 3}
   _id: STAFF01
   _name: "\uC9C0\uC9C0"
   _description: "\uC74C\uC2DD \uC790\uB3D9 \uBC30\uB2EC(2.5\uCD08)"

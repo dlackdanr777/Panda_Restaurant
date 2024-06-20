@@ -35,8 +35,6 @@ public class KitchenStaffData
 
 public class KitchenSystem : MonoBehaviour
 {
-    [SerializeField] private Image _testImage;
-
     private Dictionary<Staff, KitchenStaffData> _cookerDic = new Dictionary<Staff, KitchenStaffData>();
     private Queue<CookingData> _cookingQueue = new Queue<CookingData>();
 

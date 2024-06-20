@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
   m_Name: WaiterData
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: bf048b4a4b58b93489ab69dffdabb7a9, type: 3}
+  _sprite: {fileID: -1629956381, guid: bf048b4a4b58b93489ab69dffdabb7a9, type: 3}
   _id: Staff06
   _name: "\uC9C0\uC9C0"
   _description: "\uAF2C\uC9C8\uAF2C\uC9C8"
