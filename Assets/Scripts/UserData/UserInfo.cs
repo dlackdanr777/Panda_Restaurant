@@ -6,7 +6,6 @@ public static class UserInfo
     public static event Action OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
 
-
     private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
     private static List<string> _giveStaffList = new List<string>();
     private static HashSet<string> _giveStaffSet = new HashSet<string>();

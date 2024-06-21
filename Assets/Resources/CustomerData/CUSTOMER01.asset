@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c45ec71402c87af488940a5ef102e306, type: 3}
+  m_Name: CUSTOMER01
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: -1629956381, guid: bf048b4a4b58b93489ab69dffdabb7a9, type: 3}
+  _name: "\uD30C\uB2C8"
+  _id: CUSTOMER01
+  _description: "\uAC00\uAC8C \uBC14\uB85C \uC606 \uAC74\uBB3C\uC5D0\uC11C \uC0AC\uB294
+    \uD310\uB2E4.\\n\uC8FC\uB9D0\uB9C8\uB2E4 \uC8FD\uC21C \uC7A5\uC0AC\uB97C \uD55C\uB2E4.\\n\uD3C9\uC0DD\uC744
+    \uD568\uAED8 \uD560 \uBC30\uC6B0\uC790 \uD310\uB2E4\uB97C \uCC3E\uB294 \uC911\uC774\uB77C\uACE0
+    \uD55C\uB2E4."
+  _minScore: 0
+  _requiredDish: 
+  _orderFoods:
+  - FOOD01
+  _moveSpeed: 5

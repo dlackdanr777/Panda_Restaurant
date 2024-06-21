@@ -10,11 +10,10 @@ public class CustomerController : MonoBehaviour
     [Range(1, 30)] [SerializeField] private int _maxCustomers;
     [Range(1, 10)] [SerializeField] private int _lineSpacingGrid;
     [SerializeField] private Transform _startLine;
-    [SerializeField] private CustomerData _data;
 
     private Queue<Customer> _customers = new Queue<Customer>();
 
-    private Coroutine _sortCoroutine;
+    private Coroutine _sortCoroutine; 
 
     public event Action AddCustomerHandler;
     public event Action GuideCustomerHandler;
@@ -37,9 +36,17 @@ public class CustomerController : MonoBehaviour
         if (_maxCustomers <= _customers.Count)
             return;
 
-        Customer customer = ObjectPoolManager.Instance.SpawnCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-        customer.Init(_data);
-        _customers.Enqueue(customer);
+        List<CustomerData> data = CustomerDataManager.Instance.GetAppearCustomerList();
+        for (int i = 0, cnt = GameManager.Instance.AddPromotionCustomer; i < cnt; i++)
+        {
+            if (_maxCustomers <= _customers.Count)
+                break;
+
+            Customer customer = ObjectPoolManager.Instance.SpawnCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+            int randInt = UnityEngine.Random.Range(0, data.Count);
+            customer.Init(data[randInt]);
+            _customers.Enqueue(customer);
+        }
 
         if (_sortCoroutine != null)
             StopCoroutine(_sortCoroutine);

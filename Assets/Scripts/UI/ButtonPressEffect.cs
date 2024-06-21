@@ -18,6 +18,11 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
         _tmpScale = transform.localScale;
     }
 
+    public void OnEnable()
+    {
+        transform.localScale = _tmpScale;
+    }
+
     public void SetAction(Action onButtonUpEvent)
     {
         _onButtonUpEvent = onButtonUpEvent;

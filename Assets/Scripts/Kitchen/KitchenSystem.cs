@@ -44,7 +44,6 @@ public class KitchenSystem : MonoBehaviour
     void Update()
     {
         //TODO: 병렬 수행 제거, 음식 제작 속도만 증가
-
         if (_cookingTimer <= 0)
         {
             DequeueFood();
@@ -98,5 +97,6 @@ public class KitchenSystem : MonoBehaviour
         }
 
         _currentCookingData = _cookingQueue.Dequeue();
+        _cookingTimer = _currentCookingData.CookingTime;
     }
 }

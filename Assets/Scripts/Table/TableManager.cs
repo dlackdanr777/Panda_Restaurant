@@ -205,7 +205,9 @@ public class TableManager : MonoBehaviour
 
     public void OnCustomerOrder(int index)
     {
-        CookingData data = new CookingData("À½½Ä", 1, 100, () =>
+        string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
+        FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
+        CookingData data = new CookingData(foodData.Name, foodData.CookingTime, foodData.SellPrice, () =>
         {
             _tableDatas[index].TableState = ETableState.CanServing;
             UpdateTable();

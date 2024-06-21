@@ -20,7 +20,7 @@ public class StaffDataManager : MonoBehaviour
     }
     private static StaffDataManager _instance;
 
-    private static StaffData[] _staffData;
+    private static StaffData[] _staffDatas;
     private static Dictionary<string, StaffData> _staffDataDic = new Dictionary<string, StaffData>();
     private static List<StaffData>[] _staffTypeDataList;
 
@@ -81,14 +81,13 @@ public class StaffDataManager : MonoBehaviour
         for(int i = 0, cnt = (int)StaffType.Length; i < cnt; i++)
         {
             _staffTypeDataList[i] = new List<StaffData>();
-            _staffTypeDataList[i].AsReadOnly();
         }
 
-        _staffData = Resources.LoadAll<StaffData>("StaffData");
-        for(int i = 0, cnt = _staffData.Length; i < cnt; i++)
+        _staffDatas = Resources.LoadAll<StaffData>("StaffData");
+        for(int i = 0, cnt = _staffDatas.Length; i < cnt; i++)
         {
-            _staffDataDic.Add(_staffData[i].Id, _staffData[i]);
-            _staffTypeDataList[(int)_instance.GetStaffType(_staffData[i])].Add(_staffData[i]);
+            _staffDataDic.Add(_staffDatas[i].Id, _staffDatas[i]);
+            _staffTypeDataList[(int)_instance.GetStaffType(_staffDatas[i])].Add(_staffDatas[i]);
         }
     }
 }

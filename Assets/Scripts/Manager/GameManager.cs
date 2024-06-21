@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -24,6 +22,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int _tip;
     public int Tip => _tip;
 
+    [SerializeField] private int _score;
+    public int Score => _score;
+
+
     [SerializeField] private int _maxTipValue;
     public int MaxTipValue => _maxTipValue;
 
@@ -34,8 +36,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _foodPriceMul = 1;
     public float FoodPriceMul => _foodPriceMul;
     [SerializeField] private int _addScore = 1;
-    public float AddSocre => _addScore;
+    public float AddSocre => _addScore = 1;
 
+    private int _addPromotionCustomer = 1;
+    public int AddPromotionCustomer => _addPromotionCustomer;
 
     public void AddFoodPriceMul(float value)
     {
@@ -69,6 +73,14 @@ public class GameManager : MonoBehaviour
     { 
         _tip += (int)(value * _tipMul);
         _tip = Mathf.Clamp(_tip, 0, _maxTipValue);
+    }
+
+
+    public void AppendPromotionCustomer(int value)
+    {
+        DebugLog.Log(value);
+        _addPromotionCustomer = Mathf.Clamp(_addPromotionCustomer + value, 1, 100);
+        DebugLog.Log(_addPromotionCustomer);
     }
 
 

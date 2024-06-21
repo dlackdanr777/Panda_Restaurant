@@ -13,6 +13,7 @@ public class Customer : MonoBehaviour
     private Coroutine _teleportCoroutine;
 
     private CustomerData _customerData;
+    public CustomerData CustomerData => _customerData;
     private Action _moveCompleted;
 
     private Vector2 _targetPos;

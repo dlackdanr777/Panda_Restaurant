@@ -13,14 +13,20 @@ MonoBehaviour:
   m_Name: MarketerData
   m_EditorClassIdentifier: 
   _sprite: {fileID: 1159217384817231962, guid: b2183c4950c3077459325871ad78f895, type: 3}
-  _id: Staff02
-  _name: 
-  _description: 
-  _speed: 1
-  _skill: {fileID: 11400000, guid: 71abd801ab8f9b34390c11362a90d61f, type: 2}
+  _id: STAFF15
+  _name: "\uD1A0\uB8E8\uB8E8"
+  _description: "\uC190\uB2D8 \uC790\uB3D9 \uD638\uCD9C (2\uCD08\uB2F9 10%\uD655\uB960)"
+  _skill: {fileID: 11400000, guid: 47c907508b5243f4d97af7a63d90479b, type: 2}
+  _buyMinScore: 0
+  _moneyData:
+    _moneyType: 0
+    _price: 0
   _customerCallPercentage: 10
   _marketerLevelData:
-  - _marketingTime: 2
-    _tipAddPercent: 29
+  - _tipAddPercent: 29
     _scoreIncrement: 22
-    _nextLevelUpgradeMoney: 3999
+    _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 0
+    _marketingTime: 2

@@ -12,7 +12,6 @@ public class UIStaffSlot : MonoBehaviour
     [SerializeField] private GameObject _useImage;
     [SerializeField] private GameObject _operateImage;
     [SerializeField] private GameObject _enoughMoneyImage;
-    [SerializeField] private GameObject _notEnoughMoneyImage;
     [SerializeField] private GameObject _lowReputationImage;
 
     private StaffData _staffData;
@@ -21,7 +20,6 @@ public class UIStaffSlot : MonoBehaviour
     {
         _useImage.SetActive(true);
         _operateImage.SetActive(false);
-        _notEnoughMoneyImage.SetActive(false);
         _lowReputationImage.SetActive(false);
         _enoughMoneyImage.SetActive(false);
 
@@ -37,7 +35,6 @@ public class UIStaffSlot : MonoBehaviour
     public void SetOperate(StaffData data, UnityAction<StaffData> OnButtonClicked)
     {
         _operateImage.SetActive(true);
-        _notEnoughMoneyImage.SetActive(false);
         _lowReputationImage.SetActive(false);
         _useImage.SetActive(false);
         _enoughMoneyImage.SetActive(false);
@@ -51,22 +48,6 @@ public class UIStaffSlot : MonoBehaviour
         _button.onClick.AddListener(() => OnButtonClicked(data));
     }
 
-    public void SetNotEnoughMoney(StaffData data, UnityAction<StaffData> OnButtonClicked)
-    {
-        _notEnoughMoneyImage.SetActive(true);
-        _lowReputationImage.SetActive(false);
-        _useImage.SetActive(false);
-        _operateImage.SetActive(false);
-        _enoughMoneyImage.SetActive(false);
-
-        _staffData = data;
-        _image.sprite = data.Sprite;
-        _image.color = new Color(1, 1, 1, 1);
-        _text.text = data.MoneyData.Price.ToString();
-
-        _button.onClick.RemoveAllListeners();
-        _button.onClick.AddListener(() => OnButtonClicked(data));
-    }
 
     public void SetEnoughMoney(StaffData data, UnityAction<StaffData> OnButtonClicked)
     {
@@ -74,12 +55,21 @@ public class UIStaffSlot : MonoBehaviour
         _lowReputationImage.SetActive(false);
         _useImage.SetActive(false);
         _operateImage.SetActive(false);
-        _notEnoughMoneyImage.SetActive(false);
 
         _staffData = data;
         _image.sprite = data.Sprite;
         _image.color = new Color(0, 0, 0, 1);
-        _text.text = data.MoneyData.Price.ToString();
+
+        int price = data.MoneyData.Price;
+        if (1000 <= price)
+        {
+            int div = price / 1000;
+            _text.text = div + "K";
+        }
+        else
+        {
+            _text.text = price.ToString();
+        }
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => OnButtonClicked(data));
@@ -91,12 +81,11 @@ public class UIStaffSlot : MonoBehaviour
         _useImage.SetActive(false);
         _operateImage.SetActive(false);
         _enoughMoneyImage.SetActive(false);
-        _notEnoughMoneyImage.SetActive(false);
 
         _staffData = data;
         _image.sprite = data.Sprite;
         _image.color = new Color(0, 0, 0, 1);
-        _text.text = data.BuyMinScore + "\nÇÊ¿ä";
+        _text.text = data.BuyMinScore.ToString();
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => OnButtonClicked(data));

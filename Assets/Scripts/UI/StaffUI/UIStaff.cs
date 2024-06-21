@@ -39,6 +39,7 @@ public class UIStaff : MobileUIView
     {
         _leftArrowButton.SetAction(() => ChangeStaffData(-1));
         _rightArrowButton.SetAction(() => ChangeStaffData(1));
+        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked);
 
         _slots = new UIStaffSlot[_createSlotValue];
         for(int i = 0; i < _createSlotValue; ++i)
@@ -48,6 +49,7 @@ public class UIStaff : MobileUIView
         }
 
         gameObject.SetActive(false);
+        UserInfo.OnGiveStaffHandler += OnGiveStaffEvent;
     }
 
 
@@ -89,7 +91,7 @@ public class UIStaff : MobileUIView
         _currentType = type;
 
         StaffData equipStaffData = UserInfo.GetSEquipStaff(type);
-        _uiStaffPreview.SetStaff(equipStaffData, OnEquipButtonClicked);
+        _uiStaffPreview.SetStaff(equipStaffData);
 
         List<StaffData> list = StaffDataManager.Instance.GetStaffDataList(type);
 
@@ -137,19 +139,25 @@ public class UIStaff : MobileUIView
             if (equipStaffData != null && list[i].Id == equipStaffData.Id)
             {
                 _slots[i].transform.SetAsFirstSibling();
-                _slots[i].SetUse(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data, OnEquipButtonClicked));
+                _slots[i].SetUse(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data));
                 continue;
             }
 
             if (UserInfo.IsGiveStaff(list[i]))
             {
-                _slots[i].SetOperate(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data, OnEquipButtonClicked));
+                _slots[i].SetOperate(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data));
                 continue;
             }
 
             else
             {
-                _slots[i].SetEnoughMoney(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data, OnEquipButtonClicked));
+                if (GameManager.Instance.Score < list[i].BuyMinScore)
+                {
+                    _slots[i].SetLowReputation(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data));
+                    continue;
+                }
+
+                _slots[i].SetEnoughMoney(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data));
                 continue;
             }
         }
@@ -171,11 +179,24 @@ public class UIStaff : MobileUIView
     
     private void OnEquipButtonClicked(StaffData data)
     {
-        if(UserInfo.IsEquipStaff(data))
-        {
-            _staffController.EquipStaff(null);
-        }
         _staffController.EquipStaff(data);
+        SetStaffData(_currentType);
+    }
+
+    private void OnBuyButtonClicked(StaffData data)
+    {
+        if (UserInfo.IsGiveStaff(data.Id))
+            return;
+
+        UserInfo.GiveStaff(data);
+        //TODO: 돈 확인 후 스태프 획득으로 변경해야함
+    }
+
+    private void OnGiveStaffEvent()
+    {
+        if (VisibleState == VisibleState.Disappeared)
+            return;
+
         SetStaffData(_currentType);
     }
 
