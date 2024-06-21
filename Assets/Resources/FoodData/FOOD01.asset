@@ -18,7 +18,16 @@ MonoBehaviour:
   _description: "\uACF5\uC778 \uD310\uB2E4 \uC8FC\uBA39\uBC25. \uBAA8\uB4E0 \uD310\uB2E4\uAC00
     \uC0AC\uB791\uD558\uB294 \uC8FC\uBA39\uBC25"
   _cookingTime: 5
-  _minScore: 0
+  _buyMinScore: 0
   _buyPrice: 0
   _sellPrice: 200
   _miniGameNeeded: 0
+  _foodLevelData:
+  - _sellPrice: 100
+    _upgradeMinScore: 250
+    _upgradePrice: 1600
+    _cookingTime: 2
+  - _sellPrice: 1000
+    _upgradeMinScore: -1
+    _upgradePrice: -1
+    _cookingTime: 4

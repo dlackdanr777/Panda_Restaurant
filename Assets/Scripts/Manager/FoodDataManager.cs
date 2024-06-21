@@ -27,7 +27,7 @@ public class FoodDataManager : MonoBehaviour
     public FoodData GetFoodData(string id)
     {
         if (!_foodDataDic.TryGetValue(id, out FoodData data))
-            throw new System.Exception("해당 id값이 존재하지 않습니다.");
+            throw new System.Exception("해당 id값이 존재하지 않습니다: " + id);
 
         return data;
     }

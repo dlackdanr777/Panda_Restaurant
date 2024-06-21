@@ -65,7 +65,6 @@ public class Customer : MonoBehaviour
         _moveEndDir = moveEndDir;
         _moveCompleted = onCompleted;
 
-
         if (moveObjFloor == _targetFloor)
             AStar.Instance.RequestPath(_moveObj.transform.position, targetPos, TargetMove);
 

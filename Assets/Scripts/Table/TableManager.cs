@@ -207,12 +207,14 @@ public class TableManager : MonoBehaviour
     {
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
-        CookingData data = new CookingData(foodData.Name, foodData.CookingTime, foodData.SellPrice, () =>
+        int foodLevel = UserInfo.GetFoodLevel(foodDataId);
+
+        CookingData data = new CookingData(foodData.Name, foodData.GetCookingTime(foodLevel), foodData.GetSellPrice(foodLevel), () =>
         {
             _tableDatas[index].TableState = ETableState.CanServing;
             UpdateTable();
         });
-        _tableDatas[index].SetTipValue(10);
+        _tableDatas[index].SetTipValue((int)(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul * 0.01f));
         _tableDatas[index].TableState = ETableState.WaitFood;
         _kitchenSystem.EqueueFood(data);
         _tableDatas[index].CurrentFood = data;

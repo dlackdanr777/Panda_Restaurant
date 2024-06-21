@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
                 GameObject obj = new GameObject("GameManager");
                 _instance = obj.AddComponent<GameManager>();
                 DontDestroyOnLoad(obj);
+                UserInfo.GiveFood("FOOD01");
             }
 
             return _instance;
@@ -40,6 +41,7 @@ public class GameManager : MonoBehaviour
 
     private int _addPromotionCustomer = 1;
     public int AddPromotionCustomer => _addPromotionCustomer;
+
 
     public void AddFoodPriceMul(float value)
     {
@@ -78,7 +80,6 @@ public class GameManager : MonoBehaviour
 
     public void AppendPromotionCustomer(int value)
     {
-        DebugLog.Log(value);
         _addPromotionCustomer = Mathf.Clamp(_addPromotionCustomer + value, 1, 100);
         DebugLog.Log(_addPromotionCustomer);
     }
@@ -93,6 +94,7 @@ public class GameManager : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
+        UserInfo.GiveFood("FOOD01");
     }
 
 }
