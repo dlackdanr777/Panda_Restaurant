@@ -15,7 +15,7 @@ public class FoodData : ScriptableObject
     [SerializeField] private string _id;
     public string Id => _id;
 
-    [SerializeField] private string _description;
+    [TextArea] [SerializeField] private string _description;
     public string Description => _description;
 
     [SerializeField] private int _buyMinScore;

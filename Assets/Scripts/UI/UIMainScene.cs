@@ -21,6 +21,11 @@ public class UIMainScene : MonoBehaviour
 
         DataBind.SetUnityActionValue("ShowStaffUI", OnShowStaffUI);
         DataBind.SetUnityActionValue("HideStaffUI", OnHideStaffUI);
+        DataBind.SetUnityActionValue("HideNoAnimeStaffUI", OnHideNoAnimeStaffUI);
+
+        DataBind.SetUnityActionValue("ShowRecipeUI", OnShowRecipeUI);
+        DataBind.SetUnityActionValue("HideRecipeUI", OnHideRecipeUI);
+        DataBind.SetUnityActionValue("HideNoAnimeRecipeUI", OnHideNoAnimeRecipeUI);
     }
 
 
@@ -42,5 +47,25 @@ public class UIMainScene : MonoBehaviour
     private void OnHideStaffUI()
     {
         _uiNav.Pop("UIStaff");
+    }
+
+    private void OnHideNoAnimeStaffUI()
+    {
+        _uiNav.PopNoAnime("UIStaff");
+    }
+
+    private void OnShowRecipeUI()
+    {
+        _uiNav.Push("UIRecipe");
+    }
+
+    private void OnHideRecipeUI()
+    {
+        _uiNav.Pop("UIRecipe");
+    }
+
+    private void OnHideNoAnimeRecipeUI()
+    {
+        _uiNav.PopNoAnime("UIRecipe");
     }
 }

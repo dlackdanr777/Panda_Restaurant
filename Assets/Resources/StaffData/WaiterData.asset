@@ -17,7 +17,7 @@ MonoBehaviour:
   _name: "\uC9C0\uC9C0"
   _description: "\uAF2C\uC9C8\uAF2C\uC9C8"
   _skill: {fileID: 11400000, guid: 71abd801ab8f9b34390c11362a90d61f, type: 2}
-  _buyMinScore: 10
+  _buyMinScore: 10000
   _moneyData:
     _moneyType: 0
     _price: 0

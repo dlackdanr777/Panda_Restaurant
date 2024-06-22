@@ -46,6 +46,7 @@ public class UIStaff : MobileUIView
         {
             UIStaffSlot slot = Instantiate(_slotPrefab, _slotParnet);
             _slots[i] = slot;
+            slot.Init((StaffData data) => _uiStaffPreview.SetStaffData(data));
         }
 
         gameObject.SetActive(false);
@@ -91,7 +92,7 @@ public class UIStaff : MobileUIView
         _currentType = type;
 
         StaffData equipStaffData = UserInfo.GetSEquipStaff(type);
-        _uiStaffPreview.SetStaff(equipStaffData);
+        _uiStaffPreview.SetStaffData(equipStaffData);
 
         List<StaffData> list = StaffDataManager.Instance.GetStaffDataList(type);
 
@@ -139,13 +140,13 @@ public class UIStaff : MobileUIView
             if (equipStaffData != null && list[i].Id == equipStaffData.Id)
             {
                 _slots[i].transform.SetAsFirstSibling();
-                _slots[i].SetUse(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data));
+                _slots[i].SetUse(list[i]);
                 continue;
             }
 
             if (UserInfo.IsGiveStaff(list[i]))
             {
-                _slots[i].SetOperate(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data));
+                _slots[i].SetOperate(list[i]);
                 continue;
             }
 
@@ -153,11 +154,11 @@ public class UIStaff : MobileUIView
             {
                 if (GameManager.Instance.Score < list[i].BuyMinScore)
                 {
-                    _slots[i].SetLowReputation(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data));
+                    _slots[i].SetLowReputation(list[i]);
                     continue;
                 }
 
-                _slots[i].SetEnoughMoney(list[i], (StaffData data) => _uiStaffPreview.SetStaff(data));
+                _slots[i].SetEnoughMoney(list[i]);
                 continue;
             }
         }
@@ -200,11 +201,6 @@ public class UIStaff : MobileUIView
         SetStaffData(_currentType);
     }
 
-
-    private void ExitUIStaff()
-    {
-        _uiNav.PopNoAnime("UIStaff");
-    }
 
     public void ShowUIStaffManager()
     {

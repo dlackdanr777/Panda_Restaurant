@@ -4,7 +4,7 @@ using UnityEngine;
 public class CameraAdjuster : MonoBehaviour
 {
 
-    private float _targetAspect = 2f;
+    private float _targetAspect = 2.3333f;
 
 
     private void Awake()

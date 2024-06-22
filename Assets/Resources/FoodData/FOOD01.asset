@@ -15,12 +15,10 @@ MonoBehaviour:
   _sprite: {fileID: 7949064285695338531, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
   _name: "\uD310\uB2E4 \uC8FC\uBA39\uBC25"
   _id: FOOD01
-  _description: "\uACF5\uC778 \uD310\uB2E4 \uC8FC\uBA39\uBC25. \uBAA8\uB4E0 \uD310\uB2E4\uAC00
+  _description: "\uACF5\uC778 \uD310\uB2E4 \uC8FC\uBA39\uBC25.\n\uBAA8\uB4E0 \uD310\uB2E4\uAC00
     \uC0AC\uB791\uD558\uB294 \uC8FC\uBA39\uBC25"
-  _cookingTime: 5
   _buyMinScore: 0
   _buyPrice: 0
-  _sellPrice: 200
   _miniGameNeeded: 0
   _foodLevelData:
   - _sellPrice: 100

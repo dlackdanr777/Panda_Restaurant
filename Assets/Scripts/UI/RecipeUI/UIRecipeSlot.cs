@@ -4,50 +4,31 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
 
-public class UIStaffSlot : MonoBehaviour
+public class UIRecipeSlot : MonoBehaviour
 {
     [SerializeField] private Image _image;
     [SerializeField] private TextMeshProUGUI _text;
     [SerializeField] private Button _button;
-    [SerializeField] private GameObject _useImage;
     [SerializeField] private GameObject _operateImage;
     [SerializeField] private GameObject _enoughMoneyImage;
     [SerializeField] private GameObject _lowReputationImage;
 
-    private StaffData _staffData;
-    private Action<StaffData> _onButtonClicked;
+    private FoodData _foodData;
+    private Action<FoodData> _onButtonClicked;
 
-    public void Init(Action<StaffData> onButtonClicked)
+    public void Init(Action<FoodData> onButtonClicked)
     {
         _onButtonClicked = onButtonClicked;
     }
 
-    public void SetUse(StaffData data)
-    {
-        _useImage.SetActive(true);
-        _operateImage.SetActive(false);
-        _lowReputationImage.SetActive(false);
-        _enoughMoneyImage.SetActive(false);
-
-        _staffData = data;
-        _image.sprite = data.Sprite;
-        _image.color = new Color(1, 1, 1, 1);
-        _text.text = "사용중";
-
-        _button.onClick.RemoveAllListeners();
-        _button.onClick.AddListener(() => _onButtonClicked(data));
-    }
-
-    public void SetOperate(StaffData data)
+    public void SetOperate(FoodData data)
     {
         _operateImage.SetActive(true);
         _lowReputationImage.SetActive(false);
-        _useImage.SetActive(false);
         _enoughMoneyImage.SetActive(false);
 
-        _staffData = data;
+        _foodData = data;
         _image.sprite = data.Sprite;
-        _image.color = new Color(1, 1, 1, 1);
         _text.text = "보유중";
 
         _button.onClick.RemoveAllListeners();
@@ -55,32 +36,28 @@ public class UIStaffSlot : MonoBehaviour
     }
 
 
-    public void SetEnoughMoney(StaffData data)
+    public void SetBuy(FoodData data)
     {
         _enoughMoneyImage.SetActive(true);
         _lowReputationImage.SetActive(false);
-        _useImage.SetActive(false);
         _operateImage.SetActive(false);
 
-        _staffData = data;
+        _foodData = data;
         _image.sprite = data.Sprite;
-        _image.color = new Color(0, 0, 0, 1);
-        _text.text = Utility.ConvertToNumber(data.MoneyData.Price);
+        _text.text = Utility.ConvertToNumber(data.BuyPrice);
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
     }
 
-    public void SetLowReputation(StaffData data)
+    public void SetLowReputation(FoodData data)
     {
         _lowReputationImage.SetActive(true);
-        _useImage.SetActive(false);
         _operateImage.SetActive(false);
         _enoughMoneyImage.SetActive(false);
 
-        _staffData = data;
+        _foodData = data;
         _image.sprite = data.Sprite;
-        _image.color = new Color(0, 0, 0, 1);
         _text.text = Utility.ConvertToNumber(data.BuyMinScore);
 
         _button.onClick.RemoveAllListeners();

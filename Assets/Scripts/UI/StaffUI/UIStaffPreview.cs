@@ -9,14 +9,12 @@ public class UIStaffPreview : MonoBehaviour
 
     [SerializeField] private TextMeshProUGUI _staffNameText;
     [SerializeField] private TextMeshProUGUI _effectDescription;
-    [SerializeField] private Button _equipButton;
-    [SerializeField] private TextMeshProUGUI _equipButtonText;
+    [SerializeField] private UIButtonAndText _usingButton;
+    [SerializeField] private UIButtonAndText _equipButton;
+    [SerializeField] private UIButtonAndText _buyButton;
+    [SerializeField] private UIButtonAndText _lowScoreButton;
+    [SerializeField] private UIButtonAndText _upgradeButton;
 
-    [Space]
-    [Header("Options")]
-    [SerializeField] private Color _usingButtonColor;
-    [SerializeField] private Color _equipButtotnColor;
-    [SerializeField] private Color _buyButtonColor;
 
     private Action<StaffData> _onBuyButtonClicked;
     private Action<StaffData> _onEquipButtonClicked;
@@ -30,15 +28,20 @@ public class UIStaffPreview : MonoBehaviour
     }
 
 
-    public void SetStaff(StaffData data)
+    public void SetStaffData(StaffData data)
     {
         _currentStaffData = data;
+        _usingButton.gameObject.SetActive(false);
+        _equipButton.gameObject.SetActive(false);
+        _buyButton.gameObject.SetActive(false);
+        _lowScoreButton.gameObject.SetActive(false);
+        _upgradeButton.gameObject.SetActive(false);
+
         if (data == null)
         {
             _staffImage.gameObject.SetActive(false);
             _staffNameText.gameObject.SetActive(false);
             _effectDescription.gameObject.SetActive(false);
-            _equipButton.gameObject.SetActive(false);
             return;
         }
 
@@ -51,10 +54,8 @@ public class UIStaffPreview : MonoBehaviour
 
         if(UserInfo.IsEquipStaff(data))
         {
-            _equipButton.gameObject.SetActive(true);
-            _buttonImage.color = _usingButtonColor;
-            _equipButton.interactable = false;
-            _equipButtonText.text = "사용중";
+            _usingButton.gameObject.SetActive(true);
+            _usingButton.SetText("사용중");
             _staffImage.color = new Color(1, 1, 1);
         }
         else
@@ -62,42 +63,26 @@ public class UIStaffPreview : MonoBehaviour
             if(UserInfo.IsGiveStaff(data))
             {
                 _equipButton.gameObject.SetActive(true);
-                _equipButton.onClick.RemoveAllListeners();
-                _equipButton.onClick.AddListener(() => { _onEquipButtonClicked(_currentStaffData); });
-
-                _equipButton.interactable = true;
-                _buttonImage.color = _equipButtotnColor;
-                _equipButtonText.text = "사용";
+                _equipButton.SetText("사용");
+                _equipButton.RemoveAllListeners();
+                _equipButton.AddListener(() => { _onEquipButtonClicked(_currentStaffData); });
                 _staffImage.color = new Color(1, 1, 1);
             }
             else
             {
                 _staffImage.color = new Color(0, 0, 0);
 
-
                 if (data.BuyMinScore <= GameManager.Instance.Score)
                 {
-                    _equipButton.gameObject.SetActive(true);
-                    _equipButton.interactable = true;
-                    _equipButton.onClick.RemoveAllListeners();
-                    _equipButton.onClick.AddListener(() => { _onBuyButtonClicked(_currentStaffData); });
-                    _buttonImage.color = _equipButtotnColor;
-
-                    int price = data.MoneyData.Price;
-                    if (1000 <= price)
-                    {
-                        int div = price / 1000;
-                        _equipButtonText.text = div + "K";
-                    }
-                    else
-                    {
-                        _equipButtonText.text = price.ToString();
-                    }
-
+                    _buyButton.gameObject.SetActive(true);
+                    _buyButton.RemoveAllListeners();
+                    _buyButton.AddListener(() => { _onBuyButtonClicked(_currentStaffData); }); 
+                    _buyButton.SetText(Utility.ConvertToNumber(data.MoneyData.Price));
                 }
                 else
                 {
-                    _equipButton.gameObject.SetActive(false);
+                    _lowScoreButton.gameObject.SetActive(true);
+                    _lowScoreButton.SetText(Utility.ConvertToNumber(data.BuyMinScore));
                 }
 
             }

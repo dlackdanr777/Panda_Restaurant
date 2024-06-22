@@ -207,7 +207,7 @@ public class TableManager : MonoBehaviour
     {
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
-        int foodLevel = UserInfo.GetFoodLevel(foodDataId);
+        int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
 
         CookingData data = new CookingData(foodData.Name, foodData.GetCookingTime(foodLevel), foodData.GetSellPrice(foodLevel), () =>
         {

@@ -11,7 +11,7 @@ public class GameManager : MonoBehaviour
                 GameObject obj = new GameObject("GameManager");
                 _instance = obj.AddComponent<GameManager>();
                 DontDestroyOnLoad(obj);
-                UserInfo.GiveFood("FOOD01");
+                UserInfo.GiveRecipe("FOOD01");
             }
 
             return _instance;
@@ -94,7 +94,7 @@ public class GameManager : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
-        UserInfo.GiveFood("FOOD01");
+        UserInfo.GiveRecipe("FOOD01");
     }
 
 }

@@ -20,7 +20,9 @@ public class FoodDataManager : MonoBehaviour
     }
     private static FoodDataManager _instance;
 
-    private static FoodData[] _foodDatas;
+
+    public static int Count => _foodDataList.Count;
+    private static List<FoodData> _foodDataList = new List<FoodData>();
     private static Dictionary<string, FoodData> _foodDataDic = new Dictionary<string, FoodData>();
 
 
@@ -30,6 +32,11 @@ public class FoodDataManager : MonoBehaviour
             throw new System.Exception("해당 id값이 존재하지 않습니다: " + id);
 
         return data;
+    }
+
+    public List<FoodData> GetFoodDataList()
+    {
+        return _foodDataList;
     }
 
 
@@ -47,11 +54,12 @@ public class FoodDataManager : MonoBehaviour
     private static void Init()
     {
         _foodDataDic.Clear();
+        _foodDataList.Clear();
 
-        _foodDatas = Resources.LoadAll<FoodData>("FoodData");
-        for(int i = 0, cnt = _foodDatas.Length; i < cnt; i++)
+        _foodDataList.AddRange(Resources.LoadAll<FoodData>("FoodData"));
+        for (int i = 0, cnt = _foodDataList.Count; i < cnt; i++)
         {
-            _foodDataDic.Add(_foodDatas[i].Id, _foodDatas[i]);
+            _foodDataDic.Add(_foodDataList[i].Id, _foodDataList[i]);
         }
     }
 }

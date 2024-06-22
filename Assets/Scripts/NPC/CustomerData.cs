@@ -13,7 +13,7 @@ public class CustomerData : ScriptableObject
     [SerializeField] private string _id;
     public string Id => _id;
 
-    [SerializeField] private string _description;
+    [TextArea][SerializeField] private string _description;
     public string Description => _description;
 
     [SerializeField] private int _minScore;
@@ -34,7 +34,7 @@ public class CustomerData : ScriptableObject
         List<string> orderFoodList = new List<string>();
         for(int i = 0, cnt = _orderFoods.Length; i < cnt; i++)
         {
-            if (UserInfo.IsGiveFood(_orderFoods[i]))
+            if (UserInfo.IsGiveRecipe(_orderFoods[i]))
                 orderFoodList.Add(_orderFoods[i]);
         }
 

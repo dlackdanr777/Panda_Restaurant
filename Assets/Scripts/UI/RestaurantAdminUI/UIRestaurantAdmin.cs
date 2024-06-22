@@ -49,7 +49,6 @@ public class UIRestaurantAdmin : MobileUIView
     public override void Show()
     {
         gameObject.SetActive(true);
-        _staffUI.gameObject.SetActive(false);
         _mainUI.SetActive(false);
         FurnitureButtonClicked();
         _canvasGroup.blocksRaycasts = false;
