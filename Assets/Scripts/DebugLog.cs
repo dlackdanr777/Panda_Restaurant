@@ -6,4 +6,6 @@ public static class DebugLog
     {
         Debug.Log(obj);
     }
+
+    public static void LogError(object obj) { Debug.LogError(obj);}
 }

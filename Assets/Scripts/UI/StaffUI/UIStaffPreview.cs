@@ -6,7 +6,6 @@ using UnityEngine.UI;
 public class UIStaffPreview : MonoBehaviour
 {
     [SerializeField] private Image _staffImage;
-
     [SerializeField] private TextMeshProUGUI _staffNameText;
     [SerializeField] private TextMeshProUGUI _effectDescription;
     [SerializeField] private UIButtonAndText _usingButton;
@@ -15,16 +14,18 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private UIButtonAndText _lowScoreButton;
     [SerializeField] private UIButtonAndText _upgradeButton;
 
-
     private Action<StaffData> _onBuyButtonClicked;
     private Action<StaffData> _onEquipButtonClicked;
+    private Action<StaffData> _onUpgradeButtonClicked;
     private StaffData _currentStaffData;
-    private Image _buttonImage;
-    public void Init(Action<StaffData> onEquipButtonClicked, Action<StaffData> onBuyButtonClicked)
+
+    public void Init(Action<StaffData> onEquipButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
     {
-        _buttonImage = _equipButton.GetComponent<Image>();
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
+        _onUpgradeButtonClicked = onUpgradeButtonClicked;
+
+        UserInfo.OnUpgradeStaffHandler += UpgradeStaffEvent;
     }
 
 
@@ -51,6 +52,27 @@ public class UIStaffPreview : MonoBehaviour
         _staffImage.sprite = data.Sprite;
         _staffNameText.text = data.Name;
         _effectDescription.text = data.Description;
+
+        if(UserInfo.IsGiveStaff(data))
+        {
+            _upgradeButton.gameObject.SetActive(true);
+            _upgradeButton.RemoveAllListeners();
+
+            int level = UserInfo.GetStaffLevel(data);
+            if(data.UpgradeEnable(level))
+            {
+
+                _upgradeButton.Interactable(true);
+                _upgradeButton.SetText((level + 1)+ "단계 강화");
+                _upgradeButton.AddListener(() => { _onUpgradeButtonClicked(data); });
+            }
+            else
+            {
+                _upgradeButton.Interactable(false);
+                _upgradeButton.SetText("최대 강화");
+            }
+        }
+
 
         if(UserInfo.IsEquipStaff(data))
         {
@@ -87,5 +109,10 @@ public class UIStaffPreview : MonoBehaviour
 
             }
         }
+    }
+
+    private void UpgradeStaffEvent()
+    {
+        SetStaffData(_currentStaffData);
     }
 }

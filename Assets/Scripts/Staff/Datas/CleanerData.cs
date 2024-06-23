@@ -21,6 +21,11 @@ public class CleanerData : StaffData
         return new CleanerAction(tableManager);
     }
 
+    public override bool UpgradeEnable(int level)
+    {
+        return level < _cleanerLevelData.Length;
+    }
+
 
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
@@ -35,6 +40,19 @@ public class CleanerData : StaffData
         staff.SetAlpha(0);
         GameManager.Instance.AddScore(-_cleanerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_cleanerLevelData[staff.Level - 1].TipAddPercent);
+    }
+
+    public override int GetUpgradeMinScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _cleanerLevelData.Length - 1);
+        return _cleanerLevelData[level].UpgradeMinScore;
+    }
+
+
+    public override int GetUpgradePrice(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _cleanerLevelData.Length - 1);
+        return _cleanerLevelData[level].UpgradeMoneyData.Price;
     }
 }
 

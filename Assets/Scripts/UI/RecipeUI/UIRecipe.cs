@@ -31,12 +31,13 @@ public class UIRecipe : MobileUIView
 
     public override void Init()
     {
-        _foodDataList = FoodDataManager.Instance.GetFoodDataList();
-        _uiRecipePreview.Init(OnBuyButtonClicked, null);
+        _foodDataList = FoodDataManager.Instance.GetShopFoodDataList();
+        _uiRecipePreview.Init(OnBuyButtonClicked, OnUpgradeButtonClicked);
         _uiRecipePreview.SetFoodData(null);
         int foodCount = FoodDataManager.Count;
 
         _slots = new UIRecipeSlot[foodCount];
+
         for (int i = 0; i < foodCount; ++i)
         {
             UIRecipeSlot slot = Instantiate(_slotPrefab, _slotParnet);
@@ -114,6 +115,36 @@ public class UIRecipe : MobileUIView
         UserInfo.GiveRecipe(data);
         //TODO: 돈 확인 후 스태프 획득으로 변경해야함
     }
+
+
+    private void OnUpgradeButtonClicked(FoodData data)
+    {
+        if(!UserInfo.IsGiveRecipe(data.Id))
+        {
+            TimedDisplayManager.Instance.ShowText("레시피를 가지고 있지 않습니다.");
+            return;
+        }
+
+        int recipeLevel = UserInfo.GetRecipeLevel(data.Id);
+        if(data.GetUpgradeMinScore(recipeLevel) < GameManager.Instance.Score)
+        {
+            TimedDisplayManager.Instance.ShowText("평점이 부족합니다.");
+            return;
+        }
+
+        if(data.GetUpgradePrice(recipeLevel) < GameManager.Instance.Tip)
+        {
+            TimedDisplayManager.Instance.ShowText("소지금이 부족합니다.");
+            return;
+        }
+
+        if(UserInfo.UpgradeRecipe(data.Id))
+        {
+            TimedDisplayManager.Instance.ShowText("강화 성공");
+            return;
+        }
+    }
+
 
     private void OnSlotClicked(FoodData data)
     {

@@ -20,6 +20,10 @@ public class WaiterData : StaffData
         return new WaiterAction(tableManager);
     }
 
+    public override bool UpgradeEnable(int level)
+    {
+        return level < _waiterLevelData.Length;
+    }
 
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
@@ -34,6 +38,19 @@ public class WaiterData : StaffData
         staff.SetAlpha(0);
         GameManager.Instance.AddScore(-_waiterLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_waiterLevelData[staff.Level - 1].TipAddPercent);
+    }
+
+    public override int GetUpgradeMinScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
+        return _waiterLevelData[level].UpgradeMinScore;
+    }
+
+
+    public override int GetUpgradePrice(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
+        return _waiterLevelData[level].UpgradeMoneyData.Price;
     }
 }
 

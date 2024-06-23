@@ -21,6 +21,12 @@ public class ServerData : StaffData
     }
 
 
+    public override bool UpgradeEnable(int level)
+    {
+        return level < _serverLevelData.Length;
+    }
+
+
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
@@ -34,6 +40,19 @@ public class ServerData : StaffData
         staff.SetAlpha(0);
         GameManager.Instance.AddScore(-_serverLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_serverLevelData[staff.Level - 1].TipAddPercent);
+    }
+
+    public override int GetUpgradeMinScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _serverLevelData.Length - 1);
+        return _serverLevelData[level].UpgradeMinScore;
+    }
+
+
+    public override int GetUpgradePrice(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _serverLevelData.Length - 1);
+        return _serverLevelData[level].UpgradeMoneyData.Price;
     }
 }
 

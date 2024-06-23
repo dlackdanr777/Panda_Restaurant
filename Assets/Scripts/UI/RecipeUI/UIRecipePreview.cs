@@ -15,12 +15,13 @@ public class UIRecipePreview : MonoBehaviour
 
     private Action<FoodData> _onBuyButtonClicked;
     private Action<FoodData> _onUpgradeButtonClicked;
-
+    private FoodData _currentFoodData;
 
     public void Init(Action<FoodData> onBuyButonClicked, Action<FoodData> onUpgradeButtonClicked)
     {
         _onBuyButtonClicked = onBuyButonClicked;
         _onUpgradeButtonClicked = onUpgradeButtonClicked;
+        UserInfo.OnUpgradeRecipeHandler += UpgradeRecipeEvent;
     }
 
 
@@ -28,7 +29,7 @@ public class UIRecipePreview : MonoBehaviour
     {
         _buyButton.RemoveAllListeners();
         _upgradeButton.RemoveAllListeners();
-
+        _currentFoodData = data;
         if (data == null)
         {
             _foodImage.gameObject.SetActive(false);
@@ -54,7 +55,22 @@ public class UIRecipePreview : MonoBehaviour
             _lowReputationButton.gameObject.SetActive(false);
             _buyButton.gameObject.SetActive(false);
 
-            _upgradeButton.AddListener(() => _onUpgradeButtonClicked(data));
+            int recipeLevel = UserInfo.GetRecipeLevel(data.Id);
+
+            if (data.UpgradeEnable(recipeLevel))
+            {
+
+                _upgradeButton.Interactable(true);
+                _upgradeButton.SetText(recipeLevel + 1 + "단계 강화");
+                _upgradeButton.AddListener(() => _onUpgradeButtonClicked(data));
+            }
+            else
+            {
+                _upgradeButton.Interactable(false);
+                _upgradeButton.SetText("최대 강화");
+            }
+
+
         }
         else
         {
@@ -77,5 +93,10 @@ public class UIRecipePreview : MonoBehaviour
         }
     }
 
+
+    private void UpgradeRecipeEvent()
+    {
+        SetFoodData(_currentFoodData);
+    }
 
 }

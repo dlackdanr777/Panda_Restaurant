@@ -12,7 +12,6 @@ public class FoodDataManager : MonoBehaviour
                 GameObject obj = new GameObject("FoodDataManager");
                 _instance = obj.AddComponent<FoodDataManager>();
                 DontDestroyOnLoad(obj);
-                Init();
             }
 
             return _instance;
@@ -23,6 +22,8 @@ public class FoodDataManager : MonoBehaviour
 
     public static int Count => _foodDataList.Count;
     private static List<FoodData> _foodDataList = new List<FoodData>();
+    private static List<FoodData> _showFoodDataList = new List<FoodData>();
+    private static List<FoodData> _minigameFoodDataList = new List<FoodData>();
     private static Dictionary<string, FoodData> _foodDataDic = new Dictionary<string, FoodData>();
 
 
@@ -37,6 +38,16 @@ public class FoodDataManager : MonoBehaviour
     public List<FoodData> GetFoodDataList()
     {
         return _foodDataList;
+    }
+
+    public List<FoodData> GetShopFoodDataList()
+    {
+        return _showFoodDataList;
+    }
+
+    public List<FoodData> GetMinigameFoodDataList()
+    {
+        return _minigameFoodDataList;
     }
 
 
@@ -55,11 +66,19 @@ public class FoodDataManager : MonoBehaviour
     {
         _foodDataDic.Clear();
         _foodDataList.Clear();
+        _minigameFoodDataList.Clear();
+        _showFoodDataList.Clear();
 
         _foodDataList.AddRange(Resources.LoadAll<FoodData>("FoodData"));
         for (int i = 0, cnt = _foodDataList.Count; i < cnt; i++)
         {
             _foodDataDic.Add(_foodDataList[i].Id, _foodDataList[i]);
+
+            if (_foodDataList[i].MiniGameNeeded)
+                _minigameFoodDataList.Add(_foodDataList[i]);
+
+            else
+                _showFoodDataList.Add(_foodDataList[i]);
         }
     }
 }

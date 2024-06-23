@@ -24,7 +24,7 @@ public class UIStaffTabSlot : MonoBehaviour
 
     public void SetData(StaffType type)
     {
-        StaffData data = UserInfo.GetSEquipStaff(type);
+        StaffData data = UserInfo.GetEquipStaff(type);
 
         if(data == null)
             _staffImage.sprite = _defalutSprite;

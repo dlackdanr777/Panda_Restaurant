@@ -20,6 +20,10 @@ public class ChefData : StaffData
         return new ChefAction(kitchenSystem);
     }
 
+    public override bool UpgradeEnable(int level)
+    {
+        return level < _chefLevelData.Length;
+    }
 
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
@@ -36,6 +40,19 @@ public class ChefData : StaffData
 
         GameManager.Instance.AddScore(-_chefLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_chefLevelData[staff.Level - 1].TipAddPercent);
+    }
+
+    public override int GetUpgradeMinScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
+        return _chefLevelData[level].UpgradeMinScore;
+    }
+
+
+    public override int GetUpgradePrice(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
+        return _chefLevelData[level].UpgradeMoneyData.Price;
     }
 }
 

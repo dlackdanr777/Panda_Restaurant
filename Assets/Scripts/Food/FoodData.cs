@@ -53,6 +53,11 @@ public class FoodData : ScriptableObject
         level = Mathf.Clamp(level - 1, 0, _foodLevelData.Length - 1);
         return _foodLevelData[level].CookingTime;
     }
+
+    public bool UpgradeEnable(int level)
+    {
+        return level < _foodLevelData.Length;
+    }
 }
 
 

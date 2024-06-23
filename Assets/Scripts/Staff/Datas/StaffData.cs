@@ -25,7 +25,13 @@ public abstract class StaffData : ScriptableObject
 
     public abstract float SecondValue { get; }
 
+    public abstract int GetUpgradeMinScore(int level);
+
+    public abstract int GetUpgradePrice(int level);
+
     public abstract float GetActionValue(int level);
+
+    public abstract bool UpgradeEnable(int level);
 
     public abstract void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
 

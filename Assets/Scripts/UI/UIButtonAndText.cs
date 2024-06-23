@@ -18,6 +18,11 @@ public class UIButtonAndText : MonoBehaviour
         _button.onClick.RemoveAllListeners();
     }
 
+    public void Interactable(bool value)
+    {
+        _button.interactable = value;        
+    }
+
     public void SetText(string text)
     {
         _text.text = text;

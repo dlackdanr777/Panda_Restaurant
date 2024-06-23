@@ -12,7 +12,6 @@ public class CustomerDataManager : MonoBehaviour
                 GameObject obj = new GameObject("CustomerDataManager");
                 _instance = obj.AddComponent<CustomerDataManager>();
                 DontDestroyOnLoad(obj);
-                Init();
             }
 
             return _instance;

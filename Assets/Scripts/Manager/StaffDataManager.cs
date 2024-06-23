@@ -12,7 +12,6 @@ public class StaffDataManager : MonoBehaviour
                 GameObject obj = new GameObject("StaffDataManager");
                 _instance = obj.AddComponent<StaffDataManager>();
                 DontDestroyOnLoad(obj);
-                Init();
             }
 
             return _instance;

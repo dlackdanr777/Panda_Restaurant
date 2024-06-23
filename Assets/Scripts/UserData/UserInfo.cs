@@ -6,11 +6,14 @@ public static class UserInfo
     public static event Action OnChangeMoneyHandler;
     public static event Action OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
-    public static event Action OnGiveFoodHandler;
+    public static event Action OnUpgradeStaffHandler;
+    public static event Action OnGiveRecipeHandler;
+    public static event Action OnUpgradeRecipeHandler;
 
     private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
     private static List<string> _giveStaffList = new List<string>();
     private static HashSet<string> _giveStaffSet = new HashSet<string>();
+    private static Dictionary<string, int> _giveStaffLevelDic = new Dictionary<string, int>();
 
     private static List<string> _giveRecipeList = new List<string>();
     private static HashSet<string> _giveRecipeSet = new HashSet<string>();
@@ -28,6 +31,7 @@ public static class UserInfo
 
         _giveStaffList.Add(data.Id);
         _giveStaffSet.Add(data.Id);
+        _giveStaffLevelDic.Add(data.Id, 1);
         OnGiveStaffHandler?.Invoke();
     }
 
@@ -48,6 +52,8 @@ public static class UserInfo
 
         _giveStaffList.Add(id);
         _giveStaffSet.Add(id);
+        _giveStaffLevelDic.Add(id, 1);
+        OnGiveStaffHandler?.Invoke();
     }
 
     public static bool IsGiveStaff(string id)
@@ -74,16 +80,73 @@ public static class UserInfo
         return false;
     }
 
-
     public static void SetEquipStaff(StaffData data)
     {
         _equipStaffDatas[(int)StaffDataManager.Instance.GetStaffType(data)] = data;
         OnChangeStaffHandler?.Invoke();
     }
 
-    public static StaffData GetSEquipStaff(StaffType type)
+    public static StaffData GetEquipStaff(StaffType type)
     {
         return _equipStaffDatas[(int)type];
+    }
+
+    public static int GetStaffLevel(StaffData data)
+    {
+        if (_giveStaffLevelDic.TryGetValue(data.Id, out int level))
+        {
+            return level;
+        }
+
+        throw new Exception("가지고 있지 않은 스태프 입니다: " + data.Id);
+    }
+
+    public static int GetStaffLevel(string id)
+    {
+        if (_giveStaffLevelDic.TryGetValue(id, out int level))
+        {
+            return level;
+        }
+
+        throw new Exception("가지고 있지 않은 스태프 입니다: " + id);
+    }
+
+    public static bool UpgradeStaff(StaffData data)
+    {
+        if (_giveStaffLevelDic.TryGetValue(data.Id, out int level))
+        {
+            if(data.UpgradeEnable(level))
+            {
+                _giveStaffLevelDic[data.Id] = level + 1;
+                OnUpgradeStaffHandler?.Invoke();
+                return true;
+            }
+
+            DebugLog.LogError("레벨 초과: " + data.Id);
+            return false;
+        }
+
+        DebugLog.LogError("소유중이지 않음: " + data.Id);
+        return false;
+    }
+
+    public static bool UpgradeStaff(string id)
+    {
+        if (_giveStaffLevelDic.TryGetValue(id, out int level))
+        {
+            if (StaffDataManager.Instance.GetStaffData(id).UpgradeEnable(level))
+            {
+                _giveStaffLevelDic[id] = level + 1;
+                OnUpgradeStaffHandler?.Invoke();
+                return true;
+            }
+
+            DebugLog.LogError("레벨 초과: " + id);
+            return false;
+        }
+
+        DebugLog.LogError("소유중이지 않음: " + id);
+        return false;
     }
 
     #endregion
@@ -101,7 +164,7 @@ public static class UserInfo
         _giveRecipeList.Add(data.Id);
         _giveRecipeSet.Add(data.Id);
         _giveRecipeLevelDic.Add(data.Id, 1);
-        OnGiveFoodHandler?.Invoke();
+        OnGiveRecipeHandler?.Invoke();
     }
 
 
@@ -123,7 +186,7 @@ public static class UserInfo
         _giveRecipeList.Add(id);
         _giveRecipeSet.Add(id);
         _giveRecipeLevelDic.Add(id, 1);
-        OnGiveFoodHandler?.Invoke();
+        OnGiveRecipeHandler?.Invoke();
     }
 
     public static int GetRecipeLevel(string id)
@@ -147,12 +210,52 @@ public static class UserInfo
     }
 
 
+    public static bool UpgradeRecipe(string id)
+    {
+        if (_giveRecipeLevelDic.TryGetValue(id, out int level))
+        {
+            if(FoodDataManager.Instance.GetFoodData(id).UpgradeEnable(level))
+            {
+                _giveRecipeLevelDic[id] = level + 1;
+                OnUpgradeRecipeHandler?.Invoke();
+                return true;
+            }
+
+            DebugLog.LogError("Level 초과: " + id);
+            return false;
+        }
+
+        DebugLog.LogError("보유중이지 않음: " + id);
+        return false;
+    }
+
+
+    public static bool UpgradeRecipe(FoodData data)
+    {
+        if (_giveRecipeLevelDic.TryGetValue(data.Id, out int level))
+        {
+            if (FoodDataManager.Instance.GetFoodData(data.Id).UpgradeEnable(level))
+            {
+                _giveRecipeLevelDic[data.Id] = level + 1;
+                OnUpgradeRecipeHandler?.Invoke();
+                return true;
+            }
+
+            DebugLog.LogError("Level 초과: " + data.Id);
+            return false;
+        }
+
+        DebugLog.LogError("보유중이지 않음: " + data.Id);
+        return false;
+    }
+
+
     public static bool IsGiveRecipe(string id)
     {
         return _giveRecipeSet.Contains(id);
     }
 
-    public static bool IsGiveFood(FoodData data)
+    public static bool IsGiveRecipe(FoodData data)
     {
         return _giveRecipeSet.Contains(data.Id);
     }

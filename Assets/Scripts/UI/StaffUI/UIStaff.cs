@@ -39,7 +39,7 @@ public class UIStaff : MobileUIView
     {
         _leftArrowButton.SetAction(() => ChangeStaffData(-1));
         _rightArrowButton.SetAction(() => ChangeStaffData(1));
-        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked);
+        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
 
         _slots = new UIStaffSlot[_createSlotValue];
         for(int i = 0; i < _createSlotValue; ++i)
@@ -91,7 +91,7 @@ public class UIStaff : MobileUIView
     {
         _currentType = type;
 
-        StaffData equipStaffData = UserInfo.GetSEquipStaff(type);
+        StaffData equipStaffData = UserInfo.GetEquipStaff(type);
         _uiStaffPreview.SetStaffData(equipStaffData);
 
         List<StaffData> list = StaffDataManager.Instance.GetStaffDataList(type);
@@ -191,6 +191,35 @@ public class UIStaff : MobileUIView
 
         UserInfo.GiveStaff(data);
         //TODO: 돈 확인 후 스태프 획득으로 변경해야함
+    }
+
+    private void OnUpgradeButtonClicked(StaffData data)
+    {
+        if (!UserInfo.IsGiveStaff(data.Id))
+            return;
+
+        int staffLevel = UserInfo.GetStaffLevel(data.Id);
+
+        if (!data.UpgradeEnable(staffLevel))
+        {
+            TimedDisplayManager.Instance.ShowText("최대 레벨 입니다.");
+            return;
+        }
+
+        if (data.GetUpgradeMinScore(staffLevel) < GameManager.Instance.Score)
+        {
+            TimedDisplayManager.Instance.ShowText("평점이 부족합니다.");
+            return;
+        }
+
+        if(data.GetUpgradePrice(staffLevel) < GameManager.Instance.Tip)
+        {
+            TimedDisplayManager.Instance.ShowText("소지금이 부족합니다.");
+            return;
+        }
+
+        UserInfo.UpgradeStaff(data.Id);
+        TimedDisplayManager.Instance.ShowText("강화가 완료 됬습니다.");
     }
 
     private void OnGiveStaffEvent()

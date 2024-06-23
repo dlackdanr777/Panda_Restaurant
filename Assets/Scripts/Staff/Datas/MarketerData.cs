@@ -21,6 +21,10 @@ public class MarketerData : StaffData
         return new MarketerAction(customerController);
     }
 
+    public override bool UpgradeEnable(int level)
+    {
+        return level < _marketerLevelData.Length;
+    }
 
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
@@ -36,6 +40,19 @@ public class MarketerData : StaffData
         staff.SetAlpha(0);
         GameManager.Instance.AddScore(-_marketerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_marketerLevelData[staff.Level - 1].TipAddPercent);
+    }
+
+    public override int GetUpgradeMinScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
+        return _marketerLevelData[level].UpgradeMinScore;
+    }
+
+
+    public override int GetUpgradePrice(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
+        return _marketerLevelData[level].UpgradeMoneyData.Price;
     }
 }
 

@@ -11,7 +11,6 @@ public class GameManager : MonoBehaviour
                 GameObject obj = new GameObject("GameManager");
                 _instance = obj.AddComponent<GameManager>();
                 DontDestroyOnLoad(obj);
-                UserInfo.GiveRecipe("FOOD01");
             }
 
             return _instance;

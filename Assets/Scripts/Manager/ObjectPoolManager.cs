@@ -15,7 +15,6 @@ public class ObjectPoolManager : MonoBehaviour
                 GameObject obj = new GameObject("ObjectPoolManager");
                 _instance = obj.AddComponent<ObjectPoolManager>();
                 DontDestroyOnLoad(obj);
-                CustomerPooling();
             }
 
             return _instance;
