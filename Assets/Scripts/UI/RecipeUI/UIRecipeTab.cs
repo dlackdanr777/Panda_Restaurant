@@ -1,39 +1,30 @@
-using Muks.MobileUI;
-using Muks.Tween;
+using Muks.DataBind;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UIRecipe : MobileUIView
+public class UIRecipeTab : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private StaffController _staffController;
     [SerializeField] private UIRecipePreview _uiRecipePreview;
-    [SerializeField] private CanvasGroup _canvasGroup;
-
-    [Space]
-    [Header("Animations")]
-    [SerializeField] private GameObject _animeUI;
-    [SerializeField] private float _showDuration;
-    [SerializeField] private TweenMode _showTweenMode;
-
-    [Space]
-    [SerializeField] private float _hideDuration;
-    [SerializeField] private TweenMode _hideTweenMode;
+    [SerializeField] private UIRecipeUpgrade _uiRecipeUpgrade;
 
     [Space]
     [Header("Slot Option")]
     [SerializeField] private Transform _slotParnet;
     [SerializeField] private UIRecipeSlot _slotPrefab;
 
-    private StaffType _currentType;
     private UIRecipeSlot[] _slots;
     private List<FoodData> _foodDataList;
 
-    public override void Init()
+    public void Init()
     {
         _foodDataList = FoodDataManager.Instance.GetShopFoodDataList();
-        _uiRecipePreview.Init(OnBuyButtonClicked, OnUpgradeButtonClicked);
+        _uiRecipePreview.Init(OnBuyButtonClicked, OnShowRecipeUpgrade);
         _uiRecipePreview.SetFoodData(null);
+        _uiRecipeUpgrade.SetAction(OnUpgradeButtonClicked);
+
         int foodCount = FoodDataManager.Count;
 
         _slots = new UIRecipeSlot[foodCount];
@@ -46,42 +37,8 @@ public class UIRecipe : MobileUIView
         }
 
         UpdateSlot();
-        gameObject.SetActive(false);
     }
 
-
-    public override void Show()
-    {
-        VisibleState = VisibleState.Appearing;
-        gameObject.SetActive(true);
-        _uiRecipePreview.SetFoodData(null);
-        _canvasGroup.blocksRaycasts = false;
-        _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-
-        TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
-        tween.OnComplete(() =>
-        {
-            VisibleState = VisibleState.Appeared;
-            _canvasGroup.blocksRaycasts = true;
-        });
-
-    }
-
-
-    public override void Hide()
-    {
-        VisibleState = VisibleState.Disappearing;
-        _animeUI.SetActive(true);
-        _canvasGroup.blocksRaycasts = false;
-        _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
-
-        TweenData tween = _animeUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
-        tween.OnComplete(() =>
-        {
-            VisibleState = VisibleState.Disappeared;
-            gameObject.SetActive(false);
-        });
-    }
 
     private void UpdateSlot()
     {
@@ -149,5 +106,11 @@ public class UIRecipe : MobileUIView
     private void OnSlotClicked(FoodData data)
     {
         _uiRecipePreview.SetFoodData(data);
+    }
+
+    private void OnShowRecipeUpgrade(FoodData data)
+    {
+        DataBind.GetUnityActionValue("ShowRecipeUpgradeUI")?.Invoke();
+        _uiRecipeUpgrade.SetFoodData(data);
     }
 }

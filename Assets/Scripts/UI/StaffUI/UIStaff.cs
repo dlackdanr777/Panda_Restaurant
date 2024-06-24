@@ -10,6 +10,7 @@ public class UIStaff : MobileUIView
     [Header("Components")]
     [SerializeField] private StaffController _staffController;
     [SerializeField] private UIStaffPreview _uiStaffPreview;
+    [SerializeField] private UIStaffUpgrade _uiStaffUpgrade;
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
@@ -39,7 +40,8 @@ public class UIStaff : MobileUIView
     {
         _leftArrowButton.SetAction(() => ChangeStaffData(-1));
         _rightArrowButton.SetAction(() => ChangeStaffData(1));
-        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
+        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, ShowStaffUpgradeUI);
+        _uiStaffUpgrade.SetAction(OnUpgradeButtonClicked);
 
         _slots = new UIStaffSlot[_createSlotValue];
         for(int i = 0; i < _createSlotValue; ++i)
@@ -271,5 +273,11 @@ public class UIStaff : MobileUIView
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Server);
+    }
+
+    public void ShowStaffUpgradeUI(StaffData data)
+    {
+        DataBind.GetUnityActionValue("ShowStaffUpgradeUI")?.Invoke();
+        _uiStaffUpgrade.SetStaffData(data);
     }
 }

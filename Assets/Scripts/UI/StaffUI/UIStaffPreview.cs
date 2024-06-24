@@ -8,6 +8,8 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private Image _staffImage;
     [SerializeField] private TextMeshProUGUI _staffNameText;
     [SerializeField] private TextMeshProUGUI _effectDescription;
+    [SerializeField] private GameObject _alarmImage;
+    [SerializeField] private GameObject _lockImage;
     [SerializeField] private UIButtonAndText _usingButton;
     [SerializeField] private UIButtonAndText _equipButton;
     [SerializeField] private UIButtonAndText _buyButton;
@@ -37,6 +39,8 @@ public class UIStaffPreview : MonoBehaviour
         _buyButton.gameObject.SetActive(false);
         _lowScoreButton.gameObject.SetActive(false);
         _upgradeButton.gameObject.SetActive(false);
+        _lockImage.SetActive(false);
+        _alarmImage.SetActive(false);
 
         if (data == null)
         {
@@ -57,20 +61,8 @@ public class UIStaffPreview : MonoBehaviour
         {
             _upgradeButton.gameObject.SetActive(true);
             _upgradeButton.RemoveAllListeners();
-
-            int level = UserInfo.GetStaffLevel(data);
-            if(data.UpgradeEnable(level))
-            {
-
-                _upgradeButton.Interactable(true);
-                _upgradeButton.SetText((level + 1)+ "단계 강화");
-                _upgradeButton.AddListener(() => { _onUpgradeButtonClicked(data); });
-            }
-            else
-            {
-                _upgradeButton.Interactable(false);
-                _upgradeButton.SetText("최대 강화");
-            }
+            _upgradeButton.AddListener(() => { _onUpgradeButtonClicked(data); });
+            _upgradeButton.SetText("상세 보기");
         }
 
 
@@ -100,11 +92,14 @@ public class UIStaffPreview : MonoBehaviour
                     _buyButton.RemoveAllListeners();
                     _buyButton.AddListener(() => { _onBuyButtonClicked(_currentStaffData); }); 
                     _buyButton.SetText(Utility.ConvertToNumber(data.MoneyData.Price));
+                    _alarmImage.SetActive(true);
+
                 }
                 else
                 {
                     _lowScoreButton.gameObject.SetActive(true);
                     _lowScoreButton.SetText(Utility.ConvertToNumber(data.BuyMinScore));
+                    _lockImage.SetActive(true);
                 }
 
             }

@@ -55,22 +55,8 @@ public class UIRecipePreview : MonoBehaviour
             _lowReputationButton.gameObject.SetActive(false);
             _buyButton.gameObject.SetActive(false);
 
-            int recipeLevel = UserInfo.GetRecipeLevel(data.Id);
-
-            if (data.UpgradeEnable(recipeLevel))
-            {
-
-                _upgradeButton.Interactable(true);
-                _upgradeButton.SetText(recipeLevel + 1 + "단계 강화");
-                _upgradeButton.AddListener(() => _onUpgradeButtonClicked(data));
-            }
-            else
-            {
-                _upgradeButton.Interactable(false);
-                _upgradeButton.SetText("최대 강화");
-            }
-
-
+            _upgradeButton.AddListener(() => _onUpgradeButtonClicked(data));
+            _upgradeButton.SetText("상세 보기");
         }
         else
         {

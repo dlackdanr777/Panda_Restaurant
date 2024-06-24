@@ -23,9 +23,13 @@ public class UIMainScene : MonoBehaviour
         DataBind.SetUnityActionValue("HideStaffUI", OnHideStaffUI);
         DataBind.SetUnityActionValue("HideNoAnimeStaffUI", OnHideNoAnimeStaffUI);
 
-        DataBind.SetUnityActionValue("ShowRecipeUI", OnShowRecipeUI);
-        DataBind.SetUnityActionValue("HideRecipeUI", OnHideRecipeUI);
-        DataBind.SetUnityActionValue("HideNoAnimeRecipeUI", OnHideNoAnimeRecipeUI);
+        DataBind.SetUnityActionValue("ShowRecipeUpgradeUI", OnShowRecipeUpgradeUI);
+        DataBind.SetUnityActionValue("HideRecipeUpgradeUI", OnHideRecipeUpgradeUI);
+        DataBind.SetUnityActionValue("HideNoAnimeRecipeUpgradeUI", OnHideNoAnimeRecipeUpgradeUI);
+
+        DataBind.SetUnityActionValue("ShowStaffUpgradeUI", OnShowStaffUpgradeUI);
+        DataBind.SetUnityActionValue("HideStaffUpgradeUI", OnHideStaffUpgradeUI);
+        DataBind.SetUnityActionValue("HideNoAnimeStaffUpgradeUI", OnHideNoAnimeStaffUpgradeUI);
     }
 
 
@@ -36,6 +40,7 @@ public class UIMainScene : MonoBehaviour
 
     private void OnHideRestaurantAdminUI()
     {
+        _uiNav.PopNoAnime("UIStaff");
         _uiNav.Pop("RestaurantAdminUI");
     }
 
@@ -54,18 +59,33 @@ public class UIMainScene : MonoBehaviour
         _uiNav.PopNoAnime("UIStaff");
     }
 
-    private void OnShowRecipeUI()
+    private void OnShowRecipeUpgradeUI()
     {
-        _uiNav.Push("UIRecipe");
+        _uiNav.Push("UIRecipeUpgrade");
     }
 
-    private void OnHideRecipeUI()
+    private void OnHideRecipeUpgradeUI()
     {
-        _uiNav.Pop("UIRecipe");
+        _uiNav.Pop("UIRecipeUpgrade");
     }
 
-    private void OnHideNoAnimeRecipeUI()
+    private void OnHideNoAnimeRecipeUpgradeUI()
     {
-        _uiNav.PopNoAnime("UIRecipe");
+        _uiNav.PopNoAnime("UIRecipeUpgrade");
+    }
+
+    private void OnShowStaffUpgradeUI()
+    {
+        _uiNav.Push("UIStaffUpgrade");
+    }
+
+    private void OnHideStaffUpgradeUI()
+    {
+        _uiNav.Pop("UIStaffUpgrade");
+    }
+
+    private void OnHideNoAnimeStaffUpgradeUI()
+    {
+        _uiNav.PopNoAnime("UIStaffUpgrade");
     }
 }
