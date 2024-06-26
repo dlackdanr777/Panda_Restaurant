@@ -52,8 +52,6 @@ public class UIRestaurantAdmin : MobileUIView
     {
         gameObject.SetActive(true);
         _mainUI.SetActive(false);
-        DataBind.GetUnityActionValue("HideNoAnimeRecipeUpgradeUI")?.Invoke();
-        DataBind.GetUnityActionValue("HideNoAnimeStaffUpgradeUI")?.Invoke();
         DataBind.GetUnityActionValue("HideNoAnimeStaffUI")?.Invoke();
         FurnitureButtonClicked();
         _canvasGroup.blocksRaycasts = false;
@@ -71,8 +69,11 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Hide()
     {
+        _mainUI.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 1;
+
+        _mainUI.transform.localScale = Vector3.one;
         TweenData tween = _mainUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
         tween.OnComplete(() =>
         {
@@ -80,6 +81,11 @@ public class UIRestaurantAdmin : MobileUIView
             TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
             tween2.OnComplete(() => gameObject.SetActive(false));
         });
+    }
+
+    public void MainUISetActive(bool active)
+    {
+        _mainUI.SetActive(active);
     }
 
 

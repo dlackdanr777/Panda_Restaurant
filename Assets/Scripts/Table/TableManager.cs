@@ -230,7 +230,7 @@ public class TableManager : MonoBehaviour
 
     public void OnCleanTable(int index)
     {
-        GameManager.Instance.AppendTip(_tableDatas[index].TipValue);
+        UserInfo.AppendTip(_tableDatas[index].TipValue);
         _tableDatas[index].TableState = ETableState.NotUse;
         UpdateTable();
     }
@@ -249,7 +249,7 @@ public class TableManager : MonoBehaviour
         exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
         _tableDatas[index].CurrentCustomer = null;
 
-        GameManager.Instance.AppendTip((int)(_tableDatas[index].CurrentFood.Price * GameManager.Instance.FoodPriceMul));
+        UserInfo.AppendMoney((int)(_tableDatas[index].CurrentFood.Price * GameManager.Instance.FoodPriceMul));
         exitCustomer.SetLayer("Customer", 0);
         UpdateTable();
 

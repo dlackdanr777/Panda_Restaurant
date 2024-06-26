@@ -7,13 +7,12 @@ public class UIStaffPreview : MonoBehaviour
 {
     [SerializeField] private Image _staffImage;
     [SerializeField] private TextMeshProUGUI _staffNameText;
+    [SerializeField] private TextMeshProUGUI _description;
     [SerializeField] private TextMeshProUGUI _effectDescription;
-    [SerializeField] private GameObject _alarmImage;
     [SerializeField] private GameObject _lockImage;
     [SerializeField] private UIButtonAndText _usingButton;
     [SerializeField] private UIButtonAndText _equipButton;
     [SerializeField] private UIButtonAndText _buyButton;
-    [SerializeField] private UIButtonAndText _lowScoreButton;
     [SerializeField] private UIButtonAndText _upgradeButton;
 
     private Action<StaffData> _onBuyButtonClicked;
@@ -27,7 +26,11 @@ public class UIStaffPreview : MonoBehaviour
         _onBuyButtonClicked = onBuyButtonClicked;
         _onUpgradeButtonClicked = onUpgradeButtonClicked;
 
-        UserInfo.OnUpgradeStaffHandler += UpgradeStaffEvent;
+        UserInfo.OnUpgradeStaffHandler += UpdateStaff;
+        UserInfo.OnChangeMoneyHandler += UpdateStaff;
+        UserInfo.OnChangeScoreHanlder += UpdateStaff;
+        UserInfo.OnChangeStaffHandler += UpdateStaff;
+        UserInfo.OnGiveStaffHandler += UpdateStaff;
     }
 
 
@@ -37,39 +40,41 @@ public class UIStaffPreview : MonoBehaviour
         _usingButton.gameObject.SetActive(false);
         _equipButton.gameObject.SetActive(false);
         _buyButton.gameObject.SetActive(false);
-        _lowScoreButton.gameObject.SetActive(false);
         _upgradeButton.gameObject.SetActive(false);
         _lockImage.SetActive(false);
-        _alarmImage.SetActive(false);
 
         if (data == null)
         {
             _staffImage.gameObject.SetActive(false);
             _staffNameText.gameObject.SetActive(false);
+            _description.gameObject.SetActive(false);
             _effectDescription.gameObject.SetActive(false);
             return;
         }
 
         _staffImage.gameObject.SetActive(true);
         _staffNameText.gameObject.SetActive(true);
+        _description.gameObject.SetActive(true);
         _effectDescription.gameObject.SetActive(true);
         _staffImage.sprite = data.Sprite;
         _staffNameText.text = data.Name;
-        _effectDescription.text = data.Description;
+        _description.text = data.Description;
+        _effectDescription.text = data.Skill.Description;
 
-        if(UserInfo.IsGiveStaff(data))
+        if (UserInfo.IsGiveStaff(data))
         {
+            int level = UserInfo.GetStaffLevel(data);
             _upgradeButton.gameObject.SetActive(true);
             _upgradeButton.RemoveAllListeners();
             _upgradeButton.AddListener(() => { _onUpgradeButtonClicked(data); });
-            _upgradeButton.SetText("상세 보기");
+            _upgradeButton.SetText(Utility.ConvertToNumber(data.GetUpgradePrice(level)));
         }
-
 
         if(UserInfo.IsEquipStaff(data))
         {
             _usingButton.gameObject.SetActive(true);
             _usingButton.SetText("사용중");
+            _usingButton.Interactable(false);
             _staffImage.color = new Color(1, 1, 1);
         }
         else
@@ -77,7 +82,7 @@ public class UIStaffPreview : MonoBehaviour
             if(UserInfo.IsGiveStaff(data))
             {
                 _equipButton.gameObject.SetActive(true);
-                _equipButton.SetText("사용");
+                _equipButton.SetText("사용하기");
                 _equipButton.RemoveAllListeners();
                 _equipButton.AddListener(() => { _onEquipButtonClicked(_currentStaffData); });
                 _staffImage.color = new Color(1, 1, 1);
@@ -86,27 +91,16 @@ public class UIStaffPreview : MonoBehaviour
             {
                 _staffImage.color = new Color(0, 0, 0);
 
-                if (data.BuyMinScore <= GameManager.Instance.Score)
-                {
-                    _buyButton.gameObject.SetActive(true);
-                    _buyButton.RemoveAllListeners();
-                    _buyButton.AddListener(() => { _onBuyButtonClicked(_currentStaffData); }); 
-                    _buyButton.SetText(Utility.ConvertToNumber(data.MoneyData.Price));
-                    _alarmImage.SetActive(true);
-
-                }
-                else
-                {
-                    _lowScoreButton.gameObject.SetActive(true);
-                    _lowScoreButton.SetText(Utility.ConvertToNumber(data.BuyMinScore));
-                    _lockImage.SetActive(true);
-                }
-
+                _buyButton.gameObject.SetActive(true);
+                _buyButton.RemoveAllListeners();
+                _buyButton.AddListener(() => { _onBuyButtonClicked(_currentStaffData); });
+                _buyButton.SetText(Utility.ConvertToNumber(data.MoneyData.Price));
+                _lockImage.SetActive(true);
             }
         }
     }
 
-    private void UpgradeStaffEvent()
+    private void UpdateStaff()
     {
         SetStaffData(_currentStaffData);
     }

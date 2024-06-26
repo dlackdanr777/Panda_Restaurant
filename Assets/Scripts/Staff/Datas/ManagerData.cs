@@ -31,7 +31,7 @@ public class ManagerData : StaffData
         staff.transform.position = tableManager.GetStaffPos(0, StaffType.Manager);
         staff.SetLayer("Manager", 0);
 
-        GameManager.Instance.AddScore(_managerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(_managerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(_managerLevelData[staff.Level - 1].TipAddPercent);
     }
 
@@ -39,7 +39,7 @@ public class ManagerData : StaffData
     {
         staff.SetAlpha(0);
 
-        GameManager.Instance.AddScore(-_managerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(-_managerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_managerLevelData[staff.Level - 1].TipAddPercent);
     }
 

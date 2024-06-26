@@ -114,14 +114,14 @@ public class UIStaffUpgrade : MobileUIView
             return;
         }
 
-        if (GameManager.Instance.Score < data.GetUpgradeMinScore(level))
+        if (UserInfo.Score < data.GetUpgradeMinScore(level))
         {
             _upgradeButton.Interactable(false);
             _upgradeButton.SetText("평점 부족");
             return;
         }
 
-        if(GameManager.Instance.Tip < data.GetUpgradePrice(level))
+        if(UserInfo.Money < data.GetUpgradePrice(level))
         {
             _upgradeButton.Interactable(false);
             _upgradeButton.SetText("금액 부족");

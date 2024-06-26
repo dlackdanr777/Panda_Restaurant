@@ -29,7 +29,7 @@ public class ChefData : StaffData
     {
         staff.SetAlpha(1);
         GameManager.Instance.AddCookingSpeedMul(_chefLevelData[staff.Level - 1].FoodSpeedAddPercent);
-        GameManager.Instance.AddScore(_chefLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(_chefLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(_chefLevelData[staff.Level - 1].TipAddPercent);
     }
 
@@ -38,7 +38,7 @@ public class ChefData : StaffData
         staff.SetAlpha(0);
         GameManager.Instance.AddCookingSpeedMul(-_chefLevelData[staff.Level - 1].FoodSpeedAddPercent);
 
-        GameManager.Instance.AddScore(-_chefLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(-_chefLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_chefLevelData[staff.Level - 1].TipAddPercent);
     }
 

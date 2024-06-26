@@ -37,7 +37,7 @@ public class CustomerDataManager : MonoBehaviour
         List<CustomerData> returnList = new List<CustomerData>();
         for(int i = 0, cnt = _customerDatas.Length; i < cnt; ++i)
         {
-            if (_customerDatas[i].MinScore <= GameManager.Instance.Score)
+            if (_customerDatas[i].MinScore <= UserInfo.Score)
                 returnList.Add(_customerDatas[i]);
         }
 

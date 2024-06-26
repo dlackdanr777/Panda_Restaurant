@@ -7,11 +7,16 @@ using UnityEngine.UI;
 public class UIRecipePreview : MonoBehaviour
 {
     [SerializeField] private Image _foodImage;
+    [SerializeField] private GameObject _lockImage;
+    [SerializeField] private GameObject _descriptions;
     [SerializeField] private TextMeshProUGUI _foodNameText;
     [SerializeField] private TextMeshProUGUI _description;
+    [SerializeField] private TextMeshProUGUI _cookTimeDescription;
+    [SerializeField] private TextMeshProUGUI _priceDescription;
+    [SerializeField] private TextMeshProUGUI _scoreDescription;
+
     [SerializeField] private UIButtonAndText _buyButton;
     [SerializeField] private UIButtonAndText _upgradeButton;
-    [SerializeField] private UIButtonAndText _lowReputationButton;
 
     private Action<FoodData> _onBuyButtonClicked;
     private Action<FoodData> _onUpgradeButtonClicked;
@@ -21,7 +26,11 @@ public class UIRecipePreview : MonoBehaviour
     {
         _onBuyButtonClicked = onBuyButonClicked;
         _onUpgradeButtonClicked = onUpgradeButtonClicked;
-        UserInfo.OnUpgradeRecipeHandler += UpgradeRecipeEvent;
+        UserInfo.OnUpgradeRecipeHandler += RecipeUpdate;
+        UserInfo.OnGiveRecipeHandler += RecipeUpdate;
+        UserInfo.OnChangeMoneyHandler += RecipeUpdate;
+        UserInfo.OnChangeScoreHanlder += RecipeUpdate;
+        GameManager.OnAppendAddScoreHandler += RecipeUpdate;
     }
 
 
@@ -37,50 +46,65 @@ public class UIRecipePreview : MonoBehaviour
             _description.gameObject.SetActive(false);
             _buyButton.gameObject.SetActive(false);
             _upgradeButton.gameObject.SetActive(false);
-            _lowReputationButton.gameObject.SetActive(false);
+            _lockImage.SetActive(false);
+            _descriptions.SetActive(false);
             return;
         }
 
         _foodImage.gameObject.SetActive(true);
         _foodNameText.gameObject.SetActive(true);
-        _foodImage.sprite = data.Sprite;
         _description.gameObject.SetActive(true);
+        _descriptions.SetActive(true);
+        _foodImage.sprite = data.Sprite;
         _description.text = data.Description;
         _foodNameText.text = data.Name;
-
 
         if (UserInfo.IsGiveRecipe(data.Id))
         {
             _upgradeButton.gameObject.SetActive(true);
-            _lowReputationButton.gameObject.SetActive(false);
             _buyButton.gameObject.SetActive(false);
-
+            _lockImage.SetActive(false);
             _upgradeButton.AddListener(() => _onUpgradeButtonClicked(data));
-            _upgradeButton.SetText("상세 보기");
-        }
-        else
-        {
-            if(GameManager.Instance.Score < data.BuyMinScore)
+
+            int level = UserInfo.GetRecipeLevel(data);
+
+            _cookTimeDescription.text = data.GetCookingTime(level).ToString() + 's';
+
+            if (data.UpgradeEnable(level))
             {
-                _lowReputationButton.gameObject.SetActive(true);
-                _buyButton.gameObject.SetActive(false);
-                _upgradeButton.gameObject.SetActive(false);
-                _lowReputationButton.SetText(Utility.ConvertToNumber(data.BuyMinScore));
+                int upgradeMoney = data.GetUpgradePrice(level);
+                _priceDescription.text = Utility.ConvertToNumber(data.GetSellPrice(level));
+                _scoreDescription.text = Utility.ConvertToNumber(data.GetUpgradeMinScore(level));
+
+                _upgradeButton.SetText(Utility.ConvertToNumber(upgradeMoney));
+                _upgradeButton.Interactable(true);
             }
             else
             {
-                _buyButton.gameObject.SetActive(true);
-                _upgradeButton.gameObject.SetActive(false);
-                _lowReputationButton.gameObject.SetActive(false);
-
-                _buyButton.AddListener(() => _onBuyButtonClicked(data));
-                _buyButton.SetText(Utility.ConvertToNumber(data.BuyPrice));
+                _upgradeButton.SetText("최대 강화");
+                _priceDescription.text = "최대 강화";
+                _scoreDescription.text = "최대 강화";
+                _upgradeButton.Interactable(false);
             }
+        }
+        else
+        {
+            _buyButton.gameObject.SetActive(true);
+            _upgradeButton.gameObject.SetActive(false);
+            _lockImage.SetActive(true);
+
+            _cookTimeDescription.text = data.GetCookingTime(1).ToString() + 's';
+            _priceDescription.text = Utility.ConvertToNumber(data.GetSellPrice(1));
+            _scoreDescription.text = Utility.ConvertToNumber(data.BuyMinScore);
+
+            _upgradeButton.SetText(Utility.ConvertToNumber(data.BuyPrice));
+            _buyButton.AddListener(() => _onBuyButtonClicked(data));
+            _buyButton.SetText(Utility.ConvertToNumber(data.BuyPrice));
         }
     }
 
 
-    private void UpgradeRecipeEvent()
+    private void RecipeUpdate()
     {
         SetFoodData(_currentFoodData);
     }

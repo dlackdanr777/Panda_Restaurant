@@ -1,10 +1,7 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.UI;
 using Muks.Tween;
-using System.Runtime.CompilerServices;
+using System.Collections;
 using TMPro;
+using UnityEngine;
 
 public class UITimeDisplay : MonoBehaviour
 {
@@ -24,8 +21,7 @@ public class UITimeDisplay : MonoBehaviour
     [SerializeField] private float _hideDuration;
     [SerializeField] private TweenMode _hideTweenMode;
 
-
-    private TweenData _tweenData;
+    private Coroutine _showCoroutine;
 
     public void Init()
     {
@@ -36,17 +32,25 @@ public class UITimeDisplay : MonoBehaviour
     public void Show(string description)
     {
         gameObject.SetActive(true);
+
+        if (_showCoroutine != null)
+            StopCoroutine(_showCoroutine);
+
+        _showCoroutine = StartCoroutine(ShowRoutione(description));
+    }
+
+    private IEnumerator ShowRoutione(string description)
+    {
         _canvasGroup.TweenStop();
         _text.text = description;
 
-        _tweenData = _canvasGroup.TweenAlpha(1, _showDuration, _showTweenMode);
-        _tweenData.OnComplete(() => Tween.Wait(_waitDuration, () =>
+        _canvasGroup.TweenAlpha(1, _showDuration, _showTweenMode);
+        yield return YieldCache.WaitForSeconds(_showDuration + _waitDuration);
+        _canvasGroup.TweenAlpha(0, _hideDuration, _hideTweenMode).OnComplete(() =>
         {
-            _canvasGroup.TweenAlpha(0, _hideDuration, _hideTweenMode).OnComplete(() =>
-            {
-                gameObject.SetActive(false);
-            });
-        }));
+            gameObject.SetActive(false);
+        });
+
     }
 
 

@@ -31,14 +31,14 @@ public class CleanerData : StaffData
     {
         staff.SetAlpha(0);
 
-        GameManager.Instance.AddScore(_cleanerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(_cleanerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(_cleanerLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
-        GameManager.Instance.AddScore(-_cleanerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(-_cleanerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_cleanerLevelData[staff.Level - 1].TipAddPercent);
     }
 

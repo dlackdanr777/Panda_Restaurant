@@ -31,14 +31,14 @@ public class MarketerData : StaffData
         staff.SetAlpha(1);
         staff.transform.position = tableManager.GetStaffPos(0, StaffType.Marketer);
 
-        GameManager.Instance.AddScore(_marketerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(_marketerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(_marketerLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
-        GameManager.Instance.AddScore(-_marketerLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(-_marketerLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_marketerLevelData[staff.Level - 1].TipAddPercent);
     }
 

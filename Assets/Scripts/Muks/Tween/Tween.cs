@@ -21,7 +21,7 @@ namespace Muks.Tween
             return sequence;
         }
 
-        public static void Wait(float duration, Action onCompleted)
+        public static TweenWait Wait(float duration, Action onCompleted)
         {
             TweenWait tween = null;
             if (_tweenWaitQueue.Count == 0)
@@ -35,6 +35,7 @@ namespace Muks.Tween
                 tween = _tweenWaitQueue.Dequeue();
             }
 
+            tween.Clear();
             tween.enabled = true;
             tween.AddDataSequence(new TweenDataSequence(null, duration, TweenMode.Constant, null));
             tween.OnComplete(() =>
@@ -43,6 +44,8 @@ namespace Muks.Tween
                 tween.enabled = false;
                 _tweenWaitQueue.Enqueue(tween);
             });
+
+            return tween;
         }
 
 

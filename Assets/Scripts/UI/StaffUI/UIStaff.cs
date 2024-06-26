@@ -8,9 +8,9 @@ using UnityEngine;
 public class UIStaff : MobileUIView
 {
     [Header("Components")]
+    [SerializeField] private UIRestaurantAdmin _uiRestaurantAdmin;
     [SerializeField] private StaffController _staffController;
     [SerializeField] private UIStaffPreview _uiStaffPreview;
-    [SerializeField] private UIStaffUpgrade _uiStaffUpgrade;
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
@@ -36,12 +36,16 @@ public class UIStaff : MobileUIView
     private StaffType _currentType;
     private UIStaffSlot[] _slots;
 
+    private void OnDisable()
+    {
+        _uiRestaurantAdmin.MainUISetActive(true);
+    }
+
     public override void Init()
     {
         _leftArrowButton.SetAction(() => ChangeStaffData(-1));
         _rightArrowButton.SetAction(() => ChangeStaffData(1));
-        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, ShowStaffUpgradeUI);
-        _uiStaffUpgrade.SetAction(OnUpgradeButtonClicked);
+        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
 
         _slots = new UIStaffSlot[_createSlotValue];
         for(int i = 0; i < _createSlotValue; ++i)
@@ -51,8 +55,13 @@ public class UIStaff : MobileUIView
             slot.Init((StaffData data) => _uiStaffPreview.SetStaffData(data));
         }
 
+        UserInfo.OnChangeStaffHandler += OnSlotUpdate;
+        UserInfo.OnUpgradeStaffHandler += OnSlotUpdate;
+        UserInfo.OnGiveStaffHandler += OnSlotUpdate;
+        UserInfo.OnChangeMoneyHandler += OnSlotUpdate;
+        UserInfo.OnChangeScoreHanlder += OnSlotUpdate;
+
         gameObject.SetActive(false);
-        UserInfo.OnGiveStaffHandler += OnGiveStaffEvent;
     }
 
 
@@ -62,10 +71,12 @@ public class UIStaff : MobileUIView
         gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        _uiRestaurantAdmin.MainUISetActive(false);
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() => 
         {
+
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true; 
         });
@@ -77,6 +88,7 @@ public class UIStaff : MobileUIView
     {
         VisibleState = VisibleState.Disappearing;
         _animeUI.SetActive(true);
+        _uiRestaurantAdmin.MainUISetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
 
@@ -94,7 +106,6 @@ public class UIStaff : MobileUIView
         _currentType = type;
 
         StaffData equipStaffData = UserInfo.GetEquipStaff(type);
-        _uiStaffPreview.SetStaffData(equipStaffData);
 
         List<StaffData> list = StaffDataManager.Instance.GetStaffDataList(type);
 
@@ -154,7 +165,7 @@ public class UIStaff : MobileUIView
 
             else
             {
-                if (GameManager.Instance.Score < list[i].BuyMinScore)
+                if (UserInfo.Score < list[i].BuyMinScore)
                 {
                     _slots[i].SetLowReputation(list[i]);
                     continue;
@@ -171,12 +182,19 @@ public class UIStaff : MobileUIView
         }
     }
 
+    private void SetStaffPreview()
+    {
+        StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
+        _uiStaffPreview.SetStaffData(equipStaffData);
+    }
+
 
     private void ChangeStaffData(int dir)
     {
         StaffType newTypeIndex = _currentType + dir;
         _currentType = newTypeIndex < 0 ? StaffType.Length - 1 : (StaffType)((int)newTypeIndex % (int)StaffType.Length);
         SetStaffData(_currentType);
+        SetStaffPreview();
     }
 
     
@@ -184,52 +202,60 @@ public class UIStaff : MobileUIView
     {
         _staffController.EquipStaff(data);
         SetStaffData(_currentType);
+        SetStaffPreview();
     }
 
     private void OnBuyButtonClicked(StaffData data)
     {
         if (UserInfo.IsGiveStaff(data.Id))
+        {
+            TimedDisplayManager.Instance.ShowTextError();
             return;
+        }
 
+        if (UserInfo.Score < data.BuyMinScore)
+        {
+            TimedDisplayManager.Instance.ShowTextLackScore();
+            return;
+        }
+
+        if (UserInfo.Money < data.MoneyData.Price)
+        {
+            TimedDisplayManager.Instance.ShowTextLackMoney();
+            return;
+        }
+
+        UserInfo.AppendMoney(-data.MoneyData.Price);
         UserInfo.GiveStaff(data);
-        //TODO: 돈 확인 후 스태프 획득으로 변경해야함
+        TimedDisplayManager.Instance.ShowText("새로운 직원을 고용했어요!");
     }
 
     private void OnUpgradeButtonClicked(StaffData data)
     {
         if (!UserInfo.IsGiveStaff(data.Id))
-            return;
-
-        int staffLevel = UserInfo.GetStaffLevel(data.Id);
-
-        if (!data.UpgradeEnable(staffLevel))
         {
-            TimedDisplayManager.Instance.ShowText("최대 레벨 입니다.");
+            TimedDisplayManager.Instance.ShowTextError();
             return;
         }
 
-        if (data.GetUpgradeMinScore(staffLevel) < GameManager.Instance.Score)
+        int recipeLevel = UserInfo.GetStaffLevel(data.Id);
+        if (UserInfo.Score < data.GetUpgradeMinScore(recipeLevel))
         {
-            TimedDisplayManager.Instance.ShowText("평점이 부족합니다.");
+            TimedDisplayManager.Instance.ShowTextLackScore();
             return;
         }
 
-        if(data.GetUpgradePrice(staffLevel) < GameManager.Instance.Tip)
+        if (UserInfo.Money < data.GetUpgradePrice(recipeLevel))
         {
-            TimedDisplayManager.Instance.ShowText("소지금이 부족합니다.");
+            TimedDisplayManager.Instance.ShowTextLackMoney();
             return;
         }
 
-        UserInfo.UpgradeStaff(data.Id);
-        TimedDisplayManager.Instance.ShowText("강화가 완료 됬습니다.");
-    }
-
-    private void OnGiveStaffEvent()
-    {
-        if (VisibleState == VisibleState.Disappeared)
+        if (UserInfo.UpgradeStaff(data.Id))
+        {
+            TimedDisplayManager.Instance.ShowText("강화 성공!");
             return;
-
-        SetStaffData(_currentType);
+        }
     }
 
 
@@ -237,47 +263,53 @@ public class UIStaff : MobileUIView
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Manager);
+        SetStaffPreview();
     }
 
     public void ShowUIStaffWaiter()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Waiter);
+        SetStaffPreview();
     }
 
     public void ShowUIStaffChef()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Chef);
+        SetStaffPreview();
     }
 
     public void ShowUIStaffCleaner()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Cleaner);
+        SetStaffPreview();
     }
 
     public void ShowUIStaffMarketer()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Marketer);
+        SetStaffPreview();
     }
 
     public void ShowUIStaffGuard()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Guard);
+        SetStaffPreview();
     }
 
     public void ShowUIStaffServer()
     {
         _uiNav.Push("UIStaff");
         SetStaffData(StaffType.Server);
+        SetStaffPreview();
     }
 
-    public void ShowStaffUpgradeUI(StaffData data)
+    private void OnSlotUpdate()
     {
-        DataBind.GetUnityActionValue("ShowStaffUpgradeUI")?.Invoke();
-        _uiStaffUpgrade.SetStaffData(data);
+        SetStaffData(_currentType);
     }
 }

@@ -110,6 +110,8 @@ namespace Muks.Tween
 
             IsLoop = false;
             enabled = false;
+
+            ElapsedDuration = 0;
         }
 
 

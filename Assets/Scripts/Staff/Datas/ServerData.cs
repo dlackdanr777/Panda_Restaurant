@@ -31,14 +31,14 @@ public class ServerData : StaffData
     {
         staff.SetAlpha(0);
 
-        GameManager.Instance.AddScore(_serverLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(_serverLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(_serverLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
-        GameManager.Instance.AddScore(-_serverLevelData[staff.Level - 1].ScoreIncrement);
+        GameManager.Instance.AppendAddScore(-_serverLevelData[staff.Level - 1].ScoreIncrement);
         GameManager.Instance.AddTipMul(-_serverLevelData[staff.Level - 1].TipAddPercent);
     }
 

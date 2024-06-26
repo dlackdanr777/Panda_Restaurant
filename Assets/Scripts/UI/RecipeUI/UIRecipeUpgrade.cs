@@ -113,14 +113,14 @@ public class UIRecipeUpgrade : MobileUIView
             return;
         }
 
-        if (GameManager.Instance.Score < foodData.GetUpgradeMinScore(level))
+        if (UserInfo.Score < foodData.GetUpgradeMinScore(level))
         {
             _upgradeButton.Interactable(false);
             _upgradeButton.SetText("평점 부족");
             return;
         }
         
-        if(GameManager.Instance.Tip < foodData.GetUpgradePrice(level))
+        if(UserInfo.Money < foodData.GetUpgradePrice(level))
         {
             _upgradeButton.Interactable(false);
             _upgradeButton.SetText("금액 부족");

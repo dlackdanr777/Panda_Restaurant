@@ -1,5 +1,3 @@
-using Muks.DataBind;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,7 +6,6 @@ public class UIRecipeTab : MonoBehaviour
     [Header("Components")]
     [SerializeField] private StaffController _staffController;
     [SerializeField] private UIRecipePreview _uiRecipePreview;
-    [SerializeField] private UIRecipeUpgrade _uiRecipeUpgrade;
 
     [Space]
     [Header("Slot Option")]
@@ -21,9 +18,8 @@ public class UIRecipeTab : MonoBehaviour
     public void Init()
     {
         _foodDataList = FoodDataManager.Instance.GetShopFoodDataList();
-        _uiRecipePreview.Init(OnBuyButtonClicked, OnShowRecipeUpgrade);
+        _uiRecipePreview.Init(OnBuyButtonClicked, OnUpgradeButtonClicked);
         _uiRecipePreview.SetFoodData(null);
-        _uiRecipeUpgrade.SetAction(OnUpgradeButtonClicked);
 
         int foodCount = FoodDataManager.Count;
 
@@ -37,6 +33,12 @@ public class UIRecipeTab : MonoBehaviour
         }
 
         UpdateSlot();
+
+        UserInfo.OnUpgradeRecipeHandler += UpdateSlot;
+        UserInfo.OnGiveRecipeHandler += UpdateSlot;
+        UserInfo.OnChangeMoneyHandler += UpdateSlot;
+        UserInfo.OnChangeScoreHanlder += UpdateSlot;
+        GameManager.OnAppendAddScoreHandler += UpdateSlot;
     }
 
 
@@ -53,7 +55,7 @@ public class UIRecipeTab : MonoBehaviour
                 continue;
             }
 
-            if(data.BuyMinScore < GameManager.Instance.Score)
+            if(UserInfo.Score < data.BuyMinScore)
             {
                 _slots[i].SetLowReputation(data);
                 continue;
@@ -67,10 +69,26 @@ public class UIRecipeTab : MonoBehaviour
     private void OnBuyButtonClicked(FoodData data)
     {
         if (UserInfo.IsGiveRecipe(data.Id))
+        {
+            TimedDisplayManager.Instance.ShowTextError();
             return;
+        }
 
+        if(UserInfo.Score < data.BuyMinScore)
+        {
+            TimedDisplayManager.Instance.ShowTextLackScore();
+            return;
+        }
+
+        if(UserInfo.Money < data.BuyPrice)
+        {
+            TimedDisplayManager.Instance.ShowTextLackMoney();
+            return;
+        }
+
+        UserInfo.AppendMoney(-data.BuyPrice);
         UserInfo.GiveRecipe(data);
-        //TODO: 돈 확인 후 스태프 획득으로 변경해야함
+        TimedDisplayManager.Instance.ShowText("새로운 레시피를 배웠어요!");
     }
 
 
@@ -78,26 +96,26 @@ public class UIRecipeTab : MonoBehaviour
     {
         if(!UserInfo.IsGiveRecipe(data.Id))
         {
-            TimedDisplayManager.Instance.ShowText("레시피를 가지고 있지 않습니다.");
+            TimedDisplayManager.Instance.ShowTextError();
             return;
         }
 
         int recipeLevel = UserInfo.GetRecipeLevel(data.Id);
-        if(data.GetUpgradeMinScore(recipeLevel) < GameManager.Instance.Score)
+        if(UserInfo.Score < data.GetUpgradeMinScore(recipeLevel))
         {
-            TimedDisplayManager.Instance.ShowText("평점이 부족합니다.");
+            TimedDisplayManager.Instance.ShowTextLackScore();
             return;
         }
 
-        if(data.GetUpgradePrice(recipeLevel) < GameManager.Instance.Tip)
+        if(UserInfo.Money < data.GetUpgradePrice(recipeLevel))
         {
-            TimedDisplayManager.Instance.ShowText("소지금이 부족합니다.");
+            TimedDisplayManager.Instance.ShowTextLackMoney();
             return;
         }
 
         if(UserInfo.UpgradeRecipe(data.Id))
         {
-            TimedDisplayManager.Instance.ShowText("강화 성공");
+            TimedDisplayManager.Instance.ShowText("강화 성공!");
             return;
         }
     }
@@ -106,11 +124,5 @@ public class UIRecipeTab : MonoBehaviour
     private void OnSlotClicked(FoodData data)
     {
         _uiRecipePreview.SetFoodData(data);
-    }
-
-    private void OnShowRecipeUpgrade(FoodData data)
-    {
-        DataBind.GetUnityActionValue("ShowRecipeUpgradeUI")?.Invoke();
-        _uiRecipeUpgrade.SetFoodData(data);
     }
 }

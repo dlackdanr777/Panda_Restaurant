@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -18,13 +19,9 @@ public class GameManager : MonoBehaviour
     }
     private static GameManager _instance;
 
+    public static event Action OnAppendAddScoreHandler;
+
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
-    [SerializeField] private int _tip;
-    public int Tip => _tip;
-
-    [SerializeField] private int _score;
-    public int Score => _score;
-
 
     [SerializeField] private int _maxTipValue;
     public int MaxTipValue => _maxTipValue;
@@ -36,7 +33,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _foodPriceMul = 1;
     public float FoodPriceMul => _foodPriceMul;
     [SerializeField] private int _addScore = 1;
-    public float AddSocre => _addScore = 1;
+    public int AddSocre => _addScore = 1;
 
     private int _addPromotionCustomer = 1;
     public int AddPromotionCustomer => _addPromotionCustomer;
@@ -52,9 +49,10 @@ public class GameManager : MonoBehaviour
         _maxTipValue += value;
     }
 
-    public void AddScore(int value)
+    public void AppendAddScore(int value)
     {
         _addScore += value;
+        OnAppendAddScoreHandler?.Invoke();
 
     }
 
@@ -68,12 +66,6 @@ public class GameManager : MonoBehaviour
     {
         _tipMul += value * 0.01f;
         _tipMul = Mathf.Clamp(_tipMul, 1, 100);
-    }
-
-    public void AppendTip(int value)
-    { 
-        _tip += (int)(value * _tipMul);
-        _tip = Mathf.Clamp(_tip, 0, _maxTipValue);
     }
 
 

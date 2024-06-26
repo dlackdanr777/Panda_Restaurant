@@ -1,14 +1,27 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public static class UserInfo
 {
     public static event Action OnChangeMoneyHandler;
+    public static event Action OnChangeScoreHanlder;
     public static event Action OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
     public static event Action OnUpgradeStaffHandler;
     public static event Action OnGiveRecipeHandler;
     public static event Action OnUpgradeRecipeHandler;
+
+
+    private static int _money;
+    public static int Money => _money;
+
+    private static int _score;
+    public static int Score => _score + GameManager.Instance.AddSocre;
+
+    private static int _tip;
+    public static int Tip => _tip;
+
 
     private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
     private static List<string> _giveStaffList = new List<string>();
@@ -18,6 +31,39 @@ public static class UserInfo
     private static List<string> _giveRecipeList = new List<string>();
     private static HashSet<string> _giveRecipeSet = new HashSet<string>();
     private static Dictionary<string, int> _giveRecipeLevelDic = new Dictionary<string, int>();
+
+
+    #region UserData
+
+    public static void AppendMoney(int value)
+    {
+        _money += value;
+        OnChangeMoneyHandler?.Invoke();
+    }
+
+
+    public static void AppendScore(int value)
+    {
+        _score += value;
+        OnChangeScoreHanlder?.Invoke();
+    }
+
+    public static void TipCollection()
+    {
+        _money += _tip;
+        _tip = 0;
+    }
+
+    public static void AppendTip(int value)
+    {
+        _tip += (int)(value * GameManager.Instance.TipMul);
+        _tip = Mathf.Clamp(_tip, 0, GameManager.Instance.MaxTipValue);
+    }
+
+
+    #endregion
+
+
 
     #region StaffData
 

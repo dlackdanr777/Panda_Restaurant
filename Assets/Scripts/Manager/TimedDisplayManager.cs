@@ -30,6 +30,21 @@ public class TimedDisplayManager : MonoBehaviour
         _timeDisplay.Show(description);
     }
 
+    public void ShowTextLackMoney()
+    {
+        _timeDisplay.Show("골드가 부족합니다...");
+    }
+
+    public void ShowTextLackScore()
+    {
+        _timeDisplay.Show("평점이 부족합니다...");
+    }
+
+    public void ShowTextError()
+    {
+        _timeDisplay.Show("다시 시도해 주세요.");
+    }
+
 
     private void Awake()
     {

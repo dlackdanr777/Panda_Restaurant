@@ -23,10 +23,6 @@ public class UIMainScene : MonoBehaviour
         DataBind.SetUnityActionValue("HideStaffUI", OnHideStaffUI);
         DataBind.SetUnityActionValue("HideNoAnimeStaffUI", OnHideNoAnimeStaffUI);
 
-        DataBind.SetUnityActionValue("ShowRecipeUpgradeUI", OnShowRecipeUpgradeUI);
-        DataBind.SetUnityActionValue("HideRecipeUpgradeUI", OnHideRecipeUpgradeUI);
-        DataBind.SetUnityActionValue("HideNoAnimeRecipeUpgradeUI", OnHideNoAnimeRecipeUpgradeUI);
-
         DataBind.SetUnityActionValue("ShowStaffUpgradeUI", OnShowStaffUpgradeUI);
         DataBind.SetUnityActionValue("HideStaffUpgradeUI", OnHideStaffUpgradeUI);
         DataBind.SetUnityActionValue("HideNoAnimeStaffUpgradeUI", OnHideNoAnimeStaffUpgradeUI);
@@ -57,21 +53,6 @@ public class UIMainScene : MonoBehaviour
     private void OnHideNoAnimeStaffUI()
     {
         _uiNav.PopNoAnime("UIStaff");
-    }
-
-    private void OnShowRecipeUpgradeUI()
-    {
-        _uiNav.Push("UIRecipeUpgrade");
-    }
-
-    private void OnHideRecipeUpgradeUI()
-    {
-        _uiNav.Pop("UIRecipeUpgrade");
-    }
-
-    private void OnHideNoAnimeRecipeUpgradeUI()
-    {
-        _uiNav.PopNoAnime("UIRecipeUpgrade");
     }
 
     private void OnShowStaffUpgradeUI()
