@@ -54,6 +54,18 @@ public class ServerData : StaffData
         level = Mathf.Clamp(level - 1, 0, _serverLevelData.Length - 1);
         return _serverLevelData[level].UpgradeMoneyData.Price;
     }
+
+    public override int GetEquipAddScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _serverLevelData.Length - 1);
+        return _serverLevelData[level].ScoreIncrement;
+    }
+
+    public override float GetEquipAddTip(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _serverLevelData.Length - 1);
+        return _serverLevelData[level].TipAddPercent;
+    }
 }
 
 

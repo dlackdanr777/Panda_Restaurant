@@ -2,7 +2,15 @@ using Muks.DataBind;
 using Muks.MobileUI;
 using Muks.Tween;
 using UnityEngine;
-using UnityEngine.UI;
+
+public enum BackgroundType
+{
+    Furniture,
+    Staff,
+    Recipe,
+    Kitchen,
+}
+
 
 public class UIRestaurantAdmin : MobileUIView
 {
@@ -10,6 +18,10 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private UIStaff _staffUI;
     [SerializeField] private GameObject _mainUI;
     [SerializeField] private CanvasGroup _canvasGroup;
+
+    [Header("BackgroundImage")]
+    [SerializeField] private ScrollingImage[] _scrollImages;
+    private ScrollingImage _currentScrollImage;
 
 
     [Space]
@@ -44,6 +56,8 @@ public class UIRestaurantAdmin : MobileUIView
         _kitchenButton.OnClickEvent(KitchenButtonClicked);
         _staffTab.Init();
         _recipeTab.Init();
+        SetBackgroundImage(BackgroundType.Furniture);
+
 
         gameObject.SetActive(false);
     }
@@ -53,6 +67,7 @@ public class UIRestaurantAdmin : MobileUIView
         gameObject.SetActive(true);
         _mainUI.SetActive(false);
         DataBind.GetUnityActionValue("HideNoAnimeStaffUI")?.Invoke();
+        SetBackgroundImage(BackgroundType.Furniture);
         FurnitureButtonClicked();
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
@@ -78,6 +93,7 @@ public class UIRestaurantAdmin : MobileUIView
         tween.OnComplete(() =>
         {
             _mainUI.SetActive(false);
+            ResetBackgroundImageOffset();
             TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
             tween2.OnComplete(() => gameObject.SetActive(false));
         });
@@ -96,6 +112,8 @@ public class UIRestaurantAdmin : MobileUIView
         _furnitureButton.UnselectedButton();
         _recipeButton.UnselectedButton();
         _kitchenButton.UnselectedButton();
+
+        SetBackgroundImage(BackgroundType.Staff);
     }
 
 
@@ -106,6 +124,8 @@ public class UIRestaurantAdmin : MobileUIView
         _staffButton.UnselectedButton();
         _recipeButton.UnselectedButton();
         _kitchenButton.UnselectedButton();
+
+        SetBackgroundImage(BackgroundType.Furniture);
     }
 
 
@@ -116,6 +136,8 @@ public class UIRestaurantAdmin : MobileUIView
         _furnitureButton.UnselectedButton();
         _staffButton.UnselectedButton();
         _kitchenButton.UnselectedButton();
+
+        SetBackgroundImage(BackgroundType.Recipe);
     }
 
 
@@ -126,6 +148,30 @@ public class UIRestaurantAdmin : MobileUIView
         _furnitureButton.UnselectedButton();
         _staffButton.UnselectedButton();
         _recipeButton.UnselectedButton();
+
+        SetBackgroundImage(BackgroundType.Kitchen);
+    }
+
+    private void SetBackgroundImage(BackgroundType type)
+    {
+        for(int i = 0, cnt = _scrollImages.Length; i < cnt; i++)
+        {
+            _scrollImages[i].gameObject.SetActive(false);
+        }
+
+        if(_currentScrollImage != null)
+            _scrollImages[(int)type].SetOffset(_currentScrollImage.Offset);
+
+        _scrollImages[(int)type].gameObject.SetActive(true);
+        _currentScrollImage = _scrollImages[(int)type];
+    }
+
+    private void ResetBackgroundImageOffset()
+    {
+        for (int i = 0, cnt = _scrollImages.Length; i < cnt; i++)
+        {
+            _scrollImages[i].SetOffset(Vector2.zero);
+        }
     }
 
 }

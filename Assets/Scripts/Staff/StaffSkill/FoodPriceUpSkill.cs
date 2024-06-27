@@ -5,6 +5,10 @@ public class FoodPriceUpSkill : SkillBase
 {
     [Range(0, 1000)] [SerializeField] private float _foodPriceUpPercent;
 
+    public override float FirstValue => _foodPriceUpPercent;
+
+    public override float SecondValue => 0;
+
     public override void Activate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         GameManager.Instance.AddFoodPriceMul(_foodPriceUpPercent);

@@ -24,3 +24,4 @@ MonoBehaviour:
   _orderFoods:
   - FOOD01
   _moveSpeed: 5
+  _skill: {fileID: 11400000, guid: 4641d0077eb30704d88a3107eb8695e3, type: 2}

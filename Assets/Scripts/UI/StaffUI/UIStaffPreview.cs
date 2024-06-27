@@ -8,7 +8,12 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private Image _staffImage;
     [SerializeField] private TextMeshProUGUI _staffNameText;
     [SerializeField] private TextMeshProUGUI _description;
+    [SerializeField] private GameObject _descriptionObj;
+    [SerializeField] private TextMeshProUGUI _levelText;
     [SerializeField] private TextMeshProUGUI _effectDescription;
+    [SerializeField] private TextMeshProUGUI _equipScoreText;
+    [SerializeField] private TextMeshProUGUI _equipTipText;
+    [SerializeField] private TextMeshProUGUI _skillDescription;
     [SerializeField] private GameObject _lockImage;
     [SerializeField] private UIButtonAndText _usingButton;
     [SerializeField] private UIButtonAndText _equipButton;
@@ -47,27 +52,77 @@ public class UIStaffPreview : MonoBehaviour
         {
             _staffImage.gameObject.SetActive(false);
             _staffNameText.gameObject.SetActive(false);
+            _descriptionObj.gameObject.SetActive(false);
             _description.gameObject.SetActive(false);
-            _effectDescription.gameObject.SetActive(false);
             return;
         }
 
         _staffImage.gameObject.SetActive(true);
         _staffNameText.gameObject.SetActive(true);
         _description.gameObject.SetActive(true);
-        _effectDescription.gameObject.SetActive(true);
+        _descriptionObj.gameObject.SetActive(true);
         _staffImage.sprite = data.Sprite;
         _staffNameText.text = data.Name;
         _description.text = data.Description;
-        _effectDescription.text = data.Skill.Description;
+
+        if(data.Skill != null)
+        {
+            string skillDecription = data.Skill.Description;
+            skillDecription = skillDecription.Replace("Duration", data.Skill.Duration == 0 ? "지속" : data.Skill.Duration.ToString("n1"));
+            skillDecription = skillDecription.Replace("CoolTime", data.Skill.Cooldown == 0 ? "패시브" : data.Skill.Cooldown.ToString("n1"));
+
+            string firstValue = data.Skill.FirstValue % 1 != 0 ? data.Skill.FirstValue.ToString("n1") : ((int)data.Skill.FirstValue).ToString();
+            skillDecription = skillDecription.Replace("FirstValue", firstValue);
+            string secondValue = data.Skill.SecondValue % 1 != 0 ? data.Skill.SecondValue.ToString("n1") : ((int)data.Skill.SecondValue).ToString();
+            skillDecription = skillDecription.Replace("SecondValue", secondValue);
+
+            _skillDescription.text = skillDecription;
+        }
+
+        else
+        {
+            _skillDescription.text = "없음";
+        }
+
 
         if (UserInfo.IsGiveStaff(data))
         {
             int level = UserInfo.GetStaffLevel(data);
+
+            _levelText.text = "LV." + level;
+            string effectDescription = data.EffectDescription;
+            effectDescription = effectDescription.Replace("ActionValue", data.GetActionValue(level).ToString("n1"));
+            effectDescription = effectDescription.Replace("SecondValue", data.SecondValue.ToString("n1"));
+            _effectDescription.text = effectDescription;
+            _equipScoreText.text = data.GetEquipAddScore(level).ToString();
+            _equipTipText.text = data.GetEquipAddTip(level).ToString() + '%';
+
             _upgradeButton.gameObject.SetActive(true);
             _upgradeButton.RemoveAllListeners();
             _upgradeButton.AddListener(() => { _onUpgradeButtonClicked(data); });
-            _upgradeButton.SetText(Utility.ConvertToNumber(data.GetUpgradePrice(level)));
+
+            if(data.UpgradeEnable(level))
+            {
+                _upgradeButton.SetText("강화");
+                _upgradeButton.Interactable(true);
+            }
+            else
+            {
+                _upgradeButton.SetText("최대 강화");
+                _upgradeButton.Interactable(false);
+            }     
+        }
+
+        else
+        {
+            int level = 1;
+            _levelText.text = "LV." + level;
+            string effectDescription = data.EffectDescription;
+            effectDescription = effectDescription.Replace("ActionValue", data.GetActionValue(level).ToString("n1"));
+            effectDescription = effectDescription.Replace("SecondValue", data.SecondValue.ToString("n1"));
+            _effectDescription.text = effectDescription;
+            _equipScoreText.text = data.GetEquipAddScore(level).ToString();
+            _equipTipText.text = data.GetEquipAddTip(level).ToString() + '%';
         }
 
         if(UserInfo.IsEquipStaff(data))

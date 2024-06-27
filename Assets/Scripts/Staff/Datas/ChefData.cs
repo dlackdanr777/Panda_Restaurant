@@ -5,7 +5,7 @@ using UnityEngine;
 public class ChefData : StaffData
 {
     [SerializeField] private ChefLevelData[] _chefLevelData;
-    public override float SecondValue => 0;
+    public override float SecondValue => _chefLevelData[0].FoodSpeedAddPercent;
 
     public override float GetActionValue(int level)
     {
@@ -53,6 +53,18 @@ public class ChefData : StaffData
     {
         level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
         return _chefLevelData[level].UpgradeMoneyData.Price;
+    }
+
+    public override int GetEquipAddScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
+        return _chefLevelData[level].ScoreIncrement;
+    }
+
+    public override float GetEquipAddTip(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
+        return _chefLevelData[level].TipAddPercent;
     }
 }
 

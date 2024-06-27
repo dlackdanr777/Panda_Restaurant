@@ -14,9 +14,11 @@ public abstract class SkillBase : ScriptableObject, ISkill
 {
     [SerializeField] private Sprite _sprite;
     [SerializeField] private string _skillName;
-    [SerializeField] private string _description;
+    [TextArea][SerializeField] private string _description;
     [SerializeField] private float _cooldown;
     [SerializeField] private float _duration;
+    public abstract float FirstValue { get; }
+    public abstract float SecondValue { get; }
 
     public Sprite Sprite => _sprite;
     public string SkillName => _skillName;

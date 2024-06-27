@@ -54,6 +54,18 @@ public class MarketerData : StaffData
         level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
         return _marketerLevelData[level].UpgradeMoneyData.Price;
     }
+
+    public override int GetEquipAddScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
+        return _marketerLevelData[level].ScoreIncrement;
+    }
+
+    public override float GetEquipAddTip(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
+        return _marketerLevelData[level].TipAddPercent;
+    }
 }
 
 

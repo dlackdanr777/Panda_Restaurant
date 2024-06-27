@@ -23,11 +23,16 @@ public class TableData
     private int _tipValue;
     public int TipValue => _tipValue;
 
+    public int TotalPrice;
+
+    public int OrdersCount;
+
     public ETableState TableState;
 
     public Customer CurrentCustomer;
 
     public CookingData CurrentFood;
+
 
     public void SetTipValue(int value)
     {

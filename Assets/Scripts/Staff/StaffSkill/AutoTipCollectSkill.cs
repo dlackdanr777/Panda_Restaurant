@@ -3,6 +3,9 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "AutoTipCollectSkill", menuName = "Scriptable Object/Skill/AutoTipCollectSkill")]
 public class AutoTipCollectSkill : SkillBase
 {
+    public override float FirstValue => 0;
+
+    public override float SecondValue => 0;
 
     public override void Activate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {

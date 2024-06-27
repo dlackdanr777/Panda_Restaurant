@@ -15,6 +15,6 @@ MonoBehaviour:
   _sprite: {fileID: 0}
   _skillName: "\uBD80\uC9C0\uB7F0\uD55C \uC9C1\uC6D0"
   _description: "\uD301\uBC15\uC2A4 \uCD5C\uB300 \uB2EC\uC131\uC2DC \uC790\uB3D9
-    \uD68C\uC218"
+    \uD68C\uC218\n\uCFE8\uD0C0\uC784: CoolTimes  \uC9C0\uC18D \uC2DC\uAC04: Durations"
   _cooldown: 100
   _duration: 20

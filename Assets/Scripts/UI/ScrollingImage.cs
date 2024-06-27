@@ -7,19 +7,21 @@ public class ScrollingImage : MonoBehaviour
     [SerializeField] private Vector2 _dir;
     private Image _image;
     private Material _material;
-    
+
+    public Vector2 Offset => _material.mainTextureOffset;
+
+
+    public void SetOffset(Vector2 offset)
+    {
+        _material.mainTextureOffset = offset;
+    }
+
 
     private void Awake()
     {
         _image = GetComponent<Image>();
         _material = Instantiate(_image.material);
         _image.material = _material;
-    }
-
-
-    private void OnDisable()
-    {
-        _material.mainTextureOffset = Vector2.zero;
     }
 
 

@@ -14,6 +14,9 @@ public abstract class StaffData : ScriptableObject
     [TextArea][SerializeField] private string _description;
     public string Description => _description;
 
+    [TextArea][SerializeField] private string _effectDescription;
+    public string EffectDescription => _effectDescription;
+
     [SerializeField] private SkillBase _skill;
     public SkillBase Skill => _skill;
 
@@ -30,6 +33,10 @@ public abstract class StaffData : ScriptableObject
     public abstract int GetUpgradePrice(int level);
 
     public abstract float GetActionValue(int level);
+
+    public abstract int GetEquipAddScore(int level);
+
+    public abstract float GetEquipAddTip(int level);
 
     public abstract bool UpgradeEnable(int level);
 

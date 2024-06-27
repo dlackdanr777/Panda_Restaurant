@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _sprite: {fileID: 7448669784339011157, guid: b2183c4950c3077459325871ad78f895, type: 3}
   _skillName: "\uBC84\uB2DD"
-  _description: "\uC18D\uB3C4 2\uBC30 \uC0C1\uC2B9"
+  _description: "\uC18D\uB3C4 \uC0C1\uC2B9(FirstValue%)\n\uCFE8\uD0C0\uC784: CoolTimes 
+    \uC9C0\uC18D \uC2DC\uAC04: Durations"
   _cooldown: 100
   _duration: 20
   _speedUpMul: 200

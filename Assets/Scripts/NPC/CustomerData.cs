@@ -28,6 +28,10 @@ public class CustomerData : ScriptableObject
     [SerializeField] private float _moveSpeed = 5;
     public float MoveSpeed => _moveSpeed;
 
+    [Space]
+    [SerializeField] private CustomerSkill _skill;
+    public CustomerSkill Skill => _skill;
+
 
     public string GetRandomOrderFood()
     {

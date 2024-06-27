@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: ab621fc908cb1ac4f8ac8d918e917116
+guid: 30208709028b6a2489d68a56b8a936bf
 TextureImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -43,7 +43,7 @@ TextureImporter:
   nPOTScale: 0
   lightmap: 0
   compressionQuality: 50
-  spriteMode: 2
+  spriteMode: 1
   spriteExtrude: 1
   spriteMeshType: 1
   alignment: 0
@@ -69,7 +69,7 @@ TextureImporter:
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 1024
+    maxTextureSize: 256
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -134,28 +134,7 @@ TextureImporter:
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
-    sprites:
-    - serializedVersion: 2
-      name: "\uC74C\uC2DD \uBC30\uACBD_10"
-      rect:
-        serializedVersion: 2
-        x: 1006
-        y: 631
-        width: 1972
-        height: 1644
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      outline: []
-      physicsShape: []
-      tessellationDetail: 0
-      bones: []
-      spriteID: afb9114d4e06d384ba6da55bd597427d
-      internalID: 2044479916
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
+    sprites: []
     outline: []
     physicsShape: []
     bones: []
@@ -166,38 +145,7 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
-    nameFileIdTable:
-      "\uC74C\uC2DD \uBC30\uACBD_0": -1915090576
-      "\uC74C\uC2DD \uBC30\uACBD_1": -1214934063
-      "\uC74C\uC2DD \uBC30\uACBD_10": 2044479916
-      "\uC74C\uC2DD \uBC30\uACBD_11": 1296844714
-      "\uC74C\uC2DD \uBC30\uACBD_12": 1162780204
-      "\uC74C\uC2DD \uBC30\uACBD_13": 1198783644
-      "\uC74C\uC2DD \uBC30\uACBD_14": -747593231
-      "\uC74C\uC2DD \uBC30\uACBD_15": -2048538784
-      "\uC74C\uC2DD \uBC30\uACBD_16": 805609311
-      "\uC74C\uC2DD \uBC30\uACBD_17": 1476201518
-      "\uC74C\uC2DD \uBC30\uACBD_18": 1846902793
-      "\uC74C\uC2DD \uBC30\uACBD_19": 1530002403
-      "\uC74C\uC2DD \uBC30\uACBD_2": 401749747
-      "\uC74C\uC2DD \uBC30\uACBD_20": 1130170889
-      "\uC74C\uC2DD \uBC30\uACBD_21": -1071403409
-      "\uC74C\uC2DD \uBC30\uACBD_22": 1301333096
-      "\uC74C\uC2DD \uBC30\uACBD_23": -175071664
-      "\uC74C\uC2DD \uBC30\uACBD_24": 1883200648
-      "\uC74C\uC2DD \uBC30\uACBD_25": 1022928731
-      "\uC74C\uC2DD \uBC30\uACBD_26": -1931994065
-      "\uC74C\uC2DD \uBC30\uACBD_27": -1980036020
-      "\uC74C\uC2DD \uBC30\uACBD_28": -1738067346
-      "\uC74C\uC2DD \uBC30\uACBD_29": -1572948543
-      "\uC74C\uC2DD \uBC30\uACBD_3": -541380295
-      "\uC74C\uC2DD \uBC30\uACBD_30": 1105411442
-      "\uC74C\uC2DD \uBC30\uACBD_4": -1063046471
-      "\uC74C\uC2DD \uBC30\uACBD_5": 1630085620
-      "\uC74C\uC2DD \uBC30\uACBD_6": 1457106622
-      "\uC74C\uC2DD \uBC30\uACBD_7": -796230057
-      "\uC74C\uC2DD \uBC30\uACBD_8": 2025328130
-      "\uC74C\uC2DD \uBC30\uACBD_9": -1152136010
+    nameFileIdTable: {}
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

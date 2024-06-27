@@ -188,6 +188,9 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].CurrentCustomer = currentCustomer;
         currentCustomer.SetLayer("Customer", 0);
         _tableDatas[index].TableState = ETableState.Move;
+        _tableDatas[index].OrdersCount = currentCustomer.OrderCount;
+        _tableDatas[index].TotalPrice = 0;
+
         UpdateTable();
 
         _customerController.GuideCustomer(_tableDatas[index].CustomerMoveTr.position, 0, () =>
@@ -205,6 +208,9 @@ public class TableManager : MonoBehaviour
 
     public void OnCustomerOrder(int index)
     {
+        if (_tableDatas[index].OrdersCount <= 0)
+            ExitCustomer(index);
+
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
         int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
@@ -218,13 +224,21 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].TableState = ETableState.WaitFood;
         _kitchenSystem.EqueueFood(data);
         _tableDatas[index].CurrentFood = data;
+        _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.FoodPriceMul);
+        _tableDatas[index].OrdersCount -= 1;
         UpdateTable();
     }
 
     public void OnServing(int index)
     {
         _tableDatas[index].TableState = ETableState.Eating;
-        Tween.Wait(1, () => ExitCustomer(index));
+        Tween.Wait(1, () => 
+        {
+            if (_tableDatas[index].OrdersCount <= 0)
+                ExitCustomer(index);
+            else
+                OnCustomerOrder(index);
+        });
         UpdateTable();
     }
 
@@ -245,6 +259,9 @@ public class TableManager : MonoBehaviour
     private void ExitCustomer(int index)
     {
         _tableDatas[index].TableState = ETableState.NeedCleaning;
+
+        UserInfo.AppendMoney(_tableDatas[index].TotalPrice);
+
         Customer exitCustomer = _tableDatas[index].CurrentCustomer;
         exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
         _tableDatas[index].CurrentCustomer = null;

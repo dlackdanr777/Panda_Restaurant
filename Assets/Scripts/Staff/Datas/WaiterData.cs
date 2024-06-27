@@ -52,6 +52,18 @@ public class WaiterData : StaffData
         level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
         return _waiterLevelData[level].UpgradeMoneyData.Price;
     }
+
+    public override int GetEquipAddScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
+        return _waiterLevelData[level].ScoreIncrement;
+    }
+
+    public override float GetEquipAddTip(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
+        return _waiterLevelData[level].TipAddPercent;
+    }
 }
 
 

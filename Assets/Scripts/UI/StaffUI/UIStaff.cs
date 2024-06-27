@@ -11,6 +11,7 @@ public class UIStaff : MobileUIView
     [SerializeField] private UIRestaurantAdmin _uiRestaurantAdmin;
     [SerializeField] private StaffController _staffController;
     [SerializeField] private UIStaffPreview _uiStaffPreview;
+    [SerializeField] private UIStaffUpgrade _uiStaffUpgrade;
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
@@ -45,7 +46,8 @@ public class UIStaff : MobileUIView
     {
         _leftArrowButton.SetAction(() => ChangeStaffData(-1));
         _rightArrowButton.SetAction(() => ChangeStaffData(1));
-        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
+        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, OnShowUpgradeButtonClicked);
+        _uiStaffUpgrade.SetAction(OnUpgradeButtonClicked);
 
         _slots = new UIStaffSlot[_createSlotValue];
         for(int i = 0; i < _createSlotValue; ++i)
@@ -227,7 +229,7 @@ public class UIStaff : MobileUIView
 
         UserInfo.AppendMoney(-data.MoneyData.Price);
         UserInfo.GiveStaff(data);
-        TimedDisplayManager.Instance.ShowText("새로운 직원을 고용했어요!");
+        TimedDisplayManager.Instance.ShowText("새로운 직원을 채용했어요!");
     }
 
     private void OnUpgradeButtonClicked(StaffData data)
@@ -311,5 +313,11 @@ public class UIStaff : MobileUIView
     private void OnSlotUpdate()
     {
         SetStaffData(_currentType);
+    }
+
+    private void OnShowUpgradeButtonClicked(StaffData data)
+    {
+        _uiNav.Push("UIStaffUpgrade");
+        _uiStaffUpgrade.SetStaffData(data);
     }
 }

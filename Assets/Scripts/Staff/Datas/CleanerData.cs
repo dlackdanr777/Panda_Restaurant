@@ -54,6 +54,18 @@ public class CleanerData : StaffData
         level = Mathf.Clamp(level - 1, 0, _cleanerLevelData.Length - 1);
         return _cleanerLevelData[level].UpgradeMoneyData.Price;
     }
+
+    public override int GetEquipAddScore(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _cleanerLevelData.Length - 1);
+        return _cleanerLevelData[level].ScoreIncrement;
+    }
+
+    public override float GetEquipAddTip(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, _cleanerLevelData.Length - 1);
+        return _cleanerLevelData[level].TipAddPercent;
+    }
 }
 
 

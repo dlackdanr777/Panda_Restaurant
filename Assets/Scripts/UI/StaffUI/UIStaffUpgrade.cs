@@ -7,13 +7,15 @@ using Muks.Tween;
 
 public class UIStaffUpgrade : MobileUIView
 {
-    [SerializeField] private GameObject _dontTouchArea;
     [SerializeField] private Image _staffImage;
     [SerializeField] private UIButtonAndText _upgradeButton;
     [SerializeField] private TextMeshProUGUI _nameText;
-    [SerializeField] private TextMeshProUGUI _levelText;
-    [SerializeField] private TextMeshProUGUI _description;
-    [SerializeField] private TextMeshProUGUI _upgradeDescription;
+    [SerializeField] private TextMeshProUGUI _upgradeScoreText;
+    [SerializeField] private TextMeshProUGUI _upgradePriceText;
+    [SerializeField] private TextMeshProUGUI _nowLevelText;
+    [SerializeField] private TextMeshProUGUI _nowLevelDescription;
+    [SerializeField] private TextMeshProUGUI _upgradeLevelText;
+    [SerializeField] private TextMeshProUGUI _upgradeLevelDescription;
 
 
     [Space]
@@ -48,7 +50,6 @@ public class UIStaffUpgrade : MobileUIView
     {
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
-        _dontTouchArea.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
@@ -73,7 +74,6 @@ public class UIStaffUpgrade : MobileUIView
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Disappeared;
-            _dontTouchArea.SetActive(false);
             gameObject.SetActive(false);
         });
     }
@@ -91,40 +91,37 @@ public class UIStaffUpgrade : MobileUIView
         _upgradeButton.RemoveAllListeners();
 
         int level = UserInfo.GetStaffLevel(data);
-        _levelText.text = level + "단계";
-        string description = "작업 간격: " + data.GetActionValue(level) + "초";
-        _description.text = description;
+        _nowLevelText.text = "* lv." + level;
+        _nowLevelDescription.text = "팁" + data.GetEquipAddTip(level) + "%, 평점 " + data.GetEquipAddScore(level) + "상승";
 
-        TimedDisplayManager.Instance.ShowText("테스트입니다.");
         if (data.UpgradeEnable(level))
         {
+            _upgradeLevelText.gameObject.SetActive(true);
+            _nowLevelDescription.gameObject.SetActive(true);
+
+            _upgradeLevelText.text = "* lv. " + (level + 1);
+            _nowLevelDescription.text = "팁" + data.GetEquipAddTip(level + 1) + "%, 평점 " + data.GetEquipAddScore(level + 1) + "상승";
+
+            _upgradePriceText.text = Utility.ConvertToNumber(data.GetUpgradePrice(level));
+            _upgradeScoreText.text = Utility.ConvertToNumber(data.GetUpgradeMinScore(level));
+
             _upgradeButton.Interactable(true);
             _upgradeButton.AddListener(() => _onUpgradeButtonClicked(_currentStaffData));
             _upgradeButton.SetText("강화");
 
-            string upgradeDescription = "강화 평점: " + data.GetUpgradeMinScore(level)+ "점" + "\n강화 금액: " + data.GetUpgradePrice(level) + "골드";
-            _upgradeDescription.text = upgradeDescription;
         }
         else
         {
+            _upgradeLevelText.gameObject.SetActive(false);
+            _upgradeLevelDescription.gameObject.SetActive(false);
+
+            _upgradeScoreText.text = "최대 강화";
+            _upgradePriceText.text = "최대 강화";
+
+
             _upgradeButton.Interactable(false);
             _upgradeButton.SetText("최대 강화");
 
-            _upgradeDescription.text = string.Empty;
-            return;
-        }
-
-        if (UserInfo.Score < data.GetUpgradeMinScore(level))
-        {
-            _upgradeButton.Interactable(false);
-            _upgradeButton.SetText("평점 부족");
-            return;
-        }
-
-        if(UserInfo.Money < data.GetUpgradePrice(level))
-        {
-            _upgradeButton.Interactable(false);
-            _upgradeButton.SetText("금액 부족");
             return;
         }
     }

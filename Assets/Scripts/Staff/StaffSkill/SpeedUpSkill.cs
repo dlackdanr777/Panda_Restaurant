@@ -5,6 +5,10 @@ public class SpeedUpSkill : SkillBase
 {
     [Range(0f, 1000f)] [SerializeField] private float _speedUpMul;
 
+    public override float FirstValue => _speedUpMul;
+
+    public override float SecondValue => 0;
+
     public override void Activate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.AddSpeedMul(_speedUpMul);

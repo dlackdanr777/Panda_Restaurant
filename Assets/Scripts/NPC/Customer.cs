@@ -14,6 +14,9 @@ public class Customer : MonoBehaviour
 
     private CustomerData _customerData;
     public CustomerData CustomerData => _customerData;
+
+    private CustomerSkill _skill;
+
     private Action _moveCompleted;
 
     private Vector2 _targetPos;
@@ -21,6 +24,12 @@ public class Customer : MonoBehaviour
     private int _moveEndDir;
     private float _scaleX;
     private bool _isStairsMove;
+
+    private int _orderCount = 1;
+    public int OrderCount => _orderCount;
+
+    private float _foodPriceMul = 1;
+    public float FoodPriceMul => _foodPriceMul;
 
 
 
@@ -36,6 +45,20 @@ public class Customer : MonoBehaviour
         _spriteRenderer.sprite = data.Sprite;
         float height = (data.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y - (AStar.Instance.NodeSize * 0.5f);
         _spriteRenderer.transform.localPosition = new Vector3(0, height, 0);
+
+        if (_skill != null)
+            _skill.Deactivate(this);
+
+        if(data.Skill != null)
+        {
+            _skill = data.Skill;
+            data.Skill.Activate(this);
+        }
+        else
+        {
+            SetOrderCount(1);
+            SetFoodPriceMul(1);
+        }
 
     }
 
@@ -54,6 +77,16 @@ public class Customer : MonoBehaviour
     public void SetOrderLayer(int orderInLayer)
     {
         _spriteRenderer.sortingOrder = orderInLayer;
+    }
+
+    public void SetOrderCount(int value)
+    {
+        _orderCount = value;
+    }
+
+    public void SetFoodPriceMul(float value)
+    {
+        _foodPriceMul = value;
     }
 
 

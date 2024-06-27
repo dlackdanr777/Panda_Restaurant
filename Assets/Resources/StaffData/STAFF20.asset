@@ -15,7 +15,8 @@ MonoBehaviour:
   _sprite: {fileID: 7146915720392151192, guid: 252bd6e9c79724c4f904b411310b2974, type: 3}
   _id: STAFF20
   _name: "\uC11C\uBC84"
-  _description: "\uC74C\uC2DD \uC790\uB3D9 \uC8FC\uBB38 \uBC1B\uAE30(1.8\uCD08)"
+  _description: 
+  _effectDescription: "\uC74C\uC2DD \uC790\uB3D9 \uC8FC\uBB38 \uBC1B\uAE30(ActionValues)"
   _skill: {fileID: 11400000, guid: 90406cf60a7f94c4c9dfa7cdd1cf0f2d, type: 2}
   _buyMinScore: 90
   _moneyData:
