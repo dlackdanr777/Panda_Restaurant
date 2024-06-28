@@ -6,11 +6,16 @@ public static class UserInfo
 {
     public static event Action OnChangeMoneyHandler;
     public static event Action OnChangeScoreHanlder;
+
     public static event Action OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
     public static event Action OnUpgradeStaffHandler;
+
     public static event Action OnGiveRecipeHandler;
     public static event Action OnUpgradeRecipeHandler;
+
+    public static event Action OnChangeFurnitureHandler;
+    public static event Action OnGiveFurnitureHandler;
 
 
     private static int _money;
@@ -31,6 +36,10 @@ public static class UserInfo
     private static List<string> _giveRecipeList = new List<string>();
     private static HashSet<string> _giveRecipeSet = new HashSet<string>();
     private static Dictionary<string, int> _giveRecipeLevelDic = new Dictionary<string, int>();
+
+    private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
+    private static List<string> _giveFurnitureList = new List<string>();
+    private static HashSet<string> _giveFurnitureSet = new HashSet<string>();
 
 
     #region UserData
@@ -63,8 +72,6 @@ public static class UserInfo
 
     #endregion
 
-
-
     #region StaffData
 
     public static void GiveStaff(StaffData data)
@@ -78,6 +85,8 @@ public static class UserInfo
         _giveStaffList.Add(data.Id);
         _giveStaffSet.Add(data.Id);
         _giveStaffLevelDic.Add(data.Id, 1);
+        GameManager.Instance.AppendAddScore(data.GetAddScore(1));
+        GameManager.Instance.AddTipMul(data.GetAddTipMul(1));
         OnGiveStaffHandler?.Invoke();
     }
 
@@ -99,6 +108,9 @@ public static class UserInfo
         _giveStaffList.Add(id);
         _giveStaffSet.Add(id);
         _giveStaffLevelDic.Add(id, 1);
+        GameManager.Instance.AppendAddScore(data.GetAddScore(1));
+        GameManager.Instance.AddTipMul(data.GetAddTipMul(1));
+
         OnGiveStaffHandler?.Invoke();
     }
 
@@ -163,6 +175,10 @@ public static class UserInfo
         {
             if(data.UpgradeEnable(level))
             {
+                GameManager.Instance.AppendAddScore(-data.GetAddScore(level));
+                GameManager.Instance.AddTipMul(-data.GetAddTipMul(level));
+                GameManager.Instance.AppendAddScore(data.GetAddScore(level + 1));
+                GameManager.Instance.AddTipMul(data.GetAddTipMul(level + 1));
                 _giveStaffLevelDic[data.Id] = level + 1;
                 OnUpgradeStaffHandler?.Invoke();
                 return true;
@@ -180,8 +196,14 @@ public static class UserInfo
     {
         if (_giveStaffLevelDic.TryGetValue(id, out int level))
         {
-            if (StaffDataManager.Instance.GetStaffData(id).UpgradeEnable(level))
+            StaffData data = StaffDataManager.Instance.GetStaffData(id);
+            if (data.UpgradeEnable(level))
             {
+                GameManager.Instance.AppendAddScore(-data.GetAddScore(level));
+                GameManager.Instance.AddTipMul(-data.GetAddTipMul(level));
+                GameManager.Instance.AppendAddScore(data.GetAddScore(level + 1));
+                GameManager.Instance.AddTipMul(data.GetAddTipMul(level + 1));
+
                 _giveStaffLevelDic[id] = level + 1;
                 OnUpgradeStaffHandler?.Invoke();
                 return true;
@@ -304,6 +326,82 @@ public static class UserInfo
     public static bool IsGiveRecipe(FoodData data)
     {
         return _giveRecipeSet.Contains(data.Id);
+    }
+
+
+    #endregion
+
+    #region FurnitureData
+
+    public static void GiveFurniture(FurnitureData data)
+    {
+        if (_giveFurnitureSet.Contains(data.Id))
+        {
+            DebugLog.Log("이미 가지고 있습니다.");
+            return;
+        }
+
+        _giveFurnitureList.Add(data.Id);
+        _giveFurnitureSet.Add(data.Id);
+        OnGiveFurnitureHandler?.Invoke();
+    }
+
+
+    public static void GiveFurniture(string id)
+    {
+        if (_giveFurnitureSet.Contains(id))
+        {
+            DebugLog.Log("이미 가지고 있습니다.");
+            return;
+        }
+
+        FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
+        if (data == null)
+        {
+            DebugLog.Log("존재하지 않는 ID입니다" + id);
+            return;
+        }
+
+        _giveFurnitureList.Add(id);
+        _giveFurnitureSet.Add(id);
+        OnGiveFurnitureHandler?.Invoke();
+    }
+
+
+    public static bool IsGiveFurniture(string id)
+    {
+        return _giveFurnitureSet.Contains(id);
+    }
+
+    public static bool IsGiveFurniture(FurnitureData data)
+    {
+        return _giveFurnitureSet.Contains(data.Id);
+    }
+
+
+    public static bool IsEquipFurniture(FurnitureData data)
+    {
+        for (int i = 0, cnt = _equipFurnitureDatas.Length; i < cnt; i++)
+        {
+            if (_equipFurnitureDatas[i] == null)
+                continue;
+
+            if (_equipFurnitureDatas[i].Id == data.Id)
+                return true;
+        }
+
+        return false;
+    }
+
+    public static void SetEquipFurniture(FurnitureData data)
+    {
+        _equipFurnitureDatas[(int)data.Type] = data;
+        OnChangeFurnitureHandler?.Invoke();
+    }
+
+    public static FurnitureData GetEquipFurniture(FurnitureType type)
+    {
+        return _equipFurnitureDatas[(int)type];
     }
 
 

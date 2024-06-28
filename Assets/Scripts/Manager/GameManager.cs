@@ -28,12 +28,15 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private float _cookingSpeedMul = 1;
     public float CookingSpeedMul => _cookingSpeedMul;
+
     [SerializeField] private float _tipMul = 1;
     public float TipMul => _tipMul;
+
     [SerializeField] private float _foodPriceMul = 1;
     public float FoodPriceMul => _foodPriceMul;
-    [SerializeField] private int _addScore = 1;
-    public int AddSocre => _addScore = 1;
+
+    [SerializeField] private int _addScore = 0;
+    public int AddSocre => _addScore;
 
     private int _addPromotionCustomer = 1;
     public int AddPromotionCustomer => _addPromotionCustomer;
@@ -53,7 +56,6 @@ public class GameManager : MonoBehaviour
     {
         _addScore += value;
         OnAppendAddScoreHandler?.Invoke();
-
     }
 
     public void AddCookingSpeedMul(float value)
@@ -72,10 +74,7 @@ public class GameManager : MonoBehaviour
     public void AppendPromotionCustomer(int value)
     {
         _addPromotionCustomer = Mathf.Clamp(_addPromotionCustomer + value, 1, 100);
-        DebugLog.Log(_addPromotionCustomer);
     }
-
-
 
 
     private void Awake()

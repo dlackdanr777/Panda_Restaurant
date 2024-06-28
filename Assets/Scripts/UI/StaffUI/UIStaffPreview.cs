@@ -14,7 +14,6 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _equipScoreText;
     [SerializeField] private TextMeshProUGUI _equipTipText;
     [SerializeField] private TextMeshProUGUI _skillDescription;
-    [SerializeField] private GameObject _lockImage;
     [SerializeField] private UIButtonAndText _usingButton;
     [SerializeField] private UIButtonAndText _equipButton;
     [SerializeField] private UIButtonAndText _buyButton;
@@ -46,7 +45,6 @@ public class UIStaffPreview : MonoBehaviour
         _equipButton.gameObject.SetActive(false);
         _buyButton.gameObject.SetActive(false);
         _upgradeButton.gameObject.SetActive(false);
-        _lockImage.SetActive(false);
 
         if (data == null)
         {
@@ -94,8 +92,8 @@ public class UIStaffPreview : MonoBehaviour
             effectDescription = effectDescription.Replace("ActionValue", data.GetActionValue(level).ToString("n1"));
             effectDescription = effectDescription.Replace("SecondValue", data.SecondValue.ToString("n1"));
             _effectDescription.text = effectDescription;
-            _equipScoreText.text = data.GetEquipAddScore(level).ToString();
-            _equipTipText.text = data.GetEquipAddTip(level).ToString() + '%';
+            _equipScoreText.text = data.GetAddScore(level).ToString();
+            _equipTipText.text = data.GetAddTipMul(level).ToString() + '%';
 
             _upgradeButton.gameObject.SetActive(true);
             _upgradeButton.RemoveAllListeners();
@@ -117,12 +115,20 @@ public class UIStaffPreview : MonoBehaviour
         {
             int level = 1;
             _levelText.text = "LV." + level;
-            string effectDescription = data.EffectDescription;
-            effectDescription = effectDescription.Replace("ActionValue", data.GetActionValue(level).ToString("n1"));
-            effectDescription = effectDescription.Replace("SecondValue", data.SecondValue.ToString("n1"));
-            _effectDescription.text = effectDescription;
-            _equipScoreText.text = data.GetEquipAddScore(level).ToString();
-            _equipTipText.text = data.GetEquipAddTip(level).ToString() + '%';
+            _equipScoreText.text = data.GetAddScore(level).ToString();
+            _equipTipText.text = data.GetAddTipMul(level).ToString() + '%';
+
+            if(string.IsNullOrWhiteSpace(data.EffectDescription))
+            {
+                _effectDescription.text = string.Empty;
+            }
+            else
+            {
+                string effectDescription = data.EffectDescription;
+                effectDescription = effectDescription.Replace("ActionValue", data.GetActionValue(level).ToString("n1"));
+                effectDescription = effectDescription.Replace("SecondValue", data.SecondValue.ToString("n1"));
+                _effectDescription.text = effectDescription;
+            }
         }
 
         if(UserInfo.IsEquipStaff(data))
@@ -150,7 +156,6 @@ public class UIStaffPreview : MonoBehaviour
                 _buyButton.RemoveAllListeners();
                 _buyButton.AddListener(() => { _onBuyButtonClicked(_currentStaffData); });
                 _buyButton.SetText(Utility.ConvertToNumber(data.MoneyData.Price));
-                _lockImage.SetActive(true);
             }
         }
     }

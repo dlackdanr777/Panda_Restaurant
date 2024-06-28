@@ -34,9 +34,9 @@ public abstract class StaffData : ScriptableObject
 
     public abstract float GetActionValue(int level);
 
-    public abstract int GetEquipAddScore(int level);
+    public abstract int GetAddScore(int level);
 
-    public abstract float GetEquipAddTip(int level);
+    public abstract float GetAddTipMul(int level);
 
     public abstract bool UpgradeEnable(int level);
 

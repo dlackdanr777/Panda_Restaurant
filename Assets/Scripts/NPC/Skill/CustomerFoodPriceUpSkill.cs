@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "FoodPriceUpSkill", menuName = "Scriptable Object/Customer/Skill")]
+[CreateAssetMenu(fileName = "FoodPriceUpSkill", menuName = "Scriptable Object/Customer/FoodPriceUpSkill")]
 public class CustomerFoodPriceUpSkill : CustomerSkill
 {
     [Range(1f, 100f)] [SerializeField] private float _foodPriceMul;

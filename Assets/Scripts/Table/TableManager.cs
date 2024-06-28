@@ -195,22 +195,29 @@ public class TableManager : MonoBehaviour
 
         _customerController.GuideCustomer(_tableDatas[index].CustomerMoveTr.position, 0, () =>
         {
-            _tableDatas[index].TableState = ETableState.Seating;
             int randInt = Random.Range(0, _tableDatas[index].ChairTrs.Length);
             currentCustomer.transform.position = _tableDatas[index].ChairTrs[randInt].position;
             int dir = randInt == 0 ? 1 : -1;
             currentCustomer.SetSpriteDir(dir);
             currentCustomer.SetLayer("SitCustomer", 0);
-            UpdateTable();
+
+            OnCustomerSeating(index);
         });
+    }
+
+    public void OnCustomerSeating(int index)
+    {
+        if (_tableDatas[index].OrdersCount <= 0)
+            ExitCustomer(index);
+
+        _tableDatas[index].TableState = ETableState.Seating;
+        _tableDatas[index].OrdersCount -= 1;
+        UpdateTable();
     }
 
 
     public void OnCustomerOrder(int index)
     {
-        if (_tableDatas[index].OrdersCount <= 0)
-            ExitCustomer(index);
-
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
         int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
@@ -225,7 +232,6 @@ public class TableManager : MonoBehaviour
         _kitchenSystem.EqueueFood(data);
         _tableDatas[index].CurrentFood = data;
         _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.FoodPriceMul);
-        _tableDatas[index].OrdersCount -= 1;
         UpdateTable();
     }
 
@@ -237,7 +243,7 @@ public class TableManager : MonoBehaviour
             if (_tableDatas[index].OrdersCount <= 0)
                 ExitCustomer(index);
             else
-                OnCustomerOrder(index);
+                OnCustomerSeating(index);
         });
         UpdateTable();
     }
@@ -260,13 +266,11 @@ public class TableManager : MonoBehaviour
     {
         _tableDatas[index].TableState = ETableState.NeedCleaning;
 
-        UserInfo.AppendMoney(_tableDatas[index].TotalPrice);
-
         Customer exitCustomer = _tableDatas[index].CurrentCustomer;
         exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
         _tableDatas[index].CurrentCustomer = null;
 
-        UserInfo.AppendMoney((int)(_tableDatas[index].CurrentFood.Price * GameManager.Instance.FoodPriceMul));
+        UserInfo.AppendMoney((int)(_tableDatas[index].TotalPrice * GameManager.Instance.FoodPriceMul));
         exitCustomer.SetLayer("Customer", 0);
         UpdateTable();
 

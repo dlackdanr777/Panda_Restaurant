@@ -92,7 +92,7 @@ public class UIStaffUpgrade : MobileUIView
 
         int level = UserInfo.GetStaffLevel(data);
         _nowLevelText.text = "* lv." + level;
-        _nowLevelDescription.text = "ÆÁ" + data.GetEquipAddTip(level) + "%, ÆòÁ¡ " + data.GetEquipAddScore(level) + "»ó½Â";
+        _nowLevelDescription.text = "ÆÁ" + data.GetAddTipMul(level) + "%, ÆòÁ¡ " + data.GetAddScore(level) + "»ó½Â";
 
         if (data.UpgradeEnable(level))
         {
@@ -100,7 +100,7 @@ public class UIStaffUpgrade : MobileUIView
             _nowLevelDescription.gameObject.SetActive(true);
 
             _upgradeLevelText.text = "* lv. " + (level + 1);
-            _nowLevelDescription.text = "ÆÁ" + data.GetEquipAddTip(level + 1) + "%, ÆòÁ¡ " + data.GetEquipAddScore(level + 1) + "»ó½Â";
+            _nowLevelDescription.text = "ÆÁ" + data.GetAddTipMul(level + 1) + "%, ÆòÁ¡ " + data.GetAddScore(level + 1) + "»ó½Â";
 
             _upgradePriceText.text = Utility.ConvertToNumber(data.GetUpgradePrice(level));
             _upgradeScoreText.text = Utility.ConvertToNumber(data.GetUpgradeMinScore(level));

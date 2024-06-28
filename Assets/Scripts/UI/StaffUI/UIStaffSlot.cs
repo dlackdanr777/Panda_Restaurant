@@ -70,7 +70,7 @@ public class UIStaffSlot : MonoBehaviour
     public void SetLowReputation(StaffData data)
     {
         _enoughMoneyImage.SetActive(true);
-        _alarmImage.SetActive(true);
+        _alarmImage.SetActive(false);
         _useImage.SetActive(false);
         _operateImage.SetActive(false);
 

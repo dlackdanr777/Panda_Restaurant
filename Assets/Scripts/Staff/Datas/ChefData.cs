@@ -29,17 +29,12 @@ public class ChefData : StaffData
     {
         staff.SetAlpha(1);
         GameManager.Instance.AddCookingSpeedMul(_chefLevelData[staff.Level - 1].FoodSpeedAddPercent);
-        GameManager.Instance.AppendAddScore(_chefLevelData[staff.Level - 1].ScoreIncrement);
-        GameManager.Instance.AddTipMul(_chefLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
         GameManager.Instance.AddCookingSpeedMul(-_chefLevelData[staff.Level - 1].FoodSpeedAddPercent);
-
-        GameManager.Instance.AppendAddScore(-_chefLevelData[staff.Level - 1].ScoreIncrement);
-        GameManager.Instance.AddTipMul(-_chefLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override int GetUpgradeMinScore(int level)
@@ -55,13 +50,13 @@ public class ChefData : StaffData
         return _chefLevelData[level].UpgradeMoneyData.Price;
     }
 
-    public override int GetEquipAddScore(int level)
+    public override int GetAddScore(int level)
     {
         level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
         return _chefLevelData[level].ScoreIncrement;
     }
 
-    public override float GetEquipAddTip(int level)
+    public override float GetAddTipMul(int level)
     {
         level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
         return _chefLevelData[level].TipAddPercent;

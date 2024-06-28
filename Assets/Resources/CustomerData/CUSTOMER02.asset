@@ -19,7 +19,8 @@ MonoBehaviour:
     \uD0A4\uC640 \uADC0\uC5EC\uC6B4 \uC5BC\uAD74 \uB54C\uBB38\uC5D0 \uACE0\uC591\uC774\uB85C
     \uB9CE\uC774\uB4E4 \uCC29\uAC01\uD558\uACE0\uB294 \uD55C\uB2E4. "
   _minScore: 0
-  _requiredDish: 
+  _requiredDish: FOOD01
   _orderFoods:
   - FOOD01
   _moveSpeed: 5
+  _skill: {fileID: 11400000, guid: b779baf596903cc49ab62126c8092e61, type: 2}

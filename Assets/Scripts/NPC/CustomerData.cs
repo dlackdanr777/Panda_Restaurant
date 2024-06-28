@@ -35,8 +35,9 @@ public class CustomerData : ScriptableObject
 
     public string GetRandomOrderFood()
     {
-        List<string> orderFoodList = new List<string>();
-        for(int i = 0, cnt = _orderFoods.Length; i < cnt; i++)
+        List<string> orderFoodList = new List<string>{ _requiredDish };
+
+        for (int i = 0, cnt = _orderFoods.Length; i < cnt; i++)
         {
             if (UserInfo.IsGiveRecipe(_orderFoods[i]))
                 orderFoodList.Add(_orderFoods[i]);

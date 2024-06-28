@@ -7,7 +7,6 @@ using UnityEngine.UI;
 public class UIRecipePreview : MonoBehaviour
 {
     [SerializeField] private Image _foodImage;
-    [SerializeField] private GameObject _lockImage;
     [SerializeField] private GameObject _descriptions;
     [SerializeField] private TextMeshProUGUI _foodNameText;
     [SerializeField] private TextMeshProUGUI _description;
@@ -46,7 +45,6 @@ public class UIRecipePreview : MonoBehaviour
             _description.gameObject.SetActive(false);
             _buyButton.gameObject.SetActive(false);
             _upgradeButton.gameObject.SetActive(false);
-            _lockImage.SetActive(false);
             _descriptions.SetActive(false);
             return;
         }
@@ -63,7 +61,6 @@ public class UIRecipePreview : MonoBehaviour
         {
             _upgradeButton.gameObject.SetActive(true);
             _buyButton.gameObject.SetActive(false);
-            _lockImage.SetActive(false);
             _upgradeButton.AddListener(() => _onUpgradeButtonClicked(data));
 
             int level = UserInfo.GetRecipeLevel(data);
@@ -91,7 +88,6 @@ public class UIRecipePreview : MonoBehaviour
         {
             _buyButton.gameObject.SetActive(true);
             _upgradeButton.gameObject.SetActive(false);
-            _lockImage.SetActive(true);
 
             _cookTimeDescription.text = data.GetCookingTime(1).ToString() + 's';
             _priceDescription.text = Utility.ConvertToNumber(data.GetSellPrice(1));

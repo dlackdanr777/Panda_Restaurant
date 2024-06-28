@@ -30,16 +30,11 @@ public class MarketerData : StaffData
     {
         staff.SetAlpha(1);
         staff.transform.position = tableManager.GetStaffPos(0, StaffType.Marketer);
-
-        GameManager.Instance.AppendAddScore(_marketerLevelData[staff.Level - 1].ScoreIncrement);
-        GameManager.Instance.AddTipMul(_marketerLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
-        GameManager.Instance.AppendAddScore(-_marketerLevelData[staff.Level - 1].ScoreIncrement);
-        GameManager.Instance.AddTipMul(-_marketerLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override int GetUpgradeMinScore(int level)
@@ -55,13 +50,13 @@ public class MarketerData : StaffData
         return _marketerLevelData[level].UpgradeMoneyData.Price;
     }
 
-    public override int GetEquipAddScore(int level)
+    public override int GetAddScore(int level)
     {
         level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
         return _marketerLevelData[level].ScoreIncrement;
     }
 
-    public override float GetEquipAddTip(int level)
+    public override float GetAddTipMul(int level)
     {
         level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
         return _marketerLevelData[level].TipAddPercent;

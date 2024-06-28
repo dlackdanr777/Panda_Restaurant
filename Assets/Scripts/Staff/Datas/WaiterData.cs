@@ -28,16 +28,11 @@ public class WaiterData : StaffData
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
-
-        GameManager.Instance.AppendAddScore(_waiterLevelData[staff.Level - 1].ScoreIncrement);
-        GameManager.Instance.AddTipMul(_waiterLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
-        GameManager.Instance.AppendAddScore(-_waiterLevelData[staff.Level - 1].ScoreIncrement);
-        GameManager.Instance.AddTipMul(-_waiterLevelData[staff.Level - 1].TipAddPercent);
     }
 
     public override int GetUpgradeMinScore(int level)
@@ -53,13 +48,13 @@ public class WaiterData : StaffData
         return _waiterLevelData[level].UpgradeMoneyData.Price;
     }
 
-    public override int GetEquipAddScore(int level)
+    public override int GetAddScore(int level)
     {
         level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
         return _waiterLevelData[level].ScoreIncrement;
     }
 
-    public override float GetEquipAddTip(int level)
+    public override float GetAddTipMul(int level)
     {
         level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
         return _waiterLevelData[level].TipAddPercent;
