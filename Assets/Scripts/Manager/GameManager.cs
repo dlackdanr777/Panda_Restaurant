@@ -1,3 +1,4 @@
+using Muks.DataBind;
 using System;
 using UnityEngine;
 
@@ -85,6 +86,26 @@ public class GameManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         UserInfo.GiveRecipe("FOOD01");
+        DataBind.SetUnityActionValue("Test", Test);
+    }
+
+
+    private void Start()
+    {
+        UserInfo.GiveFurniture("TABLE011");
+        UserInfo.SetEquipFurniture("TABLE011");
+
+        UserInfo.GiveFurniture("TABLE012");
+        UserInfo.SetEquipFurniture("TABLE012");
+
+        UserInfo.GiveFurniture("TABLE013");
+        UserInfo.SetEquipFurniture("TABLE013");
+    }
+
+
+    private void Test()
+    {
+        UserInfo.DisarmEquipFurniture(FurnitureType.Table1);
     }
 
 }

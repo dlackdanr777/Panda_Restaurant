@@ -74,7 +74,6 @@ public class FurnitureDataManager : MonoBehaviour
             data = _furnitureDataList[i];
             _furnitureDataDic.Add(data.Id, data);
             _furnitureDataListType[(int)data.Type].Add(data);
-            DebugLog.Log(data.Type);
         }
     }
 }

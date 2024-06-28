@@ -14,7 +14,7 @@ public static class UserInfo
     public static event Action OnGiveRecipeHandler;
     public static event Action OnUpgradeRecipeHandler;
 
-    public static event Action OnChangeFurnitureHandler;
+    public static event Action<FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
 
 
@@ -395,8 +395,33 @@ public static class UserInfo
 
     public static void SetEquipFurniture(FurnitureData data)
     {
+        if(!_giveFurnitureSet.Contains(data.Id))
+        {
+            DebugLog.LogError("현재 가구를 보유하지 않았습니다.");
+            return;
+        }    
+
         _equipFurnitureDatas[(int)data.Type] = data;
-        OnChangeFurnitureHandler?.Invoke();
+        OnChangeFurnitureHandler?.Invoke(data.Type);
+    }
+
+    public static void SetEquipFurniture(string id)
+    {
+        if (!_giveFurnitureSet.Contains(id))
+        {
+            DebugLog.LogError("현재 가구를 보유하지 않았습니다.");
+            return;
+        }
+
+        FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
+        _equipFurnitureDatas[(int)data.Type] = data;
+        OnChangeFurnitureHandler?.Invoke(data.Type);
+    }
+
+    public static void DisarmEquipFurniture(FurnitureType type)
+    {
+        _equipFurnitureDatas[(int)type] = null;
+        OnChangeFurnitureHandler?.Invoke(type);
     }
 
     public static FurnitureData GetEquipFurniture(FurnitureType type)

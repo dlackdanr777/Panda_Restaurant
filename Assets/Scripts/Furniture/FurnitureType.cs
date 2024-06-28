@@ -6,10 +6,10 @@ public enum FurnitureType
     Table4,
     Table5,
     Counter,
-    Wallpaper,
     Rack,
     Frame,
     Flower,
     Acc,
+    Wallpaper,
     Length
 }

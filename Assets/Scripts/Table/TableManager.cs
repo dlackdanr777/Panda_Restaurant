@@ -81,6 +81,7 @@ public class TableManager : MonoBehaviour
         UpdateTable();
         _customerController.AddCustomerHandler += UpdateTable;
         _customerController.GuideCustomerHandler += UpdateTable;
+        UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
     }
 
 
@@ -136,6 +137,17 @@ public class TableManager : MonoBehaviour
         for (int i = 0, cnt = _ownedTableCount; i < cnt; ++i)
         {
             data = _tableDatas[i];
+
+            if(UserInfo.GetEquipFurniture((FurnitureType)i) == null)
+            {
+                NotFurnitureTable(i);
+            }
+
+            else if(data.TableState == ETableState.DontUse)
+            {
+                data.TableState = ETableState.NotUse;
+            }
+
             if (data.TableState == ETableState.NotUse)
             {
                 _guideButtons[i].gameObject.SetActive(true);
@@ -143,7 +155,7 @@ public class TableManager : MonoBehaviour
                 _servingButtons[i].gameObject.SetActive(false);
                 _cleaningButtons[i].gameObject.SetActive(false);
             }
-            else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating || data.TableState == ETableState.UseStaff)
+            else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating || data.TableState == ETableState.UseStaff || data.TableState == ETableState.DontUse)
             {
                 _guideButtons[i].gameObject.SetActive(false);
                 _orderButtons[i].gameObject.SetActive(false);
@@ -181,6 +193,12 @@ public class TableManager : MonoBehaviour
         if (_customerController.IsEmpty())
             return;
 
+        if (_tableDatas[index].TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(index);
+            return;
+        }
+
         if (_tableDatas[index].TableState != ETableState.NotUse)
             return;
 
@@ -207,8 +225,15 @@ public class TableManager : MonoBehaviour
 
     public void OnCustomerSeating(int index)
     {
+        if (_tableDatas[index].TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(index);
+            return;
+        }
+
         if (_tableDatas[index].OrdersCount <= 0)
             ExitCustomer(index);
+
 
         _tableDatas[index].TableState = ETableState.Seating;
         _tableDatas[index].OrdersCount -= 1;
@@ -218,6 +243,12 @@ public class TableManager : MonoBehaviour
 
     public void OnCustomerOrder(int index)
     {
+        if (_tableDatas[index].TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(index);
+            return;
+        }
+
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
         int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
@@ -237,6 +268,12 @@ public class TableManager : MonoBehaviour
 
     public void OnServing(int index)
     {
+        if (_tableDatas[index].TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(index);
+            return;
+        }
+
         _tableDatas[index].TableState = ETableState.Eating;
         Tween.Wait(1, () => 
         {
@@ -248,8 +285,14 @@ public class TableManager : MonoBehaviour
         UpdateTable();
     }
 
-    public void OnCleanTable(int index)
+    public void OnCleanTable(int index) 
     {
+        if (_tableDatas[index].TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(index);
+            return;
+        }
+
         UserInfo.AppendTip(_tableDatas[index].TipValue);
         _tableDatas[index].TableState = ETableState.NotUse;
         UpdateTable();
@@ -264,6 +307,12 @@ public class TableManager : MonoBehaviour
 
     private void ExitCustomer(int index)
     {
+        if (_tableDatas[index].TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(index);
+            return;
+        }
+
         _tableDatas[index].TableState = ETableState.NeedCleaning;
 
         Customer exitCustomer = _tableDatas[index].CurrentCustomer;
@@ -271,7 +320,7 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].CurrentCustomer = null;
 
         UserInfo.AppendMoney((int)(_tableDatas[index].TotalPrice * GameManager.Instance.FoodPriceMul));
-        exitCustomer.SetLayer("Customer", 0);
+
         UpdateTable();
 
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () => 
@@ -281,6 +330,42 @@ public class TableManager : MonoBehaviour
         });
     }
 
+    private void NotFurnitureTable(int index)
+    {
+        _tableDatas[index].TotalPrice = 0;
+        _tableDatas[index].SetTipValue(-_tableDatas[index].TipValue);
+
+        if (_tableDatas[index].CurrentCustomer == null)
+        {
+            _tableDatas[index].TableState = ETableState.DontUse;
+            return;
+        }
+
+
+        Customer exitCustomer = _tableDatas[index].CurrentCustomer;
+
+        if (_tableDatas[index].TableState != ETableState.Move)
+            exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
+
+        _tableDatas[index].CurrentCustomer = null;
+
+        exitCustomer.SetLayer("Customer", 0);
+
+        _tableDatas[index].TableState = ETableState.DontUse;
+        UpdateTable();
+
+        exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
+        {
+            ObjectPoolManager.Instance.DequeueCustomer(exitCustomer);
+            UpdateTable();
+        });
+    }
+
+    
+    private void OnChangeFurnitureEvent(FurnitureType type)
+    {
+        UpdateTable();
+    }
 
 
 

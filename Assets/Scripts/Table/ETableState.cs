@@ -9,4 +9,6 @@ public enum ETableState
     Eating,
     NeedCleaning,
     UseStaff,
+    DontUse,
+    Length
 }
