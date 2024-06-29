@@ -9,17 +9,18 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
-  m_Name: TABLE014
+  m_Script: {fileID: 11500000, guid: 144530c097518d24d9380e5e3433a0e8, type: 3}
+  m_Name: TABLE01_5
   m_EditorClassIdentifier: 
-  _type: 3
-  _sprite: {fileID: -7603392874960478093, guid: b6ff2c2881d51bd4b8d8e3e9fa6fc5da,
+  _type: 4
+  _sprite: {fileID: -6296459520990074170, guid: b6ff2c2881d51bd4b8d8e3e9fa6fc5da,
     type: 3}
-  _id: TABLE014
+  _id: TABLE01_5
   _setId: SET01
   _name: "\uD3C9\uBC94\uD55C \uD14C\uC774\uBE14"
+  _effectDescription: "1\uBD84\uB2F9 \uC218\uC785 \uC99D\uAC00(2)"
   _addScore: 3
-  _moneyPerMinute: 2
   _moneyType: 0
-  _buyMinPrice: 5000
-  _buyMinScore: 30
+  _buyMinPrice: 6000
+  _buyMinScore: 40
+  _moneyPerMinute: 2

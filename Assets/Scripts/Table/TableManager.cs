@@ -218,7 +218,7 @@ public class TableManager : MonoBehaviour
             int dir = randInt == 0 ? 1 : -1;
             currentCustomer.SetSpriteDir(dir);
             currentCustomer.SetLayer("SitCustomer", 0);
-
+            currentCustomer = null;
             OnCustomerSeating(index);
         });
     }
@@ -256,6 +256,7 @@ public class TableManager : MonoBehaviour
         CookingData data = new CookingData(foodData.Name, foodData.GetCookingTime(foodLevel), foodData.GetSellPrice(foodLevel), () =>
         {
             _tableDatas[index].TableState = ETableState.CanServing;
+            foodData = null;
             UpdateTable();
         });
         _tableDatas[index].SetTipValue((int)(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul * 0.01f));
@@ -326,6 +327,7 @@ public class TableManager : MonoBehaviour
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () => 
         {
             ObjectPoolManager.Instance.DequeueCustomer(exitCustomer);
+            exitCustomer = null;
             UpdateTable();
         });
     }
@@ -357,6 +359,7 @@ public class TableManager : MonoBehaviour
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
             ObjectPoolManager.Instance.DequeueCustomer(exitCustomer);
+            exitCustomer = null;
             UpdateTable();
         });
     }

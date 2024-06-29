@@ -24,8 +24,8 @@ public class GameManager : MonoBehaviour
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
-    [SerializeField] private int _maxTipValue;
-    public int MaxTipValue => _maxTipValue;
+    [SerializeField] private int _maxTipVolume;
+    public int MaxTipVolume => _maxTipVolume;
 
     [SerializeField] private float _cookingSpeedMul = 1;
     public float CookingSpeedMul => _cookingSpeedMul;
@@ -43,14 +43,24 @@ public class GameManager : MonoBehaviour
     public int AddPromotionCustomer => _addPromotionCustomer;
 
 
+    [SerializeField] private int _moneyPerMinute;
+    public int MoneyPerMinute => _moneyPerMinute;
+
+    [SerializeField] private int _tipPerMinute;
+    public int TipPerMinute => _tipPerMinute;
+
+
+    private float _updateTimer;
+
+
     public void AddFoodPriceMul(float value)
     {
         _foodPriceMul += value * 0.01f;
     }
 
-    public void AddMaxTipValue(int value)
+    public void SetMaxTipVolume(int value)
     {
-        _maxTipValue += value;
+        _maxTipVolume = value;
     }
 
     public void AppendAddScore(int value)
@@ -71,10 +81,19 @@ public class GameManager : MonoBehaviour
         _tipMul = Mathf.Clamp(_tipMul, 1, 100);
     }
 
-
     public void AppendPromotionCustomer(int value)
     {
         _addPromotionCustomer = Mathf.Clamp(_addPromotionCustomer + value, 1, 100);
+    }
+
+    public void AddTipPerMinute(int value)
+    {
+        _tipPerMinute += value;
+    }
+
+    public void AddMoneyPerMinute(int value)
+    {
+        _moneyPerMinute += value;
     }
 
 
@@ -92,14 +111,34 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        UserInfo.GiveFurniture("TABLE011");
-        UserInfo.SetEquipFurniture("TABLE011");
+        UserInfo.GiveFurniture("TABLE01_1");
+        UserInfo.SetEquipFurniture("TABLE01_1");
 
-        UserInfo.GiveFurniture("TABLE012");
-        UserInfo.SetEquipFurniture("TABLE012");
+        UserInfo.GiveFurniture("TABLE01_2");
+        UserInfo.SetEquipFurniture("TABLE01_2");
 
-        UserInfo.GiveFurniture("TABLE013");
-        UserInfo.SetEquipFurniture("TABLE013");
+        UserInfo.GiveFurniture("TABLE01_3");
+        UserInfo.SetEquipFurniture("TABLE01_3");
+
+        UserInfo.GiveFurniture("WALLPAPER01");
+        UserInfo.SetEquipFurniture("WALLPAPER01");
+
+        UserInfo.GiveFurniture("COUNTER01");
+        UserInfo.SetEquipFurniture("COUNTER01");
+    }
+
+
+    private void Update()
+    {
+        _updateTimer += Time.deltaTime;
+
+        if(60 <= _updateTimer)
+        {
+            _updateTimer = 0;
+            UserInfo.AppendTip(_tipPerMinute);
+            UserInfo.AppendMoney(_moneyPerMinute);
+        }
+
     }
 
 

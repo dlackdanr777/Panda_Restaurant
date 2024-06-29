@@ -66,7 +66,7 @@ public static class UserInfo
     public static void AppendTip(int value)
     {
         _tip += (int)(value * GameManager.Instance.TipMul);
-        _tip = Mathf.Clamp(_tip, 0, GameManager.Instance.MaxTipValue);
+        _tip = Mathf.Clamp(_tip, 0, GameManager.Instance.MaxTipVolume);
     }
 
 
@@ -399,9 +399,14 @@ public static class UserInfo
         {
             DebugLog.LogError("현재 가구를 보유하지 않았습니다.");
             return;
-        }    
+        }
+
+        if (_equipFurnitureDatas[(int)data.Type] != null)
+            _equipFurnitureDatas[((int)data.Type)].RemoveSlot();
 
         _equipFurnitureDatas[(int)data.Type] = data;
+        data.AddSlot();
+
         OnChangeFurnitureHandler?.Invoke(data.Type);
     }
 
@@ -414,12 +419,21 @@ public static class UserInfo
         }
 
         FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
+
+        if (_equipFurnitureDatas[(int)data.Type] != null)
+            _equipFurnitureDatas[((int)data.Type)].RemoveSlot();
+
         _equipFurnitureDatas[(int)data.Type] = data;
+        data.AddSlot();
+
         OnChangeFurnitureHandler?.Invoke(data.Type);
     }
 
     public static void DisarmEquipFurniture(FurnitureType type)
     {
+        if (_equipFurnitureDatas[(int)type] != null)
+            _equipFurnitureDatas[((int)type)].RemoveSlot();
+
         _equipFurnitureDatas[(int)type] = null;
         OnChangeFurnitureHandler?.Invoke(type);
     }

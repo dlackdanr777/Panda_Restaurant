@@ -17,7 +17,7 @@ public class AutoTipCollectSkill : SkillBase
 
     public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        if (GameManager.Instance.MaxTipValue <= UserInfo.Tip)
+        if (GameManager.Instance.MaxTipVolume <= UserInfo.Tip)
         {
             UserInfo.TipCollection();
         }

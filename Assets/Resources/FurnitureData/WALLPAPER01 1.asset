@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8d5b01ba01f2d543ad1f5bf412e3d42, type: 3}
+  m_Name: WALLPAPER01 1
+  m_EditorClassIdentifier: 
+  _type: 7
+  _sprite: {fileID: 1156376403504076984, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
+  _id: FRAME01
+  _setId: SET01
+  _name: "\uD3C9\uBC94\uD55C \uC561\uC790"
+  _effectDescription: "1\uBD84\uB2F9 \uD68D\uB4DD \uD301 \uC99D\uAC00(3)"
+  _addScore: 5
+  _moneyType: 0
+  _buyMinPrice: 6000
+  _buyMinScore: 0
+  _tipPerMinute: 3

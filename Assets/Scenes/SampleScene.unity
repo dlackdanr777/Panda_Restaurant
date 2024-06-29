@@ -2060,11 +2060,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e658a5c1194a8ef4b876a2aa72533860, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _maxTipValue: 500
+  _maxTipVolume: 0
   _cookingSpeedMul: 1
   _tipMul: 1
   _foodPriceMul: 1
   _addScore: 0
+  _moneyPerMinute: 0
+  _tipPerMinute: 0
 --- !u!4 &257354539
 Transform:
   m_ObjectHideFlags: 0
@@ -16362,7 +16364,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1735462077
   m_SortingLayer: 1
-  m_SortingOrder: 2
+  m_SortingOrder: 3
   m_Sprite: {fileID: 664133168373685104, guid: ef2a16e1c84a2ac40a5c0076731fa952, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -17039,7 +17041,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1735462077
   m_SortingLayer: 1
-  m_SortingOrder: 1
+  m_SortingOrder: 3
   m_Sprite: {fileID: 653768925269939167, guid: ef2a16e1c84a2ac40a5c0076731fa952, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -17155,7 +17157,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1735462077
   m_SortingLayer: 1
-  m_SortingOrder: 1
+  m_SortingOrder: 2
   m_Sprite: {fileID: -1408287563081556298, guid: ef2a16e1c84a2ac40a5c0076731fa952,
     type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -17614,7 +17616,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1735462077
   m_SortingLayer: 1
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_Sprite: {fileID: -2425655232681014808, guid: ef2a16e1c84a2ac40a5c0076731fa952,
     type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -17729,7 +17731,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1735462077
   m_SortingLayer: 1
-  m_SortingOrder: 1
+  m_SortingOrder: 2
   m_Sprite: {fileID: 2052132274629580107, guid: ef2a16e1c84a2ac40a5c0076731fa952,
     type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}

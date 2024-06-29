@@ -1,8 +1,6 @@
 using UnityEngine;
 
-
-[CreateAssetMenu(fileName = "FurnitureData", menuName = "Scriptable Object/FurnitureData")]
-public class FurnitureData : ScriptableObject
+public abstract class FurnitureData : ScriptableObject
 {
     [SerializeField] private FurnitureType _type;
     public FurnitureType Type => _type;
@@ -19,11 +17,16 @@ public class FurnitureData : ScriptableObject
     [SerializeField] private string _name;
     public string Name => _name;
 
+    [TextArea][SerializeField] private string _effectDescription;
+    public string EffectDescription => _effectDescription;
+
     [SerializeField] private int _addScore;
     public int AddScore => _addScore;
 
-    [SerializeField] private int _moneyPerMinute;
-    public int MoneyPerMinute => _moneyPerMinute;
+
+    public abstract void AddSlot();
+    public abstract void RemoveSlot();
+
 
 
     [Space] [Header("Buy Option")]
