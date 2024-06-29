@@ -26,7 +26,7 @@ public class UIRestaurantAdmin : MobileUIView
 
     [Space]
     [Header("Tabs")]
-    [SerializeField] private GameObject _furnitureTab;
+    [SerializeField] private UIFurnitureTab _furnitureTab;
     [SerializeField] private UIStaffTab _staffTab;
     [SerializeField] private UIRecipeTab _recipeTab;
     [SerializeField] private GameObject _kitchenTab;
@@ -56,6 +56,7 @@ public class UIRestaurantAdmin : MobileUIView
         _kitchenButton.OnClickEvent(KitchenButtonClicked);
         _staffTab.Init();
         _recipeTab.Init();
+        _furnitureTab.Init();
         SetBackgroundImage(BackgroundType.Furniture);
 
 
