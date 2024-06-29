@@ -260,53 +260,10 @@ public class UIStaff : MobileUIView
         }
     }
 
-
-    public void ShowUIStaffManager()
+    public void ShowUIStaff(StaffType type)
     {
         _uiNav.Push("UIStaff");
-        SetStaffData(StaffType.Manager);
-        SetStaffPreview();
-    }
-
-    public void ShowUIStaffWaiter()
-    {
-        _uiNav.Push("UIStaff");
-        SetStaffData(StaffType.Waiter);
-        SetStaffPreview();
-    }
-
-    public void ShowUIStaffChef()
-    {
-        _uiNav.Push("UIStaff");
-        SetStaffData(StaffType.Chef);
-        SetStaffPreview();
-    }
-
-    public void ShowUIStaffCleaner()
-    {
-        _uiNav.Push("UIStaff");
-        SetStaffData(StaffType.Cleaner);
-        SetStaffPreview();
-    }
-
-    public void ShowUIStaffMarketer()
-    {
-        _uiNav.Push("UIStaff");
-        SetStaffData(StaffType.Marketer);
-        SetStaffPreview();
-    }
-
-    public void ShowUIStaffGuard()
-    {
-        _uiNav.Push("UIStaff");
-        SetStaffData(StaffType.Guard);
-        SetStaffPreview();
-    }
-
-    public void ShowUIStaffServer()
-    {
-        _uiNav.Push("UIStaff");
-        SetStaffData(StaffType.Server);
+        SetStaffData(type);
         SetStaffPreview();
     }
 

@@ -22,7 +22,7 @@ public class UIStaffTab : MonoBehaviour
             int index = i;
             UIStaffTabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
-            slot.Init(() => OnSlotClicked(StaffType.Manager + index));
+            slot.Init(() => _uiStaff.ShowUIStaff((StaffType)index));
             slot.SetData(StaffType.Manager + index);
         }
 
@@ -37,40 +37,4 @@ public class UIStaffTab : MonoBehaviour
             _slots[i].SetData(StaffType.Manager + i);
         }
     }
-
-
-    private void OnSlotClicked(StaffType type)
-    {
-        switch (type)
-        {
-            case StaffType.Manager:
-                _uiStaff.ShowUIStaffManager();
-                break;
-
-            case StaffType.Waiter:
-                _uiStaff.ShowUIStaffWaiter();
-                break;
-
-            case StaffType.Chef:
-                _uiStaff.ShowUIStaffChef();
-                break;
-
-            case StaffType.Cleaner:
-                _uiStaff.ShowUIStaffCleaner();
-                break;
-
-            case StaffType.Marketer:
-                _uiStaff.ShowUIStaffMarketer();
-                break;
-
-            case StaffType.Guard:
-                _uiStaff.ShowUIStaffGuard();
-                break;
-
-            case StaffType.Server:
-                _uiStaff.ShowUIStaffServer();
-                break;
-        }
-    }
-
 }

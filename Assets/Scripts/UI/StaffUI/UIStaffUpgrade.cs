@@ -7,6 +7,7 @@ using Muks.Tween;
 
 public class UIStaffUpgrade : MobileUIView
 {
+    [Header("Components")]
     [SerializeField] private Image _staffImage;
     [SerializeField] private UIButtonAndText _upgradeButton;
     [SerializeField] private TextMeshProUGUI _nameText;

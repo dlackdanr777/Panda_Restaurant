@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class UIFurnitureTab : MonoBehaviour
 {
-    [SerializeField] private UIStaff _uiStaff;
+    [SerializeField] private UIFurniture _uiFurniture;
 
     [Header("Slots")]
     [SerializeField] private UIFurnitureTabSlot _slotPrefab;
@@ -19,7 +19,7 @@ public class UIFurnitureTab : MonoBehaviour
             int index = i;
             UIFurnitureTabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
-            slot.Init(() => OnSlotClicked(FurnitureType.Table1 + index));
+            slot.Init(() => _uiFurniture.ShowUIFurniture((FurnitureType)index));
             slot.SetData(FurnitureType.Table1 + index);
         }
 
