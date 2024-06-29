@@ -1098,7 +1098,7 @@ GameObject:
   - component: {fileID: 51307746}
   - component: {fileID: 51307745}
   m_Layer: 5
-  m_Name: Staff Type Background
+  m_Name: Type Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1171,8 +1171,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 72960052}
-  - component: {fileID: 72960054}
   - component: {fileID: 72960053}
+  - component: {fileID: 72960055}
   m_Layer: 5
   m_Name: Furniture UI
   m_TagString: Untagged
@@ -1212,7 +1212,7 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
---- !u!114 &72960054
+--- !u!114 &72960055
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1221,27 +1221,26 @@ MonoBehaviour:
   m_GameObject: {fileID: 72960051}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cdf72e2022106a44e83b5289fa827387, type: 3}
+  m_Script: {fileID: 11500000, guid: 023fb0ed4058fcb41896f21620d2e2e0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   VisibleState: 0
   _uiRestaurantAdmin: {fileID: 1224807818}
-  _staffController: {fileID: 666776745}
-  _uiStaffPreview: {fileID: 576267119}
-  _uiStaffUpgrade: {fileID: 1031424937}
+  _furnitureSystem: {fileID: 1916410802}
+  _uiFurniturePreview: {fileID: 576267120}
   _leftArrowButton: {fileID: 1250679418}
   _rightArrowButton: {fileID: 555928081}
   _canvasGroup: {fileID: 72960053}
-  _staffTypeText1: {fileID: 855240048}
-  _staffTypeText2: {fileID: 735680319}
+  _furnitureTypeText1: {fileID: 855240048}
+  _furnitureTypeText2: {fileID: 735680319}
   _animeUI: {fileID: 2041989366}
   _showDuration: 0.3
   _showTweenMode: 15
   _hideDuration: 0.3
   _hideTweenMode: 14
-  _createSlotValue: 30
+  _createSlotValue: 50
   _slotParnet: {fileID: 1703428999}
-  _slotPrefab: {fileID: 2672950526626870092, guid: 69c29292796594d4a9bf74bf37fa8a2b,
+  _slotPrefab: {fileID: 5485483690408162049, guid: cd297380a0ec743488ff6c9f0a29c9c6,
     type: 3}
 --- !u!1 &83360955
 GameObject:
@@ -3149,7 +3148,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2fe2553798c1b9b4ea6d36e0ded9bccc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _uiFurniture: {fileID: 0}
+  _uiFurniture: {fileID: 72960055}
   _slotPrefab: {fileID: 2037825754659242489, guid: 5c89534cdc51235408f3c40f51cb8c64,
     type: 3}
   _slotParent: {fileID: 45164126}
@@ -4539,7 +4538,7 @@ GameObject:
   - component: {fileID: 455328841}
   - component: {fileID: 455328840}
   m_Layer: 5
-  m_Name: Staff Name Text
+  m_Name: ' Name Text'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5768,8 +5767,9 @@ GameObject:
   m_Component:
   - component: {fileID: 576267118}
   - component: {fileID: 576267119}
+  - component: {fileID: 576267120}
   m_Layer: 5
-  m_Name: UI Staff Preview
+  m_Name: UI Furniture Preview
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5810,6 +5810,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _staffImage: {fileID: 339187970}
   _staffNameText: {fileID: 455328840}
+  _description: {fileID: 1943535668}
+  _descriptionObj: {fileID: 497376942}
+  _levelText: {fileID: 606386307}
+  _effectDescription: {fileID: 1364058612}
+  _equipScoreText: {fileID: 478712727}
+  _equipTipText: {fileID: 1426020675}
+  _skillDescription: {fileID: 154850929}
+  _usingButton: {fileID: 1509041351}
+  _equipButton: {fileID: 1631855461}
+  _buyButton: {fileID: 83360957}
+  _upgradeButton: {fileID: 635776361}
+--- !u!114 &576267120
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 576267117}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a7436ea1113686142b56e6f216c682b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _image: {fileID: 339187970}
+  _nameText: {fileID: 455328840}
   _description: {fileID: 1943535668}
   _descriptionObj: {fileID: 497376942}
   _levelText: {fileID: 606386307}
@@ -6563,7 +6588,7 @@ GameObject:
   - component: {fileID: 641055062}
   - component: {fileID: 641055061}
   m_Layer: 5
-  m_Name: StaffType Background
+  m_Name: Type Background
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7323,7 +7348,7 @@ GameObject:
   - component: {fileID: 735680320}
   - component: {fileID: 735680319}
   m_Layer: 5
-  m_Name: Staff Type Text
+  m_Name: Type Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7689,7 +7714,7 @@ GameObject:
   - component: {fileID: 742697381}
   - component: {fileID: 742697380}
   m_Layer: 5
-  m_Name: Staff Name Image
+  m_Name: Name Image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8474,6 +8499,8 @@ MonoBehaviour:
     UIView: {fileID: 1810491616}
   - Name: UIStaffUpgrade
     UIView: {fileID: 1031424937}
+  - Name: UIFurniture
+    UIView: {fileID: 72960055}
 --- !u!114 &853526497
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8498,7 +8525,7 @@ GameObject:
   - component: {fileID: 855240049}
   - component: {fileID: 855240048}
   m_Layer: 5
-  m_Name: Staff Type Text
+  m_Name: Type Text
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -10789,7 +10816,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80e980f0a5541d04d8db13a3230400f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _bindId: HideStaffUI
+  _bindId: HideFurnitureUI
 --- !u!114 &1111462201
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12015,7 +12042,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80e980f0a5541d04d8db13a3230400f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _bindId: HideNoAnimeStaffUI
+  _bindId: HideNoAnimeFurnitureUI
 --- !u!114 &1233210957
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -121,8 +121,8 @@ public class UIFurniture : MobileUIView
                 break;
 
             case FurnitureType.Table3:
-                _furnitureTypeText1.text = "테이블2";
-                _furnitureTypeText2.text = "테이블2";
+                _furnitureTypeText1.text = "테이블3";
+                _furnitureTypeText2.text = "테이블3";
                 break;
 
             case FurnitureType.Table4:
@@ -189,14 +189,15 @@ public class UIFurniture : MobileUIView
 
             else
             {
-                if (UserInfo.Score < list[i].BuyMinScore)
+                if (list[i].BuyMinScore <= UserInfo.Score && list[i].BuyMinPrice <= UserInfo.Money)
                 {
-                    _slots[i].SetLowReputation(list[i]);
+                    _slots[i].SetEnoughMoney(list[i]);
                     continue;
                 }
 
-                _slots[i].SetEnoughMoney(list[i]);
+                _slots[i].SetLowReputation(list[i]);
                 continue;
+
             }
         }
 
@@ -256,7 +257,7 @@ public class UIFurniture : MobileUIView
 
     public void ShowUIFurniture(FurnitureType type)
     {
-        _uiNav.Push("UIStaff");
+        _uiNav.Push("UIFurniture");
         SetFurnitureData(type);
         SetFurniturePreview();
     }

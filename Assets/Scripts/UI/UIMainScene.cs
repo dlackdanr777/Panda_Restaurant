@@ -26,6 +26,10 @@ public class UIMainScene : MonoBehaviour
         DataBind.SetUnityActionValue("ShowStaffUpgradeUI", OnShowStaffUpgradeUI);
         DataBind.SetUnityActionValue("HideStaffUpgradeUI", OnHideStaffUpgradeUI);
         DataBind.SetUnityActionValue("HideNoAnimeStaffUpgradeUI", OnHideNoAnimeStaffUpgradeUI);
+
+        DataBind.SetUnityActionValue("ShowFurnitureUI", OnShowFurnitureUI);
+        DataBind.SetUnityActionValue("HideFurnitureUI", OnHideFurnitureUI);
+        DataBind.SetUnityActionValue("HideNoAnimeFurnitureUI", OnHideNoAnimeFurnitureUI);
     }
 
 
@@ -68,5 +72,20 @@ public class UIMainScene : MonoBehaviour
     private void OnHideNoAnimeStaffUpgradeUI()
     {
         _uiNav.PopNoAnime("UIStaffUpgrade");
+    }
+
+    private void OnShowFurnitureUI()
+    {
+        _uiNav.Push("UIFurniture");
+    }
+
+    private void OnHideFurnitureUI()
+    {
+        _uiNav.Pop("UIFurniture");
+    }
+
+    private void OnHideNoAnimeFurnitureUI()
+    {
+        _uiNav.PopNoAnime("UIFurniture");
     }
 }

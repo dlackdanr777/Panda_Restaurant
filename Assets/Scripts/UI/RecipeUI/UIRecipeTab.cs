@@ -55,13 +55,13 @@ public class UIRecipeTab : MonoBehaviour
                 continue;
             }
 
-            if(UserInfo.Score < data.BuyMinScore)
+            if(data.BuyMinScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
             {
-                _slots[i].SetLowReputation(data);
+                _slots[i].SetBuy(data);
                 continue;
             }
-
-            _slots[i].SetBuy(data);
+            _slots[i].SetLowReputation(data);
+            continue;
         }
     }
 

@@ -167,13 +167,13 @@ public class UIStaff : MobileUIView
 
             else
             {
-                if (UserInfo.Score < list[i].BuyMinScore)
+                if (list[i].BuyMinScore <= UserInfo.Score && list[i].MoneyData.Price <= UserInfo.Money)
                 {
-                    _slots[i].SetLowReputation(list[i]);
+                    _slots[i].SetEnoughMoney(list[i]);
                     continue;
                 }
 
-                _slots[i].SetEnoughMoney(list[i]);
+                _slots[i].SetLowReputation(list[i]);
                 continue;
             }
         }
