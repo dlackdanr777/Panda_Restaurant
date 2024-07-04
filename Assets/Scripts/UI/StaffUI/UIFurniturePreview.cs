@@ -6,18 +6,15 @@ using UnityEngine.UI;
 public class UIFurniturePreview : MonoBehaviour
 {
     [SerializeField] private Image _image;
+    [SerializeField] private GameObject[] _hideObjs;
     [SerializeField] private TextMeshProUGUI _nameText;
-    [SerializeField] private TextMeshProUGUI _description;
-    [SerializeField] private GameObject _descriptionObj;
-    [SerializeField] private TextMeshProUGUI _levelText;
+    [SerializeField] private TextMeshProUGUI _setEffectDescription;
+    [SerializeField] private TextMeshProUGUI _addScoreDescription;
+    [SerializeField] private TextMeshProUGUI _effectText;
     [SerializeField] private TextMeshProUGUI _effectDescription;
-    [SerializeField] private TextMeshProUGUI _equipScoreText;
-    [SerializeField] private TextMeshProUGUI _equipTipText;
-    [SerializeField] private TextMeshProUGUI _skillDescription;
     [SerializeField] private UIButtonAndText _usingButton;
     [SerializeField] private UIButtonAndText _equipButton;
     [SerializeField] private UIButtonAndText _buyButton;
-    [SerializeField] private UIButtonAndText _upgradeButton;
 
     private Action<FurnitureData> _onBuyButtonClicked;
     private Action<FurnitureData> _onEquipButtonClicked;
@@ -42,30 +39,40 @@ public class UIFurniturePreview : MonoBehaviour
         _usingButton.gameObject.SetActive(false);
         _equipButton.gameObject.SetActive(false);
         _buyButton.gameObject.SetActive(false);
-        _upgradeButton.gameObject.SetActive(false);
 
         if (data == null)
         {
-            _image.gameObject.SetActive(false);
-            _nameText.gameObject.SetActive(false);
-            _descriptionObj.gameObject.SetActive(false);
-            _description.gameObject.SetActive(false);
+            for(int i = 0, cnt = _hideObjs.Length; i < cnt; ++i)
+            {
+                _hideObjs[i].SetActive(false);
+            }
             return;
         }
+        for (int i = 0, cnt = _hideObjs.Length; i < cnt; ++i)
+        {
+            _hideObjs[i].SetActive(true);
+        }
 
-        _image.gameObject.SetActive(true);
-        _nameText.gameObject.SetActive(true);
-        _description.gameObject.SetActive(true);
-        _descriptionObj.gameObject.SetActive(true);
         _image.sprite = data.Sprite;
         _nameText.text = data.Name;
-        _description.text = string.Empty;
+        _setEffectDescription.text = "아직 없습니다.";
+        _addScoreDescription.text = data.AddScore.ToString();
+        _effectDescription.text = data.EffectDescription.ToString();
 
+        if (data is MoneyPerMinuteFurnitureData)
+            _effectText.text = "분당 수입 :";
 
-        if(UserInfo.IsEquipFurniture(data))
+        else if (data is TipPerMinuteFurnitureData)
+            _effectText.text = "분당 팁 :";
+
+        else if (data is MaxTipVolumeFurnitureData)
+            _effectText.text = "팁 한도 :";
+        
+
+        if (UserInfo.IsEquipFurniture(data))
         {
             _usingButton.gameObject.SetActive(true);
-            _usingButton.SetText("사용중");
+            _usingButton.SetText("사용 중");
             _usingButton.Interactable(false);
             _image.color = new Color(1, 1, 1);
         }
@@ -74,7 +81,7 @@ public class UIFurniturePreview : MonoBehaviour
             if(UserInfo.IsGiveFurniture(data))
             {
                 _equipButton.gameObject.SetActive(true);
-                _equipButton.SetText("사용하기");
+                _equipButton.SetText("사용 하기");
                 _equipButton.RemoveAllListeners();
                 _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
                 _image.color = new Color(1, 1, 1);

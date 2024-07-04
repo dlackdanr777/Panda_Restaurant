@@ -9,6 +9,7 @@ public class UIRecipeSlot : MonoBehaviour
     [SerializeField] private Image _image;
     [SerializeField] private Button _button;
     [SerializeField] private GameObject _alarmImage;
+    [SerializeField] private GameObject _checkImage;
     [SerializeField] private UIImageAndText _operateImage;
     [SerializeField] private UIImageAndText _enoughMoneyImage;
 
@@ -22,6 +23,7 @@ public class UIRecipeSlot : MonoBehaviour
     public void SetOperate(FoodData data)
     {
         _operateImage.gameObject.SetActive(true);
+        _checkImage.gameObject.SetActive(true);
         _alarmImage.SetActive(false);
         _enoughMoneyImage.gameObject.SetActive(false);
 
@@ -35,8 +37,9 @@ public class UIRecipeSlot : MonoBehaviour
     public void SetBuy(FoodData data)
     {
         _enoughMoneyImage.gameObject.SetActive(true);
-        _operateImage.gameObject.SetActive(false);
         _alarmImage.SetActive(true);
+        _operateImage.gameObject.SetActive(false);
+        _checkImage.gameObject.SetActive(false);
 
         _image.sprite = data.Sprite;
         _enoughMoneyImage.SetText(Utility.ConvertToNumber(data.BuyPrice));
@@ -50,6 +53,7 @@ public class UIRecipeSlot : MonoBehaviour
         _enoughMoneyImage.gameObject.SetActive(true);
         _operateImage.gameObject.SetActive(false);
         _alarmImage.SetActive(false);
+        _checkImage.gameObject.SetActive(false);
 
         _image.sprite = data.Sprite;
         _enoughMoneyImage.SetText(Utility.ConvertToNumber(data.BuyPrice));

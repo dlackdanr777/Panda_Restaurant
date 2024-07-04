@@ -112,7 +112,7 @@ public class UIFurniture : MobileUIView
         {
             case FurnitureType.Table1:
                 _furnitureTypeText1.text = "테이블1";
-                _furnitureTypeText2.text = "테이블2";
+                _furnitureTypeText2.text = "테이블1";
                 break;
 
             case FurnitureType.Table2:
