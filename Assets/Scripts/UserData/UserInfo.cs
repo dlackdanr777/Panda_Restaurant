@@ -40,6 +40,7 @@ public static class UserInfo
     private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
     private static List<string> _giveFurnitureList = new List<string>();
     private static HashSet<string> _giveFurnitureSet = new HashSet<string>();
+    private static FurnitureSetData _enabledSetData;
 
 
     #region UserData
@@ -406,6 +407,7 @@ public static class UserInfo
 
         _equipFurnitureDatas[(int)data.Type] = data;
         data.AddSlot();
+        CheckFurnitureSetEnabled();
 
         OnChangeFurnitureHandler?.Invoke(data.Type);
     }
@@ -425,6 +427,7 @@ public static class UserInfo
 
         _equipFurnitureDatas[(int)data.Type] = data;
         data.AddSlot();
+        CheckFurnitureSetEnabled();
 
         OnChangeFurnitureHandler?.Invoke(data.Type);
     }
@@ -441,6 +444,32 @@ public static class UserInfo
     public static FurnitureData GetEquipFurniture(FurnitureType type)
     {
         return _equipFurnitureDatas[(int)type];
+    }
+
+    private static void CheckFurnitureSetEnabled()
+    {
+        string setId = string.Empty;
+        for(int i = 0, cnt = _equipFurnitureDatas.Length; i < cnt; i++)
+        {
+            if (_equipFurnitureDatas[i] == null)
+                return;
+
+            if (string.IsNullOrEmpty(setId))
+            {
+                setId = _equipFurnitureDatas[i].SetId;
+                continue;
+            }
+
+            if (setId != _equipFurnitureDatas[i].SetId)
+                return;
+        }
+
+        if(_enabledSetData != null)
+            _enabledSetData.Deactivate();
+
+        _enabledSetData = FurnitureDataManager.Instance.GetFurnitureSetData(setId);
+        _enabledSetData.Activate();
+        TimedDisplayManager.Instance.ShowText(_enabledSetData.Id + " 효과가 적용되었습니다.");
     }
 
 

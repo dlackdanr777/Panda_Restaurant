@@ -18,7 +18,7 @@ MonoBehaviour:
   _id: TABLE01_1
   _setId: SET01
   _name: "\uD3C9\uBC94\uD55C \uD14C\uC774\uBE14"
-  _effectDescription: "1\uBD84\uB2F9 \uC218\uC785 \uC99D\uAC00(2)"
+  _effectDescription: "\uBD84\uB2F9 \uC218\uC785 \uC99D\uAC00(2)"
   _addScore: 0
   _moneyType: 0
   _buyMinPrice: 2000

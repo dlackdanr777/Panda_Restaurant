@@ -18,7 +18,7 @@ MonoBehaviour:
   _id: RACK01
   _setId: SET01
   _name: "\uD3C9\uBC94\uD55C \uC120\uBC18"
-  _effectDescription: "1\uBD84\uB2F9 \uD68D\uB4DD \uD301 \uC99D\uAC00(2)"
+  _effectDescription: "\uBD84\uB2F9 \uD68D\uB4DD \uD301 \uC99D\uAC00(2)"
   _addScore: 5
   _moneyType: 0
   _buyMinPrice: 6500

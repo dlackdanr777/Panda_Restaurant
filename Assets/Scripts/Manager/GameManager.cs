@@ -120,8 +120,26 @@ public class GameManager : MonoBehaviour
         UserInfo.GiveFurniture("TABLE01_3");
         UserInfo.SetEquipFurniture("TABLE01_3");
 
+        UserInfo.GiveFurniture("TABLE01_4");
+        UserInfo.SetEquipFurniture("TABLE01_4");
+
+        UserInfo.GiveFurniture("TABLE01_5");
+        UserInfo.SetEquipFurniture("TABLE01_5");
+
+        UserInfo.GiveFurniture("FLOWER01");
+        UserInfo.SetEquipFurniture("FLOWER01");
+
+        UserInfo.GiveFurniture("RACK01");
+        UserInfo.SetEquipFurniture("RACK01");
+
         UserInfo.GiveFurniture("WALLPAPER01");
         UserInfo.SetEquipFurniture("WALLPAPER01");
+
+        UserInfo.GiveFurniture("ACC01");
+        UserInfo.SetEquipFurniture("ACC01");
+
+        UserInfo.GiveFurniture("FRAME01");
+        UserInfo.SetEquipFurniture("FRAME01");
 
         UserInfo.GiveFurniture("COUNTER01");
         UserInfo.SetEquipFurniture("COUNTER01");

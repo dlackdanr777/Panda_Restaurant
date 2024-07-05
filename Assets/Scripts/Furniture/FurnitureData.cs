@@ -23,6 +23,7 @@ public abstract class FurnitureData : ScriptableObject
     [SerializeField] private int _addScore;
     public int AddScore => _addScore;
 
+    public abstract int EffectValue { get; }
 
     public abstract void AddSlot();
     public abstract void RemoveSlot();

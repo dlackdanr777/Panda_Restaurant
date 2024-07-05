@@ -10,7 +10,7 @@ public class TipPerMinuteFurnitureData : FurnitureData
     [Space]
     [Header("TipPerMinuteData")]
     [SerializeField] private int _tipPerMinute;
-    public int MoneyPerMinute => _tipPerMinute;
+    public override int EffectValue => _tipPerMinute;
 
     public override void AddSlot()
     {

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f8d5b01ba01f2d543ad1f5bf412e3d42, type: 3}
+  m_Name: FLOWER01
+  m_EditorClassIdentifier: 
+  _type: 0
+  _sprite: {fileID: -2910185967387764405, guid: 30c9b0483c3f0e647b43e8e05d115fee,
+    type: 3}
+  _id: FLOWER01
+  _setId: SET01
+  _name: "\uD3C9\uBC94\uD55C \uD654\uBD84"
+  _effectDescription: "\uBD84\uB2F9 \uD68D\uB4DD \uD301 \uC99D\uAC00(2)"
+  _addScore: 4
+  _moneyType: 0
+  _buyMinPrice: 4000
+  _buyMinScore: 50
+  _tipPerMinute: 5

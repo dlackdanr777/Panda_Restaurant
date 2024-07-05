@@ -10,15 +10,15 @@ public class MaxTipVolumeFurnitureData : FurnitureData
     [Space]
     [Header("MaxTipVolumeData")]
     [SerializeField] private int _maxTipVolume;
-    public int MaxTipVolume => _maxTipVolume;
+    public override int EffectValue => _maxTipVolume;
 
     public override void AddSlot()
     {
-        GameManager.Instance.SetMaxTipVolume(MaxTipVolume);
+        GameManager.Instance.SetMaxTipVolume(_maxTipVolume);
     }
 
     public override void RemoveSlot()
     {
-        GameManager.Instance.SetMaxTipVolume(-MaxTipVolume);
+        GameManager.Instance.SetMaxTipVolume(-_maxTipVolume);
     }
 }
