@@ -8,10 +8,11 @@ public class UIRecipeSlot : MonoBehaviour
 {
     [SerializeField] private Image _image;
     [SerializeField] private Button _button;
+    [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private GameObject _alarmImage;
-    [SerializeField] private GameObject _checkImage;
-    [SerializeField] private UIImageAndText _operateImage;
-    [SerializeField] private UIImageAndText _enoughMoneyImage;
+    [SerializeField] private GameObject _lockImage;
+    [SerializeField] private UIImageAndText _buyMinScoreImage;
+    [SerializeField] private UIImageAndText _buyMinMoneyImage;
 
     private Action<FoodData> _onButtonClicked;
 
@@ -22,13 +23,13 @@ public class UIRecipeSlot : MonoBehaviour
 
     public void SetOperate(FoodData data)
     {
-        _operateImage.gameObject.SetActive(true);
-        _checkImage.gameObject.SetActive(true);
+        _buyMinScoreImage.gameObject.SetActive(false);
+        _lockImage.gameObject.SetActive(false);
         _alarmImage.SetActive(false);
-        _enoughMoneyImage.gameObject.SetActive(false);
+        _buyMinMoneyImage.gameObject.SetActive(false);
 
         _image.sprite = data.Sprite;
-        _operateImage.SetText(data.Name);
+        _nameText.text = data.Name;
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
     }
@@ -36,13 +37,14 @@ public class UIRecipeSlot : MonoBehaviour
 
     public void SetBuy(FoodData data)
     {
-        _enoughMoneyImage.gameObject.SetActive(true);
+        _buyMinMoneyImage.gameObject.SetActive(true);
         _alarmImage.SetActive(true);
-        _operateImage.gameObject.SetActive(false);
-        _checkImage.gameObject.SetActive(false);
+        _buyMinScoreImage.gameObject.SetActive(false);
+        _lockImage.gameObject.SetActive(false);
 
         _image.sprite = data.Sprite;
-        _enoughMoneyImage.SetText(Utility.ConvertToNumber(data.BuyPrice));
+        _nameText.text = data.Name;
+        _buyMinMoneyImage.SetText(Utility.ConvertToNumber(data.BuyPrice));
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
@@ -50,13 +52,14 @@ public class UIRecipeSlot : MonoBehaviour
 
     public void SetLowReputation(FoodData data)
     {
-        _enoughMoneyImage.gameObject.SetActive(true);
-        _operateImage.gameObject.SetActive(false);
+        _buyMinScoreImage.gameObject.SetActive(true);
+        _lockImage.gameObject.SetActive(true);
+        _buyMinMoneyImage.gameObject.SetActive(false);
         _alarmImage.SetActive(false);
-        _checkImage.gameObject.SetActive(false);
 
         _image.sprite = data.Sprite;
-        _enoughMoneyImage.SetText(Utility.ConvertToNumber(data.BuyPrice));
+        _nameText.text = data.Name;
+        _buyMinScoreImage.SetText(Utility.ConvertToNumber(data.BuyMinScore));
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));

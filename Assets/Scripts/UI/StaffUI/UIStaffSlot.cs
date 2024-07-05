@@ -1,18 +1,19 @@
 using System;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class UIStaffSlot : MonoBehaviour
 {
     [SerializeField] private Image _image;
-    [SerializeField] private TextMeshProUGUI _text;
     [SerializeField] private Button _button;
+    [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private GameObject _alarmImage;
-    [SerializeField] private GameObject _useImage;
-    [SerializeField] private GameObject _operateImage;
-    [SerializeField] private GameObject _enoughMoneyImage;
+    [SerializeField] private GameObject _lockImage;
+    [SerializeField] private UIImageAndText _useImage;
+    [SerializeField] private UIImageAndText _operateImage;
+    [SerializeField] private UIImageAndText _buyMinScoreImage;
+    [SerializeField] private UIImageAndText _buyMinMoneyImage;
 
     private Action<StaffData> _onButtonClicked;
 
@@ -23,14 +24,17 @@ public class UIStaffSlot : MonoBehaviour
 
     public void SetUse(StaffData data)
     {
-        _useImage.SetActive(true);
-        _operateImage.SetActive(false);
-        _enoughMoneyImage.SetActive(false);
+        _useImage.gameObject.SetActive(true);
+        _operateImage.gameObject.SetActive(false);
+        _buyMinMoneyImage.gameObject.SetActive(false);
+        _buyMinScoreImage.gameObject.SetActive(false);
         _alarmImage.SetActive(false);
+        _lockImage.SetActive(false);
 
         _image.sprite = data.Sprite;
+        _nameText.text = data.Name;
         _image.color = new Color(1, 1, 1, 1);
-        _text.text = "사용중";
+        _useImage.SetText("사용중");
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
@@ -38,14 +42,17 @@ public class UIStaffSlot : MonoBehaviour
 
     public void SetOperate(StaffData data)
     {
-        _operateImage.SetActive(true);
-        _useImage.SetActive(false);
-        _enoughMoneyImage.SetActive(false);
+        _operateImage.gameObject.SetActive(true);
+        _useImage.gameObject.SetActive(false);
+        _buyMinMoneyImage.gameObject.SetActive(false);
+        _buyMinScoreImage.gameObject.SetActive(false);
         _alarmImage.SetActive(false);
+        _lockImage.SetActive(false);
 
         _image.sprite = data.Sprite;
+        _nameText.text = data.Name;
         _image.color = new Color(1, 1, 1, 1);
-        _text.text = data.Name;
+        _operateImage.SetText("사용");
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
@@ -54,14 +61,17 @@ public class UIStaffSlot : MonoBehaviour
 
     public void SetEnoughMoney(StaffData data)
     {
-        _enoughMoneyImage.SetActive(true);
+        _buyMinMoneyImage.gameObject.SetActive(true);
         _alarmImage.SetActive(true);
-        _useImage.SetActive(false);
-        _operateImage.SetActive(false);
+        _lockImage.SetActive(false);
+        _useImage.gameObject.SetActive(false);
+        _operateImage.gameObject.SetActive(false);
+        _buyMinScoreImage.gameObject.SetActive(false);
 
         _image.sprite = data.Sprite;
+        _nameText.text = data.Name;
         _image.color = new Color(0, 0, 0, 1);
-        _text.text = Utility.ConvertToNumber(data.MoneyData.Price);
+        _buyMinMoneyImage.SetText(Utility.ConvertToNumber(data.MoneyData.Price));
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
@@ -69,14 +79,17 @@ public class UIStaffSlot : MonoBehaviour
 
     public void SetLowReputation(StaffData data)
     {
-        _enoughMoneyImage.SetActive(true);
+        _buyMinScoreImage.gameObject.SetActive(true);
+        _lockImage.SetActive(true);
         _alarmImage.SetActive(false);
-        _useImage.SetActive(false);
-        _operateImage.SetActive(false);
+        _useImage.gameObject.SetActive(false);
+        _operateImage.gameObject.SetActive(false);
+        _buyMinMoneyImage.gameObject.SetActive(true);
 
         _image.sprite = data.Sprite;
+        _nameText.text = data.Name;
         _image.color = new Color(0, 0, 0, 1);
-        _text.text = Utility.ConvertToNumber(data.MoneyData.Price);
+        _buyMinScoreImage.SetText(Utility.ConvertToNumber(data.BuyMinScore));
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));

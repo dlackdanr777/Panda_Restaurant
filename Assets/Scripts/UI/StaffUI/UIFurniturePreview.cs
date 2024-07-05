@@ -56,6 +56,7 @@ public class UIFurniturePreview : MonoBehaviour
             }
             return;
         }
+
         for (int i = 0, cnt = _hideObjs.Length; i < cnt; ++i)
         {
             _hideObjs[i].SetActive(true);
