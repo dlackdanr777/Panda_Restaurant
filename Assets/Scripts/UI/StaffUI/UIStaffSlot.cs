@@ -84,7 +84,7 @@ public class UIStaffSlot : MonoBehaviour
         _alarmImage.SetActive(false);
         _useImage.gameObject.SetActive(false);
         _operateImage.gameObject.SetActive(false);
-        _buyMinMoneyImage.gameObject.SetActive(true);
+        _buyMinMoneyImage.gameObject.SetActive(false);
 
         _image.sprite = data.Sprite;
         _nameText.text = data.Name;

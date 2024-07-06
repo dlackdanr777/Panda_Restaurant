@@ -63,6 +63,7 @@ public class UIStaffPreview : MonoBehaviour
             _ownDescription.gameObject.SetActive(true);
             _lackDescription.gameObject.SetActive(false);
             _ownDescription.SetStaffData(data, _onEquipButtonClicked, _onUpgradeButtonClicked);
+            _staffImage.color = Color.white;
         }
 
         else
@@ -70,6 +71,7 @@ public class UIStaffPreview : MonoBehaviour
             _lackDescription.gameObject.SetActive(true);
             _ownDescription.gameObject.SetActive(false);
             _lackDescription.SetStaffData(data, _onBuyButtonClicked);
+            _staffImage.color = Color.black;
         } 
     }
 

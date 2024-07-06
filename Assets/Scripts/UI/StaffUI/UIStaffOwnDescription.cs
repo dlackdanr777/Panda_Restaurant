@@ -53,7 +53,7 @@ public class UIStaffOwnDescription : MonoBehaviour
             _useButton.gameObject.SetActive(true);
             _equipButton.gameObject.SetActive(false);
             _useButton.Interactable(false);
-            _equipButton.SetText("사용중");
+            _useButton.SetText("사용중");
         }
         else
         {
