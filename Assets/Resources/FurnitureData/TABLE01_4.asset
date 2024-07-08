@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: TABLE01_4
   m_EditorClassIdentifier: 
   _type: 3
-  _sprite: {fileID: -6296459520990074170, guid: b6ff2c2881d51bd4b8d8e3e9fa6fc5da,
+  _sprite: {fileID: 7162842703009750559, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
+  _thumbnailSPrite: {fileID: 7162842703009750559, guid: add9bcf02e2c16c459accc2d154ee405,
     type: 3}
   _id: TABLE01_4
   _setId: SET01

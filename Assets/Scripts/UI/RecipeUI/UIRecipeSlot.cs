@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class UIRecipeSlot : MonoBehaviour
 {
     [SerializeField] private Image _image;
+    [SerializeField] private Outline _outLine;
     [SerializeField] private Button _button;
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private GameObject _alarmImage;
@@ -63,5 +64,10 @@ public class UIRecipeSlot : MonoBehaviour
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
+    }
+
+    public void SetOutline(bool value)
+    {
+        _outLine.enabled = value;
     }
 }

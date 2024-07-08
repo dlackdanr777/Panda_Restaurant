@@ -27,10 +27,11 @@ public class UIStaffOwnDescription : MonoBehaviour
             _upgradeAddTipDescription.gameObject.SetActive(true);
             _upgradeButton.RemoveAllListeners();
             _upgradeButton.AddListener(() => onUpgradeButtonClicked?.Invoke(data));
-            _upgradeButton.Interactable(true);
+            _upgradeButton.gameObject.SetActive(true);
             _upgradeButton.SetText(Utility.ConvertToNumber(data.GetUpgradePrice(level)));
 
-            _titleText.text = "강화 lv." + level;
+
+            _titleText.text = "강화";
             _upgradeMinScoreDescription.text = Utility.ConvertToNumber(data.GetUpgradeMinScore(level));
             _upgradeAddScoreDescription.text = data.GetAddScore(level + 1).ToString();
             _upgradeAddTipDescription.text = data.GetAddTipMul(level + 1) + "%";
@@ -40,11 +41,11 @@ public class UIStaffOwnDescription : MonoBehaviour
         {
             _upgradeAddScoreDescription.gameObject.SetActive(false);
             _upgradeAddTipDescription.gameObject.SetActive(false);
-            _upgradeButton.Interactable(false);
+            _upgradeButton.gameObject.SetActive(false);
 
-            _titleText.text = "lv." + level;
+            _titleText.text = "최대 강화";
             _upgradeButton.SetText("최대 강화");
-            _upgradeMinScoreDescription.text = "최대 강화";
+            _upgradeMinScoreDescription.text = "Max";
         }
 
 

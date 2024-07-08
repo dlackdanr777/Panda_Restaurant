@@ -73,6 +73,10 @@ public class UIRestaurantAdmin : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
 
+        _staffTab.UpdateUI();
+        _furnitureTab.UpdateUI();
+        _recipeTab.UpdateUI();
+
         TweenData tween = _canvasGroup.TweenAlpha(1, 0.1f);
         tween.OnComplete(() =>
         {

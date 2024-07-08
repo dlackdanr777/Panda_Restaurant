@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: FLOWER01
   m_EditorClassIdentifier: 
   _type: 8
-  _sprite: {fileID: -2910185967387764405, guid: 30c9b0483c3f0e647b43e8e05d115fee,
+  _sprite: {fileID: -777114055275024459, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
+  _thumbnailSPrite: {fileID: 4010724534108869623, guid: add9bcf02e2c16c459accc2d154ee405,
     type: 3}
   _id: FLOWER01
   _setId: SET01

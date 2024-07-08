@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class UIStaffTab : MonoBehaviour
 {
@@ -26,11 +23,11 @@ public class UIStaffTab : MonoBehaviour
             slot.SetData(StaffType.Manager + index);
         }
 
-        UserInfo.OnChangeStaffHandler += SlotUpdate;
+        UserInfo.OnChangeStaffHandler += UpdateUI;
     }
 
 
-    public void SlotUpdate()
+    public void UpdateUI()
     {
         for(int i = 0, cnt = _slots.Length; i < cnt; ++i)
         {

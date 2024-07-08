@@ -1,12 +1,12 @@
 using System;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.UI;
 
 public class UIFurnitureSlot : MonoBehaviour
 {
     [SerializeField] private Image _image;
+    [SerializeField] private Outline _outLine;
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private TextMeshProUGUI _text;
     [SerializeField] private Button _button;
@@ -32,7 +32,7 @@ public class UIFurnitureSlot : MonoBehaviour
         _alarmImage.SetActive(false);
         _lockImgae.SetActive(false);
 
-        _image.sprite = data.Sprite;
+        _image.sprite = data.ThumbnailSPrite;
         _image.color = new Color(1, 1, 1, 1);
         _nameText.text = data.Name;
         _text.text = "사용중";
@@ -50,7 +50,7 @@ public class UIFurnitureSlot : MonoBehaviour
         _alarmImage.SetActive(false);
         _lockImgae.SetActive(false);
 
-        _image.sprite = data.Sprite;
+        _image.sprite = data.ThumbnailSPrite;
         _image.color = new Color(1, 1, 1, 1);
         _nameText.text = data.Name;
         _text.text = "사용";
@@ -68,7 +68,7 @@ public class UIFurnitureSlot : MonoBehaviour
         _useImage.SetActive(false);
         _operateImage.SetActive(false);
 
-        _image.sprite = data.Sprite;
+        _image.sprite = data.ThumbnailSPrite;
         _image.color = new Color(0, 0, 0, 1);
         _nameText.text = data.Name;
         _text.text = Utility.ConvertToNumber(data.BuyMinPrice);
@@ -85,12 +85,17 @@ public class UIFurnitureSlot : MonoBehaviour
         _useImage.SetActive(false);
         _operateImage.SetActive(false);
 
-        _image.sprite = data.Sprite;
+        _image.sprite = data.ThumbnailSPrite;
         _image.color = new Color(0, 0, 0, 1);
         _nameText.text = data.Name;
         _text.text = Utility.ConvertToNumber(data.BuyMinPrice);
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
+    }
+
+    public void SetOutline(bool value)
+    {
+        _outLine.enabled = value;
     }
 }

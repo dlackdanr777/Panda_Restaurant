@@ -15,6 +15,8 @@ MonoBehaviour:
   _type: 5
   _sprite: {fileID: -9058710872521462115, guid: add9bcf02e2c16c459accc2d154ee405,
     type: 3}
+  _thumbnailSPrite: {fileID: -9058710872521462115, guid: add9bcf02e2c16c459accc2d154ee405,
+    type: 3}
   _id: COUNTER01
   _setId: SET01
   _name: "\uD3C9\uBC94\uD55C \uACC4\uC0B0\uB300"

@@ -27,45 +27,18 @@ public class UIFurnitureTab : MonoBehaviour
     }
 
 
-    public void SlotUpdate(FurnitureType type)
+
+    public void UpdateUI()
     {
-        _slots[(int)type].SetData(type);
+
+        for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; i++)
+        {
+            SlotUpdate((FurnitureType)i);
+        }
     }
 
-
-    private void OnSlotClicked(FurnitureType type)
+    private void SlotUpdate(FurnitureType type)
     {
-        /*  switch (type)
-          {
-              case StaffType.Manager:
-                  _uiStaff.ShowUIStaffManager();
-                  break;
-
-              case StaffType.Waiter:
-                  _uiStaff.ShowUIStaffWaiter();
-                  break;
-
-              case StaffType.Chef:
-                  _uiStaff.ShowUIStaffChef();
-                  break;
-
-              case StaffType.Cleaner:
-                  _uiStaff.ShowUIStaffCleaner();
-                  break;
-
-              case StaffType.Marketer:
-                  _uiStaff.ShowUIStaffMarketer();
-                  break;
-
-              case StaffType.Guard:
-                  _uiStaff.ShowUIStaffGuard();
-                  break;
-
-              case StaffType.Server:
-                  _uiStaff.ShowUIStaffServer();
-                  break;
-          }
-      }*/
-
+        _slots[(int)type].SetData(type);
     }
 }

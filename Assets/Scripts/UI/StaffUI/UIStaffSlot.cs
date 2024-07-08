@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class UIStaffSlot : MonoBehaviour
 {
     [SerializeField] private Image _image;
+    [SerializeField] private Outline _outline;
     [SerializeField] private Button _button;
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private GameObject _alarmImage;
@@ -93,5 +94,10 @@ public class UIStaffSlot : MonoBehaviour
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
+    }
+
+    public void SetOutline(bool value)
+    {
+        _outline.enabled = value;
     }
 }

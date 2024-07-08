@@ -16,6 +16,7 @@ MonoBehaviour:
   _id: Staff06
   _name: "\uC9C0\uC9C0"
   _description: "\uAF2C\uC9C8\uAF2C\uC9C8"
+  _effectDescription: "\uC74C\uC2DD \uC790\uB3D9 \uBC30\uB2EC(2.5\uCD08)"
   _skill: {fileID: 11400000, guid: 71abd801ab8f9b34390c11362a90d61f, type: 2}
   _buyMinScore: 10000
   _moneyData:

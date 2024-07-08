@@ -16,7 +16,7 @@ MonoBehaviour:
   _id: STAFF15
   _name: "\uD1A0\uB8E8\uB8E8"
   _description: 
-  _effectDescription: "\uC190\uB2D8 \uC790\uB3D9 \uD638\uCD9C (ActionValues) [SecondValue%]"
+  _effectDescription: "\uC190\uB2D8 \uC790\uB3D9 \uD638\uCD9C(2\uCD08\uB2F9 10%)"
   _skill: {fileID: 11400000, guid: 47c907508b5243f4d97af7a63d90479b, type: 2}
   _buyMinScore: 0
   _moneyData:

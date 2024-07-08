@@ -9,6 +9,7 @@ public class UIStaffPreview : MonoBehaviour
 
     [SerializeField] private Image _staffImage;
     [SerializeField] private TextMeshProUGUI _staffNameText;
+    [SerializeField] private TextMeshProUGUI _levelText;
     [SerializeField] private TextMeshProUGUI _effectDescription;
     [SerializeField] private TextMeshProUGUI _skillDescription;
     [SerializeField] private TextMeshProUGUI _skillCooltimeDescription;
@@ -53,10 +54,11 @@ public class UIStaffPreview : MonoBehaviour
 
         _staffImage.sprite = data.Sprite;
         _staffNameText.text = data.Name;
+        _levelText.text = UserInfo.IsGiveStaff(data) ? "lv." + UserInfo.GetStaffLevel(data) : "lv.1";
         _effectDescription.text = data.EffectDescription;
         _skillDescription.text = data.Skill != null ? data.Skill.Description + "(" + data.Skill.Duration + "초)" : "없음";
         _skillCooltimeDescription.text = data.Skill != null ? data.Skill.Cooldown + "초" : "없음";
-
+        
 
         if (UserInfo.IsGiveStaff(data))
         {

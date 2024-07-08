@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 21381d50af349ea469032be55c8679f3, type: 3}
   m_Name: OrderCountUpSkill
   m_EditorClassIdentifier: 
-  _skillActivatePercent: 100
-  _addOrderCount: 10
+  _skillActivatePercent: 0
+  _addOrderCount: 1

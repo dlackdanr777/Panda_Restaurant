@@ -8,6 +8,9 @@ public abstract class FurnitureData : ScriptableObject
     [SerializeField] private Sprite _sprite;
     public Sprite Sprite => _sprite;
 
+    [SerializeField] private Sprite _thumbnailSPrite;
+    public Sprite ThumbnailSPrite => _thumbnailSPrite;
+
     [SerializeField] private string _id;
     public string Id => _id;
 

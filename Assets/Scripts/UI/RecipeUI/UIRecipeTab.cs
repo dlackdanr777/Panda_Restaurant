@@ -29,21 +29,25 @@ public class UIRecipeTab : MonoBehaviour
         {
             UIRecipeSlot slot = Instantiate(_slotPrefab, _slotParnet);
             slot.Init(OnSlotClicked);
+            slot.SetOutline(false);
             _slots[i] = slot;
         }
 
-        UpdateSlot();
+        UpdateUI();
 
-        UserInfo.OnUpgradeRecipeHandler += UpdateSlot;
-        UserInfo.OnGiveRecipeHandler += UpdateSlot;
-        UserInfo.OnChangeMoneyHandler += UpdateSlot;
-        UserInfo.OnChangeScoreHanlder += UpdateSlot;
-        GameManager.OnAppendAddScoreHandler += UpdateSlot;
+        UserInfo.OnUpgradeRecipeHandler += UpdateUI;
+        UserInfo.OnGiveRecipeHandler += UpdateUI;
+        UserInfo.OnChangeMoneyHandler += UpdateUI;
+        UserInfo.OnChangeScoreHanlder += UpdateUI;
+        GameManager.OnAppendAddScoreHandler += UpdateUI;
     }
 
 
-    private void UpdateSlot()
+    public void UpdateUI()
     {
+        if (_foodDataList == null || _foodDataList.Count == 0)
+            return;
+
         FoodData data;
         for(int i = 0, cnt = _foodDataList.Count; i < cnt; i++)
         {
@@ -124,5 +128,11 @@ public class UIRecipeTab : MonoBehaviour
     private void OnSlotClicked(FoodData data)
     {
         _uiRecipePreview.SetFoodData(data);
+
+        for(int i = 0, cnt = _slots.Length; i < cnt; i++)
+        {
+            bool outlineEnabled = _foodDataList[i] == data ? true : false;
+            _slots[i].SetOutline(outlineEnabled);
+        }
     }
 }

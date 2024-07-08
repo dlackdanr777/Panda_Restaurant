@@ -29,7 +29,7 @@ public class UIFurnitureTabSlot : MonoBehaviour
         if(data == null)
             _furnitureImage.sprite = _defalutSprite;
         else
-            _furnitureImage.sprite = data.Sprite;
+            _furnitureImage.sprite = data.ThumbnailSPrite;
 
         switch (type)
         {

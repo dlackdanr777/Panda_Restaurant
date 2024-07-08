@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _type: 9
   _sprite: {fileID: 5094717261111458333, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
+  _thumbnailSPrite: {fileID: 5548873695978294063, guid: add9bcf02e2c16c459accc2d154ee405,
+    type: 3}
   _id: ACC01
   _setId: SET01
   _name: "\uD3C9\uBC94\uD55C \uC870\uBA85"
