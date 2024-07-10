@@ -62,7 +62,7 @@ public class KitchenSystem : MonoBehaviour
         _cookingQueue.Enqueue(cookingData);
     }
 
-    public void AddCooker(Staff staff)
+/*    public void AddCooker(Staff staff)
     {
         KitchenStaffData data = new KitchenStaffData(staff.Speed);
         _cookerDic.Add(staff, data);
@@ -81,7 +81,7 @@ public class KitchenSystem : MonoBehaviour
             _cookingQueue.Enqueue(data.GetCookingData());
 
         _cookerDic.Remove(staff);
-    }
+    }*/
 
 
     private void DequeueFood()

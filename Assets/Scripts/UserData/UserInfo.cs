@@ -17,6 +17,9 @@ public static class UserInfo
     public static event Action<FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
 
+    public static event Action<KitchenUtensilType> OnChangeKitchenUtensilHandler;
+    public static event Action OnGiveKitchenUtensilHandler;
+
 
     private static int _money;
     public static int Money => _money;
@@ -41,6 +44,10 @@ public static class UserInfo
     private static List<string> _giveFurnitureList = new List<string>();
     private static HashSet<string> _giveFurnitureSet = new HashSet<string>();
     private static FurnitureSetData _enabledSetData;
+
+    private static KitchenUtensilData[] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)KitchenUtensilType.Length];
+    private static List<string> _giveKitchenUtensilList = new List<string>();
+    private static HashSet<string> _giveKitchenUtensilSet = new HashSet<string>();
 
 
     #region UserData
@@ -469,7 +476,149 @@ public static class UserInfo
 
         _enabledSetData = FurnitureDataManager.Instance.GetFurnitureSetData(setId);
         _enabledSetData.Activate();
-        TimedDisplayManager.Instance.ShowText(_enabledSetData.Id + " 효과가 적용되었습니다.");
+    }
+
+
+    #endregion
+
+
+    #region KitchenData
+
+    public static void GiveKitchenUtensil(KitchenUtensilData data)
+    {
+        if (_giveKitchenUtensilSet.Contains(data.Id))
+        {
+            DebugLog.Log("이미 가지고 있습니다.");
+            return;
+        }
+
+        _giveKitchenUtensilList.Add(data.Id);
+        _giveKitchenUtensilSet.Add(data.Id);
+        OnGiveKitchenUtensilHandler?.Invoke();
+    }
+
+
+    public static void GiveKitchenUtensil(string id)
+    {
+        if (_giveKitchenUtensilSet.Contains(id))
+        {
+            DebugLog.Log("이미 가지고 있습니다.");
+            return;
+        }
+
+        KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
+        if (data == null)
+        {
+            DebugLog.Log("존재하지 않는 ID입니다" + id);
+            return;
+        }
+
+        _giveKitchenUtensilList.Add(id);
+        _giveKitchenUtensilSet.Add(id);
+        OnGiveKitchenUtensilHandler?.Invoke();
+    }
+
+
+    public static bool IsGiveKitchenUtensil(string id)
+    {
+        return _giveKitchenUtensilSet.Contains(id);
+    }
+
+    public static bool IsGiveKitchenUtensil(KitchenUtensilData data)
+    {
+        return _giveKitchenUtensilSet.Contains(data.Id);
+    }
+
+
+    public static bool IsEquipKitchenUtensil(KitchenUtensilData data)
+    {
+        for (int i = 0, cnt = _equipKitchenUtensilDatas.Length; i < cnt; i++)
+        {
+            if (_equipKitchenUtensilDatas[i] == null)
+                continue;
+
+            if (_equipKitchenUtensilDatas[i].Id == data.Id)
+                return true;
+        }
+
+        return false;
+    }
+
+    public static void SetEquipKitchenUtensil(KitchenUtensilData data)
+    {
+        if (!_giveKitchenUtensilSet.Contains(data.Id))
+        {
+            DebugLog.LogError("현재 주방 기구를 보유하지 않았습니다.");
+            return;
+        }
+
+        if (_equipKitchenUtensilDatas[(int)data.Type] != null)
+            _equipKitchenUtensilDatas[((int)data.Type)].RemoveSlot();
+
+        _equipKitchenUtensilDatas[(int)data.Type] = data;
+        data.AddSlot();
+        CheckKitchenUtensilSetEnabled();
+
+        OnChangeKitchenUtensilHandler?.Invoke(data.Type);
+    }
+
+    public static void SetEquipKitchenUtensil(string id)
+    {
+        if (!_giveKitchenUtensilSet.Contains(id))
+        {
+            DebugLog.LogError("현재 가구를 보유하지 않았습니다.");
+            return;
+        }
+
+        KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
+
+        if (_equipKitchenUtensilDatas[(int)data.Type] != null)
+            _equipKitchenUtensilDatas[((int)data.Type)].RemoveSlot();
+
+        _equipKitchenUtensilDatas[(int)data.Type] = data;
+        data.AddSlot();
+        CheckKitchenUtensilSetEnabled();
+
+        OnChangeKitchenUtensilHandler?.Invoke(data.Type);
+    }
+
+    public static void DisarmEquipKitchenUtensil(KitchenUtensilType type)
+    {
+        if (_equipKitchenUtensilDatas[(int)type] != null)
+            _equipKitchenUtensilDatas[((int)type)].RemoveSlot();
+
+        _equipKitchenUtensilDatas[(int)type] = null;
+        OnChangeKitchenUtensilHandler?.Invoke(type);
+    }
+
+    public static KitchenUtensilData GetEquipKitchenUtensil(KitchenUtensilType type)
+    {
+        return _equipKitchenUtensilDatas[(int)type];
+    }
+
+    private static void CheckKitchenUtensilSetEnabled()
+    {
+        string setId = string.Empty;
+        for (int i = 0, cnt = _equipKitchenUtensilDatas.Length; i < cnt; i++)
+        {
+            if (_equipKitchenUtensilDatas[i] == null)
+                return;
+
+            if (string.IsNullOrEmpty(setId))
+            {
+                setId = _equipKitchenUtensilDatas[i].SetId;
+                continue;
+            }
+
+            if (setId != _equipKitchenUtensilDatas[i].SetId)
+                return;
+        }
+
+        if (_enabledSetData != null)
+            _enabledSetData.Deactivate();
+
+        _enabledSetData = FurnitureDataManager.Instance.GetFurnitureSetData(setId);
+        _enabledSetData.Activate();
     }
 
 
