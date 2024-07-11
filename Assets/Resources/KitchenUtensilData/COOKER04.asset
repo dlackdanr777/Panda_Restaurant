@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3119371a26fed2f4fa321ff4f8f7a94b, type: 3}
   m_Name: COOKER04
   m_EditorClassIdentifier: 
-  _type: 3
   _sprite: {fileID: 21300000, guid: e6aa5099fe3702e44bd5d40d65bb49d0, type: 3}
   _thumbnailSPrite: {fileID: 21300000, guid: e6aa5099fe3702e44bd5d40d65bb49d0, type: 3}
-  _id: COOKER04
-  _setId: KETCHEN01
   _name: "\uD3C9\uBC94\uD55C \uD654\uB85C"
-  _effectDescription: 
-  _addScore: 3
+  _id: COOKER04
+  _description: 
   _moneyType: 0
-  _buyMinPrice: 2200
-  _buyMinScore: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _type: 3
+  _setId: KITCHEN01
+  _addScore: 3
   _cookingSpeedMul: 0

@@ -1,27 +1,15 @@
 using UnityEngine;
 
-public abstract class KitchenUtensilData : ScriptableObject
+public abstract class KitchenUtensilData : BasicData
 {
+    [Space]
+    [Header("KitchenUtensilData")]
     [SerializeField] private KitchenUtensilType _type;
     public KitchenUtensilType Type => _type;
-
-    [SerializeField] private Sprite _sprite;
-    public Sprite Sprite => _sprite;
-
-    [SerializeField] private Sprite _thumbnailSPrite;
-    public Sprite ThumbnailSPrite => _thumbnailSPrite;
-
-    [SerializeField] private string _id;
-    public string Id => _id;
 
     [SerializeField] private string _setId;
     public string SetId => _setId;
 
-    [SerializeField] private string _name;
-    public string Name => _name;
-
-    [TextArea][SerializeField] private string _effectDescription;
-    public string EffectDescription => _effectDescription;
 
     [SerializeField] private int _addScore;
     public int AddScore => _addScore;
@@ -30,18 +18,4 @@ public abstract class KitchenUtensilData : ScriptableObject
 
     public abstract void AddSlot();
     public abstract void RemoveSlot();
-
-
-
-    [Space]
-    [Header("Buy Option")]
-
-    [SerializeField] private MoneyType _moneyType;
-    public MoneyType MoneyType => _moneyType;
-
-    [SerializeField] private int _buyMinPrice;
-    public int BuyMinPrice => _buyMinPrice;
-
-    [SerializeField] private int _buyMinScore;
-    public int BuyMinScore => _buyMinScore;
 }

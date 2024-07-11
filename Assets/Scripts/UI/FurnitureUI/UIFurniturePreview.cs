@@ -24,13 +24,11 @@ public class UIFurniturePreview : MonoBehaviour
     private Action<FurnitureData> _onEquipButtonClicked;
     private Action<FurnitureData> _onUpgradeButtonClicked;
     private FurnitureData _currentData;
-    private Dictionary<string, FurnitureSetData> _furnitureSetDataDic;
 
     public void Init(Action<FurnitureData> onEquipButtonClicked, Action<FurnitureData> onBuyButtonClicked)
     {
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
-        _furnitureSetDataDic = FurnitureDataManager.Instance.GetFurnitureSetDic();
 
         UserInfo.OnChangeMoneyHandler += UpdateFurniture;
         UserInfo.OnChangeScoreHanlder += UpdateFurniture;
@@ -62,9 +60,12 @@ public class UIFurniturePreview : MonoBehaviour
             _hideObjs[i].SetActive(true);
         }
 
-        _image.sprite = data.Sprite;
+        _image.sprite = data.ThumbnailSprite;
         _nameText.text = data.Name;
         _addScoreDescription.text = data.AddScore.ToString();
+
+        SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
+        _setEffectDescription.text = setData != null ? setData.Description : string.Empty;
 
         if (data is MoneyPerMinuteFurnitureData)
         {
@@ -98,7 +99,6 @@ public class UIFurniturePreview : MonoBehaviour
             _usingButton.Interactable(false);
             _image.color = new Color(1, 1, 1);
             _setEffectObj.SetActive(true);
-            _setEffectDescription.text = _furnitureSetDataDic[data.SetId].Description;
         }
         else
         {
@@ -110,7 +110,6 @@ public class UIFurniturePreview : MonoBehaviour
                 _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
                 _image.color = new Color(1, 1, 1);
                 _setEffectObj.SetActive(true);
-                _setEffectDescription.text = _furnitureSetDataDic[data.SetId].Description;
             }
             else
             {

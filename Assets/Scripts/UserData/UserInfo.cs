@@ -43,7 +43,7 @@ public static class UserInfo
     private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
     private static List<string> _giveFurnitureList = new List<string>();
     private static HashSet<string> _giveFurnitureSet = new HashSet<string>();
-    private static FurnitureSetData _enabledSetData;
+    private static SetData _enabledSetData;
 
     private static KitchenUtensilData[] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)KitchenUtensilType.Length];
     private static List<string> _giveKitchenUtensilList = new List<string>();
@@ -349,6 +349,7 @@ public static class UserInfo
             return;
         }
 
+        GameManager.Instance.AppendAddScore(data.AddScore);
         _giveFurnitureList.Add(data.Id);
         _giveFurnitureSet.Add(data.Id);
         OnGiveFurnitureHandler?.Invoke();
@@ -370,6 +371,7 @@ public static class UserInfo
             return;
         }
 
+        GameManager.Instance.AppendAddScore(data.AddScore);
         _giveFurnitureList.Add(id);
         _giveFurnitureSet.Add(id);
         OnGiveFurnitureHandler?.Invoke();
@@ -474,7 +476,7 @@ public static class UserInfo
         if(_enabledSetData != null)
             _enabledSetData.Deactivate();
 
-        _enabledSetData = FurnitureDataManager.Instance.GetFurnitureSetData(setId);
+        _enabledSetData = SetDataManager.Instance.GetSetData(setId);
         _enabledSetData.Activate();
     }
 
@@ -492,6 +494,7 @@ public static class UserInfo
             return;
         }
 
+        GameManager.Instance.AppendAddScore(data.AddScore);
         _giveKitchenUtensilList.Add(data.Id);
         _giveKitchenUtensilSet.Add(data.Id);
         OnGiveKitchenUtensilHandler?.Invoke();
@@ -513,6 +516,7 @@ public static class UserInfo
             return;
         }
 
+        GameManager.Instance.AppendAddScore(data.AddScore);
         _giveKitchenUtensilList.Add(id);
         _giveKitchenUtensilSet.Add(id);
         OnGiveKitchenUtensilHandler?.Invoke();
@@ -617,7 +621,7 @@ public static class UserInfo
         if (_enabledSetData != null)
             _enabledSetData.Deactivate();
 
-        _enabledSetData = FurnitureDataManager.Instance.GetFurnitureSetData(setId);
+        _enabledSetData = SetDataManager.Instance.GetSetData(setId);
         _enabledSetData.Activate();
     }
 

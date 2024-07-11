@@ -27,12 +27,11 @@ public class UIKitchen : MobileUIView
 
     [Space]
     [Header("Slot Option")]
-    [SerializeField] private int _createSlotValue;
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UIKitchenSlot _slotPrefab;
+    [SerializeField] private UISlot _slotPrefab;
 
     private KitchenUtensilType _currentType;
-    private UIKitchenSlot[] _slots;
+    private List<UISlot>[] _slots = new List<UISlot>[(int)KitchenUtensilType.Length];
     List<KitchenUtensilData> _currentTypeDataList;
 
     private void OnDisable()
@@ -46,18 +45,24 @@ public class UIKitchen : MobileUIView
         _rightArrowButton.SetAction(() => ChangeKitchenData(1));
         _uikitchenPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked);
 
-        _slots = new UIKitchenSlot[_createSlotValue];
-        for(int i = 0; i < _createSlotValue; ++i)
+        for (int i = 0, cntI = (int)KitchenUtensilType.Length; i < cntI; ++i)
         {
-            UIKitchenSlot slot = Instantiate(_slotPrefab, _slotParnet);
-            _slots[i] = slot;
-            slot.Init(OnSlotClicked);
+            List<KitchenUtensilData> typeDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList((KitchenUtensilType)i);
+            _slots[i] = new List<UISlot>();
+            for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
+            {
+                int index = j;
+                UISlot slot = Instantiate(_slotPrefab, _slotParnet);
+                slot.Init(() => OnSlotClicked(typeDataList[index]));
+                _slots[i].Add(slot);
+                slot.gameObject.SetActive(false);
+            }
         }
 
-        UserInfo.OnChangeFurnitureHandler += (type) => OnSlotUpdate();
-        UserInfo.OnGiveFurnitureHandler += OnSlotUpdate;
-        UserInfo.OnChangeMoneyHandler += OnSlotUpdate;
-        UserInfo.OnChangeScoreHanlder += OnSlotUpdate;
+        UserInfo.OnChangeKitchenUtensilHandler += (type) => OnSlotUpdate(false);
+        UserInfo.OnGiveKitchenUtensilHandler += () => OnSlotUpdate(false);
+        UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
+        UserInfo.OnChangeScoreHanlder += () => OnSlotUpdate(false);
 
         gameObject.SetActive(false);
     }
@@ -99,10 +104,22 @@ public class UIKitchen : MobileUIView
     }
 
 
+    public void ShowUIKitchen(KitchenUtensilType type)
+    {
+        _uiNav.Push("UIKitchen");
+        SetKitchenUtensilDataData(type);
+        SetKitchenPreview();
+    }
+
+
     private void SetKitchenUtensilDataData(KitchenUtensilType type)
     {
-        _currentType = type;
+        for (int i = 0, cnt = _slots[(int)_currentType].Count; i < cnt; ++i)
+        {
+            _slots[(int)_currentType][i].gameObject.SetActive(false);
+        }
 
+        _currentType = type;
         KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(type);
         _currentTypeDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList(type);
 
@@ -110,42 +127,7 @@ public class UIKitchen : MobileUIView
         _typeText1.text = typeStr;
         _typeText2.text = typeStr;
 
-        for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
-        {
-            _slots[i].gameObject.SetActive(true);
-            if (equipData != null && _currentTypeDataList[i].Id == equipData.Id)
-            {
-                _slots[i].transform.SetAsFirstSibling();
-                _slots[i].SetUse(_currentTypeDataList[i]);
-                _slots[i].SetOutline(true);
-                continue;
-            }
-
-            _slots[i].SetOutline(false);
-            if (UserInfo.IsGiveKitchenUtensil(_currentTypeDataList[i]))
-            {
-                _slots[i].SetOperate(_currentTypeDataList[i]);
-                continue;
-            }
-
-            else
-            {
-                if (_currentTypeDataList[i].BuyMinScore <= UserInfo.Score && _currentTypeDataList[i].BuyMinPrice <= UserInfo.Money)
-                {
-                    _slots[i].SetEnoughMoney(_currentTypeDataList[i]);
-                    continue;
-                }
-
-                _slots[i].SetLowReputation(_currentTypeDataList[i]);
-                continue;
-
-            }
-        }
-
-        for(int i = _currentTypeDataList.Count; i < _createSlotValue; ++i)
-        {
-            _slots[i].gameObject.SetActive(false);
-        }
+        OnSlotUpdate(true);
     }
 
     private void SetKitchenPreview()
@@ -158,8 +140,8 @@ public class UIKitchen : MobileUIView
     private void ChangeKitchenData(int dir)
     {
         KitchenUtensilType newTypeIndex = _currentType + dir;
-        _currentType = newTypeIndex < 0 ? KitchenUtensilType.Length - 1 : (KitchenUtensilType)((int)newTypeIndex % (int)KitchenUtensilType.Length);
-        SetKitchenUtensilDataData(_currentType);
+        newTypeIndex = newTypeIndex < 0 ? KitchenUtensilType.Length - 1 : (KitchenUtensilType)((int)newTypeIndex % (int)KitchenUtensilType.Length);
+        SetKitchenUtensilDataData(newTypeIndex);
         SetKitchenPreview();
     }
 
@@ -179,66 +161,70 @@ public class UIKitchen : MobileUIView
             return;
         }
 
-        if (UserInfo.Score < data.BuyMinScore)
+        if (UserInfo.Score < data.BuyScore)
         {
             TimedDisplayManager.Instance.ShowTextLackScore();
             return;
         }
 
-        if (UserInfo.Money < data.BuyMinPrice)
+        if (UserInfo.Money < data.BuyPrice)
         {
             TimedDisplayManager.Instance.ShowTextLackMoney();
             return;
         }
 
-        UserInfo.AppendMoney(-data.BuyMinPrice);
+        UserInfo.AppendMoney(-data.BuyPrice);
         UserInfo.GiveKitchenUtensil(data);
         TimedDisplayManager.Instance.ShowText("새로운 주방 용품을 구매했어요!");
     }
 
-    public void ShowUIKitchen(KitchenUtensilType type)
-    {
-        _uiNav.Push("UIFurniture");
-        SetKitchenUtensilDataData(type);
-        SetKitchenPreview();
-    }
 
-    private void OnSlotUpdate()
+
+
+    private void OnSlotUpdate(bool changeOutline)
     {
         if (_currentTypeDataList == null || _currentTypeDataList.Count == 0 || !gameObject.activeSelf)
             return;
 
-        KitchenUtensilData equipFurnitureData = UserInfo.GetEquipKitchenUtensil(_currentType);
+        KitchenUtensilData equipStaffData = UserInfo.GetEquipKitchenUtensil(_currentType);
 
+        int slotsIndex = (int)_currentType;
+        KitchenUtensilData data;
+        UISlot slot;
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
         {
-            _slots[i].gameObject.SetActive(true);
-            if (equipFurnitureData != null && _currentTypeDataList[i].Id == equipFurnitureData.Id)
+            data = _currentTypeDataList[i];
+            slot = _slots[slotsIndex][i];
+            slot.gameObject.SetActive(true);
+            if (equipStaffData != null && data.Id == equipStaffData.Id)
             {
-                _slots[i].transform.SetAsFirstSibling();
-                _slots[i].SetUse(_currentTypeDataList[i]);
+                slot.transform.SetAsFirstSibling();
+                slot.SetUse(data.ThumbnailSprite, data.Name, "사용중");
+                if (changeOutline) _slots[slotsIndex][i].SetOutline(true);
                 continue;
             }
 
-            if (UserInfo.IsGiveKitchenUtensil(_currentTypeDataList[i]))
+            if (changeOutline) _slots[slotsIndex][i].SetOutline(false);
+            if (UserInfo.IsGiveKitchenUtensil(data))
             {
-                _slots[i].SetOperate(_currentTypeDataList[i]);
+                slot.SetOperate(data.ThumbnailSprite, data.Name, "사용");
                 continue;
             }
 
             else
             {
-                if (_currentTypeDataList[i].BuyMinScore <= UserInfo.Score && _currentTypeDataList[i].BuyMinPrice <= UserInfo.Money)
+                if (data.BuyScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
                 {
-                    _slots[i].SetEnoughMoney(_currentTypeDataList[i]);
+                    slot.SetEnoughMoney(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyPrice));
                     continue;
                 }
 
-                _slots[i].SetLowReputation(_currentTypeDataList[i]);
+                slot.SetLowReputation(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyScore));
                 continue;
             }
         }
     }
+
 
     private void OnSlotClicked(KitchenUtensilData data)
     {
@@ -246,7 +232,7 @@ public class UIKitchen : MobileUIView
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; i++)
         {
             bool outlineEnabled = _currentTypeDataList[i] == data ? true : false;
-            _slots[i].SetOutline(outlineEnabled);
+            _slots[(int)_currentType][i].SetOutline(outlineEnabled);
         }
     }
 }

@@ -52,7 +52,7 @@ public class UIStaffPreview : MonoBehaviour
             _hideObjs[i].SetActive(true);
         }
 
-        _staffImage.sprite = data.Sprite;
+        _staffImage.sprite = data.ThumbnailSprite;
         _staffNameText.text = data.Name;
         _levelText.text = UserInfo.IsGiveStaff(data) ? "lv." + UserInfo.GetStaffLevel(data) : "lv.1";
         _effectDescription.text = data.Description;

@@ -5,33 +5,45 @@ public class UIStaffTab : MonoBehaviour
     [SerializeField] private UIStaff _uiStaff;
 
     [Header("Slots")]
-    [SerializeField] private UIStaffTabSlot _slotPrefab;
+    [SerializeField] private UITabSlot _slotPrefab;
     [SerializeField] private Transform _slotParent;
 
 
-    private UIStaffTabSlot[] _slots;
+    private UITabSlot[] _slots;
 
     public void Init()
     {
-        _slots = new UIStaffTabSlot[(int)StaffType.Length];
+
+
+        _slots = new UITabSlot[(int)StaffType.Length];
         for(int i = 0, cnt = (int)StaffType.Length; i < cnt; i++)
         {
             int index = i;
-            UIStaffTabSlot slot = Instantiate(_slotPrefab, _slotParent);
+            UITabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
             slot.Init(() => _uiStaff.ShowUIStaff((StaffType)index));
-            slot.SetData(StaffType.Manager + index);
+            BasicData data = UserInfo.GetEquipStaff((StaffType)index);
+            Sprite sprite = data != null ? data.ThumbnailSprite : null;
+            slot.UpdateUI(sprite, Utility.StaffTypeStringConverter((StaffType)index));
         }
 
         UserInfo.OnChangeStaffHandler += UpdateUI;
     }
 
-
     public void UpdateUI()
     {
-        for(int i = 0, cnt = _slots.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
         {
-            _slots[i].SetData(StaffType.Manager + i);
+            UpdateUI((StaffType)i);
         }
     }
+
+    private void UpdateUI(StaffType type)
+    {
+        BasicData data = UserInfo.GetEquipStaff(type);
+        Sprite sprite = data != null ? data.ThumbnailSprite : null;
+        _slots[(int)type].UpdateUI(sprite, Utility.StaffTypeStringConverter(type));
+    }
+
+
 }

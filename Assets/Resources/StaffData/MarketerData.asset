@@ -13,15 +13,15 @@ MonoBehaviour:
   m_Name: MarketerData
   m_EditorClassIdentifier: 
   _sprite: {fileID: 1159217384817231962, guid: b2183c4950c3077459325871ad78f895, type: 3}
-  _id: STAFF15
+  _thumbnailSPrite: {fileID: 1159217384817231962, guid: b2183c4950c3077459325871ad78f895,
+    type: 3}
   _name: "\uD1A0\uB8E8\uB8E8"
+  _id: STAFF15
   _description: 
-  _effectDescription: "\uC190\uB2D8 \uC790\uB3D9 \uD638\uCD9C(2\uCD08\uB2F9 10%)"
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
   _skill: {fileID: 11400000, guid: 47c907508b5243f4d97af7a63d90479b, type: 2}
-  _buyMinScore: 0
-  _moneyData:
-    _moneyType: 0
-    _price: 0
   _customerCallPercentage: 10
   _marketerLevelData:
   - _tipAddPercent: 29

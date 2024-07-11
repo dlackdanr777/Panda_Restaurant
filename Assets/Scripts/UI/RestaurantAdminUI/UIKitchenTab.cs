@@ -2,43 +2,48 @@ using UnityEngine;
 
 public class UIKitchenTab : MonoBehaviour
 {
-    [SerializeField] private UIFurniture _uiFurniture;
+    [SerializeField] private UIKitchen _uiKitchen;
 
     [Header("Slots")]
-    [SerializeField] private UIKitchenTabSlot _slotPrefab;
+    [SerializeField] private UITabSlot _slotPrefab;
     [SerializeField] private Transform _slotParent;
 
 
-    private UIKitchenTabSlot[] _slots;
+    private UITabSlot[] _slots;
 
     public void Init()
     {
-        _slots = new UIKitchenTabSlot[(int)KitchenUtensilType.Length];
+        _slots = new UITabSlot[(int)KitchenUtensilType.Length];
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; i++)
         {
             int index = i;
-            UIKitchenTabSlot slot = Instantiate(_slotPrefab, _slotParent);
+            UITabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
-            //slot.Init(() => _uiFurniture.ShowUIFurniture((KitchenUtensilType)index));
-            slot.SetData(KitchenUtensilType.Burner1 + index);
+            slot.Init(() => _uiKitchen.ShowUIKitchen((KitchenUtensilType)index));
+            BasicData data = UserInfo.GetEquipKitchenUtensil((KitchenUtensilType)i);
+            Sprite sprite = data != null ? data.ThumbnailSprite : null;
+            _slots[i].UpdateUI(sprite, Utility.KitchenUtensilTypeStringConverter((KitchenUtensilType)i));
         }
 
-        UserInfo.OnChangeKitchenUtensilHandler += SlotUpdate;
+        UserInfo.OnChangeKitchenUtensilHandler += UpdateUI;
     }
-
 
 
     public void UpdateUI()
     {
-
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; i++)
         {
-            SlotUpdate((KitchenUtensilType)i);
+            UpdateUI((KitchenUtensilType)i);
         }
     }
 
-    private void SlotUpdate(KitchenUtensilType type)
+
+    private void UpdateUI(KitchenUtensilType type)
     {
-        _slots[(int)type].SetData(type);
+        BasicData data = UserInfo.GetEquipKitchenUtensil(type);
+        Sprite sprite = data != null ? data.ThumbnailSprite : null;
+        _slots[(int)type].UpdateUI(sprite, Utility.KitchenUtensilTypeStringConverter(type));
     }
+
+
 }

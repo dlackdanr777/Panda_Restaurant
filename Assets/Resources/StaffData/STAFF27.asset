@@ -14,15 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _sprite: {fileID: -9098682166295574887, guid: b2183c4950c3077459325871ad78f895,
     type: 3}
-  _id: STAFF27
+  _thumbnailSPrite: {fileID: 3670394725747216891, guid: ef2a16e1c84a2ac40a5c0076731fa952,
+    type: 3}
   _name: "\uD310\uB2E4 \uBA5C\uB85C"
+  _id: STAFF27
   _description: 
-  _effectDescription: "\uCCAD\uC18C \uBC0F \uD301 \uC790\uB3D9 \uD68C\uC218(3\uCD08)"
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
   _skill: {fileID: 11400000, guid: cce27c6a58e2f564fa4758e3f6e14d71, type: 2}
-  _buyMinScore: 500
-  _moneyData:
-    _moneyType: 0
-    _price: 1000000
   _cleanerLevelData:
   - _tipAddPercent: 55
     _scoreIncrement: 100

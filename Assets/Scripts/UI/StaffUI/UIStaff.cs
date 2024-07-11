@@ -33,7 +33,7 @@ public class UIStaff : MobileUIView
     [SerializeField] private UISlot _slotPrefab;
 
     private StaffType _currentType;
-    private List<UISlot>[] _slots = new List<UISlot>[(int)FurnitureType.Length];
+    private List<UISlot>[] _slots = new List<UISlot>[(int)StaffType.Length];
     List<StaffData> _currentTypeDataList;
 
     private void OnDisable()

@@ -29,57 +29,8 @@ public class UIKitchenTabSlot : MonoBehaviour
         if(data == null)
             _image.sprite = _defalutSprite;
         else
-            _image.sprite = data.ThumbnailSPrite;
+            _image.sprite = data.ThumbnailSprite;
 
-        switch (type)
-        {
-            case KitchenUtensilType.Burner1:
-                _typeText.text = "조리기1";
-                break;
-
-            case KitchenUtensilType.Burner2:
-                _typeText.text = "조리기2";
-                break;
-
-            case KitchenUtensilType.Burner3:
-                _typeText.text = "조리기3";
-                break;
-
-            case KitchenUtensilType.Burner4:
-                _typeText.text = "조리기4";
-                break;
-
-            case KitchenUtensilType.Burner5:
-                _typeText.text = "조리기5";
-                break;
-
-            case KitchenUtensilType.Refrigerator:
-                _typeText.text = "냉장고";
-                break;
-
-            case KitchenUtensilType.Cabinet:
-                _typeText.text = "장식장";
-                break;
-
-            case KitchenUtensilType.Window:
-                _typeText.text = "창문";
-                break;
-
-            case KitchenUtensilType.Shelf:
-                _typeText.text = "선반";
-                break;
-
-            case KitchenUtensilType.Sink:
-                _typeText.text = "싱크대";
-                break;
-
-            case KitchenUtensilType.CookingTools:
-                _typeText.text = "조리도구";
-                break;
-
-            default:
-                _typeText.text = string.Empty;
-                break;
-        }
+        _typeText.text = Utility.KitchenUtensilTypeStringConverter(type);
     }
 }

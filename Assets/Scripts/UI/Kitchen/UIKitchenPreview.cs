@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -23,18 +22,16 @@ public class UIKitchenPreview : MonoBehaviour
     private Action<KitchenUtensilData> _onBuyButtonClicked;
     private Action<KitchenUtensilData> _onEquipButtonClicked;
     private KitchenUtensilData _currentData;
-    private Dictionary<string, FurnitureSetData> _setDataDic;
 
     public void Init(Action<KitchenUtensilData> onEquipButtonClicked, Action<KitchenUtensilData> onBuyButtonClicked)
     {
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
-        _setDataDic = FurnitureDataManager.Instance.GetFurnitureSetDic();
 
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHanlder += UpdateUI;
-        UserInfo.OnChangeFurnitureHandler += (type) => UpdateUI();
-        UserInfo.OnGiveFurnitureHandler += UpdateUI;
+        UserInfo.OnChangeKitchenUtensilHandler += (type) => UpdateUI();
+        UserInfo.OnGiveKitchenUtensilHandler += UpdateUI;
     }
 
 
@@ -61,9 +58,12 @@ public class UIKitchenPreview : MonoBehaviour
             _hideObjs[i].SetActive(true);
         }
 
-        _image.sprite = data.Sprite;
+        _image.sprite = data.ThumbnailSprite;
         _nameText.text = data.Name;
         _addScoreDescription.text = data.AddScore.ToString();
+
+        SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
+        _setEffectDescription.text = setData != null ? setData.Description : string.Empty;
 
         if (data is CookingSpeedUpKitchenUtensilData)
         {
@@ -91,7 +91,7 @@ public class UIKitchenPreview : MonoBehaviour
             _usingButton.Interactable(false);
             _image.color = new Color(1, 1, 1);
             _setEffectObj.SetActive(true);
-            _setEffectDescription.text = _setDataDic[data.SetId].Description;
+
         }
         else
         {
@@ -103,7 +103,6 @@ public class UIKitchenPreview : MonoBehaviour
                 _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
                 _image.color = new Color(1, 1, 1);
                 _setEffectObj.SetActive(true);
-                _setEffectDescription.text = _setDataDic[data.SetId].Description;
             }
             else
             {
@@ -112,9 +111,9 @@ public class UIKitchenPreview : MonoBehaviour
                 _buyButton.gameObject.SetActive(true);
                 _buyButton.RemoveAllListeners();
                 _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
-                _buyButton.SetText(Utility.ConvertToNumber(data.BuyMinPrice));
+                _buyButton.SetText(Utility.ConvertToNumber(data.BuyPrice));
                 _buyMinScoreObj.SetActive(true);
-                _buyMinScoreDescription.text = Utility.ConvertToNumber(data.BuyMinScore);
+                _buyMinScoreDescription.text = Utility.ConvertToNumber(data.BuyScore);
             }
         }
     }

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class UIFurnitureTab : MonoBehaviour
@@ -5,40 +6,44 @@ public class UIFurnitureTab : MonoBehaviour
     [SerializeField] private UIFurniture _uiFurniture;
 
     [Header("Slots")]
-    [SerializeField] private UIFurnitureTabSlot _slotPrefab;
+    [SerializeField] private UITabSlot _slotPrefab;
     [SerializeField] private Transform _slotParent;
 
 
-    private UIFurnitureTabSlot[] _slots;
+    private UITabSlot[] _slots;
 
     public void Init()
     {
-        _slots = new UIFurnitureTabSlot[(int)FurnitureType.Length];
+        _slots = new UITabSlot[(int)FurnitureType.Length];
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; i++)
         {
             int index = i;
-            UIFurnitureTabSlot slot = Instantiate(_slotPrefab, _slotParent);
+            UITabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
             slot.Init(() => _uiFurniture.ShowUIFurniture((FurnitureType)index));
-            slot.SetData(FurnitureType.Table1 + index);
+            BasicData data = UserInfo.GetEquipFurniture((FurnitureType)index);
+            Sprite sprite = data != null ? data.ThumbnailSprite : null;
+            slot.UpdateUI(sprite, Utility.FurnitureTypeStringConverter((FurnitureType)index));
         }
 
-        UserInfo.OnChangeFurnitureHandler += SlotUpdate;
+        UserInfo.OnChangeFurnitureHandler += UpdateUI;
     }
 
 
 
     public void UpdateUI()
     {
-
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; i++)
         {
-            SlotUpdate((FurnitureType)i);
+            UpdateUI((FurnitureType)i);
         }
     }
 
-    private void SlotUpdate(FurnitureType type)
+
+    private void UpdateUI(FurnitureType type)
     {
-        _slots[(int)type].SetData(type);
+        BasicData data = UserInfo.GetEquipFurniture(type);
+        Sprite sprite = data != null ? data.ThumbnailSprite : null;
+        _slots[(int)type].UpdateUI(sprite, Utility.FurnitureTypeStringConverter(type));
     }
 }

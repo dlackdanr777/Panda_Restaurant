@@ -77,6 +77,7 @@ public class UIRestaurantAdmin : MobileUIView
         _staffTab.UpdateUI();
         _furnitureTab.UpdateUI();
         _recipeTab.UpdateUI();
+        _kitchenTab.UpdateUI();
 
         TweenData tween = _canvasGroup.TweenAlpha(1, 0.1f);
         tween.OnComplete(() =>

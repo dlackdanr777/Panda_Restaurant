@@ -30,6 +30,10 @@ public class UIMainScene : MonoBehaviour
         DataBind.SetUnityActionValue("ShowFurnitureUI", OnShowFurnitureUI);
         DataBind.SetUnityActionValue("HideFurnitureUI", OnHideFurnitureUI);
         DataBind.SetUnityActionValue("HideNoAnimeFurnitureUI", OnHideNoAnimeFurnitureUI);
+
+        DataBind.SetUnityActionValue("ShowKitchenUI", OnShowKitchenUI);
+        DataBind.SetUnityActionValue("HideKitchenUI", OnHideKitchenUI);
+        DataBind.SetUnityActionValue("HideNoAnimeKitchenUI", OnHideNoAnimeKitchenUI);
     }
 
 
@@ -41,6 +45,8 @@ public class UIMainScene : MonoBehaviour
     private void OnHideRestaurantAdminUI()
     {
         _uiNav.PopNoAnime("UIStaff");
+        _uiNav.PopNoAnime("UIFurniture");
+        _uiNav.PopNoAnime("UIKitchen");
         _uiNav.Pop("RestaurantAdminUI");
     }
 
@@ -87,5 +93,20 @@ public class UIMainScene : MonoBehaviour
     private void OnHideNoAnimeFurnitureUI()
     {
         _uiNav.PopNoAnime("UIFurniture");
+    }
+
+    private void OnShowKitchenUI()
+    {
+        _uiNav.Push("UIKitchen");
+    }
+
+    private void OnHideKitchenUI()
+    {
+        _uiNav.Pop("UIKitchen");
+    }
+
+    private void OnHideNoAnimeKitchenUI()
+    {
+        _uiNav.PopNoAnime("UIKitchen");
     }
 }
