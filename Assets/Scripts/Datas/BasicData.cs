@@ -7,7 +7,7 @@ public class BasicData : ScriptableObject
     public Sprite Sprite => _sprite;
 
     [SerializeField] private Sprite _thumbnailSPrite;
-    public Sprite ThumbnailSPrite => _thumbnailSPrite;
+    public Sprite ThumbnailSprite => _thumbnailSPrite;
 
     [SerializeField] private string _name;
     public string Name => _name;

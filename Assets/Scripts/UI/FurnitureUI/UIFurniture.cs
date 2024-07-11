@@ -14,8 +14,8 @@ public class UIFurniture : MobileUIView
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
-    [SerializeField] private TextMeshProUGUI _furnitureTypeText1;
-    [SerializeField] private TextMeshProUGUI _furnitureTypeText2;
+    [SerializeField] private TextMeshProUGUI _typeText1;
+    [SerializeField] private TextMeshProUGUI _typeText2;
 
     [Space]
     [Header("Animations")]
@@ -29,12 +29,11 @@ public class UIFurniture : MobileUIView
 
     [Space]
     [Header("Slot Option")]
-    [SerializeField] private int _createSlotValue;
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UIFurnitureSlot _slotPrefab;
+    [SerializeField] private UISlot _slotPrefab;
 
     private FurnitureType _currentType;
-    private UIFurnitureSlot[] _slots;
+    private List<UISlot>[] _slots = new List<UISlot>[(int)FurnitureType.Length];
     List<FurnitureData> _currentTypeDataList;
 
     private void OnDisable()
@@ -48,18 +47,24 @@ public class UIFurniture : MobileUIView
         _rightArrowButton.SetAction(() => ChangeFurnitureData(1));
         _uiFurniturePreview.Init(OnEquipButtonClicked, OnBuyButtonClicked);
 
-        _slots = new UIFurnitureSlot[_createSlotValue];
-        for(int i = 0; i < _createSlotValue; ++i)
+        for(int i = 0, cntI = (int)FurnitureType.Length; i < cntI; ++i)
         {
-            UIFurnitureSlot slot = Instantiate(_slotPrefab, _slotParnet);
-            _slots[i] = slot;
-            slot.Init(OnSlotClicked);
+            List<FurnitureData> typeDataList = FurnitureDataManager.Instance.GetFurnitureDataList((FurnitureType)i);
+            _slots[i] = new List<UISlot>();
+            for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
+            {
+                int index = j;
+                UISlot slot = Instantiate(_slotPrefab, _slotParnet);
+                slot.Init(() => OnSlotClicked(typeDataList[index]));
+                _slots[i].Add(slot);
+                slot.gameObject.SetActive(false);
+            }
         }
 
-        UserInfo.OnChangeFurnitureHandler += (type) => OnSlotUpdate();
-        UserInfo.OnGiveFurnitureHandler += OnSlotUpdate;
-        UserInfo.OnChangeMoneyHandler += OnSlotUpdate;
-        UserInfo.OnChangeScoreHanlder += OnSlotUpdate;
+        UserInfo.OnChangeFurnitureHandler += (type) => OnSlotUpdate(false);
+        UserInfo.OnGiveFurnitureHandler += () => OnSlotUpdate(false);
+        UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
+        UserInfo.OnChangeScoreHanlder += () => OnSlotUpdate(false);
 
         gameObject.SetActive(false);
     }
@@ -103,111 +108,20 @@ public class UIFurniture : MobileUIView
 
     private void SetFurnitureData(FurnitureType type)
     {
+        for (int i = 0, cnt = _slots[(int)_currentType].Count; i < cnt; ++i)
+        {
+            _slots[(int)_currentType][i].gameObject.SetActive(false);
+        } 
+
         _currentType = type;
-
         FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(type);
+        _currentTypeDataList = FurnitureDataManager.Instance.GetFurnitureDataList(type);
 
-        _currentTypeDataList = FurnitureDataManager.Instance.GetFoodDataList(type);
+        string furnitureName = Utility.FurnitureTypeStringConverter(type);
+        _typeText1.text = furnitureName;
+        _typeText2.text = furnitureName;
 
-        switch (type)
-        {
-            case FurnitureType.Table1:
-                _furnitureTypeText1.text = "테이블1";
-                _furnitureTypeText2.text = "테이블1";
-                break;
-
-            case FurnitureType.Table2:
-                _furnitureTypeText1.text = "테이블2";
-                _furnitureTypeText2.text = "테이블2";
-                break;
-
-            case FurnitureType.Table3:
-                _furnitureTypeText1.text = "테이블3";
-                _furnitureTypeText2.text = "테이블3";
-                break;
-
-            case FurnitureType.Table4:
-                _furnitureTypeText1.text = "테이블4";
-                _furnitureTypeText2.text = "테이블4";
-                break;
-
-            case FurnitureType.Table5:
-                _furnitureTypeText1.text = "테이블5";
-                _furnitureTypeText2.text = "테이블5";
-                break;
-
-            case FurnitureType.Counter:
-                _furnitureTypeText1.text = "카운터";
-                _furnitureTypeText2.text = "카운터";
-                break;
-
-            case FurnitureType.Rack:
-                _furnitureTypeText1.text = "선반";
-                _furnitureTypeText2.text = "선반";
-                break;
-
-            case FurnitureType.Frame:
-                _furnitureTypeText1.text = "액자";
-                _furnitureTypeText2.text = "액자";
-                break;
-
-            case FurnitureType.Flower:
-                _furnitureTypeText1.text = "화분";
-                _furnitureTypeText2.text = "화분";
-                break;
-
-            case FurnitureType.Acc:
-                _furnitureTypeText1.text = "조명";
-                _furnitureTypeText2.text = "조명";
-                break;
-
-            case FurnitureType.Wallpaper:
-                _furnitureTypeText1.text = "벽지";
-                _furnitureTypeText2.text = "벽지";
-                break;
-
-            default:
-                _furnitureTypeText1.text = string.Empty;
-                _furnitureTypeText2.text = string.Empty;
-                break;
-        }
-
-        for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
-        {
-            _slots[i].gameObject.SetActive(true);
-            if (equipFurnitureData != null && _currentTypeDataList[i].Id == equipFurnitureData.Id)
-            {
-                _slots[i].transform.SetAsFirstSibling();
-                _slots[i].SetUse(_currentTypeDataList[i]);
-                _slots[i].SetOutline(true);
-                continue;
-            }
-
-            _slots[i].SetOutline(false);
-            if (UserInfo.IsGiveFurniture(_currentTypeDataList[i]))
-            {
-                _slots[i].SetOperate(_currentTypeDataList[i]);
-                continue;
-            }
-
-            else
-            {
-                if (_currentTypeDataList[i].BuyScore <= UserInfo.Score && _currentTypeDataList[i].BuyPrice <= UserInfo.Money)
-                {
-                    _slots[i].SetEnoughMoney(_currentTypeDataList[i]);
-                    continue;
-                }
-
-                _slots[i].SetLowReputation(_currentTypeDataList[i]);
-                continue;
-
-            }
-        }
-
-        for(int i = _currentTypeDataList.Count; i < _createSlotValue; ++i)
-        {
-            _slots[i].gameObject.SetActive(false);
-        }
+        OnSlotUpdate(true);
     }
 
     private void SetFurniturePreview()
@@ -220,8 +134,8 @@ public class UIFurniture : MobileUIView
     private void ChangeFurnitureData(int dir)
     {
         FurnitureType newTypeIndex = _currentType + dir;
-        _currentType = newTypeIndex < 0 ? FurnitureType.Length - 1 : (FurnitureType)((int)newTypeIndex % (int)FurnitureType.Length);
-        SetFurnitureData(_currentType);
+        newTypeIndex = newTypeIndex < 0 ? FurnitureType.Length - 1 : (FurnitureType)((int)newTypeIndex % (int)FurnitureType.Length);
+        SetFurnitureData(newTypeIndex);
         SetFurniturePreview();
     }
 
@@ -265,51 +179,56 @@ public class UIFurniture : MobileUIView
         SetFurniturePreview();
     }
 
-    private void OnSlotUpdate()
+    private void OnSlotUpdate(bool changeOutline)
     {
         if (_currentTypeDataList == null || _currentTypeDataList.Count == 0 || !gameObject.activeSelf)
             return;
 
         FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(_currentType);
 
+        int slotsIndex = (int)_currentType;
+        FurnitureData data;
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
         {
-            _slots[i].gameObject.SetActive(true);
-            if (equipFurnitureData != null && _currentTypeDataList[i].Id == equipFurnitureData.Id)
+            data = _currentTypeDataList[i];
+            _slots[slotsIndex][i].gameObject.SetActive(true);
+            if (equipFurnitureData != null && data.Id == equipFurnitureData.Id)
             {
-                _slots[i].transform.SetAsFirstSibling();
-                _slots[i].SetUse(_currentTypeDataList[i]);
+                _slots[slotsIndex][i].transform.SetAsFirstSibling();
+                _slots[slotsIndex][i].SetUse(data.ThumbnailSprite, data.Name, "사용중");
+                if(changeOutline) _slots[slotsIndex][i].SetOutline(true);
                 continue;
             }
 
-            if (UserInfo.IsGiveFurniture(_currentTypeDataList[i]))
+            if(changeOutline) _slots[slotsIndex][i].SetOutline(false);
+            if (UserInfo.IsGiveFurniture(data))
             {
-                _slots[i].SetOperate(_currentTypeDataList[i]);
+                _slots[slotsIndex][i].SetOperate(data.ThumbnailSprite, data.Name, "사용");
                 continue;
             }
 
             else
             {
-                if (_currentTypeDataList[i].BuyScore <= UserInfo.Score && _currentTypeDataList[i].BuyPrice <= UserInfo.Money)
+                if (data.BuyScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
                 {
-                    _slots[i].SetEnoughMoney(_currentTypeDataList[i]);
+                    _slots[slotsIndex][i].SetEnoughMoney(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyPrice));
                     continue;
                 }
 
-                _slots[i].SetLowReputation(_currentTypeDataList[i]);
+                _slots[slotsIndex][i].SetLowReputation(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyScore));
                 continue;
             }
         }
     }
 
-    private void OnSlotClicked(BasicData data)
+    private void OnSlotClicked(FurnitureData data)
     {
-        FurnitureData furnitureData = (FurnitureData)data;
-        _uiFurniturePreview.SetFurnitureData(furnitureData);
+        _uiFurniturePreview.SetFurnitureData(data);
+
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; i++)
         {
-            bool outlineEnabled = _currentTypeDataList[i] == furnitureData ? true : false;
-            _slots[i].SetOutline(outlineEnabled);
+            bool outlineEnabled = _currentTypeDataList[i] == data ? true : false;
+            _slots[(int)_currentType][i].SetOutline(outlineEnabled);
         }
     }
 }

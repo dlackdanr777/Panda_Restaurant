@@ -1,4 +1,3 @@
-using Muks.DataBind;
 using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections.Generic;
@@ -11,12 +10,11 @@ public class UIStaff : MobileUIView
     [SerializeField] private UIRestaurantAdmin _uiRestaurantAdmin;
     [SerializeField] private StaffController _staffController;
     [SerializeField] private UIStaffPreview _uiStaffPreview;
-    [SerializeField] private UIStaffUpgrade _uiStaffUpgrade;
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
-    [SerializeField] private TextMeshProUGUI _staffTypeText1;
-    [SerializeField] private TextMeshProUGUI _staffTypeText2;
+    [SerializeField] private TextMeshProUGUI _typeText1;
+    [SerializeField] private TextMeshProUGUI _typeText2;
 
     [Space]
     [Header("Animations")]
@@ -32,10 +30,10 @@ public class UIStaff : MobileUIView
     [Header("Slot Option")]
     [SerializeField] private int _createSlotValue;
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UIStaffSlot _slotPrefab;
+    [SerializeField] private UISlot _slotPrefab;
 
     private StaffType _currentType;
-    private UIStaffSlot[] _slots;
+    private List<UISlot>[] _slots = new List<UISlot>[(int)FurnitureType.Length];
     List<StaffData> _currentTypeDataList;
 
     private void OnDisable()
@@ -47,22 +45,27 @@ public class UIStaff : MobileUIView
     {
         _leftArrowButton.SetAction(() => ChangeStaffData(-1));
         _rightArrowButton.SetAction(() => ChangeStaffData(1));
-        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, OnShowUpgradeButtonClicked);
-        _uiStaffUpgrade.SetAction(OnUpgradeButtonClicked);
+        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
 
-        _slots = new UIStaffSlot[_createSlotValue];
-        for(int i = 0; i < _createSlotValue; ++i)
+        for (int i = 0, cntI = (int)StaffType.Length; i < cntI; ++i)
         {
-            UIStaffSlot slot = Instantiate(_slotPrefab, _slotParnet);
-            _slots[i] = slot;
-            slot.Init(OnSlotClicked);
+            List<StaffData> typeDataList = StaffDataManager.Instance.GetStaffDataList((StaffType)i);
+            _slots[i] = new List<UISlot>();
+            for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
+            {
+                int index = j;
+                UISlot slot = Instantiate(_slotPrefab, _slotParnet);
+                slot.Init(() => OnSlotClicked(typeDataList[index]));
+                _slots[i].Add(slot);
+                slot.gameObject.SetActive(false);
+            }
         }
 
-        UserInfo.OnChangeStaffHandler += OnSlotUpdate;
-        UserInfo.OnUpgradeStaffHandler += OnSlotUpdate;
-        UserInfo.OnGiveStaffHandler += OnSlotUpdate;
-        UserInfo.OnChangeMoneyHandler += OnSlotUpdate;
-        UserInfo.OnChangeScoreHanlder += OnSlotUpdate;
+        UserInfo.OnChangeStaffHandler += () => OnSlotUpdate(false);
+        UserInfo.OnUpgradeStaffHandler += () => OnSlotUpdate(false);
+        UserInfo.OnGiveStaffHandler += () => OnSlotUpdate(false);
+        UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
+        UserInfo.OnChangeScoreHanlder += () => OnSlotUpdate(false);
 
         gameObject.SetActive(false);
     }
@@ -106,83 +109,20 @@ public class UIStaff : MobileUIView
 
     private void SetStaffData(StaffType type)
     {
+        for (int i = 0, cnt = _slots[(int)_currentType].Count; i < cnt; ++i)
+        {
+            _slots[(int)_currentType][i].gameObject.SetActive(false);
+        }
+
         _currentType = type;
         StaffData equipStaffData = UserInfo.GetEquipStaff(type);
         _currentTypeDataList = StaffDataManager.Instance.GetStaffDataList(type);
 
-        switch(type)
-        {
-            case StaffType.Manager:
-                _staffTypeText1.text = "매니저";
-                _staffTypeText2.text = "매니저";
-                break;
+        string staffName = Utility.StaffTypeStringConverter(type);
+        _typeText1.text = staffName;
+        _typeText2.text = staffName;
 
-            case StaffType.Waiter:
-                _staffTypeText1.text = "웨이터";
-                _staffTypeText2.text = "웨이터";
-                break;
-
-            case StaffType.Chef:
-                _staffTypeText1.text = "셰프";
-                _staffTypeText2.text = "셰프";
-                break;
-
-            case StaffType.Cleaner:
-                _staffTypeText1.text = "청소부";
-                _staffTypeText2.text = "청소부";
-                break;
-
-            case StaffType.Marketer:
-                _staffTypeText1.text = "마케터";
-                _staffTypeText2.text = "마케터";
-                break;
-
-            case StaffType.Guard:
-                _staffTypeText1.text = "가드";
-                _staffTypeText2.text = "가드";
-                break;
-
-            case StaffType.Server:
-                _staffTypeText1.text = "서버";
-                _staffTypeText2.text = "서버";
-                break;
-        }
-
-        for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
-        {
-            _slots[i].gameObject.SetActive(true);
-            if (equipStaffData != null && _currentTypeDataList[i].Id == equipStaffData.Id)
-            {
-                _slots[i].transform.SetAsFirstSibling();
-                _slots[i].SetUse(_currentTypeDataList[i]);
-                _slots[i].SetOutline(true);
-                continue;
-            }
-            _slots[i].SetOutline(false);
-
-            if (UserInfo.IsGiveStaff(_currentTypeDataList[i]))
-            {
-                _slots[i].SetOperate(_currentTypeDataList[i]);
-                continue;
-            }
-
-            else
-            {
-                if (_currentTypeDataList[i].BuyMinScore <= UserInfo.Score && _currentTypeDataList[i].MoneyData.Price <= UserInfo.Money)
-                {
-                    _slots[i].SetEnoughMoney(_currentTypeDataList[i]);
-                    continue;
-                }
-
-                _slots[i].SetLowReputation(_currentTypeDataList[i]);
-                continue;
-            }
-        }
-
-        for(int i = _currentTypeDataList.Count; i < _createSlotValue; ++i)
-        {
-            _slots[i].gameObject.SetActive(false);
-        }
+        OnSlotUpdate(true);
     }
 
     private void SetStaffPreview()
@@ -195,8 +135,8 @@ public class UIStaff : MobileUIView
     private void ChangeStaffData(int dir)
     {
         StaffType newTypeIndex = _currentType + dir;
-        _currentType = newTypeIndex < 0 ? StaffType.Length - 1 : (StaffType)((int)newTypeIndex % (int)StaffType.Length);
-        SetStaffData(_currentType);
+        newTypeIndex = newTypeIndex < 0 ? StaffType.Length - 1 : (StaffType)((int)newTypeIndex % (int)StaffType.Length);
+        SetStaffData(newTypeIndex);
         SetStaffPreview();
     }
 
@@ -216,22 +156,23 @@ public class UIStaff : MobileUIView
             return;
         }
 
-        if (UserInfo.Score < data.BuyMinScore)
+        if (UserInfo.Score < data.BuyScore)
         {
             TimedDisplayManager.Instance.ShowTextLackScore();
             return;
         }
 
-        if (UserInfo.Money < data.MoneyData.Price)
+        if (UserInfo.Money < data.BuyPrice)
         {
             TimedDisplayManager.Instance.ShowTextLackMoney();
             return;
         }
 
-        UserInfo.AppendMoney(-data.MoneyData.Price);
+        UserInfo.AppendMoney(-data.BuyPrice);
         UserInfo.GiveStaff(data);
         TimedDisplayManager.Instance.ShowText("새로운 직원을 채용했어요!");
     }
+
 
     private void OnUpgradeButtonClicked(StaffData data)
     {
@@ -261,6 +202,52 @@ public class UIStaff : MobileUIView
         }
     }
 
+
+    private void OnSlotUpdate(bool changeOutline)
+    {
+        if (_currentTypeDataList == null || _currentTypeDataList.Count == 0 || !gameObject.activeSelf)
+            return;
+
+        StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
+
+        int slotsIndex = (int)_currentType;
+        StaffData data;
+        UISlot slot;
+        for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
+        {
+            data = _currentTypeDataList[i];
+            slot = _slots[slotsIndex][i];
+            slot.gameObject.SetActive(true);
+            if (equipStaffData != null && data.Id == equipStaffData.Id)
+            {
+                slot.transform.SetAsFirstSibling();
+                slot.SetUse(data.ThumbnailSprite, data.Name, "사용중");
+                if (changeOutline) _slots[slotsIndex][i].SetOutline(true);
+                continue;
+            }
+
+            if (changeOutline) _slots[slotsIndex][i].SetOutline(false);
+            if (UserInfo.IsGiveStaff(data))
+            {
+                slot.SetOperate(data.ThumbnailSprite, data.Name, "사용");
+                continue;
+            }
+
+            else
+            {
+                if (data.BuyScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
+                {
+                    slot.SetEnoughMoney(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyPrice));
+                    continue;
+                }
+
+                slot.SetLowReputation(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyScore));
+                continue;
+            }
+        }
+    }
+
+
     public void ShowUIStaff(StaffType type)
     {
         _uiNav.Push("UIStaff");
@@ -268,53 +255,6 @@ public class UIStaff : MobileUIView
         SetStaffPreview();
     }
 
-    private void OnSlotUpdate()
-    {
-        if (_currentTypeDataList == null || _currentTypeDataList.Count == 0 || !gameObject.activeSelf)
-            return;
-
-        StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
-
-        for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
-        {
-            _slots[i].gameObject.SetActive(true);
-            if (equipStaffData != null && _currentTypeDataList[i].Id == equipStaffData.Id)
-            {
-                _slots[i].transform.SetAsFirstSibling();
-                _slots[i].SetUse(_currentTypeDataList[i]);
-                continue;
-            }
-
-            if (UserInfo.IsGiveStaff(_currentTypeDataList[i]))
-            {
-                _slots[i].SetOperate(_currentTypeDataList[i]);
-                continue;
-            }
-
-            else
-            {
-                if (_currentTypeDataList[i].BuyMinScore <= UserInfo.Score && _currentTypeDataList[i].MoneyData.Price <= UserInfo.Money)
-                {
-                    _slots[i].SetEnoughMoney(_currentTypeDataList[i]);
-                    continue;
-                }
-
-                _slots[i].SetLowReputation(_currentTypeDataList[i]);
-                continue;
-            }
-        }
-
-        for (int i = _currentTypeDataList.Count; i < _createSlotValue; ++i)
-        {
-            _slots[i].gameObject.SetActive(false);
-        }
-    }
-
-    private void OnShowUpgradeButtonClicked(StaffData data)
-    {
-        _uiNav.Push("UIStaffUpgrade");
-        _uiStaffUpgrade.SetStaffData(data);
-    }
 
     private void OnSlotClicked(StaffData data)
     {
@@ -322,7 +262,7 @@ public class UIStaff : MobileUIView
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; i++)
         {
             bool outlineEnabled = _currentTypeDataList[i] == data ? true : false;
-            _slots[i].SetOutline(outlineEnabled);
+            _slots[(int)_currentType][i].SetOutline(outlineEnabled);
         }
     }
 }

@@ -58,7 +58,7 @@ public class FurnitureDataManager : MonoBehaviour
     }
 
 
-    public List<FurnitureData> GetFoodDataList(FurnitureType type)
+    public List<FurnitureData> GetFurnitureDataList(FurnitureType type)
     {
         return _furnitureDataListType[(int)type];
     }

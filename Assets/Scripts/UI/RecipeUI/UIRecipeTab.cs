@@ -10,9 +10,9 @@ public class UIRecipeTab : MonoBehaviour
     [Space]
     [Header("Slot Option")]
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UIRecipeSlot _slotPrefab;
+    [SerializeField] private UISlot _slotPrefab;
 
-    private UIRecipeSlot[] _slots;
+    private UISlot[] _slots;
     private List<FoodData> _foodDataList;
 
     public void Init()
@@ -23,12 +23,15 @@ public class UIRecipeTab : MonoBehaviour
 
         int foodCount = FoodDataManager.Count;
 
-        _slots = new UIRecipeSlot[foodCount];
+        _slots = new UISlot[foodCount];
 
         for (int i = 0; i < foodCount; ++i)
         {
-            UIRecipeSlot slot = Instantiate(_slotPrefab, _slotParnet);
-            slot.Init(OnSlotClicked);
+            UISlot slot = Instantiate(_slotPrefab, _slotParnet);
+
+            int index = i;
+            FoodData data = _foodDataList[index];
+            slot.Init(() => OnSlotClicked(data));
             slot.SetOutline(false);
             _slots[i] = slot;
         }
@@ -55,16 +58,16 @@ public class UIRecipeTab : MonoBehaviour
 
             if(UserInfo.IsGiveRecipe(data.Id))
             {
-                _slots[i].SetOperate(data);
+                _slots[i].SetOperate(data.ThumbnailSprite, data.Name, string.Empty);
                 continue;
             }
 
             if(data.BuyScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
             {
-                _slots[i].SetBuy(data);
+                _slots[i].SetEnoughMoney(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyPrice));
                 continue;
             }
-            _slots[i].SetLowReputation(data);
+            _slots[i].SetLowReputation(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyScore));
             continue;
         }
     }

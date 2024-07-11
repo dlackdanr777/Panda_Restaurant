@@ -72,7 +72,7 @@ public class UIStaffSlot : MonoBehaviour
         _image.sprite = data.Sprite;
         _nameText.text = data.Name;
         _image.color = new Color(0, 0, 0, 1);
-        _buyMinMoneyImage.SetText(Utility.ConvertToNumber(data.MoneyData.Price));
+        _buyMinMoneyImage.SetText(Utility.ConvertToNumber(data.BuyPrice));
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
@@ -90,7 +90,7 @@ public class UIStaffSlot : MonoBehaviour
         _image.sprite = data.Sprite;
         _nameText.text = data.Name;
         _image.color = new Color(0, 0, 0, 1);
-        _buyMinScoreImage.SetText(Utility.ConvertToNumber(data.BuyMinScore));
+        _buyMinScoreImage.SetText(Utility.ConvertToNumber(data.BuyScore));
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));

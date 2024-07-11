@@ -1688,14 +1688,13 @@ MonoBehaviour:
   _leftArrowButton: {fileID: 1250679418}
   _rightArrowButton: {fileID: 555928081}
   _canvasGroup: {fileID: 72960053}
-  _furnitureTypeText1: {fileID: 855240048}
-  _furnitureTypeText2: {fileID: 735680319}
+  _typeText1: {fileID: 855240048}
+  _typeText2: {fileID: 735680319}
   _animeUI: {fileID: 2041989366}
   _showDuration: 0.3
   _showTweenMode: 15
   _hideDuration: 0.3
   _hideTweenMode: 14
-  _createSlotValue: 50
   _slotParnet: {fileID: 1703428999}
   _slotPrefab: {fileID: 5485483690408162049, guid: cd297380a0ec743488ff6c9f0a29c9c6,
     type: 3}
@@ -11434,7 +11433,7 @@ MonoBehaviour:
   _staffController: {fileID: 666776745}
   _uiRecipePreview: {fileID: 276378050}
   _slotParnet: {fileID: 786272252}
-  _slotPrefab: {fileID: 3761082594143574443, guid: b117b367cff623d4b8a849740ac570c3,
+  _slotPrefab: {fileID: 5485483690408162049, guid: b70bd4db71342da42b33b6d24c07329d,
     type: 3}
 --- !u!1 &756355312
 GameObject:
@@ -27109,12 +27108,11 @@ MonoBehaviour:
   _uiRestaurantAdmin: {fileID: 1224807818}
   _staffController: {fileID: 666776745}
   _uiStaffPreview: {fileID: 15120287}
-  _uiStaffUpgrade: {fileID: 1031424937}
   _leftArrowButton: {fileID: 544662911}
   _rightArrowButton: {fileID: 2102208723}
   _canvasGroup: {fileID: 1810491617}
-  _staffTypeText1: {fileID: 1613539604}
-  _staffTypeText2: {fileID: 1031445078}
+  _typeText1: {fileID: 855240048}
+  _typeText2: {fileID: 735680319}
   _animeUI: {fileID: 1413236558}
   _showDuration: 0.3
   _showTweenMode: 15
@@ -27122,7 +27120,7 @@ MonoBehaviour:
   _hideTweenMode: 14
   _createSlotValue: 30
   _slotParnet: {fileID: 1402838954}
-  _slotPrefab: {fileID: 2672950526626870092, guid: 69c29292796594d4a9bf74bf37fa8a2b,
+  _slotPrefab: {fileID: 5485483690408162049, guid: 9f4edec8a336c25418870fbd7f751411,
     type: 3}
 --- !u!225 &1810491617
 CanvasGroup:

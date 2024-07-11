@@ -18,6 +18,6 @@ public class UIStaffLackDescription : MonoBehaviour
 
         _buyButton.RemoveAllListeners();
         _buyButton.AddListener(() => onBuyButtonClicked(data));
-        _buyButton.SetText(Utility.ConvertToNumber(data.MoneyData.Price));
+        _buyButton.SetText(Utility.ConvertToNumber(data.BuyPrice));
     }
 }
