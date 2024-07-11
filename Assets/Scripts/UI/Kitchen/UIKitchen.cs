@@ -1,4 +1,3 @@
-using Muks.DataBind;
 using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections.Generic;
@@ -9,13 +8,12 @@ public class UIKitchen : MobileUIView
 {
     [Header("Components")]
     [SerializeField] private UIRestaurantAdmin _uiRestaurantAdmin;
-    [SerializeField] private FurnitureSystem _furnitureSystem;
-    [SerializeField] private UIFurniturePreview _uiFurniturePreview;
+    [SerializeField] private UIKitchenPreview _uikitchenPreview;
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
-    [SerializeField] private TextMeshProUGUI _furnitureTypeText1;
-    [SerializeField] private TextMeshProUGUI _furnitureTypeText2;
+    [SerializeField] private TextMeshProUGUI _typeText1;
+    [SerializeField] private TextMeshProUGUI _typeText2;
 
     [Space]
     [Header("Animations")]
@@ -31,11 +29,11 @@ public class UIKitchen : MobileUIView
     [Header("Slot Option")]
     [SerializeField] private int _createSlotValue;
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UIFurnitureSlot _slotPrefab;
+    [SerializeField] private UIKitchenSlot _slotPrefab;
 
-    private FurnitureType _currentType;
-    private UIFurnitureSlot[] _slots;
-    List<FurnitureData> _currentTypeDataList;
+    private KitchenUtensilType _currentType;
+    private UIKitchenSlot[] _slots;
+    List<KitchenUtensilData> _currentTypeDataList;
 
     private void OnDisable()
     {
@@ -44,14 +42,14 @@ public class UIKitchen : MobileUIView
 
     public override void Init()
     {
-        _leftArrowButton.SetAction(() => ChangeFurnitureData(-1));
-        _rightArrowButton.SetAction(() => ChangeFurnitureData(1));
-        _uiFurniturePreview.Init(OnEquipButtonClicked, OnBuyButtonClicked);
+        _leftArrowButton.SetAction(() => ChangeKitchenData(-1));
+        _rightArrowButton.SetAction(() => ChangeKitchenData(1));
+        _uikitchenPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked);
 
-        _slots = new UIFurnitureSlot[_createSlotValue];
+        _slots = new UIKitchenSlot[_createSlotValue];
         for(int i = 0; i < _createSlotValue; ++i)
         {
-            UIFurnitureSlot slot = Instantiate(_slotPrefab, _slotParnet);
+            UIKitchenSlot slot = Instantiate(_slotPrefab, _slotParnet);
             _slots[i] = slot;
             slot.Init(OnSlotClicked);
         }
@@ -101,81 +99,21 @@ public class UIKitchen : MobileUIView
     }
 
 
-    private void SetFurnitureData(FurnitureType type)
+    private void SetKitchenUtensilDataData(KitchenUtensilType type)
     {
         _currentType = type;
 
-        FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(type);
+        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(type);
+        _currentTypeDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList(type);
 
-        _currentTypeDataList = FurnitureDataManager.Instance.GetFoodDataList(type);
-
-        switch (type)
-        {
-            case FurnitureType.Table1:
-                _furnitureTypeText1.text = "테이블1";
-                _furnitureTypeText2.text = "테이블1";
-                break;
-
-            case FurnitureType.Table2:
-                _furnitureTypeText1.text = "테이블2";
-                _furnitureTypeText2.text = "테이블2";
-                break;
-
-            case FurnitureType.Table3:
-                _furnitureTypeText1.text = "테이블3";
-                _furnitureTypeText2.text = "테이블3";
-                break;
-
-            case FurnitureType.Table4:
-                _furnitureTypeText1.text = "테이블4";
-                _furnitureTypeText2.text = "테이블4";
-                break;
-
-            case FurnitureType.Table5:
-                _furnitureTypeText1.text = "테이블5";
-                _furnitureTypeText2.text = "테이블5";
-                break;
-
-            case FurnitureType.Counter:
-                _furnitureTypeText1.text = "카운터";
-                _furnitureTypeText2.text = "카운터";
-                break;
-
-            case FurnitureType.Rack:
-                _furnitureTypeText1.text = "선반";
-                _furnitureTypeText2.text = "선반";
-                break;
-
-            case FurnitureType.Frame:
-                _furnitureTypeText1.text = "액자";
-                _furnitureTypeText2.text = "액자";
-                break;
-
-            case FurnitureType.Flower:
-                _furnitureTypeText1.text = "화분";
-                _furnitureTypeText2.text = "화분";
-                break;
-
-            case FurnitureType.Acc:
-                _furnitureTypeText1.text = "조명";
-                _furnitureTypeText2.text = "조명";
-                break;
-
-            case FurnitureType.Wallpaper:
-                _furnitureTypeText1.text = "벽지";
-                _furnitureTypeText2.text = "벽지";
-                break;
-
-            default:
-                _furnitureTypeText1.text = string.Empty;
-                _furnitureTypeText2.text = string.Empty;
-                break;
-        }
+        string typeStr = Utility.KitchenUtensilTypeStringConverter(type);
+        _typeText1.text = typeStr;
+        _typeText2.text = typeStr;
 
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
         {
             _slots[i].gameObject.SetActive(true);
-            if (equipFurnitureData != null && _currentTypeDataList[i].Id == equipFurnitureData.Id)
+            if (equipData != null && _currentTypeDataList[i].Id == equipData.Id)
             {
                 _slots[i].transform.SetAsFirstSibling();
                 _slots[i].SetUse(_currentTypeDataList[i]);
@@ -184,7 +122,7 @@ public class UIKitchen : MobileUIView
             }
 
             _slots[i].SetOutline(false);
-            if (UserInfo.IsGiveFurniture(_currentTypeDataList[i]))
+            if (UserInfo.IsGiveKitchenUtensil(_currentTypeDataList[i]))
             {
                 _slots[i].SetOperate(_currentTypeDataList[i]);
                 continue;
@@ -210,32 +148,32 @@ public class UIKitchen : MobileUIView
         }
     }
 
-    private void SetFurniturePreview()
+    private void SetKitchenPreview()
     {
-        FurnitureData equipStaffData = UserInfo.GetEquipFurniture(_currentType);
-        _uiFurniturePreview.SetFurnitureData(equipStaffData);
+        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(_currentType);
+        _uikitchenPreview.SetData(equipData);
     }
 
 
-    private void ChangeFurnitureData(int dir)
+    private void ChangeKitchenData(int dir)
     {
-        FurnitureType newTypeIndex = _currentType + dir;
-        _currentType = newTypeIndex < 0 ? FurnitureType.Length - 1 : (FurnitureType)((int)newTypeIndex % (int)FurnitureType.Length);
-        SetFurnitureData(_currentType);
-        SetFurniturePreview();
+        KitchenUtensilType newTypeIndex = _currentType + dir;
+        _currentType = newTypeIndex < 0 ? KitchenUtensilType.Length - 1 : (KitchenUtensilType)((int)newTypeIndex % (int)KitchenUtensilType.Length);
+        SetKitchenUtensilDataData(_currentType);
+        SetKitchenPreview();
     }
 
     
-    private void OnEquipButtonClicked(FurnitureData data)
+    private void OnEquipButtonClicked(KitchenUtensilData data)
     {
-        UserInfo.SetEquipFurniture(data);
-        SetFurnitureData(_currentType);
-        SetFurniturePreview();
+        UserInfo.SetEquipKitchenUtensil(data);
+        SetKitchenUtensilDataData(_currentType);
+        SetKitchenPreview();
     }
 
-    private void OnBuyButtonClicked(FurnitureData data)
+    private void OnBuyButtonClicked(KitchenUtensilData data)
     {
-        if (UserInfo.IsGiveFurniture(data.Id))
+        if (UserInfo.IsGiveKitchenUtensil(data.Id))
         {
             TimedDisplayManager.Instance.ShowTextError();
             return;
@@ -254,15 +192,15 @@ public class UIKitchen : MobileUIView
         }
 
         UserInfo.AppendMoney(-data.BuyMinPrice);
-        UserInfo.GiveFurniture(data);
-        TimedDisplayManager.Instance.ShowText("새로운 가구를 구매했어요!");
+        UserInfo.GiveKitchenUtensil(data);
+        TimedDisplayManager.Instance.ShowText("새로운 주방 용품을 구매했어요!");
     }
 
-    public void ShowUIFurniture(FurnitureType type)
+    public void ShowUIKitchen(KitchenUtensilType type)
     {
         _uiNav.Push("UIFurniture");
-        SetFurnitureData(type);
-        SetFurniturePreview();
+        SetKitchenUtensilDataData(type);
+        SetKitchenPreview();
     }
 
     private void OnSlotUpdate()
@@ -270,7 +208,7 @@ public class UIKitchen : MobileUIView
         if (_currentTypeDataList == null || _currentTypeDataList.Count == 0 || !gameObject.activeSelf)
             return;
 
-        FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(_currentType);
+        KitchenUtensilData equipFurnitureData = UserInfo.GetEquipKitchenUtensil(_currentType);
 
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
         {
@@ -282,7 +220,7 @@ public class UIKitchen : MobileUIView
                 continue;
             }
 
-            if (UserInfo.IsGiveFurniture(_currentTypeDataList[i]))
+            if (UserInfo.IsGiveKitchenUtensil(_currentTypeDataList[i]))
             {
                 _slots[i].SetOperate(_currentTypeDataList[i]);
                 continue;
@@ -302,9 +240,9 @@ public class UIKitchen : MobileUIView
         }
     }
 
-    private void OnSlotClicked(FurnitureData data)
+    private void OnSlotClicked(KitchenUtensilData data)
     {
-        _uiFurniturePreview.SetFurnitureData(data);
+        _uikitchenPreview.SetData(data);
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; i++)
         {
             bool outlineEnabled = _currentTypeDataList[i] == data ? true : false;

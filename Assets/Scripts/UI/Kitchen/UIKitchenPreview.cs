@@ -20,26 +20,25 @@ public class UIKitchenPreview : MonoBehaviour
     [SerializeField] private UIButtonAndText _equipButton;
     [SerializeField] private UIButtonAndText _buyButton;
 
-    private Action<FurnitureData> _onBuyButtonClicked;
-    private Action<FurnitureData> _onEquipButtonClicked;
-    private Action<FurnitureData> _onUpgradeButtonClicked;
-    private FurnitureData _currentData;
-    private Dictionary<string, FurnitureSetData> _furnitureSetDataDic;
+    private Action<KitchenUtensilData> _onBuyButtonClicked;
+    private Action<KitchenUtensilData> _onEquipButtonClicked;
+    private KitchenUtensilData _currentData;
+    private Dictionary<string, FurnitureSetData> _setDataDic;
 
-    public void Init(Action<FurnitureData> onEquipButtonClicked, Action<FurnitureData> onBuyButtonClicked)
+    public void Init(Action<KitchenUtensilData> onEquipButtonClicked, Action<KitchenUtensilData> onBuyButtonClicked)
     {
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
-        _furnitureSetDataDic = FurnitureDataManager.Instance.GetFurnitureSetDic();
+        _setDataDic = FurnitureDataManager.Instance.GetFurnitureSetDic();
 
-        UserInfo.OnChangeMoneyHandler += UpdateFurniture;
-        UserInfo.OnChangeScoreHanlder += UpdateFurniture;
-        UserInfo.OnChangeFurnitureHandler += (type) => UpdateFurniture();
-        UserInfo.OnGiveFurnitureHandler += UpdateFurniture;
+        UserInfo.OnChangeMoneyHandler += UpdateUI;
+        UserInfo.OnChangeScoreHanlder += UpdateUI;
+        UserInfo.OnChangeFurnitureHandler += (type) => UpdateUI();
+        UserInfo.OnGiveFurnitureHandler += UpdateUI;
     }
 
 
-    public void SetFurnitureData(FurnitureData data)
+    public void SetData(KitchenUtensilData data)
     {
         _currentData = data;
         _usingButton.gameObject.SetActive(false);
@@ -66,21 +65,15 @@ public class UIKitchenPreview : MonoBehaviour
         _nameText.text = data.Name;
         _addScoreDescription.text = data.AddScore.ToString();
 
-        if (data is MoneyPerMinuteFurnitureData)
+        if (data is CookingSpeedUpKitchenUtensilData)
         {
-            _effectText.text = "분당 수입 :";
-            _effectDescription.text = data.EffectValue.ToString();
+            _effectText.text = "요리 효율 :";
+            _effectDescription.text = data.EffectValue.ToString() + "%";
         }
             
-        else if (data is TipPerMinuteFurnitureData)
+        else if (data is MoneyPerMinuteKitchenUtensilData)
         {
-            _effectText.text = "분당 팁 :";
-            _effectDescription.text = data.EffectValue.ToString();
-        }
-
-        else if (data is MaxTipVolumeFurnitureData)
-        {
-            _effectText.text = "팁 저장량 :";
+            _effectText.text = "분당 수입 :";
             _effectDescription.text = data.EffectValue.ToString();
         }
 
@@ -91,18 +84,18 @@ public class UIKitchenPreview : MonoBehaviour
         }
         
 
-        if (UserInfo.IsEquipFurniture(data))
+        if (UserInfo.IsEquipKitchenUtensil(data))
         {
             _usingButton.gameObject.SetActive(true);
             _usingButton.SetText("사용 중");
             _usingButton.Interactable(false);
             _image.color = new Color(1, 1, 1);
             _setEffectObj.SetActive(true);
-            _setEffectDescription.text = _furnitureSetDataDic[data.SetId].EffectDescription;
+            _setEffectDescription.text = _setDataDic[data.SetId].Description;
         }
         else
         {
-            if(UserInfo.IsGiveFurniture(data))
+            if(UserInfo.IsGiveKitchenUtensil(data))
             {
                 _equipButton.gameObject.SetActive(true);
                 _equipButton.SetText("사용 하기");
@@ -110,7 +103,7 @@ public class UIKitchenPreview : MonoBehaviour
                 _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
                 _image.color = new Color(1, 1, 1);
                 _setEffectObj.SetActive(true);
-                _setEffectDescription.text = _furnitureSetDataDic[data.SetId].EffectDescription;
+                _setEffectDescription.text = _setDataDic[data.SetId].Description;
             }
             else
             {
@@ -126,8 +119,8 @@ public class UIKitchenPreview : MonoBehaviour
         }
     }
 
-    private void UpdateFurniture()
+    private void UpdateUI()
     {
-        SetFurnitureData(_currentData);
+        SetData(_currentData);
     }
 }

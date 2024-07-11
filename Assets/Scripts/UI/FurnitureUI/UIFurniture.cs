@@ -192,7 +192,7 @@ public class UIFurniture : MobileUIView
 
             else
             {
-                if (_currentTypeDataList[i].BuyMinScore <= UserInfo.Score && _currentTypeDataList[i].BuyMinPrice <= UserInfo.Money)
+                if (_currentTypeDataList[i].BuyScore <= UserInfo.Score && _currentTypeDataList[i].BuyPrice <= UserInfo.Money)
                 {
                     _slots[i].SetEnoughMoney(_currentTypeDataList[i]);
                     continue;
@@ -241,19 +241,19 @@ public class UIFurniture : MobileUIView
             return;
         }
 
-        if (UserInfo.Score < data.BuyMinScore)
+        if (UserInfo.Score < data.BuyScore)
         {
             TimedDisplayManager.Instance.ShowTextLackScore();
             return;
         }
 
-        if (UserInfo.Money < data.BuyMinPrice)
+        if (UserInfo.Money < data.BuyPrice)
         {
             TimedDisplayManager.Instance.ShowTextLackMoney();
             return;
         }
 
-        UserInfo.AppendMoney(-data.BuyMinPrice);
+        UserInfo.AppendMoney(-data.BuyPrice);
         UserInfo.GiveFurniture(data);
         TimedDisplayManager.Instance.ShowText("새로운 가구를 구매했어요!");
     }
@@ -290,7 +290,7 @@ public class UIFurniture : MobileUIView
 
             else
             {
-                if (_currentTypeDataList[i].BuyMinScore <= UserInfo.Score && _currentTypeDataList[i].BuyMinPrice <= UserInfo.Money)
+                if (_currentTypeDataList[i].BuyScore <= UserInfo.Score && _currentTypeDataList[i].BuyPrice <= UserInfo.Money)
                 {
                     _slots[i].SetEnoughMoney(_currentTypeDataList[i]);
                     continue;
@@ -302,12 +302,13 @@ public class UIFurniture : MobileUIView
         }
     }
 
-    private void OnSlotClicked(FurnitureData data)
+    private void OnSlotClicked(BasicData data)
     {
-        _uiFurniturePreview.SetFurnitureData(data);
+        FurnitureData furnitureData = (FurnitureData)data;
+        _uiFurniturePreview.SetFurnitureData(furnitureData);
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; i++)
         {
-            bool outlineEnabled = _currentTypeDataList[i] == data ? true : false;
+            bool outlineEnabled = _currentTypeDataList[i] == furnitureData ? true : false;
             _slots[i].SetOutline(outlineEnabled);
         }
     }

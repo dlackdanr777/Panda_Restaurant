@@ -59,7 +59,7 @@ public class UIRecipeTab : MonoBehaviour
                 continue;
             }
 
-            if(data.BuyMinScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
+            if(data.BuyScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
             {
                 _slots[i].SetBuy(data);
                 continue;
@@ -78,7 +78,7 @@ public class UIRecipeTab : MonoBehaviour
             return;
         }
 
-        if(UserInfo.Score < data.BuyMinScore)
+        if(UserInfo.Score < data.BuyScore)
         {
             TimedDisplayManager.Instance.ShowTextLackScore();
             return;

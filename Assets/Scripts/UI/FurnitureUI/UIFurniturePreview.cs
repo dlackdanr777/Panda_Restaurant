@@ -98,7 +98,7 @@ public class UIFurniturePreview : MonoBehaviour
             _usingButton.Interactable(false);
             _image.color = new Color(1, 1, 1);
             _setEffectObj.SetActive(true);
-            _setEffectDescription.text = _furnitureSetDataDic[data.SetId].EffectDescription;
+            _setEffectDescription.text = _furnitureSetDataDic[data.SetId].Description;
         }
         else
         {
@@ -110,7 +110,7 @@ public class UIFurniturePreview : MonoBehaviour
                 _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
                 _image.color = new Color(1, 1, 1);
                 _setEffectObj.SetActive(true);
-                _setEffectDescription.text = _furnitureSetDataDic[data.SetId].EffectDescription;
+                _setEffectDescription.text = _furnitureSetDataDic[data.SetId].Description;
             }
             else
             {
@@ -119,9 +119,9 @@ public class UIFurniturePreview : MonoBehaviour
                 _buyButton.gameObject.SetActive(true);
                 _buyButton.RemoveAllListeners();
                 _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
-                _buyButton.SetText(Utility.ConvertToNumber(data.BuyMinPrice));
+                _buyButton.SetText(Utility.ConvertToNumber(data.BuyPrice));
                 _buyMinScoreObj.SetActive(true);
-                _buyMinScoreDescription.text = Utility.ConvertToNumber(data.BuyMinScore);
+                _buyMinScoreDescription.text = Utility.ConvertToNumber(data.BuyScore);
             }
         }
     }

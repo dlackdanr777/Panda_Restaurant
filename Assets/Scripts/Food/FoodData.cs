@@ -1,28 +1,11 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "FoodData", menuName = "Scriptable Object/FoodData")]
-public class FoodData : ScriptableObject
+public class FoodData : BasicData
 {
-    [SerializeField] private Sprite _sprite;
-    public Sprite Sprite => _sprite;
-
-    [SerializeField] private string _name;
-    public string Name => _name;
-
-    [SerializeField] private string _id;
-    public string Id => _id;
-
-    [TextArea] [SerializeField] private string _description;
-    public string Description => _description;
-
-    [SerializeField] private int _buyMinScore;
-    public int BuyMinScore => _buyMinScore;
-
-    [SerializeField] private int _buyPrice;
-    public int BuyPrice => _buyPrice;
+    [Space]
+    [Header("FoodData")]
 
     [SerializeField] private bool _miniGameNeeded;
     public bool MiniGameNeeded => _miniGameNeeded;

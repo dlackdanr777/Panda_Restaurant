@@ -60,7 +60,7 @@ public class UIRecipeSlot : MonoBehaviour
 
         _image.sprite = data.Sprite;
         _nameText.text = data.Name;
-        _buyMinScoreImage.SetText(Utility.ConvertToNumber(data.BuyMinScore));
+        _buyMinScoreImage.SetText(Utility.ConvertToNumber(data.BuyScore));
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));

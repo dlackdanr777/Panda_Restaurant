@@ -16,15 +16,15 @@ public class UIKitchenSlot : MonoBehaviour
     [SerializeField] private GameObject _operateImage;
     [SerializeField] private GameObject _enoughMoneyImage;
 
-    private Action<FurnitureData> _onButtonClicked;
+    private Action<KitchenUtensilData> _onButtonClicked;
 
-    public void Init(Action<FurnitureData> onButtonClicked)
+    public void Init(Action<KitchenUtensilData> onButtonClicked)
     {
         _onButtonClicked = onButtonClicked;
     }
 
 
-    public void SetUse(FurnitureData data)
+    public void SetUse(KitchenUtensilData data)
     {
         _useImage.SetActive(true);
         _operateImage.SetActive(false);
@@ -42,7 +42,7 @@ public class UIKitchenSlot : MonoBehaviour
     }
 
 
-    public void SetOperate(FurnitureData data)
+    public void SetOperate(KitchenUtensilData data)
     {
         _operateImage.SetActive(true);
         _useImage.SetActive(false);
@@ -60,7 +60,7 @@ public class UIKitchenSlot : MonoBehaviour
     }
 
 
-    public void SetEnoughMoney(FurnitureData data)
+    public void SetEnoughMoney(KitchenUtensilData data)
     {
         _enoughMoneyImage.SetActive(true);
         _alarmImage.SetActive(true);
@@ -77,7 +77,7 @@ public class UIKitchenSlot : MonoBehaviour
         _button.onClick.AddListener(() => _onButtonClicked(data));
     }
 
-    public void SetLowReputation(FurnitureData data)
+    public void SetLowReputation(KitchenUtensilData data)
     {
         _enoughMoneyImage.SetActive(true);
         _lockImgae.SetActive(true);

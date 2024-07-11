@@ -69,7 +69,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
     }
 
 
-    public List<KitchenUtensilData> GetKitchenUtensilDataList(FurnitureType type)
+    public List<KitchenUtensilData> GetKitchenUtensilDataList(KitchenUtensilType type)
     {
         return _kitchenUtensilDataListType[(int)type];
     }

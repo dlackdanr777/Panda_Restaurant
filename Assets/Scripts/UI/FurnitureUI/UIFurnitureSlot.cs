@@ -16,15 +16,15 @@ public class UIFurnitureSlot : MonoBehaviour
     [SerializeField] private GameObject _operateImage;
     [SerializeField] private GameObject _enoughMoneyImage;
 
-    private Action<FurnitureData> _onButtonClicked;
+    private Action<BasicData> _onButtonClicked;
 
-    public void Init(Action<FurnitureData> onButtonClicked)
+    public void Init(Action<BasicData> onButtonClicked)
     {
         _onButtonClicked = onButtonClicked;
     }
 
 
-    public void SetUse(FurnitureData data)
+    public void SetUse(BasicData data)
     {
         _useImage.SetActive(true);
         _operateImage.SetActive(false);
@@ -42,7 +42,7 @@ public class UIFurnitureSlot : MonoBehaviour
     }
 
 
-    public void SetOperate(FurnitureData data)
+    public void SetOperate(BasicData data)
     {
         _operateImage.SetActive(true);
         _useImage.SetActive(false);
@@ -60,7 +60,7 @@ public class UIFurnitureSlot : MonoBehaviour
     }
 
 
-    public void SetEnoughMoney(FurnitureData data)
+    public void SetEnoughMoney(BasicData data)
     {
         _enoughMoneyImage.SetActive(true);
         _alarmImage.SetActive(true);
@@ -71,13 +71,13 @@ public class UIFurnitureSlot : MonoBehaviour
         _image.sprite = data.ThumbnailSPrite;
         _image.color = new Color(0, 0, 0, 1);
         _nameText.text = data.Name;
-        _text.text = Utility.ConvertToNumber(data.BuyMinPrice);
+        _text.text = Utility.ConvertToNumber(data.BuyPrice);
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));
     }
 
-    public void SetLowReputation(FurnitureData data)
+    public void SetLowReputation(BasicData data)
     {
         _enoughMoneyImage.SetActive(true);
         _lockImgae.SetActive(true);
@@ -88,7 +88,7 @@ public class UIFurnitureSlot : MonoBehaviour
         _image.sprite = data.ThumbnailSPrite;
         _image.color = new Color(0, 0, 0, 1);
         _nameText.text = data.Name;
-        _text.text = Utility.ConvertToNumber(data.BuyMinPrice);
+        _text.text = Utility.ConvertToNumber(data.BuyPrice);
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(() => _onButtonClicked(data));

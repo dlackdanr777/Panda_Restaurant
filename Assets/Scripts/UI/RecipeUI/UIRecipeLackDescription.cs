@@ -17,7 +17,7 @@ public class UIRecipeLackDescription : MonoBehaviour
         _sellPriceDescription.text = Utility.ConvertToNumber(data.GetSellPrice(1));
 
         _needItemDescription.text = string.Empty;
-        _upgradeMinScoreDescription.text = Utility.ConvertToNumber(data.BuyMinScore);
+        _upgradeMinScoreDescription.text = Utility.ConvertToNumber(data.BuyScore);
 
         _buyButton.RemoveAllListeners();
         _buyButton.AddListener(() => onBuyButtonClicked(data));
