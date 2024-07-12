@@ -5,11 +5,12 @@ public enum KitchenUtensilType
     Burner3,
     Burner4,
     Burner5,
-    Refrigerator,
+    Fridge,
     Cabinet,
     Window,
-    Shelf,
     Sink,
+    Plate,
+    Kitchenrack,
     CookingTools,
     Length
 }

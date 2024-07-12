@@ -318,8 +318,8 @@ public class TableManager : MonoBehaviour
 
         Customer exitCustomer = _tableDatas[index].CurrentCustomer;
         exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
+        exitCustomer.SetLayer("Customer", 0);
         _tableDatas[index].CurrentCustomer = null;
-
         UserInfo.AppendMoney((int)(_tableDatas[index].TotalPrice * GameManager.Instance.FoodPriceMul));
 
         UpdateTable();
@@ -350,7 +350,6 @@ public class TableManager : MonoBehaviour
             exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
 
         _tableDatas[index].CurrentCustomer = null;
-
         exitCustomer.SetLayer("Customer", 0);
 
         _tableDatas[index].TableState = ETableState.DontUse;

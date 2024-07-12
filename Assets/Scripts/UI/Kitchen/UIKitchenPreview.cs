@@ -11,10 +11,12 @@ public class UIKitchenPreview : MonoBehaviour
     [SerializeField] private GameObject _setEffectObj;
     [SerializeField] private TextMeshProUGUI _setEffectDescription;
     [SerializeField] private GameObject _buyMinScoreObj;
+    [SerializeField] private GameObject _moneyPerMinuteObj;
+    [SerializeField] private GameObject _cookingSpeedObj;
     [SerializeField] private TextMeshProUGUI _buyMinScoreDescription;
     [SerializeField] private TextMeshProUGUI _addScoreDescription;
-    [SerializeField] private TextMeshProUGUI _effectText;
-    [SerializeField] private TextMeshProUGUI _effectDescription;
+    [SerializeField] private TextMeshProUGUI _moneyPerMinuteDescription;
+    [SerializeField] private TextMeshProUGUI _cookingSpeedDescription;
     [SerializeField] private UIButtonAndText _usingButton;
     [SerializeField] private UIButtonAndText _equipButton;
     [SerializeField] private UIButtonAndText _buyButton;
@@ -67,20 +69,22 @@ public class UIKitchenPreview : MonoBehaviour
 
         if (data is CookingSpeedUpKitchenUtensilData)
         {
-            _effectText.text = "요리 효율 :";
-            _effectDescription.text = data.EffectValue.ToString() + "%";
+            _cookingSpeedObj.gameObject.SetActive(true);
+            _moneyPerMinuteObj.gameObject.SetActive(false);
+            _cookingSpeedDescription.text = data.EffectValue.ToString() + "%";
         }
             
         else if (data is MoneyPerMinuteKitchenUtensilData)
         {
-            _effectText.text = "분당 수입 :";
-            _effectDescription.text = data.EffectValue.ToString();
+            _moneyPerMinuteObj.gameObject.SetActive(true);
+            _cookingSpeedObj.gameObject.SetActive(false);
+            _moneyPerMinuteDescription.text = Utility.ConvertToNumber(data.EffectValue);
         }
 
         else
         {
-            _effectText.text = "기본 효과 :";
-            _effectDescription.text = string.Empty;
+            _moneyPerMinuteObj.gameObject.SetActive(false);
+            _cookingSpeedObj.gameObject.SetActive(false);
         }
         
 

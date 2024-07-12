@@ -35,11 +35,35 @@ public class KitchenStaffData
 
 public class KitchenSystem : MonoBehaviour
 {
+    [SerializeField] private KitchenUtensil[] _kitchenUtensils;
+    private Dictionary<KitchenUtensilType, List<KitchenUtensil>> _kitchenUtensilDic = new Dictionary<KitchenUtensilType, List<KitchenUtensil>>();
+
     private Dictionary<Staff, KitchenStaffData> _cookerDic = new Dictionary<Staff, KitchenStaffData>();
     private Queue<CookingData> _cookingQueue = new Queue<CookingData>();
 
     private float _cookingTimer;
     private CookingData _currentCookingData;
+
+
+    private void Awake()
+    {
+        for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
+        {
+            _kitchenUtensilDic.Add((KitchenUtensilType)i, new List<KitchenUtensil>());
+        }
+
+        for (int i = 0, cnt = _kitchenUtensils.Length; i < cnt; ++i)
+        {
+            _kitchenUtensilDic[_kitchenUtensils[i].Type].Add(_kitchenUtensils[i]);
+        }
+
+        for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
+        {
+            OnChangeKitchenUtensilEvent((KitchenUtensilType)i);
+        }
+        UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEvent;
+    }
+
 
     void Update()
     {
@@ -98,5 +122,15 @@ public class KitchenSystem : MonoBehaviour
 
         _currentCookingData = _cookingQueue.Dequeue();
         _cookingTimer = _currentCookingData.CookingTime;
+    }
+
+    private void OnChangeKitchenUtensilEvent(KitchenUtensilType type)
+    {
+        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(type);
+
+        foreach (KitchenUtensil data in _kitchenUtensilDic[type])
+        {
+            data.SetData(equipData);
+        }
     }
 }

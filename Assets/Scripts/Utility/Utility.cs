@@ -38,12 +38,13 @@ public static class Utility
             KitchenUtensilType.Burner3 => "조리기3",
             KitchenUtensilType.Burner4 => "조리기4",
             KitchenUtensilType.Burner5 => "조리기5",
-            KitchenUtensilType.Refrigerator => "냉장고",
+            KitchenUtensilType.Fridge => "냉장고",
             KitchenUtensilType.Cabinet => "장식장",
             KitchenUtensilType.Window => "창문",
-            KitchenUtensilType.Shelf => "선반",
+            KitchenUtensilType.Plate => "그릇 선반",
             KitchenUtensilType.Sink => "싱크대",
-            KitchenUtensilType .CookingTools => "조리도구",
+            KitchenUtensilType.CookingTools => "도구 선반",
+            KitchenUtensilType.Kitchenrack => "주방 선반",
             _ => string.Empty
         };
     }
