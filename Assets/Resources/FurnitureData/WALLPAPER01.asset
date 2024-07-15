@@ -12,16 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8d5b01ba01f2d543ad1f5bf412e3d42, type: 3}
   m_Name: WALLPAPER01
   m_EditorClassIdentifier: 
-  _type: 10
-  _sprite: {fileID: 6201393305612411706, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
-  _thumbnailSPrite: {fileID: 6201393305612411706, guid: add9bcf02e2c16c459accc2d154ee405,
-    type: 3}
-  _id: WALLPAPER01
-  _setId: SET01
+  _sprite: {fileID: 21300000, guid: 76c691180ff3016439be79eb202bfd67, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 76c691180ff3016439be79eb202bfd67, type: 3}
   _name: "\uD3C9\uBC94\uD55C \uBCBD\uC9C0"
-  _effectDescription: "1\uBD84\uB2F9 \uD68D\uB4DD \uD301 \uC99D\uAC00(2)"
-  _addScore: 0
+  _id: WALLPAPER01
+  _description: 
   _moneyType: 0
-  _buyMinPrice: 0
-  _buyMinScore: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _type: 10
+  _setId: SET01
+  _addScore: 0
   _tipPerMinute: 2
