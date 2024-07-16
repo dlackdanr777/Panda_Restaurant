@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace Muks.Tween
 {
-    public class TweenImageFliiAmount : TweenData
+    public class TweenImageFillAmount : TweenData
     {
         private float _startAmount;
         private float _targetAmount;
@@ -27,7 +27,6 @@ namespace Muks.Tween
             base.Update();
 
             float percent = _percentHandler[_tweenMode](ElapsedDuration, TotalDuration);
-
             _image.fillAmount = Mathf.LerpUnclamped(_startAmount, _targetAmount, percent);
         }
 

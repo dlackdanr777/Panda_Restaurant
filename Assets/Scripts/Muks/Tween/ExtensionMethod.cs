@@ -325,6 +325,29 @@ namespace Muks.Tween
         }
 
 
+        /// <summary>목표 값으로 지속 시간동안 FillAmount 값을 변경하는 함수</summary>
+        public static TweenData TweenFillAmount(this Image target, float targetFill, float duration, TweenMode tweenMode = TweenMode.Constant)
+        {
+            if (!target.TryGetComponent(out TweenImageFillAmount tweenData))
+                tweenData = target.gameObject.AddComponent<TweenImageFillAmount>();
+
+            TweenDataSequence tmpData = new TweenDataSequence(targetFill, duration, tweenMode, target);
+
+            tweenData.IsLoop = false;
+            tweenData.AddDataSequence(tmpData);
+
+            if (!tweenData.enabled)
+            {
+                tweenData.ElapsedDuration = 0;
+                tweenData.TotalDuration = 0;
+                tweenData.enabled = true;
+            }
+
+            return tweenData;
+        }
+
+
+
         /// <summary>목표 값으로 지속 시간동안 스프라이트 렌더러 컬러 값을 변경하는 함수</summary>
         public static TweenData TweenColor(this SpriteRenderer target, Color targetColor, float duration, TweenMode tweenMode = TweenMode.Constant)
         {

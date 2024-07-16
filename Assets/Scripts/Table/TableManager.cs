@@ -15,35 +15,45 @@ public class TableManager : MonoBehaviour
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private KitchenSystem _kitchenSystem;
 
+
     [Space]
-    [SerializeField] private Canvas _buttonCanvas;
-    [SerializeField] private Button _guideButtonPrefab;
-    [SerializeField] private Button _orderButtonPrefab;
-    [SerializeField] private Button _servingButtonPrefab;
+    [SerializeField] private Transform _buttonParent;
+    [SerializeField] private Button _guideButton;
+    [SerializeField] private UIButtonAndImage _orderButtonPrefab;
+    [SerializeField] private UIButtonAndImage _servingButtonPrefab;
     [SerializeField] private Button _cleaningButtonPrefab;
 
-    private Button[] _guideButtons;
-    private Button[] _orderButtons;
-    private Button[] _servingButtons;
+    private UIButtonAndImage[] _orderButtons;
+    private UIButtonAndImage[] _servingButtons;
     private Button[] _cleaningButtons;
 
 
     private void Awake()
     {
         Init();
+        UpdateTable();
     }
 
 
     private void Init()
     {
+        _guideButton.onClick.AddListener(() =>
+        {
+            int index = GetTableType(ETableState.NotUse);
+
+            if (index == -1)
+                return;
+
+            OnCustomerGuide(index);
+        });
+
         int tableLength = _tableDatas.Length;
-        _guideButtons = new Button[tableLength];
-        _orderButtons = new Button[tableLength];
-        _servingButtons = new Button[tableLength];
+        _orderButtons = new UIButtonAndImage[tableLength];
+        _servingButtons = new UIButtonAndImage[tableLength];
         _cleaningButtons = new Button[tableLength];
 
         GameObject parentObj = new GameObject("TableButtons");
-        parentObj.transform.parent = _buttonCanvas.transform;
+        parentObj.transform.parent = _buttonParent.transform;
 
         for (int i = 0; i < tableLength; i++)
         {
@@ -52,23 +62,19 @@ public class TableManager : MonoBehaviour
             GameObject obj = new GameObject("Table" + (index + 1));
             obj.transform.parent = parentObj.transform;
 
-            Button orderButton = Instantiate(_orderButtonPrefab, obj.transform);
-            Button guideButton = Instantiate(_guideButtonPrefab, obj.transform);
-            Button servingButton = Instantiate(_servingButtonPrefab, obj.transform);
+            UIButtonAndImage orderButton = Instantiate(_orderButtonPrefab, obj.transform);
+            UIButtonAndImage servingButton = Instantiate(_servingButtonPrefab, obj.transform);
             Button cleaningButton = Instantiate(_cleaningButtonPrefab, obj.transform);
 
-            orderButton.onClick.AddListener(() => OnCustomerOrder(index));
-            guideButton.onClick.AddListener(() => OnCustomerGuide(index));
-            servingButton.onClick.AddListener(() => OnServing(index));
+            orderButton.AddListener(() => OnCustomerOrder(index)); 
+            servingButton.AddListener(() => OnServing(index));
             cleaningButton.onClick.AddListener(() => OnCleanTable(index));
 
             orderButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
-            guideButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
             servingButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
             cleaningButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
 
             _orderButtons[i] = orderButton;
-            _guideButtons[i] = guideButton;
             _servingButtons[i] = servingButton;
             _cleaningButtons[i] = cleaningButton;
         }
@@ -133,6 +139,18 @@ public class TableManager : MonoBehaviour
 
     private void UpdateTable()
     {
+        int index = GetTableType(ETableState.NotUse);
+
+        if (index == -1)
+            _guideButton.gameObject.SetActive(false);
+
+        else if(_customerController.IsEmpty())
+            _guideButton.gameObject.SetActive(false);
+
+        else 
+            _guideButton.gameObject.SetActive(true);
+
+
         TableData data = null;
         for (int i = 0, cnt = _ownedTableCount; i < cnt; ++i)
         {
@@ -150,14 +168,12 @@ public class TableManager : MonoBehaviour
 
             if (data.TableState == ETableState.NotUse)
             {
-                _guideButtons[i].gameObject.SetActive(true);
                 _orderButtons[i].gameObject.SetActive(false);
                 _servingButtons[i].gameObject.SetActive(false);
                 _cleaningButtons[i].gameObject.SetActive(false);
             }
             else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating || data.TableState == ETableState.UseStaff || data.TableState == ETableState.DontUse)
             {
-                _guideButtons[i].gameObject.SetActive(false);
                 _orderButtons[i].gameObject.SetActive(false);
                 _servingButtons[i].gameObject.SetActive(false);
                 _cleaningButtons[i].gameObject.SetActive(false);
@@ -165,14 +181,12 @@ public class TableManager : MonoBehaviour
             else if (data.TableState == ETableState.Seating)
             {
                 _orderButtons[i].gameObject.SetActive(true);
-                _guideButtons[i].gameObject.SetActive(false);
                 _servingButtons[i].gameObject.SetActive(false);
                 _cleaningButtons[i].gameObject.SetActive(false);
             }
             else if(data.TableState == ETableState.CanServing)
             {
                 _servingButtons[i].gameObject.SetActive(true);
-                _guideButtons[i].gameObject.SetActive(false);
                 _orderButtons[i].gameObject.SetActive(false);
                 _cleaningButtons[i].gameObject.SetActive(false);
             }
@@ -180,7 +194,6 @@ public class TableManager : MonoBehaviour
             else if (data.TableState == ETableState.NeedCleaning)
             {
                 _cleaningButtons[i].gameObject.SetActive(true);
-                _guideButtons[i].gameObject.SetActive(false);
                 _orderButtons[i].gameObject.SetActive(false);
                 _servingButtons[i].gameObject.SetActive(false);
             }
@@ -234,6 +247,22 @@ public class TableManager : MonoBehaviour
         if (_tableDatas[index].OrdersCount <= 0)
             ExitCustomer(index);
 
+        string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
+        FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
+        int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
+
+        CookingData data = new CookingData(foodData.Name, foodData.GetCookingTime(foodLevel), foodData.GetSellPrice(foodLevel), foodData.Sprite, () =>
+        {
+            _tableDatas[index].TableState = ETableState.CanServing;
+            _servingButtons[index].SetImage(foodData.ThumbnailSprite);
+            foodData = null;
+            UpdateTable();
+        });
+
+        _tableDatas[index].SetTipValue((int)(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul * 0.01f));
+        _tableDatas[index].CurrentFood = data;
+        _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.FoodPriceMul);
+        _orderButtons[index].SetImage(foodData.ThumbnailSprite);
 
         _tableDatas[index].TableState = ETableState.Seating;
         _tableDatas[index].OrdersCount -= 1;
@@ -249,21 +278,8 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
-        FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
-        int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
-
-        CookingData data = new CookingData(foodData.Name, foodData.GetCookingTime(foodLevel), foodData.GetSellPrice(foodLevel), () =>
-        {
-            _tableDatas[index].TableState = ETableState.CanServing;
-            foodData = null;
-            UpdateTable();
-        });
-        _tableDatas[index].SetTipValue((int)(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul * 0.01f));
+        _kitchenSystem.EqueueFood(_tableDatas[index].CurrentFood);
         _tableDatas[index].TableState = ETableState.WaitFood;
-        _kitchenSystem.EqueueFood(data);
-        _tableDatas[index].CurrentFood = data;
-        _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.FoodPriceMul);
         UpdateTable();
     }
 

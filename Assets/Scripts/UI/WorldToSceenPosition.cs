@@ -5,6 +5,7 @@ using UnityEngine;
 public class WorldToSceenPosition : MonoBehaviour
 {
     [SerializeField] private Transform _worldTransform;
+    [SerializeField] private Vector3 _offset;
 
     private Camera _camera;
 
@@ -23,7 +24,7 @@ public class WorldToSceenPosition : MonoBehaviour
         if (_worldTransform == null)
             return;
 
-        transform.position = _camera.WorldToScreenPoint(_worldTransform.position);
+        transform.position = _camera.WorldToScreenPoint(_worldTransform.position + _offset);
     }
 
 }

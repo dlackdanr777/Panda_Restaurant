@@ -10,14 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: dfe943a654cf4e0449fa2ace96692614, type: 3}
-  m_Name: FOOD01 1
+  m_Name: FOOD02
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 1622280053420427100, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
+  _sprite: {fileID: 21300000, guid: f56ab4b83816bbc40ab9282832785679, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: f56ab4b83816bbc40ab9282832785679, type: 3}
   _name: "\uD3EC\uC57C \uC8FC\uBA39\uBC25"
   _id: FOOD02
   _description: "\uACF5\uC778 \uD310\uB2E4 \uC8FC\uBA39\uBC25.\n\uBAA8\uB4E0 \uD310\uB2E4\uAC00
     \uC0AC\uB791\uD558\uB294 \uC8FC\uBA39\uBC25"
-  _buyMinScore: 0
+  _moneyType: 0
+  _buyScore: 0
   _buyPrice: 0
   _miniGameNeeded: 0
   _foodLevelData:

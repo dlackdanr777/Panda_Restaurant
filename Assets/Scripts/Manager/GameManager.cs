@@ -24,6 +24,9 @@ public class GameManager : MonoBehaviour
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
+    [SerializeField] private int _totalTabCount = 5;
+    public int TotalTabCount => _totalTabCount;
+
     [SerializeField] private int _maxTipVolume;
     public int MaxTipVolume => _maxTipVolume;
 

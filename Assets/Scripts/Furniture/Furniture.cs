@@ -2,21 +2,20 @@ using UnityEngine;
 
 public class Furniture : MonoBehaviour
 {
-    private enum FurnitureBatchType
+    protected enum FurnitureBatchType
     {
         Lower,
         Upper,
         Center
     }
-    [SerializeField] private FurnitureType _type;
+    [SerializeField] protected FurnitureType _type;
     public FurnitureType Type => _type;
 
-    [SerializeField] private FurnitureBatchType _batchType;
-    [SerializeField] private SpriteRenderer _spriteRenderer;
-    [SerializeField] private Sprite _defalutSprite;
-
+    [SerializeField] protected FurnitureBatchType _batchType;
+    [SerializeField] protected SpriteRenderer _spriteRenderer;
+    [SerializeField] protected Sprite _defalutSprite;
     
-    public void SetFurnitureData(FurnitureData data)
+    public virtual void SetFurnitureData(FurnitureData data)
     {
         if(data == null)
         {

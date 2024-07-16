@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 public struct CookingData
 {
@@ -11,14 +12,18 @@ public struct CookingData
     private float _price;
     public float Price => _price;
 
+    private Sprite _sprite;
+    public Sprite Sprite => _sprite;
+
     private Action _onCompleted;
     public Action OnCompleted => _onCompleted;
 
-    public CookingData(string id, float cookingTime, float price, Action onCompleted)
+    public CookingData(string id, float cookingTime, float price, Sprite sprite, Action onCompleted)
     {
         _id = id;
         _cookingTime = cookingTime;
         _price = price;
+        _sprite = sprite;
         _onCompleted = onCompleted;
     }
 
