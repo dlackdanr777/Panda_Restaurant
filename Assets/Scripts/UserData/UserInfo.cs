@@ -412,10 +412,10 @@ public static class UserInfo
         }
 
         if (_equipFurnitureDatas[(int)data.Type] != null)
-            _equipFurnitureDatas[((int)data.Type)].RemoveSlot();
+            _equipFurnitureDatas[((int)data.Type)].EffectData.RemoveSlot();
 
         _equipFurnitureDatas[(int)data.Type] = data;
-        data.AddSlot();
+        data.EffectData.AddSlot();
         CheckFurnitureSetEnabled();
 
         OnChangeFurnitureHandler?.Invoke(data.Type);
@@ -432,10 +432,10 @@ public static class UserInfo
         FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
 
         if (_equipFurnitureDatas[(int)data.Type] != null)
-            _equipFurnitureDatas[((int)data.Type)].RemoveSlot();
+            _equipFurnitureDatas[((int)data.Type)].EffectData.RemoveSlot();
 
         _equipFurnitureDatas[(int)data.Type] = data;
-        data.AddSlot();
+        data.EffectData.AddSlot();
         CheckFurnitureSetEnabled();
 
         OnChangeFurnitureHandler?.Invoke(data.Type);
@@ -444,7 +444,7 @@ public static class UserInfo
     public static void DisarmEquipFurniture(FurnitureType type)
     {
         if (_equipFurnitureDatas[(int)type] != null)
-            _equipFurnitureDatas[((int)type)].RemoveSlot();
+            _equipFurnitureDatas[((int)type)].EffectData.RemoveSlot();
 
         _equipFurnitureDatas[(int)type] = null;
         OnChangeFurnitureHandler?.Invoke(type);

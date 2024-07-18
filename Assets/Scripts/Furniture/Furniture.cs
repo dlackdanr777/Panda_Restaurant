@@ -14,7 +14,8 @@ public class Furniture : MonoBehaviour
     [SerializeField] protected FurnitureBatchType _batchType;
     [SerializeField] protected SpriteRenderer _spriteRenderer;
     [SerializeField] protected Sprite _defalutSprite;
-    
+
+
     public virtual void SetFurnitureData(FurnitureData data)
     {
         if(data == null)

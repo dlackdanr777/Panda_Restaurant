@@ -2,8 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "MoneyPerMinuteFurnitureData", menuName = "Scriptable Object/FurnitureData/MoneyPerMinuteFurnitureData")]
-public class MoneyPerMinuteFurnitureData : FurnitureData
+[CreateAssetMenu(fileName = "MoneyPerMinuteFurnitureEffectData", menuName = "Scriptable Object/FurnitureEffectData/MoneyPerMinuteFurnitureEffectData")]
+public class MoneyPerMinuteFurnitureEffectData : FurnitureEffectData
 {
     [Space]
     [Header("MoneyPerMinuteData")]

@@ -1,10 +1,8 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 
-[CreateAssetMenu(fileName = "MaxTipVolumeFurnitureData", menuName = "Scriptable Object/FurnitureData/MaxTipVolumeFurnitureData")]
-public class MaxTipVolumeFurnitureData : FurnitureData
+[CreateAssetMenu(fileName = "MaxTipVolumeFurnitureEffectData", menuName = "Scriptable Object/FurnitureEffectData/MaxTipVolumeFurnitureEffectData")]
+public class MaxTipVolumeFurnitureEffectData : FurnitureEffectData
 {
 
     [Space]

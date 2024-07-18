@@ -14,6 +14,12 @@ public class TableData
     [SerializeField] private Transform[] _chairTrs;
     public Transform[] ChairTrs => _chairTrs;
 
+    [SerializeField] private GarbageAnimation _leftGarbageAnime;
+    public GarbageAnimation LeftGarbageAnime => _leftGarbageAnime;
+
+    [SerializeField] private GarbageAnimation _rightGarbageAnime;
+    public GarbageAnimation RightGarbageAnime => _rightGarbageAnime;
+
     [SerializeField] private Transform _leftStaffTr;
     public Transform LeftStaffTr => _leftStaffTr;
 
@@ -32,6 +38,8 @@ public class TableData
     public Customer CurrentCustomer;
 
     public CookingData CurrentFood;
+
+    public int SitDir;
 
 
     public void SetTipValue(int value)

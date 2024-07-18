@@ -9,19 +9,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8d5b01ba01f2d543ad1f5bf412e3d42, type: 3}
+  m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
   m_Name: FRAME01
   m_EditorClassIdentifier: 
-  _type: 7
   _sprite: {fileID: 1156376403504076984, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
   _thumbnailSPrite: {fileID: 2752470750668871639, guid: add9bcf02e2c16c459accc2d154ee405,
     type: 3}
-  _id: FRAME01
-  _setId: SET01
   _name: "\uD3C9\uBC94\uD55C \uC561\uC790"
-  _effectDescription: "1\uBD84\uB2F9 \uD68D\uB4DD \uD301 \uC99D\uAC00(3)"
-  _addScore: 5
+  _id: FRAME01
+  _description: 
   _moneyType: 0
-  _buyMinPrice: 6000
-  _buyMinScore: 0
-  _tipPerMinute: 3
+  _buyScore: 0
+  _buyPrice: 0
+  _type: 7
+  _setId: SET01
+  _addScore: 2
+  _effectData: {fileID: 11400000, guid: 7cd6d50b00b7c0646865ee65c16989dc, type: 2}

@@ -67,22 +67,17 @@ public class UIFurniturePreview : MonoBehaviour
         SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
         _setEffectDescription.text = setData != null ? setData.Description : string.Empty;
 
-        if (data is MoneyPerMinuteFurnitureData)
+        if (data.EffectData is MoneyPerMinuteFurnitureEffectData)
         {
             _effectText.text = "분당 수입 :";
-            _effectDescription.text = data.EffectValue.ToString();
+            _effectDescription.text = data.EffectData.EffectValue.ToString();
         }
             
-        else if (data is TipPerMinuteFurnitureData)
-        {
-            _effectText.text = "분당 팁 :";
-            _effectDescription.text = data.EffectValue.ToString();
-        }
 
-        else if (data is MaxTipVolumeFurnitureData)
+        else if (data.EffectData is MaxTipVolumeFurnitureEffectData)
         {
             _effectText.text = "팁 저장량 :";
-            _effectDescription.text = data.EffectValue.ToString();
+            _effectDescription.text = data.EffectData.EffectValue.ToString();
         }
 
         else

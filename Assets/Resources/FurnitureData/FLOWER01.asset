@@ -9,19 +9,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8d5b01ba01f2d543ad1f5bf412e3d42, type: 3}
+  m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
   m_Name: FLOWER01
   m_EditorClassIdentifier: 
-  _type: 8
-  _sprite: {fileID: -777114055275024459, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
+  _sprite: {fileID: -1408287563081556298, guid: ef2a16e1c84a2ac40a5c0076731fa952,
+    type: 3}
   _thumbnailSPrite: {fileID: 4010724534108869623, guid: add9bcf02e2c16c459accc2d154ee405,
     type: 3}
-  _id: FLOWER01
-  _setId: SET01
   _name: "\uD3C9\uBC94\uD55C \uD654\uBD84"
-  _effectDescription: "\uBD84\uB2F9 \uD68D\uB4DD \uD301 \uC99D\uAC00(2)"
-  _addScore: 4
+  _id: FLOWER01
+  _description: 
   _moneyType: 0
-  _buyMinPrice: 4000
-  _buyMinScore: 50
-  _tipPerMinute: 5
+  _buyScore: 0
+  _buyPrice: 0
+  _type: 8
+  _setId: SET01
+  _addScore: 2
+  _effectData: {fileID: 11400000, guid: 7cd6d50b00b7c0646865ee65c16989dc, type: 2}

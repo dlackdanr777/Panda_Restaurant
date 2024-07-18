@@ -9,20 +9,19 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d07780720cfe7764b820420b984c53f8, type: 3}
+  m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
   m_Name: COUNTER01
   m_EditorClassIdentifier: 
-  _type: 5
-  _sprite: {fileID: -9058710872521462115, guid: add9bcf02e2c16c459accc2d154ee405,
+  _sprite: {fileID: 6901902709156339563, guid: b2183c4950c3077459325871ad78f895, type: 3}
+  _thumbnailSPrite: {fileID: 6901902709156339563, guid: b2183c4950c3077459325871ad78f895,
     type: 3}
-  _thumbnailSPrite: {fileID: -9058710872521462115, guid: add9bcf02e2c16c459accc2d154ee405,
-    type: 3}
-  _id: COUNTER01
-  _setId: SET01
   _name: "\uD3C9\uBC94\uD55C \uACC4\uC0B0\uB300"
-  _effectDescription: "\uBCF4\uAD00 \uD301 \uD55C\uB3C4 (10,000)"
-  _addScore: 2
+  _id: COUNTER01
+  _description: 
   _moneyType: 0
-  _buyMinPrice: 0
-  _buyMinScore: 0
-  _maxTipVolume: 10000
+  _buyScore: 0
+  _buyPrice: 0
+  _type: 5
+  _setId: SET01
+  _addScore: 2
+  _effectData: {fileID: 11400000, guid: 35f7fc893682eb24284708cc16b62782, type: 2}

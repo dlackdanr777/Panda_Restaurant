@@ -48,7 +48,7 @@ public class UIRecipeOwnDescription : MonoBehaviour
             _upgradeCookTimeDescription.gameObject.SetActive(false);
             _upgradeSellPriceDescription.gameObject.SetActive(false);
             _upgradeButton.Interactable(false);
-            _upgradeButton.SetText("Level " + level);
+            _upgradeButton.SetText("최대 강화");
 
             _needItemDescription.text = string.Empty;
             _upgradeMinScoreDescription.text = "최대 강화";

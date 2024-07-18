@@ -211,6 +211,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _worldTransform: {fileID: 0}
+  _offset: {x: 0, y: 3, z: 0}
 --- !u!114 &977859193166282358
 MonoBehaviour:
   m_ObjectHideFlags: 0

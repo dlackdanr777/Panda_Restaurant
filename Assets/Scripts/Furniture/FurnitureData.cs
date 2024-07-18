@@ -1,6 +1,8 @@
 using UnityEngine;
 
-public abstract class FurnitureData : BasicData
+
+[CreateAssetMenu(fileName = "FurnitureData", menuName = "Scriptable Object/FurnitureData/FurnitureData")]
+public class FurnitureData : BasicData
 {
     [Space]
     [Header("FurnitureData")]
@@ -14,8 +16,6 @@ public abstract class FurnitureData : BasicData
     [SerializeField] private int _addScore;
     public int AddScore => _addScore;
 
-    public abstract int EffectValue { get; }
-
-    public abstract void AddSlot();
-    public abstract void RemoveSlot();
+    [SerializeField] private FurnitureEffectData _effectData;
+    public FurnitureEffectData EffectData => _effectData;
 }

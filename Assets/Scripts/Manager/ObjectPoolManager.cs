@@ -79,7 +79,7 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public void DequeueCustomer(Customer customer)
+    public void EnqueueCustomer(Customer customer)
     {
         customer.gameObject.SetActive(false);
         _customerPool.Enqueue(customer);

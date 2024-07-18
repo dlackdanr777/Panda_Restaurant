@@ -68,3 +68,6 @@ TagManager:
   - name: Forgeground
     uniqueID: 1031326663
     locked: 0
+  - name: Effect
+    uniqueID: 3700528327
+    locked: 0
