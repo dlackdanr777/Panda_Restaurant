@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEditor.Animations;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "CustomerData", menuName = "Scriptable Object/CustomerData")]
@@ -27,6 +28,14 @@ public class CustomerData : ScriptableObject
 
     [SerializeField] private float _moveSpeed = 5;
     public float MoveSpeed => _moveSpeed;
+
+
+    [Space]
+    [Header("NPC Anime Data")]
+
+    [SerializeField] private AnimatorController _animatorController;
+    public AnimatorController AnimatorController => _animatorController;
+
 
     [Space]
     [SerializeField] private CustomerSkill _skill;

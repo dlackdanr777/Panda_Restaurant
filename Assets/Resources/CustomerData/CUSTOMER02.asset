@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c45ec71402c87af488940a5ef102e306, type: 3}
   m_Name: CUSTOMER02
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 7949064285695338531, guid: add9bcf02e2c16c459accc2d154ee405, type: 3}
+  _sprite: {fileID: 21300000, guid: 964ffa4969a6de148a1b5bb9a1be286b, type: 3}
   _name: "\uD30C\uB2C8"
   _id: CUSTOMER02
   _description: "\uACE0\uC591\uC774\uCC98\uB7FC \uBCF4\uC774\uC9C0\uB9CC \uD638\uB791\uC774\uC774\uB2E4.\\n\uC791\uC740
@@ -23,4 +23,5 @@ MonoBehaviour:
   _orderFoods:
   - FOOD01
   _moveSpeed: 5
+  _animatorController: {fileID: 9100000, guid: f615075cb845a6b49bb861c5a66344fc, type: 2}
   _skill: {fileID: 11400000, guid: b779baf596903cc49ab62126c8092e61, type: 2}

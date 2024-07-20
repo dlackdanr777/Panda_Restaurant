@@ -3,11 +3,20 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.U2D;
+using UnityEngine.U2D.Animation;
 
 public class Customer : MonoBehaviour
 {
+
+    [Space]
+    [Header("Components")]
     [SerializeField] private GameObject _moveObj;
+    [SerializeField] private Animator _animator;
+    [SerializeField] private SpriteSkin _skin;
     [SerializeField] private SpriteRenderer _spriteRenderer;
+    private Transform _rootBone;
+
 
     private Coroutine _moveCoroutine;
     private Coroutine _teleportCoroutine;
@@ -42,9 +51,12 @@ public class Customer : MonoBehaviour
     public void Init(CustomerData data)
     {
         _customerData = data;
-        _spriteRenderer.sprite = data.Sprite;
-        float height = (data.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y - (AStar.Instance.NodeSize * 0.5f);
-        _spriteRenderer.transform.localPosition = new Vector3(0, height, 0);
+        _animator.runtimeAnimatorController = data.AnimatorController;
+        _skin.enabled = false;
+        ChangeSPriteAndBones(data.Sprite);
+        _skin.enabled = true;
+        _animator.SetBool("Run", false);
+        _animator.SetBool("Eat", false);
 
         if (_skill != null)
             _skill.Deactivate(this);
@@ -59,13 +71,36 @@ public class Customer : MonoBehaviour
             SetOrderCount(1);
             SetFoodPriceMul(1);
         }
+    }
 
+    private void ChangeSPriteAndBones(Sprite sprite)
+    {
+
+        if(_rootBone != null)
+            Destroy(_rootBone);
+
+        var bones = _spriteRenderer.sprite.GetBones();
+        /*        Transform[] boneTransforms = new Transform[bones.Length];
+
+                for (int i = 0; i < bones.Length; i++)
+                {
+                    GameObject bone = new GameObject(bones[i].name);
+                    bone.transform.parent = transform;
+                    bone.transform.localPosition = bones[i].position;
+                    bone.transform.localRotation = bones[i].rotation;
+                    boneTransforms[i] = bone.transform;
+                }
+        */
+        _skin.enabled = false;
+        sprite.SetBones(bones);
+        _spriteRenderer.sprite = sprite;
+        _skin.enabled = true;
     }
 
     public void SetSpriteDir(float dir)
     {
-        if (dir < 0) transform.localScale = new Vector3(_scaleX, transform.localScale.y, transform.localScale.z);
-        else if (0 < dir) transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
+        if (dir < 0) _spriteRenderer.flipX = false;
+        else if (0 < dir) _spriteRenderer.flipX = true;
     }
 
     public void SetLayer(string sortingLayerName, int orderInLayer)
@@ -151,16 +186,19 @@ public class Customer : MonoBehaviour
                 _moveObj.transform.Translate(dir * Time.deltaTime * _customerData.MoveSpeed, Space.World);
 
                 SetSpriteDir(dir.x);
-
+                _animator.SetBool("Run", true);
                 yield return null;
             }
         }
 
+        _animator.SetBool("Run", false);
+
         if (_moveEndDir < 0)
-            transform.localScale = new Vector3(_scaleX, transform.localScale.y, transform.localScale.z);
+            _spriteRenderer.flipX = false;
 
         else if (0 < _moveEndDir)
-            transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
+            _spriteRenderer.flipX = true;
+
 
         onCompleted?.Invoke();
 
