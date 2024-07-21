@@ -1,35 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 
-public class KitchenStaffData
+public class KichenBurnerData
 {
-    private CookingData _cookingData;
-    private float _cookSpeedMultiple;
-    public float CookSpeedMultiple => _cookSpeedMultiple;
-    private float _cookingTime;
-
-    public float CookingTimer;
-
-
-    public KitchenStaffData(float cookSpeedMultiple)
-    {
-        _cookSpeedMultiple = cookSpeedMultiple;
-    }
-
-    public void SetCookingData(CookingData cookingData)
-    {
-        _cookingData = cookingData;
-        _cookingTime = cookingData.CookingTime;
-        CookingTimer = _cookingTime;
-    }
-
-    public CookingData GetCookingData()
-    {
-        return _cookingData;
-    }
-
+    public float Time;
+    public CookingData CookingData;
 }
 
 
@@ -37,16 +13,33 @@ public class KitchenSystem : MonoBehaviour
 {
     [SerializeField] private KitchenUtensil[] _kitchenUtensils;
     private Dictionary<KitchenUtensilType, List<KitchenUtensil>> _kitchenUtensilDic = new Dictionary<KitchenUtensilType, List<KitchenUtensil>>();
-
-    private Dictionary<Staff, KitchenStaffData> _cookerDic = new Dictionary<Staff, KitchenStaffData>();
     private Queue<CookingData> _cookingQueue = new Queue<CookingData>();
 
-    private float _cookingTimer;
-    private CookingData _currentCookingData;
+    [SerializeField] private int _burnerCount = 0;
+    private KichenBurnerData[] _burnerDatas;
 
+
+    [Space]
+    [Header("UI Options")]
+    [SerializeField] private RectTransform _burnerTimerParent;
+    [SerializeField] private UIImageFillAmount _burnerTimerPrefab;
+    [SerializeField] private Transform[] _burnerTimerTrs;
+
+
+    private UIImageFillAmount[] _burnerTimers;
 
     private void Awake()
     {
+        _burnerDatas = new KichenBurnerData[(int)KitchenUtensilType.Burner5 + 1];
+        _burnerTimers = new UIImageFillAmount[(int)KitchenUtensilType.Burner5 + 1];
+        for (int i = 0, cnt = (int)KitchenUtensilType.Burner5 + 1; i < cnt; ++i)
+        {
+            _burnerDatas[i] = new KichenBurnerData();
+            UIImageFillAmount obj = Instantiate(_burnerTimerPrefab, _burnerTimerParent);
+            _burnerTimers[i] = obj;
+            obj.GetComponent<WorldToSceenPosition>().SetWorldTransform(_burnerTimerTrs[i]);
+        }
+
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
         {
             _kitchenUtensilDic.Add((KitchenUtensilType)i, new List<KitchenUtensil>());
@@ -56,73 +49,76 @@ public class KitchenSystem : MonoBehaviour
         {
             _kitchenUtensilDic[_kitchenUtensils[i].Type].Add(_kitchenUtensils[i]);
         }
-
-        for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
-        {
-            OnChangeKitchenUtensilEvent((KitchenUtensilType)i);
-        }
+        UpdateKitchen();
         UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEvent;
     }
 
 
     void Update()
     {
-        //TODO: 병렬 수행 제거, 음식 제작 속도만 증가
-        if (_cookingTimer <= 0)
+        for(int i = 0; i < _burnerCount; ++i)
         {
-            DequeueFood();
+            if (_burnerDatas[i].Time <= 0)
+            {
+                DequeueFood(i);
+            }
+
+            else
+            {
+                _burnerDatas[i].Time -= Time.deltaTime * GameManager.Instance.CookingSpeedMul;
+                _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookingTime));
+            }
         }
+    }
 
-        else
+
+    public void EqueueFood(CookingData foodData)
+    {
+        _cookingQueue.Enqueue(foodData);
+    }
+
+
+    private void DequeueFood(int burnerIndex)
+    {
+        if (!_burnerDatas[burnerIndex].CookingData.IsDefault())
+            _burnerDatas[burnerIndex].CookingData.OnCompleted?.Invoke();
+
+        _burnerTimers[burnerIndex].SetFillAmount(0);
+        if (_cookingQueue.Count == 0)
         {
-            _cookingTimer -= Time.deltaTime * GameManager.Instance.CookingSpeedMul;
-        }
+            _burnerDatas[burnerIndex].CookingData = default;
+            _burnerDatas[burnerIndex].Time = 0;
 
-    }
-
-
-    public void EqueueFood(CookingData cookingData)
-    {
-        _cookingQueue.Enqueue(cookingData);
-    }
-
-/*    public void AddCooker(Staff staff)
-    {
-        KitchenStaffData data = new KitchenStaffData(staff.Speed);
-        _cookerDic.Add(staff, data);
-
-    }
-
-    public void RemoveCooker(Staff staff)
-    {
-        if (!_cookerDic.TryGetValue(staff, out KitchenStaffData data))
-        {
-            Debug.LogError("해당 쉐프가 슬롯에 존재하지 않습니다.");
             return;
         }
 
-        if (!data.GetCookingData().IsDefault())
-            _cookingQueue.Enqueue(data.GetCookingData());
-
-        _cookerDic.Remove(staff);
-    }*/
-
-
-    private void DequeueFood()
-    {
-        if (!_currentCookingData.IsDefault())
-            _currentCookingData.OnCompleted();
-
-        if(_cookingQueue.Count == 0)
-        {
-            _currentCookingData = default(CookingData);
-            _cookingTimer = 0;
-            return;
-        }
-
-        _currentCookingData = _cookingQueue.Dequeue();
-        _cookingTimer = _currentCookingData.CookingTime;
+        CookingData cookingData = _cookingQueue.Dequeue();
+        _burnerDatas[burnerIndex].CookingData = cookingData;
+        _burnerDatas[burnerIndex].Time = cookingData.CookingTime;
     }
+
+    private void UpdateKitchen()
+    {
+        KitchenUtensilData equipData;
+        KitchenUtensilType type;
+        for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
+        {
+            type = (KitchenUtensilType)i;
+            equipData = UserInfo.GetEquipKitchenUtensil(type);
+            foreach (KitchenUtensil data in _kitchenUtensilDic[type])
+            {
+                data.SetData(equipData);
+            }
+
+            DebugLog.Log(type + ": " + equipData);
+            if ((type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5) && equipData != null)
+            {
+                _burnerCount++;
+            }
+
+        }
+    }
+
 
     private void OnChangeKitchenUtensilEvent(KitchenUtensilType type)
     {
@@ -131,6 +127,32 @@ public class KitchenSystem : MonoBehaviour
         foreach (KitchenUtensil data in _kitchenUtensilDic[type])
         {
             data.SetData(equipData);
+        }
+        DebugLog.Log("실행");
+        if(type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5)
+        {
+            int _tmpBurnerCount = _burnerCount;
+            _burnerCount = 0;
+            for (int i = 0, cnt = (int)KitchenUtensilType.Cabinet; i < cnt; i++)
+            {
+                if (UserInfo.GetEquipKitchenUtensil((KitchenUtensilType)i) != null)
+                    _burnerCount++;
+            }
+
+            for(int i = _tmpBurnerCount; i < _burnerCount; ++i)
+            {
+                _burnerDatas[i].Time = 0;
+                _burnerTimers[i].SetFillAmount(0);
+            }
+
+            for (int i = _burnerCount, cnt = _burnerDatas.Length; i < cnt; ++i)
+            {
+                if (!_burnerDatas[i].CookingData.IsDefault())
+                    _cookingQueue.Enqueue(_burnerDatas[i].CookingData);
+
+                _burnerDatas[i].CookingData = default;
+                _burnerTimers[i].SetFillAmount(0);
+            }
         }
     }
 }

@@ -13,10 +13,8 @@ public class Customer : MonoBehaviour
     [Header("Components")]
     [SerializeField] private GameObject _moveObj;
     [SerializeField] private Animator _animator;
-    [SerializeField] private SpriteSkin _skin;
+    [SerializeField] private Transform _spriteParent;
     [SerializeField] private SpriteRenderer _spriteRenderer;
-    private Transform _rootBone;
-
 
     private Coroutine _moveCoroutine;
     private Coroutine _teleportCoroutine;
@@ -52,9 +50,9 @@ public class Customer : MonoBehaviour
     {
         _customerData = data;
         _animator.runtimeAnimatorController = data.AnimatorController;
-        _skin.enabled = false;
-        ChangeSPriteAndBones(data.Sprite);
-        _skin.enabled = true;
+        _spriteParent.transform.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
+        _spriteRenderer.transform.localPosition = Vector3.zero;
+        _spriteRenderer.sprite = data.Sprite;
         _animator.SetBool("Run", false);
         _animator.SetBool("Eat", false);
 
@@ -73,29 +71,6 @@ public class Customer : MonoBehaviour
         }
     }
 
-    private void ChangeSPriteAndBones(Sprite sprite)
-    {
-
-        if(_rootBone != null)
-            Destroy(_rootBone);
-
-        var bones = _spriteRenderer.sprite.GetBones();
-        /*        Transform[] boneTransforms = new Transform[bones.Length];
-
-                for (int i = 0; i < bones.Length; i++)
-                {
-                    GameObject bone = new GameObject(bones[i].name);
-                    bone.transform.parent = transform;
-                    bone.transform.localPosition = bones[i].position;
-                    bone.transform.localRotation = bones[i].rotation;
-                    boneTransforms[i] = bone.transform;
-                }
-        */
-        _skin.enabled = false;
-        sprite.SetBones(bones);
-        _spriteRenderer.sprite = sprite;
-        _skin.enabled = true;
-    }
 
     public void SetSpriteDir(float dir)
     {
@@ -193,12 +168,7 @@ public class Customer : MonoBehaviour
 
         _animator.SetBool("Run", false);
 
-        if (_moveEndDir < 0)
-            _spriteRenderer.flipX = false;
-
-        else if (0 < _moveEndDir)
-            _spriteRenderer.flipX = true;
-
+        SetSpriteDir(_moveEndDir);
 
         onCompleted?.Invoke();
 
@@ -214,7 +184,7 @@ public class Customer : MonoBehaviour
     {
         yield return YieldCache.WaitForSeconds(1);
         _moveObj.transform.position = AStar.Instance.GetFloorPos(_targetFloor);
-        transform.localScale = new Vector3(-_scaleX, transform.localScale.y, transform.localScale.z);
+        SetSpriteDir(1);
         yield return YieldCache.WaitForSeconds(1);
         onCompleted?.Invoke();
     }

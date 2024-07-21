@@ -23,6 +23,6 @@ MonoBehaviour:
   _requiredDish: FOOD01
   _orderFoods:
   - FOOD03
-  _moveSpeed: 5
-  _animatorController: {fileID: 9100000, guid: f615075cb845a6b49bb861c5a66344fc, type: 2}
+  _moveSpeed: 3
+  _animatorController: {fileID: 9100000, guid: d0d29d5d359bff8478a8f2a38ca631a1, type: 2}
   _skill: {fileID: 11400000, guid: 4641d0077eb30704d88a3107eb8695e3, type: 2}
