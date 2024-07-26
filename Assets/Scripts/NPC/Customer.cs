@@ -3,8 +3,17 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.U2D;
-using UnityEngine.U2D.Animation;
+
+
+public enum CustomerState
+{
+    Idle,
+    Run,
+    Sit,
+    Jump,
+    Length
+}
+
 
 public class Customer : MonoBehaviour
 {
@@ -29,7 +38,6 @@ public class Customer : MonoBehaviour
     private Vector2 _targetPos;
     private int _targetFloor;
     private int _moveEndDir;
-    private float _scaleX;
     private bool _isStairsMove;
 
     private int _orderCount = 1;
@@ -38,12 +46,7 @@ public class Customer : MonoBehaviour
     private float _foodPriceMul = 1;
     public float FoodPriceMul => _foodPriceMul;
 
-
-
-    private void Start()
-    {
-        _scaleX = transform.localScale.x;
-    }
+    private CustomerState _currentState;
 
 
     public void Init(CustomerData data)
@@ -116,6 +119,33 @@ public class Customer : MonoBehaviour
     }
 
 
+    public void ChangeState(CustomerState state)
+    {
+        if (_currentState == state)
+            return;
+
+        _currentState = state;
+        
+        switch(_currentState)
+        {
+            case CustomerState.Idle:
+                _animator.SetBool("Run", false);
+                _animator.SetBool("Sit", false);
+                break;
+
+            case CustomerState.Run:
+                _animator.SetBool("Run", true);
+                _animator.SetBool("Sit", false);
+                break;
+
+            case CustomerState.Sit:
+                _animator.SetBool("Sit", true);
+                _animator.SetBool("Run", false);
+                break;
+        }
+    }
+
+
     private void TargetMove(List<Vector2> nodeList)
     {
         if (_moveCoroutine != null)
@@ -161,12 +191,12 @@ public class Customer : MonoBehaviour
                 _moveObj.transform.Translate(dir * Time.deltaTime * _customerData.MoveSpeed, Space.World);
 
                 SetSpriteDir(dir.x);
-                _animator.SetBool("Run", true);
+                ChangeState(CustomerState.Run);
                 yield return null;
             }
         }
 
-        _animator.SetBool("Run", false);
+        ChangeState(CustomerState.Idle);
 
         SetSpriteDir(_moveEndDir);
 

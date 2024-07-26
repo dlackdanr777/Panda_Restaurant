@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,11 +15,12 @@ public class TableData
     [SerializeField] private Transform[] _chairTrs;
     public Transform[] ChairTrs => _chairTrs;
 
-    [SerializeField] private GarbageAnimation _leftGarbageAnime;
-    public GarbageAnimation LeftGarbageAnime => _leftGarbageAnime;
+    [SerializeField] private Transform _coinTr;
+    public Transform CoinTr => _coinTr;
 
-    [SerializeField] private GarbageAnimation _rightGarbageAnime;
-    public GarbageAnimation RightGarbageAnime => _rightGarbageAnime;
+    [SerializeField] private Transform _garbageTr;
+    public Transform GarbageTr => _garbageTr;
+
 
     [SerializeField] private Transform _leftStaffTr;
     public Transform LeftStaffTr => _leftStaffTr;
@@ -41,9 +43,16 @@ public class TableData
 
     public int SitDir;
 
+    public int CoinCount;
+
+    public int GarbageCount;
+
+    public List<GameObject> CoinList = new List<GameObject>();
+
 
     public void SetTipValue(int value)
     {
         _tipValue += value;
     }
+
 }

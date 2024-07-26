@@ -22,22 +22,23 @@ public class KitchenSystem : MonoBehaviour
     [Space]
     [Header("UI Options")]
     [SerializeField] private RectTransform _burnerTimerParent;
-    [SerializeField] private UIImageFillAmount _burnerTimerPrefab;
+    [SerializeField] private UIBurnerTimer _burnerTimerPrefab;
     [SerializeField] private Transform[] _burnerTimerTrs;
 
 
-    private UIImageFillAmount[] _burnerTimers;
+    private UIBurnerTimer[] _burnerTimers;
 
     private void Awake()
     {
         _burnerDatas = new KichenBurnerData[(int)KitchenUtensilType.Burner5 + 1];
-        _burnerTimers = new UIImageFillAmount[(int)KitchenUtensilType.Burner5 + 1];
+        _burnerTimers = new UIBurnerTimer[(int)KitchenUtensilType.Burner5 + 1];
         for (int i = 0, cnt = (int)KitchenUtensilType.Burner5 + 1; i < cnt; ++i)
         {
             _burnerDatas[i] = new KichenBurnerData();
-            UIImageFillAmount obj = Instantiate(_burnerTimerPrefab, _burnerTimerParent);
+            UIBurnerTimer obj = Instantiate(_burnerTimerPrefab, _burnerTimerParent);
             _burnerTimers[i] = obj;
-            obj.GetComponent<WorldToSceenPosition>().SetWorldTransform(_burnerTimerTrs[i]);
+            obj.SetWorldTransform(_burnerTimerTrs[i]);
+            obj.SetFillAmount(0);
         }
 
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
@@ -83,18 +84,23 @@ public class KitchenSystem : MonoBehaviour
         if (!_burnerDatas[burnerIndex].CookingData.IsDefault())
             _burnerDatas[burnerIndex].CookingData.OnCompleted?.Invoke();
 
-        _burnerTimers[burnerIndex].SetFillAmount(0);
+
+
         if (_cookingQueue.Count == 0)
         {
             _burnerDatas[burnerIndex].CookingData = default;
             _burnerDatas[burnerIndex].Time = 0;
-
+            _burnerTimers[burnerIndex].SetFillAmount(0);
+            _burnerTimers[burnerIndex].SetActive(false);
             return;
         }
 
         CookingData cookingData = _cookingQueue.Dequeue();
         _burnerDatas[burnerIndex].CookingData = cookingData;
         _burnerDatas[burnerIndex].Time = cookingData.CookingTime;
+        _burnerTimers[burnerIndex].SetActive(true);
+        _burnerTimers[burnerIndex].SetFillAmount(0);
+        _burnerTimers[burnerIndex].SetImage(cookingData.Sprite);
     }
 
     private void UpdateKitchen()
@@ -110,7 +116,6 @@ public class KitchenSystem : MonoBehaviour
                 data.SetData(equipData);
             }
 
-            DebugLog.Log(type + ": " + equipData);
             if ((type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5) && equipData != null)
             {
                 _burnerCount++;
@@ -128,7 +133,7 @@ public class KitchenSystem : MonoBehaviour
         {
             data.SetData(equipData);
         }
-        DebugLog.Log("½ÇÇà");
+
         if(type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5)
         {
             int _tmpBurnerCount = _burnerCount;
@@ -142,7 +147,8 @@ public class KitchenSystem : MonoBehaviour
             for(int i = _tmpBurnerCount; i < _burnerCount; ++i)
             {
                 _burnerDatas[i].Time = 0;
-                _burnerTimers[i].SetFillAmount(0);
+                _burnerTimers[i].SetActive(false);
+                _burnerTimers[i].SetWorldTransform(_burnerTimerTrs[i]);
             }
 
             for (int i = _burnerCount, cnt = _burnerDatas.Length; i < cnt; ++i)
@@ -152,6 +158,8 @@ public class KitchenSystem : MonoBehaviour
 
                 _burnerDatas[i].CookingData = default;
                 _burnerTimers[i].SetFillAmount(0);
+                _burnerTimers[i].SetActive(false);
+                _burnerTimers[i].SetWorldTransform(_burnerTimerTrs[i]);
             }
         }
     }

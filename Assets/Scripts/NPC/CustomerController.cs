@@ -18,6 +18,9 @@ public class CustomerController : MonoBehaviour
     public event Action AddCustomerHandler;
     public event Action GuideCustomerHandler;
 
+    public int Count => _customers.Count;
+    public bool IsMaxCount => Count >= _maxCustomers;
+
     public Customer GetFirstCustomer()
     {
         return _customers.Peek();

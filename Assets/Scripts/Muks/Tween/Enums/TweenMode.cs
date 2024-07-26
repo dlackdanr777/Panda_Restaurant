@@ -8,8 +8,14 @@ namespace Muks.Tween
         /// <summary>일정한 속도 유지</summary>
         Constant,
 
-        /// <summary>속도가 점점 증가함</summary>
-        Quadratic,
+        /// <summary>점점 빠르게</summary>
+        EaseInQuad,
+
+        /// <summary>점점 느리게</summary>
+        EaseOutQuad,
+
+        /// <summary>점점 빠르다가 점점 느리게</summary>
+        EaseInOutQuad,
 
         /// <summary>천천히 가속 천천히 감속</summary>
         Smoothstep,
@@ -64,6 +70,12 @@ namespace Muks.Tween
 
         /// <summary>현재 값에서 여러번 튕긴 후 중간에 목표 값 이동 후 목표 값에서도 여러번 튕김</summary>
         EaseInOutBounce,
+
+        EaseInCubic,
+
+        EaseOutCubic,
+
+        EaseInOutCubic,
 
         /// <summary>Sin 그래프 이동</summary>
         Sinerp,

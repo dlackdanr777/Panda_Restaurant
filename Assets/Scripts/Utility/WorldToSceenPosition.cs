@@ -19,6 +19,22 @@ public class WorldToSceenPosition : MonoBehaviour
         _camera = Camera.main;
     }
 
+    private void OnEnable()
+    {
+        if (_worldTransform == null || _camera == null)
+            return;
+
+        transform.position = _camera.WorldToScreenPoint(_worldTransform.position + _offset);
+    }
+
+    private void OnDisable()
+    {
+        if (_worldTransform == null || _camera == null)
+            return;
+
+        transform.position = _camera.WorldToScreenPoint(_worldTransform.position + _offset);
+    }
+
     private void Update()
     {
         if (_worldTransform == null)
@@ -26,5 +42,4 @@ public class WorldToSceenPosition : MonoBehaviour
 
         transform.position = _camera.WorldToScreenPoint(_worldTransform.position + _offset);
     }
-
 }

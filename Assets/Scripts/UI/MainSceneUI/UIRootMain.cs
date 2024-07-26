@@ -1,3 +1,4 @@
+using Muks.Tween;
 using UnityEngine;
 
 public class UIRootMain : MonoBehaviour
@@ -23,6 +24,12 @@ public class UIRootMain : MonoBehaviour
     {
         if(GameManager.Instance.TotalTabCount - 1 <= _tabCount)
         {
+            if(_customerController.IsMaxCount)
+            {
+                TimedDisplayManager.Instance.ShowText("ÁÙÀÌ ²ËÃ¡½À´Ï´Ù.");
+                return;
+            }
+
             _customerController.AddCustomer();
             _addCustomerButton.SetFillAmonut(0);
             _tabCount = 0;

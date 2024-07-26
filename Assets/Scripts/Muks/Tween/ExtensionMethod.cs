@@ -89,6 +89,62 @@ namespace Muks.Tween
         }
 
 
+        /// <summary>목표 X값으로 지속 시간동안 오브젝트를 이동시키는 함수</summary>
+        public static TweenData TweenMoveX(this Component target, float targetPosX, float duration, TweenMode tweenMode = TweenMode.Constant)
+        {
+            if (!target.TryGetComponent(out TweenTransformMoveX tweenData))
+                tweenData = target.gameObject.AddComponent<TweenTransformMoveX>();
+
+            TweenDataSequence tmpData = new TweenDataSequence(targetPosX, duration, tweenMode, null);
+
+            tweenData.IsLoop = false;
+            tweenData.AddDataSequence(tmpData);
+
+            if (!tweenData.enabled)
+            {
+                tweenData.ElapsedDuration = 0;
+                tweenData.TotalDuration = 0;
+                tweenData.enabled = true;
+            }
+
+            return tweenData;
+        }
+
+        /// <summary>목표 X값으로 지속 시간동안 오브젝트를 이동시키는 함수</summary>
+        public static TweenData TweenMoveX(this GameObject target, float targetPosX, float duration, TweenMode tweenMode = TweenMode.Constant)
+        {
+            return TweenMoveX(target.transform, targetPosX, duration, tweenMode);
+        }
+
+
+        /// <summary>목표 Y값으로 지속 시간동안 오브젝트를 이동시키는 함수</summary>
+        public static TweenData TweenMoveY(this Component target, float targetPosY, float duration, TweenMode tweenMode = TweenMode.Constant)
+        {
+            if (!target.TryGetComponent(out TweenTransformMoveY tweenData))
+                tweenData = target.gameObject.AddComponent<TweenTransformMoveY>();
+
+            TweenDataSequence tmpData = new TweenDataSequence(targetPosY, duration, tweenMode, null);
+
+            tweenData.IsLoop = false;
+            tweenData.AddDataSequence(tmpData);
+
+            if (!tweenData.enabled)
+            {
+                tweenData.ElapsedDuration = 0;
+                tweenData.TotalDuration = 0;
+                tweenData.enabled = true;
+            }
+
+            return tweenData;
+        }
+
+        /// <summary>목표 Y값으로 지속 시간동안 오브젝트를 이동시키는 함수</summary>
+        public static TweenData TweenMoveY(this GameObject target, float targetPosY, float duration, TweenMode tweenMode = TweenMode.Constant)
+        {
+            return TweenMoveY(target.transform, targetPosY, duration, tweenMode);
+        }
+
+
         /// <summary>목표 값으로 지속 시간동안 오브젝트를 회전시키는 함수</summary>
         public static TweenData TweenRotate(this Component target, Vector3 targetEulerAngles, float duration, TweenMode tweenMode = TweenMode.Constant)
         {

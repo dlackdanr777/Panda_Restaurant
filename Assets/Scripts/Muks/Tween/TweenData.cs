@@ -152,10 +152,12 @@ namespace Muks.Tween
             _percentHandler = new Dictionary<TweenMode, Func<float, float, float>>
             {
                 { TweenMode.Constant, Constant },
-                {TweenMode.Quadratic, Quadratic },
                 { TweenMode.Smoothstep, Smoothstep },
                 { TweenMode.Smootherstep, Smootherstep },
                 {TweenMode.Spike, Spike },
+                {TweenMode.EaseInQuad, EaseInQuad },
+                {TweenMode.EaseOutQuad, EaseOutQuad },
+                {TweenMode.EaseInOutQuad, EaseInOutQuad },
                 {TweenMode.EaseInQuint, EaseInQuint },
                 {TweenMode.EaseOutQuint, EaseOutQuint },
                 {TweenMode.EaseInOutQuint, EaseInOutQuint },
@@ -171,6 +173,9 @@ namespace Muks.Tween
                 {TweenMode.EaseInBounce, EaseInBounce },
                 {TweenMode.EaseOutBounce, EaseOutBounce },
                 {TweenMode.EaseInOutBounce, EaseInOutBounce },
+                {TweenMode.EaseInCubic, EaseInCubic },
+                {TweenMode.EaseOutCubic, EaseOutCubic },
+                {TweenMode.EaseInOutCubic, EaseInOutCubic },
                 { TweenMode.Sinerp, Sinerp },
                 { TweenMode.Coserp, Coserp }
             };
@@ -261,16 +266,6 @@ namespace Muks.Tween
         }
 
 
-        /// <summary> 가속 운동 </summary>
-        private float Quadratic(float elapsedDuration, float totalDuration)
-        {
-            float percent = elapsedDuration / totalDuration;
-            percent = percent * percent;
-
-            return percent;
-        }
-
-
         /// <summary> 점점 빠르게 가다 점점 느리게 </summary>
         private float Smoothstep(float elapsedDuration, float totalDuration)
         {
@@ -299,6 +294,37 @@ namespace Muks.Tween
                 return  Mathf.Pow(percent/ 0.5f, 3);
 
             return Mathf.Pow((1 - percent) / 0.5f, 3);
+        }
+
+
+        /// <summary> 점점 빠르게 </summary>
+        private float EaseInQuad(float elapsedDuration, float totalDuration)
+        {
+            float percent = elapsedDuration / totalDuration;
+            percent = 1 - (1 - percent) * (1 - percent);
+
+            return percent;
+        }
+
+
+        /// <summary> 점점 빠르다가 점점 느리게 </summary>
+        private float EaseInOutQuad(float elapsedDuration, float totalDuration)
+        {
+            float percent = elapsedDuration / totalDuration;
+            percent = percent < 0.5f ? 2 * percent * percent : 1 - Mathf.Pow(-2 * percent + 2, 2) / 2;
+
+            return percent;
+        }
+
+
+
+        /// <summary> 점점 느리게 </summary>
+        private float EaseOutQuad(float elapsedDuration, float totalDuration)
+        {
+            float percent = elapsedDuration / totalDuration;
+            percent = percent * percent;
+
+            return percent;
         }
 
 
@@ -483,6 +509,26 @@ namespace Muks.Tween
             return percent < 0.5f
                ? (1 - EaseOutBounce(1 - 2 * percent)) / 2
                : (1 + EaseOutBounce(2 * percent - 1)) / 2;
+        }
+
+
+        private float EaseInCubic(float elapsedDuration, float totalDuration)
+        {
+            float percent = elapsedDuration / totalDuration;
+            return percent * percent * percent;
+        }
+
+        private float EaseOutCubic(float elapsedDuration, float totalDuration)
+        {
+            float percent = elapsedDuration / totalDuration;
+            return 1 - Mathf.Pow(1 - percent, 3);
+        }
+
+
+        private float EaseInOutCubic(float elapsedDuration, float totalDuration)
+        {
+            float percent = elapsedDuration / totalDuration;
+            return percent < 0.5f ? 4 * percent * percent * percent : 1 - Mathf.Pow(-2 * percent + 2, 3) / 2;
         }
 
 

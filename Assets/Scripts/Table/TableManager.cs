@@ -1,5 +1,7 @@
+using Muks.PathFinding.AStar;
 using Muks.Tween;
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -30,6 +32,8 @@ public class TableManager : MonoBehaviour
     private UIButtonAndImage[] _orderButtons;
     private UIButtonAndImage[] _servingButtons;
     private Button[] _cleaningButtons;
+
+    private int _totalGarbageCount;
 
 
     private void Awake()
@@ -74,21 +78,18 @@ public class TableManager : MonoBehaviour
 
             orderButton.AddListener(() => OnCustomerOrder(index)); 
             servingButton.AddListener(() => OnServing(index));
-            cleaningButton.onClick.AddListener(() => OnCleanTable(index));
+            cleaningButton.onClick.AddListener(() => OnMoneyButtonClicked(index));
 
             _orderButtonsPos[i] = orderButton.GetComponent<WorldToSceenPosition>();
             _sevingButtonsPos[i] = servingButton.GetComponent<WorldToSceenPosition>();
 
-            _orderButtonsPos[i].SetWorldTransform(_tableDatas[index].TableButtonTr);
-            _sevingButtonsPos[i].SetWorldTransform(_tableDatas[index].TableButtonTr);
+            _orderButtonsPos[i].SetWorldTransform(_tableDatas[index].ChairTrs[0]);
+            _sevingButtonsPos[i].SetWorldTransform(_tableDatas[index].ChairTrs[0]);
             cleaningButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
 
             _orderButtons[i] = orderButton;
             _servingButtons[i] = servingButton;
             _cleaningButtons[i] = cleaningButton;
-
-            _tableDatas[i].RightGarbageAnime.Init();
-            _tableDatas[i].LeftGarbageAnime.Init();
         }
 
         for(int i = 0; i < _ownedTableCount; i++)
@@ -182,31 +183,20 @@ public class TableManager : MonoBehaviour
             {
                 _orderButtons[i].gameObject.SetActive(false);
                 _servingButtons[i].gameObject.SetActive(false);
-                _cleaningButtons[i].gameObject.SetActive(false);
             }
             else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating || data.TableState == ETableState.UseStaff || data.TableState == ETableState.DontUse)
             {
                 _orderButtons[i].gameObject.SetActive(false);
                 _servingButtons[i].gameObject.SetActive(false);
-                _cleaningButtons[i].gameObject.SetActive(false);
             }
             else if (data.TableState == ETableState.Seating)
             {
                 _orderButtons[i].gameObject.SetActive(true);
                 _servingButtons[i].gameObject.SetActive(false);
-                _cleaningButtons[i].gameObject.SetActive(false);
             }
             else if(data.TableState == ETableState.CanServing)
             {
                 _servingButtons[i].gameObject.SetActive(true);
-                _orderButtons[i].gameObject.SetActive(false);
-                _cleaningButtons[i].gameObject.SetActive(false);
-            }
-
-            else if (data.TableState == ETableState.NeedCleaning)
-            {
-                _cleaningButtons[i].gameObject.SetActive(true);
-                _servingButtons[i].gameObject.SetActive(false);
                 _orderButtons[i].gameObject.SetActive(false);
             }
         }
@@ -234,20 +224,25 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].OrdersCount = currentCustomer.OrderCount;
         _tableDatas[index].TotalPrice = 0;
 
+        int randInt = UnityEngine.Random.Range(0, _tableDatas[index].ChairTrs.Length);
+        _tableDatas[index].SitDir = randInt == 0 ? -1 : 1;
+        Vector3 targetPos = _tableDatas[index].ChairTrs[randInt].position - new Vector3(0, AStar.Instance.NodeSize * 2 ,0);
+
         UpdateTable();
 
-        _customerController.GuideCustomer(_tableDatas[index].CustomerMoveTr.position, 0, () =>
+        _customerController.GuideCustomer(targetPos, 0, () =>
         {
-            int randInt = UnityEngine.Random.Range(0, _tableDatas[index].ChairTrs.Length);
-            currentCustomer.transform.position = _tableDatas[index].ChairTrs[randInt].position;
-            _orderButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[randInt]);
-            _sevingButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[randInt]);
+            Tween.Wait(0.5f, () =>
+            {
+                currentCustomer.transform.position = _tableDatas[index].ChairTrs[randInt].position;
+                _orderButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[randInt]);
+                _sevingButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[randInt]);
 
-            _tableDatas[index].SitDir = randInt == 0 ? -1 : 1;
-            currentCustomer.SetSpriteDir(-_tableDatas[index].SitDir);
-            currentCustomer.SetLayer("SitCustomer", 0);
-            currentCustomer = null;
-            OnCustomerSeating(index);
+                currentCustomer.SetSpriteDir(-_tableDatas[index].SitDir);
+                currentCustomer.SetLayer("SitCustomer", 0);
+                currentCustomer = null;
+                OnCustomerSeating(index);
+            });
         });
     }
 
@@ -261,6 +256,8 @@ public class TableManager : MonoBehaviour
 
         if (_tableDatas[index].OrdersCount <= 0)
             EndEat(index);
+
+        _tableDatas[index].CurrentCustomer.ChangeState(CustomerState.Sit);
 
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
@@ -319,39 +316,37 @@ public class TableManager : MonoBehaviour
 
     private void EndEat(int index)
     {
-        if (_tableDatas[index].SitDir == 1)
-            _tableDatas[index].RightGarbageAnime.StartAnime();
+        StartCoinAnime(index);
 
-        else
-            _tableDatas[index].LeftGarbageAnime.StartAnime();
-
-        ExitCustomer(index);
-        Tween.Wait(1, () =>
+        Tween.Wait(0.6f, () =>
         {
-            _tableDatas[index].TableState = ETableState.NeedCleaning;
+            ExitCustomer(index);
+            _tableDatas[index].TableState = ETableState.NotUse;
+            _cleaningButtons[index].gameObject.SetActive(true);
             UpdateTable();
         });
     }
 
-    public void OnCleanTable(int index) 
+    public void OnMoneyButtonClicked(int index) 
     {
-        if (_tableDatas[index].TableState == ETableState.DontUse)
-        {
-            NotFurnitureTable(index);
-            return;
-        }
-
-        if (_tableDatas[index].SitDir == 1)
-            _tableDatas[index].RightGarbageAnime.StartCleanAnime(_moneyUITr.position);
-
-        else
-            _tableDatas[index].LeftGarbageAnime.StartCleanAnime(_moneyUITr.position);
-
+        _cleaningButtons[index].gameObject.SetActive(false);
+        _tableDatas[index].CoinCount = 0;
         UserInfo.AppendMoney((int)(_tableDatas[index].TotalPrice * GameManager.Instance.FoodPriceMul));
-        UserInfo.AppendTip((int)(_tableDatas[index].TotalPrice * 0.01f * GameManager.Instance.TipMul));
-
-        _tableDatas[index].TableState = ETableState.NotUse;
-        UpdateTable();
+        
+        for(int i = 0, cnt = _tableDatas[index].CoinList.Count; i < cnt; i++)
+        {
+            int coinIndex = i;
+            _tableDatas[index].CoinList[coinIndex].TweenStop();
+            _tableDatas[index].CoinList[coinIndex].TweenMove(_moneyUITr.position, 1.5f, TweenMode.Smootherstep).
+                OnComplete(() => 
+                {
+                    _tableDatas[index].CoinList[coinIndex].TweenStop();
+                    ObjectPoolManager.Instance.EnqueueCoin(_tableDatas[index].CoinList[coinIndex]);
+                    
+                    if(coinIndex == _tableDatas[index].CoinList.Count - 1)
+                        _tableDatas[index].CoinList.Clear();
+                });
+        }
     }
 
     public void OnUseStaff(int index)
@@ -372,11 +367,12 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        Customer exitCustomer = _tableDatas[index].CurrentCustomer;
-        exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
-        exitCustomer.SetLayer("Customer", 0);
-        _tableDatas[index].CurrentCustomer = null;
 
+        Customer exitCustomer = _tableDatas[index].CurrentCustomer;
+        exitCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
+        exitCustomer.SetLayer("Customer", 0);
+
+        _tableDatas[index].CurrentCustomer = null;
 
         UpdateTable();
 
@@ -399,11 +395,10 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-
         Customer exitCustomer = _tableDatas[index].CurrentCustomer;
 
         if (_tableDatas[index].TableState != ETableState.Move)
-            exitCustomer.transform.position = _tableDatas[index].CustomerMoveTr.position;
+            exitCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
 
         _tableDatas[index].CurrentCustomer = null;
         exitCustomer.SetLayer("Customer", 0);
@@ -416,6 +411,32 @@ public class TableManager : MonoBehaviour
             ObjectPoolManager.Instance.EnqueueCustomer(exitCustomer);
             exitCustomer = null;
             UpdateTable();
+        });
+    }
+
+
+    private void StartCoinAnime(int index)
+    {
+        int dir = _tableDatas[index].SitDir;
+        Vector3 targetTr = 5 <= _tableDatas[index].CoinCount ?
+            _tableDatas[index].CoinTr.position :
+            _tableDatas[index].CoinTr.position + new Vector3((_tableDatas[index].CoinCount * 0.3f) - 0.6f, 0, 0);
+
+        GameObject coin = ObjectPoolManager.Instance.SpawnCoin(_tableDatas[index].ChairTrs[dir == -1 ? 0 : 1].position + new Vector3(0, 1.2f, 0), Quaternion.identity);
+
+        coin.TweenMoveX(targetTr.x, 0.45f);
+        coin.TweenMoveY(targetTr.y, 0.45f, TweenMode.EaseInBack).OnComplete(() =>
+        {
+            if (5 <= _tableDatas[index].CoinCount)
+            {
+                coin.TweenStop();
+                ObjectPoolManager.Instance.EnqueueCoin(coin);
+                return;
+            }
+
+            coin.TweenMove(coin.transform.position + new Vector3(0, 0.3f, 0), 2f, TweenMode.Smootherstep).Loop(LoopType.Yoyo);
+            _tableDatas[index].CoinCount = Mathf.Clamp(_tableDatas[index].CoinCount + 1, 0, 5);
+            _tableDatas[index].CoinList.Add(coin);
         });
     }
 
