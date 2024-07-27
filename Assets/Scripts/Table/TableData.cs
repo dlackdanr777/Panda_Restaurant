@@ -1,10 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 [Serializable]
-public class TableData
+public class TableData : MonoBehaviour
 {
     [SerializeField] private Transform _customerMoveTr;
     public Transform CustomerMoveTr => _customerMoveTr;
@@ -28,6 +27,9 @@ public class TableData
     [SerializeField] private Transform _rightStaffTr;
     public Transform RightStaffTr => _rightStaffTr;
 
+    [SerializeField] private DropCoinArea _dropCoinArea;
+    public DropCoinArea DropCoinArea => _dropCoinArea;
+
     private int _tipValue;
     public int TipValue => _tipValue;
 
@@ -43,7 +45,9 @@ public class TableData
 
     public int SitDir;
 
-    public int CoinCount;
+    public int SitIndex;
+
+    public int[] CoinCount = new int[2];
 
     public int GarbageCount;
 

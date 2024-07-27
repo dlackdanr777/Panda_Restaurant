@@ -78,7 +78,7 @@ public class TableManager : MonoBehaviour
 
             orderButton.AddListener(() => OnCustomerOrder(index)); 
             servingButton.AddListener(() => OnServing(index));
-            cleaningButton.onClick.AddListener(() => OnMoneyButtonClicked(index));
+            cleaningButton.onClick.AddListener(() => OnMoneyButtonClicked(index, 0));
 
             _orderButtonsPos[i] = orderButton.GetComponent<WorldToSceenPosition>();
             _sevingButtonsPos[i] = servingButton.GetComponent<WorldToSceenPosition>();
@@ -222,10 +222,11 @@ public class TableManager : MonoBehaviour
         currentCustomer.SetLayer("Customer", 0);
         _tableDatas[index].TableState = ETableState.Move;
         _tableDatas[index].OrdersCount = currentCustomer.OrderCount;
-        _tableDatas[index].TotalPrice = 0;
 
         int randInt = UnityEngine.Random.Range(0, _tableDatas[index].ChairTrs.Length);
+        DebugLog.Log(randInt);
         _tableDatas[index].SitDir = randInt == 0 ? -1 : 1;
+        _tableDatas[index].SitIndex = randInt;
         Vector3 targetPos = _tableDatas[index].ChairTrs[randInt].position - new Vector3(0, AStar.Instance.NodeSize * 2 ,0);
 
         UpdateTable();
@@ -327,35 +328,12 @@ public class TableManager : MonoBehaviour
         });
     }
 
-    public void OnMoneyButtonClicked(int index) 
-    {
-        _cleaningButtons[index].gameObject.SetActive(false);
-        _tableDatas[index].CoinCount = 0;
-        UserInfo.AppendMoney((int)(_tableDatas[index].TotalPrice * GameManager.Instance.FoodPriceMul));
-        
-        for(int i = 0, cnt = _tableDatas[index].CoinList.Count; i < cnt; i++)
-        {
-            int coinIndex = i;
-            _tableDatas[index].CoinList[coinIndex].TweenStop();
-            _tableDatas[index].CoinList[coinIndex].TweenMove(_moneyUITr.position, 1.5f, TweenMode.Smootherstep).
-                OnComplete(() => 
-                {
-                    _tableDatas[index].CoinList[coinIndex].TweenStop();
-                    ObjectPoolManager.Instance.EnqueueCoin(_tableDatas[index].CoinList[coinIndex]);
-                    
-                    if(coinIndex == _tableDatas[index].CoinList.Count - 1)
-                        _tableDatas[index].CoinList.Clear();
-                });
-        }
-    }
 
     public void OnUseStaff(int index)
     {
         _tableDatas[index].TableState = ETableState.UseStaff;
         UpdateTable();
     }
-
-
 
 
 
@@ -386,7 +364,6 @@ public class TableManager : MonoBehaviour
 
     private void NotFurnitureTable(int index)
     {
-        _tableDatas[index].TotalPrice = 0;
         _tableDatas[index].SetTipValue(-_tableDatas[index].TipValue);
 
         if (_tableDatas[index].CurrentCustomer == null)
@@ -417,30 +394,18 @@ public class TableManager : MonoBehaviour
 
     private void StartCoinAnime(int index)
     {
-        int dir = _tableDatas[index].SitDir;
-        Vector3 targetTr = 5 <= _tableDatas[index].CoinCount ?
-            _tableDatas[index].CoinTr.position :
-            _tableDatas[index].CoinTr.position + new Vector3((_tableDatas[index].CoinCount * 0.3f) - 0.6f, 0, 0);
+        int sitIndex = _tableDatas[index].SitIndex;
+        int foodPrice = (int)(_tableDatas[index].TotalPrice * GameManager.Instance.FoodPriceMul);
 
-        GameObject coin = ObjectPoolManager.Instance.SpawnCoin(_tableDatas[index].ChairTrs[dir == -1 ? 0 : 1].position + new Vector3(0, 1.2f, 0), Quaternion.identity);
-
-        coin.TweenMoveX(targetTr.x, 0.45f);
-        coin.TweenMoveY(targetTr.y, 0.45f, TweenMode.EaseInBack).OnComplete(() =>
-        {
-            if (5 <= _tableDatas[index].CoinCount)
-            {
-                coin.TweenStop();
-                ObjectPoolManager.Instance.EnqueueCoin(coin);
-                return;
-            }
-
-            coin.TweenMove(coin.transform.position + new Vector3(0, 0.3f, 0), 2f, TweenMode.Smootherstep).Loop(LoopType.Yoyo);
-            _tableDatas[index].CoinCount = Mathf.Clamp(_tableDatas[index].CoinCount + 1, 0, 5);
-            _tableDatas[index].CoinList.Add(coin);
-        });
+        _tableDatas[index].DropCoinArea.DropCoin(_tableDatas[index].ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0), foodPrice);
     }
 
-    
+
+    public void OnMoneyButtonClicked(int index, int cheirIndex)
+    {
+        _tableDatas[index].DropCoinArea.OnCoinButtonClicked();
+    }
+
     private void OnChangeFurnitureEvent(FurnitureType type)
     {
         UpdateTable();

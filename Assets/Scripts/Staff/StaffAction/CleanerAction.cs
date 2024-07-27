@@ -25,7 +25,7 @@ public class CleanerAction : IStaffAction
             {
                 staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(staff.ResetAction);
                 staff.ResetAction();
-                _tableManager.OnMoneyButtonClicked(index);
+                //_tableManager.OnMoneyButtonClicked(index);
             });
         });
 

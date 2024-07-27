@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Muks.DataBind;
 
 public static class UserInfo
 {
@@ -55,6 +56,7 @@ public static class UserInfo
     public static void AppendMoney(int value)
     {
         _money += value;
+        DataBind.SetTextValue("Money", _money.ToString());
         OnChangeMoneyHandler?.Invoke();
     }
 
@@ -75,6 +77,7 @@ public static class UserInfo
     {
         _tip += (int)(value * GameManager.Instance.TipMul);
         _tip = Mathf.Clamp(_tip, 0, GameManager.Instance.MaxTipVolume);
+        DataBind.SetTextValue("Tip", _tip.ToString());
     }
 
 

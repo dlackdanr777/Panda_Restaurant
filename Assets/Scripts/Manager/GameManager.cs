@@ -108,7 +108,7 @@ public class GameManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         UserInfo.GiveRecipe("FOOD01");
-        DataBind.SetUnityActionValue("Test", Test);
+        DataBind.SetTextValue("Money", UserInfo.Money.ToString());
     }
 
 
@@ -165,12 +165,6 @@ public class GameManager : MonoBehaviour
             UserInfo.AppendMoney(_moneyPerMinute);
         }
 
-    }
-
-
-    private void Test()
-    {
-        UserInfo.DisarmEquipFurniture(FurnitureType.Table1);
     }
 
 }

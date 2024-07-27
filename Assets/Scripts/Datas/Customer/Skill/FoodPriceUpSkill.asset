@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: FoodPriceUpSkill
   m_EditorClassIdentifier: 
   _skillActivatePercent: 100
-  _foodPriceMul: 100
+  _foodPriceMul: 1
