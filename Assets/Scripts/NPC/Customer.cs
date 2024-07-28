@@ -130,16 +130,14 @@ public class Customer : MonoBehaviour
         {
             case CustomerState.Idle:
                 _animator.SetBool("Run", false);
-                _animator.SetBool("Sit", false);
                 break;
 
             case CustomerState.Run:
                 _animator.SetBool("Run", true);
-                _animator.SetBool("Sit", false);
                 break;
 
             case CustomerState.Sit:
-                _animator.SetBool("Sit", true);
+                _animator.SetTrigger("Sit");
                 _animator.SetBool("Run", false);
                 break;
         }

@@ -14,34 +14,34 @@ public class DropCoinArea : MonoBehaviour
     [SerializeField] private float _coinEndTime;
     [SerializeField] private float _coinAnimeInterval;
 
-    public Vector3 Pos => _dropArea.position;
-    public int MaxCoinCount => _maxCoinCount;
-
-    private int _currentCoinCount;
-    public int CurrentCoinCount => _currentCoinCount;
-
-    private GameObject[] _coins;
+    private PointerClickSpriteRenderer[] _coins;
     private int _currentMoney;
+    private int _currentCoinCount;
+    private bool _isAnimeStartEnabled;
 
     private void Start()
     {
         Init();
     }
 
+
     private void Init()
     {
         _currentCoinCount = 0;
         _currentMoney = 0;
-        _coins = new GameObject[MaxCoinCount];
+        _coins = new PointerClickSpriteRenderer[_maxCoinCount];
     }
+
 
     public void DropCoin(Vector3 startPos, int moneyValue)
     {
+        _isAnimeStartEnabled = false;
         _currentMoney += moneyValue;
-        GameObject coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
+        PointerClickSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
+        coin.AddEvent(OnCoinClicked);
 
-        Vector3 targetPos = Pos;
-        targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / MaxCoinCount) * CurrentCoinCount), 0, 0);
+        Vector3 targetPos = _dropArea.position;
+        targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * _currentCoinCount), 0, 0);
 
         if(_currentCoinCount < _maxCoinCount)
         {
@@ -52,10 +52,11 @@ public class DropCoinArea : MonoBehaviour
         coin.TweenMoveX(targetPos.x, 0.45f);
         coin.TweenMoveY(targetPos.y, 0.45f, TweenMode.EaseInBack).OnComplete(() =>
         {
-            if (MaxCoinCount <= CurrentCoinCount)
+            _isAnimeStartEnabled = true;
+            if (_maxCoinCount <= _currentCoinCount)
             {
                 coin.TweenStop();
-                ObjectPoolManager.Instance.EnqueueCoin(coin);
+                ObjectPoolManager.Instance.DespawnCoin(coin);
                 return;
             }
             coin.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, TweenMode.Smootherstep).Loop(LoopType.Yoyo);
@@ -63,29 +64,33 @@ public class DropCoinArea : MonoBehaviour
     }
 
 
-    public void OnCoinButtonClicked()
+    private void OnCoinClicked()
     {
         if (_currentCoinCount == 0)
             return;
 
+        if (!_isAnimeStartEnabled)
+            return;
+
         float endTime = _coinEndTime;
-        for (int i = 0; i < _currentCoinCount; i++)
+        int currentMoney = _currentMoney;
+        int currentCoinCount = _currentCoinCount;
+        _isAnimeStartEnabled = false;
+        _currentMoney = 0;
+        _currentCoinCount = 0;
+
+        for (int i = 0; i < currentCoinCount; i++)
         {
             int coinIndex = i;
             _coins[coinIndex].TweenStop();
-            _coins[coinIndex].TweenMove(_coinEndTr.position, endTime, TweenMode.Smootherstep).
+            _coins[coinIndex].TweenMove(_coinEndTr.position, endTime, TweenMode.Smoothstep).
                 OnComplete(() =>
                 {
                     _coins[coinIndex].TweenStop();
-                    ObjectPoolManager.Instance.EnqueueCoin(_coins[coinIndex]);
-                    UserInfo.AppendMoney((int)((_currentMoney * GameManager.Instance.FoodPriceMul) / _currentCoinCount));
+                    ObjectPoolManager.Instance.DespawnCoin(_coins[coinIndex]);
+                    UserInfo.AppendMoney(currentMoney / currentCoinCount);               
                     _coins[coinIndex] = null;
-
-                    if (_currentCoinCount - 1 <= coinIndex)
-                    {
-                        _currentMoney = 0;
-                        _currentCoinCount = 0;
-                    }
+                    _isAnimeStartEnabled = true;
                 });
 
             endTime -= _coinAnimeInterval;

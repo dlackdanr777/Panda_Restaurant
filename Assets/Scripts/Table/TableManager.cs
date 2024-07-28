@@ -25,13 +25,11 @@ public class TableManager : MonoBehaviour
     [SerializeField] private Button _guideButton;
     [SerializeField] private UIButtonAndImage _orderButtonPrefab;
     [SerializeField] private UIButtonAndImage _servingButtonPrefab;
-    [SerializeField] private Button _cleaningButtonPrefab;
 
     private WorldToSceenPosition[] _orderButtonsPos;
     private WorldToSceenPosition[] _sevingButtonsPos;
     private UIButtonAndImage[] _orderButtons;
     private UIButtonAndImage[] _servingButtons;
-    private Button[] _cleaningButtons;
 
     private int _totalGarbageCount;
 
@@ -58,7 +56,6 @@ public class TableManager : MonoBehaviour
         int tableLength = _tableDatas.Length;
         _orderButtons = new UIButtonAndImage[tableLength];
         _servingButtons = new UIButtonAndImage[tableLength];
-        _cleaningButtons = new Button[tableLength];
         _orderButtonsPos = new WorldToSceenPosition[tableLength];
         _sevingButtonsPos = new WorldToSceenPosition[tableLength];
 
@@ -74,22 +71,18 @@ public class TableManager : MonoBehaviour
 
             UIButtonAndImage orderButton = Instantiate(_orderButtonPrefab, obj.transform);
             UIButtonAndImage servingButton = Instantiate(_servingButtonPrefab, obj.transform);
-            Button cleaningButton = Instantiate(_cleaningButtonPrefab, obj.transform);
 
             orderButton.AddListener(() => OnCustomerOrder(index)); 
             servingButton.AddListener(() => OnServing(index));
-            cleaningButton.onClick.AddListener(() => OnMoneyButtonClicked(index, 0));
 
             _orderButtonsPos[i] = orderButton.GetComponent<WorldToSceenPosition>();
             _sevingButtonsPos[i] = servingButton.GetComponent<WorldToSceenPosition>();
 
             _orderButtonsPos[i].SetWorldTransform(_tableDatas[index].ChairTrs[0]);
             _sevingButtonsPos[i].SetWorldTransform(_tableDatas[index].ChairTrs[0]);
-            cleaningButton.GetComponent<WorldToSceenPosition>().SetWorldTransform(_tableDatas[index].TableButtonTr);
 
             _orderButtons[i] = orderButton;
             _servingButtons[i] = servingButton;
-            _cleaningButtons[i] = cleaningButton;
         }
 
         for(int i = 0; i < _ownedTableCount; i++)
@@ -224,7 +217,6 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].OrdersCount = currentCustomer.OrderCount;
 
         int randInt = UnityEngine.Random.Range(0, _tableDatas[index].ChairTrs.Length);
-        DebugLog.Log(randInt);
         _tableDatas[index].SitDir = randInt == 0 ? -1 : 1;
         _tableDatas[index].SitIndex = randInt;
         Vector3 targetPos = _tableDatas[index].ChairTrs[randInt].position - new Vector3(0, AStar.Instance.NodeSize * 2 ,0);
@@ -233,7 +225,7 @@ public class TableManager : MonoBehaviour
 
         _customerController.GuideCustomer(targetPos, 0, () =>
         {
-            Tween.Wait(0.5f, () =>
+            Tween.Wait(0.1f, () =>
             {
                 currentCustomer.transform.position = _tableDatas[index].ChairTrs[randInt].position;
                 _orderButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[randInt]);
@@ -318,12 +310,12 @@ public class TableManager : MonoBehaviour
     private void EndEat(int index)
     {
         StartCoinAnime(index);
+        StartGarbageAnime(index);
 
-        Tween.Wait(0.6f, () =>
+        Tween.Wait(0.5f, () =>
         {
             ExitCustomer(index);
             _tableDatas[index].TableState = ETableState.NotUse;
-            _cleaningButtons[index].gameObject.SetActive(true);
             UpdateTable();
         });
     }
@@ -334,7 +326,6 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].TableState = ETableState.UseStaff;
         UpdateTable();
     }
-
 
 
     private void ExitCustomer(int index)
@@ -356,7 +347,7 @@ public class TableManager : MonoBehaviour
 
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () => 
         {
-            ObjectPoolManager.Instance.EnqueueCustomer(exitCustomer);
+            ObjectPoolManager.Instance.DespawnCustomer(exitCustomer);
             exitCustomer = null;
             UpdateTable();
         });
@@ -385,7 +376,7 @@ public class TableManager : MonoBehaviour
 
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
-            ObjectPoolManager.Instance.EnqueueCustomer(exitCustomer);
+            ObjectPoolManager.Instance.DespawnCustomer(exitCustomer);
             exitCustomer = null;
             UpdateTable();
         });
@@ -398,13 +389,25 @@ public class TableManager : MonoBehaviour
         int foodPrice = (int)(_tableDatas[index].TotalPrice * GameManager.Instance.FoodPriceMul);
 
         _tableDatas[index].DropCoinArea.DropCoin(_tableDatas[index].ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0), foodPrice);
+        _tableDatas[index].TotalPrice = 0;
     }
 
 
-    public void OnMoneyButtonClicked(int index, int cheirIndex)
+    private void StartGarbageAnime(int index)
     {
-        _tableDatas[index].DropCoinArea.OnCoinButtonClicked();
+        int sitIndex = _tableDatas[index].SitIndex;
+        int count = UnityEngine.Random.Range(1, 3);
+        float time = 0.02f;
+        for(int i = 0; i < count; i++)
+        {
+            Tween.Wait(time, () =>
+            {
+                _tableDatas[index].DropGarbageArea.DropGarbage(_tableDatas[index].ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0));
+            });
+            time += 0.02f;
+        }
     }
+
 
     private void OnChangeFurnitureEvent(FurnitureType type)
     {

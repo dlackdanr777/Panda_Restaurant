@@ -8,10 +8,10 @@ namespace Muks.Tween
         /// <summary>일정한 속도 유지</summary>
         Constant,
 
-        /// <summary>점점 빠르게</summary>
+        /// <summary>점점 느리게</summary>
         EaseInQuad,
 
-        /// <summary>점점 느리게</summary>
+        /// <summary>점점 빠르게</summary>
         EaseOutQuad,
 
         /// <summary>점점 빠르다가 점점 느리게</summary>

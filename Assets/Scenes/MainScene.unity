@@ -859,8 +859,6 @@ MonoBehaviour:
     type: 3}
   _servingButtonPrefab: {fileID: 8950493956607595869, guid: e2fe530b16c92934581796bcb4ac78b8,
     type: 3}
-  _cleaningButtonPrefab: {fileID: 368777012543882282, guid: 05904ef16ab4d7142823ef545cced187,
-    type: 3}
 --- !u!4 &32492755
 Transform:
   m_ObjectHideFlags: 0
@@ -878,6 +876,7 @@ Transform:
   - {fileID: 816985898}
   - {fileID: 644365822}
   - {fileID: 1806651868}
+  - {fileID: 617350130}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &39743840
@@ -2406,6 +2405,60 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &116244663
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 116244664}
+  - component: {fileID: 116244665}
+  m_Layer: 0
+  m_Name: Coin Area 3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &116244664
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 116244663}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -15.78, y: 7.68, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1806651868}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &116244665
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 116244663}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7b19c5d5576488499f8faade16d9ad6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 116244664}
+  _areaRangeX: 1
+  _coinEndTr: {fileID: 222946042}
+  _maxCoinCount: 5
+  _coinEndTime: 1
+  _coinAnimeInterval: 0.05
+  _buttonParent: {fileID: 1969004360}
+  _buttonTargetTr: {fileID: 116244664}
+  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
+    type: 3}
 --- !u!1 &145778696
 GameObject:
   m_ObjectHideFlags: 0
@@ -2580,6 +2633,54 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 149262588}
   m_CullTransparentMesh: 1
+--- !u!1 &149429844
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 149429845}
+  - component: {fileID: 149429846}
+  m_Layer: 0
+  m_Name: Garbage Area 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &149429845
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 149429844}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -10.9, y: 7.65, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 617350130}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &149429846
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 149429844}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7959b39cf52402646a31498906de70c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 149429845}
+  _areaRangeX: 2.5
+  _maxGarbageCount: 10
+  _garbageEndTime: 1.2
 --- !u!1 &152295340
 GameObject:
   m_ObjectHideFlags: 0
@@ -4418,20 +4519,18 @@ MonoBehaviour:
   _chairTrs:
   - {fileID: 1473645813}
   - {fileID: 1567607180}
-  _coinTr: {fileID: 1103586671}
-  _garbageTr: {fileID: 1103586671}
+  _dropCoinAreas:
+  - {fileID: 865223382}
+  - {fileID: 1072457113}
+  _dropGarbageArea: {fileID: 1985508396}
   _leftStaffTr: {fileID: 807086978}
   _rightStaffTr: {fileID: 1190645678}
-  _dropCoinArea: {fileID: 1072457113}
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
   CurrentCustomer: {fileID: 0}
   SitDir: 0
   SitIndex: 0
-  CoinCount: 0000000000000000
-  GarbageCount: 0
-  CoinList: []
 --- !u!1 &231695027
 GameObject:
   m_ObjectHideFlags: 0
@@ -6128,6 +6227,54 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 322700136}
   m_CullTransparentMesh: 1
+--- !u!1 &327447551
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 327447552}
+  - component: {fileID: 327447553}
+  m_Layer: 0
+  m_Name: Garbage Area 3
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &327447552
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 327447551}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -10.97, y: 15.34, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 617350130}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &327447553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 327447551}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7959b39cf52402646a31498906de70c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 327447552}
+  _areaRangeX: 2.5
+  _maxGarbageCount: 10
+  _garbageEndTime: 1.2
 --- !u!1 &330086300
 GameObject:
   m_ObjectHideFlags: 0
@@ -6225,6 +6372,7 @@ GameObject:
   - component: {fileID: 330585544}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
+  - component: {fileID: 330585549}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -6362,6 +6510,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b04d42629694ed44bb653e0f4c9ab4c4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &330585549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56666c5a40171f54783dd416a44f42bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_EventMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_MaxRayIntersections: 0
 --- !u!1 &336071615
 GameObject:
   m_ObjectHideFlags: 0
@@ -8544,6 +8708,54 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 429527601}
   m_CullTransparentMesh: 1
+--- !u!1 &443201018
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 443201019}
+  - component: {fileID: 443201020}
+  m_Layer: 0
+  m_Name: Garbage Area 4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &443201019
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 443201018}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.7, y: 15.34, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 617350130}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &443201020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 443201018}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7959b39cf52402646a31498906de70c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 443201019}
+  _areaRangeX: 2.5
+  _maxGarbageCount: 10
+  _garbageEndTime: 1.2
 --- !u!1 &446043101
 GameObject:
   m_ObjectHideFlags: 0
@@ -12085,6 +12297,42 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 617275567}
   m_CullTransparentMesh: 1
+--- !u!1 &617350129
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 617350130}
+  m_Layer: 0
+  m_Name: Garbage Areas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &617350130
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 617350129}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1985508395}
+  - {fileID: 149429845}
+  - {fileID: 327447552}
+  - {fileID: 443201019}
+  - {fileID: 2053150151}
+  m_Father: {fileID: 32492755}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &618360671
 GameObject:
   m_ObjectHideFlags: 0
@@ -12869,6 +13117,60 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 646702030}
   m_CullTransparentMesh: 1
+--- !u!1 &654503899
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 654503900}
+  - component: {fileID: 654503901}
+  m_Layer: 0
+  m_Name: Coin Area 6
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &654503900
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 654503899}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.58, y: 15.31, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1806651868}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &654503901
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 654503899}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7b19c5d5576488499f8faade16d9ad6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 654503900}
+  _areaRangeX: 1
+  _coinEndTr: {fileID: 222946042}
+  _maxCoinCount: 5
+  _coinEndTime: 1
+  _coinAnimeInterval: 0.05
+  _buttonParent: {fileID: 1969004360}
+  _buttonTargetTr: {fileID: 654503900}
+  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
+    type: 3}
 --- !u!1 &656516763
 GameObject:
   m_ObjectHideFlags: 0
@@ -15782,20 +16084,18 @@ MonoBehaviour:
   _chairTrs:
   - {fileID: 922536871}
   - {fileID: 904448569}
-  _coinTr: {fileID: 1895628551}
-  _garbageTr: {fileID: 1895628551}
+  _dropCoinAreas:
+  - {fileID: 116244665}
+  - {fileID: 865223382}
+  _dropGarbageArea: {fileID: 149429846}
   _leftStaffTr: {fileID: 1468138160}
   _rightStaffTr: {fileID: 944886554}
-  _dropCoinArea: {fileID: 1072457113}
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
   CurrentCustomer: {fileID: 0}
   SitDir: 0
   SitIndex: 0
-  CoinCount: 0000000000000000
-  GarbageCount: 0
-  CoinList: []
 --- !u!1 &786272251
 GameObject:
   m_ObjectHideFlags: 0
@@ -17858,6 +18158,60 @@ MonoBehaviour:
   _batchType: 0
   _spriteRenderer: {fileID: 7175644557921545165}
   _defalutSprite: {fileID: 21300000, guid: 76c691180ff3016439be79eb202bfd67, type: 3}
+--- !u!1 &865223380
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 865223381}
+  - component: {fileID: 865223382}
+  m_Layer: 0
+  m_Name: Coin Area 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &865223381
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 865223380}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.64, y: 7.68, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1806651868}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &865223382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 865223380}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7b19c5d5576488499f8faade16d9ad6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 865223381}
+  _areaRangeX: 1
+  _coinEndTr: {fileID: 222946042}
+  _maxCoinCount: 5
+  _coinEndTime: 1
+  _coinAnimeInterval: 0.05
+  _buttonParent: {fileID: 1969004360}
+  _buttonTargetTr: {fileID: 865223381}
+  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
+    type: 3}
 --- !u!1 &865800330
 GameObject:
   m_ObjectHideFlags: 0
@@ -20572,6 +20926,8 @@ RectTransform:
   - {fileID: 2077559992}
   - {fileID: 491676466}
   - {fileID: 1853376859}
+  - {fileID: 1969004360}
+  - {fileID: 1906702672}
   - {fileID: 1842499581}
   m_Father: {fileID: 853526495}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -21344,7 +21700,7 @@ Transform:
   m_GameObject: {fileID: 1072457111}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 2.62, y: 7.64, z: 0}
+  m_LocalPosition: {x: 2.62, y: 7.68, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -21368,6 +21724,10 @@ MonoBehaviour:
   _maxCoinCount: 5
   _coinEndTime: 1
   _coinAnimeInterval: 0.05
+  _buttonParent: {fileID: 1969004360}
+  _buttonTargetTr: {fileID: 1072457112}
+  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
+    type: 3}
 --- !u!1 &1084220729
 GameObject:
   m_ObjectHideFlags: 0
@@ -22648,20 +23008,18 @@ MonoBehaviour:
   _chairTrs:
   - {fileID: 7398353918446655435}
   - {fileID: 186387599}
-  _coinTr: {fileID: 2127879737}
-  _garbageTr: {fileID: 2127879737}
+  _dropCoinAreas:
+  - {fileID: 1967942190}
+  - {fileID: 1392500389}
+  _dropGarbageArea: {fileID: 327447553}
   _leftStaffTr: {fileID: 728286430}
   _rightStaffTr: {fileID: 1399350673}
-  _dropCoinArea: {fileID: 1072457113}
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
   CurrentCustomer: {fileID: 0}
   SitDir: 0
   SitIndex: 0
-  CoinCount: 0000000000000000
-  GarbageCount: 0
-  CoinList: []
 --- !u!1 &1165356599
 GameObject:
   m_ObjectHideFlags: 0
@@ -28305,6 +28663,60 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _dir: {x: 0.02, y: 0.02}
+--- !u!1 &1392500387
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1392500388}
+  - component: {fileID: 1392500389}
+  m_Layer: 0
+  m_Name: Coin Area 5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1392500388
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1392500387}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -6.73, y: 15.31, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1806651868}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1392500389
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1392500387}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7b19c5d5576488499f8faade16d9ad6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 1392500388}
+  _areaRangeX: 1
+  _coinEndTr: {fileID: 222946042}
+  _maxCoinCount: 5
+  _coinEndTime: 1
+  _coinAnimeInterval: 0.05
+  _buttonParent: {fileID: 1969004360}
+  _buttonTargetTr: {fileID: 1392500388}
+  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
+    type: 3}
 --- !u!1 &1397579050
 GameObject:
   m_ObjectHideFlags: 0
@@ -35185,20 +35597,18 @@ MonoBehaviour:
   _chairTrs:
   - {fileID: 30312254}
   - {fileID: 179493892}
-  _coinTr: {fileID: 2142881402}
-  _garbageTr: {fileID: 2142881402}
+  _dropCoinAreas:
+  - {fileID: 654503901}
+  - {fileID: 1977665110}
+  _dropGarbageArea: {fileID: 2053150152}
   _leftStaffTr: {fileID: 826114009}
   _rightStaffTr: {fileID: 192019076}
-  _dropCoinArea: {fileID: 1072457113}
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
   CurrentCustomer: {fileID: 0}
   SitDir: 0
   SitIndex: 0
-  CoinCount: 0000000000000000
-  GarbageCount: 0
-  CoinList: []
 --- !u!1 &1768216682
 GameObject:
   m_ObjectHideFlags: 0
@@ -35338,20 +35748,18 @@ MonoBehaviour:
   _chairTrs:
   - {fileID: 391288996}
   - {fileID: 1242576314}
-  _coinTr: {fileID: 1223174017}
-  _garbageTr: {fileID: 1223174017}
+  _dropCoinAreas:
+  - {fileID: 1392500389}
+  - {fileID: 654503901}
+  _dropGarbageArea: {fileID: 443201020}
   _leftStaffTr: {fileID: 463322477}
   _rightStaffTr: {fileID: 1257074351}
-  _dropCoinArea: {fileID: 1072457113}
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
   CurrentCustomer: {fileID: 0}
   SitDir: 0
   SitIndex: 0
-  CoinCount: 0000000000000000
-  GarbageCount: 0
-  CoinList: []
 --- !u!1 &1769454368
 GameObject:
   m_ObjectHideFlags: 0
@@ -35845,6 +36253,12 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1072457112}
+  - {fileID: 865223381}
+  - {fileID: 116244664}
+  - {fileID: 1967942189}
+  - {fileID: 1392500388}
+  - {fileID: 654503900}
+  - {fileID: 1977665109}
   m_Father: {fileID: 32492755}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1807824121
@@ -37338,6 +37752,41 @@ Transform:
   m_Children: []
   m_Father: {fileID: 780087253}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1906702671
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1906702672}
+  m_Layer: 5
+  m_Name: Drop Garbage Buttons
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1906702672
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1906702671}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1026409654}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1907412514
 GameObject:
   m_ObjectHideFlags: 0
@@ -38543,6 +38992,95 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1961600834}
   m_CullTransparentMesh: 1
+--- !u!1 &1967942188
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1967942189}
+  - component: {fileID: 1967942190}
+  m_Layer: 0
+  m_Name: Coin Area 4
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1967942189
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1967942188}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -15.78, y: 15.31, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1806651868}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1967942190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1967942188}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7b19c5d5576488499f8faade16d9ad6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 1967942189}
+  _areaRangeX: 1
+  _coinEndTr: {fileID: 222946042}
+  _maxCoinCount: 5
+  _coinEndTime: 1
+  _coinAnimeInterval: 0.05
+  _buttonParent: {fileID: 1969004360}
+  _buttonTargetTr: {fileID: 1967942189}
+  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
+    type: 3}
+--- !u!1 &1969004359
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1969004360}
+  m_Layer: 5
+  m_Name: Drop Coin Buttons
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1969004360
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1969004359}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1026409654}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1971867608
 GameObject:
   m_ObjectHideFlags: 0
@@ -38717,6 +39255,108 @@ RectTransform:
   m_AnchoredPosition: {x: -5.558655, y: 45.7}
   m_SizeDelta: {x: 454.64938, y: 32.891205}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1977665108
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1977665109}
+  - component: {fileID: 1977665110}
+  m_Layer: 0
+  m_Name: Coin Area 7
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1977665109
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1977665108}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 11.08, y: 15.31, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1806651868}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1977665110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1977665108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7b19c5d5576488499f8faade16d9ad6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 1977665109}
+  _areaRangeX: 1
+  _coinEndTr: {fileID: 222946042}
+  _maxCoinCount: 5
+  _coinEndTime: 1
+  _coinAnimeInterval: 0.05
+  _buttonParent: {fileID: 1969004360}
+  _buttonTargetTr: {fileID: 1977665109}
+  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
+    type: 3}
+--- !u!1 &1985508394
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1985508395}
+  - component: {fileID: 1985508396}
+  m_Layer: 0
+  m_Name: Garbage Area 1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1985508395
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1985508394}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1.74, y: 7.65, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 617350130}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1985508396
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1985508394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7959b39cf52402646a31498906de70c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 1985508395}
+  _areaRangeX: 2.5
+  _maxGarbageCount: 10
+  _garbageEndTime: 1.2
 --- !u!1 &1999954469
 GameObject:
   m_ObjectHideFlags: 0
@@ -39583,6 +40223,54 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &2053150150
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2053150151}
+  - component: {fileID: 2053150152}
+  m_Layer: 0
+  m_Name: Garbage Area 5
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2053150151
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2053150150}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 7.18, y: 15.34, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 617350130}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2053150152
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2053150150}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7959b39cf52402646a31498906de70c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _dropArea: {fileID: 2053150151}
+  _areaRangeX: 2.5
+  _maxGarbageCount: 10
+  _garbageEndTime: 1.2
 --- !u!1 &2054744568
 GameObject:
   m_ObjectHideFlags: 0

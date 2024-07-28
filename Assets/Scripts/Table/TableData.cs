@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 [Serializable]
@@ -14,12 +13,12 @@ public class TableData : MonoBehaviour
     [SerializeField] private Transform[] _chairTrs;
     public Transform[] ChairTrs => _chairTrs;
 
-    [SerializeField] private Transform _coinTr;
-    public Transform CoinTr => _coinTr;
+    /// <summary>ChairTrs[]와 Index 연동을 통해 해당 의자위치에서 버리는 코인의 위치 클래스를 담는다.</summary>
+    [SerializeField] private DropCoinArea[] _dropCoinAreas;
+    public DropCoinArea DropCoinArea => _dropCoinAreas[SitIndex];
 
-    [SerializeField] private Transform _garbageTr;
-    public Transform GarbageTr => _garbageTr;
-
+    [SerializeField] private DropGarbageArea _dropGarbageArea;
+    public DropGarbageArea DropGarbageArea => _dropGarbageArea;
 
     [SerializeField] private Transform _leftStaffTr;
     public Transform LeftStaffTr => _leftStaffTr;
@@ -27,8 +26,6 @@ public class TableData : MonoBehaviour
     [SerializeField] private Transform _rightStaffTr;
     public Transform RightStaffTr => _rightStaffTr;
 
-    [SerializeField] private DropCoinArea _dropCoinArea;
-    public DropCoinArea DropCoinArea => _dropCoinArea;
 
     private int _tipValue;
     public int TipValue => _tipValue;
@@ -46,12 +43,6 @@ public class TableData : MonoBehaviour
     public int SitDir;
 
     public int SitIndex;
-
-    public int[] CoinCount = new int[2];
-
-    public int GarbageCount;
-
-    public List<GameObject> CoinList = new List<GameObject>();
 
 
     public void SetTipValue(int value)
