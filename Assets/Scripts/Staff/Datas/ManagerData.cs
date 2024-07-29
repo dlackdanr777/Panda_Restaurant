@@ -15,7 +15,7 @@ public class ManagerData : StaffData
         return _managerLevelData[level - 1].GuideTime;
     }
 
-    public override IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         return new ManagerAction(tableManager);
     }

@@ -16,7 +16,7 @@ public class MarketerData : StaffData
         return _marketerLevelData[level - 1].MarketingTime;
     }
 
-    public override IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         return new MarketerAction(customerController);
     }

@@ -843,6 +843,7 @@ MonoBehaviour:
   _ownedTableCount: 5
   _cashTableTr: {fileID: 1791727857}
   _marketerTr: {fileID: 1131579585}
+  _cleanerWaitTr: {fileID: 424229850}
   _guardTr: {fileID: 0}
   _moneyUITr: {fileID: 222946042}
   _tableDatas:
@@ -2455,10 +2456,6 @@ MonoBehaviour:
   _maxCoinCount: 5
   _coinEndTime: 1
   _coinAnimeInterval: 0.05
-  _buttonParent: {fileID: 1969004360}
-  _buttonTargetTr: {fileID: 116244664}
-  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
-    type: 3}
 --- !u!1 &145778696
 GameObject:
   m_ObjectHideFlags: 0
@@ -2678,8 +2675,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _dropArea: {fileID: 149429845}
-  _areaRangeX: 2.5
-  _maxGarbageCount: 10
+  _areaRangeX: 2
+  _maxGarbageCount: 5
   _garbageEndTime: 1.2
 --- !u!1 &152295340
 GameObject:
@@ -6272,8 +6269,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _dropArea: {fileID: 327447552}
-  _areaRangeX: 2.5
-  _maxGarbageCount: 10
+  _areaRangeX: 2
+  _maxGarbageCount: 5
   _garbageEndTime: 1.2
 --- !u!1 &330086300
 GameObject:
@@ -8573,6 +8570,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 423700589}
   m_CullTransparentMesh: 1
+--- !u!1 &424229849
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 424229850}
+  m_Layer: 0
+  m_Name: 'Cleaner Tr '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &424229850
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 424229849}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 3, y: 7.87, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 577864099}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &429527601
 GameObject:
   m_ObjectHideFlags: 0
@@ -8753,8 +8781,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _dropArea: {fileID: 443201019}
-  _areaRangeX: 2.5
-  _maxGarbageCount: 10
+  _areaRangeX: 2
+  _maxGarbageCount: 5
   _garbageEndTime: 1.2
 --- !u!1 &446043101
 GameObject:
@@ -11347,6 +11375,7 @@ Transform:
   - {fileID: 222946042}
   - {fileID: 1791727857}
   - {fileID: 1131579585}
+  - {fileID: 424229850}
   - {fileID: 229470081}
   - {fileID: 780087253}
   - {fileID: 1159945307}
@@ -13167,10 +13196,6 @@ MonoBehaviour:
   _maxCoinCount: 5
   _coinEndTime: 1
   _coinAnimeInterval: 0.05
-  _buttonParent: {fileID: 1969004360}
-  _buttonTargetTr: {fileID: 654503900}
-  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
-    type: 3}
 --- !u!1 &656516763
 GameObject:
   m_ObjectHideFlags: 0
@@ -18208,10 +18233,6 @@ MonoBehaviour:
   _maxCoinCount: 5
   _coinEndTime: 1
   _coinAnimeInterval: 0.05
-  _buttonParent: {fileID: 1969004360}
-  _buttonTargetTr: {fileID: 865223381}
-  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
-    type: 3}
 --- !u!1 &865800330
 GameObject:
   m_ObjectHideFlags: 0
@@ -21724,10 +21745,6 @@ MonoBehaviour:
   _maxCoinCount: 5
   _coinEndTime: 1
   _coinAnimeInterval: 0.05
-  _buttonParent: {fileID: 1969004360}
-  _buttonTargetTr: {fileID: 1072457112}
-  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
-    type: 3}
 --- !u!1 &1084220729
 GameObject:
   m_ObjectHideFlags: 0
@@ -28713,10 +28730,6 @@ MonoBehaviour:
   _maxCoinCount: 5
   _coinEndTime: 1
   _coinAnimeInterval: 0.05
-  _buttonParent: {fileID: 1969004360}
-  _buttonTargetTr: {fileID: 1392500388}
-  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
-    type: 3}
 --- !u!1 &1397579050
 GameObject:
   m_ObjectHideFlags: 0
@@ -39042,10 +39055,6 @@ MonoBehaviour:
   _maxCoinCount: 5
   _coinEndTime: 1
   _coinAnimeInterval: 0.05
-  _buttonParent: {fileID: 1969004360}
-  _buttonTargetTr: {fileID: 1967942189}
-  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
-    type: 3}
 --- !u!1 &1969004359
 GameObject:
   m_ObjectHideFlags: 0
@@ -39305,10 +39314,6 @@ MonoBehaviour:
   _maxCoinCount: 5
   _coinEndTime: 1
   _coinAnimeInterval: 0.05
-  _buttonParent: {fileID: 1969004360}
-  _buttonTargetTr: {fileID: 1977665109}
-  _buttonPrefab: {fileID: 5792306734458048990, guid: 7e5e1082455208647976b9b4253697eb,
-    type: 3}
 --- !u!1 &1985508394
 GameObject:
   m_ObjectHideFlags: 0
@@ -39354,8 +39359,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _dropArea: {fileID: 1985508395}
-  _areaRangeX: 2.5
-  _maxGarbageCount: 10
+  _areaRangeX: 2
+  _maxGarbageCount: 5
   _garbageEndTime: 1.2
 --- !u!1 &1999954469
 GameObject:
@@ -40268,8 +40273,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _dropArea: {fileID: 2053150151}
-  _areaRangeX: 2.5
-  _maxGarbageCount: 10
+  _areaRangeX: 2
+  _maxGarbageCount: 5
   _garbageEndTime: 1.2
 --- !u!1 &2054744568
 GameObject:

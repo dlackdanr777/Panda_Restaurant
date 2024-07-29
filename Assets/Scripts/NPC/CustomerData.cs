@@ -17,6 +17,9 @@ public class CustomerData : ScriptableObject
     [TextArea][SerializeField] private string _description;
     public string Description => _description;
 
+    [SerializeField] private float _moveSpeed = 4f;
+    public float MoveSpeed => _moveSpeed;
+
     [SerializeField] private int _minScore;
     public int MinScore => _minScore;
 
@@ -26,8 +29,8 @@ public class CustomerData : ScriptableObject
     [SerializeField] private string[] _orderFoods;
     public string[] OrderFoods => _orderFoods;
 
-    [SerializeField] private float _moveSpeed = 5;
-    public float MoveSpeed => _moveSpeed;
+    [Range(1, 25)] [SerializeField] private int _maxDiscomfortIndex;
+    public int MaxDiscomfortIndex => _maxDiscomfortIndex;
 
 
     [Space]

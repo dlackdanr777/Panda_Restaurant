@@ -1,6 +1,8 @@
 using Muks.PathFinding.AStar;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 
 
@@ -51,7 +53,7 @@ public class Staff : MonoBehaviour
 
         _staffData = staffData;
         _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
-        _staffAction = staffData.GetStaffAction(tableManager, kitchenSystem, customerController);
+        _staffAction = staffData.GetStaffAction(this, tableManager, kitchenSystem, customerController);
         _secondValue = staffData.SecondValue;
         _speed = 1;
         _usingSkill = false;
@@ -218,6 +220,112 @@ public class Staff : MonoBehaviour
 
         _staffData.Skill.Deactivate(this, tableManager, kitchenSystem, customerController);
         _usingSkill = false;
+    }
+
+
+    private Coroutine _moveCoroutine;
+    private Coroutine _teleportCoroutine;
+
+    private Action _moveCompleted;
+    private Vector2 _targetPos;
+    private int _targetFloor;
+    private int _moveEndDir;
+    private bool _isStairsMove;
+
+    public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
+    {
+        int moveObjFloor = AStar.Instance.GetTransformFloor(_moveObj.transform.position);
+        _targetFloor = AStar.Instance.GetTransformFloor(targetPos);
+        _targetPos = targetPos;
+        _moveEndDir = moveEndDir;
+        _moveCompleted = onCompleted;
+
+        if (moveObjFloor == _targetFloor)
+            AStar.Instance.RequestPath(_moveObj.transform.position, targetPos, TargetMove);
+
+        else
+            AStar.Instance.RequestPath(_moveObj.transform.position, AStar.Instance.GetFloorPos(moveObjFloor), StairsMove);
+    }
+
+    public void StopMove()
+    {
+        if (_moveCoroutine != null)
+            StopCoroutine(_moveCoroutine);
+
+        if (_teleportCoroutine != null)
+            StopCoroutine(_teleportCoroutine);
+
+    }
+
+
+    private void TargetMove(List<Vector2> nodeList)
+    {
+        if (_moveCoroutine != null)
+            StopCoroutine(_moveCoroutine);
+
+        if (_teleportCoroutine != null)
+            StopCoroutine(_teleportCoroutine);
+
+        _isStairsMove = false;
+
+        _moveCoroutine = StartCoroutine(MoveRoutine(nodeList));
+    }
+
+
+    private void StairsMove(List<Vector2> nodeList)
+    {
+        if (_moveCoroutine != null)
+            StopCoroutine(_moveCoroutine);
+
+        if (_teleportCoroutine != null)
+            StopCoroutine(_teleportCoroutine);
+
+        _isStairsMove = true;
+
+        _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
+        {
+            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(AStar.Instance.GetFloorPos(_targetFloor), _targetPos, TargetMove)));
+        }
+        ));
+    }
+
+
+    private IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
+    {
+        if (2 <= nodeList.Count)
+            nodeList.RemoveAt(0);
+
+        foreach (Vector2 vec in nodeList)
+        {
+            while (Vector3.Distance(_moveObj.transform.position, vec) > 0.05f)
+            {
+                Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
+                _moveObj.transform.Translate(dir * Time.deltaTime * 5, Space.World);
+
+                SetSpriteDir(dir.x);
+                yield return null;
+            }
+        }
+
+
+        SetSpriteDir(_moveEndDir);
+        onCompleted?.Invoke();
+
+        if (_isStairsMove)
+            yield break;
+
+        _moveCompleted?.Invoke();
+        _moveCompleted = null;
+    }
+
+
+    private IEnumerator TeleportFloorRoutine(Action onCompleted)
+    {
+        yield return YieldCache.WaitForSeconds(1);
+        _moveObj.transform.position = AStar.Instance.GetFloorPos(_targetFloor);
+        SetSpriteDir(1);
+        yield return YieldCache.WaitForSeconds(1);
+        onCompleted?.Invoke();
     }
 }
 

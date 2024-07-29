@@ -35,6 +35,7 @@ public class ObjectPoolManager : MonoBehaviour
     private static int _garbageCount = 100;
     private static GameObject _garbageParent;
     private static Queue<PointerClickSpriteRenderer> _garbagePool = new Queue<PointerClickSpriteRenderer>();
+    private static List<PointerClickSpriteRenderer> _enabledGarbagePool = new List<PointerClickSpriteRenderer>();
 
     private static Customer _customerPrefab;
     private static PointerClickSpriteRenderer _coinPrefab;
@@ -172,6 +173,7 @@ public class ObjectPoolManager : MonoBehaviour
         {
             garbage = Instantiate(_garbagePrefab, pos, rot, _garbageParent.transform);
             garbage.SpriteRenderer.sprite = _garbageImages[UnityEngine.Random.Range(0, _garbageImages.Length)];
+            _enabledGarbagePool.Add(garbage);
             return garbage;
         }
 
@@ -181,15 +183,28 @@ public class ObjectPoolManager : MonoBehaviour
         garbage.transform.position = pos;
         garbage.transform.rotation = rot;
         garbage.SpriteRenderer.sprite = _garbageImages[UnityEngine.Random.Range(0, _garbageImages.Length)];
+        _enabledGarbagePool.Add(garbage);
         return garbage;
     }
 
 
     public void DespawnGarbage(PointerClickSpriteRenderer garbage)
     {
+        if (!_enabledGarbagePool.Contains(garbage))
+        {
+            DebugLog.LogError("반환하려는 오브젝트가 garbarge가 아니거나, 활성화된 Garbage Pool에 등록되있지 않습니다.");
+            return;
+        }
+
         garbage.gameObject.SetActive(false);
         garbage.TweenStop();
         garbage.RemoveAllEvent();
         _garbagePool.Enqueue(garbage);
+        _enabledGarbagePool.Remove(garbage);
+    }
+
+    public int GetEnabledGarbageCount()
+    {
+        return _enabledGarbagePool.Count;
     }
 }

@@ -16,9 +16,9 @@ public class CleanerData : StaffData
         return _cleanerLevelData[level - 1].CleaningTime;
     }
 
-    public override IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        return new CleanerAction(tableManager);
+        return new CleanerAction(staff, tableManager);
     }
 
     public override bool UpgradeEnable(int level)

@@ -20,9 +20,7 @@ namespace Muks.Tween
         protected override void Update()
         {
             base.Update();
-
             float percent = _percentHandler[_tweenMode](ElapsedDuration, TotalDuration);
-
             transform.position = Vector3.LerpUnclamped(_startPosition, _targetPosition, percent);
         }
 

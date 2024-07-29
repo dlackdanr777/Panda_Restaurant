@@ -15,7 +15,7 @@ public class ChefData : StaffData
         return _chefLevelData[level - 1].FoodSpeedAddPercent;
     }
 
-    public override IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         return new ChefAction(kitchenSystem);
     }

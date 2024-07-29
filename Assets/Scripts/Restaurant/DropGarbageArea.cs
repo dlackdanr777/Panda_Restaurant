@@ -14,7 +14,7 @@ public class DropGarbageArea : MonoBehaviour
 
     private PointerClickSpriteRenderer[] _garbages;
     private int _currentGarbageCount;
-    private bool _isAnimeStartEnabled;
+    public int Count => _currentGarbageCount;
     private Vector3[] _rotate = new Vector3[7];
 
     private void Start()
@@ -40,7 +40,6 @@ public class DropGarbageArea : MonoBehaviour
 
     public void DropGarbage(Vector3 startPos)
     {
-        _isAnimeStartEnabled = false;
         PointerClickSpriteRenderer garbage = ObjectPoolManager.Instance.SpawnGarbage(startPos, Quaternion.identity);
         garbage.SpriteRenderer.color = Color.white;
 
@@ -50,7 +49,7 @@ public class DropGarbageArea : MonoBehaviour
         if (_currentGarbageCount < _maxGarbageCount)
         {
             _garbages[_currentGarbageCount] = garbage;
-            garbage.AddEvent(OnButtonClicked);
+            garbage.AddEvent(CleanGarbage);
             _currentGarbageCount++;
         }
 
@@ -58,7 +57,6 @@ public class DropGarbageArea : MonoBehaviour
         garbage.TweenMoveX(targetPos.x, 0.5f);
         garbage.TweenMoveY(targetPos.y, 0.5f, TweenMode.EaseInBack).OnComplete(() =>
         {
-            _isAnimeStartEnabled = true;
             if (_maxGarbageCount <= _currentGarbageCount)
             {
                 garbage.TweenStop();
@@ -70,31 +68,27 @@ public class DropGarbageArea : MonoBehaviour
     }
 
 
-    private void OnButtonClicked()
+    public void CleanGarbage()
     {
         if (_currentGarbageCount == 0)
             return;
 
-        if (!_isAnimeStartEnabled)
-            return;
-
         int currentCoinCount = _currentGarbageCount;
         _currentGarbageCount = 0;
-        _isAnimeStartEnabled = false;
 
         for (int i = 0; i < currentCoinCount; i++)
         {
             int coinIndex = i;
-            _garbages[coinIndex].RemoveEvent(OnButtonClicked);
+            _garbages[coinIndex].RemoveEvent(CleanGarbage);
             _garbages[coinIndex].TweenStop();
             _garbages[coinIndex].SpriteRenderer.TweenAlpha(0, _garbageEndTime, TweenMode.Smoothstep);
-            _garbages[coinIndex].TweenMoveY(_garbages[coinIndex].transform.position.y + 8, _garbageEndTime, TweenMode.Smoothstep).
+
+            float targetY = _garbages[coinIndex].transform.position.y + 8;
+            _garbages[coinIndex].TweenMoveY(targetY, _garbageEndTime, TweenMode.Smoothstep).
                 OnComplete(() =>
                 {
-                    _garbages[coinIndex].TweenStop();
                     ObjectPoolManager.Instance.DespawnGarbage(_garbages[coinIndex]);
                     _garbages[coinIndex] = null;
-                    _isAnimeStartEnabled = true;
                 });
 
         }

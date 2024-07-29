@@ -1,7 +1,7 @@
 using Muks.PathFinding.AStar;
 using Muks.Tween;
 using System;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,6 +11,8 @@ public class TableManager : MonoBehaviour
     [SerializeField] private int _ownedTableCount;
     [SerializeField] private Transform _cashTableTr;
     [SerializeField] private Transform _marketerTr;
+    [SerializeField] private Transform _cleanerWaitTr;
+    public Transform CleanerWaitTr => _cleanerWaitTr;
     [SerializeField] private Transform _guardTr;
     [SerializeField] private Transform _moneyUITr;
 
@@ -31,8 +33,9 @@ public class TableManager : MonoBehaviour
     private UIButtonAndImage[] _orderButtons;
     private UIButtonAndImage[] _servingButtons;
 
-    private int _totalGarbageCount;
+    private int _totalGarbageCount => ObjectPoolManager.Instance.GetEnabledGarbageCount();
 
+    private List<DropGarbageArea> _dropGarbageAreaList = new List<DropGarbageArea>();
 
     private void Awake()
     {
@@ -83,6 +86,7 @@ public class TableManager : MonoBehaviour
 
             _orderButtons[i] = orderButton;
             _servingButtons[i] = servingButton;
+            _dropGarbageAreaList.Add(_tableDatas[index].DropGarbageArea);
         }
 
         for(int i = 0; i < _ownedTableCount; i++)
@@ -151,6 +155,9 @@ public class TableManager : MonoBehaviour
             _guideButton.gameObject.SetActive(false);
 
         else if(_customerController.IsEmpty())
+            _guideButton.gameObject.SetActive(false);
+
+        else if(UserInfo.GetEquipStaff(StaffType.Manager) != null)
             _guideButton.gameObject.SetActive(false);
 
         else 
@@ -236,6 +243,27 @@ public class TableManager : MonoBehaviour
                 currentCustomer = null;
                 OnCustomerSeating(index);
             });
+        });
+
+        float waitTime = UnityEngine.Random.Range(2f, 3f);
+        Tween.Wait(waitTime, () =>
+        {
+            if(currentCustomer.CustomerData.MaxDiscomfortIndex < _totalGarbageCount)
+            {
+                currentCustomer.StopMove();
+                currentCustomer.StartAnger();
+                Tween.Wait(2f, () =>
+                {
+                    _tableDatas[index].CurrentCustomer = null;
+                    _tableDatas[index].TableState = ETableState.NotUse;
+                    UpdateTable();
+                    currentCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
+                    {
+                        ObjectPoolManager.Instance.DespawnCustomer(currentCustomer);
+                        currentCustomer = null;
+                    });
+                });
+            }
         });
     }
 
@@ -415,5 +443,128 @@ public class TableManager : MonoBehaviour
     }
 
 
+    public Vector3 GetMinDistanceGarbageAreaPos(Vector3 startPos)
+    {
 
+        int moveObjFloor = AStar.Instance.GetTransformFloor(startPos);
+        List<DropGarbageArea> equalFloorGarbageArea = new List<DropGarbageArea>();
+        List<DropGarbageArea> notEqualFloorGarbageArea = new List<DropGarbageArea>();
+        for (int i = 0, cnt = _dropGarbageAreaList.Count; i < cnt; i++)
+        {
+            int targetFloor = AStar.Instance.GetTransformFloor(_dropGarbageAreaList[i].transform.position);
+
+            if (0 < _dropGarbageAreaList[i].Count)
+                continue;
+
+            if (moveObjFloor == targetFloor)
+                equalFloorGarbageArea.Add(_dropGarbageAreaList[i]);
+
+            else if(moveObjFloor != targetFloor)
+                notEqualFloorGarbageArea.Add(_dropGarbageAreaList[i]);
+        }
+
+
+        if (equalFloorGarbageArea.Count == 0 && notEqualFloorGarbageArea.Count == 0)
+            return _cleanerWaitTr.position;
+
+        else if (0 < equalFloorGarbageArea.Count)
+        {
+            float minDis = 10000000;
+            int minIndex = 0;
+            for(int i = 0, cnt =  equalFloorGarbageArea.Count; i < cnt; i++)
+            {
+                if ( Vector2.Distance(equalFloorGarbageArea[i].transform.position, startPos) < minDis)
+                {
+                    minDis = Vector2.Distance(equalFloorGarbageArea[i].transform.position, startPos);
+                    minIndex = i;
+                }
+            }
+
+            return equalFloorGarbageArea[minIndex].transform.position;
+        }
+
+
+        else
+        {
+            float minDis = 10000000;
+            int minIndex = 0;
+
+            for (int i = 0, cnt = notEqualFloorGarbageArea.Count; i < cnt; i++)
+            {
+                int targetFloor = AStar.Instance.GetTransformFloor(notEqualFloorGarbageArea[i].transform.position);
+                Vector2 floorDoorPos = AStar.Instance.GetFloorPos(targetFloor);
+
+                if (Vector2.Distance(notEqualFloorGarbageArea[i].transform.position, floorDoorPos) < minDis)
+                {
+                    minDis = Vector2.Distance(notEqualFloorGarbageArea[i].transform.position, startPos);
+                    minIndex = i;
+                }
+            }
+
+            return notEqualFloorGarbageArea[minIndex].transform.position;
+        }
+    }
+
+
+    public DropGarbageArea GetMinDistanceGarbageArea(Vector3 startPos)
+    {
+
+        int moveObjFloor = AStar.Instance.GetTransformFloor(startPos);
+        List<DropGarbageArea> equalFloorGarbageArea = new List<DropGarbageArea>();
+        List<DropGarbageArea> notEqualFloorGarbageArea = new List<DropGarbageArea>();
+        for (int i = 0, cnt = _dropGarbageAreaList.Count; i < cnt; i++)
+        {
+            int targetFloor = AStar.Instance.GetTransformFloor(_dropGarbageAreaList[i].transform.position);
+
+            if (0 < _dropGarbageAreaList[i].Count)
+                continue;
+
+            if (moveObjFloor == targetFloor)
+                equalFloorGarbageArea.Add(_dropGarbageAreaList[i]);
+
+            else if (moveObjFloor != targetFloor)
+                notEqualFloorGarbageArea.Add(_dropGarbageAreaList[i]);
+        }
+
+
+        if (equalFloorGarbageArea.Count == 0 && notEqualFloorGarbageArea.Count == 0)
+            return null;
+
+        else if (0 < equalFloorGarbageArea.Count)
+        {
+            float minDis = 10000000;
+            int minIndex = 0;
+            for (int i = 0, cnt = equalFloorGarbageArea.Count; i < cnt; i++)
+            {
+                if (Vector2.Distance(equalFloorGarbageArea[i].transform.position, startPos) < minDis)
+                {
+                    minDis = Vector2.Distance(equalFloorGarbageArea[i].transform.position, startPos);
+                    minIndex = i;
+                }
+            }
+            DebugLog.Log(equalFloorGarbageArea[minIndex].name);
+            return equalFloorGarbageArea[minIndex];
+        }
+
+
+        else
+        {
+            float minDis = 10000000;
+            int minIndex = 0;
+
+            for (int i = 0, cnt = notEqualFloorGarbageArea.Count; i < cnt; i++)
+            {
+                int targetFloor = AStar.Instance.GetTransformFloor(notEqualFloorGarbageArea[i].transform.position);
+                Vector2 floorDoorPos = AStar.Instance.GetFloorPos(targetFloor);
+
+                if (Vector2.Distance(notEqualFloorGarbageArea[i].transform.position, floorDoorPos) < minDis)
+                {
+                    minDis = Vector2.Distance(notEqualFloorGarbageArea[i].transform.position, startPos);
+                    minIndex = i;
+                }
+            }
+
+            return notEqualFloorGarbageArea[minIndex];
+        }
+    }
 }

@@ -15,7 +15,7 @@ public class ServerData : StaffData
         return _serverLevelData[level - 1].ServingTime;
     }
 
-    public override IStaffAction GetStaffAction(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         return new ServerAction(tableManager);
     }

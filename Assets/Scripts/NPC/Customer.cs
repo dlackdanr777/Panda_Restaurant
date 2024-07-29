@@ -24,6 +24,7 @@ public class Customer : MonoBehaviour
     [SerializeField] private Animator _animator;
     [SerializeField] private Transform _spriteParent;
     [SerializeField] private SpriteRenderer _spriteRenderer;
+    [SerializeField] private Customer_Anger _anger;
 
     private Coroutine _moveCoroutine;
     private Coroutine _teleportCoroutine;
@@ -56,9 +57,9 @@ public class Customer : MonoBehaviour
         _spriteParent.transform.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
         _spriteRenderer.transform.localPosition = Vector3.zero;
         _spriteRenderer.sprite = data.Sprite;
+        _anger.Init();
         _animator.SetBool("Run", false);
         _animator.SetBool("Eat", false);
-
         if (_skill != null)
             _skill.Deactivate(this);
 
@@ -118,6 +119,17 @@ public class Customer : MonoBehaviour
             AStar.Instance.RequestPath(_moveObj.transform.position, AStar.Instance.GetFloorPos(moveObjFloor), StairsMove);
     }
 
+    public void StopMove()
+    {
+        if (_moveCoroutine != null)
+            StopCoroutine(_moveCoroutine);
+
+        if (_teleportCoroutine != null)
+            StopCoroutine(_teleportCoroutine);
+
+        ChangeState(CustomerState.Idle);
+    }
+
 
     public void ChangeState(CustomerState state)
     {
@@ -141,6 +153,18 @@ public class Customer : MonoBehaviour
                 _animator.SetBool("Run", false);
                 break;
         }
+    }
+
+
+    public void StartAnger()
+    {
+        _anger.StartAnime();
+    }
+
+
+    public void StopAnger()
+    {
+        _anger.StopAnime();
     }
 
 

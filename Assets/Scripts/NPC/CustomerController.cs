@@ -2,6 +2,7 @@ using Muks.PathFinding.AStar;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class CustomerController : MonoBehaviour
@@ -80,12 +81,13 @@ public class CustomerController : MonoBehaviour
     {
         yield return YieldCache.WaitForSeconds(0.5f);
         Vector2 startLinePos = _startLine.position;
-        int orderLayer = 0;
+        int orderLayer = Count;
         float gridSize = AStar.Instance.NodeSize;
+
         foreach (Customer c in _customers)
         {
             c.Move(startLinePos, -1);
-            c.SetLayer("WaitCustomer", orderLayer++);
+            c.SetLayer("WaitCustomer", orderLayer--);
             startLinePos.x += (_lineSpacingGrid * gridSize);
 
             yield return YieldCache.WaitForSeconds(0.05f);
