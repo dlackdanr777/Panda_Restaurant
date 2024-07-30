@@ -267,7 +267,6 @@ public class Staff : MonoBehaviour
             StopCoroutine(_teleportCoroutine);
 
         _isStairsMove = false;
-
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList));
     }
 

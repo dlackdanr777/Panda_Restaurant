@@ -337,12 +337,15 @@ public class TableManager : MonoBehaviour
 
     private void EndEat(int index)
     {
+        int tip = _tableDatas[index].TotalPrice / 10;
         StartCoinAnime(index);
         StartGarbageAnime(index);
 
         Tween.Wait(0.5f, () =>
         {
-            ExitCustomer(index);
+            ExitCustomer(index);       
+            UserInfo.AppendTip(tip);
+
             _tableDatas[index].TableState = ETableState.NotUse;
             UpdateTable();
         });
@@ -443,68 +446,6 @@ public class TableManager : MonoBehaviour
     }
 
 
-    public Vector3 GetMinDistanceGarbageAreaPos(Vector3 startPos)
-    {
-
-        int moveObjFloor = AStar.Instance.GetTransformFloor(startPos);
-        List<DropGarbageArea> equalFloorGarbageArea = new List<DropGarbageArea>();
-        List<DropGarbageArea> notEqualFloorGarbageArea = new List<DropGarbageArea>();
-        for (int i = 0, cnt = _dropGarbageAreaList.Count; i < cnt; i++)
-        {
-            int targetFloor = AStar.Instance.GetTransformFloor(_dropGarbageAreaList[i].transform.position);
-
-            if (0 < _dropGarbageAreaList[i].Count)
-                continue;
-
-            if (moveObjFloor == targetFloor)
-                equalFloorGarbageArea.Add(_dropGarbageAreaList[i]);
-
-            else if(moveObjFloor != targetFloor)
-                notEqualFloorGarbageArea.Add(_dropGarbageAreaList[i]);
-        }
-
-
-        if (equalFloorGarbageArea.Count == 0 && notEqualFloorGarbageArea.Count == 0)
-            return _cleanerWaitTr.position;
-
-        else if (0 < equalFloorGarbageArea.Count)
-        {
-            float minDis = 10000000;
-            int minIndex = 0;
-            for(int i = 0, cnt =  equalFloorGarbageArea.Count; i < cnt; i++)
-            {
-                if ( Vector2.Distance(equalFloorGarbageArea[i].transform.position, startPos) < minDis)
-                {
-                    minDis = Vector2.Distance(equalFloorGarbageArea[i].transform.position, startPos);
-                    minIndex = i;
-                }
-            }
-
-            return equalFloorGarbageArea[minIndex].transform.position;
-        }
-
-
-        else
-        {
-            float minDis = 10000000;
-            int minIndex = 0;
-
-            for (int i = 0, cnt = notEqualFloorGarbageArea.Count; i < cnt; i++)
-            {
-                int targetFloor = AStar.Instance.GetTransformFloor(notEqualFloorGarbageArea[i].transform.position);
-                Vector2 floorDoorPos = AStar.Instance.GetFloorPos(targetFloor);
-
-                if (Vector2.Distance(notEqualFloorGarbageArea[i].transform.position, floorDoorPos) < minDis)
-                {
-                    minDis = Vector2.Distance(notEqualFloorGarbageArea[i].transform.position, startPos);
-                    minIndex = i;
-                }
-            }
-
-            return notEqualFloorGarbageArea[minIndex].transform.position;
-        }
-    }
-
 
     public DropGarbageArea GetMinDistanceGarbageArea(Vector3 startPos)
     {
@@ -512,11 +453,11 @@ public class TableManager : MonoBehaviour
         int moveObjFloor = AStar.Instance.GetTransformFloor(startPos);
         List<DropGarbageArea> equalFloorGarbageArea = new List<DropGarbageArea>();
         List<DropGarbageArea> notEqualFloorGarbageArea = new List<DropGarbageArea>();
+
         for (int i = 0, cnt = _dropGarbageAreaList.Count; i < cnt; i++)
         {
             int targetFloor = AStar.Instance.GetTransformFloor(_dropGarbageAreaList[i].transform.position);
-
-            if (0 < _dropGarbageAreaList[i].Count)
+            if (_dropGarbageAreaList[i].Count <= 0)
                 continue;
 
             if (moveObjFloor == targetFloor)
@@ -542,7 +483,6 @@ public class TableManager : MonoBehaviour
                     minIndex = i;
                 }
             }
-            DebugLog.Log(equalFloorGarbageArea[minIndex].name);
             return equalFloorGarbageArea[minIndex];
         }
 

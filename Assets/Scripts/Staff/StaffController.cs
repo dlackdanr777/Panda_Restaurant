@@ -47,9 +47,9 @@ public class StaffController : MonoBehaviour
                 UserInfo.GiveStaff(data4);
                 UserInfo.GiveStaff(data5);*/
 
-/*        StaffData data3 = StaffDataManager.Instance.GetStaffData("STAFF27");
+        StaffData data3 = StaffDataManager.Instance.GetStaffData("STAFF27");
         UserInfo.GiveStaff(data3);
-        EquipStaff(data3);*/
+        EquipStaff(data3);
     }
 
 

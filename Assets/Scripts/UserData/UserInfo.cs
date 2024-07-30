@@ -75,8 +75,8 @@ public static class UserInfo
 
     public static void AppendTip(int value)
     {
-        _tip += (int)(value * GameManager.Instance.TipMul);
-        _tip = Mathf.Clamp(_tip, 0, GameManager.Instance.MaxTipVolume);
+        _tip = Mathf.Clamp(_tip + (int)(value * GameManager.Instance.TipMul), 0, GameManager.Instance.MaxTipVolume);
+        DebugLog.Log(value);
         DataBind.SetTextValue("Tip", _tip.ToString());
     }
 
