@@ -11,11 +11,11 @@ public class UIKitchenPreview : MonoBehaviour
     [SerializeField] private GameObject _setEffectObj;
     [SerializeField] private TextMeshProUGUI _setEffectDescription;
     [SerializeField] private GameObject _buyMinScoreObj;
-    [SerializeField] private GameObject _moneyPerMinuteObj;
+    [SerializeField] private GameObject _addTipObj;
     [SerializeField] private GameObject _cookingSpeedObj;
     [SerializeField] private TextMeshProUGUI _buyMinScoreDescription;
     [SerializeField] private TextMeshProUGUI _addScoreDescription;
-    [SerializeField] private TextMeshProUGUI _moneyPerMinuteDescription;
+    [SerializeField] private TextMeshProUGUI _addTipDescription;
     [SerializeField] private TextMeshProUGUI _cookingSpeedDescription;
     [SerializeField] private UIButtonAndText _usingButton;
     [SerializeField] private UIButtonAndText _equipButton;
@@ -70,20 +70,20 @@ public class UIKitchenPreview : MonoBehaviour
         if (data is CookingSpeedUpKitchenUtensilData)
         {
             _cookingSpeedObj.gameObject.SetActive(true);
-            _moneyPerMinuteObj.gameObject.SetActive(false);
+            _addTipObj.gameObject.SetActive(false);
             _cookingSpeedDescription.text = data.EffectValue.ToString() + "%";
         }
             
-        else if (data is MoneyPerMinuteKitchenUtensilData)
+        else if (data is TipPerMinuteKitchenUtensilData)
         {
-            _moneyPerMinuteObj.gameObject.SetActive(true);
+            _addTipObj.gameObject.SetActive(true);
             _cookingSpeedObj.gameObject.SetActive(false);
-            _moneyPerMinuteDescription.text = Utility.ConvertToNumber(data.EffectValue);
+            _addTipDescription.text = Utility.ConvertToNumber(data.EffectValue);
         }
 
         else
         {
-            _moneyPerMinuteObj.gameObject.SetActive(false);
+            _addTipObj.gameObject.SetActive(false);
             _cookingSpeedObj.gameObject.SetActive(false);
         }
         

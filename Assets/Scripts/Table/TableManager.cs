@@ -240,8 +240,10 @@ public class TableManager : MonoBehaviour
 
                 currentCustomer.SetSpriteDir(-_tableDatas[index].SitDir);
                 currentCustomer.SetLayer("SitCustomer", 0);
+                currentCustomer.ChangeState(CustomerState.Sit);
                 currentCustomer = null;
-                OnCustomerSeating(index);
+
+                Tween.Wait(0.6f, () => OnCustomerSeating(index));
             });
         });
 
@@ -277,8 +279,6 @@ public class TableManager : MonoBehaviour
 
         if (_tableDatas[index].OrdersCount <= 0)
             EndEat(index);
-
-        _tableDatas[index].CurrentCustomer.ChangeState(CustomerState.Sit);
 
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
@@ -343,8 +343,8 @@ public class TableManager : MonoBehaviour
 
         Tween.Wait(0.5f, () =>
         {
-            ExitCustomer(index);       
-            UserInfo.AppendTip(tip);
+            ExitCustomer(index);
+            UserInfo.AppendTip((int)(tip * GameManager.Instance.TipMul));
 
             _tableDatas[index].TableState = ETableState.NotUse;
             UpdateTable();

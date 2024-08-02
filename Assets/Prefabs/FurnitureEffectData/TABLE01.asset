@@ -12,4 +12,4 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f821b1a6838fbc7448824e0e9818b4b9, type: 3}
   m_Name: TABLE01
   m_EditorClassIdentifier: 
-  _moneyPerMinute: 2
+  _tipPerMinute: 3

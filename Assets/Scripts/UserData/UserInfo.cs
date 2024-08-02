@@ -6,6 +6,7 @@ using Muks.DataBind;
 public static class UserInfo
 {
     public static event Action OnChangeMoneyHandler;
+    public static event Action OnChangeTipHandler;
     public static event Action OnChangeScoreHanlder;
 
     public static event Action OnChangeStaffHandler;
@@ -56,7 +57,7 @@ public static class UserInfo
     public static void AppendMoney(int value)
     {
         _money += value;
-        DataBind.SetTextValue("Money", _money.ToString());
+        DataBindMoney();
         OnChangeMoneyHandler?.Invoke();
     }
 
@@ -67,19 +68,37 @@ public static class UserInfo
         OnChangeScoreHanlder?.Invoke();
     }
 
-    public static void TipCollection()
+    public static void TipCollection(bool isWatchingAds = false)
     {
-        _money += _tip;
+        _money = isWatchingAds ? _money + _tip * 2 : _money + _tip;
         _tip = 0;
+
+        DataBindTip();
+        DataBindMoney();
+        OnChangeMoneyHandler?.Invoke();
+        OnChangeTipHandler?.Invoke();
     }
 
     public static void AppendTip(int value)
     {
-        _tip = Mathf.Clamp(_tip + (int)(value * GameManager.Instance.TipMul), 0, GameManager.Instance.MaxTipVolume);
-        DebugLog.Log(value);
-        DataBind.SetTextValue("Tip", _tip.ToString());
+        _tip = Mathf.Clamp(_tip + value, 0, GameManager.Instance.MaxTipVolume);
+        DataBindTip();
+        OnChangeTipHandler?.Invoke();
     }
 
+    public static void DataBindTip()
+    {
+        DataBind.SetTextValue("Tip", _tip.ToString());
+        DataBind.SetTextValue("TipStr", _tip.ToString("N0"));
+        DataBind.SetTextValue("TipConvert", Utility.ConvertToNumber(_tip));
+    }
+
+    public static void DataBindMoney()
+    {
+        DataBind.SetTextValue("Money", _money.ToString());
+        DataBind.SetTextValue("MoneyStr", _money.ToString("N0"));
+        DataBind.SetTextValue("MoneyConvert", Utility.ConvertToNumber(_money));
+    }
 
     #endregion
 

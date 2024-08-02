@@ -45,10 +45,6 @@ public class GameManager : MonoBehaviour
     private int _addPromotionCustomer = 1;
     public int AddPromotionCustomer => _addPromotionCustomer;
 
-
-    [SerializeField] private int _moneyPerMinute;
-    public int MoneyPerMinute => _moneyPerMinute;
-
     [SerializeField] private int _tipPerMinute;
     public int TipPerMinute => _tipPerMinute;
 
@@ -94,11 +90,6 @@ public class GameManager : MonoBehaviour
         _tipPerMinute += value;
     }
 
-    public void AddMoneyPerMinute(int value)
-    {
-        _moneyPerMinute += value;
-    }
-
 
     private void Awake()
     {
@@ -108,7 +99,8 @@ public class GameManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         UserInfo.GiveRecipe("FOOD01");
-        DataBind.SetTextValue("Money", UserInfo.Money.ToString());
+        UserInfo.DataBindTip();
+        UserInfo.DataBindMoney();
     }
 
 

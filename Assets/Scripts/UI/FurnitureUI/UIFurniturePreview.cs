@@ -14,8 +14,10 @@ public class UIFurniturePreview : MonoBehaviour
     [SerializeField] private GameObject _buyMinScoreObj;
     [SerializeField] private TextMeshProUGUI _buyMinScoreDescription;
     [SerializeField] private TextMeshProUGUI _addScoreDescription;
-    [SerializeField] private TextMeshProUGUI _effectText;
-    [SerializeField] private TextMeshProUGUI _effectDescription;
+    [SerializeField] private GameObject _addTipObj;
+    [SerializeField] private GameObject _tipVolumeObj;
+    [SerializeField] private TextMeshProUGUI _addTipDescription;
+    [SerializeField] private TextMeshProUGUI _tipVolumeDescription;
     [SerializeField] private UIButtonAndText _usingButton;
     [SerializeField] private UIButtonAndText _equipButton;
     [SerializeField] private UIButtonAndText _buyButton;
@@ -67,23 +69,27 @@ public class UIFurniturePreview : MonoBehaviour
         SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
         _setEffectDescription.text = setData != null ? setData.Description : string.Empty;
 
-        if (data.EffectData is MoneyPerMinuteFurnitureEffectData)
+        if (data.EffectData is TipPerMinuteFurnitureEffectData)
         {
-            _effectText.text = "분당 수입 :";
-            _effectDescription.text = data.EffectData.EffectValue.ToString();
+            _addTipObj.SetActive(true);
+            _tipVolumeObj.gameObject.SetActive(false);
+
+            _addTipDescription.text = data.EffectData.EffectValue.ToString();
         }
             
 
         else if (data.EffectData is MaxTipVolumeFurnitureEffectData)
         {
-            _effectText.text = "팁 저장량 :";
-            _effectDescription.text = data.EffectData.EffectValue.ToString();
+            _tipVolumeObj.gameObject.SetActive(true);
+            _addTipObj.SetActive(false);
+
+            _tipVolumeDescription.text = data.EffectData.EffectValue.ToString();
         }
 
         else
         {
-            _effectText.text = "기본 효과 :";
-            _effectDescription.text = string.Empty;
+            _tipVolumeObj.gameObject.SetActive(false);
+            _addTipObj.SetActive(false);
         }
         
 
