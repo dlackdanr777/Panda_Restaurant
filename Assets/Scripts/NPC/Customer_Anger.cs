@@ -26,13 +26,13 @@ public class Customer_Anger : MonoBehaviour
         _angerSprite.color = new Color(_tmpColor.r, _tmpColor.g, _tmpColor.b, 0);
 
         Vector3 targetScale = _tmpScale + new Vector3(0.02f, 0.02f, 0.02f);
-        _angerSprite.TweenScale(targetScale, 0.25f, TweenMode.Smoothstep).Loop(LoopType.Yoyo);
-        TweenData tween1 = _angerSprite.TweenAlpha(1, 0.3f, TweenMode.Smoothstep);
+        _angerSprite.TweenScale(targetScale, 0.25f, Ease.Smoothstep).Loop(LoopType.Yoyo);
+        TweenData tween1 = _angerSprite.TweenAlpha(1, 0.3f, Ease.Smoothstep);
         tween1.OnComplete(() =>
         {
             Tween.Wait(3, () => 
             {
-                _angerSprite.TweenAlpha(0, 0.3f, TweenMode.Smoothstep)
+                _angerSprite.TweenAlpha(0, 0.3f, Ease.Smoothstep)
                 .OnComplete(StopAnime); 
             });
         });

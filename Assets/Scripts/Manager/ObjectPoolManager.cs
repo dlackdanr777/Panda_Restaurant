@@ -2,6 +2,7 @@ using Muks.Tween;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 
@@ -37,9 +38,15 @@ public class ObjectPoolManager : MonoBehaviour
     private static Queue<PointerClickSpriteRenderer> _garbagePool = new Queue<PointerClickSpriteRenderer>();
     private static List<PointerClickSpriteRenderer> _enabledGarbagePool = new List<PointerClickSpriteRenderer>();
 
+    private static int _tmpCount = 20;
+    private static GameObject _tmpParent;
+    private static Queue<TextMeshProUGUI> _tmpPool = new Queue<TextMeshProUGUI>();
+    private static List<TextMeshProUGUI> _enabledTmpPool = new List<TextMeshProUGUI>();
+
     private static Customer _customerPrefab;
     private static PointerClickSpriteRenderer _coinPrefab;
     private static PointerClickSpriteRenderer _garbagePrefab;
+    private static TextMeshProUGUI _tmpPrefab;
 
 
     private static Sprite[] _garbageImages;
@@ -55,6 +62,7 @@ public class ObjectPoolManager : MonoBehaviour
         CustomerPooling();
         CoinPooling();
         GarbagePooling();
+        TmpPooling();
     }
 
 
@@ -64,7 +72,7 @@ public class ObjectPoolManager : MonoBehaviour
         _customerParent.transform.parent = _instance.transform;
 
         if(_customerPrefab == null)
-            _customerPrefab = Resources.Load<Customer>("Customer");
+            _customerPrefab = Resources.Load<Customer>("ObjectPool/Customer");
 
         for (int i = 0, count = _customerCount; i < count; i++)
         {
@@ -81,7 +89,7 @@ public class ObjectPoolManager : MonoBehaviour
         _coinParent.transform.parent = _instance.transform;
 
         if(_coinPrefab == null)
-            _coinPrefab = Resources.Load<PointerClickSpriteRenderer>("Coin");
+            _coinPrefab = Resources.Load<PointerClickSpriteRenderer>("ObjectPool/Coin");
 
         for (int i = 0, count = _coinCount; i < count; i++)
         {
@@ -97,7 +105,7 @@ public class ObjectPoolManager : MonoBehaviour
         _garbageParent = new GameObject("GarbageParent");
         _garbageParent.transform.parent = _instance.transform;
 
-        _garbageImages = Resources.LoadAll<Sprite>("Garbage/GarbageImage");
+        _garbageImages = Resources.LoadAll<Sprite>("ObjectPool/Garbage/GarbageImage");
 
         if (_garbagePrefab == null)
             _garbagePrefab = Resources.Load<PointerClickSpriteRenderer>("Garbage/Garbage");
@@ -107,6 +115,23 @@ public class ObjectPoolManager : MonoBehaviour
             PointerClickSpriteRenderer garbage = Instantiate(_garbagePrefab, _garbageParent.transform);
             _garbagePool.Enqueue(garbage);
             garbage.gameObject.SetActive(false);
+        }
+    }
+
+
+    private static void TmpPooling()
+    {
+        _tmpParent = new GameObject("TmpParent");
+        _tmpParent.transform.parent = _instance.transform;
+
+        if (_tmpPrefab == null)
+            _tmpPrefab = Resources.Load<TextMeshProUGUI>("ObjectPool/TMP");
+
+        for (int i = 0, count = _tmpCount; i < count; i++)
+        {
+            TextMeshProUGUI tmp = Instantiate(_tmpPrefab, _tmpParent.transform);
+            _tmpPool.Enqueue(tmp);
+            tmp.gameObject.SetActive(false);
         }
     }
 
@@ -206,5 +231,46 @@ public class ObjectPoolManager : MonoBehaviour
     public int GetEnabledGarbageCount()
     {
         return _enabledGarbagePool.Count;
+    }
+
+
+
+    public TextMeshProUGUI SpawnTMP(Vector3 pos, Quaternion rot, RectTransform parent)
+    {
+        TextMeshProUGUI tmp;
+
+        if (_garbagePool.Count == 0)
+        {
+            tmp = Instantiate(_tmpPrefab, pos, rot, _garbageParent.transform);
+            tmp.transform.parent = parent;
+            _enabledTmpPool.Add(tmp);
+            return tmp;
+        }
+
+        tmp = _tmpPool.Dequeue();
+        tmp.gameObject.SetActive(false);
+        tmp.gameObject.SetActive(true);
+        tmp.transform.position = pos;
+        tmp.transform.rotation = rot;
+        tmp.transform.parent = parent;
+        tmp.color = Color.white;
+        _enabledTmpPool.Add(tmp);
+        return tmp;
+    }
+
+
+    public void DespawnTmp(TextMeshProUGUI tmp)
+    {
+        if (!_enabledTmpPool.Contains(tmp))
+        {
+            DebugLog.LogError("반환하려는 오브젝트가 tmp가 아니거나, 활성화된 tmp Pool에 등록되있지 않습니다.");
+            return;
+        }
+
+        tmp.gameObject.SetActive(false);
+        tmp.transform.parent = _tmpParent.transform;
+        tmp.TweenStop();
+        _tmpPool.Enqueue(tmp);
+        _enabledTmpPool.Remove(tmp);
     }
 }

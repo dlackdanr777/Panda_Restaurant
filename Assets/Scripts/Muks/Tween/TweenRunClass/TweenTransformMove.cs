@@ -8,7 +8,7 @@ namespace Muks.Tween
         [SerializeField] private Vector3 _targetPosition;
 
 
-        public override void SetData(TweenDataSequence dataSequence)
+        protected override void SetData(TweenDataSequence dataSequence)
         {
             base.SetData(dataSequence);
 
@@ -27,7 +27,7 @@ namespace Muks.Tween
 
         protected override void TweenCompleted()
         {
-            if (_tweenMode != TweenMode.Spike)
+            if (_tweenMode != Ease.Spike)
                 transform.position = _targetPosition;
         }
     }

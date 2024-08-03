@@ -79,6 +79,24 @@ public static class UserInfo
         OnChangeTipHandler?.Invoke();
     }
 
+
+    public static void TipCollection(int value, bool isWatchingAds = false)
+    {
+        if(_tip < value)
+        {
+            DebugLog.LogError("보유 팁 보다 많은 팁을 회수하려고 합니다(Tip: " + _tip + ", Value: " + value + ")");
+            return;
+        }
+
+        _tip -= value;
+        _money = isWatchingAds ? _money + value * 2 : _money + value;
+
+        DataBindTip();
+        DataBindMoney();
+        OnChangeMoneyHandler?.Invoke();
+        OnChangeTipHandler?.Invoke();
+    }
+
     public static void AppendTip(int value)
     {
         _tip = Mathf.Clamp(_tip + value, 0, GameManager.Instance.MaxTipVolume);

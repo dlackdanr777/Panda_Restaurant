@@ -9,7 +9,7 @@ namespace Muks.Tween
         private RectTransform _rectTransform;
 
 
-        public override void SetData(TweenDataSequence dataSequence)
+        protected override void SetData(TweenDataSequence dataSequence)
         {
             base.SetData(dataSequence);
 
@@ -36,7 +36,7 @@ namespace Muks.Tween
 
         protected override void TweenCompleted()
         {
-            if (_tweenMode != TweenMode.Spike)
+            if (_tweenMode != Ease.Spike)
             {
                 _rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, _targetSizeDelta.x);
                 _rectTransform.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, _targetSizeDelta.y);

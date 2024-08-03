@@ -19,11 +19,11 @@ public class UIKitchen : MobileUIView
     [Header("Animations")]
     [SerializeField] private GameObject _animeUI;
     [SerializeField] private float _showDuration;
-    [SerializeField] private TweenMode _showTweenMode;
+    [SerializeField] private Ease _showTweenMode;
 
     [Space]
     [SerializeField] private float _hideDuration;
-    [SerializeField] private TweenMode _hideTweenMode;
+    [SerializeField] private Ease _hideTweenMode;
 
     [Space]
     [Header("Slot Option")]

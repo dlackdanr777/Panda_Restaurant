@@ -9,7 +9,7 @@ namespace Muks.Tween
         private Color _targetColor;
         private Text _text;
 
-        public override void SetData(TweenDataSequence dataSequence)
+        protected override void SetData(TweenDataSequence dataSequence)
         {
             base.SetData(dataSequence);
 
@@ -33,7 +33,7 @@ namespace Muks.Tween
 
         protected override void TweenCompleted()
         {
-            if (_tweenMode != TweenMode.Spike)
+            if (_tweenMode != Ease.Spike)
                 _text.color = _targetColor;
         }
     }

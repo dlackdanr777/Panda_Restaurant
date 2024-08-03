@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 namespace Muks.Tween
@@ -14,19 +13,19 @@ namespace Muks.Tween
         private float _duration;
         public float Duration => _duration;
 
-        private TweenMode _tweenMode;
-        public TweenMode TweenMode => _tweenMode;
+        private Ease _ease;
+        public Ease Ease => _ease;
 
         private Component _component;
         public Component Component => _component;
 
 
-        public TweenDataSequence(object targetValue, float  duration,  TweenMode tweenMode, Component component)
+        public TweenDataSequence(object targetValue, float  duration,  Ease ease, Component component)
         {
             _id = -1;
             _targetValue =  targetValue;
             _duration = duration;
-            _tweenMode = tweenMode;
+            _ease = ease;
             _component = component;
         }
 

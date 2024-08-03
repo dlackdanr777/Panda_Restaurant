@@ -21,11 +21,11 @@ public class UIRecipeUpgrade : MobileUIView
     [SerializeField] private GameObject _animeUI;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private float _showDuration;
-    [SerializeField] private TweenMode _showTweenMode;
+    [SerializeField] private Ease _showTweenMode;
 
     [Space]
     [SerializeField] private float _hideDuration;
-    [SerializeField] private TweenMode _hideTweenMode;
+    [SerializeField] private Ease _hideTweenMode;
 
 
     private FoodData _currentFoodData;

@@ -7,8 +7,8 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
 {
     [SerializeField] private Vector3 _targetScale;
     [SerializeField] private float _pressDuration;
-    [SerializeField] private TweenMode _buttonDownTweenMode;
-    [SerializeField] private TweenMode _buttonUpTweenMode;
+    [SerializeField] private Ease _buttonDownTweenMode;
+    [SerializeField] private Ease _buttonUpTweenMode;
 
     private Action _onButtonUpEvent;
     private Vector3 _tmpScale;

@@ -13,7 +13,7 @@ public class GarbageAnimation : MonoBehaviour
     [Header("Animation Options")]
     [SerializeField] private float _cleanDuration;
     [SerializeField] private float _delay;
-    [SerializeField] private TweenMode _cleanTweenMode;
+    [SerializeField] private Ease _cleanTweenMode;
 
     public void Init()
     {

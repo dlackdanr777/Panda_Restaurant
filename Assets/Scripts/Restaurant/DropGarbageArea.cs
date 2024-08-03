@@ -53,9 +53,9 @@ public class DropGarbageArea : MonoBehaviour
             _currentGarbageCount++;
         }
 
-        garbage.TweenRotate(_rotate[Random.Range(0, _rotate.Length)], 0.5f, TweenMode.EaseInQuad);
+        garbage.TweenRotate(_rotate[Random.Range(0, _rotate.Length)], 0.5f, Ease.InQuad);
         garbage.TweenMoveX(targetPos.x, 0.5f);
-        garbage.TweenMoveY(targetPos.y, 0.5f, TweenMode.EaseInBack).OnComplete(() =>
+        garbage.TweenMoveY(targetPos.y, 0.5f, Ease.InBack).OnComplete(() =>
         {
             if (_maxGarbageCount <= _currentGarbageCount)
             {
@@ -63,7 +63,7 @@ public class DropGarbageArea : MonoBehaviour
                 ObjectPoolManager.Instance.DespawnGarbage(garbage);
                 return;
             }
-            garbage.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, TweenMode.Smootherstep).Loop(LoopType.Yoyo);
+            garbage.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
         });
     }
 
@@ -81,10 +81,10 @@ public class DropGarbageArea : MonoBehaviour
             int coinIndex = i;
             _garbages[coinIndex].RemoveEvent(CleanGarbage);
             _garbages[coinIndex].TweenStop();
-            _garbages[coinIndex].SpriteRenderer.TweenAlpha(0, _garbageEndTime, TweenMode.Smoothstep);
+            _garbages[coinIndex].SpriteRenderer.TweenAlpha(0, _garbageEndTime, Ease.Smoothstep);
 
             float targetY = _garbages[coinIndex].transform.position.y + 8;
-            _garbages[coinIndex].TweenMoveY(targetY, _garbageEndTime, TweenMode.Smoothstep).
+            _garbages[coinIndex].TweenMoveY(targetY, _garbageEndTime, Ease.Smoothstep).
                 OnComplete(() =>
                 {
                     ObjectPoolManager.Instance.DespawnGarbage(_garbages[coinIndex]);

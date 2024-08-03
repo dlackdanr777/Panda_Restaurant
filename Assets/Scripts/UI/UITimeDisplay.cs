@@ -12,14 +12,14 @@ public class UITimeDisplay : MonoBehaviour
     [Space(20)]
     [Header("Options")]
     [SerializeField] private float _showDuration;
-    [SerializeField] private TweenMode _showTweenMode;
+    [SerializeField] private Ease _showTweenMode;
 
     [Space(5)]
     [SerializeField] private float _waitDuration;
 
     [Space(5)]
     [SerializeField] private float _hideDuration;
-    [SerializeField] private TweenMode _hideTweenMode;
+    [SerializeField] private Ease _hideTweenMode;
 
     private Coroutine _showCoroutine;
 

@@ -18,7 +18,7 @@ public class UICamera : MonoBehaviour
     [Space]
     [Header("Camera Move Options")]
     [SerializeField] private float _moveSpeed;
-    [SerializeField] private TweenMode _moveTweenMode;
+    [SerializeField] private Ease _moveTweenMode;
     [SerializeField] private Transform _restaurantTr;
     [SerializeField] private Transform _kitchenTr;
 

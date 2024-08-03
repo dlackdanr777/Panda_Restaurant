@@ -50,7 +50,7 @@ public class DropCoinArea : MonoBehaviour
         }
 
         coin.TweenMoveX(targetPos.x, 0.45f);
-        coin.TweenMoveY(targetPos.y, 0.45f, TweenMode.EaseInBack).OnComplete(() =>
+        coin.TweenMoveY(targetPos.y, 0.45f, Ease.InBack).OnComplete(() =>
         {
             _isAnimeStartEnabled = true;
             if (_maxCoinCount <= _currentCoinCount)
@@ -59,7 +59,7 @@ public class DropCoinArea : MonoBehaviour
                 ObjectPoolManager.Instance.DespawnCoin(coin);
                 return;
             }
-            coin.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, TweenMode.Smootherstep).Loop(LoopType.Yoyo);
+            coin.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
         });
     }
 
@@ -83,7 +83,7 @@ public class DropCoinArea : MonoBehaviour
         {
             int coinIndex = i;
             _coins[coinIndex].TweenStop();
-            _coins[coinIndex].TweenMove(_coinEndTr.position, endTime, TweenMode.Smoothstep).
+            _coins[coinIndex].TweenMove(_coinEndTr.position, endTime, Ease.Smoothstep).
                 OnComplete(() =>
                 {
                     _coins[coinIndex].TweenStop();

@@ -10,7 +10,7 @@ namespace Muks.Tween
         private HorizontalOrVerticalLayoutGroup _layoutGroup;
 
 
-        public override void SetData(TweenDataSequence dataSequence)
+        protected override void SetData(TweenDataSequence dataSequence)
         {
             base.SetData(dataSequence);
 
@@ -31,7 +31,7 @@ namespace Muks.Tween
 
         protected override void TweenCompleted()
         {
-            if (_tweenMode != TweenMode.Spike)
+            if (_tweenMode != Ease.Spike)
                 _layoutGroup.spacing = _targetValue;
         }
     }

@@ -8,7 +8,7 @@ namespace Muks.Tween
         private Vector3 _targetScale;
 
 
-        public override void SetData(TweenDataSequence dataSequence)
+        protected override void SetData(TweenDataSequence dataSequence)
         {
             base.SetData(dataSequence);
             _startScale = transform.localScale;
@@ -28,7 +28,7 @@ namespace Muks.Tween
 
         protected override void TweenCompleted()
         {
-            if (_tweenMode != TweenMode.Spike)
+            if (_tweenMode != Ease.Spike)
                 transform.localScale = _targetScale;
         }
     }

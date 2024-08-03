@@ -10,13 +10,13 @@ namespace Muks.Tween
     public class TweenData : MonoBehaviour
     {
 
-        public float ElapsedDuration; // 현재 경과 시간
-        public float TotalDuration; //총 시간
-        public bool IsLoop; //반복 여부
+        internal float ElapsedDuration; // 현재 경과 시간
+        internal float TotalDuration; //총 시간
+        internal bool IsLoop; //반복 여부
 
-        protected TweenMode _tweenMode;
+        protected Ease _tweenMode;
         protected Queue<TweenDataSequence> _dataSequences = new Queue<TweenDataSequence>();
-        protected Dictionary<TweenMode, Func<float, float, float>> _percentHandler;
+        protected Dictionary<Ease, Func<float, float, float>> _percentHandler;
 
         private bool _isRightMove = true;
         private LoopType _loopType;
@@ -30,77 +30,10 @@ namespace Muks.Tween
         private int _currentDataSequenceId;
         private int _dataSequenceIdCount = -1;
 
-
-        public virtual void SetData(TweenDataSequence dataSequence)
-        {
-            _currentDataSequenceId = dataSequence.Id;
-            TotalDuration = dataSequence.Duration;
-            _tweenMode = dataSequence.TweenMode;
-
-            //해당 애니메이션 id값과 같은 id를 가진 대리자가 존재할 경우 진행중 대리자 적재
-            if (_onUpdatedDic.TryGetValue(dataSequence.Id, out _onUpdated))
-                _onUpdatedDic.Remove(dataSequence.Id);
-            else
-                _onUpdated = null;
-
-            //해당 애니메이션 id값과 같은 id를 가진 대리자가 존재할 경우 시작 대리자 실행
-            if (_onStartedDic.TryGetValue(_currentDataSequenceId, out _onStarted))
-            {
-                _onStarted?.Invoke();
-                _onStartedDic.Remove(_currentDataSequenceId);
-            }
-
-            //해당 애니메이션 id값과 같은 id를 가진 대리자가 존재할 경우 완료 대리자 적재
-            if (_onCompletedDic.TryGetValue(_currentDataSequenceId, out _onCompleted))
-            {
-                _onCompletedDic.Remove(_currentDataSequenceId);
-            }
-            else
-            {
-                _onCompleted = null;
-            }
-
-        }
-
-
-        public void AddDataSequence(TweenDataSequence dataSequence)
-        {
-            //대리자가 어느 DataSequence와 같이 추가되는지 확인하기 위해 Id값 부여
-            dataSequence.SetId(++_dataSequenceIdCount);
-            _dataSequences.Enqueue(dataSequence);
-        }
-
-
-
-        /// <summary>무한 반복</summary>
-        public void Loop(LoopType loopType = LoopType.Restart)
-        {
-            TweenDataSequence sequence = _dataSequences.Last();
-            _dataSequences.Clear();
-            _dataSequences.Enqueue(sequence);
-            SetData(_dataSequences.Dequeue());
-            _loopType = loopType;
-            IsLoop = true;
-        }
-
-
-        /// <summary>반복 횟수 설정</summary>
-        public void Repeat(int count)
-        {
-            TweenDataSequence sequence = _dataSequences.Last();
-
-            for (int i = 1; i < count; i++)
-            {
-                AddDataSequence(sequence);
-            }
-        }
-
-
         /// <summary>Tween의 모든 데이터를 초기화하는 함수</summary>
         public void Clear()
         {
             _dataSequences.Clear();
-
             _onStartedDic.Clear();
             _onStarted = null;
             _onCompletedDic.Clear();
@@ -140,8 +73,72 @@ namespace Muks.Tween
         }
 
 
+        /// <summary>무한 반복</summary>
+        public void Loop(LoopType loopType = LoopType.Restart)
+        {
+            TweenDataSequence sequence = _dataSequences.Last();
+            _dataSequences.Clear();
+            _dataSequences.Enqueue(sequence);
+            SetData(_dataSequences.Dequeue());
+            _loopType = loopType;
+            IsLoop = true;
+        }
+
+
+        /// <summary>반복 횟수 설정</summary>
+        public void Repeat(int count)
+        {
+            TweenDataSequence sequence = _dataSequences.Last();
+
+            for (int i = 1; i < count; i++)
+            {
+                AddDataSequence(sequence);
+            }
+        }
+
+
+        protected virtual void SetData(TweenDataSequence dataSequence)
+        {
+            _currentDataSequenceId = dataSequence.Id;
+            TotalDuration = dataSequence.Duration;
+            _tweenMode = dataSequence.Ease;
+
+            //해당 애니메이션 id값과 같은 id를 가진 대리자가 존재할 경우 진행중 대리자 적재
+            if (_onUpdatedDic.TryGetValue(dataSequence.Id, out _onUpdated))
+                _onUpdatedDic.Remove(dataSequence.Id);
+            else
+                _onUpdated = null;
+
+            //해당 애니메이션 id값과 같은 id를 가진 대리자가 존재할 경우 시작 대리자 실행
+            if (_onStartedDic.TryGetValue(_currentDataSequenceId, out _onStarted))
+            {
+                _onStarted?.Invoke();
+                _onStartedDic.Remove(_currentDataSequenceId);
+            }
+
+            //해당 애니메이션 id값과 같은 id를 가진 대리자가 존재할 경우 완료 대리자 적재
+            if (_onCompletedDic.TryGetValue(_currentDataSequenceId, out _onCompleted))
+            {
+                _onCompletedDic.Remove(_currentDataSequenceId);
+            }
+            else
+            {
+                _onCompleted = null;
+            }
+
+        }
+
+
+        internal void AddDataSequence(TweenDataSequence dataSequence)
+        {
+            //대리자가 어느 DataSequence와 같이 추가되는지 확인하기 위해 Id값 부여
+            dataSequence.SetId(++_dataSequenceIdCount);
+            _dataSequences.Enqueue(dataSequence);
+        }
+
+
         /// <summary> 현재 완료 대리자를 실행하고 null값으로 변경하는 함수 </summary>
-        public void OnCompletedStart()
+        internal void OnCompletedStart()
         {
             _onCompleted?.Invoke();
             _onCompleted = null;
@@ -150,35 +147,39 @@ namespace Muks.Tween
 
         private void Awake()
         {
-            _percentHandler = new Dictionary<TweenMode, Func<float, float, float>>
+            _percentHandler = new Dictionary<Ease, Func<float, float, float>>
             {
-                { TweenMode.Constant, Constant },
-                { TweenMode.Smoothstep, Smoothstep },
-                { TweenMode.Smootherstep, Smootherstep },
-                {TweenMode.Spike, Spike },
-                {TweenMode.EaseInQuad, EaseInQuad },
-                {TweenMode.EaseOutQuad, EaseOutQuad },
-                {TweenMode.EaseInOutQuad, EaseInOutQuad },
-                {TweenMode.EaseInQuint, EaseInQuint },
-                {TweenMode.EaseOutQuint, EaseOutQuint },
-                {TweenMode.EaseInOutQuint, EaseInOutQuint },
-                {TweenMode.EaseInExpo, EaseInExpo },
-                {TweenMode.EaseOutExpo, EaseOutExpo },
-                {TweenMode.EaseInOutExpo, EaseInOutExpo },
-                {TweenMode.EaseInElastic, EaseInElastic },
-                {TweenMode.EaseOutElastic, EaseOutElastic },
-                {TweenMode.EaseInOutElastic, EaseInOutElastic },
-                {TweenMode.EaseInBack, EaseInBack },
-                {TweenMode.EaseOutBack, EaseOutBack },
-                {TweenMode.EaseInOutBack, EaseInOutBack },
-                {TweenMode.EaseInBounce, EaseInBounce },
-                {TweenMode.EaseOutBounce, EaseOutBounce },
-                {TweenMode.EaseInOutBounce, EaseInOutBounce },
-                {TweenMode.EaseInCubic, EaseInCubic },
-                {TweenMode.EaseOutCubic, EaseOutCubic },
-                {TweenMode.EaseInOutCubic, EaseInOutCubic },
-                { TweenMode.Sinerp, Sinerp },
-                { TweenMode.Coserp, Coserp }
+                { Ease.Constant, Constant },
+                { Ease.Smoothstep, Smoothstep },
+                { Ease.Smootherstep, Smootherstep },
+                { Ease.Spike, Spike },
+                { Ease.InSine, InSine },
+                { Ease.OutSine, OutSine },
+                { Ease.InOutSine, InOutSine },
+                { Ease.InQuad, InQuad },
+                { Ease.OutQuad, OutQuad },
+                { Ease.InOutQuad, InOutQuad },
+                { Ease.InQuint, InQuint },
+                { Ease.OutQuint, OutQuint },
+                { Ease.InOutQuint, InOutQuint },
+                { Ease.InExpo, InExpo },
+                { Ease.OutExpo, OutExpo },
+                { Ease.InOutExpo, InOutExpo },
+                { Ease.InCirc, InCirc },
+                { Ease.OutCirc, OutCirc },
+                { Ease.InOutCirc, InOutCirc },
+                { Ease.InElastic, InElastic },
+                { Ease.OutElastic, OutElastic },
+                { Ease.InOutElastic, InOutElastic },
+                { Ease.InBack, InBack },
+                { Ease.OutBack, OutBack },
+                { Ease.InOutBack, InOutBack },
+                { Ease.InBounce, InBounce },
+                { Ease.OutBounce, OutBounce },
+                { Ease.InOutBounce, InOutBounce },
+                { Ease.InCubic, InCubic },
+                { Ease.OutCubic, OutCubic },
+                { Ease.InOutCubic, InOutCubic },
             };
         }
 
@@ -309,7 +310,7 @@ namespace Muks.Tween
 
 
         /// <summary> 점점 빠르게 </summary>
-        private float EaseInQuad(float elapsedDuration, float totalDuration)
+        private float InQuad(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -322,7 +323,7 @@ namespace Muks.Tween
 
 
         /// <summary> 점점 빠르다가 점점 느리게 </summary>
-        private float EaseInOutQuad(float elapsedDuration, float totalDuration)
+        private float InOutQuad(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -336,7 +337,7 @@ namespace Muks.Tween
 
 
         /// <summary> 점점 느리게 </summary>
-        private float EaseOutQuad(float elapsedDuration, float totalDuration)
+        private float OutQuad(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -348,7 +349,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInQuint(float elapsedDuration, float totalDuration)
+        private float InQuint(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -358,7 +359,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseOutQuint(float elapsedDuration, float totalDuration)
+        private float OutQuint(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -368,7 +369,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInOutQuint(float elapsedDuration, float totalDuration)
+        private float InOutQuint(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -379,7 +380,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInExpo(float elapsedDuration, float totalDuration)
+        private float InExpo(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -389,7 +390,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseOutExpo(float elapsedDuration, float totalDuration)
+        private float OutExpo(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -399,7 +400,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInOutExpo(float elapsedDuration, float totalDuration)
+        private float InOutExpo(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -417,7 +418,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInElastic(float elapsedDuration, float totalDuration)
+        private float InElastic(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -430,7 +431,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseOutElastic(float elapsedDuration, float totalDuration)
+        private float OutElastic(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -443,7 +444,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInOutElastic(float elapsedDuration, float totalDuration)
+        private float InOutElastic(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -457,7 +458,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInBack(float elapsedDuration, float totalDuration)
+        private float InBack(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -470,7 +471,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseOutBack(float elapsedDuration, float totalDuration)
+        private float OutBack(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -483,7 +484,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInOutBack(float elapsedDuration, float totalDuration)
+        private float InOutBack(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -498,7 +499,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInBounce(float elapsedDuration, float totalDuration)
+        private float InBounce(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -532,7 +533,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseOutBounce(float elapsedDuration, float totalDuration)
+        private float OutBounce(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -560,7 +561,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInOutBounce(float elapsedDuration, float totalDuration)
+        private float InOutBounce(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -573,7 +574,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInCubic(float elapsedDuration, float totalDuration)
+        private float InCubic(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -582,7 +583,7 @@ namespace Muks.Tween
             return percent * percent * percent;
         }
 
-        private float EaseOutCubic(float elapsedDuration, float totalDuration)
+        private float OutCubic(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -592,7 +593,7 @@ namespace Muks.Tween
         }
 
 
-        private float EaseInOutCubic(float elapsedDuration, float totalDuration)
+        private float InOutCubic(float elapsedDuration, float totalDuration)
         {
             if (totalDuration <= 0)
                 return 0;
@@ -625,6 +626,67 @@ namespace Muks.Tween
             percent = Mathf.Cos(percent * Mathf.PI * 0.5f);
 
             return percent;
+        }
+
+
+        private float InCirc(float elapsedDuration, float totalDuration)
+        {
+            if (totalDuration <= 0)
+                return 0;
+
+            float percent = elapsedDuration / totalDuration;
+            return 1 - Mathf.Sqrt(1 - Mathf.Pow(percent, 2));
+        }
+
+
+        private float OutCirc(float elapsedDuration, float totalDuration)
+        {
+            if (totalDuration <= 0)
+                return 0;
+
+            float percent = elapsedDuration / totalDuration;
+            return Mathf.Sqrt(1 - Mathf.Pow(percent - 1, 2));
+        }
+
+
+        private float InOutCirc(float elapsedDuration, float totalDuration)
+        {
+            if (totalDuration <= 0)
+                return 0;
+
+            float percent = elapsedDuration / totalDuration;
+            return percent < 0.5f ? (1 - Mathf.Sqrt(1 - Mathf.Pow(2 * percent, 2))) / 2
+                : (Mathf.Sqrt(1 - Mathf.Pow(-2 * percent + 2, 2))) / 2;
+        }
+
+
+        private float InSine(float elapsedDuration, float totalDuration)
+        {
+            if (totalDuration <= 0)
+                return 0;
+
+            float percent = elapsedDuration / totalDuration;
+            return 1 - Mathf.Cos((percent * Mathf.PI) / 2);
+        }
+
+
+        private float OutSine(float elapsedDuration, float totalDuration)
+        {
+            if (totalDuration <= 0)
+                return 0;
+
+            float percent = elapsedDuration / totalDuration;
+            return Mathf.Sin((percent * Mathf.PI) / 2);
+        }
+
+
+        private float InOutSine(float elapsedDuration, float totalDuration)
+        {
+            if (totalDuration <= 0)
+                return 0;
+
+            float percent = elapsedDuration / totalDuration;
+            return -(Mathf.Cos(Mathf.PI * percent) - 1) / 2;
         }
     }
 }

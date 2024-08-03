@@ -13,7 +13,7 @@ public class FillAmountButton : MonoBehaviour
     [Space]
     [Header("Anime Options")]
     [SerializeField] private float _duration;
-    [SerializeField] private TweenMode _tweenMode;
+    [SerializeField] private Ease _tweenMode;
 
 
     public void AddListener(UnityAction action)
