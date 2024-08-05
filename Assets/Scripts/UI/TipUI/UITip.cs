@@ -44,7 +44,7 @@ public class UITip : MobileUIView
     public override void Init()
     {
         _coins = new RectTransform[_coinCount];
-        for(int i = 0; i < _coinCount; ++i)
+        for (int i = 0; i < _coinCount; ++i)
         {
             _coins[i] = Instantiate(_coinPrefab, _coinParent);
             _coins[i].gameObject.SetActive(false);
@@ -74,7 +74,7 @@ public class UITip : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
-        for(int i = 0, cnt = _coins.Length; i < cnt; ++i)
+        for (int i = 0, cnt = _coins.Length; i < cnt; ++i)
         {
             _coins[i].gameObject.SetActive(false);
         }
@@ -114,12 +114,12 @@ public class UITip : MobileUIView
 
         //TMPAnime("+ " + UserInfo.Tip.ToString("N0"));
         //UserInfo.TipCollection();
-        CoinAnime(false);
+        CoinAnimeTest(false);
     }
 
     private void OnAdvertisingButtonClicked()
     {
-        if(UserInfo.Tip <= 0)
+        if (UserInfo.Tip <= 0)
         {
             TimedDisplayManager.Instance.ShowText("È¹µæ °¡´ÉÇÑ ÆÁÀÌ ¾ø½À´Ï´Ù.");
             return;
@@ -127,7 +127,7 @@ public class UITip : MobileUIView
 
         //TMPAnime("+ " + (UserInfo.Tip * 2).ToString("N0"));
         //UserInfo.TipCollection(true);
-        CoinAnime(true);
+        CoinAnimeTest(true);
     }
 
 
@@ -173,7 +173,7 @@ public class UITip : MobileUIView
                     Tween.Wait(0.25f, () =>
                     {
                         _coins[index].TweenScale(startScale, _coinDuration, _coinEase);
-                        _coins[index].TweenMove(_coinTargetPos.position, _coinDuration, _coinEase).OnComplete(() => 
+                        _coins[index].TweenMove(_coinTargetPos.position, _coinDuration, _coinEase).OnComplete(() =>
                         {
 
                             _coins[index].gameObject.SetActive(false);
@@ -191,6 +191,53 @@ public class UITip : MobileUIView
 
                         });
                     });
+                });
+            });
+            time += 0.02f;
+        }
+    }
+
+
+    private void CoinAnimeTest(bool isAds)
+    {
+        _dontTouchArea.gameObject.SetActive(true);
+        float time = 0.05f;
+
+        int coinCnt = UserInfo.Tip / 100;
+        coinCnt = coinCnt == 0 ? 1 : _coins.Length < coinCnt ? _coins.Length : coinCnt;
+        int tipValue = UserInfo.Tip / coinCnt;
+        int lastTipValue = UserInfo.Tip % coinCnt;
+
+        for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+        {
+            int index = i;
+            Vector2 coinPos = Vector2.zero + Random.insideUnitCircle * 50;
+            _coins[index].anchoredPosition = coinPos;
+            Vector2 startScale = _tmpCoinScale * 0.9f;
+
+            _coins[index].gameObject.SetActive(true);
+            _coins[index].TweenStop();
+            _coins[index].localScale = _tmpCoinScale;
+
+            Tween.Wait(0.25f + time, () =>
+            {
+                _coins[index].TweenScale(startScale, _coinDuration, _coinEase);
+                _coins[index].TweenMove(_coinTargetPos.position, _coinDuration, _coinEase).OnComplete(() =>
+                {
+
+                    _coins[index].gameObject.SetActive(false);
+
+                    if (index == cnt - 1)
+                    {
+                        UserInfo.TipCollection(tipValue + lastTipValue, isAds);
+                        _dontTouchArea.gameObject.SetActive(false);
+                    }
+
+                    else
+                    {
+                        UserInfo.TipCollection(tipValue, isAds);
+                    }
+
                 });
             });
             time += 0.02f;

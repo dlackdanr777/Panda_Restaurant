@@ -226,7 +226,7 @@ public class TableManager : MonoBehaviour
         int randInt = UnityEngine.Random.Range(0, _tableDatas[index].ChairTrs.Length);
         _tableDatas[index].SitDir = randInt == 0 ? -1 : 1;
         _tableDatas[index].SitIndex = randInt;
-        Vector3 targetPos = _tableDatas[index].ChairTrs[randInt].position - new Vector3(0, AStar.Instance.NodeSize * 2 ,0);
+        Vector3 targetPos = _tableDatas[index].ChairTrs[randInt].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
 
         UpdateTable();
 
@@ -241,31 +241,30 @@ public class TableManager : MonoBehaviour
                 currentCustomer.SetSpriteDir(-_tableDatas[index].SitDir);
                 currentCustomer.SetLayer("SitCustomer", 0);
                 currentCustomer.ChangeState(CustomerState.Sit);
-                currentCustomer = null;
 
-                Tween.Wait(0.6f, () => OnCustomerSeating(index));
-            });
-        });
-
-        float waitTime = UnityEngine.Random.Range(2f, 3f);
-        Tween.Wait(waitTime, () =>
-        {
-            if(currentCustomer.CustomerData.MaxDiscomfortIndex < _totalGarbageCount)
-            {
-                currentCustomer.StopMove();
-                currentCustomer.StartAnger();
-                Tween.Wait(2f, () =>
+                Tween.Wait(1f, () =>
                 {
-                    _tableDatas[index].CurrentCustomer = null;
-                    _tableDatas[index].TableState = ETableState.NotUse;
-                    UpdateTable();
-                    currentCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
+                    if (currentCustomer.CustomerData.MaxDiscomfortIndex < _totalGarbageCount)
                     {
-                        ObjectPoolManager.Instance.DespawnCustomer(currentCustomer);
-                        currentCustomer = null;
-                    });
+                        _tableDatas[index].CurrentCustomer = null;
+                        _tableDatas[index].TableState = ETableState.NotUse;
+                        currentCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
+                        currentCustomer.ChangeState(CustomerState.Idle);
+                        currentCustomer.StartAnger();
+                        currentCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
+                        {
+                            currentCustomer.StopAnger();
+                            ObjectPoolManager.Instance.DespawnCustomer(currentCustomer);
+                            currentCustomer = null;
+                        });
+
+                        UpdateTable();
+                        return;
+                    }
+
+                    OnCustomerSeating(index);
                 });
-            }
+            });
         });
     }
 
@@ -292,7 +291,8 @@ public class TableManager : MonoBehaviour
             UpdateTable();
         });
 
-        _tableDatas[index].SetTipValue((int)(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul * 0.01f));
+        int tip = Mathf.FloorToInt(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul);
+        _tableDatas[index].TotalTip += tip;
         _tableDatas[index].CurrentFood = data;
         _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.FoodPriceMul);
         _orderButtons[index].SetImage(foodData.ThumbnailSprite);
@@ -337,14 +337,14 @@ public class TableManager : MonoBehaviour
 
     private void EndEat(int index)
     {
-        int tip = _tableDatas[index].TotalPrice / 10;
+        int tip = _tableDatas[index].TotalTip;
         StartCoinAnime(index);
         StartGarbageAnime(index);
 
         Tween.Wait(0.5f, () =>
         {
             ExitCustomer(index);
-            UserInfo.AppendTip((int)(tip * GameManager.Instance.TipMul));
+            UserInfo.AppendTip(tip);
 
             _tableDatas[index].TableState = ETableState.NotUse;
             UpdateTable();
@@ -386,7 +386,8 @@ public class TableManager : MonoBehaviour
 
     private void NotFurnitureTable(int index)
     {
-        _tableDatas[index].SetTipValue(-_tableDatas[index].TipValue);
+        _tableDatas[index].TotalTip = 0;
+        _tableDatas[index].TotalPrice = 0;
 
         if (_tableDatas[index].CurrentCustomer == null)
         {
@@ -421,6 +422,7 @@ public class TableManager : MonoBehaviour
 
         _tableDatas[index].DropCoinArea.DropCoin(_tableDatas[index].ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0), foodPrice);
         _tableDatas[index].TotalPrice = 0;
+        _tableDatas[index].TotalTip = 0;
     }
 
 

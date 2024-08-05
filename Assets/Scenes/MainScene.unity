@@ -272,8 +272,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _targetScale: {x: 0.85, y: 0.85, z: 0.85}
   _pressDuration: 0.15
-  _buttonDownTweenMode: 17
-  _buttonUpTweenMode: 17
+  _buttonDownTweenMode: 23
+  _buttonUpTweenMode: 23
 --- !u!1 &6448176
 GameObject:
   m_ObjectHideFlags: 0
@@ -1744,9 +1744,9 @@ MonoBehaviour:
   _typeText2: {fileID: 735680319}
   _animeUI: {fileID: 2041989366}
   _showDuration: 0.3
-  _showTweenMode: 17
+  _showTweenMode: 23
   _hideDuration: 0.3
-  _hideTweenMode: 16
+  _hideTweenMode: 22
   _slotParnet: {fileID: 1703428999}
   _slotPrefab: {fileID: 5485483690408162049, guid: cd297380a0ec743488ff6c9f0a29c9c6,
     type: 3}
@@ -4637,6 +4637,7 @@ MonoBehaviour:
   _dropGarbageArea: {fileID: 1985508396}
   _leftStaffTr: {fileID: 807086978}
   _rightStaffTr: {fileID: 1190645678}
+  TotalTip: 0
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
@@ -5118,7 +5119,7 @@ MonoBehaviour:
   _totalTabCount: 8
   _maxTipVolume: 0
   _cookingSpeedMul: 1
-  _tipMul: 1
+  _tipMul: 0
   _foodPriceMul: 1
   _addScore: 0
   _tipPerMinute: 0
@@ -16815,6 +16816,7 @@ MonoBehaviour:
   _dropGarbageArea: {fileID: 149429846}
   _leftStaffTr: {fileID: 1468138160}
   _rightStaffTr: {fileID: 944886554}
+  TotalTip: 0
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
@@ -17893,8 +17895,8 @@ MonoBehaviour:
   _moneyText: {fileID: 932924780}
   _animeParent: {fileID: 607595518}
   _moveY: 80
-  _moveDuration: 1.5
-  _moveEase: 0
+  _moveDuration: 1.2
+  _moveEase: 11
   _startColor: {r: 0.18867922, g: 0.18867922, b: 0.18867922, a: 0.78431374}
 --- !u!1 &826114008
 GameObject:
@@ -20741,7 +20743,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 32, y: 0}
+  m_AnchoredPosition: {x: 27.8, y: 0.000048637}
   m_SizeDelta: {x: 136, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &932924780
@@ -22311,7 +22313,7 @@ MonoBehaviour:
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_PressedColor: {r: 1, g: 1, b: 1, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
@@ -24063,6 +24065,7 @@ MonoBehaviour:
   _dropGarbageArea: {fileID: 327447553}
   _leftStaffTr: {fileID: 728286430}
   _rightStaffTr: {fileID: 1399350673}
+  TotalTip: 0
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
@@ -25614,9 +25617,9 @@ MonoBehaviour:
   _recipeButton: {fileID: 1432119641}
   _kitchenButton: {fileID: 2056530461}
   _showDuration: 0.3
-  _showTweenMode: 17
+  _showTweenMode: 23
   _hideDuration: 0.3
-  _hideTweenMode: 16
+  _hideTweenMode: 22
 --- !u!1 &1229548765
 GameObject:
   m_ObjectHideFlags: 0
@@ -32774,7 +32777,7 @@ MonoBehaviour:
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
     m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
+    m_PressedColor: {r: 1, g: 1, b: 1, a: 1}
     m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
@@ -37854,6 +37857,7 @@ MonoBehaviour:
   _dropGarbageArea: {fileID: 2053150152}
   _leftStaffTr: {fileID: 826114009}
   _rightStaffTr: {fileID: 192019076}
+  TotalTip: 0
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
@@ -38005,6 +38009,7 @@ MonoBehaviour:
   _dropGarbageArea: {fileID: 443201020}
   _leftStaffTr: {fileID: 463322477}
   _rightStaffTr: {fileID: 1257074351}
+  TotalTip: 0
   TotalPrice: 0
   OrdersCount: 0
   TableState: 0
@@ -38798,9 +38803,9 @@ MonoBehaviour:
   _typeText2: {fileID: 735680319}
   _animeUI: {fileID: 1413236558}
   _showDuration: 0.3
-  _showTweenMode: 17
+  _showTweenMode: 23
   _hideDuration: 0.3
-  _hideTweenMode: 16
+  _hideTweenMode: 22
   _createSlotValue: 30
   _slotParnet: {fileID: 1402838954}
   _slotPrefab: {fileID: 5485483690408162049, guid: 9f4edec8a336c25418870fbd7f751411,
@@ -39955,9 +39960,9 @@ MonoBehaviour:
   _typeText2: {fileID: 857685684}
   _animeUI: {fileID: 316413635}
   _showDuration: 0.3
-  _showTweenMode: 17
+  _showTweenMode: 23
   _hideDuration: 0.3
-  _hideTweenMode: 16
+  _hideTweenMode: 22
   _slotParnet: {fileID: 167689393}
   _slotPrefab: {fileID: 5485483690408162049, guid: 33d8146329a720149b138eaa2290873e,
     type: 3}

@@ -1,6 +1,4 @@
 using Muks.Tween;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -45,14 +43,21 @@ public class UIMoney : MonoBehaviour
             return;
         _currentMoney = UserInfo.Money;
         _moneyText.text = Utility.ConvertToNumber(UserInfo.Money);
+
+
         string sign = textMoney < 0 ? "-" : "+";
         Vector3 spawnPos = _moneyText.transform.position + new Vector3(0, 5, 0);
         TextMeshProUGUI tmp = ObjectPoolManager.Instance.SpawnTMP(spawnPos, Quaternion.identity, _animeParent);
 
         tmp.text = sign + Utility.ConvertToNumber(textMoney);
         tmp.fontSize = _moneyText.fontSize;
+        tmp.rectTransform.sizeDelta = _moneyText.rectTransform.sizeDelta;
+        tmp.rectTransform.localScale = _moneyText.rectTransform.localScale;
+        tmp.alignment = TextAlignmentOptions.MidlineRight;
         tmp.color = _startColor;
-        tmp.TweenAlpha(0, _moveDuration);
+
+        tmp.TweenAlpha(0, _moveDuration, _moveEase);
         tmp.TweenMoveY(spawnPos.y + _moveY, _moveDuration, _moveEase).OnComplete(() => ObjectPoolManager.Instance.DespawnTmp(tmp));
+        tmp.rectTransform.SetAsLastSibling();
     }
 }

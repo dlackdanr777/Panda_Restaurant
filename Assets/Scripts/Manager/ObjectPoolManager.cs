@@ -108,7 +108,7 @@ public class ObjectPoolManager : MonoBehaviour
         _garbageImages = Resources.LoadAll<Sprite>("ObjectPool/Garbage/GarbageImage");
 
         if (_garbagePrefab == null)
-            _garbagePrefab = Resources.Load<PointerClickSpriteRenderer>("Garbage/Garbage");
+            _garbagePrefab = Resources.Load<PointerClickSpriteRenderer>("ObjectPool/Garbage/Garbage");
 
         for (int i = 0, count = _garbageCount; i < count; i++)
         {
@@ -252,7 +252,7 @@ public class ObjectPoolManager : MonoBehaviour
         tmp.gameObject.SetActive(true);
         tmp.transform.position = pos;
         tmp.transform.rotation = rot;
-        tmp.transform.parent = parent;
+        tmp.transform.SetParent(parent);
         tmp.color = Color.white;
         _enabledTmpPool.Add(tmp);
         return tmp;
@@ -268,7 +268,8 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         tmp.gameObject.SetActive(false);
-        tmp.transform.parent = _tmpParent.transform;
+        tmp.transform.SetParent(_tmpParent.transform);
+        tmp.alignment = TextAlignmentOptions.Midline;
         tmp.TweenStop();
         _tmpPool.Enqueue(tmp);
         _enabledTmpPool.Remove(tmp);

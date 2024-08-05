@@ -27,8 +27,7 @@ public class TableData : MonoBehaviour
     public Transform RightStaffTr => _rightStaffTr;
 
 
-    private int _tipValue;
-    public int TipValue => _tipValue;
+    public int TotalTip;
 
     public int TotalPrice;
 
@@ -43,11 +42,4 @@ public class TableData : MonoBehaviour
     public int SitDir;
 
     public int SitIndex;
-
-
-    public void SetTipValue(int value)
-    {
-        _tipValue += value;
-    }
-
 }
