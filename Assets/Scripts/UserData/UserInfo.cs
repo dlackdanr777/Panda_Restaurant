@@ -22,6 +22,9 @@ public static class UserInfo
     public static event Action<KitchenUtensilType> OnChangeKitchenUtensilHandler;
     public static event Action OnGiveKitchenUtensilHandler;
 
+    public static event Action OnDoneChallengeHandler;
+    public static event Action OnClearChallengeHandler;
+
 
     private static int _money;
     public static int Money => _money;
@@ -51,6 +54,8 @@ public static class UserInfo
     private static List<string> _giveKitchenUtensilList = new List<string>();
     private static HashSet<string> _giveKitchenUtensilSet = new HashSet<string>();
 
+    private static HashSet<string> _doneMainChallengeSet = new HashSet<string>();
+    private static HashSet<string> _clearMainChallengeSet = new HashSet<string>();
 
     #region UserData
 
@@ -523,7 +528,6 @@ public static class UserInfo
 
     #endregion
 
-
     #region KitchenData
 
     public static void GiveKitchenUtensil(KitchenUtensilData data)
@@ -663,6 +667,55 @@ public static class UserInfo
 
         _enabledSetData = SetDataManager.Instance.GetSetData(setId);
         _enabledSetData.Activate();
+    }
+
+
+    #endregion
+
+    #region Challenge
+
+
+    public static bool GetIsDoneMainChallenge(string id)
+    {
+        if (_doneMainChallengeSet.Contains(id))
+            return true;
+
+        return false;
+    }
+
+
+    public static bool GetIsClearMainChallenge(string id)
+    {
+        if (_clearMainChallengeSet.Contains(id))
+            return true;
+
+        return false;
+    }
+
+
+    public static void DoneMainChallenge(string id)
+    {
+        if (GetIsDoneMainChallenge(id))
+        {
+            DebugLog.LogError("이미 완료 처리된 도전과제입니다: " + id);
+            return;
+        }
+
+        _doneMainChallengeSet.Add(id);
+        OnDoneChallengeHandler?.Invoke();
+    }
+
+
+    public static void ClearMainChallenge(string id)
+    {
+        if (GetIsClearMainChallenge(id))
+        {
+            DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + id);
+            return;
+        }
+
+        _clearMainChallengeSet.Add(id);
+        OnClearChallengeHandler?.Invoke();
     }
 
 

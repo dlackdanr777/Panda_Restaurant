@@ -1,6 +1,11 @@
 public enum ChallengeType
 {
-    TYPE01, TYPE02, TYPE03, TYPE04, TYPE05, TYPE06, TYPE07, TYPE08, TYPE09, TYPE10, TYPE11, TYPE12, TYPE13, TYPE14, TYPE15, TYPE16, TYPE17, TYPE18, TYPE19, TYPE20, TYPE21, TYPE22, TYPE23, TYPE24, TYPE25, TYPE26, TYPE27, TYPE28, TYPE29, TYPE30, TYPE31, TYPE32, TYPE33, TYPE34, TYPE35, TYPE36, TYPE37, TYPE38, TYPE39, TYPE40, Length
+    TYPE01, TYPE02, TYPE03, TYPE04, TYPE05, TYPE06, TYPE07, TYPE08, TYPE09, TYPE10, TYPE11, TYPE12, TYPE13, TYPE14, TYPE15, TYPE16, TYPE17, TYPE18, TYPE19, TYPE20, TYPE21, TYPE22, TYPE23, TYPE24, TYPE25, TYPE26, TYPE27, TYPE28, TYPE29, TYPE30, Length
+}
+
+public enum ChallengeShortCutType
+{
+    ShortCut01, SHORTCUT02, SHORTCUT03, SHORTCUT04, SHORTCUT05, SHORTCUT06, SHORTCUT07, SHORTCUT08, SHORTCUT09, SHORTCUT10, SHORTCUT11, SHORTCUT12, SHORTCUT13, Length
 }
 
 public abstract class ChallengeData
@@ -95,6 +100,22 @@ public class Type05ChallengeData : ChallengeData
         _id = id;
         _description = description;
         _needStaffId = needStaffId;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>레시피 획득 달성 도전과제</summary>
+public class Type06ChallengeData : ChallengeData
+{
+    protected string _needRecipeId;
+    public string NeedRecipeId => _needRecipeId;
+
+    public Type06ChallengeData(string id, string description, string needRecipeId, int rewardMoney)
+    {
+        _id = id;
+        _description = description;
+        _needRecipeId = needRecipeId;
         _rewardMoney = rewardMoney;
     }
 }
