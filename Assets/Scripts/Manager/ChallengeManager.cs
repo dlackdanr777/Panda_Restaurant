@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class ChallengeManager : MonoBehaviour
@@ -78,48 +79,110 @@ public class ChallengeManager : MonoBehaviour
             string shortCutType = row[2];
             string description = row[3];
             int rewardMoney = Convert.ToInt32(row[6]);
+            ChallengeType challengeType;
             switch (type)
             {
                 case "TYPE01":
-                    Type01ChallengeData challengeData01 = new Type01ChallengeData(id, description, row[4], rewardMoney);
+                    challengeType = ChallengeType.TYPE01;
+                    Type01ChallengeData challengeData01 = new Type01ChallengeData(challengeType, id, description, row[4], rewardMoney);
                     _type01ChallengeDataDic.Add(id, challengeData01);
                     _mainChallengeDataDic.Add(id, challengeData01);
                     break;
 
                 case "TYPE02":
+                    challengeType = ChallengeType.TYPE02;
                     string row4 = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
                     string[] needKitcenUtensilIds = row4.Split(new char[] { '.' });
-                    Type02ChallengeData challengeData02 = new Type02ChallengeData(id, description, needKitcenUtensilIds, rewardMoney);
+                    Type02ChallengeData challengeData02 = new Type02ChallengeData(challengeType, id, description, needKitcenUtensilIds, rewardMoney);
                     _type02ChallengeDataDic.Add(id, challengeData02);
                     _mainChallengeDataDic.Add(id, challengeData02);
                     break;
 
                 case "TYPE03":
-                    Type03ChallengeData challengeData03 = new Type03ChallengeData(id, description, row[4], rewardMoney);
+                    challengeType = ChallengeType.TYPE03;
+                    Type03ChallengeData challengeData03 = new Type03ChallengeData(challengeType, id, description, row[4], rewardMoney);
                     _type03ChallengeDataDic.Add(id, challengeData03);
                     _mainChallengeDataDic.Add(id, challengeData03);
                     break;
 
                 case "TYPE04":
-                    Type04ChallengeData challengeData04 = new Type04ChallengeData(id, description, row[4], int.Parse(row[5]), rewardMoney);
+                    challengeType = ChallengeType.TYPE04;
+                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challengeType, id, description, row[4], int.Parse(row[5]), rewardMoney);
                     _type04ChallengeDataDic.Add(id, challengeData04);
                     _mainChallengeDataDic.Add(id, challengeData04);
                     break;
 
                 case "TYPE05":
-                    Type05ChallengeData challengeData05 = new Type05ChallengeData(id, description, row[4], rewardMoney);
+                    challengeType = ChallengeType.TYPE05;
+                    Type05ChallengeData challengeData05 = new Type05ChallengeData(challengeType, id, description, row[4], rewardMoney);
                     _type05ChallengeDataDic.Add(id, challengeData05);
                     _mainChallengeDataDic.Add(id, challengeData05);
                     break;
 
                 case "TYPE06":
-                    Type06ChallengeData challengeData06 = new Type06ChallengeData(id, description, row[4], rewardMoney);
+                    challengeType = ChallengeType.TYPE06;
+                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challengeType, id, description, row[4], rewardMoney);
                     _type06ChallengeDataDic.Add(id, challengeData06);
                     _mainChallengeDataDic.Add(id, challengeData06);
                     break;
             }
         }
     }
+
+    public List<ChallengeData> GetMainChallenge()
+    {
+        return _mainChallengeDataDic.Values.ToList();
+    }
+
+    public float GetChallengePercent(ChallengeData data)
+    {
+        switch (data.Type)
+        {
+            case ChallengeType.TYPE01:
+                Type01ChallengeData data01 = (Type01ChallengeData)data;
+                if (UserInfo.IsGiveFurniture(data01.NeedFurnitureId))
+                    return 1;
+                return 0;
+
+            case ChallengeType.TYPE02:
+                Type02ChallengeData data02 = (Type02ChallengeData)data;
+
+                float percent = 0;
+                for(int i = 0, cnt = data02.NeedKitchenUtensilId.Length; i < cnt; i++)
+                {
+                    if (UserInfo.IsGiveKitchenUtensil(data02.NeedKitchenUtensilId[i]))
+                        percent += 1f / cnt;
+                }
+                return percent;
+
+            case ChallengeType.TYPE03:
+                Type03ChallengeData data03 = (Type03ChallengeData)data;
+                if (UserInfo.IsGiveRecipe(data03.BuyRecipeId))
+                    return 1;
+                return 0;
+
+            case ChallengeType.TYPE04:
+                Type04ChallengeData data04 = (Type04ChallengeData)data;
+                //TODO: 레시피 제작횟수 추가 후 수정
+                return 1;
+
+            case ChallengeType.TYPE05:
+                Type05ChallengeData data05 = (Type05ChallengeData)data;
+                if (UserInfo.IsGiveStaff(data05.NeedStaffId))
+                    return 1;
+                return 0;
+
+            case ChallengeType.TYPE06:
+                Type06ChallengeData data06 = (Type06ChallengeData)data;
+                //TODO: 수정예정
+                return 0;
+
+
+            default: return 0;
+        }
+
+    }
+
 
     private void Type01ChallengeCheck()
     {
