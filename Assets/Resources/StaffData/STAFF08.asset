@@ -15,8 +15,8 @@ MonoBehaviour:
   _sprite: {fileID: -1629956381, guid: bf048b4a4b58b93489ab69dffdabb7a9, type: 3}
   _thumbnailSPrite: {fileID: -1629956381, guid: bf048b4a4b58b93489ab69dffdabb7a9,
     type: 3}
-  _name: "\uD3EC\uC57C"
-  _id: STAFF08
+  _name: "\uCD08\uBCF4 \uB9E4\uB2C8\uC800 \uD3EC\uC57C"
+  _id: STAFF06
   _description: 
   _moneyType: 0
   _buyScore: 0

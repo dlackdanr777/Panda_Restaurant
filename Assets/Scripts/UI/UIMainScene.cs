@@ -37,6 +37,11 @@ public class UIMainScene : MonoBehaviour
 
         DataBind.SetUnityActionValue("ShowTipUI", OnShowTipUI);
         DataBind.SetUnityActionValue("HideTipUI", OnHideTipUI);
+
+
+        DataBind.SetUnityActionValue("ShowChallengeUI", OnShowChallengeUI);
+        DataBind.SetUnityActionValue("HideChallengeUI", OnHideChallengeUI);
+        DataBind.SetUnityActionValue("HideNoAnimeChallengeUI", OnHideNoAnimeChallengeUI);
     }
 
 
@@ -131,5 +136,20 @@ public class UIMainScene : MonoBehaviour
     private void OnHideTipUI()
     {
         _uiNav.Pop("UITip");
+    }
+
+    private void OnShowChallengeUI()
+    {
+        _uiNav.Push("UIChallenge");
+    }
+
+    private void OnHideChallengeUI()
+    {
+        _uiNav.Pop("UIChallenge");
+    }
+
+    private void OnHideNoAnimeChallengeUI()
+    {
+        _uiNav.PopNoAnime("UIChallenge");
     }
 }

@@ -382,6 +382,12 @@ public static class UserInfo
     }
 
 
+    public static int GetRecipeCount()
+    {
+        return _giveRecipeSet.Count;
+    }
+
+
     #endregion
 
     #region FurnitureData

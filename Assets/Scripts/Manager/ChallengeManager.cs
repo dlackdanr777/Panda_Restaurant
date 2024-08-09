@@ -23,11 +23,12 @@ public class ChallengeManager : MonoBehaviour
     }
 
     private static ChallengeManager _instance;
+
+    public event Action OnChallengeUpdateHandler;
+
     private static readonly string _csvFilePath = "Challenge/";
 
     private static Dictionary<string, ChallengeData> _mainChallengeDataDic = new Dictionary<string, ChallengeData>();
-
-
 
     private static Dictionary<string, Type01ChallengeData> _type01ChallengeDataDic = new Dictionary<string, Type01ChallengeData>();
     private static Dictionary<string, Type02ChallengeData> _type02ChallengeDataDic = new Dictionary<string, Type02ChallengeData>();
@@ -55,13 +56,16 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnGiveFurnitureHandler += Type01ChallengeCheck;
         UserInfo.OnGiveKitchenUtensilHandler += Type02ChallengeCheck;
         UserInfo.OnGiveRecipeHandler += Type03ChallengeCheck;
+        UserInfo.OnGiveRecipeHandler += Type04ChallengeCheck;
         UserInfo.OnGiveStaffHandler += Type05ChallengeCheck;
+        UserInfo.OnGiveRecipeHandler += Type06ChallengeCheck;
 
         Type01ChallengeCheck();
         Type02ChallengeCheck();
         Type03ChallengeCheck();
         Type04ChallengeCheck();
         Type05ChallengeCheck();
+        Type06ChallengeCheck();
     }
 
 
@@ -107,7 +111,7 @@ public class ChallengeManager : MonoBehaviour
 
                 case "TYPE04":
                     challengeType = ChallengeType.TYPE04;
-                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challengeType, id, description, row[4], int.Parse(row[5]), rewardMoney);
+                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challengeType, id, description, row[4], rewardMoney);
                     _type04ChallengeDataDic.Add(id, challengeData04);
                     _mainChallengeDataDic.Add(id, challengeData04);
                     break;
@@ -121,7 +125,7 @@ public class ChallengeManager : MonoBehaviour
 
                 case "TYPE06":
                     challengeType = ChallengeType.TYPE06;
-                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challengeType, id, description, row[4], rewardMoney);
+                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challengeType, id, description, int.Parse(row[5]), rewardMoney);
                     _type06ChallengeDataDic.Add(id, challengeData06);
                     _mainChallengeDataDic.Add(id, challengeData06);
                     break;
@@ -163,8 +167,9 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE04:
                 Type04ChallengeData data04 = (Type04ChallengeData)data;
-                //TODO: 레시피 제작횟수 추가 후 수정
-                return 1;
+                if (UserInfo.IsGiveRecipe(data04.NeedRecipeId))
+                    return 1;
+                return 0;
 
             case ChallengeType.TYPE05:
                 Type05ChallengeData data05 = (Type05ChallengeData)data;
@@ -174,18 +179,27 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE06:
                 Type06ChallengeData data06 = (Type06ChallengeData)data;
-                //TODO: 수정예정
-                return 0;
+                int recipeCount = UserInfo.GetRecipeCount();
+                return recipeCount == 0 ? 0 : recipeCount <= data06.RecipeCount ? 1 : (float)recipeCount / data06.RecipeCount; 
 
 
             default: return 0;
         }
+    }
 
+
+    public void ChallengeClear(string id)
+    {
+        if (_mainChallengeDataDic.ContainsKey(id))
+            UserInfo.ClearMainChallenge(id);
+
+        OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type01ChallengeCheck()
     {
+        int count = 0;
         foreach (Type01ChallengeData data in _type01ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneMainChallenge(data.Id))
@@ -197,12 +211,19 @@ public class ChallengeManager : MonoBehaviour
             if (!UserInfo.IsGiveFurniture(data.NeedFurnitureId))
                 continue;
 
-            UserInfo.DoneMainChallenge(data.Id);
+            if (_mainChallengeDataDic.ContainsKey(data.Id))
+                UserInfo.DoneMainChallenge(data.Id);
+
+            count++;
         }
+
+        if (0 < count)
+            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type02ChallengeCheck()
     {
+        int count = 0;
         foreach (Type02ChallengeData data in _type02ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneMainChallenge(data.Id))
@@ -211,18 +232,31 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearMainChallenge(data.Id))
                 continue;
 
+            bool _isGives = true;
             for (int i = 0, cnt = data.NeedKitchenUtensilId.Length; i < cnt; i++)
             {
                 if (!UserInfo.IsGiveKitchenUtensil(data.NeedKitchenUtensilId[i]))
-                    continue;
+                {
+                    _isGives = false;
+                    break;
+                }
             }
 
-            UserInfo.DoneMainChallenge(data.Id);
+            if (!_isGives) continue;
+
+            if (_mainChallengeDataDic.ContainsKey(data.Id))
+                UserInfo.DoneMainChallenge(data.Id);
+
+            count++;
         }
+
+        if (0 < count)
+            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type03ChallengeCheck()
     {
+        int count = 0;
         foreach (Type03ChallengeData data in _type03ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneMainChallenge(data.Id))
@@ -234,14 +268,20 @@ public class ChallengeManager : MonoBehaviour
             if (!UserInfo.IsGiveRecipe(data.BuyRecipeId))
                 continue;
 
-            UserInfo.DoneMainChallenge(data.Id);
+            if (_mainChallengeDataDic.ContainsKey(data.Id))
+                UserInfo.DoneMainChallenge(data.Id);
+
+            count++;
         }
+
+        if (0 < count)
+            OnChallengeUpdateHandler?.Invoke();
     }
 
 
-    //TODO: 수정 예정 레시피 조리 Count값이 아직 설정안됨
     private void Type04ChallengeCheck()
     {
+        int count = 0;
         foreach (Type04ChallengeData data in _type04ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneMainChallenge(data.Id))
@@ -250,18 +290,26 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearMainChallenge(data.Id))
                 continue;
 
-            if (!UserInfo.IsGiveRecipe(data.RecipeId))
+            if (!UserInfo.IsGiveRecipe(data.NeedRecipeId))
                 continue;
 
-            UserInfo.DoneMainChallenge(data.Id);
+            if(_mainChallengeDataDic.ContainsKey(data.Id))
+                UserInfo.DoneMainChallenge(data.Id);
+
+            count++;
         }
+
+        if (0 < count)
+            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type05ChallengeCheck()
     {
+        int count = 0;
         foreach (Type05ChallengeData data in _type05ChallengeDataDic.Values)
         {
+            DebugLog.Log(data.Id);
             if (UserInfo.GetIsDoneMainChallenge(data.Id))
                 continue;
 
@@ -271,8 +319,38 @@ public class ChallengeManager : MonoBehaviour
             if (!UserInfo.IsGiveStaff(data.NeedStaffId))
                 continue;
 
-            UserInfo.DoneMainChallenge(data.Id);
+            if (_mainChallengeDataDic.ContainsKey(data.Id))
+                UserInfo.DoneMainChallenge(data.Id);
+
+            count++;
         }
+
+        if (0 < count)
+            OnChallengeUpdateHandler?.Invoke();
+    }
+
+    private void Type06ChallengeCheck()
+    {
+        int count = 0;
+        foreach (Type06ChallengeData data in _type06ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneMainChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearMainChallenge(data.Id))
+                continue;
+
+            if (data.RecipeCount < UserInfo.GetRecipeCount())
+                continue;
+
+            if (_mainChallengeDataDic.ContainsKey(data.Id))
+                UserInfo.DoneMainChallenge(data.Id);
+
+            count++;
+        }
+
+        if(0 < count)
+         OnChallengeUpdateHandler?.Invoke();
     }
 
 }

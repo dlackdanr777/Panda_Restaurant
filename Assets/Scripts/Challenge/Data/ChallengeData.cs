@@ -81,19 +81,15 @@ public class Type03ChallengeData : ChallengeData
 /// <summary>레시피 제작 도전과제</summary>
 public class Type04ChallengeData : ChallengeData
 {
-    protected string _recipeId;
-    public string RecipeId => _recipeId;
+    protected string _needRecipeId;
+    public string NeedRecipeId => _needRecipeId;
 
-    protected int _cookCount;
-    public int CookCount => _cookCount; 
-
-    public Type04ChallengeData(ChallengeType type, string id, string description, string recipeId, int cookCount, int rewardMoney)
+    public Type04ChallengeData(ChallengeType type, string id, string description, string needRecipeId, int rewardMoney)
     {
         _type = type;
         _id = id;
         _description = description;
-        _recipeId = recipeId;
-        _cookCount = cookCount;
+        _needRecipeId = needRecipeId;
         _rewardMoney = rewardMoney;
     }
 }
@@ -115,18 +111,18 @@ public class Type05ChallengeData : ChallengeData
 }
 
 
-/// <summary>레시피 획득 달성 도전과제</summary>
+/// <summary>레시피 획득 누적 달성 도전과제</summary>
 public class Type06ChallengeData : ChallengeData
 {
-    protected string _needRecipeId;
-    public string NeedRecipeId => _needRecipeId;
+    protected int _recipeCount;
+    public int RecipeCount => _recipeCount;
 
-    public Type06ChallengeData(ChallengeType type, string id, string description, string needRecipeId, int rewardMoney)
+    public Type06ChallengeData(ChallengeType type, string id, string description, int recipeCount, int rewardMoney)
     {
         _type = type;
         _id = id;
         _description = description;
-        _needRecipeId = needRecipeId;
+        _recipeCount = recipeCount;
         _rewardMoney = rewardMoney;
     }
 }
