@@ -1,13 +1,14 @@
+using Muks.DataBind;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using Muks.DataBind;
 
 public static class UserInfo
 {
     public static event Action OnChangeMoneyHandler;
     public static event Action OnChangeTipHandler;
-    public static event Action OnChangeScoreHanlder;
+    public static event Action OnChangeScoreHandler;
+    public static event Action OnAddCustomerCountHandler;
 
     public static event Action OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
@@ -15,6 +16,7 @@ public static class UserInfo
 
     public static event Action OnGiveRecipeHandler;
     public static event Action OnUpgradeRecipeHandler;
+    public static event Action OnAddCookCountHandler;
 
     public static event Action<FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
@@ -32,9 +34,23 @@ public static class UserInfo
     private static int _score;
     public static int Score => _score + GameManager.Instance.AddSocre;
 
+    private static int _maxScore;
+    public static int MaxScore
+    {
+        get
+        {
+            if(_maxScore < Score)
+                _maxScore = Score;
+
+            return _maxScore;
+        }
+    }
+
     private static int _tip;
     public static int Tip => _tip;
 
+    private static int _cumulativeCustomerCount;
+    public static int CumulativeCustomerCount => _cumulativeCustomerCount;
 
     private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
     private static List<string> _giveStaffList = new List<string>();
@@ -44,6 +60,7 @@ public static class UserInfo
     private static List<string> _giveRecipeList = new List<string>();
     private static HashSet<string> _giveRecipeSet = new HashSet<string>();
     private static Dictionary<string, int> _giveRecipeLevelDic = new Dictionary<string, int>();
+    private static Dictionary<string, int> _recipeCookCountDic = new Dictionary<string, int>();
 
     private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
     private static List<string> _giveFurnitureList = new List<string>();
@@ -54,8 +71,12 @@ public static class UserInfo
     private static List<string> _giveKitchenUtensilList = new List<string>();
     private static HashSet<string> _giveKitchenUtensilSet = new HashSet<string>();
 
+    private static HashSet<string> _doneChallengeSet = new HashSet<string>();
+    private static HashSet<string> _clearChallengeSet = new HashSet<string>();
     private static HashSet<string> _doneMainChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearMainChallengeSet = new HashSet<string>();
+    private static HashSet<string> _doneAllTimeChallengeSet = new HashSet<string>();
+    private static HashSet<string> _clearAllTimeChallengeSet = new HashSet<string>();
 
     #region UserData
 
@@ -70,7 +91,7 @@ public static class UserInfo
     public static void AppendScore(int value)
     {
         _score += value;
-        OnChangeScoreHanlder?.Invoke();
+        OnChangeScoreHandler?.Invoke();
     }
 
     public static void TipCollection(bool isWatchingAds = false)
@@ -102,11 +123,17 @@ public static class UserInfo
         OnChangeTipHandler?.Invoke();
     }
 
-    public static void AppendTip(int value)
+    public static void AddTip(int value)
     {
         _tip = Mathf.Clamp(_tip + value, 0, GameManager.Instance.MaxTipVolume);
         DataBindTip();
         OnChangeTipHandler?.Invoke();
+    }
+
+    public static void AddCustomerCount()
+    {
+        _cumulativeCustomerCount += 1;
+        OnAddCustomerCountHandler?.Invoke();
     }
 
     public static void DataBindTip()
@@ -328,6 +355,27 @@ public static class UserInfo
         }
 
         throw new Exception("해당 음식을 보유하고 있지 않습니다: " + data.Id);
+    }
+
+    public static int GetCookCount(string id)
+    {
+        if (_recipeCookCountDic.TryGetValue(id, out int count))
+            return count;
+
+        return 0;
+    }
+
+    public static void AddCookCount(string id)
+    {
+        if (_recipeCookCountDic.ContainsKey(id))
+        {
+            _recipeCookCountDic[id] += 1;
+            OnAddCookCountHandler?.Invoke();
+            return;
+        }
+
+        _recipeCookCountDic.Add(id, 1);
+        OnAddCookCountHandler?.Invoke();
     }
 
 
@@ -680,6 +728,22 @@ public static class UserInfo
 
     #region Challenge
 
+    public static bool GetIsDoneChallenge(string id)
+    {
+        if (_doneChallengeSet.Contains(id))
+            return true;
+
+        return false;
+    }
+
+    public static bool GetIsClearChallenge(string id)
+    {
+        if (_clearChallengeSet.Contains(id))
+            return true;
+
+        return false;
+    }
+
 
     public static bool GetIsDoneMainChallenge(string id)
     {
@@ -708,6 +772,7 @@ public static class UserInfo
         }
 
         _doneMainChallengeSet.Add(id);
+        _doneChallengeSet.Add(id);
         OnDoneChallengeHandler?.Invoke();
     }
 
@@ -721,6 +786,53 @@ public static class UserInfo
         }
 
         _clearMainChallengeSet.Add(id);
+        _clearChallengeSet.Add(id);
+        OnClearChallengeHandler?.Invoke();
+    }
+
+
+    public static bool GetIsDoneAllTimeChallenge(string id)
+    {
+        if (_doneAllTimeChallengeSet.Contains(id))
+            return true;
+
+        return false;
+    }
+
+
+    public static bool GetIsClearAllTimeChallenge(string id)
+    {
+        if (_clearAllTimeChallengeSet.Contains(id))
+            return true;
+
+        return false;
+    }
+
+
+    public static void DoneAllTimeChallenge(string id)
+    {
+        if (GetIsDoneAllTimeChallenge(id))
+        {
+            DebugLog.LogError("이미 완료 처리된 도전과제입니다: " + id);
+            return;
+        }
+
+        _doneAllTimeChallengeSet.Add(id);
+        _doneChallengeSet.Add(id);
+        OnDoneChallengeHandler?.Invoke();
+    }
+
+
+    public static void ClearAllTimeChallenge(string id)
+    {
+        if (GetIsClearAllTimeChallenge(id))
+        {
+            DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + id);
+            return;
+        }
+
+        _clearAllTimeChallengeSet.Add(id);
+        _clearChallengeSet.Add(id);
         OnClearChallengeHandler?.Invoke();
     }
 

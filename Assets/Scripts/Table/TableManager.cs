@@ -344,7 +344,8 @@ public class TableManager : MonoBehaviour
         Tween.Wait(0.5f, () =>
         {
             ExitCustomer(index);
-            UserInfo.AppendTip(tip);
+            UserInfo.AddCustomerCount();
+            UserInfo.AddTip(tip);
 
             _tableDatas[index].TableState = ETableState.NotUse;
             UpdateTable();

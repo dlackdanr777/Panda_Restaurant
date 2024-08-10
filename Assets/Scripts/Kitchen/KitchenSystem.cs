@@ -82,9 +82,10 @@ public class KitchenSystem : MonoBehaviour
     private void DequeueFood(int burnerIndex)
     {
         if (!_burnerDatas[burnerIndex].CookingData.IsDefault())
+        {
+            UserInfo.AddCookCount(_burnerDatas[burnerIndex].CookingData.Id);
             _burnerDatas[burnerIndex].CookingData.OnCompleted?.Invoke();
-
-
+        }
 
         if (_cookingQueue.Count == 0)
         {

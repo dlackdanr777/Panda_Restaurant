@@ -33,7 +33,7 @@ public class UIFurniturePreview : MonoBehaviour
         _onBuyButtonClicked = onBuyButtonClicked;
 
         UserInfo.OnChangeMoneyHandler += UpdateFurniture;
-        UserInfo.OnChangeScoreHanlder += UpdateFurniture;
+        UserInfo.OnChangeScoreHandler += UpdateFurniture;
         UserInfo.OnChangeFurnitureHandler += (type) => UpdateFurniture();
         UserInfo.OnGiveFurnitureHandler += UpdateFurniture;
     }

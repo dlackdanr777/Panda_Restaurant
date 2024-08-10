@@ -22,10 +22,11 @@ public class UIChallenge : MobileUIView
     public override void Init()
     {
         _uiDaily.Init(ChallengeManager.Instance.GetMainChallenge(), UserInfo.GetIsDoneMainChallenge, UserInfo.GetIsClearMainChallenge);
+        _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge(), UserInfo.GetIsDoneAllTimeChallenge, UserInfo.GetIsClearAllTimeChallenge);
         gameObject.SetActive(false);
 
         ChallengeManager.Instance.OnChallengeUpdateHandler += _uiDaily.UpdateUI;
-
+        ChallengeManager.Instance.OnChallengeUpdateHandler += _uiAllTime.UpdateUI;
     }
 
 
@@ -34,6 +35,8 @@ public class UIChallenge : MobileUIView
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
         _dontTouchArea.gameObject.SetActive(false);
+        _uiDaily.ResetScrollviewY();
+        _uiAllTime.ResetScrollviewY();
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 

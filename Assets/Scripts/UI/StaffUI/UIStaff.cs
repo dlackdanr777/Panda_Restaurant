@@ -65,7 +65,7 @@ public class UIStaff : MobileUIView
         UserInfo.OnUpgradeStaffHandler += () => OnSlotUpdate(false);
         UserInfo.OnGiveStaffHandler += () => OnSlotUpdate(false);
         UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
-        UserInfo.OnChangeScoreHanlder += () => OnSlotUpdate(false);
+        UserInfo.OnChangeScoreHandler += () => OnSlotUpdate(false);
 
         gameObject.SetActive(false);
     }

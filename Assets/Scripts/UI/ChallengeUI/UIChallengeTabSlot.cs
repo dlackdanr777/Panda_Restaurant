@@ -18,12 +18,15 @@ public class UIChallengeTabSlot : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _rewardText;
 
     private ChallengeData _data;
+    public ChallengeData Data => _data;
 
-    public void Init(UnityAction onShortCutButtonClicked, UnityAction onDoneButtonClicked)
+    public void Init(ChallengeData data, UnityAction onShortCutButtonClicked, UnityAction onDoneButtonClicked)
     {
         _shortCutButton.onClick.AddListener(onShortCutButtonClicked);
         _doneButton.onClick.AddListener(OnDoneButtonClicked);
         _doneButton.onClick.AddListener(onDoneButtonClicked);
+
+        SetData(data);
     }
 
 
@@ -34,9 +37,16 @@ public class UIChallengeTabSlot : MonoBehaviour
             gameObject.SetActive(false);
 
         gameObject.SetActive(true);
-        _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(data);
-        _moneyImage.gameObject.SetActive(true);
+
+        _moneyImage.gameObject.SetActive(false);
         _diaImage.gameObject.SetActive(false);
+
+        if (data.MoneyType == MoneyType.Gold)
+            _moneyImage.gameObject.SetActive(true);
+        else 
+            _diaImage.gameObject.SetActive(true);
+
+        _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(data);
         _descriptionText.text = data.Description;
         _rewardText.text = Utility.ConvertToNumber(data.RewardMoney);
     }

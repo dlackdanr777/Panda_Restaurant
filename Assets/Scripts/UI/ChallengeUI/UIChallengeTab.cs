@@ -11,13 +11,13 @@ public class UIChallengeTab : MonoBehaviour
     [SerializeField] private UIChallengeTabSlot _slotPrefab;
 
     private List<ChallengeData> _challengeDataList = new List<ChallengeData>();
-    private Dictionary<int, ChallengeData> _doneChallengeDataDic = new Dictionary<int, ChallengeData>();
-    private Dictionary<int, ChallengeData> _clearChallengeDataDic = new Dictionary<int, ChallengeData>();
+    private Dictionary<string, UIChallengeTabSlot> _challengeDataDic = new Dictionary<string, UIChallengeTabSlot>();
     private List<UIChallengeTabSlot> _slotList = new List<UIChallengeTabSlot>();
 
     private Func<string, bool> _isChallengeDone;
     private Func<string, bool> _isChallengeClear;
-
+    List<UIChallengeTabSlot> _doneSlotList = new List<UIChallengeTabSlot>();
+    List<UIChallengeTabSlot> _clearSlotList = new List<UIChallengeTabSlot>();
 
     public void Init(List<ChallengeData> dataList, Func<string, bool> isChallengeDone, Func<string, bool> isChallengeClear)
     {
@@ -28,38 +28,27 @@ public class UIChallengeTab : MonoBehaviour
         for (int i = 0, cnt = dataList.Count; i < cnt; i++)
         {
             UIChallengeTabSlot slot = Instantiate(_slotPrefab, _slotParent);
-            slot.SetData(dataList[i]);
-            slot.Init(null, () =>
+            slot.Init(dataList[i],null, () =>
             {
-                CheckChallenge();
                 UpdateSlot();
             });
             _slotList.Add(slot);
+            _challengeDataDic.Add(dataList[i].Id, slot);
         }
 
-        CheckChallenge();
         UpdateSlot();
     }
 
 
     public void UpdateUI()
     {
-        CheckChallenge();
         UpdateSlot();
     }
 
 
-    private void CheckChallenge()
+    public void ResetScrollviewY()
     {
-        for (int i = 0, cnt = _challengeDataList.Count; i < cnt; i++)
-        {
-            if (!_doneChallengeDataDic.ContainsKey(i) && _isChallengeDone(_challengeDataList[i].Id))
-                _doneChallengeDataDic.Add(i, _challengeDataList[i]);
-                
-
-            if (!_clearChallengeDataDic.ContainsKey(i) && _isChallengeClear(_challengeDataList[i].Id))
-                _clearChallengeDataDic.Add(i, _challengeDataList[i]);
-        }
+        _slotParent.anchoredPosition = new Vector2(0, 0);
     }
 
 
@@ -67,23 +56,31 @@ public class UIChallengeTab : MonoBehaviour
     {
         for (int i = 0, cnt = _slotList.Count; i < cnt; i++)
         {
+            if (_isChallengeClear(_slotList[i].Data.Id))
+            {
+                _clearSlotList.Add(_slotList[i]);
+                continue;
+            }
+
+            if (_isChallengeDone(_slotList[i].Data.Id))
+            {
+                _doneSlotList.Add(_slotList[i]);
+                continue;
+            }
+
             _slotList[i].SetNone();
         }
 
-        foreach (var data in _doneChallengeDataDic)
+        for(int i = _doneSlotList.Count - 1; 0 <= i; --i)
         {
-            if (_clearChallengeDataDic.ContainsKey(data.Key))
-                continue;
-
-            _slotList[data.Key].SetDone();
+            _doneSlotList[i].SetDone();
         }
 
-        foreach(var data in _clearChallengeDataDic)
+        for(int i = 0, cnt = _clearSlotList.Count; i < cnt; ++i)
         {
-            _slotList[data.Key].SetClear();
+            _clearSlotList[i].SetClear();
         }
-
+        _doneSlotList.Clear();
+        _clearSlotList.Clear();
     }
-
-
 }

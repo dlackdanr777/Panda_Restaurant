@@ -105,20 +105,20 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        UserInfo.GiveFurniture("TABLE01_1");
-        UserInfo.SetEquipFurniture("TABLE01_1");
+        UserInfo.GiveFurniture("TABLE01_01");
+        UserInfo.SetEquipFurniture("TABLE01_01");
 
-        UserInfo.GiveFurniture("TABLE01_2");
-        UserInfo.SetEquipFurniture("TABLE01_2");
+        UserInfo.GiveFurniture("TABLE01_02");
+        UserInfo.SetEquipFurniture("TABLE01_02");
 
-        UserInfo.GiveFurniture("TABLE01_3");
-        UserInfo.SetEquipFurniture("TABLE01_3");
+        UserInfo.GiveFurniture("TABLE01_03");
+        UserInfo.SetEquipFurniture("TABLE01_03");
 
-        UserInfo.GiveFurniture("TABLE01_4");
-        UserInfo.SetEquipFurniture("TABLE01_4");
+        UserInfo.GiveFurniture("TABLE01_04");
+        UserInfo.SetEquipFurniture("TABLE01_04");
 
-        UserInfo.GiveFurniture("TABLE01_5");
-        UserInfo.SetEquipFurniture("TABLE01_5");
+        UserInfo.GiveFurniture("TABLE01_05");
+        UserInfo.SetEquipFurniture("TABLE01_05");
 
         UserInfo.GiveFurniture("FLOWER01");
         UserInfo.SetEquipFurniture("FLOWER01");
@@ -150,7 +150,7 @@ public class GameManager : MonoBehaviour
         if(60 <= _updateTimer)
         {
             _updateTimer = 0;
-            UserInfo.AppendTip(_tipPerMinute);
+            UserInfo.AddTip(_tipPerMinute);
         }
     }
 }

@@ -63,7 +63,7 @@ public class UITip : MobileUIView
         _tipAnimeTmp.gameObject.SetActive(false);
 
         gameObject.SetActive(false);
-        UserInfo.AppendTip(5000);
+        UserInfo.AddTip(5000);
     }
 
     public override void Show()

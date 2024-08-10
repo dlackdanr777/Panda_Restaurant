@@ -31,7 +31,7 @@ public class UIKitchenPreview : MonoBehaviour
         _onBuyButtonClicked = onBuyButtonClicked;
 
         UserInfo.OnChangeMoneyHandler += UpdateUI;
-        UserInfo.OnChangeScoreHanlder += UpdateUI;
+        UserInfo.OnChangeScoreHandler += UpdateUI;
         UserInfo.OnChangeKitchenUtensilHandler += (type) => UpdateUI();
         UserInfo.OnGiveKitchenUtensilHandler += UpdateUI;
     }

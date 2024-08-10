@@ -29,7 +29,7 @@ public class UIStaffPreview : MonoBehaviour
 
         UserInfo.OnUpgradeStaffHandler += UpdateStaff;
         UserInfo.OnChangeMoneyHandler += UpdateStaff;
-        UserInfo.OnChangeScoreHanlder += UpdateStaff;
+        UserInfo.OnChangeScoreHandler += UpdateStaff;
         UserInfo.OnChangeStaffHandler += UpdateStaff;
         UserInfo.OnGiveStaffHandler += UpdateStaff;
     }

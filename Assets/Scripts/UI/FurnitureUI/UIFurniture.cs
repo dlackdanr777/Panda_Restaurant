@@ -64,7 +64,7 @@ public class UIFurniture : MobileUIView
         UserInfo.OnChangeFurnitureHandler += (type) => OnSlotUpdate(false);
         UserInfo.OnGiveFurnitureHandler += () => OnSlotUpdate(false);
         UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
-        UserInfo.OnChangeScoreHanlder += () => OnSlotUpdate(false);
+        UserInfo.OnChangeScoreHandler += () => OnSlotUpdate(false);
 
         gameObject.SetActive(false);
     }

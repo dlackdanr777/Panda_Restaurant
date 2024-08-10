@@ -62,7 +62,7 @@ public class UIKitchen : MobileUIView
         UserInfo.OnChangeKitchenUtensilHandler += (type) => OnSlotUpdate(false);
         UserInfo.OnGiveKitchenUtensilHandler += () => OnSlotUpdate(false);
         UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
-        UserInfo.OnChangeScoreHanlder += () => OnSlotUpdate(false);
+        UserInfo.OnChangeScoreHandler += () => OnSlotUpdate(false);
 
         gameObject.SetActive(false);
     }
