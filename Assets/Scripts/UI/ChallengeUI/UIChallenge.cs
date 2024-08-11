@@ -21,11 +21,11 @@ public class UIChallenge : MobileUIView
     [SerializeField] private Ease _hideTweenMode;
     public override void Init()
     {
-        _uiDaily.Init(ChallengeManager.Instance.GetMainChallenge(), UserInfo.GetIsDoneMainChallenge, UserInfo.GetIsClearMainChallenge);
+        //_uiDaily.Init(ChallengeManager.Instance.GetMainChallenge(), UserInfo.GetIsDoneMainChallenge, UserInfo.GetIsClearMainChallenge);
         _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge(), UserInfo.GetIsDoneAllTimeChallenge, UserInfo.GetIsClearAllTimeChallenge);
         gameObject.SetActive(false);
 
-        ChallengeManager.Instance.OnChallengeUpdateHandler += _uiDaily.UpdateUI;
+        //ChallengeManager.Instance.OnChallengeUpdateHandler += _uiDaily.UpdateUI;
         ChallengeManager.Instance.OnChallengeUpdateHandler += _uiAllTime.UpdateUI;
     }
 

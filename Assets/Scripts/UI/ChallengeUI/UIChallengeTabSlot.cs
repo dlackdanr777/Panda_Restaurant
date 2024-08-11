@@ -32,9 +32,14 @@ public class UIChallengeTabSlot : MonoBehaviour
 
     public void SetData(ChallengeData data)
     {
+        if (_data != null)
+            ChallengeManager.Instance.OnChallengePercentUpdateHandler -= UpdatePercent;
+
         _data = data;
         if (data == null)
             gameObject.SetActive(false);
+        else
+            ChallengeManager.Instance.OnChallengePercentUpdateHandler += UpdatePercent;
 
         gameObject.SetActive(true);
 
@@ -79,6 +84,17 @@ public class UIChallengeTabSlot : MonoBehaviour
         _layoutImage.color = new Color(0.8f, 0.8f, 0.8f, 1);
         _percentBar.fillAmount = 1;
         _rectTransform.SetAsLastSibling();
+    }
+
+    public void UpdatePercent(ChallengeType type)
+    {
+        if (type != _data.Type)
+            return;
+
+        if (_clearButton.gameObject.activeSelf || _doneButton.gameObject.activeSelf)
+            return;
+
+        _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(_data);
     }
 
 

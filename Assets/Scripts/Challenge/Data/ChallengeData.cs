@@ -32,15 +32,15 @@ public abstract class ChallengeData
 /// <summary>가구 구매 도전과제</summary>
 public class Type01ChallengeData : ChallengeData
 {
-    protected string _needFurnitureId;
-    public string NeedFurnitureId => _needFurnitureId;
+    protected string[] _needFurnitureIds;
+    public string[] NeedFurnitureIds => _needFurnitureIds;
 
-    public Type01ChallengeData(ChallengeType type, string id, string description, string needFurnitureId, MoneyType moneyType, int rewardMoney)
+    public Type01ChallengeData(ChallengeType type, string id, string description, string[] needFurnitureIds, MoneyType moneyType, int rewardMoney)
     {
         _type = type;
         _id = id;
         _description = description;
-        _needFurnitureId = needFurnitureId;
+        _needFurnitureIds = needFurnitureIds;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
     }

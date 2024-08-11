@@ -138,8 +138,8 @@ public class GameManager : MonoBehaviour
         UserInfo.GiveFurniture("COUNTER01");
         UserInfo.SetEquipFurniture("COUNTER01");
 
-        UserInfo.GiveKitchenUtensil("COOKER01");
-        UserInfo.SetEquipKitchenUtensil("COOKER01");
+        UserInfo.GiveKitchenUtensil("COOKER01_01");
+        UserInfo.SetEquipKitchenUtensil("COOKER01_01");
     }
 
 

@@ -2,6 +2,7 @@ using Muks.DataBind;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 public static class UserInfo
 {
@@ -9,6 +10,7 @@ public static class UserInfo
     public static event Action OnChangeTipHandler;
     public static event Action OnChangeScoreHandler;
     public static event Action OnAddCustomerCountHandler;
+    public static event Action OnAddPromotionCountHandler;
 
     public static event Action OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
@@ -27,9 +29,14 @@ public static class UserInfo
     public static event Action OnDoneChallengeHandler;
     public static event Action OnClearChallengeHandler;
 
+    public static event Action OnVisitedCustomerHandler;
+
 
     private static int _money;
     public static int Money => _money;
+
+    private static int _maxMoney;
+    public static int MaxMoney => _maxMoney;
 
     private static int _score;
     public static int Score => _score + GameManager.Instance.AddSocre;
@@ -51,6 +58,10 @@ public static class UserInfo
 
     private static int _cumulativeCustomerCount;
     public static int CumulativeCustomerCount => _cumulativeCustomerCount;
+
+    private static int _promotionCount;
+    public static int PromotionCount => _promotionCount;
+
 
     private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
     private static List<string> _giveStaffList = new List<string>();
@@ -78,11 +89,14 @@ public static class UserInfo
     private static HashSet<string> _doneAllTimeChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearAllTimeChallengeSet = new HashSet<string>();
 
+    private static HashSet<string> _visitedCustomerSet = new HashSet<string>();
+
     #region UserData
 
     public static void AppendMoney(int value)
     {
         _money += value;
+        _maxMoney += Mathf.Clamp(value, 0, 100000000);
         DataBindMoney();
         OnChangeMoneyHandler?.Invoke();
     }
@@ -96,12 +110,11 @@ public static class UserInfo
 
     public static void TipCollection(bool isWatchingAds = false)
     {
-        _money = isWatchingAds ? _money + _tip * 2 : _money + _tip;
+        int addMoneyValue = isWatchingAds ? _tip * 2 : _tip;
+        AppendMoney(addMoneyValue);
         _tip = 0;
 
         DataBindTip();
-        DataBindMoney();
-        OnChangeMoneyHandler?.Invoke();
         OnChangeTipHandler?.Invoke();
     }
 
@@ -115,11 +128,9 @@ public static class UserInfo
         }
 
         _tip -= value;
-        _money = isWatchingAds ? _money + value * 2 : _money + value;
-
+        int addMoneyValue = isWatchingAds ? value * 2 : value;
+        AppendMoney(addMoneyValue);
         DataBindTip();
-        DataBindMoney();
-        OnChangeMoneyHandler?.Invoke();
         OnChangeTipHandler?.Invoke();
     }
 
@@ -134,6 +145,12 @@ public static class UserInfo
     {
         _cumulativeCustomerCount += 1;
         OnAddCustomerCountHandler?.Invoke();
+    }
+
+    public static void AddPromotionCount()
+    {
+        _promotionCount += 1;
+        OnAddPromotionCountHandler?.Invoke();
     }
 
     public static void DataBindTip()
@@ -726,6 +743,24 @@ public static class UserInfo
 
     #endregion
 
+    #region CustomerData
+
+    public static void CustomerVisits(CustomerData customer)
+    {
+        if (_visitedCustomerSet.Contains(customer.Id))
+            return;
+
+        _visitedCustomerSet.Add(customer.Id);
+        OnVisitedCustomerHandler?.Invoke();
+    }
+
+    public static int GetVisitedCustomerCount()
+    {
+        return _visitedCustomerSet.Count;
+    }
+
+    #endregion
+
     #region Challenge
 
     public static bool GetIsDoneChallenge(string id)
@@ -817,6 +852,7 @@ public static class UserInfo
             return;
         }
 
+        DebugLog.Log(id);
         _doneAllTimeChallengeSet.Add(id);
         _doneChallengeSet.Add(id);
         OnDoneChallengeHandler?.Invoke();

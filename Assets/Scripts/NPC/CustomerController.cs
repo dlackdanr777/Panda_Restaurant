@@ -48,14 +48,17 @@ public class CustomerController : MonoBehaviour
 
             Customer customer = ObjectPoolManager.Instance.SpawnCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
             int randInt = UnityEngine.Random.Range(0, data.Count);
-            customer.Init(data[randInt]);
+            CustomerData customerData = data[randInt];
+            customer.Init(customerData);
             _customers.Enqueue(customer);
+            UserInfo.CustomerVisits(customerData);
         }
 
         if (_sortCoroutine != null)
             StopCoroutine(_sortCoroutine);
 
         _sortCoroutine = StartCoroutine(SortCustomerLine());
+        UserInfo.AddPromotionCount();
         AddCustomerHandler?.Invoke();
     }
 

@@ -54,6 +54,9 @@ public class UIChallengeTab : MonoBehaviour
 
     private void UpdateSlot()
     {
+        _doneSlotList.Clear();
+        _clearSlotList.Clear();
+
         for (int i = 0, cnt = _slotList.Count; i < cnt; i++)
         {
             if (_isChallengeClear(_slotList[i].Data.Id))
@@ -65,6 +68,7 @@ public class UIChallengeTab : MonoBehaviour
             if (_isChallengeDone(_slotList[i].Data.Id))
             {
                 _doneSlotList.Add(_slotList[i]);
+
                 continue;
             }
 
@@ -80,7 +84,5 @@ public class UIChallengeTab : MonoBehaviour
         {
             _clearSlotList[i].SetClear();
         }
-        _doneSlotList.Clear();
-        _clearSlotList.Clear();
     }
 }
