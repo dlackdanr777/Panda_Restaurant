@@ -7,6 +7,7 @@ public class UIChallengeTab : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private Button _tabButton;
+    [SerializeField] private RectTransform _rectTransform;
     [SerializeField] private RectTransform _slotParent;
     [SerializeField] private UIChallengeTabSlot _slotPrefab;
 
@@ -21,6 +22,7 @@ public class UIChallengeTab : MonoBehaviour
 
     public void Init(List<ChallengeData> dataList, Func<string, bool> isChallengeDone, Func<string, bool> isChallengeClear)
     {
+        _tabButton.onClick.AddListener(() => _rectTransform.SetAsLastSibling());
         _challengeDataList = dataList;
         _isChallengeDone = isChallengeDone;
         _isChallengeClear = isChallengeClear;

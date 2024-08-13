@@ -123,8 +123,8 @@ public class GameManager : MonoBehaviour
         UserInfo.GiveFurniture("FLOWER01");
         UserInfo.SetEquipFurniture("FLOWER01");
 
-        UserInfo.GiveFurniture("RACK01");
-        UserInfo.SetEquipFurniture("RACK01");
+/*        UserInfo.GiveFurniture("RACK01");
+        UserInfo.SetEquipFurniture("RACK01");*/
 
         UserInfo.GiveFurniture("WALLPAPER01");
         UserInfo.SetEquipFurniture("WALLPAPER01");

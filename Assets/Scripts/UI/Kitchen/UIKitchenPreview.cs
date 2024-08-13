@@ -111,7 +111,6 @@ public class UIKitchenPreview : MonoBehaviour
             else
             {
                 _image.color = new Color(0, 0, 0);
-
                 _buyButton.gameObject.SetActive(true);
                 _buyButton.RemoveAllListeners();
                 _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });

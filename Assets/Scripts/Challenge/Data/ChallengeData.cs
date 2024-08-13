@@ -2,7 +2,7 @@ using System;
 
 public enum ChallengeType
 {
-    TYPE01, TYPE02, TYPE03, TYPE04, TYPE05, TYPE06, TYPE07, TYPE08, TYPE09, TYPE10, TYPE11, TYPE12, TYPE13, TYPE14, TYPE15, TYPE16, TYPE17, TYPE18, TYPE19, TYPE20, TYPE21, TYPE22, TYPE23, TYPE24, TYPE25, TYPE26, TYPE27, TYPE28, TYPE29, TYPE30, Length
+    TYPE01, TYPE02, TYPE03, TYPE04, TYPE05, TYPE06, TYPE07, TYPE08, TYPE09, TYPE10, TYPE11, TYPE12, TYPE13, TYPE14, TYPE15, TYPE16, TYPE17, TYPE18, TYPE19, TYPE20, TYPE21, TYPE22, TYPE23, TYPE24, TYPE25, TYPE26, TYPE27, TYPE28, TYPE29, TYPE30, TYPE31, TYPE32, TYPE33, TYPE34, TYPE35, Length
 }
 
 public enum ChallengeShortCutType
@@ -245,6 +245,240 @@ public class Type12ChallengeData : ChallengeData
         _id = id;
         _description = description;
         _promotionCount = promotionCount;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>가구 및 주방 가구 보유 갯수 달성 도전과제</summary>
+public class Type13ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type13ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>레스토랑 가구 세트 갯수 달성 도전과제</summary>
+public class Type14ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type14ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>주방 가구 세트 갯수 달성 도전과제</summary>
+public class Type15ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type15ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>특정 레스토랑 가구 세트 달성 도전과제</summary>
+public class Type16ChallengeData : ChallengeData
+{
+    protected string _setId;
+    public string SetId => _setId;
+
+    public Type16ChallengeData(ChallengeType type, string id, string description, string setId, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _setId = setId;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>특정 주방 가구 세트 달성 도전과제</summary>
+public class Type17ChallengeData : ChallengeData
+{
+    protected string _setId;
+    public string SetId => _setId;
+
+    public Type17ChallengeData(ChallengeType type, string id, string description, string setId, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _setId = setId;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>레스토랑 가구 누적 갯수 달성 도전과제</summary>
+public class Type18ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type18ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>주방 가구 누적 갯수 달성 도전과제</summary>
+public class Type19ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type19ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>누적 쓰레기 청소 달성 도전과제</summary>
+public class Type28ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type28ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>(일일 도전과제) 하루 손님 방문 횟수 달성 도전과제</summary>
+public class Type31ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type31ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>(일일 도전과제) 하루 코인 획득량 달성 도전과제</summary>
+public class Type32ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type32ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>(일일 도전과제) 음식 제작 횟수 달성 도전과제</summary>
+public class Type33ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type33ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>(일일 도전과제) 청소 횟수 달성 도전과제</summary>
+public class Type34ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type34ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+    }
+}
+
+
+/// <summary>(일일 도전과제) 광고 시청 횟수 달성 도전과제</summary>
+public class Type35ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type35ChallengeData(ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney)
+    {
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
     }

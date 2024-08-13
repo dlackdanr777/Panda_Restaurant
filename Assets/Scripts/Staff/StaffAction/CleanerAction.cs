@@ -54,6 +54,13 @@ public class CleanerAction : IStaffAction
             _isNoAction = false;
             staff.Move(targetArea.transform.position, 0, () =>
             {
+                if(targetArea.Count <= 0)
+                {
+                    _isUsed = false;
+                    _time = 0;
+                    return;
+                }
+
                 Tween.Wait(1f, () =>
                 {
                     targetArea.CleanGarbage();

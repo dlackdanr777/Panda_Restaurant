@@ -73,6 +73,7 @@ public class DropGarbageArea : MonoBehaviour
         if (_currentGarbageCount == 0)
             return;
 
+        UserInfo.AddCleanCount();
         int currentCoinCount = _currentGarbageCount;
         _currentGarbageCount = 0;
 

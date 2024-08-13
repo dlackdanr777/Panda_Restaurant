@@ -23,9 +23,6 @@ public class KitchenUtensilDataManager : MonoBehaviour
     private static List<KitchenUtensilData>[] _kitchenUtensilDataListType = new List<KitchenUtensilData>[(int)KitchenUtensilType.Length];
     private static Dictionary<string, KitchenUtensilData> _kitchenUtensilDataDic = new Dictionary<string, KitchenUtensilData>();
 
-    private static List<SetData> _furnitureSetDataList = new List<SetData>();
-    private static Dictionary<string, SetData> _furnitureSetDataDic = new Dictionary<string, SetData>();
-
 
     private void Awake()
     {
@@ -35,7 +32,6 @@ public class KitchenUtensilDataManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         InitData();
-        InitSetData();
     }
 
 
@@ -45,21 +41,6 @@ public class KitchenUtensilDataManager : MonoBehaviour
             throw new System.Exception("해당 id값이 존재하지 않습니다: " + id);
 
         return data;
-    }
-
-
-    public SetData GetFurnitureSetData(string id)
-    {
-        if (!_furnitureSetDataDic.TryGetValue(id, out SetData data))
-            throw new System.Exception("해당 id값이 존재하지 않습니다: " + id);
-
-        return data;
-    }
-
-
-    public Dictionary<string, SetData> GetFurnitureSetDic()
-    {
-        return _furnitureSetDataDic;
     }
 
 
@@ -95,25 +76,6 @@ public class KitchenUtensilDataManager : MonoBehaviour
             data = _kitchenUtensilDataList[i];
             _kitchenUtensilDataDic.Add(data.Id, data);
             _kitchenUtensilDataListType[(int)data.Type].Add(data);
-        }
-    }
-
-
-    private static void InitSetData()
-    {
-        if (0 < _furnitureSetDataList.Count)
-            return;
-
-        _furnitureSetDataList.Clear();
-        _furnitureSetDataDic.Clear();
-
-        _furnitureSetDataList.AddRange(Resources.LoadAll<SetData>("FurnitureSetData"));
-
-        SetData data;
-        for (int i = 0, cnt = _furnitureSetDataList.Count; i < cnt; i++)
-        {
-            data = _furnitureSetDataList[i];
-            _furnitureSetDataDic.Add(data.Id, data);
         }
     }
 }

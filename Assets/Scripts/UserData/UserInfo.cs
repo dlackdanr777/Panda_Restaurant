@@ -2,7 +2,6 @@ using Muks.DataBind;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using static UnityEngine.Rendering.DebugUI;
 
 public static class UserInfo
 {
@@ -11,6 +10,8 @@ public static class UserInfo
     public static event Action OnChangeScoreHandler;
     public static event Action OnAddCustomerCountHandler;
     public static event Action OnAddPromotionCountHandler;
+    public static event Action OnAddAdvertisingViewCountHandler;
+    public static event Action OnAddCleanCountHandler;
 
     public static event Action OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
@@ -35,8 +36,11 @@ public static class UserInfo
     private static int _money;
     public static int Money => _money;
 
-    private static int _maxMoney;
-    public static int MaxMoney => _maxMoney;
+    private static int _totalAddMoney;
+    public static int TotalAddMoney => _totalAddMoney;
+
+    private static int _dailyAddMoney;
+    public static int DailyAddMoney => _dailyAddMoney;
 
     private static int _score;
     public static int Score => _score + GameManager.Instance.AddSocre;
@@ -56,11 +60,32 @@ public static class UserInfo
     private static int _tip;
     public static int Tip => _tip;
 
-    private static int _cumulativeCustomerCount;
-    public static int CumulativeCustomerCount => _cumulativeCustomerCount;
+    private static int _totalCookCount;
+    public static int TotalCookCount => _totalCookCount;
+
+    private static int _dailyCookCount;
+    public static int DailyCookCount => _dailyCookCount;
+
+    private static int _totalCumulativeCustomerCount;
+    public static int TotalCumulativeCustomerCount => _totalCumulativeCustomerCount;
+
+    private static int _dailyCumulativeCustomerCount;
+    public static int DailyCumulativeCustomerCount => _dailyCumulativeCustomerCount;
 
     private static int _promotionCount;
     public static int PromotionCount => _promotionCount;
+
+    private static int _totalAdvertisingViewCount;
+    public static int TotalAdvertisingViewCount => _totalAdvertisingViewCount;
+
+    private static int _dailyAdvertisingViewCount;
+    public static int DailyAdvertisingViewCount => _dailyAdvertisingViewCount;
+
+    private static int _totalCleanCount;
+    public static int TotalCleanCount => _totalCleanCount;
+
+    private static int _dailyCleanCount;
+    public static int DailyCleanCount => _dailyCleanCount;
 
 
     private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
@@ -76,11 +101,19 @@ public static class UserInfo
     private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
     private static List<string> _giveFurnitureList = new List<string>();
     private static HashSet<string> _giveFurnitureSet = new HashSet<string>();
+
     private static SetData _enabledSetData;
 
     private static KitchenUtensilData[] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)KitchenUtensilType.Length];
     private static List<string> _giveKitchenUtensilList = new List<string>();
     private static HashSet<string> _giveKitchenUtensilSet = new HashSet<string>();
+
+
+    private static Dictionary<string, int> _furnitureEffectSetCountDic = new Dictionary<string, int>();
+    private static Dictionary<string, int> _kitchenUtensilEffectSetCountDic = new Dictionary<string, int>();
+    private static HashSet<string> _activatedFurnitureEffectSet = new HashSet<string>();
+    private static HashSet<string> _activatedKitchenUtensilEffectSet = new HashSet<string>();
+
 
     private static HashSet<string> _doneChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearChallengeSet = new HashSet<string>();
@@ -88,6 +121,8 @@ public static class UserInfo
     private static HashSet<string> _clearMainChallengeSet = new HashSet<string>();
     private static HashSet<string> _doneAllTimeChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearAllTimeChallengeSet = new HashSet<string>();
+    private static HashSet<string> _doneDailyChallengeSet = new HashSet<string>();
+    private static HashSet<string> _clearDailyChallengeSet = new HashSet<string>();
 
     private static HashSet<string> _visitedCustomerSet = new HashSet<string>();
 
@@ -96,7 +131,8 @@ public static class UserInfo
     public static void AppendMoney(int value)
     {
         _money += value;
-        _maxMoney += Mathf.Clamp(value, 0, 100000000);
+        _totalAddMoney += Mathf.Clamp(value, 0, 100000000);
+        _dailyAddMoney += Mathf.Clamp(value, 0, 100000000);
         DataBindMoney();
         OnChangeMoneyHandler?.Invoke();
     }
@@ -143,7 +179,8 @@ public static class UserInfo
 
     public static void AddCustomerCount()
     {
-        _cumulativeCustomerCount += 1;
+        _totalCumulativeCustomerCount += 1;
+        _dailyCumulativeCustomerCount += 1;
         OnAddCustomerCountHandler?.Invoke();
     }
 
@@ -151,6 +188,21 @@ public static class UserInfo
     {
         _promotionCount += 1;
         OnAddPromotionCountHandler?.Invoke();
+    }
+
+    public static void AddAdvertisingViewCount()
+    {
+        _totalAdvertisingViewCount += 1;
+        _dailyAdvertisingViewCount += 1;
+        OnAddAdvertisingViewCountHandler?.Invoke();
+    }
+
+
+    public static void AddCleanCount()
+    {
+        _totalCleanCount += 1;
+        _dailyCleanCount += 1;
+        OnAddCleanCountHandler?.Invoke();
     }
 
     public static void DataBindTip()
@@ -387,11 +439,15 @@ public static class UserInfo
         if (_recipeCookCountDic.ContainsKey(id))
         {
             _recipeCookCountDic[id] += 1;
+            _dailyCookCount += 1;
+            _totalCookCount += 1;
             OnAddCookCountHandler?.Invoke();
             return;
         }
 
         _recipeCookCountDic.Add(id, 1);
+        _dailyCookCount += 1;
+        _totalCookCount += 1;
         OnAddCookCountHandler?.Invoke();
     }
 
@@ -455,6 +511,16 @@ public static class UserInfo
 
     #endregion
 
+    #region Furniture & Kitchen Data
+
+    public static int GetFurnitureAndKitchenUtensilCount()
+    {
+        return _giveKitchenUtensilSet.Count + _giveFurnitureSet.Count; 
+    }
+
+
+    #endregion
+
     #region FurnitureData
 
     public static void GiveFurniture(FurnitureData data)
@@ -468,6 +534,7 @@ public static class UserInfo
         GameManager.Instance.AppendAddScore(data.AddScore);
         _giveFurnitureList.Add(data.Id);
         _giveFurnitureSet.Add(data.Id);
+        CheckEffectSetCount();
         OnGiveFurnitureHandler?.Invoke();
     }
 
@@ -490,7 +557,13 @@ public static class UserInfo
         GameManager.Instance.AppendAddScore(data.AddScore);
         _giveFurnitureList.Add(id);
         _giveFurnitureSet.Add(id);
+        CheckEffectSetCount();
         OnGiveFurnitureHandler?.Invoke();
+    }
+
+    public static int GetGiveFurnitureCount()
+    {
+        return _giveFurnitureSet.Count;
     }
 
 
@@ -612,6 +685,7 @@ public static class UserInfo
         GameManager.Instance.AppendAddScore(data.AddScore);
         _giveKitchenUtensilList.Add(data.Id);
         _giveKitchenUtensilSet.Add(data.Id);
+        CheckEffectSetCount();
         OnGiveKitchenUtensilHandler?.Invoke();
     }
 
@@ -634,7 +708,13 @@ public static class UserInfo
         GameManager.Instance.AppendAddScore(data.AddScore);
         _giveKitchenUtensilList.Add(id);
         _giveKitchenUtensilSet.Add(id);
+        CheckEffectSetCount();
         OnGiveKitchenUtensilHandler?.Invoke();
+    }
+
+    public static int GetGiveKitchenUtensilCount()
+    {
+        return _giveKitchenUtensilSet.Count;
     }
 
 
@@ -738,6 +818,122 @@ public static class UserInfo
 
         _enabledSetData = SetDataManager.Instance.GetSetData(setId);
         _enabledSetData.Activate();
+    }
+
+
+    #endregion
+
+    #region EffectSetData
+
+
+
+    public static int GetActivatedFurnitureEffectSetCount()
+    {
+        return _activatedFurnitureEffectSet.Count;
+    }
+
+    public static int GetActivatedKitchenUtensilEffectSetCount()
+    {
+        return _activatedKitchenUtensilEffectSet.Count;
+    }
+
+    public static bool IsActivatedFurnitureEffectSet(string setId)
+    {
+        if (_activatedFurnitureEffectSet.Contains(setId))
+            return true;
+
+        return false;
+    }
+
+
+    public static bool IsActivatedKitchenUtensilEffectSet(string setId)
+    {
+        if (_activatedKitchenUtensilEffectSet.Contains(setId))
+            return true;
+
+        return false;
+    }
+
+
+    public static int GetEffectSetFurnitureCount(string setId)
+    {
+        if (_activatedFurnitureEffectSet.Contains(setId))
+            return ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT;
+
+        if (_furnitureEffectSetCountDic.ContainsKey(setId))
+            return _furnitureEffectSetCountDic[setId];
+
+        _furnitureEffectSetCountDic.Add(setId, 0);
+        return 0;
+    }
+
+    public static int GetEffectSetKitchenUtensilCount(string setId)
+    {
+        if (_activatedKitchenUtensilEffectSet.Contains(setId))
+            return ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT;
+
+        if (_kitchenUtensilEffectSetCountDic.ContainsKey(setId))
+            return _kitchenUtensilEffectSetCountDic[setId];
+
+        _kitchenUtensilEffectSetCountDic.Add(setId, 0);
+        return 0;
+    }
+
+
+    public static void CheckEffectSetCount()
+    {
+        _furnitureEffectSetCountDic.Clear();
+        _kitchenUtensilEffectSetCountDic.Clear();
+        string setId = string.Empty;
+        for(int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
+        {
+            setId = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]).SetId;
+
+            if (SetDataManager.Instance.GetSetData(setId) == null)
+                continue;
+
+            if (_furnitureEffectSetCountDic.ContainsKey(setId))
+                _furnitureEffectSetCountDic[setId] += 1;
+
+            else
+                _furnitureEffectSetCountDic.Add(setId, 1);
+        }
+
+        foreach (var data in _furnitureEffectSetCountDic)
+        {
+            if (_activatedFurnitureEffectSet.Contains(data.Key))
+                continue;
+
+            if (data.Value < ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
+                continue;
+
+            _activatedFurnitureEffectSet.Add(data.Key);
+        }
+
+        for (int i = 0, cnt = _giveKitchenUtensilList.Count; i < cnt; ++i)
+        {
+            setId = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]).SetId;
+
+            if (SetDataManager.Instance.GetSetData(setId) == null)
+                continue;
+
+            if (_kitchenUtensilEffectSetCountDic.ContainsKey(setId))
+                _kitchenUtensilEffectSetCountDic[setId] += 1;
+
+            else
+                _kitchenUtensilEffectSetCountDic.Add(setId, 1);
+        }
+
+        foreach(var data in _kitchenUtensilEffectSetCountDic)
+        {
+            if (_activatedKitchenUtensilEffectSet.Contains(data.Key))
+                continue;
+
+            if (data.Value < ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
+                continue;
+
+            _activatedKitchenUtensilEffectSet.Add(data.Key);
+        }
     }
 
 
@@ -852,7 +1048,6 @@ public static class UserInfo
             return;
         }
 
-        DebugLog.Log(id);
         _doneAllTimeChallengeSet.Add(id);
         _doneChallengeSet.Add(id);
         OnDoneChallengeHandler?.Invoke();
@@ -868,6 +1063,53 @@ public static class UserInfo
         }
 
         _clearAllTimeChallengeSet.Add(id);
+        _clearChallengeSet.Add(id);
+        OnClearChallengeHandler?.Invoke();
+    }
+
+
+    public static bool GetIsDoneDailyChallenge(string id)
+    {
+        if (_doneDailyChallengeSet.Contains(id))
+            return true;
+
+        return false;
+    }
+
+
+    public static bool GetIsClearDailyChallenge(string id)
+    {
+        if (_clearDailyChallengeSet.Contains(id))
+            return true;
+
+        return false;
+    }
+
+
+    public static void DoneDailyChallenge(string id)
+    {
+        if (GetIsDoneDailyChallenge(id))
+        {
+            DebugLog.LogError("이미 완료 처리된 도전과제입니다: " + id);
+            return;
+        }
+
+
+        _doneDailyChallengeSet.Add(id);
+        _doneChallengeSet.Add(id);
+        OnDoneChallengeHandler?.Invoke();
+    }
+
+
+    public static void ClearDailyChallenge(string id)
+    {
+        if (GetIsClearDailyChallenge(id))
+        {
+            DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + id);
+            return;
+        }
+
+        _clearDailyChallengeSet.Add(id);
         _clearChallengeSet.Add(id);
         OnClearChallengeHandler?.Invoke();
     }
