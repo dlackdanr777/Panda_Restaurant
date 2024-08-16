@@ -20,12 +20,11 @@ public class UIChallengeTabSlot : MonoBehaviour
     private ChallengeData _data;
     public ChallengeData Data => _data;
 
-    public void Init(ChallengeData data, UnityAction onShortCutButtonClicked, UnityAction onDoneButtonClicked)
+    public void Init(ChallengeData data, UnityAction onDoneButtonClicked)
     {
-        _shortCutButton.onClick.AddListener(onShortCutButtonClicked);
+        _shortCutButton.onClick.AddListener(OnShortcutButtonClicked);
         _doneButton.onClick.AddListener(OnDoneButtonClicked);
         _doneButton.onClick.AddListener(onDoneButtonClicked);
-
         SetData(data);
     }
 
@@ -101,5 +100,22 @@ public class UIChallengeTabSlot : MonoBehaviour
     private void OnDoneButtonClicked()
     {
         ChallengeManager.Instance.ChallengeClear(_data.Id);
+    }
+
+    private void OnShortcutButtonClicked()
+    {
+        if (_data == null)
+        {
+            DebugLog.Log("도전과제 데이터가 슬롯에 없습니다.");
+            return;
+        }
+
+        if(_data.ShortcutAction.Item == null)
+        {
+            DebugLog.Log("바로가기 메서드 정보가 없습니다.");
+            return;
+        }
+
+        _data.ShortcutAction.Item?.Invoke();
     }
 }

@@ -1,3 +1,4 @@
+using Muks.MobileUI;
 using Muks.UI;
 using System.Collections.Generic;
 using UnityEngine;
@@ -99,6 +100,21 @@ namespace Muks.PcUI
             _activeViewList.First.Value.Hide();
             _activeViewList.RemoveFirst();
             OnFocusHandler?.Invoke();
+        }
+
+        public override void PushNoAnime(string viewName)
+        {
+            if (_viewDic.TryGetValue(viewName, out PcUIView uiView))
+            {
+                if (_activeViewList.Contains(uiView))
+                    return;
+
+                _activeViewList.AddLast(uiView);
+                uiView.transform.SetAsLastSibling();
+                uiView.gameObject.SetActive(true);
+                uiView.VisibleState = VisibleState.Appeared;
+                OnFocusHandler?.Invoke();
+            }
         }
 
 

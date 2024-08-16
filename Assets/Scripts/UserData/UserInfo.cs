@@ -1016,6 +1016,12 @@ public static class UserInfo
             return;
         }
 
+        if(!GetIsDoneMainChallenge(id))
+        {
+            DebugLog.Log("완료 처리가 되지 않은 도전과제입니다: " + id);
+            return;
+        }
+
         _clearMainChallengeSet.Add(id);
         _clearChallengeSet.Add(id);
         OnClearChallengeHandler?.Invoke();
@@ -1059,6 +1065,12 @@ public static class UserInfo
         if (GetIsClearAllTimeChallenge(id))
         {
             DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + id);
+            return;
+        }
+
+        if (!GetIsDoneAllTimeChallenge(id))
+        {
+            DebugLog.Log("완료 처리가 되지 않은 도전과제입니다: " + id);
             return;
         }
 
@@ -1106,6 +1118,12 @@ public static class UserInfo
         if (GetIsClearDailyChallenge(id))
         {
             DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + id);
+            return;
+        }
+
+        if (!GetIsDoneDailyChallenge(id))
+        {
+            DebugLog.Log("완료 처리가 되지 않은 도전과제입니다: " + id);
             return;
         }
 

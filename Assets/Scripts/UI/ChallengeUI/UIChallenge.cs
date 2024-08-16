@@ -1,6 +1,7 @@
 using Muks.MobileUI;
 using Muks.Tween;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIChallenge : MobileUIView
 {
@@ -9,6 +10,8 @@ public class UIChallenge : MobileUIView
     [SerializeField] private RectTransform _dontTouchArea;
     [SerializeField] private UIChallengeTab _uiDaily;
     [SerializeField] private UIChallengeTab _uiAllTime;
+    [SerializeField] private Button _uiDailyButton;
+    [SerializeField] private Button _uiAllTimeButton;
 
     [Space]
     [Header("Animations")]
@@ -19,10 +22,15 @@ public class UIChallenge : MobileUIView
     [Space]
     [SerializeField] private float _hideDuration;
     [SerializeField] private Ease _hideTweenMode;
+
+
     public override void Init()
     {
         _uiDaily.Init(ChallengeManager.Instance.GetDailyChallenge(), UserInfo.GetIsDoneDailyChallenge, UserInfo.GetIsClearDailyChallenge);
         _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge(), UserInfo.GetIsDoneAllTimeChallenge, UserInfo.GetIsClearAllTimeChallenge);
+
+        _uiDailyButton.onClick.AddListener(OnDailyButtonClicked);
+        _uiAllTimeButton.onClick.AddListener(OnAllTimeButtonClicked);
         gameObject.SetActive(false);
 
         ChallengeManager.Instance.OnChallengeUpdateHandler += _uiDaily.UpdateUI;
@@ -37,6 +45,7 @@ public class UIChallenge : MobileUIView
         _dontTouchArea.gameObject.SetActive(false);
         _uiDaily.ResetScrollviewY();
         _uiAllTime.ResetScrollviewY();
+        OnDailyButtonClicked();
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
@@ -46,8 +55,8 @@ public class UIChallenge : MobileUIView
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true;
         });
-
     }
+
 
     public override void Hide()
     {
@@ -62,5 +71,19 @@ public class UIChallenge : MobileUIView
             VisibleState = VisibleState.Disappeared;
             gameObject.SetActive(false);
         });
+    }
+
+
+    private void OnDailyButtonClicked()
+    {
+        _uiDaily.SetAsLastSibling();
+        _uiAllTime.SetAsFirstSibling();
+    }
+
+
+    private void OnAllTimeButtonClicked()
+    {
+        _uiDaily.SetAsFirstSibling();
+        _uiAllTime.SetAsLastSibling();
     }
 }

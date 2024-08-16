@@ -2,13 +2,16 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Muks.UI;
-
+using System;
 
 namespace Muks.MobileUI
 {
 
     public class MobileUINavigation : UINavigation
     {
+        public event Action OnShowUIHandler;
+        public event Action OnHideUIHandler;
+
 
         [Header("Views")]
         [Tooltip("최상위 lootUIView")]
@@ -71,10 +74,27 @@ namespace Muks.MobileUI
 
                 uiView.transform.SetAsLastSibling();
                 OnFocusHandler?.Invoke();
+                OnShowUIHandler?.Invoke();
                 return;
             }
 
             Debug.LogError("딕셔너리에 해당 이름을 가진 UIView클래스가 없습니다.");
+        }
+
+        public override void PushNoAnime(string viewName)
+        {
+            if (_viewDic.TryGetValue(viewName, out MobileUIView uiView))
+            {
+                if (_activeViewList.Contains(uiView))
+                    return;
+
+                _activeViewList.Add(uiView);
+                uiView.transform.SetAsLastSibling();
+                uiView.gameObject.SetActive(true);
+                uiView.VisibleState = VisibleState.Appeared;
+                OnFocusHandler?.Invoke();
+                OnHideUIHandler?.Invoke();
+            }
         }
 
 
@@ -96,6 +116,7 @@ namespace Muks.MobileUI
             selectView.Hide();
             _activeViewList.RemoveAt(Count - 1);
             OnFocusHandler?.Invoke();
+            OnHideUIHandler?.Invoke();
 
             if (1 <= _activeViewList.Count)
                 _activeViewList.Last().transform.SetAsLastSibling();
@@ -122,6 +143,7 @@ namespace Muks.MobileUI
             view.Hide();
             _activeViewList.Remove(view);
             OnFocusHandler?.Invoke();
+            OnHideUIHandler?.Invoke();
         }
 
         public override void PopNoAnime(string viewName)
@@ -135,6 +157,7 @@ namespace Muks.MobileUI
                 uiView.gameObject.SetActive(false);
                 uiView.VisibleState = VisibleState.Disappeared;
                 OnFocusHandler?.Invoke();
+                OnHideUIHandler?.Invoke();
             }
         }
 
@@ -152,6 +175,7 @@ namespace Muks.MobileUI
 
             _isViewsInactive = false;
             OnFocusHandler?.Invoke();
+            OnShowUIHandler?.Invoke();
         }
 
 
@@ -166,6 +190,7 @@ namespace Muks.MobileUI
 
             _isViewsInactive = true;
             OnFocusHandler?.Invoke();
+            OnHideUIHandler?.Invoke();
         }
 
 

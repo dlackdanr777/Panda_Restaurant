@@ -3,6 +3,7 @@ using Muks.DataBind;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Runtime.CompilerServices;
 
 [RequireComponent(typeof(MobileUINavigation))]
 public class UIMainScene : MonoBehaviour
@@ -16,6 +17,8 @@ public class UIMainScene : MonoBehaviour
 
     void Start()
     {
+        DataBind.SetUnityActionValue("PopUI", OnPopUI);
+
         DataBind.SetUnityActionValue("ShowRestaurantAdminUI", OnShowRestaurantAdminUI);
         DataBind.SetUnityActionValue("HideRestaurantAdminUI", OnHideRestaurantAdminUI);
 
@@ -38,10 +41,13 @@ public class UIMainScene : MonoBehaviour
         DataBind.SetUnityActionValue("ShowTipUI", OnShowTipUI);
         DataBind.SetUnityActionValue("HideTipUI", OnHideTipUI);
 
-
         DataBind.SetUnityActionValue("ShowChallengeUI", OnShowChallengeUI);
         DataBind.SetUnityActionValue("HideChallengeUI", OnHideChallengeUI);
         DataBind.SetUnityActionValue("HideNoAnimeChallengeUI", OnHideNoAnimeChallengeUI);
+
+        DataBind.SetUnityActionValue("ShowMainChallengeUI", OnShowMainChallengeUI);
+        DataBind.SetUnityActionValue("HideMainChallengeUI", OnHideMainChallengeUI);
+        DataBind.SetUnityActionValue("HideNoAnimeMainChallengeUI", OnHideNoAnimeMainChallengeUI);
     }
 
 
@@ -52,6 +58,11 @@ public class UIMainScene : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.Escape))
             _uiNav.Pop();
+    }
+
+    private void OnPopUI()
+    {
+        _uiNav.Pop();
     }
 
     private void OnShowRestaurantAdminUI()
@@ -151,5 +162,20 @@ public class UIMainScene : MonoBehaviour
     private void OnHideNoAnimeChallengeUI()
     {
         _uiNav.PopNoAnime("UIChallenge");
+    }
+
+    private void OnShowMainChallengeUI()
+    {
+        _uiNav.Push("UIMainChallenge");
+    }
+
+    private void OnHideMainChallengeUI()
+    {
+        _uiNav.Pop("UIMainChallenge");
+    }
+
+    private void OnHideNoAnimeMainChallengeUI()
+    {
+        _uiNav.PopNoAnime("UIMainChallenge");
     }
 }

@@ -16,6 +16,9 @@ namespace Muks.UI
         /// <summary>이름을 받아 현재 이름의 view를 열어주는 함수</summary>
         public abstract void Push(string viewName);
 
+        /// <summary>이름을 받아 현재 이름의 view를 열어주는 함수(애니메이션 없이)</summary>
+        public abstract void PushNoAnime(string viewName);
+
         /// <summary>현재 ui 전에 열렸던 ui를 불러오는 함수</summary> 
         public abstract void Pop();
 

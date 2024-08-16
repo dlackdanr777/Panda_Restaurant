@@ -36,11 +36,6 @@ public class UIFurniture : MobileUIView
     private List<UISlot>[] _slots = new List<UISlot>[(int)FurnitureType.Length];
     List<FurnitureData> _currentTypeDataList;
 
-    private void OnDisable()
-    {
-        _uiRestaurantAdmin.MainUISetActive(true);
-    }
-
     public override void Init()
     {
         _leftArrowButton.SetAction(() => ChangeFurnitureData(-1));
@@ -66,6 +61,9 @@ public class UIFurniture : MobileUIView
         UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
         UserInfo.OnChangeScoreHandler += () => OnSlotUpdate(false);
 
+        SetFurnitureData(FurnitureType.Table1);
+        SetFurniturePreview();
+
         gameObject.SetActive(false);
     }
 
@@ -77,11 +75,13 @@ public class UIFurniture : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         _uiRestaurantAdmin.MainUISetActive(false);
+        transform.SetAsLastSibling();
+        SetFurnitureData(FurnitureType.Table1);
+        SetFurniturePreview();
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() => 
         {
-
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true; 
         });
@@ -94,6 +94,7 @@ public class UIFurniture : MobileUIView
         VisibleState = VisibleState.Disappearing;
         _animeUI.SetActive(true);
         _uiRestaurantAdmin.MainUISetActive(true);
+        transform.SetAsLastSibling();
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
 

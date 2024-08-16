@@ -34,10 +34,6 @@ public class UIKitchen : MobileUIView
     private List<UISlot>[] _slots = new List<UISlot>[(int)KitchenUtensilType.Length];
     List<KitchenUtensilData> _currentTypeDataList;
 
-    private void OnDisable()
-    {
-        _uiRestaurantAdmin.MainUISetActive(true);
-    }
 
     public override void Init()
     {
@@ -64,6 +60,8 @@ public class UIKitchen : MobileUIView
         UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
         UserInfo.OnChangeScoreHandler += () => OnSlotUpdate(false);
 
+        SetKitchenUtensilDataData(KitchenUtensilType.Burner1);
+        SetKitchenPreview();
         gameObject.SetActive(false);
     }
 
@@ -75,6 +73,9 @@ public class UIKitchen : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         _uiRestaurantAdmin.MainUISetActive(false);
+        transform.SetAsLastSibling();
+        SetKitchenUtensilDataData(KitchenUtensilType.Burner1);
+        SetKitchenPreview();
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() => 
@@ -92,6 +93,7 @@ public class UIKitchen : MobileUIView
         VisibleState = VisibleState.Disappearing;
         _animeUI.SetActive(true);
         _uiRestaurantAdmin.MainUISetActive(true);
+        transform.SetAsLastSibling();
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
 

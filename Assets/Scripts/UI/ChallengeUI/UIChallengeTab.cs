@@ -6,7 +6,6 @@ using UnityEngine.UI;
 public class UIChallengeTab : MonoBehaviour
 {
     [Header("Components")]
-    [SerializeField] private Button _tabButton;
     [SerializeField] private RectTransform _rectTransform;
     [SerializeField] private RectTransform _slotParent;
     [SerializeField] private UIChallengeTabSlot _slotPrefab;
@@ -22,7 +21,6 @@ public class UIChallengeTab : MonoBehaviour
 
     public void Init(List<ChallengeData> dataList, Func<string, bool> isChallengeDone, Func<string, bool> isChallengeClear)
     {
-        _tabButton.onClick.AddListener(() => _rectTransform.SetAsLastSibling());
         _challengeDataList = dataList;
         _isChallengeDone = isChallengeDone;
         _isChallengeClear = isChallengeClear;
@@ -30,7 +28,7 @@ public class UIChallengeTab : MonoBehaviour
         for (int i = 0, cnt = dataList.Count; i < cnt; i++)
         {
             UIChallengeTabSlot slot = Instantiate(_slotPrefab, _slotParent);
-            slot.Init(dataList[i],null, () =>
+            slot.Init(dataList[i], () =>
             {
                 UpdateSlot();
             });
@@ -51,6 +49,18 @@ public class UIChallengeTab : MonoBehaviour
     public void ResetScrollviewY()
     {
         _slotParent.anchoredPosition = new Vector2(0, 0);
+    }
+
+    public void SetAsLastSibling()
+    {
+        _rectTransform.SetAsLastSibling();
+        _slotParent.gameObject.SetActive(true);
+    }
+
+    public void SetAsFirstSibling()
+    {
+        _rectTransform.SetAsFirstSibling();
+        _slotParent.gameObject.SetActive(false);
     }
 
 

@@ -66,9 +66,9 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Show()
     {
+        VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
         _mainUI.SetActive(false);
-        DataBind.GetUnityActionValue("HideNoAnimeStaffUI")?.Invoke();
         SetBackgroundImage(BackgroundType.Furniture);
         FurnitureButtonClicked();
         _canvasGroup.blocksRaycasts = false;
@@ -82,6 +82,7 @@ public class UIRestaurantAdmin : MobileUIView
         TweenData tween = _canvasGroup.TweenAlpha(1, 0.1f);
         tween.OnComplete(() =>
         {
+            VisibleState = VisibleState.Appeared;
             _mainUI.SetActive(true);
             _mainUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
             TweenData tween2 = _mainUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
@@ -91,6 +92,7 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Hide()
     {
+        VisibleState = VisibleState.Disappearing;
         _mainUI.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 1;
@@ -103,11 +105,18 @@ public class UIRestaurantAdmin : MobileUIView
             ResetBackgroundImageOffset();
             TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
             tween2.OnComplete(() => gameObject.SetActive(false));
+            VisibleState = VisibleState.Disappeared;
         });
     }
 
     public void MainUISetActive(bool active)
     {
+        if (VisibleState == VisibleState.Disappeared || VisibleState == VisibleState.Disappearing)
+            _uiNav.PushNoAnime("RestaurantAdminUI");
+
+        _canvasGroup.blocksRaycasts = true;
+        _canvasGroup.alpha = 1;
+        _mainUI.transform.localScale = new Vector3(1, 1, 1);
         _mainUI.SetActive(active);
     }
 

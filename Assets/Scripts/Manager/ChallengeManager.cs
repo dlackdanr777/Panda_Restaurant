@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Muks.DataBind;
+using UnityEngine.Events;
 
 public class ChallengeManager : MonoBehaviour
 {
@@ -167,18 +169,20 @@ public class ChallengeManager : MonoBehaviour
 
             string type = string.Concat(row[1].Where(c => !Char.IsWhiteSpace(c)));
             string shortCutType = string.Concat(row[2].Where(c => !Char.IsWhiteSpace(c)));
+            BindData<UnityAction> shortcutAction = GetShortCutAction(row[2]);
             string description = row[3];
             string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
             int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
             MoneyType moneyType = row[6] == "게임 코인" ? MoneyType.Gold : MoneyType.Dia;
             int rewardMoney = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
+
             ChallengeType challengeType;
             switch (type)
             {
                 case "TYPE01":
                     challengeType = ChallengeType.TYPE01;
                     string[] needFurnitureIds = needItemId.Split(new char[] { '.' });
-                    Type01ChallengeData challengeData01 = new Type01ChallengeData(challengeType, id, description, needFurnitureIds, moneyType, rewardMoney);
+                    Type01ChallengeData challengeData01 = new Type01ChallengeData(challengeType, id, description, needFurnitureIds, moneyType, rewardMoney, shortcutAction);
                     _type01ChallengeDataDic.Add(id, challengeData01);
                     dic.Add(id, challengeData01);
                     break;
@@ -186,133 +190,133 @@ public class ChallengeManager : MonoBehaviour
                 case "TYPE02":
                     challengeType = ChallengeType.TYPE02;
                     string[] needKitchenUtensilIds = needItemId.Split(new char[] { '.' });
-                    Type02ChallengeData challengeData02 = new Type02ChallengeData(challengeType, id, description, needKitchenUtensilIds, moneyType, rewardMoney);
+                    Type02ChallengeData challengeData02 = new Type02ChallengeData(challengeType, id, description, needKitchenUtensilIds, moneyType, rewardMoney, shortcutAction);
                     _type02ChallengeDataDic.Add(id, challengeData02); 
                     dic.Add(id, challengeData02);
                     break;
 
                 case "TYPE03":
                     challengeType = ChallengeType.TYPE03;
-                    Type03ChallengeData challengeData03 = new Type03ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney);
+                    Type03ChallengeData challengeData03 = new Type03ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type03ChallengeDataDic.Add(id, challengeData03);
                     dic.Add(id, challengeData03);
                     break;
 
                 case "TYPE04":
                     challengeType = ChallengeType.TYPE04;
-                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney);
+                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type04ChallengeDataDic.Add(id, challengeData04);
                     dic.Add(id, challengeData04);
                     break;
 
                 case "TYPE05":
                     challengeType = ChallengeType.TYPE05;
-                    Type05ChallengeData challengeData05 = new Type05ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney);
+                    Type05ChallengeData challengeData05 = new Type05ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type05ChallengeDataDic.Add(id, challengeData05);
                     dic.Add(id, challengeData05);
                     break;
 
                 case "TYPE06":
                     challengeType = ChallengeType.TYPE06;
-                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type06ChallengeDataDic.Add(id, challengeData06);
                     dic.Add(id, challengeData06);
                     break;
 
                 case "TYPE07":
                     challengeType = ChallengeType.TYPE07;
-                    Type07ChallengeData challengeData07 = new Type07ChallengeData(challengeType, id, description, needItemId, count, moneyType, rewardMoney);
+                    Type07ChallengeData challengeData07 = new Type07ChallengeData(challengeType, id, description, needItemId, count, moneyType, rewardMoney, shortcutAction);
                     _type07ChallengeDataDic.Add(id, challengeData07);
                     dic.Add(id, challengeData07);
                     break;
 
                 case "TYPE08":
                     challengeType = ChallengeType.TYPE08;
-                    Type08ChallengeData challengeData08 = new Type08ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type08ChallengeData challengeData08 = new Type08ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type08ChallengeDataDic.Add(id, challengeData08);
                     dic.Add(id, challengeData08);
                     break;
 
                 case "TYPE09":
                     challengeType = ChallengeType.TYPE09;
-                    Type09ChallengeData challengeData09 = new Type09ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type09ChallengeData challengeData09 = new Type09ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type09ChallengeDataDic.Add(id, challengeData09);
                     dic.Add(id, challengeData09);
                     break;
 
                 case "TYPE10":
                     challengeType = ChallengeType.TYPE10;
-                    Type10ChallengeData challengeData10 = new Type10ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type10ChallengeData challengeData10 = new Type10ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type10ChallengeDataDic.Add(id, challengeData10);
                     dic.Add(id, challengeData10);
                     break;
 
                 case "TYPE11":
                     challengeType = ChallengeType.TYPE11;
-                    Type11ChallengeData challengeData11 = new Type11ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type11ChallengeData challengeData11 = new Type11ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type11ChallengeDataDic.Add(id, challengeData11);
                     dic.Add(id, challengeData11);
                     break;
 
                 case "TYPE12":
                     challengeType = ChallengeType.TYPE12;
-                    Type12ChallengeData challengeData12 = new Type12ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type12ChallengeData challengeData12 = new Type12ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type12ChallengeDataDic.Add(id, challengeData12);
                     dic.Add(id, challengeData12);
                     break;
 
                 case "TYPE13":
                     challengeType = ChallengeType.TYPE13;
-                    Type13ChallengeData challengeData13 = new Type13ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type13ChallengeData challengeData13 = new Type13ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type13ChallengeDataDic.Add(id, challengeData13);
                     dic.Add(id, challengeData13);
                     break;
 
                 case "TYPE14":
                     challengeType = ChallengeType.TYPE14;
-                    Type14ChallengeData challengeData14 = new Type14ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type14ChallengeData challengeData14 = new Type14ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type14ChallengeDataDic.Add(id, challengeData14);
                     dic.Add(id, challengeData14);
                     break;
 
                 case "TYPE15":
                     challengeType = ChallengeType.TYPE15;
-                    Type15ChallengeData challengeData15 = new Type15ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type15ChallengeData challengeData15 = new Type15ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type15ChallengeDataDic.Add(id, challengeData15);
                     dic.Add(id, challengeData15);
                     break;
 
                 case "TYPE16":
                     challengeType = ChallengeType.TYPE16;
-                    Type16ChallengeData challengeData16 = new Type16ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney);
+                    Type16ChallengeData challengeData16 = new Type16ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type16ChallengeDataDic.Add(id, challengeData16);
                     dic.Add(id, challengeData16);
                     break;
 
                 case "TYPE17":
                     challengeType = ChallengeType.TYPE17;
-                    Type17ChallengeData challengeData17 = new Type17ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney);
+                    Type17ChallengeData challengeData17 = new Type17ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type17ChallengeDataDic.Add(id, challengeData17);
                     dic.Add(id, challengeData17);
                     break;
 
                 case "TYPE18":
                     challengeType = ChallengeType.TYPE18;
-                    Type18ChallengeData challengeData18 = new Type18ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type18ChallengeData challengeData18 = new Type18ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type18ChallengeDataDic.Add(id, challengeData18);
                     dic.Add(id, challengeData18);
                     break;
 
                 case "TYPE19":
                     challengeType = ChallengeType.TYPE19;
-                    Type19ChallengeData challengeData19 = new Type19ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type19ChallengeData challengeData19 = new Type19ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type19ChallengeDataDic.Add(id, challengeData19);
                     dic.Add(id, challengeData19);
                     break;
 
                 case "TYPE28":
                     challengeType = ChallengeType.TYPE28;
-                    Type28ChallengeData challengeData28 = new Type28ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type28ChallengeData challengeData28 = new Type28ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type28ChallengeDataDic.Add(id, challengeData28);
                     dic.Add(id, challengeData28);
                     break;
@@ -320,35 +324,35 @@ public class ChallengeManager : MonoBehaviour
 
                 case "TYPE31":
                     challengeType = ChallengeType.TYPE31;
-                    Type31ChallengeData challengeData31= new Type31ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type31ChallengeData challengeData31= new Type31ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type31ChallengeDataDic.Add(id, challengeData31);
                     dic.Add(id, challengeData31);
                     break;
 
                 case "TYPE32":
                     challengeType = ChallengeType.TYPE32;
-                    Type32ChallengeData challengeData32 = new Type32ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type32ChallengeData challengeData32 = new Type32ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type32ChallengeDataDic.Add(id, challengeData32);
                     dic.Add(id, challengeData32);
                     break;
 
                 case "TYPE33":
                     challengeType = ChallengeType.TYPE33;
-                    Type33ChallengeData challengeData33 = new Type33ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type33ChallengeData challengeData33 = new Type33ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type33ChallengeDataDic.Add(id, challengeData33);
                     dic.Add(id, challengeData33);
                     break;
 
                 case "TYPE34":
                     challengeType = ChallengeType.TYPE34;
-                    Type34ChallengeData challengeData34 = new Type34ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type34ChallengeData challengeData34 = new Type34ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type34ChallengeDataDic.Add(id, challengeData34);
                     dic.Add(id, challengeData34);
                     break;
 
                 case "TYPE35":
                     challengeType = ChallengeType.TYPE35;
-                    Type35ChallengeData challengeData35 = new Type35ChallengeData(challengeType, id, description, count, moneyType, rewardMoney);
+                    Type35ChallengeData challengeData35 = new Type35ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type35ChallengeDataDic.Add(id, challengeData35);
                     dic.Add(id, challengeData35);
                     break;
@@ -359,10 +363,17 @@ public class ChallengeManager : MonoBehaviour
         return dic;
     }
 
-
-    public List<ChallengeData> GetMainChallenge()
+    public ChallengeData GetCurrentMainChallengeData()
     {
-        return _mainChallengeDataDic.Values.ToList();
+        foreach(var data in _mainChallengeDataDic)
+        {
+            if (UserInfo.GetIsClearMainChallenge(data.Key))
+                continue;
+
+            return data.Value;
+        }
+
+        return null;
     }
 
     public List<ChallengeData> GetAllTimeChallenge()
@@ -547,6 +558,38 @@ public class ChallengeManager : MonoBehaviour
     private float GetChallengeAchievementRate(int currentValue, int targetValue)
     {
         return currentValue == 0 ? 0 : Math.Min(1, (float)currentValue / targetValue);
+    }
+
+
+    private BindData<UnityAction> GetShortCutAction(string shortCutType)
+    {
+        shortCutType = string.Concat(shortCutType.Where(c => !Char.IsWhiteSpace(c)));
+        switch (shortCutType)
+        {
+            case "ShortCut01":
+                return DataBind.GetUnityActionBindData("PopUI");
+
+            case "ShortCut02":
+                return DataBind.GetUnityActionBindData("ShowKitchenUI");
+
+            case "ShortCut03":
+                return DataBind.GetUnityActionBindData("ShowFurnitureUI");
+
+            case "ShortCut04":
+                return DataBind.GetUnityActionBindData("ShowKitchenUI");
+
+            case "ShortCut05":
+                return DataBind.GetUnityActionBindData("ShowStaffUI");
+
+            case "ShortCut06":
+                return DataBind.GetUnityActionBindData("ShowRestaurantAdminUI");
+
+            case "ShortCut08":
+                return DataBind.GetUnityActionBindData("ShowChallengeUI");
+
+            default:
+                return DataBind.GetUnityActionBindData("PopUI");
+        }
     }
 
 

@@ -36,10 +36,6 @@ public class UIStaff : MobileUIView
     private List<UISlot>[] _slots = new List<UISlot>[(int)StaffType.Length];
     List<StaffData> _currentTypeDataList;
 
-    private void OnDisable()
-    {
-        _uiRestaurantAdmin.MainUISetActive(true);
-    }
 
     public override void Init()
     {
@@ -67,6 +63,8 @@ public class UIStaff : MobileUIView
         UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
         UserInfo.OnChangeScoreHandler += () => OnSlotUpdate(false);
 
+        SetStaffData(StaffType.Manager);
+        SetStaffPreview();
         gameObject.SetActive(false);
     }
 
@@ -77,7 +75,10 @@ public class UIStaff : MobileUIView
         gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        SetStaffData(StaffType.Manager);
+        SetStaffPreview();
         _uiRestaurantAdmin.MainUISetActive(false);
+        transform.SetAsLastSibling();
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() => 
@@ -95,6 +96,7 @@ public class UIStaff : MobileUIView
         VisibleState = VisibleState.Disappearing;
         _animeUI.SetActive(true);
         _uiRestaurantAdmin.MainUISetActive(true);
+        transform.SetAsLastSibling();
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
 
