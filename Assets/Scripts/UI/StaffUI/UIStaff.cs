@@ -93,7 +93,7 @@ public class UIStaff : MobileUIView
 
     public override void Hide()
     {
-        VisibleState = VisibleState.Disappearing;
+        VisibleState = VisibleState.Disappeared;
         _animeUI.SetActive(true);
         _uiRestaurantAdmin.MainUISetActive(true);
         transform.SetAsLastSibling();
@@ -103,7 +103,6 @@ public class UIStaff : MobileUIView
         TweenData tween = _animeUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
         tween.OnComplete(() =>
         {
-            VisibleState = VisibleState.Disappeared;
             gameObject.SetActive(false);
         });
     }

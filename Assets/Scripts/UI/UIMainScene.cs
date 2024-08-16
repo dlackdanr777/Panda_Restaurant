@@ -72,9 +72,9 @@ public class UIMainScene : MonoBehaviour
 
     private void OnHideRestaurantAdminUI()
     {
-        _uiNav.PopNoAnime("UIStaff");
-        _uiNav.PopNoAnime("UIFurniture");
-        _uiNav.PopNoAnime("UIKitchen");
+/*        _uiNav.Pop("UIStaff");
+        _uiNav.Pop("UIFurniture");
+        _uiNav.Pop("UIKitchen");*/
         _uiNav.Pop("RestaurantAdminUI");
     }
 

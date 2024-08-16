@@ -16,6 +16,8 @@ public class UIRestaurantAdmin : MobileUIView
 {
     [Header("Components")]
     [SerializeField] private UIStaff _staffUI;
+    [SerializeField] private UIFurniture _furnitureUI;
+    [SerializeField] private UIKitchen _kitchenUI;
     [SerializeField] private GameObject _mainUI;
     [SerializeField] private CanvasGroup _canvasGroup;
 
@@ -92,21 +94,45 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Hide()
     {
-        VisibleState = VisibleState.Disappearing;
-        _mainUI.SetActive(true);
-        _canvasGroup.blocksRaycasts = false;
-        _canvasGroup.alpha = 1;
-
-        _mainUI.transform.localScale = Vector3.one;
-        TweenData tween = _mainUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
-        tween.OnComplete(() =>
+        if(_mainUI.activeSelf)
         {
-            _mainUI.SetActive(false);
-            ResetBackgroundImageOffset();
-            TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
-            tween2.OnComplete(() => gameObject.SetActive(false));
+            VisibleState = VisibleState.Disappearing;
+            _canvasGroup.blocksRaycasts = false;
+            _canvasGroup.alpha = 1;
+
+            _mainUI.transform.localScale = Vector3.one;
+            TweenData tween = _mainUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
+            tween.OnComplete(() =>
+            {
+                _mainUI.SetActive(false);
+                ResetBackgroundImageOffset();
+                TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
+                tween2.OnComplete(() => gameObject.SetActive(false));
+                VisibleState = VisibleState.Disappeared;
+            });
+        }
+
+        else
+        {
             VisibleState = VisibleState.Disappeared;
-        });
+            if (_uiNav.CheckActiveView("UIStaff"))
+                _uiNav.Pop("UIStaff");
+
+            if (_uiNav.CheckActiveView("UIFurniture"))
+                _uiNav.Pop("UIFurniture");
+
+            if (_uiNav.CheckActiveView("UIKitchen"))
+                _uiNav.Pop("UIKitchen");
+
+            _mainUI.SetActive(false);
+            Tween.Wait(_hideDuration, () =>
+            {
+                TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
+                tween2.OnComplete(() => gameObject.SetActive(false));
+                VisibleState = VisibleState.Disappeared;
+            });
+        }
+       
     }
 
     public void MainUISetActive(bool active)
