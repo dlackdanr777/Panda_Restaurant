@@ -1,12 +1,15 @@
+using Muks.DataBind;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Muks.DataBind;
 using UnityEngine.Events;
 
 public class ChallengeManager : MonoBehaviour
 {
+    public event Action OnDailyChallengeUpdateHandler;
+    public event Action OnAllTimeChallengeUpdateHandler;
+    public event Action OnMainChallengeUpdateHandler;
 
     public static ChallengeManager Instance
     {
@@ -25,7 +28,8 @@ public class ChallengeManager : MonoBehaviour
 
     private static ChallengeManager _instance;
 
-    public event Action OnChallengeUpdateHandler;
+
+
     public event Action<ChallengeType> OnChallengePercentUpdateHandler;
 
     private static readonly string _csvFilePath = "Challenge/";
@@ -142,17 +146,17 @@ public class ChallengeManager : MonoBehaviour
     private void SetChallengeDatas()
     {
         _mainChallengeDataDic.Clear();
-        _mainChallengeDataDic = SetData("REWARD_MAIN");
+        _mainChallengeDataDic = SetData(Challenges.Main, "REWARD_MAIN");
 
         _alltimeChallengeDataDic.Clear();
-        _alltimeChallengeDataDic = SetData("REWARD_ALLTIME");
+        _alltimeChallengeDataDic = SetData(Challenges.AllTime, "REWARD_ALLTIME");
 
         _dailyChallengeDataDic.Clear();
-        _dailyChallengeDataDic = SetData("REWARD_DAILY");
+        _dailyChallengeDataDic = SetData(Challenges.Daily, "REWARD_DAILY");
     }
 
 
-    private Dictionary<string, ChallengeData> SetData(string csvFileName)
+    private Dictionary<string, ChallengeData> SetData(Challenges challenges, string csvFileName)
     {
         TextAsset csvData = Resources.Load<TextAsset>(_csvFilePath + csvFileName);
         Dictionary<string, ChallengeData> dic = new Dictionary<string, ChallengeData>();
@@ -182,7 +186,7 @@ public class ChallengeManager : MonoBehaviour
                 case "TYPE01":
                     challengeType = ChallengeType.TYPE01;
                     string[] needFurnitureIds = needItemId.Split(new char[] { '.' });
-                    Type01ChallengeData challengeData01 = new Type01ChallengeData(challengeType, id, description, needFurnitureIds, moneyType, rewardMoney, shortcutAction);
+                    Type01ChallengeData challengeData01 = new Type01ChallengeData(challenges, challengeType, id, description, needFurnitureIds, moneyType, rewardMoney, shortcutAction);
                     _type01ChallengeDataDic.Add(id, challengeData01);
                     dic.Add(id, challengeData01);
                     break;
@@ -190,133 +194,133 @@ public class ChallengeManager : MonoBehaviour
                 case "TYPE02":
                     challengeType = ChallengeType.TYPE02;
                     string[] needKitchenUtensilIds = needItemId.Split(new char[] { '.' });
-                    Type02ChallengeData challengeData02 = new Type02ChallengeData(challengeType, id, description, needKitchenUtensilIds, moneyType, rewardMoney, shortcutAction);
+                    Type02ChallengeData challengeData02 = new Type02ChallengeData(challenges, challengeType, id, description, needKitchenUtensilIds, moneyType, rewardMoney, shortcutAction);
                     _type02ChallengeDataDic.Add(id, challengeData02); 
                     dic.Add(id, challengeData02);
                     break;
 
                 case "TYPE03":
                     challengeType = ChallengeType.TYPE03;
-                    Type03ChallengeData challengeData03 = new Type03ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    Type03ChallengeData challengeData03 = new Type03ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type03ChallengeDataDic.Add(id, challengeData03);
                     dic.Add(id, challengeData03);
                     break;
 
                 case "TYPE04":
                     challengeType = ChallengeType.TYPE04;
-                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type04ChallengeDataDic.Add(id, challengeData04);
                     dic.Add(id, challengeData04);
                     break;
 
                 case "TYPE05":
                     challengeType = ChallengeType.TYPE05;
-                    Type05ChallengeData challengeData05 = new Type05ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    Type05ChallengeData challengeData05 = new Type05ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type05ChallengeDataDic.Add(id, challengeData05);
                     dic.Add(id, challengeData05);
                     break;
 
                 case "TYPE06":
                     challengeType = ChallengeType.TYPE06;
-                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type06ChallengeDataDic.Add(id, challengeData06);
                     dic.Add(id, challengeData06);
                     break;
 
                 case "TYPE07":
                     challengeType = ChallengeType.TYPE07;
-                    Type07ChallengeData challengeData07 = new Type07ChallengeData(challengeType, id, description, needItemId, count, moneyType, rewardMoney, shortcutAction);
+                    Type07ChallengeData challengeData07 = new Type07ChallengeData(challenges, challengeType, id, description, needItemId, count, moneyType, rewardMoney, shortcutAction);
                     _type07ChallengeDataDic.Add(id, challengeData07);
                     dic.Add(id, challengeData07);
                     break;
 
                 case "TYPE08":
                     challengeType = ChallengeType.TYPE08;
-                    Type08ChallengeData challengeData08 = new Type08ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type08ChallengeData challengeData08 = new Type08ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type08ChallengeDataDic.Add(id, challengeData08);
                     dic.Add(id, challengeData08);
                     break;
 
                 case "TYPE09":
                     challengeType = ChallengeType.TYPE09;
-                    Type09ChallengeData challengeData09 = new Type09ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type09ChallengeData challengeData09 = new Type09ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type09ChallengeDataDic.Add(id, challengeData09);
                     dic.Add(id, challengeData09);
                     break;
 
                 case "TYPE10":
                     challengeType = ChallengeType.TYPE10;
-                    Type10ChallengeData challengeData10 = new Type10ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type10ChallengeData challengeData10 = new Type10ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type10ChallengeDataDic.Add(id, challengeData10);
                     dic.Add(id, challengeData10);
                     break;
 
                 case "TYPE11":
                     challengeType = ChallengeType.TYPE11;
-                    Type11ChallengeData challengeData11 = new Type11ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type11ChallengeData challengeData11 = new Type11ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type11ChallengeDataDic.Add(id, challengeData11);
                     dic.Add(id, challengeData11);
                     break;
 
                 case "TYPE12":
                     challengeType = ChallengeType.TYPE12;
-                    Type12ChallengeData challengeData12 = new Type12ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type12ChallengeData challengeData12 = new Type12ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type12ChallengeDataDic.Add(id, challengeData12);
                     dic.Add(id, challengeData12);
                     break;
 
                 case "TYPE13":
                     challengeType = ChallengeType.TYPE13;
-                    Type13ChallengeData challengeData13 = new Type13ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type13ChallengeData challengeData13 = new Type13ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type13ChallengeDataDic.Add(id, challengeData13);
                     dic.Add(id, challengeData13);
                     break;
 
                 case "TYPE14":
                     challengeType = ChallengeType.TYPE14;
-                    Type14ChallengeData challengeData14 = new Type14ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type14ChallengeData challengeData14 = new Type14ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type14ChallengeDataDic.Add(id, challengeData14);
                     dic.Add(id, challengeData14);
                     break;
 
                 case "TYPE15":
                     challengeType = ChallengeType.TYPE15;
-                    Type15ChallengeData challengeData15 = new Type15ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type15ChallengeData challengeData15 = new Type15ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type15ChallengeDataDic.Add(id, challengeData15);
                     dic.Add(id, challengeData15);
                     break;
 
                 case "TYPE16":
                     challengeType = ChallengeType.TYPE16;
-                    Type16ChallengeData challengeData16 = new Type16ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    Type16ChallengeData challengeData16 = new Type16ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type16ChallengeDataDic.Add(id, challengeData16);
                     dic.Add(id, challengeData16);
                     break;
 
                 case "TYPE17":
                     challengeType = ChallengeType.TYPE17;
-                    Type17ChallengeData challengeData17 = new Type17ChallengeData(challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    Type17ChallengeData challengeData17 = new Type17ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type17ChallengeDataDic.Add(id, challengeData17);
                     dic.Add(id, challengeData17);
                     break;
 
                 case "TYPE18":
                     challengeType = ChallengeType.TYPE18;
-                    Type18ChallengeData challengeData18 = new Type18ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type18ChallengeData challengeData18 = new Type18ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type18ChallengeDataDic.Add(id, challengeData18);
                     dic.Add(id, challengeData18);
                     break;
 
                 case "TYPE19":
                     challengeType = ChallengeType.TYPE19;
-                    Type19ChallengeData challengeData19 = new Type19ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type19ChallengeData challengeData19 = new Type19ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type19ChallengeDataDic.Add(id, challengeData19);
                     dic.Add(id, challengeData19);
                     break;
 
                 case "TYPE28":
                     challengeType = ChallengeType.TYPE28;
-                    Type28ChallengeData challengeData28 = new Type28ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type28ChallengeData challengeData28 = new Type28ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type28ChallengeDataDic.Add(id, challengeData28);
                     dic.Add(id, challengeData28);
                     break;
@@ -324,35 +328,35 @@ public class ChallengeManager : MonoBehaviour
 
                 case "TYPE31":
                     challengeType = ChallengeType.TYPE31;
-                    Type31ChallengeData challengeData31= new Type31ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type31ChallengeData challengeData31= new Type31ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type31ChallengeDataDic.Add(id, challengeData31);
                     dic.Add(id, challengeData31);
                     break;
 
                 case "TYPE32":
                     challengeType = ChallengeType.TYPE32;
-                    Type32ChallengeData challengeData32 = new Type32ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type32ChallengeData challengeData32 = new Type32ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type32ChallengeDataDic.Add(id, challengeData32);
                     dic.Add(id, challengeData32);
                     break;
 
                 case "TYPE33":
                     challengeType = ChallengeType.TYPE33;
-                    Type33ChallengeData challengeData33 = new Type33ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type33ChallengeData challengeData33 = new Type33ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type33ChallengeDataDic.Add(id, challengeData33);
                     dic.Add(id, challengeData33);
                     break;
 
                 case "TYPE34":
                     challengeType = ChallengeType.TYPE34;
-                    Type34ChallengeData challengeData34 = new Type34ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type34ChallengeData challengeData34 = new Type34ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type34ChallengeDataDic.Add(id, challengeData34);
                     dic.Add(id, challengeData34);
                     break;
 
                 case "TYPE35":
                     challengeType = ChallengeType.TYPE35;
-                    Type35ChallengeData challengeData35 = new Type35ChallengeData(challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type35ChallengeData challengeData35 = new Type35ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
                     _type35ChallengeDataDic.Add(id, challengeData35);
                     dic.Add(id, challengeData35);
                     break;
@@ -534,25 +538,69 @@ public class ChallengeManager : MonoBehaviour
     }
 
 
-    public void ChallengeClear(string id)
+    public void ChallengeClear(ChallengeData data)
     {
-        if (!UserInfo.GetIsDoneChallenge(id))
+        if (!UserInfo.GetIsDoneChallenge(data.Id))
         {
-            DebugLog.LogError("해당 도전과제는 완료가 안된 상태로 클리어 요청을 했습니다: " + id);
+            DebugLog.LogError("해당 도전과제는 완료가 안된 상태로 클리어 요청을 했습니다: " + data.Id);
             return;
         }
 
-        if (_mainChallengeDataDic.ContainsKey(id))
-            UserInfo.ClearMainChallenge(id);
+        switch (data.Challenges)
+        {
+            case Challenges.Daily:
+                UserInfo.ClearDailyChallenge(data.Id);
+                break;
 
-        else if (_alltimeChallengeDataDic.ContainsKey(id))
-            UserInfo.ClearAllTimeChallenge(id);
+            case Challenges.AllTime:
+                UserInfo.ClearAllTimeChallenge(data.Id);
+                break;
 
-        else if (_dailyChallengeDataDic.ContainsKey(id))
-            UserInfo.ClearDailyChallenge(id);
+            case Challenges.Main:
+                UserInfo.ClearMainChallenge(data.Id);
+                break;
+        }
 
-        OnChallengeUpdateHandler?.Invoke();
+        UpdateChallengeByChallenges(data.Challenges);
     }
+
+    private void DoneChallengeData(ChallengeData data)
+    {
+        switch (data.Challenges)
+        {
+            case Challenges.Daily:
+                UserInfo.DoneDailyChallenge(data.Id);
+                break;
+
+            case Challenges.AllTime:
+                UserInfo.DoneAllTimeChallenge(data.Id);
+                break;
+
+            case Challenges.Main:
+                UserInfo.DoneMainChallenge(data.Id);
+                break;
+        }
+    }
+
+
+    private void UpdateChallengeByChallenges(Challenges challenges)
+    {
+        switch (challenges)
+        {
+            case Challenges.Daily:
+                OnDailyChallengeUpdateHandler?.Invoke();
+                break;
+
+            case Challenges.AllTime:
+                OnAllTimeChallengeUpdateHandler?.Invoke();
+                break;
+
+            case Challenges.Main:
+                OnMainChallengeUpdateHandler?.Invoke();
+                break;
+        }
+    }
+
 
 
     private float GetChallengeAchievementRate(int currentValue, int targetValue)
@@ -595,7 +643,9 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type01ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
         foreach (Type01ChallengeData data in _type01ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -616,26 +666,41 @@ public class ChallengeManager : MonoBehaviour
 
             if (!_isGives) continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE01);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type02ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type02ChallengeData data in _type02ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -656,26 +721,41 @@ public class ChallengeManager : MonoBehaviour
 
             if (!_isGives) continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch(data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE02);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type03ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type03ChallengeData data in _type03ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -687,27 +767,48 @@ public class ChallengeManager : MonoBehaviour
             if (!UserInfo.IsGiveRecipe(data.BuyRecipeId))
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main); if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE03);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type04ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type04ChallengeData data in _type04ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -719,27 +820,41 @@ public class ChallengeManager : MonoBehaviour
             if (!UserInfo.IsGiveRecipe(data.NeedRecipeId))
                 continue;
 
-            if(_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE04);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type05ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type05ChallengeData data in _type05ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -751,26 +866,41 @@ public class ChallengeManager : MonoBehaviour
             if (!UserInfo.IsGiveStaff(data.NeedStaffId))
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE05);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type06ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type06ChallengeData data in _type06ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -782,26 +912,27 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetRecipeCount() < data.RecipeCount)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
-
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
-
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE06);
-        if (0 < count)
-         OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type07ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type07ChallengeData data in _type07ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -813,26 +944,41 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetCookCount(data.RecipeId) < data.CookCount)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE07);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type08ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type08ChallengeData data in _type08ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -844,26 +990,41 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.MaxScore < data.Rank)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE08);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type09ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type09ChallengeData data in _type09ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -875,27 +1036,42 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.TotalCumulativeCustomerCount < data.CustomerCount)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if(_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE09);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type10ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type10ChallengeData data in _type10ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -907,26 +1083,41 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetVisitedCustomerCount() < data.CustomerCount)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE10);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type11ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type11ChallengeData data in _type11ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -938,26 +1129,41 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.TotalAddMoney < data.MoneyCount)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE11);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type12ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type12ChallengeData data in _type12ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -969,27 +1175,42 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.PromotionCount < data.PromotionCount)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE12);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type13ChallengeCheck()
     {
-        int count = 0;
         int furnitureCount = UserInfo.GetFurnitureAndKitchenUtensilCount();
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type13ChallengeData data in _type13ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1001,27 +1222,42 @@ public class ChallengeManager : MonoBehaviour
             if (furnitureCount < data.Count)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE13);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type14ChallengeCheck()
     {
-        int count = 0;
         int furnitureSetCount = UserInfo.GetActivatedFurnitureEffectSetCount();
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type14ChallengeData data in _type14ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1033,27 +1269,42 @@ public class ChallengeManager : MonoBehaviour
             if (furnitureSetCount < data.Count)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE14);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type15ChallengeCheck()
     {
-        int count = 0;
         int kitchenUtensilSetCount = UserInfo.GetActivatedKitchenUtensilEffectSetCount();
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type15ChallengeData data in _type15ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1065,26 +1316,41 @@ public class ChallengeManager : MonoBehaviour
             if (kitchenUtensilSetCount < data.Count)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE15);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type16ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type16ChallengeData data in _type16ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1096,26 +1362,41 @@ public class ChallengeManager : MonoBehaviour
             if (ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT != UserInfo.GetEffectSetFurnitureCount(data.SetId))
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE15);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type17ChallengeCheck()
     {
-        int count = 0;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type17ChallengeData data in _type17ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1127,28 +1408,43 @@ public class ChallengeManager : MonoBehaviour
             if (ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT != UserInfo.GetEffectSetKitchenUtensilCount(data.SetId))
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE15);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type18ChallengeCheck()
     {
-        int count = 0;
         int giveFurnitureCount = UserInfo.GetGiveFurnitureCount();
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type18ChallengeData data in _type18ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1160,28 +1456,43 @@ public class ChallengeManager : MonoBehaviour
             if (giveFurnitureCount < data.Count)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE18);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type19ChallengeCheck()
     {
-        int count = 0;
         int giveKitchenUtensilCount = UserInfo.GetGiveKitchenUtensilCount();
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type19ChallengeData data in _type19ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1193,28 +1504,43 @@ public class ChallengeManager : MonoBehaviour
             if (giveKitchenUtensilCount < data.Count)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE19);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type28ChallengeCheck()
     {
-        int count = 0;
         int cleanCount = UserInfo.TotalCleanCount;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type28ChallengeData data in _type28ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1226,28 +1552,43 @@ public class ChallengeManager : MonoBehaviour
             if (cleanCount < data.Count)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE28);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type31ChallengeCheck()
     {
-        int count = 0;
         int dailyCustomerCount = UserInfo.DailyCumulativeCustomerCount;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type31ChallengeData data in _type31ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1259,28 +1600,43 @@ public class ChallengeManager : MonoBehaviour
             if (GetChallengeAchievementRate(dailyCustomerCount, data.Count) < 1)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE31);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type32ChallengeCheck()
     {
-        int count = 0;
         int dailyAddMoney = UserInfo.DailyAddMoney;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type32ChallengeData data in _type32ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1292,28 +1648,43 @@ public class ChallengeManager : MonoBehaviour
             if (GetChallengeAchievementRate(dailyAddMoney, data.Count) < 1)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE32);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type33ChallengeCheck()
     {
-        int count = 0;
         int dailyCookCount = UserInfo.DailyCookCount;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type33ChallengeData data in _type33ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1325,27 +1696,42 @@ public class ChallengeManager : MonoBehaviour
             if (GetChallengeAchievementRate(dailyCookCount, data.Count) < 1)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE33);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
     private void Type34ChallengeCheck()
     {
-        int count = 0;
         int dailyCleanCount = UserInfo.DailyCleanCount;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type34ChallengeData data in _type34ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1357,28 +1743,43 @@ public class ChallengeManager : MonoBehaviour
             if (GetChallengeAchievementRate(dailyCleanCount, data.Count) < 1)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE34);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 
 
     private void Type35ChallengeCheck()
     {
-        int count = 0;
         int dailyAdvertisingViewCount = UserInfo.DailyAdvertisingViewCount;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
         foreach (Type35ChallengeData data in _type35ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1390,20 +1791,32 @@ public class ChallengeManager : MonoBehaviour
             if (GetChallengeAchievementRate(dailyAdvertisingViewCount, data.Count) < 1)
                 continue;
 
-            if (_mainChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneMainChallenge(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
 
-            else if (_alltimeChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneAllTimeChallenge(data.Id);
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
 
-            else if (_dailyChallengeDataDic.ContainsKey(data.Id))
-                UserInfo.DoneDailyChallenge(data.Id);
-
-            count++;
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
         }
 
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE35);
-        if (0 < count)
-            OnChallengeUpdateHandler?.Invoke();
     }
 }

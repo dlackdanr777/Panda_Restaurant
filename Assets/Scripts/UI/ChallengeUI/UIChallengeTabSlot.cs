@@ -99,7 +99,7 @@ public class UIChallengeTabSlot : MonoBehaviour
 
     private void OnDoneButtonClicked()
     {
-        ChallengeManager.Instance.ChallengeClear(_data.Id);
+        ChallengeManager.Instance.ChallengeClear(_data);
     }
 
     private void OnShortcutButtonClicked()

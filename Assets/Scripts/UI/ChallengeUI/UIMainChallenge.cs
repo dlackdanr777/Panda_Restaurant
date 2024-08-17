@@ -37,7 +37,7 @@ public class UIMainChallenge : MobileUIView
         _shortCutButton.onClick.AddListener(OnShortcutButtonClicked);
 
         UpdateData();
-        ChallengeManager.Instance.OnChallengeUpdateHandler += UpdateData;
+        ChallengeManager.Instance.OnMainChallengeUpdateHandler += UpdateData;
         gameObject.SetActive(false);
     }
 

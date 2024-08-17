@@ -31,10 +31,11 @@ public class UIChallenge : MobileUIView
 
         _uiDailyButton.onClick.AddListener(OnDailyButtonClicked);
         _uiAllTimeButton.onClick.AddListener(OnAllTimeButtonClicked);
-        gameObject.SetActive(false);
 
-        ChallengeManager.Instance.OnChallengeUpdateHandler += _uiDaily.UpdateUI;
-        ChallengeManager.Instance.OnChallengeUpdateHandler += _uiAllTime.UpdateUI;
+        ChallengeManager.Instance.OnDailyChallengeUpdateHandler += _uiDaily.UpdateUI;
+        ChallengeManager.Instance.OnAllTimeChallengeUpdateHandler += _uiAllTime.UpdateUI;
+
+        gameObject.SetActive(false);
     }
 
 
