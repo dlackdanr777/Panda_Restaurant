@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 public static class Utility
@@ -9,6 +10,23 @@ public static class Utility
         string text = 1000 <= value ? (value / 1000).ToString("#,##0.0") + 'K' : ((int)value).ToString();
         return text;
     }
+
+    /// <summary>총문자열 갯수와 문자열을 받아 문자열 앞쪽에 -를 넣어주는 함수</summary>
+    public static string StringAddHyphen(string str, int strLength)
+    {
+        if (strLength <= str.Length)
+            return str;
+
+        StringBuilder strBuilder = new StringBuilder();
+        int cnt = strLength - str.Length;
+
+        for(int i = 0; i < cnt; ++i)
+            strBuilder.Append("-");
+
+        strBuilder.Append(str);
+        return strBuilder.ToString();
+    }
+
 
     public static string FurnitureTypeStringConverter(FurnitureType type)
     {

@@ -19,7 +19,8 @@ public class GameManager : MonoBehaviour
     }
     private static GameManager _instance;
 
-    public static event Action OnAppendAddScoreHandler;
+    public event Action OnChangeTipPerMinuteHandler;
+    public event Action OnAppendAddScoreHandler;
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
@@ -87,6 +88,7 @@ public class GameManager : MonoBehaviour
     public void AddTipPerMinute(int value)
     {
         _tipPerMinute += value;
+        OnChangeTipPerMinuteHandler?.Invoke();
     }
 
 

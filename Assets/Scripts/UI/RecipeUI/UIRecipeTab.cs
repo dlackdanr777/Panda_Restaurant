@@ -42,7 +42,7 @@ public class UIRecipeTab : MonoBehaviour
         UserInfo.OnGiveRecipeHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
-        GameManager.OnAppendAddScoreHandler += UpdateUI;
+        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
     }
 
 

@@ -4,7 +4,8 @@ using UnityEngine;
 public class CookingSpeedUpSetData : SetData
 {
 
-    [Range(0f, 100f)] [SerializeField] public float _cookingSpeedUpMul;
+    [Range(0f, 100f)] [SerializeField] private float _cookingSpeedUpMul;
+    public float CookingSpeedUpMul => _cookingSpeedUpMul;
 
     public override void Activate()
     {

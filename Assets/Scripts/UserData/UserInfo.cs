@@ -523,6 +523,11 @@ public static class UserInfo
 
     #region FurnitureData
 
+    public static SetData GetEquipFurnitureSetData()
+    {
+        return _enabledSetData;
+    }
+
     public static void GiveFurniture(FurnitureData data)
     {
         if (_giveFurnitureSet.Contains(data.Id))
@@ -824,8 +829,6 @@ public static class UserInfo
     #endregion
 
     #region EffectSetData
-
-
 
     public static int GetActivatedFurnitureEffectSetCount()
     {

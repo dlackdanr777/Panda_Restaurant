@@ -13,5 +13,6 @@ MonoBehaviour:
   m_Name: SET03
   m_EditorClassIdentifier: 
   _id: SET03
-  _description: "\uBD84\uB2F9 \uC218\uC785 \uC99D\uAC00(40)"
-  _moneyPerMinuteValue: 40
+  _name: 
+  _description: "\uBD84\uB2F9 \uD301 \uC99D\uAC00"
+  _tipPerMinuteValue: 0

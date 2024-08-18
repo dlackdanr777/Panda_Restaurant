@@ -1,9 +1,6 @@
-using Muks.MobileUI;
 using Muks.DataBind;
-using System.Collections;
-using System.Collections.Generic;
+using Muks.MobileUI;
 using UnityEngine;
-using System.Runtime.CompilerServices;
 
 [RequireComponent(typeof(MobileUINavigation))]
 public class UIMainScene : MonoBehaviour
@@ -48,6 +45,10 @@ public class UIMainScene : MonoBehaviour
         DataBind.SetUnityActionValue("ShowMainChallengeUI", OnShowMainChallengeUI);
         DataBind.SetUnityActionValue("HideMainChallengeUI", OnHideMainChallengeUI);
         DataBind.SetUnityActionValue("HideNoAnimeMainChallengeUI", OnHideNoAnimeMainChallengeUI);
+
+        DataBind.SetUnityActionValue("ShowManagementUI", OnShowManagementUI);
+        DataBind.SetUnityActionValue("HideManagementUI", OnHideManagementUI);
+        DataBind.SetUnityActionValue("HideNoAnimeManagementUI", OnHideNoAnimeManagementUI);
     }
 
 
@@ -177,5 +178,20 @@ public class UIMainScene : MonoBehaviour
     private void OnHideNoAnimeMainChallengeUI()
     {
         _uiNav.PopNoAnime("UIMainChallenge");
+    }
+
+    private void OnShowManagementUI()
+    {
+        _uiNav.Push("UIManagement");
+    }
+
+    private void OnHideManagementUI()
+    {
+        _uiNav.Pop("UIManagement");
+    }
+
+    private void OnHideNoAnimeManagementUI()
+    {
+        _uiNav.PopNoAnime("UIManagement");
     }
 }
