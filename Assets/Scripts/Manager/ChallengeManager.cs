@@ -615,10 +615,10 @@ public class ChallengeManager : MonoBehaviour
         switch (shortCutType)
         {
             case "ShortCut01":
-                return DataBind.GetUnityActionBindData("PopUI");
+                return DataBind.GetUnityActionBindData("ShowRestaurant");
 
             case "ShortCut02":
-                return DataBind.GetUnityActionBindData("ShowKitchenUI");
+                return DataBind.GetUnityActionBindData("ShowKitchen");
 
             case "ShortCut03":
                 return DataBind.GetUnityActionBindData("ShowFurnitureUI");
@@ -631,6 +631,9 @@ public class ChallengeManager : MonoBehaviour
 
             case "ShortCut06":
                 return DataBind.GetUnityActionBindData("ShowRestaurantAdminUI");
+
+            case "ShortCut07":
+                return DataBind.GetUnityActionBindData("ShowManagementUI");
 
             case "ShortCut08":
                 return DataBind.GetUnityActionBindData("ShowChallengeUI");

@@ -1,4 +1,6 @@
+using Muks.DataBind;
 using Muks.Tween;
+using Muks.UI;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,6 +13,7 @@ public class UICamera : MonoBehaviour
     }
 
     [Header("Components")]
+    [SerializeField] private UINavigation _uiNav;
     [SerializeField] private CameraController _cameraController;
     [SerializeField] private Button _leftArrowButton;
     [SerializeField] private Button _rightArrowButton;
@@ -24,6 +27,7 @@ public class UICamera : MonoBehaviour
 
     private CameraTr _currentTr;
 
+
     private void Awake()
     {
         _leftArrowButton.gameObject.SetActive(true);
@@ -31,6 +35,18 @@ public class UICamera : MonoBehaviour
 
         _leftArrowButton.onClick.AddListener(() => ArrowButtonClicked(CameraTr.Kitchen));
         _rightArrowButton.onClick.AddListener(() => ArrowButtonClicked(CameraTr.Restaurant));
+
+        DataBind.SetUnityActionValue("ShowRestaurant", () => 
+        {
+            _uiNav.AllPop();
+            ArrowButtonClicked(CameraTr.Restaurant);
+            });
+
+        DataBind.SetUnityActionValue("ShowKitchen", () =>
+        {
+            _uiNav.AllPop();
+            ArrowButtonClicked(CameraTr.Kitchen);
+        });
     }
 
 

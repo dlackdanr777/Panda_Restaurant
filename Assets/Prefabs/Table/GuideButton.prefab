@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 5645993335142891745}
   - component: {fileID: 3439605216224755706}
   - component: {fileID: 8259611891003175613}
+  - component: {fileID: 2770443912579825900}
   m_Layer: 5
   m_Name: GuideButton
   m_TagString: Untagged
@@ -134,3 +135,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _worldTransform: {fileID: 0}
+  _offset: {x: 0, y: 0, z: 0}
+--- !u!114 &2770443912579825900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 774889616951865535}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cbd59f93efffe8a47b29fb1fc5074d11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _targetScale: {x: 0.9, y: 0.9, z: 0.9}
+  _pressDuration: 0.15
+  _buttonDownTweenMode: 23
+  _buttonUpTweenMode: 23

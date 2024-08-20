@@ -2,6 +2,7 @@ using Muks.MobileUI;
 using Muks.UI;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 
@@ -136,6 +137,23 @@ namespace Muks.PcUI
                 OnFocusHandler?.Invoke();
             }
         }
+
+
+        public override void AllPop()
+        {
+            if (_activeViewList.Count == 0)
+                return;
+
+            for (LinkedListNode<PcUIView> node = _activeViewList.Last; node != null; node = node.Previous)
+            {
+                PcUIView view = node.Value;
+                view.Hide();
+                view.VisibleState = VisibleState.Disappeared;
+            }
+
+            _activeViewList.Clear();
+        }
+
 
         public override void PopNoAnime(string viewName)
         {

@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEngine;
 using Muks.UI;
 using System;
+using Muks.PcUI;
 
 namespace Muks.MobileUI
 {
@@ -144,6 +145,21 @@ namespace Muks.MobileUI
             _activeViewList.Remove(view);
             OnFocusHandler?.Invoke();
             OnHideUIHandler?.Invoke();
+        }
+
+        public override void AllPop()
+        {
+            if (_activeViewList.Count == 0)
+                return;
+
+            for (int i = _activeViewList.Count - 1; 0 <= i; --i)
+            {
+                MobileUIView view = _activeViewList[i];
+                view.Hide();
+                view.VisibleState = VisibleState.Disappeared;
+            }
+
+            _activeViewList.Clear();
         }
 
         public override void PopNoAnime(string viewName)
