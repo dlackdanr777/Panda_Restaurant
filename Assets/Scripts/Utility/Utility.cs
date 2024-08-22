@@ -82,4 +82,17 @@ public static class Utility
             _ => string.Empty
         };
     }
+
+    public static string GachaItemRankStringConverter(GachaItemRank rank)
+    {
+        return rank switch
+        {
+            GachaItemRank.Normal1 => "노말",
+            GachaItemRank.Normal2 => "노말",
+            GachaItemRank.Rare => "레어",
+            GachaItemRank.Unique => "유니크",
+            GachaItemRank.Special => "스페셜",
+            _ => string.Empty
+        };
+    }
 }

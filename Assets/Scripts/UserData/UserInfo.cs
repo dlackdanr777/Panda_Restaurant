@@ -126,6 +126,16 @@ public static class UserInfo
 
     private static HashSet<string> _visitedCustomerSet = new HashSet<string>();
 
+
+    //################################환경 설정 관련 변수################################
+    public static Action OnChangeGachaItemSortTypeHandler;
+
+
+    private static SortType _gachaItemSortType = SortType.GradeDescending;
+    public static SortType GachaItemSortType => _gachaItemSortType;
+
+
+
     #region UserData
 
     public static void AppendMoney(int value)
@@ -1133,6 +1143,21 @@ public static class UserInfo
         _clearDailyChallengeSet.Add(id);
         _clearChallengeSet.Add(id);
         OnClearChallengeHandler?.Invoke();
+    }
+
+
+    #endregion
+
+
+    #region 환경 설정
+
+    public static void ChangeGachaItemSortType(SortType sortType)
+    {
+        if (_gachaItemSortType == sortType)
+            return;
+
+        _gachaItemSortType = sortType;
+        OnChangeGachaItemSortTypeHandler?.Invoke();
     }
 
 

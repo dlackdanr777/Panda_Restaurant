@@ -1,5 +1,9 @@
+using UnityEngine;
+
 public class GachaItemData
 {
+    public GachaItemRank GachaItemRank => _rank - 1 < 0 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (int)GachaItemRank.Length <= _rank - 1 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (GachaItemRank)_rank - 1;
+
     private string _id;
     public string Id => _id;
 
@@ -24,8 +28,11 @@ public class GachaItemData
     private int _duplicatePaymentCount;
     public int DuplicatePaymentCount => _duplicatePaymentCount;
 
+    private Sprite _sprite;
+    public Sprite Sprite => _sprite;
 
-    public GachaItemData(string id, string name, string description, int addScore, int minutePerTip, int rank, int exchangeCount, int duplicatePaymentCount)
+
+    public GachaItemData(string id, string name, string description, int addScore, int minutePerTip, int rank, int exchangeCount, int duplicatePaymentCount, Sprite sprite)
     {
         _id = id;
         _name = name;
@@ -35,5 +42,6 @@ public class GachaItemData
         _rank = rank;
         _exchangeCount = exchangeCount;
         _duplicatePaymentCount = duplicatePaymentCount;
+        _sprite = sprite;
     }
 }

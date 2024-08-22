@@ -49,6 +49,10 @@ public class UIMainScene : MonoBehaviour
         DataBind.SetUnityActionValue("ShowManagementUI", OnShowManagementUI);
         DataBind.SetUnityActionValue("HideManagementUI", OnHideManagementUI);
         DataBind.SetUnityActionValue("HideNoAnimeManagementUI", OnHideNoAnimeManagementUI);
+
+        DataBind.SetUnityActionValue("ShowPictorialBookUI", OnShowPictorialBookUI);
+        DataBind.SetUnityActionValue("HidePictorialBookUI", OnHidePictorialBookUI);
+        DataBind.SetUnityActionValue("HideNoAnimePictorialBookUI", OnHideNoAnimePictorialBookUI);
     }
 
 
@@ -193,5 +197,20 @@ public class UIMainScene : MonoBehaviour
     private void OnHideNoAnimeManagementUI()
     {
         _uiNav.PopNoAnime("UIManagement");
+    }
+
+    private void OnShowPictorialBookUI()
+    {
+        _uiNav.Push("UIPictorialBook");
+    }
+
+    private void OnHidePictorialBookUI()
+    {
+        _uiNav.Pop("UIPictorialBook");
+    }
+
+    private void OnHideNoAnimePictorialBookUI()
+    {
+        _uiNav.PopNoAnime("UIPictorialBook");
     }
 }

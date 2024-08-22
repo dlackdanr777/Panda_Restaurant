@@ -6,6 +6,7 @@ public class UIPictorialBook : MobileUIView
 {
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private UIGachaItem _uiGachaItem;
 
     [Space]
     [Header("Animations")]
@@ -23,6 +24,7 @@ public class UIPictorialBook : MobileUIView
 
     public override void Init()
     {
+        _uiGachaItem.Init();
         gameObject.SetActive(false);
     }
 
@@ -35,7 +37,7 @@ public class UIPictorialBook : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.anchoredPosition = _hideTargetPos.anchoredPosition;
 
-        TweenData tween = _animeUI.TweenAnchoredPosition(_showTargetPos.position, _showDuration, _showTweenMode);
+        TweenData tween = _animeUI.TweenAnchoredPosition(_showTargetPos.anchoredPosition, _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Appeared;
@@ -51,7 +53,7 @@ public class UIPictorialBook : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.anchoredPosition = _showTargetPos.anchoredPosition;
 
-        TweenData tween = _animeUI.TweenAnchoredPosition(_hideTargetPos.position, _hideDuration, _hideTweenMode);
+        TweenData tween = _animeUI.TweenAnchoredPosition(_hideTargetPos.anchoredPosition, _hideDuration, _hideTweenMode);
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Disappeared;

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class ItemManager : MonoBehaviour
@@ -36,7 +37,14 @@ public class ItemManager : MonoBehaviour
 
     public List<GachaItemData> GetGachaItemDataList()
     {
-        return _gachaItemDataList;
+        return UserInfo.GachaItemSortType switch
+        {
+            SortType.NameAscending => _gachaItemDataList.OrderBy(data => data.Name).ToList(),
+            SortType.NameDescending => _gachaItemDataList.OrderByDescending(data => data.Name).ToList(),
+            SortType.GradeAscending => _gachaItemDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            SortType.GradeDescending => _gachaItemDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            _ => null
+        };
     }
 
     public bool IsGachaItem(string id)
@@ -49,7 +57,13 @@ public class ItemManager : MonoBehaviour
     {
         _gachaItemDataList.Clear();
         _gachaItemDataDic.Clear();
-        TextAsset csvData = Resources.Load<TextAsset>("ItemData/GachaItemList");
+        Dictionary<string, Sprite> spriteDic = new Dictionary<string, Sprite>();
+        Sprite[] sprites = Resources.LoadAll<Sprite>("ItemData/GachaItemData/Sprites");
+
+        for(int i = 0, cnt = sprites.Length; i < cnt; ++i)
+            spriteDic.Add(CutStringUpToChar(sprites[i].name, '_'), sprites[i]);
+
+        TextAsset csvData = Resources.Load<TextAsset>("ItemData/GachaItemData/GachaItemList");
         string[] data = csvData.text.Split(new char[] { '\n' });
         string[] row;
 
@@ -61,17 +75,29 @@ public class ItemManager : MonoBehaviour
             if (string.IsNullOrWhiteSpace(id))
                 continue;
 
-            string name = row[1].Replace(" ", "");
-            string description = row[2].Replace(" ", ""); ;
+            string name = row[1];
+            string description = row[2];
             int addScore = int.Parse(row[4].Replace(" ", ""));
             int minutePerTip = int.Parse(row[5].Replace(" ", ""));
             int rank = int.Parse(row[6].Replace(" ", ""));
             int exchangeCount = int.Parse(row[8].Replace(" ", ""));
             int duplicatePaymentCount = int.Parse(row[9].Replace(" ", ""));
 
-            GachaItemData gachaItemData = new GachaItemData(id, name, description, addScore, minutePerTip, rank, exchangeCount, duplicatePaymentCount);
+            GachaItemData gachaItemData = new GachaItemData(id, name, description, addScore, minutePerTip, rank, exchangeCount, duplicatePaymentCount, spriteDic[id]);
             _gachaItemDataList.Add(gachaItemData);
             _gachaItemDataDic.Add(id, gachaItemData);
         }
+    }
+
+
+    private string CutStringUpToChar(string str, char delimiter)
+    {
+        int index = str.IndexOf(delimiter);
+
+        if (index >= 0)
+            return str.Substring(0, index);
+
+        else
+            return str;
     }
 }
