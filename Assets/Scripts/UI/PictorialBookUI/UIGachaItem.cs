@@ -25,9 +25,16 @@ public class UIGachaItem : MonoBehaviour
             slot.SetData(_gachaItemDataList[i]);
             _slotList.Add(slot);
         }
-
+        ResetData();
         UserInfo.OnChangeGachaItemSortTypeHandler += OnChangeGachaItemSortTypeEvent;
     }
+    
+
+    public void ResetData()
+    {
+        _view.SetData(_gachaItemDataList[0] != null ? _gachaItemDataList[0] : null);
+    }
+
 
     private void OnChangeGachaItemSortTypeEvent()
     {

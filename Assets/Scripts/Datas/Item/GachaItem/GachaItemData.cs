@@ -16,8 +16,8 @@ public class GachaItemData
     private int _addScore;
     public int AddScore => _addScore;
 
-    private int _minutePerTip;
-    public int MinutePerTip => _minutePerTip;
+    private int _tipPerMinute;
+    public int TipPerMinute => _tipPerMinute;
 
     private int _rank;
     public int Rank => _rank;
@@ -38,7 +38,7 @@ public class GachaItemData
         _name = name;
         _description = description;
         _addScore = addScore;
-        _minutePerTip = minutePerTip;
+        _tipPerMinute = minutePerTip;
         _rank = rank;
         _exchangeCount = exchangeCount;
         _duplicatePaymentCount = duplicatePaymentCount;

@@ -43,6 +43,8 @@ public class UIPictorialBook : MobileUIView
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true;
         });
+
+        _uiGachaItem.ResetData();
     }
 
 
