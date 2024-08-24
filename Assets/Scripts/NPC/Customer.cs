@@ -53,7 +53,6 @@ public class Customer : MonoBehaviour
     public void Init(CustomerData data)
     {
         _customerData = data;
-        _animator.runtimeAnimatorController = data.AnimatorController;
         _spriteParent.transform.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
         _spriteRenderer.transform.localPosition = Vector3.zero;
         _spriteRenderer.sprite = data.Sprite;

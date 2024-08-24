@@ -5,6 +5,8 @@ using UnityEngine;
 
 public abstract class CustomerSkill : ScriptableObject
 {
+    [TextArea][SerializeField] private string _description;
+    public string Description => _description;
 
     [Range(0f, 100f)] [SerializeField] private float _skillActivatePercent;
     public float SkillActivatePercent => _skillActivatePercent;

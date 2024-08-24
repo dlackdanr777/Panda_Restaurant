@@ -131,6 +131,9 @@ public static class UserInfo
     public static Action OnChangeGachaItemSortTypeHandler;
 
 
+    public static SortType _customerSortType = SortType.NameAscending;
+    public static SortType CustomerSortType => _customerSortType;
+
     private static SortType _gachaItemSortType = SortType.GradeDescending;
     public static SortType GachaItemSortType => _gachaItemSortType;
 

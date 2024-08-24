@@ -35,7 +35,7 @@ public class ItemManager : MonoBehaviour
     }
 
 
-    public List<GachaItemData> GetGachaItemDataList()
+    public List<GachaItemData> GetSortGachaItemDataList()
     {
         return UserInfo.GachaItemSortType switch
         {

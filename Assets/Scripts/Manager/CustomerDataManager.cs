@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class CustomerDataManager : MonoBehaviour
 {
@@ -19,7 +20,7 @@ public class CustomerDataManager : MonoBehaviour
     }
     private static CustomerDataManager _instance;
 
-    private static CustomerData[] _customerDatas;
+    private static List<CustomerData> _custoemrDataList = new List<CustomerData>();
     private static Dictionary<string, CustomerData> _customerDataDic = new Dictionary<string, CustomerData>();
 
 
@@ -35,18 +36,30 @@ public class CustomerDataManager : MonoBehaviour
     public List<CustomerData> GetAppearCustomerList()
     {
         List<CustomerData> returnList = new List<CustomerData>();
-        for(int i = 0, cnt = _customerDatas.Length; i < cnt; ++i)
+        for(int i = 0, cnt = _custoemrDataList.Count; i < cnt; ++i)
         {
-            if (UserInfo.Score < _customerDatas[i].MinScore)
+            if (UserInfo.Score < _custoemrDataList[i].MinScore)
                 continue;
 
-            if (!UserInfo.IsGiveRecipe(_customerDatas[i].RequiredDish))
+            if (!UserInfo.IsGiveRecipe(_custoemrDataList[i].RequiredDish))
                 continue;
 
-            returnList.Add(_customerDatas[i]);
+            returnList.Add(_custoemrDataList[i]);
         }
 
         return returnList;
+    }
+
+    public List<CustomerData> GetSortCustomerList()
+    {
+        return UserInfo.CustomerSortType switch
+        {
+            SortType.NameAscending => _custoemrDataList.OrderBy(data => data.Name).ToList(),
+            SortType.NameDescending => _custoemrDataList.OrderByDescending(data => data.Name).ToList(),
+            SortType.GradeAscending => _custoemrDataList.OrderBy(data => data.Name).ToList(),
+            SortType.GradeDescending => _custoemrDataList.OrderBy(data => data.Name).ToList(),
+            _ => null
+        };
     }
 
 
@@ -64,11 +77,11 @@ public class CustomerDataManager : MonoBehaviour
     private static void Init()
     {
         _customerDataDic.Clear();
-
-        _customerDatas = Resources.LoadAll<CustomerData>("CustomerData");
-        for(int i = 0, cnt = _customerDatas.Length; i < cnt; i++)
+        _custoemrDataList.Clear();
+        _custoemrDataList.AddRange(Resources.LoadAll<CustomerData>("CustomerData"));
+        for(int i = 0, cnt = _custoemrDataList.Count; i < cnt; i++)
         {
-            _customerDataDic.Add(_customerDatas[i].Id, _customerDatas[i]);
+            _customerDataDic.Add(_custoemrDataList[i].Id, _custoemrDataList[i]);
         }
     }
 }

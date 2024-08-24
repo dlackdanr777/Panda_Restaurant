@@ -19,10 +19,10 @@ MonoBehaviour:
     \uD310\uB2E4.\\n\uC8FC\uB9D0\uB9C8\uB2E4 \uC8FD\uC21C \uC7A5\uC0AC\uB97C \uD55C\uB2E4.\\n\uD3C9\uC0DD\uC744
     \uD568\uAED8 \uD560 \uBC30\uC6B0\uC790 \uD310\uB2E4\uB97C \uCC3E\uB294 \uC911\uC774\uB77C\uACE0
     \uD55C\uB2E4."
+  _moveSpeed: 3
   _minScore: 0
   _requiredDish: FOOD01
   _orderFoods:
   - FOOD03
-  _moveSpeed: 3
-  _animatorController: {fileID: 9100000, guid: d0d29d5d359bff8478a8f2a38ca631a1, type: 2}
+  _maxDiscomfortIndex: 1
   _skill: {fileID: 11400000, guid: 4641d0077eb30704d88a3107eb8695e3, type: 2}

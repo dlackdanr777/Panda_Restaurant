@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using UnityEditor.Animations;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "CustomerData", menuName = "Scriptable Object/CustomerData")]
@@ -31,13 +30,6 @@ public class CustomerData : ScriptableObject
 
     [Range(1, 25)] [SerializeField] private int _maxDiscomfortIndex;
     public int MaxDiscomfortIndex => _maxDiscomfortIndex;
-
-
-    [Space]
-    [Header("NPC Anime Data")]
-
-    [SerializeField] private AnimatorController _animatorController;
-    public AnimatorController AnimatorController => _animatorController;
 
 
     [Space]

@@ -16,7 +16,7 @@ public class UIGachaItem : MonoBehaviour
 
     public void Init()
     {
-        _gachaItemDataList = ItemManager.Instance.GetGachaItemDataList();
+        _gachaItemDataList = ItemManager.Instance.GetSortGachaItemDataList();
         
         for(int i = 0, cnt = _gachaItemDataList.Count; i < cnt; ++i) 
         {
@@ -35,10 +35,14 @@ public class UIGachaItem : MonoBehaviour
         _view.SetData(_gachaItemDataList[0] != null ? _gachaItemDataList[0] : null);
     }
 
+    public void ChoiceView()
+    {
+        _view.ChoiceView();
+    }
 
     private void OnChangeGachaItemSortTypeEvent()
     {
-        _gachaItemDataList = ItemManager.Instance.GetGachaItemDataList();
+        _gachaItemDataList = ItemManager.Instance.GetSortGachaItemDataList();
 
         for (int i = 0, cnt = _gachaItemDataList.Count; i < cnt; ++i)
         {
@@ -57,7 +61,6 @@ public class UIGachaItem : MonoBehaviour
             slot.SetData(_gachaItemDataList[i]);
         }
     }
-
 
     private void OnSlotClicked(GachaItemData data)
     {
