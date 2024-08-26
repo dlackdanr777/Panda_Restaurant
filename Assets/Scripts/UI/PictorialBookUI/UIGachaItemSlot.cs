@@ -6,15 +6,22 @@ public class UIGachaItemSlot : MonoBehaviour
 {
     [SerializeField] private Button _slotButton;
     [SerializeField] private Image _itemImage;
-    [SerializeField] private Image _frameImage;
+    [SerializeField] private Image _normalFrameImage;
+    [SerializeField] private Image _rareFrameImage;
+    [SerializeField] private Image _uniqueFrameImage;
+    [SerializeField] private Image _specialFrameImage;
     [SerializeField] private GameObject _star1;
     [SerializeField] private GameObject _star2;
     [SerializeField] private GameObject _star3;
     [SerializeField] private GameObject _star4;
     [SerializeField] private GameObject _star5;
+    [SerializeField] private GameObject _blackStar1;
+    [SerializeField] private GameObject _blackStar2;
+    [SerializeField] private GameObject _blackStar3;
+    [SerializeField] private GameObject _blackStar4;
+    [SerializeField] private GameObject _blackStar5;
 
-    [SerializeField] private Sprite _normalFrameSprite;
-    [SerializeField] private Sprite _specialFrameSprite;
+
 
     private GachaItemData _data;
 
@@ -58,7 +65,15 @@ public class UIGachaItemSlot : MonoBehaviour
                 _star3.SetActive(false);
                 _star4.SetActive(false);
                 _star5.SetActive(false);
-                _frameImage.sprite = _normalFrameSprite;
+                _blackStar1.SetActive(false);
+                _blackStar2.SetActive(true);
+                _blackStar3.SetActive(true);
+                _blackStar4.SetActive(true);
+                _blackStar5.SetActive(true);
+                _normalFrameImage.gameObject.SetActive(true);
+                _rareFrameImage.gameObject.SetActive(false);
+                _uniqueFrameImage.gameObject.SetActive(false);
+                _specialFrameImage.gameObject.SetActive(false);
                 break;
 
                 case GachaItemRank.Normal2:
@@ -67,7 +82,15 @@ public class UIGachaItemSlot : MonoBehaviour
                 _star3.SetActive(false);
                 _star4.SetActive(false);
                 _star5.SetActive(false);
-                _frameImage.sprite = _normalFrameSprite;
+                _blackStar1.SetActive(false);
+                _blackStar2.SetActive(false);
+                _blackStar3.SetActive(true);
+                _blackStar4.SetActive(true);
+                _blackStar5.SetActive(true);
+                _normalFrameImage.gameObject.SetActive(true);
+                _rareFrameImage.gameObject.SetActive(false);
+                _uniqueFrameImage.gameObject.SetActive(false);
+                _specialFrameImage.gameObject.SetActive(false);
                 break;
 
             case GachaItemRank.Rare:
@@ -76,7 +99,15 @@ public class UIGachaItemSlot : MonoBehaviour
                 _star3.SetActive(true);
                 _star4.SetActive(false);
                 _star5.SetActive(false);
-                _frameImage.sprite = _normalFrameSprite;
+                _blackStar1.SetActive(false);
+                _blackStar2.SetActive(false);
+                _blackStar3.SetActive(false);
+                _blackStar4.SetActive(true);
+                _blackStar5.SetActive(true);
+                _normalFrameImage.gameObject.SetActive(false);
+                _rareFrameImage.gameObject.SetActive(true);
+                _uniqueFrameImage.gameObject.SetActive(false);
+                _specialFrameImage.gameObject.SetActive(false);
                 break;
 
             case GachaItemRank.Unique:
@@ -85,7 +116,15 @@ public class UIGachaItemSlot : MonoBehaviour
                 _star3.SetActive(true);
                 _star4.SetActive(true);
                 _star5.SetActive(false);
-                _frameImage.sprite = _specialFrameSprite;
+                _blackStar1.SetActive(false);
+                _blackStar2.SetActive(false);
+                _blackStar3.SetActive(false);
+                _blackStar4.SetActive(false);
+                _blackStar5.SetActive(true);
+                _normalFrameImage.gameObject.SetActive(false);
+                _rareFrameImage.gameObject.SetActive(false);
+                _uniqueFrameImage.gameObject.SetActive(true);
+                _specialFrameImage.gameObject.SetActive(false);
                 break;
 
             case GachaItemRank.Special:
@@ -94,7 +133,15 @@ public class UIGachaItemSlot : MonoBehaviour
                 _star3.SetActive(true);
                 _star4.SetActive(true);
                 _star5.SetActive(true);
-                _frameImage.sprite = _specialFrameSprite;
+                _blackStar1.SetActive(false);
+                _blackStar2.SetActive(false);
+                _blackStar3.SetActive(false);
+                _blackStar4.SetActive(false);
+                _blackStar5.SetActive(false);
+                _normalFrameImage.gameObject.SetActive(false);
+                _rareFrameImage.gameObject.SetActive(false);
+                _uniqueFrameImage.gameObject.SetActive(false);
+                _specialFrameImage.gameObject.SetActive(true);
                 break;
 
             default:
@@ -103,7 +150,15 @@ public class UIGachaItemSlot : MonoBehaviour
                 _star3.SetActive(false);
                 _star4.SetActive(false);
                 _star5.SetActive(false);
-                _frameImage.sprite = _normalFrameSprite;
+                _blackStar1.SetActive(true);
+                _blackStar2.SetActive(true);
+                _blackStar3.SetActive(true);
+                _blackStar4.SetActive(true);
+                _blackStar5.SetActive(true);
+                _normalFrameImage.gameObject.SetActive(true);
+                _rareFrameImage.gameObject.SetActive(false);
+                _uniqueFrameImage.gameObject.SetActive(false);
+                _specialFrameImage.gameObject.SetActive(false);
                 break;
 
         }
