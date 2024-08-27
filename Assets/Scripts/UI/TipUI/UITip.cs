@@ -1,5 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -114,7 +115,7 @@ public class UITip : MobileUIView
 
         //TMPAnime("+ " + UserInfo.Tip.ToString("N0"));
         //UserInfo.TipCollection();
-        CoinAnimeTest(false);
+        CoinAnime(false);
     }
 
     private void OnAdvertisingButtonClicked()
@@ -127,7 +128,7 @@ public class UITip : MobileUIView
 
         //TMPAnime("+ " + (UserInfo.Tip * 2).ToString("N0"));
         //UserInfo.TipCollection(true);
-        CoinAnimeTest(true);
+        CoinAnime(true);
     }
 
 
@@ -144,61 +145,28 @@ public class UITip : MobileUIView
     }
 
 
-    private void CoinAnime(bool isAds)
+    private void Test()
     {
         _dontTouchArea.gameObject.SetActive(true);
-        float time = 0.01f;
 
-        int coinCnt = UserInfo.Tip / 100;
-        coinCnt = coinCnt == 0 ? 1 : _coins.Length < coinCnt ? _coins.Length : coinCnt;
-        int tipValue = UserInfo.Tip / coinCnt;
-        int lastTipValue = UserInfo.Tip % coinCnt;
+        _coins[0].gameObject.SetActive(true);
+        _coins[0].anchoredPosition = Vector2.zero;
+        _coins[0].TweenStop();
 
-        for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+        _coins[0].TweenMoveY(_coins[0].transform.position.y - 70, 0.5f, Ease.OutBounce).OnComplete(() =>
         {
-            int index = i;
-            _coins[index].anchoredPosition = new Vector2(0, 0);
-            Vector2 targetPos1 = (Vector2)_coins[index].transform.position + Random.insideUnitCircle * 150;
-            Vector2 startScale = _tmpCoinScale * 0.9f;
-            Tween.Wait(time, () =>
-            {
-                _coins[index].gameObject.SetActive(true);
-                _coins[index].TweenStop();
+            Tween.Wait(0.25f, () =>
+              _coins[0].TweenMove(_coinTargetPos.position, _coinDuration, _coinEase).OnComplete(() =>
+              {
+                  _coins[0].gameObject.SetActive(false);
+              })
+              );
+        });
 
-                _coins[index].localScale = startScale;
-                _coins[index].TweenScale(_tmpCoinScale, 0.35f, Ease.OutCubic);
-                _coins[index].TweenMove(targetPos1, 0.35f, Ease.OutCubic)
-                .OnComplete(() =>
-                {
-                    Tween.Wait(0.25f, () =>
-                    {
-                        _coins[index].TweenScale(startScale, _coinDuration, _coinEase);
-                        _coins[index].TweenMove(_coinTargetPos.position, _coinDuration, _coinEase).OnComplete(() =>
-                        {
-
-                            _coins[index].gameObject.SetActive(false);
-
-                            if (index == cnt - 1)
-                            {
-                                UserInfo.TipCollection(tipValue + lastTipValue, isAds);
-                                _dontTouchArea.gameObject.SetActive(false);
-                            }
-
-                            else
-                            {
-                                UserInfo.TipCollection(tipValue, isAds);
-                            }
-
-                        });
-                    });
-                });
-            });
-            time += 0.02f;
-        }
     }
 
 
-    private void CoinAnimeTest(bool isAds)
+    private void CoinAnime(bool isAds)
     {
         _dontTouchArea.gameObject.SetActive(true);
         float time = 0.05f;
@@ -208,10 +176,10 @@ public class UITip : MobileUIView
         int tipValue = UserInfo.Tip / coinCnt;
         int lastTipValue = UserInfo.Tip % coinCnt;
 
-        for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+        for (int i = 0, cnt = 1; i < cnt; ++i)
         {
             int index = i;
-            Vector2 coinPos = Vector2.zero + Random.insideUnitCircle * 50;
+            Vector2 coinPos = Vector2.zero + UnityEngine.Random.insideUnitCircle * 50;
             _coins[index].anchoredPosition = coinPos;
             Vector2 startScale = _tmpCoinScale * 0.9f;
 

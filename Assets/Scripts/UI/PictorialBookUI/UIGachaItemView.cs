@@ -1,4 +1,5 @@
 using Muks.Tween;
+using NUnit.Framework.Constraints;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -56,7 +57,7 @@ public class UIGachaItemView : MonoBehaviour
         _tipPerMinuteText.gameObject.SetActive(true);
         SetStar(data.GachaItemRank);
 
-        _itemImage.sprite = data.Sprite;
+        ChangeSpriteAndPivot(_data.Sprite);
         _itemImage.TweenStop();
         _itemImage.color = new Color(_itemImage.color.r, _itemImage.color.g, _itemImage.color.b, 0);
         _itemImage.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
@@ -74,12 +75,23 @@ public class UIGachaItemView : MonoBehaviour
         if (_data == null)
             return;
 
-        _itemImage.sprite = _data.Sprite;
+        ChangeSpriteAndPivot(_data.Sprite);
         _itemImage.TweenStop();
         _itemImage.color = new Color(_itemImage.color.r, _itemImage.color.g, _itemImage.color.b, 0);
         _itemImage.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
         _itemImage.TweenAlpha(1, 0.25f, Ease.OutQuint);
         _itemImage.TweenScale(Vector3.one, 0.25f, Ease.OutBack);
+    }
+
+
+    private void ChangeSpriteAndPivot(Sprite sprite)
+    {
+        Vector2 spritePivot = sprite.pivot;
+        Vector2 spriteSize = sprite.rect.size;
+        Vector2 normalizedPivot = new Vector2(spritePivot.x / spriteSize.x, spritePivot.y / spriteSize.y);
+
+        _itemImage.rectTransform.pivot = normalizedPivot;
+        _itemImage.sprite = sprite;
     }
 
 

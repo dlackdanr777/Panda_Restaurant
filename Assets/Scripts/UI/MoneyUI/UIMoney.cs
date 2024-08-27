@@ -1,4 +1,5 @@
 using Muks.Tween;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 
@@ -16,7 +17,7 @@ public class UIMoney : MonoBehaviour
     [SerializeField] private Color _startColor;
 
     private int _currentMoney;
-
+    private Coroutine _moneyAnimeRoutine;
 
 
     private void Awake()
@@ -37,27 +38,51 @@ public class UIMoney : MonoBehaviour
     private void OnChangeMoneyEvent()
     {
         
-        int textMoney = UserInfo.Money - _currentMoney;
+        int addMoney = UserInfo.Money - _currentMoney;
 
-        if (textMoney == 0)
+        if (addMoney == 0)
             return;
+
         _currentMoney = UserInfo.Money;
-        _moneyText.text = Utility.ConvertToNumber(UserInfo.Money);
+       
+        if(_moneyAnimeRoutine != null)
+            StopCoroutine( _moneyAnimeRoutine );
+
+        _moneyAnimeRoutine = StartCoroutine(AddMoneyAnime(addMoney));
 
 
-        string sign = textMoney < 0 ? "-" : "+";
-        Vector3 spawnPos = _moneyText.transform.position + new Vector3(0, 5, 0);
+
+        string sign = addMoney < 0 ? "-" : "+";
+        Vector3 spawnPos = _animeParent.transform.position;
         TextMeshProUGUI tmp = ObjectPoolManager.Instance.SpawnTMP(spawnPos, Quaternion.identity, _animeParent);
 
-        tmp.text = sign + Utility.ConvertToNumber(textMoney);
+        tmp.text = sign + Utility.ConvertToNumber(addMoney);
         tmp.fontSize = _moneyText.fontSize;
         tmp.rectTransform.sizeDelta = _moneyText.rectTransform.sizeDelta;
         tmp.rectTransform.localScale = _moneyText.rectTransform.localScale;
-        tmp.alignment = TextAlignmentOptions.MidlineRight;
+        tmp.alignment = TextAlignmentOptions.Midline;
         tmp.color = _startColor;
 
         tmp.TweenAlpha(0, _moveDuration, _moveEase);
         tmp.TweenMoveY(spawnPos.y + _moveY, _moveDuration, _moveEase).OnComplete(() => ObjectPoolManager.Instance.DespawnTmp(tmp));
         tmp.rectTransform.SetAsLastSibling();
+    }
+
+    private IEnumerator AddMoneyAnime(int addMoney)
+    {
+        int startMoney = UserInfo.Money - addMoney;
+        int targetMoney = UserInfo.Money;
+        float time = 0; 
+
+        while(time < 1)
+        {
+            _moneyText.text = Utility.ConvertToNumber(Mathf.Lerp(startMoney, targetMoney, time));
+            time += 0.02f * 2.5f;
+            yield return YieldCache.WaitForSeconds(0.02f);
+        }
+
+        _moneyText.text = Utility.ConvertToNumber(UserInfo.Money);
+
+        
     }
 }
