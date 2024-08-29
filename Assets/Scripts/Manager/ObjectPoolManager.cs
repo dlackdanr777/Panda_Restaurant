@@ -3,8 +3,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
-
+using UnityEngine.UI;
 
 public class ObjectPoolManager : MonoBehaviour
 {
@@ -33,6 +34,10 @@ public class ObjectPoolManager : MonoBehaviour
     private static GameObject _coinParent;
     private static Queue<PointerClickSpriteRenderer> _coinPool = new Queue<PointerClickSpriteRenderer>();
 
+    private static int _uiCoinCount = 50;
+    private static GameObject _uiCoinParent;
+    private static Queue<RectTransform> _uiCoinPool = new Queue<RectTransform>();
+
     private static int _garbageCount = 100;
     private static GameObject _garbageParent;
     private static Queue<PointerClickSpriteRenderer> _garbagePool = new Queue<PointerClickSpriteRenderer>();
@@ -45,12 +50,13 @@ public class ObjectPoolManager : MonoBehaviour
 
     private static Customer _customerPrefab;
     private static PointerClickSpriteRenderer _coinPrefab;
+    private static RectTransform _uiCoinPrefab;
     private static PointerClickSpriteRenderer _garbagePrefab;
     private static TextMeshProUGUI _tmpPrefab;
 
 
     private static Sprite[] _garbageImages;
-
+    private static Canvas _uiCanvas;
 
     private void Awake()
     {
@@ -59,8 +65,20 @@ public class ObjectPoolManager : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
+
+        _uiCanvas = new GameObject("UI Canvas").AddComponent<Canvas>();
+        _uiCanvas.transform.parent = _instance.transform;
+        _uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+        CanvasScaler scaler = _uiCanvas.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 1;
+
         CustomerPooling();
         CoinPooling();
+        UICoinPooling();
         GarbagePooling();
         TmpPooling();
     }
@@ -95,6 +113,22 @@ public class ObjectPoolManager : MonoBehaviour
         {
             PointerClickSpriteRenderer coin = Instantiate(_coinPrefab, _coinParent.transform);
             _coinPool.Enqueue(coin);
+            coin.gameObject.SetActive(false);
+        }
+    }
+
+    private static void UICoinPooling()
+    {
+        _uiCoinParent = new GameObject("UICoinParent");
+        _uiCoinParent.transform.parent = _instance.transform;
+
+        if (_uiCoinPrefab == null)
+            _uiCoinPrefab = Resources.Load<RectTransform>("ObjectPool/UICoin");
+
+        for (int i = 0, count = _uiCoinCount; i < count; i++)
+        {
+            RectTransform coin = Instantiate(_uiCoinPrefab, _uiCanvas.transform);
+            _uiCoinPool.Enqueue(coin);
             coin.gameObject.SetActive(false);
         }
     }
@@ -187,6 +221,33 @@ public class ObjectPoolManager : MonoBehaviour
         coin.TweenStop();
         coin.RemoveAllEvent();
         _coinPool.Enqueue(coin);
+    }
+
+
+    public RectTransform SpawnUICoin(Vector3 pos, Quaternion rot)
+    {
+        RectTransform coin;
+
+        if (_coinPool.Count == 0)
+        {
+            coin = Instantiate(_uiCoinPrefab, pos, rot, _uiCanvas.transform);
+            return coin;
+        }
+
+        coin = _uiCoinPool.Dequeue();
+        coin.gameObject.SetActive(false);
+        coin.gameObject.SetActive(true);
+        coin.transform.position = pos;
+        coin.transform.rotation = rot;
+        return coin;
+    }
+
+
+    public void DespawnUICoin(RectTransform coin)
+    {
+        coin.gameObject.SetActive(false);
+        coin.TweenStop();
+        _uiCoinPool.Enqueue(coin);
     }
 
 

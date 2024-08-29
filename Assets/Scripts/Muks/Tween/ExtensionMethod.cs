@@ -200,6 +200,34 @@ namespace Muks.Tween
             return TweenScale(target.transform, targetScale, duration, ease);
         }
 
+        /// <summary>목표 값으로 지속 시간동안 오브젝트를 점프하며 이동하는 함수</summary>
+        public static TweenData TweenJump(this Component target, Vector3 targetPos, float jumpHeight, float duration, Ease ease = Ease.Constant)
+        {
+            if (!target.TryGetComponent(out TweenJump tweenData))
+                tweenData = target.gameObject.AddComponent<TweenJump>();
+
+            TweenDataSequence tmpData = new TweenDataSequence(targetPos, duration, ease, null);
+
+            tweenData.IsLoop = false;
+            tweenData.AddDataSequence(tmpData);
+            tweenData.SetHeight(jumpHeight);
+
+            if (!tweenData.enabled)
+            {
+                tweenData.ElapsedDuration = 0;
+                tweenData.TotalDuration = 0;
+                tweenData.enabled = true;
+            }
+
+            return tweenData;
+        }
+
+        /// <summary>목표 값으로 지속 시간동안 오브젝트를 점프하며 이동하는 함수</summary>
+        public static TweenData TweenJump(this GameObject target, Vector3 targetPos, float jumpHeight, float duration, Ease ease = Ease.Constant)
+        {
+            return TweenJump(target, targetPos, jumpHeight, duration, ease);
+        }
+
 
         /// <summary>목표 값으로 지속 시간동안 UI 사이즈를 조절하는 함수</summary>
         public static TweenData TweenSizeDelta(this RectTransform target, Vector2 targetSizeDelta, float duration, Ease ease = Ease.Constant)

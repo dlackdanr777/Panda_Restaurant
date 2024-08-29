@@ -35,10 +35,10 @@ namespace Muks.Tween
         /// <summary>점점 빠르다가 점점 느리게(^2)</summary>
         InOutQuad,
 
-        /// <summary>점점 느리게(^2)</summary>
+        /// <summary>점점 느리게(^3)</summary>
         InCubic,
 
-        /// <summary>점점 빠르게(^2)</summary>
+        /// <summary>점점 빠르게(^3)</summary>
         OutCubic,
 
         /// <summary>점점 빠르다가 점점 느리게(^3)</summary>

@@ -6,6 +6,7 @@ using UnityEngine;
 public class UIMoney : MonoBehaviour
 {
     [Header("Components")]
+    [SerializeField] private RectTransform _uiMoney;
     [SerializeField] private TextMeshProUGUI _moneyText;
 
     [Space]
@@ -17,8 +18,9 @@ public class UIMoney : MonoBehaviour
     [SerializeField] private Color _startColor;
 
     private int _currentMoney;
+    private Vector3 _tmpScale;
     private Coroutine _moneyAnimeRoutine;
-
+    private bool _isAnimeStart;
 
     private void Awake()
     {
@@ -30,8 +32,24 @@ public class UIMoney : MonoBehaviour
     {
         _moneyText.text = Utility.ConvertToNumber(UserInfo.Money);
         _currentMoney = UserInfo.Money;
+        _tmpScale = _uiMoney.localScale;
 
         UserInfo.OnChangeMoneyHandler += OnChangeMoneyEvent;
+    }
+
+
+    public void StartAnime()
+    {
+/*        if (_isAnimeStart)
+            return;
+
+        _isAnimeStart = true;*/
+        _uiMoney.TweenStop();
+        _uiMoney.localScale = _tmpScale;
+        _uiMoney.TweenScale(_tmpScale * 0.9f, 0.03f, Ease.Constant).OnComplete(() =>
+        {
+            _uiMoney.TweenScale(_tmpScale, 0.03f, Ease.Constant).OnComplete(() => _isAnimeStart = false);
+        });
     }
 
 
@@ -50,7 +68,7 @@ public class UIMoney : MonoBehaviour
 
         _moneyAnimeRoutine = StartCoroutine(AddMoneyAnime(addMoney));
 
-
+        StartAnime();
 
         string sign = addMoney < 0 ? "-" : "+";
         Vector3 spawnPos = _animeParent.transform.position;
@@ -68,6 +86,7 @@ public class UIMoney : MonoBehaviour
         tmp.rectTransform.SetAsLastSibling();
     }
 
+
     private IEnumerator AddMoneyAnime(int addMoney)
     {
         int startMoney = UserInfo.Money - addMoney;
@@ -81,8 +100,8 @@ public class UIMoney : MonoBehaviour
             yield return YieldCache.WaitForSeconds(0.02f);
         }
 
-        _moneyText.text = Utility.ConvertToNumber(UserInfo.Money);
-
-        
+        _moneyText.text = Utility.ConvertToNumber(UserInfo.Money);  
     }
+
+    
 }

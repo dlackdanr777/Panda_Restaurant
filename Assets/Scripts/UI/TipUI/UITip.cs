@@ -1,6 +1,7 @@
 using Muks.MobileUI;
 using Muks.Tween;
 using System;
+using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -12,6 +13,9 @@ public class UITip : MobileUIView
     [SerializeField] private Button _collectTipButton;
     [SerializeField] private Button _advertisingButton;
     [SerializeField] private TextMeshProUGUI _tipAnimeTmp;
+    [SerializeField] private TextMeshProUGUI _tipText;
+    [SerializeField] private GameObject _bigCoinImage;
+    [SerializeField] private UIMoney _uiMoney;
 
     [Space]
     [Header("Animations")]
@@ -26,43 +30,39 @@ public class UITip : MobileUIView
 
     [Space]
     [Header("Coin Animations")]
-    [SerializeField] private RectTransform _coinParent;
+    [SerializeField] private int _coinMaxCount;
+    [SerializeField] private RectTransform _coinPos;
     [SerializeField] private RectTransform _dontTouchArea;
-    [SerializeField] private RectTransform _coinPrefab;
     [SerializeField] private Transform _coinTargetPos;
-    [SerializeField] private int _coinCount;
     [SerializeField] private float _coinDuration;
     [SerializeField] private Ease _coinEase;
 
 
-
-    private RectTransform[] _coins;
-    private Vector2 _tipAnimeTmpPos;
+    private Coroutine _moneyAnimeRoutine;
     private Color _tipAnimeTmpColor;
+    private Vector2 _tipAnimeTmpPos;
     private Vector3 _startPos;
     private Vector3 _tmpCoinScale;
+    private Vector3 _tmpBigCoinScale;
+    private Vector3 _currentBigCoinScale;
+    private float _currentScaleMul;
+    private int _currentTip;
 
     public override void Init()
     {
-        _coins = new RectTransform[_coinCount];
-        for (int i = 0; i < _coinCount; ++i)
-        {
-            _coins[i] = Instantiate(_coinPrefab, _coinParent);
-            _coins[i].gameObject.SetActive(false);
-        }
-
-        if (_coins[0] != null)
-            _tmpCoinScale = _coins[0].transform.localScale;
-
+        _tmpBigCoinScale = _bigCoinImage.transform.localScale;
         _dontTouchArea.SetAsLastSibling();
 
         _collectTipButton.onClick.AddListener(OnCollectTipButtonClicked);
         _advertisingButton.onClick.AddListener(OnAdvertisingButtonClicked);
+        UserInfo.OnChangeTipHandler += OnChangeMoneyEvent;
 
         _tipAnimeTmpPos = _tipAnimeTmp.rectTransform.anchoredPosition;
         _tipAnimeTmpColor = _tipAnimeTmp.color;
-        _tipAnimeTmp.gameObject.SetActive(false);
+        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
+        _currentTip = UserInfo.Tip;
 
+        _tipAnimeTmp.gameObject.SetActive(false);
         gameObject.SetActive(false);
         UserInfo.AddTip(5000);
     }
@@ -73,12 +73,15 @@ public class UITip : MobileUIView
         gameObject.SetActive(true);
         _dontTouchArea.gameObject.SetActive(false);
         _canvasGroup.blocksRaycasts = false;
-        _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
-        for (int i = 0, cnt = _coins.Length; i < cnt; ++i)
-        {
-            _coins[i].gameObject.SetActive(false);
-        }
+        _bigCoinImage.gameObject.SetActive(true);
+        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
+        _currentTip = UserInfo.Tip;
+        float scaleMul = 0.5f + Mathf.Clamp((UserInfo.Tip / 100) * 0.1f, 0, 1);
+        _currentBigCoinScale = _tmpBigCoinScale * scaleMul;
+        _bigCoinImage.transform.localScale = _currentBigCoinScale;
+
+        _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
@@ -115,7 +118,8 @@ public class UITip : MobileUIView
 
         //TMPAnime("+ " + UserInfo.Tip.ToString("N0"));
         //UserInfo.TipCollection();
-        CoinAnime(false);
+        //CoinAnime(false);
+        GiveTipAnime(false);
     }
 
     private void OnAdvertisingButtonClicked()
@@ -126,9 +130,8 @@ public class UITip : MobileUIView
             return;
         }
 
-        //TMPAnime("+ " + (UserInfo.Tip * 2).ToString("N0"));
-        //UserInfo.TipCollection(true);
-        CoinAnime(true);
+        //CoinAnime(true);
+        GiveTipAnime(true);
     }
 
 
@@ -145,70 +148,114 @@ public class UITip : MobileUIView
     }
 
 
-    private void Test()
+    private void GiveTipAnime(bool isAds)
     {
         _dontTouchArea.gameObject.SetActive(true);
 
-        _coins[0].gameObject.SetActive(true);
-        _coins[0].anchoredPosition = Vector2.zero;
-        _coins[0].TweenStop();
-
-        _coins[0].TweenMoveY(_coins[0].transform.position.y - 70, 0.5f, Ease.OutBounce).OnComplete(() =>
+        _bigCoinImage.gameObject.SetActive(true);
+        _bigCoinImage.transform.localScale = _currentBigCoinScale;
+        _bigCoinImage.TweenStop();
+        _uiNav.Pop("UITip");
+        Tween.Wait(_hideDuration, () =>
         {
-            Tween.Wait(0.25f, () =>
-              _coins[0].TweenMove(_coinTargetPos.position, _coinDuration, _coinEase).OnComplete(() =>
-              {
-                  _coins[0].gameObject.SetActive(false);
-              })
-              );
-        });
+            float time = 0;
+            int coinCnt = UserInfo.Tip / 1000;
+            coinCnt = coinCnt <= 10 ? 10 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
+            int tipValue = UserInfo.Tip / coinCnt;
+            int lastTipValue = UserInfo.Tip % coinCnt;
+            UserInfo.TipCollection(isAds);
+            for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+            {
+                int index = i;
+                RectTransform coin = ObjectPoolManager.Instance.SpawnUICoin(_coinPos.transform.position, Quaternion.identity);
+                Vector2 coinPos = UnityEngine.Random.insideUnitCircle * 300;
 
+                coin.TweenAnchoredPosition(coinPos, 0.4f, Ease.InQuad).OnComplete(() =>
+                {
+                        float height = 100;
+                        if (coin.anchoredPosition.y < 0)
+                            height *= -1;
+
+                        coin.TweenJump(_coinTargetPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                        {
+
+                            ObjectPoolManager.Instance.DespawnUICoin(coin);
+                            _uiMoney.StartAnime();
+                            if (index == cnt - 1)
+                            {
+                                _dontTouchArea.gameObject.SetActive(false);
+                                _currentBigCoinScale = Vector3.one;
+                                _bigCoinImage.transform.localScale = _currentBigCoinScale;
+                            }
+                        });
+                    time += 0.04f;
+                });
+            }
+        });     
     }
 
 
-    private void CoinAnime(bool isAds)
+    private void OnChangeMoneyEvent()
     {
-        _dontTouchArea.gameObject.SetActive(true);
-        float time = 0.05f;
+        if (VisibleState == VisibleState.Disappeared || VisibleState == VisibleState.Disappearing)
+            return;
 
-        int coinCnt = UserInfo.Tip / 100;
-        coinCnt = coinCnt == 0 ? 1 : _coins.Length < coinCnt ? _coins.Length : coinCnt;
-        int tipValue = UserInfo.Tip / coinCnt;
-        int lastTipValue = UserInfo.Tip % coinCnt;
+        int addMoney = UserInfo.Tip - _currentTip;
 
-        for (int i = 0, cnt = 1; i < cnt; ++i)
+        if (addMoney == 0)
+            return;
+
+        _currentTip = UserInfo.Tip;
+
+        if (_moneyAnimeRoutine != null)
+            StopCoroutine(_moneyAnimeRoutine);
+
+        _moneyAnimeRoutine = StartCoroutine(AddMoneyAnime(addMoney));
+        CheckBigCoin();
+    }
+
+        private IEnumerator AddMoneyAnime(int addMoney)
+    {
+        int startMoney = UserInfo.Tip - addMoney;
+        int targetMoney = UserInfo.Tip;
+        float time = 0;
+
+        while (time < 1)
         {
-            int index = i;
-            Vector2 coinPos = Vector2.zero + UnityEngine.Random.insideUnitCircle * 50;
-            _coins[index].anchoredPosition = coinPos;
-            Vector2 startScale = _tmpCoinScale * 0.9f;
+            _tipText.text = Utility.ConvertToNumber(Mathf.Lerp(startMoney, targetMoney, time));
+            time += 0.02f * 2.5f;
+            yield return YieldCache.WaitForSeconds(0.02f);
+        }
 
-            _coins[index].gameObject.SetActive(true);
-            _coins[index].TweenStop();
-            _coins[index].localScale = _tmpCoinScale;
+        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);       
+    }
 
-            Tween.Wait(0.25f + time, () =>
-            {
-                _coins[index].TweenScale(startScale, _coinDuration, _coinEase);
-                _coins[index].TweenMove(_coinTargetPos.position, _coinDuration, _coinEase).OnComplete(() =>
-                {
+    private void CheckBigCoin()
+    {
+        if (!_bigCoinImage.gameObject.activeSelf)
+            return;
 
-                    _coins[index].gameObject.SetActive(false);
+        float tip = UserInfo.Tip;
+        _bigCoinImage.TweenStop();
 
-                    if (index == cnt - 1)
-                    {
-                        UserInfo.TipCollection(tipValue + lastTipValue, isAds);
-                        _dontTouchArea.gameObject.SetActive(false);
-                    }
+        if (_currentBigCoinScale == Vector3.zero)
+            _currentBigCoinScale = Vector3.one;
 
-                    else
-                    {
-                        UserInfo.TipCollection(tipValue, isAds);
-                    }
+        _bigCoinImage.transform.localScale = _currentBigCoinScale;
 
-                });
-            });
-            time += 0.02f;
+        float scaleMul = 1 + Mathf.Clamp((tip / 1000) * 0.1f, 0, 1);
+        _currentBigCoinScale = _tmpBigCoinScale * scaleMul;
+
+        if (scaleMul == _currentScaleMul)
+        {
+            _bigCoinImage.TweenScale(_currentBigCoinScale + new Vector3(0.1f, 0.1f, 0.1f), 0.2f, Ease.Spike);
+            return;
+        }
+
+        else
+        {
+            _bigCoinImage.TweenScale(_currentBigCoinScale, 0.2f, Ease.OutBack);
+            return;
         }
     }
 }
