@@ -37,8 +37,8 @@ public class UIKitchen : MobileUIView
 
     public override void Init()
     {
-        _leftArrowButton.SetAction(() => ChangeKitchenData(-1));
-        _rightArrowButton.SetAction(() => ChangeKitchenData(1));
+        _leftArrowButton.AddListener(() => ChangeKitchenData(-1));
+        _rightArrowButton.AddListener(() => ChangeKitchenData(1));
         _uikitchenPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked);
 
         for (int i = 0, cntI = (int)KitchenUtensilType.Length; i < cntI; ++i)

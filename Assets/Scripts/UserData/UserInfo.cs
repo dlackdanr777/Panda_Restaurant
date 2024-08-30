@@ -102,7 +102,8 @@ public static class UserInfo
     private static List<string> _giveFurnitureList = new List<string>();
     private static HashSet<string> _giveFurnitureSet = new HashSet<string>();
 
-    private static SetData _enabledSetData;
+    private static SetData _furnitureEnabledSetData;
+    private static SetData _kitchenuntensilEnabledSetData;
 
     private static KitchenUtensilData[] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)KitchenUtensilType.Length];
     private static List<string> _giveKitchenUtensilList = new List<string>();
@@ -538,8 +539,14 @@ public static class UserInfo
 
     public static SetData GetEquipFurnitureSetData()
     {
-        return _enabledSetData;
+        return _furnitureEnabledSetData;
     }
+
+    public static SetData GetEquipKitchenUntensilSetData()
+    {
+        return _kitchenuntensilEnabledSetData;
+    }
+
 
     public static void GiveFurniture(FurnitureData data)
     {
@@ -680,11 +687,11 @@ public static class UserInfo
                 return;
         }
 
-        if(_enabledSetData != null)
-            _enabledSetData.Deactivate();
+        if(_furnitureEnabledSetData != null)
+            _furnitureEnabledSetData.Deactivate();
 
-        _enabledSetData = SetDataManager.Instance.GetSetData(setId);
-        _enabledSetData.Activate();
+        _furnitureEnabledSetData = SetDataManager.Instance.GetSetData(setId);
+        _furnitureEnabledSetData.Activate();
     }
 
 
@@ -831,11 +838,11 @@ public static class UserInfo
                 return;
         }
 
-        if (_enabledSetData != null)
-            _enabledSetData.Deactivate();
+        if (_kitchenuntensilEnabledSetData != null)
+            _kitchenuntensilEnabledSetData.Deactivate();
 
-        _enabledSetData = SetDataManager.Instance.GetSetData(setId);
-        _enabledSetData.Activate();
+        _kitchenuntensilEnabledSetData = SetDataManager.Instance.GetSetData(setId);
+        _kitchenuntensilEnabledSetData.Activate();
     }
 
 
@@ -882,6 +889,7 @@ public static class UserInfo
         _furnitureEffectSetCountDic.Add(setId, 0);
         return 0;
     }
+
 
     public static int GetEffectSetKitchenUtensilCount(string setId)
     {

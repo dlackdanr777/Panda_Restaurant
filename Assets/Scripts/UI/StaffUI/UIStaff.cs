@@ -39,8 +39,8 @@ public class UIStaff : MobileUIView
 
     public override void Init()
     {
-        _leftArrowButton.SetAction(() => ChangeStaffData(-1));
-        _rightArrowButton.SetAction(() => ChangeStaffData(1));
+        _leftArrowButton.AddListener(() => ChangeStaffData(-1));
+        _rightArrowButton.AddListener(() => ChangeStaffData(1));
         _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
 
         for (int i = 0, cntI = (int)StaffType.Length; i < cntI; ++i)

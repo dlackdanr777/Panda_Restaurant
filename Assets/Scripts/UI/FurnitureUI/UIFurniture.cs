@@ -38,8 +38,8 @@ public class UIFurniture : MobileUIView
 
     public override void Init()
     {
-        _leftArrowButton.SetAction(() => ChangeFurnitureData(-1));
-        _rightArrowButton.SetAction(() => ChangeFurnitureData(1));
+        _leftArrowButton.AddListener(() => ChangeFurnitureData(-1));
+        _rightArrowButton.AddListener(() => ChangeFurnitureData(1));
         _uiFurniturePreview.Init(OnEquipButtonClicked, OnBuyButtonClicked);
 
         for(int i = 0, cntI = (int)FurnitureType.Length; i < cntI; ++i)

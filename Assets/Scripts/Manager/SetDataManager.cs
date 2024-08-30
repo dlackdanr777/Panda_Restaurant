@@ -19,6 +19,8 @@ public class SetDataManager : MonoBehaviour
     }
     private static SetDataManager _instance;
 
+    public static int Count => _setDataList.Count;
+    
     private static List<SetData> _setDataList = new List<SetData>();
     private static Dictionary<string, SetData> _setDataDic = new Dictionary<string, SetData>();
 
@@ -29,6 +31,11 @@ public class SetDataManager : MonoBehaviour
             return null;
 
         return data;
+    }
+
+    public List<SetData> GetSetDataList()
+    {
+        return _setDataList;
     }
 
 

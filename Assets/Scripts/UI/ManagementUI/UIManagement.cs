@@ -9,9 +9,14 @@ public class UIManagement : MobileUIView
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
 
+
     [Space]
     [Header("Set Effect Components")]
+    [SerializeField] private RectTransform _setEffectGroup;
     [SerializeField] private UIManagementSetEffect _furnitureSetEffect;
+    [SerializeField] private UIManagementSetEffect _kitchenUntensilsSetEffect;
+    [SerializeField] private ButtonPressEffect _leftArrowButton;
+    [SerializeField] private ButtonPressEffect _rightArrowButton;
 
 
     [Space]
@@ -30,15 +35,25 @@ public class UIManagement : MobileUIView
     [SerializeField] private float _hideDuration;
     [SerializeField] private Ease _hideTweenMode;
 
+    private SetEffectType _currentSetEffectType;
 
     public override void Init()
     {
+        _furnitureSetEffect.Init(SetEffectType.Furniture);
+        _kitchenUntensilsSetEffect.Init(SetEffectType.KitchenUntensils);
         _furnitureSetEffect.SetData(UserInfo.GetEquipFurnitureSetData());
+        _kitchenUntensilsSetEffect.SetData(UserInfo.GetEquipKitchenUntensilSetData());
+
+        _leftArrowButton.AddListener(() => OnSetEffectArrowButtonClicked(SetEffectType.Furniture));
+        _rightArrowButton.AddListener(() => OnSetEffectArrowButtonClicked(SetEffectType.KitchenUntensils));
+
         OnChangeTipPerMinuteEvent();
         OnAddCustomerEvent();
         OnChangeMoneyEvent();
+        OnSetEffectArrowButtonClicked(_currentSetEffectType);
 
         UserInfo.OnChangeFurnitureHandler += (type) => _furnitureSetEffect.SetData(UserInfo.GetEquipFurnitureSetData());
+        UserInfo.OnChangeKitchenUtensilHandler += (type) => _kitchenUntensilsSetEffect.SetData(UserInfo.GetEquipKitchenUntensilSetData());
         GameManager.Instance.OnChangeTipPerMinuteHandler += OnChangeTipPerMinuteEvent;
         UserInfo.OnAddCustomerCountHandler += OnAddCustomerEvent;
         UserInfo.OnChangeMoneyHandler += OnChangeMoneyEvent;
@@ -53,6 +68,7 @@ public class UIManagement : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.gameObject.SetActive(true);
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        OnSetEffectArrowButtonClicked(_currentSetEffectType);
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
@@ -78,6 +94,36 @@ public class UIManagement : MobileUIView
         });
     }
 
+    private void OnSetEffectArrowButtonClicked(SetEffectType type)
+    {
+        if(type == SetEffectType.Furniture)
+        {
+            _rightArrowButton.gameObject.SetActive(true);
+            _leftArrowButton.gameObject.SetActive(false);
+        }
+        else
+        {
+            _leftArrowButton.gameObject.SetActive(true);
+            _rightArrowButton.gameObject.SetActive(false);
+        }
+
+        if (_currentSetEffectType == type)
+            return;
+
+        _currentSetEffectType = type;
+        _setEffectGroup.TweenStop();
+        if (type == SetEffectType.Furniture)
+        {
+            _setEffectGroup.TweenAnchoredPosition(new Vector2(0, 0), 0.5f, Ease.Smoothstep);
+            return;
+        }
+
+        if (type == SetEffectType.KitchenUntensils)
+        {
+            _setEffectGroup.TweenAnchoredPosition(new Vector2(-530, 0), 0.5f, Ease.Smoothstep);
+            return;
+        }
+    }
 
     private void OnChangeTipPerMinuteEvent()
     {

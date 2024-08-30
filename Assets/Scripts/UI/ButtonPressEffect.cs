@@ -1,7 +1,7 @@
+using Muks.Tween;
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using System;
-using Muks.Tween;
 
 public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
@@ -23,7 +23,7 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
         transform.localScale = _tmpScale;
     }
 
-    public void SetAction(Action onButtonUpEvent)
+    public void AddListener(Action onButtonUpEvent)
     {
         _onButtonUpEvent = onButtonUpEvent;
     }
