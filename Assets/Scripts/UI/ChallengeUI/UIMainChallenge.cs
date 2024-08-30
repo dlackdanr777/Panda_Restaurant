@@ -136,6 +136,7 @@ public class UIMainChallenge : MobileUIView
         }
 
         UserInfo.ClearMainChallenge(_currentData.Id);
+        UserInfo.AppendMoney(_currentData.RewardMoney);
         UpdateData();
     }
 

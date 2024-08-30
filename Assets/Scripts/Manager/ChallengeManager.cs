@@ -638,6 +638,9 @@ public class ChallengeManager : MonoBehaviour
             case "ShortCut08":
                 return DataBind.GetUnityActionBindData("ShowChallengeUI");
 
+            case "ShortCut09":
+                return DataBind.GetUnityActionBindData("UIPictorialBook");
+
             default:
                 return DataBind.GetUnityActionBindData("PopUI");
         }

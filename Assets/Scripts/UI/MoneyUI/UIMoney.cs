@@ -20,7 +20,6 @@ public class UIMoney : MonoBehaviour
     private int _currentMoney;
     private Vector3 _tmpScale;
     private Coroutine _moneyAnimeRoutine;
-    private bool _isAnimeStart;
 
     private void Awake()
     {
@@ -46,9 +45,9 @@ public class UIMoney : MonoBehaviour
         _isAnimeStart = true;*/
         _uiMoney.TweenStop();
         _uiMoney.localScale = _tmpScale;
-        _uiMoney.TweenScale(_tmpScale * 0.9f, 0.03f, Ease.Constant).OnComplete(() =>
+        _uiMoney.TweenScale(_tmpScale * 0.9f, 0.05f, Ease.Constant).OnComplete(() =>
         {
-            _uiMoney.TweenScale(_tmpScale, 0.03f, Ease.Constant).OnComplete(() => _isAnimeStart = false);
+            _uiMoney.TweenScale(_tmpScale, 0.05f, Ease.Constant);
         });
     }
 

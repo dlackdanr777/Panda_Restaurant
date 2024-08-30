@@ -14,7 +14,6 @@ public class UITip : MobileUIView
     [SerializeField] private Button _advertisingButton;
     [SerializeField] private TextMeshProUGUI _tipAnimeTmp;
     [SerializeField] private TextMeshProUGUI _tipText;
-    [SerializeField] private GameObject _bigCoinImage;
     [SerializeField] private UIMoney _uiMoney;
 
     [Space]
@@ -39,26 +38,16 @@ public class UITip : MobileUIView
 
 
     private Coroutine _moneyAnimeRoutine;
-    private Color _tipAnimeTmpColor;
-    private Vector2 _tipAnimeTmpPos;
-    private Vector3 _startPos;
-    private Vector3 _tmpCoinScale;
-    private Vector3 _tmpBigCoinScale;
-    private Vector3 _currentBigCoinScale;
-    private float _currentScaleMul;
     private int _currentTip;
 
     public override void Init()
     {
-        _tmpBigCoinScale = _bigCoinImage.transform.localScale;
         _dontTouchArea.SetAsLastSibling();
 
         _collectTipButton.onClick.AddListener(OnCollectTipButtonClicked);
         _advertisingButton.onClick.AddListener(OnAdvertisingButtonClicked);
         UserInfo.OnChangeTipHandler += OnChangeMoneyEvent;
 
-        _tipAnimeTmpPos = _tipAnimeTmp.rectTransform.anchoredPosition;
-        _tipAnimeTmpColor = _tipAnimeTmp.color;
         _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
         _currentTip = UserInfo.Tip;
 
@@ -74,12 +63,8 @@ public class UITip : MobileUIView
         _dontTouchArea.gameObject.SetActive(false);
         _canvasGroup.blocksRaycasts = false;
 
-        _bigCoinImage.gameObject.SetActive(true);
         _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
         _currentTip = UserInfo.Tip;
-        float scaleMul = 0.5f + Mathf.Clamp((UserInfo.Tip / 100) * 0.1f, 0, 1);
-        _currentBigCoinScale = _tmpBigCoinScale * scaleMul;
-        _bigCoinImage.transform.localScale = _currentBigCoinScale;
 
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
@@ -116,9 +101,6 @@ public class UITip : MobileUIView
             return;
         }
 
-        //TMPAnime("+ " + UserInfo.Tip.ToString("N0"));
-        //UserInfo.TipCollection();
-        //CoinAnime(false);
         GiveTipAnime(false);
     }
 
@@ -135,34 +117,17 @@ public class UITip : MobileUIView
     }
 
 
-    private void TMPAnime(string text)
-    {
-        _tipAnimeTmp.gameObject.SetActive(true);
-        _tipAnimeTmp.rectTransform.TweenStop();
-        _tipAnimeTmp.TweenStop();
-        _tipAnimeTmp.text = text;
-        _tipAnimeTmp.rectTransform.anchoredPosition = _tipAnimeTmpPos;
-        _tipAnimeTmp.color = _tipAnimeTmpColor;
-        _tipAnimeTmp.rectTransform.TweenAnchoredPosition(_tipAnimeTmpPos + new Vector2(0, 50), 1f, Ease.InQuad);
-        _tipAnimeTmp.TweenAlpha(0, 1, Ease.Smoothstep).OnComplete(() => _tipAnimeTmp.gameObject.SetActive(false));
-    }
-
-
     private void GiveTipAnime(bool isAds)
     {
         _dontTouchArea.gameObject.SetActive(true);
 
-        _bigCoinImage.gameObject.SetActive(true);
-        _bigCoinImage.transform.localScale = _currentBigCoinScale;
-        _bigCoinImage.TweenStop();
         _uiNav.Pop("UITip");
         Tween.Wait(_hideDuration, () =>
         {
             float time = 0;
-            int coinCnt = UserInfo.Tip / 1000;
+            int tip = isAds ? UserInfo.Tip * 2 : UserInfo.Tip;
+            int coinCnt = tip / 500;
             coinCnt = coinCnt <= 10 ? 10 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
-            int tipValue = UserInfo.Tip / coinCnt;
-            int lastTipValue = UserInfo.Tip % coinCnt;
             UserInfo.TipCollection(isAds);
             for (int i = 0, cnt = coinCnt; i < cnt; ++i)
             {
@@ -172,33 +137,35 @@ public class UITip : MobileUIView
 
                 coin.TweenAnchoredPosition(coinPos, 0.4f, Ease.InQuad).OnComplete(() =>
                 {
-                        float height = 100;
-                        if (coin.anchoredPosition.y < 0)
-                            height *= -1;
+                    float height = 100;
+                    if (coin.anchoredPosition.y < 0)
+                        height *= -1;
 
-                        coin.TweenJump(_coinTargetPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                    coin.TweenJump(_coinTargetPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                    {
+
+                        ObjectPoolManager.Instance.DespawnUICoin(coin);
+                        _uiMoney.StartAnime();
+                        if (index == cnt - 1)
                         {
-
-                            ObjectPoolManager.Instance.DespawnUICoin(coin);
-                            _uiMoney.StartAnime();
-                            if (index == cnt - 1)
-                            {
-                                _dontTouchArea.gameObject.SetActive(false);
-                                _currentBigCoinScale = Vector3.one;
-                                _bigCoinImage.transform.localScale = _currentBigCoinScale;
-                            }
-                        });
+                            _dontTouchArea.gameObject.SetActive(false);
+                        }
+                    });
                     time += 0.04f;
                 });
             }
-        });     
+        });
     }
 
 
     private void OnChangeMoneyEvent()
     {
         if (VisibleState == VisibleState.Disappeared || VisibleState == VisibleState.Disappearing)
+        {
+            _currentTip = UserInfo.Tip;
             return;
+        }
+
 
         int addMoney = UserInfo.Tip - _currentTip;
 
@@ -211,10 +178,9 @@ public class UITip : MobileUIView
             StopCoroutine(_moneyAnimeRoutine);
 
         _moneyAnimeRoutine = StartCoroutine(AddMoneyAnime(addMoney));
-        CheckBigCoin();
     }
 
-        private IEnumerator AddMoneyAnime(int addMoney)
+    private IEnumerator AddMoneyAnime(int addMoney)
     {
         int startMoney = UserInfo.Tip - addMoney;
         int targetMoney = UserInfo.Tip;
@@ -226,36 +192,6 @@ public class UITip : MobileUIView
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-
-        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);       
-    }
-
-    private void CheckBigCoin()
-    {
-        if (!_bigCoinImage.gameObject.activeSelf)
-            return;
-
-        float tip = UserInfo.Tip;
-        _bigCoinImage.TweenStop();
-
-        if (_currentBigCoinScale == Vector3.zero)
-            _currentBigCoinScale = Vector3.one;
-
-        _bigCoinImage.transform.localScale = _currentBigCoinScale;
-
-        float scaleMul = 1 + Mathf.Clamp((tip / 1000) * 0.1f, 0, 1);
-        _currentBigCoinScale = _tmpBigCoinScale * scaleMul;
-
-        if (scaleMul == _currentScaleMul)
-        {
-            _bigCoinImage.TweenScale(_currentBigCoinScale + new Vector3(0.1f, 0.1f, 0.1f), 0.2f, Ease.Spike);
-            return;
-        }
-
-        else
-        {
-            _bigCoinImage.TweenScale(_currentBigCoinScale, 0.2f, Ease.OutBack);
-            return;
-        }
+        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
     }
 }

@@ -100,6 +100,7 @@ public class UIChallengeTabSlot : MonoBehaviour
     private void OnDoneButtonClicked()
     {
         ChallengeManager.Instance.ChallengeClear(_data);
+        UserInfo.AppendMoney(_data.RewardMoney);
     }
 
     private void OnShortcutButtonClicked()

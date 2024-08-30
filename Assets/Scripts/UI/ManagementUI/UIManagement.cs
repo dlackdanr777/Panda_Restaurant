@@ -11,10 +11,8 @@ public class UIManagement : MobileUIView
 
     [Space]
     [Header("Set Effect Components")]
-    [SerializeField] private Image _setImage;
-    [SerializeField] private TextMeshProUGUI _setEffectName;
-    [SerializeField] private TextMeshProUGUI _setEffectDescription;
-    [SerializeField] private TextMeshProUGUI _setEffectValue;
+    [SerializeField] private UIManagementSetEffect _furnitureSetEffect;
+
 
     [Space]
     [Header("Management Components")]
@@ -35,13 +33,12 @@ public class UIManagement : MobileUIView
 
     public override void Init()
     {
-        OnChangeSetEffectEvent();
+        _furnitureSetEffect.SetData(UserInfo.GetEquipFurnitureSetData());
         OnChangeTipPerMinuteEvent();
         OnAddCustomerEvent();
         OnChangeMoneyEvent();
 
-
-        UserInfo.OnChangeFurnitureHandler += (type) => OnChangeSetEffectEvent();
+        UserInfo.OnChangeFurnitureHandler += (type) => _furnitureSetEffect.SetData(UserInfo.GetEquipFurnitureSetData());
         GameManager.Instance.OnChangeTipPerMinuteHandler += OnChangeTipPerMinuteEvent;
         UserInfo.OnAddCustomerCountHandler += OnAddCustomerEvent;
         UserInfo.OnChangeMoneyHandler += OnChangeMoneyEvent;
@@ -79,41 +76,6 @@ public class UIManagement : MobileUIView
             VisibleState = VisibleState.Disappeared;
             gameObject.SetActive(false);
         });
-    }
-
-    private void OnChangeSetEffectEvent()
-    {
-        SetData equipFurnitureSetData = UserInfo.GetEquipFurnitureSetData();
-
-        if(equipFurnitureSetData == null)
-        {
-            _setImage.gameObject.SetActive(false);
-            _setEffectName.gameObject.SetActive(false);
-            _setEffectDescription.gameObject.SetActive(false);
-            _setEffectValue.gameObject.SetActive(false);
-            return;
-        }
-
-        _setEffectName.gameObject.SetActive(true);
-        _setEffectDescription.gameObject.SetActive(true);
-        _setEffectValue.gameObject.SetActive(true);
-
-        _setEffectName.text = equipFurnitureSetData.Name;
-        
-        if(equipFurnitureSetData is TipPerMinuteSetData)
-        {
-            TipPerMinuteSetData tipSetData = (TipPerMinuteSetData)equipFurnitureSetData;
-            _setEffectDescription.text = tipSetData.Description;
-            _setEffectValue.text = Utility.StringAddHyphen(Utility.ConvertToNumber(tipSetData.TipPerMinuteValue), 9);
-            return;
-        }
-
-        if(equipFurnitureSetData is CookingSpeedUpSetData)
-        {
-            CookingSpeedUpSetData cookSetData = (CookingSpeedUpSetData)equipFurnitureSetData;
-            _setEffectDescription.text = cookSetData.Description;
-            _setEffectValue.text = Utility.StringAddHyphen(cookSetData.CookingSpeedUpMul.ToString(), 8) + "%";
-        }
     }
 
 
