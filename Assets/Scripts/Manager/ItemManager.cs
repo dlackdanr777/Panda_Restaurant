@@ -47,6 +47,34 @@ public class ItemManager : MonoBehaviour
         };
     }
 
+    public GachaItemData GetRandomGachaItem(List<GachaItemData> gachaItemDataList)
+    {
+        List<GachaItemData> itemList = new List<GachaItemData>();
+        float randF = UnityEngine.Random.Range(0f, 1f);
+        float tmp = 0;
+        GachaItemRank currentRank = GachaItemRank.Normal1;
+        for(int i = 0, cnt = (int)GachaItemRank.Length; i < cnt; ++i)
+        {
+            tmp += Utility.GetGachaItemRankRange((GachaItemRank)i);
+            if(randF < tmp)
+            {
+                currentRank = (GachaItemRank)i;
+                break;
+            }
+        }
+
+        for(int i = 0, cnt = gachaItemDataList.Count; i < cnt; ++i)
+        {
+            if (gachaItemDataList[i].GachaItemRank != currentRank)
+                continue;
+
+            itemList.Add(gachaItemDataList[i]); 
+        }
+
+        return itemList[Random.Range(0, itemList.Count)];
+    }
+
+
     public bool IsGachaItem(string id)
     {
         return _gachaItemDataDic.ContainsKey(id);

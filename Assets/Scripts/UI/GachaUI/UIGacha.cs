@@ -26,18 +26,10 @@ public class UIGacha : MobileUIView
     [SerializeField] private Image _upperCapsule;
     [SerializeField] private Image _lowerCapsule;
 
-    [Space]
-    [Header("Animations")]
-    [SerializeField] private GameObject _animeUI;
-    [SerializeField] private float _showDuration;
-    [SerializeField] private Ease _showTweenMode;
-
-    [Space]
-    [SerializeField] private float _hideDuration;
-    [SerializeField] private Ease _hideTweenMode;
 
     private List<GachaItemData> _itemDataList;
     private List<UIGachaItemSlot> _slotList = new List<UIGachaItemSlot>();
+    private List<GachaItemData> _getItemList = new List<GachaItemData>();
     private int _currentStep;
 
     public override void Init()
@@ -54,41 +46,24 @@ public class UIGacha : MobileUIView
         _screenButton.onClick.AddListener(OnScreenButtonClicked);
         _singleButton.AddListener(OnSingleGachaButtonClicked);
         _listButton.AddListener(OnListButtonClicked);
-        //gameObject.SetActive(false);
-        _listImage.gameObject.SetActive(false);
+
         SetStep(1);
+        _listImage.gameObject.SetActive(false);
+        gameObject.SetActive(false);
+
     }
 
     public override void Show()
     {
-        VisibleState = VisibleState.Appearing;
+        _canvasGroup.blocksRaycasts = true;
         gameObject.SetActive(true);
-        _canvasGroup.blocksRaycasts = false;
-        _animeUI.gameObject.SetActive(true);
-        _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-
-        TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
-        tween.OnComplete(() =>
-        {
-            VisibleState = VisibleState.Appeared;
-            _canvasGroup.blocksRaycasts = true;
-        });
     }
 
 
     public override void Hide()
     {
-        VisibleState = VisibleState.Disappearing;
-        _canvasGroup.blocksRaycasts = false;
-        _animeUI.SetActive(true);
-        _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
-
-        TweenData tween = _animeUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
-        tween.OnComplete(() =>
-        {
-            VisibleState = VisibleState.Disappeared;
-            gameObject.SetActive(false);
-        });
+        VisibleState = VisibleState.Disappeared;
+        gameObject.SetActive(false);
     }
 
 
@@ -150,6 +125,10 @@ public class UIGacha : MobileUIView
         Tween.Wait(1, () => _canvasGroup.blocksRaycasts = true);
 
         _gachaMacineAnimator.SetTrigger("Start");
+        _getItemList.Clear();
+
+        _getItemList.Add(ItemManager.Instance.GetRandomGachaItem(_itemDataList));
+        DebugLog.Log(_getItemList[0].Name);
     }
 
 

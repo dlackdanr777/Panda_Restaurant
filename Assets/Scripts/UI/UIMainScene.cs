@@ -53,6 +53,10 @@ public class UIMainScene : MonoBehaviour
         DataBind.SetUnityActionValue("ShowPictorialBookUI", OnShowPictorialBookUI);
         DataBind.SetUnityActionValue("HidePictorialBookUI", OnHidePictorialBookUI);
         DataBind.SetUnityActionValue("HideNoAnimePictorialBookUI", OnHideNoAnimePictorialBookUI);
+
+        DataBind.SetUnityActionValue("ShowGachaUI", OnShowGachaUI);
+        DataBind.SetUnityActionValue("HideGachaUI", OnHideGachaUI);
+        DataBind.SetUnityActionValue("HideNoAnimeGachaUI", OnHideGachaUI);
     }
 
 
@@ -212,5 +216,21 @@ public class UIMainScene : MonoBehaviour
     private void OnHideNoAnimePictorialBookUI()
     {
         _uiNav.PopNoAnime("UIPictorialBook");
+    }
+
+
+    private void OnShowGachaUI()
+    {
+        _uiNav.Push("UIGacha");
+    }
+
+    private void OnHideGachaUI()
+    {
+        _uiNav.Pop("UIGacha");
+    }
+
+    private void OnHideNoAnimeGachaUI()
+    {
+        _uiNav.PopNoAnime("UIGacha");
     }
 }

@@ -95,4 +95,23 @@ public static class Utility
             _ => string.Empty
         };
     }
+
+
+    public static float GetGachaItemRankRange(GachaItemRank rank)
+    {
+        switch (rank)
+        {
+            case GachaItemRank.Normal1:
+                return 0.375f;
+            case GachaItemRank.Normal2:
+                return 0.375f;
+            case GachaItemRank.Rare:
+                return 0.125f;
+            case GachaItemRank.Unique:
+                return 0.0938f;
+            case GachaItemRank.Special:
+                return 0.0313f;
+        }
+        return 0;
+    }
 }
