@@ -7,7 +7,7 @@ public class UIPictorialBook : MobileUIView
 {
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
-    [SerializeField] private UIGachaItem _uiGachaItem;
+    [SerializeField] private UIPictorialBookGachaItem _uiGachaItem;
     [SerializeField] private UICustomerPictorialBook _uiCustomer;
 
     [Header("Button Options")]
@@ -15,6 +15,7 @@ public class UIPictorialBook : MobileUIView
     [SerializeField] private Button _customerButton;
     [SerializeField] private RectTransform _gachaItemButtonClickPos;
     [SerializeField] private RectTransform _customerButtonClickPos;
+
 
     [Space]
     [Header("Animations")]
@@ -89,6 +90,10 @@ public class UIPictorialBook : MobileUIView
             gameObject.SetActive(false);
         });
     }
+
+
+
+   
 
 
     private void OnGachaItemButtonClicked()

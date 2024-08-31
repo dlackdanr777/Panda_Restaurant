@@ -35,10 +35,10 @@ public class KitchenSystem : MonoBehaviour
         for (int i = 0, cnt = (int)KitchenUtensilType.Burner5 + 1; i < cnt; ++i)
         {
             _burnerDatas[i] = new KichenBurnerData();
-            UIBurnerTimer obj = Instantiate(_burnerTimerPrefab, _burnerTimerParent);
-            _burnerTimers[i] = obj;
-            obj.SetWorldTransform(_burnerTimerTrs[i]);
-            obj.SetFillAmount(0);
+            _burnerTimers[i] = Instantiate(_burnerTimerPrefab, _burnerTimerParent);
+            _burnerTimers[i].Init();
+            _burnerTimers[i].SetWorldTransform(_burnerTimerTrs[i]);
+            _burnerTimers[i].SetFillAmount(0);
         }
 
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)

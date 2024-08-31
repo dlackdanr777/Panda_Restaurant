@@ -39,13 +39,9 @@ public class UIMoney : MonoBehaviour
 
     public void StartAnime()
     {
-/*        if (_isAnimeStart)
-            return;
-
-        _isAnimeStart = true;*/
         _uiMoney.TweenStop();
         _uiMoney.localScale = _tmpScale;
-        _uiMoney.TweenScale(_tmpScale * 0.9f, 0.05f, Ease.Constant).OnComplete(() =>
+        _uiMoney.TweenScale(_tmpScale * 1.1f, 0.05f, Ease.Constant).OnComplete(() =>
         {
             _uiMoney.TweenScale(_tmpScale, 0.05f, Ease.Constant);
         });

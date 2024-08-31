@@ -1,18 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UIGachaItem : MonoBehaviour
+public class UIPictorialBookGachaItem : MonoBehaviour
 {
     [Header("Components")]
-    [SerializeField] private UIGachaItemView _view;
+    [SerializeField] private UIPictorialBookGachaItemView _view;
 
     [Header("Slot Options")]
     [SerializeField] private RectTransform _slotParent;
-    [SerializeField] private UIGachaItemSlot _slotPrefab;
+    [SerializeField] private UIPictorialBookGachaItemSlot _slotPrefab;
 
 
     private List<GachaItemData> _gachaItemDataList;
-    private List<UIGachaItemSlot> _slotList = new List<UIGachaItemSlot>();
+    private List<UIPictorialBookGachaItemSlot> _slotList = new List<UIPictorialBookGachaItemSlot>();
 
     public void Init()
     {
@@ -20,7 +20,7 @@ public class UIGachaItem : MonoBehaviour
         
         for(int i = 0, cnt = _gachaItemDataList.Count; i < cnt; ++i) 
         {
-            UIGachaItemSlot slot = Instantiate(_slotPrefab, _slotParent);
+            UIPictorialBookGachaItemSlot slot = Instantiate(_slotPrefab, _slotParent);
             slot.SetButtonEvent(OnSlotClicked);
             slot.SetData(_gachaItemDataList[i]);
             _slotList.Add(slot);
@@ -46,7 +46,7 @@ public class UIGachaItem : MonoBehaviour
 
         for (int i = 0, cnt = _gachaItemDataList.Count; i < cnt; ++i)
         {
-            UIGachaItemSlot slot;
+            UIPictorialBookGachaItemSlot slot;
             if (_slotList.Count - 1 < i)
             {
                 slot = Instantiate(_slotPrefab, _slotParent);

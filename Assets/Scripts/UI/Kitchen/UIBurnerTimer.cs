@@ -9,7 +9,7 @@ public class UIBurnerTimer : MonoBehaviour
     private WorldToSceenPosition _worldToSceen;
     private UIImageFillAmount _imageFillAmount;
 
-    private void Awake()
+    public void Init()
     {
         _worldToSceen = GetComponent<WorldToSceenPosition>();
         _imageFillAmount = GetComponent<UIImageFillAmount>();
