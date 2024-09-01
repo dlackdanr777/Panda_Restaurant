@@ -1,6 +1,8 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Muks.Tween;
+using System;
 
 public class UIImageAndText : MonoBehaviour
 {
@@ -15,5 +17,13 @@ public class UIImageAndText : MonoBehaviour
     public void SetText(string text)
     {
         _text.text = text;
+    }
+
+    public void TweenText(string str, float duration, Ease ease = Ease.Constant, Action onCompleted = null)
+    {
+        _text.TweenStop();
+        TweenData tween = _text.TweenText(str, duration, ease);
+        if (onCompleted != null)
+            tween.OnComplete(onCompleted);
     }
 }
