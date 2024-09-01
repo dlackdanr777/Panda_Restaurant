@@ -55,12 +55,13 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
         _itemImage.gameObject.SetActive(true);
         _addScoreText.gameObject.SetActive(true);
         _tipPerMinuteText.gameObject.SetActive(true);
-        SetStar(data.GachaItemRank);
 
+        SetStar(data.GachaItemRank);
         ChangeSpriteAndPivot(_data.Sprite);
         _itemImage.TweenStop();
         _itemImage.color = new Color(_itemImage.color.r, _itemImage.color.g, _itemImage.color.b, 0);
         _itemImage.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
+        _itemImage.color = UserInfo.IsGiveGachaItem(data.Id) ? new Color(_itemImage.color.r, _itemImage.color.g, _itemImage.color.b, 0) : new Color(0.2f, 0.2f, 0.2f, 0);
         _itemImage.TweenAlpha(1, 0.25f, Ease.OutQuint);
         _itemImage.TweenScale(Vector3.one, 0.25f, Ease.OutBack);
 

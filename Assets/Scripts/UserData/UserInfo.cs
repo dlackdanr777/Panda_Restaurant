@@ -1,6 +1,7 @@
 using Muks.DataBind;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public static class UserInfo
@@ -20,6 +21,8 @@ public static class UserInfo
     public static event Action OnGiveRecipeHandler;
     public static event Action OnUpgradeRecipeHandler;
     public static event Action OnAddCookCountHandler;
+
+    public static event Action OnGiveGachaItemHandler;
 
     public static event Action<FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
@@ -97,6 +100,9 @@ public static class UserInfo
     private static HashSet<string> _giveRecipeSet = new HashSet<string>();
     private static Dictionary<string, int> _giveRecipeLevelDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _recipeCookCountDic = new Dictionary<string, int>();
+
+    private static List<string> _giveGachaItemList = new List<string>();
+    private static HashSet<string> _giveGachaItemSet = new HashSet<string>();
 
     private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
     private static List<string> _giveFurnitureList = new List<string>();
@@ -521,6 +527,91 @@ public static class UserInfo
     {
         return _giveRecipeSet.Count;
     }
+
+
+    #endregion
+
+    #region ItemData
+
+    public static bool IsGiveGachaItem(GachaItemData data)
+    {
+        if (_giveGachaItemSet.Contains(data.Id))
+            return true;
+
+        return false;
+    }
+
+
+    public static bool IsGiveGachaItem(string id)
+    {
+        if (_giveGachaItemSet.Contains(id))
+            return true;
+
+        return false;
+    }
+
+
+    public static void GiveGachaItem(GachaItemData data)
+    {
+        if (!ItemManager.Instance.IsGachaItem(data.Id))
+        {
+            DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + data.Id);
+            return;
+        }
+
+        if (_giveGachaItemSet.Contains(data.Id))
+        {
+            DebugLog.Log("이미 가지고 있습니다.");
+            return;
+        }
+
+        _giveGachaItemList.Add(data.Id);
+        _giveGachaItemSet.Add(data.Id);
+        OnGiveGachaItemHandler?.Invoke();
+    }
+
+    public static void GiveGachaItem(List<GachaItemData> dataList)
+    {
+        for(int i = 0, cnt =  dataList.Count; i < cnt; ++i)
+        {
+            if (!ItemManager.Instance.IsGachaItem(dataList[i].Id))
+            {
+                DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + dataList[i].Id);
+                continue;
+            }
+
+            if (_giveGachaItemSet.Contains(dataList[i].Id))
+            {
+                DebugLog.Log("이미 가지고 있습니다.");
+                continue;
+            }
+
+            _giveGachaItemList.Add(dataList[i].Id);
+            _giveGachaItemSet.Add(dataList[i].Id);
+        }
+       
+        OnGiveGachaItemHandler?.Invoke();
+    }
+
+    public static void GiveGachaItem(string id)
+    {
+        if(!ItemManager.Instance.IsGachaItem(id))
+        {
+            DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + id);
+            return;
+        }
+
+        if (_giveGachaItemSet.Contains(id))
+        {
+            DebugLog.Log("이미 가지고 있습니다.");
+            return;
+        }
+
+        _giveGachaItemList.Add(id);
+        _giveGachaItemSet.Add(id);
+        OnGiveGachaItemHandler?.Invoke();
+    }
+
 
 
     #endregion

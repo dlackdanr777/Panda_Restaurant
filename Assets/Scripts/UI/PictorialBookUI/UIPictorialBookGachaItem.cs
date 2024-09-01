@@ -27,6 +27,7 @@ public class UIPictorialBookGachaItem : MonoBehaviour
         }
         ResetData();
         UserInfo.OnChangeGachaItemSortTypeHandler += OnChangeGachaItemSortTypeEvent;
+        UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEvent;
     }
     
 
@@ -35,9 +36,30 @@ public class UIPictorialBookGachaItem : MonoBehaviour
         _view.SetData(_gachaItemDataList[0] != null ? _gachaItemDataList[0] : null);
     }
 
+
     public void ChoiceView()
     {
         _view.ChoiceView();
+    }
+
+
+    private void OnGiveGachaItemEvent()
+    {
+        UIPictorialBookGachaItemSlot slot;
+        for (int i = 0, cnt = _gachaItemDataList.Count; i < cnt; ++i)
+        {
+            if(_slotList.Count <= i)
+            {
+                slot = Instantiate(_slotPrefab, _slotParent);
+                slot.SetButtonEvent(OnSlotClicked);
+                slot.SetData(_gachaItemDataList[i]);
+                _slotList.Add(slot);
+                continue;
+            }
+
+            slot = _slotList[i];
+            slot.SetData(_gachaItemDataList[i]);
+        }
     }
 
     private void OnChangeGachaItemSortTypeEvent()

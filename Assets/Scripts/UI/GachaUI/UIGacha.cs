@@ -3,6 +3,7 @@ using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using static UnityEditor.Progress;
 
 [System.Serializable]
 public class Capsule
@@ -26,6 +27,11 @@ public class UIGacha : MobileUIView
     [SerializeField] private ButtonPressEffect _listButton;
     [SerializeField] private GameObject _listImage;
     [SerializeField] private Image _getItemImage;
+    [SerializeField] private GameObject _star1;
+    [SerializeField] private GameObject _star2;
+    [SerializeField] private GameObject _star3;
+    [SerializeField] private GameObject _star4;
+    [SerializeField] private GameObject _star5;
 
     [Space]
     [Header("Slot Options")]
@@ -201,8 +207,52 @@ public class UIGacha : MobileUIView
                     setActive = true;
                     break;
                 }
-                _getItemImage.sprite = _getItemList[0].Sprite;
                 _getItemSlotParent.gameObject.SetActive(setActive);
+                _getItemImage.sprite = _getItemList[0].Sprite;
+
+                switch (_getItemList[0].GachaItemRank)
+                {
+                    case GachaItemRank.Normal1:
+                        _star1.gameObject.SetActive(true);
+                        _star2.gameObject.SetActive(false);
+                        _star3.gameObject.SetActive(false);
+                        _star4.gameObject.SetActive(false);
+                        _star5.gameObject.SetActive(false);
+                        break;
+
+                    case GachaItemRank.Normal2:
+                        _star1.gameObject.SetActive(true);
+                        _star2.gameObject.SetActive(true);
+                        _star3.gameObject.SetActive(false);
+                        _star4.gameObject.SetActive(false);
+                        _star5.gameObject.SetActive(false);
+                        break;
+
+                    case GachaItemRank.Rare:
+                        _star1.gameObject.SetActive(true);
+                        _star2.gameObject.SetActive(true);
+                        _star3.gameObject.SetActive(true);
+                        _star4.gameObject.SetActive(false);
+                        _star5.gameObject.SetActive(false);
+                        break;
+
+                    case GachaItemRank.Unique:
+                        _star1.gameObject.SetActive(true);
+                        _star2.gameObject.SetActive(true);
+                        _star3.gameObject.SetActive(true);
+                        _star4.gameObject.SetActive(true);
+                        _star5.gameObject.SetActive(false);
+                        break;
+
+                    case GachaItemRank.Special:
+                        _star1.gameObject.SetActive(true);
+                        _star2.gameObject.SetActive(true);
+                        _star3.gameObject.SetActive(true);
+                        _star4.gameObject.SetActive(true);
+                        _star5.gameObject.SetActive(true);
+                        break;
+                }
+
                 CapsuleSetSibilingIndex(9);
                 break;
 
@@ -235,7 +285,9 @@ public class UIGacha : MobileUIView
         _gachaMacineAnimator.SetTrigger("Start");
         _getItemList.Clear();
 
-        _getItemList.Add(ItemManager.Instance.GetRandomGachaItem(_itemDataList));
+        GachaItemData item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
+        _getItemList.Add(item);
+        UserInfo.GiveGachaItem(item);
     }
 
 
@@ -244,11 +296,13 @@ public class UIGacha : MobileUIView
         _gachaMacineAnimator.SetTrigger("Start");
         _getItemList.Clear();
 
-        for(int i = 0, cnt = 11; i < cnt; i++)
+        GachaItemData item;
+        for (int i = 0, cnt = 11; i < cnt; i++)
         {
-            _getItemList.Add(ItemManager.Instance.GetRandomGachaItem(_itemDataList));
+            item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
+            _getItemList.Add(item);
         }
-
+        UserInfo.GiveGachaItem(_getItemList);
     }
 
 

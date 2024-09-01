@@ -36,8 +36,14 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
             return;
         }
 
+        _itemImage.color = UserInfo.IsGiveGachaItem(data.Id) ? Color.white : new Color(0.2f, 0.2f, 0.2f, 1);
+
+        if (_data == data)
+            return;
+
         _data = data;
         _itemImage.sprite = data.Sprite;
+
         SetStar(data.GachaItemRank);
     }
 
