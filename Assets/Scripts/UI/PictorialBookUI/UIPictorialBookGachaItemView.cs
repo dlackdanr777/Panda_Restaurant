@@ -12,16 +12,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
     [SerializeField] private Image _rareFrameImage;
     [SerializeField] private Image _normalFrameImage;
     [SerializeField] private Image _itemImage;
-    [SerializeField] private GameObject _star1;
-    [SerializeField] private GameObject _star2;
-    [SerializeField] private GameObject _star3;
-    [SerializeField] private GameObject _star4;
-    [SerializeField] private GameObject _star5;
-    [SerializeField] private GameObject _blackStar1;
-    [SerializeField] private GameObject _blackStar2;
-    [SerializeField] private GameObject _blackStar3;
-    [SerializeField] private GameObject _blackStar4;
-    [SerializeField] private GameObject _blackStar5;
+    [SerializeField] private UIItemStar _itemStar;
     [SerializeField] private TextMeshProUGUI _itemNameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private TextMeshProUGUI _addScoreText;
@@ -98,19 +89,10 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
 
     private void SetStar(GachaItemRank rank)
     {
+        _itemStar.SetStar(rank);
         switch (rank)
         {
             case GachaItemRank.Normal1:
-                _star1.SetActive(true);
-                _star2.SetActive(false);
-                _star3.SetActive(false);
-                _star4.SetActive(false);
-                _star5.SetActive(false);
-                _blackStar1.SetActive(false);
-                _blackStar2.SetActive(true);
-                _blackStar3.SetActive(true);
-                _blackStar4.SetActive(true);
-                _blackStar5.SetActive(true);
                 _normalFrameImage.gameObject.SetActive(true);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);
@@ -118,16 +100,6 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
                 break;
 
             case GachaItemRank.Normal2:
-                _star1.SetActive(true);
-                _star2.SetActive(true);
-                _star3.SetActive(false);
-                _star4.SetActive(false);
-                _star5.SetActive(false);
-                _blackStar1.SetActive(false);
-                _blackStar2.SetActive(false);
-                _blackStar3.SetActive(true);
-                _blackStar4.SetActive(true);
-                _blackStar5.SetActive(true);
                 _normalFrameImage.gameObject.SetActive(true);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);
@@ -135,16 +107,6 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
                 break;
 
             case GachaItemRank.Rare:
-                _star1.SetActive(true);
-                _star2.SetActive(true);
-                _star3.SetActive(true);
-                _star4.SetActive(false);
-                _star5.SetActive(false);
-                _blackStar1.SetActive(false);
-                _blackStar2.SetActive(false);
-                _blackStar3.SetActive(false);
-                _blackStar4.SetActive(true);
-                _blackStar5.SetActive(true);
                 _normalFrameImage.gameObject.SetActive(false);
                 _rareFrameImage.gameObject.SetActive(true);
                 _uniqueFrameImage.gameObject.SetActive(false);
@@ -152,16 +114,6 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
                 break;
 
             case GachaItemRank.Unique:
-                _star1.SetActive(true);
-                _star2.SetActive(true);
-                _star3.SetActive(true);
-                _star4.SetActive(true);
-                _star5.SetActive(false);
-                _blackStar1.SetActive(false);
-                _blackStar2.SetActive(false);
-                _blackStar3.SetActive(false);
-                _blackStar4.SetActive(false);
-                _blackStar5.SetActive(true);
                 _normalFrameImage.gameObject.SetActive(false);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(true);
@@ -169,16 +121,6 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
                 break;
 
             case GachaItemRank.Special:
-                _star1.SetActive(true);
-                _star2.SetActive(true);
-                _star3.SetActive(true);
-                _star4.SetActive(true);
-                _star5.SetActive(true);
-                _blackStar1.SetActive(false);
-                _blackStar2.SetActive(false);
-                _blackStar3.SetActive(false);
-                _blackStar4.SetActive(false);
-                _blackStar5.SetActive(false);
                 _normalFrameImage.gameObject.SetActive(false);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);
@@ -186,16 +128,6 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
                 break;
 
             default:
-                _star1.SetActive(false);
-                _star2.SetActive(false);
-                _star3.SetActive(false);
-                _star4.SetActive(false);
-                _star5.SetActive(false);
-                _blackStar1.SetActive(true);
-                _blackStar2.SetActive(true);
-                _blackStar3.SetActive(true);
-                _blackStar4.SetActive(true);
-                _blackStar5.SetActive(true);
                 _normalFrameImage.gameObject.SetActive(true);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);

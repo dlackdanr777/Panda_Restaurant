@@ -324,6 +324,28 @@ namespace Muks.Tween
             return tweenData;
         }
 
+        /// <summary>목표 값으로 한글자 출력 시간 * 총 글자수 동안 text를 변경하는 함수</summary>
+        public static TweenData TweenCharacter(this Text target, string targetString, float characterInterval, Ease ease = Ease.Constant)
+        {
+            if (!target.TryGetComponent(out TweenTextContents tweenData))
+                tweenData = target.gameObject.AddComponent<TweenTextContents>();
+
+            float duration = targetString.Length * characterInterval;
+            TweenDataSequence tmpData = new TweenDataSequence(targetString, duration, ease, target);
+
+            tweenData.IsLoop = false;
+            tweenData.AddDataSequence(tmpData);
+
+            if (!tweenData.enabled)
+            {
+                tweenData.ElapsedDuration = 0;
+                tweenData.TotalDuration = 0;
+                tweenData.enabled = true;
+            }
+
+            return tweenData;
+        }
+
 
 
 
@@ -363,6 +385,28 @@ namespace Muks.Tween
             if (!target.TryGetComponent(out TweenTMPContents tweenData))
                 tweenData = target.gameObject.AddComponent<TweenTMPContents>();
 
+            TweenDataSequence tmpData = new TweenDataSequence(targetString, duration, ease, target);
+
+            tweenData.IsLoop = false;
+            tweenData.AddDataSequence(tmpData);
+
+            if (!tweenData.enabled)
+            {
+                tweenData.ElapsedDuration = 0;
+                tweenData.TotalDuration = 0;
+                tweenData.enabled = true;
+            }
+
+            return tweenData;
+        }
+
+        /// <summary>목표 값으로 한글자 출력 시간 * 총 글자수 동안 TMP.text를 변경하는 함수</summary>
+        public static TweenData TweenCharacter(this TextMeshProUGUI target, string targetString, float characterInterval, Ease ease = Ease.Constant)
+        {
+            if (!target.TryGetComponent(out TweenTMPContents tweenData))
+                tweenData = target.gameObject.AddComponent<TweenTMPContents>();
+
+            float duration = targetString.Length * characterInterval;
             TweenDataSequence tmpData = new TweenDataSequence(targetString, duration, ease, target);
 
             tweenData.IsLoop = false;

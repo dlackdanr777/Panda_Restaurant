@@ -25,13 +25,10 @@ public class UIGacha : MobileUIView
     [SerializeField] private ButtonPressEffect _singleButton;
     [SerializeField] private ButtonPressEffect _tenButton;
     [SerializeField] private ButtonPressEffect _listButton;
+    [SerializeField] private ButtonPressEffect _skipButton;
     [SerializeField] private GameObject _listImage;
     [SerializeField] private Image _getItemImage;
-    [SerializeField] private GameObject _star1;
-    [SerializeField] private GameObject _star2;
-    [SerializeField] private GameObject _star3;
-    [SerializeField] private GameObject _star4;
-    [SerializeField] private GameObject _star5;
+    [SerializeField] private UIItemStar _itemStar;
 
     [Space]
     [Header("Slot Options")]
@@ -52,6 +49,7 @@ public class UIGacha : MobileUIView
     private List<UIGachaItemSlot> _getItemSlotList = new List<UIGachaItemSlot>();
     private List<GachaItemData> _getItemList = new List<GachaItemData>();
     private int _currentStep;
+    private int _getItemIndex = 0;
     private bool _isCapsuleColorChanged;
 
     public override void Init()
@@ -76,6 +74,7 @@ public class UIGacha : MobileUIView
         _singleButton.AddListener(OnSingleGachaButtonClicked);
         _tenButton.AddListener(OnTenGachaButtonClicked);
         _listButton.AddListener(OnListButtonClicked);
+        _skipButton.AddListener(OnSkipButtonClicked);
 
         SetStep(1);
         _gachaItemName.gameObject.SetActive(false);
@@ -121,18 +120,14 @@ public class UIGacha : MobileUIView
                 break;
 
             case 5:
-                if (_getItemList.Count <= 0)
+
+                if (_getItemList.Count <= _getItemIndex)
                 {
                     _gachaMacineAnimator.SetTrigger("Stop");
                     return;
                 }
-                GachaItemData currentItem = _getItemList[0];
-                _getItemList.RemoveAt(0);
-                if(_getItemList.Count <= 0 )
-                {
-                    _gachaMacineAnimator.SetTrigger("Stop");
-                    return;
-                }
+
+                GachaItemData currentItem = _getItemList[_getItemIndex - 1];
 
                 for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
                 {
@@ -160,6 +155,7 @@ public class UIGacha : MobileUIView
         {
             case 1:
                 _currentStep = 1;
+                _getItemIndex = 0;
                 _isCapsuleColorChanged = true;
 
                 for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
@@ -167,6 +163,8 @@ public class UIGacha : MobileUIView
                     _getItemSlotList[i].gameObject.SetActive(false);
                 }
                 _getItemSlotParent.gameObject.SetActive(false);
+
+                _skipButton.gameObject.SetActive(false);
                 CapsuleSetSibilingIndex(1);
                 break;
             case 2:
@@ -174,6 +172,7 @@ public class UIGacha : MobileUIView
 
                 CapsuleColorChange();
                 _getItemSlotParent.gameObject.SetActive(false);
+                _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(1);
                 break;
             case 3:
@@ -191,6 +190,7 @@ public class UIGacha : MobileUIView
                 }
 
                 _getItemSlotParent.gameObject.SetActive(setActive);
+                _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(9);
                 break;
 
@@ -207,52 +207,11 @@ public class UIGacha : MobileUIView
                     setActive = true;
                     break;
                 }
+                _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
                 _getItemSlotParent.gameObject.SetActive(setActive);
-                _getItemImage.sprite = _getItemList[0].Sprite;
+                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
 
-                switch (_getItemList[0].GachaItemRank)
-                {
-                    case GachaItemRank.Normal1:
-                        _star1.gameObject.SetActive(true);
-                        _star2.gameObject.SetActive(false);
-                        _star3.gameObject.SetActive(false);
-                        _star4.gameObject.SetActive(false);
-                        _star5.gameObject.SetActive(false);
-                        break;
-
-                    case GachaItemRank.Normal2:
-                        _star1.gameObject.SetActive(true);
-                        _star2.gameObject.SetActive(true);
-                        _star3.gameObject.SetActive(false);
-                        _star4.gameObject.SetActive(false);
-                        _star5.gameObject.SetActive(false);
-                        break;
-
-                    case GachaItemRank.Rare:
-                        _star1.gameObject.SetActive(true);
-                        _star2.gameObject.SetActive(true);
-                        _star3.gameObject.SetActive(true);
-                        _star4.gameObject.SetActive(false);
-                        _star5.gameObject.SetActive(false);
-                        break;
-
-                    case GachaItemRank.Unique:
-                        _star1.gameObject.SetActive(true);
-                        _star2.gameObject.SetActive(true);
-                        _star3.gameObject.SetActive(true);
-                        _star4.gameObject.SetActive(true);
-                        _star5.gameObject.SetActive(false);
-                        break;
-
-                    case GachaItemRank.Special:
-                        _star1.gameObject.SetActive(true);
-                        _star2.gameObject.SetActive(true);
-                        _star3.gameObject.SetActive(true);
-                        _star4.gameObject.SetActive(true);
-                        _star5.gameObject.SetActive(true);
-                        break;
-                }
-
+                _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(9);
                 break;
 
@@ -270,9 +229,12 @@ public class UIGacha : MobileUIView
                     break;
                 }
 
-                _getItemImage.sprite = _getItemList[0].Sprite;
+                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 _gachaItemName.SetText(string.Empty);
-                _gachaItemName.TweenText(_getItemList[0].Name, 0.5f);
+                _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.07f);
+                _getItemIndex++;
+
+                _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(9);
                 break;
         }
@@ -284,6 +246,7 @@ public class UIGacha : MobileUIView
     {
         _gachaMacineAnimator.SetTrigger("Start");
         _getItemList.Clear();
+        _getItemIndex = 0;
 
         GachaItemData item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
         _getItemList.Add(item);
@@ -295,6 +258,7 @@ public class UIGacha : MobileUIView
     {
         _gachaMacineAnimator.SetTrigger("Start");
         _getItemList.Clear();
+        _getItemIndex = 0;
 
         GachaItemData item;
         for (int i = 0, cnt = 11; i < cnt; i++)
@@ -323,6 +287,34 @@ public class UIGacha : MobileUIView
         _isCapsuleColorChanged = false;
     }
 
+
+    private void OnSkipButtonClicked()
+    {
+        _gachaMacineAnimator.SetTrigger("SkipButtonClick");
+        _getItemImage.sprite = _getItemList[_getItemList.Count - 1].Sprite;
+        _gachaItemName.TweenStop();
+        _gachaItemName.SetText(_getItemList[_getItemList.Count - 1].Name);
+        CapsuleSetSibilingIndex(9);
+
+        if (_getItemList.Count <= 1)
+        {
+            _getItemSlotParent.gameObject.SetActive(false);
+            return;
+        }
+
+        _getItemSlotParent.gameObject.SetActive(true);
+        for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
+        {
+            _getItemSlotList[i].gameObject.SetActive(false);
+        }
+
+        for(int i = 0, cnt = _getItemList.Count - 1; i < cnt; i++)
+        {
+            _getItemSlotList[i].SetData(_getItemList[i]);
+            _getItemSlotList[i].gameObject.SetActive(true);
+        }
+        _getItemIndex = _getItemList.Count;
+    }
 
 
 }
