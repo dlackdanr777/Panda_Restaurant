@@ -15,9 +15,9 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
     [SerializeField] private UIItemStar _itemStar;
     [SerializeField] private TextMeshProUGUI _itemNameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
-    [SerializeField] private TextMeshProUGUI _addScoreText;
+    [SerializeField] private GameObject _addScoreLayout;
     [SerializeField] private TextMeshProUGUI _addScoreDescription;
-    [SerializeField] private TextMeshProUGUI _tipPerMinuteText;
+    [SerializeField] private GameObject _tipPerMinuteLayout;
     [SerializeField] private TextMeshProUGUI _tipPerMinuteDescription;
 
     private GachaItemData _data;
@@ -31,8 +31,8 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
         if (data == null)
         {
             _itemImage.gameObject.SetActive(false);
-            _addScoreText.gameObject.SetActive(false);
-            _tipPerMinuteText.gameObject.SetActive(false);
+            _addScoreLayout.SetActive(false);
+            _tipPerMinuteLayout.SetActive(false);
             SetStar(GachaItemRank.Length);
             _itemNameText.text = string.Empty;
             _descriptionText.text = string.Empty;
@@ -44,8 +44,8 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
 
         _data = data;
         _itemImage.gameObject.SetActive(true);
-        _addScoreText.gameObject.SetActive(true);
-        _tipPerMinuteText.gameObject.SetActive(true);
+        _addScoreLayout.SetActive(true);
+        _tipPerMinuteLayout.SetActive(true);
 
         SetStar(data.GachaItemRank);
         ChangeSpriteAndPivot(_data.Sprite);

@@ -15,6 +15,7 @@ public class UITip : MobileUIView
     [SerializeField] private TextMeshProUGUI _tipAnimeTmp;
     [SerializeField] private TextMeshProUGUI _tipText;
     [SerializeField] private UIMoney _uiMoney;
+    [SerializeField] private GameObject _uiShinyStar;
 
     [Space]
     [Header("Animations")]
@@ -129,6 +130,8 @@ public class UITip : MobileUIView
             int coinCnt = tip / 500;
             coinCnt = coinCnt <= 10 ? 10 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
             UserInfo.TipCollection(isAds);
+            ObjectPoolManager.Instance.SpawnUIEffect(EffectType.Type1, _coinPos.transform.position, Quaternion.identity);
+
             for (int i = 0, cnt = coinCnt; i < cnt; ++i)
             {
                 int index = i;

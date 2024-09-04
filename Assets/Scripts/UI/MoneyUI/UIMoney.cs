@@ -11,6 +11,7 @@ public class UIMoney : MonoBehaviour
 
     [Space]
     [Header("Animations")]
+    [SerializeField] private RectTransform _effectSpawnPos;
     [SerializeField] private RectTransform _animeParent;
     [SerializeField] private float _moveY;
     [SerializeField] private float _moveDuration;

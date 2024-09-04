@@ -7,6 +7,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
+
 public class ObjectPoolManager : MonoBehaviour
 {
     public static ObjectPoolManager Instance
@@ -34,9 +35,6 @@ public class ObjectPoolManager : MonoBehaviour
     private static GameObject _coinParent;
     private static Queue<PointerClickSpriteRenderer> _coinPool = new Queue<PointerClickSpriteRenderer>();
 
-    private static int _uiCoinCount = 50;
-    private static GameObject _uiCoinParent;
-    private static Queue<RectTransform> _uiCoinPool = new Queue<RectTransform>();
 
     private static int _garbageCount = 100;
     private static GameObject _garbageParent;
@@ -48,12 +46,18 @@ public class ObjectPoolManager : MonoBehaviour
     private static Queue<TextMeshProUGUI> _tmpPool = new Queue<TextMeshProUGUI>();
     private static List<TextMeshProUGUI> _enabledTmpPool = new List<TextMeshProUGUI>();
 
+    private static int _uiCoinCount = 50;
+    private static Queue<RectTransform> _uiCoinPool = new Queue<RectTransform>();
+
+    private static int _uiEffectCount;
+    private static Queue<UIParticleEffect>[] _uiEffectPool;
+
     private static Customer _customerPrefab;
     private static PointerClickSpriteRenderer _coinPrefab;
     private static RectTransform _uiCoinPrefab;
     private static PointerClickSpriteRenderer _garbagePrefab;
     private static TextMeshProUGUI _tmpPrefab;
-
+    private static UIParticleEffect[] _uiEffectPrefabs = new UIParticleEffect[(int)EffectType.Length];
 
     private static Sprite[] _garbageImages;
     private static Canvas _uiCanvas;
@@ -81,6 +85,7 @@ public class ObjectPoolManager : MonoBehaviour
         UICoinPooling();
         GarbagePooling();
         TmpPooling();
+        UIEffectPooling();
     }
 
 
@@ -119,9 +124,6 @@ public class ObjectPoolManager : MonoBehaviour
 
     private static void UICoinPooling()
     {
-        _uiCoinParent = new GameObject("UICoinParent");
-        _uiCoinParent.transform.parent = _instance.transform;
-
         if (_uiCoinPrefab == null)
             _uiCoinPrefab = Resources.Load<RectTransform>("ObjectPool/UICoin");
 
@@ -166,6 +168,31 @@ public class ObjectPoolManager : MonoBehaviour
             TextMeshProUGUI tmp = Instantiate(_tmpPrefab, _tmpParent.transform);
             _tmpPool.Enqueue(tmp);
             tmp.gameObject.SetActive(false);
+        }
+    }
+
+    private static void UIEffectPooling()
+    {
+        _uiEffectPool = new Queue<UIParticleEffect>[(int)EffectType.Length];
+        for (int i = 0, cnt = (int)EffectType.Length; i < cnt; i++)
+        {
+            _uiEffectPool[i] = new Queue<UIParticleEffect>();
+            if (_uiEffectPrefabs[i] == null)
+                _uiEffectPrefabs[i] = Resources.Load<UIParticleEffect>("ObjectPool/Effect/UIEffect" + (i + 1));
+
+            if (_uiEffectPrefabs[i] == null)
+            {
+                DebugLog.LogError("해당 위치에 프리팹이 존재하지 않습니다: " + "ObjectPool/Effect/UIEffect" + (i + 1));
+                continue;
+            }
+
+            for (int j = 0, count = _uiEffectCount; j < count; j++)
+            {
+                UIParticleEffect effect = Instantiate(_uiEffectPrefabs[i], _uiCanvas.transform);
+                _uiEffectPool[i].Enqueue(effect);
+                effect.gameObject.SetActive(false);
+            }
+
         }
     }
 
@@ -334,5 +361,35 @@ public class ObjectPoolManager : MonoBehaviour
         tmp.TweenStop();
         _tmpPool.Enqueue(tmp);
         _enabledTmpPool.Remove(tmp);
+    }
+
+
+    public UIParticleEffect SpawnUIEffect(EffectType type, Vector3 pos, Quaternion rot)
+    {
+        UIParticleEffect effect;
+        int index = (int)type;
+
+
+        if (_uiEffectPool[index].Count == 0)
+        {
+            effect = Instantiate(_uiEffectPrefabs[index], pos, rot, _uiCanvas.transform);
+            _uiEffectPool[index].Enqueue(effect);
+            return effect;
+        }
+
+        effect = _uiEffectPool[index].Dequeue();
+        effect.gameObject.SetActive(false);
+        effect.gameObject.SetActive(true);
+        effect.transform.position = pos;
+        effect.transform.rotation = rot;
+        return effect;
+    }
+
+
+    public void DespawnUIEffect(EffectType type, UIParticleEffect effect)
+    {
+        int index = (int)type;
+        effect.gameObject.SetActive(false);
+        _uiEffectPool[index].Enqueue(effect);
     }
 }

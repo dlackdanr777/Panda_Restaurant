@@ -27,13 +27,17 @@ public class UIGacha : MobileUIView
     [SerializeField] private ButtonPressEffect _listButton;
     [SerializeField] private ButtonPressEffect _skipButton;
     [SerializeField] private GameObject _listImage;
+    [SerializeField] private GameObject _gachaMachineBackgroundImage;
     [SerializeField] private Image _getItemImage;
     [SerializeField] private UIItemStar _itemStar;
 
     [Space]
     [Header("Slot Options")]
     [SerializeField] private Transform _slotParent;
+
+    [SerializeField] private Transform _getItemSlotFrame;
     [SerializeField] private Transform _getItemSlotParent;
+    [SerializeField] private GameObject _gachaResultText;
     [SerializeField] private UIGachaItemSlot _slotPrefab;
 
     [Space]
@@ -48,9 +52,11 @@ public class UIGacha : MobileUIView
     private List<UIGachaItemSlot> _slotList = new List<UIGachaItemSlot>();
     private List<UIGachaItemSlot> _getItemSlotList = new List<UIGachaItemSlot>();
     private List<GachaItemData> _getItemList = new List<GachaItemData>();
+    private float _screenTouchWaitTime;
     private int _currentStep;
     private int _getItemIndex = 0;
     private bool _isCapsuleColorChanged;
+    private bool _isPlayTextAnime;
 
     public override void Init()
     {
@@ -80,12 +86,19 @@ public class UIGacha : MobileUIView
         _gachaItemName.gameObject.SetActive(false);
         _listImage.gameObject.SetActive(false);
         gameObject.SetActive(false);
-
     }
+
+    private void Update()
+    {
+        if( 0 < _screenTouchWaitTime)
+            _screenTouchWaitTime -= Time.deltaTime;
+    }
+
 
     public override void Show()
     {
         SetStep(1);
+        _screenTouchWaitTime = 0;
         OnScreenButtonClicked();
         gameObject.SetActive(true);
     }
@@ -94,6 +107,7 @@ public class UIGacha : MobileUIView
     public override void Hide()
     {
         VisibleState = VisibleState.Disappeared;
+        _screenTouchWaitTime = 0;
         gameObject.SetActive(false);
     }
 
@@ -105,6 +119,12 @@ public class UIGacha : MobileUIView
 
     public void OnScreenButtonClicked()
     {
+        if (0 < _screenTouchWaitTime)
+        {
+            DebugLog.Log("아직 터치할 수 없습니다.");
+            return;
+        }
+
         switch (_currentStep)
         {
             case 1:
@@ -124,6 +144,15 @@ public class UIGacha : MobileUIView
                 if (_getItemList.Count <= _getItemIndex)
                 {
                     _gachaMacineAnimator.SetTrigger("Stop");
+                    return;
+                }
+
+                if(_isPlayTextAnime)
+                {
+                    _gachaItemName.TweenStop();
+                    _gachaItemName.SetText(_getItemList[_getItemIndex - 1].Name);
+                    _isPlayTextAnime = false;
+                    _screenTouchWaitTime = 0.5f;
                     return;
                 }
 
@@ -162,8 +191,10 @@ public class UIGacha : MobileUIView
                 {
                     _getItemSlotList[i].gameObject.SetActive(false);
                 }
-                _getItemSlotParent.gameObject.SetActive(false);
 
+                _getItemSlotFrame.gameObject.SetActive(false);
+                _gachaResultText.gameObject.SetActive(false);
+                _gachaMachineBackgroundImage.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
                 CapsuleSetSibilingIndex(1);
                 break;
@@ -171,7 +202,10 @@ public class UIGacha : MobileUIView
                 _currentStep = 2;
 
                 CapsuleColorChange();
-                _getItemSlotParent.gameObject.SetActive(false);
+                _screenTouchWaitTime = 0.2f;
+                _getItemSlotFrame.gameObject.SetActive(false);
+                _gachaMachineBackgroundImage.gameObject.SetActive(false);
+                _gachaResultText.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(1);
                 break;
@@ -179,6 +213,7 @@ public class UIGacha : MobileUIView
                 _currentStep = 3;
 
                 CapsuleColorChange();
+                _screenTouchWaitTime = 0.2f;
                 setActive = false;
                 for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
                 {
@@ -189,14 +224,16 @@ public class UIGacha : MobileUIView
                     break;
                 }
 
-                _getItemSlotParent.gameObject.SetActive(setActive);
+                _getItemSlotFrame.gameObject.SetActive(setActive);
+                _gachaMachineBackgroundImage.gameObject.SetActive(true);
+                _gachaResultText.gameObject.SetActive(setActive);
                 _skipButton.gameObject.SetActive(true);
-                CapsuleSetSibilingIndex(9);
+                CapsuleSetSibilingIndex(11);
                 break;
 
             case 4:
                 _currentStep = 4;
-
+                _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
                 setActive = false;
                 for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
@@ -208,15 +245,18 @@ public class UIGacha : MobileUIView
                     break;
                 }
                 _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
-                _getItemSlotParent.gameObject.SetActive(setActive);
+                _getItemSlotFrame.gameObject.SetActive(setActive);
+                _gachaResultText.gameObject.SetActive(setActive);
+                _gachaMachineBackgroundImage.gameObject.SetActive(true);
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
 
                 _skipButton.gameObject.SetActive(true);
-                CapsuleSetSibilingIndex(9);
+                CapsuleSetSibilingIndex(11);
                 break;
 
             case 5:
                 _currentStep = 5;
+                _screenTouchWaitTime = 0.2f;
                 _isCapsuleColorChanged = true;
 
                 setActive = false;
@@ -229,13 +269,17 @@ public class UIGacha : MobileUIView
                     break;
                 }
 
+                _getItemSlotFrame.gameObject.SetActive(setActive);
+                _gachaResultText.gameObject.SetActive(setActive);
+                _gachaMachineBackgroundImage.gameObject.SetActive(true);
+                _isPlayTextAnime = true;
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 _gachaItemName.SetText(string.Empty);
-                _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.07f);
+                _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.07f, Ease.Constant, () =>  _isPlayTextAnime = false);
                 _getItemIndex++;
 
                 _skipButton.gameObject.SetActive(true);
-                CapsuleSetSibilingIndex(9);
+                CapsuleSetSibilingIndex(11);
                 break;
         }
     }
@@ -315,6 +359,4 @@ public class UIGacha : MobileUIView
         }
         _getItemIndex = _getItemList.Count;
     }
-
-
 }
