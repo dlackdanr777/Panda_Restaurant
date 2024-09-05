@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
+using UnityEngine.UI;
 
 public static class Utility
 {
@@ -113,5 +114,34 @@ public static class Utility
                 return 0.0313f;
         }
         return 0;
+    }
+
+
+    /// <summary>Image의 Sprite 피벗값에 맞춰 Image 컴포넌트 피벗값을 이동하는 함수</summary>
+    public static void ChangeImagePivot(Image image)
+    {
+        // 스프라이트의 현재 피벗과 크기를 구함
+        Vector2 spritePivot = image.sprite.pivot;
+        Vector2 spriteSize = image.sprite.rect.size;
+        Vector2 normalizedPivot = new Vector2(spritePivot.x / spriteSize.x, spritePivot.y / spriteSize.y);
+
+        // 현재 RectTransform의 크기 저장
+        RectTransform rectTransform = image.rectTransform;
+        Vector2 originalSize = rectTransform.rect.size;
+
+        // 피벗을 새로 설정하기 전의 anchoredPosition 계산
+        Vector2 oldPivotOffset = new Vector2(rectTransform.pivot.x * originalSize.x, rectTransform.pivot.y * originalSize.y);
+        Vector2 newPivotOffset = new Vector2(normalizedPivot.x * originalSize.x, normalizedPivot.y * originalSize.y);
+        Vector2 pivotDelta = newPivotOffset - oldPivotOffset;
+
+        // 새로운 피벗 설정
+        rectTransform.pivot = normalizedPivot;
+
+        // Stretch 모드인지 확인 (anchorMin과 anchorMax가 같지 않으면 Stretch 모드임)
+        bool isStretch = rectTransform.anchorMin != rectTransform.anchorMax;
+
+        // Stretch 모드일 때만 anchoredPosition을 조정하여 피벗 변경에 따른 위치 변화를 상쇄함
+        if (isStretch)
+            rectTransform.anchoredPosition -= pivotDelta;
     }
 }

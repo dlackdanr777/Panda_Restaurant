@@ -249,6 +249,7 @@ public class UIGacha : MobileUIView
                 _gachaResultText.gameObject.SetActive(setActive);
                 _gachaMachineBackgroundImage.gameObject.SetActive(true);
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
+                Utility.ChangeImagePivot(_getItemImage);
 
                 _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(11);
@@ -274,6 +275,7 @@ public class UIGacha : MobileUIView
                 _gachaMachineBackgroundImage.gameObject.SetActive(true);
                 _isPlayTextAnime = true;
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
+                Utility.ChangeImagePivot(_getItemImage);
                 _gachaItemName.SetText(string.Empty);
                 _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.07f, Ease.Constant, () =>  _isPlayTextAnime = false);
                 _getItemIndex++;
@@ -335,7 +337,9 @@ public class UIGacha : MobileUIView
     private void OnSkipButtonClicked()
     {
         _gachaMacineAnimator.SetTrigger("SkipButtonClick");
+        CapsuleSetSibilingIndex(12);
         _getItemImage.sprite = _getItemList[_getItemList.Count - 1].Sprite;
+        Utility.ChangeImagePivot(_getItemImage);
         _gachaItemName.TweenStop();
         _gachaItemName.SetText(_getItemList[_getItemList.Count - 1].Name);
         CapsuleSetSibilingIndex(9);
@@ -357,6 +361,6 @@ public class UIGacha : MobileUIView
             _getItemSlotList[i].SetData(_getItemList[i]);
             _getItemSlotList[i].gameObject.SetActive(true);
         }
-        _getItemIndex = _getItemList.Count;
+        _getItemIndex = _getItemList.Count - 1;
     }
 }

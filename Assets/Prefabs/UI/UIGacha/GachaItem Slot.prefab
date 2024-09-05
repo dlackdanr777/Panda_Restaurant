@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6334012966616014634}
   - component: {fileID: 9100514132123925446}
   - component: {fileID: 1645094928582272032}
+  - component: {fileID: 4726714766919641588}
   m_Layer: 5
   m_Name: Star Layout
   m_TagString: Untagged
@@ -105,6 +106,23 @@ MonoBehaviour:
   m_Spacing: {x: 2, y: 0}
   m_Constraint: 1
   m_ConstraintCount: 5
+--- !u!114 &4726714766919641588
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1421138015268199302}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea2fd50ccc04cfc448ed9150ca9cb7a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _star1: {fileID: 3833569512576908098}
+  _star2: {fileID: 7762440508079343550}
+  _star3: {fileID: 4498767568939054396}
+  _star4: {fileID: 3741279538329236200}
+  _star5: {fileID: 4042877606496358129}
 --- !u!1 &3543610341728099554
 GameObject:
   m_ObjectHideFlags: 0
@@ -571,11 +589,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _itemImage: {fileID: 4982894197411666063}
-  _star1: {fileID: 3833569512576908098}
-  _star2: {fileID: 7762440508079343550}
-  _star3: {fileID: 4498767568939054396}
-  _star4: {fileID: 3741279538329236200}
-  _star5: {fileID: 4042877606496358129}
+  _uiStar: {fileID: 4726714766919641588}
 --- !u!1 &7762440508079343550
 GameObject:
   m_ObjectHideFlags: 0
