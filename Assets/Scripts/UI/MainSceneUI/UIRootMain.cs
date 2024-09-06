@@ -51,6 +51,8 @@ public class UIRootMain : MonoBehaviour
         }
 
         _tabCount++;
-        _addCustomerButton.SetFillAmonut((float)_tabCount / (GameManager.Instance.TotalTabCount - 1));
+
+        float fillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + ((float)_tabCount / (GameManager.Instance.TotalTabCount - 1)) * 0.725f;
+        _addCustomerButton.SetFillAmonut(fillAmount);
     }
 }

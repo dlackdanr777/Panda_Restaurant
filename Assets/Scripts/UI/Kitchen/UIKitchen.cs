@@ -148,14 +148,14 @@ public class UIKitchen : MobileUIView
     }
 
     
-    private void OnEquipButtonClicked(KitchenUtensilData data)
+    private void OnEquipButtonClicked(BasicData data)
     {
-        UserInfo.SetEquipKitchenUtensil(data);
+        UserInfo.SetEquipKitchenUtensil(data.Id);
         SetKitchenUtensilDataData(_currentType);
         SetKitchenPreview();
     }
 
-    private void OnBuyButtonClicked(KitchenUtensilData data)
+    private void OnBuyButtonClicked(BasicData data)
     {
         if (UserInfo.IsGiveKitchenUtensil(data.Id))
         {
@@ -176,7 +176,7 @@ public class UIKitchen : MobileUIView
         }
 
         UserInfo.AppendMoney(-data.BuyPrice);
-        UserInfo.GiveKitchenUtensil(data);
+        UserInfo.GiveKitchenUtensil(data.Id);
         TimedDisplayManager.Instance.ShowText("새로운 주방 용품을 구매했어요!");
     }
 

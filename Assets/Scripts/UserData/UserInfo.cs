@@ -241,6 +241,27 @@ public static class UserInfo
 
     #endregion
 
+    #region BasicData
+
+    public static bool IsScoreValid(BasicData data)
+    {
+        if (Score < data.BuyScore)
+            return false;
+
+        return true;
+    }
+
+    public static bool IsMoneyValid(BasicData data)
+    {
+        if (Money < data.BuyPrice)
+            return false;
+
+        return true;
+    }
+
+
+    #endregion
+
     #region StaffData
 
     public static void GiveStaff(StaffData data)
