@@ -10,9 +10,12 @@ public abstract class KitchenUtensilData : BasicData
     [SerializeField] private string _setId;
     public string SetId => _setId;
 
-
     [SerializeField] private int _addScore;
     public int AddScore => _addScore;
+
+
+    [TextArea] [SerializeField] private string _effectDescription;
+    public string EffectDescription => _effectDescription;
 
     public abstract int EffectValue { get; }
 

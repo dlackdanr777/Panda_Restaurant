@@ -11,8 +11,8 @@ public class UIKitchenPreview : MonoBehaviour
     [SerializeField] private UITitleAndDescription _setEffectGroup;
     [SerializeField] private UITitleAndDescription _effectGroup;
     [SerializeField] private UIImageAndText _needScore;
-    [SerializeField] private GameObject _underDescriptionObj;
     [SerializeField] private UIButtonAndText _buyButton;
+    [SerializeField] private UIImageAndText _addScoreGroup;
 
     private Action<KitchenUtensilData> _onBuyButtonClicked;
     private Action<KitchenUtensilData> _onEquipButtonClicked;
@@ -34,39 +34,33 @@ public class UIKitchenPreview : MonoBehaviour
     {
         _currentData = data;
         _needScore.gameObject.SetActive(false);
-        _underDescriptionObj.gameObject.SetActive(false);
+        _addScoreGroup.gameObject.SetActive(false);
         _buyButton.gameObject.SetActive(false);
 
         if (data == null)
         {
             _setNameGroup.SetText(string.Empty, string.Empty);
             _setEffectGroup.SetText(string.Empty, string.Empty);
+            _effectGroup.SetText(string.Empty, string.Empty);
             _selectSlot.SetData(null, false, false);
-            _effectGroup.SetActive(false);
             return;
-
         }
 
         //효과 관련 코드
         SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
         _setNameGroup.SetText("세트", setData != null ? setData.Name : string.Empty);
         _setEffectGroup.SetText("세트 효과", setData != null ? setData.Description : string.Empty);
-        if (data is CookingSpeedUpKitchenUtensilData)
+        if (data is CookingSpeedUpKitchenUtensilData || data is TipPerMinuteKitchenUtensilData)
         {
             _effectGroup.SetActive(true);
-            _effectGroup.SetText("요리 효율 증가", data.EffectValue + "%");
-        }
-        else if (data is TipPerMinuteKitchenUtensilData)
-        {
-            _effectGroup.SetActive(true);
-            _effectGroup.SetText("분당 팁", Utility.ConvertToNumber(data.EffectValue));
+            _effectGroup.SetText("보유 효과", data.EffectDescription);
         }
         else
         {
             _effectGroup.SetActive(false);
         }
 
-
+        //하단 설명창 관련 코드
         bool isUse = UserInfo.IsEquipKitchenUtensil(data);
         bool isHave = UserInfo.IsGiveKitchenUtensil(data);
         _selectSlot.SetData(data, isUse, isHave);
@@ -86,6 +80,12 @@ public class UIKitchenPreview : MonoBehaviour
 
             _needScore.gameObject.SetActive(true);
             _needScore.SetText(data.BuyScore.ToString());
+        }
+
+        else
+        {
+            _addScoreGroup.gameObject.SetActive(true);
+            _addScoreGroup.SetText(Utility.ConvertToNumber(data.AddScore));
         }
     }
 

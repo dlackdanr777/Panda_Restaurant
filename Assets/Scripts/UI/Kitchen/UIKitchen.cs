@@ -1,6 +1,7 @@
 using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -13,7 +14,6 @@ public class UIKitchen : MobileUIView
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private TextMeshProUGUI _typeText1;
-    [SerializeField] private TextMeshProUGUI _typeText2;
 
     [Space]
     [Header("Animations")]
@@ -127,7 +127,6 @@ public class UIKitchen : MobileUIView
 
         string typeStr = Utility.KitchenUtensilTypeStringConverter(type);
         _typeText1.text = typeStr;
-        _typeText2.text = typeStr;
 
         OnSlotUpdate(true);
     }
@@ -135,6 +134,14 @@ public class UIKitchen : MobileUIView
     private void SetKitchenPreview()
     {
         KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(_currentType);
+
+        if(equipData == null)
+        {
+            KitchenUtensilData firstSlotData = _currentTypeDataList[0];
+            _uikitchenPreview.SetData(firstSlotData);
+            return;
+        }
+
         _uikitchenPreview.SetData(equipData);
     }
 

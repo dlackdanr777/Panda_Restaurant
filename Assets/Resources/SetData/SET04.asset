@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: SET04
   m_EditorClassIdentifier: 
   _id: SET04
-  _name: 
-  _description: "\uBD84\uB2F9 \uD301 \uC99D\uAC00"
-  _tipPerMinuteValue: 0
+  _name: "\uD654\uB824\uD55C \uAC00\uAD6C"
+  _description: "\uBD84\uB2F9 \uD68D\uB4DD \uD301 70 \uC99D\uAC00"
+  _tipPerMinuteValue: 70

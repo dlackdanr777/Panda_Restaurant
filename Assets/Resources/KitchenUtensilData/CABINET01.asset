@@ -23,4 +23,6 @@ MonoBehaviour:
   _type: 6
   _setId: KITCHEN01
   _addScore: 10
+  _effectDescription: "\uBCF4\uC720\uC2DC \uBD84\uB2F9 \uD301 \uD68D\uB4DD\uB7C9
+    <color=#B40404>40</color>\uC99D\uAC00"
   _tipPerMinute: 40

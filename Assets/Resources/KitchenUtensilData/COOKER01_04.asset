@@ -23,4 +23,7 @@ MonoBehaviour:
   _type: 3
   _setId: KITCHEN01
   _addScore: 3
+  _effectDescription: "\uBCF4\uC720\uC2DC \uC694\uB9AC \uD6A8\uC728 <color=#B40404>0%</color>
+    \uC99D\uAC00\n\uBC30\uCE58\uC2DC \uB3D9\uC2DC \uC870\uB9AC \uAC00\uB2A5 \uC218\uB7C9
+    <color=#B40404>1</color>\uAC1C \uCD94\uAC00"
   _cookingSpeedMul: 0
