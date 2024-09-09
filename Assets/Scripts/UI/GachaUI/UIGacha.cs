@@ -3,7 +3,6 @@ using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections.Generic;
 using UnityEngine.UI;
-using static UnityEditor.Progress;
 
 [System.Serializable]
 public class Capsule

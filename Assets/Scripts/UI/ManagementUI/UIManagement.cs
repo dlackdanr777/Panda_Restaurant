@@ -114,13 +114,13 @@ public class UIManagement : MobileUIView
         _setEffectGroup.TweenStop();
         if (type == SetEffectType.Furniture)
         {
-            _setEffectGroup.TweenAnchoredPosition(new Vector2(0, 0), 0.5f, Ease.Smoothstep);
+            _setEffectGroup.TweenAnchoredPosition(new Vector2(0, -5.6f), 0.5f, Ease.Smoothstep);
             return;
         }
 
         if (type == SetEffectType.KitchenUntensils)
         {
-            _setEffectGroup.TweenAnchoredPosition(new Vector2(-530, 0), 0.5f, Ease.Smoothstep);
+            _setEffectGroup.TweenAnchoredPosition(new Vector2(-610, -5.6f), 0.5f, Ease.Smoothstep);
             return;
         }
     }
