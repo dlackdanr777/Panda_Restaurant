@@ -671,3 +671,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _slotButton: {fileID: 1030854578563781994}
   _itemImage: {fileID: 2873013399157308517}
+  _grayMat: {fileID: 2100000, guid: 19b86f68a35a77a4e87a9a832c8790e3, type: 2}

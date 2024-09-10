@@ -12,7 +12,13 @@ public class UIImageAndText : MonoBehaviour
     {
         get { return _text.color;}
         set { _text.color = value; }
-    } 
+    }
+
+    public Color ImageColor
+    {
+        get { return _image.color;}
+        set { _image.color = value; }
+    }
 
     public void SetSprite(Sprite sprite)
     {
@@ -23,6 +29,12 @@ public class UIImageAndText : MonoBehaviour
     {
         _text.text = text;
     }
+
+    public void SetImageMaterial(Material material)
+    {
+        _image.material = material;
+    }
+
 
     public void TweenStop()
     {

@@ -151,7 +151,7 @@ public static class Utility
         return type switch
         {
             ColorType.None => Color.white,
-            ColorType.NoGive => new Color(0.25f, 0.25f, 0.25f),
+            ColorType.NoGive => new Color(0.2f, 0.2f, 0.2f),
             ColorType.Give => Color.white,
             ColorType.Negative => new Color(0.83f, 0.28f, 0.25f),
             ColorType.Positive => new Color(0.24f, 0.57f, 1),

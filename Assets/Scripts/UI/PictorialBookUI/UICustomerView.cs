@@ -18,6 +18,7 @@ public class UICustomerView : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _orderFoodTitle;
     [SerializeField] private TextMeshProUGUI _effectTitle;
     [SerializeField] private TextMeshProUGUI _effectDescription;
+    [SerializeField] private Material _grayMat;
 
     [Space]
     [Header("OrderFood Slot Options")]
@@ -140,6 +141,7 @@ public class UICustomerView : MonoBehaviour
 
             _orderFoodSlotList[slotIndex].gameObject.SetActive(true);
             _orderFoodSlotList[slotIndex].SetSprite(foodData.Sprite);
+            _orderFoodSlotList[slotIndex].SetMaterial(UserInfo.IsGiveRecipe(foodData) ? null : _grayMat);
             _orderFoodSlotList[slotIndex].SetColor(UserInfo.IsGiveRecipe(foodData) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive));
 
             slotIndex++;

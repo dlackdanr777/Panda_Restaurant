@@ -16,4 +16,9 @@ public class UIImageSlot : MonoBehaviour
     {
         _image.color = color;
     }
+
+    public void SetMaterial(Material material)
+    {
+        _image.material = material;
+    }
 }

@@ -7,6 +7,7 @@ public class UICustomerBlackImage : MonoBehaviour
     [SerializeField] private UIImageAndText _needItemSlot;
     [SerializeField] private UIImageAndText _needFoodSlot;
     [SerializeField] private UITextAndText _needScoreSlot;
+    [SerializeField] private Material _grayMaterial;
 
     private Color _needItemSlotTextColor;
     private Color _needFoodSlotTextColor;
@@ -31,7 +32,10 @@ public class UICustomerBlackImage : MonoBehaviour
             GachaItemData itemData = ItemManager.Instance.GetGachaItemData(data.RequiredItem);
             _needItemSlot.gameObject.SetActive(true);
             _needItemSlot.SetSprite(itemData.Sprite);
-            _needItemSlot.TextColor = UserInfo.IsGiveGachaItem(data.RequiredItem) ? _needItemSlotTextColor : Utility.GetColor(ColorType.Negative);
+
+            bool isGiveItem = UserInfo.IsGiveGachaItem(data.RequiredItem);
+            _needItemSlot.TextColor = isGiveItem ? _needItemSlotTextColor : Utility.GetColor(ColorType.Negative);
+            _needItemSlot.SetImageMaterial(isGiveItem ? null : _grayMaterial);
         }
 
 
@@ -44,7 +48,10 @@ public class UICustomerBlackImage : MonoBehaviour
             FoodData foodData = FoodDataManager.Instance.GetFoodData(data.RequiredDish);
             _needFoodSlot.gameObject.SetActive(true);
             _needFoodSlot.SetSprite(foodData.Sprite);
-            _needFoodSlot.TextColor = UserInfo.IsGiveRecipe(data.RequiredDish) ? _needFoodSlotTextColor : Utility.GetColor(ColorType.Negative);
+
+            bool isGiveRecipe = UserInfo.IsGiveRecipe(data.RequiredDish);
+            _needFoodSlot.TextColor = isGiveRecipe ? _needFoodSlotTextColor : Utility.GetColor(ColorType.Negative);
+            _needFoodSlot.SetImageMaterial(isGiveRecipe ? null : _grayMaterial);
         }
 
         if(data.MinScore <= 0)
