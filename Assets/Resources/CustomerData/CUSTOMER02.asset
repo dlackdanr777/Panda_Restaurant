@@ -12,16 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c45ec71402c87af488940a5ef102e306, type: 3}
   m_Name: CUSTOMER02
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: 964ffa4969a6de148a1b5bb9a1be286b, type: 3}
-  _name: "\uD30C\uB2C8"
+  _sprite: {fileID: 21300000, guid: 013d213f1158db3439e7059fa9af43ca, type: 3}
+  _name: "\uB791\uC774"
   _id: CUSTOMER02
-  _description: "\uACE0\uC591\uC774\uCC98\uB7FC \uBCF4\uC774\uC9C0\uB9CC \uD638\uB791\uC774\uC774\uB2E4.\\n\uC791\uC740
-    \uD0A4\uC640 \uADC0\uC5EC\uC6B4 \uC5BC\uAD74 \uB54C\uBB38\uC5D0 \uACE0\uC591\uC774\uB85C
-    \uB9CE\uC774\uB4E4 \uCC29\uAC01\uD558\uACE0\uB294 \uD55C\uB2E4. "
+  _description: "\uC791\uC740 \uD638\uB791\uC774.\n\uC791\uC740 \uD0A4\uC640 \uADC0\uC5EC\uC6B4
+    \uC5BC\uAD74 \uB54C\uBB38\uC5D0 \uACE0\uC591\uC774\uB85C \uB9CE\uC774\uB4E4 \uCC29\uAC01\uD558\uACE0\uB294
+    \uD55C\uB2E4."
   _moveSpeed: 3
   _minScore: 0
-  _requiredDish: FOOD01
+  _requiredDish: FOOD02
+  _requiredItem: 
   _orderFoods:
   - FOOD01
-  _maxDiscomfortIndex: 1
-  _skill: {fileID: 11400000, guid: b779baf596903cc49ab62126c8092e61, type: 2}
+  _maxDiscomfortIndex: 15
+  _skill: {fileID: 11400000, guid: 4641d0077eb30704d88a3107eb8695e3, type: 2}

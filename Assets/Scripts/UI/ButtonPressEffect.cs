@@ -50,7 +50,6 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
             return;
 
         gameObject.TweenStop();
-        DebugLog.Log(gameObject.name + _tmpScale);
         gameObject.transform.localScale = _targetScale;
         gameObject.TweenScale(_tmpScale, _pressDuration, _buttonUpTweenMode);
         _onButtonUpEvent?.Invoke();

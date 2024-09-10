@@ -35,6 +35,15 @@ public class ItemManager : MonoBehaviour
     }
 
 
+    public GachaItemData GetGachaItemData(string id)
+    {
+        if (_gachaItemDataDic.TryGetValue(id, out GachaItemData data))
+            return data;
+
+        throw new System.Exception("해당 id를 가진 가챠 아이템이 존재하지 않습니다: " + id);
+    }
+
+
     public List<GachaItemData> GetSortGachaItemDataList()
     {
         return UserInfo.GachaItemSortType switch

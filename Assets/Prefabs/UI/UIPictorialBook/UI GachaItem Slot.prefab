@@ -268,7 +268,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 1.7, y: 6.4}
-  m_SizeDelta: {x: 116.2662, y: 99.7333}
+  m_SizeDelta: {x: 120, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2828793522308532555
 CanvasRenderer:
@@ -666,6 +666,7 @@ MonoBehaviour:
   _pressDuration: 0.15
   _buttonDownTweenMode: 23
   _buttonUpTweenMode: 23
+  Interactable: 1
 --- !u!114 &5042317861996598461
 MonoBehaviour:
   m_ObjectHideFlags: 0

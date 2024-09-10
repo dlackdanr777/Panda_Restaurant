@@ -22,6 +22,7 @@ public class UICustomerSlot : MonoBehaviour
 
         _data = data;
         _itemImage.sprite = data.Sprite;
+        _itemImage.color = UserInfo.IsCustomerVisitEnabled(data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
     }
 
 

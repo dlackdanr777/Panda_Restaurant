@@ -16,6 +16,7 @@ public class UICustomerPictorialBook : MonoBehaviour
 
     public void Init()
     {
+        _view.Init();
         _customerList = CustomerDataManager.Instance.GetSortCustomerList();
         
         for(int i = 0, cnt = _customerList.Count; i < cnt; ++i) 

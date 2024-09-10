@@ -25,6 +25,9 @@ public class CustomerData : ScriptableObject
     [SerializeField] private string _requiredDish;
     public string RequiredDish => _requiredDish;
 
+    [SerializeField] private string _requiredItem;
+    public string RequiredItem => _requiredItem;
+
     [SerializeField] private string[] _orderFoods;
     public string[] OrderFoods => _orderFoods;
 

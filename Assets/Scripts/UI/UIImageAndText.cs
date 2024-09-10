@@ -8,6 +8,11 @@ public class UIImageAndText : MonoBehaviour
 {
     [SerializeField] private Image _image;
     [SerializeField] private TextMeshProUGUI _text;
+    public Color TextColor
+    {
+        get { return _text.color;}
+        set { _text.color = value; }
+    } 
 
     public void SetSprite(Sprite sprite)
     {

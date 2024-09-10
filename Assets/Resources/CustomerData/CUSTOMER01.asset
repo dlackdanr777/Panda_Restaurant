@@ -12,17 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c45ec71402c87af488940a5ef102e306, type: 3}
   m_Name: CUSTOMER01
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: 91588342c286e6a459afb40957b06543, type: 3}
+  _sprite: {fileID: 21300000, guid: 7a688e572447b4f4e823a25f2cf40c7e, type: 3}
   _name: "\uD30C\uB2C8"
   _id: CUSTOMER01
   _description: "\uAC00\uAC8C \uBC14\uB85C \uC606 \uAC74\uBB3C\uC5D0\uC11C \uC0AC\uB294
-    \uD310\uB2E4.\\n\uC8FC\uB9D0\uB9C8\uB2E4 \uC8FD\uC21C \uC7A5\uC0AC\uB97C \uD55C\uB2E4.\\n\uD3C9\uC0DD\uC744
-    \uD568\uAED8 \uD560 \uBC30\uC6B0\uC790 \uD310\uB2E4\uB97C \uCC3E\uB294 \uC911\uC774\uB77C\uACE0
-    \uD55C\uB2E4."
+    \uD310\uB2E4.\n\uC8FC\uB9D0\uB9C8\uB2E4 \uC8FD\uC21C \uC7A5\uC0AC\uB97C \uD55C\uB2E4."
   _moveSpeed: 3
   _minScore: 0
   _requiredDish: FOOD01
+  _requiredItem: 
   _orderFoods:
   - FOOD03
-  _maxDiscomfortIndex: 1
-  _skill: {fileID: 11400000, guid: 4641d0077eb30704d88a3107eb8695e3, type: 2}
+  _maxDiscomfortIndex: 25
+  _skill: {fileID: 0}

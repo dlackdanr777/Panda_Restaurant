@@ -27,7 +27,7 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
             return;
         }
 
-        _itemImage.color = UserInfo.IsGiveGachaItem(data.Id) ? Color.white : new Color(0.2f, 0.2f, 0.2f, 1);
+        _itemImage.color = UserInfo.IsGiveGachaItem(data.Id) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
 
         if (_data == data)
             return;

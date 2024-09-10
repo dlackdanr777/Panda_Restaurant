@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class UIPictorialBookGachaItemView : MonoBehaviour
 {
     [Header("Components")]
+    [SerializeField] private GameObject _blackImage;
     [SerializeField] private Image _specialFrameImage;
     [SerializeField] private Image _uniqueFrameImage;
     [SerializeField] private Image _rareFrameImage;
@@ -39,26 +40,39 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
             _addScoreDescription.text = string.Empty;
             _tipPerMinuteDescription.text = string.Empty;
             _data = null;
+            _blackImage.gameObject.SetActive(true);
             return;
         }
 
         _data = data;
+
+        if(UserInfo.IsGiveGachaItem(data))
+        {
+            _blackImage.gameObject.SetActive(false);
+            _itemNameText.text = data.Name;
+        }
+        else
+        {
+            _blackImage.gameObject.SetActive(true);
+            _itemNameText.text = "???";
+        }
+
         _itemImage.gameObject.SetActive(true);
         _addScoreLayout.SetActive(true);
         _tipPerMinuteLayout.SetActive(true);
 
-        SetStar(data.GachaItemRank);
 
+        SetStar(data.GachaItemRank);
         _itemImage.sprite = _data.Sprite;
         Utility.ChangeImagePivot(_itemImage);
         _itemImage.TweenStop();
-        _itemImage.color = new Color(_itemImage.color.r, _itemImage.color.g, _itemImage.color.b, 0);
         _itemImage.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
-        _itemImage.color = UserInfo.IsGiveGachaItem(data.Id) ? new Color(_itemImage.color.r, _itemImage.color.g, _itemImage.color.b, 0) : new Color(0.2f, 0.2f, 0.2f, 0);
+        Color itemColor = UserInfo.IsGiveGachaItem(data.Id) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        itemColor.a = 0;
+        _itemImage.color = itemColor;
         _itemImage.TweenAlpha(1, 0.25f, Ease.OutQuint);
         _itemImage.TweenScale(Vector3.one, 0.25f, Ease.OutBack);
 
-        _itemNameText.text = data.Name;
         _descriptionText.text = data.Description;
         _addScoreDescription.text = Utility.ConvertToNumber(data.AddScore);
         _tipPerMinuteDescription.text = Utility.ConvertToNumber(data.TipPerMinute);
@@ -72,8 +86,11 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
         _itemImage.sprite = _data.Sprite;
         Utility.ChangeImagePivot(_itemImage);
         _itemImage.TweenStop();
-        _itemImage.color = new Color(_itemImage.color.r, _itemImage.color.g, _itemImage.color.b, 0);
+        _itemImage.TweenStop();
         _itemImage.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
+        Color itemColor = UserInfo.IsGiveGachaItem(_data.Id) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        itemColor.a = 0;
+        _itemImage.color = itemColor;
         _itemImage.TweenAlpha(1, 0.25f, Ease.OutQuint);
         _itemImage.TweenScale(Vector3.one, 0.25f, Ease.OutBack);
     }

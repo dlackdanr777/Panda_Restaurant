@@ -11,5 +11,8 @@ public enum SortType
 
     /// <summary>등급 내림차순</summary>
     GradeDescending,
-    Length
+    Length,
+
+    /// <summary>기존 그대로</summary>
+    None,
 }

@@ -138,7 +138,7 @@ public static class UserInfo
     public static Action OnChangeGachaItemSortTypeHandler;
 
 
-    public static SortType _customerSortType = SortType.NameAscending;
+    public static SortType _customerSortType = SortType.None;
     public static SortType CustomerSortType => _customerSortType;
 
     private static SortType _gachaItemSortType = SortType.GradeDescending;
@@ -239,13 +239,17 @@ public static class UserInfo
         DataBind.SetTextValue("MoneyConvert", Utility.ConvertToNumber(_money));
     }
 
-    #endregion
-
-    #region BasicData
-
     public static bool IsScoreValid(BasicData data)
     {
         if (Score < data.BuyScore)
+            return false;
+
+        return true;
+    }
+
+    public static bool IsScoreValid(int score)
+    {
+        if (Score < score)
             return false;
 
         return true;
@@ -259,6 +263,13 @@ public static class UserInfo
         return true;
     }
 
+    public static bool IsMoneyValid(int money)
+    {
+        if (Money < money)
+            return false;
+
+        return true;
+    }
 
     #endregion
 
@@ -1076,6 +1087,17 @@ public static class UserInfo
     #endregion
 
     #region CustomerData
+
+    public static bool IsCustomerVisitEnabled(CustomerData data)
+    {
+        bool gachaItemCheck = !string.IsNullOrWhiteSpace(data.RequiredItem) && !IsGiveGachaItem(data.RequiredItem);
+        bool recipeCheck = !string.IsNullOrWhiteSpace(data.RequiredDish) && !IsGiveRecipe(data.RequiredDish);
+        if (gachaItemCheck || recipeCheck || !IsScoreValid(data.MinScore))
+            return false;
+
+        return true;
+    }
+
 
     public static void CustomerVisits(CustomerData customer)
     {

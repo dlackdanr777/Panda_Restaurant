@@ -12,22 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dfe943a654cf4e0449fa2ace96692614, type: 3}
   m_Name: FOOD02
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: f56ab4b83816bbc40ab9282832785679, type: 3}
-  _thumbnailSPrite: {fileID: 21300000, guid: f56ab4b83816bbc40ab9282832785679, type: 3}
-  _name: "\uD3EC\uC57C \uC8FC\uBA39\uBC25"
+  _sprite: {fileID: 21300000, guid: 3ef9dc8cdc3d8c3479a7e77ed3844400, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 3ef9dc8cdc3d8c3479a7e77ed3844400, type: 3}
+  _name: "\uACF6\uAC10\uACFC \uC6B0\uC720"
   _id: FOOD02
-  _description: "\uACF5\uC778 \uD310\uB2E4 \uC8FC\uBA39\uBC25.\n\uBAA8\uB4E0 \uD310\uB2E4\uAC00
-    \uC0AC\uB791\uD558\uB294 \uC8FC\uBA39\uBC25"
+  _description: "\uB2EC\uB2EC\uD55C \uACF6\uAC10\uACFC \uBD80\uB4DC\uB7EC\uC6B4 \uC6B0\uC720"
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
+  _buyScore: 2
+  _buyPrice: 100
   _miniGameNeeded: 0
   _foodLevelData:
-  - _sellPrice: 100
-    _upgradeMinScore: 250
-    _upgradePrice: 1600
-    _cookingTime: 2
-  - _sellPrice: 1000
+  - _sellPrice: 120
+    _upgradeMinScore: 290
+    _upgradePrice: 2500
+    _cookingTime: 3
+  - _sellPrice: 1500
     _upgradeMinScore: -1
     _upgradePrice: -1
-    _cookingTime: 4
+    _cookingTime: 6

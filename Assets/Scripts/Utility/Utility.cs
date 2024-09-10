@@ -144,4 +144,26 @@ public static class Utility
         if (isStretch)
             rectTransform.anchoredPosition -= pivotDelta;
     }
+
+
+    public static Color GetColor(ColorType type)
+    {
+        return type switch
+        {
+            ColorType.None => Color.white,
+            ColorType.NoGive => new Color(0.25f, 0.25f, 0.25f),
+            ColorType.Give => Color.white,
+            ColorType.Negative => new Color(0.83f, 0.28f, 0.25f),
+            ColorType.Positive => new Color(0.24f, 0.57f, 1),
+            _=> Color.black
+        };
+    }
+
+    public static string ColorToHex(Color color)
+    {
+        int r = Mathf.Clamp(Mathf.FloorToInt(color.r * 255), 0, 255);
+        int g = Mathf.Clamp(Mathf.FloorToInt(color.g * 255), 0, 255);
+        int b = Mathf.Clamp(Mathf.FloorToInt(color.b * 255), 0, 255);
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
 }
