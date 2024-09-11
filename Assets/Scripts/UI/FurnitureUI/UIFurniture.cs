@@ -14,8 +14,7 @@ public class UIFurniture : MobileUIView
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
-    [SerializeField] private TextMeshProUGUI _typeText1;
-    [SerializeField] private TextMeshProUGUI _typeText2;
+    [SerializeField] private TextMeshProUGUI _typeText;
 
     [Space]
     [Header("Animations")]
@@ -119,8 +118,7 @@ public class UIFurniture : MobileUIView
         _currentTypeDataList = FurnitureDataManager.Instance.GetFurnitureDataList(type);
 
         string furnitureName = Utility.FurnitureTypeStringConverter(type);
-        _typeText1.text = furnitureName;
-        _typeText2.text = furnitureName;
+        _typeText.text = furnitureName;
 
         OnSlotUpdate(true);
     }
