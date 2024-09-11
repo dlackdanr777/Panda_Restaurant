@@ -195,11 +195,9 @@ public class UIFurniture : MobileUIView
             {
                 _slots[slotsIndex][i].transform.SetAsFirstSibling();
                 _slots[slotsIndex][i].SetUse(data.ThumbnailSprite, data.Name, "사용중");
-                if(changeOutline) _slots[slotsIndex][i].SetOutline(true);
                 continue;
             }
 
-            if(changeOutline) _slots[slotsIndex][i].SetOutline(false);
             if (UserInfo.IsGiveFurniture(data))
             {
                 _slots[slotsIndex][i].SetOperate(data.ThumbnailSprite, data.Name, "사용");
@@ -223,11 +221,5 @@ public class UIFurniture : MobileUIView
     private void OnSlotClicked(FurnitureData data)
     {
         _uiFurniturePreview.SetFurnitureData(data);
-
-        for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; i++)
-        {
-            bool outlineEnabled = _currentTypeDataList[i] == data ? true : false;
-            _slots[(int)_currentType][i].SetOutline(outlineEnabled);
-        }
     }
 }

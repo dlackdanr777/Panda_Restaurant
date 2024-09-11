@@ -32,7 +32,6 @@ public class UIRecipeTab : MonoBehaviour
             int index = i;
             FoodData data = _foodDataList[index];
             slot.Init(() => OnSlotClicked(data));
-            slot.SetOutline(false);
             _slots[i] = slot;
         }
 
@@ -131,11 +130,5 @@ public class UIRecipeTab : MonoBehaviour
     private void OnSlotClicked(FoodData data)
     {
         _uiRecipePreview.SetFoodData(data);
-
-        for(int i = 0, cnt = _slots.Length; i < cnt; i++)
-        {
-            bool outlineEnabled = _foodDataList[i] == data ? true : false;
-            _slots[i].SetOutline(outlineEnabled);
-        }
     }
 }

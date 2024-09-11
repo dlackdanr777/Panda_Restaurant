@@ -7,7 +7,6 @@ using UnityEngine.UI;
 public class UISlot : MonoBehaviour
 {
     [SerializeField] private Image _image;
-    [SerializeField] private Outline _outLine;
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private Button _button;
     [SerializeField] private GameObject _alarmImage;
@@ -86,11 +85,5 @@ public class UISlot : MonoBehaviour
         _image.color = new Color(0, 0, 0, 1);
         _nameText.text = name;
         _scoreImage?.SetText(text);
-    }
-
-
-    public void SetOutline(bool value)
-    {
-        _outLine.enabled = value;
     }
 }

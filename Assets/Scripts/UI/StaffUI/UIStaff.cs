@@ -223,11 +223,9 @@ public class UIStaff : MobileUIView
             {
                 slot.transform.SetAsFirstSibling();
                 slot.SetUse(data.ThumbnailSprite, data.Name, "사용중");
-                if (changeOutline) _slots[slotsIndex][i].SetOutline(true);
                 continue;
             }
 
-            if (changeOutline) _slots[slotsIndex][i].SetOutline(false);
             if (UserInfo.IsGiveStaff(data))
             {
                 slot.SetOperate(data.ThumbnailSprite, data.Name, "사용");
@@ -260,10 +258,5 @@ public class UIStaff : MobileUIView
     private void OnSlotClicked(StaffData data)
     {
         _uiStaffPreview.SetStaffData(data);
-        for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; i++)
-        {
-            bool outlineEnabled = _currentTypeDataList[i] == data ? true : false;
-            _slots[(int)_currentType][i].SetOutline(outlineEnabled);
-        }
     }
 }
