@@ -6,21 +6,17 @@ using UnityEngine.UI;
 
 public class UIFurniturePreview : MonoBehaviour
 {
-    [SerializeField] private Image _image;
-    [SerializeField] private GameObject[] _hideObjs;
-    [SerializeField] private TextMeshProUGUI _nameText;
-    [SerializeField] private GameObject _setEffectObj;
-    [SerializeField] private TextMeshProUGUI _setEffectDescription;
-    [SerializeField] private GameObject _buyMinScoreObj;
-    [SerializeField] private TextMeshProUGUI _buyMinScoreDescription;
-    [SerializeField] private TextMeshProUGUI _addScoreDescription;
-    [SerializeField] private GameObject _addTipObj;
-    [SerializeField] private GameObject _tipVolumeObj;
-    [SerializeField] private TextMeshProUGUI _addTipDescription;
-    [SerializeField] private TextMeshProUGUI _tipVolumeDescription;
+    [SerializeField] private UIImageAndText _selectGroup;
+    [SerializeField] private UIImageAndText _scoreGroup;
+    [SerializeField] private UIImageAndText _tipPerMinuteGroup;
+    [SerializeField] private UIImageAndText _cookSpeedGroup;
+    [SerializeField] private UITextAndText _setGroup;
+    [SerializeField] private GameObject _effetGroup;
+
     [SerializeField] private UIButtonAndText _usingButton;
     [SerializeField] private UIButtonAndText _equipButton;
     [SerializeField] private UIButtonAndText _buyButton;
+    [SerializeField] private UIButtonAndText _scoreButton;
 
     private Action<FurnitureData> _onBuyButtonClicked;
     private Action<FurnitureData> _onEquipButtonClicked;
@@ -42,86 +38,88 @@ public class UIFurniturePreview : MonoBehaviour
     public void SetFurnitureData(FurnitureData data)
     {
         _currentData = data;
+
         _usingButton.gameObject.SetActive(false);
         _equipButton.gameObject.SetActive(false);
         _buyButton.gameObject.SetActive(false);
-        _buyMinScoreObj.SetActive(false);
-        _setEffectObj.SetActive(false);
+        _scoreButton.gameObject.SetActive(false);
+        _tipPerMinuteGroup.gameObject.SetActive(false);
+        _cookSpeedGroup.gameObject.SetActive(false);
 
         if (data == null)
         {
-            for(int i = 0, cnt = _hideObjs.Length; i < cnt; ++i)
-            {
-                _hideObjs[i].SetActive(false);
-            }
+            _scoreGroup.gameObject.SetActive(false);
+            _setGroup.gameObject.SetActive(false);
+            _effetGroup.gameObject.SetActive(false);
+            _selectGroup.ImageColor = new Color(1,1,1,0);
+            _selectGroup.SetText(string.Empty);
             return;
         }
-
-        for (int i = 0, cnt = _hideObjs.Length; i < cnt; ++i)
+        else
         {
-            _hideObjs[i].SetActive(true);
+            _scoreGroup.gameObject.SetActive(true);
+            _setGroup.gameObject.SetActive(true);
+            _effetGroup.gameObject.SetActive(true);
+            _selectGroup.ImageColor = Color.white;
+
         }
 
-        _image.sprite = data.ThumbnailSprite;
-        _nameText.text = data.Name;
-        _addScoreDescription.text = data.AddScore.ToString();
+        _selectGroup.SetSprite(data.ThumbnailSprite);
+        _selectGroup.SetText(data.Name);
+        _scoreGroup.SetText(data.AddScore.ToString());
 
         SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
-        _setEffectDescription.text = setData != null ? setData.Description : string.Empty;
+        _setGroup.SetText1(setData.Name);
+        _setGroup.SetText2(setData != null ? setData.Description : string.Empty);
 
         if (data.EffectData is TipPerMinuteFurnitureEffectData)
         {
-            _addTipObj.SetActive(true);
-            _tipVolumeObj.gameObject.SetActive(false);
+            _tipPerMinuteGroup.gameObject.SetActive(true);
+            _cookSpeedGroup.gameObject.SetActive(false);
 
-            _addTipDescription.text = data.EffectData.EffectValue.ToString();
-        }
-            
-
+            _tipPerMinuteGroup.SetText("∫–¥Á »πµÊ ∆¡ <color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + (data.EffectData.EffectValue.ToString())  + "</color> ¡ı∞°");
+        }        
         else if (data.EffectData is MaxTipVolumeFurnitureEffectData)
         {
-            _tipVolumeObj.gameObject.SetActive(true);
-            _addTipObj.SetActive(false);
+            _tipPerMinuteGroup.gameObject.SetActive(false);
+            _cookSpeedGroup.gameObject.SetActive(true);
 
-            _tipVolumeDescription.text = data.EffectData.EffectValue.ToString();
+            _cookSpeedGroup.SetText("∆¡ ¿˙¿Â∑Æ <color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.EffectData.EffectValue + "</color> ¡ı∞°");
         }
-
         else
         {
-            _tipVolumeObj.gameObject.SetActive(false);
-            _addTipObj.SetActive(false);
+            _tipPerMinuteGroup.SetText(string.Empty);
         }
         
 
         if (UserInfo.IsEquipFurniture(data))
         {
             _usingButton.gameObject.SetActive(true);
-            _usingButton.SetText("ªÁøÎ ¡ﬂ");
-            _usingButton.Interactable(false);
-            _image.color = new Color(1, 1, 1);
-            _setEffectObj.SetActive(true);
+            _selectGroup.ImageColor = Color.white;
         }
         else
         {
             if(UserInfo.IsGiveFurniture(data))
             {
                 _equipButton.gameObject.SetActive(true);
-                _equipButton.SetText("ªÁøÎ «œ±‚");
                 _equipButton.RemoveAllListeners();
                 _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
-                _image.color = new Color(1, 1, 1);
-                _setEffectObj.SetActive(true);
+                _selectGroup.ImageColor = Color.white;
             }
             else
             {
-                _image.color = new Color(0, 0, 0);
+                _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
 
+                if (!UserInfo.IsScoreValid(data))
+                {
+                    _scoreButton.gameObject.SetActive(true);
+                    _scoreButton.SetText(data.BuyScore.ToString());
+                    return;
+                }
                 _buyButton.gameObject.SetActive(true);
                 _buyButton.RemoveAllListeners();
                 _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
                 _buyButton.SetText(Utility.ConvertToNumber(data.BuyPrice));
-                _buyMinScoreObj.SetActive(true);
-                _buyMinScoreDescription.text = Utility.ConvertToNumber(data.BuyScore);
             }
         }
     }
