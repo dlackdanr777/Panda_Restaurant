@@ -30,7 +30,7 @@ public class UIMoney : MonoBehaviour
 
     private void Init()
     {
-        _moneyText.text = Utility.ConvertToNumber(UserInfo.Money);
+        _moneyText.text = Utility.ConvertToMoney(UserInfo.Money);
         _currentMoney = UserInfo.Money;
         _tmpScale = _uiMoney.localScale;
 
@@ -70,7 +70,7 @@ public class UIMoney : MonoBehaviour
         Vector3 spawnPos = _animeParent.transform.position;
         TextMeshProUGUI tmp = ObjectPoolManager.Instance.SpawnTMP(spawnPos, Quaternion.identity, _animeParent);
 
-        tmp.text = sign + Utility.ConvertToNumber(addMoney);
+        tmp.text = sign + Utility.ConvertToMoney(addMoney);
         tmp.fontSize = _moneyText.fontSize;
         tmp.rectTransform.sizeDelta = _moneyText.rectTransform.sizeDelta;
         tmp.rectTransform.localScale = _moneyText.rectTransform.localScale;
@@ -91,12 +91,12 @@ public class UIMoney : MonoBehaviour
 
         while(time < 1)
         {
-            _moneyText.text = Utility.ConvertToNumber(Mathf.Lerp(startMoney, targetMoney, time));
+            _moneyText.text = Utility.ConvertToMoney(Mathf.Lerp(startMoney, targetMoney, time));
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
 
-        _moneyText.text = Utility.ConvertToNumber(UserInfo.Money);  
+        _moneyText.text = Utility.ConvertToMoney(UserInfo.Money);  
     }
 
     

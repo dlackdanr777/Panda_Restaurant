@@ -16,6 +16,6 @@ public class FurnitureData : BasicData
     [SerializeField] private int _addScore;
     public int AddScore => _addScore;
 
-    [SerializeField] private FurnitureEffectData _effectData;
-    public FurnitureEffectData EffectData => _effectData;
+    [SerializeField] private EquipEffectData _effectData;
+    public EquipEffectData EffectData => _effectData;
 }

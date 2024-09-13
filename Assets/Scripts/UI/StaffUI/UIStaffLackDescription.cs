@@ -13,11 +13,11 @@ public class UIStaffLackDescription : MonoBehaviour
     public void SetStaffData(StaffData data, Action<StaffData> onBuyButtonClicked)
     {
         _needItemDescription.text = string.Empty;
-        _addScoreDescription.text = Utility.ConvertToNumber(data.GetAddScore(1));
+        _addScoreDescription.text = Utility.ConvertToMoney(data.GetAddScore(1));
         _addTipDescription.text = data.GetAddTipMul(1) + "%";
 
         _buyButton.RemoveAllListeners();
         _buyButton.AddListener(() => onBuyButtonClicked(data));
-        _buyButton.SetText(Utility.ConvertToNumber(data.BuyPrice));
+        _buyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
     }
 }

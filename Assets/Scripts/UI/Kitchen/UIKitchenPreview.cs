@@ -6,13 +6,26 @@ using UnityEngine.UI;
 public class UIKitchenPreview : MonoBehaviour
 {
     [Header("Components")]
-    [SerializeField] private UISelectSlot _selectSlot;
-    [SerializeField] private UITitleAndDescription _setNameGroup;
-    [SerializeField] private UITitleAndDescription _setEffectGroup;
-    [SerializeField] private UITitleAndDescription _effectGroup;
-    [SerializeField] private UIImageAndText _needScore;
+    [SerializeField] private UIImageAndText _selectGroup;
+    [SerializeField] private UIImageAndText _scoreGroup;
+    [SerializeField] private UIImageAndText _tipPerMinuteGroup;
+    [SerializeField] private UIImageAndText _cookSpeedGroup;
+    [SerializeField] private UIImageAndImage _scoreSignGroup;
+    [SerializeField] private UIImageAndImage _effectSignGroup;
+    [SerializeField] private UITextAndText _setGroup;
+    [SerializeField] private GameObject _effetGroup;
+
+    [Space]
+    [Header("Buttons")]
+    [SerializeField] private UIButtonAndText _usingButton;
+    [SerializeField] private UIButtonAndText _equipButton;
     [SerializeField] private UIButtonAndText _buyButton;
-    [SerializeField] private UIImageAndText _addScoreGroup;
+    [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
+    [SerializeField] private UIButtonAndText _scoreButton;
+
+    [Space]
+    [Header("Sprites")]
+    [SerializeField] private Sprite _questionMarkSprite;
 
     private Action<KitchenUtensilData> _onBuyButtonClicked;
     private Action<KitchenUtensilData> _onEquipButtonClicked;
@@ -20,7 +33,7 @@ public class UIKitchenPreview : MonoBehaviour
 
     public void Init(Action<BasicData> onEquipButtonClicked, Action<BasicData> onBuyButtonClicked)
     {
-        _selectSlot.OnButtonClicked(onEquipButtonClicked);
+        _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
 
         UserInfo.OnChangeMoneyHandler += UpdateUI;
@@ -33,59 +46,149 @@ public class UIKitchenPreview : MonoBehaviour
     public void SetData(KitchenUtensilData data)
     {
         _currentData = data;
-        _needScore.gameObject.SetActive(false);
-        _addScoreGroup.gameObject.SetActive(false);
+        _usingButton.gameObject.SetActive(false);
+        _equipButton.gameObject.SetActive(false);
         _buyButton.gameObject.SetActive(false);
+        _notEnoughMoneyButton.gameObject.SetActive(false);
+        _scoreButton.gameObject.SetActive(false);
 
         if (data == null)
         {
-            _setNameGroup.SetText(string.Empty, string.Empty);
-            _setEffectGroup.SetText(string.Empty, string.Empty);
-            _effectGroup.SetText(string.Empty, string.Empty);
-            _selectSlot.SetData(null, false, false);
+            _scoreGroup.gameObject.SetActive(false);
+            _setGroup.gameObject.SetActive(false);
+            _effetGroup.gameObject.SetActive(false);
+            _tipPerMinuteGroup.gameObject.SetActive(false);
+            _cookSpeedGroup.gameObject.SetActive(false);
+            _selectGroup.ImageColor = new Color(1, 1, 1, 0);
+            _selectGroup.SetText(string.Empty);
             return;
         }
-
-        //효과 관련 코드
-        SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
-        _setNameGroup.SetText("세트", setData != null ? setData.Name : string.Empty);
-        _setEffectGroup.SetText("세트 효과", setData != null ? setData.Description : string.Empty);
-        if (data is CookingSpeedUpKitchenUtensilData || data is TipPerMinuteKitchenUtensilData)
+        else
         {
-            _effectGroup.SetActive(true);
-            _effectGroup.SetText("보유 효과", data.EffectDescription);
+            _scoreGroup.gameObject.SetActive(true);
+            _setGroup.gameObject.SetActive(true);
+            _effetGroup.gameObject.SetActive(true);
+            _tipPerMinuteGroup.gameObject.SetActive(true);
+            _selectGroup.ImageColor = Color.white;
+        }
+
+        _selectGroup.SetSprite(data.ThumbnailSprite);
+        _selectGroup.SetText(data.Name);
+        _scoreGroup.SetText("<color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.AddScore.ToString() + "</color> 점 증가");
+
+        SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
+        _setGroup.SetText1(setData.Name);
+        _setGroup.SetText2(setData != null ? setData.Description : string.Empty);
+
+        string effectText = Utility.GetEffectDataDescription(data.EffectData);
+
+        if(data.EffectData is CookingSpeedUpEquipEffectData)
+        {
+            _cookSpeedGroup.gameObject.SetActive(true);
+            _tipPerMinuteGroup.gameObject.SetActive(false);
+            _cookSpeedGroup.SetText(effectText);
         }
         else
         {
-            _effectGroup.SetActive(false);
+            _cookSpeedGroup.gameObject.SetActive(false);
+            _tipPerMinuteGroup.gameObject.SetActive(true);
+            _tipPerMinuteGroup.SetText(effectText);
         }
 
-        //하단 설명창 관련 코드
-        bool isUse = UserInfo.IsEquipKitchenUtensil(data);
-        bool isHave = UserInfo.IsGiveKitchenUtensil(data);
-        _selectSlot.SetData(data, isUse, isHave);
 
-        if (!isHave)
+
+        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(data.Type);
+        if (equipData == null)
         {
-            if (UserInfo.IsScoreValid(data))
+            _scoreSignGroup.Image1SetActive(false);
+            _scoreSignGroup.Image2SetActive(false);
+            _effectSignGroup.Image1SetActive(false);
+            _effectSignGroup.Image2SetActive(false);
+        }
+        else
+        {
+            if (equipData.AddScore < data.AddScore)
             {
-                _buyButton.gameObject.SetActive(true);
-                _needScore.gameObject.SetActive(false);
-
-                _buyButton.RemoveAllListeners();
-                _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
-                _buyButton.SetText(Utility.ConvertToNumber(data.BuyPrice));
-                return;
+                _scoreSignGroup.Image1SetActive(false);
+                _scoreSignGroup.Image2SetActive(true);
+            }
+            else if (data.AddScore < equipData.AddScore)
+            {
+                _scoreSignGroup.Image1SetActive(true);
+                _scoreSignGroup.Image2SetActive(false);
+            }
+            else
+            {
+                _scoreSignGroup.Image1SetActive(false);
+                _scoreSignGroup.Image2SetActive(false);
             }
 
-            _needScore.gameObject.SetActive(true);
-            _needScore.SetText(data.BuyScore.ToString());
+            if (equipData.EffectData.EffectValue < data.EffectData.EffectValue)
+            {
+                _effectSignGroup.Image1SetActive(false);
+                _effectSignGroup.Image2SetActive(true);
+            }
+            else if (data.EffectData.EffectValue < equipData.EffectData.EffectValue)
+            {
+                _effectSignGroup.Image1SetActive(true);
+                _effectSignGroup.Image2SetActive(false);
+            }
+            else
+            {
+                _effectSignGroup.Image1SetActive(false);
+                _effectSignGroup.Image2SetActive(false);
+            }
         }
 
+
+        if (UserInfo.IsEquipKitchenUtensil(data))
+        {
+            _usingButton.gameObject.SetActive(true);
+            _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+        }
         else
         {
-            _addScoreGroup.gameObject.SetActive(true);
-            _addScoreGroup.SetText(Utility.ConvertToNumber(data.AddScore));
+            if (UserInfo.IsGiveKitchenUtensil(data))
+            {
+                _equipButton.gameObject.SetActive(true);
+                _equipButton.RemoveAllListeners();
+                _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
+                _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+            }
+            else
+            {
+                if (!UserInfo.IsScoreValid(data))
+                {
+                    _selectGroup.ImageColor = Utility.GetColor(ColorType.None);
+                    _scoreButton.gameObject.SetActive(true);
+                    _scoreButton.SetText(data.BuyScore.ToString());
+                    _selectGroup.SetSprite(_questionMarkSprite);
+                    _scoreGroup.SetText("???");
+                    _tipPerMinuteGroup.SetText("???");
+                    _setGroup.SetText1("???");
+                    _setGroup.SetText2("???");
+                    _effectSignGroup.Image1SetActive(false);
+                    _effectSignGroup.Image2SetActive(false);
+                    _scoreSignGroup.Image1SetActive(false);
+                    _scoreSignGroup.Image2SetActive(false);
+                    return;
+                }
+
+                _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
+                if (!UserInfo.IsMoneyValid(data))
+                {
+                    _notEnoughMoneyButton.gameObject.SetActive(true);
+                    _notEnoughMoneyButton.RemoveAllListeners();
+                    _notEnoughMoneyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
+                    _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+                    return;
+                }
+
+                _buyButton.gameObject.SetActive(true);
+                _buyButton.RemoveAllListeners();
+                _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
+                _buyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+            }
         }
     }
 

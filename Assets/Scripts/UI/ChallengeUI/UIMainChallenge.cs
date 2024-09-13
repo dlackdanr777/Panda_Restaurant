@@ -117,7 +117,7 @@ public class UIMainChallenge : MobileUIView
         _rewardValue.gameObject.SetActive(true);
         _description.text = _currentData.Description;
         DataBind.SetTextValue("MainChallengeDescription", _currentData.Description);
-        _rewardValue.text = Utility.ConvertToNumber(_currentData.RewardMoney);
+        _rewardValue.text = Utility.ConvertToMoney(_currentData.RewardMoney);
     }
 
 

@@ -74,8 +74,8 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
         _itemImage.TweenScale(Vector3.one, 0.25f, Ease.OutBack);
 
         _descriptionText.text = data.Description;
-        _addScoreDescription.text = Utility.ConvertToNumber(data.AddScore);
-        _tipPerMinuteDescription.text = Utility.ConvertToNumber(data.TipPerMinute);
+        _addScoreDescription.text = Utility.ConvertToMoney(data.AddScore);
+        _tipPerMinuteDescription.text = Utility.ConvertToMoney(data.TipPerMinute);
     }
 
     public void ChoiceView()

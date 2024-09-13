@@ -117,7 +117,7 @@ public class UIManagementSetEffect : MonoBehaviour
         {
             TipPerMinuteSetData tipSetData = (TipPerMinuteSetData)data;
             _setDescription.text = tipSetData.Description;
-            _setValue.text = Utility.StringAddHyphen(Utility.ConvertToNumber(tipSetData.TipPerMinuteValue), 9);
+            _setValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(tipSetData.TipPerMinuteValue), 9);
             return;
         }
 

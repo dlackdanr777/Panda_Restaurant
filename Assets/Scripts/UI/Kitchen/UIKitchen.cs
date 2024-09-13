@@ -1,7 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections.Generic;
-using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -28,10 +27,10 @@ public class UIKitchen : MobileUIView
     [Space]
     [Header("Slot Option")]
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UISlot _slotPrefab;
+    [SerializeField] private UIRestaurantAdminSlot _slotPrefab;
 
     private KitchenUtensilType _currentType;
-    private List<UISlot>[] _slots = new List<UISlot>[(int)KitchenUtensilType.Length];
+    private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)KitchenUtensilType.Length];
     List<KitchenUtensilData> _currentTypeDataList;
 
 
@@ -44,21 +43,21 @@ public class UIKitchen : MobileUIView
         for (int i = 0, cntI = (int)KitchenUtensilType.Length; i < cntI; ++i)
         {
             List<KitchenUtensilData> typeDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList((KitchenUtensilType)i);
-            _slots[i] = new List<UISlot>();
+            _slots[i] = new List<UIRestaurantAdminSlot>();
             for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
             {
                 int index = j;
-                UISlot slot = Instantiate(_slotPrefab, _slotParnet);
+                UIRestaurantAdminSlot slot = Instantiate(_slotPrefab, _slotParnet);
                 slot.Init(() => OnSlotClicked(typeDataList[index]));
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
             }
         }
 
-        UserInfo.OnChangeKitchenUtensilHandler += (type) => OnSlotUpdate(false);
-        UserInfo.OnGiveKitchenUtensilHandler += () => OnSlotUpdate(false);
-        UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
-        UserInfo.OnChangeScoreHandler += () => OnSlotUpdate(false);
+        UserInfo.OnChangeKitchenUtensilHandler += (type) => OnSlotUpdate();
+        UserInfo.OnGiveKitchenUtensilHandler += OnSlotUpdate;
+        UserInfo.OnChangeMoneyHandler += OnSlotUpdate;
+        UserInfo.OnChangeScoreHandler += OnSlotUpdate;
 
         SetKitchenUtensilDataData(KitchenUtensilType.Burner1);
         SetKitchenPreview();
@@ -80,7 +79,6 @@ public class UIKitchen : MobileUIView
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() => 
         {
-
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true; 
         });
@@ -128,7 +126,7 @@ public class UIKitchen : MobileUIView
         string typeStr = Utility.KitchenUtensilTypeStringConverter(type);
         _typeText1.text = typeStr;
 
-        OnSlotUpdate(true);
+        OnSlotUpdate();
     }
 
     private void SetKitchenPreview()
@@ -184,13 +182,13 @@ public class UIKitchen : MobileUIView
 
         UserInfo.AppendMoney(-data.BuyPrice);
         UserInfo.GiveKitchenUtensil(data.Id);
-        TimedDisplayManager.Instance.ShowText("새로운 주방 용품을 구매했어요!");
+        TimedDisplayManager.Instance.ShowText("새로운 주방 기구를 구매했어요!");
     }
 
 
 
 
-    private void OnSlotUpdate(bool changeOutline)
+    private void OnSlotUpdate()
     {
         if (_currentTypeDataList == null || _currentTypeDataList.Count == 0 || !gameObject.activeSelf)
             return;
@@ -199,7 +197,7 @@ public class UIKitchen : MobileUIView
 
         int slotsIndex = (int)_currentType;
         KitchenUtensilData data;
-        UISlot slot;
+        UIRestaurantAdminSlot slot;
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
         {
             data = _currentTypeDataList[i];
@@ -208,25 +206,31 @@ public class UIKitchen : MobileUIView
             if (equipStaffData != null && data.Id == equipStaffData.Id)
             {
                 slot.transform.SetAsFirstSibling();
-                slot.SetUse(data.ThumbnailSprite, data.Name, "사용중");
+                slot.SetUse(data.ThumbnailSprite, data.Name, "배치중");
                 continue;
             }
 
             if (UserInfo.IsGiveKitchenUtensil(data))
             {
-                slot.SetOperate(data.ThumbnailSprite, data.Name, "사용");
+                slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
                 continue;
             }
 
             else
             {
-                if (data.BuyScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
+                if (!UserInfo.IsScoreValid(data))
                 {
-                    slot.SetEnoughMoney(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyPrice));
+                    slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
                     continue;
                 }
 
-                slot.SetLowReputation(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyScore));
+                if(!UserInfo.IsMoneyValid(data))
+                {
+                    slot.SetNotEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                    continue;
+                }
+
+                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
                 continue;
             }
         }

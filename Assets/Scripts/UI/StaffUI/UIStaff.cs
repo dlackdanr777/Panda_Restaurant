@@ -30,10 +30,10 @@ public class UIStaff : MobileUIView
     [Header("Slot Option")]
     [SerializeField] private int _createSlotValue;
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UISlot _slotPrefab;
+    [SerializeField] private UIRestaurantAdminSlot _slotPrefab;
 
     private StaffType _currentType;
-    private List<UISlot>[] _slots = new List<UISlot>[(int)StaffType.Length];
+    private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)StaffType.Length];
     List<StaffData> _currentTypeDataList;
 
 
@@ -46,11 +46,11 @@ public class UIStaff : MobileUIView
         for (int i = 0, cntI = (int)StaffType.Length; i < cntI; ++i)
         {
             List<StaffData> typeDataList = StaffDataManager.Instance.GetStaffDataList((StaffType)i);
-            _slots[i] = new List<UISlot>();
+            _slots[i] = new List<UIRestaurantAdminSlot>();
             for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
             {
                 int index = j;
-                UISlot slot = Instantiate(_slotPrefab, _slotParnet);
+                UIRestaurantAdminSlot slot = Instantiate(_slotPrefab, _slotParnet);
                 slot.Init(() => OnSlotClicked(typeDataList[index]));
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
@@ -213,7 +213,7 @@ public class UIStaff : MobileUIView
 
         int slotsIndex = (int)_currentType;
         StaffData data;
-        UISlot slot;
+        UIRestaurantAdminSlot slot;
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
         {
             data = _currentTypeDataList[i];
@@ -236,11 +236,11 @@ public class UIStaff : MobileUIView
             {
                 if (data.BuyScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
                 {
-                    slot.SetEnoughMoney(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyPrice));
+                    slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
                     continue;
                 }
 
-                slot.SetLowReputation(data.ThumbnailSprite, data.Name, Utility.ConvertToNumber(data.BuyScore));
+                slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
                 continue;
             }
         }

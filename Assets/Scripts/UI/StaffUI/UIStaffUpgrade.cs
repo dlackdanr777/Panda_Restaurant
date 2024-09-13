@@ -103,8 +103,8 @@ public class UIStaffUpgrade : MobileUIView
             _upgradeLevelText.text = "* lv. " + (level + 1);
             _nowLevelDescription.text = "ÆÁ" + data.GetAddTipMul(level + 1) + "%, ÆòÁ¡ " + data.GetAddScore(level + 1) + "»ó½Â";
 
-            _upgradePriceText.text = Utility.ConvertToNumber(data.GetUpgradePrice(level));
-            _upgradeScoreText.text = Utility.ConvertToNumber(data.GetUpgradeMinScore(level));
+            _upgradePriceText.text = Utility.ConvertToMoney(data.GetUpgradePrice(level));
+            _upgradeScoreText.text = Utility.ConvertToMoney(data.GetUpgradeMinScore(level));
 
             _upgradeButton.Interactable(true);
             _upgradeButton.AddListener(() => _onUpgradeButtonClicked(_currentStaffData));

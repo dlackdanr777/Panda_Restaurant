@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: be899e54e516687408d0be85d8d21b5e, type: 3}
+  m_Script: {fileID: 11500000, guid: 45701c712da292b41aaa45d610b59e06, type: 3}
   m_Name: SINK01
   m_EditorClassIdentifier: 
   _sprite: {fileID: 21300000, guid: 88838fe238c30454d8e6831f3b659bb8, type: 3}
@@ -23,6 +23,4 @@ MonoBehaviour:
   _type: 8
   _setId: KITCHEN01
   _addScore: 10
-  _effectDescription: "\uBCF4\uC720\uC2DC \uBD84\uB2F9 \uD301 \uD68D\uB4DD\uB7C9
-    <color=#B40404>40</color>\uC99D\uAC00"
-  _tipPerMinute: 40
+  _effectData: {fileID: 11400000, guid: 33d0682c86a81e24f810a7004c4e1410, type: 2}

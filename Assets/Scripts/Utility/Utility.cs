@@ -6,9 +6,10 @@ using UnityEngine.UI;
 
 public static class Utility
 {
-    public static string ConvertToNumber(float value)
+    public static string ConvertToMoney(float value)
     {
-        string text = 1000 <= value ? (value / 1000).ToString("#,##0.0") + 'K' : ((int)value).ToString();
+        //string text = 1000 <= value ? (value / 1000).ToString("#,##0.0") + 'K' : ((int)value).ToString();
+        string text = value.ToString("N0");
         return text;
     }
 
@@ -116,6 +117,21 @@ public static class Utility
         return 0;
     }
 
+    public static string GetEffectDataDescription(EquipEffectData effectData)
+    {
+        string description = string.Empty;
+        if (effectData is TipPerMinuteEquipEffectData)
+            description = "분당 획득 팁 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + (effectData.EffectValue.ToString()) + "</color> 증가";
+
+        else if (effectData is MaxTipVolumeEquipEffectData)
+            description = "팁 저장량 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + effectData.EffectValue + "</color> 증가";
+
+        else if(effectData is CookingSpeedUpEquipEffectData)
+            description = "요리 효율 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + effectData.EffectValue + "%</color> 증가";
+
+        return description;
+    }
+
 
     /// <summary>Image의 Sprite 피벗값에 맞춰 Image 컴포넌트 피벗값을 이동하는 함수</summary>
     public static void ChangeImagePivot(Image image)
@@ -154,7 +170,7 @@ public static class Utility
             ColorType.NoGive => new Color(0.2f, 0.2f, 0.2f),
             ColorType.Give => Color.white,
             ColorType.Negative => new Color(0.83f, 0.28f, 0.25f),
-            ColorType.Positive => new Color(0.24f, 0.57f, 1),
+            ColorType.Positive => new Color(0.16f, 0.41f, 0.72f),
             _=> Color.black
         };
     }

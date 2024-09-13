@@ -28,11 +28,11 @@ public class UIStaffOwnDescription : MonoBehaviour
             _upgradeButton.RemoveAllListeners();
             _upgradeButton.AddListener(() => onUpgradeButtonClicked?.Invoke(data));
             _upgradeButton.gameObject.SetActive(true);
-            _upgradeButton.SetText(Utility.ConvertToNumber(data.GetUpgradePrice(level)));
+            _upgradeButton.SetText(Utility.ConvertToMoney(data.GetUpgradePrice(level)));
 
 
             _titleText.text = "°­È­";
-            _upgradeMinScoreDescription.text = Utility.ConvertToNumber(data.GetUpgradeMinScore(level));
+            _upgradeMinScoreDescription.text = Utility.ConvertToMoney(data.GetUpgradeMinScore(level));
             _upgradeAddScoreDescription.text = data.GetAddScore(level + 1).ToString();
             _upgradeAddTipDescription.text = data.GetAddTipMul(level + 1) + "%";
         }

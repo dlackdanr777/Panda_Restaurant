@@ -229,14 +229,14 @@ public static class UserInfo
     {
         DataBind.SetTextValue("Tip", _tip.ToString());
         DataBind.SetTextValue("TipStr", _tip.ToString("N0"));
-        DataBind.SetTextValue("TipConvert", Utility.ConvertToNumber(_tip));
+        DataBind.SetTextValue("TipConvert", Utility.ConvertToMoney(_tip));
     }
 
     public static void DataBindMoney()
     {
         DataBind.SetTextValue("Money", _money.ToString());
         DataBind.SetTextValue("MoneyStr", _money.ToString("N0"));
-        DataBind.SetTextValue("MoneyConvert", Utility.ConvertToNumber(_money));
+        DataBind.SetTextValue("MoneyConvert", Utility.ConvertToMoney(_money));
     }
 
     public static bool IsScoreValid(BasicData data)
@@ -748,11 +748,12 @@ public static class UserInfo
             return;
         }
 
-        if (_equipFurnitureDatas[(int)data.Type] != null)
+        if (_equipFurnitureDatas[(int)data.Type] != null && _equipFurnitureDatas[(int)data.Type].EffectData != null)
             _equipFurnitureDatas[((int)data.Type)].EffectData.RemoveSlot();
 
         _equipFurnitureDatas[(int)data.Type] = data;
-        data.EffectData.AddSlot();
+        if (data.EffectData != null) data.EffectData.AddSlot();
+
         CheckFurnitureSetEnabled();
 
         OnChangeFurnitureHandler?.Invoke(data.Type);
@@ -768,11 +769,12 @@ public static class UserInfo
 
         FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
 
-        if (_equipFurnitureDatas[(int)data.Type] != null)
+        if (_equipFurnitureDatas[(int)data.Type] != null && _equipFurnitureDatas[(int)data.Type].EffectData != null)
             _equipFurnitureDatas[((int)data.Type)].EffectData.RemoveSlot();
 
         _equipFurnitureDatas[(int)data.Type] = data;
-        data.EffectData.AddSlot();
+
+        if(_equipFurnitureDatas[(int)data.Type].EffectData != null) data.EffectData.AddSlot();
         CheckFurnitureSetEnabled();
 
         OnChangeFurnitureHandler?.Invoke(data.Type);
@@ -780,8 +782,8 @@ public static class UserInfo
 
     public static void DisarmEquipFurniture(FurnitureType type)
     {
-        if (_equipFurnitureDatas[(int)type] != null)
-            _equipFurnitureDatas[((int)type)].EffectData.RemoveSlot();
+        if (_equipFurnitureDatas[(int)type] != null && _equipFurnitureDatas[(int)type].EffectData != null)
+            _equipFurnitureDatas[(int)type].EffectData.RemoveSlot();
 
         _equipFurnitureDatas[(int)type] = null;
         OnChangeFurnitureHandler?.Invoke(type);
@@ -899,11 +901,13 @@ public static class UserInfo
             return;
         }
 
-        if (_equipKitchenUtensilDatas[(int)data.Type] != null)
-            _equipKitchenUtensilDatas[((int)data.Type)].RemoveSlot();
+        if (_equipKitchenUtensilDatas[(int)data.Type] != null && _equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
+            _equipKitchenUtensilDatas[((int)data.Type)].EffectData.RemoveSlot();
 
         _equipKitchenUtensilDatas[(int)data.Type] = data;
-        data.AddSlot();
+        if (_equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
+            data.EffectData.AddSlot();
+
         CheckKitchenUtensilSetEnabled();
 
         OnChangeKitchenUtensilHandler?.Invoke(data.Type);
@@ -919,11 +923,13 @@ public static class UserInfo
 
         KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
 
-        if (_equipKitchenUtensilDatas[(int)data.Type] != null)
-            _equipKitchenUtensilDatas[((int)data.Type)].RemoveSlot();
+        if (_equipKitchenUtensilDatas[(int)data.Type] != null && _equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
+            _equipKitchenUtensilDatas[((int)data.Type)].EffectData.RemoveSlot();
 
         _equipKitchenUtensilDatas[(int)data.Type] = data;
-        data.AddSlot();
+        if (_equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
+            data.EffectData.AddSlot();
+
         CheckKitchenUtensilSetEnabled();
 
         OnChangeKitchenUtensilHandler?.Invoke(data.Type);
@@ -931,8 +937,8 @@ public static class UserInfo
 
     public static void DisarmEquipKitchenUtensil(KitchenUtensilType type)
     {
-        if (_equipKitchenUtensilDatas[(int)type] != null)
-            _equipKitchenUtensilDatas[((int)type)].RemoveSlot();
+        if (_equipKitchenUtensilDatas[(int)type] != null && _equipKitchenUtensilDatas[(int)type].EffectData != null)
+            _equipKitchenUtensilDatas[((int)type)].EffectData.RemoveSlot();
 
         _equipKitchenUtensilDatas[(int)type] = null;
         OnChangeKitchenUtensilHandler?.Invoke(type);

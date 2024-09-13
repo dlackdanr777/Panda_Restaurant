@@ -59,6 +59,7 @@ public class GameManager : MonoBehaviour
 
     public void SetMaxTipVolume(int value)
     {
+        DebugLog.Log("최대치 설정: " + value);
         _maxTipVolume = value;
     }
 

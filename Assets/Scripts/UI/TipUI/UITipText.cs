@@ -12,7 +12,7 @@ public class UITipText : MonoBehaviour
 
     private void Awake()
     {
-        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
+        _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
         _currentTip = UserInfo.Tip;
 
         UserInfo.OnChangeTipHandler += OnChangeMoneyEvent;
@@ -47,10 +47,10 @@ public class UITipText : MonoBehaviour
 
         while (time < 1)
         {
-            _tipText.text = Utility.ConvertToNumber(Mathf.Lerp(startMoney, targetMoney, time));
+            _tipText.text = Utility.ConvertToMoney(Mathf.Lerp(startMoney, targetMoney, time));
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
+        _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
     }
 }

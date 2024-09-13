@@ -49,12 +49,11 @@ public class UITip : MobileUIView
         _advertisingButton.onClick.AddListener(OnAdvertisingButtonClicked);
         UserInfo.OnChangeTipHandler += OnChangeMoneyEvent;
 
-        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
+        _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
         _currentTip = UserInfo.Tip;
 
         _tipAnimeTmp.gameObject.SetActive(false);
         gameObject.SetActive(false);
-        UserInfo.AddTip(5000);
     }
 
     public override void Show()
@@ -64,7 +63,7 @@ public class UITip : MobileUIView
         _dontTouchArea.gameObject.SetActive(false);
         _canvasGroup.blocksRaycasts = false;
 
-        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
+        _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
         _currentTip = UserInfo.Tip;
 
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
@@ -191,10 +190,10 @@ public class UITip : MobileUIView
 
         while (time < 1)
         {
-            _tipText.text = Utility.ConvertToNumber(Mathf.Lerp(startMoney, targetMoney, time));
+            _tipText.text = Utility.ConvertToMoney(Mathf.Lerp(startMoney, targetMoney, time));
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        _tipText.text = Utility.ConvertToNumber(UserInfo.Tip);
+        _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
     }
 }

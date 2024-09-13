@@ -25,8 +25,8 @@ public class UIRecipeOwnDescription : MonoBehaviour
         _cookTimeDescription1.text = data.GetCookingTime(level) + "s";
         _cookTimeDescription2.text = data.GetCookingTime(level) + "s";
 
-        _sellPriceDescription1.text = Utility.ConvertToNumber(data.GetSellPrice(level));
-        _sellPriceDescription2.text = Utility.ConvertToNumber(data.GetSellPrice(level));
+        _sellPriceDescription1.text = Utility.ConvertToMoney(data.GetSellPrice(level));
+        _sellPriceDescription2.text = Utility.ConvertToMoney(data.GetSellPrice(level));
 
         if (data.UpgradeEnable(level))
         {
@@ -35,11 +35,11 @@ public class UIRecipeOwnDescription : MonoBehaviour
             _upgradeButton.RemoveAllListeners();
             _upgradeButton.AddListener(() => onUpgradeButtonClicked?.Invoke(data));
             _upgradeButton.Interactable(true);
-            _upgradeButton.SetText(Utility.ConvertToNumber(data.GetUpgradePrice(level)));
+            _upgradeButton.SetText(Utility.ConvertToMoney(data.GetUpgradePrice(level)));
 
             _needItemDescription.text = string.Empty;
-            _upgradeMinScoreDescription.text = Utility.ConvertToNumber(data.GetUpgradeMinScore(level));
-            _upgradeSellPriceDescription.text = Utility.ConvertToNumber(data.GetSellPrice(level + 1));
+            _upgradeMinScoreDescription.text = Utility.ConvertToMoney(data.GetUpgradeMinScore(level));
+            _upgradeSellPriceDescription.text = Utility.ConvertToMoney(data.GetSellPrice(level + 1));
             _upgradeCookTimeDescription.text = data.GetCookingTime(level + 1).ToString() + "s";
         }
 

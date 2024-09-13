@@ -52,7 +52,7 @@ public class UIChallengeTabSlot : MonoBehaviour
 
         _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(data);
         _descriptionText.text = data.Description;
-        _rewardText.text = Utility.ConvertToNumber(data.RewardMoney);
+        _rewardText.text = Utility.ConvertToMoney(data.RewardMoney);
     }
 
     public void SetNone()

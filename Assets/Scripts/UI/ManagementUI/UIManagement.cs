@@ -127,19 +127,19 @@ public class UIManagement : MobileUIView
 
     private void OnChangeTipPerMinuteEvent()
     {
-        _tipPerMinuteValue.text = Utility.StringAddHyphen(Utility.ConvertToNumber(GameManager.Instance.TipPerMinute), 9);
+        _tipPerMinuteValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(GameManager.Instance.TipPerMinute), 9);
     }
 
 
     private void OnAddCustomerEvent()
     {
-        _totalCustomerValue.text = Utility.StringAddHyphen(Utility.ConvertToNumber(UserInfo.TotalCumulativeCustomerCount), 9);
+        _totalCustomerValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(UserInfo.TotalCumulativeCustomerCount), 9);
     }
 
 
     private void OnChangeMoneyEvent()
     {
-        _totalMoneyValue.text = Utility.StringAddHyphen(Utility.ConvertToNumber(UserInfo.TotalAddMoney), 9);
+        _totalMoneyValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(UserInfo.TotalAddMoney), 9);
     }
 
 
