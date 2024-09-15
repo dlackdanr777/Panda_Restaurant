@@ -6,6 +6,8 @@ public class ManagerData : StaffData
 {
     [SerializeField] private ManagerLevelData[] _managerLevelData;
     public override float SecondValue => 0;
+    public override int MaxLavel => _managerLevelData.Length;
+
 
     public override float GetActionValue(int level)
     {

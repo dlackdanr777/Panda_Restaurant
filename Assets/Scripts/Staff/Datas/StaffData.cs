@@ -9,6 +9,7 @@ public abstract class StaffData : BasicData
     public SkillBase Skill => _skill;
 
     public abstract float SecondValue { get; }
+    public abstract int MaxLavel { get; }
 
     public abstract int GetUpgradeMinScore(int level);
 

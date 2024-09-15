@@ -8,13 +8,13 @@ public class UIStaff : MobileUIView
 {
     [Header("Components")]
     [SerializeField] private UIRestaurantAdmin _uiRestaurantAdmin;
+    [SerializeField] private UIStaffUpgrade _uiStaffUpgrade;
     [SerializeField] private StaffController _staffController;
     [SerializeField] private UIStaffPreview _uiStaffPreview;
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
-    [SerializeField] private TextMeshProUGUI _typeText1;
-    [SerializeField] private TextMeshProUGUI _typeText2;
+    [SerializeField] private TextMeshProUGUI _typeText;
 
     [Space]
     [Header("Animations")]
@@ -120,8 +120,7 @@ public class UIStaff : MobileUIView
         _currentTypeDataList = StaffDataManager.Instance.GetStaffDataList(type);
 
         string staffName = Utility.StaffTypeStringConverter(type);
-        _typeText1.text = staffName;
-        _typeText2.text = staffName;
+        _typeText.text = staffName;
 
         OnSlotUpdate(true);
     }
@@ -129,7 +128,8 @@ public class UIStaff : MobileUIView
     private void SetStaffPreview()
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
-        _uiStaffPreview.SetStaffData(equipStaffData);
+        _uiStaffUpgrade.SetData(equipStaffData);
+        _uiStaffPreview.SetData(equipStaffData);
     }
 
 
@@ -177,30 +177,7 @@ public class UIStaff : MobileUIView
 
     private void OnUpgradeButtonClicked(StaffData data)
     {
-        if (!UserInfo.IsGiveStaff(data.Id))
-        {
-            TimedDisplayManager.Instance.ShowTextError();
-            return;
-        }
-
-        int recipeLevel = UserInfo.GetStaffLevel(data.Id);
-        if (UserInfo.Score < data.GetUpgradeMinScore(recipeLevel))
-        {
-            TimedDisplayManager.Instance.ShowTextLackScore();
-            return;
-        }
-
-        if (UserInfo.Money < data.GetUpgradePrice(recipeLevel))
-        {
-            TimedDisplayManager.Instance.ShowTextLackMoney();
-            return;
-        }
-
-        if (UserInfo.UpgradeStaff(data.Id))
-        {
-            TimedDisplayManager.Instance.ShowText("강화 성공!");
-            return;
-        }
+        _uiNav.Push("UIStaffUpgrade");
     }
 
 
@@ -222,25 +199,31 @@ public class UIStaff : MobileUIView
             if (equipStaffData != null && data.Id == equipStaffData.Id)
             {
                 slot.transform.SetAsFirstSibling();
-                slot.SetUse(data.ThumbnailSprite, data.Name, "사용중");
+                slot.SetUse(data.ThumbnailSprite, data.Name, "배치중");
                 continue;
             }
 
             if (UserInfo.IsGiveStaff(data))
             {
-                slot.SetOperate(data.ThumbnailSprite, data.Name, "사용");
+                slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
                 continue;
             }
 
             else
             {
-                if (data.BuyScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
+                if (!UserInfo.IsScoreValid(data))
                 {
-                    slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                    slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
                     continue;
                 }
 
-                slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
+                if (!UserInfo.IsMoneyValid(data))
+                {
+                    slot.SetNotEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                    continue;
+                }
+
+                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
                 continue;
             }
         }
@@ -257,6 +240,7 @@ public class UIStaff : MobileUIView
 
     private void OnSlotClicked(StaffData data)
     {
-        _uiStaffPreview.SetStaffData(data);
+        _uiStaffUpgrade.SetData(data);
+        _uiStaffPreview.SetData(data);
     }
 }

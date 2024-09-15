@@ -16,6 +16,7 @@ public class CleanerAction : IStaffAction
         _isUsed = false;
         _isNoAction = false;
         _time = 0;
+        _duration = staff.SecondValue;
 
         staff.transform.position = _tableManager.CleanerWaitTr.position;
         staff.SetAlpha(1);

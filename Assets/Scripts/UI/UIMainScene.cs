@@ -56,7 +56,7 @@ public class UIMainScene : MonoBehaviour
 
         DataBind.SetUnityActionValue("ShowGachaUI", OnShowGachaUI);
         DataBind.SetUnityActionValue("HideGachaUI", OnHideGachaUI);
-        DataBind.SetUnityActionValue("HideNoAnimeGachaUI", OnHideGachaUI);
+        DataBind.SetUnityActionValue("HideNoAnimeGachaUI", OnHideNoAnimeGachaUI);
     }
 
 

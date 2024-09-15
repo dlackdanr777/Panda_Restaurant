@@ -5,80 +5,186 @@ using UnityEngine.UI;
 
 public class UIStaffPreview : MonoBehaviour
 {
-    [SerializeField] private GameObject[] _hideObjs;
+    [Header("Components")]
+    [SerializeField] private UIStaffSelectSlot _selectGroup;
+    [SerializeField] private UIImageAndText _levelGroup;
+    [SerializeField] private UIImageAndText _scoreGroup;
+    [SerializeField] private UIImageAndText _addTipPercentGroup;
+    [SerializeField] private UIImageAndImage _scoreSignGroup;
+    [SerializeField] private UIImageAndImage _effectSignGroup;
+    [SerializeField] private UIStaffSkillEffect _skillEffectGroup;
+    [SerializeField] private GameObject _effetGroup;
 
-    [SerializeField] private Image _staffImage;
-    [SerializeField] private TextMeshProUGUI _staffNameText;
-    [SerializeField] private TextMeshProUGUI _levelText;
-    [SerializeField] private TextMeshProUGUI _effectDescription;
-    [SerializeField] private TextMeshProUGUI _skillDescription;
-    [SerializeField] private TextMeshProUGUI _skillCooltimeDescription;
-    [SerializeField] private UIStaffLackDescription _lackDescription;
-    [SerializeField] private UIStaffOwnDescription _ownDescription;
+    [Space]
+    [Header("Buttons")]
+    [SerializeField] private UIButtonAndText _usingButton;
+    [SerializeField] private UIButtonAndText _equipButton;
+    [SerializeField] private UIButtonAndText _buyButton;
+    [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
+    [SerializeField] private UIButtonAndText _scoreButton;
+
+    [Space]
+    [Header("Sprites")]
+    [SerializeField] private Sprite _questionMarkSprite;
 
     private Action<StaffData> _onBuyButtonClicked;
     private Action<StaffData> _onEquipButtonClicked;
-    private Action<StaffData> _onUpgradeButtonClicked;
-    private StaffData _currentStaffData;
+    private StaffData _currentData;
 
     public void Init(Action<StaffData> onEquipButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
     {
+        _skillEffectGroup.Init();
+        _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
-        _onUpgradeButtonClicked = onUpgradeButtonClicked;
 
         UserInfo.OnUpgradeStaffHandler += UpdateStaff;
         UserInfo.OnChangeMoneyHandler += UpdateStaff;
         UserInfo.OnChangeScoreHandler += UpdateStaff;
         UserInfo.OnChangeStaffHandler += UpdateStaff;
         UserInfo.OnGiveStaffHandler += UpdateStaff;
+        UserInfo.OnUpgradeStaffHandler += UpdateStaff;
     }
 
 
-    public void SetStaffData(StaffData data)
+    public void SetData(StaffData data)
     {
-        _currentStaffData = data;
+        _currentData = data;
+        _selectGroup.SetData(data);
+        _levelGroup.gameObject.SetActive(false);
+        _usingButton.gameObject.SetActive(false);
+        _equipButton.gameObject.SetActive(false);
+        _buyButton.gameObject.SetActive(false);
+        _notEnoughMoneyButton.gameObject.SetActive(false);
+        _scoreButton.gameObject.SetActive(false);
 
         if (data == null)
         {
-            for (int i = 0, cnt = _hideObjs.Length; i < cnt; ++i)
-            {
-                _hideObjs[i].SetActive(false);
-            }
+            _scoreGroup.gameObject.SetActive(false);
+            _skillEffectGroup.gameObject.SetActive(false);
+            _effetGroup.gameObject.SetActive(false);
+            _addTipPercentGroup.gameObject.SetActive(false);
+            _selectGroup.ImageColor = new Color(1, 1, 1, 0);
+            _selectGroup.SetText(string.Empty);
             return;
         }
-        for (int i = 0, cnt = _hideObjs.Length; i < cnt; ++i)
-        {
-            _hideObjs[i].SetActive(true);
-        }
-
-        _staffImage.sprite = data.ThumbnailSprite;
-        _staffNameText.text = data.Name;
-        _levelText.text = UserInfo.IsGiveStaff(data) ? "lv." + UserInfo.GetStaffLevel(data) : "lv.1";
-        _effectDescription.text = data.Description;
-        _skillDescription.text = data.Skill != null ? data.Skill.Description + "(" + data.Skill.Duration + "초)" : "없음";
-        _skillCooltimeDescription.text = data.Skill != null ? data.Skill.Cooldown + "초" : "없음";
-        
-
-        if (UserInfo.IsGiveStaff(data))
-        {
-            _ownDescription.gameObject.SetActive(true);
-            _lackDescription.gameObject.SetActive(false);
-            _ownDescription.SetStaffData(data, _onEquipButtonClicked, _onUpgradeButtonClicked);
-            _staffImage.color = Color.white;
-        }
-
         else
         {
-            _lackDescription.gameObject.SetActive(true);
-            _ownDescription.gameObject.SetActive(false);
-            _lackDescription.SetStaffData(data, _onBuyButtonClicked);
-            _staffImage.color = Color.black;
-        } 
+            _scoreGroup.gameObject.SetActive(true);
+            _skillEffectGroup.gameObject.SetActive(true);
+            _effetGroup.gameObject.SetActive(true);
+            _addTipPercentGroup.gameObject.SetActive(true);
+            _selectGroup.ImageColor = Color.white;
+        }
+        int level = UserInfo.IsGiveStaff(data) ? UserInfo.GetStaffLevel(data) : 1;
+
+        _selectGroup.SetSprite(data.ThumbnailSprite);
+        _selectGroup.SetText(data.Name);
+        _scoreGroup.SetText("<color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddScore(level).ToString() + "</color> 점 증가");
+        _addTipPercentGroup.SetText("메뉴별 팁 <color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddTipMul(level) + "%</color> 증가");
+        _skillEffectGroup.SetData(data);
+
+        StaffData equipData = UserInfo.GetEquipStaff(StaffDataManager.Instance.GetStaffType(data));
+        int equipDataLevel = equipData == null ? 1 : UserInfo.IsGiveStaff(equipData) ? UserInfo.GetStaffLevel(equipData) : 1;
+        if (equipData == null)
+        {
+            _scoreSignGroup.Image1SetActive(false);
+            _scoreSignGroup.Image2SetActive(false);
+            _effectSignGroup.Image1SetActive(false);
+            _effectSignGroup.Image2SetActive(false);
+        }
+        else
+        {
+            if (equipData.GetAddScore(equipDataLevel) < data.GetAddScore(level))
+            {
+                _scoreSignGroup.Image1SetActive(false);
+                _scoreSignGroup.Image2SetActive(true);
+            }
+            else if (data.GetAddScore(level) < equipData.GetAddScore(equipDataLevel))
+            {
+                _scoreSignGroup.Image1SetActive(true);
+                _scoreSignGroup.Image2SetActive(false);
+            }
+            else
+            {
+                _scoreSignGroup.Image1SetActive(false);
+                _scoreSignGroup.Image2SetActive(false);
+            }
+
+            if (equipData.GetAddTipMul(equipDataLevel) < data.GetAddTipMul(level))
+            {
+                _effectSignGroup.Image1SetActive(false);
+                _effectSignGroup.Image2SetActive(true);
+            }
+            else if (data.GetAddTipMul(level) < equipData.GetAddTipMul(equipDataLevel))
+            {
+                _effectSignGroup.Image1SetActive(true);
+                _effectSignGroup.Image2SetActive(false);
+            }
+            else
+            {
+                _effectSignGroup.Image1SetActive(false);
+                _effectSignGroup.Image2SetActive(false);
+            }
+        }
+
+
+        if (UserInfo.IsEquipStaff(data))
+        {
+            _levelGroup.gameObject.SetActive(true);
+            _usingButton.gameObject.SetActive(true);
+            _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+            _levelGroup.SetText("LV." + level + " / " + data.MaxLavel);
+        }
+        else
+        {
+            if (UserInfo.IsGiveStaff(data))
+            {
+                _levelGroup.gameObject.SetActive(true);
+                _equipButton.gameObject.SetActive(true);
+                _equipButton.RemoveAllListeners();
+                _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
+                _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                _levelGroup.SetText("LV." + level + " / " + data.MaxLavel);
+            }
+            else
+            {
+                if (!UserInfo.IsScoreValid(data))
+                {
+                    _selectGroup.ImageColor = Utility.GetColor(ColorType.None);
+                    _scoreButton.gameObject.SetActive(true);
+                    _scoreButton.SetText(data.BuyScore.ToString());
+                    _selectGroup.SetSprite(_questionMarkSprite);
+                    _scoreGroup.SetText("???");
+                    _addTipPercentGroup.SetText("???");
+                    _skillEffectGroup.SetData(null);
+                    _effectSignGroup.Image1SetActive(false);
+                    _effectSignGroup.Image2SetActive(false);
+                    _scoreSignGroup.Image1SetActive(false);
+                    _scoreSignGroup.Image2SetActive(false);
+                    return;
+                }
+
+                _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
+                if (!UserInfo.IsMoneyValid(data))
+                {
+                    _notEnoughMoneyButton.gameObject.SetActive(true);
+                    _notEnoughMoneyButton.RemoveAllListeners();
+                    _notEnoughMoneyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
+                    _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+                    return;
+                }
+
+                _buyButton.gameObject.SetActive(true);
+                _buyButton.RemoveAllListeners();
+                _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
+                _buyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+            }
+        }
     }
 
     private void UpdateStaff()
     {
-        SetStaffData(_currentStaffData);
+        SetData(_currentData);
     }
 }

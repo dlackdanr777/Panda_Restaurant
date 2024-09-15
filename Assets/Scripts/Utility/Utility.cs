@@ -120,14 +120,61 @@ public static class Utility
     public static string GetEffectDataDescription(EquipEffectData effectData)
     {
         string description = string.Empty;
-        if (effectData is TipPerMinuteEquipEffectData)
-            description = "분당 획득 팁 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + (effectData.EffectValue.ToString()) + "</color> 증가";
 
-        else if (effectData is MaxTipVolumeEquipEffectData)
-            description = "팁 저장량 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + effectData.EffectValue + "</color> 증가";
+        switch (effectData)
+        {
+            case TipPerMinuteEquipEffectData:
+                description = "분당 획득 팁 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + (effectData.EffectValue.ToString()) + "</color> 증가";
+                break;
 
-        else if(effectData is CookingSpeedUpEquipEffectData)
-            description = "요리 효율 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + effectData.EffectValue + "%</color> 증가";
+            case MaxTipVolumeEquipEffectData:
+                description = "팁 저장량 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + effectData.EffectValue + "</color> 증가";
+                break;
+
+            case CookingSpeedUpEquipEffectData:
+                description = "요리 효율 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + effectData.EffectValue + "%</color> 증가";
+                break;
+
+            default:
+                description = "알 수 없는 효과";
+                break;
+        }
+
+        return description;
+    }
+
+
+    public static string GetStaffEffectDescription(StaffData data)
+    {
+        string description = string.Empty;
+        int level = UserInfo.IsGiveStaff(data) ? UserInfo.GetStaffLevel(data) : 1;
+
+        switch(data)
+        {
+            case ManagerData:
+                description = $"자동 손님 테이블로 안내하기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 1명)";
+                break;
+
+            case WaiterData:
+                description = $"자동 음식 서빙하기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 1개)";
+                break;
+
+            case MarketerData:
+                description = $"자동 손님 호출하기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.SecondValue}%</color> 확률)";
+                break;
+
+            case ServerData:
+                description = $"자동 음식 주문 받기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 1테이블)";
+                break;
+
+            case CleanerData:
+                description = $"자동 쓰레기 청소 하기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.SecondValue}</color>초)";
+                break;
+
+            case ChefData:
+                description = $"요리 속도 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
+                break;
+        }
 
         return description;
     }
