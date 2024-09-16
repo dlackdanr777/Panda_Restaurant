@@ -28,6 +28,10 @@ public class UICustomerPictorialBook : MonoBehaviour
         }
         ResetData();
         UserInfo.OnChangeGachaItemSortTypeHandler += OnChangeGachaItemSortTypeEvent;
+        UserInfo.OnGiveRecipeHandler += UpdateUI;
+        UserInfo.OnChangeScoreHandler += UpdateUI;
+        UserInfo.OnGiveGachaItemHandler += UpdateUI;
+        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
     }
     
 
@@ -39,6 +43,19 @@ public class UICustomerPictorialBook : MonoBehaviour
     public void ChoiceView()
     {
         _view.ChoiceView();
+    }
+
+    public void UpdateUI()
+    {
+        if (!gameObject.activeSelf)
+            return;
+
+        _view.UpdateUI();
+        for(int i = 0, cnt = _slotList.Count; i < cnt; ++i)
+        {
+            _slotList[i].UpdateUI();
+        }
+
     }
 
     private void OnChangeGachaItemSortTypeEvent()

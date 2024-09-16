@@ -117,7 +117,7 @@ public class UIManagementSetEffect : MonoBehaviour
         {
             TipPerMinuteSetData tipSetData = (TipPerMinuteSetData)data;
             _setDescription.text = tipSetData.Description;
-            _setValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(tipSetData.TipPerMinuteValue), 9);
+            _setValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(tipSetData.Value), 9);
             return;
         }
 
@@ -125,7 +125,7 @@ public class UIManagementSetEffect : MonoBehaviour
         {
             CookingSpeedUpSetData cookSetData = (CookingSpeedUpSetData)data;
             _setDescription.text = cookSetData.Description;
-            _setValue.text = Utility.StringAddHyphen(cookSetData.CookingSpeedUpMul.ToString(), 8) + "%";
+            _setValue.text = Utility.StringAddHyphen(cookSetData.Value.ToString(), 8) + "%";
         }
     }
 }

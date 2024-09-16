@@ -6,7 +6,7 @@ public class WaiterData : StaffData
 {
     [SerializeField] private WaiterLevelData[] _waiterLevelData;
     public override float SecondValue => 0;
-    public override int MaxLavel => _waiterLevelData.Length;
+    public override int MaxLevel => _waiterLevelData.Length;
 
     public override float GetActionValue(int level)
     {

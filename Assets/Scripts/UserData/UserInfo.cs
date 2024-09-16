@@ -486,6 +486,14 @@ public static class UserInfo
         return 0;
     }
 
+    public static int GetCookCount(FoodData data)
+    {
+        if (_recipeCookCountDic.TryGetValue(data.Id, out int count))
+            return count;
+
+        return 0;
+    }
+
     public static void AddCookCount(string id)
     {
         if (_recipeCookCountDic.ContainsKey(id))
@@ -494,13 +502,14 @@ public static class UserInfo
             _dailyCookCount += 1;
             _totalCookCount += 1;
             OnAddCookCountHandler?.Invoke();
-            return;
         }
-
-        _recipeCookCountDic.Add(id, 1);
-        _dailyCookCount += 1;
-        _totalCookCount += 1;
-        OnAddCookCountHandler?.Invoke();
+        else
+        {
+            _recipeCookCountDic.Add(id, 1);
+            _dailyCookCount += 1;
+            _totalCookCount += 1;
+            OnAddCookCountHandler?.Invoke();
+        }
     }
 
 

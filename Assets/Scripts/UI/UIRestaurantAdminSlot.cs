@@ -108,4 +108,19 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _nameText.text = name;
         _scoreImage?.SetText(text);
     }
+
+    public void SetNone(Sprite sprite, string name)
+    {
+        _scoreImage?.gameObject.SetActive(false);
+        _priceImage?.gameObject.SetActive(false);
+        _useImage?.gameObject.SetActive(false);
+        _operateImage?.gameObject.SetActive(false);
+        _notEnoughPriceImage?.gameObject.SetActive(false);
+        _lockImgae?.SetActive(false);
+        _alarmImage?.SetActive(false);
+
+        _image.color = Utility.GetColor(ColorType.None);
+        _image.sprite = sprite;
+        _nameText.text = name;
+    }
 }

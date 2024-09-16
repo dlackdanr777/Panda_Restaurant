@@ -11,6 +11,7 @@ public class FoodData : BasicData
     public bool MiniGameNeeded => _miniGameNeeded;
 
     [SerializeField] private FoodLevelData[] _foodLevelData;
+    public int MaxLevel => _foodLevelData.Length;
 
 
     public int GetSellPrice(int level)

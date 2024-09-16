@@ -69,7 +69,7 @@ public class UIStaffUpgrade : MobileUIView
 
         if(_currentStaffData.UpgradeEnable(level))
         {
-            _levelText.text = "Lv." + level + " / " + _currentStaffData.MaxLavel;
+            _levelText.text = "Lv." + level + " / " + _currentStaffData.MaxLevel;
             _lowerFrame.gameObject.SetActive(true);
             _maxLevelGroup.gameObject.SetActive(false);
             _currentLevelGroup.SetData(level, _currentStaffData.GetAddScore(level).ToString(), _currentStaffData.GetAddTipMul(level) + "%");
@@ -77,7 +77,7 @@ public class UIStaffUpgrade : MobileUIView
         }
         else
         {
-            _levelText.text = "Lv." + level + " / " + _currentStaffData.MaxLavel;
+            _levelText.text = "Lv." + level + " / " + _currentStaffData.MaxLevel;
             _lowerFrame.gameObject.SetActive(false);
             _maxLevelGroup.gameObject.SetActive(true);
             _maxLevelGroup.SetData(level, _currentStaffData.GetAddScore(level).ToString(), _currentStaffData.GetAddTipMul(level) + "%");

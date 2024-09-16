@@ -283,7 +283,7 @@ public class TableManager : MonoBehaviour
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
         int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
 
-        CookingData data = new CookingData(foodData.Name, foodData.GetCookingTime(foodLevel), foodData.GetSellPrice(foodLevel), foodData.Sprite, () =>
+        CookingData data = new CookingData(foodData.Id, foodData.GetCookingTime(foodLevel), foodData.GetSellPrice(foodLevel), foodData.Sprite, () =>
         {
             _tableDatas[index].TableState = ETableState.CanServing;
             _servingButtons[index].SetImage(foodData.ThumbnailSprite);

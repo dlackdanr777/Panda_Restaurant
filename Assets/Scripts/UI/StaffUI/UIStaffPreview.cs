@@ -134,7 +134,7 @@ public class UIStaffPreview : MonoBehaviour
             _levelGroup.gameObject.SetActive(true);
             _usingButton.gameObject.SetActive(true);
             _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
-            _levelGroup.SetText("LV." + level + " / " + data.MaxLavel);
+            _levelGroup.SetText("LV." + level + " / " + data.MaxLevel);
         }
         else
         {
@@ -145,7 +145,7 @@ public class UIStaffPreview : MonoBehaviour
                 _equipButton.RemoveAllListeners();
                 _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
                 _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
-                _levelGroup.SetText("LV." + level + " / " + data.MaxLavel);
+                _levelGroup.SetText("LV." + level + " / " + data.MaxLevel);
             }
             else
             {

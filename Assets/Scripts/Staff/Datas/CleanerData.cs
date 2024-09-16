@@ -7,7 +7,7 @@ public class CleanerData : StaffData
     [SerializeField] private CleanerLevelData[] _cleanerLevelData;
     [Range(0.0f, 100f)] [SerializeField] private float _waitDuration;
     public override float SecondValue => _waitDuration;
-    public override int MaxLavel => _cleanerLevelData.Length;
+    public override int MaxLevel => _cleanerLevelData.Length;
 
 
     public override float GetActionValue(int level)

@@ -36,4 +36,9 @@ public class UICustomerSlot : MonoBehaviour
             action?.Invoke(_data);
         });
     }
+
+    public void UpdateUI()
+    {
+        _itemImage.color = UserInfo.IsCustomerVisitEnabled(_data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+    }
 }

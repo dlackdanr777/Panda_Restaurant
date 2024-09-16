@@ -12,6 +12,8 @@ public abstract class SetData : ScriptableObject
     [TextArea][SerializeField] string _description;
     public string Description => _description;
 
+    public abstract float Value { get; }
+
 
     public abstract void Activate();
     public abstract void Deactivate();

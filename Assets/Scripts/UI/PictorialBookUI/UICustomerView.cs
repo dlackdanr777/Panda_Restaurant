@@ -41,6 +41,11 @@ public class UICustomerView : MonoBehaviour
         }
     }
 
+    public void UpdateUI()
+    {
+        SetData(_data);
+    }
+
 
     public void SetData(CustomerData data)
     {

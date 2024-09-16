@@ -27,6 +27,14 @@ public class UIMainScene : MonoBehaviour
         DataBind.SetUnityActionValue("HideStaffUpgradeUI", OnHideStaffUpgradeUI);
         DataBind.SetUnityActionValue("HideNoAnimeStaffUpgradeUI", OnHideNoAnimeStaffUpgradeUI);
 
+        DataBind.SetUnityActionValue("ShowStaffUpgradeUI", OnShowStaffUpgradeUI);
+        DataBind.SetUnityActionValue("HideStaffUpgradeUI", OnHideStaffUpgradeUI);
+        DataBind.SetUnityActionValue("HideNoAnimeStaffUpgradeUI", OnHideNoAnimeStaffUpgradeUI);
+
+        DataBind.SetUnityActionValue("ShowRecipeUpgradeUI", OnShowRecipeUpgradeUI);
+        DataBind.SetUnityActionValue("HideRecipeUpgradeUI", OnHideRecipeUpgradeUI);
+        DataBind.SetUnityActionValue("HideNoAnimeRecipeUpgradeUI", OnHideNoAnimeRecipeUpgradeUI);
+
         DataBind.SetUnityActionValue("ShowFurnitureUI", OnShowFurnitureUI);
         DataBind.SetUnityActionValue("HideFurnitureUI", OnHideFurnitureUI);
         DataBind.SetUnityActionValue("HideNoAnimeFurnitureUI", OnHideNoAnimeFurnitureUI);
@@ -81,9 +89,6 @@ public class UIMainScene : MonoBehaviour
 
     private void OnHideRestaurantAdminUI()
     {
-/*        _uiNav.Pop("UIStaff");
-        _uiNav.Pop("UIFurniture");
-        _uiNav.Pop("UIKitchen");*/
         _uiNav.Pop("RestaurantAdminUI");
     }
 
@@ -116,6 +121,23 @@ public class UIMainScene : MonoBehaviour
     {
         _uiNav.PopNoAnime("UIStaffUpgrade");
     }
+
+
+    private void OnShowRecipeUpgradeUI()
+    {
+        _uiNav.Push("UIRecipeUpgrade");
+    }
+
+    private void OnHideRecipeUpgradeUI()
+    {
+        _uiNav.Pop("UIRecipeUpgrade");
+    }
+
+    private void OnHideNoAnimeRecipeUpgradeUI()
+    {
+        _uiNav.PopNoAnime("UIRecipeUpgrade");
+    }
+
 
     private void OnShowFurnitureUI()
     {

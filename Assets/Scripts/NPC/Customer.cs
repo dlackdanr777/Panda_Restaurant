@@ -50,7 +50,7 @@ public class Customer : MonoBehaviour
     private CustomerState _currentState;
 
 
-    public void Init(CustomerData data)
+    public void SetData(CustomerData data)
     {
         _customerData = data;
         _spriteParent.transform.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);

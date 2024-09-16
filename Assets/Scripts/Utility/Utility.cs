@@ -117,7 +117,7 @@ public static class Utility
         return 0;
     }
 
-    public static string GetEffectDataDescription(EquipEffectData effectData)
+    public static string GetEquipEffectDescription(EquipEffectData effectData)
     {
         string description = string.Empty;
 
@@ -133,6 +133,29 @@ public static class Utility
 
             case CookingSpeedUpEquipEffectData:
                 description = "요리 효율 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + effectData.EffectValue + "%</color> 증가";
+                break;
+
+            default:
+                description = "알 수 없는 효과";
+                break;
+        }
+
+        return description;
+    }
+
+
+    public static string GetSetEffectDescription(SetData setData)
+    {
+        string description = string.Empty;
+
+        switch (setData)
+        {
+            case TipPerMinuteSetData:
+                description = "분당 획득 팁 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + (setData.Value) + "</color> 증가";
+                break;
+
+            case CookingSpeedUpSetData:
+                description = "요리 효율 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + (setData.Value) + "%</color> 증가";
                 break;
 
             default:

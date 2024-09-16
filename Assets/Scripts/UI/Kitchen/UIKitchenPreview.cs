@@ -78,9 +78,9 @@ public class UIKitchenPreview : MonoBehaviour
 
         SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
         _setGroup.SetText1(setData.Name);
-        _setGroup.SetText2(setData != null ? setData.Description : string.Empty);
+        _setGroup.SetText2(setData != null ? Utility.GetSetEffectDescription(setData) : string.Empty);
 
-        string effectText = Utility.GetEffectDataDescription(data.EffectData);
+        string effectText = Utility.GetEquipEffectDescription(data.EffectData);
 
         if(data.EffectData is CookingSpeedUpEquipEffectData)
         {

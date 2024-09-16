@@ -58,11 +58,13 @@ public class UIPictorialBook : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
+
         gameObject.SetActive(true);
         _animeUI.gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.anchoredPosition = _hideTargetPos.anchoredPosition;
         OnGachaItemButtonClicked();
+        _uiCustomer.UpdateUI();
 
         TweenData tween = _animeUI.TweenAnchoredPosition(_showTargetPos.anchoredPosition, _showDuration, _showTweenMode);
         tween.OnComplete(() =>

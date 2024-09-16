@@ -5,7 +5,7 @@ public class CookingSpeedUpSetData : SetData
 {
 
     [Range(0f, 100f)] [SerializeField] private float _cookingSpeedUpMul;
-    public float CookingSpeedUpMul => _cookingSpeedUpMul;
+    public override float Value => _cookingSpeedUpMul;
 
     public override void Activate()
     {

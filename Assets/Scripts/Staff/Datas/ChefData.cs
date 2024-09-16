@@ -6,7 +6,7 @@ public class ChefData : StaffData
 {
     [SerializeField] private ChefLevelData[] _chefLevelData;
     public override float SecondValue => _chefLevelData[0].FoodSpeedAddPercent;
-    public override int MaxLavel => _chefLevelData.Length;
+    public override int MaxLevel => _chefLevelData.Length;
 
     public override float GetActionValue(int level)
     {

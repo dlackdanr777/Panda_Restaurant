@@ -7,7 +7,7 @@ public class MarketerData : StaffData
     [Range(0f, 100f)] [SerializeField] private float _customerCallPercentage;
     [SerializeField] private MarketerLevelData[] _marketerLevelData;
     public override float SecondValue => _customerCallPercentage;
-    public override int MaxLavel => _marketerLevelData.Length;
+    public override int MaxLevel => _marketerLevelData.Length;
 
     public override float GetActionValue(int level)
     {

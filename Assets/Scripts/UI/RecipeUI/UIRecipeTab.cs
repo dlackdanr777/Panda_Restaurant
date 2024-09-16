@@ -1,10 +1,12 @@
+using Muks.MobileUI;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class UIRecipeTab : MonoBehaviour
 {
     [Header("Components")]
-    [SerializeField] private StaffController _staffController;
+    [SerializeField] private MobileUINavigation _uiNav;
+    [SerializeField] private UIRecipeUpgrade _uiUpgrade;
     [SerializeField] private UIRecipePreview _uiRecipePreview;
 
     [Space]
@@ -19,7 +21,8 @@ public class UIRecipeTab : MonoBehaviour
     {
         _foodDataList = FoodDataManager.Instance.GetShopFoodDataList();
         _uiRecipePreview.Init(OnBuyButtonClicked, OnUpgradeButtonClicked);
-        _uiRecipePreview.SetFoodData(null);
+        _uiRecipePreview.SetData(_foodDataList[0]);
+        _uiUpgrade.SetData(_foodDataList[0]);
 
         int foodCount = FoodDataManager.Count;
 
@@ -57,16 +60,23 @@ public class UIRecipeTab : MonoBehaviour
 
             if(UserInfo.IsGiveRecipe(data.Id))
             {
-                _slots[i].SetOperate(data.ThumbnailSprite, data.Name, string.Empty);
+                _slots[i].SetNone(data.ThumbnailSprite, data.Name);
                 continue;
             }
 
-            if(data.BuyScore <= UserInfo.Score && data.BuyPrice <= UserInfo.Money)
+            if (!UserInfo.IsScoreValid(data))
             {
-                _slots[i].SetEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                _slots[i].SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
                 continue;
             }
-            _slots[i].SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
+
+            if (!UserInfo.IsMoneyValid(data))
+            {
+                _slots[i].SetNotEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                continue;
+            }
+
+            _slots[i].SetEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
             continue;
         }
     }
@@ -100,35 +110,13 @@ public class UIRecipeTab : MonoBehaviour
 
     private void OnUpgradeButtonClicked(FoodData data)
     {
-        if(!UserInfo.IsGiveRecipe(data.Id))
-        {
-            TimedDisplayManager.Instance.ShowTextError();
-            return;
-        }
-
-        int recipeLevel = UserInfo.GetRecipeLevel(data.Id);
-        if(UserInfo.Score < data.GetUpgradeMinScore(recipeLevel))
-        {
-            TimedDisplayManager.Instance.ShowTextLackScore();
-            return;
-        }
-
-        if(UserInfo.Money < data.GetUpgradePrice(recipeLevel))
-        {
-            TimedDisplayManager.Instance.ShowTextLackMoney();
-            return;
-        }
-
-        if(UserInfo.UpgradeRecipe(data.Id))
-        {
-            TimedDisplayManager.Instance.ShowText("강화 성공!");
-            return;
-        }
+        _uiNav.Push("UIRecipeUpgrade");
     }
 
 
     private void OnSlotClicked(FoodData data)
     {
-        _uiRecipePreview.SetFoodData(data);
+        _uiUpgrade.SetData(data);
+        _uiRecipePreview.SetData(data);
     }
 }
