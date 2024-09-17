@@ -50,8 +50,13 @@ public class UIRecipeTab : MonoBehaviour
 
     public void UpdateUI()
     {
+        if (!gameObject.activeSelf)
+            return;
+
         if (_foodDataList == null || _foodDataList.Count == 0)
             return;
+
+        _uiRecipePreview.UpdateUI();
 
         FoodData data;
         for(int i = 0, cnt = _foodDataList.Count; i < cnt; i++)

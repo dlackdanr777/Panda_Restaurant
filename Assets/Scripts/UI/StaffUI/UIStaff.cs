@@ -57,11 +57,12 @@ public class UIStaff : MobileUIView
             }
         }
 
-        UserInfo.OnChangeStaffHandler += () => OnSlotUpdate(false);
-        UserInfo.OnUpgradeStaffHandler += () => OnSlotUpdate(false);
-        UserInfo.OnGiveStaffHandler += () => OnSlotUpdate(false);
-        UserInfo.OnChangeMoneyHandler += () => OnSlotUpdate(false);
-        UserInfo.OnChangeScoreHandler += () => OnSlotUpdate(false);
+        UserInfo.OnChangeStaffHandler += UpdateUI;
+        UserInfo.OnUpgradeStaffHandler += UpdateUI;
+        UserInfo.OnGiveStaffHandler += UpdateUI;
+        UserInfo.OnChangeMoneyHandler += UpdateUI;
+        UserInfo.OnChangeScoreHandler += UpdateUI;
+        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
 
         SetStaffData(StaffType.Manager);
         SetStaffPreview();
@@ -116,19 +117,16 @@ public class UIStaff : MobileUIView
         }
 
         _currentType = type;
-        StaffData equipStaffData = UserInfo.GetEquipStaff(type);
         _currentTypeDataList = StaffDataManager.Instance.GetStaffDataList(type);
+        _typeText.text = Utility.StaffTypeStringConverter(type);
 
-        string staffName = Utility.StaffTypeStringConverter(type);
-        _typeText.text = staffName;
-
-        OnSlotUpdate(true);
+        UpdateUI();
     }
+
 
     private void SetStaffPreview()
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
-        _uiStaffUpgrade.SetData(equipStaffData);
         _uiStaffPreview.SetData(equipStaffData);
     }
 
@@ -177,14 +175,20 @@ public class UIStaff : MobileUIView
 
     private void OnUpgradeButtonClicked(StaffData data)
     {
+        _uiStaffUpgrade.SetData(data);
         _uiNav.Push("UIStaffUpgrade");
     }
 
 
-    private void OnSlotUpdate(bool changeOutline)
+    private void UpdateUI()
     {
-        if (_currentTypeDataList == null || _currentTypeDataList.Count == 0 || !gameObject.activeSelf)
+        if (!gameObject.activeSelf)
             return;
+
+        if (_currentTypeDataList == null || _currentTypeDataList.Count == 0)
+            return;
+
+        _uiStaffPreview.UpdateUI();
 
         StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
 
@@ -240,7 +244,6 @@ public class UIStaff : MobileUIView
 
     private void OnSlotClicked(StaffData data)
     {
-        _uiStaffUpgrade.SetData(data);
         _uiStaffPreview.SetData(data);
     }
 }

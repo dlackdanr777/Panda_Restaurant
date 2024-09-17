@@ -33,12 +33,12 @@ public class UIRecipePreview : MonoBehaviour
     {
         _onBuyButtonClicked = onBuyButonClicked;
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
-        UserInfo.OnUpgradeRecipeHandler += RecipeUpdate;
-        UserInfo.OnGiveRecipeHandler += RecipeUpdate;
-        UserInfo.OnChangeMoneyHandler += RecipeUpdate;
-        UserInfo.OnChangeScoreHandler += RecipeUpdate;
-        UserInfo.OnAddCookCountHandler += RecipeUpdate;
-        GameManager.Instance.OnAppendAddScoreHandler += RecipeUpdate;
+        UserInfo.OnUpgradeRecipeHandler += UpdateUI;
+        UserInfo.OnGiveRecipeHandler += UpdateUI;
+        UserInfo.OnChangeMoneyHandler += UpdateUI;
+        UserInfo.OnChangeScoreHandler += UpdateUI;
+        UserInfo.OnAddCookCountHandler += UpdateUI;
+        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
     }
 
 
@@ -124,11 +124,8 @@ public class UIRecipePreview : MonoBehaviour
     }
 
 
-    private void RecipeUpdate()
+    public void UpdateUI()
     {
-        if (!gameObject.activeSelf)
-            return;
-
         SetData(_currentData);
     }
 

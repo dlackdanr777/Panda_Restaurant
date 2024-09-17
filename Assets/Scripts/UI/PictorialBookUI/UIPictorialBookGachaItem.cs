@@ -27,7 +27,6 @@ public class UIPictorialBookGachaItem : MonoBehaviour
         }
         ResetData();
         UserInfo.OnChangeGachaItemSortTypeHandler += OnChangeGachaItemSortTypeEvent;
-        UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEvent;
     }
     
 
@@ -43,24 +42,15 @@ public class UIPictorialBookGachaItem : MonoBehaviour
     }
 
 
-    private void OnGiveGachaItemEvent()
+    public void UpdateUI()
     {
-        UIPictorialBookGachaItemSlot slot;
-        for (int i = 0, cnt = _gachaItemDataList.Count; i < cnt; ++i)
+        _view.SetData(_gachaItemDataList[0] != null ? _gachaItemDataList[0] : null);
+        for (int i = 0, cnt = _slotList.Count; i < cnt; ++i)
         {
-            if(_slotList.Count <= i)
-            {
-                slot = Instantiate(_slotPrefab, _slotParent);
-                slot.SetButtonEvent(OnSlotClicked);
-                slot.SetData(_gachaItemDataList[i]);
-                _slotList.Add(slot);
-                continue;
-            }
-
-            slot = _slotList[i];
-            slot.SetData(_gachaItemDataList[i]);
+            _slotList[i].UpdateUI();
         }
     }
+
 
     private void OnChangeGachaItemSortTypeEvent()
     {

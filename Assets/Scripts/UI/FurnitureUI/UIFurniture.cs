@@ -55,10 +55,11 @@ public class UIFurniture : MobileUIView
             }
         }
 
-        UserInfo.OnChangeFurnitureHandler += (type) => OnSlotUpdate();
-        UserInfo.OnGiveFurnitureHandler += OnSlotUpdate;
-        UserInfo.OnChangeMoneyHandler += OnSlotUpdate;
-        UserInfo.OnChangeScoreHandler += OnSlotUpdate;
+        UserInfo.OnChangeFurnitureHandler += (type) => UpdateUI();
+        UserInfo.OnGiveFurnitureHandler += UpdateUI;
+        UserInfo.OnChangeMoneyHandler += UpdateUI;
+        UserInfo.OnChangeScoreHandler += UpdateUI;
+        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
 
         SetFurnitureData(FurnitureType.Table1);
         SetFurniturePreview();
@@ -75,7 +76,6 @@ public class UIFurniture : MobileUIView
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         _uiRestaurantAdmin.MainUISetActive(false);
         transform.SetAsLastSibling();
-        SetFurnitureData(FurnitureType.Table1);
         SetFurniturePreview();
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
@@ -119,13 +119,13 @@ public class UIFurniture : MobileUIView
         string furnitureName = Utility.FurnitureTypeStringConverter(type);
         _typeText.text = furnitureName;
 
-        OnSlotUpdate();
+        UpdateUI();
     }
 
     private void SetFurniturePreview()
     {
-        FurnitureData equipStaffData = UserInfo.GetEquipFurniture(_currentType);
-        _uiFurniturePreview.SetData(equipStaffData != null ? equipStaffData : _currentTypeDataList[0]);
+        FurnitureData equipData = UserInfo.GetEquipFurniture(_currentType);
+        _uiFurniturePreview.SetData(equipData != null ? equipData : _currentTypeDataList[0]);
     }
 
 
@@ -177,11 +177,15 @@ public class UIFurniture : MobileUIView
         SetFurniturePreview();
     }
 
-    private void OnSlotUpdate()
+    private void UpdateUI()
     {
-        if (_currentTypeDataList == null || _currentTypeDataList.Count == 0 || !gameObject.activeSelf)
+        if (!gameObject.activeSelf)
             return;
 
+        if (_currentTypeDataList == null || _currentTypeDataList.Count == 0)
+            return;
+
+        _uiFurniturePreview.UpdateUI();
         FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(_currentType);
 
         int slotsIndex = (int)_currentType;

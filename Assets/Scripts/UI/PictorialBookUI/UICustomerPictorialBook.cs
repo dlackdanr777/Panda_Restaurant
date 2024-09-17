@@ -26,12 +26,9 @@ public class UICustomerPictorialBook : MonoBehaviour
             slot.SetData(_customerList[i]);
             _slotList.Add(slot);
         }
+
         ResetData();
-        UserInfo.OnChangeGachaItemSortTypeHandler += OnChangeGachaItemSortTypeEvent;
-        UserInfo.OnGiveRecipeHandler += UpdateUI;
-        UserInfo.OnChangeScoreHandler += UpdateUI;
-        UserInfo.OnGiveGachaItemHandler += UpdateUI;
-        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
+        UserInfo.OnchangeCustomerSortTypeHandler += OnChangeCustomerSortTypeEvent;
     }
     
 
@@ -40,16 +37,15 @@ public class UICustomerPictorialBook : MonoBehaviour
         _view.SetData(_customerList[0] != null ? _customerList[0] : null);
     }
 
+
     public void ChoiceView()
     {
         _view.ChoiceView();
     }
 
+
     public void UpdateUI()
     {
-        if (!gameObject.activeSelf)
-            return;
-
         _view.UpdateUI();
         for(int i = 0, cnt = _slotList.Count; i < cnt; ++i)
         {
@@ -58,10 +54,9 @@ public class UICustomerPictorialBook : MonoBehaviour
 
     }
 
-    private void OnChangeGachaItemSortTypeEvent()
+    public void OnChangeCustomerSortTypeEvent()
     {
         _customerList = CustomerDataManager.Instance.GetSortCustomerList();
-
         for (int i = 0, cnt = _customerList.Count; i < cnt; ++i)
         {
             UICustomerSlot slot;

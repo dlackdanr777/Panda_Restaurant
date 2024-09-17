@@ -12,10 +12,8 @@ public class UITip : MobileUIView
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private Button _collectTipButton;
     [SerializeField] private Button _advertisingButton;
-    [SerializeField] private TextMeshProUGUI _tipAnimeTmp;
     [SerializeField] private TextMeshProUGUI _tipText;
     [SerializeField] private UIMoney _uiMoney;
-    [SerializeField] private GameObject _uiShinyStar;
 
     [Space]
     [Header("Animations")]
@@ -52,7 +50,6 @@ public class UITip : MobileUIView
         _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
         _currentTip = UserInfo.Tip;
 
-        _tipAnimeTmp.gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 

@@ -52,8 +52,8 @@ public class UIManagement : MobileUIView
         OnChangeMoneyEvent();
         OnSetEffectArrowButtonClicked(_currentSetEffectType);
 
-        UserInfo.OnChangeFurnitureHandler += (type) => _furnitureSetEffect.SetData(UserInfo.GetEquipFurnitureSetData());
-        UserInfo.OnChangeKitchenUtensilHandler += (type) => _kitchenUntensilsSetEffect.SetData(UserInfo.GetEquipKitchenUntensilSetData());
+        UserInfo.OnChangeFurnitureHandler += (type) => OnChangeFurnitureEvent();
+        UserInfo.OnChangeKitchenUtensilHandler += (type) => OnChangeKitchenUntensilsEvent();
         GameManager.Instance.OnChangeTipPerMinuteHandler += OnChangeTipPerMinuteEvent;
         UserInfo.OnAddCustomerCountHandler += OnAddCustomerEvent;
         UserInfo.OnChangeMoneyHandler += OnChangeMoneyEvent;
@@ -69,6 +69,12 @@ public class UIManagement : MobileUIView
         _animeUI.gameObject.SetActive(true);
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         OnSetEffectArrowButtonClicked(_currentSetEffectType);
+
+        OnChangeFurnitureEvent();
+        OnChangeKitchenUntensilsEvent();
+        OnChangeMoneyEvent();
+        OnAddCustomerEvent();
+        OnChangeMoneyEvent();
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
@@ -125,20 +131,48 @@ public class UIManagement : MobileUIView
         }
     }
 
+
+    private void OnChangeFurnitureEvent()
+    {
+        if (!gameObject.activeSelf)
+            return;
+
+        _furnitureSetEffect.SetData(UserInfo.GetEquipFurnitureSetData());
+    }
+
+
+    private void OnChangeKitchenUntensilsEvent()
+    {
+        if (!gameObject.activeSelf)
+            return;
+
+        _kitchenUntensilsSetEffect.SetData(UserInfo.GetEquipKitchenUntensilSetData());
+    }
+
+
     private void OnChangeTipPerMinuteEvent()
     {
+        if (!gameObject.activeSelf)
+            return;
+
         _tipPerMinuteValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(GameManager.Instance.TipPerMinute), 9);
     }
 
 
     private void OnAddCustomerEvent()
     {
+        if (!gameObject.activeSelf)
+            return;
+
         _totalCustomerValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(UserInfo.TotalCumulativeCustomerCount), 9);
     }
 
 
     private void OnChangeMoneyEvent()
     {
+        if (!gameObject.activeSelf)
+            return;
+
         _totalMoneyValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(UserInfo.TotalAddMoney), 9);
     }
 

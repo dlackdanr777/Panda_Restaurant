@@ -54,10 +54,11 @@ public class UIKitchen : MobileUIView
             }
         }
 
-        UserInfo.OnChangeKitchenUtensilHandler += (type) => OnSlotUpdate();
-        UserInfo.OnGiveKitchenUtensilHandler += OnSlotUpdate;
-        UserInfo.OnChangeMoneyHandler += OnSlotUpdate;
-        UserInfo.OnChangeScoreHandler += OnSlotUpdate;
+        UserInfo.OnChangeKitchenUtensilHandler += (type) => UpdateUI();
+        UserInfo.OnGiveKitchenUtensilHandler += UpdateUI;
+        UserInfo.OnChangeMoneyHandler += UpdateUI;
+        UserInfo.OnChangeScoreHandler += UpdateUI;
+        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
 
         SetKitchenUtensilDataData(KitchenUtensilType.Burner1);
         SetKitchenPreview();
@@ -126,7 +127,7 @@ public class UIKitchen : MobileUIView
         string typeStr = Utility.KitchenUtensilTypeStringConverter(type);
         _typeText1.text = typeStr;
 
-        OnSlotUpdate();
+        UpdateUI();
     }
 
     private void SetKitchenPreview()
@@ -188,10 +189,15 @@ public class UIKitchen : MobileUIView
 
 
 
-    private void OnSlotUpdate()
+    private void UpdateUI()
     {
-        if (_currentTypeDataList == null || _currentTypeDataList.Count == 0 || !gameObject.activeSelf)
+        if (!gameObject.activeSelf)
             return;
+
+        if (_currentTypeDataList == null || _currentTypeDataList.Count == 0)
+            return;
+
+        _uikitchenPreview.UpdateUI();
 
         KitchenUtensilData equipStaffData = UserInfo.GetEquipKitchenUtensil(_currentType);
 

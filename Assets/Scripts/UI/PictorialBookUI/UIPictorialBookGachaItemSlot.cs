@@ -51,6 +51,14 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
         });
     }
 
+    public void UpdateUI()
+    {
+        if (_data == null)
+            return;
+
+        _itemImage.color = UserInfo.IsGiveGachaItem(_data.Id) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+    }
+
 
     private void SetStar(GachaItemRank rank)
     {

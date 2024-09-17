@@ -50,6 +50,13 @@ public class UIPictorialBook : MobileUIView
         _tmpGachaItemButtonPos = _gachaItemButtonTr.anchoredPosition;
         _tmpCustomerButtonPos = _customerButtonTr.anchoredPosition;
 
+        UserInfo.OnGiveRecipeHandler += CustomerUpdateUI;
+        UserInfo.OnChangeScoreHandler += CustomerUpdateUI;
+        UserInfo.OnGiveGachaItemHandler += CustomerUpdateUI;
+        GameManager.Instance.OnAppendAddScoreHandler += CustomerUpdateUI;
+
+        UserInfo.OnGiveGachaItemHandler += GachaItemUpdateUI;
+
         OnGachaItemButtonClicked();
         gameObject.SetActive(false);
     }
@@ -64,7 +71,6 @@ public class UIPictorialBook : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.anchoredPosition = _hideTargetPos.anchoredPosition;
         OnGachaItemButtonClicked();
-        _uiCustomer.UpdateUI();
 
         TweenData tween = _animeUI.TweenAnchoredPosition(_showTargetPos.anchoredPosition, _showDuration, _showTweenMode);
         tween.OnComplete(() =>
@@ -94,10 +100,6 @@ public class UIPictorialBook : MobileUIView
     }
 
 
-
-   
-
-
     private void OnGachaItemButtonClicked()
     {
         _gachaItemButtonTr.anchoredPosition = _gachaItemButtonClickPos.anchoredPosition;
@@ -106,6 +108,7 @@ public class UIPictorialBook : MobileUIView
         _uiGachaItem.gameObject.SetActive(true);
         _uiCustomer.gameObject.SetActive(false);
 
+        _uiGachaItem.UpdateUI();
         _uiGachaItem.ChoiceView();
     }
 
@@ -117,6 +120,23 @@ public class UIPictorialBook : MobileUIView
         _uiCustomer.gameObject.SetActive(true);
         _uiGachaItem.gameObject.SetActive(false);
 
+        _uiCustomer.UpdateUI();
         _uiCustomer.ChoiceView();
+    }
+
+    private void CustomerUpdateUI()
+    {
+        if (!gameObject.activeSelf)
+            return;
+
+        _uiCustomer.UpdateUI();
+    }
+
+    private void GachaItemUpdateUI()
+    {
+        if (!gameObject.activeSelf)
+            return;
+
+        _uiGachaItem.UpdateUI();
     }
 }

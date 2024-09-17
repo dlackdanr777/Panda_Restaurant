@@ -136,6 +136,7 @@ public static class UserInfo
 
     //################################환경 설정 관련 변수################################
     public static Action OnChangeGachaItemSortTypeHandler;
+    public static Action OnchangeCustomerSortTypeHandler;
 
 
     public static SortType _customerSortType = SortType.None;
@@ -1318,6 +1319,16 @@ public static class UserInfo
 
         _gachaItemSortType = sortType;
         OnChangeGachaItemSortTypeHandler?.Invoke();
+    }
+
+
+    public static void ChangeCustomerSortType(SortType sortType)
+    {
+        if (_customerSortType == sortType)
+            return;
+
+        _customerSortType = sortType;
+        OnchangeCustomerSortTypeHandler?.Invoke();
     }
 
 

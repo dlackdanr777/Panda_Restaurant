@@ -37,13 +37,6 @@ public class UIStaffPreview : MonoBehaviour
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
-
-        UserInfo.OnUpgradeStaffHandler += UpdateStaff;
-        UserInfo.OnChangeMoneyHandler += UpdateStaff;
-        UserInfo.OnChangeScoreHandler += UpdateStaff;
-        UserInfo.OnChangeStaffHandler += UpdateStaff;
-        UserInfo.OnGiveStaffHandler += UpdateStaff;
-        UserInfo.OnUpgradeStaffHandler += UpdateStaff;
     }
 
 
@@ -183,7 +176,7 @@ public class UIStaffPreview : MonoBehaviour
         }
     }
 
-    private void UpdateStaff()
+    public void UpdateUI()
     {
         SetData(_currentData);
     }

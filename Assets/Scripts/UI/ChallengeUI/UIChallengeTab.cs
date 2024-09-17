@@ -30,19 +30,13 @@ public class UIChallengeTab : MonoBehaviour
             UIChallengeTabSlot slot = Instantiate(_slotPrefab, _slotParent);
             slot.Init(dataList[i], () =>
             {
-                UpdateSlot();
+                UpdateUI();
             });
             _slotList.Add(slot);
             _challengeDataDic.Add(dataList[i].Id, slot);
         }
 
-        UpdateSlot();
-    }
-
-
-    public void UpdateUI()
-    {
-        UpdateSlot();
+        UpdateUI();
     }
 
 
@@ -64,7 +58,7 @@ public class UIChallengeTab : MonoBehaviour
     }
 
 
-    private void UpdateSlot()
+    public void UpdateUI()
     {
         _doneSlotList.Clear();
         _clearSlotList.Clear();
@@ -80,7 +74,6 @@ public class UIChallengeTab : MonoBehaviour
             if (_isChallengeDone(_slotList[i].Data.Id))
             {
                 _doneSlotList.Add(_slotList[i]);
-
                 continue;
             }
 
