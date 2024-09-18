@@ -101,7 +101,7 @@ public class UIStaffUpgrade : MobileUIView
         else
         {
             _scoreButton.gameObject.SetActive(true);
-            _scoreButton.SetText(_currentStaffData.GetAddScore(level).ToString());
+            _scoreButton.SetText(_currentStaffData.GetUpgradeMinScore(level).ToString());
             return;
         }
     }
@@ -121,6 +121,7 @@ public class UIStaffUpgrade : MobileUIView
             if(UserInfo.IsMoneyValid(_currentStaffData.GetUpgradePrice(level)))
             {
                 UserInfo.UpgradeStaff(_currentStaffData);
+                UserInfo.AppendMoney(-_currentStaffData.GetUpgradePrice(level));
                 TimedDisplayManager.Instance.ShowText("직원 업그레이드를 완료했어요!");
                 UpdateData();
                 return;

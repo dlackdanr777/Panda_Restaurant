@@ -38,7 +38,7 @@ public class CustomerDataManager : MonoBehaviour
         List<CustomerData> returnList = new List<CustomerData>();
         for(int i = 0, cnt = _custoemrDataList.Count; i < cnt; ++i)
         {
-            if (UserInfo.Score < _custoemrDataList[i].MinScore)
+            if (!UserInfo.IsScoreValid(_custoemrDataList[i].MinScore))
                 continue;
 
             if (!UserInfo.IsGiveRecipe(_custoemrDataList[i].RequiredDish))

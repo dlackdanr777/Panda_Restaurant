@@ -28,7 +28,7 @@ public class UICustomerPictorialBook : MonoBehaviour
         }
 
         ResetData();
-        UserInfo.OnchangeCustomerSortTypeHandler += OnChangeCustomerSortTypeEvent;
+        UserInfo.OnChangeCustomerSortTypeHandler += OnChangeCustomerSortTypeEvent;
     }
     
 

@@ -12,11 +12,9 @@ public class CookingSpeedUpEquipEffectData : EquipEffectData
 
     public override void AddSlot()
     {
-        GameManager.Instance.AddCookingSpeedMul(_cookSpeedUpVolume);
     }
 
     public override void RemoveSlot()
     {
-        GameManager.Instance.AddCookingSpeedMul(-_cookSpeedUpVolume);
     }
 }

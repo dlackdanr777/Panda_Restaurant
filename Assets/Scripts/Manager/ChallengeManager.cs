@@ -443,7 +443,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE08:
                 Type08ChallengeData data08 = (Type08ChallengeData)data;
-                int socre = UserInfo.MaxScore;
+                int socre = UserInfo.Score;
                 return socre == 0 ? 0 : Math.Min(1, (float)socre / data08.Rank);
 
             case ChallengeType.TYPE09:
@@ -993,7 +993,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (UserInfo.MaxScore < data.Rank)
+            if (!UserInfo.IsScoreValid(data.Rank))
                 continue;
 
             switch (data.Challenges)

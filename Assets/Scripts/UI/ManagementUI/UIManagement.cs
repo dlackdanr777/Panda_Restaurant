@@ -47,6 +47,8 @@ public class UIManagement : MobileUIView
         _leftArrowButton.AddListener(() => OnSetEffectArrowButtonClicked(SetEffectType.Furniture));
         _rightArrowButton.AddListener(() => OnSetEffectArrowButtonClicked(SetEffectType.KitchenUntensils));
 
+        OnChangeFurnitureEvent();
+        OnChangeKitchenUntensilsEvent();
         OnChangeTipPerMinuteEvent();
         OnAddCustomerEvent();
         OnChangeMoneyEvent();
@@ -72,6 +74,7 @@ public class UIManagement : MobileUIView
 
         OnChangeFurnitureEvent();
         OnChangeKitchenUntensilsEvent();
+        OnChangeTipPerMinuteEvent();
         OnChangeMoneyEvent();
         OnAddCustomerEvent();
         OnChangeMoneyEvent();

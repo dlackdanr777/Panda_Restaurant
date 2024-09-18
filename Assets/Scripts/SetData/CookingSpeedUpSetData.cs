@@ -9,11 +9,9 @@ public class CookingSpeedUpSetData : SetData
 
     public override void Activate()
     {
-        GameManager.Instance.AddCookingSpeedMul(_cookingSpeedUpMul);
     }
 
     public override void Deactivate()
     {
-        GameManager.Instance.AddCookingSpeedMul(-_cookingSpeedUpMul);
     }
 }

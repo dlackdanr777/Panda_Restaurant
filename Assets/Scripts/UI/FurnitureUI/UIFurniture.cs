@@ -153,13 +153,13 @@ public class UIFurniture : MobileUIView
             return;
         }
 
-        if (UserInfo.Score < data.BuyScore)
+        if (!UserInfo.IsScoreValid(data))
         {
             TimedDisplayManager.Instance.ShowTextLackScore();
             return;
         }
 
-        if (UserInfo.Money < data.BuyPrice)
+        if (!UserInfo.IsMoneyValid(data))
         {
             TimedDisplayManager.Instance.ShowTextLackMoney();
             return;

@@ -12,11 +12,9 @@ public class MaxTipVolumeEquipEffectData : EquipEffectData
 
     public override void AddSlot()
     {
-        GameManager.Instance.SetMaxTipVolume(_maxTipVolume);
     }
 
     public override void RemoveSlot()
     {
-        GameManager.Instance.SetMaxTipVolume(-_maxTipVolume);
     }
 }

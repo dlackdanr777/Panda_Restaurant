@@ -122,6 +122,7 @@ public class UIRecipeUpgrade : MobileUIView
             if(UserInfo.IsMoneyValid(_currentData.GetUpgradePrice(level)))
             {
                 UserInfo.UpgradeRecipe(_currentData);
+                UserInfo.AppendMoney(-_currentData.GetUpgradePrice(level));
                 TimedDisplayManager.Instance.ShowText("직원 업그레이드를 완료했어요!");
                 UpdateData();
                 return;

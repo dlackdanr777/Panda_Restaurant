@@ -10,11 +10,9 @@ public class TipPerMinuteEquipEffectData : EquipEffectData
 
     public override void AddSlot()
     {
-        GameManager.Instance.AddTipPerMinute(_tipPerMinute);
     }
 
     public override void RemoveSlot()
     {
-        GameManager.Instance.AddTipPerMinute(-_tipPerMinute);
     }
 }

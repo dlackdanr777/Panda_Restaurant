@@ -1,6 +1,7 @@
 using Muks.DataBind;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using UnityEngine;
 
@@ -26,9 +27,11 @@ public static class UserInfo
 
     public static event Action<FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
+    public static event Action OnChangeFurnitureSetDataHandler;
 
     public static event Action<KitchenUtensilType> OnChangeKitchenUtensilHandler;
     public static event Action OnGiveKitchenUtensilHandler;
+    public static event Action OnChangeKitchenUtensilSetDataHandler;
 
     public static event Action OnDoneChallengeHandler;
     public static event Action OnClearChallengeHandler;
@@ -47,18 +50,6 @@ public static class UserInfo
 
     private static int _score;
     public static int Score => _score + GameManager.Instance.AddSocre;
-
-    private static int _maxScore;
-    public static int MaxScore
-    {
-        get
-        {
-            if(_maxScore < Score)
-                _maxScore = Score;
-
-            return _maxScore;
-        }
-    }
 
     private static int _tip;
     public static int Tip => _tip;
@@ -136,7 +127,7 @@ public static class UserInfo
 
     //################################환경 설정 관련 변수################################
     public static Action OnChangeGachaItemSortTypeHandler;
-    public static Action OnchangeCustomerSortTypeHandler;
+    public static Action OnChangeCustomerSortTypeHandler;
 
 
     public static SortType _customerSortType = SortType.None;
@@ -242,6 +233,7 @@ public static class UserInfo
 
     public static bool IsScoreValid(BasicData data)
     {
+        DebugLog.Log(Score);
         if (Score < data.BuyScore)
             return false;
 
@@ -250,6 +242,7 @@ public static class UserInfo
 
     public static bool IsScoreValid(int score)
     {
+        DebugLog.Log(Score);
         if (Score < score)
             return false;
 
@@ -287,8 +280,6 @@ public static class UserInfo
         _giveStaffList.Add(data.Id);
         _giveStaffSet.Add(data.Id);
         _giveStaffLevelDic.Add(data.Id, 1);
-        GameManager.Instance.AppendAddScore(data.GetAddScore(1));
-        GameManager.Instance.AddTipMul(data.GetAddTipMul(1));
         OnGiveStaffHandler?.Invoke();
     }
 
@@ -310,9 +301,6 @@ public static class UserInfo
         _giveStaffList.Add(id);
         _giveStaffSet.Add(id);
         _giveStaffLevelDic.Add(id, 1);
-        GameManager.Instance.AppendAddScore(data.GetAddScore(1));
-        GameManager.Instance.AddTipMul(data.GetAddTipMul(1));
-
         OnGiveStaffHandler?.Invoke();
     }
 
@@ -377,10 +365,6 @@ public static class UserInfo
         {
             if(data.UpgradeEnable(level))
             {
-                GameManager.Instance.AppendAddScore(-data.GetAddScore(level));
-                GameManager.Instance.AddTipMul(-data.GetAddTipMul(level));
-                GameManager.Instance.AppendAddScore(data.GetAddScore(level + 1));
-                GameManager.Instance.AddTipMul(data.GetAddTipMul(level + 1));
                 _giveStaffLevelDic[data.Id] = level + 1;
                 OnUpgradeStaffHandler?.Invoke();
                 return true;
@@ -401,11 +385,6 @@ public static class UserInfo
             StaffData data = StaffDataManager.Instance.GetStaffData(id);
             if (data.UpgradeEnable(level))
             {
-                GameManager.Instance.AppendAddScore(-data.GetAddScore(level));
-                GameManager.Instance.AddTipMul(-data.GetAddTipMul(level));
-                GameManager.Instance.AppendAddScore(data.GetAddScore(level + 1));
-                GameManager.Instance.AddTipMul(data.GetAddTipMul(level + 1));
-
                 _giveStaffLevelDic[id] = level + 1;
                 OnUpgradeStaffHandler?.Invoke();
                 return true;
@@ -518,7 +497,14 @@ public static class UserInfo
     {
         if (_giveRecipeLevelDic.TryGetValue(id, out int level))
         {
-            if(FoodDataManager.Instance.GetFoodData(id).UpgradeEnable(level))
+            FoodData data = FoodDataManager.Instance.GetFoodData(id);
+            if (!IsMoneyValid(data))
+            {
+                DebugLog.LogError("돈 부족: " + data.Id);
+                return false;
+            }
+
+            if (data.UpgradeEnable(level))
             {
                 _giveRecipeLevelDic[id] = level + 1;
                 OnUpgradeRecipeHandler?.Invoke();
@@ -538,6 +524,12 @@ public static class UserInfo
     {
         if (_giveRecipeLevelDic.TryGetValue(data.Id, out int level))
         {
+            if(!IsMoneyValid(data))
+            {
+                DebugLog.LogError("돈 부족: " + data.Id);
+                return false;
+            }
+
             if (FoodDataManager.Instance.GetFoodData(data.Id).UpgradeEnable(level))
             {
                 _giveRecipeLevelDic[data.Id] = level + 1;
@@ -675,9 +667,13 @@ public static class UserInfo
         return _furnitureEnabledSetData;
     }
 
-    public static SetData GetEquipKitchenUntensilSetData()
+    public static void SetEquipFurnitureSetData(SetData data)
     {
-        return _kitchenuntensilEnabledSetData;
+        if (_furnitureEnabledSetData == data)
+            return;
+
+        _furnitureEnabledSetData = data;
+        OnChangeFurnitureSetDataHandler?.Invoke();
     }
 
 
@@ -689,7 +685,6 @@ public static class UserInfo
             return;
         }
 
-        GameManager.Instance.AppendAddScore(data.AddScore);
         _giveFurnitureList.Add(data.Id);
         _giveFurnitureSet.Add(data.Id);
         CheckEffectSetCount();
@@ -712,7 +707,6 @@ public static class UserInfo
             return;
         }
 
-        GameManager.Instance.AppendAddScore(data.AddScore);
         _giveFurnitureList.Add(id);
         _giveFurnitureSet.Add(id);
         CheckEffectSetCount();
@@ -764,8 +758,6 @@ public static class UserInfo
         _equipFurnitureDatas[(int)data.Type] = data;
         if (data.EffectData != null) data.EffectData.AddSlot();
 
-        CheckFurnitureSetEnabled();
-
         OnChangeFurnitureHandler?.Invoke(data.Type);
     }
 
@@ -783,9 +775,7 @@ public static class UserInfo
             _equipFurnitureDatas[((int)data.Type)].EffectData.RemoveSlot();
 
         _equipFurnitureDatas[(int)data.Type] = data;
-
         if(_equipFurnitureDatas[(int)data.Type].EffectData != null) data.EffectData.AddSlot();
-        CheckFurnitureSetEnabled();
 
         OnChangeFurnitureHandler?.Invoke(data.Type);
     }
@@ -804,35 +794,24 @@ public static class UserInfo
         return _equipFurnitureDatas[(int)type];
     }
 
-    private static void CheckFurnitureSetEnabled()
-    {
-        string setId = string.Empty;
-        for(int i = 0, cnt = _equipFurnitureDatas.Length; i < cnt; i++)
-        {
-            if (_equipFurnitureDatas[i] == null)
-                return;
-
-            if (string.IsNullOrEmpty(setId))
-            {
-                setId = _equipFurnitureDatas[i].SetId;
-                continue;
-            }
-
-            if (setId != _equipFurnitureDatas[i].SetId)
-                return;
-        }
-
-        if(_furnitureEnabledSetData != null)
-            _furnitureEnabledSetData.Deactivate();
-
-        _furnitureEnabledSetData = SetDataManager.Instance.GetSetData(setId);
-        _furnitureEnabledSetData.Activate();
-    }
-
-
     #endregion
 
     #region KitchenData
+
+    public static SetData GetEquipKitchenUntensilSetData()
+    {
+        return _kitchenuntensilEnabledSetData;
+    }
+
+    public static void SetEquipKitchenUntensilSetData(SetData data)
+    {
+        if (_kitchenuntensilEnabledSetData == data)
+            return;
+
+        _kitchenuntensilEnabledSetData = data;
+        OnChangeKitchenUtensilSetDataHandler?.Invoke();
+    }
+
 
     public static void GiveKitchenUtensil(KitchenUtensilData data)
     {
@@ -842,7 +821,6 @@ public static class UserInfo
             return;
         }
 
-        GameManager.Instance.AppendAddScore(data.AddScore);
         _giveKitchenUtensilList.Add(data.Id);
         _giveKitchenUtensilSet.Add(data.Id);
         CheckEffectSetCount();
@@ -865,7 +843,6 @@ public static class UserInfo
             return;
         }
 
-        GameManager.Instance.AppendAddScore(data.AddScore);
         _giveKitchenUtensilList.Add(id);
         _giveKitchenUtensilSet.Add(id);
         CheckEffectSetCount();
@@ -918,8 +895,6 @@ public static class UserInfo
         if (_equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
             data.EffectData.AddSlot();
 
-        CheckKitchenUtensilSetEnabled();
-
         OnChangeKitchenUtensilHandler?.Invoke(data.Type);
     }
 
@@ -940,8 +915,6 @@ public static class UserInfo
         if (_equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
             data.EffectData.AddSlot();
 
-        CheckKitchenUtensilSetEnabled();
-
         OnChangeKitchenUtensilHandler?.Invoke(data.Type);
     }
 
@@ -958,32 +931,6 @@ public static class UserInfo
     {
         return _equipKitchenUtensilDatas[(int)type];
     }
-
-    private static void CheckKitchenUtensilSetEnabled()
-    {
-        string setId = string.Empty;
-        for (int i = 0, cnt = _equipKitchenUtensilDatas.Length; i < cnt; i++)
-        {
-            if (_equipKitchenUtensilDatas[i] == null)
-                return;
-
-            if (string.IsNullOrEmpty(setId))
-            {
-                setId = _equipKitchenUtensilDatas[i].SetId;
-                continue;
-            }
-
-            if (setId != _equipKitchenUtensilDatas[i].SetId)
-                return;
-        }
-
-        if (_kitchenuntensilEnabledSetData != null)
-            _kitchenuntensilEnabledSetData.Deactivate();
-
-        _kitchenuntensilEnabledSetData = SetDataManager.Instance.GetSetData(setId);
-        _kitchenuntensilEnabledSetData.Activate();
-    }
-
 
     #endregion
 
@@ -1328,7 +1275,7 @@ public static class UserInfo
             return;
 
         _customerSortType = sortType;
-        OnchangeCustomerSortTypeHandler?.Invoke();
+        OnChangeCustomerSortTypeHandler?.Invoke();
     }
 
 
