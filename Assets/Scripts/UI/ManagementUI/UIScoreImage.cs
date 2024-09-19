@@ -44,16 +44,6 @@ public class UIScoreImage : MonoBehaviour
         UserInfo.OnChangeScoreHandler += OnScoreChangeEvent;
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.Tab))
-        {
-            UserInfo.AppendScore(10);
-            DebugLog.Log(UserInfo.Score);
-        }
-
-    }
-
 
     private void OnScoreChangeEvent()
     {

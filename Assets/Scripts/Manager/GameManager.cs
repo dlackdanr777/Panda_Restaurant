@@ -1,5 +1,6 @@
-using JetBrains.Annotations;
 using System;
+using System.Collections.Generic;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -38,11 +39,10 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _cookingSpeedMul = 1;
     public float CookingSpeedMul => _cookingSpeedMul + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) + (_addEquipSetDataCookSpeedMul * 0.01f);
 
-    public int AddSocre => _addEquipStaffScore + _addEquipFurnitureScore + _addEquipKitchenUtensilScore;
+    public int AddSocre => _addEquipStaffScore + _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore;
     public float TipMul => 1 + (_addEquipStaffTipMul * 0.01f);
 
-    [SerializeField] private int _tipPerMinute;
-    public int TipPerMinute => _tipPerMinute + _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addEquipSetDataTipPerMinute;
+    public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addEquipSetDataTipPerMinute + _addGiveGachaItemTipPerMinute;
     public int MaxTipVolume => _addEquipFurnitureMaxTipVolume;
 
 
@@ -60,6 +60,9 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private int _addEquipSetDataTipPerMinute;
     [SerializeField] private float _addEquipSetDataCookSpeedMul;
+
+    [SerializeField] private int _addGiveGachaItemScore;
+    [SerializeField] private int _addGiveGachaItemTipPerMinute;
 
     private float _updateTimer;
 
@@ -82,12 +85,6 @@ public class GameManager : MonoBehaviour
         _addPromotionCustomer = Mathf.Clamp(_addPromotionCustomer + value, 1, 100);
     }
 
-    public void AddTipPerMinute(int value)
-    {
-        _tipPerMinute += value;
-        OnChangeTipPerMinuteHandler?.Invoke();
-    }
-
 
     private void Awake()
     {
@@ -101,15 +98,19 @@ public class GameManager : MonoBehaviour
         UserInfo.DataBindTip();
         UserInfo.DataBindMoney();
 
-        UserInfo.OnChangeStaffHandler += OnEquipStaffEvent;
-        UserInfo.OnUpgradeStaffHandler += OnEquipStaffEvent;
-        UserInfo.OnChangeFurnitureHandler += (type) => OnEquipFurnitureEvent();
-        UserInfo.OnChangeKitchenUtensilHandler += (type) => OnEquipKitchenUtensilEvent();
+        UserInfo.OnChangeStaffHandler += OnEquipStaffEffectCheck;
+        UserInfo.OnUpgradeStaffHandler += OnEquipStaffEffectCheck;
+        UserInfo.OnChangeFurnitureHandler += (type) => OnEquipFurnitureEffectCheck();
+        UserInfo.OnChangeKitchenUtensilHandler += (type) => OnEquipKitchenUtensilEffectCheck();
         UserInfo.OnChangeFurnitureHandler += (type) => CheckSetDataEnabled();
         UserInfo.OnChangeKitchenUtensilHandler += (type) => CheckSetDataEnabled();
+        UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEffectCheck;
 
-        OnEquipStaffEvent();
-        OnEquipFurnitureEvent();
+        OnEquipStaffEffectCheck();
+        OnEquipFurnitureEffectCheck();
+        OnEquipKitchenUtensilEffectCheck();
+        CheckSetDataEnabled();
+        OnGiveGachaItemEffectCheck();
     }
 
 
@@ -160,12 +161,12 @@ public class GameManager : MonoBehaviour
         if(60 <= _updateTimer)
         {
             _updateTimer = 0;
-            UserInfo.AddTip(_tipPerMinute);
+            UserInfo.AddTip(TipPerMinute);
         }
     }
 
 
-    private void OnEquipStaffEvent()
+    private void OnEquipStaffEffectCheck()
     {
         _addEquipStaffScore = 0;
         _addEquipStaffTipMul = 0;
@@ -189,7 +190,8 @@ public class GameManager : MonoBehaviour
         OnAppendAddScoreHandler?.Invoke();
     }
 
-    private void OnEquipFurnitureEvent()
+
+    private void OnEquipFurnitureEffectCheck()
     {
         _addEquipFurnitureScore = 0;
         _addEquipFurnitureMaxTipVolume = 0;
@@ -224,7 +226,8 @@ public class GameManager : MonoBehaviour
         OnChangeTipPerMinuteHandler?.Invoke();
     }
 
-    private void OnEquipKitchenUtensilEvent()
+
+    private void OnEquipKitchenUtensilEffectCheck()
     {
         _addEquipKitchenUtensilScore = 0;
         _addEquipKitchenUtensilCookSpeedMul = 0;
@@ -258,6 +261,7 @@ public class GameManager : MonoBehaviour
         OnAppendAddScoreHandler?.Invoke();
         OnChangeTipPerMinuteHandler?.Invoke();
     }
+
 
     private  void CheckSetDataEnabled()
     {
@@ -341,4 +345,29 @@ public class GameManager : MonoBehaviour
             return setData;
         }
     }
+
+    
+    private void OnGiveGachaItemEffectCheck()
+    {
+        _addGiveGachaItemScore = 0;
+        _addGiveGachaItemTipPerMinute = 0;
+        int addScore = 0;
+        int addTipPerMinute = 0;
+
+        List<string> giveGachaItemList = UserInfo.GetGiveGachaItemList();
+        for(int i = 0, cnt = giveGachaItemList.Count; i < cnt; ++i)
+        {
+            if (!ItemManager.Instance.IsGachaItem(giveGachaItemList[i]))
+                continue;
+
+            GachaItemData data = ItemManager.Instance.GetGachaItemData(giveGachaItemList[i]);
+            addScore += data.AddScore;
+            addTipPerMinute += data.TipPerMinute;
+        }
+
+        _addGiveGachaItemScore = addScore;
+        _addGiveGachaItemTipPerMinute = addTipPerMinute;
+        OnAppendAddScoreHandler?.Invoke();
+    }
+
 }

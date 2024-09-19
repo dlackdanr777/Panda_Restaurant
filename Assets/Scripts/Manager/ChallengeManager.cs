@@ -59,12 +59,12 @@ public class ChallengeManager : MonoBehaviour
     private static Dictionary<string, Type19ChallengeData> _type19ChallengeDataDic = new Dictionary<string, Type19ChallengeData>();
 
     private static Dictionary<string, Type28ChallengeData> _type28ChallengeDataDic = new Dictionary<string, Type28ChallengeData>();
+    private static Dictionary<string, Type30ChallengeData> _type30ChallengeDataDic = new Dictionary<string, Type30ChallengeData>();
     private static Dictionary<string, Type31ChallengeData> _type31ChallengeDataDic = new Dictionary<string, Type31ChallengeData>();
     private static Dictionary<string, Type32ChallengeData> _type32ChallengeDataDic = new Dictionary<string, Type32ChallengeData>();
     private static Dictionary<string, Type33ChallengeData> _type33ChallengeDataDic = new Dictionary<string, Type33ChallengeData>();
     private static Dictionary<string, Type34ChallengeData> _type34ChallengeDataDic = new Dictionary<string, Type34ChallengeData>();
     private static Dictionary<string, Type35ChallengeData> _type35ChallengeDataDic = new Dictionary<string, Type35ChallengeData>();
-
 
 
     private void Awake()
@@ -89,9 +89,7 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnGiveRecipeHandler += Type06ChallengeCheck;
         UserInfo.OnAddCookCountHandler += Type07ChallengeCheck;
         UserInfo.OnChangeScoreHandler += Type08ChallengeCheck;
-        UserInfo.OnGiveFurnitureHandler +=  Type08ChallengeCheck;
-        UserInfo.OnGiveKitchenUtensilHandler += Type08ChallengeCheck;
-        UserInfo.OnGiveStaffHandler += Type08ChallengeCheck;
+        GameManager.Instance.OnAppendAddScoreHandler += Type08ChallengeCheck;
         UserInfo.OnAddCustomerCountHandler += Type09ChallengeCheck;
         UserInfo.OnVisitedCustomerHandler += Type10ChallengeCheck;
         UserInfo.OnChangeMoneyHandler += Type11ChallengeCheck;
@@ -107,6 +105,7 @@ public class ChallengeManager : MonoBehaviour
 
         UserInfo.OnAddCleanCountHandler += Type28ChallengeCheck;
 
+        OnDailyChallengeUpdateHandler += Type30ChallengeCheck;
         UserInfo.OnAddCustomerCountHandler += Type31ChallengeCheck;
         UserInfo.OnChangeMoneyHandler += Type32ChallengeCheck;
         UserInfo.OnAddCookCountHandler += Type33ChallengeCheck;
@@ -135,6 +134,7 @@ public class ChallengeManager : MonoBehaviour
 
         Type28ChallengeCheck();
 
+        Type30ChallengeCheck();
         Type31ChallengeCheck();
         Type32ChallengeCheck();
         Type33ChallengeCheck();
@@ -325,6 +325,12 @@ public class ChallengeManager : MonoBehaviour
                     dic.Add(id, challengeData28);
                     break;
 
+                case "TYPE30":
+                    challengeType = ChallengeType.TYPE30;
+                    Type30ChallengeData challengeData30 = new Type30ChallengeData(challenges, challengeType, id, description, moneyType, rewardMoney, shortcutAction);
+                    _type30ChallengeDataDic.Add(id, challengeData30);
+                    dic.Add(id, challengeData30);
+                    break;
 
                 case "TYPE31":
                     challengeType = ChallengeType.TYPE31;
@@ -506,6 +512,10 @@ public class ChallengeManager : MonoBehaviour
                 Type28ChallengeData data28 = (Type28ChallengeData)data;
                 int cleanCount = UserInfo.TotalCleanCount;
                 return cleanCount == 0 ? 0 : Math.Min(1, (float)cleanCount / data28.Count);
+
+            case ChallengeType.TYPE30:
+                int dailyClearCount = UserInfo.GetClearDailyChallengeCount();
+                return GetChallengeAchievementRate(dailyClearCount, _dailyChallengeDataDic.Count - 1);
 
             case ChallengeType.TYPE31:
                 Type31ChallengeData data31 = (Type31ChallengeData)data;
@@ -993,7 +1003,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (!UserInfo.IsScoreValid(data.Rank))
+            if (UserInfo.Score < data.Rank)
                 continue;
 
             switch (data.Challenges)
@@ -1586,6 +1596,55 @@ public class ChallengeManager : MonoBehaviour
 
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE28);
     }
+
+    private void Type30ChallengeCheck()
+    {
+        int count = UserInfo.GetClearDailyChallengeCount();
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type30ChallengeData data in _type30ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (GetChallengeAchievementRate(count, _dailyChallengeDataDic.Count - 1) < 1)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            DoneChallengeData(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE30);
+    }
+
+
 
 
     private void Type31ChallengeCheck()

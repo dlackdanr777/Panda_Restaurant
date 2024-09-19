@@ -9,11 +9,9 @@ public class TipPerMinuteSetData : SetData
 
     public override void Activate()
     {
-        GameManager.Instance.AddTipPerMinute(_tipPerMinuteValue);
     }
 
     public override void Deactivate()
     {
-        GameManager.Instance.AddTipPerMinute(-_tipPerMinuteValue);
     }
 }

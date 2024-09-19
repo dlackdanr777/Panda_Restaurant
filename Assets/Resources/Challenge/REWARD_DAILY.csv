@@ -1,5 +1,5 @@
 ﻿ID,퀘스트 타입,바로가기 타입,설명,타입 필요 id,필요 개수,보상타입,보상,,퀘스트 타입,설명,,,,,바로가기 타입,위치
-DailyReward01,TYPE31,ShortCut01,손님 방문 10회,,5,게임 코인,3000,,TYPE01,가구 구매하기,,,,,ShortCut01,메인 씬
+DailyReward01,TYPE31,ShortCut01,손님 방문 10회,,10,게임 코인,3000,,TYPE01,가구 구매하기,,,,,ShortCut01,메인 씬
 DailyReward02,TYPE32,ShortCut01,누적 코인 10.000획득,,10000,게임 코인,2000,,TYPE02,주방 구매하기,,,,,ShortCut02,주방 씬
 DailyReward03,TYPE33,ShortCut01,음식 제작 20회,,20,게임 코인,4500,,TYPE03,특정 레시피 구매하기,,,,,ShortCut03,샵(가구)
 DailyReward04,TYPE34,ShortCut01,쓰레기 줍기 20회,,20,게임 코인,5000,,TYPE04,특정 레시피 제작하기,,,,,ShortCut04,샵(주방)

@@ -442,6 +442,23 @@ public class Type28ChallengeData : ChallengeData
     }
 }
 
+/// <summary>(일일 도전과제) 모든 일일 도전과제 완료</summary>
+public class Type30ChallengeData : ChallengeData
+{
+
+    public Type30ChallengeData(Challenges challenges, ChallengeType type, string id, string description, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    {
+        _challenges = challenges;
+        _type = type;
+        _id = id;
+        _description = description;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+        _shortcutAction = shortcutAction;
+    }
+}
+
+
 
 /// <summary>(일일 도전과제) 하루 손님 방문 횟수 달성 도전과제</summary>
 public class Type31ChallengeData : ChallengeData

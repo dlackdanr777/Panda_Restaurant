@@ -184,6 +184,9 @@ public static class UserInfo
 
     public static void AddTip(int value)
     {
+        if (GameManager.Instance.MaxTipVolume <= _tip)
+            return;
+
         _tip = Mathf.Clamp(_tip + value, 0, GameManager.Instance.MaxTipVolume);
         DataBindTip();
         OnChangeTipHandler?.Invoke();
@@ -233,7 +236,6 @@ public static class UserInfo
 
     public static bool IsScoreValid(BasicData data)
     {
-        DebugLog.Log(Score);
         if (Score < data.BuyScore)
             return false;
 
@@ -242,7 +244,6 @@ public static class UserInfo
 
     public static bool IsScoreValid(int score)
     {
-        DebugLog.Log(Score);
         if (Score < score)
             return false;
 
@@ -644,6 +645,11 @@ public static class UserInfo
         _giveGachaItemList.Add(id);
         _giveGachaItemSet.Add(id);
         OnGiveGachaItemHandler?.Invoke();
+    }
+
+    public static List<string> GetGiveGachaItemList()
+    {
+        return _giveGachaItemList;
     }
 
 
@@ -1078,7 +1084,12 @@ public static class UserInfo
 
     #endregion
 
-    #region Challenge
+    #region ChallengeData
+
+    public static int GetClearDailyChallengeCount()
+    {
+        return _clearDailyChallengeSet.Count;
+    }
 
     public static bool GetIsDoneChallenge(string id)
     {
