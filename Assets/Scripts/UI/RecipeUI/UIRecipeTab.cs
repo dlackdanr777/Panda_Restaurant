@@ -24,7 +24,7 @@ public class UIRecipeTab : MonoBehaviour
         _uiRecipePreview.SetData(_foodDataList[0]);
         _uiUpgrade.SetData(_foodDataList[0]);
 
-        int foodCount = FoodDataManager.Count;
+        int foodCount = _foodDataList.Count;
 
         _slots = new UIRestaurantAdminSlot[foodCount];
 

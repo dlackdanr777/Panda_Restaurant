@@ -12,9 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
   m_Name: RACK01
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 653768925269939167, guid: ef2a16e1c84a2ac40a5c0076731fa952, type: 3}
-  _thumbnailSPrite: {fileID: -2727008511803129439, guid: ef2a16e1c84a2ac40a5c0076731fa952,
-    type: 3}
+  _sprite: {fileID: 21300000, guid: 935c15c9e4ad9514aaaa58620a7267de, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 69810803554974e4996becddb9eee81d, type: 3}
   _name: "\uD3C9\uBC94\uD55C \uC120\uBC18"
   _id: RACK01
   _description: 

@@ -1,17 +1,29 @@
+using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 
 public class Furniture : MonoBehaviour
 {
-    protected enum FurnitureBatchType
+    protected enum FurnitureBatchTypeY
     {
         Lower,
         Upper,
-        Center
+        Center,
+        None,
     }
+
+    protected enum FurnitureBatchTypeX
+    {
+        Left,
+        Right,
+        Center,
+        None,
+    }
+
     [SerializeField] protected FurnitureType _type;
     public FurnitureType Type => _type;
 
-    [SerializeField] protected FurnitureBatchType _batchType;
+    [SerializeField] protected FurnitureBatchTypeY _batchType;
+    [SerializeField] protected FurnitureBatchTypeX _batchTypeX;
     [SerializeField] protected SpriteRenderer _spriteRenderer;
     [SerializeField] protected Sprite _defalutSprite;
 
@@ -32,21 +44,34 @@ public class Furniture : MonoBehaviour
         _spriteRenderer.gameObject.SetActive(true);
         _spriteRenderer.sprite = data.Sprite;
 
+        float y = 0;
+        float x = 0;
 
-        if(_batchType == FurnitureBatchType.Lower)
-        {
-            float heightMul = (data.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;
-            _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
-        }
-        else if(_batchType == FurnitureBatchType.Upper)
-        {
-            float heightMul = (data.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;
-            _spriteRenderer.transform.localPosition = new Vector3(0, -heightMul, 0);
-        }
-        else if(_batchType == FurnitureBatchType.Center)
-        {
-            _spriteRenderer.transform.localPosition = Vector3.zero;
-        }
+        if (_batchType == FurnitureBatchTypeY.Lower)
+            y = data.Sprite.bounds.size.y * 0.5f * _spriteRenderer.transform.lossyScale.y;
 
+        else if (_batchType == FurnitureBatchTypeY.Upper)
+            y = -(data.Sprite.bounds.size.y * 0.5f * _spriteRenderer.transform.lossyScale.y);
+
+        else if (_batchType == FurnitureBatchTypeY.Center)
+            y = 0;
+
+        else if (_batchType == FurnitureBatchTypeY.None)
+            y = _spriteRenderer.transform.localPosition.y;
+
+
+        if (_batchTypeX == FurnitureBatchTypeX.Left)
+            x = data.Sprite.bounds.size.x * 0.5f * _spriteRenderer.transform.lossyScale.x;
+
+        else if (_batchTypeX == FurnitureBatchTypeX.Right)
+            x = -(data.Sprite.bounds.size.x * 0.5f * _spriteRenderer.transform.lossyScale.x);
+
+        else if (_batchTypeX == FurnitureBatchTypeX.Center)
+            x = 0;
+
+        else if (_batchType == FurnitureBatchTypeY.None)
+            x = _spriteRenderer.transform.localPosition.x;
+
+        _spriteRenderer.transform.localPosition = new Vector3(x, y, 0);
     }
 }

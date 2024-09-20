@@ -12,10 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
   m_Name: FLOWER01
   m_EditorClassIdentifier: 
-  _sprite: {fileID: -1408287563081556298, guid: ef2a16e1c84a2ac40a5c0076731fa952,
-    type: 3}
-  _thumbnailSPrite: {fileID: 4010724534108869623, guid: add9bcf02e2c16c459accc2d154ee405,
-    type: 3}
+  _sprite: {fileID: 21300000, guid: 222cb1cf7b521ca47be356c101480ee1, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 636145fd347ffe748ae53effaf178850, type: 3}
   _name: "\uD3C9\uBC94\uD55C \uD654\uBD84"
   _id: FLOWER01
   _description: 

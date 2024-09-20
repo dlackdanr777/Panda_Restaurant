@@ -12,9 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
   m_Name: ACC01
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 664133168373685104, guid: ef2a16e1c84a2ac40a5c0076731fa952, type: 3}
-  _thumbnailSPrite: {fileID: 5548873695978294063, guid: add9bcf02e2c16c459accc2d154ee405,
-    type: 3}
+  _sprite: {fileID: 21300000, guid: 6eb3603bea3e21c459a241e209a6ee9c, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: ca7c5383950a0b4429791ca2a08d70d1, type: 3}
   _name: "\uD3C9\uBC94\uD55C \uC870\uBA85"
   _id: ACC01
   _description: 

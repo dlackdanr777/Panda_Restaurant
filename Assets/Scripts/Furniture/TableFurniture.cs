@@ -39,19 +39,19 @@ public class TableFurniture : Furniture
         float heightMul = (data.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;
         float chairHeightMul = (tableData.ChairSprite.bounds.size.y * 0.5f) * _leftChairSpriteRenderer.transform.lossyScale.y;
 
-        if (_batchType == FurnitureBatchType.Lower)
+        if (_batchType == FurnitureBatchTypeY.Lower)
         {
             _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
             _leftChairSpriteRenderer.transform.localPosition = new Vector3(_leftChairSpriteRenderer.transform.localPosition.x, chairHeightMul, 0);
             _rightChairSpriteRenderer.transform.localPosition = new Vector3(_rightChairSpriteRenderer.transform.localPosition.x, chairHeightMul, 0);
         }
-        else if (_batchType == FurnitureBatchType.Upper)
+        else if (_batchType == FurnitureBatchTypeY.Upper)
         {
             _spriteRenderer.transform.localPosition = new Vector3(0, -heightMul, 0);
             _leftChairSpriteRenderer.transform.localPosition = new Vector3(_leftChairSpriteRenderer.transform.localPosition.x, -chairHeightMul, 0);
             _rightChairSpriteRenderer.transform.localPosition = new Vector3(_rightChairSpriteRenderer.transform.localPosition.x, -chairHeightMul, 0);
         }
-        else if (_batchType == FurnitureBatchType.Center)
+        else if (_batchType == FurnitureBatchTypeY.Center)
         {
             _spriteRenderer.transform.localPosition = Vector3.zero;
             _leftChairSpriteRenderer.transform.localPosition = new Vector3(_leftChairSpriteRenderer.transform.localPosition.x, 0, 0);

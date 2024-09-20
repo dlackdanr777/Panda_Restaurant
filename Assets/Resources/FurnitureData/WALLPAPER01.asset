@@ -12,9 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
   m_Name: WALLPAPER01
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: 76c691180ff3016439be79eb202bfd67, type: 3}
-  _thumbnailSPrite: {fileID: -5445307937506887489, guid: b2183c4950c3077459325871ad78f895,
-    type: 3}
+  _sprite: {fileID: 21300000, guid: ce2e1934bf167364a884707f58ad4d4c, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: ea6cc30c88adb2b468a5c72e55c22a42, type: 3}
   _name: "\uD3C9\uBC94\uD55C \uBCBD\uC9C0"
   _id: WALLPAPER01
   _description: 

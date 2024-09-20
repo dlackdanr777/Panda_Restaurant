@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1c4042e672d09e4680972267cb86ec5, type: 3}
   m_Name: TABLE01_01
   m_EditorClassIdentifier: 
-  _sprite: {fileID: -689776452538693104, guid: ef2a16e1c84a2ac40a5c0076731fa952, type: 3}
-  _thumbnailSPrite: {fileID: 21300000, guid: c0bf06e276fc0ab47b3743d760e0748d, type: 3}
+  _sprite: {fileID: 21300000, guid: 0b270f8950f3a6c41947ef6ee6b4067d, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 8d47c0da8a2e1414894df114ce0c21e8, type: 3}
   _name: "\uD3C9\uBC94\uD55C \uD14C\uC774\uBE14"
   _id: TABLE01_01
   _description: "\uBD84\uB2F9 \uC218\uC785 \uC99D\uAC00(2)"
@@ -24,5 +24,4 @@ MonoBehaviour:
   _setId: SET01
   _addScore: 3
   _effectData: {fileID: 11400000, guid: a2c68f54380ee754b9b0c2ee3d377d8d, type: 2}
-  _chairSprite: {fileID: 5309616821111568457, guid: add9bcf02e2c16c459accc2d154ee405,
-    type: 3}
+  _chairSprite: {fileID: 21300000, guid: cc754bf5fc58afa4282012c894c25159, type: 3}

@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dfe943a654cf4e0449fa2ace96692614, type: 3}
+  m_Name: FOOD06
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: babe815268d996840b7425081d70389e, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: babe815268d996840b7425081d70389e, type: 3}
+  _name: "\uC5D0\uADF8 \uC0CC\uB4DC\uC704\uCE58"
+  _id: FOOD06
+  _description: "\uAC04\uB2E8\uD558\uC9C0\uB9CC \uC54C\uCC2C \uC0CC\uB4DC\uC704\uCE58"
+  _moneyType: 0
+  _buyScore: 45
+  _buyPrice: 1500
+  _miniGameNeeded: 0
+  _foodLevelData:
+  - _sellPrice: 220
+    _upgradeMinScore: 500
+    _upgradePrice: 7500
+    _cookingTime: 10
+  - _sellPrice: 3600
+    _upgradeMinScore: -1
+    _upgradePrice: -1
+    _cookingTime: 14
