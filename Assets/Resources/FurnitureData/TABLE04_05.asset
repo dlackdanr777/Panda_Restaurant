@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1c4042e672d09e4680972267cb86ec5, type: 3}
+  m_Name: TABLE04_05
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 6f61a7f034bbe204f8e9686f222879dd, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 93e2b4fda1e0d574e8c6f27c18acaa49, type: 3}
+  _name: "\uD654\uB824\uD55C \uD14C\uC774\uBE14"
+  _id: TABLE04_05
+  _description: 
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _type: 4
+  _setId: SET04
+  _addScore: 5
+  _effectData: {fileID: 11400000, guid: 4729c668dae051641a78058c5ff36e19, type: 2}
+  _scale: 0.98
+  _chairSprite: {fileID: 21300000, guid: 84c64095d8c87bb43821c53477f1ff6e, type: 3}
+  _rightChairSprite: {fileID: 0}

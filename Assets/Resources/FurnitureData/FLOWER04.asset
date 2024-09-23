@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
+  m_Name: FLOWER04
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 51a7743417eea2446ba6849e2dccc856, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: b82b1168e90697a4fa59276b46d6902a, type: 3}
+  _name: "\uD654\uB824\uD55C \uD654\uBD84"
+  _id: FLOWER04
+  _description: 
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _type: 8
+  _setId: SET04
+  _addScore: 2
+  _effectData: {fileID: 11400000, guid: 55297c25562f4424ba7a079237ee13cb, type: 2}

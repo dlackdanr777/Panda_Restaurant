@@ -15,7 +15,8 @@ public class FurnitureSystem : MonoBehaviour
 
         for (int i = 0, cnt = _furniture.Length; i < cnt; ++i)
         {
-            _furnitureDic[_furniture[i].Type].Add(_furniture[i]);     
+            _furnitureDic[_furniture[i].Type].Add(_furniture[i]);
+            _furniture[i].Init();
         }
 
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)

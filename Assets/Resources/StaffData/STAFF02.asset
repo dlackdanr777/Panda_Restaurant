@@ -12,11 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
   m_Name: STAFF02
   m_EditorClassIdentifier: 
-  _sprite: {fileID: -7340937073833519069, guid: 252bd6e9c79724c4f904b411310b2974,
-    type: 3}
-  _thumbnailSPrite: {fileID: -7340937073833519069, guid: 252bd6e9c79724c4f904b411310b2974,
-    type: 3}
-  _name: "\uC9C0\uC9C0"
+  _sprite: {fileID: 21300000, guid: 561a66e482de8704192a054dddf29c13, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 561a66e482de8704192a054dddf29c13, type: 3}
+  _name: "\uC591\uBCF5\uC785\uC740 \uC9C0\uC9C0"
   _id: STAFF02
   _description: 
   _moneyType: 0

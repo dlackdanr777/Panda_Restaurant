@@ -18,4 +18,6 @@ public class FurnitureData : BasicData
 
     [SerializeField] private EquipEffectData _effectData;
     public EquipEffectData EffectData => _effectData;
+
+
 }

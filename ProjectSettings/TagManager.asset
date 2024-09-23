@@ -44,8 +44,14 @@ TagManager:
   - name: Background
     uniqueID: 1735462077
     locked: 0
+  - name: Rack
+    uniqueID: 871353087
+    locked: 0
   - name: Chair
     uniqueID: 2526321389
+    locked: 0
+  - name: Frame
+    uniqueID: 1889931585
     locked: 0
   - name: SitCustomer
     uniqueID: 4098983017
@@ -53,8 +59,17 @@ TagManager:
   - name: Manager
     uniqueID: 3521634867
     locked: 0
+  - name: Counter
+    uniqueID: 2492150019
+    locked: 0
+  - name: Flower
+    uniqueID: 3625630637
+    locked: 0
   - name: Table
     uniqueID: 2218170019
+    locked: 0
+  - name: Acc
+    uniqueID: 2173918227
     locked: 0
   - name: WaitCustomer
     uniqueID: 3792127949

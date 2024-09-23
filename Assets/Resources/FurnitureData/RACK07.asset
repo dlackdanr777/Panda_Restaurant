@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
+  m_Name: RACK07
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: bc34af19737abb548b5fad6871615360, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: a257efcb647f60e42aca5397341c67b3, type: 3}
+  _name: "\uC624\uC2F9\uC624\uC2F9 \uC120\uBC18"
+  _id: RACK07
+  _description: "\t"
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _type: 6
+  _setId: SET07
+  _addScore: 2
+  _effectData: {fileID: 11400000, guid: fa252a96cf90f1a419df6b4c345deaa6, type: 2}

@@ -89,7 +89,7 @@ public class UIRecipePreview : MonoBehaviour
             _totalSellGroup.gameObject.SetActive(true);
             _totalSellGroup.SetText(UserInfo.GetCookCount(data).ToString());
             _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
-            _levelGroup.SetText("LV." + level + " / " + data.MaxLevel);
+            _levelGroup.SetText(data.UpgradeEnable(level) ? "Lv." + level : "Lv.Max");
         }
         else
         {

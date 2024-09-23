@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
+  m_Name: ACC06
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 45ecc5553ab477148bda4cda385e6102, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: f5e88f26b3db9064fbda5ec1d0137df4, type: 3}
+  _name: "\uBC14\uCE89\uC2A4 \uC870\uBA85"
+  _id: ACC06
+  _description: 
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _type: 9
+  _setId: SET06
+  _addScore: 2
+  _effectData: {fileID: 11400000, guid: b2de10c3849fc98488253be06fd903e2, type: 2}

@@ -69,7 +69,7 @@ public class UIRecipeUpgrade : MobileUIView
 
         if(_currentData.UpgradeEnable(level))
         {
-            _levelText.text = "Lv." + level + " / " + _currentData.MaxLevel;
+            _levelText.text = "Lv." + level;
             _lowerFrame.gameObject.SetActive(true);
             _maxLevelGroup.gameObject.SetActive(false);
             _currentLevelGroup.SetData(level, Utility.ConvertToMoney(_currentData.GetSellPrice(level)), _currentData.GetCookingTime(level) + "s");
@@ -77,7 +77,7 @@ public class UIRecipeUpgrade : MobileUIView
         }
         else
         {
-            _levelText.text = "Lv." + level + " / " + _currentData.MaxLevel;
+            _levelText.text = "Lv.Max";
             _lowerFrame.gameObject.SetActive(false);
             _maxLevelGroup.gameObject.SetActive(true);
             _maxLevelGroup.SetData(level, Utility.ConvertToMoney(_currentData.GetSellPrice(level)), _currentData.GetCookingTime(level) + "s");

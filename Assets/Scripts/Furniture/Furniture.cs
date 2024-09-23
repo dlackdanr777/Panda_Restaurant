@@ -27,6 +27,13 @@ public class Furniture : MonoBehaviour
     [SerializeField] protected SpriteRenderer _spriteRenderer;
     [SerializeField] protected Sprite _defalutSprite;
 
+    protected Vector3 _tmpScale;
+
+    public void Init()
+    {
+        _tmpScale = _spriteRenderer.transform.localScale;
+    }
+
 
     public virtual void SetFurnitureData(FurnitureData data)
     {
