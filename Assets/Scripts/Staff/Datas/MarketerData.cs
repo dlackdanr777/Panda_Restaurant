@@ -6,6 +6,21 @@ public class MarketerData : StaffData
 {
     [Range(0f, 100f)] [SerializeField] private float _customerCallPercentage;
     [SerializeField] private MarketerLevelData[] _marketerLevelData;
+
+    [Header("Animation Option")]
+    [SerializeField] private Sprite _uiSprite;
+    public Sprite UISprite => _uiSprite;
+
+    [SerializeField] private Sprite _animationSprite;
+    public Sprite AnimationSprite => _animationSprite;
+
+    [SerializeField] private Sprite _leftHandSprite;
+    public Sprite LeftHandSprite => _leftHandSprite;
+
+    [SerializeField] private Sprite _rightHandSprite;
+    public Sprite RightHandSprite => _rightHandSprite;
+
+
     public override float SecondValue => _customerCallPercentage;
     public override int MaxLevel => _marketerLevelData.Length;
 
@@ -29,13 +44,15 @@ public class MarketerData : StaffData
 
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        staff.SetAlpha(1);
-        staff.transform.position = tableManager.GetStaffPos(0, StaffType.Marketer);
+        staff.SetAlpha(0);
+        tableManager.MarketerImage.SetData(this);
+        tableManager.MarketerImage.SetActive(true);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
+        tableManager.MarketerImage.SetActive(false);
     }
 
     public override int GetUpgradeMinScore(int level)

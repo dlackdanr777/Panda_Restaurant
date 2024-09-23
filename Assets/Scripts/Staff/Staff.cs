@@ -61,8 +61,7 @@ public class Staff : MonoBehaviour
         _level = 1;
 
         _spriteRenderer.sprite = staffData.Sprite;
-        //float heightMul = (staffData.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y - (AStar.Instance.NodeSize * 0.5f);
-        float heightMul = (staffData.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;
+        float heightMul = (staffData.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y - (AStar.Instance.NodeSize * 0.25f);
         _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
 
         ResetAction();

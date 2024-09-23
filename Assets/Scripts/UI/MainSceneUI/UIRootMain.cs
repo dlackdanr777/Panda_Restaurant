@@ -1,4 +1,5 @@
 using Muks.Tween;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class UIRootMain : MonoBehaviour
@@ -9,6 +10,7 @@ public class UIRootMain : MonoBehaviour
 
     [Header("Buttons")]
     [SerializeField] private FillAmountButton _addCustomerButton;
+    [SerializeField] private UIMarketerImage _marketerImage;
 
 
     private int _tabCount = 0;
@@ -20,6 +22,7 @@ public class UIRootMain : MonoBehaviour
         _addCustomerButtonTmpPos = _addCustomerButton.transform.position;
         _addCustomerButtonTmpScale = _addCustomerButton.transform.localScale;
         _addCustomerButton.AddListener(OnAddCustomerButtonClicked);
+        _addCustomerButton.AddListener(_marketerImage.StartAnime);
     }
 
 

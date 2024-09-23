@@ -8,6 +8,7 @@ using UnityEngine.UI;
 public class TableManager : MonoBehaviour
 {
     [Range(0, 10)]
+    [Header("Transform")]
     [SerializeField] private int _ownedTableCount;
     [SerializeField] private Transform _cashTableTr;
     [SerializeField] private Transform _marketerTr;
@@ -17,12 +18,16 @@ public class TableManager : MonoBehaviour
     [SerializeField] private Transform _moneyUITr;
 
     [Space]
+    [Header("Components")]
     [SerializeField] private TableData[] _tableDatas;
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private KitchenSystem _kitchenSystem;
+    [SerializeField] private UIMarketerImage _marketerImage;
+    public UIMarketerImage MarketerImage => _marketerImage;
 
 
     [Space]
+    [Header("Button Option")]
     [SerializeField] private Transform _buttonParent;
     [SerializeField] private Button _guideButton;
     [SerializeField] private UIButtonAndImage _orderButtonPrefab;

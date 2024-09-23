@@ -30,3 +30,7 @@ MonoBehaviour:
       _moneyType: 0
       _price: 0
     _marketingTime: 2
+  _uiSprite: {fileID: 21300000, guid: df332576e8d59a94b999d472b245df80, type: 3}
+  _animationSprite: {fileID: 21300000, guid: 035fa15597b07944698323c3d5380ee9, type: 3}
+  _leftHandSprite: {fileID: 21300000, guid: ba7db56348668024192878964747cdc5, type: 3}
+  _rightHandSprite: {fileID: 21300000, guid: 50d5a53ccca4a4044ab4e902d4175dec, type: 3}
