@@ -19,6 +19,7 @@ public class UIRootMain : MonoBehaviour
 
     private void Awake()
     {
+        _marketerImage.Init();
         _addCustomerButtonTmpPos = _addCustomerButton.transform.position;
         _addCustomerButtonTmpScale = _addCustomerButton.transform.localScale;
         _addCustomerButton.AddListener(OnAddCustomerButtonClicked);

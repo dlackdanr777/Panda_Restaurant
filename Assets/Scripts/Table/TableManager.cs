@@ -22,8 +22,6 @@ public class TableManager : MonoBehaviour
     [SerializeField] private TableData[] _tableDatas;
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private KitchenSystem _kitchenSystem;
-    [SerializeField] private UIMarketerImage _marketerImage;
-    public UIMarketerImage MarketerImage => _marketerImage;
 
 
     [Space]
