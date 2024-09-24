@@ -194,6 +194,10 @@ public static class Utility
                 description = $"자동 쓰레기 청소 하기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.SecondValue}</color>초)";
                 break;
 
+            case GuardData:
+                description = $"도둑 퇴치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초 소요)";
+                break;
+
             case ChefData:
                 description = $"요리 속도 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
                 break;

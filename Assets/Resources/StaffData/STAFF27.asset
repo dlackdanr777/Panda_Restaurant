@@ -9,25 +9,23 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a377ea42dec1d4d4c9ea62112443872a, type: 3}
+  m_Script: {fileID: 11500000, guid: 93bdf2a61116f5a4bbf3c395f44840da, type: 3}
   m_Name: STAFF27
   m_EditorClassIdentifier: 
-  _sprite: {fileID: -9098682166295574887, guid: b2183c4950c3077459325871ad78f895,
-    type: 3}
-  _thumbnailSPrite: {fileID: 3670394725747216891, guid: ef2a16e1c84a2ac40a5c0076731fa952,
-    type: 3}
-  _name: "\uD310\uB2E4 \uBA5C\uB85C"
+  _sprite: {fileID: 21300000, guid: 5d98947ce8f73c94da13c1501cda6176, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 5d98947ce8f73c94da13c1501cda6176, type: 3}
+  _name: "\uBBF8\uC2A4\uD130 \uBC31"
   _id: STAFF27
   _description: 
   _moneyType: 0
   _buyScore: 0
   _buyPrice: 0
-  _skill: {fileID: 11400000, guid: cce27c6a58e2f564fa4758e3f6e14d71, type: 2}
-  _cleanerLevelData:
-  - _tipAddPercent: 55
-    _scoreIncrement: 100
-    _upgradeMinScore: 7300
+  _skill: {fileID: 11400000, guid: 728f87aca015bf34fbe7aa82872f6c5b, type: 2}
+  _chefLevelData:
+  - _tipAddPercent: 50
+    _scoreIncrement: 300
+    _upgradeMinScore: 45800
     _upgradeMoneyData:
-      _moneyType: 0
-      _price: 1000000
-    _cleaningTime: 3
+      _moneyType: 1
+      _price: 50
+    _foodSpeedAddPercent: 1.5

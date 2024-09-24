@@ -74,6 +74,9 @@ TagManager:
   - name: WaitCustomer
     uniqueID: 3792127949
     locked: 0
+  - name: Guard
+    uniqueID: 1312653411
+    locked: 0
   - name: Customer
     uniqueID: 59168115
     locked: 0

@@ -74,8 +74,8 @@ public class UIMarketerImage : MonoBehaviour
         _marketerImage.sprite = _marketerSprite;
         _leftHandImage.sprite = data.LeftHandSprite;
         _rightHandImage.sprite = data.RightHandSprite;
-        _particleCount = data.ParticleCount;
 
+        _particleCount = data.ParticleCount;
         for (int i = 0, cnt = _particleSystem.textureSheetAnimation.spriteCount; i < cnt; ++i)
         {
             _particleSystem.textureSheetAnimation.RemoveSprite(0);

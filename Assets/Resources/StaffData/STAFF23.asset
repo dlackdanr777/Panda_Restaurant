@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a377ea42dec1d4d4c9ea62112443872a, type: 3}
+  m_Name: STAFF23
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 1e66a3dd88ceee544bc73cc9fb7887bf, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 1e66a3dd88ceee544bc73cc9fb7887bf, type: 3}
+  _name: "\uAC10\uC790\uD280\uAE40 \uBA5C\uB85C"
+  _id: STAFF23
+  _description: 
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _skill: {fileID: 11400000, guid: 71abd801ab8f9b34390c11362a90d61f, type: 2}
+  _cleanerLevelData:
+  - _tipAddPercent: 0
+    _scoreIncrement: 0
+    _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 0
+    _cleaningTime: 0
+  _waitDuration: 0

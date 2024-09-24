@@ -34,7 +34,7 @@ MonoBehaviour:
   _animationSprite: {fileID: 21300000, guid: 035fa15597b07944698323c3d5380ee9, type: 3}
   _leftHandSprite: {fileID: 21300000, guid: ba7db56348668024192878964747cdc5, type: 3}
   _rightHandSprite: {fileID: 21300000, guid: 50d5a53ccca4a4044ab4e902d4175dec, type: 3}
-  _particleCount: 8
+  _particleCount: 5
   _particleSprites:
   - {fileID: 21300000, guid: 46ba48cad0030fa4b919a406d2fdc150, type: 3}
   - {fileID: 21300000, guid: 409f98981382ae14baf0ceb265b0803a, type: 3}

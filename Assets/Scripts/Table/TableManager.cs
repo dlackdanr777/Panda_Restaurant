@@ -341,6 +341,7 @@ public class TableManager : MonoBehaviour
     private void EndEat(int index)
     {
         int tip = _tableDatas[index].TotalTip;
+        UserInfo.AppendMoney(_tableDatas[index].TotalPrice);
         StartCoinAnime(index);
         StartGarbageAnime(index);
 

@@ -55,6 +55,9 @@ public class StaffDataManager : MonoBehaviour
         else if (data is MarketerData)
             return StaffType.Marketer;
 
+        else if (data is GuardData)
+            return StaffType.Guard;
+
         else if (data is ChefData)
             return StaffType.Chef;
 

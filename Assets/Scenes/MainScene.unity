@@ -1591,7 +1591,7 @@ MonoBehaviour:
   _cashTableTr: {fileID: 1791727857}
   _marketerTr: {fileID: 1131579585}
   _cleanerWaitTr: {fileID: 424229850}
-  _guardTr: {fileID: 0}
+  _guardTr: {fileID: 2116100610}
   _moneyUITr: {fileID: 222946042}
   _tableDatas:
   - {fileID: 229470082}
@@ -13529,7 +13529,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1031326663
-  m_SortingLayer: 14
+  m_SortingLayer: 15
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: da447f45dda296a499bd3971bb8cb040, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -14454,7 +14454,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1031326663
-  m_SortingLayer: 14
+  m_SortingLayer: 15
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: da447f45dda296a499bd3971bb8cb040, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -21179,6 +21179,7 @@ Transform:
   - {fileID: 1791727857}
   - {fileID: 1131579585}
   - {fileID: 424229850}
+  - {fileID: 2116100610}
   - {fileID: 229470081}
   - {fileID: 780087253}
   - {fileID: 1159945307}
@@ -36935,7 +36936,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 1031326663
-  m_SortingLayer: 14
+  m_SortingLayer: 15
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 2ce0f1ef0618ab34397de359c17081d9, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 0.22745098}
@@ -67498,6 +67499,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2114222482}
   m_CullTransparentMesh: 1
+--- !u!1 &2116100609
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2116100610}
+  m_Layer: 0
+  m_Name: 'Guard Tr '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2116100610
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2116100609}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 11.67, y: 7.474, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 577864099}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2116173925
 GameObject:
   m_ObjectHideFlags: 0
@@ -68865,8 +68897,8 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 0.7
-      minScalar: 1
+      scalar: 0.8
+      minScalar: 1.1
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -68918,8 +68950,8 @@ ParticleSystem:
     startSizeY:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 0.7
-      minScalar: 1
+      scalar: 0.8
+      minScalar: 1.1
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -68971,8 +69003,8 @@ ParticleSystem:
     startSizeZ:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 0.7
-      minScalar: 1
+      scalar: 0.8
+      minScalar: 1.1
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -76482,7 +76514,7 @@ ParticleSystemRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -594438969
-  m_SortingLayer: 15
+  m_SortingLayer: 16
   m_SortingOrder: 1
   m_RenderMode: 0
   m_MeshDistribution: 0
