@@ -11,8 +11,9 @@ public class CustomerController : MonoBehaviour
     [Range(1, 30)] [SerializeField] private int _maxCustomers;
     [Range(1, 10)] [SerializeField] private int _lineSpacingGrid;
     [SerializeField] private Transform _startLine;
+    [SerializeField] private List<Vector3> _specialCustomerTargetPosList;
 
-    private Queue<Customer> _customers = new Queue<Customer>();
+    private Queue<NormalCustomer> _customers = new Queue<NormalCustomer>();
 
     private Coroutine _sortCoroutine; 
 
@@ -22,7 +23,7 @@ public class CustomerController : MonoBehaviour
     public int Count => _customers.Count;
     public bool IsMaxCount => Count >= _maxCustomers;
 
-    public Customer GetFirstCustomer()
+    public NormalCustomer GetFirstCustomer()
     {
         return _customers.Peek();
     }
@@ -40,18 +41,36 @@ public class CustomerController : MonoBehaviour
         if (_maxCustomers <= _customers.Count)
             return;
 
-        List<CustomerData> data = CustomerDataManager.Instance.GetAppearCustomerList();
+        int spawnSpecialCustomerProbability = 100;
+        List<CustomerData> normalCustomerDataList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
+        List<SpecialCustomerData> specialCustomerDataList = CustomerDataManager.Instance.GetAppearSpecialCustomerDataList();
+        int randInt = 0;
+
         for (int i = 0, cnt = GameManager.Instance.AddPromotionCustomer; i < cnt; i++)
         {
             if (_maxCustomers <= _customers.Count)
                 break;
 
-            Customer customer = ObjectPoolManager.Instance.SpawnCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            int randInt = UnityEngine.Random.Range(0, data.Count);
-            CustomerData customerData = data[randInt];
-            customer.SetData(customerData);
-            _customers.Enqueue(customer);
-            UserInfo.CustomerVisits(customerData);
+
+            int randSpawnProbability = UnityEngine.Random.Range(0, 100);
+            bool specialCutomerEnabled = (0 < specialCustomerDataList.Count);
+
+            if (specialCutomerEnabled && randSpawnProbability < spawnSpecialCustomerProbability)
+            {
+                SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+                randInt = UnityEngine.Random.Range(0, specialCustomerDataList.Count);
+                specialCustomer.SetData(specialCustomerDataList[randInt]);
+                specialCustomer.StartEvent(_specialCustomerTargetPosList);
+            }
+            else
+            {
+                NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+                randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
+                CustomerData customerData = normalCustomerDataList[randInt];
+                customer.SetData(customerData);
+                _customers.Enqueue(customer);
+                UserInfo.CustomerVisits(customerData);
+            }
         }
 
         if (_sortCoroutine != null)

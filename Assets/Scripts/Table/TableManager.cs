@@ -220,7 +220,7 @@ public class TableManager : MonoBehaviour
         if (_tableDatas[index].TableState != ETableState.NotUse)
             return;
 
-        Customer currentCustomer = _customerController.GetFirstCustomer();
+        NormalCustomer currentCustomer = _customerController.GetFirstCustomer();
         _tableDatas[index].CurrentCustomer = currentCustomer;
         currentCustomer.SetLayer("Customer", 0);
         _tableDatas[index].TableState = ETableState.Move;
@@ -257,7 +257,7 @@ public class TableManager : MonoBehaviour
                         currentCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
                         {
                             currentCustomer.StopAnger();
-                            ObjectPoolManager.Instance.DespawnCustomer(currentCustomer);
+                            ObjectPoolManager.Instance.DespawnNormalCustomer(currentCustomer);
                             currentCustomer = null;
                         });
 
@@ -373,7 +373,7 @@ public class TableManager : MonoBehaviour
         }
 
 
-        Customer exitCustomer = _tableDatas[index].CurrentCustomer;
+        NormalCustomer exitCustomer = _tableDatas[index].CurrentCustomer;
         exitCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
         exitCustomer.SetLayer("Customer", 0);
 
@@ -383,7 +383,7 @@ public class TableManager : MonoBehaviour
 
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () => 
         {
-            ObjectPoolManager.Instance.DespawnCustomer(exitCustomer);
+            ObjectPoolManager.Instance.DespawnNormalCustomer(exitCustomer);
             exitCustomer = null;
             UpdateTable();
         });
@@ -400,7 +400,7 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        Customer exitCustomer = _tableDatas[index].CurrentCustomer;
+        NormalCustomer exitCustomer = _tableDatas[index].CurrentCustomer;
 
         if (_tableDatas[index].TableState != ETableState.Move)
             exitCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
@@ -413,7 +413,7 @@ public class TableManager : MonoBehaviour
 
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
-            ObjectPoolManager.Instance.DespawnCustomer(exitCustomer);
+            ObjectPoolManager.Instance.DespawnNormalCustomer(exitCustomer);
             exitCustomer = null;
             UpdateTable();
         });

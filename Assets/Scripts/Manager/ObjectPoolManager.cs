@@ -29,7 +29,8 @@ public class ObjectPoolManager : MonoBehaviour
 
     private static int _customerCount = 30;
     private static GameObject _customerParent;
-    private static Queue<Customer> _customerPool = new Queue<Customer>();
+    private static Queue<NormalCustomer> _normalCustomerPool = new Queue<NormalCustomer>();
+    private static Queue<SpecialCustomer> _specialCustomerPool = new Queue<SpecialCustomer>();
 
     private static int _coinCount = 50;
     private static GameObject _coinParent;
@@ -52,7 +53,8 @@ public class ObjectPoolManager : MonoBehaviour
     private static int _uiEffectCount;
     private static Queue<UIParticleEffect>[] _uiEffectPool;
 
-    private static Customer _customerPrefab;
+    private static NormalCustomer _normalCustomerPrefab;
+    private static SpecialCustomer _specialCustomerPrefab;
     private static PointerClickSpriteRenderer _coinPrefab;
     private static RectTransform _uiCoinPrefab;
     private static PointerClickSpriteRenderer _garbagePrefab;
@@ -94,14 +96,22 @@ public class ObjectPoolManager : MonoBehaviour
         _customerParent = new GameObject("CustomerParent");
         _customerParent.transform.parent = _instance.transform;
 
-        if(_customerPrefab == null)
-            _customerPrefab = Resources.Load<Customer>("ObjectPool/Customer");
+        if(_normalCustomerPrefab == null)
+            _normalCustomerPrefab = Resources.Load<NormalCustomer>("ObjectPool/NormalCustomer");
+
+        if(_specialCustomerPrefab == null)
+            _specialCustomerPrefab = Resources.Load<SpecialCustomer>("ObjectPool/SpecialCustomer");
 
         for (int i = 0, count = _customerCount; i < count; i++)
         {
-            Customer customer = Instantiate(_customerPrefab, Vector3.zero, Quaternion.identity, _customerParent.transform);
-            _customerPool.Enqueue(customer);
-            customer.gameObject.SetActive(false);
+            NormalCustomer normalCustomer = Instantiate(_normalCustomerPrefab, _customerParent.transform);
+            _normalCustomerPool.Enqueue(normalCustomer);
+            normalCustomer.gameObject.SetActive(false);
+
+            SpecialCustomer specialCustomer = Instantiate(_specialCustomerPrefab, _customerParent.transform);
+            _specialCustomerPool.Enqueue(specialCustomer);
+            specialCustomer.gameObject.SetActive(false);
+
         }
     }
 
@@ -197,17 +207,17 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public Customer SpawnCustomer(Vector3 pos, Quaternion rot)
+    public NormalCustomer SpawnNormalCustomer(Vector3 pos, Quaternion rot)
     {
-        Customer customer;
+        NormalCustomer customer;
 
-        if (_customerPool.Count == 0 )
+        if (_normalCustomerPool.Count == 0 )
         {
-            customer = Instantiate(_customerPrefab, pos, rot, _customerParent.transform);
+            customer = Instantiate(_normalCustomerPrefab, pos, rot, _customerParent.transform);
             return customer;
         }
 
-        customer = _customerPool.Dequeue();
+        customer = _normalCustomerPool.Dequeue();
         customer.gameObject.SetActive(false);
         customer.gameObject.SetActive(true);
         customer.transform.position = pos;
@@ -216,10 +226,36 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public void DespawnCustomer(Customer customer)
+    public void DespawnNormalCustomer(NormalCustomer customer)
     {
         customer.gameObject.SetActive(false);
-        _customerPool.Enqueue(customer);
+        _normalCustomerPool.Enqueue(customer);
+    }
+
+
+    public SpecialCustomer SpawnSpecialCustomer(Vector3 pos, Quaternion rot)
+    {
+        SpecialCustomer customer;
+
+        if (_specialCustomerPool.Count == 0)
+        {
+            customer = Instantiate(_specialCustomerPrefab, pos, rot, _customerParent.transform);
+            return customer;
+        }
+
+        customer = _specialCustomerPool.Dequeue();
+        customer.gameObject.SetActive(false);
+        customer.gameObject.SetActive(true);
+        customer.transform.position = pos;
+        customer.transform.rotation = rot;
+        return customer;
+    }
+
+
+    public void DespawnSpecialCustomer(SpecialCustomer customer)
+    {
+        customer.gameObject.SetActive(false);
+        _specialCustomerPool.Enqueue(customer);
     }
 
 

@@ -17,7 +17,7 @@ public class ScrollingImage : MonoBehaviour
     }
 
 
-    private void Awake()
+    public void Init()
     {
         _image = GetComponent<Image>();
         _material = Instantiate(_image.material);
@@ -25,7 +25,7 @@ public class ScrollingImage : MonoBehaviour
     }
 
 
-    void Update()
+    private void Update()
     {
         _material.mainTextureOffset += _dir * Time.deltaTime;
     }

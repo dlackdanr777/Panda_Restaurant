@@ -11,18 +11,31 @@ public class CustomerFoodPriceUpSkill : CustomerSkill
 
     public override void Activate(Customer customer)
     {
-        customer.SetOrderCount(1);
+        if (!(customer is NormalCustomer))
+        {
+            DebugLog.LogError("일반 손님이 아닌 다른 타입의 손님이 입력됬습니다.");
+            return;
+        }
+        NormalCustomer normalCustomer = (NormalCustomer)customer;
+
+        normalCustomer.SetOrderCount(1);
 
         if(Random.Range(0f, 100f) < SkillActivatePercent)
-            customer.SetFoodPriceMul(_foodPriceMul);
+            normalCustomer.SetFoodPriceMul(_foodPriceMul);
 
         else
-            customer.SetFoodPriceMul(1);
+            normalCustomer.SetFoodPriceMul(1);
     }
 
     public override void Deactivate(Customer customer)
     {
-        customer.SetOrderCount(1);
-        customer.SetFoodPriceMul(1);
+        if (!(customer is NormalCustomer))
+        {
+            DebugLog.LogError("일반 손님이 아닌 다른 타입의 손님이 입력됬습니다.");
+            return;
+        }
+        NormalCustomer normalCustomer = (NormalCustomer)customer;
+        normalCustomer.SetOrderCount(1);
+        normalCustomer.SetFoodPriceMul(1);
     }
 }

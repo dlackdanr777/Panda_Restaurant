@@ -60,9 +60,13 @@ public class UIRestaurantAdmin : MobileUIView
         _recipeTab.Init();
         _furnitureTab.Init();
         _kitchenTab.Init();
+
+        for(int i = 0, cnt = _scrollImages.Length; i < cnt; i++)
+        {
+            _scrollImages[i].Init();
+        }
+
         SetBackgroundImage(BackgroundType.Furniture);
-
-
         gameObject.SetActive(false);
     }
 

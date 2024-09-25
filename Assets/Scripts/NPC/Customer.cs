@@ -20,58 +20,27 @@ public class Customer : MonoBehaviour
 
     [Space]
     [Header("Components")]
-    [SerializeField] private GameObject _moveObj;
-    [SerializeField] private Animator _animator;
-    [SerializeField] private Transform _spriteParent;
-    [SerializeField] private SpriteRenderer _spriteRenderer;
-    [SerializeField] private Customer_Anger _anger;
+    [SerializeField] protected GameObject _moveObj;
+    [SerializeField] protected Animator _animator;
+    [SerializeField] protected Transform _spriteParent;
+    [SerializeField] protected SpriteRenderer _spriteRenderer;
 
-    private Coroutine _moveCoroutine;
-    private Coroutine _teleportCoroutine;
-
-    private CustomerData _customerData;
+    protected CustomerData _customerData;
     public CustomerData CustomerData => _customerData;
 
-    private CustomerSkill _skill;
+    protected CustomerState _currentState;
+    protected Coroutine _moveCoroutine;
+    protected Coroutine _teleportCoroutine;
+    protected Action _moveCompleted;
+    protected Vector2 _targetPos;
+    protected int _targetFloor;
+    protected int _moveEndDir;
+    protected float _moveSpeed;
+    protected bool _isStairsMove;
 
-    private Action _moveCompleted;
-
-    private Vector2 _targetPos;
-    private int _targetFloor;
-    private int _moveEndDir;
-    private bool _isStairsMove;
-
-    private int _orderCount = 1;
-    public int OrderCount => _orderCount;
-
-    private float _foodPriceMul = 1;
-    public float FoodPriceMul => _foodPriceMul;
-
-    private CustomerState _currentState;
-
-
-    public void SetData(CustomerData data)
+    public virtual void SetData(CustomerData data)
     {
-        _customerData = data;
-        _spriteParent.transform.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
-        _spriteRenderer.transform.localPosition = Vector3.zero;
-        _spriteRenderer.sprite = data.Sprite;
-        _anger.Init();
-        _animator.SetBool("Run", false);
-        _animator.SetBool("Eat", false);
-        if (_skill != null)
-            _skill.Deactivate(this);
-
-        if(data.Skill != null)
-        {
-            _skill = data.Skill;
-            data.Skill.Activate(this);
-        }
-        else
-        {
-            SetOrderCount(1);
-            SetFoodPriceMul(1);
-        }
+        _moveSpeed = data.MoveSpeed;
     }
 
 
@@ -92,17 +61,6 @@ public class Customer : MonoBehaviour
         _spriteRenderer.sortingOrder = orderInLayer;
     }
 
-    public void SetOrderCount(int value)
-    {
-        _orderCount = value;
-    }
-
-    public void SetFoodPriceMul(float value)
-    {
-        _foodPriceMul = value;
-    }
-
-
     public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
     {
         int moveObjFloor = AStar.Instance.GetTransformFloor(_moveObj.transform.position);
@@ -110,12 +68,7 @@ public class Customer : MonoBehaviour
         _targetPos = targetPos;
         _moveEndDir = moveEndDir;
         _moveCompleted = onCompleted;
-
-        if (moveObjFloor == _targetFloor)
-            AStar.Instance.RequestPath(_moveObj.transform.position, targetPos, TargetMove);
-
-        else
-            AStar.Instance.RequestPath(_moveObj.transform.position, AStar.Instance.GetFloorPos(moveObjFloor), StairsMove);
+        AStar.Instance.RequestPath(_moveObj.transform.position, moveObjFloor == _targetFloor ? targetPos : AStar.Instance.GetFloorPos(moveObjFloor), moveObjFloor == _targetFloor ? TargetMove : StairsMove);
     }
 
     public void StopMove()
@@ -155,18 +108,6 @@ public class Customer : MonoBehaviour
     }
 
 
-    public void StartAnger()
-    {
-        _anger.StartAnime();
-    }
-
-
-    public void StopAnger()
-    {
-        _anger.StopAnime();
-    }
-
-
     private void TargetMove(List<Vector2> nodeList)
     {
         if (_moveCoroutine != null)
@@ -176,7 +117,6 @@ public class Customer : MonoBehaviour
             StopCoroutine(_teleportCoroutine);
 
         _isStairsMove = false;
-
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList));
     }
 
@@ -209,7 +149,7 @@ public class Customer : MonoBehaviour
             while (Vector3.Distance(_moveObj.transform.position, vec) > 0.05f)
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
-                _moveObj.transform.Translate(dir * Time.deltaTime * _customerData.MoveSpeed, Space.World);
+                _moveObj.transform.Translate(dir * Time.deltaTime * _moveSpeed, Space.World);
 
                 SetSpriteDir(dir.x);
                 ChangeState(CustomerState.Run);

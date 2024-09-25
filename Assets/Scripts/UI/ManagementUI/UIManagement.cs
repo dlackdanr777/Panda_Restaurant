@@ -8,7 +8,8 @@ public class UIManagement : MobileUIView
 {
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
-
+    [SerializeField] private Camera _kitchenCamera;
+    [SerializeField] private Camera _restaurantCamera;
 
     [Space]
     [Header("Set Effect Components")]
@@ -60,6 +61,8 @@ public class UIManagement : MobileUIView
         UserInfo.OnAddCustomerCountHandler += OnAddCustomerEvent;
         UserInfo.OnChangeMoneyHandler += OnChangeMoneyEvent;
 
+        _kitchenCamera.gameObject.SetActive(false);
+        _restaurantCamera.gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
@@ -69,6 +72,8 @@ public class UIManagement : MobileUIView
         gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.gameObject.SetActive(true);
+        _kitchenCamera.gameObject.SetActive(true);
+        _restaurantCamera.gameObject.SetActive(true);
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         OnSetEffectArrowButtonClicked(_currentSetEffectType);
 
@@ -99,6 +104,8 @@ public class UIManagement : MobileUIView
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Disappeared;
+            _kitchenCamera.gameObject.SetActive(false);
+            _restaurantCamera.gameObject.SetActive(false);
             gameObject.SetActive(false);
         });
     }

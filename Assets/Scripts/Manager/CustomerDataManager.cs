@@ -20,7 +20,9 @@ public class CustomerDataManager : MonoBehaviour
     }
     private static CustomerDataManager _instance;
 
-    private static List<CustomerData> _custoemrDataList = new List<CustomerData>();
+    private static List<CustomerData> _customerDataList = new List<CustomerData>();
+    private static List<CustomerData> _normalCustomerDataList = new List<CustomerData>();
+    private static List<SpecialCustomerData> _specialCustomerDataList = new List<SpecialCustomerData>();
     private static Dictionary<string, CustomerData> _customerDataDic = new Dictionary<string, CustomerData>();
 
 
@@ -33,32 +35,37 @@ public class CustomerDataManager : MonoBehaviour
     }
 
 
-    public List<CustomerData> GetAppearCustomerList()
+    public List<CustomerData> GetAppearNormalCustomerList()
     {
         List<CustomerData> returnList = new List<CustomerData>();
-        for(int i = 0, cnt = _custoemrDataList.Count; i < cnt; ++i)
+        for(int i = 0, cnt = _customerDataList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.IsScoreValid(_custoemrDataList[i].MinScore))
+            if (!UserInfo.IsScoreValid(_customerDataList[i].MinScore))
                 continue;
 
-            if (!UserInfo.IsGiveRecipe(_custoemrDataList[i].RequiredDish))
+            if (!UserInfo.IsGiveRecipe(_customerDataList[i].RequiredDish))
                 continue;
 
-            returnList.Add(_custoemrDataList[i]);
+            returnList.Add(_customerDataList[i]);
         }
 
         return returnList;
+    }
+
+    public List<SpecialCustomerData> GetAppearSpecialCustomerDataList()
+    {
+        return _specialCustomerDataList;
     }
 
     public List<CustomerData> GetSortCustomerList()
     {
         return UserInfo.CustomerSortType switch
         {
-            SortType.NameAscending => _custoemrDataList.OrderBy(data => data.Name).ToList(),
-            SortType.NameDescending => _custoemrDataList.OrderByDescending(data => data.Name).ToList(),
-            SortType.GradeAscending => _custoemrDataList.OrderBy(data => data.Name).ToList(),
-            SortType.GradeDescending => _custoemrDataList.OrderBy(data => data.Name).ToList(),
-            SortType.None => _custoemrDataList,
+            SortType.NameAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
+            SortType.NameDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
+            SortType.GradeAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
+            SortType.GradeDescending => _customerDataList.OrderBy(data => data.Name).ToList(),
+            SortType.None => _customerDataList,
             _ => null
         };
     }
@@ -78,11 +85,21 @@ public class CustomerDataManager : MonoBehaviour
     private static void Init()
     {
         _customerDataDic.Clear();
-        _custoemrDataList.Clear();
-        _custoemrDataList.AddRange(Resources.LoadAll<CustomerData>("CustomerData"));
-        for(int i = 0, cnt = _custoemrDataList.Count; i < cnt; i++)
+        _customerDataList.Clear();
+        _customerDataList.AddRange(Resources.LoadAll<CustomerData>("CustomerData"));
+        for(int i = 0, cnt = _customerDataList.Count; i < cnt; i++)
         {
-            _customerDataDic.Add(_custoemrDataList[i].Id, _custoemrDataList[i]);
+            CustomerData data = _customerDataList[i];
+            _customerDataDic.Add(data.Id, data);
+
+            if(data is SpecialCustomerData)
+            {
+                _specialCustomerDataList.Add((SpecialCustomerData)data);
+            }
+            else
+            {
+                _normalCustomerDataList.Add(data);
+            }
         }
     }
 }

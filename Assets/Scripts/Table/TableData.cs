@@ -35,7 +35,7 @@ public class TableData : MonoBehaviour
 
     public ETableState TableState;
 
-    public Customer CurrentCustomer;
+    public NormalCustomer CurrentCustomer;
 
     public CookingData CurrentFood;
 
