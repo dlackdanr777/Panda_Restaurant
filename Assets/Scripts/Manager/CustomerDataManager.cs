@@ -23,6 +23,7 @@ public class CustomerDataManager : MonoBehaviour
     private static List<CustomerData> _customerDataList = new List<CustomerData>();
     private static List<CustomerData> _normalCustomerDataList = new List<CustomerData>();
     private static List<SpecialCustomerData> _specialCustomerDataList = new List<SpecialCustomerData>();
+    private static List<GatecrasherCustomerData> _gatecrasherCustomerDataList = new List<GatecrasherCustomerData>();
     private static Dictionary<string, CustomerData> _customerDataDic = new Dictionary<string, CustomerData>();
 
 
@@ -57,6 +58,12 @@ public class CustomerDataManager : MonoBehaviour
         return _specialCustomerDataList;
     }
 
+    public List<GatecrasherCustomerData> GetAppearGatecrasherCustomerDataList()
+    {
+        return _gatecrasherCustomerDataList;
+    }
+
+
     public List<CustomerData> GetSortCustomerList()
     {
         return UserInfo.CustomerSortType switch
@@ -86,7 +93,10 @@ public class CustomerDataManager : MonoBehaviour
     {
         _customerDataDic.Clear();
         _customerDataList.Clear();
+        _specialCustomerDataList.Clear();
+        _gatecrasherCustomerDataList.Clear();
         _customerDataList.AddRange(Resources.LoadAll<CustomerData>("CustomerData"));
+
         for(int i = 0, cnt = _customerDataList.Count; i < cnt; i++)
         {
             CustomerData data = _customerDataList[i];
@@ -96,6 +106,12 @@ public class CustomerDataManager : MonoBehaviour
             {
                 _specialCustomerDataList.Add((SpecialCustomerData)data);
             }
+
+            else if(data is GatecrasherCustomerData)
+            {
+                _gatecrasherCustomerDataList.Add((GatecrasherCustomerData)data);
+            }
+
             else
             {
                 _normalCustomerDataList.Add(data);

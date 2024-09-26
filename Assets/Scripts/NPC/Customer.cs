@@ -11,6 +11,7 @@ public enum CustomerState
     Run,
     Sit,
     Jump,
+    Action,
     Length
 }
 
@@ -41,6 +42,13 @@ public class Customer : MonoBehaviour
     public virtual void SetData(CustomerData data)
     {
         _moveSpeed = data.MoveSpeed;
+
+        _customerData = data;
+        _spriteParent.localScale = data.Scale <= 0 ? Vector3.one : Vector3.one * data.Scale;
+        _spriteParent.transform.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
+        _spriteRenderer.transform.localPosition = Vector3.zero;
+        _spriteRenderer.sprite = data.Sprite;
+        _spriteRenderer.color = Color.white;
     }
 
 
@@ -89,7 +97,6 @@ public class Customer : MonoBehaviour
             return;
 
         _currentState = state;
-        
         switch(_currentState)
         {
             case CustomerState.Idle:
@@ -103,6 +110,11 @@ public class Customer : MonoBehaviour
             case CustomerState.Sit:
                 _animator.SetTrigger("Sit");
                 _animator.SetBool("Run", false);
+                break;
+
+            case CustomerState.Action:
+                _animator.SetBool("Run", false);
+                _animator.SetBool("Action", true);
                 break;
         }
     }

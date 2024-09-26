@@ -61039,6 +61039,7 @@ MonoBehaviour:
   - {x: -5.97, y: 15.28, z: 0}
   - {x: 3.36, y: 15.28, z: 0}
   - {x: 12.47, y: 15.28, z: 0}
+  _gatecrasherCustomer2TargetPos: {x: -6.77, y: 7.59, z: 0}
 --- !u!1 &1921264916
 GameObject:
   m_ObjectHideFlags: 0

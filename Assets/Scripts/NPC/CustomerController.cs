@@ -12,6 +12,8 @@ public class CustomerController : MonoBehaviour
     [Range(1, 10)] [SerializeField] private int _lineSpacingGrid;
     [SerializeField] private Transform _startLine;
     [SerializeField] private List<Vector3> _specialCustomerTargetPosList;
+    [SerializeField] private Vector3 _gatecrasherCustomer2TargetPos;
+    public Vector3 _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
 
     private Queue<NormalCustomer> _customers = new Queue<NormalCustomer>();
 
@@ -44,6 +46,7 @@ public class CustomerController : MonoBehaviour
         int spawnSpecialCustomerProbability = 100;
         List<CustomerData> normalCustomerDataList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
         List<SpecialCustomerData> specialCustomerDataList = CustomerDataManager.Instance.GetAppearSpecialCustomerDataList();
+        List<GatecrasherCustomerData> gatecrasherCustomerDataList = CustomerDataManager.Instance.GetAppearGatecrasherCustomerDataList();
         int randInt = 0;
 
         for (int i = 0, cnt = GameManager.Instance.AddPromotionCustomer; i < cnt; i++)
@@ -54,6 +57,13 @@ public class CustomerController : MonoBehaviour
 
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);
             bool specialCutomerEnabled = (0 < specialCustomerDataList.Count);
+
+            GatecrasherCustomer gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+            randInt = UnityEngine.Random.Range(0, gatecrasherCustomerDataList.Count);
+            gatecrasherCustomer.SetData(gatecrasherCustomerDataList[randInt]);
+            gatecrasherCustomer.StartEvent(_gatecrasherCustomer2TargetPos);
+            continue;
+
 
             if (specialCutomerEnabled && randSpawnProbability < spawnSpecialCustomerProbability)
             {

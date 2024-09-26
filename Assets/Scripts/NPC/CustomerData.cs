@@ -4,6 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "CustomerData", menuName = "Scriptable Object/CustomerData")]
 public class CustomerData : ScriptableObject
 {
+    [Header("Status")]
     [SerializeField] private Sprite _sprite;
     public Sprite Sprite => _sprite;
 
@@ -19,6 +20,15 @@ public class CustomerData : ScriptableObject
     [SerializeField] private float _moveSpeed = 4f;
     public float MoveSpeed => _moveSpeed;
 
+    [SerializeField] private float _scale = 1;
+    public float Scale => _scale;
+
+    [Range(1, 25)][SerializeField] private int _maxDiscomfortIndex;
+    public int MaxDiscomfortIndex => _maxDiscomfortIndex;
+
+    [Space]
+    [Header("등장 옵션")]
+
     [SerializeField] private int _minScore;
     public int MinScore => _minScore;
 
@@ -31,8 +41,7 @@ public class CustomerData : ScriptableObject
     [SerializeField] private string[] _orderFoods;
     public string[] OrderFoods => _orderFoods;
 
-    [Range(1, 25)] [SerializeField] private int _maxDiscomfortIndex;
-    public int MaxDiscomfortIndex => _maxDiscomfortIndex;
+
 
 
     [Space]

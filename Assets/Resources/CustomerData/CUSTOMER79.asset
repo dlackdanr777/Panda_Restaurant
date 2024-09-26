@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6dad612579425044e98972c6c5ba9201, type: 3}
-  m_Name: CUSTOMER78
+  m_Name: CUSTOMER79
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: c09227752f2f2bc4287fa3714fc061a7, type: 3}
-  _name: "\uAD6D\uC655 \uC9C4"
-  _id: CUSTOMER78
-  _description: "\uACE0\uC591\uC774 \uC655\uAC00\uC758 \uAD6D\uC655.\n\uC791\uC740
-    \uD0A4\uB294 \uBABB\uBCF8\uCC99 \uD558\uAE38"
+  _sprite: {fileID: 21300000, guid: 598e406976b5880468fd0010016f729a, type: 3}
+  _name: "\uC655\uBE44 \uB808\uC544"
+  _id: CUSTOMER79
+  _description: "\uACE0\uC591\uC774 \uC655\uAC00\uC758 \uC655\uBE44.\n\uC790\uC560\uB85C\uC6B4
+    \uC655\uBE44\uB2D8!"
   _moveSpeed: 4
   _minScore: 0
   _requiredDish: FOOD01
@@ -24,6 +24,6 @@ MonoBehaviour:
   _orderFoods: []
   _maxDiscomfortIndex: 25
   _skill: {fileID: 0}
-  _activeDuration: 20
+  _activeDuration: 15
   _touchCount: 50
-  _touchAddMoney: 300
+  _touchAddMoney: 2500

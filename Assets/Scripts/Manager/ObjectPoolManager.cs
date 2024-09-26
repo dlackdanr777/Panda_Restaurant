@@ -28,9 +28,12 @@ public class ObjectPoolManager : MonoBehaviour
     private static ObjectPoolManager _instance;
 
     private static int _customerCount = 30;
+    private static int _specialCustomerCount = 5;
+    private static int _gatecrasherCustomerCount = 5;
     private static GameObject _customerParent;
     private static Queue<NormalCustomer> _normalCustomerPool = new Queue<NormalCustomer>();
     private static Queue<SpecialCustomer> _specialCustomerPool = new Queue<SpecialCustomer>();
+    private static Queue<GatecrasherCustomer> _gatecrasherCustomerPool = new Queue<GatecrasherCustomer>();
 
     private static int _coinCount = 50;
     private static GameObject _coinParent;
@@ -55,6 +58,7 @@ public class ObjectPoolManager : MonoBehaviour
 
     private static NormalCustomer _normalCustomerPrefab;
     private static SpecialCustomer _specialCustomerPrefab;
+    private static GatecrasherCustomer _gatecrasherCustomerPrefab;
     private static PointerClickSpriteRenderer _coinPrefab;
     private static RectTransform _uiCoinPrefab;
     private static PointerClickSpriteRenderer _garbagePrefab;
@@ -102,16 +106,28 @@ public class ObjectPoolManager : MonoBehaviour
         if(_specialCustomerPrefab == null)
             _specialCustomerPrefab = Resources.Load<SpecialCustomer>("ObjectPool/SpecialCustomer");
 
+        if (_gatecrasherCustomerPrefab == null)
+            _gatecrasherCustomerPrefab = Resources.Load<GatecrasherCustomer>("ObjectPool/GatecrasherCustomer");
+
         for (int i = 0, count = _customerCount; i < count; i++)
         {
             NormalCustomer normalCustomer = Instantiate(_normalCustomerPrefab, _customerParent.transform);
             _normalCustomerPool.Enqueue(normalCustomer);
             normalCustomer.gameObject.SetActive(false);
+        }
 
+        for(int i = 0; i < _specialCustomerCount; ++i)
+        {
             SpecialCustomer specialCustomer = Instantiate(_specialCustomerPrefab, _customerParent.transform);
             _specialCustomerPool.Enqueue(specialCustomer);
             specialCustomer.gameObject.SetActive(false);
+        }
 
+        for (int i = 0; i < _gatecrasherCustomerCount; ++i)
+        {
+            GatecrasherCustomer gatecrasherCustomer = Instantiate(_gatecrasherCustomerPrefab, _customerParent.transform);
+            _gatecrasherCustomerPool.Enqueue(gatecrasherCustomer);
+            gatecrasherCustomer.gameObject.SetActive(false);
         }
     }
 
@@ -251,11 +267,36 @@ public class ObjectPoolManager : MonoBehaviour
         return customer;
     }
 
+    public GatecrasherCustomer SpawnGatecrasherCustomer(Vector3 pos, Quaternion rot)
+    {
+        GatecrasherCustomer customer;
+
+        if (_gatecrasherCustomerPool.Count == 0)
+        {
+            customer = Instantiate(_gatecrasherCustomerPrefab, pos, rot, _customerParent.transform);
+            return customer;
+        }
+
+        customer = _gatecrasherCustomerPool.Dequeue();
+        customer.gameObject.SetActive(false);
+        customer.gameObject.SetActive(true);
+        customer.transform.position = pos;
+        customer.transform.rotation = rot;
+        return customer;
+    }
+
+
 
     public void DespawnSpecialCustomer(SpecialCustomer customer)
     {
         customer.gameObject.SetActive(false);
         _specialCustomerPool.Enqueue(customer);
+    }
+
+    public void DespawnGatecrasherCustomer(GatecrasherCustomer customer)
+    {
+        customer.gameObject.SetActive(false);
+        _gatecrasherCustomerPool.Enqueue(customer);
     }
 
 

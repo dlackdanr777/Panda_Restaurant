@@ -22,10 +22,6 @@ public class NormalCustomer : Customer
     public override void SetData(CustomerData data)
     {
         base.SetData(data);
-        _customerData = data;
-        _spriteParent.transform.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
-        _spriteRenderer.transform.localPosition = Vector3.zero;
-        _spriteRenderer.sprite = data.Sprite;
         _anger.Init();
         _animator.SetBool("Run", false);
         _animator.SetBool("Eat", false);

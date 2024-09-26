@@ -6,8 +6,8 @@ public class SpecialCustomerData : CustomerData
     [Space]
     [Header("SpecialCustomer Option")]
 
-    [Range(0f, 100f)] private float _spawnProbability;
-    public float SpawnProbability => _spawnProbability;
+    [Range(0f, 10f)] private float _spawnChance;
+    public float SpawnChance => _spawnChance;
 
     [Range(0, 100)] [SerializeField] private int _activeDuration;
     public int ActiveDuration => _activeDuration;

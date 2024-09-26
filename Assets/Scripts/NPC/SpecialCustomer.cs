@@ -11,6 +11,7 @@ public class SpecialCustomer : Customer
     [SerializeField] private PointerClickSpriteRenderer _pointerClickSpriteRenderer;
     [SerializeField] private ParticleSystem _coinParticle;
 
+    private int _activeDuration;
     private int _touchCount;
     private int _touchAddMoney;
     private bool _isEndEvent;
@@ -26,12 +27,7 @@ public class SpecialCustomer : Customer
 
         base.SetData(data);
         SpecialCustomerData specialData = (SpecialCustomerData)data;
-
-        _customerData = data;
-        _spriteParent.transform.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
-        _spriteRenderer.transform.localPosition = Vector3.zero;
-        _spriteRenderer.sprite = data.Sprite;
-        _spriteRenderer.color = Color.white;
+        _activeDuration = specialData.ActiveDuration;
         _touchCount = specialData.TouchCount;
         _touchAddMoney = specialData.TouchAddMoney;
         _isEndEvent = false;
@@ -85,7 +81,7 @@ public class SpecialCustomer : Customer
                 StopCoroutine(_coroutine);
 
             StopMove();
-            _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
+            _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
             return;
         }
     }
@@ -93,7 +89,7 @@ public class SpecialCustomer : Customer
 
     private IEnumerator OnEndTimeEvent()
     {
-        yield return YieldCache.WaitForSeconds(60);
+        yield return YieldCache.WaitForSeconds(_activeDuration);
 
         if (_isEndEvent)
             yield break;
@@ -101,6 +97,6 @@ public class SpecialCustomer : Customer
         _isEndEvent = true;
 
         StopMove();
-        _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
+        _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
     }
 }
