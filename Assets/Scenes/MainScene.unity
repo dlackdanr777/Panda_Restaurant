@@ -61028,6 +61028,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17213a95982817c42a02ea754820a5e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _tableManager: {fileID: 32492754}
   _maxCustomers: 20
   _lineSpacingGrid: 2
   _startLine: {fileID: 1445560223}

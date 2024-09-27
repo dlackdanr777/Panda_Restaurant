@@ -39,15 +39,15 @@ public class CustomerDataManager : MonoBehaviour
     public List<CustomerData> GetAppearNormalCustomerList()
     {
         List<CustomerData> returnList = new List<CustomerData>();
-        for(int i = 0, cnt = _customerDataList.Count; i < cnt; ++i)
+        for(int i = 0, cnt = _normalCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.IsScoreValid(_customerDataList[i].MinScore))
+            if (!UserInfo.IsScoreValid(_normalCustomerDataList[i].MinScore))
                 continue;
 
-            if (!UserInfo.IsGiveRecipe(_customerDataList[i].RequiredDish))
+            if (!UserInfo.IsGiveRecipe(_normalCustomerDataList[i].RequiredDish))
                 continue;
 
-            returnList.Add(_customerDataList[i]);
+            returnList.Add(_normalCustomerDataList[i]);
         }
 
         return returnList;

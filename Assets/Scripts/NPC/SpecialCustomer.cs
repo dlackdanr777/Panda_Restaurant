@@ -8,13 +8,15 @@ public class SpecialCustomer : Customer
 {
     [Space]
     [Header("SpecialCustomer Components")]
-    [SerializeField] private PointerClickSpriteRenderer _pointerClickSpriteRenderer;
+    [SerializeField] private SpritePressEffect _spritePressEffect;
     [SerializeField] private ParticleSystem _coinParticle;
 
     private int _activeDuration;
     private int _touchCount;
     private int _touchAddMoney;
     private bool _isEndEvent;
+    private Sprite _normalSprite;
+    private Sprite _touchSprite;
     private Coroutine _coroutine;
 
     public override void SetData(CustomerData data)
@@ -27,13 +29,16 @@ public class SpecialCustomer : Customer
 
         base.SetData(data);
         SpecialCustomerData specialData = (SpecialCustomerData)data;
+
+        _normalSprite = specialData.Sprite;
+        _touchSprite = specialData.TouchSprite;
         _activeDuration = specialData.ActiveDuration;
         _touchCount = specialData.TouchCount;
         _touchAddMoney = specialData.TouchAddMoney;
         _isEndEvent = false;
-
-        _pointerClickSpriteRenderer.RemoveAllEvent();
-        _pointerClickSpriteRenderer.AddEvent(OnTouchEvent);
+        _spritePressEffect.Interactable = true;
+        _spritePressEffect.RemoveAllListeners();
+        _spritePressEffect.AddListener(OnTouchEvent);
 
         if (_coroutine != null)
             StopCoroutine(_coroutine);
@@ -71,7 +76,17 @@ public class SpecialCustomer : Customer
             return;
 
         _touchCount--;
-        _coinParticle.Emit(1);
+        _coinParticle.Emit(Random.Range(1, 4));
+        _spriteRenderer.sprite = _touchSprite;
+
+        Tween.Wait(1f, () =>
+        {
+            if (!gameObject.activeSelf)
+                return;
+
+            _spriteRenderer.sprite = _normalSprite;
+        });
+
         UserInfo.AppendMoney(_touchAddMoney);
 
         if (_touchCount <= 0)
@@ -95,6 +110,7 @@ public class SpecialCustomer : Customer
             yield break;
 
         _isEndEvent = true;
+        _spritePressEffect.Interactable = false;
 
         StopMove();
         _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));

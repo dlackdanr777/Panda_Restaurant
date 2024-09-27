@@ -7,7 +7,11 @@ using UnityEngine;
 
 public class CustomerController : MonoBehaviour
 {
-    
+    [Header("Components")]
+    [SerializeField] private TableManager _tableManager;
+
+    [Space]
+    [Header("Option")]
     [Range(1, 30)] [SerializeField] private int _maxCustomers;
     [Range(1, 10)] [SerializeField] private int _lineSpacingGrid;
     [SerializeField] private Transform _startLine;
@@ -57,11 +61,26 @@ public class CustomerController : MonoBehaviour
 
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);
             bool specialCutomerEnabled = (0 < specialCustomerDataList.Count);
-
             GatecrasherCustomer gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
             randInt = UnityEngine.Random.Range(0, gatecrasherCustomerDataList.Count);
             gatecrasherCustomer.SetData(gatecrasherCustomerDataList[randInt]);
-            gatecrasherCustomer.StartEvent(_gatecrasherCustomer2TargetPos);
+            DebugLog.Log(gatecrasherCustomerDataList[randInt].Id);
+            if(gatecrasherCustomerDataList[randInt] is GatecrasherCustomer1Data)
+            {
+                gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList);
+            }
+            else if (gatecrasherCustomerDataList[randInt] is GatecrasherCustomer2Data)
+            {
+                gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager);
+            }
+
+
+            NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+            randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
+            CustomerData customerData = normalCustomerDataList[randInt];
+            customer.SetData(customerData);
+            _customers.Enqueue(customer);
+            UserInfo.CustomerVisits(customerData);
             continue;
 
 
@@ -74,12 +93,12 @@ public class CustomerController : MonoBehaviour
             }
             else
             {
-                NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+/*                NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
                 CustomerData customerData = normalCustomerDataList[randInt];
                 customer.SetData(customerData);
                 _customers.Enqueue(customer);
-                UserInfo.CustomerVisits(customerData);
+                UserInfo.CustomerVisits(customerData);*/
             }
         }
 

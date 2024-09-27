@@ -6,6 +6,9 @@ public class SpecialCustomerData : CustomerData
     [Space]
     [Header("SpecialCustomer Option")]
 
+    [SerializeField] private Sprite _touchSprite;
+    public Sprite TouchSprite => _touchSprite;
+
     [Range(0f, 10f)] private float _spawnChance;
     public float SpawnChance => _spawnChance;
 

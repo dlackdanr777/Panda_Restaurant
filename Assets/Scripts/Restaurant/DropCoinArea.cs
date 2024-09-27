@@ -17,6 +17,7 @@ public class DropCoinArea : MonoBehaviour
     private PointerClickSpriteRenderer[] _coins;
     private int _currentMoney;
     private int _currentCoinCount;
+    public int Count => _currentCoinCount;
     private bool _isAnimeStartEnabled;
 
     private void Start()
@@ -61,6 +62,38 @@ public class DropCoinArea : MonoBehaviour
             }
             coin.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
         });
+    }
+
+    public void OnCoinStealEvent(Vector3 targetPos)
+    {
+        if (_currentCoinCount == 0)
+            return;
+
+        if (!_isAnimeStartEnabled)
+            return;
+
+        float endTime = _coinEndTime;
+        int currentMoney = _currentMoney;
+        int currentCoinCount = _currentCoinCount;
+        _isAnimeStartEnabled = false;
+        _currentMoney = 0;
+        _currentCoinCount = 0;
+
+        for (int i = 0; i < currentCoinCount; i++)
+        {
+            int coinIndex = i;
+            _coins[coinIndex].TweenStop();
+            _coins[coinIndex].TweenMove(targetPos, 0.2f, Ease.Smoothstep).
+                OnComplete(() =>
+                {
+                    _coins[coinIndex].TweenStop();
+                    ObjectPoolManager.Instance.DespawnCoin(_coins[coinIndex]);
+                    _coins[coinIndex] = null;
+                    _isAnimeStartEnabled = true;
+                });
+
+            endTime -= _coinAnimeInterval;
+        }
     }
 
 

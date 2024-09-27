@@ -149,6 +149,34 @@ public class TableManager : MonoBehaviour
         return new Vector2(0,0);
     }
 
+    public List<NormalCustomer> GetSitCustomerList()
+    {
+        List<NormalCustomer> returnDataList = new List<NormalCustomer>();
+        for(int i = 0, cnt =  _tableDatas.Length; i < cnt; ++i)
+        {
+            returnDataList.Add(_tableDatas[i].TableState != ETableState.Move ? _tableDatas[i].CurrentCustomer : null);
+        }
+
+        return returnDataList;
+    }
+
+    public List<DropCoinArea> GetDropCoinAreaList()
+    {
+        List<DropCoinArea> dropCoinAreaList = new List<DropCoinArea>();
+        for (int i = 0, cnt = _tableDatas.Length; i < cnt; ++i)
+        {
+            for(int j = 0, cntJ = _tableDatas[i].DropCoinAreas.Length; j < cntJ; ++j)
+            {
+                if (_tableDatas[i].DropCoinAreas[j] == null)
+                    continue;
+
+                dropCoinAreaList.Add(_tableDatas[i].DropCoinAreas[j]);
+            }
+        }
+
+        return dropCoinAreaList;
+    }
+
 
     private void UpdateTable()
     {
@@ -285,9 +313,11 @@ public class TableManager : MonoBehaviour
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
         int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
-
         CookingData data = new CookingData(foodData.Id, foodData.GetCookingTime(foodLevel), foodData.GetSellPrice(foodLevel), foodData.Sprite, () =>
         {
+            if (_tableDatas[index].TableState != ETableState.WaitFood || _tableDatas[index].CurrentCustomer == null)
+                return;
+
             _tableDatas[index].TableState = ETableState.CanServing;
             _servingButtons[index].SetImage(foodData.ThumbnailSprite);
             foodData = null;
@@ -350,8 +380,6 @@ public class TableManager : MonoBehaviour
             ExitCustomer(index);
             UserInfo.AddCustomerCount();
             UserInfo.AddTip(tip);
-
-            _tableDatas[index].TableState = ETableState.NotUse;
             UpdateTable();
         });
     }
@@ -364,7 +392,7 @@ public class TableManager : MonoBehaviour
     }
 
 
-    private void ExitCustomer(int index)
+    public void ExitCustomer(int index)
     {
         if (_tableDatas[index].TableState == ETableState.DontUse)
         {
@@ -372,13 +400,13 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-
         NormalCustomer exitCustomer = _tableDatas[index].CurrentCustomer;
         exitCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
         exitCustomer.SetLayer("Customer", 0);
-
+        _tableDatas[index].TableState = ETableState.NotUse;
         _tableDatas[index].CurrentCustomer = null;
-
+        _tableDatas[index].TotalTip = 0;
+        _tableDatas[index].TotalPrice = 0;
         UpdateTable();
 
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () => 
@@ -425,7 +453,7 @@ public class TableManager : MonoBehaviour
         int sitIndex = _tableDatas[index].SitIndex;
         int foodPrice = (int)(_tableDatas[index].TotalPrice * GameManager.Instance.FoodPriceMul);
 
-        _tableDatas[index].DropCoinArea.DropCoin(_tableDatas[index].ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0), foodPrice);
+        _tableDatas[index].DropCoinAreas[sitIndex].DropCoin(_tableDatas[index].ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0), foodPrice);
         _tableDatas[index].TotalPrice = 0;
         _tableDatas[index].TotalTip = 0;
     }

@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 853882216369539704}
+  - component: {fileID: 8990246247636248208}
   m_Layer: 0
   m_Name: Sprite Parent
   m_TagString: Untagged
@@ -32,6 +33,24 @@ Transform:
   - {fileID: 3841693560060966491}
   m_Father: {fileID: 4204737690065876172}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8990246247636248208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 698261751868952346}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5905e9666bcca0e4eb485e5589876efe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _isMaintainScale: 1
+  _targetScale: {x: 0.95, y: 0.95, z: 0.95}
+  _pressDuration: 0.15
+  _buttonDownTweenMode: 23
+  _buttonUpTweenMode: 23
+  Interactable: 1
 --- !u!1 &7863722711697501431
 GameObject:
   m_ObjectHideFlags: 0
@@ -59,7 +78,7 @@ Transform:
   m_GameObject: {fileID: 7863722711697501431}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 5.24, z: 1}
+  m_LocalPosition: {x: 0, y: 5.43, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4975,7 +4994,7 @@ MonoBehaviour:
   _animator: {fileID: 3092635076492906523}
   _spriteParent: {fileID: 853882216369539704}
   _spriteRenderer: {fileID: 8002874606411395625}
-  _pointerClickSpriteRenderer: {fileID: 4835419546606847566}
+  _spritePressEffect: {fileID: 8990246247636248208}
   _coinParticle: {fileID: 6484403252911908027}
 --- !u!1 &8803229222698952562
 GameObject:
@@ -5056,7 +5075,7 @@ SpriteRenderer:
   m_SortingLayerID: 59168115
   m_SortingLayer: 13
   m_SortingOrder: 1
-  m_Sprite: {fileID: 21300000, guid: 7a688e572447b4f4e823a25f2cf40c7e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 276dbe5794e7c374c9d3d9bee3b4c726, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -5077,7 +5096,7 @@ Animator:
   m_GameObject: {fileID: 8803229222698952562}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: d0d29d5d359bff8478a8f2a38ca631a1, type: 2}
+  m_Controller: {fileID: 9100000, guid: d3a4ddda817e9d245a1333ecd6726eaf, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -5139,8 +5158,8 @@ BoxCollider2D:
   m_Offset: {x: 0, y: 3}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0}
-    oldSize: {x: 5.92, y: 5.8621874}
+    pivot: {x: 0.4661658, y: 0.019}
+    oldSize: {x: 8.885715, y: 9.428572}
     newSize: {x: 5.92, y: 5.8621874}
     adaptiveTilingThreshold: 0.5
     drawMode: 0

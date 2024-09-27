@@ -101,15 +101,18 @@ public class Customer : MonoBehaviour
         {
             case CustomerState.Idle:
                 _animator.SetBool("Run", false);
+                _animator.SetBool("Action", false);
                 break;
 
             case CustomerState.Run:
                 _animator.SetBool("Run", true);
+                _animator.SetBool("Action", false);
                 break;
 
             case CustomerState.Sit:
                 _animator.SetTrigger("Sit");
                 _animator.SetBool("Run", false);
+                _animator.SetBool("Action", false);
                 break;
 
             case CustomerState.Action:
@@ -165,7 +168,7 @@ public class Customer : MonoBehaviour
 
                 SetSpriteDir(dir.x);
                 ChangeState(CustomerState.Run);
-                yield return null;
+                yield return YieldCache.WaitForSeconds(0.02f);
             }
         }
 
