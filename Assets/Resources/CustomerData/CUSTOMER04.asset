@@ -18,11 +18,12 @@ MonoBehaviour:
   _description: "\uAD6C\uBBF8\uD638 \uC218\uB828\uC0DD \uB3C4\uC2DC \uC5EC\uC6B0.\n\uAD6C\uBBF8\uD638\uAC00
     \uB418\uAE30 \uC704\uD574 \uB9C8\uB298\uACFC \uC465\uB9CC 3\uC8FC \uC9F8 \uBA39\uACE0
     \uC788\uB2E4."
-  _moveSpeed: 3
+  _moveSpeed: 5
+  _scale: 1
+  _maxDiscomfortIndex: 10
   _minScore: 0
   _requiredDish: FOOD04
   _requiredItem: 
   _orderFoods:
   - FOOD05
-  _maxDiscomfortIndex: 10
   _skill: {fileID: 0}

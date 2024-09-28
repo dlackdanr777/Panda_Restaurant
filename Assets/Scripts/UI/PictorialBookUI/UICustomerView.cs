@@ -9,8 +9,7 @@ public class UICustomerView : MonoBehaviour
     [Header("Components")]
     [SerializeField] private UICustomerBlackImage _blackImage;
     [SerializeField] private Image _specialFrameImage;
-    [SerializeField] private Image _uniqueFrameImage;
-    [SerializeField] private Image _rareFrameImage;
+    [SerializeField] private Image _gatecrasherFrameImage;
     [SerializeField] private Image _normalFrameImage;
     [SerializeField] private Image _npcImage;
     [SerializeField] private TextMeshProUGUI _npcNameText;
@@ -52,10 +51,6 @@ public class UICustomerView : MonoBehaviour
         if (data == _data)
             return;
 
-        _normalFrameImage.gameObject.SetActive(true);
-        _rareFrameImage.gameObject.SetActive(false);
-        _uniqueFrameImage.gameObject.SetActive(false);
-        _specialFrameImage.gameObject.SetActive(false);
         _blackImage.gameObject.SetActive(false);
 
         if (data == null)
@@ -63,6 +58,7 @@ public class UICustomerView : MonoBehaviour
             _npcImage.gameObject.SetActive(false);
             _orderFoodTitle.gameObject.SetActive(false);
             _effectTitle.gameObject.SetActive(false);
+            _normalFrameImage.gameObject.SetActive(true);
             _npcNameText.text = string.Empty;
             _descriptionText.text = string.Empty;
             _effectDescription.text = string.Empty;
@@ -75,6 +71,26 @@ public class UICustomerView : MonoBehaviour
         _effectTitle.gameObject.SetActive(true);
         _orderFoodTitle.gameObject.SetActive(true);
         _npcImage.sprite = data.Sprite;
+
+        if (data is SpecialCustomerData)
+        {
+            _normalFrameImage.gameObject.SetActive(false);
+            _gatecrasherFrameImage.gameObject.SetActive(false);
+            _specialFrameImage.gameObject.SetActive(true);
+        }
+        else if(data is GatecrasherCustomerData)
+        {
+            _normalFrameImage.gameObject.SetActive(false);
+            _gatecrasherFrameImage.gameObject.SetActive(true);
+            _specialFrameImage.gameObject.SetActive(false);
+        }
+        else
+        {
+            _normalFrameImage.gameObject.SetActive(true);
+            _gatecrasherFrameImage.gameObject.SetActive(false);
+            _specialFrameImage.gameObject.SetActive(false);
+        }
+
 
         if (!UserInfo.IsCustomerVisitEnabled(data))
         {
@@ -90,7 +106,7 @@ public class UICustomerView : MonoBehaviour
             SetOrderFoodSlot(data);
             _npcNameText.text = data.Name;
             _descriptionText.text = data.Description;
-            _effectDescription.text = data.Skill == null ? "¾øÀ½" : data.Skill.Description;
+            _effectDescription.text = Utility.GetCustomerEffectDescription(data);
         }
 
         _npcImage.TweenStop();
@@ -129,6 +145,9 @@ public class UICustomerView : MonoBehaviour
     private void SetOrderFoodSlot(CustomerData data)
     {
         HideOrderFoodSlots();
+        if (data is SpecialCustomerData || data is GatecrasherCustomerData)
+            return;
+
         List<string> orderFoodList = new List<string>();
         orderFoodList.Add(data.RequiredDish);
         orderFoodList.AddRange(data.OrderFoods);

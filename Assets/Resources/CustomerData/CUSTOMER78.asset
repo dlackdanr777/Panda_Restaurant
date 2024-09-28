@@ -17,7 +17,7 @@ MonoBehaviour:
   _id: CUSTOMER78
   _description: "\uACE0\uC591\uC774 \uC655\uAC00\uC758 \uAD6D\uC655.\n\uC791\uC740
     \uD0A4\uB294 \uBABB\uBCF8\uCC99 \uD558\uAE38"
-  _moveSpeed: 4
+  _moveSpeed: 6
   _scale: 1
   _maxDiscomfortIndex: 25
   _minScore: 0

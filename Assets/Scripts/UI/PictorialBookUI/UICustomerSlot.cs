@@ -6,6 +6,9 @@ public class UICustomerSlot : MonoBehaviour
 {
     [SerializeField] private Button _slotButton;
     [SerializeField] private Image _itemImage;
+    [SerializeField] private GameObject _normalFrame;
+    [SerializeField] private GameObject _gatecrasherFrame;
+    [SerializeField] private GameObject _specialFrame;
 
     private CustomerData _data;
 
@@ -22,6 +25,19 @@ public class UICustomerSlot : MonoBehaviour
         _data = data;
         _itemImage.sprite = data.Sprite;
         _itemImage.color = UserInfo.IsCustomerVisitEnabled(data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+
+        _normalFrame.SetActive(false);
+        _specialFrame.SetActive(false);
+        _gatecrasherFrame.SetActive(false);
+
+        if (data is SpecialCustomerData)
+            _specialFrame.gameObject.SetActive(true);
+
+        else if (data is GatecrasherCustomerData)
+            _gatecrasherFrame.gameObject.SetActive(true);
+
+        else
+            _normalFrame.gameObject.SetActive(true);
     }
 
 

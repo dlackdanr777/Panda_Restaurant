@@ -41,10 +41,7 @@ public class CustomerDataManager : MonoBehaviour
         List<CustomerData> returnList = new List<CustomerData>();
         for(int i = 0, cnt = _normalCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.IsScoreValid(_normalCustomerDataList[i].MinScore))
-                continue;
-
-            if (!UserInfo.IsGiveRecipe(_normalCustomerDataList[i].RequiredDish))
+            if (!CheckAppearCustomer(_normalCustomerDataList[i]))
                 continue;
 
             returnList.Add(_normalCustomerDataList[i]);
@@ -55,12 +52,30 @@ public class CustomerDataManager : MonoBehaviour
 
     public List<SpecialCustomerData> GetAppearSpecialCustomerDataList()
     {
-        return _specialCustomerDataList;
+        List<SpecialCustomerData> returnList = new List<SpecialCustomerData>();
+        for (int i = 0, cnt = _specialCustomerDataList.Count; i < cnt; ++i)
+        {
+            if (!CheckAppearCustomer(_specialCustomerDataList[i]))
+                continue;
+
+            returnList.Add(_specialCustomerDataList[i]);
+        }
+
+        return returnList;
     }
 
     public List<GatecrasherCustomerData> GetAppearGatecrasherCustomerDataList()
     {
-        return _gatecrasherCustomerDataList;
+        List<GatecrasherCustomerData> returnList = new List<GatecrasherCustomerData>();
+        for (int i = 0, cnt = _gatecrasherCustomerDataList.Count; i < cnt; ++i)
+        {
+            if (!CheckAppearCustomer(_gatecrasherCustomerDataList[i]))
+                continue;
+
+            returnList.Add(_gatecrasherCustomerDataList[i]);
+        }
+
+        return returnList;
     }
 
 
@@ -117,5 +132,16 @@ public class CustomerDataManager : MonoBehaviour
                 _normalCustomerDataList.Add(data);
             }
         }
+    }
+
+    private bool CheckAppearCustomer(CustomerData data)
+    {
+        if (!UserInfo.IsScoreValid(data.MinScore))
+            return false;
+
+        if (!string.IsNullOrEmpty(data.RequiredDish) && !UserInfo.IsGiveRecipe(data.RequiredDish))
+            return false;
+
+        return true;
     }
 }

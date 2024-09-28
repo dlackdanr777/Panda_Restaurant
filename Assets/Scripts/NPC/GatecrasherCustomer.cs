@@ -1,5 +1,6 @@
 using Muks.PathFinding.AStar;
 using Muks.Tween;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -29,18 +30,18 @@ public class GatecrasherCustomer : Customer
     private Coroutine _gatecrasher1Coroutine;
     private Coroutine _actionCoroutine;
     private Coroutine _enabledCoroutine;
+    private Action _onCompleted;
 
     public override void SetData(CustomerData data)
     {
-        if(!(data is GatecrasherCustomerData))
+        if (!(data is GatecrasherCustomerData))
         {
             DebugLog.LogError("해당 오브젝트는 GatecrasherCustomerData만 받을 수 있습니다.");
             return;
         }
-
-        base.SetData(data);
         GatecrasherCustomerData gatecrasherData = (GatecrasherCustomerData)data;
-        _spriteRenderer.sprite = gatecrasherData.Sprite;
+        _animator.runtimeAnimatorController = gatecrasherData.Controller;
+        base.SetData(data);
         _activeDuration = gatecrasherData.ActiveDuration;
         _touchCount = 0;
         _totalTouchCount = gatecrasherData.TouchCount;
@@ -62,11 +63,14 @@ public class GatecrasherCustomer : Customer
             StopCoroutine(_gatecrasher1Coroutine);
     }
 
-    public void StartGatecreasherCustomer2Event(Vector3 targetPos, TableManager tableManager)
+    public void StartGatecreasherCustomer2Event(Vector3 targetPos, TableManager tableManager, Action onCompleted)
     {
         _touchEnabled = false;
+        _onCompleted = onCompleted;
+        _spriteRenderer.sprite = _customerData.Sprite;
         Move(targetPos, -1, () =>
         {
+            _spriteRenderer.sprite = _customerData.Sprite;
             Tween.Wait(1f, () =>
             {
                 _spritePressEffect.Interactable = true;
@@ -85,10 +89,11 @@ public class GatecrasherCustomer : Customer
         });
     }
 
-    public void StartGatecreasherCustomer1Event(List<DropCoinArea> dropCoinAreaList, List<Vector3> noCoinTargetPosList)
+    public void StartGatecreasherCustomer1Event(List<DropCoinArea> dropCoinAreaList, List<Vector3> noCoinTargetPosList, Action onCompleted)
     {
         _touchEnabled = true;
         _spritePressEffect.Interactable = true;
+        _onCompleted = onCompleted;
 
         if (_enabledCoroutine != null)
             StopCoroutine(_enabledCoroutine);
@@ -118,10 +123,10 @@ public class GatecrasherCustomer : Customer
         if (targetArea == null)
         {
             _gatecrasher1Coroutine = StartCoroutine(GatecreasherCustomer1Routine(dropCoinAreaList, noCoinTargetPosList));
-            int randInt = Random.Range(0, noCoinTargetPosList.Count);
+            int randInt = UnityEngine.Random.Range(0, noCoinTargetPosList.Count);
             Move(noCoinTargetPosList[randInt], 0, () =>
             {
-                Tween.Wait(Random.Range(0f, 2f), () => LoopGatecreasherCustomer1Event(dropCoinAreaList, noCoinTargetPosList));
+                Tween.Wait(UnityEngine.Random.Range(0f, 2f), () => LoopGatecreasherCustomer1Event(dropCoinAreaList, noCoinTargetPosList));
             });
         }
 
@@ -183,7 +188,7 @@ public class GatecrasherCustomer : Customer
             return;
 
         _touchCount++;
-        _touchParticle.Emit(Random.Range(2, 4));
+        _touchParticle.Emit(UnityEngine.Random.Range(2, 4));
         _spriteGroup.SetAlpha(1);
         _spriteFillAmount.TweenFillAmount((float)_touchCount / _totalTouchCount, 0.05f);
 
@@ -202,9 +207,11 @@ public class GatecrasherCustomer : Customer
             _spriteGroup.SetAlpha(1);
             _spriteGroup.TweenSetAlpha(0, 0.7f);
             _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnGatecrasherCustomer(this));
+            _onCompleted?.Invoke();
             return;
         }
     }
+
 
     public DropCoinArea GetMinDistanceCoinArea(List<DropCoinArea> dropCoinAreaList, Vector3 startPos)
     {
@@ -349,5 +356,6 @@ public class GatecrasherCustomer : Customer
         _spritePressEffect.Interactable = false;
         _spriteGroup.TweenSetAlpha(0, 0.7f);
         _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnGatecrasherCustomer(this));
+        _onCompleted?.Invoke();
     }
 }

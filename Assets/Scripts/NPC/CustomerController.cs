@@ -7,6 +7,9 @@ using UnityEngine;
 
 public class CustomerController : MonoBehaviour
 {
+    public event Action AddCustomerHandler;
+    public event Action GuideCustomerHandler;
+
     [Header("Components")]
     [SerializeField] private TableManager _tableManager;
 
@@ -20,11 +23,12 @@ public class CustomerController : MonoBehaviour
     public Vector3 _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
 
     private Queue<NormalCustomer> _customers = new Queue<NormalCustomer>();
+    private Coroutine _sortCoroutine;
+    private float _breakInCustomerTime = 60;
+    [SerializeField] private bool _breakCustomerEnabled = true;
+    [SerializeField] private float _breakInCustomerTimer;
 
-    private Coroutine _sortCoroutine; 
 
-    public event Action AddCustomerHandler;
-    public event Action GuideCustomerHandler;
 
     public int Count => _customers.Count;
     public bool IsMaxCount => Count >= _maxCustomers;
@@ -47,7 +51,6 @@ public class CustomerController : MonoBehaviour
         if (_maxCustomers <= _customers.Count)
             return;
 
-        int spawnSpecialCustomerProbability = 100;
         List<CustomerData> normalCustomerDataList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
         List<SpecialCustomerData> specialCustomerDataList = CustomerDataManager.Instance.GetAppearSpecialCustomerDataList();
         List<GatecrasherCustomerData> gatecrasherCustomerDataList = CustomerDataManager.Instance.GetAppearGatecrasherCustomerDataList();
@@ -58,47 +61,58 @@ public class CustomerController : MonoBehaviour
             if (_maxCustomers <= _customers.Count)
                 break;
 
-
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);
-            bool specialCutomerEnabled = (0 < specialCustomerDataList.Count);
-            GatecrasherCustomer gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            randInt = UnityEngine.Random.Range(0, gatecrasherCustomerDataList.Count);
-            gatecrasherCustomer.SetData(gatecrasherCustomerDataList[randInt]);
-            DebugLog.Log(gatecrasherCustomerDataList[randInt].Id);
-            if(gatecrasherCustomerDataList[randInt] is GatecrasherCustomer1Data)
+
+            if(_breakCustomerEnabled && _breakInCustomerTimer <= 0 && randSpawnProbability < 10)
             {
-                gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList);
+
+                if (UnityEngine.Random.Range(0, 2) == 0)
+                {
+                    if (specialCustomerDataList.Count <= 0)
+                    {
+                        i--;
+                        continue;
+                    }
+
+                    _breakInCustomerTimer = _breakInCustomerTime;
+                    _breakCustomerEnabled = false;
+                    SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+                    randInt = UnityEngine.Random.Range(0, specialCustomerDataList.Count);
+                    specialCustomer.SetData(specialCustomerDataList[randInt]);
+                    specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
+                }
+                else
+                {
+                    if(gatecrasherCustomerDataList.Count <= 0)
+                    {
+                        i--;
+                        continue;
+                    }
+                    _breakInCustomerTimer = _breakInCustomerTime;
+                    _breakCustomerEnabled = false;
+                    GatecrasherCustomer gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+                    randInt = UnityEngine.Random.Range(0, gatecrasherCustomerDataList.Count);
+                    gatecrasherCustomer.SetData(gatecrasherCustomerDataList[randInt]);
+                    if (gatecrasherCustomerDataList[randInt] is GatecrasherCustomer1Data)
+                    {
+                        gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList, OnCustomerEvent);
+                    }
+                    else if (gatecrasherCustomerDataList[randInt] is GatecrasherCustomer2Data)
+                    {
+                        gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
+                    }
+                }
             }
-            else if (gatecrasherCustomerDataList[randInt] is GatecrasherCustomer2Data)
-            {
-                gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager);
-            }
 
-
-            NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
-            CustomerData customerData = normalCustomerDataList[randInt];
-            customer.SetData(customerData);
-            _customers.Enqueue(customer);
-            UserInfo.CustomerVisits(customerData);
-            continue;
-
-
-            if (specialCutomerEnabled && randSpawnProbability < spawnSpecialCustomerProbability)
-            {
-                SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-                randInt = UnityEngine.Random.Range(0, specialCustomerDataList.Count);
-                specialCustomer.SetData(specialCustomerDataList[randInt]);
-                specialCustomer.StartEvent(_specialCustomerTargetPosList);
-            }
             else
             {
-/*                NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+                NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
                 CustomerData customerData = normalCustomerDataList[randInt];
                 customer.SetData(customerData);
                 _customers.Enqueue(customer);
-                UserInfo.CustomerVisits(customerData);*/
+                UserInfo.CustomerVisits(customerData);
+                continue;
             }
         }
 
@@ -127,7 +141,25 @@ public class CustomerController : MonoBehaviour
         GuideCustomerHandler.Invoke();
         return true;
     }
-     
+
+
+    private void Awake()
+    {
+        _breakInCustomerTimer = _breakInCustomerTime;
+        _breakCustomerEnabled = true;
+    }
+
+
+    private void Update()
+    {
+        if (!_breakCustomerEnabled)
+            return;
+
+        if (0 < _breakInCustomerTimer)
+            _breakInCustomerTimer -= Time.deltaTime;
+    }
+
+
     private IEnumerator SortCustomerLine()
     {
         yield return YieldCache.WaitForSeconds(0.5f);
@@ -143,5 +175,12 @@ public class CustomerController : MonoBehaviour
 
             yield return YieldCache.WaitForSeconds(0.05f);
         }
+    }
+
+    private void OnCustomerEvent()
+    {
+        _breakInCustomerTimer = _breakInCustomerTime;
+        _breakCustomerEnabled = true;
+
     }
 }

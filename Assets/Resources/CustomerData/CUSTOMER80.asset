@@ -16,7 +16,7 @@ MonoBehaviour:
   _name: "\uB3C4\uB451\uACE0\uC591\uC774"
   _id: CUSTOMER80
   _description: 
-  _moveSpeed: 4
+  _moveSpeed: 8
   _scale: 2
   _maxDiscomfortIndex: 25
   _minScore: 0
@@ -27,3 +27,4 @@ MonoBehaviour:
   _spawnChance: 9
   _activeDuration: 30
   _touchCount: 20
+  _controller: {fileID: 9100000, guid: 643365cb238204e4d9706b2680174307, type: 2}

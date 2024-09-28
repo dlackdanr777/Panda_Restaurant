@@ -207,6 +207,39 @@ public static class Utility
     }
 
 
+    public static string GetCustomerEffectDescription(CustomerData data)
+    {
+        string description = string.Empty;
+        if (data is SpecialCustomerData)
+        {
+            SpecialCustomerData specialCustomerData = (SpecialCustomerData)data;
+            description = $"{specialCustomerData.ActiveDuration}초 동안 돌아다니며 \n터치시 <color={ColorToHex(GetColor(ColorType.Positive))}>{specialCustomerData.TouchAddMoney}</color>골드를 획득한다";
+        }
+
+        else if(data is GatecrasherCustomerData)
+        {
+            GatecrasherCustomerData gatecrasherCustomerData = (GatecrasherCustomerData)data;
+            description = data is GatecrasherCustomer1Data ? $"{gatecrasherCustomerData.ActiveDuration}초 동안 돌아다니며 동전을 훔친다" : $"{gatecrasherCustomerData.ActiveDuration}초 동안 고성방가로 손님들을 쫒아낸다";
+        }
+
+        else
+        {
+            if (data.Skill == null)
+                description = "없음";
+
+            else
+            {
+                if(data.Skill is CustomerFoodPriceUpSkill)
+                    description = $"{data.Skill.SkillActivatePercent}% 확률로 음식 가격의 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}</color>배 지불한다";
+                else if(data.Skill is CustomerOrderCountUpSkill)
+                    description = $"{data.Skill.SkillActivatePercent}% 확률로 음식을 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}</color>개 주문한다";
+            }      
+        }
+
+        return description;
+    }
+
+
     /// <summary>Image의 Sprite 피벗값에 맞춰 Image 컴포넌트 피벗값을 이동하는 함수</summary>
     public static void ChangeImagePivot(Image image)
     {

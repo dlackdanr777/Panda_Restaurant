@@ -17,11 +17,12 @@ MonoBehaviour:
   _id: CUSTOMER01
   _description: "\uAC00\uAC8C \uBC14\uB85C \uC606 \uAC74\uBB3C\uC5D0\uC11C \uC0AC\uB294
     \uD310\uB2E4.\n\uC8FC\uB9D0\uB9C8\uB2E4 \uC8FD\uC21C \uC7A5\uC0AC\uB97C \uD55C\uB2E4."
-  _moveSpeed: 3
+  _moveSpeed: 5
+  _scale: 1
+  _maxDiscomfortIndex: 25
   _minScore: 0
   _requiredDish: FOOD01
   _requiredItem: 
   _orderFoods:
   - FOOD03
-  _maxDiscomfortIndex: 25
   _skill: {fileID: 0}

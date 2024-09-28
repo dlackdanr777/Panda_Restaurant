@@ -164,11 +164,11 @@ public class Customer : MonoBehaviour
             while (Vector3.Distance(_moveObj.transform.position, vec) > 0.05f)
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
-                _moveObj.transform.Translate(dir * Time.deltaTime * _moveSpeed, Space.World);
+                _moveObj.transform.Translate(dir * 0.01f * _moveSpeed, Space.World);
 
                 SetSpriteDir(dir.x);
                 ChangeState(CustomerState.Run);
-                yield return YieldCache.WaitForSeconds(0.02f);
+                yield return YieldCache.WaitForSeconds(0.01f);
             }
         }
 

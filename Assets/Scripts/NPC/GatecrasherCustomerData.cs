@@ -1,3 +1,4 @@
+
 using UnityEngine;
 
 public abstract class GatecrasherCustomerData : CustomerData
@@ -12,4 +13,7 @@ public abstract class GatecrasherCustomerData : CustomerData
 
     [Range(0, 100)][SerializeField] private int _touchCount;
     public int TouchCount => _touchCount;
+
+    [SerializeField] private RuntimeAnimatorController _controller;
+    public RuntimeAnimatorController Controller => _controller;
 }

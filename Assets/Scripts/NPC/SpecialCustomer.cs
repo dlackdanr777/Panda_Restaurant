@@ -1,8 +1,8 @@
-using Muks.PathFinding.AStar;
+using Muks.Tween;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Collections;
-using Muks.Tween;
 
 public class SpecialCustomer : Customer
 {
@@ -18,6 +18,8 @@ public class SpecialCustomer : Customer
     private Sprite _normalSprite;
     private Sprite _touchSprite;
     private Coroutine _coroutine;
+    private Action _onCompleted;
+
 
     public override void SetData(CustomerData data)
     {
@@ -46,9 +48,10 @@ public class SpecialCustomer : Customer
         _coroutine = StartCoroutine(OnEndTimeEvent());
     }
 
-    public void StartEvent(List<Vector3> targetPosList)
+    public void StartEvent(List<Vector3> targetPosList, Action onCompleted)
     {
         LoopEvent(-1, targetPosList);
+        _onCompleted = onCompleted;
     }
 
 
@@ -61,9 +64,9 @@ public class SpecialCustomer : Customer
 
         int randInt = currentIndex;
         while (currentIndex == randInt)
-            randInt = Random.Range(0, posList.Count);
+            randInt = UnityEngine.Random.Range(0, posList.Count);
 
-        Move(posList[randInt], 0, () => Tween.Wait(Random.Range(0.02f, 2f), () => LoopEvent(randInt, posList)));
+        Move(posList[randInt], 0, () => Tween.Wait(UnityEngine.Random.Range(0.02f, 2f), () => LoopEvent(randInt, posList)));
     }
 
 
@@ -76,7 +79,7 @@ public class SpecialCustomer : Customer
             return;
 
         _touchCount--;
-        _coinParticle.Emit(Random.Range(1, 4));
+        _coinParticle.Emit(UnityEngine.Random.Range(1, 4));
         _spriteRenderer.sprite = _touchSprite;
 
         Tween.Wait(1f, () =>
@@ -97,6 +100,7 @@ public class SpecialCustomer : Customer
 
             StopMove();
             _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
+            _onCompleted?.Invoke();
             return;
         }
     }
@@ -114,5 +118,6 @@ public class SpecialCustomer : Customer
 
         StopMove();
         _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
+        _onCompleted?.Invoke();
     }
 }
