@@ -9,7 +9,7 @@ public class SpecialCustomerData : CustomerData
     [SerializeField] private Sprite _touchSprite;
     public Sprite TouchSprite => _touchSprite;
 
-    [Range(0f, 10f)] private float _spawnChance;
+    [Range(0f, 10f)] [SerializeField] private float _spawnChance;
     public float SpawnChance => _spawnChance;
 
     [Range(0, 100)] [SerializeField] private int _activeDuration;

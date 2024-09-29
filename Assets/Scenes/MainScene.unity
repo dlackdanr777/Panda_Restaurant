@@ -25744,7 +25744,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &713134323
 RectTransform:
   m_ObjectHideFlags: 0
@@ -57670,8 +57670,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 3.7075, y: 338.54898}
-  m_SizeDelta: {x: 246.8212, y: 53.3375}
+  m_AnchoredPosition: {x: 3.7075, y: 337.8831}
+  m_SizeDelta: {x: 246.8212, y: 52.0057}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1816855126
 MonoBehaviour:
@@ -57721,8 +57721,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 45
-  m_fontSizeBase: 45
+  m_fontSize: 50
+  m_fontSizeBase: 50
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -60507,6 +60507,8 @@ MonoBehaviour:
   - {x: 3.36, y: 15.28, z: 0}
   - {x: 12.47, y: 15.28, z: 0}
   _gatecrasherCustomer2TargetPos: {x: -6.77, y: 7.59, z: 0}
+  _breakCustomerEnabled: 1
+  _breakInCustomerTimer: 0
 --- !u!1 &1921264916
 GameObject:
   m_ObjectHideFlags: 0
@@ -62478,8 +62480,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -1.2484, y: -1.3207}
-  m_SizeDelta: {x: 287.99, y: 72.6759}
+  m_AnchoredPosition: {x: -1.2484, y: -5.1881}
+  m_SizeDelta: {x: 287.99, y: 64.9411}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1965666640
 MonoBehaviour:
@@ -62503,8 +62505,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\uB3C4\uAC10"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 452e39f04be31f147b0e2a9b45681611, type: 2}
-  m_sharedMaterial: {fileID: 3874839414945399098, guid: 452e39f04be31f147b0e2a9b45681611,
+  m_fontAsset: {fileID: 11400000, guid: 0cbc05084ee1e444389450df4c0062e1, type: 2}
+  m_sharedMaterial: {fileID: 8635327179134459558, guid: 0cbc05084ee1e444389450df4c0062e1,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
@@ -62529,8 +62531,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 60
-  m_fontSizeBase: 60
+  m_fontSize: 55
+  m_fontSizeBase: 55
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

@@ -16,11 +16,11 @@ MonoBehaviour:
   _name: "\uB3C4\uB451\uACE0\uC591\uC774"
   _id: CUSTOMER80
   _description: 
-  _moveSpeed: 8
+  _moveSpeed: 6
   _scale: 2
   _maxDiscomfortIndex: 25
-  _minScore: 0
-  _requiredDish: FOOD01
+  _minScore: 500
+  _requiredDish: 
   _requiredItem: 
   _orderFoods: []
   _skill: {fileID: 0}

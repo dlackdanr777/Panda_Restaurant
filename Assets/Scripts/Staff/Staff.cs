@@ -9,8 +9,14 @@ using System;
 public class Staff : MonoBehaviour
 {
     [SerializeField] private GameObject _moveObj;
+    [SerializeField] private GameObject _spriteParent;
     [SerializeField] private SpriteRenderer _spriteRenderer;
     public SpriteRenderer SpriteRenderer => _spriteRenderer;
+
+    [Header("Cleaner Components")]
+    [SerializeField] private Animator _animator;
+    [SerializeField] private GameObject _cleanerItem;
+    [SerializeField] private GameObject _cleanParticle;
 
     private StaffData _staffData;
     private IStaffAction _staffAction;
@@ -55,14 +61,17 @@ public class Staff : MonoBehaviour
         _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         _staffAction = staffData.GetStaffAction(this, tableManager, kitchenSystem, customerController);
         _secondValue = staffData.SecondValue;
+        _animator.enabled = staffData is CleanerData;
+        _cleanerItem.gameObject.SetActive(staffData is CleanerData);
+        _cleanParticle.gameObject.SetActive(false);
         _speed = 1;
         _usingSkill = false;
         _skillEnabled = false;
         _level = 1;
 
         _spriteRenderer.sprite = staffData.Sprite;
-        float heightMul = (staffData.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y - (AStar.Instance.NodeSize * 0.5f);
-        _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
+        _spriteParent.transform.localPosition = new Vector3(0, -(AStar.Instance.NodeSize * 0.5f), 0);
+        _spriteRenderer.transform.localPosition = Vector3.zero;
 
         ResetAction();
         ResetSkill();
@@ -95,6 +104,9 @@ public class Staff : MonoBehaviour
     public void SetStaffState(EStaffState state)
     {
         _state = state;
+
+        if(_animator.enabled)
+            _animator.SetInteger("State", (int)_state);
     }
 
 
@@ -294,6 +306,8 @@ public class Staff : MonoBehaviour
         if (2 <= nodeList.Count)
             nodeList.RemoveAt(0);
 
+        SetStaffState(EStaffState.Run);
+
         foreach (Vector2 vec in nodeList)
         {
             while (Vector3.Distance(_moveObj.transform.position, vec) > 0.05f)
@@ -306,7 +320,7 @@ public class Staff : MonoBehaviour
             }
         }
 
-
+        SetStaffState(EStaffState.None);
         SetSpriteDir(_moveEndDir);
         onCompleted?.Invoke();
 

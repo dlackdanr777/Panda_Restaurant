@@ -17,15 +17,16 @@ MonoBehaviour:
   _id: CUSTOMER79
   _description: "\uACE0\uC591\uC774 \uC655\uAC00\uC758 \uC655\uBE44.\n\uC790\uC560\uB85C\uC6B4
     \uC655\uBE44\uB2D8!"
-  _moveSpeed: 6
+  _moveSpeed: 3.5
   _scale: 1
   _maxDiscomfortIndex: 25
-  _minScore: 0
-  _requiredDish: FOOD01
-  _requiredItem: 
+  _minScore: 1000
+  _requiredDish: 
+  _requiredItem: GOTCHA103
   _orderFoods: []
   _skill: {fileID: 0}
   _touchSprite: {fileID: 21300000, guid: a71d5f11b4e47584b9be91c9d2b03ae8, type: 3}
+  _spawnChance: 3
   _activeDuration: 15
   _touchCount: 50
   _touchAddMoney: 2500

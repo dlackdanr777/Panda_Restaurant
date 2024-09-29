@@ -1,4 +1,5 @@
 using Muks.PathFinding.AStar;
+using Muks.WeightedRandom;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -62,42 +63,45 @@ public class CustomerController : MonoBehaviour
                 break;
 
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);
-
             if(_breakCustomerEnabled && _breakInCustomerTimer <= 0 && randSpawnProbability < 10)
             {
+                WeightedRandom<CustomerData> randomDataList = new WeightedRandom<CustomerData>();
+                for(int j = 0, cntJ = specialCustomerDataList.Count; j < cntJ; ++j)
+                    randomDataList.Add(specialCustomerDataList[j], specialCustomerDataList[j].SpawnChance);
 
-                if (UnityEngine.Random.Range(0, 2) == 0)
+                for (int j = 0, cntJ = gatecrasherCustomerDataList.Count; j < cntJ; ++j)
+                    randomDataList.Add(gatecrasherCustomerDataList[j], gatecrasherCustomerDataList[j].SpawnChance);
+
+                DebugLog.Log(randomDataList.Count);
+
+                if(randomDataList.Count <= 0)
                 {
-                    if (specialCustomerDataList.Count <= 0)
-                    {
-                        i--;
-                        continue;
-                    }
+                    i--;
+                    continue;
+                }
 
+                CustomerData getData = randomDataList.GetRamdomItem();
+
+                if(getData is SpecialCustomerData)
+                {
                     _breakInCustomerTimer = _breakInCustomerTime;
                     _breakCustomerEnabled = false;
                     SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-                    randInt = UnityEngine.Random.Range(0, specialCustomerDataList.Count);
-                    specialCustomer.SetData(specialCustomerDataList[randInt]);
+                    specialCustomer.SetData(getData);
                     specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
                 }
-                else
+                else if(getData is GatecrasherCustomerData)
                 {
-                    if(gatecrasherCustomerDataList.Count <= 0)
-                    {
-                        i--;
-                        continue;
-                    }
                     _breakInCustomerTimer = _breakInCustomerTime;
                     _breakCustomerEnabled = false;
                     GatecrasherCustomer gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                     randInt = UnityEngine.Random.Range(0, gatecrasherCustomerDataList.Count);
                     gatecrasherCustomer.SetData(gatecrasherCustomerDataList[randInt]);
-                    if (gatecrasherCustomerDataList[randInt] is GatecrasherCustomer1Data)
+                    if (getData is GatecrasherCustomer1Data)
                     {
                         gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList, OnCustomerEvent);
                     }
-                    else if (gatecrasherCustomerDataList[randInt] is GatecrasherCustomer2Data)
+                    else if (getData is GatecrasherCustomer2Data)
                     {
                         gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
                     }

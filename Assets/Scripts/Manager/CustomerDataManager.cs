@@ -26,7 +26,6 @@ public class CustomerDataManager : MonoBehaviour
     private static List<GatecrasherCustomerData> _gatecrasherCustomerDataList = new List<GatecrasherCustomerData>();
     private static Dictionary<string, CustomerData> _customerDataDic = new Dictionary<string, CustomerData>();
 
-
     public CustomerData GetCustomerData(string id)
     {
         if (!_customerDataDic.TryGetValue(id, out CustomerData data))
@@ -140,6 +139,9 @@ public class CustomerDataManager : MonoBehaviour
             return false;
 
         if (!string.IsNullOrEmpty(data.RequiredDish) && !UserInfo.IsGiveRecipe(data.RequiredDish))
+            return false;
+
+        if(!string.IsNullOrEmpty(data.RequiredItem) && !UserInfo.IsGiveGachaItem(data.RequiredItem))
             return false;
 
         return true;

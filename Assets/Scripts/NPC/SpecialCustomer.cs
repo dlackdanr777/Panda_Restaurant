@@ -18,6 +18,7 @@ public class SpecialCustomer : Customer
     private Sprite _normalSprite;
     private Sprite _touchSprite;
     private Coroutine _coroutine;
+    private Coroutine _touchCoroutine;
     private Action _onCompleted;
 
 
@@ -42,10 +43,13 @@ public class SpecialCustomer : Customer
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
 
+        if (_touchCoroutine != null)
+            StopCoroutine(_touchCoroutine);
+
         if (_coroutine != null)
             StopCoroutine(_coroutine);
 
-        _coroutine = StartCoroutine(OnEndTimeEvent());
+        _coroutine = StartCoroutine(OnEndTimeRoutine());
     }
 
     public void StartEvent(List<Vector3> targetPosList, Action onCompleted)
@@ -82,13 +86,9 @@ public class SpecialCustomer : Customer
         _coinParticle.Emit(UnityEngine.Random.Range(1, 4));
         _spriteRenderer.sprite = _touchSprite;
 
-        Tween.Wait(1f, () =>
-        {
-            if (!gameObject.activeSelf)
-                return;
-
-            _spriteRenderer.sprite = _normalSprite;
-        });
+        if (_touchCoroutine != null)
+            StopCoroutine(_touchCoroutine);
+        _touchCoroutine = StartCoroutine(OnTouchRoutine());
 
         UserInfo.AppendMoney(_touchAddMoney);
 
@@ -106,7 +106,7 @@ public class SpecialCustomer : Customer
     }
 
 
-    private IEnumerator OnEndTimeEvent()
+    private IEnumerator OnEndTimeRoutine()
     {
         yield return YieldCache.WaitForSeconds(_activeDuration);
 
@@ -116,8 +116,18 @@ public class SpecialCustomer : Customer
         _isEndEvent = true;
         _spritePressEffect.Interactable = false;
 
+        if (_touchCoroutine != null)
+            StopCoroutine(_touchCoroutine);
+
         StopMove();
         _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
         _onCompleted?.Invoke();
+    }
+
+    private IEnumerator OnTouchRoutine()
+    {
+        _spriteRenderer.sprite = _touchSprite;
+        yield return YieldCache.WaitForSeconds(0.5f);
+        _spriteRenderer.sprite = _normalSprite;
     }
 }

@@ -61,6 +61,9 @@ public class GatecrasherCustomer : Customer
 
         if (_gatecrasher1Coroutine != null)
             StopCoroutine(_gatecrasher1Coroutine);
+
+        if (_actionCoroutine != null)
+            StopCoroutine(_actionCoroutine);
     }
 
     public void StartGatecreasherCustomer2Event(Vector3 targetPos, TableManager tableManager, Action onCompleted)
@@ -77,6 +80,9 @@ public class GatecrasherCustomer : Customer
                 _touchEnabled = true;
                 ChangeState(CustomerState.Action);
                 _soundParticle.Play();
+
+                if (_gatecrasher1Coroutine != null)
+                    StopCoroutine(_gatecrasher1Coroutine);
 
                 if (_enabledCoroutine != null)
                     StopCoroutine(_enabledCoroutine);
@@ -165,7 +171,6 @@ public class GatecrasherCustomer : Customer
             if (_isEndEvent)
                 yield break;
 
-            DebugLog.Log("Å½»öÁß");
             yield return YieldCache.WaitForSeconds(0.5f);
             targetArea = GetMinDistanceCoinArea(dropCoinAreaList, transform.position);
             

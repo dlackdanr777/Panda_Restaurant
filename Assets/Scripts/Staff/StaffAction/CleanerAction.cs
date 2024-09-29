@@ -62,11 +62,13 @@ public class CleanerAction : IStaffAction
                     return;
                 }
 
+                staff.SetStaffState(EStaffState.Action);
                 Tween.Wait(1f, () =>
-                {
+                {              
                     targetArea.CleanGarbage();
-                    Tween.Wait(1, () =>
+                    Tween.Wait(1.5f, () =>
                     {
+                        staff.SetStaffState(EStaffState.None);
                         _isUsed = false;
                         _time = 0;
                     });
