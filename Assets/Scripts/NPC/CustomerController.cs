@@ -72,8 +72,6 @@ public class CustomerController : MonoBehaviour
                 for (int j = 0, cntJ = gatecrasherCustomerDataList.Count; j < cntJ; ++j)
                     randomDataList.Add(gatecrasherCustomerDataList[j], gatecrasherCustomerDataList[j].SpawnChance);
 
-                DebugLog.Log(randomDataList.Count);
-
                 if(randomDataList.Count <= 0)
                 {
                     i--;

@@ -22,6 +22,7 @@ public class Furniture : MonoBehaviour
     [SerializeField] protected FurnitureType _type;
     public FurnitureType Type => _type;
 
+    [SerializeField] protected bool _thumbnailSpriteEnabled = false;
     [SerializeField] protected FurnitureBatchTypeY _batchType;
     [SerializeField] protected FurnitureBatchTypeX _batchTypeX;
     [SerializeField] protected SpriteRenderer _spriteRenderer;
@@ -49,7 +50,7 @@ public class Furniture : MonoBehaviour
         }
 
         _spriteRenderer.gameObject.SetActive(true);
-        _spriteRenderer.sprite = data.Sprite;
+        _spriteRenderer.sprite = _thumbnailSpriteEnabled ? data.ThumbnailSprite : data.Sprite;
 
         float y = 0;
         float x = 0;
