@@ -26,12 +26,15 @@ public class GatecrasherCustomer : Customer
     private int _activeDuration;
     private int _touchCount;
     private int _totalTouchCount;
+    public int TotalTouchCount => _totalTouchCount;
     private bool _isEndEvent;
+    public bool IsEndEvent => _isEndEvent;
     private bool _touchEnabled;
     private Sprite _gatecrasher1DisquiseSprite;
     private Coroutine _gatecrasher1Coroutine;
     private Coroutine _actionCoroutine;
     private Coroutine _enabledCoroutine;
+    private Coroutine _speedRecoveryCoroutine;
     private Action _onCompleted;
 
     public override void SetData(CustomerData data)
@@ -67,6 +70,9 @@ public class GatecrasherCustomer : Customer
 
         if (_actionCoroutine != null)
             StopCoroutine(_actionCoroutine);
+
+        if(_speedRecoveryCoroutine != null)
+            StopCoroutine(_speedRecoveryCoroutine);
     }
 
     public void StartGatecreasherCustomer2Event(Vector3 targetPos, TableManager tableManager, Action onCompleted)
@@ -153,6 +159,9 @@ public class GatecrasherCustomer : Customer
                 {
                     if (targetArea.Count <= 0)
                     {
+                        if (_isEndEvent)
+                            return;
+
                         LoopGatecreasherCustomer1Event(dropCoinAreaList, noCoinTargetPosList);
                     }
 
@@ -170,6 +179,9 @@ public class GatecrasherCustomer : Customer
                         _stealParticle.Play();
                         Tween.Wait(2, () =>
                         {
+                            if(_isEndEvent)
+                                return;
+
                             targetArea.OnCoinStealEvent(_spriteRenderer.transform.position + Vector3.up);
                             Tween.Wait(1.5f, () => LoopGatecreasherCustomer1Event(dropCoinAreaList, noCoinTargetPosList));
                         });
@@ -201,7 +213,7 @@ public class GatecrasherCustomer : Customer
 
 
 
-    private void OnTouchEvent()
+    public void OnTouchEvent()
     {
         if (_isEndEvent || !_touchEnabled)
             return;
@@ -214,6 +226,10 @@ public class GatecrasherCustomer : Customer
         _spriteGroup.SetAlpha(1);
         _spriteFillAmount.TweenFillAmount((float)_touchCount / _totalTouchCount, 0.05f);
 
+        if (_speedRecoveryCoroutine != null)
+            StopCoroutine(_speedRecoveryCoroutine);
+        _speedRecoveryCoroutine = StartCoroutine(SpeedRecoveryRoutine());
+
         if (_totalTouchCount <= _touchCount)
         {
             _isEndEvent = true;
@@ -223,6 +239,9 @@ public class GatecrasherCustomer : Customer
 
             if (_actionCoroutine != null)
                 StopCoroutine(_actionCoroutine);
+
+            if (_speedRecoveryCoroutine != null)
+                StopCoroutine(_speedRecoveryCoroutine);
 
             StopMove();
             _spritePressEffect.Interactable = false;
@@ -374,10 +393,31 @@ public class GatecrasherCustomer : Customer
         if (_gatecrasher1Coroutine != null)
             StopCoroutine(_gatecrasher1Coroutine);
 
+        if (_speedRecoveryCoroutine != null)
+            StopCoroutine(_speedRecoveryCoroutine);
+
         StopMove();
         _spritePressEffect.Interactable = false;
         _spriteGroup.TweenSetAlpha(0, 0.7f);
         _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnGatecrasherCustomer(this));
         _onCompleted?.Invoke();
+    }
+
+    private IEnumerator SpeedRecoveryRoutine()
+    {
+        _moveSpeed = 0.1f;
+        float startSpeed = 0.1f;
+        float targetSpeed = _customerData.MoveSpeed;
+        float targetTime = 0.5f;
+        float timer = 0;
+
+        while(timer < targetTime)
+        {
+            _moveSpeed = Mathf.Lerp(startSpeed, targetSpeed, timer / targetTime);
+            timer += 0.02f;
+            yield return new WaitForSeconds(0.02f);
+        }
+
+        _moveSpeed = targetSpeed;
     }
 }

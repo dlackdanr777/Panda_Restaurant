@@ -8,6 +8,7 @@ public class CleanerAction : IStaffAction
     private bool _isNoAction;
     private float _time;
     private float _duration = 2f;
+    private TweenData _tweenData;
 
 
     public CleanerAction(Staff staff, TableManager tableManager)
@@ -22,18 +23,22 @@ public class CleanerAction : IStaffAction
         staff.SetAlpha(1);
     }
 
-    public bool PerformAction(Staff staff)
+    public void Destructor()
+    {
+        _tweenData?.TweenStop();
+    }
+
+    public void PerformAction(Staff staff)
     {
         if (_isUsed)
-            return false;
+            return;
 
 
         if(_time < _duration)
         {
             _time += Time.deltaTime;
-            return false;
+            return;
         }
-
 
         _isUsed = true;
         DropGarbageArea targetArea = _tableManager.GetMinDistanceGarbageArea(staff.transform.position);
@@ -43,7 +48,7 @@ public class CleanerAction : IStaffAction
             _isUsed = false;
             _time = 0;
             if (_isNoAction)
-                return false;
+                return;
 
             _isNoAction = true;
             if (0.1f < Vector2.Distance(staff.transform.position, _tableManager.CleanerWaitTr.position))
@@ -63,10 +68,10 @@ public class CleanerAction : IStaffAction
                 }
 
                 staff.SetStaffState(EStaffState.Action);
-                Tween.Wait(1f, () =>
+                _tweenData = Tween.Wait(1f, () =>
                 {              
                     targetArea.CleanGarbage();
-                    Tween.Wait(1.5f, () =>
+                    _tweenData = Tween.Wait(1.5f, () =>
                     {
                         staff.SetStaffState(EStaffState.None);
                         _isUsed = false;
@@ -76,6 +81,6 @@ public class CleanerAction : IStaffAction
             });
         }
 
-        return true;
+        return;
     }
 }

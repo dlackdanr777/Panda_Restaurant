@@ -9959,7 +9959,7 @@ ParticleSystem:
     startLifetime:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 0.8
+      scalar: 0.7
       minScalar: 5
       maxCurve:
         serializedVersion: 2
@@ -10130,7 +10130,7 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 0
-      scalar: 9
+      scalar: 7
       minScalar: 5
       maxCurve:
         serializedVersion: 2
@@ -34784,7 +34784,7 @@ BoxCollider2D:
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.445, y: 0.077}
-    oldSize: {x: 3.15, y: 4.01}
+    oldSize: {x: 6.3, y: 8.02}
     newSize: {x: 3.15, y: 4.01}
     adaptiveTilingThreshold: 0.5
     drawMode: 0

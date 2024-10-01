@@ -6,16 +6,20 @@ public class ManagerAction : IStaffAction
         _tableManager = tableManager;
     }
 
-    public bool PerformAction(Staff staff)
+    public void Destructor()
+    {
+    }
+
+    public void PerformAction(Staff staff)
     {
         int index = _tableManager.GetTableType(ETableState.NotUse);
 
         if (index == -1)
-            return false;
+            return;
 
         _tableManager.OnCustomerGuide(index);
         staff.ResetAction();
 
-        return true;
+        return;
     }
 }

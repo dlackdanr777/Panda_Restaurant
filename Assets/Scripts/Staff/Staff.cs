@@ -19,6 +19,7 @@ public class Staff : MonoBehaviour
     [SerializeField] private GameObject _cleanParticle;
 
     private StaffData _staffData;
+    public StaffData StaffData => _staffData;
     private IStaffAction _staffAction;
     private EStaffState _state;
     private bool _usingSkill;

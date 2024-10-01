@@ -17,7 +17,7 @@ public class GuardData : StaffData
 
     public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        return new GuardAction(customerController);
+        return new GuardAction(customerController, tableManager);
     }
 
 

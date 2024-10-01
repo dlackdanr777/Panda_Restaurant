@@ -9,11 +9,16 @@ public class MarketerAction : IStaffAction
         _customerController = customerController;
     }
 
-    public bool PerformAction(Staff staff)
+    public void Destructor()
+    {
+        throw new System.NotImplementedException();
+    }
+
+    public void PerformAction(Staff staff)
     {
         if(Random.Range(0f, 100f) < staff.SecondValue)
             _customerController.AddCustomer();
+
         staff.ResetAction();
-        return true;
     }
 }

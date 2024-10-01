@@ -8,9 +8,11 @@ public class ChefAction : IStaffAction
         _kitchenSystem = kitchenSystem;
     }
 
-    public bool PerformAction(Staff staff)
+    public void Destructor()
     {
-        staff.ResetAction();
-        return true;
+    }
+
+    void IStaffAction.PerformAction(Staff staff)
+    {
     }
 }

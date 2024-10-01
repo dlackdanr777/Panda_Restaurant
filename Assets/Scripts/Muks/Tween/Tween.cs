@@ -35,7 +35,7 @@ namespace Muks.Tween
                 tween = _tweenWaitQueue.Dequeue();
             }
 
-            tween.Clear();
+            //tween.Clear();
             tween.enabled = true;
             tween.AddDataSequence(new TweenDataSequence(null, duration, Ease.Constant, null));
             tween.OnComplete(() =>
@@ -47,6 +47,15 @@ namespace Muks.Tween
 
             return tween;
         }
+
+        internal static void DequeueTweenWait(TweenWait tweenWait)
+        {
+            if (_tweenWaitQueue.Contains(tweenWait))
+                return;
+
+            _tweenWaitQueue.Enqueue(tweenWait);
+        }
+
 
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

@@ -1,4 +1,6 @@
 public interface IStaffAction
 {
-    bool PerformAction(Staff staff);
+    void PerformAction(Staff staff);
+
+    void Destructor();
 }

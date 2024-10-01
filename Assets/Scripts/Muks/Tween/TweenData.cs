@@ -31,7 +31,7 @@ namespace Muks.Tween
         private int _dataSequenceIdCount = -1;
 
         /// <summary>Tween의 모든 데이터를 초기화하는 함수</summary>
-        public void Clear()
+        public virtual void Clear()
         {
             _dataSequences.Clear();
             _onStartedDic.Clear();
