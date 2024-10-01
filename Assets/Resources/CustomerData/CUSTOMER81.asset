@@ -17,7 +17,7 @@ MonoBehaviour:
   _id: CUSTOMER81
   _description: 
   _moveSpeed: 4
-  _scale: 2
+  _scale: 1
   _maxDiscomfortIndex: 25
   _minScore: 1000
   _requiredDish: 

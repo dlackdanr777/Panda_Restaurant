@@ -185,4 +185,20 @@ public class CustomerController : MonoBehaviour
         _breakCustomerEnabled = true;
 
     }
+
+
+    public void GatecrasherTest(string id)
+    {
+        GatecrasherCustomer gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+        CustomerData data = CustomerDataManager.Instance.GetCustomerData(id);
+        gatecrasherCustomer.SetData(data);
+        if (data is GatecrasherCustomer1Data)
+        {
+            gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList, OnCustomerEvent);
+        }
+        else if (data is GatecrasherCustomer2Data)
+        {
+            gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
+        }
+    }
 }

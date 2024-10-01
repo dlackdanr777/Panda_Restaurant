@@ -15,12 +15,12 @@ public class SpritePressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
     private Action _onPointerUpEvent;
     private Vector3 _tmpScale;
 
-    public void Awake()
+    private void Awake()
     {
         _tmpScale = transform.localScale;
     }
 
-    public void OnEnable()
+    private void OnEnable()
     {
         transform.localScale = _tmpScale;
     }
@@ -34,6 +34,12 @@ public class SpritePressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
     {
         _onPointerUpEvent = null;
     }
+
+    public void SetTmpScale(Vector3 scale)
+    {
+        _tmpScale = scale;
+    }
+
 
     public void OnPointerDown(PointerEventData eventData)
     {

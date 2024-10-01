@@ -17,6 +17,7 @@ public class GatecrasherCustomer : Customer
     [Space]
     [Header("GatecrasherCustomer1 Option")]
     [SerializeField] private ParticleSystem _stealParticle;
+    [SerializeField] private ParticleSystem _disguiseOffParticle;
 
     [Space]
     [Header("GatecrasherCustomer2 Option")]
@@ -27,6 +28,7 @@ public class GatecrasherCustomer : Customer
     private int _totalTouchCount;
     private bool _isEndEvent;
     private bool _touchEnabled;
+    private Sprite _gatecrasher1DisquiseSprite;
     private Coroutine _gatecrasher1Coroutine;
     private Coroutine _actionCoroutine;
     private Coroutine _enabledCoroutine;
@@ -49,10 +51,11 @@ public class GatecrasherCustomer : Customer
         _touchEnabled = false;
         _spriteGroup.SetAlpha(0);
         _spritePressEffect.Interactable = false;
-
+        _spritePressEffect.SetTmpScale(_spriteParent.transform.localScale);
         _touchParticle.Stop();
         _soundParticle.Stop();
         _stealParticle.Stop();
+        _disguiseOffParticle.Stop();
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
 
@@ -101,6 +104,11 @@ public class GatecrasherCustomer : Customer
         _spritePressEffect.Interactable = true;
         _onCompleted = onCompleted;
 
+        List<CustomerData> customerList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
+        _gatecrasher1DisquiseSprite = customerList[UnityEngine.Random.Range(0, customerList.Count)].Sprite;
+        _spriteRenderer.sprite = _gatecrasher1DisquiseSprite;
+        _animator.runtimeAnimatorController = ((GatecrasherCustomer1Data)_customerData).Controller;
+
         if (_enabledCoroutine != null)
             StopCoroutine(_enabledCoroutine);
         _enabledCoroutine = StartCoroutine(OnEndTimeEvent());
@@ -140,6 +148,7 @@ public class GatecrasherCustomer : Customer
         {
             Move(targetArea.transform.position, 0, () =>
             {
+
                 Tween.Wait(1, () =>
                 {
                     if (targetArea.Count <= 0)
@@ -149,6 +158,14 @@ public class GatecrasherCustomer : Customer
 
                     else
                     {
+                        if (_spriteRenderer.sprite == _gatecrasher1DisquiseSprite)
+                        {
+                            GatecrasherCustomer1Data gatecrasher2Data = (GatecrasherCustomer1Data)_customerData;
+                            _disguiseOffParticle.Emit(1);
+                            _spriteRenderer.sprite = _customerData.Sprite;
+                            _animator.runtimeAnimatorController = gatecrasher2Data.GatecrasherController;
+                        }
+
                         ChangeState(CustomerState.Idle);
                         _stealParticle.Play();
                         Tween.Wait(2, () =>

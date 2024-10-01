@@ -17,7 +17,7 @@ MonoBehaviour:
   _id: CUSTOMER80
   _description: 
   _moveSpeed: 6
-  _scale: 2
+  _scale: 1
   _maxDiscomfortIndex: 25
   _minScore: 500
   _requiredDish: 
@@ -27,4 +27,6 @@ MonoBehaviour:
   _spawnChance: 9
   _activeDuration: 30
   _touchCount: 20
-  _controller: {fileID: 9100000, guid: 643365cb238204e4d9706b2680174307, type: 2}
+  _controller: {fileID: 9100000, guid: d0d29d5d359bff8478a8f2a38ca631a1, type: 2}
+  _gatecrasherController: {fileID: 9100000, guid: 643365cb238204e4d9706b2680174307,
+    type: 2}
