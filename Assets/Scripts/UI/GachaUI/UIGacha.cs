@@ -18,6 +18,8 @@ public class UIGacha : MobileUIView
 {
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private UIBouncingBall _bouncingBall;
+    [SerializeField] private ScrollingImage _scrollImage;
     [SerializeField] private Animator _gachaMacineAnimator;
     [SerializeField] private UIImageAndText _gachaItemName;
     [SerializeField] private Button _screenButton;
@@ -25,15 +27,14 @@ public class UIGacha : MobileUIView
     [SerializeField] private ButtonPressEffect _tenButton;
     [SerializeField] private ButtonPressEffect _listButton;
     [SerializeField] private ButtonPressEffect _skipButton;
+    [SerializeField] private GameObject _uiComponents;
     [SerializeField] private GameObject _listImage;
-    [SerializeField] private GameObject _gachaMachineBackgroundImage;
     [SerializeField] private Image _getItemImage;
     [SerializeField] private UIItemStar _itemStar;
 
     [Space]
     [Header("Slot Options")]
     [SerializeField] private Transform _slotParent;
-
     [SerializeField] private Transform _getItemSlotFrame;
     [SerializeField] private Transform _getItemSlotParent;
     [SerializeField] private GameObject _gachaResultText;
@@ -45,6 +46,16 @@ public class UIGacha : MobileUIView
     [SerializeField] private Image _upperCapsule;
     [SerializeField] private Image _lowerCapsule;
     [SerializeField] private Capsule[] _capsuleColors;
+
+    [Space]
+    [Header("Animations")]
+    [SerializeField] private GameObject _animeUI;
+    [SerializeField] private float _showDuration;
+    [SerializeField] private Ease _showTweenMode;
+
+    [Space]
+    [SerializeField] private float _hideDuration;
+    [SerializeField] private Ease _hideTweenMode;
 
 
     private List<GachaItemData> _itemDataList;
@@ -59,6 +70,7 @@ public class UIGacha : MobileUIView
 
     public override void Init()
     {
+        _scrollImage.Init();
         _itemDataList = ItemManager.Instance.GetSortGachaItemDataList();
 
         for(int i = 0, cnt = _itemDataList.Count; i < cnt; ++i)
@@ -96,10 +108,28 @@ public class UIGacha : MobileUIView
 
     public override void Show()
     {
+        VisibleState = VisibleState.Appearing;
+        gameObject.SetActive(true);
+        _uiComponents.SetActive(false);
+        _screenButton.gameObject.SetActive(false);
+        _scrollImage.gameObject.SetActive(false);
+        _canvasGroup.blocksRaycasts = false;
+        _animeUI.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+        _bouncingBall.ResetBalls();
+        TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
+        tween.OnComplete(() =>
+        {
+            VisibleState = VisibleState.Appeared;
+            _canvasGroup.blocksRaycasts = true;
+            _uiComponents.SetActive(true);
+            _scrollImage.gameObject.SetActive(true);
+            _gachaMacineAnimator.enabled = true;
+        });
+
         SetStep(1);
         _screenTouchWaitTime = 0;
+        _gachaMacineAnimator.enabled = false;
         OnScreenButtonClicked();
-        gameObject.SetActive(true);
     }
 
 
@@ -115,6 +145,18 @@ public class UIGacha : MobileUIView
     {
         _capsules.SetSiblingIndex(index);
     }
+
+    public void StartBallBounce()
+    {
+        _bouncingBall.NoSpeedDamping = false;
+        _bouncingBall.StartBounce();
+    }
+
+    public void StopBallBounce()
+    {
+        _bouncingBall.NoSpeedDamping = true;
+    }
+
 
     public void OnScreenButtonClicked()
     {
@@ -183,6 +225,9 @@ public class UIGacha : MobileUIView
         {
             case 1:
                 _currentStep = 1;
+
+                _uiComponents.SetActive(true);
+                _screenButton.gameObject.SetActive(true);
                 _getItemIndex = 0;
                 _isCapsuleColorChanged = true;
 
@@ -191,23 +236,19 @@ public class UIGacha : MobileUIView
                     _getItemSlotList[i].gameObject.SetActive(false);
                 }
 
-                _getItemSlotFrame.gameObject.SetActive(false);
-                _gachaResultText.gameObject.SetActive(false);
-                _gachaMachineBackgroundImage.gameObject.SetActive(false);
-                _skipButton.gameObject.SetActive(false);
                 CapsuleSetSibilingIndex(1);
                 break;
+
             case 2:
                 _currentStep = 2;
 
+                _screenButton.gameObject.SetActive(false);
+                _uiComponents.SetActive(false);
                 CapsuleColorChange();
                 _screenTouchWaitTime = 0.2f;
-                _getItemSlotFrame.gameObject.SetActive(false);
-                _gachaMachineBackgroundImage.gameObject.SetActive(false);
-                _gachaResultText.gameObject.SetActive(false);
-                _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(1);
                 break;
+
             case 3:
                 _currentStep = 3;
 
@@ -224,7 +265,6 @@ public class UIGacha : MobileUIView
                 }
 
                 _getItemSlotFrame.gameObject.SetActive(setActive);
-                _gachaMachineBackgroundImage.gameObject.SetActive(true);
                 _gachaResultText.gameObject.SetActive(setActive);
                 _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(11);
@@ -246,7 +286,6 @@ public class UIGacha : MobileUIView
                 _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
                 _getItemSlotFrame.gameObject.SetActive(setActive);
                 _gachaResultText.gameObject.SetActive(setActive);
-                _gachaMachineBackgroundImage.gameObject.SetActive(true);
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 Utility.ChangeImagePivot(_getItemImage);
 
@@ -271,7 +310,6 @@ public class UIGacha : MobileUIView
 
                 _getItemSlotFrame.gameObject.SetActive(setActive);
                 _gachaResultText.gameObject.SetActive(setActive);
-                _gachaMachineBackgroundImage.gameObject.SetActive(true);
                 _isPlayTextAnime = true;
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 Utility.ChangeImagePivot(_getItemImage);
