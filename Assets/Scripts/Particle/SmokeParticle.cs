@@ -1,21 +1,22 @@
-using Unity.VisualScripting;
-using UnityEngine;
-using System;
 using System.Collections;
+using UnityEngine;
 
-public class UIParticleEffect : MonoBehaviour
+public class SmokeParticle : MonoBehaviour
 {
     [SerializeField] private ParticleSystem _particleSystem;
 
     private IEnumerator _ienumerator;
     private Coroutine _coroutine;
 
-    private EffectType _type;
 
-    public void Init(EffectType type)
+    public void Init()
     {
         _ienumerator = StartHide(_particleSystem.duration);
-        _type = type;
+    }
+
+    public void Play()
+    {
+        _particleSystem.Emit(1);
     }
 
     private void OnEnable()
@@ -29,20 +30,16 @@ public class UIParticleEffect : MonoBehaviour
 
     private void OnDisable()
     {
-        if(_coroutine != null)
+        if (_coroutine != null)
             StopCoroutine(_coroutine);
 
-        ObjectPoolManager.Instance.DespawnUIEffect(_type, this);
+        ObjectPoolManager.Instance.DespawnSmokeParticle(this);
     }
 
     private IEnumerator StartHide(float duration)
     {
         _particleSystem.Play();
         yield return YieldCache.WaitForSeconds(duration);
-        gameObject.SetActive(false);
-        ObjectPoolManager.Instance.DespawnUIEffect(_type, this);
+        ObjectPoolManager.Instance.DespawnSmokeParticle(this);
     }
-
-
-    
 }

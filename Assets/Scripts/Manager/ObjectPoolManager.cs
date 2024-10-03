@@ -2,6 +2,7 @@ using Muks.Tween;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -50,16 +51,22 @@ public class ObjectPoolManager : MonoBehaviour
     private static Queue<TextMeshProUGUI> _tmpPool = new Queue<TextMeshProUGUI>();
     private static List<TextMeshProUGUI> _enabledTmpPool = new List<TextMeshProUGUI>();
 
+    private static int _smokeParitcleCount = 10;
+    private static GameObject _particleParent;
+    private static Queue<SmokeParticle> _smokeParitclePool = new Queue<SmokeParticle>();
+
     private static int _uiCoinCount = 50;
     private static Queue<RectTransform> _uiCoinPool = new Queue<RectTransform>();
 
     private static int _uiEffectCount;
     private static Queue<UIParticleEffect>[] _uiEffectPool;
 
+
     private static NormalCustomer _normalCustomerPrefab;
     private static SpecialCustomer _specialCustomerPrefab;
     private static GatecrasherCustomer _gatecrasherCustomerPrefab;
     private static PointerClickSpriteRenderer _coinPrefab;
+    private static SmokeParticle _smokeParticlePrefab;
     private static RectTransform _uiCoinPrefab;
     private static PointerClickSpriteRenderer _garbagePrefab;
     private static TextMeshProUGUI _tmpPrefab;
@@ -92,6 +99,7 @@ public class ObjectPoolManager : MonoBehaviour
         GarbagePooling();
         TmpPooling();
         UIEffectPooling();
+        SmokeParticlePooling();
     }
 
 
@@ -221,6 +229,25 @@ public class ObjectPoolManager : MonoBehaviour
 
         }
     }
+
+
+    private static void SmokeParticlePooling()
+    {
+        _particleParent = new GameObject("ParticleParent");
+        _particleParent.transform.parent = _instance.transform;
+
+        if (_smokeParticlePrefab == null)
+            _smokeParticlePrefab = Resources.Load<SmokeParticle>("ObjectPool/SmokeParticle");
+
+        for (int i = 0, count = _smokeParitcleCount; i < count; i++)
+        {
+            SmokeParticle particle = Instantiate(_smokeParticlePrefab, _particleParent.transform);
+            _smokeParitclePool.Enqueue(particle);
+            particle.gameObject.SetActive(false);
+        }
+    }
+
+
 
 
     public NormalCustomer SpawnNormalCustomer(Vector3 pos, Quaternion rot)
@@ -466,7 +493,40 @@ public class ObjectPoolManager : MonoBehaviour
     public void DespawnUIEffect(EffectType type, UIParticleEffect effect)
     {
         int index = (int)type;
+
+        if (_uiEffectPool[index].Contains(effect))
+            return;
+
         effect.gameObject.SetActive(false);
         _uiEffectPool[index].Enqueue(effect);
+    }
+
+
+    public SmokeParticle SpawnSmokeParticle(Vector3 pos, Quaternion rot)
+    {
+        SmokeParticle particle;
+
+        if (_smokeParitclePool.Count == 0)
+        {
+            particle = Instantiate(_smokeParticlePrefab, pos, rot, _particleParent.transform);
+            return particle;
+        }
+
+        particle = _smokeParitclePool.Dequeue();
+        particle.gameObject.SetActive(false);
+        particle.gameObject.SetActive(true);
+        particle.transform.position = pos;
+        particle.transform.rotation = rot;
+        return particle;
+    }
+
+
+    public void DespawnSmokeParticle(SmokeParticle smokeParticle)
+    {
+        if (_smokeParitclePool.Contains(smokeParticle))
+            return;
+
+        smokeParticle.gameObject.SetActive(false);
+        _smokeParitclePool.Enqueue(smokeParticle);
     }
 }

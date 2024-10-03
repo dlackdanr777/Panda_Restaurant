@@ -12,6 +12,8 @@ public class GuardAction : IStaffAction
     private float _actionTimer = 0;
     private bool _startAction;
     private TweenData _tweenData;
+    private TweenData _guardSpriteTweenData;
+    private Vector3 _tmpScale;
 
     public GuardAction(CustomerController customerController, TableManager tableManager)
     {
@@ -24,6 +26,8 @@ public class GuardAction : IStaffAction
     public void Destructor()
     {
         _tweenData?.TweenStop();
+        _guardSpriteTweenData?.TweenStop();
+
     }
 
 
@@ -73,6 +77,7 @@ public class GuardAction : IStaffAction
                         if (_gatecrasherCustomer.IsEndEvent)
                             return;
 
+                        _tmpScale = staff.SpriteRenderer.transform.localScale;
                         EliminatingGatecrasherCustomer2(staff);
                     });
                 });
@@ -122,10 +127,19 @@ public class GuardAction : IStaffAction
             return;
         }
 
+        float duration = staff.StaffData.GetActionValue(1) / _gatecrasherCustomer.TotalTouchCount;
         _tweenData = Tween.Wait(staff.StaffData.GetActionValue(1) / _gatecrasherCustomer.TotalTouchCount, () =>
         {
             staff.SetSpriteDir(_gatecrasherCustomer.transform.position.x < staff.transform.position.x ? -1 : 1);
             _gatecrasherCustomer.OnTouchEvent();
+
+            staff.SpriteRenderer.transform.localScale = _tmpScale;
+            ObjectPoolManager.Instance.SpawnSmokeParticle(_gatecrasherCustomer.transform.position + new Vector3(0, 1.5f, 0), Quaternion.identity).Play();
+            _guardSpriteTweenData = staff.SpriteRenderer.TweenScale(_tmpScale * 0.99f, duration * 0.5f, Ease.OutBack).OnComplete(() =>
+            {
+                staff.SpriteRenderer.transform.localScale = _tmpScale * 0.99f;
+                _guardSpriteTweenData = staff.SpriteRenderer.TweenScale(_tmpScale, duration * 0.5f, Ease.OutBack);
+            });
             EliminatingGatecrasherCustomer2(staff);
         });
     }
