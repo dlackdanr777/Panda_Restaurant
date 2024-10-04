@@ -36,8 +36,6 @@ public class UIGacha : MobileUIView
     [Header("Slot Options")]
     [SerializeField] private Transform _slotParent;
     [SerializeField] private Transform _getItemSlotFrame;
-    [SerializeField] private Transform _getItemSlotParent;
-    [SerializeField] private GameObject _gachaResultText;
     [SerializeField] private UIGachaItemSlot _slotPrefab;
 
     [Space]
@@ -82,7 +80,7 @@ public class UIGacha : MobileUIView
 
         for(int i = 0; i < 10; ++i)
         {
-            UIGachaItemSlot slot = Instantiate(_slotPrefab, _getItemSlotParent);
+            UIGachaItemSlot slot = Instantiate(_slotPrefab, _getItemSlotFrame);
             _getItemSlotList.Add(slot);
             slot.gameObject.SetActive(false);
         }
@@ -113,9 +111,13 @@ public class UIGacha : MobileUIView
         _uiComponents.SetActive(false);
         _screenButton.gameObject.SetActive(false);
         _scrollImage.gameObject.SetActive(false);
+        _gachaItemName.gameObject.SetActive(false);
+        _skipButton.gameObject.SetActive(false);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
         _bouncingBall.ResetBalls();
+        CapsuleSetSibilingIndex(1);
+
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
@@ -174,14 +176,16 @@ public class UIGacha : MobileUIView
 
             case 2:
                 _gachaMacineAnimator.SetTrigger("Step2Skip");
+                StopBallBounce();
                 break;
 
             case 3:
                 _gachaMacineAnimator.SetTrigger("CapsuleOpen");
+                StopBallBounce();
                 break;
 
             case 5:
-
+                StopBallBounce();
                 if (_getItemList.Count <= _getItemIndex)
                 {
                     _gachaMacineAnimator.SetTrigger("Stop");
@@ -220,14 +224,15 @@ public class UIGacha : MobileUIView
         if (_currentStep == step)
             return;
 
-        bool setActive = false;
         switch (step)
         {
             case 1:
                 _currentStep = 1;
 
                 _uiComponents.SetActive(true);
-                _screenButton.gameObject.SetActive(true);
+                _screenButton.gameObject.SetActive(false);
+                _gachaItemName.gameObject.SetActive(false);
+                _skipButton.gameObject.SetActive(false);
                 _getItemIndex = 0;
                 _isCapsuleColorChanged = true;
 
@@ -241,83 +246,57 @@ public class UIGacha : MobileUIView
 
             case 2:
                 _currentStep = 2;
-
-                _screenButton.gameObject.SetActive(false);
+                _screenButton.gameObject.SetActive(true);
+                _skipButton.gameObject.SetActive(true);
                 _uiComponents.SetActive(false);
-                CapsuleColorChange();
+                _gachaItemName.gameObject.SetActive(false);
+                _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
+                CapsuleColorChange();
                 CapsuleSetSibilingIndex(1);
                 break;
 
             case 3:
                 _currentStep = 3;
 
-                CapsuleColorChange();
-                _screenTouchWaitTime = 0.2f;
-                setActive = false;
-                for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
-                {
-                    if (!_getItemSlotList[i].gameObject.activeSelf)
-                        continue;
-
-                    setActive = true;
-                    break;
-                }
-
-                _getItemSlotFrame.gameObject.SetActive(setActive);
-                _gachaResultText.gameObject.SetActive(setActive);
+                _screenButton.gameObject.SetActive(true);
                 _skipButton.gameObject.SetActive(true);
+                _gachaItemName.gameObject.SetActive(false);
+                _getItemSlotFrame.gameObject.SetActive(false);
+                _screenTouchWaitTime = 0.2f;
+                CapsuleColorChange();
                 CapsuleSetSibilingIndex(11);
                 break;
 
             case 4:
                 _currentStep = 4;
+
+                _gachaItemName.gameObject.SetActive(false);
+                _skipButton.gameObject.SetActive(false);
+                _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
-                setActive = false;
-                for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
-                {
-                    if (!_getItemSlotList[i].gameObject.activeSelf)
-                        continue;
-
-                    setActive = true;
-                    break;
-                }
                 _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
-                _getItemSlotFrame.gameObject.SetActive(setActive);
-                _gachaResultText.gameObject.SetActive(setActive);
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 Utility.ChangeImagePivot(_getItemImage);
-
-                _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(11);
                 break;
 
             case 5:
                 _currentStep = 5;
+
+                _gachaItemName.gameObject.SetActive(true);
+                _getItemSlotFrame.gameObject.SetActive(true);
+                _skipButton.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 _isCapsuleColorChanged = true;
 
-                setActive = false;
-                for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
-                {
-                    if (!_getItemSlotList[i].gameObject.activeSelf)
-                        continue;
-
-                    setActive = true;
-                    break;
-                }
-
-                _getItemSlotFrame.gameObject.SetActive(setActive);
-                _gachaResultText.gameObject.SetActive(setActive);
                 _isPlayTextAnime = true;
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 Utility.ChangeImagePivot(_getItemImage);
                 _gachaItemName.SetText(string.Empty);
-                _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.07f, Ease.Constant, () =>  _isPlayTextAnime = false);
+                _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.08f, Ease.Constant, () =>  _isPlayTextAnime = false);
                 _getItemIndex++;
-
-                _skipButton.gameObject.SetActive(true);
                 CapsuleSetSibilingIndex(11);
                 break;
         }
@@ -381,13 +360,7 @@ public class UIGacha : MobileUIView
         _gachaItemName.SetText(_getItemList[_getItemList.Count - 1].Name);
         CapsuleSetSibilingIndex(9);
 
-        if (_getItemList.Count <= 1)
-        {
-            _getItemSlotParent.gameObject.SetActive(false);
-            return;
-        }
-
-        _getItemSlotParent.gameObject.SetActive(true);
+        _getItemSlotFrame.gameObject.SetActive(true);
         for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
         {
             _getItemSlotList[i].gameObject.SetActive(false);

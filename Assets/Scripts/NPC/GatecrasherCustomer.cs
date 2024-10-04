@@ -29,7 +29,10 @@ public class GatecrasherCustomer : Customer
     public int TotalTouchCount => _totalTouchCount;
     private bool _isEndEvent;
     public bool IsEndEvent => _isEndEvent;
+    private bool _isInDisguise;
+    public bool IsInDisguise => _isInDisguise;
     private bool _touchEnabled;
+
     private Sprite _gatecrasher1DisquiseSprite;
     private Coroutine _gatecrasher1Coroutine;
     private Coroutine _actionCoroutine;
@@ -107,6 +110,7 @@ public class GatecrasherCustomer : Customer
     public void StartGatecreasherCustomer1Event(List<DropCoinArea> dropCoinAreaList, List<Vector3> noCoinTargetPosList, Action onCompleted)
     {
         _touchEnabled = true;
+        _isInDisguise = true;
         _spritePressEffect.Interactable = true;
         _onCompleted = onCompleted;
 
@@ -167,12 +171,13 @@ public class GatecrasherCustomer : Customer
 
                     else
                     {
-                        if (_spriteRenderer.sprite == _gatecrasher1DisquiseSprite)
+                        if (_isInDisguise)
                         {
                             GatecrasherCustomer1Data gatecrasher2Data = (GatecrasherCustomer1Data)_customerData;
                             _disguiseOffParticle.Emit(1);
                             _spriteRenderer.sprite = _customerData.Sprite;
                             _animator.runtimeAnimatorController = gatecrasher2Data.GatecrasherController;
+                            _isInDisguise = false;
                         }
 
                         ChangeState(CustomerState.Idle);

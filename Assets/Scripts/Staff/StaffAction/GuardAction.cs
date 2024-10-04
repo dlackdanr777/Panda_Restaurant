@@ -64,9 +64,14 @@ public class GuardAction : IStaffAction
                 return;
             }
 
+            if (_gatecrasherCustomer.IsInDisguise)
+            {
+                _startAction = false;
+                return;
+            }
+                
             _startAction = true;
-
-            _tweenData = Tween.Wait(5, () =>
+            _tweenData = Tween.Wait(1, () =>
             {
                 _tweenData = staff.SpriteRenderer.TweenAlpha(0, 0.3f).OnComplete(() =>
                 {

@@ -101,6 +101,9 @@ public class UIBouncingBall : MonoBehaviour
             ball.BallRect.Rotate(0, 0, ball.RotationSpeed * Time.deltaTime);
             ball.RotationSpeed *= _rotationDamping; // 회전 감속 적용
 
+            if (ball.RotationSpeed < 0.5f && -0.5f < ball.RotationSpeed)
+                ball.RotationSpeed = 0;
+
             // 원의 중심으로부터 공의 현재 위치까지의 거리 계산 (원 경계와 충돌 체크)
             if (Vector2.Distance(Vector2.zero, ball.BallRect.anchoredPosition) >= _circleBoundaryRadius - ball.Radius)
             {
@@ -171,8 +174,7 @@ public class UIBouncingBall : MonoBehaviour
     }
 
 
-    // Gizmo를 사용하여 원의 범위 및 공의 반지름을 시각적으로 표현
-    void OnDrawGizmos()
+    private void OnDrawGizmosSelected()
     {
         if (_rect == null)
             _rect = GetComponent<RectTransform>();
