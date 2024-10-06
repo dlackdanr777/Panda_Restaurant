@@ -1,93 +1,53 @@
+using Muks.RecyclableScrollView;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
-public class UIChallengeTab : MonoBehaviour
+public class UIChallengeTab : RecyclableVerticalScrollView<ChallengeData>
 {
     [Header("Components")]
     [SerializeField] private RectTransform _rectTransform;
-    [SerializeField] private RectTransform _slotParent;
-    [SerializeField] private UIChallengeTabSlot _slotPrefab;
-
-    private List<ChallengeData> _challengeDataList = new List<ChallengeData>();
     private Dictionary<string, UIChallengeTabSlot> _challengeDataDic = new Dictionary<string, UIChallengeTabSlot>();
-    private List<UIChallengeTabSlot> _slotList = new List<UIChallengeTabSlot>();
-
-    private Func<string, bool> _isChallengeDone;
-    private Func<string, bool> _isChallengeClear;
-    List<UIChallengeTabSlot> _doneSlotList = new List<UIChallengeTabSlot>();
-    List<UIChallengeTabSlot> _clearSlotList = new List<UIChallengeTabSlot>();
-
-    public void Init(List<ChallengeData> dataList, Func<string, bool> isChallengeDone, Func<string, bool> isChallengeClear)
-    {
-        _challengeDataList = dataList;
-        _isChallengeDone = isChallengeDone;
-        _isChallengeClear = isChallengeClear;
-
-        for (int i = 0, cnt = dataList.Count; i < cnt; i++)
-        {
-            UIChallengeTabSlot slot = Instantiate(_slotPrefab, _slotParent);
-            slot.Init(dataList[i], () =>
-            {
-                UpdateUI();
-            });
-            _slotList.Add(slot);
-            _challengeDataDic.Add(dataList[i].Id, slot);
-        }
-
-        UpdateUI();
-    }
-
 
     public void ResetScrollviewY()
     {
-        _slotParent.anchoredPosition = new Vector2(0, 0);
+        _contentRect.anchoredPosition = new Vector2(0, 0);
     }
 
     public void SetAsLastSibling()
     {
         _rectTransform.SetAsLastSibling();
-        _slotParent.gameObject.SetActive(true);
+        _contentRect.gameObject.SetActive(true);
     }
 
     public void SetAsFirstSibling()
     {
         _rectTransform.SetAsFirstSibling();
-        _slotParent.gameObject.SetActive(false);
+        _contentRect.gameObject.SetActive(false);
     }
 
 
     public void UpdateUI()
     {
-        _doneSlotList.Clear();
-        _clearSlotList.Clear();
-
-        for (int i = 0, cnt = _slotList.Count; i < cnt; i++)
+        List<ChallengeData> noneDataList = new List<ChallengeData>();
+        List<ChallengeData> doneDataList = new List<ChallengeData>();
+        List<ChallengeData> clearDataList = new List<ChallengeData>();
+        for (int i = 0, cnt = _dataList.Count; i < cnt; i++)
         {
-            if (_isChallengeClear(_slotList[i].Data.Id))
-            {
-                _clearSlotList.Add(_slotList[i]);
-                continue;
-            }
+            if (UserInfo.GetIsClearChallenge(_dataList[i]))
+                clearDataList.Add(_dataList[i]);
 
-            if (_isChallengeDone(_slotList[i].Data.Id))
-            {
-                _doneSlotList.Add(_slotList[i]);
-                continue;
-            }
+            else if (UserInfo.GetIsDoneChallenge(_dataList[i]))
+                doneDataList.Add(_dataList[i]);
 
-            _slotList[i].SetNone();
+            else
+                noneDataList.Add(_dataList[i]);
         }
+        List<ChallengeData> returnList = new List<ChallengeData>();
+        returnList.AddRange(doneDataList);
+        returnList.AddRange(noneDataList);
+        returnList.AddRange(clearDataList);
 
-        for(int i = _doneSlotList.Count - 1; 0 <= i; --i)
-        {
-            _doneSlotList[i].SetDone();
-        }
-
-        for(int i = 0, cnt = _clearSlotList.Count; i < cnt; ++i)
-        {
-            _clearSlotList[i].SetClear();
-        }
+        UpdateData(returnList);
     }
 }

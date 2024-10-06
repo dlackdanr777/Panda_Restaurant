@@ -2,6 +2,7 @@ using Muks.DataBind;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -34,6 +35,7 @@ public class ChallengeManager : MonoBehaviour
 
     private static readonly string _csvFilePath = "Challenge/";
 
+    private static Dictionary<string, ChallengeData> _challengeDataDic = new Dictionary<string, ChallengeData>();
     private static Dictionary<string, ChallengeData> _mainChallengeDataDic = new Dictionary<string, ChallengeData>();
     private static Dictionary<string, ChallengeData> _alltimeChallengeDataDic = new Dictionary<string, ChallengeData>();
     private static Dictionary<string, ChallengeData> _dailyChallengeDataDic = new Dictionary<string, ChallengeData>();
@@ -66,6 +68,14 @@ public class ChallengeManager : MonoBehaviour
     private static Dictionary<string, Type34ChallengeData> _type34ChallengeDataDic = new Dictionary<string, Type34ChallengeData>();
     private static Dictionary<string, Type35ChallengeData> _type35ChallengeDataDic = new Dictionary<string, Type35ChallengeData>();
 
+
+    public ChallengeData GetCallengeData(string id)
+    {
+        if(_challengeDataDic.TryGetValue(id, out var challengeData))
+            return challengeData;
+
+        throw new Exception("도전과제 ID가 존재하지 않습니다: " + id);
+    }
 
     private void Awake()
     {
@@ -153,6 +163,11 @@ public class ChallengeManager : MonoBehaviour
 
         _dailyChallengeDataDic.Clear();
         _dailyChallengeDataDic = SetData(Challenges.Daily, "REWARD_DAILY");
+
+        _challengeDataDic.Clear();
+        _challengeDataDic.AddRange(_mainChallengeDataDic);
+        _challengeDataDic.AddRange(_alltimeChallengeDataDic);
+        _challengeDataDic.AddRange(_dailyChallengeDataDic);
     }
 
 
@@ -377,7 +392,7 @@ public class ChallengeManager : MonoBehaviour
     {
         foreach(var data in _mainChallengeDataDic)
         {
-            if (UserInfo.GetIsClearMainChallenge(data.Key))
+            if (UserInfo.GetIsClearChallenge(data.Key))
                 continue;
 
             return data.Value;
@@ -548,52 +563,7 @@ public class ChallengeManager : MonoBehaviour
     }
 
 
-    public void ChallengeClear(ChallengeData data)
-    {
-        if (!UserInfo.GetIsDoneChallenge(data.Id))
-        {
-            DebugLog.LogError("해당 도전과제는 완료가 안된 상태로 클리어 요청을 했습니다: " + data.Id);
-            return;
-        }
-
-        switch (data.Challenges)
-        {
-            case Challenges.Daily:
-                UserInfo.ClearDailyChallenge(data.Id);
-                break;
-
-            case Challenges.AllTime:
-                UserInfo.ClearAllTimeChallenge(data.Id);
-                break;
-
-            case Challenges.Main:
-                UserInfo.ClearMainChallenge(data.Id);
-                break;
-        }
-
-        UpdateChallengeByChallenges(data.Challenges);
-    }
-
-    private void DoneChallengeData(ChallengeData data)
-    {
-        switch (data.Challenges)
-        {
-            case Challenges.Daily:
-                UserInfo.DoneDailyChallenge(data.Id);
-                break;
-
-            case Challenges.AllTime:
-                UserInfo.DoneAllTimeChallenge(data.Id);
-                break;
-
-            case Challenges.Main:
-                UserInfo.DoneMainChallenge(data.Id);
-                break;
-        }
-    }
-
-
-    private void UpdateChallengeByChallenges(Challenges challenges)
+    public void UpdateChallengeByChallenges(Challenges challenges)
     {
         switch (challenges)
         {
@@ -696,7 +666,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -751,7 +721,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -797,7 +767,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -850,7 +820,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -896,7 +866,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -928,7 +898,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetRecipeCount() < data.RecipeCount)
                 continue;
 
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -974,7 +944,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1020,7 +990,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1066,7 +1036,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1113,7 +1083,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1159,7 +1129,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1205,7 +1175,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1252,7 +1222,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1299,7 +1269,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1346,7 +1316,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1392,7 +1362,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1438,7 +1408,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1486,7 +1456,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1534,7 +1504,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1582,7 +1552,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1629,7 +1599,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1679,7 +1649,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1727,7 +1697,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1775,7 +1745,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1822,7 +1792,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)
@@ -1870,7 +1840,7 @@ public class ChallengeManager : MonoBehaviour
                     mainUpdateEnabled = true;
                     break;
             }
-            DoneChallengeData(data);
+            UserInfo.DoneChallenge(data);
         }
 
         if (dailyUpdateEnabled)

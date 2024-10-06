@@ -9,6 +9,7 @@ namespace Muks.RecyclableScrollView
         public float Height => _rectTransform.rect.height;
         public float Width => _rectTransform.rect.width;
 
+        public abstract void Init();
         public abstract void UpdateSlot(T data);
     }
 }

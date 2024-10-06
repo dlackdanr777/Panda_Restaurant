@@ -103,7 +103,7 @@ public class UIMainChallenge : MobileUIView
             _moneyImage.gameObject.SetActive(false);
         }
 
-        if(UserInfo.GetIsDoneMainChallenge(_currentData.Id))
+        if(UserInfo.GetIsDoneChallenge(_currentData.Id))
         {
             _rewardButton.gameObject.SetActive(true);
             _shortCutButton.gameObject.SetActive(false);
@@ -129,13 +129,13 @@ public class UIMainChallenge : MobileUIView
             return;
         }
 
-        if(!UserInfo.GetIsDoneMainChallenge(_currentData.Id))
+        if(!UserInfo.GetIsDoneChallenge(_currentData.Id))
         {
             DebugLog.Log("메인 과제가 완료되지 않았습니다: " + _currentData.Id);
             return;
         }
 
-        UserInfo.ClearMainChallenge(_currentData.Id);
+        UserInfo.ClearChallenge(_currentData.Id);
         UserInfo.AppendMoney(_currentData.RewardMoney);
         UpdateData();
     }

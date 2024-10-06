@@ -22,19 +22,17 @@ public class UIGacha : MobileUIView
     [SerializeField] private ScrollingImage _scrollImage;
     [SerializeField] private Animator _gachaMacineAnimator;
     [SerializeField] private UIImageAndText _gachaItemName;
+    [SerializeField] private UIGachaItemList _gachaItemList;
     [SerializeField] private Button _screenButton;
     [SerializeField] private ButtonPressEffect _singleButton;
     [SerializeField] private ButtonPressEffect _tenButton;
-    [SerializeField] private ButtonPressEffect _listButton;
     [SerializeField] private ButtonPressEffect _skipButton;
     [SerializeField] private GameObject _uiComponents;
-    [SerializeField] private GameObject _listImage;
     [SerializeField] private Image _getItemImage;
     [SerializeField] private UIItemStar _itemStar;
 
     [Space]
     [Header("Slot Options")]
-    [SerializeField] private Transform _slotParent;
     [SerializeField] private Transform _getItemSlotFrame;
     [SerializeField] private UIGachaItemSlot _slotPrefab;
 
@@ -70,15 +68,9 @@ public class UIGacha : MobileUIView
     {
         _scrollImage.Init();
         _itemDataList = ItemManager.Instance.GetSortGachaItemDataList();
+        _gachaItemList.Init(_itemDataList);
 
-        for(int i = 0, cnt = _itemDataList.Count; i < cnt; ++i)
-        {
-            UIGachaItemSlot slot = Instantiate(_slotPrefab, _slotParent);
-            slot.SetData(_itemDataList[i]);
-            _slotList.Add(slot);
-        }
-
-        for(int i = 0; i < 10; ++i)
+        for (int i = 0; i < 10; ++i)
         {
             UIGachaItemSlot slot = Instantiate(_slotPrefab, _getItemSlotFrame);
             _getItemSlotList.Add(slot);
@@ -88,12 +80,10 @@ public class UIGacha : MobileUIView
         _screenButton.onClick.AddListener(OnScreenButtonClicked);
         _singleButton.AddListener(OnSingleGachaButtonClicked);
         _tenButton.AddListener(OnTenGachaButtonClicked);
-        _listButton.AddListener(OnListButtonClicked);
         _skipButton.AddListener(OnSkipButtonClicked);
 
         SetStep(1);
         _gachaItemName.gameObject.SetActive(false);
-        _listImage.gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
@@ -209,7 +199,7 @@ public class UIGacha : MobileUIView
                         continue;
 
                     _getItemSlotList[i].gameObject.SetActive(true);
-                    _getItemSlotList[i].SetData(currentItem);
+                    _getItemSlotList[i].UpdateSlot(currentItem);
                     break;
                 }
                 _gachaMacineAnimator.SetTrigger("Step2Skip");
@@ -332,12 +322,6 @@ public class UIGacha : MobileUIView
     }
 
 
-    private void OnListButtonClicked()
-    {
-        _listImage.gameObject.SetActive(!_listImage.gameObject.activeSelf);
-    }
-
-
     private void CapsuleColorChange()
     {
         if (!_isCapsuleColorChanged)
@@ -368,7 +352,7 @@ public class UIGacha : MobileUIView
 
         for(int i = 0, cnt = _getItemList.Count - 1; i < cnt; i++)
         {
-            _getItemSlotList[i].SetData(_getItemList[i]);
+            _getItemSlotList[i].UpdateSlot(_getItemList[i]);
             _getItemSlotList[i].gameObject.SetActive(true);
         }
         _getItemIndex = _getItemList.Count - 1;

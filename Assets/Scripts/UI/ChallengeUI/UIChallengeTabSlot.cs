@@ -1,12 +1,13 @@
-using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
+using Muks.RecyclableScrollView;
+using TMPro;
 using UnityEngine.UI;
+using UnityEngine.Events;
+using System;
 
-public class UIChallengeTabSlot : MonoBehaviour
+public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
 {
     [Header("Components")]
-    [SerializeField] private RectTransform _rectTransform;
     [SerializeField] private Button _shortCutButton;
     [SerializeField] private Button _doneButton;
     [SerializeField] private Button _clearButton;
@@ -20,73 +21,72 @@ public class UIChallengeTabSlot : MonoBehaviour
     private ChallengeData _data;
     public ChallengeData Data => _data;
 
-    public void Init(ChallengeData data, UnityAction onDoneButtonClicked)
+    private Func<string, bool> _isChallengeDone;
+    private Func<string, bool> _isChallengeClear;
+
+    public override void Init()
     {
         _shortCutButton.onClick.AddListener(OnShortcutButtonClicked);
         _doneButton.onClick.AddListener(OnDoneButtonClicked);
-        _doneButton.onClick.AddListener(onDoneButtonClicked);
-        SetData(data);
+
+        ChallengeManager.Instance.OnChallengePercentUpdateHandler += UpdatePercent;
     }
 
-
-    public void SetData(ChallengeData data)
+    public override void UpdateSlot(ChallengeData data)
     {
-        if (_data != null)
-            ChallengeManager.Instance.OnChallengePercentUpdateHandler -= UpdatePercent;
-
         _data = data;
-        if (data == null)
-            gameObject.SetActive(false);
-        else
-            ChallengeManager.Instance.OnChallengePercentUpdateHandler += UpdatePercent;
-
-        gameObject.SetActive(true);
-
-        _moneyImage.gameObject.SetActive(false);
-        _diaImage.gameObject.SetActive(false);
+        gameObject.SetActive(data == null ? false : true);
 
         if (data.MoneyType == MoneyType.Gold)
+        {
             _moneyImage.gameObject.SetActive(true);
-        else 
+            _diaImage.gameObject.SetActive(false);
+        }
+        else if(data.MoneyType == MoneyType.Dia)
+        {
             _diaImage.gameObject.SetActive(true);
+            _moneyImage.gameObject.SetActive(false);
+        }
 
         _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(data);
         _descriptionText.text = data.Description;
         _rewardText.text = Utility.ConvertToMoney(data.RewardMoney);
+
+        if (UserInfo.GetIsClearChallenge(_data.Id))
+        {
+            _clearButton.gameObject.SetActive(true);
+            _doneButton.gameObject.SetActive(false);
+            _shortCutButton.gameObject.SetActive(false);
+            _layoutImage.color = new Color(0.8f, 0.8f, 0.8f, 1);
+            _percentBar.fillAmount = 1;
+            return;
+        }
+        else if (UserInfo.GetIsDoneChallenge(_data.Id))
+        {
+            _doneButton.gameObject.SetActive(true);
+            _shortCutButton.gameObject.SetActive(false);
+            _clearButton.gameObject.SetActive(false);
+            _layoutImage.color = Color.white;
+            _percentBar.fillAmount = 1;
+            return;
+        }
+        else
+        {
+            _shortCutButton.gameObject.SetActive(true);
+            _doneButton.gameObject.SetActive(false);
+            _clearButton.gameObject.SetActive(false);
+            _layoutImage.color = Color.white;
+            _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(_data);
+            return;
+        }
     }
 
-    public void SetNone()
-    {
-        _shortCutButton.gameObject.SetActive(true);
-        _doneButton.gameObject.SetActive(false);
-        _clearButton.gameObject.SetActive(false);
-        _layoutImage.color = Color.white;
-        _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(_data);
-        _rectTransform.SetAsLastSibling();
-    }
 
-    public void SetDone()
+    private void UpdatePercent(ChallengeType type)
     {
-        _doneButton.gameObject.SetActive(true);
-        _shortCutButton.gameObject.SetActive(false);
-        _clearButton.gameObject.SetActive(false);
-        _layoutImage.color = Color.white;
-        _percentBar.fillAmount = 1;
-        _rectTransform.SetAsFirstSibling();
-    }
+        if (_data == null)
+            return;
 
-    public void SetClear()
-    {
-        _clearButton.gameObject.SetActive(true);
-        _doneButton.gameObject.SetActive(false);
-        _shortCutButton.gameObject.SetActive(false);
-        _layoutImage.color = new Color(0.8f, 0.8f, 0.8f, 1);
-        _percentBar.fillAmount = 1;
-        _rectTransform.SetAsLastSibling();
-    }
-
-    public void UpdatePercent(ChallengeType type)
-    {
         if (type != _data.Type)
             return;
 
@@ -99,9 +99,16 @@ public class UIChallengeTabSlot : MonoBehaviour
 
     private void OnDoneButtonClicked()
     {
-        ChallengeManager.Instance.ChallengeClear(_data);
+        if (_data == null)
+        {
+            DebugLog.Log("도전과제 데이터가 슬롯에 없습니다.");
+            return;
+        }
+
+        UserInfo.ClearChallenge(_data);
         UserInfo.AppendMoney(_data.RewardMoney);
     }
+
 
     private void OnShortcutButtonClicked()
     {
@@ -111,7 +118,7 @@ public class UIChallengeTabSlot : MonoBehaviour
             return;
         }
 
-        if(_data.ShortcutAction.Item == null)
+        if (_data.ShortcutAction.Item == null)
         {
             DebugLog.Log("바로가기 메서드 정보가 없습니다.");
             return;

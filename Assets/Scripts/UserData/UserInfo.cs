@@ -113,8 +113,6 @@ public static class UserInfo
     private static HashSet<string> _activatedKitchenUtensilEffectSet = new HashSet<string>();
 
 
-    private static HashSet<string> _doneChallengeSet = new HashSet<string>();
-    private static HashSet<string> _clearChallengeSet = new HashSet<string>();
     private static HashSet<string> _doneMainChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearMainChallengeSet = new HashSet<string>();
     private static HashSet<string> _doneAllTimeChallengeSet = new HashSet<string>();
@@ -1093,177 +1091,214 @@ public static class UserInfo
 
     public static bool GetIsDoneChallenge(string id)
     {
-        if (_doneChallengeSet.Contains(id))
-            return true;
+        ChallengeData data = ChallengeManager.Instance.GetCallengeData(id);
+
+        switch (data.Challenges)
+        {
+            case Challenges.Main:
+                return _doneMainChallengeSet.Contains(id);
+
+            case Challenges.Daily:
+                return _doneDailyChallengeSet.Contains(id);
+
+            case Challenges.AllTime:
+                return _doneAllTimeChallengeSet.Contains(id);
+        }
 
         return false;
     }
+
+    public static bool GetIsDoneChallenge(ChallengeData data)
+    {
+        switch (data.Challenges)
+        {
+            case Challenges.Main:
+                return _doneMainChallengeSet.Contains(data.Id);
+
+            case Challenges.Daily:
+                return _doneDailyChallengeSet.Contains(data.Id);
+
+            case Challenges.AllTime:
+                return _doneAllTimeChallengeSet.Contains(data.Id);
+        }
+
+        return false;
+    }
+
 
     public static bool GetIsClearChallenge(string id)
     {
-        if (_clearChallengeSet.Contains(id))
-            return true;
+        ChallengeData data = ChallengeManager.Instance.GetCallengeData(id);
+
+        switch (data.Challenges)
+        {
+            case Challenges.Main:
+                return _clearMainChallengeSet.Contains(id);
+
+            case Challenges.Daily:
+                return _clearDailyChallengeSet.Contains(id);
+
+            case Challenges.AllTime:
+                return _clearAllTimeChallengeSet.Contains(id);
+        }
 
         return false;
     }
 
 
-    public static bool GetIsDoneMainChallenge(string id)
+    public static bool GetIsClearChallenge(ChallengeData data)
     {
-        if (_doneMainChallengeSet.Contains(id))
-            return true;
+        switch (data.Challenges)
+        {
+            case Challenges.Main:
+                return _clearMainChallengeSet.Contains(data.Id);
+
+            case Challenges.Daily:
+                return _clearDailyChallengeSet.Contains(data.Id);
+
+            case Challenges.AllTime:
+                return _clearAllTimeChallengeSet.Contains(data.Id);
+        }
 
         return false;
     }
 
 
-    public static bool GetIsClearMainChallenge(string id)
+    public static void DoneChallenge(string id)
     {
-        if (_clearMainChallengeSet.Contains(id))
-            return true;
+        ChallengeData data = ChallengeManager.Instance.GetCallengeData(id);
 
-        return false;
-    }
-
-
-    public static void DoneMainChallenge(string id)
-    {
-        if (GetIsDoneMainChallenge(id))
+        if (GetIsDoneChallenge(id))
         {
             DebugLog.LogError("이미 완료 처리된 도전과제입니다: " + id);
             return;
         }
 
-        _doneMainChallengeSet.Add(id);
-        _doneChallengeSet.Add(id);
-        OnDoneChallengeHandler?.Invoke();
-    }
-
-
-    public static void ClearMainChallenge(string id)
-    {
-        if (GetIsClearMainChallenge(id))
+        if(GetIsClearChallenge(id))
         {
             DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + id);
             return;
         }
 
-        if(!GetIsDoneMainChallenge(id))
+        switch (data.Challenges)
         {
-            DebugLog.Log("완료 처리가 되지 않은 도전과제입니다: " + id);
+            case Challenges.Main:
+                _doneMainChallengeSet.Add(id);
+                break;
+
+            case Challenges.Daily:
+                _doneDailyChallengeSet.Add(id);
+                break;
+
+            case Challenges.AllTime:
+                _doneAllTimeChallengeSet.Add(id);
+                break;
+        }
+
+        OnDoneChallengeHandler?.Invoke();
+    }
+
+    public static void DoneChallenge(ChallengeData data)
+    {
+
+        if (GetIsDoneChallenge(data))
+        {
+            DebugLog.LogError("이미 완료 처리된 도전과제입니다: " + data.Id);
             return;
         }
 
-        _clearMainChallengeSet.Add(id);
-        _clearChallengeSet.Add(id);
-        OnClearChallengeHandler?.Invoke();
-    }
-
-
-    public static bool GetIsDoneAllTimeChallenge(string id)
-    {
-        if (_doneAllTimeChallengeSet.Contains(id))
-            return true;
-
-        return false;
-    }
-
-
-    public static bool GetIsClearAllTimeChallenge(string id)
-    {
-        if (_clearAllTimeChallengeSet.Contains(id))
-            return true;
-
-        return false;
-    }
-
-
-    public static void DoneAllTimeChallenge(string id)
-    {
-        if (GetIsDoneAllTimeChallenge(id))
+        if (GetIsClearChallenge(data))
         {
-            DebugLog.LogError("이미 완료 처리된 도전과제입니다: " + id);
+            DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + data.Id);
             return;
         }
 
-        _doneAllTimeChallengeSet.Add(id);
-        _doneChallengeSet.Add(id);
+        switch (data.Challenges)
+        {
+            case Challenges.Main:
+                _doneMainChallengeSet.Add(data.Id);
+                break;
+
+            case Challenges.Daily:
+                _doneDailyChallengeSet.Add(data.Id);
+                break;
+
+            case Challenges.AllTime:
+                _doneAllTimeChallengeSet.Add(data.Id);
+                break;
+        }
+
         OnDoneChallengeHandler?.Invoke();
     }
 
 
-    public static void ClearAllTimeChallenge(string id)
+    public static void ClearChallenge(string id)
     {
-        if (GetIsClearAllTimeChallenge(id))
+        ChallengeData data = ChallengeManager.Instance.GetCallengeData(id);
+
+        if (GetIsClearChallenge(id))
         {
             DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + id);
             return;
         }
 
-        if (!GetIsDoneAllTimeChallenge(id))
+        if(!GetIsDoneChallenge(id))
         {
             DebugLog.Log("완료 처리가 되지 않은 도전과제입니다: " + id);
             return;
         }
 
-        _clearAllTimeChallengeSet.Add(id);
-        _clearChallengeSet.Add(id);
+        switch (data.Challenges)
+        {
+            case Challenges.Main:
+                _clearMainChallengeSet.Add(id);
+                break;
+
+            case Challenges.Daily:
+                _clearDailyChallengeSet.Add(id);
+                break;
+
+            case Challenges.AllTime:
+                _clearAllTimeChallengeSet.Add(id);
+                break;
+        }
+
+        ChallengeManager.Instance.UpdateChallengeByChallenges(data.Challenges);
         OnClearChallengeHandler?.Invoke();
     }
 
-
-    public static bool GetIsDoneDailyChallenge(string id)
+    public static void ClearChallenge(ChallengeData data)
     {
-        if (_doneDailyChallengeSet.Contains(id))
-            return true;
-
-        return false;
-    }
-
-
-    public static bool GetIsClearDailyChallenge(string id)
-    {
-        if (_clearDailyChallengeSet.Contains(id))
-            return true;
-
-        return false;
-    }
-
-
-    public static void DoneDailyChallenge(string id)
-    {
-        if (GetIsDoneDailyChallenge(id))
+        if (GetIsClearChallenge(data))
         {
-            DebugLog.LogError("이미 완료 처리된 도전과제입니다: " + id);
+            DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + data.Id);
             return;
         }
 
-
-        _doneDailyChallengeSet.Add(id);
-        _doneChallengeSet.Add(id);
-        OnDoneChallengeHandler?.Invoke();
-    }
-
-
-    public static void ClearDailyChallenge(string id)
-    {
-        if (GetIsClearDailyChallenge(id))
+        if (!GetIsDoneChallenge(data))
         {
-            DebugLog.LogError("이미 클리어 처리된 도전과제입니다: " + id);
+            DebugLog.Log("완료 처리가 되지 않은 도전과제입니다: " + data.Id);
             return;
         }
 
-        if (!GetIsDoneDailyChallenge(id))
+        switch (data.Challenges)
         {
-            DebugLog.Log("완료 처리가 되지 않은 도전과제입니다: " + id);
-            return;
+            case Challenges.Main:
+                _clearMainChallengeSet.Add(data.Id);
+                break;
+
+            case Challenges.Daily:
+                _clearDailyChallengeSet.Add(data.Id);
+                break;
+
+            case Challenges.AllTime:
+                _clearAllTimeChallengeSet.Add(data.Id);
+                break;
         }
 
-        _clearDailyChallengeSet.Add(id);
-        _clearChallengeSet.Add(id);
+        ChallengeManager.Instance.UpdateChallengeByChallenges(data.Challenges);
         OnClearChallengeHandler?.Invoke();
     }
-
 
     #endregion
 

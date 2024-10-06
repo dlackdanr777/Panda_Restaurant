@@ -26,14 +26,16 @@ public class UIChallenge : MobileUIView
 
     public override void Init()
     {
-        _uiDaily.Init(ChallengeManager.Instance.GetDailyChallenge(), UserInfo.GetIsDoneDailyChallenge, UserInfo.GetIsClearDailyChallenge);
-        _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge(), UserInfo.GetIsDoneAllTimeChallenge, UserInfo.GetIsClearAllTimeChallenge);
+        _uiDaily.Init(ChallengeManager.Instance.GetDailyChallenge());
+        _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge());
 
         _uiDailyButton.onClick.AddListener(OnDailyButtonClicked);
         _uiAllTimeButton.onClick.AddListener(OnAllTimeButtonClicked);
 
-        ChallengeManager.Instance.OnDailyChallengeUpdateHandler += _uiDaily.UpdateUI;
-        ChallengeManager.Instance.OnAllTimeChallengeUpdateHandler += _uiAllTime.UpdateUI;
+        ChallengeManager.Instance.OnDailyChallengeUpdateHandler += OnDailyUpdateUI;
+        ChallengeManager.Instance.OnAllTimeChallengeUpdateHandler += OnAllTimeUpdateUI;
+
+
 
         gameObject.SetActive(false);
     }
@@ -44,6 +46,8 @@ public class UIChallenge : MobileUIView
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
         _dontTouchArea.gameObject.SetActive(false);
+        _uiDaily.UpdateUI();
+        _uiAllTime.UpdateUI();
         _uiDaily.ResetScrollviewY();
         _uiAllTime.ResetScrollviewY();
         OnDailyButtonClicked();
@@ -87,4 +91,24 @@ public class UIChallenge : MobileUIView
         _uiDaily.SetAsFirstSibling();
         _uiAllTime.SetAsLastSibling();
     }
+
+
+    private void OnDailyUpdateUI()
+    {
+        if (!gameObject.activeSelf)
+            return;
+
+        _uiDaily.UpdateUI();
+    }
+
+
+    private void OnAllTimeUpdateUI()
+    {
+        if (!gameObject.activeSelf)
+            return;
+
+        _uiAllTime.UpdateUI();
+    }
+
+
 }
