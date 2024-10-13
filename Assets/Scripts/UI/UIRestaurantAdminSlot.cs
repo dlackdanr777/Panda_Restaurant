@@ -15,6 +15,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
     [SerializeField] private UIImageAndText _operateImage;
     [SerializeField] private UIImageAndText _priceImage;
     [SerializeField] private UIImageAndText _notEnoughPriceImage;
+    [SerializeField] private UIImageAndText _needItemImage;
     [SerializeField] private UIImageAndText _scoreImage;
     [SerializeField] private Sprite _questionMarkSprite;
 
@@ -32,6 +33,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _priceImage?.gameObject.SetActive(false);
         _scoreImage?.gameObject.SetActive(false);
         _notEnoughPriceImage.gameObject.SetActive(false);
+        _needItemImage.gameObject.SetActive(false);
         _alarmImage?.SetActive(false);
         _lockImgae?.SetActive(false);
 
@@ -49,6 +51,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _priceImage?.gameObject.SetActive(false);
         _scoreImage?.gameObject.SetActive(false);
         _notEnoughPriceImage?.gameObject.SetActive(false);
+        _needItemImage.gameObject.SetActive(false);
         _alarmImage?.SetActive(false);
         _lockImgae?.SetActive(false);
 
@@ -66,6 +69,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _operateImage?.gameObject.SetActive(false);
         _scoreImage?.gameObject.SetActive(false);
         _notEnoughPriceImage?.gameObject.SetActive(false);
+        _needItemImage.gameObject.SetActive(false);
         _alarmImage?.SetActive(true);
         _lockImgae?.SetActive(false);
 
@@ -83,6 +87,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _useImage?.gameObject.SetActive(false);
         _operateImage?.gameObject.SetActive(false);
         _scoreImage?.gameObject.SetActive(false);
+        _needItemImage.gameObject.SetActive(false);
         _alarmImage?.SetActive(false);
         _lockImgae?.SetActive(false);
 
@@ -100,6 +105,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _useImage?.gameObject.SetActive(false);
         _operateImage?.gameObject.SetActive(false);
         _notEnoughPriceImage?.gameObject.SetActive(false);
+        _needItemImage.gameObject.SetActive(false);
         _lockImgae?.SetActive(true);
         _alarmImage?.SetActive(false);
 
@@ -109,6 +115,46 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _scoreImage?.SetText(text);
     }
 
+    public void SetNeedItem(Sprite sprite, string name, string needItemId)
+    {
+        _needItemImage.gameObject.SetActive(true);
+        _scoreImage?.gameObject.SetActive(false);
+        _priceImage?.gameObject.SetActive(false);
+        _useImage?.gameObject.SetActive(false);
+        _operateImage?.gameObject.SetActive(false);
+        _notEnoughPriceImage?.gameObject.SetActive(false);
+        _lockImgae?.SetActive(false);
+        _alarmImage?.SetActive(false);
+
+        _image.color = Utility.GetColor(ColorType.None);
+        _image.sprite = sprite;
+        _nameText.text = name;
+
+        GachaItemData data = ItemManager.Instance.GetGachaItemData(needItemId);
+        _needItemImage?.SetText("아이템 필요");
+        _needItemImage.SetSprite(data.Sprite);
+    }
+
+    public void SetMiniGame(Sprite sprite, string name, string needItemId)
+    {
+        _needItemImage.gameObject.SetActive(true);
+        _scoreImage?.gameObject.SetActive(false);
+        _priceImage?.gameObject.SetActive(false);
+        _useImage?.gameObject.SetActive(false);
+        _operateImage?.gameObject.SetActive(false);
+        _notEnoughPriceImage?.gameObject.SetActive(false);
+        _lockImgae?.SetActive(false);
+        _alarmImage?.SetActive(true);
+
+        _image.color = Utility.GetColor(ColorType.None);
+        _image.sprite = sprite;
+        _nameText.text = name;
+
+        GachaItemData data = ItemManager.Instance.GetGachaItemData(needItemId);
+        _needItemImage?.SetText("아이템 보유");
+        _needItemImage.SetSprite(data.Sprite);
+    }
+
     public void SetNone(Sprite sprite, string name)
     {
         _scoreImage?.gameObject.SetActive(false);
@@ -116,6 +162,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _useImage?.gameObject.SetActive(false);
         _operateImage?.gameObject.SetActive(false);
         _notEnoughPriceImage?.gameObject.SetActive(false);
+        _needItemImage.gameObject.SetActive(false);
         _lockImgae?.SetActive(false);
         _alarmImage?.SetActive(false);
 

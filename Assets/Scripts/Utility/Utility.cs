@@ -29,6 +29,11 @@ public static class Utility
         return strBuilder.ToString();
     }
 
+    public static string SetStringColor(string str, ColorType colorType)
+    {
+        return "<color=" + ColorToHex(GetColor(colorType)) + ">" + str + "</color>";
+    }
+
 
     public static string FurnitureTypeStringConverter(FurnitureType type)
     {

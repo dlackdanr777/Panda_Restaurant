@@ -19,7 +19,7 @@ public class UIRecipeTab : MonoBehaviour
 
     public void Init()
     {
-        _foodDataList = FoodDataManager.Instance.GetShopFoodDataList();
+        _foodDataList = FoodDataManager.Instance.GetFoodDataList();
         _uiRecipePreview.Init(OnBuyButtonClicked, OnUpgradeButtonClicked);
         _uiRecipePreview.SetData(_foodDataList[0]);
         _uiUpgrade.SetData(_foodDataList[0]);
@@ -72,6 +72,18 @@ public class UIRecipeTab : MonoBehaviour
             if (!UserInfo.IsScoreValid(data))
             {
                 _slots[i].SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
+                continue;
+            }
+
+            if(!string.IsNullOrWhiteSpace(data.NeedItem))
+            {
+                if(!UserInfo.IsGiveGachaItem(data.NeedItem))
+                {
+                    _slots[i].SetNeedItem(data.ThumbnailSprite, data.Name, data.NeedItem);
+                    continue;
+                }
+
+                _slots[i].SetMiniGame(data.ThumbnailSprite, data.Name, data.NeedItem);
                 continue;
             }
 

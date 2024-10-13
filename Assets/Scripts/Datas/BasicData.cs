@@ -3,30 +3,30 @@ using UnityEngine;
 public class BasicData : ScriptableObject
 {
     [Header("DefaultData")]
-    [SerializeField] private Sprite _sprite;
+    [SerializeField] protected Sprite _sprite;
     public Sprite Sprite => _sprite;
 
-    [SerializeField] private Sprite _thumbnailSPrite;
+    [SerializeField] protected Sprite _thumbnailSPrite;
     public Sprite ThumbnailSprite => _thumbnailSPrite;
 
-    [SerializeField] private string _name;
+    [SerializeField] protected string _name;
     public string Name => _name;
 
-    [SerializeField] private string _id;
+    [SerializeField] protected string _id;
     public string Id => _id;
 
-    [TextArea][SerializeField] private string _description;
+    [TextArea][SerializeField] protected string _description;
     public string Description => _description;
 
     [Space]
     [Header("ShopData")]
 
-    [SerializeField] private MoneyType _moneyType;
+    [SerializeField] protected MoneyType _moneyType;
     public MoneyType MoneyType => _moneyType;
 
-    [SerializeField] private int _buyScore;
+    [SerializeField] protected int _buyScore;
     public int BuyScore => _buyScore;
 
-    [SerializeField] private int _buyPrice;
+    [SerializeField] protected int _buyPrice;
     public int BuyPrice => _buyPrice;
 }

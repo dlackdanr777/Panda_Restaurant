@@ -22,9 +22,8 @@ public class FoodDataManager : MonoBehaviour
 
     public static int Count => _foodDataList.Count;
     private static List<FoodData> _foodDataList = new List<FoodData>();
-    private static List<FoodData> _showFoodDataList = new List<FoodData>();
-    private static List<FoodData> _minigameFoodDataList = new List<FoodData>();
     private static Dictionary<string, FoodData> _foodDataDic = new Dictionary<string, FoodData>();
+    private static Dictionary<string, FoodMiniGameData> _foodMiniGameDataDic = new Dictionary<string, FoodMiniGameData>();
 
 
     public FoodData GetFoodData(string id)
@@ -35,21 +34,18 @@ public class FoodDataManager : MonoBehaviour
         return data;
     }
 
+    public FoodMiniGameData GetFoodMiniGameData(string id)
+    {
+        if (_foodMiniGameDataDic.TryGetValue(id, out FoodMiniGameData data))
+            return data;
+
+        return null;
+    }
+
     public List<FoodData> GetFoodDataList()
     {
         return _foodDataList;
     }
-
-    public List<FoodData> GetShopFoodDataList()
-    {
-        return _showFoodDataList;
-    }
-
-    public List<FoodData> GetMinigameFoodDataList()
-    {
-        return _minigameFoodDataList;
-    }
-
 
     private void Awake()
     {
@@ -62,23 +58,108 @@ public class FoodDataManager : MonoBehaviour
     }
 
 
-    private static void Init()
+    private void Init()
     {
-        _foodDataDic.Clear();
-        _foodDataList.Clear();
-        _minigameFoodDataList.Clear();
-        _showFoodDataList.Clear();
+        Dictionary<string, Sprite> spriteDic = new Dictionary<string, Sprite>();
+        Sprite[] sprites = Resources.LoadAll<Sprite>("FoodData/Sprites");
 
-        _foodDataList.AddRange(Resources.LoadAll<FoodData>("FoodData"));
-        for (int i = 0, cnt = _foodDataList.Count; i < cnt; i++)
+        for (int i = 0, cnt = sprites.Length; i < cnt; ++i)
+            spriteDic.Add(CutStringUpToChar(sprites[i].name, '_'), sprites[i]);
+
+
+        TextAsset csvData = Resources.Load<TextAsset>("FoodData/FoodDataList");
+        TextAsset miniGameData = Resources.Load<TextAsset>("FoodData/FoodMiniGameDataList");
+
+        string[] data = miniGameData.text.Split(new char[] { '\n' });
+        string[] row;
+
+        for (int i = 1, cnt = data.Length - 1; i < cnt; ++i)
         {
-            _foodDataDic.Add(_foodDataList[i].Id, _foodDataList[i]);
+            row = data[i].Split(new char[] { ',' });
+            string id = row[0].Replace(" ", "");
 
-            if (_foodDataList[i].MiniGameNeeded)
-                _minigameFoodDataList.Add(_foodDataList[i]);
+            if (string.IsNullOrWhiteSpace(id))
+                continue;
 
-            else
-                _showFoodDataList.Add(_foodDataList[i]);
+            if (!int.TryParse(row[2].Replace(" ", ""), out int successCount))
+                successCount = 0;
+
+            if (!int.TryParse(row[3].Replace(" ", ""), out int maxHealth))
+                maxHealth = 0;
+
+            if (!int.TryParse(row[4].Replace(" ", ""), out int firstHealth))
+                firstHealth = 0;
+
+            if (!int.TryParse(row[5].Replace(" ", ""), out int addHealth))
+                addHealth = 0;
+
+            if (!int.TryParse(row[6].Replace(" ", ""), out int clearAddTime))
+                clearAddTime = 0;
+
+            FoodMiniGameData foodMiniGameData = new FoodMiniGameData(id, successCount, maxHealth, firstHealth, addHealth, clearAddTime);
+            _foodMiniGameDataDic.Add(id, foodMiniGameData);
         }
+
+            data = csvData.text.Split(new char[] { '\n' });
+        for (int i = 1, cnt = data.Length - 1; i < cnt; ++i)
+        {
+            row = data[i].Split(new char[] { ',' });
+            string id = row[0].Replace(" ", "");
+
+            if (string.IsNullOrWhiteSpace(id))
+                continue;
+
+            if (!spriteDic.TryGetValue(id, out Sprite sprite))
+            {
+                DebugLog.LogError("스프라이트가 없습니다: " + id);
+                continue;
+            }
+
+            string name = row[1];
+            string description = row[2];
+            string needItem = row[4].Replace(" ", "");
+            if (!int.TryParse(row[5].Replace(" ", ""), out int buyScore))
+                buyScore = 0;
+
+            if (!int.TryParse(row[7].Replace(" ", ""), out int buyPrice))
+                buyPrice = 0;
+
+            int level1SellPrice = int.Parse(row[8].Replace(" ", ""));
+            float level1CookSpeed = float.Parse(row[9].Replace(" ", ""));
+            int level1UpgradeScore = int.Parse(row[10].Replace(" ", ""));
+            string level1UpgradeNeedItem = row[11].Replace(" ", "");
+            int level1UpgradePrice = int.Parse(row[13].Replace(" ", ""));
+
+            int level2SellPrice = int.Parse(row[14].Replace(" ", ""));
+            float level2CookSpeed = float.Parse(row[15].Replace(" ", ""));
+            int level2UpgradeScore = 0;
+            string level2UpgradeNeedItem = string.Empty;
+            int level2UpgradePrice = 0;
+
+            List<FoodLevelData> foodLevelDataList = new List<FoodLevelData>();
+            foodLevelDataList.Add(new FoodLevelData(level1SellPrice, level1UpgradeScore, level1UpgradePrice, level1UpgradeNeedItem, level1CookSpeed));
+            foodLevelDataList.Add(new FoodLevelData(level2SellPrice, level2UpgradeScore, level2UpgradePrice, level2UpgradeNeedItem, level2CookSpeed));
+
+            if (!_foodMiniGameDataDic.TryGetValue(id, out FoodMiniGameData foodMiniGameData))
+                foodMiniGameData = null;
+
+            FoodData foodData = new FoodData(sprite, name, id, MoneyType.Gold, buyScore, buyPrice, needItem, foodLevelDataList, foodMiniGameData);
+
+            _foodDataList.Add(foodData);
+            _foodDataDic.Add(id, foodData);
+        }
+    }
+
+
+    private string CutStringUpToChar(string str, char delimiter)
+    {
+        str = str.ToUpper();
+        int index = str.IndexOf(delimiter);
+
+        if (index >= 0)
+            return str.Substring(0, index);
+
+        else
+            return str;
     }
 }

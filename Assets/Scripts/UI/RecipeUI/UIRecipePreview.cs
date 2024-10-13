@@ -1,11 +1,10 @@
 using System;
-using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 
 public class UIRecipePreview : MonoBehaviour
 {
     [Header("Components")]
+    [SerializeField] private UIMiniGame _uiMiniGame;
     [SerializeField] private UIRecipeSelectSlot _selectGroup;
     [SerializeField] private UIImageAndText _levelGroup;
     [SerializeField] private UIImageAndText _priceGroup;
@@ -20,6 +19,8 @@ public class UIRecipePreview : MonoBehaviour
     [SerializeField] private UIButtonAndText _buyButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
+    [SerializeField] private UIButtonAndImage _minigameButton;
+    [SerializeField] private UIImageAndText _needItemImage;
 
     [Space]
     [Header("Sprites")]
@@ -32,6 +33,7 @@ public class UIRecipePreview : MonoBehaviour
     public void Init(Action<FoodData> onBuyButonClicked, Action<FoodData> onUpgradeButtonClicked)
     {
         _onBuyButtonClicked = onBuyButonClicked;
+        _minigameButton.AddListener(OnMiniGameButtonClicked);
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         UserInfo.OnUpgradeRecipeHandler += UpdateUI;
         UserInfo.OnGiveRecipeHandler += UpdateUI;
@@ -49,6 +51,8 @@ public class UIRecipePreview : MonoBehaviour
         _buyButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
+        _minigameButton.gameObject.SetActive(false);
+        _needItemImage.gameObject.SetActive(false);
         _levelGroup.gameObject.SetActive(false);
         _totalSellGroup.gameObject.SetActive(false);
 
@@ -105,20 +109,42 @@ public class UIRecipePreview : MonoBehaviour
             }
 
             _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
-            if (!UserInfo.IsMoneyValid(data))
+            if (!string.IsNullOrWhiteSpace(data.NeedItem))
             {
-                _notEnoughMoneyButton.gameObject.SetActive(true);
-                _notEnoughMoneyButton.RemoveAllListeners();
-                _notEnoughMoneyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
-                _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+                GachaItemData gachaItemData = ItemManager.Instance.GetGachaItemData(data.NeedItem);
+                if (gachaItemData == null)
+                    throw new Exception("필요 아이템이 존재하나 데이터베이스 상에 존재하지 않습니다: " + data.NeedItem);
+
+                if (!UserInfo.IsGiveGachaItem(gachaItemData))
+                {
+                    _needItemImage.gameObject.SetActive(true);
+                    _needItemImage.SetSprite(gachaItemData.Sprite);
+                    _needItemImage.SetText(gachaItemData.Name);
+                    return;
+                }
+
+                _minigameButton.gameObject.SetActive(true);
+                _minigameButton.SetImage(gachaItemData.Sprite);
                 return;
             }
 
-            _buyButton.gameObject.SetActive(true);
-            _buyButton.RemoveAllListeners();
-            _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
-            _buyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+            else
+            {
+                if (!UserInfo.IsMoneyValid(data))
+                {
+                    _notEnoughMoneyButton.gameObject.SetActive(true);
+                    _notEnoughMoneyButton.RemoveAllListeners();
+                    _notEnoughMoneyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
+                    _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+                    return;
+                }
 
+                _buyButton.gameObject.SetActive(true);
+                _buyButton.RemoveAllListeners();
+                _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
+                _buyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+
+            }
         }
 
     }
@@ -127,6 +153,25 @@ public class UIRecipePreview : MonoBehaviour
     public void UpdateUI()
     {
         SetData(_currentData);
+    }
+
+
+    private void OnMiniGameButtonClicked()
+    {
+        if(_currentData == null)
+        {
+            DebugLog.LogError("현재 음식 데이터가 없습니다.");
+            return;
+        }
+
+        FoodMiniGameData data = FoodDataManager.Instance.GetFoodMiniGameData(_currentData.Id);
+        if(data == null)
+        {
+            DebugLog.LogError("해당 음식은 미니게임을 할 수 없습니다: " + _currentData.Id);
+            return;
+        }
+
+        _uiMiniGame.StartMiniGame(data);
     }
 
 }
