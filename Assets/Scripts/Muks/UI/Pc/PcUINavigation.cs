@@ -99,6 +99,12 @@ namespace Muks.PcUI
             if (_activeViewList.First == null)
                 return;
 
+            if (!_activeViewList.First.Value.PopEnabled)
+            {
+                Debug.Log("해당 UI가 Pop이 가능한 상태가 아닙니다: " + _activeViewList.First.Value.name);
+                return;
+            }
+
             _activeViewList.First.Value.Hide();
             _activeViewList.RemoveFirst();
             OnFocusHandler?.Invoke();
@@ -131,6 +137,12 @@ namespace Muks.PcUI
             {
                 if (!_activeViewList.Contains(uiView))
                     return;
+
+                if(!uiView.PopEnabled)
+                {
+                    Debug.Log("해당 UI가 Pop이 가능한 상태가 아닙니다: " + uiView.name);
+                    return;
+                }
 
                 _activeViewList.Remove(uiView);
                 uiView.Hide();

@@ -9,7 +9,8 @@ namespace Muks.UI
         public VisibleState VisibleState;
         protected UINavigation _uiNav;
         protected RectTransform _rectTransform;
-
+        protected bool _popEnabled = true;
+        public bool PopEnabled => _popEnabled;
 
         public void ViewInit(UINavigation uiNav)
         {

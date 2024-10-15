@@ -21,6 +21,7 @@ public class UIMiniGame : MobileUIView
 
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private UIMiniGameFeverTime _uiFeverTime;
     [SerializeField] private Button _screenButton;
     [SerializeField] private GameObject _descriptionGroup;
     [SerializeField] private UIImageAndText _descriptionText;
@@ -66,6 +67,7 @@ public class UIMiniGame : MobileUIView
         _leftTouchButton.AddListener(OnTouchButtonClicked);
         _rightTouchButton.AddListener(OnTouchButtonClicked);
         _miniGameState = MiniGameState.Wait;
+        _uiFeverTime.SetNormalSprite();
 
         _descriptionGroup.gameObject.SetActive(false);
         _descriptionText.gameObject.SetActive(false);
@@ -102,7 +104,7 @@ public class UIMiniGame : MobileUIView
         _miniGameState = MiniGameState.Wait;
         transform.SetAsLastSibling();
         _canvasGroup.blocksRaycasts = false;
-
+        _popEnabled = false;
         _startPos.anchoredPosition = new Vector2(Screen.width, 0);
         _animeUI.position = _targetPos.position;
 
@@ -138,6 +140,7 @@ public class UIMiniGame : MobileUIView
         _totalTime = 60;
         _currentTime = _totalTime;
 
+        _uiFeverTime.SetNormalSprite();
         _gaugeBar.SetFillAmonut(0);
         _successCountText.text = _successCount.ToString();
         _timeText.text = ((int)_currentTime).ToString();
@@ -149,6 +152,16 @@ public class UIMiniGame : MobileUIView
     }
 
 
+    private void EndMiniGame()
+    {
+        if (_miniGameState != MiniGameState.Start && _miniGameState != MiniGameState.FeverTime)
+            return;
+
+        _miniGameState = MiniGameState.End;
+
+    }
+
+
     private void Update()
     {
         if (_miniGameState != MiniGameState.Start && _miniGameState != MiniGameState.FeverTime)
@@ -157,8 +170,8 @@ public class UIMiniGame : MobileUIView
         if (_currentTime <= 0)
         {
             _currentTime = 0;
-            _miniGameState = MiniGameState.End;
             _timeText.text = 0.ToString();
+            EndMiniGame();
         }
 
         _currentTime -= Time.deltaTime;
@@ -191,7 +204,8 @@ public class UIMiniGame : MobileUIView
         yield return YieldCache.WaitForSeconds(1);
         _timeCountText.text = "1";
         yield return YieldCache.WaitForSeconds(1);
-
+        _timeCountText.text = "Let's Go!";
+        yield return YieldCache.WaitForSeconds(1);
         _descriptionGroup.gameObject.SetActive(false);
         _descriptionText.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
@@ -224,8 +238,34 @@ public class UIMiniGame : MobileUIView
         if (_miniGameState != MiniGameState.Start && _miniGameState != MiniGameState.FeverTime)
             return;
 
-        _currentGauge += _touchPower;
         _stickAnimator.SetTrigger("Play");
+        AddGaugeEvent();
+    }
+
+
+    private void OnLeftTouchButtonClicked()
+    {
+        if (_miniGameState != MiniGameState.Start && _miniGameState != MiniGameState.FeverTime)
+            return;
+
+        _stickAnimator.SetTrigger("LeftPlay");
+        AddGaugeEvent();
+    }
+
+
+    private void OnRightTouchButtonClicked()
+    {
+        if (_miniGameState != MiniGameState.Start && _miniGameState != MiniGameState.FeverTime)
+            return;
+
+        _stickAnimator.SetTrigger("RightPlay");
+        AddGaugeEvent();
+    }
+
+    private void AddGaugeEvent()
+    {
+
+        _currentGauge += _touchPower + 10;
         if (_currentHealth <= _currentGauge)
         {
             _totalCount++;
@@ -234,13 +274,20 @@ public class UIMiniGame : MobileUIView
             _currentHealth = _firstHealth + (_totalCount * 10);
             _successCountText.text = Mathf.Abs(_currentCount).ToString();
 
-            if(_currentCount == 0)
+            if (_currentCount == -1)
             {
-                if(_miniGameState == MiniGameState.Start)
+                if (_miniGameState == MiniGameState.Start)
+                {
                     _miniGameState = MiniGameState.FeverTime;
+                    _uiFeverTime.SetFeverSprite();
+                }
+
             }
         }
 
         _gaugeBar.SetFillAmonut(_currentGauge <= 0 ? 0 : (float)_currentGauge / _currentHealth);
     }
+
+
+
 }
