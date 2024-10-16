@@ -21,6 +21,7 @@ namespace Muks.MobileUI
         [Tooltip("이 클래스에서 관리할 UIViews")]
         [SerializeField] private MobileViewDicStruct[] _uiViews;
 
+        public override UIView FirstView => Count <= 0 ? null : _activeViewList[Count - 1];
         public override int Count => _activeViewList.Count;
 
         private bool _isViewsInactive;
@@ -258,7 +259,7 @@ namespace Muks.MobileUI
 
 
         /// <summary>열려있는 UI의 VisibleState를 확인 후 bool값을 리턴하는 함수</summary>
-        private bool ViewsVisibleStateCheck()
+        public override bool ViewsVisibleStateCheck()
         {
             foreach (MobileUIView view in _viewDic.Values)
             {

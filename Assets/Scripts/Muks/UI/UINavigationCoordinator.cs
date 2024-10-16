@@ -49,9 +49,9 @@ namespace Muks.UI
         {
             NavigationData navData = _navList.Last.Value;
             UINavigation uiNav = navData.UiNav;
-
+            UIView firstView;
             //만약 최 상위 UI 관리 클래스에 UI가 열려 있지 않다면?
-            if(uiNav.Count <= 0)
+            if (uiNav.Count <= 0)
             {
                 //자료구조를 순회
                 for(int i = 0, count = _navDatas.Length - 1; i < count; i++)
@@ -67,6 +67,16 @@ namespace Muks.UI
                     if (uiNav.Count <= 0)
                         continue;
 
+                    if (!uiNav.ViewsVisibleStateCheck())
+                        return false;
+
+                    firstView = uiNav.FirstView;
+                    if(!firstView.PopEnabled)
+                    {
+                        Debug.Log("마지막에 열려있는 UI가 Pop을 허용하지 않습니다: " + firstView.name);
+                        return false;
+                    }
+
                     uiNav.Pop();
                     return true;
                 }
@@ -74,6 +84,15 @@ namespace Muks.UI
                 return false;
             }
 
+            if (!uiNav.ViewsVisibleStateCheck())
+                return false;
+
+            firstView = uiNav.FirstView;
+            if (!firstView.PopEnabled)
+            {
+                Debug.Log("마지막에 열려있는 UI가 Pop을 허용하지 않습니다: " + firstView.name);
+                return false;
+            }
             uiNav.Pop();
             return true;
         }

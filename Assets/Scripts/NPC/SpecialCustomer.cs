@@ -90,7 +90,7 @@ public class SpecialCustomer : Customer
             StopCoroutine(_touchCoroutine);
         _touchCoroutine = StartCoroutine(OnTouchRoutine());
 
-        UserInfo.AppendMoney(_touchAddMoney);
+        UserInfo.AppendMoney(_touchAddMoney + GameManager.Instance.AddSpecialCustomerMoney);
 
         if (_touchCount <= 0)
         {

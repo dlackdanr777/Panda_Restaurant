@@ -3,7 +3,6 @@ using Muks.WeightedRandom;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public class CustomerController : MonoBehaviour
@@ -16,25 +15,24 @@ public class CustomerController : MonoBehaviour
 
     [Space]
     [Header("Option")]
-    [Range(1, 30)] [SerializeField] private int _maxCustomers;
     [Range(1, 10)] [SerializeField] private int _lineSpacingGrid;
     [SerializeField] private Transform _startLine;
     [SerializeField] private List<Vector3> _specialCustomerTargetPosList;
     [SerializeField] private Vector3 _gatecrasherCustomer2TargetPos;
-    public Vector3 _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
+
 
     private Queue<NormalCustomer> _customers = new Queue<NormalCustomer>();
     private GatecrasherCustomer _gatecrasherCustomer;
-    public GatecrasherCustomer GatecrasherCustomer => _gatecrasherCustomer;
     private Coroutine _sortCoroutine;
-    private float _breakInCustomerTime = 60;
-    [SerializeField] private bool _breakCustomerEnabled = true;
-    [SerializeField] private float _breakInCustomerTimer;
+    private float _breakInCustomerTime => 60;
+    private float _breakInCustomerTimer;
+    private bool _breakCustomerEnabled = true;
 
 
-
+    public Vector3 _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
+    public GatecrasherCustomer GatecrasherCustomer => _gatecrasherCustomer;
     public int Count => _customers.Count;
-    public bool IsMaxCount => Count >= _maxCustomers;
+    public bool IsMaxCount => Count >= GameManager.Instance.MaxWaitCustomerCount;
 
     public NormalCustomer GetFirstCustomer()
     {
@@ -51,7 +49,7 @@ public class CustomerController : MonoBehaviour
 
     public void AddCustomer()
     {
-        if (_maxCustomers <= _customers.Count)
+        if (IsMaxCount)
             return;
 
         List<CustomerData> normalCustomerDataList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
@@ -61,7 +59,7 @@ public class CustomerController : MonoBehaviour
 
         for (int i = 0, cnt = GameManager.Instance.AddPromotionCustomer; i < cnt; i++)
         {
-            if (_maxCustomers <= _customers.Count)
+            if (IsMaxCount)
                 break;
 
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);

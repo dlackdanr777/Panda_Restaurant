@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -80,7 +81,7 @@ public class ItemManager : MonoBehaviour
             itemList.Add(gachaItemDataList[i]); 
         }
 
-        return itemList[Random.Range(0, itemList.Count)];
+        return itemList[UnityEngine.Random.Range(0, itemList.Count)];
     }
 
 
@@ -117,10 +118,9 @@ public class ItemManager : MonoBehaviour
             int addScore = int.Parse(row[4].Replace(" ", ""));
             int minutePerTip = int.Parse(row[5].Replace(" ", ""));
             int rank = int.Parse(row[6].Replace(" ", ""));
-            int exchangeCount = int.Parse(row[8].Replace(" ", ""));
-            int duplicatePaymentCount = int.Parse(row[9].Replace(" ", ""));
+            UpgradeType upgradeType = StrToUpgradeType(row[8].Replace(" ", ""));
 
-            GachaItemData gachaItemData = new GachaItemData(id, name, description, addScore, minutePerTip, rank, exchangeCount, duplicatePaymentCount, spriteDic[id]);
+            GachaItemData gachaItemData = new GachaItemData(id, name, description, addScore, minutePerTip, rank, upgradeType, spriteDic[id]);
             _gachaItemDataList.Add(gachaItemData);
             _gachaItemDataDic.Add(id, gachaItemData);
         }
@@ -136,5 +136,14 @@ public class ItemManager : MonoBehaviour
 
         else
             return str;
+    }
+
+
+    private UpgradeType StrToUpgradeType(string str)
+    {
+        if (Enum.TryParse(str, true, out UpgradeType upgradeType))
+            return upgradeType;
+
+        throw new ArgumentException("해당 문자열을 가진 UpgradeType이 없습니다: " + str);
     }
 }

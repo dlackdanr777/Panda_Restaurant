@@ -18,6 +18,7 @@ namespace Muks.PcUI
         [Tooltip("이곳에서 관리할 UIView")]
         [SerializeField] private PcViewDicStruct[] _uiViews;
 
+        public override UIView FirstView => Count <= 0 ? null : _activeViewList.First.Value;
         public override int Count => _activeViewList.Count;
         private bool _isViewsInactive;
         public override bool IsViewsInactive => _isViewsInactive;
@@ -239,7 +240,7 @@ namespace Muks.PcUI
 
 
         /// <summary>열려있는 UI의 VisibleState를 확인 후 bool값을 리턴하는 함수</summary>
-        private bool ViewsVisibleStateCheck()
+        public override bool ViewsVisibleStateCheck()
         {
             foreach (PcUIView view in _viewDic.Values)
             {

@@ -313,7 +313,7 @@ public class TableManager : MonoBehaviour
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
         int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
-        CookingData data = new CookingData(foodData.Id, foodData.GetCookingTime(foodLevel), foodData.GetSellPrice(foodLevel), foodData.Sprite, () =>
+        CookingData data = new CookingData(foodData.Id, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), foodData.Sprite, () =>
         {
             if (_tableDatas[index].TableState != ETableState.WaitFood || _tableDatas[index].CurrentCustomer == null)
                 return;
@@ -325,9 +325,9 @@ public class TableManager : MonoBehaviour
         });
 
         int tip = Mathf.FloorToInt(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul);
-        _tableDatas[index].TotalTip += tip;
+        _tableDatas[index].TotalTip += tip + GameManager.Instance.AddFoodTip;
         _tableDatas[index].CurrentFood = data;
-        _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.FoodPriceMul);
+        _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.FoodPriceMul) + (int)(data.Price * GameManager.Instance.FoodPriceMul * 0.01f) + GameManager.Instance.AddFoodPrice;
         _orderButtons[index].SetImage(foodData.ThumbnailSprite);
 
         _tableDatas[index].TableState = ETableState.Seating;
@@ -371,7 +371,11 @@ public class TableManager : MonoBehaviour
     private void EndEat(int index)
     {
         int tip = _tableDatas[index].TotalTip;
-        UserInfo.AppendMoney(_tableDatas[index].TotalPrice);
+        int totalPrice = _tableDatas[index].TotalPrice;
+        if (UnityEngine.Random.Range(0f, 100f) < GameManager.Instance.AddFoodDoublePricePercent)
+            totalPrice *= 2;
+
+        UserInfo.AppendMoney(totalPrice);
         StartCoinAnime(index);
         StartGarbageAnime(index);
 

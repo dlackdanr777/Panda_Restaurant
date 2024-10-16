@@ -12,6 +12,8 @@ namespace Muks.UI
         public abstract int Count { get; }
         public abstract bool IsViewsInactive{ get; }
 
+        public abstract UIView FirstView { get; }
+
 
         /// <summary>이름을 받아 현재 이름의 view를 열어주는 함수</summary>
         public abstract void Push(string viewName);
@@ -42,6 +44,9 @@ namespace Muks.UI
 
         /// <summary> 매개 변수에 해당하는 UIView Class의 VisibleState값을 반환하는 함수 </summary>
         public abstract VisibleState GetVisibleState(string viewName);
+
+        /// <summary> 활성화된 UIView들을 순회하며 애니메이션이 진행중인 UI가 있는지 확인하는 함수(있으면 false, 없으면 true) </summary>
+        public abstract bool ViewsVisibleStateCheck();
     }
 
 }
