@@ -119,8 +119,11 @@ public class ItemManager : MonoBehaviour
             int minutePerTip = int.Parse(row[5].Replace(" ", ""));
             int rank = int.Parse(row[6].Replace(" ", ""));
             UpgradeType upgradeType = StrToUpgradeType(row[8].Replace(" ", ""));
+            float defaultValue = float.Parse(row[9].Replace(" ", ""));
+            float upgradeValue = float.Parse(row[10].Replace(" ", ""));
+            int maxLevel = int.Parse(row[11].Replace(" ", ""));
 
-            GachaItemData gachaItemData = new GachaItemData(id, name, description, addScore, minutePerTip, rank, upgradeType, spriteDic[id]);
+            GachaItemData gachaItemData = new GachaItemData(id, name, description, addScore, minutePerTip, rank, upgradeType, defaultValue, upgradeValue, maxLevel, spriteDic[id]);
             _gachaItemDataList.Add(gachaItemData);
             _gachaItemDataDic.Add(id, gachaItemData);
         }

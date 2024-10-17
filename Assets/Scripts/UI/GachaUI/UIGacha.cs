@@ -296,29 +296,39 @@ public class UIGacha : MobileUIView
 
     private void OnSingleGachaButtonClicked()
     {
-        _gachaMacineAnimator.SetTrigger("Start");
         _getItemList.Clear();
         _getItemIndex = 0;
 
         GachaItemData item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
         _getItemList.Add(item);
         UserInfo.GiveGachaItem(item);
+
+        _gachaMacineAnimator.SetTrigger("Start");
     }
 
 
     private void OnTenGachaButtonClicked()
     {
-        _gachaMacineAnimator.SetTrigger("Start");
+
         _getItemList.Clear();
         _getItemIndex = 0;
 
         GachaItemData item;
-        for (int i = 0, cnt = 11; i < cnt; i++)
+        int i = 0;
+        while(i < 11)
         {
             item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
+
+            if (!UserInfo.CanAddMoreItems(item))
+                continue;
+
             _getItemList.Add(item);
+            i++;
         }
+
         UserInfo.GiveGachaItem(_getItemList);
+
+        _gachaMacineAnimator.SetTrigger("Start");
     }
 
 

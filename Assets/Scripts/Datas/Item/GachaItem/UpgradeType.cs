@@ -1,114 +1,82 @@
 
 public enum UpgradeType
 {
+    /// <summary>전체 평점 상승 nn(+n) 증가</summary>
     UPGRADE01,
+
+    /// <summary>전체 손님 속도 n%(+n.n) 증가</summary>
     UPGRADE02,
+
+    /// <summary>분당 팁 n(+n)증가</summary>
     UPGRADE03,
+
+    /// <summary>보유 가능한 팁 n%(+n%)증가</summary>
     UPGRADE04,
+
+    /// <summary>판매하는 메뉴의 가격 n코인(+n) 증가</summary>
     UPGRADE05,
+
+    /// <summary>모든 메뉴 제작 시간 n초(+n.n초)단축</summary>
     UPGRADE06,
+
+    /// <summary>손님이 지불하는 음식가격 두배 확률 n%(+n.n%)증가</summary>
     UPGRADE07,
+
+    /// <summary>손님의 메뉴 주문당 지급 코인 n(+n)증가(팁)</summary>
     UPGRADE08,
+
+    /// <summary>웨이터 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
     UPGRADE09,
+
+    /// <summary>웨이터 스텝 스킬 타임 n초(+n.n초)증가</summary>
     UPGRADE10,
+
+    /// <summary>알바 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
     UPGRADE11,
+
+    /// <summary>알바 스텝 스킬 타임 n초(+n.n초)증가</summary>
     UPGRADE12,
+
+    /// <summary>치어리더 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
     UPGRADE13,
+
+    /// <summary>치어리더 스텝 스킬 타임 n초(+n.n초)증가</summary>
     UPGRADE14,
+
+    /// <summary>청소부 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
     UPGRADE15,
+
+    /// <summary>청소부 스텝 스킬 타임 n초(+n.n초)증가</summary>
     UPGRADE16,
+
+    /// <summary>가드 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
     UPGRADE17,
+
+    /// <summary>가드 스텝 스킬 타임 n초(+n.n초)증가</summary>
     UPGRADE18,
+
+    /// <summary>진상에게 가하는 피해 n%(+n.n%)증가</summary>
     UPGRADE19,
+
+    /// <summary>스페셜 손님에게 획득 코인 nn(+n)증가</summary>
     UPGRADE20,
+
+    /// <summary>도둑 손님이 속도 둔화 n.n초(+n.n초)증가</summary>
     UPGRADE21,
+
+    /// <summary>전체 스텝 스킬 쿨타임 n초(+n초) 감소</summary>
     UPGRADE22,
+
+    /// <summary>전체 스텝 스킬 타임 n초(+n.n초)증가</summary>
     UPGRADE23,
+
+    /// <summary>미니게임 제작 시간 n.n초 (+n.n)증가</summary>
     UPGRADE24,
+
+    /// <summary>스페셜 손님 등장 확률 n.n% (+n.n%)증가</summary>
     UPGRADE25,
-    UPGRADE26,
-    UPGRADE27,
-    UPGRADE28,
-    UPGRADE29,
-    UPGRADE30,
-    UPGRADE31,
-    UPGRADE32,
-    UPGRADE33,
-    UPGRADE34,
-    UPGRADE35,
-    UPGRADE36,
-    UPGRADE37,
-    UPGRADE38,
-    UPGRADE39,
-    UPGRADE40,
-    UPGRADE41,
-    UPGRADE42,
-    UPGRADE43,
-    UPGRADE44,
-    UPGRADE45,
-    UPGRADE46,
-    UPGRADE47,
-    UPGRADE48,
-    UPGRADE49,
-    UPGRADE50,
-    UPGRADE51,
-    UPGRADE52,
-    UPGRADE53,
-    UPGRADE54,
-    UPGRADE55,
-    UPGRADE56,
-    UPGRADE57,
-    UPGRADE58,
-    UPGRADE59,
-    UPGRADE60,
-    UPGRADE61,
-    UPGRADE62,
-    UPGRADE63,
-    UPGRADE64,
-    UPGRADE65,
-    UPGRADE66,
-    UPGRADE67,
-    UPGRADE68,
-    UPGRADE69,
-    UPGRADE70,
-    UPGRADE71,
-    UPGRADE72,
-    UPGRADE73,
-    UPGRADE74,
-    UPGRADE75,
-    UPGRADE76,
-    UPGRADE77,
-    UPGRADE78,
-    UPGRADE79,
-    UPGRADE80,
-    UPGRADE81,
-    UPGRADE82,
-    UPGRADE83,
-    UPGRADE84,
-    UPGRADE85,
-    UPGRADE86,
-    UPGRADE87,
-    UPGRADE88,
-    UPGRADE89,
-    UPGRADE90,
-    UPGRADE91,
-    UPGRADE92,
-    UPGRADE93,
-    UPGRADE94,
-    UPGRADE95,
-    UPGRADE96,
-    UPGRADE97,
-    UPGRADE98,
-    UPGRADE99,
-    UPGRADE100,
-    UPGRADE101,
-    UPGRADE102,
-    UPGRADE103,
-    UPGRADE104,
-    UPGRADE105,
-    UPGRADE106,
-    UPGRADE107,
-    UPGRADE108,
-    UPGRADE109,
+
+    /// <summary>최대 줄서기 손님 n명(+n)증가</summary>
+    UPGRADE26, 
     Length,
 }

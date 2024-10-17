@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -60,7 +59,7 @@ public class GameManager : MonoBehaviour
     public int MaxTipVolume => Mathf.FloorToInt(_addEquipFurnitureMaxTipVolume + (_addEquipFurnitureMaxTipVolume * _addUpgradeGachaItemMaxTipVolumeMul * 0.01f));
 
 
-    public float AddMiniGameTime => _addUpgradeGachaItemMiniGameTime;
+    public float AddMiniGameTime => _addUpgradeGachaItemMiniGameTime + _addGiveRecipeMiniGameTime;
 
 
     [SerializeField] private int _addEquipStaffScore;
@@ -79,6 +78,8 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private int _addGiveGachaItemScore;
     [SerializeField] private int _addGiveGachaItemTipPerMinute;
+
+    [SerializeField] private int _addGiveRecipeMiniGameTime;
 
     [SerializeField] private int _addUpgradeGachaItemScroe; // 전체 평점 상승(+) 추가됨
     [SerializeField] private int _addUpgradeGachaItemTipPerMinute; //분당 팁 증가(+) 추가됨
@@ -150,12 +151,14 @@ public class GameManager : MonoBehaviour
         UserInfo.OnChangeFurnitureHandler += (type) => CheckSetDataEnabled();
         UserInfo.OnChangeKitchenUtensilHandler += (type) => CheckSetDataEnabled();
         UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEffectCheck;
+        UserInfo.OnGiveRecipeHandler += OnGiveRecipeCheck;
 
         OnEquipStaffEffectCheck();
         OnEquipFurnitureEffectCheck();
         OnEquipKitchenUtensilEffectCheck();
         CheckSetDataEnabled();
         OnGiveGachaItemEffectCheck();
+        OnGiveRecipeCheck();
     }
 
 
@@ -308,6 +311,26 @@ public class GameManager : MonoBehaviour
     }
 
 
+    private void OnGiveRecipeCheck()
+    {
+        _addGiveRecipeMiniGameTime = 0;
+        List<string> giveRecipeList = UserInfo.GetGiveRecipeList();
+        FoodData foodData;
+        for(int i = 0, cnt = giveRecipeList.Count; i < cnt; ++i)
+        {
+            foodData = FoodDataManager.Instance.GetFoodData(giveRecipeList[i]);
+
+            if(foodData == null)
+                throw new Exception("보유중인 레시피이지만 데이터베이스에 등록되어있지 않습니다: " + giveRecipeList[i]);
+
+            if(!FoodDataManager.Instance.IsNeedMiniGame(giveRecipeList[i]))
+                continue;
+
+            _addGiveRecipeMiniGameTime += 5;
+        }
+    }
+
+
     private  void CheckSetDataEnabled()
     {
         _addEquipSetDataTipPerMinute = 0;
@@ -399,13 +422,14 @@ public class GameManager : MonoBehaviour
         int addScore = 0;
         int addTipPerMinute = 0;
 
-        List<string> giveGachaItemList = UserInfo.GetGiveGachaItemList();
-        for(int i = 0, cnt = giveGachaItemList.Count; i < cnt; ++i)
+        Dictionary<string, int> giveGachaItemDic = UserInfo.GetGiveGachaItemDic();
+
+        foreach(string id in giveGachaItemDic.Keys)
         {
-            if (!ItemManager.Instance.IsGachaItem(giveGachaItemList[i]))
+            if (!ItemManager.Instance.IsGachaItem(id))
                 continue;
 
-            GachaItemData data = ItemManager.Instance.GetGachaItemData(giveGachaItemList[i]);
+            GachaItemData data = ItemManager.Instance.GetGachaItemData(id);
             addScore += data.AddScore;
             addTipPerMinute += data.TipPerMinute;
         }

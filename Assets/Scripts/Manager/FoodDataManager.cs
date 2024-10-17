@@ -22,6 +22,7 @@ public class FoodDataManager : MonoBehaviour
 
     public static int Count => _foodDataList.Count;
     private static List<FoodData> _foodDataList = new List<FoodData>();
+    private static List<FoodMiniGameData> _foodMiniGameDataList = new List<FoodMiniGameData>();
     private static Dictionary<string, FoodData> _foodDataDic = new Dictionary<string, FoodData>();
     private static Dictionary<string, FoodMiniGameData> _foodMiniGameDataDic = new Dictionary<string, FoodMiniGameData>();
 
@@ -46,6 +47,29 @@ public class FoodDataManager : MonoBehaviour
     {
         return _foodDataList;
     }
+
+    public List<FoodMiniGameData> GetMiniGameDataList()
+    {
+        return _foodMiniGameDataList;
+    }
+
+    public bool IsNeedMiniGame(FoodData data)
+    {
+        if (_foodMiniGameDataDic.ContainsKey(data.Id))
+            return true;
+
+        return false;
+    }
+
+
+    public bool IsNeedMiniGame(string id)
+    {
+        if (_foodMiniGameDataDic.ContainsKey(id))
+            return true;
+
+        return false;
+    }
+
 
     private void Awake()
     {
@@ -97,6 +121,7 @@ public class FoodDataManager : MonoBehaviour
                 clearAddTime = 0;
 
             FoodMiniGameData foodMiniGameData = new FoodMiniGameData(id, successCount, maxHealth, firstHealth, addHealth, clearAddTime);
+            _foodMiniGameDataList.Add(foodMiniGameData);
             _foodMiniGameDataDic.Add(id, foodMiniGameData);
         }
 

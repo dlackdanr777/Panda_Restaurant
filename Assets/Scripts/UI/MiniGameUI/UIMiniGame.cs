@@ -1,12 +1,9 @@
 using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections;
-using System.Text;
 using TMPro;
-using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.UI;
-using static UIMiniGame;
 
 public class UIMiniGame : MobileUIView
 {
@@ -32,7 +29,9 @@ public class UIMiniGame : MobileUIView
     [SerializeField] private ButtonPressEffect _leftTouchButton;
     [SerializeField] private ButtonPressEffect _rightTouchButton;
     [SerializeField] private FillAmountImage _gaugeBar;
+    [SerializeField] private UIMiniGameJarGroup _jarGroup;
     [SerializeField] private Animator _jarAnimator;
+    [SerializeField] private Animator _panda3Animator;
 
     [Space]
     [Header("Result Components")]
@@ -64,14 +63,17 @@ public class UIMiniGame : MobileUIView
     private int _firstHealth;
     private int _addHealth;
     private int _currentHealth;
-    private int _currentGauge;
+    private float _currentGauge;
     private int _touchPower = 1;
     private float _currentTime;
     private bool _onButtonClicked;
     private MiniGameState _miniGameState;
 
+    private float _currentPower;
+
     public override void Init()
     {
+        _jarGroup.Init();
         _screenButton.onClick.AddListener(() => _onButtonClicked = true);
         _leftTouchButton.AddListener(OnTouchButtonClicked);
         _rightTouchButton.AddListener(OnTouchButtonClicked);
@@ -160,10 +162,13 @@ public class UIMiniGame : MobileUIView
         _addHealth = data.AddHealth;
         _currentHealth = _firstHealth;
         _currentGauge = 0;
+        _currentPower = 0;
 
         _currentTime = _totalTime;
         _popEnabled = false;
 
+        _jarAnimator.SetFloat("StickSpeed", -1);
+        _panda3Animator.SetFloat("StickSpeed", -1);
         _uiFeverTime.SetNormalSprite();
         _gaugeBar.SetFillAmonut(0);
         _successCountText.text = _successCount.ToString();
@@ -188,18 +193,51 @@ public class UIMiniGame : MobileUIView
 
     private void Update()
     {
+
+
         if (_miniGameState != MiniGameState.Start && _miniGameState != MiniGameState.FeverTime)
             return;
+
+        if (-5 < _currentPower)
+            _currentPower -= Time.deltaTime * 5;
+        else if (_currentPower < -5)
+            _currentPower = -5;
+
+        _jarAnimator.SetFloat("StickSpeed", _currentPower * 0.1f);
+        _jarAnimator.SetFloat("StickSpeedMul", Mathf.Clamp(_currentPower * 0.1f, 0, 10f));
+        _panda3Animator.SetFloat("StickSpeed", _currentPower * 0.1f);
 
         if (_currentTime <= 0)
         {
             _currentTime = 0;
             _timeText.text = 0.ToString();
+            _currentPower = 0;
             EndMiniGame();
+            _jarAnimator.SetFloat("StickSpeed", 0);
+            _jarAnimator.SetFloat("StickSpeedMul", 0);
+            _panda3Animator.SetFloat("StickSpeed", -1);
         }
 
         _currentTime -= Time.deltaTime;
         _timeText.text = ((int)_currentTime).ToString();
+        _currentGauge = Mathf.Clamp(_currentGauge + _currentPower * Time.deltaTime, 0, 10000000);    
+        _gaugeBar.SetFillAmountNoAnime(_currentGauge <= 0 ? 0 : _currentGauge / _currentHealth);
+
+        if (_currentHealth <= _currentGauge)
+        {
+            _totalCount++;
+            _currentCount--;
+            _currentGauge = 0;
+            _currentHealth = _firstHealth + (_totalCount * 10);
+            _successCountText.text = Mathf.Abs(_currentCount).ToString();
+
+
+            if (_currentCount == -1 && _miniGameState == MiniGameState.Start)
+            {
+                _miniGameState = MiniGameState.FeverTime;
+                _uiFeverTime.SetFeverSprite();
+            }
+        } 
     }
 
 
@@ -336,37 +374,6 @@ public class UIMiniGame : MobileUIView
         if (_miniGameState != MiniGameState.Start && _miniGameState != MiniGameState.FeverTime)
             return;
 
-        _jarAnimator.SetTrigger("Play");
-        AddGaugeEvent();
+        _currentPower = Mathf.Clamp(_currentPower + _touchPower, 0, 50);
     }
-
-
-    private void AddGaugeEvent()
-    {
-
-        _currentGauge += _touchPower + 10;
-        if (_currentHealth <= _currentGauge)
-        {
-            _totalCount++;
-            _currentCount--;
-            _currentGauge = 0;
-            _currentHealth = _firstHealth + (_totalCount * 10);
-            _successCountText.text = Mathf.Abs(_currentCount).ToString();
-
-            if (_currentCount == -1)
-            {
-                if (_miniGameState == MiniGameState.Start)
-                {
-                    _miniGameState = MiniGameState.FeverTime;
-                    _uiFeverTime.SetFeverSprite();
-                }
-
-            }
-        }
-
-        _gaugeBar.SetFillAmonut(_currentGauge <= 0 ? 0 : (float)_currentGauge / _currentHealth);
-    }
-
-
-
 }

@@ -92,8 +92,8 @@ public static class UserInfo
     private static Dictionary<string, int> _giveRecipeLevelDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _recipeCookCountDic = new Dictionary<string, int>();
 
-    private static List<string> _giveGachaItemList = new List<string>();
-    private static HashSet<string> _giveGachaItemSet = new HashSet<string>();
+    private static Dictionary<string, int> _giveGachaItemCountDic = new Dictionary<string, int>();
+    private static Dictionary<string, int> _giveGachaItemLevelDic = new Dictionary<string, int>();
 
     private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
     private static List<string> _giveFurnitureList = new List<string>();
@@ -437,6 +437,13 @@ public static class UserInfo
         OnGiveRecipeHandler?.Invoke();
     }
 
+
+    public static List<string> GetGiveRecipeList()
+    {
+        return _giveRecipeList;
+    }
+
+
     public static int GetRecipeLevel(string id)
     {
         if(_giveRecipeLevelDic.TryGetValue(id, out int level))
@@ -568,7 +575,7 @@ public static class UserInfo
 
     public static bool IsGiveGachaItem(GachaItemData data)
     {
-        if (_giveGachaItemSet.Contains(data.Id))
+        if (_giveGachaItemCountDic.ContainsKey(data.Id))
             return true;
 
         return false;
@@ -577,31 +584,57 @@ public static class UserInfo
 
     public static bool IsGiveGachaItem(string id)
     {
-        if (_giveGachaItemSet.Contains(id))
+        if (_giveGachaItemCountDic.ContainsKey(id))
             return true;
 
         return false;
     }
 
+    public static int GetGachaItemLevel(GachaItemData data)
+    {
+        if (_giveGachaItemLevelDic.TryGetValue(data.Id, out int level))
+            return level;
 
-    public static void GiveGachaItem(GachaItemData data)
+        return 0;
+    }
+
+
+    public static int GetGachaItemLevel(string id)
+    {
+        if (_giveGachaItemLevelDic.TryGetValue(id, out int level))
+            return level;
+
+        return 0;
+    }
+
+
+    public static bool GiveGachaItem(GachaItemData data)
     {
         if (!ItemManager.Instance.IsGachaItem(data.Id))
         {
             DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + data.Id);
-            return;
+            return false;
         }
 
-        if (_giveGachaItemSet.Contains(data.Id))
+        if (_giveGachaItemCountDic.ContainsKey(data.Id))
         {
-            DebugLog.Log("이미 가지고 있습니다.");
-            return;
+            if (CanAddMoreItems(data))
+            {
+                _giveGachaItemCountDic[data.Id]++;
+                OnGiveGachaItemHandler?.Invoke();
+                return true;
+            }
+
+            DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
+            return false;
         }
 
-        _giveGachaItemList.Add(data.Id);
-        _giveGachaItemSet.Add(data.Id);
+        _giveGachaItemCountDic.Add(data.Id, 0);
+        _giveGachaItemLevelDic.Add(data.Id, 1);
         OnGiveGachaItemHandler?.Invoke();
+        return true;
     }
+
 
     public static void GiveGachaItem(List<GachaItemData> dataList)
     {
@@ -613,43 +646,86 @@ public static class UserInfo
                 continue;
             }
 
-            if (_giveGachaItemSet.Contains(dataList[i].Id))
+            if (_giveGachaItemCountDic.ContainsKey(dataList[i].Id))
             {
-                DebugLog.Log("이미 가지고 있습니다.");
+                if (CanAddMoreItems(dataList[i]))
+                {
+                    _giveGachaItemCountDic[dataList[i].Id]++;
+                    OnGiveGachaItemHandler?.Invoke();
+                    DebugLog.Log(dataList[i].Id + ", Lv." + (_giveGachaItemCountDic[dataList[i].Id]));
+                    continue;
+                }
+
+                DebugLog.LogError("더이상 획득할 수 없습니다: " + dataList[i].Id);
                 continue;
             }
 
-            _giveGachaItemList.Add(dataList[i].Id);
-            _giveGachaItemSet.Add(dataList[i].Id);
+            _giveGachaItemCountDic.Add(dataList[i].Id, 0);
+            _giveGachaItemLevelDic.Add(dataList[i].Id, 1);
         }
        
         OnGiveGachaItemHandler?.Invoke();
     }
 
-    public static void GiveGachaItem(string id)
+    public static bool GiveGachaItem(string id)
     {
-        if(!ItemManager.Instance.IsGachaItem(id))
+        GachaItemData data = ItemManager.Instance.GetGachaItemData(id);
+        if (data == null)
         {
-            DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + id);
-            return;
+            DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + data.Id);
+            return false;
         }
 
-        if (_giveGachaItemSet.Contains(id))
+        if (_giveGachaItemCountDic.ContainsKey(data.Id))
         {
-            DebugLog.Log("이미 가지고 있습니다.");
-            return;
+            if (CanAddMoreItems(data))
+            {
+                _giveGachaItemCountDic[data.Id]++;
+                OnGiveGachaItemHandler?.Invoke();
+                return true;
+            }
+            DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
+            return false;
         }
 
-        _giveGachaItemList.Add(id);
-        _giveGachaItemSet.Add(id);
+        _giveGachaItemCountDic.Add(data.Id, 0);
+        _giveGachaItemLevelDic.Add(data.Id, 1);
         OnGiveGachaItemHandler?.Invoke();
+        return true;
     }
 
-    public static List<string> GetGiveGachaItemList()
+    public static Dictionary<string, int> GetGiveGachaItemDic()
     {
-        return _giveGachaItemList;
+        return _giveGachaItemCountDic;
     }
 
+    public static bool CanAddMoreItems(GachaItemData data)
+    {
+        if(_giveGachaItemCountDic.TryGetValue(data.Id, out int giveCount))
+        {
+            int itemLevel = _giveGachaItemLevelDic[data.Id];
+            int maxLevel = data.MaxLevel;
+
+            if(maxLevel <= itemLevel)
+            {
+                DebugLog.Log("아이템이 이미 최대 레벨입니다.: " + data.Id + "Lv." + itemLevel);
+                return false;
+            }
+
+            int requiredItems = 0;
+            for(int level = itemLevel; level < maxLevel; level++)
+            {
+                requiredItems += level * ConstValue.ADD_ITEM_UPGRADE_COUNT;
+            }
+
+            if (giveCount < requiredItems)
+                return true;
+
+            return false;
+        }
+
+        return true;
+    }
 
 
     #endregion

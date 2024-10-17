@@ -25,11 +25,11 @@ public class GachaItemData
     private UpgradeType _upgradeType;
     public UpgradeType UpgradeType => _upgradeType;
 
-    private float _upgradeDefaultValue;
-    public float UpgradeDefaultValue => _upgradeDefaultValue;
+    private float _defaultValue;
+    public float DefaultValue => _defaultValue;
 
-    private float _upgradeAddValue;
-    public float UpdatingAddValue => _upgradeAddValue;
+    private float _upgradeValue;
+    public float UpdatingValue => _upgradeValue;
 
     private int _maxLevel;
     public int MaxLevel => _maxLevel;
@@ -38,7 +38,7 @@ public class GachaItemData
     public Sprite Sprite => _sprite;
 
 
-    public GachaItemData(string id, string name, string description, int addScore, int minutePerTip, int rank, UpgradeType upgradeType, Sprite sprite)
+    public GachaItemData(string id, string name, string description, int addScore, int minutePerTip, int rank, UpgradeType upgradeType, float defaultValue, float upgradeValue, int maxLevel, Sprite sprite)
     {
         _id = id;
         _name = name;
@@ -47,6 +47,9 @@ public class GachaItemData
         _tipPerMinute = minutePerTip;
         _rank = rank;
         _upgradeType = upgradeType;
+        _defaultValue = defaultValue;
+        _upgradeValue = upgradeValue;
+        _maxLevel = maxLevel;
         _sprite = sprite;
     }
 }
