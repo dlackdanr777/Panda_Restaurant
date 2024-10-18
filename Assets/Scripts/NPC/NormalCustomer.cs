@@ -15,16 +15,26 @@ public class NormalCustomer : Customer
     private int _orderCount = 1;
     public int OrderCount => _orderCount;
 
-    private float _foodPriceMul = 1;
-    public float FoodPriceMul => _foodPriceMul;
+    private float _foodPriceMul = 2;
 
+    private float _currentFoodPriceMul = 1;
+    public float CurrentFoodPriceMul => _currentFoodPriceMul;
+
+    private float _doublePricePercent;
+    public float DoublePricePercent => _doublePricePercent;
 
     public override void SetData(CustomerData data)
     {
         base.SetData(data);
+
+        _moveSpeed *= GameManager.Instance.AddCustomerSpeedMul;
+        _doublePricePercent = 0;
+        _currentFoodPriceMul = 1;
+        _orderCount = 1;
         _anger.Init();
         _animator.SetBool("Run", false);
         _animator.SetBool("Eat", false);
+
         if (_skill != null)
             _skill.Deactivate(this);
 
@@ -33,11 +43,12 @@ public class NormalCustomer : Customer
             _skill = data.Skill;
             data.Skill.Activate(this);
         }
-        else
+        DebugLog.Log(Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100));
+        if (Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100))
         {
-            SetOrderCount(1);
-            SetFoodPriceMul(1);
+            _currentFoodPriceMul = _foodPriceMul;
         }
+
     }
 
 
@@ -46,9 +57,10 @@ public class NormalCustomer : Customer
         _orderCount = value;
     }
 
-    public void SetFoodPriceMul(float value)
+    public void AddFoodPricePercent(float value)
     {
-        _foodPriceMul = value;
+        _currentFoodPriceMul = Mathf.Clamp(_currentFoodPriceMul + value, 0, 100);
+        
     }
 
     public void StartAnger()

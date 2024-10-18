@@ -327,7 +327,7 @@ public class TableManager : MonoBehaviour
         int tip = Mathf.FloorToInt(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul);
         _tableDatas[index].TotalTip += tip + GameManager.Instance.AddFoodTip;
         _tableDatas[index].CurrentFood = data;
-        _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.FoodPriceMul) + (int)(data.Price * GameManager.Instance.FoodPriceMul * 0.01f) + GameManager.Instance.AddFoodPrice;
+        _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.CurrentFoodPriceMul) + (int)(data.Price * GameManager.Instance.FoodPriceMul * 0.01f) + GameManager.Instance.AddFoodPrice;
         _orderButtons[index].SetImage(foodData.ThumbnailSprite);
 
         _tableDatas[index].TableState = ETableState.Seating;
@@ -372,8 +372,6 @@ public class TableManager : MonoBehaviour
     {
         int tip = _tableDatas[index].TotalTip;
         int totalPrice = _tableDatas[index].TotalPrice;
-        if (UnityEngine.Random.Range(0f, 100f) < GameManager.Instance.AddFoodDoublePricePercent)
-            totalPrice *= 2;
 
         UserInfo.AppendMoney(totalPrice);
         StartCoinAnime(index);

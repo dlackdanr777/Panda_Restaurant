@@ -16,13 +16,9 @@ public class CustomerOrderCountUpSkill : CustomerSkill
         }
 
         NormalCustomer normalCustomer = (NormalCustomer)customer;
-        normalCustomer.SetFoodPriceMul(1);
 
         if (Random.Range(0f, 100f) < SkillActivatePercent)
             normalCustomer.SetOrderCount(_addOrderCount + 1);
-
-        else
-            normalCustomer.SetOrderCount(1);
     }
 
     public override void Deactivate(Customer customer)
@@ -33,7 +29,5 @@ public class CustomerOrderCountUpSkill : CustomerSkill
             return;
         }
         NormalCustomer normalCustomer = (NormalCustomer)customer;
-        normalCustomer.SetOrderCount(1);
-        normalCustomer.SetFoodPriceMul(1);
     }
 }

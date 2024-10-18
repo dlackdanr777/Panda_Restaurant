@@ -47,6 +47,7 @@ public class SpriteFillAmount : MonoBehaviour
 
     private IEnumerator TweenFillAmountRoutine(float amount, float time)
     {
+        amount = Mathf.Clamp(amount, 0, 1);
         float currentAmount = _value;
         float currenttime = 0;
 

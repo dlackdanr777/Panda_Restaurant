@@ -29,7 +29,7 @@ public class GachaItemData
     public float DefaultValue => _defaultValue;
 
     private float _upgradeValue;
-    public float UpdatingValue => _upgradeValue;
+    public float UpgradeValue => _upgradeValue;
 
     private int _maxLevel;
     public int MaxLevel => _maxLevel;

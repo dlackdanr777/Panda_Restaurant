@@ -56,18 +56,17 @@ public class CustomerController : MonoBehaviour
         List<SpecialCustomerData> specialCustomerDataList = CustomerDataManager.Instance.GetAppearSpecialCustomerDataList();
         List<GatecrasherCustomerData> gatecrasherCustomerDataList = CustomerDataManager.Instance.GetAppearGatecrasherCustomerDataList();
         int randInt = 0;
-
         for (int i = 0, cnt = GameManager.Instance.AddPromotionCustomer; i < cnt; i++)
         {
             if (IsMaxCount)
                 break;
 
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);
-            if(_breakCustomerEnabled && _breakInCustomerTimer <= 0 && randSpawnProbability < 10)
+            if(_breakCustomerEnabled && _breakInCustomerTimer <= 0 && randSpawnProbability < ConstValue.DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT)
             {
                 WeightedRandom<CustomerData> randomDataList = new WeightedRandom<CustomerData>();
                 for(int j = 0, cntJ = specialCustomerDataList.Count; j < cntJ; ++j)
-                    randomDataList.Add(specialCustomerDataList[j], specialCustomerDataList[j].SpawnChance);
+                    randomDataList.Add(specialCustomerDataList[j], specialCustomerDataList[j].SpawnChance * GameManager.Instance.AddSpecialCustomerSpawnMul);
 
                 for (int j = 0, cntJ = gatecrasherCustomerDataList.Count; j < cntJ; ++j)
                     randomDataList.Add(gatecrasherCustomerDataList[j], gatecrasherCustomerDataList[j].SpawnChance);

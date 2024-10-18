@@ -161,7 +161,7 @@ public class Customer : MonoBehaviour
 
         foreach (Vector2 vec in nodeList)
         {
-            while (Vector3.Distance(_moveObj.transform.position, vec) > 0.05f)
+            while (Vector3.Distance(_moveObj.transform.position, vec) > 0.1f)
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
                 _moveObj.transform.Translate(dir * 0.01f * _moveSpeed, Space.World);

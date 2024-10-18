@@ -20,9 +20,6 @@ public class UIMiniGame : MobileUIView
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIMiniGameFeverTime _uiFeverTime;
     [SerializeField] private Button _screenButton;
-    [SerializeField] private GameObject _descriptionGroup;
-
-    [SerializeField] private UIImageAndText _descriptionText;
     [SerializeField] private TextMeshProUGUI _timeCountText;
     [SerializeField] private TextMeshProUGUI _timeText;
     [SerializeField] private TextMeshProUGUI _successCountText;
@@ -32,6 +29,15 @@ public class UIMiniGame : MobileUIView
     [SerializeField] private UIMiniGameJarGroup _jarGroup;
     [SerializeField] private Animator _jarAnimator;
     [SerializeField] private Animator _panda3Animator;
+
+    [Space]
+    [Header("Description Components")]
+    [SerializeField] private GameObject _descriptionGroup;
+    [SerializeField] private Image _descriptionLeftTouchImage;
+    [SerializeField] private Image _descriptionRightTouchImage;
+    [SerializeField] private UIImageAndText _descriptionText;
+    [SerializeField] private UIImageAndText _descriptionTimeText;
+    [SerializeField] private UIImageAndText _descriptionSuccessCountText;
 
     [Space]
     [Header("Result Components")]
@@ -53,7 +59,7 @@ public class UIMiniGame : MobileUIView
     [SerializeField] private float _hideDuration;
     [SerializeField] private Ease _hideTweenMode;
 
-    private float _totalTime => 60 + GameManager.Instance.AddMiniGameTime;
+    private float _totalTime => ConstValue.DEFAULT_MINIGAME_TIME + GameManager.Instance.AddMiniGameTime;
 
     private FoodMiniGameData _currentData;
     private int _successCount;
@@ -70,6 +76,8 @@ public class UIMiniGame : MobileUIView
     private MiniGameState _miniGameState;
 
     private float _currentPower;
+    private float _maxPower => 50;
+
 
     public override void Init()
     {
@@ -172,7 +180,9 @@ public class UIMiniGame : MobileUIView
         _uiFeverTime.SetNormalSprite();
         _gaugeBar.SetFillAmonut(0);
         _successCountText.text = _successCount.ToString();
+        _descriptionSuccessCountText.SetText(_successCount.ToString());
         _timeText.text = Mathf.CeilToInt(_currentTime).ToString();
+        _descriptionTimeText.SetText(Mathf.CeilToInt(_currentTime).ToString());
         _uiNav.Push("UIMiniGame");
         Tween.Wait(_showDuration + 0.5f, () =>
         {
@@ -193,19 +203,17 @@ public class UIMiniGame : MobileUIView
 
     private void Update()
     {
-
-
         if (_miniGameState != MiniGameState.Start && _miniGameState != MiniGameState.FeverTime)
             return;
 
-        if (-5 < _currentPower)
-            _currentPower -= Time.deltaTime * 5;
-        else if (_currentPower < -5)
-            _currentPower = -5;
+        if (-2 < _currentPower)
+            _currentPower -= Time.deltaTime * 5 * Mathf.Lerp(1, 3, _currentPower <= 0 ? 0 : _currentPower / _maxPower);
+        else if (_currentPower < -2)
+            _currentPower = -2;
 
         _jarAnimator.SetFloat("StickSpeed", _currentPower * 0.1f);
-        _jarAnimator.SetFloat("StickSpeedMul", Mathf.Clamp(_currentPower * 0.1f, 0, 10f));
-        _panda3Animator.SetFloat("StickSpeed", _currentPower * 0.1f);
+        _jarAnimator.SetFloat("StickSpeedMul", Mathf.Clamp(_currentPower * 0.3f, 0, 10f));
+        _panda3Animator.SetFloat("StickSpeed", _currentPower * 0.2f);
 
         if (_currentTime <= 0)
         {
@@ -228,7 +236,7 @@ public class UIMiniGame : MobileUIView
             _totalCount++;
             _currentCount--;
             _currentGauge = 0;
-            _currentHealth = _firstHealth + (_totalCount * 10);
+            _currentHealth = _firstHealth + (_totalCount * _addHealth);
             _successCountText.text = Mathf.Abs(_currentCount).ToString();
 
 
@@ -244,8 +252,6 @@ public class UIMiniGame : MobileUIView
     private IEnumerator StartDescriptionRoutine()
     {
         _canvasGroup.blocksRaycasts = true;
-        _descriptionGroup.gameObject.SetActive(true);
-        _descriptionText.gameObject.SetActive(true);
         _screenButton.gameObject.SetActive(true);
         _timeCountText.gameObject.SetActive(false);
         _timeOver.gameObject.SetActive(false);
@@ -255,13 +261,29 @@ public class UIMiniGame : MobileUIView
         _resultEffect.gameObject.SetActive(false);
         _resultDescription.gameObject.SetActive(false);
 
+        _descriptionGroup.gameObject.SetActive(true);
+        _descriptionText.gameObject.SetActive(true);
+        _descriptionLeftTouchImage.gameObject.SetActive(false);
+        _descriptionRightTouchImage.gameObject.SetActive(false);
+        _descriptionSuccessCountText.gameObject.SetActive(false);
+        _descriptionTimeText.gameObject.SetActive(true);
+
+
         yield return StartCoroutine(DescriptionRoutine(Utility.SetStringColor(((int)_totalTime).ToString(), ColorType.Negative) + "초 동안"));
+        _descriptionTimeText.gameObject.SetActive(false);
+        _descriptionLeftTouchImage.gameObject.SetActive(true);
+        _descriptionRightTouchImage.gameObject.SetActive(true);
+
         yield return StartCoroutine(DescriptionRoutine("발바닥을 눌러 휘저으세요!!"));
+        _descriptionLeftTouchImage.gameObject.SetActive(false);
+        _descriptionRightTouchImage.gameObject.SetActive(false);
+        _descriptionSuccessCountText.gameObject.SetActive(true);
+
         yield return StartCoroutine(DescriptionRoutine("이번 목표는 " + Utility.SetStringColor(_successCount.ToString(), ColorType.Negative) + "!!!"));
-
-
         yield return YieldCache.WaitForSeconds(0.5f);
         _descriptionText.gameObject.SetActive(false);
+        _descriptionSuccessCountText.gameObject.SetActive(false);
+
 
         yield return YieldCache.WaitForSeconds(0.5f);
         _timeCountText.gameObject.SetActive(true);
@@ -275,6 +297,10 @@ public class UIMiniGame : MobileUIView
         yield return YieldCache.WaitForSeconds(1);
         _descriptionGroup.gameObject.SetActive(false);
         _descriptionText.gameObject.SetActive(false);
+        _descriptionLeftTouchImage.gameObject.SetActive(false);
+        _descriptionRightTouchImage.gameObject.SetActive(false);
+        _descriptionSuccessCountText.gameObject.SetActive(false);
+        _descriptionTimeText.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
         _timeCountText.gameObject.SetActive(false);
         _miniGameState = MiniGameState.Start;
@@ -374,6 +400,6 @@ public class UIMiniGame : MobileUIView
         if (_miniGameState != MiniGameState.Start && _miniGameState != MiniGameState.FeverTime)
             return;
 
-        _currentPower = Mathf.Clamp(_currentPower + _touchPower, 0, 50);
+        _currentPower = Mathf.Clamp(_currentPower + _touchPower, 0, _maxPower);
     }
 }

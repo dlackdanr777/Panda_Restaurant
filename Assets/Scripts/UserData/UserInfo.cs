@@ -699,6 +699,11 @@ public static class UserInfo
         return _giveGachaItemCountDic;
     }
 
+    public static Dictionary<string, int> GetGiveGachaItemLevelDic()
+    {
+        return _giveGachaItemLevelDic;
+    }
+
     public static bool CanAddMoreItems(GachaItemData data)
     {
         if(_giveGachaItemCountDic.TryGetValue(data.Id, out int giveCount))

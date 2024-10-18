@@ -24,9 +24,9 @@ public class GatecrasherCustomer : Customer
     [SerializeField] private ParticleSystem _soundParticle;
 
     private int _activeDuration;
-    private int _touchCount;
-    private int _totalTouchCount;
-    public int TotalTouchCount => _totalTouchCount;
+    private float _currentTouchCount;
+    private float _totalTouchCount;
+    public float TotalTouchCount => _totalTouchCount;
     private bool _isEndEvent;
     public bool IsEndEvent => _isEndEvent;
     private bool _isInDisguise;
@@ -40,6 +40,8 @@ public class GatecrasherCustomer : Customer
     private Coroutine _speedRecoveryCoroutine;
     private Action _onCompleted;
 
+    private float _touchDamage => 1;
+
     public override void SetData(CustomerData data)
     {
         if (!(data is GatecrasherCustomerData))
@@ -51,7 +53,7 @@ public class GatecrasherCustomer : Customer
         _animator.runtimeAnimatorController = gatecrasherData.Controller;
         base.SetData(data);
         _activeDuration = gatecrasherData.ActiveDuration;
-        _touchCount = 0;
+        _currentTouchCount = 0;
         _totalTouchCount = gatecrasherData.TouchCount;
         _isEndEvent = false;
         _touchEnabled = false;
@@ -226,16 +228,16 @@ public class GatecrasherCustomer : Customer
         if (_customerData == null)
             return;
 
-        _touchCount++;
+        _currentTouchCount += _touchDamage * GameManager.Instance.AddGatecrasherCustomerDamageMul;
         _touchParticle.Emit(UnityEngine.Random.Range(2, 4));
         _spriteGroup.SetAlpha(1);
-        _spriteFillAmount.TweenFillAmount((float)_touchCount / _totalTouchCount, 0.05f);
+        _spriteFillAmount.TweenFillAmount(_currentTouchCount / _totalTouchCount, 0.05f);
 
         if (_speedRecoveryCoroutine != null)
             StopCoroutine(_speedRecoveryCoroutine);
         _speedRecoveryCoroutine = StartCoroutine(SpeedRecoveryRoutine());
 
-        if (_totalTouchCount <= _touchCount)
+        if (_totalTouchCount <= _currentTouchCount)
         {
             _isEndEvent = true;
 
