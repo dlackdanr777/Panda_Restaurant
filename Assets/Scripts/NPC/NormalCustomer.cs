@@ -43,7 +43,7 @@ public class NormalCustomer : Customer
             _skill = data.Skill;
             data.Skill.Activate(this);
         }
-        DebugLog.Log(Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100));
+
         if (Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100))
         {
             _currentFoodPriceMul = _foodPriceMul;

@@ -53,7 +53,7 @@ public class UIPictorialBook : MobileUIView
         UserInfo.OnGiveRecipeHandler += CustomerUpdateUI;
         UserInfo.OnChangeScoreHandler += CustomerUpdateUI;
         UserInfo.OnGiveGachaItemHandler += CustomerUpdateUI;
-        GameManager.Instance.OnAppendAddScoreHandler += CustomerUpdateUI;
+        GameManager.Instance.OnChangeScoreHandler += CustomerUpdateUI;
 
         UserInfo.OnGiveGachaItemHandler += GachaItemUpdateUI;
 

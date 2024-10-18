@@ -181,8 +181,8 @@ public class UIMiniGame : MobileUIView
         _gaugeBar.SetFillAmonut(0);
         _successCountText.text = _successCount.ToString();
         _descriptionSuccessCountText.SetText(_successCount.ToString());
-        _timeText.text = Mathf.CeilToInt(_currentTime).ToString();
-        _descriptionTimeText.SetText(Mathf.CeilToInt(_currentTime).ToString());
+        _timeText.text = Mathf.CeilToInt(_totalTime).ToString();
+        _descriptionTimeText.SetText(Mathf.CeilToInt(_totalTime).ToString());
         _uiNav.Push("UIMiniGame");
         Tween.Wait(_showDuration + 0.5f, () =>
         {
@@ -269,7 +269,7 @@ public class UIMiniGame : MobileUIView
         _descriptionTimeText.gameObject.SetActive(true);
 
 
-        yield return StartCoroutine(DescriptionRoutine(Utility.SetStringColor(((int)_totalTime).ToString(), ColorType.Negative) + "초 동안"));
+        yield return StartCoroutine(DescriptionRoutine(Utility.SetStringColor(Mathf.CeilToInt(_totalTime).ToString(), ColorType.Negative) + "초 동안"));
         _descriptionTimeText.gameObject.SetActive(false);
         _descriptionLeftTouchImage.gameObject.SetActive(true);
         _descriptionRightTouchImage.gameObject.SetActive(true);

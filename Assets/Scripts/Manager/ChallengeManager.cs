@@ -99,7 +99,7 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnGiveRecipeHandler += Type06ChallengeCheck;
         UserInfo.OnAddCookCountHandler += Type07ChallengeCheck;
         UserInfo.OnChangeScoreHandler += Type08ChallengeCheck;
-        GameManager.Instance.OnAppendAddScoreHandler += Type08ChallengeCheck;
+        GameManager.Instance.OnChangeScoreHandler += Type08ChallengeCheck;
         UserInfo.OnAddCustomerCountHandler += Type09ChallengeCheck;
         UserInfo.OnVisitedCustomerHandler += Type10ChallengeCheck;
         UserInfo.OnChangeMoneyHandler += Type11ChallengeCheck;

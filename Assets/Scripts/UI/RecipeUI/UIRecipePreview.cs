@@ -40,7 +40,7 @@ public class UIRecipePreview : MonoBehaviour
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
         UserInfo.OnAddCookCountHandler += UpdateUI;
-        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
+        GameManager.Instance.OnChangeScoreHandler += UpdateUI;
     }
 
 

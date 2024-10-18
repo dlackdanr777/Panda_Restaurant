@@ -21,7 +21,8 @@ public class GameManager : MonoBehaviour
     private static GameManager _instance;
 
     public event Action OnChangeTipPerMinuteHandler;
-    public event Action OnAppendAddScoreHandler;
+    public event Action OnChangeScoreHandler;
+    public event Action OnChgangeStaffSkillValueHandler;
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
@@ -60,7 +61,23 @@ public class GameManager : MonoBehaviour
     public int MaxTipVolume => Mathf.FloorToInt(_addEquipFurnitureMaxTipVolume + (_addEquipFurnitureMaxTipVolume * _addUpgradeGachaItemMaxTipVolumePercent * 0.01f));
 
 
+    public float AddStaffSkillTime => _addUpgradeGachaItemStaffSkillTime;
+    public float AddWaiterSkillTime => _addUpgradeGachaItemWaiterSkillTime;
+    public float AddServerSkillTime => _addUpgradeGachaItemServerSkillTime;
+    public float AddMarketerSkillTime => _addUpgradeGachaItemMarketerSkillTime;
+    public float AddGuardSkillTime => _addUpgradeGachaItemGuardSkillTime;
+    public float AddCleanerSkillTime => _addUpgradeGachaItemCleanerSkillTime;
+
+    public float SubStaffSkillCoolTime => -_subUpgradeGachaItemStaffCoolTime;
+    public float SubWaiterSkillCoolTime => -_subUpgradeGachaItemWaiterCoolTime;
+    public float SubServerSkillCoolTime => -_subUpgradeGachaItemServerCoolTime;
+    public float SubMarketerSkillCoolTime => -_subUpgradeGachaItemMarketerCoolTime;
+    public float SubGuardSkillCoolTime => -_subUpgradeGachaItemGuardCoolTime;
+    public float SubCleanerSkillCoolTime => -_subUpgradeGachaItemCleanerCoolTime;
+
+
     public float AddMiniGameTime => _addUpgradeGachaItemMiniGameTime + _addGiveRecipeMiniGameTime;
+
 
 
     [SerializeField] private int _addEquipStaffScore;
@@ -82,20 +99,20 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private int _addGiveRecipeMiniGameTime;
 
-    [SerializeField] private int _addUpgradeGachaItemScroe; // 전체 평점 상승(+) 추가됨
-    [SerializeField] private int _addUpgradeGachaItemTipPerMinute; //분당 팁 증가(+) 추가됨
-    [SerializeField] private int _addUpgradeGachaItemFoodPrice; //음식 가격 증가(+) 추가됨
-    [SerializeField] private int _addUpgradeGachaItemFoodTip; //주문 수 마다 팁 증가(+) 추가됨
-    [SerializeField] private int _addUpgradeGachaItemWaitCustomerMaxCount; //최대 줄서기 손님 증가(+) 추가됨
-    [SerializeField] private int _addUpgradeGachaItemSpecialCustomerMoney; //스페셜 손님 터치시 코인 획득량 증가(+) 추가됨
-    [SerializeField] private float _addUpgradeGachaItemCustomerSpeedPercent; //손님 스피드 상승(%) 추가됨
-    [SerializeField] private float _addUpgradeGachaItemMaxTipVolumePercent; //최대 팁 보유량 증가(%) 추가됨
-    [SerializeField] private float _subUpgradeGachaItemCookingTime; //요리 시간 단축(-) 추가됨
-    [SerializeField] private float _addUpgradeGachaItemFoodDoublePricePercent; //음식 가격 두배 확률 증가(%) //추가됨
-    [SerializeField] private float _addUpgradeGachaItemSpecialCustomerSpawnPercent; //스페셜 손님 등장 확률 증가(%) 추가됨
-    [SerializeField] private float _addUpgradeGachaItemGatecrasherCustomerDamagePercent; //진상에게 가하는 피해 증가(%) //추가됨
-    [SerializeField] private float _addUpgradeGachaItemGatecrasherCustomerSpeedDownTime; //진상 터치시 속도 둔화 시간 증가(+) //추가됨
-    [SerializeField] private float _addUpgradeGachaItemMiniGameTime; //미니 게임 제작 시간 증가(+) //추가됨
+    [SerializeField] private int _addUpgradeGachaItemScroe; // 전체 평점 상승(+)
+    [SerializeField] private int _addUpgradeGachaItemTipPerMinute; //분당 팁 증가(+)
+    [SerializeField] private int _addUpgradeGachaItemFoodPrice; //음식 가격 증가(+)
+    [SerializeField] private int _addUpgradeGachaItemFoodTip; //주문 수 마다 팁 증가(+)
+    [SerializeField] private int _addUpgradeGachaItemWaitCustomerMaxCount; //최대 줄서기 손님 증가(+)
+    [SerializeField] private int _addUpgradeGachaItemSpecialCustomerMoney; //스페셜 손님 터치시 코인 획득량 증가(+)
+    [SerializeField] private float _addUpgradeGachaItemCustomerSpeedPercent; //손님 스피드 상승(%)
+    [SerializeField] private float _addUpgradeGachaItemMaxTipVolumePercent; //최대 팁 보유량 증가(%)
+    [SerializeField] private float _subUpgradeGachaItemCookingTime; //요리 시간 단축(-)
+    [SerializeField] private float _addUpgradeGachaItemFoodDoublePricePercent; //음식 가격 두배 확률 증가(%)
+    [SerializeField] private float _addUpgradeGachaItemSpecialCustomerSpawnPercent; //스페셜 손님 등장 확률 증가(%)
+    [SerializeField] private float _addUpgradeGachaItemGatecrasherCustomerDamagePercent; //진상에게 가하는 피해 증가(%)
+    [SerializeField] private float _addUpgradeGachaItemGatecrasherCustomerSpeedDownTime; //진상 터치시 속도 둔화 시간 증가(+)
+    [SerializeField] private float _addUpgradeGachaItemMiniGameTime; //미니 게임 제작 시간 증가(+)
 
     [SerializeField] private float _subUpgradeGachaItemStaffCoolTime; //전체 스탭 스킬 쿨타임 감소(-)
     [SerializeField] private float _addUpgradeGachaItemStaffSkillTime; //전체 스탭 스킬 유지 시간 증가(+)
@@ -154,6 +171,7 @@ public class GameManager : MonoBehaviour
         UserInfo.OnGiveRecipeHandler += OnGiveRecipeCheck;
         UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEffectCheck;
         UserInfo.OnGiveGachaItemHandler += OnUpgradeGachaItemCheck;
+        UserInfo.OnUpgradeGachaItemHandler += OnUpgradeGachaItemCheck;
 
         OnEquipStaffEffectCheck();
         OnEquipFurnitureEffectCheck();
@@ -238,7 +256,7 @@ public class GameManager : MonoBehaviour
 
         _addEquipStaffScore = addScore;
         _addEquipStaffTipMul = addTipMul;
-        OnAppendAddScoreHandler?.Invoke();
+        OnChangeScoreHandler?.Invoke();
     }
 
 
@@ -273,7 +291,7 @@ public class GameManager : MonoBehaviour
         _addEquipFurnitureScore = addScore;
         _addEquipFurnitureMaxTipVolume = maxTipVolume;
         _addEquipFurnitureTipPerMinute = tipPerMinute;
-        OnAppendAddScoreHandler?.Invoke();
+        OnChangeScoreHandler?.Invoke();
         OnChangeTipPerMinuteHandler?.Invoke();
     }
 
@@ -309,7 +327,7 @@ public class GameManager : MonoBehaviour
         _addEquipKitchenUtensilScore = addScore;
         _addEquipKitchenUtensilCookSpeedMul = cookSpeedMul;
         _addEquipKitchenUtensilTipPerMinute = tipPerMinute;
-        OnAppendAddScoreHandler?.Invoke();
+        OnChangeScoreHandler?.Invoke();
         OnChangeTipPerMinuteHandler?.Invoke();
     }
 
@@ -439,13 +457,12 @@ public class GameManager : MonoBehaviour
 
         _addGiveGachaItemScore = addScore;
         _addGiveGachaItemTipPerMinute = addTipPerMinute;
-        OnAppendAddScoreHandler?.Invoke();
+        OnChangeScoreHandler?.Invoke();
     }
 
 
     private void OnUpgradeGachaItemCheck()
     {
-        DebugLog.Log("실행");
         _addUpgradeGachaItemScroe = 0;
         _addUpgradeGachaItemScroe = 0;
         _addUpgradeGachaItemTipPerMinute = 0;
@@ -530,6 +547,46 @@ public class GameManager : MonoBehaviour
                     _addUpgradeGachaItemFoodTip += (int)addValue;
                     break;
 
+                case UpgradeType.UPGRADE09:
+                    _subUpgradeGachaItemWaiterCoolTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE10:
+                    _addUpgradeGachaItemWaiterSkillTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE11:
+                    _subUpgradeGachaItemServerCoolTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE12:
+                    _addUpgradeGachaItemServerSkillTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE13:
+                    _subUpgradeGachaItemMarketerCoolTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE14:
+                    _addUpgradeGachaItemMarketerSkillTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE15:
+                    _subUpgradeGachaItemCleanerCoolTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE16:
+                    _addUpgradeGachaItemCleanerSkillTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE17:
+                    _subUpgradeGachaItemGuardCoolTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE18:
+                    _addUpgradeGachaItemGuardSkillTime += addValue;
+                    break;
+
                 case UpgradeType.UPGRADE19:
                     _addUpgradeGachaItemGatecrasherCustomerDamagePercent += addValue;
                     break;
@@ -540,6 +597,14 @@ public class GameManager : MonoBehaviour
 
                 case UpgradeType.UPGRADE21:
                     _addUpgradeGachaItemGatecrasherCustomerSpeedDownTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE22:
+                    _subUpgradeGachaItemStaffCoolTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE23:
+                    _addUpgradeGachaItemStaffSkillTime += addValue;
                     break;
 
                 case UpgradeType.UPGRADE24:
@@ -553,9 +618,10 @@ public class GameManager : MonoBehaviour
                 case UpgradeType.UPGRADE26:
                     _addUpgradeGachaItemWaitCustomerMaxCount += (int)addValue;
                     break;
-
-
             }
+
+            OnChangeScoreHandler?.Invoke();
+            OnChgangeStaffSkillValueHandler?.Invoke();
         }
     }
 

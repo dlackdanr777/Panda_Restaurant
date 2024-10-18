@@ -62,7 +62,7 @@ public class UIStaff : MobileUIView
         UserInfo.OnGiveStaffHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
-        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
+        GameManager.Instance.OnChangeScoreHandler += UpdateUI;
 
         SetStaffData(StaffType.Manager);
         SetStaffPreview();

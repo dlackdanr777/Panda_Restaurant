@@ -14894,7 +14894,7 @@ MonoBehaviour:
   _addUpgradeGachaItemCustomerSpeedPercent: 0
   _addUpgradeGachaItemMaxTipVolumePercent: 0
   _subUpgradeGachaItemCookingTime: 0
-  _addUpgradeGachaItemFoodDoublePricePercent: 1000
+  _addUpgradeGachaItemFoodDoublePricePercent: 0
   _addUpgradeGachaItemSpecialCustomerSpawnPercent: 0
   _addUpgradeGachaItemGatecrasherCustomerDamagePercent: 0
   _addUpgradeGachaItemGatecrasherCustomerSpeedDownTime: 0

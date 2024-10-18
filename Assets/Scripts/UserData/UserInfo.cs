@@ -24,6 +24,7 @@ public static class UserInfo
     public static event Action OnAddCookCountHandler;
 
     public static event Action OnGiveGachaItemHandler;
+    public static event Action OnUpgradeGachaItemHandler;
 
     public static event Action<FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
@@ -185,7 +186,7 @@ public static class UserInfo
         if (GameManager.Instance.MaxTipVolume <= _tip)
             return;
 
-        _tip = Mathf.Clamp(_tip + value, 0, GameManager.Instance.MaxTipVolume);
+        _tip = _tip + value;
         DataBindTip();
         OnChangeTipHandler?.Invoke();
     }
@@ -652,7 +653,7 @@ public static class UserInfo
                 {
                     _giveGachaItemCountDic[dataList[i].Id]++;
                     OnGiveGachaItemHandler?.Invoke();
-                    DebugLog.Log(dataList[i].Id + ", Lv." + (_giveGachaItemCountDic[dataList[i].Id]));
+                    DebugLog.Log(dataList[i].Id + ", 보유량: " + (_giveGachaItemCountDic[dataList[i].Id]));
                     continue;
                 }
 
@@ -694,6 +695,73 @@ public static class UserInfo
         return true;
     }
 
+    public static bool UpgradeGachaItem(GachaItemData data)
+    {
+        if(!_giveGachaItemCountDic.ContainsKey(data.Id))
+        {
+            DebugLog.LogError("보유중인 아이템이 아닙니다: " + data.Id);
+            return false;
+        }
+
+        int itemLevel = _giveGachaItemLevelDic[data.Id];
+        int maxLevel = data.MaxLevel;
+        if (maxLevel <= itemLevel)
+        {
+            DebugLog.LogError("업그레이드를 할 수 없습니다: " + data.Id);
+            return false;
+        }
+
+        int currentItemCount = _giveGachaItemCountDic[data.Id];
+        int requiredItemCount = GetUpgradeRequiredItemCount(data);
+        if(currentItemCount < requiredItemCount)
+        {
+            DebugLog.LogError("보유중인 아이템의 갯수가 부족합니다: 필요 수량(" + requiredItemCount + "), 보유 수량(" + currentItemCount + ")");
+            return false;
+        }
+
+        _giveGachaItemLevelDic[data.Id]++;
+        _giveGachaItemCountDic[data.Id] -= requiredItemCount;
+        OnUpgradeGachaItemHandler?.Invoke();
+        return true;
+    }
+
+    public static bool UpgradeGachaItem(string id)
+    {
+        GachaItemData data = ItemManager.Instance.GetGachaItemData(id);
+        if (data == null)
+        {
+            DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + data.Id);
+            return false;
+        }
+
+        if (!_giveGachaItemCountDic.ContainsKey(data.Id))
+        {
+            DebugLog.LogError("보유중인 아이템이 아닙니다: " + data.Id);
+            return false;
+        }
+
+        int itemLevel = _giveGachaItemLevelDic[data.Id];
+        int maxLevel = data.MaxLevel;
+        if (maxLevel <= itemLevel)
+        {
+            DebugLog.LogError("업그레이드를 할 수 없습니다: " + data.Id);
+            return false;
+        }
+
+        int currentItemCount = _giveGachaItemCountDic[data.Id];
+        int requiredItemCount = GetUpgradeRequiredItemCount(data);
+        if (currentItemCount < requiredItemCount)
+        {
+            DebugLog.LogError("보유중인 아이템의 갯수가 부족합니다: 필요 수량(" + requiredItemCount + "), 보유 수량(" + currentItemCount + ")");
+            return false;
+        }
+
+        _giveGachaItemLevelDic[data.Id]++;
+        _giveGachaItemCountDic[data.Id] -= requiredItemCount;
+        OnUpgradeGachaItemHandler?.Invoke();
+        return true;
+    }
+
     public static Dictionary<string, int> GetGiveGachaItemDic()
     {
         return _giveGachaItemCountDic;
@@ -703,6 +771,7 @@ public static class UserInfo
     {
         return _giveGachaItemLevelDic;
     }
+
 
     public static bool CanAddMoreItems(GachaItemData data)
     {
@@ -730,6 +799,22 @@ public static class UserInfo
         }
 
         return true;
+    }
+
+    public static int GetUpgradeRequiredItemCount(GachaItemData data)
+    {
+        int requiredItems = 0;
+        int maxLevel = data.MaxLevel;
+
+        if (!_giveGachaItemCountDic.TryGetValue(data.Id, out int itemLevel))
+            return -1;
+
+        for (int level = itemLevel; level < maxLevel; level++)
+        {
+            requiredItems += level * ConstValue.ADD_ITEM_UPGRADE_COUNT;
+        }
+
+        return requiredItems;
     }
 
 

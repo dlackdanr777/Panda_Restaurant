@@ -20,8 +20,10 @@ public class Staff : MonoBehaviour
 
     private StaffData _staffData;
     public StaffData StaffData => _staffData;
+    private StaffType _staffType;
     private IStaffAction _staffAction;
     private EStaffState _state;
+
     private bool _usingSkill;
     private bool _skillEnabled;
 
@@ -30,6 +32,7 @@ public class Staff : MonoBehaviour
     private float _scaleX;
     private float _actionTimer;
     private float _skillTimer;
+    private float _skillCoolTime;
     private float _secondValue;
     public float SecondValue => _secondValue;
     private float _speed;
@@ -39,6 +42,14 @@ public class Staff : MonoBehaviour
     public float SpeedMul => _speedMul;
 
     private Coroutine _useSkillRoutine;
+
+
+    public void Init()
+    {
+        GameManager.Instance.OnChgangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+    }
+
+
 
     public void SetStaffData(StaffData staffData, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
@@ -51,13 +62,12 @@ public class Staff : MonoBehaviour
         if(_usingSkill)
             _staffData.Skill.Deactivate(this, tableManager, kitchenSystem, customerController);
 
-        if(staffData == null)
+        if (staffData == null)
         {
             _staffData = null;
             _staffAction = null;
             return;
         }
-
         _staffData = staffData;
         _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         _staffAction = staffData.GetStaffAction(this, tableManager, kitchenSystem, customerController);
@@ -74,6 +84,19 @@ public class Staff : MonoBehaviour
         _spriteParent.transform.localPosition = new Vector3(0, -(AStar.Instance.NodeSize * 0.5f), 0);
         _spriteRenderer.transform.localPosition = Vector3.zero;
 
+        _staffType = staffData switch
+        {
+            ManagerData => StaffType.Manager,
+            MarketerData => StaffType.Marketer,
+            WaiterData => StaffType.Waiter,
+            ServerData => StaffType.Server,
+            CleanerData => StaffType.Cleaner,
+            GuardData => StaffType.Guard,
+            ChefData => StaffType.Chef,
+            _ => StaffType.Length
+        };
+
+        OnChangeSkillValueEvent();
         ResetAction();
         ResetSkill();
     }
@@ -97,7 +120,7 @@ public class Staff : MonoBehaviour
 
     public void ResetSkill()
     {
-        _skillTimer = _staffData.Skill.Cooldown;
+        _skillTimer = 0;
         _skillEnabled = false;
     }
 
@@ -214,13 +237,14 @@ public class Staff : MonoBehaviour
         if (_staffData.Skill == null)
             return;
 
-        if (_skillTimer <= 0)
+
+        if (_skillCoolTime <= _skillTimer)
         {
             _skillEnabled = true;
         }
         else
         {
-            _skillTimer -= Time.deltaTime;
+            _skillTimer += Time.deltaTime;
         }
     }
 
@@ -229,7 +253,17 @@ public class Staff : MonoBehaviour
         _usingSkill = true;
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 
-        yield return YieldCache.WaitForSeconds(_staffData.Skill.Duration);
+        float duration = _staffData.Skill.Duration + GameManager.Instance.AddStaffSkillTime + _staffType switch
+        {
+            StaffType.Marketer => GameManager.Instance.AddMarketerSkillTime,
+            StaffType.Waiter => GameManager.Instance.AddWaiterSkillTime,
+            StaffType.Server => GameManager.Instance.AddServerSkillTime,
+            StaffType.Cleaner => GameManager.Instance.AddCleanerSkillTime,
+            StaffType.Guard => GameManager.Instance.AddGuardSkillTime,
+            _ => 0
+        };
+
+        yield return YieldCache.WaitForSeconds(duration);
 
         _staffData.Skill.Deactivate(this, tableManager, kitchenSystem, customerController);
         _usingSkill = false;
@@ -340,6 +374,30 @@ public class Staff : MonoBehaviour
         SetSpriteDir(1);
         yield return YieldCache.WaitForSeconds(1);
         onCompleted?.Invoke();
+    }
+
+
+    private void OnChangeSkillValueEvent()
+    {
+
+        DebugLog.Log("½ÇÇà");
+        if (_staffData == null)
+            return;
+
+        if (_staffData.Skill == null)
+            return;
+
+        _skillCoolTime = _staffData.Skill.Cooldown + GameManager.Instance.SubStaffSkillCoolTime + _staffType switch
+        {
+            StaffType.Marketer => GameManager.Instance.SubMarketerSkillCoolTime,
+            StaffType.Waiter => GameManager.Instance.SubWaiterSkillCoolTime,
+            StaffType.Server => GameManager.Instance.SubServerSkillCoolTime,
+            StaffType.Cleaner => GameManager.Instance.SubCleanerSkillCoolTime,
+            StaffType.Guard => GameManager.Instance.SubGuardSkillCoolTime,
+            _ => 0
+        };
+
+        _skillCoolTime = _skillCoolTime < 0.1f ? 0.1f : _skillCoolTime;
     }
 }
 

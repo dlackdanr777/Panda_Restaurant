@@ -59,7 +59,7 @@ public class UIFurniture : MobileUIView
         UserInfo.OnGiveFurnitureHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
-        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
+        GameManager.Instance.OnChangeScoreHandler += UpdateUI;
 
         SetFurnitureData(FurnitureType.Table1);
         SetFurniturePreview();

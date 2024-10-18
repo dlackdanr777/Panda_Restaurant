@@ -58,7 +58,7 @@ public class UIKitchen : MobileUIView
         UserInfo.OnGiveKitchenUtensilHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
-        GameManager.Instance.OnAppendAddScoreHandler += UpdateUI;
+        GameManager.Instance.OnChangeScoreHandler += UpdateUI;
 
         SetKitchenUtensilDataData(KitchenUtensilType.Burner1);
         SetKitchenPreview();

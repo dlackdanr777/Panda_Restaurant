@@ -39,6 +39,7 @@ public class Customer : MonoBehaviour
     protected float _moveSpeed;
     protected bool _isStairsMove;
 
+
     public virtual void SetData(CustomerData data)
     {
         _moveSpeed = data.MoveSpeed;
@@ -49,6 +50,8 @@ public class Customer : MonoBehaviour
         _spriteRenderer.transform.localPosition = Vector3.zero;
         _spriteRenderer.sprite = data.Sprite;
         _spriteRenderer.color = Color.white;
+
+
     }
 
 

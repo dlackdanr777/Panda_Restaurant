@@ -16,8 +16,6 @@ public class StaffController : MonoBehaviour
         UserInfo.SetEquipStaff(data);
     }
 
-
-
     private void Awake()
     {
         _staffs = new Staff[(int)StaffType.Length];
@@ -27,6 +25,7 @@ public class StaffController : MonoBehaviour
         {
             Staff staff = Instantiate(staffPrefab, transform);
             _staffs[i] = staff;
+            staff.Init();
         }
 
         /*        StaffData data1 = StaffDataManager.Instance.GetStaffData("STAFF01");
