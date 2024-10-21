@@ -1,7 +1,7 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "KitchenUtensilData", menuName = "Scriptable Object/KitchenUtensilData/KitchenUtensilData")]
-public class KitchenUtensilData : BasicData
+public class KitchenUtensilData : ShopData
 {
     [Space]
     [Header("KitchenUtensilData")]

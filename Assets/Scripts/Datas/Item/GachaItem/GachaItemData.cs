@@ -1,17 +1,8 @@
 using UnityEngine;
 
-public class GachaItemData
+public class GachaItemData : BasicData
 {
     public GachaItemRank GachaItemRank => _rank - 1 < 0 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (int)GachaItemRank.Length <= _rank - 1 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (GachaItemRank)_rank - 1;
-
-    private string _id;
-    public string Id => _id;
-
-    private string _name;
-    public string Name => _name;
-
-    private string _description;
-    public string Description => _description;
 
     private int _addScore;
     public int AddScore => _addScore;
@@ -33,9 +24,6 @@ public class GachaItemData
 
     private int _maxLevel;
     public int MaxLevel => _maxLevel;
-
-    private Sprite _sprite;
-    public Sprite Sprite => _sprite;
 
 
     public GachaItemData(string id, string name, string description, int addScore, int minutePerTip, int rank, UpgradeType upgradeType, float defaultValue, float upgradeValue, int maxLevel, Sprite sprite)

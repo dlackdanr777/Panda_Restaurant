@@ -379,8 +379,6 @@ public class Staff : MonoBehaviour
 
     private void OnChangeSkillValueEvent()
     {
-
-        DebugLog.Log("½ÇÇà");
         if (_staffData == null)
             return;
 

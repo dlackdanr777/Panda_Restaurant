@@ -154,14 +154,14 @@ public class UIKitchen : MobileUIView
     }
 
     
-    private void OnEquipButtonClicked(BasicData data)
+    private void OnEquipButtonClicked(ShopData data)
     {
         UserInfo.SetEquipKitchenUtensil(data.Id);
         SetKitchenUtensilDataData(_currentType);
         SetKitchenPreview();
     }
 
-    private void OnBuyButtonClicked(BasicData data)
+    private void OnBuyButtonClicked(ShopData data)
     {
         if (UserInfo.IsGiveKitchenUtensil(data.Id))
         {

@@ -2,8 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "FoodData", menuName = "Scriptable Object/FoodData")]
-public class FoodData : BasicData
+public class FoodData : ShopData
 {
     [Space]
     [Header("FoodData")]
@@ -32,8 +31,6 @@ public class FoodData : BasicData
         _foodLevelDataList = foodLevelDataList;
         _foodMiniGameData = foodMiniGameData;
     }
-
-
 
 
     public int GetSellPrice(int level)

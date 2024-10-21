@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public abstract class StaffData : BasicData
+public abstract class StaffData : ShopData
 {
     [Space]
     [Header("StaffData")]

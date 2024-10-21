@@ -2,7 +2,7 @@ using UnityEngine;
 
 
 [CreateAssetMenu(fileName = "FurnitureData", menuName = "Scriptable Object/FurnitureData/FurnitureData")]
-public class FurnitureData : BasicData
+public class FurnitureData : ShopData
 {
     [Space]
     [Header("FurnitureData")]

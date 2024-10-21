@@ -1,4 +1,3 @@
-using Muks.Tween;
 using UnityEngine;
 
 
@@ -14,7 +13,9 @@ public class CameraController : MonoBehaviour
     }
 
 
-    // Update is called once per frame
+    /// <summary>
+    /// 카메라 비율을 해상도에 맞춰 변경하는 함수
+    /// </summary>
     private void AdjstCamera()
     {
         Camera camera = GetComponent<Camera>();

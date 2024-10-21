@@ -35,23 +35,11 @@ public class FoodDataManager : MonoBehaviour
         return data;
     }
 
-    public FoodMiniGameData GetFoodMiniGameData(string id)
-    {
-        if (_foodMiniGameDataDic.TryGetValue(id, out FoodMiniGameData data))
-            return data;
-
-        return null;
-    }
-
     public List<FoodData> GetFoodDataList()
     {
         return _foodDataList;
     }
 
-    public List<FoodMiniGameData> GetMiniGameDataList()
-    {
-        return _foodMiniGameDataList;
-    }
 
     public bool IsNeedMiniGame(FoodData data)
     {

@@ -20,7 +20,6 @@ public class UIMiniGame : MobileUIView
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIMiniGameFeverTime _uiFeverTime;
     [SerializeField] private Button _screenButton;
-    [SerializeField] private TextMeshProUGUI _timeCountText;
     [SerializeField] private TextMeshProUGUI _timeText;
     [SerializeField] private TextMeshProUGUI _successCountText;
     [SerializeField] private ButtonPressEffect _leftTouchButton;
@@ -35,6 +34,9 @@ public class UIMiniGame : MobileUIView
     [SerializeField] private GameObject _descriptionGroup;
     [SerializeField] private Image _descriptionLeftTouchImage;
     [SerializeField] private Image _descriptionRightTouchImage;
+    [SerializeField] private GameObject _1Image;
+    [SerializeField] private GameObject _2Image;
+    [SerializeField] private GameObject _3Image;
     [SerializeField] private UIImageAndText _descriptionText;
     [SerializeField] private UIImageAndText _descriptionTimeText;
     [SerializeField] private UIImageAndText _descriptionSuccessCountText;
@@ -91,7 +93,9 @@ public class UIMiniGame : MobileUIView
         _descriptionGroup.gameObject.SetActive(false);
         _descriptionText.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
-        _timeCountText.gameObject.SetActive(false);
+        _1Image.gameObject.SetActive(false);
+        _2Image.gameObject.SetActive(false);
+        _3Image.gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
@@ -253,7 +257,9 @@ public class UIMiniGame : MobileUIView
     {
         _canvasGroup.blocksRaycasts = true;
         _screenButton.gameObject.SetActive(true);
-        _timeCountText.gameObject.SetActive(false);
+        _1Image.gameObject.SetActive(false);
+        _2Image.gameObject.SetActive(false);
+        _3Image.gameObject.SetActive(false);
         _timeOver.gameObject.SetActive(false);
         _resultGroup.gameObject.SetActive(false);
         _itemImage.gameObject.SetActive(false);
@@ -286,14 +292,13 @@ public class UIMiniGame : MobileUIView
 
 
         yield return YieldCache.WaitForSeconds(0.5f);
-        _timeCountText.gameObject.SetActive(true);
-        _timeCountText.text = "3";
+        _3Image.gameObject.SetActive(true);
         yield return YieldCache.WaitForSeconds(1);
-        _timeCountText.text = "2";
+        _2Image.gameObject.SetActive(true);
+        _3Image.gameObject.SetActive(false);
         yield return YieldCache.WaitForSeconds(1);
-        _timeCountText.text = "1";
-        yield return YieldCache.WaitForSeconds(1);
-        _timeCountText.text = "Let's Go!";
+        _1Image.gameObject.SetActive(true);
+        _2Image.gameObject.SetActive(false);
         yield return YieldCache.WaitForSeconds(1);
         _descriptionGroup.gameObject.SetActive(false);
         _descriptionText.gameObject.SetActive(false);
@@ -302,7 +307,9 @@ public class UIMiniGame : MobileUIView
         _descriptionSuccessCountText.gameObject.SetActive(false);
         _descriptionTimeText.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
-        _timeCountText.gameObject.SetActive(false);
+        _1Image.gameObject.SetActive(false);
+        _2Image.gameObject.SetActive(false);
+        _3Image.gameObject.SetActive(false);
         _miniGameState = MiniGameState.Start;
     }
 
@@ -333,7 +340,6 @@ public class UIMiniGame : MobileUIView
         _timeOver.gameObject.SetActive(true);
         _descriptionText.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
-        _timeCountText.gameObject.SetActive(false);
         _resultGroup.gameObject.SetActive(false);
         _itemImage.gameObject.SetActive(false);
         _boomEffect.gameObject.SetActive(false);

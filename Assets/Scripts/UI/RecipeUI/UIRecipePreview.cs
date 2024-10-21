@@ -164,7 +164,7 @@ public class UIRecipePreview : MonoBehaviour
             return;
         }
 
-        FoodMiniGameData data = FoodDataManager.Instance.GetFoodMiniGameData(_currentData.Id);
+        FoodMiniGameData data = _currentData.FoodMiniGameData;
         if(data == null)
         {
             DebugLog.LogError("해당 음식은 미니게임을 할 수 없습니다: " + _currentData.Id);

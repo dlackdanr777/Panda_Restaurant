@@ -29,6 +29,6 @@ public struct CookingData
 
     public bool IsDefault()
     {
-        return _id == default(string) && _cookingTime == default(float);
+        return string.IsNullOrEmpty(_id);
     }
 }

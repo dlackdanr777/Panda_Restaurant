@@ -496,7 +496,6 @@ public class GameManager : MonoBehaviour
 
         foreach (var data in giveGachaItemLevelDic)
         {
-            DebugLog.Log(data.Key);
             gachaItemData = ItemManager.Instance.GetGachaItemData(data.Key);
             int itemLevel = data.Value;
             if (gachaItemData == null)
@@ -619,10 +618,9 @@ public class GameManager : MonoBehaviour
                     _addUpgradeGachaItemWaitCustomerMaxCount += (int)addValue;
                     break;
             }
-
-            OnChangeScoreHandler?.Invoke();
-            OnChgangeStaffSkillValueHandler?.Invoke();
         }
+        OnChangeScoreHandler?.Invoke();
+        OnChgangeStaffSkillValueHandler?.Invoke();
     }
 
 }

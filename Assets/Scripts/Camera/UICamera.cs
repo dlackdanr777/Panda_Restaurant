@@ -49,7 +49,7 @@ public class UICamera : MonoBehaviour
         });
     }
 
-
+    /// <summary>맵 전환 버튼을 눌렀을 경우 카메라의 위치를 변경하는 함수</summary>
     public void ArrowButtonClicked(CameraTr moveTr)
     {
         if (_currentTr == moveTr)
@@ -58,10 +58,10 @@ public class UICamera : MonoBehaviour
         _currentTr = moveTr;
         transform.TweenStop();
         TweenData tween;
+        _leftArrowButton.gameObject.SetActive(false);
+        _rightArrowButton.gameObject.SetActive(false);
         if (moveTr == CameraTr.Restaurant)
         {
-            _leftArrowButton.gameObject.SetActive(false);
-            _rightArrowButton.gameObject.SetActive(false);
             tween = _cameraController.transform.TweenMove(_restaurantTr.position, _moveSpeed, _moveTweenMode);
             tween.OnComplete(() =>
             {
@@ -71,8 +71,6 @@ public class UICamera : MonoBehaviour
 
         else if (moveTr == CameraTr.Kitchen)
         {
-            _leftArrowButton.gameObject.SetActive(false);
-            _rightArrowButton.gameObject.SetActive(false);
             tween = _cameraController.transform.TweenMove(_kitchenTr.position, _moveSpeed, _moveTweenMode);
             tween.OnComplete(() =>
             {

@@ -31,7 +31,7 @@ public class UIKitchenPreview : MonoBehaviour
     private Action<KitchenUtensilData> _onEquipButtonClicked;
     private KitchenUtensilData _currentData;
 
-    public void Init(Action<BasicData> onEquipButtonClicked, Action<BasicData> onBuyButtonClicked)
+    public void Init(Action<ShopData> onEquipButtonClicked, Action<ShopData> onBuyButtonClicked)
     {
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;

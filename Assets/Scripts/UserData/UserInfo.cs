@@ -233,7 +233,7 @@ public static class UserInfo
         DataBind.SetTextValue("MoneyConvert", Utility.ConvertToMoney(_money));
     }
 
-    public static bool IsScoreValid(BasicData data)
+    public static bool IsScoreValid(ShopData data)
     {
         if (Score < data.BuyScore)
             return false;
@@ -249,7 +249,7 @@ public static class UserInfo
         return true;
     }
 
-    public static bool IsMoneyValid(BasicData data)
+    public static bool IsMoneyValid(ShopData data)
     {
         if (Money < data.BuyPrice)
             return false;
@@ -652,7 +652,6 @@ public static class UserInfo
                 if (CanAddMoreItems(dataList[i]))
                 {
                     _giveGachaItemCountDic[dataList[i].Id]++;
-                    OnGiveGachaItemHandler?.Invoke();
                     DebugLog.Log(dataList[i].Id + ", º¸À¯·®: " + (_giveGachaItemCountDic[dataList[i].Id]));
                     continue;
                 }

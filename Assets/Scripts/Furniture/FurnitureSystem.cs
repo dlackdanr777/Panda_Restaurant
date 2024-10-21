@@ -8,6 +8,7 @@ public class FurnitureSystem : MonoBehaviour
 
     private void Awake()
     {
+
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
         {
             _furnitureDic.Add((FurnitureType)i, new List<Furniture>());
