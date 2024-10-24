@@ -7,6 +7,7 @@ public class UIImageFillAmount : MonoBehaviour
 
     public void SetFillAmount(float amount)
     {
+        amount = Mathf.Clamp(amount, 0f, 1f);
         _fillImage.fillAmount = amount;
     }
 

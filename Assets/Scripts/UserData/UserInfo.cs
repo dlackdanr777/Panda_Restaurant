@@ -694,6 +694,30 @@ public static class UserInfo
         return true;
     }
 
+
+    public static int GetGiveItemCount(GachaItemData data)
+    {
+        if (_giveGachaItemCountDic.TryGetValue(data.Id, out int count))
+            return count;
+
+        return 0;
+    }
+
+
+    public static int GetGiveItemCount(string id)
+    {
+        GachaItemData data = ItemManager.Instance.GetGachaItemData(id);
+        if (data == null)
+            throw new Exception("해당 하는 아이템이 존재하지 않습니다: " + id);
+
+        if (_giveGachaItemCountDic.TryGetValue(data.Id, out int count))
+            return count;
+
+        return 0;
+    }
+
+
+
     public static bool UpgradeGachaItem(GachaItemData data)
     {
         if(!_giveGachaItemCountDic.ContainsKey(data.Id))
@@ -702,9 +726,7 @@ public static class UserInfo
             return false;
         }
 
-        int itemLevel = _giveGachaItemLevelDic[data.Id];
-        int maxLevel = data.MaxLevel;
-        if (maxLevel <= itemLevel)
+        if (IsGachaItemUpgradeRequirementMet(data))
         {
             DebugLog.LogError("업그레이드를 할 수 없습니다: " + data.Id);
             return false;
@@ -739,16 +761,14 @@ public static class UserInfo
             return false;
         }
 
-        int itemLevel = _giveGachaItemLevelDic[data.Id];
-        int maxLevel = data.MaxLevel;
-        if (maxLevel <= itemLevel)
+        if(IsGachaItemUpgradeRequirementMet(data))
         {
             DebugLog.LogError("업그레이드를 할 수 없습니다: " + data.Id);
             return false;
         }
 
         int currentItemCount = _giveGachaItemCountDic[data.Id];
-        int requiredItemCount = GetUpgradeRequiredItemCount(data);
+        int requiredItemCount = GetMaxUpgradeRequiredItemCount(data);
         if (currentItemCount < requiredItemCount)
         {
             DebugLog.LogError("보유중인 아이템의 갯수가 부족합니다: 필요 수량(" + requiredItemCount + "), 보유 수량(" + currentItemCount + ")");
@@ -800,13 +820,16 @@ public static class UserInfo
         return true;
     }
 
-    public static int GetUpgradeRequiredItemCount(GachaItemData data)
+    public static int GetMaxUpgradeRequiredItemCount(GachaItemData data)
     {
         int requiredItems = 0;
         int maxLevel = data.MaxLevel;
 
-        if (!_giveGachaItemCountDic.TryGetValue(data.Id, out int itemLevel))
+        if (!_giveGachaItemLevelDic.TryGetValue(data.Id, out int itemLevel))
             return -1;
+
+        if (maxLevel <= requiredItems)
+            return 0;
 
         for (int level = itemLevel; level < maxLevel; level++)
         {
@@ -814,6 +837,46 @@ public static class UserInfo
         }
 
         return requiredItems;
+    }
+
+    public static int GetUpgradeRequiredItemCount(GachaItemData data)
+    {
+        if (!_giveGachaItemLevelDic.TryGetValue(data.Id, out int itemLevel))
+            return 0;
+
+        if (data.MaxLevel <= itemLevel)
+            return 0;
+
+        return itemLevel * ConstValue.ADD_ITEM_UPGRADE_COUNT;
+    }
+
+    public static bool IsGachaItemUpgradeEnabled(GachaItemData data)
+    {
+        if (!_giveGachaItemLevelDic.TryGetValue(data.Id, out int level))
+            return false;
+
+        if (data.MaxLevel <= level)
+            return false;
+
+        return true;
+    }
+
+    public static bool IsGachaItemUpgradeRequirementMet(GachaItemData data)
+    {
+        if (!_giveGachaItemLevelDic.TryGetValue(data.Id, out int level))
+            return false;
+
+        if (data.MaxLevel <= level)
+            return false;
+
+        if (!_giveGachaItemCountDic.TryGetValue(data.Id, out int itemCount))
+            return false;
+
+        int requiredItemCount = GetUpgradeRequiredItemCount(data);
+        if (itemCount < requiredItemCount)
+            return false;
+
+        return true;
     }
 
 

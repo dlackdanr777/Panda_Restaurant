@@ -24,7 +24,7 @@ public class UIMiniGame : MobileUIView
     [SerializeField] private TextMeshProUGUI _successCountText;
     [SerializeField] private ButtonPressEffect _leftTouchButton;
     [SerializeField] private ButtonPressEffect _rightTouchButton;
-    [SerializeField] private FillAmountImage _gaugeBar;
+    [SerializeField] private UITweenFillAmountImage _gaugeBar;
     [SerializeField] private UIMiniGameJarGroup _jarGroup;
     [SerializeField] private Animator _jarAnimator;
     [SerializeField] private Animator _panda3Animator;

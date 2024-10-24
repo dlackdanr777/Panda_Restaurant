@@ -16,6 +16,7 @@ public class UIPictorialBookGachaItem : MonoBehaviour
 
     public void Init()
     {
+        _view.Init();
         _gachaItemDataList = ItemManager.Instance.GetSortGachaItemDataList();
         
         for(int i = 0, cnt = _gachaItemDataList.Count; i < cnt; ++i) 

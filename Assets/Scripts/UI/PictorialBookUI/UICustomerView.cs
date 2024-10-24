@@ -9,12 +9,12 @@ public class UICustomerView : MonoBehaviour
     [Header("Components")]
     [SerializeField] private UICustomerBlackImage _blackImage;
     [SerializeField] private Image _specialFrameImage;
-    [SerializeField] private Image _gatecrasherFrameImage;
+    [SerializeField] private UIImageAndText _gatecrasherFrameImage;
     [SerializeField] private Image _normalFrameImage;
     [SerializeField] private Image _npcImage;
     [SerializeField] private TextMeshProUGUI _npcNameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
-    [SerializeField] private TextMeshProUGUI _orderFoodTitle;
+    [SerializeField] private UIImageAndText _orderFoodTitle;
     [SerializeField] private TextMeshProUGUI _effectTitle;
     [SerializeField] private TextMeshProUGUI _effectDescription;
     [SerializeField] private Material _grayMat;
@@ -56,20 +56,19 @@ public class UICustomerView : MonoBehaviour
         if (data == null)
         {
             _npcImage.gameObject.SetActive(false);
-            _orderFoodTitle.gameObject.SetActive(false);
+            _orderFoodTitle.gameObject.SetActive(true);
             _effectTitle.gameObject.SetActive(false);
             _normalFrameImage.gameObject.SetActive(true);
             _npcNameText.text = string.Empty;
             _descriptionText.text = string.Empty;
             _effectDescription.text = string.Empty;
+            _orderFoodTitle.SetText(string.Empty);
             _data = null;
             return;
         }
 
         _data = data;
         _npcImage.gameObject.SetActive(true);
-        _effectTitle.gameObject.SetActive(true);
-        _orderFoodTitle.gameObject.SetActive(true);
         _npcImage.sprite = data.Sprite;
 
         if (data is SpecialCustomerData)
@@ -77,18 +76,27 @@ public class UICustomerView : MonoBehaviour
             _normalFrameImage.gameObject.SetActive(false);
             _gatecrasherFrameImage.gameObject.SetActive(false);
             _specialFrameImage.gameObject.SetActive(true);
+            _effectTitle.gameObject.SetActive(true);
+            _orderFoodTitle.gameObject.SetActive(true);
+            _orderFoodTitle.SetText("林巩 夸府");
         }
         else if(data is GatecrasherCustomerData)
         {
             _normalFrameImage.gameObject.SetActive(false);
             _gatecrasherFrameImage.gameObject.SetActive(true);
             _specialFrameImage.gameObject.SetActive(false);
+            _effectTitle.gameObject.SetActive(false);
+            _orderFoodTitle.gameObject.SetActive(false);
+
         }
         else
         {
             _normalFrameImage.gameObject.SetActive(true);
             _gatecrasherFrameImage.gameObject.SetActive(false);
             _specialFrameImage.gameObject.SetActive(false);
+            _effectTitle.gameObject.SetActive(true);
+            _orderFoodTitle.gameObject.SetActive(true);
+            _orderFoodTitle.SetText("林巩 夸府");
         }
 
 
@@ -99,14 +107,28 @@ public class UICustomerView : MonoBehaviour
             HideOrderFoodSlots();
             _npcNameText.text = "???";
             _descriptionText.text = "???";
-            _effectDescription.text = "???";
+
+            if(data is GatecrasherCustomerData)
+            {
+                _effectDescription.text = string.Empty;
+                _gatecrasherFrameImage.SetText("???");
+            }
+            else
+                _effectDescription.text = "???";
         }
         else
         {
             SetOrderFoodSlot(data);
             _npcNameText.text = data.Name;
             _descriptionText.text = data.Description;
-            _effectDescription.text = Utility.GetCustomerEffectDescription(data);
+
+            if (data is GatecrasherCustomerData)
+            {
+                _effectDescription.text = string.Empty;
+                _gatecrasherFrameImage.SetText(Utility.GetCustomerEffectDescription(data));
+            }
+            else
+                _effectDescription.text = Utility.GetCustomerEffectDescription(data);
         }
 
         _npcImage.TweenStop();
