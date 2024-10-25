@@ -726,7 +726,7 @@ public static class UserInfo
             return false;
         }
 
-        if (IsGachaItemUpgradeRequirementMet(data))
+        if (!IsGachaItemUpgradeRequirementMet(data))
         {
             DebugLog.LogError("업그레이드를 할 수 없습니다: " + data.Id);
             return false;
@@ -761,7 +761,7 @@ public static class UserInfo
             return false;
         }
 
-        if(IsGachaItemUpgradeRequirementMet(data))
+        if(!IsGachaItemUpgradeRequirementMet(data))
         {
             DebugLog.LogError("업그레이드를 할 수 없습니다: " + data.Id);
             return false;
@@ -877,6 +877,18 @@ public static class UserInfo
             return false;
 
         return true;
+    }
+
+
+    public static bool IsGachaItemMaxLevel(GachaItemData data)
+    {
+        if (!_giveGachaItemLevelDic.TryGetValue(data.Id, out int level))
+            return false;
+
+        if (data.MaxLevel <= level)
+            return true;
+
+        return false;
     }
 
 

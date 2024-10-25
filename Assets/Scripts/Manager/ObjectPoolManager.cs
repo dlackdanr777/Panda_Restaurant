@@ -70,7 +70,7 @@ public class ObjectPoolManager : MonoBehaviour
     private static RectTransform _uiCoinPrefab;
     private static PointerClickSpriteRenderer _garbagePrefab;
     private static TextMeshProUGUI _tmpPrefab;
-    private static UIParticleEffect[] _uiEffectPrefabs = new UIParticleEffect[(int)EffectType.Length];
+    private static UIParticleEffect[] _uiEffectPrefabs = new UIParticleEffect[(int)UIEffectType.Length];
 
     private static Sprite[] _garbageImages;
     private static Canvas _uiCanvas;
@@ -207,16 +207,17 @@ public class ObjectPoolManager : MonoBehaviour
 
     private static void UIEffectPooling()
     {
-        _uiEffectPool = new Queue<UIParticleEffect>[(int)EffectType.Length];
-        for (int i = 0, cnt = (int)EffectType.Length; i < cnt; i++)
+        _uiEffectPool = new Queue<UIParticleEffect>[(int)UIEffectType.Length];
+        List<UIParticleEffect> uIParticleEffects = Resources.LoadAll<UIParticleEffect>("ObjectPool/Effect/").ToList();
+        for (int i = 0, cnt = (int)UIEffectType.Length; i < cnt; i++)
         {
             _uiEffectPool[i] = new Queue<UIParticleEffect>();
             if (_uiEffectPrefabs[i] == null)
-                _uiEffectPrefabs[i] = Resources.Load<UIParticleEffect>("ObjectPool/Effect/UIEffect" + (i + 1));
+                _uiEffectPrefabs[i] = uIParticleEffects.Find(x => x.Type == (UIEffectType)i);
 
             if (_uiEffectPrefabs[i] == null)
             {
-                DebugLog.LogError("해당 위치에 프리팹이 존재하지 않습니다: " + "ObjectPool/Effect/UIEffect" + (i + 1));
+                DebugLog.LogError("해당 위치에 프리팹이 존재하지 않습니다: " + "ObjectPool/Effect/" + (UIEffectType)i);
                 continue;
             }
 
@@ -468,7 +469,7 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public UIParticleEffect SpawnUIEffect(EffectType type, Vector3 pos, Quaternion rot)
+    public UIParticleEffect SpawnUIEffect(UIEffectType type, Vector3 pos, Quaternion rot)
     {
         UIParticleEffect effect;
         int index = (int)type;
@@ -490,7 +491,7 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public void DespawnUIEffect(EffectType type, UIParticleEffect effect)
+    public void DespawnUIEffect(UIEffectType type, UIParticleEffect effect)
     {
         int index = (int)type;
 

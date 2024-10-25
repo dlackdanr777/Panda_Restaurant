@@ -66,8 +66,8 @@ public class UICustomerView : MonoBehaviour
             _data = null;
             return;
         }
-
         _data = data;
+
         _npcImage.gameObject.SetActive(true);
         _npcImage.sprite = data.Sprite;
 
@@ -138,6 +138,11 @@ public class UICustomerView : MonoBehaviour
         _npcImage.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
         _npcImage.TweenAlpha(1, 0.25f, Ease.OutQuint);
         _npcImage.TweenScale(Vector3.one, 0.25f, Ease.OutBack);
+    }
+
+    public void UpdateData()
+    {
+
     }
 
 

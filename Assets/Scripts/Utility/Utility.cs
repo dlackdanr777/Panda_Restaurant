@@ -101,6 +101,48 @@ public static class Utility
         };
     }
 
+    public static string GetGachaItemEffectDescription(GachaItemData data)
+    {
+        if (data == null)
+            throw new System.Exception("전달 받은 가챠 아이템 데이터가 null 입니다.");
+
+        int level = UserInfo.GetGachaItemLevel(data);
+        level = level <= 0 ? 1 : level;
+        float upgradeValue = UserInfo.IsGachaItemMaxLevel(data) ? 0 : data.UpgradeValue;
+        string effectDescription = data.UpgradeType switch
+        {
+            UpgradeType.UPGRADE01 => "매장 평점\n" + ((int)data.DefaultValue + (int)data.UpgradeValue * (level - 1)) + "(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "</color>) 증가",
+            UpgradeType.UPGRADE02 => "전체 손님 이동 속도\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE03 => "분당 팁\n" + ((int)data.DefaultValue + (int)data.UpgradeValue * (level - 1)) + "(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "</color>) 증가",
+            UpgradeType.UPGRADE04 => "최대 팁 보유량\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE05 => "판매 메뉴 가격\n" + ((int)data.DefaultValue + (int)data.UpgradeValue * (level - 1)) + "(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "</color>) 증가",
+            UpgradeType.UPGRADE06 => "메뉴 조리 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 단축",
+            UpgradeType.UPGRADE07 => "메뉴 가격 두 배 확률\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE08 => "주문 메뉴 당 팁\n" + ((int)data.DefaultValue + (int)data.UpgradeValue * (level - 1)) + "(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "</color>) 증가",
+            UpgradeType.UPGRADE09 => StaffTypeStringConverter(StaffType.Waiter) + " 스킬 쿨타임\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 감소",
+            UpgradeType.UPGRADE10 => StaffTypeStringConverter(StaffType.Waiter) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
+            UpgradeType.UPGRADE11 => StaffTypeStringConverter(StaffType.Server) + " 스킬 쿨타임\n"+ (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 감소",
+            UpgradeType.UPGRADE12 => StaffTypeStringConverter(StaffType.Server) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
+            UpgradeType.UPGRADE13 => StaffTypeStringConverter(StaffType.Marketer) + " 스킬 쿨타임\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 감소",
+            UpgradeType.UPGRADE14 => StaffTypeStringConverter(StaffType.Marketer) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
+            UpgradeType.UPGRADE15 => StaffTypeStringConverter(StaffType.Cleaner) + " 스킬 쿨타임\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 감소",
+            UpgradeType.UPGRADE16 => StaffTypeStringConverter(StaffType.Cleaner) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
+            UpgradeType.UPGRADE17 => StaffTypeStringConverter(StaffType.Guard) + " 스킬 쿨타임\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 감소",
+            UpgradeType.UPGRADE18 => StaffTypeStringConverter(StaffType.Guard) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
+            UpgradeType.UPGRADE19 => "진상 손님에게 가하는 피해\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE20 => "스페셜 손님 터치시 코인 획득량\n" + ((int)data.DefaultValue + (int)data.UpgradeValue * (level - 1)) + "(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "</color>) 증가",
+            UpgradeType.UPGRADE21 => "진상 손님 터치시 속도 감소 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
+            UpgradeType.UPGRADE22 => "전체 직원 스킬 쿨타임\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 감소",
+            UpgradeType.UPGRADE23 => "전체 직원 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
+            UpgradeType.UPGRADE24 => "미니게임 제한 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
+            UpgradeType.UPGRADE25 => "스페셜 손님 등장 확률\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE26 => "최대 대기 손님\n" + ((int)data.DefaultValue + (int)data.UpgradeValue * (level - 1)) + "명(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "명</color>) 증가",
+            _ => string.Empty
+        };
+        return effectDescription;
+    }
+
+
 
     public static float GetGachaItemRankRange(GachaItemRank rank)
     {
@@ -281,8 +323,9 @@ public static class Utility
             ColorType.Give => Color.white,
             ColorType.Negative => new Color(0.83f, 0.28f, 0.25f),
             ColorType.Positive => new Color(0.16f, 0.41f, 0.72f),
-            _=> Color.black
-        };
+            ColorType.AddValue => new Color(0.141f, 0.569f, 0.247f),
+            _ => Color.black
+        } ;
     }
 
     public static string ColorToHex(Color color)

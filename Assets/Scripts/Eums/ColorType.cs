@@ -5,5 +5,6 @@ public enum ColorType
     Give,
     Negative,
     Positive,
+    AddValue,
     Length
 }

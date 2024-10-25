@@ -6,13 +6,14 @@ using System.Collections;
 public class UIParticleEffect : MonoBehaviour
 {
     [SerializeField] private ParticleSystem _particleSystem;
+    [SerializeField] private UIEffectType _type;
+    public UIEffectType Type => _type;
 
     private IEnumerator _ienumerator;
     private Coroutine _coroutine;
 
-    private EffectType _type;
 
-    public void Init(EffectType type)
+    public void Init(UIEffectType type)
     {
         _ienumerator = StartHide(_particleSystem.duration);
         _type = type;

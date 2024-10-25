@@ -95,6 +95,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _particleSystem: {fileID: 2215830563419841}
+  _type: 1
 --- !u!1 &3437504499337175802
 GameObject:
   m_ObjectHideFlags: 0
@@ -4957,7 +4958,7 @@ ParticleSystemRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -594438969
-  m_SortingLayer: 10
+  m_SortingLayer: 16
   m_SortingOrder: 1
   m_RenderMode: 0
   m_MeshDistribution: 0
