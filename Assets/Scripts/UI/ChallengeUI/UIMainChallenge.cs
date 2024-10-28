@@ -28,6 +28,15 @@ public class UIMainChallenge : MobileUIView
     [SerializeField] private float _hideDuration;
     [SerializeField] private Ease _hideTweenMode;
 
+    [Space]
+    [Header("Coin Animations")]
+    [SerializeField] private UIMoney _uiMoney;
+    [SerializeField] private int _coinCount;
+    [SerializeField] private RectTransform _coinPos;
+    [SerializeField] private Transform _coinTargetPos;
+    [SerializeField] private float _coinDuration;
+    [SerializeField] private Ease _coinEase;
+
 
     private ChallengeData _currentData;
 
@@ -79,20 +88,20 @@ public class UIMainChallenge : MobileUIView
     {
         _currentData = ChallengeManager.Instance.GetCurrentMainChallengeData();
 
-        if(_currentData == null)
+        if (_currentData == null)
         {
             _description.text = "현재 메인 과제가 없습니다.";
             DataBind.SetTextValue("MainChallengeDescription", "현재 메인 과제가 없습니다.");
 
             _rewardValue.gameObject.SetActive(false);
-            _moneyImage.gameObject.SetActive(false); 
+            _moneyImage.gameObject.SetActive(false);
             _diaImage.gameObject.SetActive(false);
             _rewardButton.gameObject.SetActive(false);
             _shortCutButton.gameObject.SetActive(false);
             return;
         }
 
-        if(_currentData.MoneyType == MoneyType.Gold)
+        if (_currentData.MoneyType == MoneyType.Gold)
         {
             _moneyImage.gameObject.SetActive(true);
             _diaImage.gameObject.SetActive(false);
@@ -103,7 +112,7 @@ public class UIMainChallenge : MobileUIView
             _moneyImage.gameObject.SetActive(false);
         }
 
-        if(UserInfo.GetIsDoneChallenge(_currentData.Id))
+        if (UserInfo.GetIsDoneChallenge(_currentData.Id))
         {
             _rewardButton.gameObject.SetActive(true);
             _shortCutButton.gameObject.SetActive(false);
@@ -129,7 +138,7 @@ public class UIMainChallenge : MobileUIView
             return;
         }
 
-        if(!UserInfo.GetIsDoneChallenge(_currentData.Id))
+        if (!UserInfo.GetIsDoneChallenge(_currentData.Id))
         {
             DebugLog.Log("메인 과제가 완료되지 않았습니다: " + _currentData.Id);
             return;
@@ -137,6 +146,7 @@ public class UIMainChallenge : MobileUIView
 
         UserInfo.ClearChallenge(_currentData.Id);
         UserInfo.AppendMoney(_currentData.RewardMoney);
+        ChallengeClaerAnime();
         UpdateData();
     }
 
@@ -156,5 +166,33 @@ public class UIMainChallenge : MobileUIView
         }
 
         _currentData.ShortcutAction.Item?.Invoke();
+    }
+
+    private void ChallengeClaerAnime()
+    {
+        float time = 0;
+        UserInfo.TipCollection();
+        ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
+
+        for (int i = 0; i < _coinCount; ++i)
+        {
+            int index = i;
+            RectTransform coin = ObjectPoolManager.Instance.SpawnUICoin(_coinPos.transform.position, Quaternion.identity);
+            Vector2 coinPos = UnityEngine.Random.insideUnitCircle * 300;
+            coinPos = _coinPos.anchoredPosition + coinPos;
+            coin.TweenAnchoredPosition(coinPos, 0.45f, Ease.InQuad).OnComplete(() =>
+            {
+                float height = 100;
+                if (coin.anchoredPosition.y < 0)
+                    height *= -1;
+
+                coin.TweenJump(_coinTargetPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                {
+                    ObjectPoolManager.Instance.DespawnUICoin(coin);
+                    _uiMoney.StartAnime();
+                });
+                time += 0.02f;
+            });
+        }
     }
 }

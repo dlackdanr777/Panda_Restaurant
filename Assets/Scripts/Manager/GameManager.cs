@@ -54,7 +54,7 @@ public class GameManager : MonoBehaviour
     public int AddFoodTip => _addUpgradeGachaItemFoodTip;
 
 
-    public int AddSocre => _addEquipStaffScore + _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore + _addUpgradeGachaItemScroe;
+    public int AddSocre => _addEquipStaffScore + _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore + _addUpgradeGachaItemScore;
     public float TipMul => Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f);
 
     public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addEquipSetDataTipPerMinute + _addGiveGachaItemTipPerMinute + _addUpgradeGachaItemTipPerMinute;
@@ -99,7 +99,7 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private int _addGiveRecipeMiniGameTime;
 
-    [SerializeField] private int _addUpgradeGachaItemScroe; // 전체 평점 상승(+)
+    [SerializeField] private int _addUpgradeGachaItemScore; // 전체 평점 상승(+)
     [SerializeField] private int _addUpgradeGachaItemTipPerMinute; //분당 팁 증가(+)
     [SerializeField] private int _addUpgradeGachaItemFoodPrice; //음식 가격 증가(+)
     [SerializeField] private int _addUpgradeGachaItemFoodTip; //주문 수 마다 팁 증가(+)
@@ -149,6 +149,10 @@ public class GameManager : MonoBehaviour
         _addPromotionCustomer = Mathf.Clamp(_addPromotionCustomer + value, 1, 100);
     }
 
+    public void FixedUpdate()
+    {
+        DebugLog.Log(MaxTipVolume);
+    }
 
     private void Awake()
     {
@@ -463,8 +467,8 @@ public class GameManager : MonoBehaviour
 
     private void OnUpgradeGachaItemCheck()
     {
-        _addUpgradeGachaItemScroe = 0;
-        _addUpgradeGachaItemScroe = 0;
+        _addUpgradeGachaItemScore = 0;
+        _addUpgradeGachaItemScore = 0;
         _addUpgradeGachaItemTipPerMinute = 0;
         _addUpgradeGachaItemFoodPrice = 0;
         _addUpgradeGachaItemFoodTip = 0;
@@ -515,7 +519,7 @@ public class GameManager : MonoBehaviour
             switch (gachaItemData.UpgradeType)
             {
                 case UpgradeType.UPGRADE01:
-                    _addUpgradeGachaItemScroe += (int)addValue;
+                    _addUpgradeGachaItemScore += (int)addValue;
                     break;
 
                 case UpgradeType.UPGRADE02:

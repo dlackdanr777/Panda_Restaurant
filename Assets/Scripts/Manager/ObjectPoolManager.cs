@@ -86,6 +86,7 @@ public class ObjectPoolManager : MonoBehaviour
         _uiCanvas = new GameObject("UI Canvas").AddComponent<Canvas>();
         _uiCanvas.transform.parent = _instance.transform;
         _uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        _uiCanvas.sortingOrder = 10;
 
         CanvasScaler scaler = _uiCanvas.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
