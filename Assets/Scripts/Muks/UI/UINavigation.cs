@@ -8,7 +8,6 @@ namespace Muks.UI
     public abstract class UINavigation : MonoBehaviour
     {
         public Action OnFocusHandler;
-
         public abstract int Count { get; }
         public abstract bool IsViewsInactive{ get; }
 

@@ -13,7 +13,6 @@ namespace Muks.MobileUI
         public event Action OnShowUIHandler;
         public event Action OnHideUIHandler;
 
-
         [Header("Views")]
         [Tooltip("√÷ªÛ¿ß lootUIView")]
         [SerializeField] private MobileViewDicStruct _rootUiView;

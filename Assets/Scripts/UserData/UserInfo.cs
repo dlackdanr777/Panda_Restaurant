@@ -39,6 +39,8 @@ public static class UserInfo
 
     public static event Action OnVisitedCustomerHandler;
 
+    private static bool _tutorial1Clear;
+    public static bool Tutorial1Clear => _tutorial1Clear;
 
     private static int _money;
     public static int Money => _money;
