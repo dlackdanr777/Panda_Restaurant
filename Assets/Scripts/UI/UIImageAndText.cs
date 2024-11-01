@@ -8,6 +8,9 @@ public class UIImageAndText : MonoBehaviour
 {
     [SerializeField] private Image _image;
     [SerializeField] private TextMeshProUGUI _text;
+    public TextMeshProUGUI Text => _text;
+
+
     public Color TextColor
     {
         get { return _text.color;}
@@ -41,19 +44,17 @@ public class UIImageAndText : MonoBehaviour
         _text.TweenStop();
     }
 
-    public void TweenText(string str, float duration, Ease ease = Ease.Constant, Action onCompleted = null)
+    public TweenData TweenText(string str, float duration, Ease ease = Ease.Constant)
     {
         _text.TweenStop();
         TweenData tween = _text.TweenText(str, duration, ease);
-        if (onCompleted != null)
-            tween.OnComplete(onCompleted);
+        return tween;
     }
 
-    public void TweenCharacter(string str, float characterInterval, Ease ease = Ease.Constant, Action onCompleted = null)
+    public TweenData TweenCharacter(string str, float characterInterval, Ease ease = Ease.Constant)
     {
         _text.TweenStop();
         TweenData tween = _text.TweenCharacter(str, characterInterval, ease);
-        if (onCompleted != null)
-            tween.OnComplete(onCompleted);
+        return tween;
     }
 }

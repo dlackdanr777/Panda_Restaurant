@@ -9,8 +9,20 @@ namespace Muks.UI
         public VisibleState VisibleState;
         protected UINavigation _uiNav;
         protected RectTransform _rectTransform;
-        protected bool _popEnabled = true;
-        public bool PopEnabled => _popEnabled;
+        [SerializeField] protected bool _popEnabled = true;
+        public bool PopEnabled
+        {
+            get
+            {
+                return _popEnabled;
+            }
+
+            set
+            {
+                _popEnabled = value;
+            }
+        }
+            
 
         public void ViewInit(UINavigation uiNav)
         {

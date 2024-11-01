@@ -223,11 +223,11 @@ public class UIStaff : MobileUIView
 
                 if (!UserInfo.IsMoneyValid(data))
                 {
-                    slot.SetNotEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                    slot.SetNotEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     continue;
                 }
 
-                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                 continue;
             }
         }

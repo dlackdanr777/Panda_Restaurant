@@ -17,6 +17,9 @@ namespace Muks.UI
         /// <summary>이름을 받아 현재 이름의 view를 열어주는 함수</summary>
         public abstract void Push(string viewName);
 
+        /// <summary> UIView를 확인해 해당 UI 를 열어주는 함수</summary>
+        //public abstract void Push(UIView uiView);
+
         /// <summary>이름을 받아 현재 이름의 view를 열어주는 함수(애니메이션 없이)</summary>
         public abstract void PushNoAnime(string viewName);
 
@@ -25,6 +28,9 @@ namespace Muks.UI
 
         /// <summary> viewName을 확인해 해당 UI 를 감추는 함수</summary>
         public abstract void Pop(string viewName);
+
+        /// <summary> UIView를 확인해 해당 UI 를 감추는 함수</summary>
+        //public abstract void Pop(UIView uiView);
 
         /// <summary> 열려있는 모든 View를 닫는 함수</summary>
         public abstract void AllPop();

@@ -82,6 +82,7 @@ namespace Muks.MobileUI
             Debug.LogError("딕셔너리에 해당 이름을 가진 UIView클래스가 없습니다.");
         }
 
+
         public override void PushNoAnime(string viewName)
         {
             if (_viewDic.TryGetValue(viewName, out MobileUIView uiView))

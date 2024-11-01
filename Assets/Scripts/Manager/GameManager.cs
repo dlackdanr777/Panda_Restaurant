@@ -149,11 +149,6 @@ public class GameManager : MonoBehaviour
         _addPromotionCustomer = Mathf.Clamp(_addPromotionCustomer + value, 1, 100);
     }
 
-    public void FixedUpdate()
-    {
-        DebugLog.Log(MaxTipVolume);
-    }
-
     private void Awake()
     {
         if (_instance != null)
@@ -189,7 +184,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        UserInfo.GiveFurniture("TABLE01_01");
+/*        UserInfo.GiveFurniture("TABLE01_01");
         UserInfo.SetEquipFurniture("TABLE01_01");
 
         UserInfo.GiveFurniture("TABLE01_02");
@@ -207,8 +202,8 @@ public class GameManager : MonoBehaviour
         UserInfo.GiveFurniture("FLOWER01");
         UserInfo.SetEquipFurniture("FLOWER01");
 
-/*        UserInfo.GiveFurniture("RACK01");
-        UserInfo.SetEquipFurniture("RACK01");*/
+        UserInfo.GiveFurniture("RACK01");
+        UserInfo.SetEquipFurniture("RACK01");
 
         UserInfo.GiveFurniture("WALLPAPER01");
         UserInfo.SetEquipFurniture("WALLPAPER01");
@@ -223,7 +218,7 @@ public class GameManager : MonoBehaviour
         UserInfo.SetEquipFurniture("COUNTER01");
 
         UserInfo.GiveKitchenUtensil("COOKER01_01");
-        UserInfo.SetEquipKitchenUtensil("COOKER01_01");
+        UserInfo.SetEquipKitchenUtensil("COOKER01_01");*/
     }
 
 

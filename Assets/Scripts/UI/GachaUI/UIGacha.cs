@@ -285,7 +285,7 @@ public class UIGacha : MobileUIView
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 Utility.ChangeImagePivot(_getItemImage);
                 _gachaItemName.SetText(string.Empty);
-                _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.08f, Ease.Constant, () =>  _isPlayTextAnime = false);
+                _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.08f, Ease.Constant).OnComplete(() => _isPlayTextAnime = false);
                 _getItemIndex++;
                 CapsuleSetSibilingIndex(11);
                 break;

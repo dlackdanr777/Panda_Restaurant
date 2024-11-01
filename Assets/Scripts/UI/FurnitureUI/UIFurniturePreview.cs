@@ -159,14 +159,14 @@ public class UIFurniturePreview : MonoBehaviour
                     _notEnoughMoneyButton.gameObject.SetActive(true);
                     _notEnoughMoneyButton.RemoveAllListeners();
                     _notEnoughMoneyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
-                    _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     return;
                 }
 
                 _buyButton.gameObject.SetActive(true);
                 _buyButton.RemoveAllListeners();
                 _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
-                _buyButton.SetText(Utility.ConvertToMoney(data.BuyPrice));
+                _buyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
             }
         }
     }

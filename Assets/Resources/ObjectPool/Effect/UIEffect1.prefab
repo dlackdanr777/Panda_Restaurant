@@ -95,6 +95,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _particleSystem: {fileID: 2215830563419841}
+  _type: 0
 --- !u!1 &3437504499337175802
 GameObject:
   m_ObjectHideFlags: 0

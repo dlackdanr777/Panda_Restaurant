@@ -217,11 +217,11 @@ public class UIFurniture : MobileUIView
 
                 if (!UserInfo.IsMoneyValid(data))
                 {
-                    _slots[slotsIndex][i].SetNotEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                    _slots[slotsIndex][i].SetNotEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     continue;
                 }
 
-                _slots[slotsIndex][i].SetEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                _slots[slotsIndex][i].SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                 continue;
             }
         }

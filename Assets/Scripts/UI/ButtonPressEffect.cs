@@ -11,7 +11,7 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
     [SerializeField] private Ease _buttonUpTweenMode;
 
     public bool Interactable = true;
-    private Action _onButtonUpEvent;
+    private Action _onButtonClickEvent;
     private Vector3 _tmpScale;
 
     public void Awake()
@@ -24,14 +24,20 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
         transform.localScale = _tmpScale;
     }
 
-    public void AddListener(Action onButtonUpEvent)
+    public void AddListener(Action onButtonClickEvent)
     {
-        _onButtonUpEvent = onButtonUpEvent;
+        _onButtonClickEvent = onButtonClickEvent;
     }
 
     public void RemoveAllListeners()
     {
-        _onButtonUpEvent = null;
+        _onButtonClickEvent = null;
+    }
+
+    public void ResetScale()
+    {
+        gameObject.TweenStop();
+        gameObject.TweenScale(_tmpScale, _pressDuration, _buttonUpTweenMode);
     }
 
     public void OnPointerDown(PointerEventData eventData)
@@ -52,6 +58,7 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
         gameObject.TweenStop();
         gameObject.transform.localScale = _targetScale;
         gameObject.TweenScale(_tmpScale, _pressDuration, _buttonUpTweenMode);
-        _onButtonUpEvent?.Invoke();
+        _onButtonClickEvent?.Invoke();
     }
+
 }

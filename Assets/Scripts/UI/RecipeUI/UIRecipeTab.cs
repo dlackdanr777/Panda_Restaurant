@@ -89,11 +89,11 @@ public class UIRecipeTab : MonoBehaviour
 
             if (!UserInfo.IsMoneyValid(data))
             {
-                _slots[i].SetNotEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+                _slots[i].SetNotEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                 continue;
             }
 
-            _slots[i].SetEnoughPrice(data.ThumbnailSprite, data.Name, Utility.ConvertToMoney(data.BuyPrice));
+            _slots[i].SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
             continue;
         }
     }
