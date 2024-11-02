@@ -50,8 +50,8 @@ public class Tutorial1 : MonoBehaviour
         yield return YieldCache.WaitForSeconds(1);
         yield return _uiDescriptionNPC.ShowDescription2Text("먼저 가게 정리가 필요하겠군요.");
         _punchHole.gameObject.SetActive(true);
-        _punchHole.TweenScale(1.5f, 1, 0.5f, Muks.Tween.Ease.OutBack);
-        yield return YieldCache.WaitForSeconds(1);
+        _punchHole.TweenScale(1.5f, 1, 0.35f, Muks.Tween.Ease.OutBack);
+        yield return YieldCache.WaitForSeconds(1f);
         yield return _uiDescriptionNPC.ShowDescription2Text("화면 터치로 먼지를 제거해 주세요!");
         _uiTutorial1.ScreenButtonSetActive(true);
         _punchHole.gameObject.SetActive(false);
@@ -78,16 +78,16 @@ public class Tutorial1 : MonoBehaviour
         yield return _uiDescriptionNPC.ShowDescription2Text("우선 테이블을 \n설치해 볼까요?");
         _uiTutorial1.ShopButtonSetActive(true);
         _uiTutorial1.PunchHoleSetActive(true);
-        _uiTutorial1.ShopMaskSetActive(true);
         yield return _uiDescriptionNPC.ShowDescription2Text("먼저 상점으로 들어가 \n테이블을 구매해 주세요.");
+        _uiTutorial1.ShopMaskSetActive(true);
 
-        while(!_uiTutorial1.IsShopButtonClicked)
+        while (!_uiTutorial1.IsShopButtonClicked)
             yield return YieldCache.WaitForSeconds(0.02f);
 
         _uiNav.Push("UITutorial1");
         _uiTutorial1.ShopButtonSetActive(false);
-        _uiTutorial1.PunchHoleSetActive(false);
         _uiTutorial1.ShopMaskSetActive(false);
+        _uiTutorial1.PunchHoleSetActive(false);
 
         yield return YieldCache.WaitForSeconds(1);
         _uiTutorial1.PunchHoleSetActive(true);
@@ -98,25 +98,67 @@ public class Tutorial1 : MonoBehaviour
 
         _uiNav.Push("UITutorial1");
         yield return YieldCache.WaitForSeconds(1);
-        _uiTutorial1.TableBuyHoleSetActive(true);
-
+        _uiTutorial1.BuyHoleSetActive(true);
+        _uiTutorial1.SetBuyHoleTargetObjectName("Buy Button");
         while(!UserInfo.IsGiveFurniture("TABLE01_01"))
-        {
-            DebugLog.Log(UserInfo.IsGiveFurniture("TABLE01_01"));
             yield return YieldCache.WaitForSeconds(0.02f);
-        }
 
-        DebugLog.Log("실행1");
         yield return YieldCache.WaitForSeconds(1);
-        _uiTutorial1.TableBuyHoleSetActive(true);
+        _uiTutorial1.BuyHoleSetActive(true);
+        _uiTutorial1.SetBuyHoleTargetObjectName("Equip Button");
         FurnitureData table1Data = FurnitureDataManager.Instance.GetFurnitureData("TABLE01_01");
 
         while (!UserInfo.IsEquipFurniture(table1Data))
             yield return YieldCache.WaitForSeconds(0.02f);
 
         yield return YieldCache.WaitForSeconds(1);
+        _uiNav.Push("UITutorialDescription");
         yield return _uiDescriptionNPC.ShowDescription2Text("다음으로 음식을 조리하기 위해 \n조리 기구를 설치해 볼까요?");
         yield return _uiDescriptionNPC.ShowDescription2Text("주방 카테고리로 이동해 \n조리 기구를 구매해 주세요!");
+        yield return YieldCache.WaitForSeconds(1);
+
+        _uiNav.Push("UITutorial1");
+        _uiTutorial1.BackHoleSetActive(true);
+        while(!_uiTutorial1.IsBackHoleClicked)
+            yield return YieldCache.WaitForSeconds(0.02f);
+
+        yield return YieldCache.WaitForSeconds(1);
+        _uiTutorial1.KitchenHoleSetActive(true);
+        while (!_uiTutorial1.IsKitchenHoleClicked)
+            yield return YieldCache.WaitForSeconds(0.02f);
+
+        yield return YieldCache.WaitForSeconds(1);
+        _uiTutorial1.TableHoleSetActive(true);
+        while(!_uiTutorial1.IsTableHoleClicked)
+            yield return YieldCache.WaitForSeconds(0.02f);
+
+        _uiNav.Push("UITutorial1");
+        yield return YieldCache.WaitForSeconds(1);
+        _uiTutorial1.BuyHoleSetActive(true);
+        _uiTutorial1.SetBuyHoleTargetObjectName("Buy Button");
+        while (!UserInfo.IsGiveKitchenUtensil("COOKER01_01"))
+            yield return YieldCache.WaitForSeconds(0.02f);
+
+        yield return YieldCache.WaitForSeconds(1);
+        _uiTutorial1.BuyHoleSetActive(true);
+        _uiTutorial1.SetBuyHoleTargetObjectName("Equip Button");
+        KitchenUtensilData kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData("COOKER01_01");
+        while (!UserInfo.IsEquipKitchenUtensil(kitchenData))
+            yield return YieldCache.WaitForSeconds(0.02f);
+
+        yield return YieldCache.WaitForSeconds(1);
+        _uiNav.Push("UITutorialDescription");
+        yield return _uiDescriptionNPC.ShowDescription2Text("잘하셨습니다! \n손님을 맞이할 준비를 끝내셨네요!");
+        yield return _uiDescriptionNPC.ShowDescription2Text("이제 레스토랑을 \n한번 확인해 볼까요?");
+
+        yield return YieldCache.WaitForSeconds(1);
+        _uiTutorial1.ExitHoleSetActive(true);
+        while(!_uiTutorial1.IsExitHoleClicked)
+            yield return YieldCache.WaitForSeconds(0.02f);
+
+        yield return YieldCache.WaitForSeconds(1.3f);
+        yield return _uiDescriptionNPC.ShowDescription2Text("현재 손님을 맞이할 \n준비는 완료됬네요.");
+        yield return _uiDescriptionNPC.ShowDescription2Text("하지만 손님들이 \n아직 우리 가게를 잘 모를거에요.");
     }
 
     private void Step2TouchEvent()

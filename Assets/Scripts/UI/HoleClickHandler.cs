@@ -6,16 +6,22 @@ using UnityEngine.UI;
 
 public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHandler
 {
+    public bool Interactable;
     [SerializeField] private RectTransform _parent;
     [SerializeField] private RectTransform _holeRect;
     private Action _action;
-
+    private string _targetName;
     private Button _selectButton;
     private ButtonPressEffect _selectButtonPress;
 
     public void SetActive(bool value)
     {
         _parent.gameObject.SetActive(value);
+    }
+
+    public void SetTargetObjectName(string name)
+    {
+        _targetName = name;
     }
 
     public void AddListener(Action action)
@@ -30,6 +36,9 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
 
     public void OnPointerDown(PointerEventData eventData)
     {
+        if (!Interactable)
+            return;
+
         _selectButton = null;
         _selectButtonPress = null;
         var results = new List<RaycastResult>();
@@ -46,6 +55,10 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
             if (result.gameObject == _holeRect.gameObject)
                 continue;
 
+            DebugLog.Log(result.gameObject.name + ": " + result.gameObject.name.Equals(_targetName));
+            if (!string.IsNullOrWhiteSpace(_targetName) && !result.gameObject.name.Equals(_targetName))
+                continue;
+
             if (!result.gameObject.TryGetComponent(out Button button) || !result.gameObject.TryGetComponent(out ButtonPressEffect effect))
                 continue;
 
@@ -60,6 +73,9 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
 
     public void OnPointerUp(PointerEventData eventData)
     {
+        if (!Interactable)
+            return;
+
         var results = new List<RaycastResult>();
         EventSystem.current.RaycastAll(eventData, results);
 
@@ -72,6 +88,9 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
                 continue;
 
             if (result.gameObject == _holeRect.gameObject)
+                continue;
+
+            if (!string.IsNullOrWhiteSpace(_targetName) && !result.gameObject.name.Equals(_targetName))
                 continue;
 
             if (!result.gameObject.TryGetComponent(out Button button) || !result.gameObject.TryGetComponent(out ButtonPressEffect effect))

@@ -25,6 +25,7 @@ public class UIStaffTab : MonoBehaviour
             BasicData data = UserInfo.GetEquipStaff((StaffType)index);
             Sprite sprite = data != null ? data.ThumbnailSprite : null;
             slot.UpdateUI(sprite, Utility.StaffTypeStringConverter((StaffType)index));
+            slot.name = "Slot" + (i + 1);
         }
 
         UserInfo.OnChangeStaffHandler += UpdateUI;

@@ -22,7 +22,8 @@ public class UIKitchenTab : MonoBehaviour
             slot.Init(() => _uiKitchen.ShowUIKitchen((KitchenUtensilType)index));
             BasicData data = UserInfo.GetEquipKitchenUtensil((KitchenUtensilType)i);
             Sprite sprite = data != null ? data.ThumbnailSprite : null;
-            _slots[i].UpdateUI(sprite, Utility.KitchenUtensilTypeStringConverter((KitchenUtensilType)i));
+            slot.UpdateUI(sprite, Utility.KitchenUtensilTypeStringConverter((KitchenUtensilType)i));
+            slot.name = "Slot" + (i + 1);
         }
 
         UserInfo.OnChangeKitchenUtensilHandler += UpdateUI;
