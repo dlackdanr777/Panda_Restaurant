@@ -55,7 +55,6 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
             if (result.gameObject == _holeRect.gameObject)
                 continue;
 
-            DebugLog.Log(result.gameObject.name + ": " + result.gameObject.name.Equals(_targetName));
             if (!string.IsNullOrWhiteSpace(_targetName) && !result.gameObject.name.Equals(_targetName))
                 continue;
 
@@ -90,6 +89,7 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
             if (result.gameObject == _holeRect.gameObject)
                 continue;
 
+            DebugLog.Log(name + ": " + result.gameObject.name.Equals(_targetName));
             if (!string.IsNullOrWhiteSpace(_targetName) && !result.gameObject.name.Equals(_targetName))
                 continue;
 

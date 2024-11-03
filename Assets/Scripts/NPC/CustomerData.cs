@@ -51,11 +51,13 @@ public class CustomerData : ScriptableObject
 
     public string GetRandomOrderFood()
     {
-        List<string> orderFoodList = new List<string>{ _requiredDish };
+        List<string> orderFoodList = new List<string>();
+        
+        if(!string.IsNullOrWhiteSpace(_requiredDish))
+            orderFoodList.Add(_requiredDish);   
 
         for (int i = 0, cnt = _orderFoods.Length; i < cnt; i++)
         {
-            if (UserInfo.IsGiveRecipe(_orderFoods[i]))
                 orderFoodList.Add(_orderFoods[i]);
         }
 

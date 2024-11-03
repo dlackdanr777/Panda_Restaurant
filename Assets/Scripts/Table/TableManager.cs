@@ -1,3 +1,4 @@
+using Muks.DataBind;
 using Muks.PathFinding.AStar;
 using Muks.Tween;
 using System;
@@ -49,16 +50,7 @@ public class TableManager : MonoBehaviour
 
     private void Init()
     {
-        _guideButton.onClick.AddListener(() =>
-        {
-            int index = GetTableType(ETableState.NotUse);
-
-            if (index == -1)
-                return;
-
-            OnCustomerGuide(index);
-        });
-
+        _guideButton.onClick.AddListener(() => OnCustomerGuideButtonClicked(-1));
         int tableLength = _tableDatas.Length;
         _orderButtons = new UIButtonAndImage[tableLength];
         _servingButtons = new UIButtonAndImage[tableLength];
@@ -234,7 +226,7 @@ public class TableManager : MonoBehaviour
     }
 
 
-    public void OnCustomerGuide(int index)
+    public void OnCustomerGuide(int index, int sitPos = -1)
     {
         if (_customerController.IsEmpty())
             return;
@@ -254,10 +246,19 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].TableState = ETableState.Move;
         _tableDatas[index].OrdersCount = currentCustomer.OrderCount;
 
-        int randInt = UnityEngine.Random.Range(0, _tableDatas[index].ChairTrs.Length);
-        _tableDatas[index].SitDir = randInt == 0 ? -1 : 1;
-        _tableDatas[index].SitIndex = randInt;
-        Vector3 targetPos = _tableDatas[index].ChairTrs[randInt].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
+        if(sitPos != 0 && sitPos != 1)
+        {
+            int randInt = UnityEngine.Random.Range(0, _tableDatas[index].ChairTrs.Length);
+            _tableDatas[index].SitDir = randInt == 0 ? -1 : 1;
+            _tableDatas[index].SitIndex = randInt;
+        }
+        else
+        {
+            _tableDatas[index].SitDir = sitPos == 0 ? -1 : 1;
+            _tableDatas[index].SitIndex = sitPos;
+        }
+
+        Vector3 targetPos = _tableDatas[index].ChairTrs[_tableDatas[index].SitIndex].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
 
         UpdateTable();
 
@@ -265,9 +266,9 @@ public class TableManager : MonoBehaviour
         {
             Tween.Wait(0.1f, () =>
             {
-                currentCustomer.transform.position = _tableDatas[index].ChairTrs[randInt].position;
-                _orderButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[randInt]);
-                _sevingButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[randInt]);
+                currentCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitIndex].position;
+                _orderButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[_tableDatas[index].SitIndex]);
+                _sevingButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[_tableDatas[index].SitIndex]);
 
                 currentCustomer.SetSpriteDir(-_tableDatas[index].SitDir);
                 currentCustomer.SetLayer("SitCustomer", 0);
@@ -341,6 +342,26 @@ public class TableManager : MonoBehaviour
         if (_tableDatas[index].TableState == ETableState.DontUse)
         {
             NotFurnitureTable(index);
+            return;
+        }
+
+        string orderFoodId = _tableDatas[index].CurrentFood.Id;
+        if(!UserInfo.IsGiveRecipe(orderFoodId))
+        {
+            NormalCustomer currentCustomer = _tableDatas[index].CurrentCustomer;
+            _tableDatas[index].CurrentCustomer = null;
+            _tableDatas[index].TableState = ETableState.NotUse;
+            currentCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
+            currentCustomer.ChangeState(CustomerState.Idle);
+            currentCustomer.StartAnger();
+            currentCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
+            {
+                currentCustomer.StopAnger();
+                ObjectPoolManager.Instance.DespawnNormalCustomer(currentCustomer);
+                currentCustomer = null;
+            });
+
+            UpdateTable();
             return;
         }
 
@@ -543,5 +564,17 @@ public class TableManager : MonoBehaviour
 
             return notEqualFloorGarbageArea[minIndex];
         }
+    }
+
+
+    public void OnCustomerGuideButtonClicked(int sitPos = -1)
+    {
+        int index = GetTableType(ETableState.NotUse);
+
+        if (index == -1)
+            return;
+
+        sitPos = Mathf.Clamp(sitPos, -1, 1);
+        OnCustomerGuide(index, sitPos);
     }
 }

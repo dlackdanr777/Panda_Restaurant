@@ -21,8 +21,8 @@ MonoBehaviour:
   _scale: 1
   _maxDiscomfortIndex: 25
   _minScore: 0
-  _requiredDish: FOOD01
+  _requiredDish: 
   _requiredItem: 
   _orderFoods:
-  - FOOD03
+  - FOOD01
   _skill: {fileID: 0}

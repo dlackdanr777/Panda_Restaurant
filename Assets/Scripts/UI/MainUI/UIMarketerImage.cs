@@ -15,6 +15,12 @@ public class UIMarketerImage : MonoBehaviour
     private MarketerData _data;
     private int _particleCount;
 
+
+    private void OnEnable()
+    {
+        OnChangeMarketerEvent();
+    }
+
     public void Init()
     {
         OnChangeMarketerEvent();
@@ -50,6 +56,9 @@ public class UIMarketerImage : MonoBehaviour
 
     private void OnChangeMarketerEvent()
     {
+        if (!gameObject.activeSelf)
+            return;
+
         MarketerData equipData = (MarketerData)UserInfo.GetEquipStaff(StaffType.Marketer);
         if (equipData == _data)
             return;

@@ -39,8 +39,8 @@ public static class UserInfo
 
     public static event Action OnVisitedCustomerHandler;
 
-    private static bool _tutorial1Clear;
-    public static bool Tutorial1Clear => _tutorial1Clear;
+
+    public static bool Tutorial1Clear = false;
 
     private static int _money;
     public static int Money => _money;
@@ -332,6 +332,28 @@ public static class UserInfo
 
     public static void SetEquipStaff(StaffData data)
     {
+        if(!_giveStaffList.Contains(data.Id))
+        {
+            DebugLog.LogError("해당 스탭은 현재 가지고 있지 않습니다: " + data.Id);
+            return;
+        }    
+
+        _equipStaffDatas[(int)StaffDataManager.Instance.GetStaffType(data)] = data;
+        OnChangeStaffHandler?.Invoke();
+    }
+
+    public static void SetEquipStaff(string id)
+    {
+        if (!_giveStaffList.Contains(id))
+        {
+            DebugLog.LogError("해당 스탭은 현재 가지고 있지 않습니다: " + id);
+            return;
+        }
+
+        StaffData data = StaffDataManager.Instance.GetStaffData(id);
+        if (data == null)
+            throw new Exception("해당 Id를 가진 스탭이 없습니다: " + id);
+
         _equipStaffDatas[(int)StaffDataManager.Instance.GetStaffType(data)] = data;
         OnChangeStaffHandler?.Invoke();
     }
@@ -454,7 +476,7 @@ public static class UserInfo
             return level;
         }
 
-        throw new Exception("해당하는 ID의 음식을 보유하고 있지 않습니다: " + id);
+        return 1;
     }
 
     public static int GetRecipeLevel(FoodData data)

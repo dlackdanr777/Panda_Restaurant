@@ -24,7 +24,7 @@ public class UIFurnitureTab : MonoBehaviour
             BasicData data = UserInfo.GetEquipFurniture((FurnitureType)index);
             Sprite sprite = data != null ? data.ThumbnailSprite : null;
             slot.UpdateUI(sprite, Utility.FurnitureTypeStringConverter((FurnitureType)index));
-            slot.name = "Slot" + (i + 1);
+            slot.name = "FurnitureTabSlot" + (i + 1);
         }
 
         UserInfo.OnChangeFurnitureHandler += UpdateUI;

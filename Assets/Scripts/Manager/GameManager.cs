@@ -156,7 +156,6 @@ public class GameManager : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
-        UserInfo.GiveRecipe("FOOD01");
         Application.targetFrameRate = 60;
         UserInfo.DataBindTip();
         UserInfo.DataBindMoney();

@@ -1,8 +1,11 @@
 using Muks.Tween;
+using System;
 using UnityEngine;
 
-public class UIRootMain : MonoBehaviour
+public class UIAddCutomerController : MonoBehaviour
 {
+    public event Action OnAddCustomerHandelr;
+
     [Header("Components")]
     [SerializeField] private TableManager _tableManager;
     [SerializeField] private CustomerController _customerController;
@@ -50,6 +53,7 @@ public class UIRootMain : MonoBehaviour
             _customerController.AddCustomer();
             _addCustomerButton.SetFillAmonut(0);
             _tabCount = 0;
+            OnAddCustomerHandelr?.Invoke();
             return;
         }
 

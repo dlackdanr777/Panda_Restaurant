@@ -56,7 +56,7 @@ public class UITutorialDescriptionNPC : MobileUIView
         _descriptionText2.gameObject.SetActive(false);
         if (_textCoroutine != null)
             StopCoroutine(_textCoroutine);
-        _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText1, str, 0.08f));
+        _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText1, str, 0.05f));
         return _textCoroutine;
     }
 
@@ -66,7 +66,7 @@ public class UITutorialDescriptionNPC : MobileUIView
         _descriptionText1.gameObject.SetActive(false);
         if (_textCoroutine != null)
             StopCoroutine(_textCoroutine);
-        _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText2, str, 0.08f));
+        _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText2, str, 0.05f));
         return _textCoroutine;
     }
 
