@@ -141,6 +141,17 @@ public class TableManager : MonoBehaviour
         return new Vector2(0,0);
     }
 
+    public TableData GetTableData(int index)
+    {
+        if(index < 0 || _tableDatas.Length <= index)
+        {
+            DebugLog.LogError("테이블 범위를 벗어나는 인덱스입니다: " + index + " (테이블 배열 길이: " + _tableDatas.Length + ")");
+            return null;
+        }
+
+        return _tableDatas[index];
+    }
+
     public List<NormalCustomer> GetSitCustomerList()
     {
         List<NormalCustomer> returnDataList = new List<NormalCustomer>();

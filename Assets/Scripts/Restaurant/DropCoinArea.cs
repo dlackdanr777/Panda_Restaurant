@@ -39,7 +39,7 @@ public class DropCoinArea : MonoBehaviour
         _isAnimeStartEnabled = false;
         _currentMoney += moneyValue;
         PointerClickSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
-        coin.AddEvent(OnCoinClicked);
+        coin.AddEvent(GiveCoin);
 
         Vector3 targetPos = _dropArea.position;
         targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * _currentCoinCount), 0, 0);
@@ -97,7 +97,7 @@ public class DropCoinArea : MonoBehaviour
     }
 
 
-    private void OnCoinClicked()
+    public void GiveCoin()
     {
         if (_currentCoinCount == 0)
             return;

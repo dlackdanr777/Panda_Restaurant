@@ -18,7 +18,7 @@ MonoBehaviour:
   _description: "\uC791\uC740 \uD638\uB791\uC774.\n\uC791\uC740 \uD0A4\uC640 \uADC0\uC5EC\uC6B4
     \uC5BC\uAD74 \uB54C\uBB38\uC5D0 \uACE0\uC591\uC774\uB85C \uB9CE\uC774\uB4E4 \uCC29\uAC01\uD558\uACE0\uB294
     \uD55C\uB2E4."
-  _moveSpeed: 5
+  _moveSpeed: 6
   _scale: 1
   _maxDiscomfortIndex: 15
   _minScore: 0

@@ -16,7 +16,7 @@ MonoBehaviour:
   _name: "\uB3C4\uB451\uACE0\uC591\uC774"
   _id: CUSTOMER80
   _description: 
-  _moveSpeed: 6
+  _moveSpeed: 7
   _scale: 1
   _maxDiscomfortIndex: 25
   _minScore: 500
