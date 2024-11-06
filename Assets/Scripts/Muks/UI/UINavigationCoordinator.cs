@@ -116,6 +116,17 @@ namespace Muks.UI
                 navData.UiNav.AllHide();
             }
         }
+
+        public int GetOpenViewCount()
+        {
+            int count = 0;
+            foreach (NavigationData navData in _navList)
+            {
+                count += navData.UiNav.Count;
+            }
+
+            return count;
+        }
     }
 }
 

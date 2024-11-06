@@ -27,6 +27,11 @@ public class UIMoney : MonoBehaviour
         Init();
     }
 
+    private void OnEnable()
+    {
+        OnChangeMoneyEvent();
+    }
+
 
     private void Init()
     {
@@ -51,7 +56,9 @@ public class UIMoney : MonoBehaviour
 
     private void OnChangeMoneyEvent()
     {
-        
+        if (!gameObject.activeInHierarchy)
+            return;
+
         int addMoney = UserInfo.Money - _currentMoney;
 
         if (addMoney == 0)

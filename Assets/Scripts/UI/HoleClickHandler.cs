@@ -9,6 +9,7 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
     public bool Interactable;
     [SerializeField] private RectTransform _parent;
     [SerializeField] private RectTransform _holeRect;
+    public RectTransform HoleRect => _holeRect;
     private Action _action;
     private string _targetName;
     private Button _selectButton;

@@ -18,9 +18,14 @@ public class UITipText : MonoBehaviour
         UserInfo.OnChangeTipHandler += OnChangeMoneyEvent;
     }
 
+    private void OnEnable()
+    {
+        OnChangeMoneyEvent();
+    }
+
     private void OnChangeMoneyEvent()
     {
-        if (!gameObject.activeSelf)
+        if (!gameObject.activeInHierarchy)
         {
             _currentTip = UserInfo.Tip;
             return;

@@ -1,5 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -16,6 +17,7 @@ public class UITutorial : MobileUIView
     [SerializeField] private UIAddCutomerController _addCustomerButton;
     [SerializeField] private Button _customerGuideButton;
     [SerializeField] private Button _table1Button;
+    [SerializeField] private ButtonPressEffect _gacha1Button;
     [SerializeField] private UIButtonAndImage _orderButton;
     [SerializeField] private UIButtonAndImage _servingButton;
     [SerializeField] private GameObject _uiPunchHole;
@@ -32,6 +34,7 @@ public class UITutorial : MobileUIView
     [SerializeField] private HoleClickHandler _customerGuideHole;
     [SerializeField] private HoleClickHandler _orderHole;
     [SerializeField] private HoleClickHandler _table1Hole;
+    [SerializeField] private HoleClickHandler _gacha1Hole;
 
 
     [SerializeField] private EnabledScaleAnimation _addCustonerHoleAnime;
@@ -45,6 +48,8 @@ public class UITutorial : MobileUIView
     [SerializeField] private EnabledScaleAnimation _customerGuideHoleAnime;
     [SerializeField] private EnabledScaleAnimation _orderHoleAnime;
     [SerializeField] private EnabledScaleAnimation _table1HoleAnime;
+    [SerializeField] private EnabledScaleAnimation _gacha1HoleAnime;
+
 
     [SerializeField] private GameObject _shopMaskCursor;
     [SerializeField] private GameObject _addCustomerHoleCursor;
@@ -57,6 +62,12 @@ public class UITutorial : MobileUIView
     [SerializeField] private GameObject _customerGuideHoleCursor;
     [SerializeField] private GameObject _orderHoleCursor;
     [SerializeField] private GameObject _table1HoleCursor;
+    [SerializeField] private GameObject _gacha1HoleCursor;
+
+    [Space]
+    [SerializeField] private HoleClickHandler _customHole;
+    [SerializeField] private EnabledScaleAnimation _customHoleAnime;
+    [SerializeField] private GameObject _customHoleCursor;
 
 
     private bool _isButtonClicked;
@@ -74,6 +85,7 @@ public class UITutorial : MobileUIView
         _orderButton.gameObject.SetActive(false);
         _servingButton.gameObject.SetActive(false);
         _table1Button.gameObject.SetActive(false);
+        _gacha1Button.gameObject.SetActive(false);
 
         _shopHole.SetActive(false);
         _addCustomerHole.SetActive(false);
@@ -86,6 +98,8 @@ public class UITutorial : MobileUIView
         _customerGuideHole.SetActive(false);
         _orderHole.SetActive(false);
         _table1Hole.SetActive(false);
+        _customHole.SetActive(false);
+        _gacha1Hole.SetActive(false);
 
         _shopMaskCursor.SetActive(false);
         _addCustomerHoleCursor.SetActive(false);
@@ -98,8 +112,10 @@ public class UITutorial : MobileUIView
         _customerGuideHoleCursor.SetActive(false);
         _orderHoleCursor.SetActive(false);
         _table1HoleCursor.SetActive(false);
+        _customHoleCursor.SetActive(false);
+        _gacha1HoleCursor.SetActive(false);
 
-        _addCustomerButton.OnAddCustomerHandelr += OnAddCustomerEvent;
+        _addCustomerButton.OnAddCustomerHandelr += OnButtonClickEvent;
         _tableHole.AddListener(OnTableHoleClicked);
         _kitchenHole.AddListener(OnKitchenHoleClicked);
         _recipeHole.AddListener(OnRecipeHoleClicked);
@@ -111,6 +127,7 @@ public class UITutorial : MobileUIView
         _orderButton.AddListener(OnOrderButtonClicked);
         _servingButton.AddListener(OnServingButtonClicked);
         _table1Button.onClick.AddListener(OnTable1ButtonClicked);
+        _gacha1Hole.AddListener(OnButtonClickEvent);
 
         _shopHole.SetTargetObjectName("Tutorial Shop Button");
         _addCustomerHole.SetTargetObjectName("Tutorial Add Customer Button");
@@ -123,6 +140,7 @@ public class UITutorial : MobileUIView
         _customerGuideHole.SetTargetObjectName("Tutorial Guide Button");
         _orderHole.SetTargetObjectName("Tutorial Order Button");
         _table1Hole.SetTargetObjectName("Table1 Button");
+        _gacha1Hole.SetTargetObjectName("Tutorial Gacha1 Button");
 
         _shopMaskAnime.SetCallBack(() => _shopMaskCursor.SetActive(false), null, OnShopMaskAnimeCompleted);
         _addCustonerHoleAnime.SetCallBack(() => _addCustomerHoleCursor.SetActive(false), null, OnAddCustomerHoleAnimeCompleted);
@@ -135,7 +153,9 @@ public class UITutorial : MobileUIView
         _customerGuideHoleAnime.SetCallBack(() => _customerGuideHoleCursor.SetActive(false), null, OnCustomerGuideHoleAnimeCompleted);
         _orderHoleAnime.SetCallBack(() => _orderHoleCursor.SetActive(false), null, OnOrderHoleAnimeCompleted);
         _table1HoleAnime.SetCallBack(() => _table1HoleCursor.SetActive(false), null, OnTable1HoleAnimeCompleted);
-
+        _customHoleAnime.SetCallBack(() => _customHoleCursor.SetActive(false), null, OnCustomHoleAnimeCompleted);
+        _gacha1HoleAnime.SetCallBack(() => _gacha1HoleCursor.SetActive(false), null, OnGacha1HoleAnimeCompleted);
+        
         VisibleState = VisibleState.Disappeared;
         gameObject.SetActive(false);
     }
@@ -313,6 +333,30 @@ public class UITutorial : MobileUIView
         _isButtonClicked = false;
     }
 
+    public void CustomHoleSetActive(bool value, Transform pos)
+    {
+        _customHole.SetActive(value);
+        _addCustomerHoleCursor.SetActive(false);
+        _customHole.HoleRect.transform.position = pos.position;
+        _customHoleCursor.transform.position = pos.position;
+        _customHole.Interactable = false;
+        _isButtonClicked = false;
+    }
+
+    public void Gacha1HoleSetActive(bool value)
+    {
+        _gacha1Hole.SetActive(value);
+        _gacha1HoleCursor.SetActive(false);
+        _gacha1Hole.Interactable = false;
+        _isButtonClicked = false;
+    }
+
+    public void Gacha1ButtonSetActive(bool value)
+    {
+        _gacha1Button.gameObject.SetActive(value);
+        _isButtonClicked = false;
+    }
+
 
     public void SetBuyHoleTargetObjectName(string name)
     {
@@ -327,6 +371,17 @@ public class UITutorial : MobileUIView
     public void SetOrderHoleTargetObjectName(string name)
     {
         _orderHole.SetTargetObjectName(name);
+    }
+
+    public void SetCustomHoleTargetObjectName(string name)
+    {
+        _customHole.SetTargetObjectName(name);
+    }
+
+    public void SetGacha1ButtonClickEvent(Action action)
+    {
+        _gacha1Button.RemoveAllListeners();
+        _gacha1Button.AddListener(action);
     }
 
 
@@ -382,6 +437,12 @@ public class UITutorial : MobileUIView
     private void OnRecipeHoleClicked()
     {
         _recipeHole.SetActive(false);
+        _isButtonClicked = true;
+    }
+
+    private void OnCustomHoleClicked()
+    {
+        _customHole.SetActive(false);
         _isButtonClicked = true;
     }
 
@@ -487,7 +548,26 @@ public class UITutorial : MobileUIView
         });
     }
 
-    private void OnAddCustomerEvent()
+    private void OnCustomHoleAnimeCompleted()
+    {
+        Tween.Wait(0.5f, () =>
+        {
+            _customHole.Interactable = true;
+            _customHoleCursor.gameObject.SetActive(true);
+        });
+    }
+
+    private void OnGacha1HoleAnimeCompleted()
+    {
+        Tween.Wait(0.5f, () =>
+        {
+            _gacha1Hole.Interactable = true;
+            _gacha1HoleCursor.gameObject.SetActive(true);
+        });
+    }
+
+
+    private void OnButtonClickEvent()
     {
         _isButtonClicked = true;
     }

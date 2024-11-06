@@ -3,6 +3,7 @@ using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using System;
 
 [System.Serializable]
 public class Capsule
@@ -16,6 +17,8 @@ public class Capsule
 
 public class UIGacha : MobileUIView
 {
+    public event Action<int> _gachaStepHandler;
+
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIBouncingBall _bouncingBall;
@@ -25,6 +28,7 @@ public class UIGacha : MobileUIView
     [SerializeField] private UIGachaItemList _gachaItemList;
     [SerializeField] private Button _screenButton;
     [SerializeField] private ButtonPressEffect _singleButton;
+    public ButtonPressEffect SingleButton => _singleButton;
     [SerializeField] private ButtonPressEffect _tenButton;
     [SerializeField] private ButtonPressEffect _skipButton;
     [SerializeField] private GameObject _uiComponents;
@@ -98,6 +102,8 @@ public class UIGacha : MobileUIView
     {
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
+        _singleButton.gameObject.SetActive(true);
+        _tenButton.gameObject.SetActive(true);
         _uiComponents.SetActive(false);
         _screenButton.gameObject.SetActive(false);
         _scrollImage.gameObject.SetActive(false);
@@ -132,6 +138,17 @@ public class UIGacha : MobileUIView
         gameObject.SetActive(false);
     }
 
+
+    public void GetItem(GachaItemData data)
+    {
+        _getItemList.Clear();
+        _getItemIndex = 0;
+
+        _getItemList.Add(data);
+        UserInfo.GiveGachaItem(data);
+
+        _gachaMacineAnimator.SetTrigger("Start");
+    }
 
     public void CapsuleSetSibilingIndex(int index)
     {
@@ -290,6 +307,8 @@ public class UIGacha : MobileUIView
                 CapsuleSetSibilingIndex(11);
                 break;
         }
+
+        _gachaStepHandler?.Invoke(_currentStep);
     }
 
 
@@ -337,7 +356,7 @@ public class UIGacha : MobileUIView
         if (!_isCapsuleColorChanged)
             return;
 
-        int randInt = Random.Range(0, _capsuleColors.Length);
+        int randInt = UnityEngine.Random.Range(0, _capsuleColors.Length);
         _upperCapsule.sprite = _capsuleColors[randInt].UpperCapsule;
         _lowerCapsule.sprite = _capsuleColors[randInt].LowerCapsule;
         _isCapsuleColorChanged = false;

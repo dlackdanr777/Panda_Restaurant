@@ -10,6 +10,7 @@ public class UITutorialDescriptionNPC : MobileUIView
     [SerializeField] private UIImageAndText _descriptionText1;
     [SerializeField] private UIImageAndText _descriptionText2;
     [SerializeField] private Button _screenButton;
+    [SerializeField] private GameObject[] _cursorObjs;
 
     private Coroutine _textCoroutine;
     private bool _isScreenClicked = false;
@@ -30,6 +31,8 @@ public class UITutorialDescriptionNPC : MobileUIView
         _descriptionText1.gameObject.SetActive(false);
         _descriptionText2.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
+        for (int i = 0, cnt = _cursorObjs.Length; i < cnt; ++i)
+            _cursorObjs[i].gameObject.SetActive(false);
         _isScreenClicked = false;
 
         if (_textCoroutine != null)
@@ -75,6 +78,9 @@ public class UITutorialDescriptionNPC : MobileUIView
     {
         text.gameObject.SetActive(true);
         _screenButton.gameObject.SetActive(false);
+        for(int i = 0, cnt = _cursorObjs.Length; i < cnt; ++i)
+            _cursorObjs[i].gameObject.SetActive(false);
+
         text.Text.text = string.Empty;
         TweenData tween = Tween.Wait(0.2f, () => _screenButton.gameObject.SetActive(true));
         _isScreenClicked = false;
@@ -93,7 +99,11 @@ public class UITutorialDescriptionNPC : MobileUIView
         _screenButton.gameObject.SetActive(false);
         _isScreenClicked = false;
         tween.Clear();
-        tween = Tween.Wait(0.2f, () => _screenButton.gameObject.SetActive(true));
+        yield return YieldCache.WaitForSeconds(0.2f);
+        _screenButton.gameObject.SetActive(true);
+        for (int i = 0, cnt = _cursorObjs.Length; i < cnt; ++i)
+            _cursorObjs[i].gameObject.SetActive(true);
+
         while (!_isScreenClicked)
             yield return YieldCache.WaitForSeconds(0.02f);
 

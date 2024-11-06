@@ -1,6 +1,7 @@
 using Muks.DataBind;
 using Muks.PathFinding.AStar;
 using Muks.Tween;
+using Muks.UI;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -20,6 +21,7 @@ public class TableManager : MonoBehaviour
 
     [Space]
     [Header("Components")]
+
     [SerializeField] private TableData[] _tableDatas;
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private KitchenSystem _kitchenSystem;
@@ -31,6 +33,10 @@ public class TableManager : MonoBehaviour
     [SerializeField] private Button _guideButton;
     [SerializeField] private UIButtonAndImage _orderButtonPrefab;
     [SerializeField] private UIButtonAndImage _servingButtonPrefab;
+
+    [Space]
+    [Header("Tutorial Components")]
+    [SerializeField] private MiniGameTutorial _miniGameTutorial;
 
     private WorldToSceenPosition[] _orderButtonsPos;
     private WorldToSceenPosition[] _sevingButtonsPos;
@@ -45,6 +51,8 @@ public class TableManager : MonoBehaviour
     {
         Init();
         UpdateTable();
+
+        UserInfo.OnChangeFurnitureHandler += (type) => UpdateTable();
     }
 
 
@@ -324,6 +332,12 @@ public class TableManager : MonoBehaviour
 
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
+
+        if(!UserInfo.IsMiniGameTutorialClear)
+        {
+            _miniGameTutorial.StartTutorial(foodData, _orderButtons[index].transform);
+        }
+
         int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
         CookingData data = new CookingData(foodData.Id, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), foodData.Sprite, () =>
         {
