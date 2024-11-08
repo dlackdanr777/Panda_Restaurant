@@ -151,7 +151,7 @@ public class UIRestaurantAdmin : MobileUIView
     }
 
 
-    private void StaffButtonClicked()
+    public void StaffButtonClicked()
     {
         _staffTab.transform.SetAsLastSibling();
         _staffButton.SelectButton();
@@ -163,7 +163,7 @@ public class UIRestaurantAdmin : MobileUIView
     }
 
 
-    private void FurnitureButtonClicked()
+    public void FurnitureButtonClicked()
     {
         _furnitureTab.transform.SetAsLastSibling();
         _furnitureButton.SelectButton();
@@ -175,7 +175,7 @@ public class UIRestaurantAdmin : MobileUIView
     }
 
 
-    private void RecipeButtonClicked()
+    public void RecipeButtonClicked()
     {
         _recipeTab.transform.SetAsLastSibling();
         _recipeButton.SelectButton();
@@ -187,7 +187,7 @@ public class UIRestaurantAdmin : MobileUIView
     }
 
 
-    private void KitchenButtonClicked()
+    public void KitchenButtonClicked()
     {
         _kitchenTab.transform.SetAsLastSibling();
         _kitchenButton.SelectButton();

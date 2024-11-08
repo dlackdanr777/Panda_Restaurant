@@ -36,7 +36,7 @@ public class TableManager : MonoBehaviour
 
     [Space]
     [Header("Tutorial Components")]
-    [SerializeField] private MiniGameTutorial _miniGameTutorial;
+    [SerializeField] private GachaTutorial _miniGameTutorial;
 
     private WorldToSceenPosition[] _orderButtonsPos;
     private WorldToSceenPosition[] _sevingButtonsPos;
@@ -332,8 +332,9 @@ public class TableManager : MonoBehaviour
 
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
-
-        if(!UserInfo.IsMiniGameTutorialClear)
+        
+        bool isMiniGameNeeded = foodData.MiniGameNeeded && string.IsNullOrWhiteSpace(foodData.NeedItem);
+        if(isMiniGameNeeded && !UserInfo.IsMiniGameTutorialClear)
         {
             _miniGameTutorial.StartTutorial(foodData, _orderButtons[index].transform);
         }

@@ -16,6 +16,7 @@ public class UIRecipeTab : MonoBehaviour
 
     private UIRestaurantAdminSlot[] _slots;
     private List<FoodData> _foodDataList;
+    private Dictionary<FoodData, UIRestaurantAdminSlot> _slotDic = new Dictionary<FoodData, UIRestaurantAdminSlot>();
 
     public void Init()
     {
@@ -36,6 +37,7 @@ public class UIRecipeTab : MonoBehaviour
             FoodData data = _foodDataList[index];
             slot.Init(() => OnSlotClicked(data));
             _slots[i] = slot;
+            _slotDic.Add(data, slot);
         }
 
         UpdateUI();
@@ -45,6 +47,12 @@ public class UIRecipeTab : MonoBehaviour
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
         GameManager.Instance.OnChangeScoreHandler += UpdateUI;
+    }
+
+
+    public void SetView(FoodData data)
+    {
+        _uiRecipePreview.SetData(data);
     }
 
 

@@ -40,6 +40,7 @@ public static class UserInfo
     public static event Action OnVisitedCustomerHandler;
 
 
+    public static bool IsTutorialStart = false;
     public static bool IsFirstTutorialClear = true;
     public static bool IsMiniGameTutorialClear = false;
 

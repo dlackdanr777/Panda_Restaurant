@@ -42,6 +42,7 @@ public class FirstTutorial : MonoBehaviour
 
         _mainSceneUI.gameObject.SetActive(false);
         _punchHole.gameObject.SetActive(false);
+        UserInfo.IsTutorialStart = true;
         UserInfo.GiveFurniture("COUNTER01");
         UserInfo.SetEquipFurniture("COUNTER01");
         UserInfo.GiveFurniture("WALLPAPER01");
@@ -287,6 +288,7 @@ public class FirstTutorial : MonoBehaviour
         _uiNav.Pop("UITutorialDescription");
         _uiTutorial.PopEnabled = false;
         _uiDescriptionNPC.PopEnabled = false;
+        UserInfo.IsTutorialStart = false;
         gameObject.SetActive(false);
     }
 

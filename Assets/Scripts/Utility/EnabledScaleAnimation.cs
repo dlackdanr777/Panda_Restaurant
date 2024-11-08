@@ -31,7 +31,7 @@ public class EnabledScaleAnimation : MonoBehaviour
     {
         _tweenData?.Clear();
 
-        gameObject.transform.localScale = _startScale;
+        _target.transform.localScale = _startScale;
         _tweenData = _target.TweenScale(_targetScale, _duration, _ease);
         _tweenData.OnStart(_onStarted);
         _tweenData.OnUpdate(_onUpdated);

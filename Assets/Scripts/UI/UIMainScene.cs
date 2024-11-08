@@ -13,7 +13,7 @@ public class UIMainScene : MonoBehaviour
 
     private void Update()
     {
-        if (!UserInfo.IsFirstTutorialClear)
+        if (UserInfo.IsTutorialStart)
             return;
 
         if (!Input.anyKey)

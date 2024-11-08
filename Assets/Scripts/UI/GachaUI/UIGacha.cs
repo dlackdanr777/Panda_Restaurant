@@ -17,7 +17,7 @@ public class Capsule
 
 public class UIGacha : MobileUIView
 {
-    public event Action<int> _gachaStepHandler;
+    public event Action<int> GachaStepHandler;
 
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
@@ -308,7 +308,7 @@ public class UIGacha : MobileUIView
                 break;
         }
 
-        _gachaStepHandler?.Invoke(_currentStep);
+        GachaStepHandler?.Invoke(_currentStep);
     }
 
 

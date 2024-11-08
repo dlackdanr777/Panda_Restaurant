@@ -113,15 +113,15 @@ public class CustomerController : MonoBehaviour
                 customer.SetData(customerData);
                 _customers.Enqueue(customer);
                 UserInfo.CustomerVisits(customerData);
-                continue;
+                UserInfo.AddPromotionCount();
+
+                if (_sortCoroutine != null)
+                    StopCoroutine(_sortCoroutine);
+
+                _sortCoroutine = StartCoroutine(SortCustomerLine());
             }
         }
 
-        if (_sortCoroutine != null)
-            StopCoroutine(_sortCoroutine);
-
-        _sortCoroutine = StartCoroutine(SortCustomerLine());
-        UserInfo.AddPromotionCount();
         AddCustomerHandler?.Invoke();
     }
 
@@ -186,18 +186,35 @@ public class CustomerController : MonoBehaviour
     }
 
 
-    public void GatecrasherTest(string id)
+    public void SpawnCustomer(string id)
     {
-        _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
         CustomerData data = CustomerDataManager.Instance.GetCustomerData(id);
-        _gatecrasherCustomer.SetData(data);
         if (data is GatecrasherCustomer1Data)
         {
+            _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+            _gatecrasherCustomer.SetData(data);
             _gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList, OnCustomerEvent);
         }
         else if (data is GatecrasherCustomer2Data)
         {
+            _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+            _gatecrasherCustomer.SetData(data);
             _gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
         }
+
+        else
+        {
+            NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+            customer.SetData(data);
+            _customers.Enqueue(customer);
+            UserInfo.CustomerVisits(data);
+
+            if (_sortCoroutine != null)
+                StopCoroutine(_sortCoroutine);
+            _sortCoroutine = StartCoroutine(SortCustomerLine());
+            UserInfo.AddPromotionCount();
+        }
+
+        AddCustomerHandler?.Invoke();
     }
 }

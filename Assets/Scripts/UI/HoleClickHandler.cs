@@ -59,9 +59,14 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
             if (!string.IsNullOrWhiteSpace(_targetName) && !result.gameObject.name.Equals(_targetName))
                 continue;
 
-            if (!result.gameObject.TryGetComponent(out Button button) || !result.gameObject.TryGetComponent(out ButtonPressEffect effect))
+            Button button = result.gameObject.GetComponent<Button>();
+            ButtonPressEffect effect = result.gameObject.GetComponent<ButtonPressEffect>();
+            if (button == null && effect == null)
                 continue;
 
+            DebugLog.Log(name + ": ´Ù¿î");
+            DebugLog.Log(button);
+            DebugLog.Log(effect);
             button?.OnPointerDown(eventData);
             effect?.OnPointerDown(eventData);
             _selectButton = button;
@@ -90,16 +95,19 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
             if (result.gameObject == _holeRect.gameObject)
                 continue;
 
-            DebugLog.Log(name + ": " + result.gameObject.name.Equals(_targetName));
+            DebugLog.Log(name + ": " + result.gameObject.name + "(" + result.gameObject.name.Equals(_targetName) + ")");
             if (!string.IsNullOrWhiteSpace(_targetName) && !result.gameObject.name.Equals(_targetName))
                 continue;
 
-            if (!result.gameObject.TryGetComponent(out Button button) || !result.gameObject.TryGetComponent(out ButtonPressEffect effect))
+            Button button = result.gameObject.GetComponent<Button>();
+            ButtonPressEffect effect = result.gameObject.GetComponent<ButtonPressEffect>();
+            if (button == null && effect == null)
                 continue;
 
             if (button != _selectButton || effect != _selectButtonPress)
                 continue;
 
+            DebugLog.Log(name + ": ¾÷");
             _selectButton?.OnPointerClick(eventData);
             _selectButtonPress?.OnPointerUp(eventData);
             _action?.Invoke();

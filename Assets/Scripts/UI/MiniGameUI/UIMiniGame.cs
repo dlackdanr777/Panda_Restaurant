@@ -18,6 +18,7 @@ public class UIMiniGame : MobileUIView
 
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private UIMiniGameTutorial _uiMiniGameTotorial;
     [SerializeField] private UIMiniGameFeverTime _uiFeverTime;
     [SerializeField] private Button _screenButton;
     [SerializeField] private TextMeshProUGUI _timeText;
@@ -89,6 +90,7 @@ public class UIMiniGame : MobileUIView
         _rightTouchButton.AddListener(OnTouchButtonClicked);
         _miniGameState = MiniGameState.Wait;
         _uiFeverTime.SetNormalSprite();
+        _uiMiniGameTotorial.Init();
 
         _descriptionGroup.gameObject.SetActive(false);
         _descriptionText.gameObject.SetActive(false);
@@ -115,6 +117,7 @@ public class UIMiniGame : MobileUIView
       TweenData tween = _animeUI.TweenMove(_targetPos.position, _showDuration, _showTweenMode);
         tween.OnComplete(() => 
         {
+            _canvasGroup.blocksRaycasts = true;
             VisibleState = VisibleState.Appeared;
         });
 
@@ -188,10 +191,17 @@ public class UIMiniGame : MobileUIView
         _timeText.text = Mathf.CeilToInt(_totalTime).ToString();
         _descriptionTimeText.SetText(Mathf.CeilToInt(_totalTime).ToString());
         _uiNav.Push("UIMiniGame");
-        Tween.Wait(_showDuration + 0.5f, () =>
+
+        _uiMiniGameTotorial.StartTutorial(() =>
         {
-            StartCoroutine(StartDescriptionRoutine());
+            _uiMiniGameTotorial.gameObject.SetActive(false);
+            Tween.Wait(_showDuration + 0.5f, () =>
+            {
+                StartCoroutine(StartDescriptionRoutine());
+            });
         });
+
+
     }
 
 
