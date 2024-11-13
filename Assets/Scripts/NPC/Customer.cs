@@ -18,6 +18,7 @@ public enum CustomerState
 
 public class Customer : MonoBehaviour
 {
+    [SerializeField] private bool _drawPath;
 
     [Space]
     [Header("Components")]
@@ -38,7 +39,7 @@ public class Customer : MonoBehaviour
     protected int _moveEndDir;
     protected float _moveSpeed;
     protected bool _isStairsMove;
-
+    private List<Vector2> _path;
 
     public virtual void SetData(CustomerData data)
     {
@@ -159,6 +160,8 @@ public class Customer : MonoBehaviour
 
     private IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {
+        _path = nodeList;
+
         if (2 <= nodeList.Count)
             nodeList.RemoveAt(0);
 
@@ -196,5 +199,22 @@ public class Customer : MonoBehaviour
         SetSpriteDir(1);
         yield return YieldCache.WaitForSeconds(1);
         onCompleted?.Invoke();
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (!_drawPath)
+            return;
+
+        // 경로를 그리는 코드
+        if (_path != null && _path.Count > 0)
+        {
+            Gizmos.color = Color.blue;
+
+            for (int i = 0; i < _path.Count - 1; i++)
+            {
+                Gizmos.DrawLine(_path[i], _path[i + 1]);
+            }
+        }
     }
 }

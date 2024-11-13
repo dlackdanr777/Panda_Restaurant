@@ -12,6 +12,7 @@ public class CustomerController : MonoBehaviour
 
     [Header("Components")]
     [SerializeField] private TableManager _tableManager;
+    [SerializeField] private UICustomerTutorial _uiCustomerTutorial;
 
     [Space]
     [Header("Option")]
@@ -86,6 +87,7 @@ public class CustomerController : MonoBehaviour
                     SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                     specialCustomer.SetData(getData);
                     specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
+                    _uiCustomerTutorial.ShowTutorial(getData);
                 }
                 else if(getData is GatecrasherCustomerData)
                 {
@@ -94,6 +96,7 @@ public class CustomerController : MonoBehaviour
                     _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                     randInt = UnityEngine.Random.Range(0, gatecrasherCustomerDataList.Count);
                     _gatecrasherCustomer.SetData(gatecrasherCustomerDataList[randInt]);
+                    _uiCustomerTutorial.ShowTutorial(getData);
                     if (getData is GatecrasherCustomer1Data)
                     {
                         _gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList, OnCustomerEvent);
@@ -189,6 +192,7 @@ public class CustomerController : MonoBehaviour
     public void SpawnCustomer(string id)
     {
         CustomerData data = CustomerDataManager.Instance.GetCustomerData(id);
+        _uiCustomerTutorial.ShowTutorial(data);
         if (data is GatecrasherCustomer1Data)
         {
             _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
@@ -200,6 +204,13 @@ public class CustomerController : MonoBehaviour
             _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
             _gatecrasherCustomer.SetData(data);
             _gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
+        }
+
+        else if(data is SpecialCustomerData)
+        {
+            SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+            specialCustomer.SetData(data);
+            specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
         }
 
         else

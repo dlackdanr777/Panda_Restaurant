@@ -1,4 +1,5 @@
 using Muks.PathFinding.AStar;
+using System.Collections.Generic;
 using UnityEngine;
 
 
@@ -22,6 +23,7 @@ public class NormalCustomer : Customer
 
     private float _doublePricePercent;
     public float DoublePricePercent => _doublePricePercent;
+
 
     public override void SetData(CustomerData data)
     {
