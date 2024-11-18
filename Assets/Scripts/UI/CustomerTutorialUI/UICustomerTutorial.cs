@@ -36,18 +36,19 @@ public class UICustomerTutorial : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
-        gameObject.SetActive(true);
-        _canvasGroup.blocksRaycasts = false;
-
-        _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-
-        TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
-        tween.OnComplete(() =>
+        Tween.Wait(2,() =>
         {
-            VisibleState = VisibleState.Appeared;
-            _canvasGroup.blocksRaycasts = true;
-        });
+            gameObject.SetActive(true);
+            _canvasGroup.blocksRaycasts = false;
+            _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
+            TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
+            tween.OnComplete(() =>
+            {
+                VisibleState = VisibleState.Appeared;
+                _canvasGroup.blocksRaycasts = true;
+            });
+        });
     }
 
     public override void Hide()

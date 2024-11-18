@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f025093603c92db4881b671da40526ff, type: 3}
   m_Name: FRAME01
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: c6eeaca2cb72e654e987e230332e7f04, type: 3}
+  _sprite: {fileID: 21300000, guid: 364e9b667a52eb840825352993995a87, type: 3}
   _thumbnailSPrite: {fileID: 21300000, guid: 4703a052908f2c045a9636de2ee03cfe, type: 3}
   _name: "\uD3C9\uBC94\uD55C \uC561\uC790"
   _id: FRAME01

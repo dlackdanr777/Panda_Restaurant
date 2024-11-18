@@ -1,7 +1,8 @@
+using BackEnd;
+using LitJson;
 using Muks.DataBind;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using UnityEngine;
 
@@ -92,12 +93,8 @@ public static class UserInfo
 
 
     private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
-    private static List<string> _giveStaffList = new List<string>();
-    private static HashSet<string> _giveStaffSet = new HashSet<string>();
     private static Dictionary<string, int> _giveStaffLevelDic = new Dictionary<string, int>();
 
-    private static List<string> _giveRecipeList = new List<string>();
-    private static HashSet<string> _giveRecipeSet = new HashSet<string>();
     private static Dictionary<string, int> _giveRecipeLevelDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _recipeCookCountDic = new Dictionary<string, int>();
 
@@ -106,7 +103,6 @@ public static class UserInfo
 
     private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
     private static List<string> _giveFurnitureList = new List<string>();
-    private static HashSet<string> _giveFurnitureSet = new HashSet<string>();
 
     private static SetData _furnitureEnabledSetData;
     private static SetData _kitchenuntensilEnabledSetData;
@@ -143,6 +139,147 @@ public static class UserInfo
     private static SortType _gachaItemSortType = SortType.GradeDescending;
     public static SortType GachaItemSortType => _gachaItemSortType;
 
+
+    public static Param GetSaveData()
+    {
+        Param param = new Param();
+        param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
+        param.Add("IsMiniGameTutorialClear", IsMiniGameTutorialClear);
+        param.Add("IsGatecrasher1TutorialClear", IsGatecrasher1TutorialClear);
+        param.Add("IsGatecrasher2TutorialClear", IsGatecrasher2TutorialClear);
+        param.Add("IsSpecialCustomer1TutorialClear", IsSpecialCustomer1TutorialClear);
+        param.Add("IsSpecialCustomer2TutorialClear", IsSpecialCustomer2TutorialClear);
+        param.Add("Money", _money);
+        param.Add("TotalAddMoney", _totalAddMoney);
+        param.Add("DailyAddMoney", _dailyAddMoney);
+        param.Add("Score", _score);
+        param.Add("Tip", _tip);
+        param.Add("TotalCookCount", _totalCookCount);
+        param.Add("DailyCookCount", _dailyCookCount);
+        param.Add("TotalCumulativeCustomerCount", _totalCumulativeCustomerCount);
+        param.Add("DailyCumulativeCustomerCount", _dailyCumulativeCustomerCount);
+        param.Add("PromotionCount", _promotionCount);
+        param.Add("TotalAdvertisingViewCount", _totalAdvertisingViewCount);
+        param.Add("DailyAdvertisingViewCount", _dailyAdvertisingViewCount);
+        param.Add("TotalCleanCount", _totalCleanCount);
+        param.Add("DailyCleanCount", _dailyCleanCount);
+
+        List<SaveLevelData> giveStaffSaveDataList = new List<SaveLevelData>();
+        foreach (var value in _giveStaffLevelDic)
+        {
+            giveStaffSaveDataList.Add(new SaveLevelData(value.Key, value.Value));
+        }
+        param.Add("GiveStaffList", giveStaffSaveDataList);
+
+        List<string> equipStaffDataList = new List<string>();
+        for (int i = 0, cnt = _equipStaffDatas.Length; i < cnt; ++i)
+        {
+            if (_equipStaffDatas[i] == null)
+                continue;
+
+            equipStaffDataList.Add(_equipStaffDatas[i].Id);
+        }
+        param.Add("EquipStaffDatas", equipStaffDataList);
+
+        List<SaveLevelData> giveRecipeSaveDataList = new List<SaveLevelData>();
+        foreach (var value in _giveRecipeLevelDic)
+        {
+            giveRecipeSaveDataList.Add(new SaveLevelData(value.Key, value.Value));
+        }
+        param.Add("GiveRecipeList", giveRecipeSaveDataList);
+
+        List<SaveCountData> recipeCookCountSaveDataList = new List<SaveCountData>();
+        foreach (var value in _recipeCookCountDic)
+        {
+            recipeCookCountSaveDataList.Add(new SaveCountData(value.Key, value.Value));
+        }
+        param.Add("RecipeCookCountList", recipeCookCountSaveDataList);
+
+        List<SaveCountData> giveGachaItemCountList = new List<SaveCountData>();
+        foreach (var value in _giveGachaItemCountDic)
+        {
+            giveGachaItemCountList.Add(new SaveCountData(value.Key, value.Value));
+        }
+        param.Add("GiveGachaItemCountList", giveGachaItemCountList);
+
+        List<SaveLevelData> giveGachaItemLevelList = new List<SaveLevelData>();
+        foreach (var value in _giveGachaItemLevelDic)
+        {
+            giveGachaItemLevelList.Add(new SaveLevelData(value.Key, value.Value));
+        }
+        param.Add("GiveGachaItemLevelList", giveGachaItemLevelList);
+
+        param.Add("GiveFurnitureList", _giveFurnitureList);
+        List<string> equipFurnitureList = new List<string>();
+        for (int i = 0, cnt = _equipFurnitureDatas.Length; i < cnt; ++i)
+        {
+            if (_equipFurnitureDatas[i] == null)
+                continue;
+
+            equipFurnitureList.Add(_equipFurnitureDatas[i].Id);
+        }
+        param.Add("EquipFurnitureList", equipFurnitureList);
+
+
+
+
+        return param;
+    }
+
+
+    public static void LoadSaveData(BackendReturnObject bro)
+    {
+        LoadData loadData = new LoadData(bro);
+
+        if(loadData == null)
+        {
+            DebugLog.LogError("로드 데이터를 파싱하는 과정에서 오류가 발생했습니다.");
+            return;
+        }    
+
+        IsFirstTutorialClear = loadData.IsFirstTutorialClear;
+        IsMiniGameTutorialClear = loadData.IsMiniGameTutorialClear;
+        IsGatecrasher1TutorialClear = loadData.IsGatecrasher1TutorialClear;
+        IsGatecrasher2TutorialClear = loadData.IsGatecrasher2TutorialClear;
+        IsSpecialCustomer1TutorialClear = loadData.IsSpecialCustomer1TutorialClear;
+        IsSpecialCustomer2TutorialClear = loadData.IsSpecialCustomer2TutorialClear;
+        _money = loadData.Money;
+        _totalAddMoney = loadData.TotalAddMoney;
+        _dailyAddMoney = loadData.DailyAddMoney;
+        _score = loadData.Score;
+        _tip = loadData.Tip;
+        _totalCookCount = loadData.TotalCookCount;
+        _dailyCookCount = loadData.DailyCookCount;
+        _totalCumulativeCustomerCount = loadData.TotalCumulativeCustomerCount;
+        _dailyCumulativeCustomerCount = loadData.DailyCumulativeCustomerCount;
+        _promotionCount = loadData.PromotionCount;
+        _totalAdvertisingViewCount = loadData.TotalAdvertisingViewCount;
+        _dailyAdvertisingViewCount = loadData.DailyAdvertisingViewCount;
+        _totalCleanCount = loadData.TotalCleanCount;
+        _dailyCleanCount = loadData.DailyCleanCount;
+
+        _giveStaffLevelDic = loadData.GiveStaffLevelDic;
+        for(int i = 0, cnt = loadData.EquipStaffDataList.Count; i < cnt; ++i)
+        {
+            StaffData data = StaffDataManager.Instance.GetStaffData(loadData.EquipStaffDataList[i]);
+            SetEquipStaff(data);
+        }
+
+        _giveRecipeLevelDic = loadData.GiveRecipeLevelDic;
+        _recipeCookCountDic = loadData.RecipeCookCountDic;
+
+        _giveGachaItemCountDic = loadData.GiveGachaItemCountDic;
+        _giveGachaItemLevelDic = loadData.GiveGachaItemLevelDic;
+
+        _giveFurnitureList = loadData.GiveFurnitureList;
+        for (int i = 0, cnt = loadData.EquipFurnitureList.Count; i < cnt; ++i)
+        {
+            FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(loadData.EquipFurnitureList[i]);
+            SetEquipFurniture(data);
+        }
+
+        Debug.Log("데이터 로드 완료");
+    }
 
 
     #region UserData
@@ -279,21 +416,19 @@ public static class UserInfo
 
     public static void GiveStaff(StaffData data)
     {
-        if(_giveStaffSet.Contains(data.Id))
+        if(_giveStaffLevelDic.ContainsKey(data.Id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
         }
 
-        _giveStaffList.Add(data.Id);
-        _giveStaffSet.Add(data.Id);
         _giveStaffLevelDic.Add(data.Id, 1);
         OnGiveStaffHandler?.Invoke();
     }
 
     public static void GiveStaff(string id)
     {
-        if (_giveStaffSet.Contains(id))
+        if (_giveStaffLevelDic.ContainsKey(id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
@@ -306,20 +441,18 @@ public static class UserInfo
             return;
         }
 
-        _giveStaffList.Add(id);
-        _giveStaffSet.Add(id);
         _giveStaffLevelDic.Add(id, 1);
         OnGiveStaffHandler?.Invoke();
     }
 
     public static bool IsGiveStaff(string id)
     {
-        return _giveStaffSet.Contains(id);
+        return _giveStaffLevelDic.ContainsKey(id);
     }
 
     public static bool IsGiveStaff(StaffData data)
     {
-        return _giveStaffSet.Contains(data.Id);
+        return _giveStaffLevelDic.ContainsKey(data.Id);
     }
 
     public static bool IsEquipStaff(StaffData data)
@@ -338,11 +471,11 @@ public static class UserInfo
 
     public static void SetEquipStaff(StaffData data)
     {
-        if(!_giveStaffList.Contains(data.Id))
+        if(!_giveStaffLevelDic.ContainsKey(data.Id))
         {
             DebugLog.LogError("해당 스탭은 현재 가지고 있지 않습니다: " + data.Id);
             return;
-        }    
+        }
 
         _equipStaffDatas[(int)StaffDataManager.Instance.GetStaffType(data)] = data;
         OnChangeStaffHandler?.Invoke();
@@ -350,7 +483,7 @@ public static class UserInfo
 
     public static void SetEquipStaff(string id)
     {
-        if (!_giveStaffList.Contains(id))
+        if (!_giveStaffLevelDic.ContainsKey(id))
         {
             DebugLog.LogError("해당 스탭은 현재 가지고 있지 않습니다: " + id);
             return;
@@ -434,14 +567,12 @@ public static class UserInfo
 
     public static void GiveRecipe(FoodData data)
     {
-        if (_giveRecipeSet.Contains(data.Id))
+        if (_giveRecipeLevelDic.ContainsKey(data.Id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
         }
 
-        _giveRecipeList.Add(data.Id);
-        _giveRecipeSet.Add(data.Id);
         _giveRecipeLevelDic.Add(data.Id, 1);
         OnGiveRecipeHandler?.Invoke();
     }
@@ -449,7 +580,7 @@ public static class UserInfo
 
     public static void GiveRecipe(string id)
     {
-        if (_giveRecipeSet.Contains(id))
+        if (_giveRecipeLevelDic.ContainsKey(id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
@@ -462,8 +593,6 @@ public static class UserInfo
             return;
         }
 
-        _giveRecipeList.Add(id);
-        _giveRecipeSet.Add(id);
         _giveRecipeLevelDic.Add(id, 1);
         OnGiveRecipeHandler?.Invoke();
     }
@@ -471,7 +600,7 @@ public static class UserInfo
 
     public static List<string> GetGiveRecipeList()
     {
-        return _giveRecipeList;
+        return _giveRecipeLevelDic.Keys.ToList();
     }
 
 
@@ -585,18 +714,18 @@ public static class UserInfo
 
     public static bool IsGiveRecipe(string id)
     {
-        return _giveRecipeSet.Contains(id);
+        return _giveRecipeLevelDic.ContainsKey(id);
     }
 
     public static bool IsGiveRecipe(FoodData data)
     {
-        return _giveRecipeSet.Contains(data.Id);
+        return _giveRecipeLevelDic.ContainsKey(data.Id);
     }
 
 
     public static int GetRecipeCount()
     {
-        return _giveRecipeSet.Count;
+        return _giveRecipeLevelDic.Count;
     }
 
 
@@ -928,7 +1057,7 @@ public static class UserInfo
 
     public static int GetFurnitureAndKitchenUtensilCount()
     {
-        return _giveKitchenUtensilSet.Count + _giveFurnitureSet.Count; 
+        return _giveKitchenUtensilSet.Count + _giveFurnitureList.Count; 
     }
 
 
@@ -953,14 +1082,13 @@ public static class UserInfo
 
     public static void GiveFurniture(FurnitureData data)
     {
-        if (_giveFurnitureSet.Contains(data.Id))
+        if (_giveFurnitureList.Contains(data.Id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
         }
 
         _giveFurnitureList.Add(data.Id);
-        _giveFurnitureSet.Add(data.Id);
         CheckEffectSetCount();
         OnGiveFurnitureHandler?.Invoke();
     }
@@ -968,7 +1096,7 @@ public static class UserInfo
 
     public static void GiveFurniture(string id)
     {
-        if (_giveFurnitureSet.Contains(id))
+        if (_giveFurnitureList.Contains(id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
@@ -982,25 +1110,24 @@ public static class UserInfo
         }
 
         _giveFurnitureList.Add(id);
-        _giveFurnitureSet.Add(id);
         CheckEffectSetCount();
         OnGiveFurnitureHandler?.Invoke();
     }
 
     public static int GetGiveFurnitureCount()
     {
-        return _giveFurnitureSet.Count;
+        return _giveFurnitureList.Count;
     }
 
 
     public static bool IsGiveFurniture(string id)
     {
-        return _giveFurnitureSet.Contains(id);
+        return _giveFurnitureList.Contains(id);
     }
 
     public static bool IsGiveFurniture(FurnitureData data)
     {
-        return _giveFurnitureSet.Contains(data.Id);
+        return _giveFurnitureList.Contains(data.Id);
     }
 
 
@@ -1020,7 +1147,7 @@ public static class UserInfo
 
     public static void SetEquipFurniture(FurnitureData data)
     {
-        if(!_giveFurnitureSet.Contains(data.Id))
+        if(!_giveFurnitureList.Contains(data.Id))
         {
             DebugLog.LogError("현재 가구를 보유하지 않았습니다.");
             return;
@@ -1037,7 +1164,7 @@ public static class UserInfo
 
     public static void SetEquipFurniture(string id)
     {
-        if (!_giveFurnitureSet.Contains(id))
+        if (!_giveFurnitureList.Contains(id))
         {
             DebugLog.LogError("현재 가구를 보유하지 않았습니다.");
             return;

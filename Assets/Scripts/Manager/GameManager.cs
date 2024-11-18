@@ -1,3 +1,5 @@
+using BackEnd;
+using Muks.BackEnd;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -183,46 +185,51 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-/*        UserInfo.GiveFurniture("TABLE01_01");
-        UserInfo.SetEquipFurniture("TABLE01_01");
+        UserInfo.GiveFurniture("TABLE08_01");
+        UserInfo.SetEquipFurniture("TABLE08_01");
 
-        UserInfo.GiveFurniture("TABLE01_02");
-        UserInfo.SetEquipFurniture("TABLE01_02");
+        UserInfo.GiveFurniture("TABLE08_02");
+        UserInfo.SetEquipFurniture("TABLE08_02");
 
-        UserInfo.GiveFurniture("TABLE01_03");
-        UserInfo.SetEquipFurniture("TABLE01_03");
+        UserInfo.GiveFurniture("TABLE08_03");
+        UserInfo.SetEquipFurniture("TABLE08_03");
 
-        UserInfo.GiveFurniture("TABLE01_04");
-        UserInfo.SetEquipFurniture("TABLE01_04");
+        UserInfo.GiveFurniture("TABLE08_04");
+        UserInfo.SetEquipFurniture("TABLE08_04");
 
-        UserInfo.GiveFurniture("TABLE01_05");
-        UserInfo.SetEquipFurniture("TABLE01_05");
+        UserInfo.GiveFurniture("TABLE08_05");
+        UserInfo.SetEquipFurniture("TABLE08_05");
 
-        UserInfo.GiveFurniture("FLOWER01");
-        UserInfo.SetEquipFurniture("FLOWER01");
+        UserInfo.GiveFurniture("FLOWER08");
+        UserInfo.SetEquipFurniture("FLOWER08");
 
-        UserInfo.GiveFurniture("RACK01");
-        UserInfo.SetEquipFurniture("RACK01");
+        UserInfo.GiveFurniture("RACK08");
+        UserInfo.SetEquipFurniture("RACK08");
 
-        UserInfo.GiveFurniture("WALLPAPER01");
-        UserInfo.SetEquipFurniture("WALLPAPER01");
+        UserInfo.GiveFurniture("WALLPAPER08");
+        UserInfo.SetEquipFurniture("WALLPAPER08");
 
-        UserInfo.GiveFurniture("ACC01");
-        UserInfo.SetEquipFurniture("ACC01");
+        UserInfo.GiveFurniture("ACC08");
+        UserInfo.SetEquipFurniture("ACC08");
 
-        UserInfo.GiveFurniture("FRAME01");
-        UserInfo.SetEquipFurniture("FRAME01");
+        UserInfo.GiveFurniture("FRAME08");
+        UserInfo.SetEquipFurniture("FRAME08");
 
-        UserInfo.GiveFurniture("COUNTER01");
-        UserInfo.SetEquipFurniture("COUNTER01");
+        UserInfo.GiveFurniture("COUNTER08");
+        UserInfo.SetEquipFurniture("COUNTER08");
 
         UserInfo.GiveKitchenUtensil("COOKER01_01");
-        UserInfo.SetEquipKitchenUtensil("COOKER01_01");*/
+        UserInfo.SetEquipKitchenUtensil("COOKER01_01");
     }
 
 
     private void Update()
     {
+        if(Input.GetKeyDown(KeyCode.A))
+        {
+            BackendManager.Instance.GetMyData("Test", 10, UserInfo.LoadSaveData);
+        }
+
         _updateTimer += Time.deltaTime;
 
         if(60 <= _updateTimer)
@@ -619,6 +626,24 @@ public class GameManager : MonoBehaviour
         }
         OnChangeScoreHandler?.Invoke();
         OnChgangeStaffSkillValueHandler?.Invoke();
+    }
+
+
+    private void OnApplicationPause(bool pause)
+    {
+        if (!pause)
+            return;
+
+        Param param = UserInfo.GetSaveData();
+        BackendManager.Instance.SaveGameData("Test", 3, param);
+        DebugLog.Log("저장");
+    }
+
+    private void OnApplicationQuit()
+    {
+        Param param = UserInfo.GetSaveData();
+        BackendManager.Instance.SaveGameData("Test", 3, param);
+        DebugLog.Log("저장");
     }
 
 }

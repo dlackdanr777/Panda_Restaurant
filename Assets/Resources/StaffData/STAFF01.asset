@@ -18,8 +18,8 @@ MonoBehaviour:
   _id: STAFF01
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
+  _buyScore: 300
+  _buyPrice: 10000
   _skill: {fileID: 11400000, guid: e02701bebe44c864688b4304e4a359c2, type: 2}
   _waiterLevelData:
   - _tipAddPercent: 10

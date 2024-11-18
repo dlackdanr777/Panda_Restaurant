@@ -56,9 +56,6 @@ public class UIMarketerImage : MonoBehaviour
 
     private void OnChangeMarketerEvent()
     {
-        if (!gameObject.activeSelf)
-            return;
-
         MarketerData equipData = (MarketerData)UserInfo.GetEquipStaff(StaffType.Marketer);
         if (equipData == _data)
             return;
@@ -70,6 +67,7 @@ public class UIMarketerImage : MonoBehaviour
             return;
         }
 
+        gameObject.SetActive(true);
         SetData(_data);
     }
 
