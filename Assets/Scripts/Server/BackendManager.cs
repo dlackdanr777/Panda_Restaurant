@@ -1,4 +1,5 @@
 using BackEnd;
+using LitJson;
 using System;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -202,6 +203,7 @@ namespace Muks.BackEnd
             });
         }
 
+
         public void SaveGameData(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
         {
             if (!Backend.IsLogin && !_isLogin)
@@ -216,9 +218,11 @@ namespace Muks.BackEnd
                 return;
             }
 
-            ExecuteWithRetry(maxRepeatCount, () => Backend.GameData.Get(selectedProbabilityFileId, new Where()), (bro) =>
+            Where where = new Where();
+            where.Equal("owner_inDate", Backend.UserInDate);
+            ExecuteWithRetry(maxRepeatCount, () => Backend.GameData.Get(selectedProbabilityFileId, where), (bro) =>
             {
-                var rows = bro.GetReturnValuetoJSON()?["rows"];
+                var rows = bro.FlattenRows();
                 if (rows != null && 0 < rows.Count)
                 {
                     UpdateGameData(selectedProbabilityFileId, bro.GetInDate(), maxRepeatCount, param, onCompleted, onFailed);
@@ -255,9 +259,11 @@ namespace Muks.BackEnd
                 return;
             }
 
-            await ExecuteWithRetryAsync(maxRepeatCount, () => Backend.GameData.Get(selectedProbabilityFileId, new Where()), (bro) =>
+            Where where = new Where();
+            where.Equal("owner_inDate", Backend.UserInDate);
+            await ExecuteWithRetryAsync(maxRepeatCount, () => Backend.GameData.Get(selectedProbabilityFileId, where), (bro) =>
            {
-               var rows = bro.GetReturnValuetoJSON()?["rows"];
+               var rows = bro.FlattenRows();
                if (rows != null && 0 < rows.Count)
                {
                    UpdateGameDataAsync(selectedProbabilityFileId, bro.GetInDate(), maxRepeatCount, param, onCompleted, onFailed);

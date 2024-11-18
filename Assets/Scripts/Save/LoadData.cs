@@ -39,15 +39,18 @@ public class LoadData
     public List<string> GiveFurnitureList = new List<string>(); 
     public List<string> EquipFurnitureList = new List<string>();
 
-    public LoadData(BackendReturnObject bro)
-    {
-        JsonData json = bro.FlattenRows();
-        if (json.Count <= 0)
-        {
-            DebugLog.Log("저장된 데이터가 없습니다.");
-            return;
-        }
+    public List<string> EquipKitchenUtensilList = new List<string>();
+    public List<string> GiveKitchenUtensilList = new List<string>();
 
+    public HashSet<string> DoneMainChallengeSet = new HashSet<string>();
+    public HashSet<string> ClearMainChallengeSet = new HashSet<string>();
+    public HashSet<string> DoneAllTimeChallengeSet = new HashSet<string>();
+    public HashSet<string> ClearAllTimeChallengeSet = new HashSet<string>();
+    public HashSet<string> DoneDailyChallengeSet = new HashSet<string>();
+    public HashSet<string> ClearDailyChallengeSet = new HashSet<string>();
+
+    public LoadData(JsonData json)
+    {
         IsFirstTutorialClear = json[0]["IsFirstTutorialClear"].ToString() == "true";
         IsMiniGameTutorialClear = json[0]["IsMiniGameTutorialClear"].ToString() == "true";
         IsGatecrasher1TutorialClear = json[0]["IsGatecrasher1TutorialClear"].ToString() == "true";
@@ -145,6 +148,71 @@ public class LoadData
             foreach (JsonData item in json[0]["EquipFurnitureList"])
             {
                 EquipFurnitureList.Add(item.ToString());
+            }
+        }
+
+        if (json[0]["GiveKitchenUtensilList"] != null)
+        {
+            foreach (JsonData item in json[0]["GiveKitchenUtensilList"])
+            {
+                GiveKitchenUtensilList.Add(item.ToString());
+            }
+        }
+
+        if (json[0]["EquipKitchenUtensilList"] != null)
+        {
+            foreach (JsonData item in json[0]["EquipKitchenUtensilList"])
+            {
+                EquipKitchenUtensilList.Add(item.ToString());
+            }
+        }
+
+
+        if (json[0]["DoneMainChallengeList"] != null)
+        {
+            foreach (JsonData item in json[0]["DoneMainChallengeList"])
+            {
+                DoneMainChallengeSet.Add(item.ToString());
+            }
+        }
+
+        if (json[0]["ClearMainChallengeList"] != null)
+        {
+            foreach (JsonData item in json[0]["ClearMainChallengeList"])
+            {
+                ClearMainChallengeSet.Add(item.ToString());
+            }
+        }
+
+        if (json[0]["DoneAllTimeChallengeList"] != null)
+        {
+            foreach (JsonData item in json[0]["DoneAllTimeChallengeList"])
+            {
+                DoneAllTimeChallengeSet.Add(item.ToString());
+            }
+        }
+
+        if (json[0]["ClearAllTimeChallengeList"] != null)
+        {
+            foreach (JsonData item in json[0]["ClearAllTimeChallengeList"])
+            {
+                ClearAllTimeChallengeSet.Add(item.ToString());
+            }
+        }
+
+        if (json[0]["DoneDailyChallengeList"] != null)
+        {
+            foreach (JsonData item in json[0]["DoneDailyChallengeList"])
+            {
+                DoneDailyChallengeSet.Add(item.ToString());
+            }
+        }
+
+        if (json[0]["ClearDailyChallengeList"] != null)
+        {
+            foreach (JsonData item in json[0]["ClearDailyChallengeList"])
+            {
+                ClearDailyChallengeSet.Add(item.ToString());
             }
         }
     }

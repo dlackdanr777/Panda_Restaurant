@@ -227,7 +227,7 @@ public class GameManager : MonoBehaviour
     {
         if(Input.GetKeyDown(KeyCode.A))
         {
-            BackendManager.Instance.GetMyData("Test", 10, UserInfo.LoadSaveData);
+            BackendManager.Instance.GetMyData("Test", 10, UserInfo.LoadGameData);
         }
 
         _updateTimer += Time.deltaTime;
@@ -634,14 +634,14 @@ public class GameManager : MonoBehaviour
         if (!pause)
             return;
 
-        Param param = UserInfo.GetSaveData();
+        Param param = UserInfo.GetSaveGameData();
         BackendManager.Instance.SaveGameData("Test", 3, param);
         DebugLog.Log("저장");
     }
 
     private void OnApplicationQuit()
     {
-        Param param = UserInfo.GetSaveData();
+        Param param = UserInfo.GetSaveGameData();
         BackendManager.Instance.SaveGameData("Test", 3, param);
         DebugLog.Log("저장");
     }

@@ -104,13 +104,11 @@ public static class UserInfo
     private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
     private static List<string> _giveFurnitureList = new List<string>();
 
-    private static SetData _furnitureEnabledSetData;
-    private static SetData _kitchenuntensilEnabledSetData;
-
     private static KitchenUtensilData[] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)KitchenUtensilType.Length];
     private static List<string> _giveKitchenUtensilList = new List<string>();
-    private static HashSet<string> _giveKitchenUtensilSet = new HashSet<string>();
 
+    private static SetData _furnitureEnabledSetData;
+    private static SetData _kitchenuntensilEnabledSetData;
 
     private static Dictionary<string, int> _furnitureEffectSetCountDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _kitchenUtensilEffectSetCountDic = new Dictionary<string, int>();
@@ -140,7 +138,7 @@ public static class UserInfo
     public static SortType GachaItemSortType => _gachaItemSortType;
 
 
-    public static Param GetSaveData()
+    public static Param GetSaveGameData()
     {
         Param param = new Param();
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
@@ -220,20 +218,41 @@ public static class UserInfo
         }
         param.Add("EquipFurnitureList", equipFurnitureList);
 
+        param.Add("GiveKitchenUtensilList", _giveKitchenUtensilList);
+        List<string> equipKitchenUtensilList = new List<string>();
+        for (int i = 0, cnt = _equipKitchenUtensilDatas.Length; i < cnt; ++i)
+        {
+            if (_equipKitchenUtensilDatas[i] == null)
+                continue;
 
+            equipKitchenUtensilList.Add(_equipKitchenUtensilDatas[i].Id);
+        }
+        param.Add("EquipKitchenUtensilList", equipKitchenUtensilList);
 
+        param.Add("DoneMainChallengeList", _doneMainChallengeSet.ToList());
+        param.Add("ClearMainChallengeList", _clearMainChallengeSet.ToList());
+        param.Add("DoneAllTimeChallengeList", _doneAllTimeChallengeSet.ToList());
+        param.Add("ClearAllTimeChallengeList", _clearAllTimeChallengeSet.ToList());
+        param.Add("DoneDailyChallengeList", _doneDailyChallengeSet.ToList());
+        param.Add("ClearDailyChallengeList", _clearDailyChallengeSet.ToList());
 
         return param;
     }
 
 
-    public static void LoadSaveData(BackendReturnObject bro)
+    public static void LoadGameData(BackendReturnObject bro)
     {
-        LoadData loadData = new LoadData(bro);
+        JsonData json = bro.FlattenRows();
+        if (json.Count <= 0)
+        {
+            Debug.LogError("저장된 데이터가 없습니다.");
+            return;
+        }
 
+        LoadData loadData = new LoadData(json);
         if(loadData == null)
         {
-            DebugLog.LogError("로드 데이터를 파싱하는 과정에서 오류가 발생했습니다.");
+            Debug.LogError("로드 데이터를 파싱하는 과정에서 오류가 발생했습니다.");
             return;
         }    
 
@@ -278,7 +297,37 @@ public static class UserInfo
             SetEquipFurniture(data);
         }
 
-        Debug.Log("데이터 로드 완료");
+        _giveKitchenUtensilList = loadData.GiveKitchenUtensilList;
+        for (int i = 0, cnt = loadData.EquipKitchenUtensilList.Count; i < cnt; ++i)
+        {
+            KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(loadData.EquipKitchenUtensilList[i]);
+            SetEquipKitchenUtensil(data);
+        }
+
+
+        _doneMainChallengeSet = loadData.DoneMainChallengeSet;
+        _clearMainChallengeSet = loadData.ClearMainChallengeSet;
+        _doneAllTimeChallengeSet = loadData.DoneAllTimeChallengeSet;
+        _clearAllTimeChallengeSet = loadData.ClearAllTimeChallengeSet;
+        _doneDailyChallengeSet = loadData.DoneDailyChallengeSet;
+        _clearDailyChallengeSet = loadData.ClearDailyChallengeSet;
+
+        OnChangeMoneyHandler?.Invoke();
+        OnChangeTipHandler?.Invoke();
+        OnChangeScoreHandler?.Invoke();
+        OnAddCustomerCountHandler?.Invoke();
+        OnAddPromotionCountHandler?.Invoke();
+        OnAddAdvertisingViewCountHandler?.Invoke();
+        OnAddCleanCountHandler?.Invoke();
+        OnChangeStaffHandler?.Invoke();
+        OnGiveStaffHandler?.Invoke();
+        OnUpgradeStaffHandler?.Invoke();
+        OnGiveRecipeHandler?.Invoke();
+        OnUpgradeRecipeHandler?.Invoke();
+        OnAddCookCountHandler?.Invoke();
+        OnGiveGachaItemHandler?.Invoke();
+        OnUpgradeGachaItemHandler?.Invoke();
+        DebugLog.Log("데이터 로드 완료");
     }
 
 
@@ -1057,7 +1106,7 @@ public static class UserInfo
 
     public static int GetFurnitureAndKitchenUtensilCount()
     {
-        return _giveKitchenUtensilSet.Count + _giveFurnitureList.Count; 
+        return _giveKitchenUtensilList.Count + _giveFurnitureList.Count; 
     }
 
 
@@ -1149,7 +1198,7 @@ public static class UserInfo
     {
         if(!_giveFurnitureList.Contains(data.Id))
         {
-            DebugLog.LogError("현재 가구를 보유하지 않았습니다.");
+            DebugLog.LogError("현재 가구를 보유하지 않았습니다: " + data.Id);
             return;
         }
 
@@ -1166,7 +1215,7 @@ public static class UserInfo
     {
         if (!_giveFurnitureList.Contains(id))
         {
-            DebugLog.LogError("현재 가구를 보유하지 않았습니다.");
+            DebugLog.LogError("현재 가구를 보유하지 않았습니다: " + id);
             return;
         }
 
@@ -1216,14 +1265,13 @@ public static class UserInfo
 
     public static void GiveKitchenUtensil(KitchenUtensilData data)
     {
-        if (_giveKitchenUtensilSet.Contains(data.Id))
+        if (_giveKitchenUtensilList.Contains(data.Id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
         }
 
         _giveKitchenUtensilList.Add(data.Id);
-        _giveKitchenUtensilSet.Add(data.Id);
         CheckEffectSetCount();
         OnGiveKitchenUtensilHandler?.Invoke();
     }
@@ -1231,7 +1279,7 @@ public static class UserInfo
 
     public static void GiveKitchenUtensil(string id)
     {
-        if (_giveKitchenUtensilSet.Contains(id))
+        if (_giveKitchenUtensilList.Contains(id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
@@ -1245,25 +1293,24 @@ public static class UserInfo
         }
 
         _giveKitchenUtensilList.Add(id);
-        _giveKitchenUtensilSet.Add(id);
         CheckEffectSetCount();
         OnGiveKitchenUtensilHandler?.Invoke();
     }
 
     public static int GetGiveKitchenUtensilCount()
     {
-        return _giveKitchenUtensilSet.Count;
+        return _giveKitchenUtensilList.Count;
     }
 
 
     public static bool IsGiveKitchenUtensil(string id)
     {
-        return _giveKitchenUtensilSet.Contains(id);
+        return _giveKitchenUtensilList.Contains(id);
     }
 
     public static bool IsGiveKitchenUtensil(KitchenUtensilData data)
     {
-        return _giveKitchenUtensilSet.Contains(data.Id);
+        return _giveKitchenUtensilList.Contains(data.Id);
     }
 
 
@@ -1283,9 +1330,9 @@ public static class UserInfo
 
     public static void SetEquipKitchenUtensil(KitchenUtensilData data)
     {
-        if (!_giveKitchenUtensilSet.Contains(data.Id))
+        if (!_giveKitchenUtensilList.Contains(data.Id))
         {
-            DebugLog.LogError("현재 주방 기구를 보유하지 않았습니다.");
+            DebugLog.LogError("현재 주방 기구를 보유하지 않았습니다: " + data.Id);
             return;
         }
 
@@ -1301,9 +1348,9 @@ public static class UserInfo
 
     public static void SetEquipKitchenUtensil(string id)
     {
-        if (!_giveKitchenUtensilSet.Contains(id))
+        if (!_giveKitchenUtensilList.Contains(id))
         {
-            DebugLog.LogError("현재 가구를 보유하지 않았습니다.");
+            DebugLog.LogError("현재 가구를 보유하지 않았습니다: " + id);
             return;
         }
 
