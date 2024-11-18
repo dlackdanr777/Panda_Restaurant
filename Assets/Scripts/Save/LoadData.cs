@@ -51,12 +51,12 @@ public class LoadData
 
     public LoadData(JsonData json)
     {
-        IsFirstTutorialClear = json[0]["IsFirstTutorialClear"].ToString() == "true";
-        IsMiniGameTutorialClear = json[0]["IsMiniGameTutorialClear"].ToString() == "true";
-        IsGatecrasher1TutorialClear = json[0]["IsGatecrasher1TutorialClear"].ToString() == "true";
-        IsGatecrasher2TutorialClear = json[0]["IsGatecrasher2TutorialClear"].ToString() == "true";
-        IsSpecialCustomer1TutorialClear = json[0]["IsSpecialCustomer1TutorialClear"].ToString() == "true";
-        IsSpecialCustomer2TutorialClear = json[0]["IsSpecialCustomer2TutorialClear"].ToString() == "true";
+        IsFirstTutorialClear = json[0]["IsFirstTutorialClear"].ToString().ToLower() == "true";
+        IsMiniGameTutorialClear = json[0]["IsMiniGameTutorialClear"].ToString().ToLower() == "true";
+        IsGatecrasher1TutorialClear = json[0]["IsGatecrasher1TutorialClear"].ToString().ToLower() == "true";
+        IsGatecrasher2TutorialClear = json[0]["IsGatecrasher2TutorialClear"].ToString().ToLower() == "true";
+        IsSpecialCustomer1TutorialClear = json[0]["IsSpecialCustomer1TutorialClear"].ToString().ToLower() == "true";
+        IsSpecialCustomer2TutorialClear = json[0]["IsSpecialCustomer2TutorialClear"].ToString().ToLower() == "true";
         Money = int.Parse(json[0]["Money"].ToString());
         TotalAddMoney = int.Parse(json[0]["TotalAddMoney"].ToString());
         DailyAddMoney = int.Parse(json[0]["DailyAddMoney"].ToString());

@@ -1,5 +1,6 @@
 using BackEnd;
 using LitJson;
+using Muks.BackEnd;
 using Muks.DataBind;
 using System;
 using System.Collections.Generic;
@@ -257,6 +258,7 @@ public static class UserInfo
         }    
 
         IsFirstTutorialClear = loadData.IsFirstTutorialClear;
+        DebugLog.Log("초기 튜토리얼: " + loadData.IsFirstTutorialClear);
         IsMiniGameTutorialClear = loadData.IsMiniGameTutorialClear;
         IsGatecrasher1TutorialClear = loadData.IsGatecrasher1TutorialClear;
         IsGatecrasher2TutorialClear = loadData.IsGatecrasher2TutorialClear;

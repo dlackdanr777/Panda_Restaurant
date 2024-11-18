@@ -108,6 +108,7 @@ public class KitchenSystem : MonoBehaviour
     {
         KitchenUtensilData equipData;
         KitchenUtensilType type;
+        _burnerCount = 0;
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
         {
             type = (KitchenUtensilType)i;
@@ -139,7 +140,7 @@ public class KitchenSystem : MonoBehaviour
         {
             int _tmpBurnerCount = _burnerCount;
             _burnerCount = 0;
-            for (int i = 0, cnt = (int)KitchenUtensilType.Cabinet; i < cnt; i++)
+            for (int i = 0, cnt = (int)KitchenUtensilType.Burner5; i <= cnt; i++)
             {
                 if (UserInfo.GetEquipKitchenUtensil((KitchenUtensilType)i) != null)
                     _burnerCount++;

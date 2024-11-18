@@ -60,8 +60,6 @@ namespace Muks.BackEnd
         private async void Init()
         {
             await BackendInit(10);
-            await GuestLogin(10);
-            _isLoaded = true;
         }
 
 
