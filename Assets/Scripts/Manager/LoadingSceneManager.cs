@@ -1,3 +1,4 @@
+using Muks.Tween;
 using System;
 using System.Collections;
 using UnityEngine;
@@ -50,7 +51,8 @@ public class LoadingSceneManager : MonoBehaviour
                 if(_changeSceneTime < timer)
                 {
                     op.allowSceneActivation = true;
-                    FadeManager.Instance.FadeOut();
+                    FadeManager.Instance.FadeSetActive(true);
+                    Tween.Wait(1, () => FadeManager.Instance.FadeOut());
                     yield break;
                 }
             }

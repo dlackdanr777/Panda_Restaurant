@@ -72,6 +72,11 @@ public class FadeManager : MonoBehaviour
         OnFadeInHandler?.Invoke();
     }
 
+    public void FadeSetActive(bool value)
+    {
+        _fadeImage.gameObject.SetActive(value);
+        _fadeImage.color = new Color(_fadeImage.color.r, _fadeImage.color.g, _fadeImage.color.b, value ? 1 : 0);
+    }
 
     /// <summary>FadeOut효과를 주는 함수(duration이 0일 경우 기본 값, onComplete는 FadeIn효과가 종료된 후 실행)</summary>
     public void FadeOut(float duration = 0, float waitDuration = 0, Action onComplete = null)

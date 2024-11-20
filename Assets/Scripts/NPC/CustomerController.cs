@@ -7,8 +7,8 @@ using UnityEngine;
 
 public class CustomerController : MonoBehaviour
 {
-    public event Action AddCustomerHandler;
-    public event Action GuideCustomerHandler;
+    public event Action OnAddCustomerHandler;
+    public event Action OnGuideCustomerHandler;
 
     [Header("Components")]
     [SerializeField] private TableManager _tableManager;
@@ -125,7 +125,7 @@ public class CustomerController : MonoBehaviour
             }
         }
 
-        AddCustomerHandler?.Invoke();
+        OnAddCustomerHandler?.Invoke();
     }
 
 
@@ -142,7 +142,7 @@ public class CustomerController : MonoBehaviour
             StopCoroutine(_sortCoroutine);
 
         _sortCoroutine = StartCoroutine(SortCustomerLine());
-        GuideCustomerHandler.Invoke();
+        OnGuideCustomerHandler.Invoke();
         return true;
     }
 
@@ -226,6 +226,6 @@ public class CustomerController : MonoBehaviour
             UserInfo.AddPromotionCount();
         }
 
-        AddCustomerHandler?.Invoke();
+        OnAddCustomerHandler?.Invoke();
     }
 }

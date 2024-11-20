@@ -16,15 +16,22 @@ public class FirstLoadingScene : MonoBehaviour
     {
         _uiFirstLoadingScene.ShowTitle(async () =>
         {
-            await BackendManager.Instance.GuestLogin(10);
-            BackendManager.Instance.GetMyData("Test", 10, UserInfo.LoadGameData);
-            Tween.Wait(1, () =>
+            await BackendManager.Instance.GuestLogin(10, (bro) =>
             {
-                _uiFirstLoadingScene.HideTitle(() =>
+                BackendManager.Instance.GetMyData("GameData", 10, UserInfo.LoadGameData);
+                Tween.Wait(1, () =>
                 {
-                    Tween.Wait(1f, () => LoadingSceneManager.LoadScene("MainScene"));
+                    _uiFirstLoadingScene.HideTitle(() =>
+                    {
+                        Tween.Wait(1f, () => LoadingSceneManager.LoadScene("MainScene"));
+                    });
                 });
+            }, (bro) =>
+            {
+                _uiFirstLoadingScene.ShowErrorText(bro.GetErrorCode() + "\n" + bro.GetErrorMessage());
+                //실패하면 여기서 팝업 띄우기
             });
+            
         });
     }
 

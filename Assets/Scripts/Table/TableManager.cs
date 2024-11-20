@@ -98,8 +98,8 @@ public class TableManager : MonoBehaviour
         }
 
         UpdateTable();
-        _customerController.AddCustomerHandler += UpdateTable;
-        _customerController.GuideCustomerHandler += UpdateTable;
+        _customerController.OnAddCustomerHandler += UpdateTable;
+        _customerController.OnGuideCustomerHandler += UpdateTable;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
     }
 

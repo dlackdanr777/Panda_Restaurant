@@ -71,7 +71,7 @@ namespace Muks.BackEnd
             {
                 Debug.Log("초기화 성공");
             }, 
-            (state) =>
+            (BackendState state) =>
             {
                 Debug.LogError("뒤끝을 초기화하지 못했습니다. 다시 실행:" + state);
             });
@@ -96,7 +96,7 @@ namespace Muks.BackEnd
 
 
         /// <summary>게스트 로그인을 진행하는 함수 </summary>
-        public async Task GuestLogin(int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
+        public async Task GuestLogin(int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
             if (IsLogin)
                 return;
@@ -116,10 +116,10 @@ namespace Muks.BackEnd
                 _isLogin = true;
 
             },
-            (state) =>
+            (bro) =>
             {
-                Debug.LogError("게스트 로그인 에러 발생:" + state);
-                onFailed?.Invoke(state);
+                Debug.LogError("게스트 로그인 에러 발생");
+                onFailed?.Invoke(bro);
                 _isLogin = false;
             });
         }
@@ -415,7 +415,7 @@ namespace Muks.BackEnd
                         onCompleted?.Invoke(bro);
                         break;
                 }
-            });    
+            });
         }
 
 
@@ -443,6 +443,30 @@ namespace Muks.BackEnd
             onFail?.Invoke(state);
         }
 
+        private void ExecuteWithRetry(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendReturnObject> onFail)
+        {
+            BackendReturnObject bro = action.Invoke();
+            BackendState state = HandleError(bro);
+            if (maxRepeatCount <= 0)
+            {
+                onFail?.Invoke(bro);
+                return;
+            }
+
+            if (state == BackendState.Retry)
+            {
+                ExecuteWithRetry(maxRepeatCount - 1, action, onSuccess, onFail);
+                return;
+            }
+            else if (state == BackendState.Success)
+            {
+                onSuccess?.Invoke(bro);
+                return;
+            }
+
+            onFail?.Invoke(bro);
+        }
+
 
         private async Task ExecuteWithRetryAsync(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendState> onFail)
         {
@@ -467,6 +491,32 @@ namespace Muks.BackEnd
             }
 
             onFail?.Invoke(state);
+        }
+
+
+        private async Task ExecuteWithRetryAsync(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendReturnObject> onFail)
+        {
+            BackendReturnObject bro = action.Invoke();
+            BackendState state = HandleError(bro);
+            if (maxRepeatCount <= 0)
+            {
+                onFail?.Invoke(bro);
+                return;
+            }
+
+            if (state == BackendState.Retry)
+            {
+                await Task.Delay(100);
+                await ExecuteWithRetryAsync(maxRepeatCount - 1, action, onSuccess, onFail);
+                return;
+            }
+            else if (state == BackendState.Success)
+            {
+                onSuccess?.Invoke(bro);
+                return;
+            }
+
+            onFail?.Invoke(bro);
         }
 
 

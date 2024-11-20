@@ -185,6 +185,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+#if UNITY_EDITOR
         UserInfo.GiveFurniture("TABLE08_01");
         UserInfo.SetEquipFurniture("TABLE08_01");
 
@@ -220,16 +221,19 @@ public class GameManager : MonoBehaviour
 
         UserInfo.GiveKitchenUtensil("COOKER01_01");
         UserInfo.SetEquipKitchenUtensil("COOKER01_01");
+#endif
+
     }
 
 
     private void Update()
     {
-        if(Input.GetKeyDown(KeyCode.A))
+#if UNITY_EDITOR
+        if (Input.GetKeyDown(KeyCode.S))
         {
-            BackendManager.Instance.GetMyData("Test", 10, UserInfo.LoadGameData);
+            BackendManager.Instance.GetMyData("GameData", 10, UserInfo.LoadGameData);
         }
-
+#endif
         _updateTimer += Time.deltaTime;
 
         if(60 <= _updateTimer)
@@ -634,15 +638,21 @@ public class GameManager : MonoBehaviour
         if (!pause)
             return;
 
+        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
+            return;
+
         Param param = UserInfo.GetSaveGameData();
-        BackendManager.Instance.SaveGameData("Test", 3, param);
+        BackendManager.Instance.SaveGameData("GameData", 3, param);
         DebugLog.Log("저장");
     }
 
     private void OnApplicationQuit()
     {
+        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
+            return;
+
         Param param = UserInfo.GetSaveGameData();
-        BackendManager.Instance.SaveGameData("Test", 3, param);
+        BackendManager.Instance.SaveGameData("GameData", 3, param);
         DebugLog.Log("저장");
     }
 

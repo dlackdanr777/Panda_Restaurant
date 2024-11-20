@@ -127,7 +127,7 @@ public class UIStaff : MobileUIView
     private void SetStaffPreview()
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
-        _uiStaffPreview.SetData(equipStaffData);
+        _uiStaffPreview.SetData(equipStaffData != null ? equipStaffData : _currentTypeDataList.Count <= 0 ? null : _currentTypeDataList[0]);
     }
 
 

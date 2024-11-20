@@ -43,7 +43,7 @@ public static class UserInfo
 
 
     public static bool IsTutorialStart = false;
-    public static bool IsFirstTutorialClear = true;
+    public static bool IsFirstTutorialClear = false;
     public static bool IsMiniGameTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
     public static bool IsGatecrasher2TutorialClear = false;
@@ -258,7 +258,6 @@ public static class UserInfo
         }    
 
         IsFirstTutorialClear = loadData.IsFirstTutorialClear;
-        DebugLog.Log("초기 튜토리얼: " + loadData.IsFirstTutorialClear);
         IsMiniGameTutorialClear = loadData.IsMiniGameTutorialClear;
         IsGatecrasher1TutorialClear = loadData.IsGatecrasher1TutorialClear;
         IsGatecrasher2TutorialClear = loadData.IsGatecrasher2TutorialClear;

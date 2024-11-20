@@ -58,7 +58,7 @@ public class FirstTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(0.02f);
         _uiNav.Push("UITutorial");
         _uiNav.Push("UITutorialDescription");
-        yield return YieldCache.WaitForSeconds(1);
+        yield return YieldCache.WaitForSeconds(3);
         yield return _uiDescriptionNPC.ShowDescription1Text("안녕하세요.   \n이번에 새로 온 점장님이시죠?");
         yield return _uiDescriptionNPC.ShowDescription1Text("저는 점장님의 원활한 가게 운영을 위해 간단하게 안내해 드릴 \"제인\" 입니다.");
         yield return _uiDescriptionNPC.ShowDescription1Text("하나하나 설명해 드릴 테니 천천히 따라오세요!");
