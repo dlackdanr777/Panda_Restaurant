@@ -167,7 +167,7 @@ public class UIStaff : MobileUIView
             return;
         }
 
-        UserInfo.AppendMoney(-data.BuyPrice);
+        UserInfo.AddMoney(-data.BuyPrice);
         UserInfo.GiveStaff(data);
         TimedDisplayManager.Instance.ShowText("새로운 직원을 채용했어요!");
     }

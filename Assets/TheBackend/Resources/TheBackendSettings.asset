@@ -15,7 +15,7 @@ MonoBehaviour:
   clientAppID: 21c31f60-a186-11ef-a556-bfddcc4fec9a8757
   signatureKey: 07ddf110-a186-11ef-b780-ed390bebfd6d8757
   functionAuthKey: 
-  packageName: com.UnityTechnologies.com.unity.template.urpblank
+  packageName: com.MultiverseStudio.RestaurantGame
   sendLogReport: 1
   timeOutSec: 100
   Version: 5.15.0

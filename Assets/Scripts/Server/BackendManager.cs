@@ -1,6 +1,7 @@
 using BackEnd;
 using LitJson;
 using System;
+using System.Data;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
@@ -46,6 +47,30 @@ namespace Muks.BackEnd
         private bool _isLoaded = false;
         public bool IsLoaded => _isLoaded;
 
+        public DateTime LocalTime = DateTime.Now;
+        
+        public DateTime ServerTime
+        {
+            get
+            {
+                BackendReturnObject bro = Backend.Utils.GetServerTime();
+
+                if (bro.IsSuccess())
+                {
+                    string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
+                    DateTime dateTime = DateTime.Parse(time);
+                    return dateTime;
+                }
+
+                else
+                {
+                    return LocalTime;
+                }
+
+            }
+        }
+
+
 
         private void Awake()
         {
@@ -76,6 +101,24 @@ namespace Muks.BackEnd
                 Debug.LogError("뒤끝을 초기화하지 못했습니다. 다시 실행:" + state);
             });
 
+        }
+
+        public void GetServerTimeAsync(Action<DateTime> onCompleted = null, Action<BackendReturnObject> onFailed = null)
+        {
+            Backend.Utils.GetServerTime((bro) =>
+            {
+                if (bro.IsSuccess())
+                {
+                    string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
+                    DateTime dateTime = DateTime.Parse(time);
+                    onCompleted?.Invoke(dateTime);
+                }
+                else
+                {
+                    onCompleted?.Invoke(LocalTime);
+                    onFailed?.Invoke(bro);
+                }
+            });
         }
 
 
@@ -376,7 +419,6 @@ namespace Muks.BackEnd
                 Debug.LogError("게임 정보 갱신 에러 발생:" + selectedProbabilityFileId);
                 onFailed?.Invoke(state);
             });
-
         }
 
 
@@ -518,6 +560,8 @@ namespace Muks.BackEnd
 
             onFail?.Invoke(bro);
         }
+
+
 
 
         /// <summary> 서버와 연결 상태를 체크하고 BackendState값을 반환하는 함수 </summary>

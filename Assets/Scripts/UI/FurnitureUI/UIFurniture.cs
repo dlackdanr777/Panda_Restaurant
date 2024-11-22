@@ -165,7 +165,7 @@ public class UIFurniture : MobileUIView
             return;
         }
 
-        UserInfo.AppendMoney(-data.BuyPrice);
+        UserInfo.AddMoney(-data.BuyPrice);
         UserInfo.GiveFurniture(data);
         TimedDisplayManager.Instance.ShowText("새로운 가구를 구매했어요!");
     }

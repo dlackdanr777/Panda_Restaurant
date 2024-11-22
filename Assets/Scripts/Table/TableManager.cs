@@ -420,7 +420,7 @@ public class TableManager : MonoBehaviour
         int tip = _tableDatas[index].TotalTip;
         int totalPrice = _tableDatas[index].TotalPrice;
 
-        UserInfo.AppendMoney(totalPrice);
+        UserInfo.AddMoney(totalPrice);
         StartCoinAnime(index);
         StartGarbageAnime(index);
 

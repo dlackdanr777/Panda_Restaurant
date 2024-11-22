@@ -121,7 +121,7 @@ public class DropCoinArea : MonoBehaviour
                 {
                     _coins[coinIndex].TweenStop();
                     ObjectPoolManager.Instance.DespawnCoin(_coins[coinIndex]);
-                    UserInfo.AppendMoney(currentMoney / currentCoinCount);               
+                    UserInfo.AddMoney(currentMoney / currentCoinCount);               
                     _coins[coinIndex] = null;
                     _isAnimeStartEnabled = true;
                 });

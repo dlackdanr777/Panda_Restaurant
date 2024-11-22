@@ -12,6 +12,7 @@ public class LoadData
     public bool IsGatecrasher2TutorialClear;
     public bool IsSpecialCustomer1TutorialClear;
     public bool IsSpecialCustomer2TutorialClear;
+    public int Dia;
     public int Money;
     public int TotalAddMoney;
     public int DailyAddMoney;
@@ -57,6 +58,7 @@ public class LoadData
         IsGatecrasher2TutorialClear = json[0]["IsGatecrasher2TutorialClear"].ToString().ToLower() == "true";
         IsSpecialCustomer1TutorialClear = json[0]["IsSpecialCustomer1TutorialClear"].ToString().ToLower() == "true";
         IsSpecialCustomer2TutorialClear = json[0]["IsSpecialCustomer2TutorialClear"].ToString().ToLower() == "true";
+        Dia = json[0].ContainsKey("Dia") ?  int.Parse(json[0]["Dia"].ToString()) : 0;
         Money = int.Parse(json[0]["Money"].ToString());
         TotalAddMoney = int.Parse(json[0]["TotalAddMoney"].ToString());
         DailyAddMoney = int.Parse(json[0]["DailyAddMoney"].ToString());

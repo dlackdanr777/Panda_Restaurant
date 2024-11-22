@@ -121,7 +121,7 @@ public class UIStaffUpgrade : MobileUIView
             if(UserInfo.IsMoneyValid(_currentStaffData.GetUpgradePrice(level)))
             {
                 UserInfo.UpgradeStaff(_currentStaffData);
-                UserInfo.AppendMoney(-_currentStaffData.GetUpgradePrice(level));
+                UserInfo.AddMoney(-_currentStaffData.GetUpgradePrice(level));
                 TimedDisplayManager.Instance.ShowText("직원 업그레이드를 완료했어요!");
                 UpdateData();
                 return;

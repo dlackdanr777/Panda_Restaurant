@@ -363,7 +363,7 @@ public class UIMiniGame : MobileUIView
         {
             FoodData giveFoodData = FoodDataManager.Instance.GetFoodData(_currentData.Id);
             UserInfo.GiveRecipe(giveFoodData);
-            UserInfo.AppendMoney(Mathf.Abs(_currentCount) * 1000);
+            UserInfo.AddMoney(Mathf.Abs(_currentCount) * 1000);
 
             _itemImage.sprite = giveFoodData.Sprite;
             _resultDescription.SetText(giveFoodData.Name + " 제작 완료");

@@ -32,7 +32,12 @@ public class TimedDisplayManager : MonoBehaviour
 
     public void ShowTextLackMoney()
     {
-        _timeDisplay.Show("골드가 부족합니다...");
+        _timeDisplay.Show("코인이 부족합니다...");
+    }
+
+    public void ShowTextLackDia()
+    {
+        _timeDisplay.Show("다이아가 부족합니다...");
     }
 
     public void ShowTextLackScore()

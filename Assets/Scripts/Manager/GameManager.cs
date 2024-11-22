@@ -63,6 +63,7 @@ public class GameManager : MonoBehaviour
     public int MaxTipVolume => Mathf.FloorToInt(_addEquipFurnitureMaxTipVolume + (_addEquipFurnitureMaxTipVolume * _addUpgradeGachaItemMaxTipVolumePercent * 0.01f));
 
 
+
     public float AddStaffSkillTime => _addUpgradeGachaItemStaffSkillTime;
     public float AddWaiterSkillTime => _addUpgradeGachaItemWaiterSkillTime;
     public float AddServerSkillTime => _addUpgradeGachaItemServerSkillTime;
@@ -116,6 +117,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _addUpgradeGachaItemGatecrasherCustomerSpeedDownTime; //진상 터치시 속도 둔화 시간 증가(+)
     [SerializeField] private float _addUpgradeGachaItemMiniGameTime; //미니 게임 제작 시간 증가(+)
 
+    private int _addStaffMaxWaitCustomerCount;
     [SerializeField] private float _subUpgradeGachaItemStaffCoolTime; //전체 스탭 스킬 쿨타임 감소(-)
     [SerializeField] private float _addUpgradeGachaItemStaffSkillTime; //전체 스탭 스킬 유지 시간 증가(+)
     [SerializeField] private float _subUpgradeGachaItemWaiterCoolTime; //웨이터 스킬 쿨타임 감소(-)
@@ -130,7 +132,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _addUpgradeGachaItemCleanerSkillTime; //청소부 스킬 유지 시간 증가(+)
 
 
-    private float _updateTimer;
+
 
 
     public void AddFoodPriceMul(float value)
@@ -234,13 +236,6 @@ public class GameManager : MonoBehaviour
             BackendManager.Instance.GetMyData("GameData", 10, UserInfo.LoadGameData);
         }
 #endif
-        _updateTimer += Time.deltaTime;
-
-        if(60 <= _updateTimer)
-        {
-            _updateTimer = 0;
-            UserInfo.AddTip(TipPerMinute);
-        }
     }
 
 
@@ -632,7 +627,6 @@ public class GameManager : MonoBehaviour
         OnChgangeStaffSkillValueHandler?.Invoke();
     }
 
-
     private void OnApplicationPause(bool pause)
     {
         if (!pause)
@@ -655,5 +649,4 @@ public class GameManager : MonoBehaviour
         BackendManager.Instance.SaveGameData("GameData", 3, param);
         DebugLog.Log("저장");
     }
-
 }

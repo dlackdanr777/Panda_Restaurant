@@ -39,6 +39,7 @@ public class GatecrasherCustomer : Customer
     private Coroutine _enabledCoroutine;
     private Coroutine _speedRecoveryCoroutine;
     private Action _onCompleted;
+    private Action _gatecrasher1OnChangeShape;
 
     private float _touchDamage => 1;
 
@@ -109,12 +110,13 @@ public class GatecrasherCustomer : Customer
         });
     }
 
-    public void StartGatecreasherCustomer1Event(List<DropCoinArea> dropCoinAreaList, List<Vector3> noCoinTargetPosList, Action onCompleted)
+    public void StartGatecreasherCustomer1Event(List<DropCoinArea> dropCoinAreaList, List<Vector3> noCoinTargetPosList, Action onCompleted, Action onChangeShape = null)
     {
         _touchEnabled = true;
         _isInDisguise = true;
         _spritePressEffect.Interactable = true;
         _onCompleted = onCompleted;
+        _gatecrasher1OnChangeShape = onChangeShape;
 
         List<CustomerData> customerList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
         _gatecrasher1DisquiseSprite = customerList[UnityEngine.Random.Range(0, customerList.Count)].Sprite;
@@ -177,6 +179,7 @@ public class GatecrasherCustomer : Customer
                         {
                             GatecrasherCustomer1Data gatecrasher2Data = (GatecrasherCustomer1Data)_customerData;
                             _disguiseOffParticle.Emit(1);
+                            _gatecrasher1OnChangeShape?.Invoke();
                             _spriteRenderer.sprite = _customerData.Sprite;
                             _animator.runtimeAnimatorController = gatecrasher2Data.GatecrasherController;
                             _isInDisguise = false;

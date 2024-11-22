@@ -433,7 +433,7 @@ public class UITutorial : MobileUIView
 
     private void OnShopMaskAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _shopButton.interactable = true;
             _shopHole.Interactable = true;
@@ -443,7 +443,7 @@ public class UITutorial : MobileUIView
 
     private void OnTableHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _tableHole.Interactable = true;
             _tableHoleCursor.gameObject.SetActive(true);
@@ -452,7 +452,7 @@ public class UITutorial : MobileUIView
 
     private void OnKitchenHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _kitchenHole.Interactable = true;
             _kitchenHoleCursor.gameObject.SetActive(true);
@@ -461,7 +461,7 @@ public class UITutorial : MobileUIView
 
     private void OnRecipeHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _recipeHole.Interactable = true;
             _recipeHoleCursor.gameObject.SetActive(true);
@@ -470,7 +470,7 @@ public class UITutorial : MobileUIView
 
     private void OnBuyHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _buyHole.Interactable = true;
             _buyHoleCursor.gameObject.SetActive(true);
@@ -479,7 +479,7 @@ public class UITutorial : MobileUIView
 
     private void OnExitHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _exitHole.Interactable = true;
             _exitHoleCursor.gameObject.SetActive(true);
@@ -488,7 +488,7 @@ public class UITutorial : MobileUIView
 
     private void OnBackHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _backHole.Interactable = true;
             _backHoleCursor.gameObject.SetActive(true);
@@ -497,7 +497,7 @@ public class UITutorial : MobileUIView
 
     private void OnAddCustomerHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _addCustomerHole.Interactable = true;
             _addCustomerHoleCursor.SetActive(true);
@@ -506,7 +506,7 @@ public class UITutorial : MobileUIView
 
     private void OnCustomerGuideHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _customerGuideHole.Interactable = true;
             _customerGuideHoleCursor.gameObject.SetActive(true);
@@ -515,7 +515,7 @@ public class UITutorial : MobileUIView
 
     private void OnOrderHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _orderHole.Interactable = true;
             _orderHoleCursor.gameObject.SetActive(true);
@@ -524,7 +524,7 @@ public class UITutorial : MobileUIView
 
     private void OnTable1HoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _table1Hole.Interactable = true;
             _table1Button.gameObject.SetActive(true);
@@ -534,7 +534,7 @@ public class UITutorial : MobileUIView
 
     private void OnCustomHoleAnimeCompleted()
     {
-        Tween.Wait(0.5f, () =>
+        Tween.Wait(0.05f, () =>
         {
             _customHole.Interactable = true;
             _customHoleCursorParent.gameObject.SetActive(true);

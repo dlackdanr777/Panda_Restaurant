@@ -95,7 +95,7 @@ public class UIChallenge : MobileUIView
 
     private void OnDailyUpdateUI()
     {
-        if (!gameObject.activeSelf)
+        if (!gameObject.activeInHierarchy)
             return;
 
         _uiDaily.UpdateUI();
@@ -104,7 +104,7 @@ public class UIChallenge : MobileUIView
 
     private void OnAllTimeUpdateUI()
     {
-        if (!gameObject.activeSelf)
+        if (!gameObject.activeInHierarchy)
             return;
 
         _uiAllTime.UpdateUI();

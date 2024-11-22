@@ -14,7 +14,7 @@ public class ManagerData : StaffData
         if (_managerLevelData.Length < level - 1 || level < 0)
             throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
 
-        return _managerLevelData[level - 1].GuideTime;
+        return _managerLevelData[level - 1].MaxWaitCustomerCount;
     }
 
     public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
@@ -69,6 +69,6 @@ public class ManagerData : StaffData
 [Serializable]
 public class ManagerLevelData : StaffLevelData
 {
-    [SerializeField] private float _guideTime;
-    public float GuideTime => _guideTime;
+    [Range(0, 100)] [SerializeField] private int _maxWaitCustomerCount;
+    public int MaxWaitCustomerCount => _maxWaitCustomerCount;
 }

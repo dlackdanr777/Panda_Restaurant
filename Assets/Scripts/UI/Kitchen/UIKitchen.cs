@@ -181,7 +181,7 @@ public class UIKitchen : MobileUIView
             return;
         }
 
-        UserInfo.AppendMoney(-data.BuyPrice);
+        UserInfo.AddMoney(-data.BuyPrice);
         UserInfo.GiveKitchenUtensil(data.Id);
         TimedDisplayManager.Instance.ShowText("새로운 주방 기구를 구매했어요!");
     }

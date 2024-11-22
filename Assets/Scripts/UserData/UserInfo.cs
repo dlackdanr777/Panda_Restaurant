@@ -9,6 +9,7 @@ using UnityEngine;
 
 public static class UserInfo
 {
+    public static event Action OnChangeDiaHandler;
     public static event Action OnChangeMoneyHandler;
     public static event Action OnChangeTipHandler;
     public static event Action OnChangeScoreHandler;
@@ -43,12 +44,18 @@ public static class UserInfo
 
 
     public static bool IsTutorialStart = false;
-    public static bool IsFirstTutorialClear = false;
+    public static bool IsFirstTutorialClear = true;
     public static bool IsMiniGameTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
     public static bool IsGatecrasher2TutorialClear = false;
     public static bool IsSpecialCustomer1TutorialClear = false;
     public static bool IsSpecialCustomer2TutorialClear = false;
+
+    private static string _lastAccessTime;
+    public static string LastAccessTime => _lastAccessTime;
+
+    private static int _dia;
+    public static int Dia => _dia;
 
     private static int _money;
     public static int Money => _money;
@@ -148,6 +155,9 @@ public static class UserInfo
         param.Add("IsGatecrasher2TutorialClear", IsGatecrasher2TutorialClear);
         param.Add("IsSpecialCustomer1TutorialClear", IsSpecialCustomer1TutorialClear);
         param.Add("IsSpecialCustomer2TutorialClear", IsSpecialCustomer2TutorialClear);
+
+        param.Add("LastAccessTime", BackendManager.Instance.ServerTime.ToString());
+        param.Add("Dia", _dia);
         param.Add("Money", _money);
         param.Add("TotalAddMoney", _totalAddMoney);
         param.Add("DailyAddMoney", _dailyAddMoney);
@@ -334,7 +344,17 @@ public static class UserInfo
 
     #region UserData
 
-    public static void AppendMoney(int value)
+
+    public static void AddDia(int value)
+    {
+        _dia += value;
+        _dia =  Mathf.Max(0, _dia);
+        DataBindDia();
+        OnChangeDiaHandler?.Invoke();
+    }
+
+
+    public static void AddMoney(int value)
     {
         _money += value;
         _totalAddMoney += Mathf.Clamp(value, 0, 100000000);
@@ -344,7 +364,7 @@ public static class UserInfo
     }
 
 
-    public static void AppendScore(int value)
+    public static void AddScore(int value)
     {
         _score += value;
         OnChangeScoreHandler?.Invoke();
@@ -353,7 +373,7 @@ public static class UserInfo
     public static void TipCollection(bool isWatchingAds = false)
     {
         int addMoneyValue = isWatchingAds ? _tip * 2 : _tip;
-        AppendMoney(addMoneyValue);
+        AddMoney(addMoneyValue);
         _tip = 0;
 
         DataBindTip();
@@ -371,7 +391,7 @@ public static class UserInfo
 
         _tip -= value;
         int addMoneyValue = isWatchingAds ? value * 2 : value;
-        AppendMoney(addMoneyValue);
+        AddMoney(addMoneyValue);
         DataBindTip();
         OnChangeTipHandler?.Invoke();
     }
@@ -427,6 +447,29 @@ public static class UserInfo
         DataBind.SetTextValue("MoneyStr", _money.ToString("N0"));
         DataBind.SetTextValue("MoneyConvert", Utility.ConvertToMoney(_money));
     }
+
+    public static void DataBindDia()
+    {
+        DataBind.SetTextValue("Dia", _dia.ToString());
+        DataBind.SetTextValue("DiaStr", _dia.ToString("N0"));
+        DataBind.SetTextValue("DiaConvert", Utility.ConvertToMoney(_dia));
+    }
+
+    public static void UpdateLastAccessTime()
+    {
+        BackendManager.Instance.GetServerTimeAsync((serverTime) => _lastAccessTime = serverTime.ToString());
+    }
+
+    public static bool IsPreviousDay()
+    {
+        DateTime now = BackendManager.Instance.ServerTime;
+
+        DateTime savedDate = DateTime.Parse(_lastAccessTime);
+        DateTime currentDate = now.Date;
+
+        return savedDate == currentDate.AddDays(-1);
+    }
+
 
     public static bool IsScoreValid(ShopData data)
     {
@@ -1743,6 +1786,23 @@ public static class UserInfo
 
         ChallengeManager.Instance.UpdateChallengeByChallenges(data.Challenges);
         OnClearChallengeHandler?.Invoke();
+    }
+
+
+    public static void ResetDailyChallenges()
+    {
+        _dailyAddMoney = 0;
+        _dailyAdvertisingViewCount = 0;
+        _dailyCleanCount = 0;
+        _dailyCookCount = 0;
+        _dailyCumulativeCustomerCount = 0;
+
+        _doneDailyChallengeSet.Clear();
+        _clearDailyChallengeSet.Clear();
+
+        ChallengeManager.Instance.UpdateChallengeByChallenges(Challenges.Daily);
+        OnClearChallengeHandler?.Invoke();
+        OnDoneChallengeHandler?.Invoke();
     }
 
     #endregion

@@ -106,7 +106,7 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
         }
 
         UserInfo.ClearChallenge(_data);
-        UserInfo.AppendMoney(_data.RewardMoney);
+        UserInfo.AddMoney(_data.RewardMoney);
     }
 
 

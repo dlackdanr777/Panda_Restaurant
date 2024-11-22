@@ -315,39 +315,58 @@ public class UIGacha : MobileUIView
 
     private void OnSingleGachaButtonClicked()
     {
-        _getItemList.Clear();
-        _getItemIndex = 0;
 
-        GachaItemData item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
-        _getItemList.Add(item);
-        UserInfo.GiveGachaItem(item);
+        if(1 <= UserInfo.Dia)
+        {
+            _getItemList.Clear();
+            _getItemIndex = 0;
 
-        _gachaMacineAnimator.SetTrigger("Start");
+            GachaItemData item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
+            _getItemList.Add(item);
+            UserInfo.GiveGachaItem(item);
+
+            _gachaMacineAnimator.SetTrigger("Start");
+            UserInfo.AddDia(-1);
+        }
+
+        else
+        {
+            TimedDisplayManager.Instance.ShowTextLackDia();
+        }
+
     }
 
 
     private void OnTenGachaButtonClicked()
     {
-
-        _getItemList.Clear();
-        _getItemIndex = 0;
-
-        GachaItemData item;
-        int i = 0;
-        while(i < 11)
+        if(10 <= UserInfo.Dia)
         {
-            item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
+            _getItemList.Clear();
+            _getItemIndex = 0;
 
-            if (!UserInfo.CanAddMoreItems(item))
-                continue;
+            GachaItemData item;
+            int i = 0;
+            while (i < 11)
+            {
+                item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
 
-            _getItemList.Add(item);
-            i++;
+                if (!UserInfo.CanAddMoreItems(item))
+                    continue;
+
+                _getItemList.Add(item);
+                i++;
+            }
+
+            UserInfo.GiveGachaItem(_getItemList);
+
+            _gachaMacineAnimator.SetTrigger("Start");
+            UserInfo.AddDia(-10);
+        }
+        else
+        {
+            TimedDisplayManager.Instance.ShowTextLackDia();
         }
 
-        UserInfo.GiveGachaItem(_getItemList);
-
-        _gachaMacineAnimator.SetTrigger("Start");
     }
 
 

@@ -127,7 +127,7 @@ public class UIRecipeTab : MonoBehaviour
             return;
         }
 
-        UserInfo.AppendMoney(-data.BuyPrice);
+        UserInfo.AddMoney(-data.BuyPrice);
         UserInfo.GiveRecipe(data);
         TimedDisplayManager.Instance.ShowText("새로운 레시피를 배웠어요!");
     }

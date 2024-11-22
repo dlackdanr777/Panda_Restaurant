@@ -28,4 +28,4 @@ MonoBehaviour:
     _upgradeMoneyData:
       _moneyType: 0
       _price: 30000
-    _guideTime: 0.2
+    _maxWaitCustomerCount: 1

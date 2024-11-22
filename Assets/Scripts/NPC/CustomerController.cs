@@ -96,13 +96,13 @@ public class CustomerController : MonoBehaviour
                     _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                     randInt = UnityEngine.Random.Range(0, gatecrasherCustomerDataList.Count);
                     _gatecrasherCustomer.SetData(gatecrasherCustomerDataList[randInt]);
-                    _uiCustomerTutorial.ShowTutorial(getData);
                     if (getData is GatecrasherCustomer1Data)
                     {
-                        _gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList, OnCustomerEvent);
+                        _gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList, OnCustomerEvent, () => _uiCustomerTutorial.ShowTutorial(getData));
                     }
                     else if (getData is GatecrasherCustomer2Data)
                     {
+                        _uiCustomerTutorial.ShowTutorial(getData);
                         _gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
                     }
                 }

@@ -220,7 +220,7 @@ public static class Utility
         switch(data)
         {
             case ManagerData:
-                description = $"자동 손님 테이블로 안내하기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 1명)";
+                description = $"최대 대기 손님(<color={ColorToHex(GetColor(ColorType.Positive))}>{Mathf.FloorToInt(data.GetActionValue(level))}</color> 명 추가)";
                 break;
 
             case WaiterData:
