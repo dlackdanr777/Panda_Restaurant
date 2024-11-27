@@ -30,6 +30,14 @@ public class ScrollingImage : MonoBehaviour
 
     private void Update()
     {
+        if(_image == null)
+        {
+            _image = GetComponent<Image>();
+            _rectTransform = GetComponent<RectTransform>();
+            _material = Instantiate(_image.material);
+            _image.material = _material;
+        }
+
         _material.mainTextureOffset += _dir * Time.deltaTime;
     }
 }

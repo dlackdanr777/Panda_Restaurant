@@ -8,6 +8,7 @@ using UnityEngine.SceneManagement;
 
 public class LoadingSceneManager : MonoBehaviour
 {
+    [SerializeField] private UILoadingScene _uiLoadingScene;
 
 
     [Tooltip("로딩이 최소 몇 초가 걸리게 할지 설정")]
@@ -16,11 +17,14 @@ public class LoadingSceneManager : MonoBehaviour
     private static string _nextScene;
     public static event Action OnLoadSceneHandler;
 
+    private static bool _isStart;
 
     private void Start()
     {
-        StartCoroutine(LoadScene());
         GC.Collect();
+        _uiLoadingScene.Init();
+        _isStart = false;
+        StartCoroutine(LoadScene());
     }
 
 
@@ -28,31 +32,48 @@ public class LoadingSceneManager : MonoBehaviour
     {
         _nextScene = sceneName;
         OnLoadSceneHandler?.Invoke();
-        FadeManager.Instance.FadeIn( onComplete: () => SceneManager.LoadScene("LoadingScene") );
+        FadeManager.Instance.FadeIn( onComplete: () =>
+        {
+            SceneManager.LoadScene("LoadingScene");
+            FadeManager.Instance.FadeSetActive(true);
+            FadeManager.Instance.FadeOut(onComplete: () => _isStart = true);
+        });
     }
 
 
     private IEnumerator LoadScene()
     {
+        if(!_isStart)
         yield return null;
 
         AsyncOperation op = SceneManager.LoadSceneAsync(_nextScene);
-
         op.allowSceneActivation = false;
         float timer = 0f;
         
         while (!op.isDone)
         {
             yield return null;
-            timer += Time.deltaTime;
-
-            if(0.9f <= op.progress)
+            _uiLoadingScene.SetLoadingBarFillAmount(op.progress);
+            if (0.9f <= op.progress)
             {
-                if(_changeSceneTime < timer)
+                timer += Time.deltaTime;
+                _uiLoadingScene.SetLoadingBarFillAmount(0.9f + ((timer / _changeSceneTime) * 0.1f));
+
+                if (_changeSceneTime < timer)
                 {
-                    op.allowSceneActivation = true;
-                    FadeManager.Instance.FadeSetActive(true);
-                    Tween.Wait(1, () => FadeManager.Instance.FadeOut());
+
+                    _uiLoadingScene.SetLoadingBarFillAmount(1);
+                    FadeManager.Instance.FadeSetActive(false);
+                    Tween.Wait(1.5f, () => FadeManager.Instance.FadeIn(onComplete: () => 
+                    {
+                        op.allowSceneActivation = true;
+                        FadeManager.Instance.FadeSetActive(true);
+                        Tween.Wait(1f, () =>
+                        {
+                            FadeManager.Instance.FadeSetActive(true);
+                            FadeManager.Instance.FadeOut();
+                        });
+                    }));
                     yield break;
                 }
             }

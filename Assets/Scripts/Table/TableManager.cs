@@ -35,6 +35,10 @@ public class TableManager : MonoBehaviour
     [SerializeField] private UIButtonAndImage _servingButtonPrefab;
 
     [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _callSound;
+
+    [Space]
     [Header("Tutorial Components")]
     [SerializeField] private GachaTutorial _miniGameTutorial;
 
@@ -602,5 +606,6 @@ public class TableManager : MonoBehaviour
 
         sitPos = Mathf.Clamp(sitPos, -1, 1);
         OnCustomerGuide(index, sitPos);
+        SoundManager.Instance.PlayEffectAudio(_callSound);
     }
 }

@@ -5,13 +5,14 @@ using UnityEngine;
 
 public class MainScene : MonoBehaviour
 {
+    [SerializeField] private AudioClip _mainSceneMusic;
     private float _updateTimer;
 
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        
+        SoundManager.Instance.PlayBackgroundAudio(_mainSceneMusic, 0.5f);
     }
 
     // Update is called once per frame

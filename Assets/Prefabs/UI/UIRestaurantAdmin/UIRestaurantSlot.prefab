@@ -880,6 +880,7 @@ GameObject:
   - component: {fileID: 4572410894617378136}
   - component: {fileID: 3615907493671298857}
   - component: {fileID: 4080264987333789842}
+  - component: {fileID: 6344367271073888985}
   m_Layer: 5
   m_Name: UIRestaurantSlot
   m_TagString: Untagged
@@ -1040,6 +1041,19 @@ MonoBehaviour:
   _buttonDownTweenMode: 23
   _buttonUpTweenMode: 23
   Interactable: 1
+--- !u!114 &6344367271073888985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4476749406031203879}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80e980f0a5541d04d8db13a3230400f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _bindId: ButtonClickSound
 --- !u!1 &4907050912710417817
 GameObject:
   m_ObjectHideFlags: 0

@@ -547,6 +547,7 @@ GameObject:
   - component: {fileID: 1030854578563781994}
   - component: {fileID: 8248317171488371466}
   - component: {fileID: 5042317861996598461}
+  - component: {fileID: 5742814810149714726}
   m_Layer: 5
   m_Name: UI GachaItem Slot
   m_TagString: Untagged
@@ -697,6 +698,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &5742814810149714726
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7199737093093146046}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80e980f0a5541d04d8db13a3230400f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _bindId: ButtonClickSound
 --- !u!1 &7214011182525037756
 GameObject:
   m_ObjectHideFlags: 0

@@ -90,6 +90,7 @@ GameObject:
   - component: {fileID: 4826069807172515999}
   - component: {fileID: 977859193166282358}
   - component: {fileID: 7550094120159029698}
+  - component: {fileID: 2979884778168292887}
   m_Layer: 5
   m_Name: OrderButton
   m_TagString: Untagged
@@ -244,3 +245,16 @@ MonoBehaviour:
   _buttonDownTweenMode: 23
   _buttonUpTweenMode: 23
   Interactable: 1
+--- !u!114 &2979884778168292887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4556119113900793014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80e980f0a5541d04d8db13a3230400f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _bindId: ButtonClickSound
