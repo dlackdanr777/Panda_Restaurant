@@ -16,6 +16,7 @@ public enum SoundEffectType
 {
     ButtonClickSound,
     ButtonExitSound,
+    BuySound,
     Length
 }
 
@@ -44,6 +45,7 @@ public class SoundManager : MonoBehaviour
     private float _effectVolume = 1f;
     private AudioSource[] _audios;
     private AudioClip[] _clips;
+    private AudioClip _currentBackgroundClip;
 
     private float _backgroundVolumeMul;
     public float BackgroundVolumeMul => _backgroundVolumeMul;
@@ -125,6 +127,32 @@ public class SoundManager : MonoBehaviour
         _audioMixer.SetFloat("Master", masterVolume);
         _audioMixer.SetFloat("Background", backgroundVolume);
         _audioMixer.SetFloat("SoundEffect", soundEffectVolume);
+
+        SetVolume(masterVolume, AudioType.Master);
+        SetVolume(backgroundVolume, AudioType.BackgroundAudio);
+        SetVolume(soundEffectVolume, AudioType.EffectAudio);
+    }
+
+
+    public float GetVolume(AudioType audioType)
+    {
+        float volume = 0;
+        switch(audioType)
+        {
+            case AudioType.Master:
+                volume = PlayerPrefs.HasKey("MasterVolume") ? PlayerPrefs.GetFloat("MasterVolume") : 1;
+                break;
+
+            case AudioType.BackgroundAudio:
+                volume = PlayerPrefs.HasKey("BackgroundVolume") ? PlayerPrefs.GetFloat("BackgroundVolume") : 1;
+                break;
+
+            case AudioType.EffectAudio:
+                volume = PlayerPrefs.HasKey("SoundEffectVolume") ? PlayerPrefs.GetFloat("SoundEffectVolume") : 1;
+                break;
+        }
+
+        return volume;
     }
 
 
@@ -136,6 +164,13 @@ public class SoundManager : MonoBehaviour
 
     public void PlayBackgroundAudio(AudioClip clip, float duration = 0, bool isLoop = true)
     {
+        if(clip == _currentBackgroundClip)
+        {
+            DebugLog.Log("현재 클립과 같은 이름의 클립을 재생 시도 했습니다: " + clip.name);
+            return;
+        }
+        _currentBackgroundClip = clip;
+
         if (_changeAudioRoutine != null)
             StopCoroutine(_changeAudioRoutine);
         _audios[(int)AudioType.BackgroundAudio].loop = isLoop;

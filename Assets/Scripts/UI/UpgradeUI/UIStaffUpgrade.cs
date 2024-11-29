@@ -18,7 +18,7 @@ public class UIStaffUpgrade : MobileUIView
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
 
-    private StaffData _currentStaffData;
+    private StaffData _currentData;
 
 
     public override void Init()
@@ -46,62 +46,62 @@ public class UIStaffUpgrade : MobileUIView
     
     public void SetData(StaffData data)
     {
-        _currentStaffData = data;
+        _currentData = data;
     }
 
 
     private void UpdateData()
     {
-        if (_currentStaffData == null)
+        if (_currentData == null)
             throw new System.Exception("스탭 데이터가 NULL입니다.");
 
-        if(!UserInfo.IsGiveStaff(_currentStaffData))
+        if(!UserInfo.IsGiveStaff(_currentData))
             throw new System.Exception("해당 스탭을 고용하지 않았습니다.");
 
         _upgradeButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
 
-        int level = UserInfo.GetStaffLevel(_currentStaffData);
-        _selectGroup.SetSprite(_currentStaffData.ThumbnailSprite);
-        _selectGroup.SetText(_currentStaffData.Name);
+        int level = UserInfo.GetStaffLevel(_currentData);
+        _selectGroup.SetSprite(_currentData.ThumbnailSprite);
+        _selectGroup.SetText(_currentData.Name);
 
 
-        if(_currentStaffData.UpgradeEnable(level))
+        if(_currentData.UpgradeEnable(level))
         {
             _levelText.text = "Lv." + level;
             _lowerFrame.gameObject.SetActive(true);
             _maxLevelGroup.gameObject.SetActive(false);
-            _currentLevelGroup.SetData(level, _currentStaffData.GetAddScore(level).ToString(), _currentStaffData.GetAddTipMul(level) + "%");
-            _nextLevelGroup.SetData(level + 1, _currentStaffData.GetAddScore(level + 1).ToString(), _currentStaffData.GetAddTipMul(level + 1) + "%");
+            _currentLevelGroup.SetData(level, _currentData.GetAddScore(level).ToString(), _currentData.GetAddTipMul(level) + "%");
+            _nextLevelGroup.SetData(level + 1, _currentData.GetAddScore(level + 1).ToString(), _currentData.GetAddTipMul(level + 1) + "%");
         }
         else
         {
             _levelText.text = "Lv.Max";
             _lowerFrame.gameObject.SetActive(false);
             _maxLevelGroup.gameObject.SetActive(true);
-            _maxLevelGroup.SetData(level, _currentStaffData.GetAddScore(level).ToString(), _currentStaffData.GetAddTipMul(level) + "%");
+            _maxLevelGroup.SetData(level, _currentData.GetAddScore(level).ToString(), _currentData.GetAddTipMul(level) + "%");
         }
 
-        if (UserInfo.IsScoreValid(_currentStaffData.GetUpgradeMinScore(level)))
+        if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
         {
-            if (UserInfo.IsMoneyValid(_currentStaffData.GetUpgradePrice(level)))
+            if (UserInfo.IsMoneyValid(_currentData.GetUpgradePrice(level)))
             {
                 _upgradeButton.gameObject.SetActive(true);
-                _upgradeButton.SetText(Utility.ConvertToMoney(_currentStaffData.GetUpgradePrice(level)));
+                _upgradeButton.SetText(Utility.ConvertToMoney(_currentData.GetUpgradePrice(level)));
                 return;
             }
             else
             {
                 _notEnoughMoneyButton.gameObject.SetActive(true);
-                _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(_currentStaffData.GetUpgradePrice(level)));
+                _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(_currentData.GetUpgradePrice(level)));
                 return;
             }
         }
         else
         {
             _scoreButton.gameObject.SetActive(true);
-            _scoreButton.SetText(_currentStaffData.GetUpgradeMinScore(level).ToString());
+            _scoreButton.SetText(_currentData.GetUpgradeMinScore(level).ToString());
             return;
         }
     }
@@ -109,19 +109,19 @@ public class UIStaffUpgrade : MobileUIView
 
     private void OnUpgradeButtonClicked()
     {
-        if (_currentStaffData == null)
+        if (_currentData == null)
             throw new System.Exception("스태프 데이터가 NULL입니다.");
 
-        if (!UserInfo.IsGiveStaff(_currentStaffData))
+        if (!UserInfo.IsGiveStaff(_currentData))
             throw new System.Exception("해당 스탭을 고용하지 않았습니다.");
 
-        int level = UserInfo.GetStaffLevel(_currentStaffData);
-        if (UserInfo.IsScoreValid(_currentStaffData.GetUpgradeMinScore(level)))
+        int level = UserInfo.GetStaffLevel(_currentData);
+        if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
         {
-            if(UserInfo.IsMoneyValid(_currentStaffData.GetUpgradePrice(level)))
+            if(UserInfo.IsMoneyValid(_currentData.GetUpgradePrice(level)))
             {
-                UserInfo.UpgradeStaff(_currentStaffData);
-                UserInfo.AddMoney(-_currentStaffData.GetUpgradePrice(level));
+                UserInfo.UpgradeStaff(_currentData);
+                UserInfo.AddMoney(-_currentData.GetUpgradePrice(level));
                 TimedDisplayManager.Instance.ShowText("직원 업그레이드를 완료했어요!");
                 UpdateData();
                 return;

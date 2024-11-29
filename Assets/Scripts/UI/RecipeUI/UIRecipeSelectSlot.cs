@@ -25,9 +25,20 @@ public class UIRecipeSelectSlot : MonoBehaviour
     private FoodData _currentData;
     private Action<FoodData> _onButtonClicked;
 
+
+    public void Init()
+    {
+        _button.onClick.AddListener(OnUpgradeButtonClicked);
+    }
+
     public void OnButtonClicked(Action<FoodData> action)
     {
         _onButtonClicked = action;
+    }
+
+    private void OnUpgradeButtonClicked()
+    {
+        _onButtonClicked?.Invoke(_currentData);
     }
 
     public void SetSprite(Sprite sprite)
@@ -56,8 +67,6 @@ public class UIRecipeSelectSlot : MonoBehaviour
 
         _image.gameObject.SetActive(true);
         _nameText.gameObject.SetActive(true);
-
-        _button.onClick.RemoveAllListeners();
         if (UserInfo.IsGiveRecipe(data))
         {
             int level = UserInfo.GetRecipeLevel(data);
@@ -66,7 +75,6 @@ public class UIRecipeSelectSlot : MonoBehaviour
                 _upgradeImage.gameObject.SetActive(true);
                 _button.interactable = true;
                 _buttonpressEffect.Interactable = true;
-                _button.onClick.AddListener(() => _onButtonClicked(_currentData));
                 return;
             }
 
@@ -83,6 +91,7 @@ public class UIRecipeSelectSlot : MonoBehaviour
             _upgradeImage.gameObject.SetActive(false);
             return;
         }
-
     }
+
+
 }

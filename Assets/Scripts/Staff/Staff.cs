@@ -15,8 +15,11 @@ public class Staff : MonoBehaviour
 
     [Header("Cleaner Components")]
     [SerializeField] private Animator _animator;
+    [SerializeField] private AudioSource _audio;
+    [SerializeField] private AudioClip _cleanSound;
     [SerializeField] private GameObject _cleanerItem;
     [SerializeField] private GameObject _cleanParticle;
+
 
     private StaffData _staffData;
     public StaffData StaffData => _staffData;
@@ -122,6 +125,19 @@ public class Staff : MonoBehaviour
     {
         _skillTimer = 0;
         _skillEnabled = false;
+    }
+
+    public void PlayCleanSound()
+    {
+        _audio.PlayOneShot(_cleanSound);
+    }
+
+    public void StopSound()
+    {
+        if (!_audio.isPlaying)
+            return;
+
+        _audio.Stop();
     }
 
 

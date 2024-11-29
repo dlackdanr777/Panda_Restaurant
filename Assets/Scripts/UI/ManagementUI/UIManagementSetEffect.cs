@@ -2,6 +2,7 @@ using Muks.Tween;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public enum SetEffectType
 {
@@ -14,8 +15,8 @@ public class UIManagementSetEffect : MonoBehaviour
 {
     [Header("Set Camera Components")]
     [SerializeField] private RectTransform _setCameraGroup;
-    [SerializeField] private ButtonPressEffect _leftArrowButton;
-    [SerializeField] private ButtonPressEffect _rightArrowButton;
+    [SerializeField] private Button _leftArrowButton;
+    [SerializeField] private Button _rightArrowButton;
 
     [Header("SetDescroption Components")]
     [SerializeField] private UIHorizontalScrollSwipe _scrollSwipe;
@@ -39,8 +40,8 @@ public class UIManagementSetEffect : MonoBehaviour
             setCount.gameObject.SetActive(false);
         }
 
-        _leftArrowButton.AddListener(() => OnChagneSetEffectType(SetEffectType.Furniture));
-        _rightArrowButton.AddListener(() => OnChagneSetEffectType(SetEffectType.KitchenUntensils));
+        _leftArrowButton.onClick.AddListener(() => OnChagneSetEffectType(SetEffectType.Furniture));
+        _rightArrowButton.onClick.AddListener(() => OnChagneSetEffectType(SetEffectType.KitchenUntensils));
 
         OnChagneSetEffectType(_currentSetEffectType);
         OnChangeSetEffect(0);

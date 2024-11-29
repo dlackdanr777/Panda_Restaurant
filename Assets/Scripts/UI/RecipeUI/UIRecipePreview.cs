@@ -32,8 +32,11 @@ public class UIRecipePreview : MonoBehaviour
 
     public void Init(Action<FoodData> onBuyButonClicked, Action<FoodData> onUpgradeButtonClicked)
     {
+        _selectGroup.Init();
         _onBuyButtonClicked = onBuyButonClicked;
         _minigameButton.AddListener(OnMiniGameButtonClicked);
+        _buyButton.AddListener(OnBuyEvent);
+        _notEnoughMoneyButton.AddListener(OnBuyEvent);
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         UserInfo.OnUpgradeRecipeHandler += UpdateUI;
         UserInfo.OnGiveRecipeHandler += UpdateUI;
@@ -133,15 +136,11 @@ public class UIRecipePreview : MonoBehaviour
                 if (!UserInfo.IsMoneyValid(data))
                 {
                     _notEnoughMoneyButton.gameObject.SetActive(true);
-                    _notEnoughMoneyButton.RemoveAllListeners();
-                    _notEnoughMoneyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
                     _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     return;
                 }
 
                 _buyButton.gameObject.SetActive(true);
-                _buyButton.RemoveAllListeners();
-                _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
                 _buyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
 
             }
@@ -153,6 +152,18 @@ public class UIRecipePreview : MonoBehaviour
     public void UpdateUI()
     {
         SetData(_currentData);
+    }
+
+
+    private void OnBuyEvent()
+    {
+        if (_currentData == null)
+        {
+            DebugLog.LogError("현재 음식 데이터가 없습니다.");
+            return;
+        }
+
+        _onBuyButtonClicked?.Invoke(_currentData);
     }
 
 

@@ -12,6 +12,10 @@ public class DropGarbageArea : MonoBehaviour
     [SerializeField] private int _maxGarbageCount;
     [SerializeField] private float _garbageEndTime;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _cleanSound;
+
     private PointerClickSpriteRenderer[] _garbages;
     private int _currentGarbageCount;
     public int Count => _currentGarbageCount;
@@ -76,6 +80,7 @@ public class DropGarbageArea : MonoBehaviour
         UserInfo.AddCleanCount();
         int currentCoinCount = _currentGarbageCount;
         _currentGarbageCount = 0;
+        SoundManager.Instance.PlayEffectAudio(_cleanSound);
 
         for (int i = 0; i < currentCoinCount; i++)
         {

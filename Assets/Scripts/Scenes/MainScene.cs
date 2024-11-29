@@ -13,6 +13,7 @@ public class MainScene : MonoBehaviour
     void Start()
     {
         SoundManager.Instance.PlayBackgroundAudio(_mainSceneMusic, 0.5f);
+        UserInfo.AddDia(100);
     }
 
     // Update is called once per frame

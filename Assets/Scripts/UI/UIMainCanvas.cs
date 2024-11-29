@@ -65,6 +65,10 @@ public class UIMainCanvas : MonoBehaviour
         DataBind.SetUnityActionValue("ShowGachaUI", OnShowGachaUI);
         DataBind.SetUnityActionValue("HideGachaUI", OnHideGachaUI);
         DataBind.SetUnityActionValue("HideNoAnimeGachaUI", OnHideNoAnimeGachaUI);
+
+        DataBind.SetUnityActionValue("ShowSettingUI", OnShowSettingUI);
+        DataBind.SetUnityActionValue("HideSettingUI", OnHideSettingUI);
+        DataBind.SetUnityActionValue("HideNoAnimeSettingUI", OnHideNoAnimeSettingUI);
     }
 
 
@@ -245,5 +249,20 @@ public class UIMainCanvas : MonoBehaviour
     private void OnHideNoAnimeGachaUI()
     {
         _uiNav.PopNoAnime("UIGacha");
+    }
+
+    private void OnShowSettingUI()
+    {
+        _uiNav.Push("UISetting");
+    }
+
+    private void OnHideSettingUI()
+    {
+        _uiNav.Pop("UISetting");
+    }
+
+    private void OnHideNoAnimeSettingUI()
+    {
+        _uiNav.PopNoAnime("UISetting");
     }
 }

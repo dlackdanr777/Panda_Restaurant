@@ -50,6 +50,12 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private Ease _hideTweenMode;
 
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _shopMusic;
+    [SerializeField] private AudioClip _mainMusic;
+
+
     public override void Init()
     {
         _staffButton.OnClickEvent(StaffButtonClicked);
@@ -73,6 +79,7 @@ public class UIRestaurantAdmin : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
+        SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
         gameObject.SetActive(true);
         _mainUI.SetActive(false);
         SetBackgroundImage(BackgroundType.Furniture);
@@ -101,9 +108,9 @@ public class UIRestaurantAdmin : MobileUIView
         if(_mainUI.activeSelf)
         {
             VisibleState = VisibleState.Disappearing;
+            SoundManager.Instance.PlayBackgroundAudio(_mainMusic, 0.5f);
             _canvasGroup.blocksRaycasts = false;
             _canvasGroup.alpha = 1;
-
             _mainUI.transform.localScale = Vector3.one;
             TweenData tween = _mainUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
             tween.OnComplete(() =>

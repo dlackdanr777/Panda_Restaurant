@@ -27,10 +27,10 @@ public class UIGacha : MobileUIView
     [SerializeField] private UIImageAndText _gachaItemName;
     [SerializeField] private UIGachaItemList _gachaItemList;
     [SerializeField] private Button _screenButton;
-    [SerializeField] private ButtonPressEffect _singleButton;
-    public ButtonPressEffect SingleButton => _singleButton;
-    [SerializeField] private ButtonPressEffect _tenButton;
-    [SerializeField] private ButtonPressEffect _skipButton;
+    [SerializeField] private Button _singleButton;
+    public Button SingleButton => _singleButton;
+    [SerializeField] private Button _tenButton;
+    [SerializeField] private Button _skipButton;
     [SerializeField] private GameObject _uiComponents;
     [SerializeField] private Image _getItemImage;
     [SerializeField] private UIItemStar _itemStar;
@@ -57,6 +57,18 @@ public class UIGacha : MobileUIView
     [SerializeField] private float _hideDuration;
     [SerializeField] private Ease _hideTweenMode;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _backgroundAudio;
+    [SerializeField] private AudioClip _mainAudio;
+    [SerializeField] private AudioClip _leverSound;
+    [SerializeField] private AudioClip _shakeCapsuleSound;
+    [SerializeField] private AudioClip _fallCapsuleSound;
+    [SerializeField] private AudioClip _openDoorSound;
+    [SerializeField] private AudioClip _boomSound;
+    [SerializeField] private AudioClip _getNormalItemSound;
+    [SerializeField] private AudioClip _getSpecialItemSound;
+
 
     private List<GachaItemData> _itemDataList;
     private List<UIGachaItemSlot> _slotList = new List<UIGachaItemSlot>();
@@ -67,6 +79,38 @@ public class UIGacha : MobileUIView
     private int _getItemIndex = 0;
     private bool _isCapsuleColorChanged;
     private bool _isPlayTextAnime;
+    private AudioClip _getItemSound;
+
+
+    public void PlayLeverSound()
+    {
+        SoundManager.Instance.PlayEffectAudio(_leverSound);
+    }
+
+    public void PlayShakeCapsuleSound()
+    {
+        SoundManager.Instance.PlayEffectAudio(_shakeCapsuleSound);
+    }
+
+    public void PlayFallCapsuleSound()
+    {
+        SoundManager.Instance.PlayEffectAudio(_fallCapsuleSound);
+    }
+
+    public void PlayOpenDoorSound()
+    {
+        SoundManager.Instance.PlayEffectAudio(_openDoorSound);
+    }
+
+    public void PlayBoomSound()
+    {
+        SoundManager.Instance.PlayEffectAudio(_boomSound);
+    }
+
+    public void PlayGetItemSound()
+    {
+        SoundManager.Instance.PlayEffectAudio(_getItemSound);
+    }
 
     public override void Init()
     {
@@ -82,9 +126,9 @@ public class UIGacha : MobileUIView
         }
 
         _screenButton.onClick.AddListener(OnScreenButtonClicked);
-        _singleButton.AddListener(OnSingleGachaButtonClicked);
-        _tenButton.AddListener(OnTenGachaButtonClicked);
-        _skipButton.AddListener(OnSkipButtonClicked);
+        _singleButton.onClick.AddListener(OnSingleGachaButtonClicked);
+        _tenButton.onClick.AddListener(OnTenGachaButtonClicked);
+        _skipButton.onClick.AddListener(OnSkipButtonClicked);
 
         SetStep(1);
         _gachaItemName.gameObject.SetActive(false);
@@ -101,6 +145,7 @@ public class UIGacha : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
+        SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
         gameObject.SetActive(true);
         _singleButton.gameObject.SetActive(true);
         _tenButton.gameObject.SetActive(true);
@@ -134,6 +179,7 @@ public class UIGacha : MobileUIView
     public override void Hide()
     {
         VisibleState = VisibleState.Disappeared;
+        SoundManager.Instance.PlayBackgroundAudio(_mainAudio, 0.5f);
         _screenTouchWaitTime = 0;
         gameObject.SetActive(false);
     }
@@ -283,9 +329,6 @@ public class UIGacha : MobileUIView
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
-                _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
-                Utility.ChangeImagePivot(_getItemImage);
                 CapsuleSetSibilingIndex(11);
                 break;
 
@@ -301,6 +344,10 @@ public class UIGacha : MobileUIView
                 _isPlayTextAnime = true;
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 Utility.ChangeImagePivot(_getItemImage);
+                _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
+                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
+                _getItemSound = _getItemList[_getItemIndex].GachaItemRank == GachaItemRank.Unique || _getItemList[_getItemIndex].GachaItemRank == GachaItemRank.Special ? _getSpecialItemSound : _getNormalItemSound;
+                PlayGetItemSound();
                 _gachaItemName.SetText(string.Empty);
                 _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.08f, Ease.Constant).OnComplete(() => _isPlayTextAnime = false);
                 _getItemIndex++;

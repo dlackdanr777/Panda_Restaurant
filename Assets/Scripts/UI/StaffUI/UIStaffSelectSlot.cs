@@ -25,9 +25,19 @@ public class UIStaffSelectSlot : MonoBehaviour
     private StaffData _currentData;
     private Action<StaffData> _onButtonClicked;
 
+    public void Init()
+    {
+        _button.onClick.AddListener(OnUpgradeButtonClicked);
+    }
+
     public void OnButtonClicked(Action<StaffData> action)
     {
         _onButtonClicked = action;
+    }
+
+    private void OnUpgradeButtonClicked()
+    {
+        _onButtonClicked?.Invoke(_currentData);
     }
 
     public void SetSprite(Sprite sprite)
@@ -57,7 +67,6 @@ public class UIStaffSelectSlot : MonoBehaviour
         _image.gameObject.SetActive(true);
         _nameText.gameObject.SetActive(true);
 
-        _button.onClick.RemoveAllListeners();
         if (UserInfo.IsGiveStaff(data))
         {
             int level = UserInfo.GetStaffLevel(data);
@@ -66,7 +75,6 @@ public class UIStaffSelectSlot : MonoBehaviour
                 _upgradeImage.gameObject.SetActive(true);
                 _button.interactable = true;
                 _buttonpressEffect.Interactable = true;
-                _button.onClick.AddListener(() => _onButtonClicked(_currentData));
                 return;
             }
 

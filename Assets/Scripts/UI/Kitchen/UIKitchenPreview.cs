@@ -35,6 +35,10 @@ public class UIKitchenPreview : MonoBehaviour
     {
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
+
+        _buyButton.AddListener(OnBuyEvent);
+        _notEnoughMoneyButton.AddListener(OnBuyEvent);
+        _equipButton.AddListener(OnEquipEvent);
     }
 
 
@@ -146,8 +150,6 @@ public class UIKitchenPreview : MonoBehaviour
             if (UserInfo.IsGiveKitchenUtensil(data))
             {
                 _equipButton.gameObject.SetActive(true);
-                _equipButton.RemoveAllListeners();
-                _equipButton.AddListener(() => { _onEquipButtonClicked(_currentData); });
                 _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
             }
             else
@@ -173,15 +175,11 @@ public class UIKitchenPreview : MonoBehaviour
                 if (!UserInfo.IsMoneyValid(data))
                 {
                     _notEnoughMoneyButton.gameObject.SetActive(true);
-                    _notEnoughMoneyButton.RemoveAllListeners();
-                    _notEnoughMoneyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
                     _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     return;
                 }
 
                 _buyButton.gameObject.SetActive(true);
-                _buyButton.RemoveAllListeners();
-                _buyButton.AddListener(() => { _onBuyButtonClicked(_currentData); });
                 _buyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
             }
         }
@@ -190,5 +188,28 @@ public class UIKitchenPreview : MonoBehaviour
     public void UpdateUI()
     {
         SetData(_currentData);
+    }
+
+
+    private void OnBuyEvent()
+    {
+        if(_currentData == null)
+        {
+            DebugLog.Log("현재 데이터가 존재하지 않습니다.");
+            return;
+        }
+
+        _onBuyButtonClicked?.Invoke(_currentData);
+    }
+
+    private void OnEquipEvent()
+    {
+        if (_currentData == null)
+        {
+            DebugLog.Log("현재 데이터가 존재하지 않습니다.");
+            return;
+        }
+
+        _onEquipButtonClicked?.Invoke(_currentData);
     }
 }

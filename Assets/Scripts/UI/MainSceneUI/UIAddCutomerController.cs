@@ -10,10 +10,14 @@ public class UIAddCutomerController : MonoBehaviour
     [SerializeField] private TableManager _tableManager;
     [SerializeField] private CustomerController _customerController;
 
+    [Space]
     [Header("Buttons")]
     [SerializeField] private FillAmountButton _addCustomerButton;
     [SerializeField] private UIMarketerImage _marketerImage;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _callSound;
 
     private int _tabCount = 0;
     private Vector3 _addCustomerButtonTmpPos;
@@ -31,6 +35,7 @@ public class UIAddCutomerController : MonoBehaviour
 
     private void OnAddCustomerButtonClicked()
     {
+        SoundManager.Instance.PlayEffectAudio(_callSound);
 
         if(GameManager.Instance.TotalTabCount - 1 <= _tabCount)
         {
