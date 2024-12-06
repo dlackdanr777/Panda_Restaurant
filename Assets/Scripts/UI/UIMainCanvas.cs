@@ -69,6 +69,10 @@ public class UIMainCanvas : MonoBehaviour
         DataBind.SetUnityActionValue("ShowSettingUI", OnShowSettingUI);
         DataBind.SetUnityActionValue("HideSettingUI", OnHideSettingUI);
         DataBind.SetUnityActionValue("HideNoAnimeSettingUI", OnHideNoAnimeSettingUI);
+
+        DataBind.SetUnityActionValue("ShowAttendanceUI", OnShowAttendanceUI);
+        DataBind.SetUnityActionValue("HideAttendanceUI", OnHideAttendanceUI);
+        DataBind.SetUnityActionValue("HideNoAnimeAttendanceUI", OnHideNoAnimeAttendanceUI);
     }
 
 
@@ -264,5 +268,20 @@ public class UIMainCanvas : MonoBehaviour
     private void OnHideNoAnimeSettingUI()
     {
         _uiNav.PopNoAnime("UISetting");
+    }
+
+    private void OnShowAttendanceUI()
+    {
+        _uiNav.Push("UIAttendance");
+    }
+
+    private void OnHideAttendanceUI()
+    {
+        _uiNav.Pop("UIAttendance");
+    }
+
+    private void OnHideNoAnimeAttendanceUI()
+    {
+        _uiNav.PopNoAnime("UIAttendance");
     }
 }

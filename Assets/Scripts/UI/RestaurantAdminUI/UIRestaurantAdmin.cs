@@ -125,6 +125,7 @@ public class UIRestaurantAdmin : MobileUIView
 
         else
         {
+            SoundManager.Instance.PlayBackgroundAudio(_mainMusic, 0.5f);
             VisibleState = VisibleState.Disappeared;
             if (_uiNav.CheckActiveView("UIStaff"))
                 _uiNav.Pop("UIStaff");

@@ -21,6 +21,10 @@ namespace Muks.BackEnd
     /// <summary> 뒤끝과 연동할 수 있게 해주는 싱글톤 클래스 </summary>
     public class BackendManager : MonoBehaviour
     {
+        public static event Action OnGuestSignupHandler;
+        public static event Action OnGuestLoginHandler;
+        public static event Action<BackendReturnObject> OnInsertGameDataHandler;
+
         public static BackendManager Instance
         {
             get
@@ -148,22 +152,49 @@ namespace Muks.BackEnd
             {
                 if(!Backend.IsLogin)
                 {
-                    Debug.Log("게스트 로그인 실패: 서버에 정보가 없음");
-                    Backend.BMember.DeleteGuestInfo();
-                    await GuestLogin(maxRepeatCount - 1, onCompleted, onFailed);
+                    if (bro.GetStatusCode() == "401")
+                    {
+                        Debug.Log("게스트 로그인 실패: 서버에 정보가 없음");
+                        Backend.BMember.DeleteGuestInfo();
+                        await GuestLogin(maxRepeatCount - 1, onCompleted, onFailed);
+                    }
+                    else
+                    {
+                        Debug.Log("게스트 로그인 실패: " + bro.GetMessage());
+                    }
+
                     return;
                 }
 
+
+
                 Debug.Log("게스트 로그인 성공");
+                if(bro.GetStatusCode() == "201")
+                {
+                    UserInfo.SetFirstAccessTime(ServerTime);
+                    OnGuestSignupHandler?.Invoke();
+                }
+
+                else if(bro.GetStatusCode() == "200")
+                {
+                    OnGuestLoginHandler?.Invoke();
+                }
                 onCompleted?.Invoke(bro);
                 _isLogin = true;
 
             },
-            (bro) =>
+            async (BackendReturnObject bro) =>
             {
-                Debug.LogError("게스트 로그인 에러 발생");
-                onFailed?.Invoke(bro);
-                _isLogin = false;
+                if (bro.GetStatusCode() == "401")
+                {
+                    Debug.Log("게스트 로그인 실패: 서버에 정보가 없음");
+                    Backend.BMember.DeleteGuestInfo();
+                    await GuestLogin(maxRepeatCount - 1, onCompleted, onFailed);
+                }
+                else
+                {
+                    Debug.Log("게스트 로그인 실패: " + bro.GetMessage());
+                }
             });
         }
 
@@ -346,6 +377,7 @@ namespace Muks.BackEnd
             {
                 Debug.Log("게임 정보 삽입 성공:" + selectedProbabilityFileId);
                 onCompleted?.Invoke(bro);
+                OnInsertGameDataHandler?.Invoke(bro);
             },
             (state) =>
             {
@@ -388,6 +420,7 @@ namespace Muks.BackEnd
 
                     case BackendState.Success:
                         onCompleted?.Invoke(bro);
+                        OnInsertGameDataHandler?.Invoke(bro);
                         break;
                 }
             });      

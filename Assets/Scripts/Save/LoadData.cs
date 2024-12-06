@@ -27,6 +27,7 @@ public class LoadData
     public int DailyAdvertisingViewCount;
     public int TotalCleanCount;
     public int DailyCleanCount;
+    public string FirstAccessTime;
 
     public List<string> EquipStaffDataList = new List<string>();
     public Dictionary<string, int> GiveStaffLevelDic = new Dictionary<string, int>();
@@ -73,6 +74,7 @@ public class LoadData
         DailyAdvertisingViewCount = int.Parse(json[0]["DailyAdvertisingViewCount"].ToString());
         TotalCleanCount = int.Parse(json[0]["TotalCleanCount"].ToString());
         DailyCleanCount = int.Parse(json[0]["DailyCleanCount"].ToString());
+        FirstAccessTime = json[0]["FirstAccessTime"].ToString();
 
         if (json[0]["GiveStaffList"] != null)
         {

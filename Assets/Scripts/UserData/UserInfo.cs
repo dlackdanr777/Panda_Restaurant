@@ -44,12 +44,15 @@ public static class UserInfo
 
 
     public static bool IsTutorialStart = false;
-    public static bool IsFirstTutorialClear = false;
+    public static bool IsFirstTutorialClear = true;
     public static bool IsMiniGameTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
     public static bool IsGatecrasher2TutorialClear = false;
     public static bool IsSpecialCustomer1TutorialClear = false;
     public static bool IsSpecialCustomer2TutorialClear = false;
+
+    private static string _firstAccessTime;
+    public static string FirstAccessTime => _firstAccessTime;
 
     private static string _lastAccessTime;
     public static string LastAccessTime => _lastAccessTime;
@@ -172,6 +175,7 @@ public static class UserInfo
         param.Add("DailyAdvertisingViewCount", _dailyAdvertisingViewCount);
         param.Add("TotalCleanCount", _totalCleanCount);
         param.Add("DailyCleanCount", _dailyCleanCount);
+        param.Add("FirstAccessTime", _firstAccessTime);
 
         List<SaveLevelData> giveStaffSaveDataList = new List<SaveLevelData>();
         foreach (var value in _giveStaffLevelDic)
@@ -250,6 +254,12 @@ public static class UserInfo
         return param;
     }
 
+    public static void SetFirstAccessTime(DateTime time)
+    {
+        DebugLog.Log("첫 로그인 성공");
+        _firstAccessTime = time.ToString();
+    }
+
 
     public static void LoadGameData(BackendReturnObject bro)
     {
@@ -287,6 +297,7 @@ public static class UserInfo
         _dailyAdvertisingViewCount = loadData.DailyAdvertisingViewCount;
         _totalCleanCount = loadData.TotalCleanCount;
         _dailyCleanCount = loadData.DailyCleanCount;
+        _firstAccessTime = loadData.FirstAccessTime;
 
         _giveStaffLevelDic = loadData.GiveStaffLevelDic;
         for(int i = 0, cnt = loadData.EquipStaffDataList.Count; i < cnt; ++i)

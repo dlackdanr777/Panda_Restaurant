@@ -30,14 +30,14 @@ public class UISettingButton : MonoBehaviour
     }
 
 
-    public void OnButtonClicked()
+    private void OnButtonClicked()
     {
         _offButton.gameObject.SetActive(true);
         _onButton.gameObject.SetActive(false);
         _onButtonClicked?.Invoke();
     }
 
-    public void OffButtonClicked()
+    private void OffButtonClicked()
     {
         _onButton.gameObject.SetActive(true);
         _offButton.gameObject.SetActive(false);

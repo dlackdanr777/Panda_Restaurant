@@ -65,6 +65,11 @@ public class SoundManager : MonoBehaviour
 
     private  void Awake()
     {
+        if (_instance != null)
+            return;
+
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
         Init();
     }
 
@@ -115,20 +120,20 @@ public class SoundManager : MonoBehaviour
 
     public void LoadSoundData()
     {
-        float masterVolume = PlayerPrefs.HasKey("MasterVolume") ? PlayerPrefs.GetFloat("MasterVolume") : 0;
+        //float masterVolume = PlayerPrefs.HasKey("MasterVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("MasterVolume"), 0, 1) : 1;
         //GameManager.Instance.Option.SetVolume(AudioType.Master, masterVolume);
 
-        float backgroundVolume = PlayerPrefs.HasKey("BackgroundVolume") ? PlayerPrefs.GetFloat("BackgroundVolume") : 0;
+        float backgroundVolume = PlayerPrefs.HasKey("BackgroundVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("BackgroundVolume"), 0, 1) : 1;
         //GameManager.Instance.Option.SetVolume(AudioType.BackgroundAudio, backgroundVolume);
 
-        float soundEffectVolume = PlayerPrefs.HasKey("SoundEffectVolume") ? PlayerPrefs.GetFloat("SoundEffectVolume") : 0;
+        float soundEffectVolume = PlayerPrefs.HasKey("SoundEffectVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("SoundEffectVolume"), 0, 1) : 1;
         //GameManager.Instance.Option.SetVolume(AudioType.EffectAudio, soundEffectVolume);
 
-        _audioMixer.SetFloat("Master", masterVolume);
+        _audioMixer.SetFloat("Master", 1);
         _audioMixer.SetFloat("Background", backgroundVolume);
         _audioMixer.SetFloat("SoundEffect", soundEffectVolume);
 
-        SetVolume(masterVolume, AudioType.Master);
+        SetVolume(1, AudioType.Master);
         SetVolume(backgroundVolume, AudioType.BackgroundAudio);
         SetVolume(soundEffectVolume, AudioType.EffectAudio);
     }
@@ -245,23 +250,24 @@ public class SoundManager : MonoBehaviour
 
     public void SetVolume(float value, AudioType type)
     {
+        value = Mathf.Clamp(value, 0.0f, 1.0f);
         float volume = value != 0 ? Mathf.Log10(value) * 20 : -80;
 
         switch (type)
         {
             case AudioType.Master:
                 _audioMixer.SetFloat("Master", volume);
-                SaveSoundData("Master", volume);
+                SaveSoundData("Master", value);
                 break;
 
             case AudioType.BackgroundAudio:
                 _audioMixer.SetFloat("Background", volume);
-                SaveSoundData("Background", volume);
+                SaveSoundData("Background", value);
                 break;
 
             case AudioType.EffectAudio:
                 _audioMixer.SetFloat("SoundEffect", volume);
-                SaveSoundData("SoundEffect", volume);
+                SaveSoundData("SoundEffect", value);
                 break;
         }
 
