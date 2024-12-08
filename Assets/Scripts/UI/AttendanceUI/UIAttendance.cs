@@ -9,6 +9,8 @@ public class UIAttendance : MobileUIView
 
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private UIButtonAndPressEffect _attendanceButton;
+    [SerializeField] private UILoadingBar _loadingBar;
 
 
 
@@ -16,6 +18,8 @@ public class UIAttendance : MobileUIView
     [Header("Slots")]
     [SerializeField] private RectTransform _slotParent;
     [SerializeField] private UIAttendanceSlot _slotPrefab;
+
+
 
     [Space]
     [Header("Animations")]
@@ -32,12 +36,26 @@ public class UIAttendance : MobileUIView
      
     public override void Init()
     {
-        for(int i = 0, cnt = 7; i < cnt; i++)
+        int startDay = UserInfo.GetTotalAttendanceDays();
+        List<AttendanceData> dataList = AttendanceDataManager.Instance.GetRewardDataList(startDay);
+        int baseStartDay = ((startDay - 1) / 7) * 7 + 1;
+        for (int i = 0, cnt = 7; i < cnt; i++)
         {
             UIAttendanceSlot slot = Instantiate(_slotPrefab, _slotParent.transform);
             _slotList.Add(slot);
+
+            if(i == cnt - 1)
+            {
+                slot.SetDataToSpecial(dataList[i]);
+            }
+            else
+            {
+                slot.SetData(baseStartDay + i, dataList[i]);
+            }
+
         }
 
+        _attendanceButton.AddListener(OnAttendanceCheck);
         gameObject.SetActive(false);
     }
 
@@ -49,6 +67,7 @@ public class UIAttendance : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
+        UpdateUI();
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
@@ -73,5 +92,71 @@ public class UIAttendance : MobileUIView
             VisibleState = VisibleState.Disappeared;
             gameObject.SetActive(false);
         });
+    }
+
+
+    public void OnAttendanceCheck()
+    {
+        if (!UserInfo.CheckAttendance())
+        {
+            DebugLog.LogError("이미 출석 체크를 진행했습니다.");
+            return;
+        }
+
+        // 출석 데이터 갱신
+        UserInfo.UpdateAttendanceData();
+
+        // 현재 출석 일수 계산
+        int totalDays = UserInfo.GetTotalAttendanceDays();
+        int currentWeek = totalDays / 7; // 현재 주차 계산 (0-based index)
+        int currentDay = totalDays % 7; // 해당 주의 몇 번째 날인지 계산
+
+        // 보상 아이템 처리
+        if (currentDay < _slotList.Count)
+        {
+            DebugLog.Log(currentWeek + "주차 " + currentDay + "일 출석 체크");
+            //_slotList[currentDay].ReceiveItem(); // 현재 슬롯의 보상 수령 처리
+        }
+
+        // 슬롯 UI 갱신
+        UpdateUI();
+    }
+
+
+    private void UpdateUI()
+    {
+        bool checkAttendance = UserInfo.CheckAttendance();
+        int adjustedDays = checkAttendance ? UserInfo.GetTotalAttendanceDays() : UserInfo.GetTotalAttendanceDays() - 1;
+
+        // UI 갱신: 현재 주의 슬롯만 업데이트
+        for (int i = 0; i < _slotList.Count; i++)
+        {
+            if (i < adjustedDays % 7)
+            {
+                _slotList[i].SetChecked(); // 이미 출석한 슬롯 표시
+            }
+
+            else if(i == adjustedDays % 7)
+            {
+                if(checkAttendance)
+                {
+                    _slotList[i].SetTotaySlotUnChecked();
+                }
+                else
+                {
+                    _slotList[i].SetTotaySlotChecked();
+                }
+            }
+            else
+            {
+                _slotList[i].SetUnchecked(); // 출석하지 않은 슬롯 표시
+            }
+        }
+
+        _attendanceButton.interactable = checkAttendance;
+
+        float totalDays = UserInfo.GetTotalAttendanceDays();
+        float loadingBarGauge = totalDays <= 0 ? 0 : (totalDays % 7) / 6f; // 6일차에 1.0, 7일차에 0으로 초기화
+        _loadingBar.SetFillAmount(loadingBarGauge);
     }
 }

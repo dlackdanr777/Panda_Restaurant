@@ -57,6 +57,9 @@ public static class UserInfo
     private static string _lastAccessTime;
     public static string LastAccessTime => _lastAccessTime;
 
+    private static string _lastAttendanceTime;
+    public static string LastAttendanceTime => _lastAttendanceTime;
+
     private static int _dia;
     public static int Dia => _dia;
 
@@ -101,6 +104,9 @@ public static class UserInfo
 
     private static int _dailyCleanCount;
     public static int DailyCleanCount => _dailyCleanCount;
+
+    private static int _totalAttendanceDays = 0;
+    public static int TotalAttendanceDays => _totalAttendanceDays;
 
 
     private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
@@ -176,6 +182,8 @@ public static class UserInfo
         param.Add("TotalCleanCount", _totalCleanCount);
         param.Add("DailyCleanCount", _dailyCleanCount);
         param.Add("FirstAccessTime", _firstAccessTime);
+        param.Add("LastAttendanceTime", _lastAttendanceTime);
+        param.Add("TotalAttendanceDays", _totalAttendanceDays);
 
         List<SaveLevelData> giveStaffSaveDataList = new List<SaveLevelData>();
         foreach (var value in _giveStaffLevelDic)
@@ -261,6 +269,36 @@ public static class UserInfo
     }
 
 
+    public static bool CheckAttendance()
+    {
+        if (string.IsNullOrWhiteSpace(_lastAttendanceTime))
+            return true;
+
+        DateTime currentServerTime = BackendManager.Instance.ServerTime;
+        DateTime lastAttendanceTime = DateTime.Parse(_lastAttendanceTime);
+        TimeSpan timeDifference = currentServerTime - lastAttendanceTime;
+
+        return 1 <= timeDifference.TotalDays;
+    }
+
+    public static void UpdateAttendanceData()
+    {
+        if (!CheckAttendance())
+        {
+            DebugLog.LogError("이미 출석 체크를 진행했습니다.");
+            return;
+        }
+
+        _lastAttendanceTime = BackendManager.Instance.ServerTime.ToString();
+        _totalAttendanceDays += 1;
+    }
+
+    public static int GetTotalAttendanceDays()
+    {
+        return _totalAttendanceDays;
+    }
+
+
     public static void LoadGameData(BackendReturnObject bro)
     {
         JsonData json = bro.FlattenRows();
@@ -298,6 +336,8 @@ public static class UserInfo
         _totalCleanCount = loadData.TotalCleanCount;
         _dailyCleanCount = loadData.DailyCleanCount;
         _firstAccessTime = loadData.FirstAccessTime;
+        _lastAccessTime = loadData.LastAttendanceTime;
+        _totalAttendanceDays = loadData.TotalAttendanceDays;
 
         _giveStaffLevelDic = loadData.GiveStaffLevelDic;
         for(int i = 0, cnt = loadData.EquipStaffDataList.Count; i < cnt; ++i)

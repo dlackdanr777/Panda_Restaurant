@@ -28,6 +28,8 @@ public class LoadData
     public int TotalCleanCount;
     public int DailyCleanCount;
     public string FirstAccessTime;
+    public string LastAttendanceTime;
+    public int TotalAttendanceDays;
 
     public List<string> EquipStaffDataList = new List<string>();
     public Dictionary<string, int> GiveStaffLevelDic = new Dictionary<string, int>();
@@ -75,7 +77,8 @@ public class LoadData
         TotalCleanCount = int.Parse(json[0]["TotalCleanCount"].ToString());
         DailyCleanCount = int.Parse(json[0]["DailyCleanCount"].ToString());
         FirstAccessTime = json[0]["FirstAccessTime"].ToString();
-
+        LastAttendanceTime = json[0]["LastAttendanceTime"].ToString();
+        TotalAttendanceDays = int.Parse(json[0]["TotalAttendanceDays"].ToString());
         if (json[0]["GiveStaffList"] != null)
         {
             GiveStaffLevelDic.Clear();
