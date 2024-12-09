@@ -36,8 +36,9 @@ public class UICustomerTutorial : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
-        Tween.Wait(2,() =>
+        Tween.Wait(3,() =>
         {
+            Vibration.Vibrate(500);
             gameObject.SetActive(true);
             _canvasGroup.blocksRaycasts = false;
             _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);

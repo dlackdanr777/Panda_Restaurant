@@ -55,6 +55,7 @@ public class FirstTutorial : MonoBehaviour
 
     private IEnumerator StartTutorial()
     {
+        _uiDescriptionNPC.OnSkipOkButtonClicked(OnSkipButtonClicked);
         yield return YieldCache.WaitForSeconds(0.02f);
         _uiNav.Push("UITutorial");
         _uiNav.Push("UITutorialDescription");
@@ -303,6 +304,29 @@ public class FirstTutorial : MonoBehaviour
         {
             _boomParticles[i].Emit(1);
         }
+    }
+
+
+    private void OnSkipButtonClicked()
+    {
+        UserInfo.GiveRecipe("FOOD01");
+        UserInfo.GiveFurniture("TABLE01_01");
+        UserInfo.GiveKitchenUtensil("COOKER01_01");
+        KitchenUtensilData kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData("COOKER01_01");
+        FurnitureData table1Data = FurnitureDataManager.Instance.GetFurnitureData("TABLE01_01");
+        UserInfo.SetEquipFurniture(table1Data);
+        UserInfo.SetEquipKitchenUtensil(kitchenData);
+
+        _uiTutorial.PopEnabled = true;
+        _uiDescriptionNPC.PopEnabled = true;
+        _uiNav.Pop("UITutorial");
+        _uiNav.Pop("UITutorialDescription");
+        _uiTutorial.PopEnabled = false;
+        _uiDescriptionNPC.PopEnabled = false;
+        UserInfo.IsTutorialStart = false;
+        UserInfo.IsFirstTutorialClear = true;
+        _mainSceneUI.gameObject.SetActive(true);
+        gameObject.SetActive(false);
     }
 
 }

@@ -1,3 +1,4 @@
+using Muks.Tween;
 using UnityEngine;
 
 public class UIMain : MonoBehaviour
@@ -13,12 +14,25 @@ public class UIMain : MonoBehaviour
     {
         _customerController.OnAddCustomerHandler += OnChangeCustomerCountEvent;
         _customerController.OnGuideCustomerHandler += OnChangeCustomerCountEvent;
+        GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnChangeCustomerCountEvent;
         _customerController.OnAddCustomerHandler += OnUpdateAdButtonEvent;
         _customerController.OnGuideCustomerHandler += OnUpdateAdButtonEvent;
+        GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnUpdateAdButtonEvent;
 
+        _watchAdButton.AddListener(OnAdButtonClicked);
         OnChangeCustomerCountEvent();
         OnUpdateAdButtonEvent();
     }
+
+    private void OnAdButtonClicked()
+    {
+        int count = GameManager.Instance.MaxWaitCustomerCount - _customerController.Count;
+        for(int i = 0; i < count; ++i)
+        {
+            Tween.Wait(0.2f, () => _customerController.AddCustomer());
+        }
+    }
+
 
     private void OnEnable()
     {

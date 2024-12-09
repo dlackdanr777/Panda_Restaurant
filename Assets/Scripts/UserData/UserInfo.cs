@@ -44,7 +44,7 @@ public static class UserInfo
 
 
     public static bool IsTutorialStart = false;
-    public static bool IsFirstTutorialClear = true;
+    public static bool IsFirstTutorialClear = false;
     public static bool IsMiniGameTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
     public static bool IsGatecrasher2TutorialClear = false;
@@ -155,6 +155,14 @@ public static class UserInfo
     public static SortType GachaItemSortType => _gachaItemSortType;
 
 
+    //################################코인, 쓰레기 맵에 존재하는지 확인 변수################################
+    private static List<SaveCoinAreaData> _saveCoinAreaDataList = new List<SaveCoinAreaData>();
+    public static List<SaveCoinAreaData> SaveCounAreaDataList => _saveCoinAreaDataList;
+
+    private static List<SaveGarbageAreaData> _saveGarbageAreaDataList = new List<SaveGarbageAreaData>();
+    public static List<SaveGarbageAreaData> SaveGarbageAreaDataList => _saveGarbageAreaDataList;
+
+
     public static Param GetSaveGameData()
     {
         Param param = new Param();
@@ -165,7 +173,6 @@ public static class UserInfo
         param.Add("IsSpecialCustomer1TutorialClear", IsSpecialCustomer1TutorialClear);
         param.Add("IsSpecialCustomer2TutorialClear", IsSpecialCustomer2TutorialClear);
 
-        param.Add("LastAccessTime", BackendManager.Instance.ServerTime.ToString());
         param.Add("Dia", _dia);
         param.Add("Money", _money);
         param.Add("TotalAddMoney", _totalAddMoney);
@@ -182,6 +189,7 @@ public static class UserInfo
         param.Add("TotalCleanCount", _totalCleanCount);
         param.Add("DailyCleanCount", _dailyCleanCount);
         param.Add("FirstAccessTime", _firstAccessTime);
+        param.Add("LastAccessTime", BackendManager.Instance.ServerTime.ToString());
         param.Add("LastAttendanceTime", _lastAttendanceTime);
         param.Add("TotalAttendanceDays", _totalAttendanceDays);
 
@@ -259,6 +267,24 @@ public static class UserInfo
         param.Add("DoneDailyChallengeList", _doneDailyChallengeSet.ToList());
         param.Add("ClearDailyChallengeList", _clearDailyChallengeSet.ToList());
 
+        MainScene mainScene = UnityEngine.Object.FindAnyObjectByType<MainScene>();
+        if(mainScene != null)
+        {
+            _saveCoinAreaDataList.Clear();
+            for(int i = 0, cnt = mainScene.DropCoinAreas.Length; i < cnt; ++i)
+            {
+                _saveCoinAreaDataList.Add(new SaveCoinAreaData(mainScene.DropCoinAreas[i].Count, mainScene.DropCoinAreas[i].CurrentMoney));
+            }
+
+            _saveGarbageAreaDataList.Clear();
+            for (int i = 0, cnt = mainScene.DropGarbageAreas.Length; i < cnt; ++i)
+            {
+                _saveGarbageAreaDataList.Add(new SaveGarbageAreaData(mainScene.DropGarbageAreas[i].Count));
+            }
+        }
+        param.Add("CoinAreaDataList", _saveCoinAreaDataList);
+        param.Add("GarbageAreaDataList", _saveGarbageAreaDataList);
+
         return param;
     }
 
@@ -283,12 +309,6 @@ public static class UserInfo
 
     public static void UpdateAttendanceData()
     {
-        if (!CheckAttendance())
-        {
-            DebugLog.LogError("이미 출석 체크를 진행했습니다.");
-            return;
-        }
-
         _lastAttendanceTime = BackendManager.Instance.ServerTime.ToString();
         _totalAttendanceDays += 1;
     }
@@ -309,11 +329,11 @@ public static class UserInfo
         }
 
         LoadData loadData = new LoadData(json);
-        if(loadData == null)
+        if (loadData == null)
         {
             Debug.LogError("로드 데이터를 파싱하는 과정에서 오류가 발생했습니다.");
             return;
-        }    
+        }
 
         IsFirstTutorialClear = loadData.IsFirstTutorialClear;
         IsMiniGameTutorialClear = loadData.IsMiniGameTutorialClear;
@@ -336,11 +356,12 @@ public static class UserInfo
         _totalCleanCount = loadData.TotalCleanCount;
         _dailyCleanCount = loadData.DailyCleanCount;
         _firstAccessTime = loadData.FirstAccessTime;
-        _lastAccessTime = loadData.LastAttendanceTime;
+        _lastAccessTime = loadData.LastAccessTime;
+        _lastAttendanceTime = loadData.LastAttendanceTime;
         _totalAttendanceDays = loadData.TotalAttendanceDays;
 
         _giveStaffLevelDic = loadData.GiveStaffLevelDic;
-        for(int i = 0, cnt = loadData.EquipStaffDataList.Count; i < cnt; ++i)
+        for (int i = 0, cnt = loadData.EquipStaffDataList.Count; i < cnt; ++i)
         {
             StaffData data = StaffDataManager.Instance.GetStaffData(loadData.EquipStaffDataList[i]);
             SetEquipStaff(data);
@@ -365,14 +386,15 @@ public static class UserInfo
             KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(loadData.EquipKitchenUtensilList[i]);
             SetEquipKitchenUtensil(data);
         }
-
-
         _doneMainChallengeSet = loadData.DoneMainChallengeSet;
         _clearMainChallengeSet = loadData.ClearMainChallengeSet;
         _doneAllTimeChallengeSet = loadData.DoneAllTimeChallengeSet;
         _clearAllTimeChallengeSet = loadData.ClearAllTimeChallengeSet;
         _doneDailyChallengeSet = loadData.DoneDailyChallengeSet;
         _clearDailyChallengeSet = loadData.ClearDailyChallengeSet;
+
+        _saveCoinAreaDataList = loadData.CoinAreaDataList;
+        _saveGarbageAreaDataList = loadData.GarbageAreaDataList;
 
         OnChangeMoneyHandler?.Invoke();
         OnChangeTipHandler?.Invoke();

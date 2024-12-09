@@ -28,6 +28,7 @@ public class LoadData
     public int TotalCleanCount;
     public int DailyCleanCount;
     public string FirstAccessTime;
+    public string LastAccessTime;
     public string LastAttendanceTime;
     public int TotalAttendanceDays;
 
@@ -53,6 +54,8 @@ public class LoadData
     public HashSet<string> DoneDailyChallengeSet = new HashSet<string>();
     public HashSet<string> ClearDailyChallengeSet = new HashSet<string>();
 
+    public  List<SaveCoinAreaData> CoinAreaDataList = new List<SaveCoinAreaData>();
+    public  List<SaveGarbageAreaData> GarbageAreaDataList = new List<SaveGarbageAreaData>();
     public LoadData(JsonData json)
     {
         IsFirstTutorialClear = json[0]["IsFirstTutorialClear"].ToString().ToLower() == "true";
@@ -76,9 +79,11 @@ public class LoadData
         DailyAdvertisingViewCount = int.Parse(json[0]["DailyAdvertisingViewCount"].ToString());
         TotalCleanCount = int.Parse(json[0]["TotalCleanCount"].ToString());
         DailyCleanCount = int.Parse(json[0]["DailyCleanCount"].ToString());
-        FirstAccessTime = json[0]["FirstAccessTime"].ToString();
-        LastAttendanceTime = json[0]["LastAttendanceTime"].ToString();
-        TotalAttendanceDays = int.Parse(json[0]["TotalAttendanceDays"].ToString());
+        FirstAccessTime = json[0].ContainsKey("FirstAccessTime") ? json[0]["FirstAccessTime"].ToString() : string.Empty;
+        LastAccessTime = json[0].ContainsKey("LastAccessTime") ? json[0]["LastAccessTime"].ToString() : string.Empty;
+        LastAttendanceTime = json[0].ContainsKey("LastAttendanceTime") ? json[0]["LastAttendanceTime"].ToString() : string.Empty;
+        TotalAttendanceDays = json[0].ContainsKey("TotalAttendanceDays") ? int.Parse(json[0]["TotalAttendanceDays"].ToString()) : 0;
+
         if (json[0]["GiveStaffList"] != null)
         {
             GiveStaffLevelDic.Clear();
@@ -222,6 +227,33 @@ public class LoadData
                 ClearDailyChallengeSet.Add(item.ToString());
             }
         }
+
+        if (json[0].ContainsKey("CoinAreaDataList"))
+        {
+            foreach (JsonData item in json[0]["CoinAreaDataList"])
+            {
+                // JSON 데이터를 클래스 객체로 변환
+                int coinCount = (int)item["CoinCount"];
+                int money = (int)item["Money"];
+                SaveCoinAreaData data = new SaveCoinAreaData(coinCount, money);
+
+                // 리스트에 추가
+                CoinAreaDataList.Add(data);
+            }
+        }
+
+        if (json[0].ContainsKey("GarbageAreaDataList"))
+        {
+            foreach (JsonData item in json[0]["GarbageAreaDataList"])
+            {
+                // JSON 데이터를 클래스 객체로 변환
+                int count = (int)item["Count"];
+                SaveGarbageAreaData data = new SaveGarbageAreaData(count);
+
+                // 리스트에 추가
+                GarbageAreaDataList.Add(data);
+            }
+        }
     }
 }
 
@@ -246,6 +278,29 @@ public class SaveCountData
     public SaveCountData(string id, int count)
     {
         Id = id;
+        Count = count;
+    }
+}
+
+
+public class SaveCoinAreaData
+{
+    public int CoinCount;
+    public int Money;
+
+    public SaveCoinAreaData(int coinCount, int money)
+    {
+        CoinCount = coinCount;
+        Money = money;
+    }
+}
+
+public class SaveGarbageAreaData
+{
+    public int Count;
+
+    public SaveGarbageAreaData(int count)
+    {
         Count = count;
     }
 }

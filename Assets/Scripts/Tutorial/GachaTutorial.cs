@@ -19,7 +19,7 @@ public class GachaTutorial : MonoBehaviour
  
     private Coroutine _coroutine;
     private bool _gachaCompleted;
-
+    private FoodData _foodData;
 
     public void StartTutorial(FoodData foodData, Transform holePos)
     {
@@ -35,6 +35,8 @@ public class GachaTutorial : MonoBehaviour
 
     private IEnumerator TutorialRoutine(FoodData foodData, Transform holePos)
     {
+        _descriptionNPC.OnSkipOkButtonClicked(OnSkipButtonClicked);
+        _foodData = foodData;
         while (0 < _coordinator.GetOpenViewCount())
             yield return null;
 
@@ -58,7 +60,7 @@ public class GachaTutorial : MonoBehaviour
         _uiTutorial.CustomHoleSetActive(false, 170, "none", _shopButton.transform);
         yield return YieldCache.WaitForSeconds(1);
         _uiTutorial.RecipeHoleSetActive(true);
-        _uiRecipe.SetView(foodData);
+        _uiRecipe.SetView(_foodData);
         while (!_uiTutorial.IsButtonClicked)
             yield return YieldCache.WaitForSeconds(0.02f);
 
@@ -86,7 +88,7 @@ public class GachaTutorial : MonoBehaviour
         _uiTutorial.CustomHoleSetActive(false, 170, _gachaButton.name, _gachaButton.transform, false);
         _uiGacha.SingleButton.gameObject.SetActive(false);
         _uiTutorial.Gacha1ButtonSetActive(true);
-        GachaItemData needItemData = ItemManager.Instance.GetGachaItemData(foodData.NeedItem);
+        GachaItemData needItemData = ItemManager.Instance.GetGachaItemData(_foodData.NeedItem);
         _uiTutorial.SetGacha1ButtonClickEvent(() => _uiGacha.GetItem(needItemData));
         yield return YieldCache.WaitForSeconds(2f);
         yield return _descriptionNPC.ShowDescription2Text("이곳은 아이템을 뽑을 수 있는 곳입니다.");
@@ -142,5 +144,24 @@ public class GachaTutorial : MonoBehaviour
             return;
 
         _gachaCompleted = true;
+    }
+
+
+    private void OnSkipButtonClicked()
+    {
+        _descriptionNPC.PopEnabled = true;
+        _uiTutorial.PopEnabled = true;
+        _tutorialNav.Pop("UITutorialDescription");
+        _tutorialNav.Pop("UITutorial");
+        _descriptionNPC.PopEnabled = false;
+        _uiTutorial.PopEnabled = false;
+
+        GachaItemData needItemData = ItemManager.Instance.GetGachaItemData(_foodData.NeedItem);
+        if(!UserInfo.IsGiveGachaItem(needItemData))
+            UserInfo.GiveGachaItem(needItemData);
+
+        UserInfo.IsTutorialStart = false;
+        UserInfo.IsMiniGameTutorialClear = true;
+        gameObject.SetActive(false);
     }
 }

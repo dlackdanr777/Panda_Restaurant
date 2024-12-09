@@ -97,7 +97,7 @@ public class UIMiniGame : MobileUIView
 
     private float _currentPower;
     public float CurrentPower => _currentPower;
-    private float _maxPower => 50;
+    private float _maxPower => 60;
 
 
     public override void Init()
@@ -242,7 +242,7 @@ public class UIMiniGame : MobileUIView
             return;
 
         if (-2 < _currentPower)
-            _currentPower -= Time.deltaTime * 5 * Mathf.Lerp(1, 3, _currentPower <= 0 ? 0 : _currentPower / _maxPower);
+            _currentPower -= Time.deltaTime * 4 * Mathf.Lerp(1, 3, _currentPower <= 0 ? 0 : _currentPower / _maxPower);
         else if (_currentPower < -2)
             _currentPower = -2;
 

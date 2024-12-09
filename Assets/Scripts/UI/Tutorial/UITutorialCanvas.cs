@@ -13,12 +13,26 @@ public class UITutorialCanvas : MonoBehaviour
     {
         _uiNav = GetComponent<MobileUINavigation>();
         DataBind.SetUnityActionValue("HideCustomerTutorialUI", OnHideCustomerTutorialUI);
+
+        DataBind.SetUnityActionValue("ShowTutorialSkipUI", OnShowTutorialSkipUI);
+        DataBind.SetUnityActionValue("HideTutorialSkipUI", OnHideTutorialSkipUI);
     }
 
     private void OnHideCustomerTutorialUI()
     {
         _customerTutorial.PopEnabled = true;
         _uiNav.Pop("UICustomerTutorial");
+    }
+
+    private void OnShowTutorialSkipUI()
+    {
+        _uiNav.Push("UITutorialSkip");
+    }
+
+
+    private void OnHideTutorialSkipUI()
+    {
+        _uiNav.Pop("UITutorialSkip");
     }
 
 }

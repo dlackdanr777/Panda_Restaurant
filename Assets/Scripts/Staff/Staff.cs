@@ -49,7 +49,7 @@ public class Staff : MonoBehaviour
 
     public void Init()
     {
-        GameManager.Instance.OnChgangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+        GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
     }
 
 
@@ -267,6 +267,7 @@ public class Staff : MonoBehaviour
     private IEnumerator UseSkillCoroutine(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         _usingSkill = true;
+        Vibration.Vibrate(500);
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 
         float duration = _staffData.Skill.Duration + GameManager.Instance.AddStaffSkillTime + _staffType switch

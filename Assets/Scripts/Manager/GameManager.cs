@@ -24,7 +24,8 @@ public class GameManager : MonoBehaviour
 
     public event Action OnChangeTipPerMinuteHandler;
     public event Action OnChangeScoreHandler;
-    public event Action OnChgangeStaffSkillValueHandler;
+    public event Action OnChangeStaffSkillValueHandler;
+    public event Action OnChangeMaxWaitCustomerCountHandler;
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
@@ -152,6 +153,18 @@ public class GameManager : MonoBehaviour
     {
         _addPromotionCustomer = Mathf.Clamp(_addPromotionCustomer + value, 1, 100);
     }
+
+
+    public void SaveGameData()
+    {
+        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
+            return;
+
+        Param param = UserInfo.GetSaveGameData();
+        BackendManager.Instance.SaveGameData("GameData", 3, param);
+        DebugLog.Log("저장");
+    }
+
 
     private void Awake()
     {
@@ -624,7 +637,8 @@ public class GameManager : MonoBehaviour
             }
         }
         OnChangeScoreHandler?.Invoke();
-        OnChgangeStaffSkillValueHandler?.Invoke();
+        OnChangeStaffSkillValueHandler?.Invoke();
+        OnChangeMaxWaitCustomerCountHandler?.Invoke();
     }
 
     private void OnApplicationPause(bool pause)
@@ -632,21 +646,11 @@ public class GameManager : MonoBehaviour
         if (!pause)
             return;
 
-        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
-            return;
-
-        Param param = UserInfo.GetSaveGameData();
-        BackendManager.Instance.SaveGameData("GameData", 3, param);
-        DebugLog.Log("저장");
+        SaveGameData();
     }
 
     private void OnApplicationQuit()
     {
-        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
-            return;
-
-        Param param = UserInfo.GetSaveGameData();
-        BackendManager.Instance.SaveGameData("GameData", 3, param);
-        DebugLog.Log("저장");
+        SaveGameData();
     }
 }

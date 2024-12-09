@@ -27,28 +27,6 @@ public class StaffController : MonoBehaviour
             _staffs[i] = staff;
             staff.Init();
         }
-
-        /*        StaffData data1 = StaffDataManager.Instance.GetStaffData("STAFF01");
-                StaffData data2 = StaffDataManager.Instance.GetStaffData("STAFF20");
-                StaffData data3 = StaffDataManager.Instance.GetStaffData("STAFF27");
-                StaffData data4 = StaffDataManager.Instance.GetStaffData("STAFF34");
-                StaffData data5 = StaffDataManager.Instance.GetStaffData("STAFF08");
-
-                EquipStaff(data1);
-                EquipStaff(data2);
-                EquipStaff(data3);
-                EquipStaff(data4);
-                EquipStaff(data5);
-
-                UserInfo.GiveStaff(data1);
-                UserInfo.GiveStaff(data2);
-                UserInfo.GiveStaff(data3);
-                UserInfo.GiveStaff(data4);
-                UserInfo.GiveStaff(data5);*/
-/*
-        StaffData data3 = StaffDataManager.Instance.GetStaffData("STAFF27");
-        UserInfo.GiveStaff(data3);
-        EquipStaff(data3);*/
     }
 
 

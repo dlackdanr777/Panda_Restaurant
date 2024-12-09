@@ -34,6 +34,7 @@ public class UIAttendanceSlot : MonoBehaviour
         if (_data == data)
             return;
 
+        _data = data;
         _dayText.text = day + "일";
         _normalImages.gameObject.SetActive(true);
         _specialImages.gameObject.SetActive(false);
@@ -58,6 +59,7 @@ public class UIAttendanceSlot : MonoBehaviour
             return;
 
 
+        _data = data;
         _dayText.text = "개근상";
         _normalImages.gameObject.SetActive(false);
         _specialImages.gameObject.SetActive(true);
@@ -108,5 +110,28 @@ public class UIAttendanceSlot : MonoBehaviour
         _checkImage.gameObject.SetActive(false);
         _notCheckImage.gameObject.SetActive(true);
         _todayArrow.gameObject.SetActive(false);
+    }
+
+
+    public void ReceiveItem(bool isAd)
+    {
+        if(_data == null)
+        {
+            throw new System.Exception("현재 출석 보상 데이터가 없습니다.");
+        }
+
+        switch (_data.MoneyType)
+        {
+            case MoneyType.Gold:
+                UserInfo.AddMoney(isAd ? _data.RewardValue * 2 : _data.RewardValue);
+                break;
+
+
+            case MoneyType.Dia:
+                UserInfo.AddDia(isAd ? _data.RewardValue * 2 : _data.RewardValue);
+                break;
+        }
+
+
     }
 }

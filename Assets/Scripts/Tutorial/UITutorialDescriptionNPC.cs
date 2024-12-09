@@ -1,5 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,6 +8,8 @@ using UnityEngine.UI;
 public class UITutorialDescriptionNPC : MobileUIView
 {
     [Header("Components")]
+    [SerializeField] private UITutorialSkip _tutorialSkip;
+    [SerializeField] private Button _skipButton;
     [SerializeField] private UIImageAndText _descriptionText1;
     [SerializeField] private UIImageAndText _descriptionText2;
     [SerializeField] private Button _screenButton;
@@ -15,8 +18,11 @@ public class UITutorialDescriptionNPC : MobileUIView
     private Coroutine _textCoroutine;
     private bool _isScreenClicked = false;
 
+    private Action _onSkipOkButtonClicked;
+
     public override void Init()
     {
+        _skipButton.onClick.AddListener(OnSkipButtonClicked);
         _descriptionText1.gameObject.SetActive(false);
         _descriptionText2.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
@@ -40,6 +46,12 @@ public class UITutorialDescriptionNPC : MobileUIView
 
         VisibleState = VisibleState.Appeared;
         gameObject.SetActive(true);
+    }
+
+
+    public void OnSkipOkButtonClicked(Action action)
+    {
+        _onSkipOkButtonClicked = action;
     }
 
 
@@ -71,6 +83,12 @@ public class UITutorialDescriptionNPC : MobileUIView
             StopCoroutine(_textCoroutine);
         _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText2, str, 0.05f));
         return _textCoroutine;
+    }
+
+
+    private void OnSkipButtonClicked()
+    {
+        _tutorialSkip.ShowSkipUI(_onSkipOkButtonClicked);
     }
 
 
