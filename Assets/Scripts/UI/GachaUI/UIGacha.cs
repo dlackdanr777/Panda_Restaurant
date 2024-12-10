@@ -378,7 +378,7 @@ public class UIGacha : MobileUIView
 
         else
         {
-            TimedDisplayManager.Instance.ShowTextLackDia();
+            PopupManager.Instance.ShowTextLackDia();
         }
 
     }
@@ -411,7 +411,7 @@ public class UIGacha : MobileUIView
         }
         else
         {
-            TimedDisplayManager.Instance.ShowTextLackDia();
+            PopupManager.Instance.ShowTextLackDia();
         }
 
     }

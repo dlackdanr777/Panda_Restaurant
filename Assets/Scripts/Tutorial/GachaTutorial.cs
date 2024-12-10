@@ -37,6 +37,7 @@ public class GachaTutorial : MonoBehaviour
     {
         _descriptionNPC.OnSkipOkButtonClicked(OnSkipButtonClicked);
         _foodData = foodData;
+        _mainNav.AllPop();
         while (0 < _coordinator.GetOpenViewCount())
             yield return null;
 

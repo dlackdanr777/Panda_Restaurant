@@ -25,6 +25,6 @@ public class UISettingUserId : MonoBehaviour
         }
 
         GUIUtility.systemCopyBuffer = copyStr;
-        TimedDisplayManager.Instance.ShowText("UserID 복사가 완료됬습니다.");
+        PopupManager.Instance.ShowDisplayText("UserID 복사가 완료됬습니다.");
     }
 }

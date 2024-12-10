@@ -123,20 +123,20 @@ public class UIRecipeUpgrade : MobileUIView
             {
                 UserInfo.UpgradeRecipe(_currentData);
                 UserInfo.AddMoney(-_currentData.GetUpgradePrice(level));
-                TimedDisplayManager.Instance.ShowText("직원 업그레이드를 완료했어요!");
+                PopupManager.Instance.ShowDisplayText("직원 업그레이드를 완료했어요!");
                 UpdateData();
                 return;
             }
             else
             {
-                TimedDisplayManager.Instance.ShowTextLackMoney();
+                PopupManager.Instance.ShowTextLackMoney();
                 return;
             }
         }
 
         else
         {
-            TimedDisplayManager.Instance.ShowTextLackScore();
+            PopupManager.Instance.ShowTextLackScore();
             return;
         }
     }

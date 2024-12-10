@@ -202,7 +202,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
         }
         else
         {
-            TimedDisplayManager.Instance.ShowText("알 수 없는 오류 발생");
+            PopupManager.Instance.ShowDisplayText("알 수 없는 오류 발생");
         }
     }
 }

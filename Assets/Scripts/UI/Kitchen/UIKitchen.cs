@@ -165,25 +165,25 @@ public class UIKitchen : MobileUIView
     {
         if (UserInfo.IsGiveKitchenUtensil(data.Id))
         {
-            TimedDisplayManager.Instance.ShowTextError();
+            PopupManager.Instance.ShowTextError();
             return;
         }
 
         if (!UserInfo.IsScoreValid(data))
         {
-            TimedDisplayManager.Instance.ShowTextLackScore();
+            PopupManager.Instance.ShowTextLackScore();
             return;
         }
 
         if(!UserInfo.IsMoneyValid(data))
         {
-            TimedDisplayManager.Instance.ShowTextLackMoney();
+            PopupManager.Instance.ShowTextLackMoney();
             return;
         }
 
         UserInfo.AddMoney(-data.BuyPrice);
         UserInfo.GiveKitchenUtensil(data.Id);
-        TimedDisplayManager.Instance.ShowText("새로운 주방 기구를 구매했어요!");
+        PopupManager.Instance.ShowDisplayText("새로운 주방 기구를 구매했어요!");
     }
 
 

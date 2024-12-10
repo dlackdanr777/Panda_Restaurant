@@ -94,7 +94,7 @@ public class UITip : MobileUIView
     {
         if (UserInfo.Tip <= 0)
         {
-            TimedDisplayManager.Instance.ShowText("È¹µæ °¡´ÉÇÑ ÆÁÀÌ ¾ø½À´Ï´Ù.");
+            PopupManager.Instance.ShowDisplayText("È¹µæ °¡´ÉÇÑ ÆÁÀÌ ¾ø½À´Ï´Ù.");
             return;
         }
 
@@ -105,7 +105,7 @@ public class UITip : MobileUIView
     {
         if (UserInfo.Tip <= 0)
         {
-            TimedDisplayManager.Instance.ShowText("È¹µæ °¡´ÉÇÑ ÆÁÀÌ ¾ø½À´Ï´Ù.");
+            PopupManager.Instance.ShowDisplayText("È¹µæ °¡´ÉÇÑ ÆÁÀÌ ¾ø½À´Ï´Ù.");
             return;
         }
 

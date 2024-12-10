@@ -51,7 +51,7 @@ public class UIAddCutomerController : MonoBehaviour
                 _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 3, 0.02f);
                 _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x, 0.1f);
 
-                TimedDisplayManager.Instance.ShowText("¡Ÿ¿Ã ≤À√°Ω¿¥œ¥Ÿ.");
+                PopupManager.Instance.ShowDisplayText("¡Ÿ¿Ã ≤À√°Ω¿¥œ¥Ÿ.");
                 return;
             }
 

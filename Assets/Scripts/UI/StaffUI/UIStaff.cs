@@ -151,25 +151,25 @@ public class UIStaff : MobileUIView
     {
         if (UserInfo.IsGiveStaff(data.Id))
         {
-            TimedDisplayManager.Instance.ShowTextError();
+            PopupManager.Instance.ShowTextError();
             return;
         }
 
         if (!UserInfo.IsScoreValid(data))
         {
-            TimedDisplayManager.Instance.ShowTextLackScore();
+            PopupManager.Instance.ShowTextLackScore();
             return;
         }
 
         if (!UserInfo.IsMoneyValid(data))
         {
-            TimedDisplayManager.Instance.ShowTextLackMoney();
+            PopupManager.Instance.ShowTextLackMoney();
             return;
         }
 
         UserInfo.AddMoney(-data.BuyPrice);
         UserInfo.GiveStaff(data);
-        TimedDisplayManager.Instance.ShowText("새로운 직원을 채용했어요!");
+        PopupManager.Instance.ShowDisplayText("새로운 직원을 채용했어요!");
     }
 
 

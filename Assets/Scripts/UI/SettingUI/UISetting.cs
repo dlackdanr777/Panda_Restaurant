@@ -34,9 +34,9 @@ public class UIsetting : MobileUIView
         _musicButton.Init(() => SoundManager.Instance.SetVolume(0, AudioType.BackgroundAudio), () => SoundManager.Instance.SetVolume(1, AudioType.BackgroundAudio), 0 < SoundManager.Instance.GetVolume(AudioType.BackgroundAudio));
         _soundEffectButton.Init(() => SoundManager.Instance.SetVolume(0, AudioType.EffectAudio), () => SoundManager.Instance.SetVolume(1, AudioType.EffectAudio), 0 < SoundManager.Instance.GetVolume(AudioType.EffectAudio));
         _userId.Init("User10101010");
-        _homePageButton.onClick.AddListener(() => TimedDisplayManager.Instance.ShowText("현재 지원하지 않는 버튼입니다."));
-        _customerServiceButton.onClick.AddListener(() => TimedDisplayManager.Instance.ShowText("현재 지원하지 않는 버튼입니다."));
-        _privacyButton.onClick.AddListener(() => TimedDisplayManager.Instance.ShowText("현재 지원하지 않는 버튼입니다."));
+        _homePageButton.onClick.AddListener(() => PopupManager.Instance.ShowDisplayText("현재 지원하지 않는 버튼입니다."));
+        _customerServiceButton.onClick.AddListener(() => PopupManager.Instance.ShowDisplayText("현재 지원하지 않는 버튼입니다."));
+        _privacyButton.onClick.AddListener(() => PopupManager.Instance.ShowDisplayText("현재 지원하지 않는 버튼입니다."));
         gameObject.SetActive(false);
     }
 

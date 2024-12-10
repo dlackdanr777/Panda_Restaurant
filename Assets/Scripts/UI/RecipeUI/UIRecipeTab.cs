@@ -111,25 +111,25 @@ public class UIRecipeTab : MonoBehaviour
     {
         if (UserInfo.IsGiveRecipe(data.Id))
         {
-            TimedDisplayManager.Instance.ShowTextError();
+            PopupManager.Instance.ShowTextError();
             return;
         }
 
         if (!UserInfo.IsScoreValid(data))
         {
-            TimedDisplayManager.Instance.ShowTextLackScore();
+            PopupManager.Instance.ShowTextLackScore();
             return;
         }
 
         if (!UserInfo.IsMoneyValid(data))
         {
-            TimedDisplayManager.Instance.ShowTextLackMoney();
+            PopupManager.Instance.ShowTextLackMoney();
             return;
         }
 
         UserInfo.AddMoney(-data.BuyPrice);
         UserInfo.GiveRecipe(data);
-        TimedDisplayManager.Instance.ShowText("새로운 레시피를 배웠어요!");
+        PopupManager.Instance.ShowDisplayText("새로운 레시피를 배웠어요!");
     }
 
 
