@@ -18,9 +18,10 @@ MonoBehaviour:
   _id: RACK06
   _description: "\t"
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
+  _buyScore: 160
+  _buyPrice: 22000
   _type: 6
   _setId: SET06
-  _addScore: 2
-  _effectData: {fileID: 11400000, guid: fa252a96cf90f1a419df6b4c345deaa6, type: 2}
+  _addScore: 180
+  _equipEffectType: 1
+  _effectValue: 40

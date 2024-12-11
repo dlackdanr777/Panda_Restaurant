@@ -18,9 +18,10 @@ MonoBehaviour:
   _id: FRAME03
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
+  _buyScore: 60
+  _buyPrice: 9500
   _type: 7
   _setId: SET03
-  _addScore: 2
-  _effectData: {fileID: 11400000, guid: 3d468b61a465e754787e90e7a2a110d6, type: 2}
+  _addScore: 20
+  _equipEffectType: 1
+  _effectValue: 8

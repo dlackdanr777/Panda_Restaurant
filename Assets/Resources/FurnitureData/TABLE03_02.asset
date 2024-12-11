@@ -18,10 +18,13 @@ MonoBehaviour:
   _id: TABLE03_02
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
+  _buyScore: 30
+  _buyPrice: 5000
   _type: 1
   _setId: SET03
-  _addScore: 5
-  _effectData: {fileID: 11400000, guid: 4729c668dae051641a78058c5ff36e19, type: 2}
+  _addScore: 10
+  _equipEffectType: 1
+  _effectValue: 7
+  _scale: 1
   _chairSprite: {fileID: 21300000, guid: 960090fb0d5d97b4b9c7cf11a775a12e, type: 3}
+  _rightChairSprite: {fileID: 0}

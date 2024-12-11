@@ -60,6 +60,13 @@ public class ChallengeManager : MonoBehaviour
     private static Dictionary<string, Type18ChallengeData> _type18ChallengeDataDic = new Dictionary<string, Type18ChallengeData>();
     private static Dictionary<string, Type19ChallengeData> _type19ChallengeDataDic = new Dictionary<string, Type19ChallengeData>();
 
+    private static Dictionary<string, Type21ChallengeData> _type21ChallengeDataDic = new Dictionary<string, Type21ChallengeData>();
+    private static Dictionary<string, Type22ChallengeData> _type22ChallengeDataDic = new Dictionary<string, Type22ChallengeData>();
+    private static Dictionary<string, Type23ChallengeData> _type23ChallengeDataDic = new Dictionary<string, Type23ChallengeData>();
+    private static Dictionary<string, Type24ChallengeData> _type24ChallengeDataDic = new Dictionary<string, Type24ChallengeData>();
+    private static Dictionary<string, Type25ChallengeData> _type25ChallengeDataDic = new Dictionary<string, Type25ChallengeData>();
+    private static Dictionary<string, Type26ChallengeData> _type26ChallengeDataDic = new Dictionary<string, Type26ChallengeData>();
+
     private static Dictionary<string, Type28ChallengeData> _type28ChallengeDataDic = new Dictionary<string, Type28ChallengeData>();
     private static Dictionary<string, Type30ChallengeData> _type30ChallengeDataDic = new Dictionary<string, Type30ChallengeData>();
     private static Dictionary<string, Type31ChallengeData> _type31ChallengeDataDic = new Dictionary<string, Type31ChallengeData>();
@@ -113,6 +120,13 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnGiveFurnitureHandler += Type18ChallengeCheck;
         UserInfo.OnGiveKitchenUtensilHandler += Type19ChallengeCheck;
 
+        UserInfo.OnVisitSpecialCustomerHandler += Type21ChallengeCheck;
+        UserInfo.OnExterminationGatecrasherCustomerHandler += Type22ChallengeCheck;
+        UserInfo.OnExterminationGatecrasherCustomerHandler += Type23ChallengeCheck;
+        UserInfo.OnExterminationGatecrasherCustomerHandler += Type24ChallengeCheck;
+        UserInfo.OnUseGachaMachineHandler += Type25ChallengeCheck;
+        UserInfo.OnUseGachaMachineHandler += Type26ChallengeCheck;
+
         UserInfo.OnAddCleanCountHandler += Type28ChallengeCheck;
 
         OnDailyChallengeUpdateHandler += Type30ChallengeCheck;
@@ -141,6 +155,10 @@ public class ChallengeManager : MonoBehaviour
         Type17ChallengeCheck();
         Type18ChallengeCheck();
         Type19ChallengeCheck();
+
+        Type21ChallengeCheck();
+        Type22ChallengeCheck();
+        Type23ChallengeCheck();
 
         Type28ChallengeCheck();
 
@@ -333,6 +351,48 @@ public class ChallengeManager : MonoBehaviour
                     dic.Add(id, challengeData19);
                     break;
 
+                case "TYPE21":
+                    challengeType = ChallengeType.TYPE21;
+                    Type21ChallengeData challengeData21 = new Type21ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    _type21ChallengeDataDic.Add(id, challengeData21);
+                    dic.Add(id, challengeData21);
+                    break;
+
+                case "TYPE22":
+                    challengeType = ChallengeType.TYPE22;
+                    Type22ChallengeData challengeData22 = new Type22ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    _type22ChallengeDataDic.Add(id, challengeData22);
+                    dic.Add(id, challengeData22);
+                    break;
+
+                case "TYPE23":
+                    challengeType = ChallengeType.TYPE23;
+                    Type23ChallengeData challengeData23 = new Type23ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    _type23ChallengeDataDic.Add(id, challengeData23);
+                    dic.Add(id, challengeData23);
+                    break;
+
+                case "TYPE24":
+                    challengeType = ChallengeType.TYPE24;
+                    Type24ChallengeData challengeData24 = new Type24ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    _type24ChallengeDataDic.Add(id, challengeData24);
+                    dic.Add(id, challengeData24);
+                    break;
+
+                case "TYPE25":
+                    challengeType = ChallengeType.TYPE25;
+                    Type25ChallengeData challengeData25 = new Type25ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    _type25ChallengeDataDic.Add(id, challengeData25);
+                    dic.Add(id, challengeData25);
+                    break;
+
+                case "TYPE26":
+                    challengeType = ChallengeType.TYPE26;
+                    Type26ChallengeData challengeData26 = new Type26ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    _type26ChallengeDataDic.Add(id, challengeData26);
+                    dic.Add(id, challengeData26);
+                    break;
+
                 case "TYPE28":
                     challengeType = ChallengeType.TYPE28;
                     Type28ChallengeData challengeData28 = new Type28ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
@@ -523,6 +583,36 @@ public class ChallengeManager : MonoBehaviour
                 int giveKitchenUntensilCount = UserInfo.GetGiveKitchenUtensilCount();
                 return giveKitchenUntensilCount == 0 ? 0 : Math.Min(1, (float)giveKitchenUntensilCount / data19.Count);
 
+            case ChallengeType.TYPE21:
+                Type21ChallengeData data21 = (Type21ChallengeData)data;
+                int totalVisitSpecialCustomerCount = UserInfo.TotalVisitSpecialCustomerCount;
+                return totalVisitSpecialCustomerCount == 0 ? 0 : Math.Min(1, (float)totalVisitSpecialCustomerCount / data21.Count);
+
+            case ChallengeType.TYPE22:
+                Type22ChallengeData data22 = (Type22ChallengeData)data;
+                int totalExterminationGatecrasherCustomer1Count = UserInfo.TotalExterminationGatecrasherCustomer1Count;
+                return totalExterminationGatecrasherCustomer1Count == 0 ? 0 : Math.Min(1, (float)totalExterminationGatecrasherCustomer1Count / data22.Count);
+
+            case ChallengeType.TYPE23:
+                Type23ChallengeData data23 = (Type23ChallengeData)data;
+                int totalExterminationGatecrasherCustomer2Count = UserInfo.TotalExterminationGatecrasherCustomer2Count;
+                return totalExterminationGatecrasherCustomer2Count == 0 ? 0 : Math.Min(1, (float)totalExterminationGatecrasherCustomer2Count / data23.Count);
+
+            case ChallengeType.TYPE24:
+                Type24ChallengeData data24 = (Type24ChallengeData)data;
+                int totalExterminationGatecrasherCustomerCount = UserInfo.TotalExterminationGatecrasherCustomer1Count + UserInfo.TotalExterminationGatecrasherCustomer2Count;
+                return totalExterminationGatecrasherCustomerCount == 0 ? 0 : Math.Min(1, (float)totalExterminationGatecrasherCustomerCount / data24.Count);
+
+            case ChallengeType.TYPE25:
+                Type25ChallengeData data25 = (Type25ChallengeData)data;
+                int totalUseGachaMachineCount = UserInfo.TotalUseGachaMachineCount;
+                return totalUseGachaMachineCount == 0 ? 0 : Math.Min(1, (float)totalUseGachaMachineCount / data25.Count);
+
+            case ChallengeType.TYPE26:
+                Type26ChallengeData data26 = (Type26ChallengeData)data;
+                int totalGachaMachineTypeCount = UserInfo.GetGiveGachaItemDic().Count;
+                return totalGachaMachineTypeCount == 0 ? 0 : Math.Min(1, (float)totalGachaMachineTypeCount / data26.Count);
+
             case ChallengeType.TYPE28:
                 Type28ChallengeData data28 = (Type28ChallengeData)data;
                 int cleanCount = UserInfo.TotalCleanCount;
@@ -620,6 +710,15 @@ public class ChallengeManager : MonoBehaviour
 
             case "ShortCut09":
                 return DataBind.GetUnityActionBindData("UIPictorialBook");
+
+            case "ShortCut10":
+                return DataBind.GetUnityActionBindData("ShowGachaUI");
+
+            case "ShortCut12":
+                return DataBind.GetUnityActionBindData("ShowAttendanceUI");
+
+            case "ShortCut13":
+                return DataBind.GetUnityActionBindData("ShowSettingUI");
 
             default:
                 return DataBind.GetUnityActionBindData("PopUI");
@@ -1518,6 +1617,293 @@ public class ChallengeManager : MonoBehaviour
 
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE19);
     }
+
+
+
+    private void Type21ChallengeCheck()
+    {
+        int visitSpecialCustomerCount = UserInfo.TotalVisitSpecialCustomerCount;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type21ChallengeData data in _type21ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (visitSpecialCustomerCount < data.Count)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE21);
+    }
+
+
+    private void Type22ChallengeCheck()
+    {
+        int exterminationGatecrasherCustomer1Count = UserInfo.TotalExterminationGatecrasherCustomer1Count;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type22ChallengeData data in _type22ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (exterminationGatecrasherCustomer1Count < data.Count)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE22);
+    }
+
+
+    private void Type23ChallengeCheck()
+    {
+        int exterminationGatecrasherCustomer2Count = UserInfo.TotalExterminationGatecrasherCustomer2Count;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type23ChallengeData data in _type23ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (exterminationGatecrasherCustomer2Count < data.Count)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE23);
+    }
+
+    private void Type24ChallengeCheck()
+    {
+        int exterminationGatecrasherCustomerCount = UserInfo.TotalExterminationGatecrasherCustomer1Count + UserInfo.TotalExterminationGatecrasherCustomer2Count;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type24ChallengeData data in _type24ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (exterminationGatecrasherCustomerCount < data.Count)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE24);
+    }
+
+    private void Type25ChallengeCheck()
+    {
+        int totalUseGachaMachineCount = UserInfo.TotalUseGachaMachineCount;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type25ChallengeData data in _type25ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (totalUseGachaMachineCount < data.Count)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE25);
+    }
+
+    private void Type26ChallengeCheck()
+    {
+        int totalGachaMachineTypeCount = UserInfo.GetGiveGachaItemDic().Count;
+        bool dailyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type26ChallengeData data in _type26ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (totalGachaMachineTypeCount < data.Count)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE26);
+    }
+
 
 
     private void Type28ChallengeCheck()

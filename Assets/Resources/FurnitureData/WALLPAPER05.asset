@@ -18,9 +18,10 @@ MonoBehaviour:
   _id: WALLPAPER05
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
+  _buyScore: 50
+  _buyPrice: 8000
   _type: 10
   _setId: SET05
-  _addScore: 2
-  _effectData: {fileID: 11400000, guid: 4a1d28b0e6f5137459431d31c788b3aa, type: 2}
+  _addScore: 100
+  _equipEffectType: 1
+  _effectValue: 16

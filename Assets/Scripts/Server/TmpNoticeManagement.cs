@@ -18,11 +18,11 @@ public class TmpNoticeManagement : IDisposable
 
 
     /// <summary>뒤끝 임시 공지 확인 함수</summary>
-    public bool TmpNoticeCheck(UnityAction onButtonClicked = null)
+    public bool TmpNoticeCheck(Action onButtonClicked = null)
     {
         if (_maxRepeatCount <= 0)
         {
-            string errorName = "서버 접속 오류";
+            string errorName = "네트워크 에러";
             string errorDescription = "서버에 접속하지 못했습니다. \n재 접속 해주세요.";
             BackendManager.Instance.ShowPopup(errorName, errorDescription, () => Application.Quit());
             return false;

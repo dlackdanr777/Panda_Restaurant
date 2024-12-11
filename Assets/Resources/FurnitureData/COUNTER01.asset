@@ -22,5 +22,6 @@ MonoBehaviour:
   _buyPrice: 0
   _type: 5
   _setId: SET01
-  _addScore: 2
-  _effectData: {fileID: 11400000, guid: 35f7fc893682eb24284708cc16b62782, type: 2}
+  _addScore: 0
+  _equipEffectType: 3
+  _effectValue: 10000

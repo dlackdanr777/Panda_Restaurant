@@ -26,6 +26,7 @@ public static class UserInfo
     public static event Action OnUpgradeRecipeHandler;
     public static event Action OnAddCookCountHandler;
 
+    public static event Action OnUseGachaMachineHandler;
     public static event Action OnGiveGachaItemHandler;
     public static event Action OnUpgradeGachaItemHandler;
 
@@ -41,10 +42,12 @@ public static class UserInfo
     public static event Action OnClearChallengeHandler;
 
     public static event Action OnVisitedCustomerHandler;
+    public static event Action OnVisitSpecialCustomerHandler;
+    public static event Action OnExterminationGatecrasherCustomerHandler;
 
 
     public static bool IsTutorialStart = false;
-    public static bool IsFirstTutorialClear = false;
+    public static bool IsFirstTutorialClear = true;
     public static bool IsMiniGameTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
     public static bool IsGatecrasher2TutorialClear = false;
@@ -107,6 +110,19 @@ public static class UserInfo
 
     private static int _totalAttendanceDays = 0;
     public static int TotalAttendanceDays => _totalAttendanceDays;
+
+    private static int _totalVisitSpecialCustomerCount;
+    public static int TotalVisitSpecialCustomerCount => _totalVisitSpecialCustomerCount;
+
+    private static int _totalExterminationGatecrasherCustomer1Count;
+    public static int TotalExterminationGatecrasherCustomer1Count => _totalExterminationGatecrasherCustomer1Count;
+
+    private static int _totalExterminationGatecrasherCustomer2Count;
+    public static int TotalExterminationGatecrasherCustomer2Count => _totalExterminationGatecrasherCustomer2Count;
+
+    private static int _totalUseGachaMachineCount;
+    public static int TotalUseGachaMachineCount => _totalUseGachaMachineCount;
+
 
 
     private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
@@ -188,6 +204,11 @@ public static class UserInfo
         param.Add("DailyAdvertisingViewCount", _dailyAdvertisingViewCount);
         param.Add("TotalCleanCount", _totalCleanCount);
         param.Add("DailyCleanCount", _dailyCleanCount);
+        param.Add("TotalVisitSpecialCustomerCount", _totalVisitSpecialCustomerCount);
+        param.Add("TotalExterminationGatecrasherCustomer1Count", _totalExterminationGatecrasherCustomer1Count);
+        param.Add("TotalExterminationGatecrasherCustomer2Count", _totalExterminationGatecrasherCustomer2Count);
+        param.Add("TotalUseGachaMachineCount", _totalUseGachaMachineCount);
+
         param.Add("FirstAccessTime", _firstAccessTime);
         param.Add("LastAccessTime", BackendManager.Instance.ServerTime.ToString());
         param.Add("LastAttendanceTime", _lastAttendanceTime);
@@ -355,6 +376,10 @@ public static class UserInfo
         _dailyAdvertisingViewCount = loadData.DailyAdvertisingViewCount;
         _totalCleanCount = loadData.TotalCleanCount;
         _dailyCleanCount = loadData.DailyCleanCount;
+        _totalVisitSpecialCustomerCount = loadData.TotalVisitSpecialCustomerCount;
+        _totalExterminationGatecrasherCustomer1Count = loadData.TotalExterminationGatecrasherCustomer1Count;
+        _totalExterminationGatecrasherCustomer2Count = loadData.TotalExterminationGatecrasherCustomer2Count;
+
         _firstAccessTime = loadData.FirstAccessTime;
         _lastAccessTime = loadData.LastAccessTime;
         _lastAttendanceTime = loadData.LastAttendanceTime;
@@ -395,6 +420,12 @@ public static class UserInfo
 
         _saveCoinAreaDataList = loadData.CoinAreaDataList;
         _saveGarbageAreaDataList = loadData.GarbageAreaDataList;
+
+        if (CheckAttendance())
+        {
+            UpdateLastAccessTime();
+            ResetDailyChallenges();
+        }
 
         OnChangeMoneyHandler?.Invoke();
         OnChangeTipHandler?.Invoke();
@@ -507,6 +538,31 @@ public static class UserInfo
         OnAddCleanCountHandler?.Invoke();
     }
 
+    public static void AddVisitSpecialCustomerCount()
+    {
+        _totalVisitSpecialCustomerCount += 1;
+        OnVisitSpecialCustomerHandler?.Invoke();
+    }
+
+    public static void AddExterminationGatecrasherCustomer1Count()
+    {
+        _totalExterminationGatecrasherCustomer1Count += 1;
+        OnExterminationGatecrasherCustomerHandler?.Invoke();
+    }
+
+    public static void AddExterminationGatecrasherCustomer2Count()
+    {
+        _totalExterminationGatecrasherCustomer2Count += 1;
+        OnExterminationGatecrasherCustomerHandler?.Invoke();
+    }
+
+    public static void AddUserGachaMachineCount(int cnt = 1)
+    {
+        _totalUseGachaMachineCount += cnt;
+        OnUseGachaMachineHandler?.Invoke();
+    }
+
+
     public static void DataBindTip()
     {
         DataBind.SetTextValue("Tip", _tip.ToString());
@@ -531,16 +587,6 @@ public static class UserInfo
     public static void UpdateLastAccessTime()
     {
         BackendManager.Instance.GetServerTimeAsync((serverTime) => _lastAccessTime = serverTime.ToString());
-    }
-
-    public static bool IsPreviousDay()
-    {
-        DateTime now = BackendManager.Instance.ServerTime;
-
-        DateTime savedDate = DateTime.Parse(_lastAccessTime);
-        DateTime currentDate = now.Date;
-
-        return savedDate == currentDate.AddDays(-1);
     }
 
 
@@ -898,6 +944,11 @@ public static class UserInfo
     #endregion
 
     #region ItemData
+
+    public static Dictionary<string, int> GetGiveGachaItemCountDic()
+    {
+        return _giveGachaItemCountDic;
+    }
 
     public static bool IsGiveGachaItem(GachaItemData data)
     {
@@ -1319,12 +1370,7 @@ public static class UserInfo
             return;
         }
 
-        if (_equipFurnitureDatas[(int)data.Type] != null && _equipFurnitureDatas[(int)data.Type].EffectData != null)
-            _equipFurnitureDatas[((int)data.Type)].EffectData.RemoveSlot();
-
         _equipFurnitureDatas[(int)data.Type] = data;
-        if (data.EffectData != null) data.EffectData.AddSlot();
-
         OnChangeFurnitureHandler?.Invoke(data.Type);
     }
 
@@ -1337,21 +1383,12 @@ public static class UserInfo
         }
 
         FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
-
-        if (_equipFurnitureDatas[(int)data.Type] != null && _equipFurnitureDatas[(int)data.Type].EffectData != null)
-            _equipFurnitureDatas[((int)data.Type)].EffectData.RemoveSlot();
-
         _equipFurnitureDatas[(int)data.Type] = data;
-        if(_equipFurnitureDatas[(int)data.Type].EffectData != null) data.EffectData.AddSlot();
-
         OnChangeFurnitureHandler?.Invoke(data.Type);
     }
 
     public static void DisarmEquipFurniture(FurnitureType type)
     {
-        if (_equipFurnitureDatas[(int)type] != null && _equipFurnitureDatas[(int)type].EffectData != null)
-            _equipFurnitureDatas[(int)type].EffectData.RemoveSlot();
-
         _equipFurnitureDatas[(int)type] = null;
         OnChangeFurnitureHandler?.Invoke(type);
     }
@@ -1453,13 +1490,7 @@ public static class UserInfo
             return;
         }
 
-        if (_equipKitchenUtensilDatas[(int)data.Type] != null && _equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
-            _equipKitchenUtensilDatas[((int)data.Type)].EffectData.RemoveSlot();
-
         _equipKitchenUtensilDatas[(int)data.Type] = data;
-        if (_equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
-            data.EffectData.AddSlot();
-
         OnChangeKitchenUtensilHandler?.Invoke(data.Type);
     }
 
@@ -1472,22 +1503,12 @@ public static class UserInfo
         }
 
         KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
-
-        if (_equipKitchenUtensilDatas[(int)data.Type] != null && _equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
-            _equipKitchenUtensilDatas[((int)data.Type)].EffectData.RemoveSlot();
-
         _equipKitchenUtensilDatas[(int)data.Type] = data;
-        if (_equipKitchenUtensilDatas[(int)data.Type].EffectData != null)
-            data.EffectData.AddSlot();
-
         OnChangeKitchenUtensilHandler?.Invoke(data.Type);
     }
 
     public static void DisarmEquipKitchenUtensil(KitchenUtensilType type)
     {
-        if (_equipKitchenUtensilDatas[(int)type] != null && _equipKitchenUtensilDatas[(int)type].EffectData != null)
-            _equipKitchenUtensilDatas[((int)type)].EffectData.RemoveSlot();
-
         _equipKitchenUtensilDatas[(int)type] = null;
         OnChangeKitchenUtensilHandler?.Invoke(type);
     }

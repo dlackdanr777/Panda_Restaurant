@@ -284,6 +284,18 @@ public static class Utility
         return description;
     }
 
+    public static string GetEquipEffectDescription(EquipEffectType type, int value)
+    {
+        return type switch
+        {
+            EquipEffectType.AddScore => $"평점 <color={ColorToHex(GetColor(ColorType.Positive))}>{value}</color> 점 증가",
+            EquipEffectType.AddTipPerMinute => $"분당 획득 팁 <color={ColorToHex(GetColor(ColorType.Positive))}>{value}</color> 증가",
+            EquipEffectType.AddCookSpeed => "요리 효율 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + value + "%</color> 증가",
+            EquipEffectType.AddMaxTip => "팁 저장량 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + value + "</color> 증가",
+            _ => string.Empty
+        };
+    }
+
 
     /// <summary>Image의 Sprite 피벗값에 맞춰 Image 컴포넌트 피벗값을 이동하는 함수</summary>
     public static void ChangeImagePivot(Image image)

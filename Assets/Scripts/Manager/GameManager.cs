@@ -41,7 +41,7 @@ public class GameManager : MonoBehaviour
     public int AddPromotionCustomer => _addPromotionCustomer;
 
     private int _maxWaitCustomerCount = 10;
-    public int MaxWaitCustomerCount => _maxWaitCustomerCount + _addUpgradeGachaItemWaitCustomerMaxCount;
+    public int MaxWaitCustomerCount => _maxWaitCustomerCount + _addUpgradeGachaItemWaitCustomerMaxCount + _addEquipStaffMaxWaitCustomerCount;
     public float AddCustomerSpeedMul => 1 + 0.01f * (_addUpgradeGachaItemCustomerSpeedPercent);
     public int AddSpecialCustomerMoney => _addUpgradeGachaItemSpecialCustomerMoney;
     public float AddSpecialCustomerSpawnMul => 1 +  0.01f * (_addUpgradeGachaItemSpecialCustomerSpawnPercent);
@@ -50,7 +50,7 @@ public class GameManager : MonoBehaviour
     
 
     [SerializeField] private float _cookingSpeedMul = 1;
-    public float CookingSpeedMul => 1 + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) + (_addEquipSetDataCookSpeedMul * 0.01f);
+    public float CookingSpeedMul => 1 + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) + (_addEquipSetDataCookSpeedMul * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
     public float SubCookingTime => _subUpgradeGachaItemCookingTime;
     public int AddFoodPrice => _addUpgradeGachaItemFoodPrice;
     public float AddFoodDoublePricePercent => Mathf.Clamp(_addUpgradeGachaItemFoodDoublePricePercent, 0f, 100f);
@@ -61,7 +61,7 @@ public class GameManager : MonoBehaviour
     public float TipMul => Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f);
 
     public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addEquipSetDataTipPerMinute + _addGiveGachaItemTipPerMinute + _addUpgradeGachaItemTipPerMinute;
-    public int MaxTipVolume => Mathf.FloorToInt(_addEquipFurnitureMaxTipVolume + (_addEquipFurnitureMaxTipVolume * _addUpgradeGachaItemMaxTipVolumePercent * 0.01f));
+    public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume + Mathf.FloorToInt((_addEquipKitchenUtensilTipVolume + _addEquipFurnitureMaxTipVolume) * _addUpgradeGachaItemMaxTipVolumePercent * 0.01f);
 
 
 
@@ -86,14 +86,17 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private int _addEquipStaffScore;
     [SerializeField] private float _addEquipStaffTipMul;
+    [SerializeField] private int _addEquipStaffMaxWaitCustomerCount;
 
     [SerializeField] private int _addEquipFurnitureScore;
-    [SerializeField] private int _addEquipFurnitureMaxTipVolume;
+    [SerializeField] private int _addEquipFurnitureCookSpeedMul;
     [SerializeField] private int _addEquipFurnitureTipPerMinute;
+    [SerializeField] private int _addEquipFurnitureMaxTipVolume;
 
     [SerializeField] private int _addEquipKitchenUtensilScore;
     [SerializeField] private int _addEquipKitchenUtensilCookSpeedMul;
     [SerializeField] private int _addEquipKitchenUtensilTipPerMinute;
+    [SerializeField] private int _addEquipKitchenUtensilTipVolume;
 
     [SerializeField] private int _addEquipSetDataTipPerMinute;
     [SerializeField] private float _addEquipSetDataCookSpeedMul;
@@ -256,10 +259,12 @@ public class GameManager : MonoBehaviour
     {
         _addEquipStaffScore = 0;
         _addEquipStaffTipMul = 0;
+        _addEquipStaffMaxWaitCustomerCount = 0;
         int addScore = 0;
         float addTipMul = 0;
+        int maxWaitCustomerCount = 0;
 
-        for(int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
         {
             StaffData data = UserInfo.GetEquipStaff((StaffType)i);
 
@@ -267,13 +272,21 @@ public class GameManager : MonoBehaviour
                 continue;
 
             int level = UserInfo.GetStaffLevel(data);
+            if ((StaffType)i == StaffType.Manager)
+            {
+                ManagerData managerData = (ManagerData)data;
+                maxWaitCustomerCount += Mathf.FloorToInt(managerData.GetActionValue(level));
+            }
+
             addScore += data.GetAddScore(level);
             addTipMul += data.GetAddTipMul(level);
         }
 
         _addEquipStaffScore = addScore;
         _addEquipStaffTipMul = addTipMul;
+        _addEquipStaffMaxWaitCustomerCount = maxWaitCustomerCount;
         OnChangeScoreHandler?.Invoke();
+        OnChangeMaxWaitCustomerCountHandler?.Invoke();
     }
 
 
@@ -285,6 +298,7 @@ public class GameManager : MonoBehaviour
         int addScore = 0;
         int maxTipVolume = 0;
         int tipPerMinute = 0;
+        int cookSpeedMul = 0;
 
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
         {
@@ -295,19 +309,20 @@ public class GameManager : MonoBehaviour
 
             addScore += data.AddScore;
 
-            if (data.EffectData == null)
-                continue;
+            if (data.EquipEffectType == EquipEffectType.AddMaxTip)
+                maxTipVolume += data.EffectValue;
 
-            if (data.EffectData is MaxTipVolumeEquipEffectData)
-                maxTipVolume += data.EffectData.EffectValue;
+            else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
+                tipPerMinute += data.EffectValue;
 
-            else if (data.EffectData is TipPerMinuteEquipEffectData)
-                tipPerMinute += data.EffectData.EffectValue;
+            else if(data.EquipEffectType == EquipEffectType.AddCookSpeed)
+                cookSpeedMul += data.EffectValue;
         }
 
         _addEquipFurnitureScore = addScore;
         _addEquipFurnitureMaxTipVolume = maxTipVolume;
         _addEquipFurnitureTipPerMinute = tipPerMinute;
+        _addEquipFurnitureCookSpeedMul = cookSpeedMul;
         OnChangeScoreHandler?.Invoke();
         OnChangeTipPerMinuteHandler?.Invoke();
     }
@@ -319,6 +334,7 @@ public class GameManager : MonoBehaviour
         _addEquipKitchenUtensilCookSpeedMul = 0;
         _addEquipKitchenUtensilTipPerMinute = 0;
         int addScore = 0;
+        int maxTipVolume = 0;
         int cookSpeedMul = 0;
         int tipPerMinute = 0;
 
@@ -331,17 +347,18 @@ public class GameManager : MonoBehaviour
 
             addScore += data.AddScore;
 
-            if (data.EffectData == null)
-                continue;
+            if (data.EquipEffectType == EquipEffectType.AddMaxTip)
+                maxTipVolume += data.EffectValue;
 
-            if (data.EffectData is CookingSpeedUpEquipEffectData)
-                cookSpeedMul += data.EffectData.EffectValue;
+            else if (data.EquipEffectType == EquipEffectType.AddCookSpeed)
+                cookSpeedMul += data.EffectValue;
 
-            else if (data.EffectData is TipPerMinuteEquipEffectData)
-                tipPerMinute += data.EffectData.EffectValue;
+            else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
+                tipPerMinute += data.EffectValue;
         }
 
         _addEquipKitchenUtensilScore = addScore;
+        _addEquipKitchenUtensilTipVolume = tipPerMinute;
         _addEquipKitchenUtensilCookSpeedMul = cookSpeedMul;
         _addEquipKitchenUtensilTipPerMinute = tipPerMinute;
         OnChangeScoreHandler?.Invoke();

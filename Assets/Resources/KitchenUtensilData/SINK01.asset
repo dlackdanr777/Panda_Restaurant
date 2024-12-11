@@ -18,9 +18,10 @@ MonoBehaviour:
   _id: SINK01
   _description: 
   _moneyType: 0
-  _buyScore: 100
-  _buyPrice: 7000
+  _buyScore: 45
+  _buyPrice: 6000
   _type: 8
   _setId: KITCHEN01
   _addScore: 10
-  _effectData: {fileID: 11400000, guid: 33d0682c86a81e24f810a7004c4e1410, type: 2}
+  _equipEffectType: 1
+  _effectValue: 40

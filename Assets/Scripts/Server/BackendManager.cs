@@ -31,7 +31,7 @@ namespace Muks.BackEnd
             {
                 if (_instance == null)
                 {
-                    GameObject obj = new GameObject("ChallengeManager");
+                    GameObject obj = new GameObject("BackendManager");
                     _instance = obj.AddComponent<BackendManager>();
                     DontDestroyOnLoad(obj);
                 }
@@ -160,6 +160,7 @@ namespace Muks.BackEnd
                     }
                     else
                     {
+                        ShowPopup("로그인 에러", "로그인에 실패했습니다. \n오류 코드: " + bro.GetErrorCode(), Application.Quit);
                         Debug.Log("게스트 로그인 실패: " + bro.GetMessage());
                     }
 
@@ -193,6 +194,7 @@ namespace Muks.BackEnd
                 }
                 else
                 {
+                    ShowPopup("로그인 에러", "로그인에 실패했습니다. \n오류 코드: " + bro.GetErrorCode(), Application.Quit);
                     Debug.Log("게스트 로그인 실패: " + bro.GetMessage());
                 }
             });
@@ -202,6 +204,9 @@ namespace Muks.BackEnd
         {
             if (!Backend.IsLogin && !_isLogin)
             {
+#if !UNITY_EDITOR
+                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
+#endif
                 Debug.LogError("로그인이 되어있지 않습니다.");
                 return;
             }
@@ -228,7 +233,7 @@ namespace Muks.BackEnd
 
 
         /// <summary> 내 데이터 ID를 받아 서버 연결 확인 후 받은 함수를 처리해주는 함수 </summary>
-        public void GetMyData(string selectedProbabilityFileId, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
+        public void GetMyData(string selectedProbabilityFileId, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
             if (!Backend.IsLogin && !_isLogin)
             {
@@ -245,8 +250,9 @@ namespace Muks.BackEnd
                 onCompleted?.Invoke(bro);
                 _isLoaded = true;
             },
-            (state) =>
+            (BackendReturnObject state) =>
             {
+                ShowPopup("네트워크 에러", "정보를 불러오는데 실패했습니다. \n다시 시도 해주세요. \n오류 코드: " + state.GetErrorCode(), () => GetMyData(selectedProbabilityFileId, maxRepeatCount, onCompleted, onFailed));
                 Debug.LogError("내 정보 불러오기 에러 발생:" + selectedProbabilityFileId + "  State: " + state);
                 onFailed?.Invoke(state);
                 _isLoaded = false;
@@ -255,15 +261,18 @@ namespace Muks.BackEnd
 
 
         /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝에서 ChartData를 받아오는 함수 </summary>
-        public async Task GetChartData(string selectedProbabilityFileId, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
+        public void GetChartData(string selectedProbabilityFileId, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
             if (!Backend.IsLogin && !_isLogin)
             {
+#if !UNITY_EDITOR
+                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
+#endif
                 Debug.LogError("로그인이 되어있지 않습니다.");
                 return;
             }
 
-            await ExecuteWithRetryAsync(maxRepeatCount, () => Backend.Chart.GetOneChartAndSave(selectedProbabilityFileId), (bro) =>
+            ExecuteWithRetry(maxRepeatCount, () => Backend.Chart.GetOneChartAndSave(selectedProbabilityFileId), (bro) =>
             {
                 Debug.LogError("차트 불러오기 성공:" + selectedProbabilityFileId);
                 onCompleted?.Invoke(bro);
@@ -271,15 +280,19 @@ namespace Muks.BackEnd
             (state) =>
             {
                 Debug.LogError("차트 불러오기 에러 발생:" + selectedProbabilityFileId);
+                ShowPopup("네트워크 에러", "정보를 불러오는데 실패했습니다. \n다시 시도 해주세요. \n오류 코드: " + state.GetErrorCode(), () => GetChartData(selectedProbabilityFileId, maxRepeatCount, onCompleted, onFailed));
                 onFailed?.Invoke(state);
             });
         }
 
 
-        public void SaveGameData(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
+        public void SaveGameData(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
             if (!Backend.IsLogin && !_isLogin)
             {
+#if !UNITY_EDITOR
+                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
+#endif
                 Debug.LogError("로그인이 되어있지 않습니다.");
                 return;
             }
@@ -308,19 +321,23 @@ namespace Muks.BackEnd
                 }
 
             },
-            (state) =>
+            (BackendReturnObject state) =>
             {
-                 Debug.LogError("게임 정보 저장 에러 발생:" + selectedProbabilityFileId + "  State: " + state);
+                ShowPopup("네트워크 에러", "유저 정보 저장에 실패했습니다. \n다시 시도해 주세요. \n오류 코드: " + state.GetErrorCode(), () => SaveGameData(selectedProbabilityFileId, maxRepeatCount, param, onCompleted, onFailed));
+                Debug.LogError("게임 정보 저장 에러 발생:" + selectedProbabilityFileId + "  State: " + state);
                  onFailed?.Invoke(state);
                  return;
              });
         }
 
 
-        public async void SaveGameDataAsync(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
+        public async void SaveGameDataAsync(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
             if (!Backend.IsLogin && !_isLogin)
             {
+#if !UNITY_EDITOR
+                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
+#endif
                 Debug.LogError("로그인이 되어있지 않습니다.");
                 return;
             }
@@ -359,10 +376,13 @@ namespace Muks.BackEnd
 
 
         /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝 GameData란에 정보를 동기적으로 추가하는 함수 </summary>
-        public void InsertGameData(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
+        public void InsertGameData(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
             if (!Backend.IsLogin && !_isLogin)
             {
+#if !UNITY_EDITOR
+                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
+#endif
                 Debug.LogError("로그인이 되어있지 않습니다.");
                 return;
             }
@@ -381,6 +401,7 @@ namespace Muks.BackEnd
             },
             (state) =>
             {
+                ShowPopup("네트워크 에러", "유저 정보 저장에 실패했습니다. \n다시 시도해 주세요. \n오류 코드: " + state.GetErrorCode(), () => InsertGameData(selectedProbabilityFileId, maxRepeatCount, param, onCompleted, onFailed));
                 Debug.LogError("게임 정보 삽입 에러 발생:" + selectedProbabilityFileId);
                 onFailed?.Invoke(state);
             });
@@ -388,10 +409,13 @@ namespace Muks.BackEnd
 
 
         /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝 GameData란에 정보를 비동기적으로 추가하는 함수 </summary>
-        public void InsertGameDataAsync(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
+        public void InsertGameDataAsync(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
             if (!Backend.IsLogin && !_isLogin)
             {
+#if !UNITY_EDITOR
+                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
+#endif
                 Debug.LogError("로그인이 되어있지 않습니다.");
                 return;
             }
@@ -407,11 +431,11 @@ namespace Muks.BackEnd
                 switch (HandleError(bro))
                 {
                     case BackendState.Failure:
-                        onFailed?.Invoke(BackendState.Failure);
+                        onFailed?.Invoke(bro);
                         break;
 
                     case BackendState.Maintainance:
-                        onFailed?.Invoke(BackendState.Maintainance);
+                        onFailed?.Invoke(bro);
                         break;
 
                     case BackendState.Retry:
@@ -428,10 +452,13 @@ namespace Muks.BackEnd
 
 
         /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝 GameData란에 정보를 동기적으로 추가하는 함수 </summary>
-        public void UpdateGameData(string selectedProbabilityFileId, string inDate, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
+        public void UpdateGameData(string selectedProbabilityFileId, string inDate, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
             if (!Backend.IsLogin && !_isLogin)
             {
+#if !UNITY_EDITOR
+                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
+#endif
                 Debug.LogError("로그인이 되어있지 않습니다.");
                 return;
             }
@@ -449,6 +476,7 @@ namespace Muks.BackEnd
             },
             (state) =>
             {
+                ShowPopup("네트워크 에러", "유저 정보 저장에 실패했습니다. \n다시 시도해 주세요. \n오류 코드: " + state.GetErrorCode(), () => UpdateGameData(selectedProbabilityFileId, inDate, maxRepeatCount, param, onCompleted, onFailed));
                 Debug.LogError("게임 정보 갱신 에러 발생:" + selectedProbabilityFileId);
                 onFailed?.Invoke(state);
             });
@@ -456,10 +484,13 @@ namespace Muks.BackEnd
 
 
         /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝 GameData란에 정보를 비동기적으로 추가하는 함수 </summary>
-        public void UpdateGameDataAsync(string selectedProbabilityFileId, string inDate, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
+        public void UpdateGameDataAsync(string selectedProbabilityFileId, string inDate, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
             if (!Backend.IsLogin && !_isLogin)
             {
+#if !UNITY_EDITOR
+                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
+#endif
                 Debug.LogError("로그인이 되어있지 않습니다.");
                 return;
             }
@@ -475,11 +506,12 @@ namespace Muks.BackEnd
                 switch (HandleError(bro))
                 {
                     case BackendState.Failure:
-                        onFailed?.Invoke(BackendState.Failure);
+                        ShowPopup("네트워크 에러", "유저 정보 저장에 실패했습니다. \n다시 시도해 주세요. \n오류 코드: " + bro.GetErrorCode(), () => UpdateGameDataAsync(selectedProbabilityFileId, inDate, maxRepeatCount, param, onCompleted, onFailed));
+                        onFailed?.Invoke(bro);
                         break;
 
                     case BackendState.Maintainance:
-                        onFailed?.Invoke(BackendState.Failure);
+                        onFailed?.Invoke(bro);
                         break;
 
                     case BackendState.Retry:
@@ -620,23 +652,13 @@ namespace Muks.BackEnd
                 }
                 else if (bro.IsMaintenanceError()) // 서버 상태가 '점검'일 시
                 {
-                    //점검 팝업창 + 로그인 화면으로 보내기
-                    Debug.Log("게임 점검중");
-
-                    string errorName = "서버 점검중";
-                    string errorDescription = "서버 점검 중입니다. \n점검이 완료된 후 접속해 주세요.";
-                    //_popup.Show(errorName, errorDescription, ExitApp);
-
+                    ShowPopup("서버 점검중", "현재 서버 점검중 입니다. \n점검이 끝난 후 접속해 주세요. \n오류 코드: " + bro.GetErrorCode(), Application.Quit);
                     return BackendState.Maintainance;
                 }
                 else if (bro.IsTooManyRequestError()) // 단기간에 많은 요청을 보낼 경우 발생하는 403 Forbbiden 발생 시
                 {
                     //단기간에 많은 요청을 보내면 발생합니다. 5분동안 뒤끝의 함수 요청을 중지해야합니다.  
                     DebugLog.LogError("단기간에 많은 요청을 보냈습니다. 5분간 사용 불가");
-                    string errorName = "서버 요청 오류";
-                    string errorDescription = "단기간 많은 요청을 보냈습니다. \n5분뒤 다시 접속을 시도하세요.";
-                    //_popup.Show(errorName, errorDescription, ExitApp);
-
                     return BackendState.Failure;
                 }
                 else if (bro.IsBadAccessTokenError())
@@ -772,8 +794,9 @@ namespace Muks.BackEnd
 
 
         /// <summary>서버 오류 팝업을 띄워주는 함수</summary>
-        public void ShowPopup(string title, string description, UnityAction onButtonClicked = null)
+        public void ShowPopup(string title, string description, Action onButtonClicked = null)
         {
+            PopupManager.Instance.ShowPopup(title, description, onButtonClicked);
             //_popup.Show(title, description, onButtonClicked);
         }
 

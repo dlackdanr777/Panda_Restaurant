@@ -87,6 +87,7 @@ public class CustomerController : MonoBehaviour
                     SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                     specialCustomer.SetData(getData);
                     specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
+                    UserInfo.AddVisitSpecialCustomerCount();
                     _uiCustomerTutorial.ShowTutorial(getData);
                 }
                 else if(getData is GatecrasherCustomerData)

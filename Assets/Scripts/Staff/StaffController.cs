@@ -39,7 +39,6 @@ public class StaffController : MonoBehaviour
 
             _staffs[i].StaffAction();
             _staffs[i].UsingStaffSkill(_tableManager, _kitchenSystem, _customerController);
-            _staffs[i].UpdateStaffSkill(_tableManager, _kitchenSystem, _customerController);
         }
     }
 }

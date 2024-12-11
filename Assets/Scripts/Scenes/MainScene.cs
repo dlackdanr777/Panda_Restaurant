@@ -1,13 +1,15 @@
-using BackEnd;
-using Muks.BackEnd;
-using NUnit.Framework;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Muks.MobileUI;
+using Muks.UI;
+using System.Collections;
+using BackEnd;
+using Muks.BackEnd;
 
 public class MainScene : MonoBehaviour
 {
     [Header("Components")]
+    [SerializeField] private UINavigation _uiMainNav;
     [SerializeField] private AudioClip _mainSceneMusic;
 
 
@@ -27,7 +29,12 @@ public class MainScene : MonoBehaviour
     {
         SoundManager.Instance.PlayBackgroundAudio(_mainSceneMusic, 0.5f);
         UpdateArea();
-        UserInfo.AddDia(100);
+        StartCoroutine(CheckAttendanceRoutine());
+
+#if UNITY_EDITOR
+        UserInfo.AddDia(1000);
+        UserInfo.AddMoney(100000);
+#endif
     }
 
     // Update is called once per frame
@@ -40,9 +47,8 @@ public class MainScene : MonoBehaviour
             _updateTimer = 0;
             UserInfo.AddTip(GameManager.Instance.TipPerMinute);
 
-/*            if (UserInfo.IsPreviousDay())
+            if (UserInfo.CheckAttendance())
             {
-                DebugLog.Log("다음날이 됨");
                 UserInfo.UpdateLastAccessTime();
                 UserInfo.ResetDailyChallenges();
 
@@ -51,7 +57,7 @@ public class MainScene : MonoBehaviour
 
                 Param param = UserInfo.GetSaveGameData();
                 BackendManager.Instance.SaveGameData("GameData", 3, param);
-            }*/
+            }
 
         }
     }
@@ -85,5 +91,28 @@ public class MainScene : MonoBehaviour
                 _dropGarbageAreas[i].LoadData(garbageAreaData.Count);
             }
         }
+    }
+
+
+    private IEnumerator CheckAttendanceRoutine()
+    {
+        yield return YieldCache.WaitForSeconds(0.1f);
+
+        if (!UserInfo.CheckAttendance())
+        {
+            DebugLog.Log("이미 출석함");
+            yield break;
+        }
+
+
+        while(UserInfo.IsTutorialStart)
+            yield return YieldCache.WaitForSeconds(0.02f);
+
+        yield return YieldCache.WaitForSeconds(0.5f);
+        while(!_uiMainNav.ViewsVisibleStateCheck())
+            yield return YieldCache.WaitForSeconds(0.02f);
+
+        _uiMainNav.Push("UIAttendance");
+
     }
 }

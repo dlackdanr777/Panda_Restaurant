@@ -32,12 +32,19 @@ public class UITimeDisplay : MonoBehaviour
     public void Show(string description)
     {
         gameObject.SetActive(true);
-
         if (_showCoroutine != null)
             StopCoroutine(_showCoroutine);
 
         _showCoroutine = StartCoroutine(ShowRoutione(description));
     }
+
+    public void Stop()
+    {
+        gameObject.SetActive(false);
+        if (_showCoroutine != null)
+            StopCoroutine(_showCoroutine);
+    }
+
 
     private IEnumerator ShowRoutione(string description)
     {

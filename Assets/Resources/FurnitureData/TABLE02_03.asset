@@ -18,10 +18,13 @@ MonoBehaviour:
   _id: TABLE02_03
   _description: "\uBD84\uB2F9 \uC218\uC785 \uC99D\uAC00(4)"
   _moneyType: 0
-  _buyScore: 120
-  _buyPrice: 14000
+  _buyScore: 30
+  _buyPrice: 3500
   _type: 2
   _setId: SET02
   _addScore: 5
-  _effectData: {fileID: 11400000, guid: 4729c668dae051641a78058c5ff36e19, type: 2}
+  _equipEffectType: 1
+  _effectValue: 4
+  _scale: 1
   _chairSprite: {fileID: 21300000, guid: 94c3b93f6f4d5a54a9e3fa2c6a683293, type: 3}
+  _rightChairSprite: {fileID: 0}

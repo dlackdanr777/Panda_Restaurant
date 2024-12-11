@@ -28,14 +28,13 @@ public class Staff : MonoBehaviour
     private EStaffState _state;
 
     private bool _usingSkill;
-    private bool _skillEnabled;
+    private float _skillTimer;
+    private float _skillCoolTime;
 
     private int _level = 1;
     public int Level => _level;
     private float _scaleX;
     private float _actionTimer;
-    private float _skillTimer;
-    private float _skillCoolTime;
     private float _secondValue;
     public float SecondValue => _secondValue;
     private float _speed;
@@ -80,7 +79,8 @@ public class Staff : MonoBehaviour
         _cleanParticle.gameObject.SetActive(false);
         _speed = 1;
         _usingSkill = false;
-        _skillEnabled = false;
+        _skillTimer = 0;
+
         _level = 1;
 
         _spriteRenderer.sprite = staffData.Sprite;
@@ -101,7 +101,6 @@ public class Staff : MonoBehaviour
 
         OnChangeSkillValueEvent();
         ResetAction();
-        ResetSkill();
     }
 
     public void SetAlpha(float alpha)
@@ -119,12 +118,6 @@ public class Staff : MonoBehaviour
     {
         _actionTimer = _staffData.GetActionValue(_level);
         _state = EStaffState.None;
-    }
-
-    public void ResetSkill()
-    {
-        _skillTimer = 0;
-        _skillEnabled = false;
     }
 
     public void PlayCleanSound()
@@ -178,6 +171,7 @@ public class Staff : MonoBehaviour
         _staffAction.PerformAction(this);
     }
 
+
     public void UsingStaffSkill(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         if (_staffData == null)
@@ -186,32 +180,21 @@ public class Staff : MonoBehaviour
         if (_staffData.Skill == null)
             return;
 
-        if (!_skillEnabled)
-            return;
-
         if (_usingSkill)
         {
             Debug.Log("스킬이 이미 사용중 입니다.");
             return;
         }
 
-        ResetSkill();
-        _useSkillRoutine = StartCoroutine(UseSkillCoroutine(tableManager, kitchenSystem, customerController));
-
-    }
-
-    public void UpdateStaffSkill(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
-    {
-        if (_staffData == null)
-            return;
-
-        if (_staffData.Skill == null)
-            return;
-
-        if (!_usingSkill)
-            return;
-
-        _staffData.Skill.ActivateUpdate(this, tableManager, kitchenSystem, customerController);
+        if (_skillCoolTime <= _skillTimer)
+        {
+            _skillTimer = 0;
+            _useSkillRoutine = StartCoroutine(UseSkillCoroutine(tableManager, kitchenSystem, customerController));
+        }
+        else
+        {
+            _skillTimer += Time.deltaTime;
+        }
     }
 
 
@@ -224,7 +207,6 @@ public class Staff : MonoBehaviour
     private void Update()
     {
         UpdateAction();
-        UpdateSkill();
     }
 
     private void UpdateAction()
@@ -245,25 +227,6 @@ public class Staff : MonoBehaviour
         }
     }
 
-    private void UpdateSkill()
-    {
-        if (_staffData == null)
-            return;
-
-        if (_staffData.Skill == null)
-            return;
-
-
-        if (_skillCoolTime <= _skillTimer)
-        {
-            _skillEnabled = true;
-        }
-        else
-        {
-            _skillTimer += Time.deltaTime;
-        }
-    }
-
     private IEnumerator UseSkillCoroutine(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         _usingSkill = true;
@@ -279,8 +242,13 @@ public class Staff : MonoBehaviour
             StaffType.Guard => GameManager.Instance.AddGuardSkillTime,
             _ => 0
         };
-
-        yield return YieldCache.WaitForSeconds(duration);
+        float timer = 0;
+        while(timer < duration)
+        {
+            _staffData.Skill.ActivateUpdate(this, tableManager, kitchenSystem, customerController);
+            timer += 0.02f;
+            yield return YieldCache.WaitForSeconds(0.02f);
+        }
 
         _staffData.Skill.Deactivate(this, tableManager, kitchenSystem, customerController);
         _usingSkill = false;

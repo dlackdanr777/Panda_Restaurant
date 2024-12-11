@@ -19,8 +19,9 @@ MonoBehaviour:
   _description: 
   _moneyType: 0
   _buyScore: 0
-  _buyPrice: 0
+  _buyPrice: 3500
   _type: 8
   _setId: SET01
-  _addScore: 2
-  _effectData: {fileID: 11400000, guid: 55297c25562f4424ba7a079237ee13cb, type: 2}
+  _addScore: 5
+  _equipEffectType: 1
+  _effectValue: 2

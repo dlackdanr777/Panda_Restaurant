@@ -191,7 +191,7 @@ public class UIKitchen : MobileUIView
 
     private void UpdateUI()
     {
-        if (!gameObject.activeSelf)
+        if (!gameObject.activeInHierarchy)
             return;
 
         if (_currentTypeDataList == null || _currentTypeDataList.Count == 0)

@@ -18,9 +18,10 @@ MonoBehaviour:
   _id: COOKER01_02
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 2200
+  _buyScore: 10
+  _buyPrice: 2000
   _type: 1
   _setId: KITCHEN01
   _addScore: 3
-  _effectData: {fileID: 11400000, guid: 9f3d86b74afc45442af76f7e2271d905, type: 2}
+  _equipEffectType: 2
+  _effectValue: 0

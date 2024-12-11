@@ -258,6 +258,13 @@ public class GatecrasherCustomer : Customer
             _spriteGroup.SetAlpha(1);
             _spriteGroup.TweenSetAlpha(0, 0.7f);
             _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnGatecrasherCustomer(this));
+
+            if (_customerData is GatecrasherCustomer1Data)
+                UserInfo.AddExterminationGatecrasherCustomer1Count();
+
+            else if (_customerData is GatecrasherCustomer2Data)
+                UserInfo.AddExterminationGatecrasherCustomer2Count();
+
             _onCompleted?.Invoke();
             return;
         }

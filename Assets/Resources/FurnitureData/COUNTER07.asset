@@ -18,9 +18,10 @@ MonoBehaviour:
   _id: COUNTER07
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
+  _buyScore: 100
+  _buyPrice: 20000
   _type: 5
   _setId: SET07
-  _addScore: 2
-  _effectData: {fileID: 11400000, guid: 35f7fc893682eb24284708cc16b62782, type: 2}
+  _addScore: 120
+  _equipEffectType: 3
+  _effectValue: 130000

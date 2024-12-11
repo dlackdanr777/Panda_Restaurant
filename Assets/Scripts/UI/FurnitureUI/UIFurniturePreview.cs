@@ -77,7 +77,7 @@ public class UIFurniturePreview : MonoBehaviour
         _setGroup.SetText1(setData.Name);
         _setGroup.SetText2(setData != null ? Utility.GetSetEffectDescription(setData) : string.Empty);
 
-        string effectText = Utility.GetEquipEffectDescription(data.EffectData);
+        string effectText = Utility.GetEquipEffectDescription(data.EquipEffectType, data.EffectValue);
         _tipPerMinuteGroup.SetText(effectText);
 
         FurnitureData equipData = UserInfo.GetEquipFurniture(data.Type);
@@ -106,12 +106,12 @@ public class UIFurniturePreview : MonoBehaviour
                 _scoreSignGroup.Image2SetActive(false);
             }
 
-            if (equipData.EffectData.EffectValue < data.EffectData.EffectValue)
+            if (equipData.EffectValue < data.EffectValue)
             {
                 _effectSignGroup.Image1SetActive(false);
                 _effectSignGroup.Image2SetActive(true);
             }
-            else if (data.EffectData.EffectValue < equipData.EffectData.EffectValue)
+            else if (data.EffectValue < equipData.EffectValue)
             {
                 _effectSignGroup.Image1SetActive(true);
                 _effectSignGroup.Image2SetActive(false);

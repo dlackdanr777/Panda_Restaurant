@@ -1,12 +1,16 @@
 using Muks.Tween;
 using System;
+using TMPro;
 using UnityEngine;
-
+using UnityEngine.UI;
 
 public class UIPopup : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private TextMeshProUGUI _titleText;
+    [SerializeField] private TextMeshProUGUI _descriptionText;
+    [SerializeField] private Button _okButton;
 
 
     [Space]
@@ -21,21 +25,21 @@ public class UIPopup : MonoBehaviour
 
 
     private Action _onOkButtonClicked;
-    private Action _onExitButtonClicked;
 
 
     public void Init()
     {
+        _okButton.onClick.AddListener(OnOkButtonClicked);
         gameObject.SetActive(false);
     }
 
 
-    public void Show(Action okButtonClicked, Action exitButtonClicked)
+    public void Show(string title, string description, Action okButtonClicked)
     {
         gameObject.SetActive(true);
+        _titleText.text = title;
+        _descriptionText.text = description;
         _onOkButtonClicked = okButtonClicked;
-        _onExitButtonClicked = exitButtonClicked;
-
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
@@ -69,11 +73,4 @@ public class UIPopup : MonoBehaviour
     {
         _onOkButtonClicked?.Invoke();
     }
-
-
-    private void OnExitButtonClicked()
-    {
-        _onExitButtonClicked?.Invoke();
-    }
-
 }

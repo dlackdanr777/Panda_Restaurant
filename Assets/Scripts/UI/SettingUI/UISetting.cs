@@ -34,8 +34,8 @@ public class UIsetting : MobileUIView
         _musicButton.Init(() => SoundManager.Instance.SetVolume(0, AudioType.BackgroundAudio), () => SoundManager.Instance.SetVolume(1, AudioType.BackgroundAudio), 0 < SoundManager.Instance.GetVolume(AudioType.BackgroundAudio));
         _soundEffectButton.Init(() => SoundManager.Instance.SetVolume(0, AudioType.EffectAudio), () => SoundManager.Instance.SetVolume(1, AudioType.EffectAudio), 0 < SoundManager.Instance.GetVolume(AudioType.EffectAudio));
         _userId.Init("User10101010");
-        _homePageButton.onClick.AddListener(() => PopupManager.Instance.ShowDisplayText("현재 지원하지 않는 버튼입니다."));
-        _customerServiceButton.onClick.AddListener(() => PopupManager.Instance.ShowDisplayText("현재 지원하지 않는 버튼입니다."));
+        _homePageButton.onClick.AddListener(OnHomepageButtonClicked);
+        _customerServiceButton.onClick.AddListener(OnCustomerServiceButtonClicked);
         _privacyButton.onClick.AddListener(() => PopupManager.Instance.ShowDisplayText("현재 지원하지 않는 버튼입니다."));
         gameObject.SetActive(false);
     }
@@ -74,5 +74,16 @@ public class UIsetting : MobileUIView
             VisibleState = VisibleState.Disappeared;
             gameObject.SetActive(false);
         });
+    }
+
+    private void OnHomepageButtonClicked()
+    {
+        Application.OpenURL("https://cafe.naver.com/everyonesrestaurant");
+    }
+
+
+    private void  OnCustomerServiceButtonClicked()
+    {
+        Application.OpenURL("https://cafe.naver.com/everyonesrestaurant?iframe_url=/ArticleList.nhn%3Fsearch.clubid=31345503%26search.menuid=12%26search.boardtype=L");
     }
 }

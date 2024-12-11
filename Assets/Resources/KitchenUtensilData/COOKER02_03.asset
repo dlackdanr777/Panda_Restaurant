@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45701c712da292b41aaa45d610b59e06, type: 3}
+  m_Name: COOKER02_03
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 0cc8d0f6e8daf7b4cb84744803421ccb, type: 3}
+  _thumbnailSPrite: {fileID: 21300000, guid: 0cc8d0f6e8daf7b4cb84744803421ccb, type: 3}
+  _name: "\uBAA8\uB358\uD55C \uC2A4\uD1A0\uBE0C"
+  _id: COOKER02_03
+  _description: 
+  _moneyType: 0
+  _buyScore: 70
+  _buyPrice: 8000
+  _type: 2
+  _setId: KITCHEN02
+  _addScore: 5
+  _equipEffectType: 2
+  _effectValue: 5

@@ -18,9 +18,10 @@ MonoBehaviour:
   _id: ACC07
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
+  _buyScore: 1200
+  _buyPrice: 38000
   _type: 9
   _setId: SET07
-  _addScore: 2
-  _effectData: {fileID: 11400000, guid: b2de10c3849fc98488253be06fd903e2, type: 2}
+  _addScore: 250
+  _equipEffectType: 1
+  _effectValue: 65

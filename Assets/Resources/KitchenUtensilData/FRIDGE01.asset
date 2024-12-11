@@ -18,9 +18,11 @@ MonoBehaviour:
   _id: FRIDGE01
   _description: 
   _moneyType: 0
-  _buyScore: 100
-  _buyPrice: 7000
+  _buyScore: 40
+  _buyPrice: 2750
   _type: 5
   _setId: KITCHEN01
   _addScore: 10
+  _equipEffectType: 1
+  _effectValue: 40
   _effectData: {fileID: 11400000, guid: 33d0682c86a81e24f810a7004c4e1410, type: 2}

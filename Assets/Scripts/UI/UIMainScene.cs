@@ -13,10 +13,13 @@ public class UIMainScene : MonoBehaviour
 
     private void Update()
     {
+        if (!Input.anyKey)
+            return;
+
         if (UserInfo.IsTutorialStart)
             return;
 
-        if (!Input.anyKey)
+        if (PopupManager.IsShowPopup)
             return;
 
         if (Input.GetKeyDown(KeyCode.Escape))

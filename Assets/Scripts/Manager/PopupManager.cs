@@ -1,6 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
+using UnityEditor.Experimental.Licensing;
 using UnityEngine;
 
 public class PopupManager : MonoBehaviour
@@ -26,8 +27,19 @@ public class PopupManager : MonoBehaviour
     private static Canvas _canvas;
     private static UITimeDisplay _timeDisplay;
     private static UIPopup _uiPopup;
+    private static bool _isShowPopup;
+    public static bool IsShowPopup => _isShowPopup;
 
-
+    public void ShowPopup(string title, string description, Action onOkButtonClicked)
+    {
+        _isShowPopup = true;
+        _uiPopup.Show(title, description, () =>
+        {
+            _isShowPopup = false;
+            _uiPopup.Hide();
+            onOkButtonClicked?.Invoke();
+        });
+    }
 
 
     public void ShowDisplayText(string description)
@@ -75,9 +87,19 @@ public class PopupManager : MonoBehaviour
         _canvas = Instantiate(canvasPrefab, _instance.transform);
         _timeDisplay = Instantiate(prefab, _canvas.transform);
         _timeDisplay.Init();
-
         _uiPopup = Instantiate(popupPrefab, _canvas.transform);
+        _timeDisplay.transform.SetAsLastSibling();
+
+        LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
         _uiPopup.Init();
+    }
+
+
+    private static void OnChangeSceneEvent()
+    {
+        _uiPopup.gameObject.SetActive(false);
+        _timeDisplay.Stop();
+        _isShowPopup = false;
     }
 
 }
