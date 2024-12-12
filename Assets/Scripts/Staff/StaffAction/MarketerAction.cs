@@ -11,7 +11,7 @@ public class MarketerAction : IStaffAction
 
     public void Destructor()
     {
-        throw new System.NotImplementedException();
+
     }
 
     public void PerformAction(Staff staff)

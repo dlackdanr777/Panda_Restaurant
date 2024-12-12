@@ -46,10 +46,10 @@ public class ManagerData : StaffData
     }
 
 
-    public override int GetUpgradePrice(int level)
+    public override UpgradeMoneyData GetUpgradeMoneyData(int level)
     {
         level = Mathf.Clamp(level - 1, 0, _managerLevelData.Length - 1);
-        return _managerLevelData[level].UpgradeMoneyData.Price;
+        return _managerLevelData[level].UpgradeMoneyData;
     }
 
     public override int GetAddScore(int level)

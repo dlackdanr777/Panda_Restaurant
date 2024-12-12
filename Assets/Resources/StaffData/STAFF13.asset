@@ -18,17 +18,45 @@ MonoBehaviour:
   _id: STAFF13
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
-  _skill: {fileID: 11400000, guid: 47c907508b5243f4d97af7a63d90479b, type: 2}
-  _customerCallPercentage: 10
+  _buyScore: 90
+  _buyPrice: 100000
+  _skill: {fileID: 11400000, guid: c1b5ec904eb676d4993adb0e6c1d8b70, type: 2}
+  _customerCallPercentage: 20
   _marketerLevelData:
-  - _tipAddPercent: 29
-    _scoreIncrement: 22
-    _upgradeMinScore: 0
+  - _tipAddPercent: 38
+    _scoreIncrement: 35
+    _upgradeMinScore: 130
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 0
+      _price: 30000
+    _marketingTime: 2
+  - _tipAddPercent: 40
+    _scoreIncrement: 40
+    _upgradeMinScore: 150
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 90000
+    _marketingTime: 2
+  - _tipAddPercent: 42
+    _scoreIncrement: 45
+    _upgradeMinScore: 170
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 120000
+    _marketingTime: 2
+  - _tipAddPercent: 44
+    _scoreIncrement: 50
+    _upgradeMinScore: 190
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 150000
+    _marketingTime: 2
+  - _tipAddPercent: 46
+    _scoreIncrement: 55
+    _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
     _marketingTime: 2
   _uiSprite: {fileID: 21300000, guid: cdcf2d8272fd1404ea881e67fa4bb7f1, type: 3}
   _animationSprite: {fileID: 21300000, guid: 8dca3533148bea24a8b9c7927d55c7e7, type: 3}

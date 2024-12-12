@@ -159,13 +159,24 @@ public class UIFurniture : MobileUIView
             return;
         }
 
-        if (!UserInfo.IsMoneyValid(data))
+        if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
         {
             PopupManager.Instance.ShowTextLackMoney();
             return;
         }
 
-        UserInfo.AddMoney(-data.BuyPrice);
+        if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
+        {
+            PopupManager.Instance.ShowTextLackDia();
+            return;
+        }
+
+        if(data.MoneyType == MoneyType.Gold)
+            UserInfo.AddMoney(-data.BuyPrice);
+
+        else if(data.MoneyType == MoneyType.Dia)
+            UserInfo.AddDia(-data.BuyPrice);
+
         UserInfo.GiveFurniture(data);
         PopupManager.Instance.ShowDisplayText("새로운 가구를 구매했어요!");
     }
@@ -215,13 +226,19 @@ public class UIFurniture : MobileUIView
                     continue;
                 }
 
-                if (!UserInfo.IsMoneyValid(data))
+                if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
                 {
-                    _slots[slotsIndex][i].SetNotEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                    _slots[slotsIndex][i].SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     continue;
                 }
 
-                _slots[slotsIndex][i].SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                if(data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
+                {
+                    _slots[slotsIndex][i].SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                    continue;
+                }
+
+                _slots[slotsIndex][i].SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice), data.MoneyType);
                 continue;
             }
         }

@@ -30,9 +30,7 @@ public class Staff : MonoBehaviour
     private bool _usingSkill;
     private float _skillTimer;
     private float _skillCoolTime;
-
-    private int _level = 1;
-    public int Level => _level;
+    public int Level => _staffData != null ? UserInfo.GetStaffLevel(_staffData) : 0;
     private float _scaleX;
     private float _actionTimer;
     private float _secondValue;
@@ -81,8 +79,6 @@ public class Staff : MonoBehaviour
         _usingSkill = false;
         _skillTimer = 0;
 
-        _level = 1;
-
         _spriteRenderer.sprite = staffData.Sprite;
         _spriteParent.transform.localPosition = new Vector3(0, -(AStar.Instance.NodeSize * 0.5f), 0);
         _spriteRenderer.transform.localPosition = Vector3.zero;
@@ -116,7 +112,7 @@ public class Staff : MonoBehaviour
 
     public void ResetAction()
     {
-        _actionTimer = _staffData.GetActionValue(_level);
+        _actionTimer = _staffData.GetActionValue(Level) / _speedMul;
         _state = EStaffState.None;
     }
 

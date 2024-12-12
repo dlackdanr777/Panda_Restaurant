@@ -16,7 +16,13 @@ public class UIStaffUpgrade : MobileUIView
     [Header("Buttons")]
     [SerializeField] private UIButtonAndText _upgradeButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
+    [SerializeField] private UIButtonAndText _notEnoughDiaButton;
     [SerializeField] private UIButtonAndText _scoreButton;
+
+    [Header("Sprites")]
+    [SerializeField] private Image _upgradeImage;
+    [SerializeField] private Sprite _upgradeMoneySprite;
+    [SerializeField] private Sprite _upgradeDiaSprite;
 
     private StaffData _currentData;
 
@@ -25,6 +31,7 @@ public class UIStaffUpgrade : MobileUIView
     {
         _upgradeButton.AddListener(OnUpgradeButtonClicked);
         _notEnoughMoneyButton.AddListener(OnUpgradeButtonClicked);
+        _notEnoughDiaButton.AddListener(OnUpgradeButtonClicked);
         gameObject.SetActive(false);
     }
 
@@ -60,6 +67,7 @@ public class UIStaffUpgrade : MobileUIView
 
         _upgradeButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
+        _notEnoughDiaButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
 
         int level = UserInfo.GetStaffLevel(_currentData);
@@ -83,20 +91,30 @@ public class UIStaffUpgrade : MobileUIView
             _maxLevelGroup.SetData(level, _currentData.GetAddScore(level).ToString(), _currentData.GetAddTipMul(level) + "%");
         }
 
+
         if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
         {
-            if (UserInfo.IsMoneyValid(_currentData.GetUpgradePrice(level)))
-            {
-                _upgradeButton.gameObject.SetActive(true);
-                _upgradeButton.SetText(Utility.ConvertToMoney(_currentData.GetUpgradePrice(level)));
-                return;
-            }
-            else
+            UpgradeMoneyData upgradeMoneyData = _currentData.GetUpgradeMoneyData(level);
+
+            if (upgradeMoneyData.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(upgradeMoneyData.Price))
             {
                 _notEnoughMoneyButton.gameObject.SetActive(true);
-                _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(_currentData.GetUpgradePrice(level)));
+                _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(upgradeMoneyData.Price));
                 return;
             }
+
+            if (upgradeMoneyData.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(upgradeMoneyData.Price))
+            {
+                _notEnoughMoneyButton.gameObject.SetActive(true);
+                _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(upgradeMoneyData.Price));
+                return;
+            }
+
+            _upgradeButton.gameObject.SetActive(true);
+            _upgradeImage.sprite = upgradeMoneyData.MoneyType == MoneyType.Gold ? _upgradeMoneySprite : _upgradeDiaSprite;
+            _upgradeButton.SetText(Utility.ConvertToMoney(upgradeMoneyData.Price));
+            return;
+
         }
         else
         {
@@ -118,19 +136,30 @@ public class UIStaffUpgrade : MobileUIView
         int level = UserInfo.GetStaffLevel(_currentData);
         if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
         {
-            if(UserInfo.IsMoneyValid(_currentData.GetUpgradePrice(level)))
-            {
-                UserInfo.UpgradeStaff(_currentData);
-                UserInfo.AddMoney(-_currentData.GetUpgradePrice(level));
-                PopupManager.Instance.ShowDisplayText("직원 업그레이드를 완료했어요!");
-                UpdateData();
-                return;
-            }
-            else
+            UpgradeMoneyData upgradeMoneyData = _currentData.GetUpgradeMoneyData(level);
+
+            if (upgradeMoneyData.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(upgradeMoneyData.Price))
             {
                 PopupManager.Instance.ShowTextLackMoney();
                 return;
             }
+
+            if (upgradeMoneyData.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(upgradeMoneyData.Price))
+            {
+                PopupManager.Instance.ShowTextLackDia();
+                return;
+            }
+
+            if(upgradeMoneyData.MoneyType == MoneyType.Gold)
+                UserInfo.AddMoney(-upgradeMoneyData.Price);
+
+            else if (upgradeMoneyData.MoneyType == MoneyType.Dia)
+                UserInfo.AddDia(-upgradeMoneyData.Price);
+
+            UserInfo.UpgradeStaff(_currentData);
+            PopupManager.Instance.ShowDisplayText("직원 업그레이드를 완료했어요!");
+            UpdateData();
+            return;
 
         }
 

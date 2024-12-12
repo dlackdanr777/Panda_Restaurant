@@ -161,13 +161,24 @@ public class UIStaff : MobileUIView
             return;
         }
 
-        if (!UserInfo.IsMoneyValid(data))
+        if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
         {
             PopupManager.Instance.ShowTextLackMoney();
             return;
         }
 
-        UserInfo.AddMoney(-data.BuyPrice);
+        if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
+        {
+            PopupManager.Instance.ShowTextLackDia();
+            return;
+        }
+
+        if (data.MoneyType == MoneyType.Gold)
+            UserInfo.AddMoney(-data.BuyPrice);
+
+        else if (data.MoneyType == MoneyType.Dia)
+            UserInfo.AddDia(-data.BuyPrice);
+
         UserInfo.GiveStaff(data);
         PopupManager.Instance.ShowDisplayText("새로운 직원을 채용했어요!");
     }
@@ -221,13 +232,19 @@ public class UIStaff : MobileUIView
                     continue;
                 }
 
-                if (!UserInfo.IsMoneyValid(data))
+                if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
                 {
-                    slot.SetNotEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                    _slots[slotsIndex][i].SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     continue;
                 }
 
-                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
+                {
+                    _slots[slotsIndex][i].SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                    continue;
+                }
+
+                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice), data.MoneyType);
                 continue;
             }
         }

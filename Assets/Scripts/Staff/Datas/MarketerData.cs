@@ -69,10 +69,10 @@ public class MarketerData : StaffData
     }
 
 
-    public override int GetUpgradePrice(int level)
+    public override UpgradeMoneyData GetUpgradeMoneyData(int level)
     {
         level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
-        return _marketerLevelData[level].UpgradeMoneyData.Price;
+        return _marketerLevelData[level].UpgradeMoneyData;
     }
 
     public override int GetAddScore(int level)

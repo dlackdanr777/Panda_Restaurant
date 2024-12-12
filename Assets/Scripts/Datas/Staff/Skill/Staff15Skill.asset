@@ -13,10 +13,8 @@ MonoBehaviour:
   m_Name: Staff15Skill
   m_EditorClassIdentifier: 
   _sprite: {fileID: 4822751867963304781, guid: b2183c4950c3077459325871ad78f895, type: 3}
-  _skillName: "\uBC84\uB2DD \uD64D\uBCF4"
-  _description: "\uD64D\uBCF4 1\uD68C \uB2F9 \uC190\uB2D8 \uCD94\uAC00 \uD638\uCD9C
-    (FirstValue\uBA85)\n\uCFE8\uD0C0\uC784: CoolTimes  \uC9C0\uC18D \uC2DC\uAC04:
-    Durations"
-  _cooldown: 10
-  _duration: 10
+  _skillName: 
+  _description: 
+  _cooldown: 100
+  _duration: 20
   _addCustomerValue: 1

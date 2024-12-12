@@ -13,7 +13,7 @@ public abstract class StaffData : ShopData
 
     public abstract int GetUpgradeMinScore(int level);
 
-    public abstract int GetUpgradePrice(int level);
+    public abstract UpgradeMoneyData GetUpgradeMoneyData(int level);
 
     public abstract float GetActionValue(int level);
 

@@ -95,13 +95,19 @@ public class UIRecipeTab : MonoBehaviour
                 continue;
             }
 
-            if (!UserInfo.IsMoneyValid(data))
+            if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
             {
-                _slots[i].SetNotEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                _slots[i].SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                 continue;
             }
 
-            _slots[i].SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+            if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
+            {
+                _slots[i].SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                continue;
+            }
+
+            _slots[i].SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice), data.MoneyType);
             continue;
         }
     }
@@ -121,13 +127,24 @@ public class UIRecipeTab : MonoBehaviour
             return;
         }
 
-        if (!UserInfo.IsMoneyValid(data))
+        if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
         {
             PopupManager.Instance.ShowTextLackMoney();
             return;
         }
 
-        UserInfo.AddMoney(-data.BuyPrice);
+        if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
+        {
+            PopupManager.Instance.ShowTextLackDia();
+            return;
+        }
+
+        if (data.MoneyType == MoneyType.Gold)
+            UserInfo.AddMoney(-data.BuyPrice);
+
+        else if (data.MoneyType == MoneyType.Dia)
+            UserInfo.AddDia(-data.BuyPrice);
+
         UserInfo.GiveRecipe(data);
         PopupManager.Instance.ShowDisplayText("새로운 레시피를 배웠어요!");
     }

@@ -193,7 +193,7 @@ public class TableManager : MonoBehaviour
     }
 
 
-    private void UpdateTable()
+    public void UpdateTable()
     {
         int index = GetTableType(ETableState.NotUse);
 
@@ -201,9 +201,6 @@ public class TableManager : MonoBehaviour
             _guideButton.gameObject.SetActive(false);
 
         else if(_customerController.IsEmpty())
-            _guideButton.gameObject.SetActive(false);
-
-        else if(UserInfo.GetEquipStaff(StaffType.Manager) != null)
             _guideButton.gameObject.SetActive(false);
 
         else 

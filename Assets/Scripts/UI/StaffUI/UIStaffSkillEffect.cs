@@ -29,6 +29,8 @@ public class UIStaffSkillEffect : MonoBehaviour
         }
 
         _skillEffectGroup1.SetText1(Utility.GetStaffEffectDescription(data));
+        _skillEffectGroup2.SetText1(Utility.GetStaffSkillDescription(data));
+        _skillEffectGroup2.SetText2(data.Skill == null ? string.Empty : data.Skill.Cooldown + "s");
     }
 
     private void OnArrowButtonClicked()

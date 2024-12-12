@@ -13,9 +13,8 @@ MonoBehaviour:
   m_Name: Staff01Skill
   m_EditorClassIdentifier: 
   _sprite: {fileID: 0}
-  _skillName: "\uD504\uB9AC\uBBF8\uC5C4 \uC694\uAE08"
-  _description: "\uC8FC\uBB38 \uB2F9 \uC74C\uC2DD \uAC00\uACA9 \uC99D\uAC00(FirstValue%)\n\uCFE8\uD0C0\uC784:
-    CoolTimes  \uC9C0\uC18D \uC2DC\uAC04: Durations"
+  _skillName: 
+  _description: 
   _cooldown: 200
   _duration: 20
-  _foodPriceUpPercent: 50
+  _foodPriceUpPercent: 10

@@ -33,6 +33,7 @@ public class LoadData
     public int TotalExterminationGatecrasherCustomer2Count;
     public int TotalUseGachaMachineCount;
 
+    public string UserId;
     public string FirstAccessTime;
     public string LastAccessTime;
     public string LastAttendanceTime;
@@ -90,6 +91,7 @@ public class LoadData
         TotalExterminationGatecrasherCustomer2Count = json[0].ContainsKey("TotalExterminationGatecrasherCustomer2Count") ? int.Parse(json[0]["TotalExterminationGatecrasherCustomer2Count"].ToString()) : 0;
         TotalUseGachaMachineCount = json[0].ContainsKey("TotalUseGachaMachineCount") ? int.Parse(json[0]["TotalUseGachaMachineCount"].ToString()) : 0;
 
+        UserId = json[0].ContainsKey("UserId") ? json[0]["UserId"].ToString() : string.Empty;
         FirstAccessTime = json[0].ContainsKey("FirstAccessTime") ? json[0]["FirstAccessTime"].ToString() : string.Empty;
         LastAccessTime = json[0].ContainsKey("LastAccessTime") ? json[0]["LastAccessTime"].ToString() : string.Empty;
         LastAttendanceTime = json[0].ContainsKey("LastAttendanceTime") ? json[0]["LastAttendanceTime"].ToString() : string.Empty;

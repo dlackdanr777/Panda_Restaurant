@@ -33,8 +33,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int _totalTabCount = 8;
     public int TotalTabCount => _totalTabCount;
 
-    [SerializeField] private float _foodPriceMul = 1;
-    public float FoodPriceMul => _foodPriceMul;
+    [SerializeField] private float _foodPriceMul = 0;
+    public float FoodPriceMul => 1 + _foodPriceMul;
 
 
     private int _addPromotionCustomer = 1;
@@ -141,7 +141,7 @@ public class GameManager : MonoBehaviour
 
     public void AddFoodPriceMul(float value)
     {
-        _foodPriceMul += value * 0.01f;
+        _foodPriceMul = Mathf.Clamp(_foodPriceMul + value * 0.01f, 0, 100);
     }
 
 

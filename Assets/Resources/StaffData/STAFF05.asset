@@ -18,42 +18,42 @@ MonoBehaviour:
   _id: STAFF05
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
-  _skill: {fileID: 11400000, guid: 04374f64e289b204c84ea921b9c17185, type: 2}
+  _buyScore: 60
+  _buyPrice: 130000
+  _skill: {fileID: 11400000, guid: acaa64854568edc499b285f3df6aceb4, type: 2}
   _waiterLevelData:
-  - _tipAddPercent: 20
-    _scoreIncrement: 12
-    _upgradeMinScore: 50
+  - _tipAddPercent: 38
+    _scoreIncrement: 35
+    _upgradeMinScore: 70
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 30000
-    _servingTime: 2.5
-  - _tipAddPercent: 22
-    _scoreIncrement: 14
-    _upgradeMinScore: 65
+      _price: 25000
+    _servingTime: 6
+  - _tipAddPercent: 40
+    _scoreIncrement: 40
+    _upgradeMinScore: 70
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 70000
-    _servingTime: 2.5
-  - _tipAddPercent: 24
-    _scoreIncrement: 16
-    _upgradeMinScore: 85
-    _upgradeMoneyData:
-      _moneyType: 0
-      _price: 150000
-    _servingTime: 2.5
-  - _tipAddPercent: 26
-    _scoreIncrement: 18
+      _price: 25000
+    _servingTime: 6
+  - _tipAddPercent: 42
+    _scoreIncrement: 45
     _upgradeMinScore: 110
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 300000
-    _servingTime: 2.5
-  - _tipAddPercent: 28
+      _price: 45000
+    _servingTime: 6
+  - _tipAddPercent: 44
+    _scoreIncrement: 50
+    _upgradeMinScore: 130
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 90000
+    _servingTime: 6
+  - _tipAddPercent: 48
     _scoreIncrement: 20
     _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _servingTime: 2.5
+    _servingTime: 6

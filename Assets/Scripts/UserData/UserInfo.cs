@@ -54,6 +54,9 @@ public static class UserInfo
     public static bool IsSpecialCustomer1TutorialClear = false;
     public static bool IsSpecialCustomer2TutorialClear = false;
 
+    private static string _userId;
+    public static string UserId => _userId;
+
     private static string _firstAccessTime;
     public static string FirstAccessTime => _firstAccessTime;
 
@@ -209,6 +212,7 @@ public static class UserInfo
         param.Add("TotalExterminationGatecrasherCustomer2Count", _totalExterminationGatecrasherCustomer2Count);
         param.Add("TotalUseGachaMachineCount", _totalUseGachaMachineCount);
 
+        param.Add("UserId", _userId);
         param.Add("FirstAccessTime", _firstAccessTime);
         param.Add("LastAccessTime", BackendManager.Instance.ServerTime.ToString());
         param.Add("LastAttendanceTime", _lastAttendanceTime);
@@ -311,7 +315,8 @@ public static class UserInfo
 
     public static void SetFirstAccessTime(DateTime time)
     {
-        DebugLog.Log("첫 로그인 성공");
+        if (string.IsNullOrEmpty(_userId))
+            _userId = "User" + UnityEngine.Random.Range(10000000, 20000000);
         _firstAccessTime = time.ToString();
     }
 
@@ -380,6 +385,7 @@ public static class UserInfo
         _totalExterminationGatecrasherCustomer1Count = loadData.TotalExterminationGatecrasherCustomer1Count;
         _totalExterminationGatecrasherCustomer2Count = loadData.TotalExterminationGatecrasherCustomer2Count;
 
+        _userId = string.IsNullOrEmpty(loadData.UserId) ? "User" + UnityEngine.Random.Range(10000000, 20000000) : loadData.UserId;
         _firstAccessTime = loadData.FirstAccessTime;
         _lastAccessTime = loadData.LastAccessTime;
         _lastAttendanceTime = loadData.LastAttendanceTime;
@@ -617,6 +623,23 @@ public static class UserInfo
     public static bool IsMoneyValid(int money)
     {
         if (Money < money)
+            return false;
+
+        return true;
+    }
+
+
+    public static bool IsDiaValid(ShopData data)
+    {
+        if (Dia < data.BuyPrice)
+            return false;
+
+        return true;
+    }
+
+    public static bool IsDiaValid(int dia)
+    {
+        if (Dia < dia)
             return false;
 
         return true;

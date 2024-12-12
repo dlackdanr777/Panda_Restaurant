@@ -42,7 +42,7 @@ public class UIMain : MonoBehaviour
 
     private void OnUpdateAdButtonEvent()
     {
-        if(GameManager.Instance.MaxWaitCustomerCount <= _customerController.Count)
+        if(_customerController.IsMaxCount)
         {
             _watchAdButton.gameObject.SetActive(false);
             return;

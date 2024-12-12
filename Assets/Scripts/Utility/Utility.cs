@@ -162,32 +162,6 @@ public static class Utility
         return 0;
     }
 
-    public static string GetEquipEffectDescription(EquipEffectData effectData)
-    {
-        string description = string.Empty;
-
-        switch (effectData)
-        {
-            case TipPerMinuteEquipEffectData:
-                description = "분당 획득 팁 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + (effectData.EffectValue.ToString()) + "</color> 증가";
-                break;
-
-            case MaxTipVolumeEquipEffectData:
-                description = "팁 저장량 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + effectData.EffectValue + "</color> 증가";
-                break;
-
-            case CookingSpeedUpEquipEffectData:
-                description = "요리 효율 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + effectData.EffectValue + "%</color> 증가";
-                break;
-
-            default:
-                description = "알 수 없는 효과";
-                break;
-        }
-
-        return description;
-    }
-
 
     public static string GetSetEffectDescription(SetData setData)
     {
@@ -244,11 +218,26 @@ public static class Utility
                 break;
 
             case ChefData:
-                description = $"요리 속도 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
+                description = $"요리 효율 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
                 break;
         }
 
         return description;
+    }
+
+
+    public static string GetStaffSkillDescription(StaffData data)
+    {
+        int level = UserInfo.IsGiveStaff(data) ? UserInfo.GetStaffLevel(data) : 1;
+        return data.Skill switch
+        {
+            SpeedUpSkill => $"직원 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가 ({data.Skill.Duration}s)",
+            FoodPriceUpSkill => $"주문 당 음식 가격 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가 ({data.Skill.Duration}s)",
+            AutoCustomerGuideSkill => $"손님 자동 안내 ({data.Skill.Duration}s)",
+            AddPromotionCustomerSkill => $"홍보당 손님 호출 인원 <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)data.Skill.FirstValue}</color>명 증가({data.Skill.Duration}s)",
+            _ => string.Empty
+        };
+
     }
 
 

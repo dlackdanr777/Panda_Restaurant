@@ -25,10 +25,38 @@ MonoBehaviour:
   _marketerLevelData:
   - _tipAddPercent: 29
     _scoreIncrement: 22
-    _upgradeMinScore: 0
+    _upgradeMinScore: 120
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 0
+      _price: 7000
+    _marketingTime: 2
+  - _tipAddPercent: 30
+    _scoreIncrement: 24
+    _upgradeMinScore: 140
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 60000
+    _marketingTime: 2
+  - _tipAddPercent: 33
+    _scoreIncrement: 26
+    _upgradeMinScore: 160
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 90000
+    _marketingTime: 2
+  - _tipAddPercent: 36
+    _scoreIncrement: 28
+    _upgradeMinScore: 180
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 90000
+    _marketingTime: 2
+  - _tipAddPercent: 39
+    _scoreIncrement: 30
+    _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
     _marketingTime: 2
   _uiSprite: {fileID: 21300000, guid: c9f79ec54bc2c0840bff6c273651b0fd, type: 3}
   _animationSprite: {fileID: 21300000, guid: 4e1db93a6752e744c9b13e01bd5cf203, type: 3}
