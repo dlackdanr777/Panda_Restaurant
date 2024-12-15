@@ -15,15 +15,15 @@ MonoBehaviour:
   _sprite: {fileID: 21300000, guid: 29a37af07beb34c4c8753747c23f67fa, type: 3}
   _name: "\uBC00\uD0A4"
   _id: CUSTOMER04
-  _description: "\uAD6C\uBBF8\uD638 \uC218\uB828\uC0DD \uB3C4\uC2DC \uC5EC\uC6B0.\n\uAD6C\uBBF8\uD638\uAC00
-    \uB418\uAE30 \uC704\uD574 \uB9C8\uB298\uACFC \uC465\uB9CC 3\uC8FC \uC9F8 \uBA39\uACE0
-    \uC788\uB2E4."
+  _description: "\uB514\uC800\uD2B8 \uC560\uD638\uAC00.\n\uB514\uC800\uD2B8\uB97C
+    \uBA39\uAE30 \uC704\uD574 \uCCB4\uC911 \uAD00\uB9AC\uB97C \uD558\uB2E4 \uBCF4\uB2C8
+    \uC6B4\uB3D9\uC774 \uCDE8\uBBF8\uAC00 \uB418\uC5C8\uB2E4."
   _moveSpeed: 6
   _scale: 1
-  _maxDiscomfortIndex: 10
+  _maxDiscomfortIndex: 25
   _minScore: 0
   _requiredDish: FOOD04
   _requiredItem: 
   _orderFoods:
-  - FOOD05
+  - FOOD15
   _skill: {fileID: 0}

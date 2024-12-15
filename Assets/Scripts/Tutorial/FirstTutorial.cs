@@ -47,6 +47,9 @@ public class FirstTutorial : MonoBehaviour
         UserInfo.SetEquipFurniture("COUNTER01");
         UserInfo.GiveFurniture("WALLPAPER01");
         UserInfo.SetEquipFurniture("WALLPAPER01");
+        UserInfo.GiveFurniture("WALLPAPER01");
+        UserInfo.SetEquipFurniture("WALLPAPER01");
+
         UserInfo.GiveStaff("STAFF11");
         UserInfo.SetEquipStaff("STAFF11");
         StartCoroutine(StartTutorial());

@@ -18,7 +18,7 @@ public class ServerAction : IStaffAction
     public void PerformAction(Staff staff)
     {
         int index = _tableManager.GetTableType(ETableState.Seating);
-
+        DebugLog.Log("½ÇÇà");
         if (index == -1)
             return;
 
@@ -31,8 +31,8 @@ public class ServerAction : IStaffAction
             _tweenData = Tween.Wait(0.5f, () =>
             {
                 _tableManager.OnCustomerOrder(index);
-                staff.ResetAction();
                 _tweenData = staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(staff.ResetAction);
+                staff.ResetAction();
             });
         });
 

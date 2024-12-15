@@ -124,7 +124,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _image.sprite = sprite;
         _image.color = Utility.GetColor(ColorType.NoGive);
         _nameText.text = name;
-        _notEnoughPriceImage.SetText(text);
+        _notEnoughDiaPriceImage.SetText(text);
     }
 
 

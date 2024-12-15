@@ -88,16 +88,16 @@ GameObject:
   - component: {fileID: 8084085723135840969}
   - component: {fileID: 368777012543882282}
   - component: {fileID: 4704249680555859731}
-  - component: {fileID: 8950493956607595869}
   - component: {fileID: 7857981070369382751}
   - component: {fileID: 2932775734690723703}
+  - component: {fileID: 3296475518309115904}
   m_Layer: 5
   m_Name: ServingButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &3849675672865610068
 RectTransform:
   m_ObjectHideFlags: 0
@@ -214,20 +214,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _worldTransform: {fileID: 0}
   _offset: {x: 0, y: 3.315, z: 0}
---- !u!114 &8950493956607595869
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8893323088763524850}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 18a430ee5cfb1244c92b1818188ef6cd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _button: {fileID: 368777012543882282}
-  _image: {fileID: 892875937151173668}
 --- !u!114 &7857981070369382751
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -258,3 +244,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _bindId: ButtonClickSound
+--- !u!114 &3296475518309115904
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8893323088763524850}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fab445089e828fb48a937e00da1446e8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _foodImage: {fileID: 892875937151173668}
+  _button: {fileID: 368777012543882282}
+  _worldToSceenPos: {fileID: 4704249680555859731}
+  _grayMat: {fileID: 2100000, guid: 19b86f68a35a77a4e87a9a832c8790e3, type: 2}

@@ -22,7 +22,6 @@ public class Staff : MonoBehaviour
 
 
     private StaffData _staffData;
-    public StaffData StaffData => _staffData;
     private StaffType _staffType;
     private IStaffAction _staffAction;
     private EStaffState _state;
@@ -35,11 +34,9 @@ public class Staff : MonoBehaviour
     private float _actionTimer;
     private float _secondValue;
     public float SecondValue => _secondValue;
-    private float _speed;
-    public float Speed => _speed;
 
     private float _speedMul;
-    public float SpeedMul => _speedMul;
+    public float SpeedMul => 1 + _speedMul;
 
     private Coroutine _useSkillRoutine;
 
@@ -47,6 +44,22 @@ public class Staff : MonoBehaviour
     public void Init()
     {
         GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+    }
+
+    public float GetActionValue()
+    {
+        if(_staffData == null)
+        {
+            throw new Exception("현재 스탭 데이터가 null입니다.");
+        }
+
+        int level = UserInfo.GetStaffLevel(_staffData);
+        if(level <= 0)
+        {
+            throw new Exception("현재 스탭 데이터를 보유하고 있지 않습니다: " + _staffData.Id);
+        }
+
+        return _staffData.GetActionValue(level) / SpeedMul;
     }
 
 
@@ -75,7 +88,7 @@ public class Staff : MonoBehaviour
         _animator.enabled = staffData is CleanerData;
         _cleanerItem.gameObject.SetActive(staffData is CleanerData);
         _cleanParticle.gameObject.SetActive(false);
-        _speed = 1;
+        _speedMul = 0;
         _usingSkill = false;
         _skillTimer = 0;
 
@@ -107,12 +120,13 @@ public class Staff : MonoBehaviour
 
     public void AddSpeedMul(float value)
     {
-        _speedMul += value * 0.01f;
+        _speedMul = Mathf.Clamp(_speedMul + value * 0.01f, 0f, 10f);
     }
 
     public void ResetAction()
     {
-        _actionTimer = _staffData.GetActionValue(Level) / _speedMul;
+        _actionTimer = _staffData.GetActionValue(Level);
+        DebugLog.Log(_actionTimer);
         _state = EStaffState.None;
     }
 
@@ -164,6 +178,7 @@ public class Staff : MonoBehaviour
         if (_state != EStaffState.ActionEnable)
             return;
 
+        DebugLog.Log("실행");
         _staffAction.PerformAction(this);
     }
 
@@ -189,7 +204,7 @@ public class Staff : MonoBehaviour
         }
         else
         {
-            _skillTimer += Time.deltaTime;
+            _skillTimer += Time.deltaTime * SpeedMul;
         }
     }
 
@@ -219,7 +234,7 @@ public class Staff : MonoBehaviour
         }
         else
         {
-            _actionTimer -= Time.deltaTime * (_speed + _speedMul);
+            _actionTimer -= Time.deltaTime * SpeedMul;
         }
     }
 
@@ -239,7 +254,7 @@ public class Staff : MonoBehaviour
             _ => 0
         };
         float timer = 0;
-        while(timer < duration)
+        while (timer < duration)
         {
             _staffData.Skill.ActivateUpdate(this, tableManager, kitchenSystem, customerController);
             timer += 0.02f;
@@ -329,7 +344,7 @@ public class Staff : MonoBehaviour
             while (Vector3.Distance(_moveObj.transform.position, vec) > 0.05f)
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
-                _moveObj.transform.Translate(dir * Time.deltaTime * 5, Space.World);
+                _moveObj.transform.Translate(dir * Time.deltaTime * 5 * SpeedMul, Space.World);
 
                 SetSpriteDir(dir.x);
                 yield return null;

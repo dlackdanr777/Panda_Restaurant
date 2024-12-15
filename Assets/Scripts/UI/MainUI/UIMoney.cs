@@ -29,13 +29,14 @@ public class UIMoney : MonoBehaviour
 
     private void OnEnable()
     {
-        OnChangeMoneyEvent();
+        _currentMoney = UserInfo.Money;
+        _moneyText.text = Utility.ConvertToMoney(UserInfo.Money);
     }
 
 
     private void Init()
     {
-        _moneyText.text = Utility.ConvertToMoney(UserInfo.Money);
+
         _currentMoney = UserInfo.Money;
         _tmpScale = _uiMoney.localScale;
 
@@ -102,7 +103,6 @@ public class UIMoney : MonoBehaviour
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-
         _moneyText.text = Utility.ConvertToMoney(UserInfo.Money);  
     }
 

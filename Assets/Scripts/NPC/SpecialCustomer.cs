@@ -99,7 +99,11 @@ public class SpecialCustomer : Customer
                 StopCoroutine(_coroutine);
 
             StopMove();
-            _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
+            _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() =>
+            {
+                _spriteRenderer.TweenAlpha(0, 0.5f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
+            });
+
             _onCompleted?.Invoke();
             return;
         }
@@ -120,7 +124,10 @@ public class SpecialCustomer : Customer
             StopCoroutine(_touchCoroutine);
 
         StopMove();
-        _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
+        _spriteRenderer.TweenAlpha(0, 1f).OnComplete(() =>
+        {
+            _spriteRenderer.TweenAlpha(0, 0.5f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
+        });
         _onCompleted?.Invoke();
     }
 

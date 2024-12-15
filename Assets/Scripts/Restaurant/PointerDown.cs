@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class PointerClick : MonoBehaviour, IPointerClickHandler
+public class PointerDown : MonoBehaviour, IPointerDownHandler
 {
     private Action _onPointerClickHandler;
 
@@ -22,7 +22,7 @@ public class PointerClick : MonoBehaviour, IPointerClickHandler
     }
 
    
-    public void OnPointerClick(PointerEventData eventData)
+    public void OnPointerDown(PointerEventData eventData)
     {
         _onPointerClickHandler?.Invoke();
     }

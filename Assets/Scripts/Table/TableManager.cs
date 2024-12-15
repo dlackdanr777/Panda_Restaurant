@@ -31,8 +31,8 @@ public class TableManager : MonoBehaviour
     [Header("Button Option")]
     [SerializeField] private Transform _buttonParent;
     [SerializeField] private Button _guideButton;
-    [SerializeField] private UIButtonAndImage _orderButtonPrefab;
-    [SerializeField] private UIButtonAndImage _servingButtonPrefab;
+    [SerializeField] private TableButton _orderButtonPrefab;
+    [SerializeField] private TableButton _servingButtonPrefab;
 
     [Space]
     [Header("Audios")]
@@ -42,10 +42,8 @@ public class TableManager : MonoBehaviour
     [Header("Tutorial Components")]
     [SerializeField] private GachaTutorial _miniGameTutorial;
 
-    private WorldToSceenPosition[] _orderButtonsPos;
-    private WorldToSceenPosition[] _sevingButtonsPos;
-    private UIButtonAndImage[] _orderButtons;
-    private UIButtonAndImage[] _servingButtons;
+    private TableButton[] _orderButtons;
+    private TableButton[] _servingButtons;
 
     private int _totalGarbageCount => ObjectPoolManager.Instance.GetEnabledGarbageCount();
 
@@ -64,10 +62,9 @@ public class TableManager : MonoBehaviour
     {
         _guideButton.onClick.AddListener(() => OnCustomerGuideButtonClicked(-1));
         int tableLength = _tableDatas.Length;
-        _orderButtons = new UIButtonAndImage[tableLength];
-        _servingButtons = new UIButtonAndImage[tableLength];
-        _orderButtonsPos = new WorldToSceenPosition[tableLength];
-        _sevingButtonsPos = new WorldToSceenPosition[tableLength];
+        _orderButtons = new TableButton[tableLength];
+        _servingButtons = new TableButton[tableLength];
+
 
         GameObject parentObj = new GameObject("TableButtons");
         parentObj.transform.parent = _buttonParent.transform;
@@ -79,17 +76,17 @@ public class TableManager : MonoBehaviour
             GameObject obj = new GameObject("Table" + (index + 1));
             obj.transform.parent = parentObj.transform;
 
-            UIButtonAndImage orderButton = Instantiate(_orderButtonPrefab, obj.transform);
-            UIButtonAndImage servingButton = Instantiate(_servingButtonPrefab, obj.transform);
+            TableButton orderButton = Instantiate(_orderButtonPrefab, obj.transform);
+            TableButton servingButton = Instantiate(_servingButtonPrefab, obj.transform);
+            
+            orderButton.Init();
+            servingButton.Init();
 
             orderButton.AddListener(() => OnCustomerOrder(index)); 
             servingButton.AddListener(() => OnServing(index));
 
-            _orderButtonsPos[i] = orderButton.GetComponent<WorldToSceenPosition>();
-            _sevingButtonsPos[i] = servingButton.GetComponent<WorldToSceenPosition>();
-
-            _orderButtonsPos[i].SetWorldTransform(_tableDatas[index].ChairTrs[0]);
-            _sevingButtonsPos[i].SetWorldTransform(_tableDatas[index].ChairTrs[0]);
+            orderButton.SetWorldTransform(_tableDatas[index].ChairTrs[0]);
+            servingButton.SetWorldTransform(_tableDatas[index].ChairTrs[0]);
 
             _orderButtons[i] = orderButton;
             _servingButtons[i] = servingButton;
@@ -287,8 +284,8 @@ public class TableManager : MonoBehaviour
             Tween.Wait(0.1f, () =>
             {
                 currentCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitIndex].position;
-                _orderButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[_tableDatas[index].SitIndex]);
-                _sevingButtonsPos[index].SetWorldTransform(_tableDatas[index].ChairTrs[_tableDatas[index].SitIndex]);
+                _orderButtons[index].SetWorldTransform(_tableDatas[index].ChairTrs[_tableDatas[index].SitIndex]);
+                _servingButtons[index].SetWorldTransform(_tableDatas[index].ChairTrs[_tableDatas[index].SitIndex]);
 
                 currentCustomer.SetSpriteDir(-_tableDatas[index].SitDir);
                 currentCustomer.SetLayer("SitCustomer", 0);
@@ -347,7 +344,7 @@ public class TableManager : MonoBehaviour
                 return;
 
             _tableDatas[index].TableState = ETableState.CanServing;
-            _servingButtons[index].SetImage(foodData.ThumbnailSprite);
+            _servingButtons[index].SetData(foodData);
             foodData = null;
             UpdateTable();
         });
@@ -356,7 +353,7 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].TotalTip += tip + GameManager.Instance.AddFoodTip;
         _tableDatas[index].CurrentFood = data;
         _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.CurrentFoodPriceMul) + (int)(data.Price * GameManager.Instance.FoodPriceMul * 0.01f) + GameManager.Instance.AddFoodPrice;
-        _orderButtons[index].SetImage(foodData.ThumbnailSprite);
+        _orderButtons[index].SetData(foodData);
 
         _tableDatas[index].TableState = ETableState.Seating;
         _tableDatas[index].OrdersCount -= 1;
@@ -376,6 +373,7 @@ public class TableManager : MonoBehaviour
         if(!UserInfo.IsGiveRecipe(orderFoodId))
         {
             NormalCustomer currentCustomer = _tableDatas[index].CurrentCustomer;
+            currentCustomer.SetLayer("Customer", 0);
             _tableDatas[index].CurrentCustomer = null;
             _tableDatas[index].TableState = ETableState.NotUse;
             currentCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);

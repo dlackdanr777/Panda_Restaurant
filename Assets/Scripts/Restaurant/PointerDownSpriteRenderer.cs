@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PointerClickSpriteRenderer : PointerClick
+public class PointerDownSpriteRenderer : PointerDown
 {
     [SerializeField] private SpriteRenderer _spriteRenderer;
     public SpriteRenderer SpriteRenderer => _spriteRenderer;

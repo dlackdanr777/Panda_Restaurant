@@ -6,8 +6,21 @@ public static class Utility
 {
     public static string ConvertToMoney(float value)
     {
-        //string text = 1000 <= value ? (value / 1000).ToString("#,##0.0") + 'K' : ((int)value).ToString();
-        string text = value.ToString("N0");
+        string text;
+
+        if (value >= 1_000_000_000) // 10억 이상
+        {
+            text = (value / 1_000_000_000f).ToString("#,##0.0") + "B"; // 억 단위
+        }
+        else if (value >= 1_000_000) // 100만 이상
+        {
+            text = (value / 1_000_000f).ToString("#,##0.0") + "A"; // 백만 단위
+        }
+        else // 1천 미만
+        {
+            text = ((int)value).ToString();
+        }
+
         return text;
     }
 
@@ -231,7 +244,7 @@ public static class Utility
         int level = UserInfo.IsGiveStaff(data) ? UserInfo.GetStaffLevel(data) : 1;
         return data.Skill switch
         {
-            SpeedUpSkill => $"직원 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가 ({data.Skill.Duration}s)",
+            SpeedUpSkill => $"행동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가 ({data.Skill.Duration}s)",
             FoodPriceUpSkill => $"주문 당 음식 가격 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가 ({data.Skill.Duration}s)",
             AutoCustomerGuideSkill => $"손님 자동 안내 ({data.Skill.Duration}s)",
             AddPromotionCustomerSkill => $"홍보당 손님 호출 인원 <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)data.Skill.FirstValue}</color>명 증가({data.Skill.Duration}s)",

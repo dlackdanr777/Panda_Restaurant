@@ -317,6 +317,9 @@ public static class UserInfo
     {
         if (string.IsNullOrEmpty(_userId))
             _userId = "User" + UnityEngine.Random.Range(10000000, 20000000);
+
+        AddDia(100);
+        AddMoney(15000);
         _firstAccessTime = time.ToString();
     }
 

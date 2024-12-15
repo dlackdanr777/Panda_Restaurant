@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c45ec71402c87af488940a5ef102e306, type: 3}
+  m_Name: CUSTOMER07
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 15a7c69ee96eca54aa268dd7de28aebd, type: 3}
+  _name: "\uACE0\uB3CC\uC774"
+  _id: CUSTOMER07
+  _description: "\uC11C\uB2F9 \uAC1C.\n\uCDE8\uBBF8\uB294 '\uD559\uAD50\uB97C \uBE60\uC9C0\uACE0
+    \uB9DB\uC788\uB294 \uAC78 \uBA39\uC73C\uB7EC \uAC00\uAE30' \uC774\uB2E4."
+  _moveSpeed: 6
+  _scale: 1
+  _maxDiscomfortIndex: 25
+  _minScore: 150
+  _requiredDish: FOOD07
+  _requiredItem: 
+  _orderFoods:
+  - FOOD03
+  _skill: {fileID: 11400000, guid: d39b1dc067642d2478a70e7aadeeb310, type: 2}

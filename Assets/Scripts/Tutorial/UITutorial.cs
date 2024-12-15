@@ -19,8 +19,8 @@ public class UITutorial : MobileUIView
     [SerializeField] private Button _table1Button;
     [SerializeField] private ButtonPressEffect _gacha1Button;
     public ButtonPressEffect Gacha1Button => _gacha1Button;
-    [SerializeField] private UIButtonAndImage _orderButton;
-    [SerializeField] private UIButtonAndImage _servingButton;
+    [SerializeField] private TableButton _orderButton;
+    [SerializeField] private TableButton _servingButton;
     [SerializeField] private GameObject _uiPunchHole;
 
     [SerializeField] private HoleClickHandler _shopHole;
@@ -148,7 +148,10 @@ public class UITutorial : MobileUIView
         _orderHoleAnime.SetCallBack(() => _orderHoleCursor.SetActive(false), null, OnOrderHoleAnimeCompleted);
         _table1HoleAnime.SetCallBack(() => _table1HoleCursor.SetActive(false), null, OnTable1HoleAnimeCompleted);
         _customHoleAnime.SetCallBack(() => _customHoleCursorParent.gameObject.SetActive(false), null, OnCustomHoleAnimeCompleted);
-        
+
+        _orderButton.Init();
+        _servingButton.Init();
+
         VisibleState = VisibleState.Disappeared;
         gameObject.SetActive(false);
     }
@@ -292,7 +295,7 @@ public class UITutorial : MobileUIView
     public void OrderButtonSetActive(bool value)
     {
         _orderButton.gameObject.SetActive(value);
-        _orderButton.SetImage(FoodDataManager.Instance.GetFoodData("FOOD01").Sprite);
+        _orderButton.SetData(FoodDataManager.Instance.GetFoodData("FOOD01"));
         _orderHole.SetActive(false);
         _orderHoleCursor.SetActive(false);
         _orderHole.Interactable = false;
@@ -310,7 +313,7 @@ public class UITutorial : MobileUIView
     public void ServingButtonSetActive(bool value)
     {
         _servingButton.gameObject.SetActive(value);
-        _servingButton.SetImage(FoodDataManager.Instance.GetFoodData("FOOD01").Sprite);
+        _servingButton.SetData(FoodDataManager.Instance.GetFoodData("FOOD01"));
         _orderHole.SetActive(false);
         _orderHoleCursor.SetActive(false);
         _orderHole.Interactable = false;

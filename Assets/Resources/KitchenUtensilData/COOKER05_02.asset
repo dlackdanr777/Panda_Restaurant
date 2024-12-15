@@ -23,5 +23,6 @@ MonoBehaviour:
   _type: 1
   _setId: KITCHEN05
   _addScore: 35
+  _sizeMul: 0.95
   _equipEffectType: 2
   _effectValue: 20

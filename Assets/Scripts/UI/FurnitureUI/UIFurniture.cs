@@ -232,7 +232,7 @@ public class UIFurniture : MobileUIView
                     continue;
                 }
 
-                if(data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
+                else if(data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
                 {
                     _slots[slotsIndex][i].SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice));
                     continue;

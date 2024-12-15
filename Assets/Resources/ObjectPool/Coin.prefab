@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 654615764348424302}
   - component: {fileID: 9095326177151127792}
-  - component: {fileID: -5564921612899319339}
   - component: {fileID: 7407130135595686554}
+  - component: {fileID: 2051096774648291777}
   m_Layer: 0
   m_Name: Coin
   m_TagString: Untagged
@@ -77,7 +77,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -594438969
   m_SortingLayer: 16
-  m_SortingOrder: 4
+  m_SortingOrder: 100
   m_Sprite: {fileID: 21300000, guid: 220bea282b974e648af2dba022ad9c5b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -89,19 +89,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &-5564921612899319339
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8906124303292039287}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2089858f87825034d9f609252ca632de, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _spriteRenderer: {fileID: 9095326177151127792}
 --- !u!61 &7407130135595686554
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -148,3 +135,16 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 3.5, y: 3.5}
   m_EdgeRadius: 0
+--- !u!114 &2051096774648291777
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8906124303292039287}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7568fe40097c6a4099303d55c2c4b08, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _spriteRenderer: {fileID: 9095326177151127792}

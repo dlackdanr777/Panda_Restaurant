@@ -32,7 +32,7 @@ public class MainScene : MonoBehaviour
         StartCoroutine(CheckAttendanceRoutine());
 
 #if UNITY_EDITOR
-        UserInfo.AddDia(1000);
+        //UserInfo.AddDia(1000);
         UserInfo.AddMoney(100000);
 #endif
     }

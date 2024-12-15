@@ -18,7 +18,7 @@ public class DropCoinArea : MonoBehaviour
     [SerializeField] private AudioClip _dropCoinSound;
     [SerializeField] private AudioClip _getCoinSound;
 
-    private PointerClickSpriteRenderer[] _coins;
+    private PointerDownSpriteRenderer[] _coins;
     private int _currentMoney;
     public int CurrentMoney => _currentMoney;
 
@@ -35,7 +35,7 @@ public class DropCoinArea : MonoBehaviour
     {
         _currentCoinCount = 0;
         _currentMoney = 0;
-        _coins = new PointerClickSpriteRenderer[_maxCoinCount];
+        _coins = new PointerDownSpriteRenderer[_maxCoinCount];
     }
 
 
@@ -68,7 +68,7 @@ public class DropCoinArea : MonoBehaviour
     public void DropCoin(Vector3 startPos, int moneyValue)
     {
         _currentMoney += moneyValue;
-        PointerClickSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
+        PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
         coin.AddEvent(GiveCoin);
         SoundManager.Instance.PlayEffectAudio(_dropCoinSound, 0.05f);
         Vector3 targetPos = _dropArea.position;

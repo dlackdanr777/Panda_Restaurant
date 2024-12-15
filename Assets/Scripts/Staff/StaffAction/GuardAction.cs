@@ -132,8 +132,8 @@ public class GuardAction : IStaffAction
             return;
         }
 
-        float duration = staff.StaffData.GetActionValue(1) / _gatecrasherCustomer.TotalTouchCount;
-        _tweenData = Tween.Wait(staff.StaffData.GetActionValue(1) / _gatecrasherCustomer.TotalTouchCount, () =>
+        float duration = staff.GetActionValue() / _gatecrasherCustomer.TotalTouchCount;
+        _tweenData = Tween.Wait(duration, () =>
         {
             staff.SetSpriteDir(_gatecrasherCustomer.transform.position.x < staff.transform.position.x ? -1 : 1);
             _gatecrasherCustomer.OnTouchEvent();

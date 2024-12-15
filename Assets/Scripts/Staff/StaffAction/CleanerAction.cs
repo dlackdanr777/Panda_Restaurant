@@ -7,7 +7,7 @@ public class CleanerAction : IStaffAction
     private bool _isUsed = false;
     private bool _isNoAction;
     private float _time;
-    private float _duration = 2f;
+    private float _duration = 1f;
     private TweenData _tweenData;
 
 
@@ -68,10 +68,10 @@ public class CleanerAction : IStaffAction
                 }
 
                 staff.SetStaffState(EStaffState.Action);
-                _tweenData = Tween.Wait(1f, () =>
+                _tweenData = Tween.Wait(staff.SecondValue / staff.SpeedMul, () =>
                 {              
                     targetArea.CleanGarbage();
-                    _tweenData = Tween.Wait(1.5f, () =>
+                    _tweenData = Tween.Wait(1, () =>
                     {
                         staff.SetStaffState(EStaffState.None);
                         _isUsed = false;

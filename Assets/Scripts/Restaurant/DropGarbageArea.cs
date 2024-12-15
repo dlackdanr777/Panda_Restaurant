@@ -16,7 +16,7 @@ public class DropGarbageArea : MonoBehaviour
     [Header("Audios")]
     [SerializeField] private AudioClip _cleanSound;
 
-    private PointerClickSpriteRenderer[] _garbages;
+    private PointerDownSpriteRenderer[] _garbages;
     private int _currentGarbageCount;
     public int Count => _currentGarbageCount;
     private Vector3[] _rotate = new Vector3[7];
@@ -30,7 +30,7 @@ public class DropGarbageArea : MonoBehaviour
     private void Init()
     {
         _currentGarbageCount = 0;
-        _garbages = new PointerClickSpriteRenderer[_maxGarbageCount];
+        _garbages = new PointerDownSpriteRenderer[_maxGarbageCount];
 
         _rotate[0] = new Vector3(0, 0, 0);
         _rotate[1] = new Vector3(0, 0, 90);
@@ -68,7 +68,7 @@ public class DropGarbageArea : MonoBehaviour
 
     public void DropGarbage(Vector3 startPos)
     {
-        PointerClickSpriteRenderer garbage = ObjectPoolManager.Instance.SpawnGarbage(startPos, Quaternion.identity);
+        PointerDownSpriteRenderer garbage = ObjectPoolManager.Instance.SpawnGarbage(startPos, Quaternion.identity);
         garbage.SpriteRenderer.color = Color.white;
 
         Vector3 targetPos = _dropArea.position;

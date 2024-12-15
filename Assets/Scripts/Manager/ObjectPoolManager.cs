@@ -38,13 +38,13 @@ public class ObjectPoolManager : MonoBehaviour
 
     private static int _coinCount = 50;
     private static GameObject _coinParent;
-    private static Queue<PointerClickSpriteRenderer> _coinPool = new Queue<PointerClickSpriteRenderer>();
+    private static Queue<PointerDownSpriteRenderer> _coinPool = new Queue<PointerDownSpriteRenderer>();
 
 
     private static int _garbageCount = 100;
     private static GameObject _garbageParent;
-    private static Queue<PointerClickSpriteRenderer> _garbagePool = new Queue<PointerClickSpriteRenderer>();
-    private static List<PointerClickSpriteRenderer> _enabledGarbagePool = new List<PointerClickSpriteRenderer>();
+    private static Queue<PointerDownSpriteRenderer> _garbagePool = new Queue<PointerDownSpriteRenderer>();
+    private static List<PointerDownSpriteRenderer> _enabledGarbagePool = new List<PointerDownSpriteRenderer>();
 
     private static int _tmpCount = 20;
     private static GameObject _tmpParent;
@@ -65,10 +65,10 @@ public class ObjectPoolManager : MonoBehaviour
     private static NormalCustomer _normalCustomerPrefab;
     private static SpecialCustomer _specialCustomerPrefab;
     private static GatecrasherCustomer _gatecrasherCustomerPrefab;
-    private static PointerClickSpriteRenderer _coinPrefab;
+    private static PointerDownSpriteRenderer _coinPrefab;
     private static SmokeParticle _smokeParticlePrefab;
     private static RectTransform _uiCoinPrefab;
-    private static PointerClickSpriteRenderer _garbagePrefab;
+    private static PointerDownSpriteRenderer _garbagePrefab;
     private static TextMeshProUGUI _tmpPrefab;
     private static UIParticleEffect[] _uiEffectPrefabs = new UIParticleEffect[(int)UIEffectType.Length];
 
@@ -147,11 +147,11 @@ public class ObjectPoolManager : MonoBehaviour
         _coinParent.transform.parent = _instance.transform;
 
         if(_coinPrefab == null)
-            _coinPrefab = Resources.Load<PointerClickSpriteRenderer>("ObjectPool/Coin");
+            _coinPrefab = Resources.Load<PointerDownSpriteRenderer>("ObjectPool/Coin");
 
         for (int i = 0, count = _coinCount; i < count; i++)
         {
-            PointerClickSpriteRenderer coin = Instantiate(_coinPrefab, _coinParent.transform);
+            PointerDownSpriteRenderer coin = Instantiate(_coinPrefab, _coinParent.transform);
             _coinPool.Enqueue(coin);
             coin.gameObject.SetActive(false);
         }
@@ -179,11 +179,11 @@ public class ObjectPoolManager : MonoBehaviour
         _garbageImages = Resources.LoadAll<Sprite>("ObjectPool/Garbage/GarbageImage");
 
         if (_garbagePrefab == null)
-            _garbagePrefab = Resources.Load<PointerClickSpriteRenderer>("ObjectPool/Garbage/Garbage");
+            _garbagePrefab = Resources.Load<PointerDownSpriteRenderer>("ObjectPool/Garbage/Garbage");
 
         for (int i = 0, count = _garbageCount; i < count; i++)
         {
-            PointerClickSpriteRenderer garbage = Instantiate(_garbagePrefab, _garbageParent.transform);
+            PointerDownSpriteRenderer garbage = Instantiate(_garbagePrefab, _garbageParent.transform);
             _garbagePool.Enqueue(garbage);
             garbage.gameObject.SetActive(false);
         }
@@ -329,9 +329,9 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public PointerClickSpriteRenderer SpawnCoin(Vector3 pos, Quaternion rot)
+    public PointerDownSpriteRenderer SpawnCoin(Vector3 pos, Quaternion rot)
     {
-        PointerClickSpriteRenderer coin;
+        PointerDownSpriteRenderer coin;
 
         if (_coinPool.Count == 0)
         {
@@ -348,7 +348,7 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public void DespawnCoin(PointerClickSpriteRenderer coin)
+    public void DespawnCoin(PointerDownSpriteRenderer coin)
     {
         coin.gameObject.SetActive(false);
         coin.TweenStop();
@@ -384,9 +384,9 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public PointerClickSpriteRenderer SpawnGarbage(Vector3 pos, Quaternion rot)
+    public PointerDownSpriteRenderer SpawnGarbage(Vector3 pos, Quaternion rot)
     {
-        PointerClickSpriteRenderer garbage;
+        PointerDownSpriteRenderer garbage;
 
         if (_garbagePool.Count == 0)
         {
@@ -407,7 +407,7 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public void DespawnGarbage(PointerClickSpriteRenderer garbage)
+    public void DespawnGarbage(PointerDownSpriteRenderer garbage)
     {
         if (!_enabledGarbagePool.Contains(garbage))
         {

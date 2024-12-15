@@ -1,6 +1,7 @@
 using JetBrains.Annotations;
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIFurniturePreview : MonoBehaviour
 {
@@ -23,6 +24,12 @@ public class UIFurniturePreview : MonoBehaviour
 
     [Space]
     [Header("Sprites")]
+    [SerializeField] private Image _notEnoughImage;
+    [SerializeField] private Image _buyImage;
+    [SerializeField] private Sprite _notEnoughMoneySprite;
+    [SerializeField] private Sprite _notEnoughDiaSprite;
+    [SerializeField] private Sprite _buyMoneySprite;
+    [SerializeField] private Sprite _buyDiaSprite;
     [SerializeField] private Sprite _questionMarkSprite;
 
     private Action<FurnitureData> _onBuyButtonClicked;
@@ -156,15 +163,29 @@ public class UIFurniturePreview : MonoBehaviour
                 }
 
                 _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
-                if (!UserInfo.IsMoneyValid(data))
+                MoneyType moneyType = data.MoneyType;
+                int price = data.BuyPrice;
+
+                if (moneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(price))
                 {
                     _notEnoughMoneyButton.gameObject.SetActive(true);
-                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
+                    _notEnoughImage.sprite = _notEnoughMoneySprite;
+                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
                     return;
                 }
 
+                else if (moneyType == MoneyType.Dia && !UserInfo.IsDiaValid(price))
+                {
+                    _notEnoughMoneyButton.gameObject.SetActive(true);
+                    _notEnoughImage.sprite = _notEnoughDiaSprite;
+                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
+                    return;
+                }
+
+
                 _buyButton.gameObject.SetActive(true);
                 _buyButton.SetText(data.BuyPrice <= 0 ? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
+                _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
             }
         }
     }

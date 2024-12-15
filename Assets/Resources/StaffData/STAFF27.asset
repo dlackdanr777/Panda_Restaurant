@@ -17,15 +17,36 @@ MonoBehaviour:
   _name: "\uBBF8\uC2A4\uD130 \uBC31"
   _id: STAFF27
   _description: 
-  _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
-  _skill: {fileID: 11400000, guid: 728f87aca015bf34fbe7aa82872f6c5b, type: 2}
+  _moneyType: 1
+  _buyScore: 350
+  _buyPrice: 250
+  _skill: {fileID: 11400000, guid: cce27c6a58e2f564fa4758e3f6e14d71, type: 2}
   _chefLevelData:
   - _tipAddPercent: 50
     _scoreIncrement: 300
-    _upgradeMinScore: 45800
+    _upgradeMinScore: 380
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 25
+    _foodSpeedAddPercent: 1.5
+  - _tipAddPercent: 90
+    _scoreIncrement: 350
+    _upgradeMinScore: 400
     _upgradeMoneyData:
       _moneyType: 1
       _price: 50
+    _foodSpeedAddPercent: 1.5
+  - _tipAddPercent: 95
+    _scoreIncrement: 400
+    _upgradeMinScore: 420
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 75
+    _foodSpeedAddPercent: 1.5
+  - _tipAddPercent: 110
+    _scoreIncrement: 500
+    _upgradeMinScore: 440
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 100
     _foodSpeedAddPercent: 1.5

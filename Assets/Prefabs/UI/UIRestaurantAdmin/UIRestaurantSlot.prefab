@@ -953,7 +953,7 @@ MonoBehaviour:
   _questionMarkSprite: {fileID: 21300000, guid: 88f2ea3e0b7fb834dacb0fd12070787c,
     type: 3}
   _moneyPriceSprite: {fileID: 21300000, guid: d5840f01da116874d819b95f0cf43508, type: 3}
-  _diaPriceSprite: {fileID: 21300000, guid: 4efe6c7450fd8a245a0275102d97a30e, type: 3}
+  _diaPriceSprite: {fileID: 21300000, guid: 8c7ec04d57a19f447a8e91b7160b44e8, type: 3}
 --- !u!114 &4572410894617378136
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1444,7 +1444,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 4efe6c7450fd8a245a0275102d97a30e, type: 3}
+  m_Sprite: {fileID: 21300000, guid: db50645d79d3aef45aa20fd9096455aa, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1

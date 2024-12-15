@@ -18,14 +18,42 @@ MonoBehaviour:
   _id: STAFF17
   _description: 
   _moneyType: 0
-  _buyScore: 0
-  _buyPrice: 0
-  _skill: {fileID: 11400000, guid: 90406cf60a7f94c4c9dfa7cdd1cf0f2d, type: 2}
+  _buyScore: 90
+  _buyPrice: 40000
+  _skill: {fileID: 11400000, guid: e2ed3dfdcabb5034c8fa1e1dccd072a1, type: 2}
   _serverLevelData:
-  - _tipAddPercent: 20
-    _scoreIncrement: 12
-    _upgradeMinScore: 0
+  - _tipAddPercent: 29
+    _scoreIncrement: 22
+    _upgradeMinScore: 130
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 500000
-    _servingTime: 1.8
+      _price: 65000
+    _servingTime: 18
+  - _tipAddPercent: 30
+    _scoreIncrement: 35
+    _upgradeMinScore: 150
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 145000
+    _servingTime: 18
+  - _tipAddPercent: 31
+    _scoreIncrement: 39
+    _upgradeMinScore: 170
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 160000
+    _servingTime: 18
+  - _tipAddPercent: 32
+    _scoreIncrement: 43
+    _upgradeMinScore: 190
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 190000
+    _servingTime: 18
+  - _tipAddPercent: 39
+    _scoreIncrement: 47
+    _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _servingTime: 18

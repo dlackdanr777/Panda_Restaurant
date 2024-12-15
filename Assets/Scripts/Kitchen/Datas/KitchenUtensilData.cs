@@ -26,6 +26,10 @@ public class KitchenUtensilData : ShopData
     [SerializeField] private int _addScore;
     public int AddScore => _addScore;
 
+    [SerializeField] private float _sizeMul = 1;
+    public float SizeMul => _sizeMul;
+    
+
     [Space]
     [Header("EquipData")]
     [SerializeField] private EquipEffectType _equipEffectType;
