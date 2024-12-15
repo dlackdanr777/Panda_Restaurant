@@ -28,8 +28,14 @@ public class UICustomerView : MonoBehaviour
     private CustomerData _data;
     private List<UIImageSlot> _orderFoodSlotList = new List<UIImageSlot>();
 
+    private Vector2 _originalSize;
+    private Vector3 _originalPosition;
+
     public void Init()
     {
+        _originalSize = _npcImage.rectTransform.sizeDelta;
+        _originalPosition = _npcImage.rectTransform.anchoredPosition;
+
         _blackImage.Init();
         _blackImage.gameObject.SetActive(false);
         for (int i = 0; i < _orderFoodSlotCount; ++i)
@@ -63,6 +69,7 @@ public class UICustomerView : MonoBehaviour
             _descriptionText.text = string.Empty;
             _effectDescription.text = string.Empty;
             _orderFoodTitle.SetText(string.Empty);
+            SetScaleImage(1);
             _data = null;
             return;
         }
@@ -79,6 +86,8 @@ public class UICustomerView : MonoBehaviour
             _effectTitle.gameObject.SetActive(true);
             _orderFoodTitle.gameObject.SetActive(true);
             _orderFoodTitle.SetText("林巩 夸府");
+            SetScaleImage(1);
+
         }
         else if(data is GatecrasherCustomerData)
         {
@@ -87,7 +96,7 @@ public class UICustomerView : MonoBehaviour
             _specialFrameImage.gameObject.SetActive(false);
             _effectTitle.gameObject.SetActive(false);
             _orderFoodTitle.gameObject.SetActive(false);
-
+            SetScaleImage(1);
         }
         else
         {
@@ -97,6 +106,7 @@ public class UICustomerView : MonoBehaviour
             _effectTitle.gameObject.SetActive(true);
             _orderFoodTitle.gameObject.SetActive(true);
             _orderFoodTitle.SetText("林巩 夸府");
+            SetScaleImage(1.3f, 13);
         }
 
 
@@ -131,6 +141,7 @@ public class UICustomerView : MonoBehaviour
                 _effectDescription.text = Utility.GetCustomerEffectDescription(data);
         }
 
+
         _npcImage.TweenStop();
         Color npcColor = UserInfo.IsCustomerVisitEnabled(data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
         npcColor.a = 0;
@@ -138,11 +149,6 @@ public class UICustomerView : MonoBehaviour
         _npcImage.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
         _npcImage.TweenAlpha(1, 0.25f, Ease.OutQuint);
         _npcImage.TweenScale(Vector3.one, 0.25f, Ease.OutBack);
-    }
-
-    public void UpdateData()
-    {
-
     }
 
 
@@ -159,7 +165,22 @@ public class UICustomerView : MonoBehaviour
         _npcImage.TweenAlpha(1, 0.25f, Ease.OutQuint);
         _npcImage.TweenScale(Vector3.one, 0.25f, Ease.OutBack);
     }
-    
+
+    public void SetScaleImage(float scale, float offset = 0)
+    {
+        Vector2 newSize = _originalSize * scale;
+        float heightDifference = (newSize.y - _originalSize.y) / 2;
+
+        Vector3 newPosition = new Vector3(
+            _originalPosition.x,
+            _originalPosition.y + heightDifference - offset,
+            _originalPosition.z
+        );
+
+        _npcImage.rectTransform.sizeDelta = newSize;
+        _npcImage.rectTransform.anchoredPosition = newPosition;
+    }
+
 
     private void HideOrderFoodSlots()
     {

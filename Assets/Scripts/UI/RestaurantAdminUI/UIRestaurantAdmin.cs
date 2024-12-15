@@ -58,10 +58,10 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Init()
     {
-        _staffButton.OnClickEvent(StaffButtonClicked);
-        _furnitureButton.OnClickEvent(FurnitureButtonClicked);
-        _recipeButton.OnClickEvent(RecipeButtonClicked);
-        _kitchenButton.OnClickEvent(KitchenButtonClicked);
+        _staffButton.OnClickEvent(ShowStaffTab);
+        _furnitureButton.OnClickEvent(ShowFurnitureTab);
+        _recipeButton.OnClickEvent(ShowRecipeTab);
+        _kitchenButton.OnClickEvent(ShowKitchenTab);
         _staffTab.Init();
         _recipeTab.Init();
         _furnitureTab.Init();
@@ -83,7 +83,7 @@ public class UIRestaurantAdmin : MobileUIView
         gameObject.SetActive(true);
         _mainUI.SetActive(false);
         SetBackgroundImage(BackgroundType.Furniture);
-        FurnitureButtonClicked();
+        ShowFurnitureTab();
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
 
@@ -159,7 +159,7 @@ public class UIRestaurantAdmin : MobileUIView
     }
 
 
-    public void StaffButtonClicked()
+    public void ShowStaffTab()
     {
         _staffTab.transform.SetAsLastSibling();
         _staffButton.SelectButton();
@@ -171,7 +171,7 @@ public class UIRestaurantAdmin : MobileUIView
     }
 
 
-    public void FurnitureButtonClicked()
+    public void ShowFurnitureTab()
     {
         _furnitureTab.transform.SetAsLastSibling();
         _furnitureButton.SelectButton();
@@ -183,7 +183,7 @@ public class UIRestaurantAdmin : MobileUIView
     }
 
 
-    public void RecipeButtonClicked()
+    public void ShowRecipeTab()
     {
         _recipeTab.transform.SetAsLastSibling();
         _recipeButton.SelectButton();
@@ -195,7 +195,7 @@ public class UIRestaurantAdmin : MobileUIView
     }
 
 
-    public void KitchenButtonClicked()
+    public void ShowKitchenTab()
     {
         _kitchenTab.transform.SetAsLastSibling();
         _kitchenButton.SelectButton();

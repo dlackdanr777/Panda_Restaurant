@@ -311,13 +311,16 @@ public class UIGacha : MobileUIView
 
             case 3:
                 _currentStep = 3;
-
+               
                 _screenButton.gameObject.SetActive(true);
                 _skipButton.gameObject.SetActive(true);
                 _gachaItemName.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
+
+                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
+                Utility.ChangeImagePivot(_getItemImage);
                 CapsuleSetSibilingIndex(11);
                 break;
 
@@ -329,6 +332,9 @@ public class UIGacha : MobileUIView
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
+
+                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
+                Utility.ChangeImagePivot(_getItemImage);
                 CapsuleSetSibilingIndex(11);
                 break;
 
@@ -342,10 +348,9 @@ public class UIGacha : MobileUIView
                 _isCapsuleColorChanged = true;
 
                 _isPlayTextAnime = true;
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
-                Utility.ChangeImagePivot(_getItemImage);
                 _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
+                Utility.ChangeImagePivot(_getItemImage);
                 _getItemSound = _getItemList[_getItemIndex].GachaItemRank == GachaItemRank.Unique || _getItemList[_getItemIndex].GachaItemRank == GachaItemRank.Special ? _getSpecialItemSound : _getNormalItemSound;
                 PlayGetItemSound();
                 _gachaItemName.SetText(string.Empty);

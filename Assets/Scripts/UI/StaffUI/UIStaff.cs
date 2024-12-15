@@ -78,6 +78,7 @@ public class UIStaff : MobileUIView
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         SetStaffData(StaffType.Manager);
         SetStaffPreview();
+        _uiRestaurantAdmin.ShowStaffTab();
         _uiRestaurantAdmin.MainUISetActive(false);
         transform.SetAsLastSibling();
 

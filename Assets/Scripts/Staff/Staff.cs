@@ -126,7 +126,6 @@ public class Staff : MonoBehaviour
     public void ResetAction()
     {
         _actionTimer = _staffData.GetActionValue(Level);
-        DebugLog.Log(_actionTimer);
         _state = EStaffState.None;
     }
 

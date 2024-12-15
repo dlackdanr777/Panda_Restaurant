@@ -41,7 +41,7 @@ public class GameManager : MonoBehaviour
     public int AddPromotionCustomer => _addPromotionCustomer;
 
     private int _maxWaitCustomerCount = 10;
-    public int MaxWaitCustomerCount => _maxWaitCustomerCount + _addUpgradeGachaItemWaitCustomerMaxCount + _addEquipStaffMaxWaitCustomerCount;
+    public int MaxWaitCustomerCount => Mathf.Clamp(_maxWaitCustomerCount + _addUpgradeGachaItemWaitCustomerMaxCount + _addEquipStaffMaxWaitCustomerCount, 0, 30);
     public float AddCustomerSpeedMul => 1 + 0.01f * (_addUpgradeGachaItemCustomerSpeedPercent);
     public int AddSpecialCustomerMoney => _addUpgradeGachaItemSpecialCustomerMoney;
     public float AddSpecialCustomerSpawnMul => 1 +  0.01f * (_addUpgradeGachaItemSpecialCustomerSpawnPercent);

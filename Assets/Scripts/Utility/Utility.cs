@@ -93,7 +93,7 @@ public static class Utility
             StaffType.Manager => "매니저",
             StaffType.Marketer => "치어리더",
             StaffType.Waiter => "웨이터",
-            StaffType.Server => "서버",
+            StaffType.Server => "알바",
             StaffType.Cleaner => "청소부",
             StaffType.Guard => "경호원",
             StaffType.Chef => "셰프",

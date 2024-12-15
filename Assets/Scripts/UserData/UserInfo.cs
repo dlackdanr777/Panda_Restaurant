@@ -47,7 +47,7 @@ public static class UserInfo
 
 
     public static bool IsTutorialStart = false;
-    public static bool IsFirstTutorialClear = true;
+    public static bool IsFirstTutorialClear = false;
     public static bool IsMiniGameTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
     public static bool IsGatecrasher2TutorialClear = false;
@@ -185,6 +185,13 @@ public static class UserInfo
     public static Param GetSaveGameData()
     {
         Param param = new Param();
+
+        if(CheckLastAccessTime())
+        {
+            UpdateLastAccessTime();
+            ResetDailyChallenges();
+        }
+
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
         param.Add("IsMiniGameTutorialClear", IsMiniGameTutorialClear);
         param.Add("IsGatecrasher1TutorialClear", IsGatecrasher1TutorialClear);
@@ -336,6 +343,19 @@ public static class UserInfo
         return 1 <= timeDifference.TotalDays;
     }
 
+    public static bool CheckLastAccessTime()
+    {
+        if (string.IsNullOrWhiteSpace(_lastAccessTime))
+            return true;
+
+        DateTime currentServerTime = BackendManager.Instance.ServerTime;
+        DateTime lastAccessTime = DateTime.Parse(_lastAccessTime);
+        TimeSpan timeDifference = currentServerTime - lastAccessTime;
+
+        return 1 <= timeDifference.TotalDays;
+    }
+
+
     public static void UpdateAttendanceData()
     {
         _lastAttendanceTime = BackendManager.Instance.ServerTime.ToString();
@@ -370,6 +390,7 @@ public static class UserInfo
         IsGatecrasher2TutorialClear = loadData.IsGatecrasher2TutorialClear;
         IsSpecialCustomer1TutorialClear = loadData.IsSpecialCustomer1TutorialClear;
         IsSpecialCustomer2TutorialClear = loadData.IsSpecialCustomer2TutorialClear;
+        _dia = loadData.Dia;
         _money = loadData.Money;
         _totalAddMoney = loadData.TotalAddMoney;
         _dailyAddMoney = loadData.DailyAddMoney;

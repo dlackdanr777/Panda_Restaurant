@@ -76,7 +76,6 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             _doneButton.gameObject.SetActive(false);
             _clearButton.gameObject.SetActive(false);
             _layoutImage.color = Color.white;
-            _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(_data);
             return;
         }
     }

@@ -209,8 +209,9 @@ public class ChallengeManager : MonoBehaviour
             BindData<UnityAction> shortcutAction = GetShortCutAction(row[2]);
             string description = row[3];
             string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
+            DebugLog.Log(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
             int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
-            MoneyType moneyType = row[6] == "게임 코인" ? MoneyType.Gold : MoneyType.Dia;
+            MoneyType moneyType = row[6] == "코인" ? MoneyType.Gold : MoneyType.Dia;
             int rewardMoney = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
 
             ChallengeType challengeType;
@@ -565,7 +566,6 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE16:
                 Type16ChallengeData data16 = (Type16ChallengeData)data;
                 int giveFurnitureSetCount = UserInfo.GetEffectSetFurnitureCount(data16.SetId);
-               
                 return giveFurnitureSetCount == 0 ? 0 : Math.Min(1, (float)giveFurnitureSetCount / ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT);
 
             case ChallengeType.TYPE17:
@@ -785,7 +785,6 @@ public class ChallengeManager : MonoBehaviour
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
-
         foreach (Type02ChallengeData data in _type02ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1444,7 +1443,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT != UserInfo.GetEffectSetFurnitureCount(data.SetId))
+            if (UserInfo.GetEffectSetFurnitureCount(data.SetId) < ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
                 continue;
 
             switch (data.Challenges)
@@ -1473,7 +1472,7 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
-        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE15);
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE16);
     }
 
     private void Type17ChallengeCheck()
@@ -1490,7 +1489,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT != UserInfo.GetEffectSetKitchenUtensilCount(data.SetId))
+            if (UserInfo.GetEffectSetKitchenUtensilCount(data.SetId) <= ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
                 continue;
 
             switch (data.Challenges)
@@ -1519,7 +1518,7 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
-        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE15);
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE17);
     }
 
 

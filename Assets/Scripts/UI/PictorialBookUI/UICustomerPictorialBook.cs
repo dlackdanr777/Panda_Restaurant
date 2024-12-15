@@ -22,6 +22,7 @@ public class UICustomerPictorialBook : MonoBehaviour
         for(int i = 0, cnt = _customerList.Count; i < cnt; ++i) 
         {
             UICustomerSlot slot = Instantiate(_slotPrefab, _slotParent);
+            slot.Init();
             slot.SetButtonEvent(OnSlotClicked);
             slot.SetData(_customerList[i]);
             _slotList.Add(slot);

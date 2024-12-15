@@ -47,7 +47,7 @@ public class MainScene : MonoBehaviour
             _updateTimer = 0;
             UserInfo.AddTip(GameManager.Instance.TipPerMinute);
 
-            if (UserInfo.CheckAttendance())
+            if (UserInfo.CheckLastAccessTime())
             {
                 UserInfo.UpdateLastAccessTime();
                 UserInfo.ResetDailyChallenges();

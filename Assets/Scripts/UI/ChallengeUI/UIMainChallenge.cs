@@ -57,6 +57,7 @@ public class UIMainChallenge : MobileUIView
         gameObject.SetActive(true);
         _dontTouchArea.gameObject.SetActive(false);
         _canvasGroup.blocksRaycasts = false;
+        UpdateData();
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);

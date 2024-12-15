@@ -15,13 +15,13 @@ public class UIMain : MonoBehaviour
         _customerController.OnAddCustomerHandler += OnChangeCustomerCountEvent;
         _customerController.OnGuideCustomerHandler += OnChangeCustomerCountEvent;
         GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnChangeCustomerCountEvent;
-        _customerController.OnAddCustomerHandler += OnUpdateAdButtonEvent;
-        _customerController.OnGuideCustomerHandler += OnUpdateAdButtonEvent;
-        GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnUpdateAdButtonEvent;
+        //_customerController.OnAddCustomerHandler += OnUpdateAdButtonEvent;
+        //_customerController.OnGuideCustomerHandler += OnUpdateAdButtonEvent;
+        //GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnUpdateAdButtonEvent;
 
-        _watchAdButton.AddListener(OnAdButtonClicked);
-        OnChangeCustomerCountEvent();
-        OnUpdateAdButtonEvent();
+        //_watchAdButton.AddListener(OnAdButtonClicked);
+       OnChangeCustomerCountEvent();
+        //OnUpdateAdButtonEvent();
     }
 
     private void OnAdButtonClicked()
@@ -36,7 +36,7 @@ public class UIMain : MonoBehaviour
 
     private void OnEnable()
     {
-        OnChangeCustomerCountEvent();
+        //OnChangeCustomerCountEvent();
     }
 
 
