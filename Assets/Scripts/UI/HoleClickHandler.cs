@@ -107,7 +107,6 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
             if (button != _selectButton || effect != _selectButtonPress)
                 continue;
 
-            DebugLog.Log(name + ": ¾÷");
             _selectButton?.OnPointerClick(eventData);
             _selectButtonPress?.OnPointerUp(eventData);
             _action?.Invoke();

@@ -14,11 +14,11 @@ public static class Utility
         }
         else if (value >= 1_000_000) // 100만 이상
         {
-            text = (value / 1_000_000f).ToString("#,##0.0") + "A"; // 백만 단위
+            text = (value / 1_000_000f).ToString("#,##0.0") + "M"; // 백만 단위
         }
         else // 1천 미만
         {
-            text = ((int)value).ToString();
+            text = ((int)value).ToString("N0");
         }
 
         return text;

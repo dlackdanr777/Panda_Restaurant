@@ -40,9 +40,12 @@ public class SoundManager : MonoBehaviour
     private static SoundManager _instance;
 
 
+    public event Action<float, AudioType> OnVolumeChangedHandler;
+
     private AudioMixer _audioMixer;
     private float _backgroundVolume = 0.5f;
     private float _effectVolume = 1f;
+
     private AudioSource[] _audios;
     private AudioClip[] _clips;
     private AudioClip _currentBackgroundClip;
@@ -53,15 +56,15 @@ public class SoundManager : MonoBehaviour
     private float _effectVolumeMul;
     public float EffectVolumeMul => _effectVolumeMul;
 
+    private bool _isVibration = false;
+    public bool IsVibration => _isVibration;
+
     //배경 음악 변경시 볼륨 업, 다운 기능을 위한 변수
     private Coroutine _changeAudioRoutine;
     private Coroutine _delayPlayEffectAudioRoutine;
     private Coroutine _stopBackgroundAudioRoutine;
     private Coroutine _stopEffectAudioRoutine;
 
-
-    //대리자
-    public event Action<float, AudioType> OnVolumeChangedHandler;
 
     private  void Awake()
     {
@@ -129,6 +132,8 @@ public class SoundManager : MonoBehaviour
         float soundEffectVolume = PlayerPrefs.HasKey("SoundEffectVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("SoundEffectVolume"), 0, 1) : 1;
         //GameManager.Instance.Option.SetVolume(AudioType.EffectAudio, soundEffectVolume);
 
+        bool isVibration = PlayerPrefs.GetInt("IsVibration", 0) == 1;
+
         _audioMixer.SetFloat("Master", 1);
         _audioMixer.SetFloat("Background", backgroundVolume);
         _audioMixer.SetFloat("SoundEffect", soundEffectVolume);
@@ -136,6 +141,7 @@ public class SoundManager : MonoBehaviour
         SetVolume(1, AudioType.Master);
         SetVolume(backgroundVolume, AudioType.BackgroundAudio);
         SetVolume(soundEffectVolume, AudioType.EffectAudio);
+        _isVibration = isVibration;
     }
 
 
@@ -164,6 +170,12 @@ public class SoundManager : MonoBehaviour
     public void SaveSoundData(string name, float value)
     {
         PlayerPrefs.SetFloat(name + "Volume", value);
+    }
+
+    public void SetVibration(bool value)
+    {
+        _isVibration = value;
+        PlayerPrefs.SetInt("IsVibration", value ? 1 : 0);
     }
 
 

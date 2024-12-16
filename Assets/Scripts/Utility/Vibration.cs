@@ -32,6 +32,9 @@ public static class Vibration
 #if UNITY_ANDROID && !UNITY_EDITOR
         try
         {
+            if (!SoundManager.Instance.IsVibration)
+                return;
+
             if (_unityPlayer == null)
                 _unityPlayer = new AndroidJavaClass("com.unity3d.player.UnityPlayer");
 

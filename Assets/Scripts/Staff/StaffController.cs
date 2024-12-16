@@ -27,6 +27,16 @@ public class StaffController : MonoBehaviour
             _staffs[i] = staff;
             staff.Init();
         }
+
+        for(int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        {
+            StaffData data = UserInfo.GetEquipStaff((StaffType)i);
+
+            if (data == null)
+                continue;
+
+            _staffs[i].SetStaffData(data, _tableManager, _kitchenSystem, _customerController);
+        }
     }
 
 

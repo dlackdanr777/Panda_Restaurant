@@ -36,6 +36,6 @@ public class UIBetaTestSurvey : MonoBehaviour
             return;
         }
 
-        PopupManager.Instance.ShowDisplayText("가구'평범한 세트'를 완성해 주세요!");
+        PopupManager.Instance.ShowDisplayText("원스토어 리워드를 참가하시려면\n가구 '평범한 세트' 를 완성해 주세요!");
     }
 }

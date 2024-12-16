@@ -30,7 +30,7 @@ public class UIsetting : MobileUIView
      
     public override void Init()
     {
-        _alramButton.Init(null, null, false);
+        _alramButton.Init(() => OnVibrationButtonClicked(false), () => OnVibrationButtonClicked(true), SoundManager.Instance.IsVibration);
         _musicButton.Init(() => SoundManager.Instance.SetVolume(0, AudioType.BackgroundAudio), () => SoundManager.Instance.SetVolume(1, AudioType.BackgroundAudio), 0 < SoundManager.Instance.GetVolume(AudioType.BackgroundAudio));
         _soundEffectButton.Init(() => SoundManager.Instance.SetVolume(0, AudioType.EffectAudio), () => SoundManager.Instance.SetVolume(1, AudioType.EffectAudio), 0 < SoundManager.Instance.GetVolume(AudioType.EffectAudio));
         _userId.Init(UserInfo.UserId);
@@ -48,6 +48,7 @@ public class UIsetting : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
+        _alramButton.IsOn(SoundManager.Instance.IsVibration);
         _musicButton.IsOn(0 < SoundManager.Instance.GetVolume(AudioType.BackgroundAudio));
         _soundEffectButton.IsOn(0 < SoundManager.Instance.GetVolume(AudioType.EffectAudio));
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
@@ -75,6 +76,16 @@ public class UIsetting : MobileUIView
             gameObject.SetActive(false);
         });
     }
+
+
+    private void OnVibrationButtonClicked(bool value)
+    {
+        SoundManager.Instance.SetVibration(value);
+
+        if(value)
+            Vibration.Vibrate(500);
+    }
+
 
     private void OnHomepageButtonClicked()
     {

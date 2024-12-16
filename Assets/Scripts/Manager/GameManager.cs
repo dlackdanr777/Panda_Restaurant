@@ -203,7 +203,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-#if UNITY_EDITOR
+/*#if UNITY_EDITOR
         UserInfo.GiveFurniture("TABLE08_01");
         UserInfo.SetEquipFurniture("TABLE08_01");
 
@@ -239,7 +239,7 @@ public class GameManager : MonoBehaviour
 
         UserInfo.GiveKitchenUtensil("COOKER01_01");
         UserInfo.SetEquipKitchenUtensil("COOKER01_01");
-#endif
+#endif*/
 
     }
 

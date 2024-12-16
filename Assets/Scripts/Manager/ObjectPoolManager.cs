@@ -361,7 +361,7 @@ public class ObjectPoolManager : MonoBehaviour
     {
         RectTransform coin;
 
-        if (_coinPool.Count == 0)
+        if (_uiCoinPool.Count == 0)
         {
             coin = Instantiate(_uiCoinPrefab, pos, rot, _uiCanvas.transform);
             return coin;

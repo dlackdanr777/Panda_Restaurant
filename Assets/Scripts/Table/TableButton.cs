@@ -16,7 +16,6 @@ public class TableButton : MonoBehaviour
         UserInfo.OnGiveRecipeHandler += UpdateFoodImage;
     }
 
-
     public void AddListener(UnityAction action)
     {
         _button.onClick.AddListener(action);

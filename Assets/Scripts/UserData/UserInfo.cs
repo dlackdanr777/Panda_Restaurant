@@ -574,15 +574,17 @@ public static class UserInfo
         OnVisitSpecialCustomerHandler?.Invoke();
     }
 
-    public static void AddExterminationGatecrasherCustomer1Count()
+    public static void AddExterminationGatecrasherCustomerCount(CustomerData data)
     {
-        _totalExterminationGatecrasherCustomer1Count += 1;
-        OnExterminationGatecrasherCustomerHandler?.Invoke();
-    }
+        if (data is GatecrasherCustomer1Data)
+            _totalExterminationGatecrasherCustomer1Count += 1;
 
-    public static void AddExterminationGatecrasherCustomer2Count()
-    {
-        _totalExterminationGatecrasherCustomer2Count += 1;
+        else if (data is GatecrasherCustomer2Data)
+            _totalExterminationGatecrasherCustomer2Count += 1;
+
+        else
+            return;
+
         OnExterminationGatecrasherCustomerHandler?.Invoke();
     }
 

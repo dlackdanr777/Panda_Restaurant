@@ -1,9 +1,9 @@
 ﻿ID,퀘스트 타입,바로가기 타입,설명,타입 필요 id,필요 개수,보상타입,보상,,퀘스트 타입,설명,,,,,바로가기 타입,위치
-DailyReward01,TYPE31,ShortCut01,손님 방문 10회,,5,코인,3000,,TYPE01,가구 구매하기,,,,,ShortCut01,메인 씬
+DailyReward01,TYPE31,ShortCut01,손님 방문 10회,,10,코인,3000,,TYPE01,가구 구매하기,,,,,ShortCut01,메인 씬
 DailyReward02,TYPE32,ShortCut01,누적 코인 10.000획득,,10000,코인,4000,,TYPE02,주방 구매하기,,,,,ShortCut02,주방 씬
 DailyReward03,TYPE33,ShortCut01,음식 제작 20회,,20,코인,5000,,TYPE03,특정 레시피 구매하기,,,,,ShortCut03,샵(가구)
 DailyReward04,TYPE34,ShortCut01,쓰레기 줍기 20회,,20,코인,5000,,TYPE04,특정 레시피 제작하기,,,,,ShortCut04,샵(주방)
-DailyReward06,TYPE35,ShortCut01,일일 퀘스트 모두 완료하기,,5,다이아,30,,TYPE05,특정 스테프 채용하기,,,,,ShortCut05,샵(스텝)
+DailyReward06,TYPE30,ShortCut01,일일 퀘스트 모두 완료하기,,5,다이아,30,,TYPE05,특정 스테프 채용하기,,,,,ShortCut05,샵(스텝)
 ,,,,,,,,,TYPE06,레시피 배우기 누적 횟수 달성,,,,,ShortCut06,샵(레시피)
 ,,,,,,,,,TYPE07,음식 제작(서빙) 누적 횟수 달성,,,,,ShortCut07,가게 관리
 ,,,,,,,,,TYPE08,누적 평점 획득 달성,,,,,ShortCut08,도전 과제

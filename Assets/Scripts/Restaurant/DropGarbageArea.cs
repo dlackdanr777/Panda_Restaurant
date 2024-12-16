@@ -1,4 +1,5 @@
 using Muks.Tween;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class DropGarbageArea : MonoBehaviour
@@ -16,7 +17,8 @@ public class DropGarbageArea : MonoBehaviour
     [Header("Audios")]
     [SerializeField] private AudioClip _cleanSound;
 
-    private PointerDownSpriteRenderer[] _garbages;
+    
+    private List<PointerDownSpriteRenderer> _garbageList = new List<PointerDownSpriteRenderer>();
     private int _currentGarbageCount;
     public int Count => _currentGarbageCount;
     private Vector3[] _rotate = new Vector3[7];
@@ -30,7 +32,11 @@ public class DropGarbageArea : MonoBehaviour
     private void Init()
     {
         _currentGarbageCount = 0;
-        _garbages = new PointerDownSpriteRenderer[_maxGarbageCount];
+        for (int i = 0; i < _garbageList.Count; i++)
+        {
+            ObjectPoolManager.Instance.DespawnGarbage(_garbageList[i]);
+        }
+        _garbageList.Clear();
 
         _rotate[0] = new Vector3(0, 0, 0);
         _rotate[1] = new Vector3(0, 0, 90);
@@ -41,17 +47,15 @@ public class DropGarbageArea : MonoBehaviour
         _rotate[6] = new Vector3(0, 0, -270);
     }
 
-    public void LoadData(int Count)
+    public void LoadData(int count)
     {
-        _currentGarbageCount = Mathf.Clamp(Count, 0, _maxGarbageCount);
+        _currentGarbageCount = Mathf.Clamp(count, 0, _maxGarbageCount);
 
-        for (int i = 0, cnt = _garbages.Length; i < cnt; ++i)
+        for (int i = 0, cnt = _garbageList.Count; i < cnt; ++i)
         {
-            if (_garbages[i] == null)
-                continue;
-
-            ObjectPoolManager.Instance.DespawnGarbage(_garbages[i]);
+            ObjectPoolManager.Instance.DespawnGarbage(_garbageList[i]);
         }
+        _garbageList.Clear();
 
         for (int i = 0, cnt = _currentGarbageCount; i < cnt; i++)
         {
@@ -59,9 +63,10 @@ public class DropGarbageArea : MonoBehaviour
             Vector3 targetPos = _dropArea.position;
             targetPos += new Vector3(-(_areaRangeX * 0.5f) + ((_areaRangeX / _maxGarbageCount) * index), 0, 0);
 
-            _garbages[index] = ObjectPoolManager.Instance.SpawnGarbage(targetPos, Quaternion.identity);
-            _garbages[index].TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
-            _garbages[index].AddEvent(CleanGarbage);
+            PointerDownSpriteRenderer garbage = ObjectPoolManager.Instance.SpawnGarbage(targetPos, Quaternion.identity);
+            garbage.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
+            garbage.AddEvent(CleanGarbage);
+            _garbageList.Add(garbage);
         }
     }
 
@@ -70,17 +75,17 @@ public class DropGarbageArea : MonoBehaviour
     {
         PointerDownSpriteRenderer garbage = ObjectPoolManager.Instance.SpawnGarbage(startPos, Quaternion.identity);
         garbage.SpriteRenderer.color = Color.white;
+        garbage.AddEvent(CleanGarbage);
 
         Vector3 targetPos = _dropArea.position;
         targetPos += new Vector3(-(_areaRangeX * 0.5f) + ((_areaRangeX / _maxGarbageCount) * _currentGarbageCount), 0, 0);
 
-        if (_currentGarbageCount < _maxGarbageCount)
+        if (_garbageList.Count < _maxGarbageCount)
         {
-            _garbages[_currentGarbageCount] = garbage;
-            garbage.AddEvent(CleanGarbage);
-            _currentGarbageCount++;
+            _garbageList.Add(garbage);
         }
 
+        _currentGarbageCount = Mathf.Clamp(_garbageList.Count, 0, _maxGarbageCount);
         garbage.TweenRotate(_rotate[Random.Range(0, _rotate.Length)], 0.5f, Ease.InQuad);
         garbage.TweenMoveX(targetPos.x, 0.5f);
         garbage.TweenMoveY(targetPos.y, 0.5f, Ease.InBack).OnComplete(() =>
@@ -98,29 +103,30 @@ public class DropGarbageArea : MonoBehaviour
 
     public void CleanGarbage()
     {
-        if (_currentGarbageCount == 0)
+        if (_garbageList.Count <= 0)
             return;
 
         UserInfo.AddCleanCount();
-        int currentCoinCount = _currentGarbageCount;
         _currentGarbageCount = 0;
         SoundManager.Instance.PlayEffectAudio(_cleanSound);
 
-        for (int i = 0; i < currentCoinCount; i++)
+        for (int i = 0; i < _garbageList.Count; i++)
         {
-            int coinIndex = i;
-            _garbages[coinIndex].RemoveEvent(CleanGarbage);
-            _garbages[coinIndex].TweenStop();
-            _garbages[coinIndex].SpriteRenderer.TweenAlpha(0, _garbageEndTime, Ease.Smoothstep);
+            int index = i;
+            PointerDownSpriteRenderer garbage = _garbageList[index];
+            garbage.RemoveEvent(CleanGarbage);
+            garbage.TweenStop();
+            garbage.SpriteRenderer.TweenAlpha(0, _garbageEndTime, Ease.Smoothstep);
 
-            float targetY = _garbages[coinIndex].transform.position.y + 8;
-            _garbages[coinIndex].TweenMoveY(targetY, _garbageEndTime, Ease.Smoothstep).
+            float targetY = garbage.transform.position.y + 8;
+            garbage.TweenMoveY(targetY, _garbageEndTime, Ease.Smoothstep).
                 OnComplete(() =>
                 {
-                    ObjectPoolManager.Instance.DespawnGarbage(_garbages[coinIndex]);
-                    _garbages[coinIndex] = null;
+                    garbage.TweenStop();
+                    ObjectPoolManager.Instance.DespawnGarbage(garbage);
                 });
 
         }
+        _garbageList.Clear();
     }
 }

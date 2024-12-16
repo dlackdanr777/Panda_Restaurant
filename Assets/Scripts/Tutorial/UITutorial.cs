@@ -295,6 +295,7 @@ public class UITutorial : MobileUIView
     public void OrderButtonSetActive(bool value)
     {
         _orderButton.gameObject.SetActive(value);
+        DebugLog.Log("¿À´õ È¦: " + value);
         _orderButton.SetData(FoodDataManager.Instance.GetFoodData("FOOD01"));
         _orderHole.SetActive(false);
         _orderHoleCursor.SetActive(false);

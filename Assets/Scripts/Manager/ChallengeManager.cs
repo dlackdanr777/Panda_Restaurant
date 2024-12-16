@@ -209,7 +209,6 @@ public class ChallengeManager : MonoBehaviour
             BindData<UnityAction> shortcutAction = GetShortCutAction(row[2]);
             string description = row[3];
             string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
-            DebugLog.Log(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
             int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
             MoneyType moneyType = row[6] == "ÄÚÀÎ" ? MoneyType.Gold : MoneyType.Dia;
             int rewardMoney = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
@@ -1958,7 +1957,6 @@ public class ChallengeManager : MonoBehaviour
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
-
         foreach (Type30ChallengeData data in _type30ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
