@@ -33,7 +33,7 @@ public class MainScene : MonoBehaviour
 
 #if UNITY_EDITOR
         //UserInfo.AddDia(1000);
-        UserInfo.AddMoney(100000);
+        UserInfo.AddMoney(100000000);
 #endif
     }
 
@@ -46,7 +46,7 @@ public class MainScene : MonoBehaviour
         {
             _updateTimer = 0;
             UserInfo.AddTip(GameManager.Instance.TipPerMinute);
-
+            GameManager.Instance.AsyncSaveGameData();
             if (UserInfo.CheckLastAccessTime())
             {
                 UserInfo.UpdateLastAccessTime();
@@ -55,8 +55,7 @@ public class MainScene : MonoBehaviour
                 if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
                     return;
 
-                Param param = UserInfo.GetSaveGameData();
-                BackendManager.Instance.SaveGameData("GameData", 3, param);
+                GameManager.Instance.AsyncSaveGameData();
             }
 
         }

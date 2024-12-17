@@ -174,7 +174,7 @@ public class UIMainChallenge : MobileUIView
         float time = 0;
         UserInfo.TipCollection();
         ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
-
+        SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
         for (int i = 0; i < _coinCount; ++i)
         {
             int index = i;

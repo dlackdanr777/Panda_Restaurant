@@ -21,6 +21,7 @@ public class UIRecipePreview : MonoBehaviour
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
     [SerializeField] private UIButtonAndImage _minigameButton;
+    [SerializeField] private Button _needItemButton;
     [SerializeField] private UIImageAndText _needItemImage;
 
     [Space]
@@ -44,7 +45,9 @@ public class UIRecipePreview : MonoBehaviour
         _minigameButton.AddListener(OnMiniGameButtonClicked);
         _buyButton.AddListener(OnBuyEvent);
         _notEnoughMoneyButton.AddListener(OnBuyEvent);
+        _needItemButton.onClick.AddListener(OnNeedItemButtonClicked);
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
+
         UserInfo.OnUpgradeRecipeHandler += UpdateUI;
         UserInfo.OnGiveRecipeHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
@@ -206,4 +209,22 @@ public class UIRecipePreview : MonoBehaviour
         _uiMiniGame.StartMiniGame(data);
     }
 
+
+    private void OnNeedItemButtonClicked()
+    {
+        if(_currentData == null)
+        {
+            DebugLog.LogError("현재 음식 데이터가 없습니다.");
+            return;
+        }
+
+        GachaItemData itemData = ItemManager.Instance.GetGachaItemData(_currentData.NeedItem);
+        if(itemData == null)
+        {
+            DebugLog.LogError("이 음식은 요구 아이템이 없습니다.");
+            return;
+        }
+
+        PopupManager.Instance.ShowDisplayText("캡슐 뽑기를 통해\n" + Utility.SetStringColor(itemData.Name, ColorType.Positive) + " 아이템이 필요합니다.");
+    }
 }

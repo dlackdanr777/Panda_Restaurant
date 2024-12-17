@@ -85,7 +85,7 @@ public class CustomerDataManager : MonoBehaviour
             SortType.NameAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
             SortType.NameDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
             SortType.GradeAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
-            SortType.GradeDescending => _customerDataList.OrderBy(data => data.Name).ToList(),
+            SortType.GradeDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
             SortType.None => _customerDataList,
             _ => null
         };

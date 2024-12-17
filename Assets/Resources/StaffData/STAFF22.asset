@@ -23,35 +23,35 @@ MonoBehaviour:
   _skill: {fileID: 11400000, guid: ef660263ff65d1c4da0465a18b2666e7, type: 2}
   _cleanerLevelData:
   - _tipAddPercent: 60
-    _scoreIncrement: 140
+    _scoreIncrement: 120
     _upgradeMinScore: 160
     _upgradeMoneyData:
       _moneyType: 0
       _price: 120000
     _cleaningTime: 1
   - _tipAddPercent: 64
-    _scoreIncrement: 200
+    _scoreIncrement: 130
     _upgradeMinScore: 180
     _upgradeMoneyData:
       _moneyType: 0
       _price: 130000
     _cleaningTime: 1
   - _tipAddPercent: 68
-    _scoreIncrement: 250
+    _scoreIncrement: 150
     _upgradeMinScore: 200
     _upgradeMoneyData:
       _moneyType: 0
       _price: 150000
     _cleaningTime: 1
   - _tipAddPercent: 72
-    _scoreIncrement: 300
+    _scoreIncrement: 180
     _upgradeMinScore: 220
     _upgradeMoneyData:
       _moneyType: 0
       _price: 170000
     _cleaningTime: 1
   - _tipAddPercent: 77
-    _scoreIncrement: 350
+    _scoreIncrement: 230
     _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0

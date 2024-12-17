@@ -73,6 +73,9 @@ public class UIRestaurantAdmin : MobileUIView
         }
 
         SetBackgroundImage(BackgroundType.Furniture);
+
+
+
         gameObject.SetActive(false);
     }
 

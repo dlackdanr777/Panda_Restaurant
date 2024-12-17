@@ -29,6 +29,11 @@ public class UIKitchen : MobileUIView
     [SerializeField] private Transform _slotParnet;
     [SerializeField] private UIRestaurantAdminSlot _slotPrefab;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _equipSound;
+    [SerializeField] private AudioClip _dequipSound;
+
     private KitchenUtensilType _currentType;
     private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)KitchenUtensilType.Length];
     List<KitchenUtensilData> _currentTypeDataList;
@@ -157,6 +162,16 @@ public class UIKitchen : MobileUIView
     
     private void OnEquipButtonClicked(ShopData data)
     {
+        if (data == null)
+        {
+            SoundManager.Instance.PlayEffectAudio(_dequipSound);
+            UserInfo.SetNullEquipKitchenUtensil(_currentType);
+            SetKitchenUtensilDataData(_currentType);
+            //SetKitchenPreview();
+            return;
+        }
+
+        SoundManager.Instance.PlayEffectAudio(_equipSound);
         UserInfo.SetEquipKitchenUtensil(data.Id);
         SetKitchenUtensilDataData(_currentType);
         SetKitchenPreview();
@@ -212,7 +227,7 @@ public class UIKitchen : MobileUIView
         _uikitchenPreview.UpdateUI();
 
         KitchenUtensilData equipStaffData = UserInfo.GetEquipKitchenUtensil(_currentType);
-
+        DebugLog.Log(equipStaffData);
         int slotsIndex = (int)_currentType;
         KitchenUtensilData data;
         UIRestaurantAdminSlot slot;

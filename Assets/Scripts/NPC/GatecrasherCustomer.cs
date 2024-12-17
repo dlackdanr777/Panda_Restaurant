@@ -22,6 +22,12 @@ public class GatecrasherCustomer : Customer
     [Space]
     [Header("GatecrasherCustomer2 Option")]
     [SerializeField] private ParticleSystem _soundParticle;
+    [SerializeField] private AudioSource _guitarSource;
+
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _visitSound;
+
 
     private int _activeDuration;
     private float _currentTouchCount;
@@ -65,8 +71,11 @@ public class GatecrasherCustomer : Customer
         _soundParticle.Stop();
         _stealParticle.Stop();
         _disguiseOffParticle.Stop();
+        _guitarSource.Stop();
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
+
+        SoundManager.Instance.PlayEffectAudio(_visitSound, 0.15f);
 
         if (_enabledCoroutine != null)
             StopCoroutine(_enabledCoroutine);
@@ -95,7 +104,7 @@ public class GatecrasherCustomer : Customer
                 _touchEnabled = true;
                 ChangeState(CustomerState.Action);
                 _soundParticle.Play();
-
+                _guitarSource.Play();
                 if (_gatecrasher1Coroutine != null)
                     StopCoroutine(_gatecrasher1Coroutine);
 
@@ -240,6 +249,8 @@ public class GatecrasherCustomer : Customer
             StopCoroutine(_speedRecoveryCoroutine);
         _speedRecoveryCoroutine = StartCoroutine(SpeedRecoveryRoutine());
 
+        //SoundManager.Instance.PlayEffectAudio(SoundEffectType.ButtonClickSound);
+
         if (_totalTouchCount <= _currentTouchCount)
         {
             _isEndEvent = true;
@@ -258,7 +269,7 @@ public class GatecrasherCustomer : Customer
             _spriteGroup.SetAlpha(1);
             _spriteGroup.TweenSetAlpha(0, 0.7f);
             _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnGatecrasherCustomer(this));
-
+            _guitarSource.Stop();
             UserInfo.AddExterminationGatecrasherCustomerCount(_customerData);
             _onCompleted?.Invoke();
             return;
@@ -412,6 +423,7 @@ public class GatecrasherCustomer : Customer
         _spritePressEffect.Interactable = false;
         _spriteGroup.TweenSetAlpha(0, 0.7f);
         _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnGatecrasherCustomer(this));
+        _guitarSource.Stop();
         _onCompleted?.Invoke();
     }
 

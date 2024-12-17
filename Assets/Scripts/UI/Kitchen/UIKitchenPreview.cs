@@ -43,6 +43,7 @@ public class UIKitchenPreview : MonoBehaviour
         _onBuyButtonClicked = onBuyButtonClicked;
 
         _buyButton.AddListener(OnBuyEvent);
+        _usingButton.AddListener(() => _onEquipButtonClicked(null));
         _notEnoughMoneyButton.AddListener(OnBuyEvent);
         _equipButton.AddListener(OnEquipEvent);
     }

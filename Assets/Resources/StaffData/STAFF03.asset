@@ -23,35 +23,35 @@ MonoBehaviour:
   _skill: {fileID: 11400000, guid: 4bfdce5ace1067847854f37cc271fc34, type: 2}
   _waiterLevelData:
   - _tipAddPercent: 29
-    _scoreIncrement: 22
+    _scoreIncrement: 12
     _upgradeMinScore: 50
     _upgradeMoneyData:
       _moneyType: 0
       _price: 7500
     _servingTime: 14
   - _tipAddPercent: 30
-    _scoreIncrement: 24
+    _scoreIncrement: 14
     _upgradeMinScore: 60
     _upgradeMoneyData:
       _moneyType: 0
       _price: 12000
     _servingTime: 14
   - _tipAddPercent: 31
-    _scoreIncrement: 26
+    _scoreIncrement: 16
     _upgradeMinScore: 70
     _upgradeMoneyData:
       _moneyType: 0
       _price: 25000
     _servingTime: 14
   - _tipAddPercent: 32
-    _scoreIncrement: 28
+    _scoreIncrement: 18
     _upgradeMinScore: 80
     _upgradeMoneyData:
       _moneyType: 0
       _price: 50000
     _servingTime: 14
   - _tipAddPercent: 34
-    _scoreIncrement: 13
+    _scoreIncrement: 25
     _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0

@@ -33,7 +33,8 @@ public class CustomerController : MonoBehaviour
     public Vector3 _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
     public GatecrasherCustomer GatecrasherCustomer => _gatecrasherCustomer;
     public int Count => _customers.Count;
-    public bool IsMaxCount => Count >= GameManager.Instance.MaxWaitCustomerCount;
+    public bool IsMaxCount => GameManager.Instance.MaxWaitCustomerCount <= _customers.Count;
+
 
     public NormalCustomer GetFirstCustomer()
     {
@@ -57,6 +58,7 @@ public class CustomerController : MonoBehaviour
         List<SpecialCustomerData> specialCustomerDataList = CustomerDataManager.Instance.GetAppearSpecialCustomerDataList();
         List<GatecrasherCustomerData> gatecrasherCustomerDataList = CustomerDataManager.Instance.GetAppearGatecrasherCustomerDataList();
         int randInt = 0;
+
         for (int i = 0, cnt = GameManager.Instance.AddPromotionCustomer; i < cnt; i++)
         {
             if (IsMaxCount)

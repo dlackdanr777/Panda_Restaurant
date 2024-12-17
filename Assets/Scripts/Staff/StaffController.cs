@@ -9,13 +9,6 @@ public class StaffController : MonoBehaviour
     [SerializeField] private KitchenSystem _kitchenSystem;
     private Staff[] _staffs;
 
-    public void EquipStaff(StaffData data)
-    {
-        StaffType type = StaffDataManager.Instance.GetStaffType(data);
-        _staffs[(int)type].SetStaffData(data, _tableManager, _kitchenSystem, _customerController);
-        UserInfo.SetEquipStaff(data);
-    }
-
     private void Awake()
     {
         _staffs = new Staff[(int)StaffType.Length];
@@ -37,6 +30,8 @@ public class StaffController : MonoBehaviour
 
             _staffs[i].SetStaffData(data, _tableManager, _kitchenSystem, _customerController);
         }
+
+        UserInfo.OnChangeStaffHandler += OnEquipEvent;
     }
 
 
@@ -49,6 +44,16 @@ public class StaffController : MonoBehaviour
 
             _staffs[i].StaffAction();
             _staffs[i].UsingStaffSkill(_tableManager, _kitchenSystem, _customerController);
+        }
+    }
+
+
+    private void OnEquipEvent()
+    { 
+        for(int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        {
+            StaffData data = UserInfo.GetEquipStaff((StaffType)i);
+            _staffs[i].SetStaffData(data, _tableManager, _kitchenSystem, _customerController);
         }
     }
 }

@@ -46,7 +46,10 @@ public class TableButton : MonoBehaviour
         }
 
         if (data == _currentData)
+        {
+            _foodImage.material = UserInfo.IsGiveRecipe(data) ? null : _grayMat;
             return;
+        }
 
         _currentData = data;
         _foodImage.sprite = data.ThumbnailSprite;

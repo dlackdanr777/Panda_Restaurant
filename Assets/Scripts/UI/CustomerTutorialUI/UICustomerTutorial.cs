@@ -22,6 +22,7 @@ public class UICustomerTutorial : MobileUIView
     [SerializeField] private Ease _hideTweenMode;
 
 
+
     public override void Init()
     {
         _gateCrasher1Tab.Init();
@@ -36,7 +37,7 @@ public class UICustomerTutorial : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
-        Tween.Wait(3,() =>
+        Tween.Wait(1.5f,() =>
         {
             Vibration.Vibrate(500);
             gameObject.SetActive(true);

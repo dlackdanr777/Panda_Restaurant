@@ -30,28 +30,28 @@ MonoBehaviour:
       _price: 50000
     _servingTime: 20
   - _tipAddPercent: 22
-    _scoreIncrement: 28
+    _scoreIncrement: 16
     _upgradeMinScore: 120
     _upgradeMoneyData:
       _moneyType: 0
       _price: 130000
     _servingTime: 20
   - _tipAddPercent: 24
-    _scoreIncrement: 32
+    _scoreIncrement: 20
     _upgradeMinScore: 140
     _upgradeMoneyData:
       _moneyType: 0
       _price: 150000
     _servingTime: 20
   - _tipAddPercent: 26
-    _scoreIncrement: 36
+    _scoreIncrement: 24
     _upgradeMinScore: 160
     _upgradeMoneyData:
       _moneyType: 0
       _price: 180000
     _servingTime: 20
-  - _tipAddPercent: 36
-    _scoreIncrement: 45
+  - _tipAddPercent: 30
+    _scoreIncrement: 30
     _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0

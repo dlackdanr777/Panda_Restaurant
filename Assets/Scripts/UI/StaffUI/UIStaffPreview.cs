@@ -46,6 +46,7 @@ public class UIStaffPreview : MonoBehaviour
         _onBuyButtonClicked = onBuyButtonClicked;
 
         _buyButton.AddListener(OnBuyEvent);
+        _usingButton.AddListener(() => onEquipButtonClicked(null));
         _notEnoughMoneyButton.AddListener(OnBuyEvent);
         _equipButton.AddListener(OnEquipEvent);
     }

@@ -7,6 +7,9 @@ public class UIMainCanvas : MonoBehaviour
 {
     private MobileUINavigation _uiNav;
 
+    [SerializeField] private UIRestaurantAdmin _uiAdmin;
+
+
     private void Awake()
     {
         _uiNav = GetComponent<MobileUINavigation>();
@@ -15,6 +18,11 @@ public class UIMainCanvas : MonoBehaviour
     void Start()
     {
         DataBind.SetUnityActionValue("PopUI", OnPopUI);
+
+        DataBind.SetUnityActionValue("ShowFurnitureTab", OnShowFurnitureTab);
+        DataBind.SetUnityActionValue("ShowRecipeTab", OnShowRecipeTab);
+        DataBind.SetUnityActionValue("ShowKitchenTab", OnShowKitchenTab);
+        DataBind.SetUnityActionValue("ShowStaffTab", OnShowStaffTab);
 
         DataBind.SetUnityActionValue("ShowRestaurantAdminUI", OnShowRestaurantAdminUI);
         DataBind.SetUnityActionValue("HideRestaurantAdminUI", OnHideRestaurantAdminUI);
@@ -73,6 +81,13 @@ public class UIMainCanvas : MonoBehaviour
         DataBind.SetUnityActionValue("ShowAttendanceUI", OnShowAttendanceUI);
         DataBind.SetUnityActionValue("HideAttendanceUI", OnHideAttendanceUI);
         DataBind.SetUnityActionValue("HideNoAnimeAttendanceUI", OnHideNoAnimeAttendanceUI);
+
+        DataBind.SetUnityActionValue("ShowUserReportUI", OnShowUserReportUI);
+        DataBind.SetUnityActionValue("HideUserReportUI", OnHideUserReportUI);
+        DataBind.SetUnityActionValue("HideNoAnimeUserReportUI", OnHideNoAnimeUserReportUI);
+
+
+
     }
 
 
@@ -80,6 +95,31 @@ public class UIMainCanvas : MonoBehaviour
     {
         _uiNav.Pop();
     }
+
+    private void OnShowRecipeTab()
+    {
+        _uiNav.Push("RestaurantAdminUI");
+        _uiAdmin.ShowRecipeTab();
+    }
+
+    private void OnShowFurnitureTab()
+    {
+        _uiNav.Push("RestaurantAdminUI");
+        _uiAdmin.ShowFurnitureTab();
+    }
+
+    private void OnShowStaffTab()
+    {
+        _uiNav.Push("RestaurantAdminUI");
+        _uiAdmin.ShowStaffTab();
+    }
+
+    private void OnShowKitchenTab()
+    {
+        _uiNav.Push("RestaurantAdminUI");
+        _uiAdmin.ShowKitchenTab();
+    }
+
 
     private void OnShowRestaurantAdminUI()
     {
@@ -283,5 +323,21 @@ public class UIMainCanvas : MonoBehaviour
     private void OnHideNoAnimeAttendanceUI()
     {
         _uiNav.PopNoAnime("UIAttendance");
+    }
+
+
+    private void OnShowUserReportUI()
+    {
+        _uiNav.Push("UIUserReport");
+    }
+
+    private void OnHideUserReportUI()
+    {
+        _uiNav.Pop("UIUserReport");
+    }
+
+    private void OnHideNoAnimeUserReportUI()
+    {
+        _uiNav.PopNoAnime("UIUserReport");
     }
 }

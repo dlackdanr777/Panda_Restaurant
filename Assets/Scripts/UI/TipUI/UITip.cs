@@ -127,13 +127,12 @@ public class UITip : MobileUIView
             coinCnt = coinCnt <= 10 ? 10 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
             UserInfo.TipCollection(isAds);
             ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
-
+            SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
             for (int i = 0, cnt = coinCnt; i < cnt; ++i)
             {
                 int index = i;
                 RectTransform coin = ObjectPoolManager.Instance.SpawnUICoin(_coinPos.transform.position, Quaternion.identity);
                 Vector2 coinPos = UnityEngine.Random.insideUnitCircle * 300;
-
                 coin.TweenAnchoredPosition(coinPos, 0.4f, Ease.InQuad).OnComplete(() =>
                 {
                     float height = 100;

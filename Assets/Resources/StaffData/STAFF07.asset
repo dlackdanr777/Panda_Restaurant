@@ -23,35 +23,35 @@ MonoBehaviour:
   _skill: {fileID: 11400000, guid: cd009befb3873f14fbd76d7188b1e9b8, type: 2}
   _managerLevelData:
   - _tipAddPercent: 29
-    _scoreIncrement: 22
+    _scoreIncrement: 14
     _upgradeMinScore: 50
     _upgradeMoneyData:
       _moneyType: 0
       _price: 4000
     _maxWaitCustomerCount: 2
   - _tipAddPercent: 30
-    _scoreIncrement: 24
+    _scoreIncrement: 16
     _upgradeMinScore: 70
     _upgradeMoneyData:
       _moneyType: 0
       _price: 9000
     _maxWaitCustomerCount: 2
   - _tipAddPercent: 32
-    _scoreIncrement: 26
+    _scoreIncrement: 18
     _upgradeMinScore: 90
     _upgradeMoneyData:
       _moneyType: 0
       _price: 30000
     _maxWaitCustomerCount: 2
   - _tipAddPercent: 34
-    _scoreIncrement: 28
+    _scoreIncrement: 20
     _upgradeMinScore: 110
     _upgradeMoneyData:
       _moneyType: 0
       _price: 50000
     _maxWaitCustomerCount: 2
   - _tipAddPercent: 36
-    _scoreIncrement: 30
+    _scoreIncrement: 24
     _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0

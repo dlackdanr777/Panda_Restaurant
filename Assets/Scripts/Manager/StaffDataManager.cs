@@ -61,7 +61,7 @@ public class StaffDataManager : MonoBehaviour
         else if (data is ChefData)
             return StaffType.Chef;
 
-        else throw new System.Exception("해당 스태프의 종류가 존재하지 않습니다.");
+        else return StaffType.Length;
     }
 
 

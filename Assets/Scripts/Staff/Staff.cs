@@ -66,6 +66,9 @@ public class Staff : MonoBehaviour
 
     public void SetStaffData(StaffData staffData, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
+        if (staffData == _staffData)
+            return;
+
         if (_staffData != null)
             _staffData.RemoveSlot(this, tableManager, kitchenSystem, customerController);
 
@@ -91,7 +94,6 @@ public class Staff : MonoBehaviour
         _speedMul = 0;
         _usingSkill = false;
         _skillTimer = 0;
-
         _spriteRenderer.sprite = staffData.Sprite;
         _spriteParent.transform.localPosition = new Vector3(0, -(AStar.Instance.NodeSize * 0.5f), 0);
         _spriteRenderer.transform.localPosition = Vector3.zero;
@@ -177,7 +179,6 @@ public class Staff : MonoBehaviour
         if (_state != EStaffState.ActionEnable)
             return;
 
-        DebugLog.Log("½ÇÇà");
         _staffAction.PerformAction(this);
     }
 
@@ -337,16 +338,14 @@ public class Staff : MonoBehaviour
             nodeList.RemoveAt(0);
 
         SetStaffState(EStaffState.Run);
-
         foreach (Vector2 vec in nodeList)
         {
-            while (Vector3.Distance(_moveObj.transform.position, vec) > 0.05f)
+            while (Vector3.Distance(_moveObj.transform.position, vec) > 0.1f)
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
-                _moveObj.transform.Translate(dir * Time.deltaTime * 5 * SpeedMul, Space.World);
-
+                _moveObj.transform.Translate(dir * 0.02f * 5 * SpeedMul, Space.World);
                 SetSpriteDir(dir.x);
-                yield return null;
+                yield return YieldCache.WaitForSeconds(0.01f);
             }
         }
 

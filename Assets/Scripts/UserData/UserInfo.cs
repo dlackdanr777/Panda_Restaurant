@@ -409,7 +409,7 @@ public static class UserInfo
         _totalExterminationGatecrasherCustomer1Count = loadData.TotalExterminationGatecrasherCustomer1Count;
         _totalExterminationGatecrasherCustomer2Count = loadData.TotalExterminationGatecrasherCustomer2Count;
 
-        _userId = string.IsNullOrEmpty(loadData.UserId) ? "User" + UnityEngine.Random.Range(10000000, 20000000) : loadData.UserId;
+        _userId = string.IsNullOrWhiteSpace(loadData.UserId) || !loadData.UserId.StartsWith("User") ? "User" + UnityEngine.Random.Range(10000000, 20000000) : loadData.UserId;
         _firstAccessTime = loadData.FirstAccessTime;
         _lastAccessTime = loadData.LastAccessTime;
         _lastAttendanceTime = loadData.LastAttendanceTime;
@@ -757,6 +757,14 @@ public static class UserInfo
         _equipStaffDatas[(int)StaffDataManager.Instance.GetStaffType(data)] = data;
         OnChangeStaffHandler?.Invoke();
     }
+
+
+    public static void SetNullEquipStaff(StaffType type)
+    {
+        _equipStaffDatas[(int)type] = null;
+        OnChangeStaffHandler?.Invoke();
+    }
+
 
     public static StaffData GetEquipStaff(StaffType type)
     {
@@ -1436,11 +1444,13 @@ public static class UserInfo
         OnChangeFurnitureHandler?.Invoke(data.Type);
     }
 
-    public static void DisarmEquipFurniture(FurnitureType type)
+
+    public static void SetNullEquipFurniture(FurnitureType type)
     {
         _equipFurnitureDatas[(int)type] = null;
         OnChangeFurnitureHandler?.Invoke(type);
     }
+
 
     public static FurnitureData GetEquipFurniture(FurnitureType type)
     {
@@ -1554,6 +1564,12 @@ public static class UserInfo
         KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
         _equipKitchenUtensilDatas[(int)data.Type] = data;
         OnChangeKitchenUtensilHandler?.Invoke(data.Type);
+    }
+
+    public static void SetNullEquipKitchenUtensil(KitchenUtensilType type)
+    {
+        _equipKitchenUtensilDatas[(int)type] = null;
+        OnChangeKitchenUtensilHandler?.Invoke(type);
     }
 
     public static void DisarmEquipKitchenUtensil(KitchenUtensilType type)

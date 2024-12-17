@@ -17,6 +17,8 @@ public enum SoundEffectType
     ButtonClickSound,
     ButtonExitSound,
     BuySound,
+    GoldSound,
+    DiaSound,
     Length
 }
 

@@ -17,7 +17,6 @@ public class DropCoinArea : MonoBehaviour
 
     [Space]
     [SerializeField] private AudioClip _dropCoinSound;
-    [SerializeField] private AudioClip _getCoinSound;
 
     private List<PointerDownSpriteRenderer> _coinList = new List<PointerDownSpriteRenderer>();
     private int _currentMoney;
@@ -107,7 +106,7 @@ public class DropCoinArea : MonoBehaviour
         int currentMoney = _currentMoney;
         _currentMoney = 0;
         _currentCoinCount = 0;
-        SoundManager.Instance.PlayEffectAudio(_getCoinSound);
+        SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
         {
@@ -137,7 +136,7 @@ public class DropCoinArea : MonoBehaviour
         int currentCoinCount = _currentCoinCount;
         _currentMoney = 0;
         _currentCoinCount = 0;
-        SoundManager.Instance.PlayEffectAudio(_getCoinSound);
+        SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
         {

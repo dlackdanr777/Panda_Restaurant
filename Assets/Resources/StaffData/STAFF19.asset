@@ -51,7 +51,7 @@ MonoBehaviour:
       _price: 200000
     _servingTime: 10
   - _tipAddPercent: 47
-    _scoreIncrement: 65
+    _scoreIncrement: 70
     _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0

@@ -3,6 +3,7 @@ using Muks.Tween;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class UIStaff : MobileUIView
 {
@@ -31,6 +32,12 @@ public class UIStaff : MobileUIView
     [SerializeField] private int _createSlotValue;
     [SerializeField] private Transform _slotParnet;
     [SerializeField] private UIRestaurantAdminSlot _slotPrefab;
+
+
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _equipSound;
+    [SerializeField] private AudioClip _dequipSound;
 
     private StaffType _currentType;
     private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)StaffType.Length];
@@ -143,10 +150,20 @@ public class UIStaff : MobileUIView
     
     private void OnEquipButtonClicked(StaffData data)
     {
-        _staffController.EquipStaff(data);
+        if(data == null)
+        {
+            SoundManager.Instance.PlayEffectAudio(_dequipSound);
+            UserInfo.SetNullEquipStaff(_currentType);
+            SetStaffData(_currentType);
+            //SetStaffPreview();
+            return;
+        }
+        SoundManager.Instance.PlayEffectAudio(_equipSound);
+        UserInfo.SetEquipStaff(data);
         SetStaffData(_currentType);
         SetStaffPreview();
     }
+
 
     private void OnBuyButtonClicked(StaffData data)
     {
@@ -203,7 +220,6 @@ public class UIStaff : MobileUIView
         _uiStaffPreview.UpdateUI();
 
         StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
-
         int slotsIndex = (int)_currentType;
         StaffData data;
         UIRestaurantAdminSlot slot;

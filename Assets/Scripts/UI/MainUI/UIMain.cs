@@ -62,12 +62,11 @@ public class UIMain : MonoBehaviour
             return;
         }
 
-
-        if(_customerController.Count < GameManager.Instance.MaxWaitCustomerCount)
+        else if(_customerController.Count < GameManager.Instance.MaxWaitCustomerCount)
         {
             _customerCountImage.gameObject.SetActive(true);
             _customerMaxCountImage.SetActive(false);
-            _customerCountImage.SetText((_customerController.Count - 9).ToString());
+            _customerCountImage.SetText(Mathf.Clamp(_customerController.Count - 9, 0, 30).ToString());
         }
 
         else

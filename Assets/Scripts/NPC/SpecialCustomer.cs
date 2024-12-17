@@ -11,6 +11,11 @@ public class SpecialCustomer : Customer
     [SerializeField] private SpritePressEffect _spritePressEffect;
     [SerializeField] private ParticleSystem _coinParticle;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _visitSound;
+    [SerializeField] private AudioClip _goldSound;
+
     private int _activeDuration;
     private int _touchCount;
     private int _touchAddMoney;
@@ -42,6 +47,8 @@ public class SpecialCustomer : Customer
         _spritePressEffect.Interactable = true;
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
+
+        SoundManager.Instance.PlayEffectAudio(_visitSound, 0.15f);
 
         if (_touchCoroutine != null)
             StopCoroutine(_touchCoroutine);
@@ -91,7 +98,7 @@ public class SpecialCustomer : Customer
         _touchCoroutine = StartCoroutine(OnTouchRoutine());
 
         UserInfo.AddMoney(_touchAddMoney + GameManager.Instance.AddSpecialCustomerMoney);
-
+        SoundManager.Instance.PlayEffectAudio(_goldSound);
         if (_touchCount <= 0)
         {
             _isEndEvent = true;

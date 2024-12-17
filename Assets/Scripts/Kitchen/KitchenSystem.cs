@@ -39,6 +39,7 @@ public class KitchenSystem : MonoBehaviour
             _burnerTimers[i].Init();
             _burnerTimers[i].SetWorldTransform(_burnerTimerTrs[i]);
             _burnerTimers[i].SetFillAmount(0);
+            _burnerTimers[i].gameObject.SetActive(false);
         }
 
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)

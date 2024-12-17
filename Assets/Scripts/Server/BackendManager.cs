@@ -781,14 +781,15 @@ namespace Muks.BackEnd
         }
 
 
-        public void BugReportUpload(string email, string logDescription)
+        public void BugReportUpload(string userId, string email, string logDescription)
         {
             if (!Backend.IsLogin || !_isLogin)
                 return;
 
             Param logParam = new Param();
-            logParam.Add("Email", email);
             logParam.Add("Description", logDescription);
+            logParam.Add("Email", email);
+            logParam.Add("UserId", userId);
             Backend.GameLog.InsertLogV2("BugReport", logParam);
         }
 
@@ -797,7 +798,6 @@ namespace Muks.BackEnd
         public void ShowPopup(string title, string description, Action onButtonClicked = null)
         {
             PopupManager.Instance.ShowPopup(title, description, onButtonClicked);
-            //_popup.Show(title, description, onButtonClicked);
         }
 
 

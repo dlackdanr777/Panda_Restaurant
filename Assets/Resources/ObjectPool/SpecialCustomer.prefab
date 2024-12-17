@@ -4997,6 +4997,8 @@ MonoBehaviour:
   _spriteRenderer: {fileID: 8002874606411395625}
   _spritePressEffect: {fileID: 8990246247636248208}
   _coinParticle: {fileID: 6484403252911908027}
+  _visitSound: {fileID: 8300000, guid: 35a6d6c14300e4848a71c6549b302eea, type: 3}
+  _goldSound: {fileID: 8300000, guid: 8eccfbf13598c4a4b813f1ed2178d03b, type: 3}
 --- !u!1 &8803229222698952562
 GameObject:
   m_ObjectHideFlags: 0

@@ -133,6 +133,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _angerSprite: {fileID: 6036484457547112159}
+  _angerSound: {fileID: 8300000, guid: b5d3832afe58edf42877b486912a67f6, type: 3}
 --- !u!1 &8531199010196193388
 GameObject:
   m_ObjectHideFlags: 0
@@ -178,6 +179,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 75e8673525e40334c9e4bbf87b746f6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _drawPath: 0
   _moveObj: {fileID: 8531199010196193388}
   _animator: {fileID: 3092635076492906523}
   _spriteParent: {fileID: 853882216369539704}

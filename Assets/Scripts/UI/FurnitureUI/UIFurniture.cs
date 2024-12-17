@@ -31,6 +31,11 @@ public class UIFurniture : MobileUIView
     [SerializeField] private Transform _slotParnet;
     [SerializeField] private UIRestaurantAdminSlot _slotPrefab;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _equipSound;
+    [SerializeField] private AudioClip _dequipSound;
+
     private FurnitureType _currentType;
     private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)FurnitureType.Length];
     List<FurnitureData> _currentTypeDataList;
@@ -141,6 +146,16 @@ public class UIFurniture : MobileUIView
     
     private void OnEquipButtonClicked(FurnitureData data)
     {
+        if (data == null)
+        {
+            SoundManager.Instance.PlayEffectAudio(_dequipSound);
+            UserInfo.SetNullEquipFurniture(_currentType);
+            SetFurnitureData(_currentType);
+            //SetFurniturePreview();
+            return;
+        }
+
+        SoundManager.Instance.PlayEffectAudio(_equipSound);
         UserInfo.SetEquipFurniture(data);
         SetFurnitureData(_currentType);
         SetFurniturePreview();

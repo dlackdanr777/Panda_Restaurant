@@ -690,16 +690,16 @@ public class ChallengeManager : MonoBehaviour
                 return DataBind.GetUnityActionBindData("ShowKitchen");
 
             case "ShortCut03":
-                return DataBind.GetUnityActionBindData("ShowFurnitureUI");
+                return DataBind.GetUnityActionBindData("ShowFurnitureTab");
 
             case "ShortCut04":
-                return DataBind.GetUnityActionBindData("ShowKitchenUI");
+                return DataBind.GetUnityActionBindData("ShowKitchenTab");
 
             case "ShortCut05":
-                return DataBind.GetUnityActionBindData("ShowStaffUI");
+                return DataBind.GetUnityActionBindData("ShowStaffTab");
 
             case "ShortCut06":
-                return DataBind.GetUnityActionBindData("ShowRestaurantAdminUI");
+                return DataBind.GetUnityActionBindData("ShowRecipeTab");
 
             case "ShortCut07":
                 return DataBind.GetUnityActionBindData("ShowManagementUI");
