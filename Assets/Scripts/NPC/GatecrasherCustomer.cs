@@ -27,6 +27,7 @@ public class GatecrasherCustomer : Customer
     [Space]
     [Header("Audios")]
     [SerializeField] private AudioClip _visitSound;
+    [SerializeField] private AudioClip _touchSound;
 
 
     private int _activeDuration;
@@ -44,10 +45,22 @@ public class GatecrasherCustomer : Customer
     private Coroutine _actionCoroutine;
     private Coroutine _enabledCoroutine;
     private Coroutine _speedRecoveryCoroutine;
+    private TweenData _tween;
     private Action _onCompleted;
     private Action _gatecrasher1OnChangeShape;
 
     private float _touchDamage => 1;
+
+
+    private void OnDisable()
+    {
+        if(_tween != null)
+            _tween.TweenStop();
+
+        gameObject.TweenStop();
+        StopAllCoroutines();
+    }
+
 
     public override void SetData(CustomerData data)
     {
@@ -98,7 +111,7 @@ public class GatecrasherCustomer : Customer
         Move(targetPos, -1, () =>
         {
             _spriteRenderer.sprite = _customerData.Sprite;
-            Tween.Wait(1f, () =>
+            _tween = Tween.Wait(1f, () =>
             {
                 _spritePressEffect.Interactable = true;
                 _touchEnabled = true;
@@ -163,7 +176,7 @@ public class GatecrasherCustomer : Customer
             int randInt = UnityEngine.Random.Range(0, noCoinTargetPosList.Count);
             Move(noCoinTargetPosList[randInt], 0, () =>
             {
-                Tween.Wait(UnityEngine.Random.Range(0f, 2f), () => LoopGatecreasherCustomer1Event(dropCoinAreaList, noCoinTargetPosList));
+                _tween = Tween.Wait(UnityEngine.Random.Range(0f, 2f), () => LoopGatecreasherCustomer1Event(dropCoinAreaList, noCoinTargetPosList));
             });
         }
 
@@ -172,7 +185,7 @@ public class GatecrasherCustomer : Customer
             Move(targetArea.transform.position, 0, () =>
             {
 
-                Tween.Wait(1, () =>
+                _tween = Tween.Wait(1, () =>
                 {
                     if (targetArea.Count <= 0)
                     {
@@ -196,13 +209,13 @@ public class GatecrasherCustomer : Customer
 
                         ChangeState(CustomerState.Idle);
                         _stealParticle.Play();
-                        Tween.Wait(2, () =>
+                        _tween = Tween.Wait(2, () =>
                         {
                             if(_isEndEvent)
                                 return;
 
                             targetArea.OnCoinStealEvent(_spriteRenderer.transform.position + Vector3.up);
-                            Tween.Wait(1.5f, () => LoopGatecreasherCustomer1Event(dropCoinAreaList, noCoinTargetPosList));
+                            _tween = Tween.Wait(1.5f, () => LoopGatecreasherCustomer1Event(dropCoinAreaList, noCoinTargetPosList));
                         });
                     }
 
@@ -240,6 +253,7 @@ public class GatecrasherCustomer : Customer
         if (_customerData == null)
             return;
 
+        SoundManager.Instance.PlayEffectAudio(_touchSound);
         _currentTouchCount += _touchDamage * GameManager.Instance.AddGatecrasherCustomerDamageMul;
         _touchParticle.Emit(UnityEngine.Random.Range(2, 4));
         _spriteGroup.SetAlpha(1);

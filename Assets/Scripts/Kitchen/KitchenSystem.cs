@@ -30,6 +30,7 @@ public class KitchenSystem : MonoBehaviour
 
     private void Awake()
     {
+        
         _burnerDatas = new KichenBurnerData[(int)KitchenUtensilType.Burner5 + 1];
         _burnerTimers = new UIBurnerTimer[(int)KitchenUtensilType.Burner5 + 1];
         for (int i = 0, cnt = (int)KitchenUtensilType.Burner5 + 1; i < cnt; ++i)
@@ -49,6 +50,7 @@ public class KitchenSystem : MonoBehaviour
 
         for (int i = 0, cnt = _kitchenUtensils.Length; i < cnt; ++i)
         {
+            _kitchenUtensils[i].Init();
             _kitchenUtensilDic[_kitchenUtensils[i].Type].Add(_kitchenUtensils[i]);
         }
         UpdateKitchen();

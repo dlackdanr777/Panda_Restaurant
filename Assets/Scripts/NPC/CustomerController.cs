@@ -65,7 +65,7 @@ public class CustomerController : MonoBehaviour
                 break;
 
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);
-            if(_breakCustomerEnabled && _breakInCustomerTimer <= 0 && randSpawnProbability < ConstValue.DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT)
+            if(!UserInfo.IsTutorialStart && _breakCustomerEnabled && _breakInCustomerTimer <= 0 && randSpawnProbability < ConstValue.DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT)
             {
                 WeightedRandom<CustomerData> randomDataList = new WeightedRandom<CustomerData>();
                 for(int j = 0, cntJ = specialCustomerDataList.Count; j < cntJ; ++j)
@@ -97,8 +97,7 @@ public class CustomerController : MonoBehaviour
                     _breakInCustomerTimer = _breakInCustomerTime;
                     _breakCustomerEnabled = false;
                     _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-                    randInt = UnityEngine.Random.Range(0, gatecrasherCustomerDataList.Count);
-                    _gatecrasherCustomer.SetData(gatecrasherCustomerDataList[randInt]);
+                    _gatecrasherCustomer.SetData(getData);
                     if (getData is GatecrasherCustomer1Data)
                     {
                         _gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(), _specialCustomerTargetPosList, OnCustomerEvent, () => _uiCustomerTutorial.ShowTutorial(getData));
@@ -159,11 +158,32 @@ public class CustomerController : MonoBehaviour
 
     private void Update()
     {
+        UpdateBreakTimer();
+        CheckGatecrasherCustomer();
+    }
+
+
+    private void UpdateBreakTimer()
+    {
         if (!_breakCustomerEnabled)
             return;
 
         if (0 < _breakInCustomerTimer)
             _breakInCustomerTimer -= Time.deltaTime;
+    }
+
+
+    private void CheckGatecrasherCustomer()
+    {
+        if (_gatecrasherCustomer == null)
+            return;
+
+        if (!UserInfo.IsTutorialStart)
+            return;
+
+        ObjectPoolManager.Instance.DespawnGatecrasherCustomer(_gatecrasherCustomer);
+        _gatecrasherCustomer = null;
+        DebugLog.Log("Áø»ó ¼Õ´Ô »ç¶óÁü");
     }
 
 

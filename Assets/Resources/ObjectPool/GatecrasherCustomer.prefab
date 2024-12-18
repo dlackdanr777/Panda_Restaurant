@@ -34824,6 +34824,7 @@ MonoBehaviour:
   _soundParticle: {fileID: 6484403252911908027}
   _guitarSource: {fileID: 5239595084921835029}
   _visitSound: {fileID: 8300000, guid: 46b3f28db39188c45971a4729035698a, type: 3}
+  _touchSound: {fileID: 8300000, guid: 2fa0a9bc16d733146903d2548e6c5d93, type: 3}
 --- !u!1 &8803229222698952562
 GameObject:
   m_ObjectHideFlags: 0

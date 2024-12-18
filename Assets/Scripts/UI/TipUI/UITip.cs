@@ -35,6 +35,10 @@ public class UITip : MobileUIView
     [SerializeField] private float _coinDuration;
     [SerializeField] private Ease _coinEase;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _collectTipSound;
+
 
     private Coroutine _moneyAnimeRoutine;
     private int _currentTip;
@@ -127,7 +131,7 @@ public class UITip : MobileUIView
             coinCnt = coinCnt <= 10 ? 10 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
             UserInfo.TipCollection(isAds);
             ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
-            SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
+            SoundManager.Instance.PlayEffectAudio(_collectTipSound);
             for (int i = 0, cnt = coinCnt; i < cnt; ++i)
             {
                 int index = i;

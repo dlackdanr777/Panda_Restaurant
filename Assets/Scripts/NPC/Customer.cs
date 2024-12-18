@@ -165,13 +165,14 @@ public class Customer : MonoBehaviour
         if (2 <= nodeList.Count)
             nodeList.RemoveAt(0);
 
+
         foreach (Vector2 vec in nodeList)
         {
             while (Vector3.Distance(_moveObj.transform.position, vec) > 0.1f)
             {
+                float step = 0.01f * _moveSpeed; // 이동 거리 제한
+                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
-                _moveObj.transform.Translate(dir * 0.01f * _moveSpeed, Space.World);
-
                 SetSpriteDir(dir.x);
                 ChangeState(CustomerState.Run);
                 yield return YieldCache.WaitForSeconds(0.01f);
@@ -179,9 +180,7 @@ public class Customer : MonoBehaviour
         }
 
         ChangeState(CustomerState.Idle);
-
         SetSpriteDir(_moveEndDir);
-
         onCompleted?.Invoke();
 
         if (_isStairsMove)

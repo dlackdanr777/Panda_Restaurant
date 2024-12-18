@@ -17,7 +17,7 @@ public class KitchenUtensil : MonoBehaviour
 
     private float _initialSpriteHeight; // 초기 스프라이트 높이 저장용
 
-    private void Awake()
+    public void Init()
     {
         if (_spriteRenderer.sprite != null)
         {

@@ -18,11 +18,9 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
     [SerializeField] private Image _diaImage;
     [SerializeField] private TextMeshProUGUI _rewardText;
 
+
     private ChallengeData _data;
     public ChallengeData Data => _data;
-
-    private Func<string, bool> _isChallengeDone;
-    private Func<string, bool> _isChallengeClear;
 
     public override void Init()
     {
@@ -34,9 +32,15 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
 
     public override void UpdateSlot(ChallengeData data)
     {
-        _data = data;
-        gameObject.SetActive(data == null ? false : true);
+        if (data == null)
+        {
+            _data = null;
+            gameObject.SetActive(false);
+            return;
+        }
 
+        _data = data;
+        gameObject.SetActive(true);
         if (data.MoneyType == MoneyType.Gold)
         {
             _moneyImage.gameObject.SetActive(true);
@@ -103,22 +107,19 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             DebugLog.Log("도전과제 데이터가 슬롯에 없습니다.");
             return;
         }
-
-        UserInfo.ClearChallenge(_data);
-
+        
         if(_data.MoneyType == MoneyType.Gold)
         {
             UserInfo.AddMoney(_data.RewardMoney);
             SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
         }
 
-
         else if(_data.MoneyType == MoneyType.Dia)
         {
             UserInfo.AddDia(_data.RewardMoney);
             SoundManager.Instance.PlayEffectAudio(SoundEffectType.DiaSound);
         }
-
+        UserInfo.ClearChallenge(_data);
     }
 
 

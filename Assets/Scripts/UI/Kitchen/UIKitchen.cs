@@ -227,7 +227,6 @@ public class UIKitchen : MobileUIView
         _uikitchenPreview.UpdateUI();
 
         KitchenUtensilData equipStaffData = UserInfo.GetEquipKitchenUtensil(_currentType);
-        DebugLog.Log(equipStaffData);
         int slotsIndex = (int)_currentType;
         KitchenUtensilData data;
         UIRestaurantAdminSlot slot;

@@ -37,6 +37,10 @@ public class UIMainChallenge : MobileUIView
     [SerializeField] private float _coinDuration;
     [SerializeField] private Ease _coinEase;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _clearGoldSound;
+
 
     private ChallengeData _currentData;
 
@@ -174,7 +178,7 @@ public class UIMainChallenge : MobileUIView
         float time = 0;
         UserInfo.TipCollection();
         ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
-        SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
+        SoundManager.Instance.PlayEffectAudio(_clearGoldSound);
         for (int i = 0; i < _coinCount; ++i)
         {
             int index = i;

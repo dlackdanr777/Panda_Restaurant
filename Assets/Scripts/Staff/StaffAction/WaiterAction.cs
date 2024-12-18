@@ -17,7 +17,7 @@ public class WaiterAction : IStaffAction
 
     public void PerformAction(Staff staff)
     {
-        int index = _tableManager.GetTableType(ETableState.CanServing);
+        int index = _tableManager.GetTableTypeByNeedFood(ETableState.CanServing);
         if (index == -1)
             return;
 

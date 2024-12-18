@@ -142,6 +142,7 @@ MonoBehaviour:
   _cleanSound: {fileID: 8300000, guid: 7cfd574c92a8c7b4f87994f38e1e517b, type: 3}
   _cleanerItem: {fileID: 102124633062350916}
   _cleanParticle: {fileID: 4093869780081804112}
+  _skillActiveSound: {fileID: 8300000, guid: 22f6133c384fdca4bbab3e89e864174c, type: 3}
 --- !u!95 &3596169654744063757
 Animator:
   serializedVersion: 7

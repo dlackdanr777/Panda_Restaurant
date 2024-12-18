@@ -75,6 +75,9 @@ public class UICustomerTutorial : MobileUIView
 
     public void ShowTutorial(CustomerData data)
     {
+        if (UserInfo.IsTutorialStart)
+            return;
+
         if(data is GatecrasherCustomerData)
         {
             if(!UserInfo.IsGatecrasher1TutorialClear && data is GatecrasherCustomer1Data)
@@ -112,8 +115,6 @@ public class UICustomerTutorial : MobileUIView
 
             return;
         }
-
-        DebugLog.Log("일반 고객입니다: " + data.Id);
     }
 
 

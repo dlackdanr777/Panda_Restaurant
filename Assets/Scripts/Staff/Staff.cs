@@ -20,6 +20,10 @@ public class Staff : MonoBehaviour
     [SerializeField] private GameObject _cleanerItem;
     [SerializeField] private GameObject _cleanParticle;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _skillActiveSound;
+
 
     private StaffData _staffData;
     private StaffType _staffType;
@@ -43,7 +47,9 @@ public class Staff : MonoBehaviour
 
     public void Init()
     {
+        _scaleX = transform.localScale.x;
         GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+        gameObject.SetActive(false);
     }
 
     public float GetActionValue()
@@ -82,8 +88,11 @@ public class Staff : MonoBehaviour
         {
             _staffData = null;
             _staffAction = null;
+            gameObject.SetActive(false);
             return;
         }
+
+        gameObject.SetActive(true);
         _staffData = staffData;
         _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         _staffAction = staffData.GetStaffAction(this, tableManager, kitchenSystem, customerController);
@@ -94,9 +103,11 @@ public class Staff : MonoBehaviour
         _speedMul = 0;
         _usingSkill = false;
         _skillTimer = 0;
+        _spriteRenderer.enabled = false;
         _spriteRenderer.sprite = staffData.Sprite;
         _spriteParent.transform.localPosition = new Vector3(0, -(AStar.Instance.NodeSize * 0.5f), 0);
         _spriteRenderer.transform.localPosition = Vector3.zero;
+        _spriteRenderer.enabled = true;
 
         _staffType = staffData switch
         {
@@ -173,6 +184,12 @@ public class Staff : MonoBehaviour
 
     public void StaffAction()
     {
+        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
+        {
+            DebugLog.Log("튜토리얼 진행중");
+            return;
+        }   
+
         if(_staffAction == null)
             return;
 
@@ -185,6 +202,12 @@ public class Staff : MonoBehaviour
 
     public void UsingStaffSkill(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
+        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
+        {
+            DebugLog.Log("튜토리얼 진행중");
+            return;
+        }
+
         if (_staffData == null)
             return;
 
@@ -206,12 +229,6 @@ public class Staff : MonoBehaviour
         {
             _skillTimer += Time.deltaTime * SpeedMul;
         }
-    }
-
-
-    private void Start()
-    {
-        _scaleX = transform.localScale.x;
     }
 
 
@@ -242,6 +259,7 @@ public class Staff : MonoBehaviour
     {
         _usingSkill = true;
         Vibration.Vibrate(500);
+        //SoundManager.Instance.PlayEffectAudio(_skillActiveSound);
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 
         float duration = _staffData.Skill.Duration + GameManager.Instance.AddStaffSkillTime + _staffType switch
@@ -342,11 +360,15 @@ public class Staff : MonoBehaviour
         {
             while (Vector3.Distance(_moveObj.transform.position, vec) > 0.1f)
             {
+                float step = 0.02f * 5 * SpeedMul; // 이동 거리 제한
+                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
-                _moveObj.transform.Translate(dir * 0.02f * 5 * SpeedMul, Space.World);
                 SetSpriteDir(dir.x);
                 yield return YieldCache.WaitForSeconds(0.01f);
             }
+
+            // 목표 지점에 정확히 도달하도록 위치 보정
+            _moveObj.transform.position = vec;
         }
 
         SetStaffState(EStaffState.None);

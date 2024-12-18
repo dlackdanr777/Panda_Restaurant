@@ -1,7 +1,5 @@
-using Muks.DataBind;
 using Muks.PathFinding.AStar;
 using Muks.Tween;
-using Muks.UI;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -111,6 +109,26 @@ public class TableManager : MonoBehaviour
         {
             if (_tableDatas[i].TableState == state)
                 return i;
+        }
+
+        return -1;
+    }
+
+
+    public int GetTableTypeByNeedFood(ETableState state)
+    {
+        for (int i = 0, cnt = _tableDatas.Length; i < cnt; i++)
+        {
+            if (_tableDatas[i].TableState != state)
+                continue;
+
+            if (_tableDatas[i].CurrentFood.IsDefault())
+                continue;
+
+            if (!UserInfo.IsGiveRecipe(_tableDatas[i].CurrentFood.Id))
+                continue;
+
+            return i;
         }
 
         return -1;

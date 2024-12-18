@@ -17,8 +17,7 @@ public class ServerAction : IStaffAction
 
     public void PerformAction(Staff staff)
     {
-        int index = _tableManager.GetTableType(ETableState.Seating);
-        DebugLog.Log("½ÇÇà");
+        int index = _tableManager.GetTableTypeByNeedFood(ETableState.Seating);
         if (index == -1)
             return;
 

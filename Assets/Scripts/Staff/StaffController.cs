@@ -42,6 +42,9 @@ public class StaffController : MonoBehaviour
             if (_staffs[i] == null)
                 continue;
 
+            if (!_staffs[i].gameObject.activeInHierarchy)
+                continue;
+
             _staffs[i].StaffAction();
             _staffs[i].UsingStaffSkill(_tableManager, _kitchenSystem, _customerController);
         }

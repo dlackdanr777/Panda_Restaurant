@@ -73,11 +73,11 @@ public class GuardAction : IStaffAction
             _startAction = true;
             _tweenData = Tween.Wait(1, () =>
             {
-                _tweenData = staff.SpriteRenderer.TweenAlpha(0, 0.3f).OnComplete(() =>
+                _tweenData = staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(() =>
                 {
-                    staff.transform.position = _gatecrasherCustomer.transform.position + new Vector3(0.5f, 0);
+                    staff.transform.position = _gatecrasherCustomer.transform.position + new Vector3(0.2f, 0);
                     staff.SetSpriteDir(-1);
-                    _tweenData = staff.SpriteRenderer.TweenAlpha(1, 0.3f).OnComplete(() =>
+                    _tweenData = staff.SpriteRenderer.TweenAlpha(1, 0.25f).OnComplete(() =>
                     {
                         if (_gatecrasherCustomer.IsEndEvent)
                             return;
@@ -137,7 +137,7 @@ public class GuardAction : IStaffAction
         {
             staff.SetSpriteDir(_gatecrasherCustomer.transform.position.x < staff.transform.position.x ? -1 : 1);
             _gatecrasherCustomer.OnTouchEvent();
-
+            staff.transform.position = _gatecrasherCustomer.transform.position + new Vector3(0.2f, 0);
             staff.SpriteRenderer.transform.localScale = _tmpScale;
             ObjectPoolManager.Instance.SpawnSmokeParticle(_gatecrasherCustomer.transform.position + new Vector3(0, 1.5f, 0), Quaternion.identity).Play();
             _guardSpriteTweenData = staff.SpriteRenderer.TweenScale(_tmpScale * 0.99f, duration * 0.5f, Ease.OutBack).OnComplete(() =>
