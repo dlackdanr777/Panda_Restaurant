@@ -268,7 +268,7 @@ public class FirstTutorial : MonoBehaviour
         while (!_uiTutorial.IsButtonClicked)
             yield return YieldCache.WaitForSeconds(0.02f);
 
-        yield return YieldCache.WaitForSeconds(3);
+        yield return YieldCache.WaitForSeconds(4.5f);
         yield return _uiDescriptionNPC.ShowDescription2Text("첫 손님이 만족하신 것 같네요!");
         yield return _uiDescriptionNPC.ShowDescription2Text("손님이 있던 자리에 쓰레기도 치워줘야해요.");
         yield return _uiDescriptionNPC.ShowDescription2Text("쓰레기가 계속 쌓이면 다른 손님들이 불쾌감을 느낍니다.");
@@ -329,6 +329,8 @@ public class FirstTutorial : MonoBehaviour
         UserInfo.IsTutorialStart = false;
         UserInfo.IsFirstTutorialClear = true;
         _mainSceneUI.gameObject.SetActive(true);
+        _table1.SetActive(true);
+        _burner1.SetActive(true);
         gameObject.SetActive(false);
     }
 

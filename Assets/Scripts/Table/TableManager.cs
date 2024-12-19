@@ -44,7 +44,6 @@ public class TableManager : MonoBehaviour
     private TableButton[] _servingButtons;
 
     private int _totalGarbageCount => ObjectPoolManager.Instance.GetEnabledGarbageCount();
-
     private List<DropGarbageArea> _dropGarbageAreaList = new List<DropGarbageArea>();
 
     private void Awake()
@@ -301,6 +300,9 @@ public class TableManager : MonoBehaviour
         {
             Tween.Wait(0.1f, () =>
             {
+                if (_tableDatas[index].CurrentCustomer == null)
+                    return;
+
                 currentCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitIndex].position;
                 _orderButtons[index].SetWorldTransform(_tableDatas[index].ChairTrs[_tableDatas[index].SitIndex]);
                 _servingButtons[index].SetWorldTransform(_tableDatas[index].ChairTrs[_tableDatas[index].SitIndex]);
@@ -311,6 +313,9 @@ public class TableManager : MonoBehaviour
 
                 Tween.Wait(1f, () =>
                 {
+                    if (_tableDatas[index].CurrentCustomer == null)
+                        return;
+
                     if (currentCustomer.CustomerData.MaxDiscomfortIndex < _totalGarbageCount)
                     {
                         _tableDatas[index].CurrentCustomer = null;
@@ -318,6 +323,7 @@ public class TableManager : MonoBehaviour
                         currentCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
                         currentCustomer.ChangeState(CustomerState.Idle);
                         currentCustomer.StartAnger();
+                        currentCustomer.HideFood();
                         currentCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
                         {
                             currentCustomer.StopAnger();
@@ -421,13 +427,25 @@ public class TableManager : MonoBehaviour
             return;
         }
 
+        FoodData foodData = FoodDataManager.Instance.GetFoodData(_tableDatas[index].CurrentFood.Id);
         _tableDatas[index].TableState = ETableState.Eating;
-        Tween.Wait(1, () => 
+        Tween.Wait(0.5f, () =>
         {
-            if (_tableDatas[index].OrdersCount <= 0)
-                EndEat(index);
-            else
-                OnCustomerSeating(index);
+            if (_tableDatas[index].CurrentCustomer == null)
+                return;
+
+            _tableDatas[index].CurrentCustomer.ChangeState(CustomerState.Eat);
+            _tableDatas[index].CurrentCustomer.ShowFood(foodData.Sprite);
+            Tween.Wait(1.5f, () =>
+            {
+                if (_tableDatas[index].CurrentCustomer == null)
+                    return;
+
+                if (_tableDatas[index].OrdersCount <= 0)
+                    EndEat(index);
+                else
+                    OnCustomerSeating(index);
+            });
         });
         UpdateTable();
     }
@@ -437,12 +455,17 @@ public class TableManager : MonoBehaviour
         int tip = _tableDatas[index].TotalTip;
         int totalPrice = _tableDatas[index].TotalPrice;
 
+        _tableDatas[index].CurrentCustomer.ChangeState(CustomerState.Idle);
+        _tableDatas[index].CurrentCustomer.HideFood();
         UserInfo.AddMoney(totalPrice);
         StartCoinAnime(index);
         StartGarbageAnime(index);
 
         Tween.Wait(0.5f, () =>
         {
+            if (_tableDatas[index].CurrentCustomer == null)
+                return;
+
             ExitCustomer(index);
             UserInfo.AddCustomerCount();
             UserInfo.AddTip(tip);
@@ -469,6 +492,7 @@ public class TableManager : MonoBehaviour
         NormalCustomer exitCustomer = _tableDatas[index].CurrentCustomer;
         exitCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
         exitCustomer.SetLayer("Customer", 0);
+        exitCustomer.HideFood();
         _tableDatas[index].TableState = ETableState.NotUse;
         _tableDatas[index].CurrentCustomer = null;
         _tableDatas[index].TotalTip = 0;
@@ -501,6 +525,7 @@ public class TableManager : MonoBehaviour
 
         _tableDatas[index].CurrentCustomer = null;
         exitCustomer.SetLayer("Customer", 0);
+        exitCustomer.HideFood();
 
         _tableDatas[index].TableState = ETableState.DontUse;
         UpdateTable();

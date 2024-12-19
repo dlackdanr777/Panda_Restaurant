@@ -34,4 +34,10 @@ public class FillAmountButton : MonoBehaviour
         _image.TweenFillAmount(value, _duration, _tweenMode);
     }
 
+    public void SetFillAmountNoAnime(float value)
+    {
+        value = Mathf.Clamp(value, 0, 1);
+        _image.fillAmount = value;
+    }
+
 }

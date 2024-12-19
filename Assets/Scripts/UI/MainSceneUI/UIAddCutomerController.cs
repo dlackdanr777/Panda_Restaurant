@@ -1,3 +1,4 @@
+using Coffee.UIExtensions;
 using Muks.Tween;
 using System;
 using UnityEngine;
@@ -62,9 +63,10 @@ public class UIAddCutomerController : MonoBehaviour
             return;
         }
 
+        float cntFillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + ((float)_tabCount / (GameManager.Instance.TotalTabCount - 1)) * 0.725f;
+        _addCustomerButton.SetFillAmountNoAnime(cntFillAmount);
         _tabCount++;
-
-        float fillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + ((float)_tabCount / (GameManager.Instance.TotalTabCount - 1)) * 0.725f;
-        _addCustomerButton.SetFillAmonut(fillAmount);
+        float nextFillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + ((float)_tabCount / (GameManager.Instance.TotalTabCount - 1)) * 0.725f;
+        _addCustomerButton.SetFillAmonut(nextFillAmount);
     }
 }

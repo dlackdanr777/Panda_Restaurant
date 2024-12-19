@@ -10,7 +10,7 @@ public enum CustomerState
     Idle,
     Run,
     Sit,
-    Jump,
+    Eat,
     Action,
     Length
 }
@@ -41,6 +41,13 @@ public class Customer : MonoBehaviour
     protected bool _isStairsMove;
     private List<Vector2> _path;
 
+
+    public virtual void Init()
+    {
+
+    }
+
+
     public virtual void SetData(CustomerData data)
     {
         _moveSpeed = data.MoveSpeed;
@@ -51,12 +58,10 @@ public class Customer : MonoBehaviour
         _spriteRenderer.transform.localPosition = Vector3.zero;
         _spriteRenderer.sprite = data.Sprite;
         _spriteRenderer.color = Color.white;
-
-
     }
 
 
-    public void SetSpriteDir(float dir)
+    public virtual void SetSpriteDir(float dir)
     {
         if (dir < 0) _spriteRenderer.flipX = false;
         else if (0 < dir) _spriteRenderer.flipX = true;
@@ -95,35 +100,14 @@ public class Customer : MonoBehaviour
     }
 
 
-    public void ChangeState(CustomerState state)
+    public virtual void ChangeState(CustomerState state)
     {
         if (_currentState == state)
             return;
 
         _currentState = state;
-        switch(_currentState)
-        {
-            case CustomerState.Idle:
-                _animator.SetBool("Run", false);
-                _animator.SetBool("Action", false);
-                break;
+        _animator.SetInteger("State", (int)_currentState);
 
-            case CustomerState.Run:
-                _animator.SetBool("Run", true);
-                _animator.SetBool("Action", false);
-                break;
-
-            case CustomerState.Sit:
-                _animator.SetTrigger("Sit");
-                _animator.SetBool("Run", false);
-                _animator.SetBool("Action", false);
-                break;
-
-            case CustomerState.Action:
-                _animator.SetBool("Run", false);
-                _animator.SetBool("Action", true);
-                break;
-        }
     }
 
 

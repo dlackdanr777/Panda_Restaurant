@@ -83,6 +83,7 @@ public class DropCoinArea : MonoBehaviour
         }
 
         _currentCoinCount = Mathf.Clamp(_coinList.Count, 0, _maxCoinCount);
+        coin.TweenStop();
         coin.TweenMoveX(targetPos.x, 0.45f);
         coin.TweenMoveY(targetPos.y, 0.45f, Ease.InBack).OnComplete(() =>
         {
@@ -92,6 +93,7 @@ public class DropCoinArea : MonoBehaviour
                 ObjectPoolManager.Instance.DespawnCoin(coin);
                 return;
             }
+            coin.transform.position = targetPos;
             coin.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
         });
 

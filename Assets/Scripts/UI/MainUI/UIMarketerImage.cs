@@ -1,3 +1,4 @@
+using Coffee.UIExtensions;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -5,10 +6,12 @@ public class UIMarketerImage : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private Animator _animator;
+    [SerializeField] private UIParticle _uiParticle;
     [SerializeField] private ParticleSystem _particleSystem;
     [SerializeField] private Image _marketerImage;
     [SerializeField] private Image _leftHandImage;
     [SerializeField] private Image _rightHandImage;
+
 
     private Sprite _marketerSprite;
     private Sprite _animationSprite;
@@ -83,15 +86,20 @@ public class UIMarketerImage : MonoBehaviour
         _rightHandImage.sprite = data.RightHandSprite;
 
         _particleCount = data.ParticleCount;
-        for (int i = 0, cnt = _particleSystem.textureSheetAnimation.spriteCount; i < cnt; ++i)
+        _particleSystem.gameObject.SetActive(false);
+        _uiParticle.enabled = false;
+        for (int i = _particleSystem.textureSheetAnimation.spriteCount - 1; i >= 0; i--)
         {
-            _particleSystem.textureSheetAnimation.RemoveSprite(0);
+            _particleSystem.textureSheetAnimation.RemoveSprite(i);
         }
 
-        for(int i = 0, cnt = data.ParticleSprites.Length; i < cnt; ++i)
+        for (int i = 0, cnt = data.ParticleSprites.Length; i < cnt; ++i)
         {
             _particleSystem.textureSheetAnimation.AddSprite(data.ParticleSprites[i]);
         }
+
+        _particleSystem.gameObject.SetActive(true);
+        _uiParticle.enabled = true;
     }
 
 }

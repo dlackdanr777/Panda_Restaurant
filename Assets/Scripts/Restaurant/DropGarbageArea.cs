@@ -86,6 +86,7 @@ public class DropGarbageArea : MonoBehaviour
         }
 
         _currentGarbageCount = Mathf.Clamp(_garbageList.Count, 0, _maxGarbageCount);
+        garbage.TweenStop();
         garbage.TweenRotate(_rotate[Random.Range(0, _rotate.Length)], 0.5f, Ease.InQuad);
         garbage.TweenMoveX(targetPos.x, 0.5f);
         garbage.TweenMoveY(targetPos.y, 0.5f, Ease.InBack).OnComplete(() =>
@@ -96,6 +97,7 @@ public class DropGarbageArea : MonoBehaviour
                 ObjectPoolManager.Instance.DespawnGarbage(garbage);
                 return;
             }
+            garbage.transform.position = targetPos;
             garbage.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
         });
     }

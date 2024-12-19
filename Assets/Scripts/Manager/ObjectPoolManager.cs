@@ -121,6 +121,7 @@ public class ObjectPoolManager : MonoBehaviour
         for (int i = 0, count = _customerCount; i < count; i++)
         {
             NormalCustomer normalCustomer = Instantiate(_normalCustomerPrefab, _customerParent.transform);
+            normalCustomer.Init();
             _normalCustomerPool.Enqueue(normalCustomer);
             normalCustomer.gameObject.SetActive(false);
         }
@@ -128,6 +129,7 @@ public class ObjectPoolManager : MonoBehaviour
         for(int i = 0; i < _specialCustomerCount; ++i)
         {
             SpecialCustomer specialCustomer = Instantiate(_specialCustomerPrefab, _customerParent.transform);
+            specialCustomer.Init();
             _specialCustomerPool.Enqueue(specialCustomer);
             specialCustomer.gameObject.SetActive(false);
         }
@@ -135,6 +137,7 @@ public class ObjectPoolManager : MonoBehaviour
         for (int i = 0; i < _gatecrasherCustomerCount; ++i)
         {
             GatecrasherCustomer gatecrasherCustomer = Instantiate(_gatecrasherCustomerPrefab, _customerParent.transform);
+            gatecrasherCustomer.Init();
             _gatecrasherCustomerPool.Enqueue(gatecrasherCustomer);
             gatecrasherCustomer.gameObject.SetActive(false);
         }
