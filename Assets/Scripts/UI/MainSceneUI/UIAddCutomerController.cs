@@ -18,6 +18,7 @@ public class UIAddCutomerController : MonoBehaviour
 
     [Space]
     [Header("Audios")]
+    [SerializeField] private AudioSource _audioSource;
     [SerializeField] private AudioClip _callSound;
 
     private int _tabCount = 0;
@@ -36,7 +37,7 @@ public class UIAddCutomerController : MonoBehaviour
 
     private void OnAddCustomerButtonClicked()
     {
-        SoundManager.Instance.PlayEffectAudio(_callSound);
+        _audioSource.PlayOneShot(_callSound);
 
         if(GameManager.Instance.TotalTabCount - 1 <= _tabCount)
         {

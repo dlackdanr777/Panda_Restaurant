@@ -18,10 +18,10 @@ public class FoodData : ShopData
 
     public bool MiniGameNeeded => _foodMiniGameData != null ? true : false;
 
-    public FoodData(Sprite sprite, string name, string id, MoneyType moneyType, int buyScore, int buyPrice, string needItem, List<FoodLevelData> foodLevelDataList, FoodMiniGameData foodMiniGameData)
+    public FoodData(Sprite sprite, Sprite thumbnailSprite, string name, string id, MoneyType moneyType, int buyScore, int buyPrice, string needItem, List<FoodLevelData> foodLevelDataList, FoodMiniGameData foodMiniGameData)
     {
         _sprite = sprite;
-        _thumbnailSPrite = sprite;
+        _thumbnailSPrite = thumbnailSprite;
         _name = name;
         _id = id;
         _moneyType = moneyType;

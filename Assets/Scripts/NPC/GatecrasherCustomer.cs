@@ -262,9 +262,6 @@ public class GatecrasherCustomer : Customer
         if (_speedRecoveryCoroutine != null)
             StopCoroutine(_speedRecoveryCoroutine);
         _speedRecoveryCoroutine = StartCoroutine(SpeedRecoveryRoutine());
-
-        //SoundManager.Instance.PlayEffectAudio(SoundEffectType.ButtonClickSound);
-
         if (_totalTouchCount <= _currentTouchCount)
         {
             _isEndEvent = true;

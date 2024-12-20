@@ -17,7 +17,7 @@ public class CustomerFoodPriceUpSkill : CustomerSkill
             return;
         }
         NormalCustomer normalCustomer = (NormalCustomer)customer;
-        normalCustomer.AddFoodPricePercent(SkillActivatePercent);
+        normalCustomer.AddFoodPricePercent(_foodPriceMul);
     }
 
     public override void Deactivate(Customer customer)

@@ -73,7 +73,12 @@ public class FoodDataManager : MonoBehaviour
     private void Init()
     {
         Dictionary<string, Sprite> spriteDic = new Dictionary<string, Sprite>();
+        Dictionary<string, Sprite> thumbnailSpriteDic = new Dictionary<string, Sprite>();
         Sprite[] sprites = Resources.LoadAll<Sprite>("FoodData/Sprites");
+        Sprite[] thumbnailSprites = Resources.LoadAll<Sprite>("FoodData/ThumbnailSprites");
+
+        for (int i = 0, cnt = thumbnailSprites.Length; i < cnt; ++i)
+            thumbnailSpriteDic.Add(CutStringUpToChar(thumbnailSprites[i].name, '_'), thumbnailSprites[i]);
 
         for (int i = 0, cnt = sprites.Length; i < cnt; ++i)
             spriteDic.Add(CutStringUpToChar(sprites[i].name, '_'), sprites[i]);
@@ -128,6 +133,12 @@ public class FoodDataManager : MonoBehaviour
                 continue;
             }
 
+            if (!thumbnailSpriteDic.TryGetValue(id, out Sprite thumbnailSprite))
+            {
+                DebugLog.LogError("스프라이트가 없습니다: " + id);
+                continue;
+            }
+
             string name = row[1];
             string description = row[2];
             string needItem = row[4].Replace(" ", "");
@@ -156,7 +167,7 @@ public class FoodDataManager : MonoBehaviour
             if (!_foodMiniGameDataDic.TryGetValue(id, out FoodMiniGameData foodMiniGameData))
                 foodMiniGameData = null;
 
-            FoodData foodData = new FoodData(sprite, name, id, MoneyType.Gold, buyScore, buyPrice, needItem, foodLevelDataList, foodMiniGameData);
+            FoodData foodData = new FoodData(sprite, thumbnailSprite, name, id, MoneyType.Gold, buyScore, buyPrice, needItem, foodLevelDataList, foodMiniGameData);
 
             _foodDataList.Add(foodData);
             _foodDataDic.Add(id, foodData);

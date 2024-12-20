@@ -6,8 +6,6 @@ public class SmokeParticle : MonoBehaviour
     [SerializeField] private ParticleSystem _particleSystem;
 
     private IEnumerator _ienumerator;
-    private Coroutine _coroutine;
-
 
     public void Init()
     {
@@ -19,21 +17,29 @@ public class SmokeParticle : MonoBehaviour
         _particleSystem.Emit(1);
     }
 
+    public void Stop()
+    {
+        _particleSystem.Stop();
+    }
+
+
+    public void SetScale(float size = 1)
+    {
+        size = Mathf.Clamp(size, 0.1f, 10f);
+        transform.localScale = Vector3.one * size;
+    }
+
+
     private void OnEnable()
     {
-        if (_coroutine != null)
-            StopCoroutine(_coroutine);
-
         if (_ienumerator != null)
             StartCoroutine(_ienumerator);
     }
 
     private void OnDisable()
     {
-        if (_coroutine != null)
-            StopCoroutine(_coroutine);
-
-        ObjectPoolManager.Instance.DespawnSmokeParticle(this);
+        if (_ienumerator != null)
+            StopCoroutine(_ienumerator);
     }
 
     private IEnumerator StartHide(float duration)

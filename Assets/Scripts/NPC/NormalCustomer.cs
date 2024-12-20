@@ -66,7 +66,7 @@ public class NormalCustomer : Customer
 
         if (Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100))
         {
-            _currentFoodPriceMul = _foodPriceMul;
+            _currentFoodPriceMul = _currentFoodPriceMul * _foodPriceMul;
         }
 
     }
@@ -103,7 +103,7 @@ public class NormalCustomer : Customer
 
     public void AddFoodPricePercent(float value)
     {
-        _currentFoodPriceMul = Mathf.Clamp(_currentFoodPriceMul + value, 0, 100);
+        _currentFoodPriceMul = Mathf.Clamp(value, 0, 100);
         
     }
 
@@ -123,18 +123,35 @@ public class NormalCustomer : Customer
     {
         _foodRenderer.sprite = sprite;
 
+     /*   // 새 스프라이트의 크기
         float newSpriteHeight = sprite.texture.height;
+        float newSpriteWidth = sprite.texture.width;
 
-        if (newSpriteHeight > _tmpFoodSpriteHeight)
+        // 이전 스프라이트의 크기
+        float originalHeight = _tmpFoodSpriteHeight;
+        float originalWidth = _foodRenderer.sprite.texture.width;
+
+        // 높이와 너비의 비율 계산
+        float heightScaleFactor = newSpriteHeight / originalHeight;
+        float widthScaleFactor = newSpriteWidth / originalWidth;
+
+        float scaleFactor;
+
+        if (newSpriteHeight > originalHeight || newSpriteWidth > originalWidth)
         {
-            float scaleFactor = newSpriteHeight / _tmpFoodSpriteHeight;
-            _foodRenderer.transform.localScale = _tmpFoodSize * scaleFactor;
+            // 높이나 너비 중 더 큰 값을 기준으로 크기 조정
+            scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
         }
         else
         {
-            _foodRenderer.transform.localScale = _tmpFoodSize;
+            // 둘 다 작거나 크기 동일: 가장 큰 값을 기준으로 크기 조정
+            scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
         }
 
+        // 스프라이트 크기 조정
+        _foodRenderer.transform.localScale = _tmpFoodSize / scaleFactor;
+        DebugLog.Log(scaleFactor);
+        // 스프라이트 활성화*/
         _foodRenderer.gameObject.SetActive(true);
     }
 

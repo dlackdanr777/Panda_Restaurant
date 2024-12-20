@@ -247,6 +247,7 @@ public class ObjectPoolManager : MonoBehaviour
         for (int i = 0, count = _smokeParitcleCount; i < count; i++)
         {
             SmokeParticle particle = Instantiate(_smokeParticlePrefab, _particleParent.transform);
+            particle.Init();
             _smokeParitclePool.Enqueue(particle);
             particle.gameObject.SetActive(false);
         }
@@ -507,7 +508,7 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public SmokeParticle SpawnSmokeParticle(Vector3 pos, Quaternion rot)
+    public SmokeParticle SpawnSmokeParticle(Vector3 pos, Quaternion rot, float scale = 1)
     {
         SmokeParticle particle;
 
@@ -522,6 +523,7 @@ public class ObjectPoolManager : MonoBehaviour
         particle.gameObject.SetActive(true);
         particle.transform.position = pos;
         particle.transform.rotation = rot;
+        particle.SetScale(scale);
         return particle;
     }
 
@@ -531,6 +533,7 @@ public class ObjectPoolManager : MonoBehaviour
         if (_smokeParitclePool.Contains(smokeParticle))
             return;
 
+        smokeParticle.Stop();
         smokeParticle.gameObject.SetActive(false);
         _smokeParitclePool.Enqueue(smokeParticle);
     }

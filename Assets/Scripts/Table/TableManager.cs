@@ -352,6 +352,9 @@ public class TableManager : MonoBehaviour
         if (_tableDatas[index].OrdersCount <= 0)
             EndEat(index);
 
+        _tableDatas[index].CurrentCustomer.ChangeState(CustomerState.Idle);
+        _tableDatas[index].CurrentCustomer.HideFood();
+
         string foodDataId = _tableDatas[index].CurrentCustomer.CustomerData.GetRandomOrderFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
         
@@ -376,7 +379,11 @@ public class TableManager : MonoBehaviour
         int tip = Mathf.FloorToInt(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul);
         _tableDatas[index].TotalTip += tip + GameManager.Instance.AddFoodTip;
         _tableDatas[index].CurrentFood = data;
-        _tableDatas[index].TotalPrice += (int)(data.Price * _tableDatas[index].CurrentCustomer.CurrentFoodPriceMul) + (int)(data.Price * GameManager.Instance.FoodPriceMul * 0.01f) + GameManager.Instance.AddFoodPrice;
+
+        int totalPrice = (int)(((data.Price * _tableDatas[index].CurrentCustomer.CurrentFoodPriceMul) + GameManager.Instance.AddFoodPrice) * GameManager.Instance.FoodPriceMul);
+        DebugLog.Log(GameManager.Instance.FoodPriceMul);
+
+        _tableDatas[index].TotalPrice += totalPrice;
         _orderButtons[index].SetData(foodData);
 
         _tableDatas[index].TableState = ETableState.Seating;
@@ -433,7 +440,7 @@ public class TableManager : MonoBehaviour
         {
             if (_tableDatas[index].CurrentCustomer == null)
                 return;
-
+            _tableDatas[index].CurrentCustomer.transform.position = _tableDatas[index].ChairTrs[_tableDatas[index].SitIndex].position;
             _tableDatas[index].CurrentCustomer.ChangeState(CustomerState.Eat);
             _tableDatas[index].CurrentCustomer.ShowFood(foodData.Sprite);
             Tween.Wait(1.5f, () =>
@@ -457,7 +464,6 @@ public class TableManager : MonoBehaviour
 
         _tableDatas[index].CurrentCustomer.ChangeState(CustomerState.Idle);
         _tableDatas[index].CurrentCustomer.HideFood();
-        UserInfo.AddMoney(totalPrice);
         StartCoinAnime(index);
         StartGarbageAnime(index);
 
@@ -542,7 +548,7 @@ public class TableManager : MonoBehaviour
     private void StartCoinAnime(int index)
     {
         int sitIndex = _tableDatas[index].SitIndex;
-        int foodPrice = (int)(_tableDatas[index].TotalPrice * GameManager.Instance.FoodPriceMul);
+        int foodPrice = _tableDatas[index].TotalPrice;
 
         _tableDatas[index].DropCoinAreas[sitIndex].DropCoin(_tableDatas[index].ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0), foodPrice);
         _tableDatas[index].TotalPrice = 0;

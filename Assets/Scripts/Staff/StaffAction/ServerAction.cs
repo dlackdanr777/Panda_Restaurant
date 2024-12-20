@@ -1,4 +1,5 @@
 using Muks.Tween;
+using UnityEngine;
 
 public class ServerAction : IStaffAction
 {
@@ -24,14 +25,20 @@ public class ServerAction : IStaffAction
         staff.SetAlpha(0);
         staff.SetStaffState(EStaffState.Used);
         _tableManager.OnUseStaff(index);
-        staff.transform.position = _tableManager.GetStaffPos(index, StaffType.Server);
-        _tweenData = staff.SpriteRenderer.TweenAlpha(1, 0.25f).OnComplete(() =>
+        Vector3 pos = _tableManager.GetStaffPos(index, StaffType.Server);
+        staff.transform.position = pos;
+        ObjectPoolManager.Instance.SpawnSmokeParticle(pos + new Vector3(0, 1f, 0), Quaternion.identity).Play();
+        _tweenData = staff.SpriteRenderer.TweenAlpha(1, 0.1f).OnComplete(() =>
         {
-            _tweenData = Tween.Wait(0.5f, () =>
+            _tweenData = Tween.Wait(1f, () =>
             {
                 _tableManager.OnCustomerOrder(index);
-                _tweenData = staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(staff.ResetAction);
-                staff.ResetAction();
+                _tweenData = staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(() =>
+                {
+                    staff.ResetAction();
+                    staff.transform.position = Vector3.zero;
+                });
+
             });
         });
 

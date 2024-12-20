@@ -158,7 +158,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _lockImgae?.SetActive(false);
         _alarmImage?.SetActive(false);
 
-        _image.color = Utility.GetColor(ColorType.None);
+        _image.color = Utility.GetColor(ColorType.NoGive);
         _image.sprite = sprite;
         _nameText.text = name;
 
@@ -179,7 +179,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _lockImgae?.SetActive(false);
         _alarmImage?.SetActive(true);
 
-        _image.color = Utility.GetColor(ColorType.None);
+        _image.color = Utility.GetColor(ColorType.NoGive);
         _image.sprite = sprite;
         _nameText.text = name;
 

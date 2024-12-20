@@ -80,11 +80,17 @@ public class Customer : MonoBehaviour
 
     public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
     {
+        if (_moveCoroutine != null)
+            StopCoroutine(_moveCoroutine);
+
+        if (_teleportCoroutine != null)
+            StopCoroutine(_teleportCoroutine);
+
+        _moveCompleted = onCompleted;
         int moveObjFloor = AStar.Instance.GetTransformFloor(_moveObj.transform.position);
         _targetFloor = AStar.Instance.GetTransformFloor(targetPos);
         _targetPos = targetPos;
         _moveEndDir = moveEndDir;
-        _moveCompleted = onCompleted;
         AStar.Instance.RequestPath(_moveObj.transform.position, moveObjFloor == _targetFloor ? targetPos : AStar.Instance.GetFloorPos(moveObjFloor), moveObjFloor == _targetFloor ? TargetMove : StairsMove);
     }
 

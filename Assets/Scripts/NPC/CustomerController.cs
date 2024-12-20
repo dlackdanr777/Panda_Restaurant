@@ -183,7 +183,6 @@ public class CustomerController : MonoBehaviour
 
         ObjectPoolManager.Instance.DespawnGatecrasherCustomer(_gatecrasherCustomer);
         _gatecrasherCustomer = null;
-        DebugLog.Log("Áø»ó ¼Õ´Ô »ç¶óÁü");
     }
 
 

@@ -190,7 +190,7 @@ public class FirstTutorial : MonoBehaviour
         _table1BoomParticle.Emit(1);
         yield return YieldCache.WaitForSeconds(4f);
 
-        yield return _uiDescriptionNPC.ShowDescription2Text("현재 손님을 맞이할 준비는 완료됬네요.");
+        yield return _uiDescriptionNPC.ShowDescription2Text("현재 손님을 맞이할 준비는 완료됐네요.");
         yield return _uiDescriptionNPC.ShowDescription2Text("하지만 손님들이 아직 우리 가게를 잘 모를거에요.");
 
         _uiTutorial.AddCustomerButtonSetActive(true);
