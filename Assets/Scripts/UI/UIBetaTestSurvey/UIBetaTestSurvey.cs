@@ -30,6 +30,7 @@ public class UIBetaTestSurvey : MonoBehaviour
 
     private void OnButtonClicked()
     {
+        DebugLog.Log(UserInfo.GetEffectSetFurnitureCount("SET01"));
         if(UserInfo.IsActivatedFurnitureEffectSet("SET01"))
         {
             Application.OpenURL("https://naver.me/5XJ7mKyj");

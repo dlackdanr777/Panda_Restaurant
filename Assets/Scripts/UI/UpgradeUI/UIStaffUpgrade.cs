@@ -12,6 +12,7 @@ public class UIStaffUpgrade : MobileUIView
     [SerializeField] private UIUpgradeAreaGroup _currentLevelGroup;
     [SerializeField] private UIUpgradeAreaGroup _nextLevelGroup;
     [SerializeField] private UIUpgradeAreaGroup _maxLevelGroup;
+    [SerializeField] private ParticleSystem _flashEffect;
 
     [Header("Buttons")]
     [SerializeField] private UIButtonAndText _upgradeButton;
@@ -23,6 +24,10 @@ public class UIStaffUpgrade : MobileUIView
     [SerializeField] private Image _upgradeImage;
     [SerializeField] private Sprite _upgradeMoneySprite;
     [SerializeField] private Sprite _upgradeDiaSprite;
+
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _upgradeSound;
 
     private StaffData _currentData;
 
@@ -39,6 +44,7 @@ public class UIStaffUpgrade : MobileUIView
     public override void Hide()
     {
         VisibleState = VisibleState.Disappeared;
+        _flashEffect.Stop();
         gameObject.SetActive(false);
     }
 
@@ -158,6 +164,8 @@ public class UIStaffUpgrade : MobileUIView
 
             UserInfo.UpgradeStaff(_currentData);
             PopupManager.Instance.ShowDisplayText("직원 업그레이드를 완료했어요!");
+            SoundManager.Instance.PlayEffectAudio(_upgradeSound);
+            _flashEffect.Emit(1);
             UpdateData();
             return;
 

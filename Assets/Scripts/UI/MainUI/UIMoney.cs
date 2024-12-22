@@ -18,7 +18,7 @@ public class UIMoney : MonoBehaviour
     [SerializeField] private Ease _moveEase;
     [SerializeField] private Color _startColor;
 
-    private int _currentMoney;
+    private long _currentMoney;
     private Vector3 _tmpScale;
     private Coroutine _moneyAnimeRoutine;
 
@@ -60,7 +60,7 @@ public class UIMoney : MonoBehaviour
         if (!gameObject.activeInHierarchy)
             return;
 
-        int addMoney = UserInfo.Money - _currentMoney;
+        long addMoney = UserInfo.Money - _currentMoney;
 
         if (addMoney == 0)
             return;
@@ -91,15 +91,15 @@ public class UIMoney : MonoBehaviour
     }
 
 
-    private IEnumerator AddMoneyAnime(int addMoney)
+    private IEnumerator AddMoneyAnime(long addMoney)
     {
-        int startMoney = UserInfo.Money - addMoney;
-        int targetMoney = UserInfo.Money;
+        long startMoney = UserInfo.Money - addMoney;
+        long targetMoney = UserInfo.Money;
         float time = 0; 
 
         while(time < 1)
         {
-            _moneyText.text = Utility.ConvertToMoney(Mathf.Lerp(startMoney, targetMoney, time));
+            _moneyText.text = Utility.ConvertToMoney(Mathf.FloorToInt(Mathf.Lerp(startMoney, targetMoney, time)));
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }

@@ -69,14 +69,14 @@ public static class UserInfo
     private static int _dia;
     public static int Dia => _dia;
 
-    private static int _money;
-    public static int Money => _money;
+    private static long _money;
+    public static long Money => _money;
 
-    private static int _totalAddMoney;
-    public static int TotalAddMoney => _totalAddMoney;
+    private static long _totalAddMoney;
+    public static long TotalAddMoney => _totalAddMoney;
 
-    private static int _dailyAddMoney;
-    public static int DailyAddMoney => _dailyAddMoney;
+    private static long _dailyAddMoney;
+    public static long DailyAddMoney => _dailyAddMoney;
 
     private static int _score;
     public static int Score => _score + GameManager.Instance.AddSocre;
@@ -457,6 +457,9 @@ public static class UserInfo
             ResetDailyChallenges();
         }
 
+        CheckFurnitureSetCount();
+        CheckKitchenSetCount();
+
         OnChangeMoneyHandler?.Invoke();
         OnChangeTipHandler?.Invoke();
         OnChangeScoreHandler?.Invoke();
@@ -488,11 +491,12 @@ public static class UserInfo
     }
 
 
-    public static void AddMoney(int value)
+    public static void AddMoney(long value)
     {
         _money += value;
-        _totalAddMoney += Mathf.Clamp(value, 0, 100000000);
-        _dailyAddMoney += Mathf.Clamp(value, 0, 100000000);
+        if (value < 0) value = 0;
+        _totalAddMoney += value;
+        _dailyAddMoney += value;
         DataBindMoney();
         OnChangeMoneyHandler?.Invoke();
     }
@@ -646,7 +650,7 @@ public static class UserInfo
         return true;
     }
 
-    public static bool IsMoneyValid(int money)
+    public static bool IsMoneyValid(long money)
     {
         if (Money < money)
             return false;
@@ -1363,7 +1367,7 @@ public static class UserInfo
         }
 
         _giveFurnitureList.Add(data.Id);
-        CheckEffectSetCount();
+        CheckFurnitureSetCount();
         OnGiveFurnitureHandler?.Invoke();
     }
 
@@ -1384,7 +1388,7 @@ public static class UserInfo
         }
 
         _giveFurnitureList.Add(id);
-        CheckEffectSetCount();
+        CheckFurnitureSetCount();
         OnGiveFurnitureHandler?.Invoke();
     }
 
@@ -1485,7 +1489,7 @@ public static class UserInfo
         }
 
         _giveKitchenUtensilList.Add(data.Id);
-        CheckEffectSetCount();
+        CheckKitchenSetCount();
         OnGiveKitchenUtensilHandler?.Invoke();
     }
 
@@ -1506,7 +1510,7 @@ public static class UserInfo
         }
 
         _giveKitchenUtensilList.Add(id);
-        CheckEffectSetCount();
+        CheckKitchenSetCount();
         OnGiveKitchenUtensilHandler?.Invoke();
     }
 
@@ -1640,22 +1644,23 @@ public static class UserInfo
         return 0;
     }
 
-
-    public static void CheckEffectSetCount()
+    private static void CheckFurnitureSetCount()
     {
         _furnitureEffectSetCountDic.Clear();
-        _kitchenUtensilEffectSetCountDic.Clear();
         string setId = string.Empty;
-        for(int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
-        {
-            setId = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]).SetId;
 
-            if (SetDataManager.Instance.GetSetData(setId) == null)
+        for (int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
+        {
+            var furnitureData = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]);
+            if (furnitureData == null)
+                continue;
+
+            setId = furnitureData.SetId;
+            if (string.IsNullOrEmpty(setId) || SetDataManager.Instance.GetSetData(setId) == null)
                 continue;
 
             if (_furnitureEffectSetCountDic.ContainsKey(setId))
                 _furnitureEffectSetCountDic[setId] += 1;
-
             else
                 _furnitureEffectSetCountDic.Add(setId, 1);
         }
@@ -1665,35 +1670,40 @@ public static class UserInfo
             if (_activatedFurnitureEffectSet.Contains(data.Key))
                 continue;
 
-            if (data.Value < ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
-                continue;
-
-            _activatedFurnitureEffectSet.Add(data.Key);
+            if (data.Value >= ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
+                _activatedFurnitureEffectSet.Add(data.Key);
         }
+    }
+
+
+    private static void CheckKitchenSetCount()
+    {
+        _kitchenUtensilEffectSetCountDic.Clear();
+        string setId = string.Empty;
 
         for (int i = 0, cnt = _giveKitchenUtensilList.Count; i < cnt; ++i)
         {
-            setId = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]).SetId;
+            var kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]);
+            if (kitchenData == null)
+                continue;
 
-            if (SetDataManager.Instance.GetSetData(setId) == null)
+            setId = kitchenData.SetId;
+            if (string.IsNullOrEmpty(setId) || SetDataManager.Instance.GetSetData(setId) == null)
                 continue;
 
             if (_kitchenUtensilEffectSetCountDic.ContainsKey(setId))
                 _kitchenUtensilEffectSetCountDic[setId] += 1;
-
             else
                 _kitchenUtensilEffectSetCountDic.Add(setId, 1);
         }
 
-        foreach(var data in _kitchenUtensilEffectSetCountDic)
+        foreach (var data in _kitchenUtensilEffectSetCountDic)
         {
             if (_activatedKitchenUtensilEffectSet.Contains(data.Key))
                 continue;
 
-            if (data.Value < ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
-                continue;
-
-            _activatedKitchenUtensilEffectSet.Add(data.Key);
+            if (data.Value >= ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
+                _activatedKitchenUtensilEffectSet.Add(data.Key);
         }
     }
 

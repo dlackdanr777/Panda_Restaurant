@@ -45,7 +45,7 @@ public class SoundManager : MonoBehaviour
     public event Action<float, AudioType> OnVolumeChangedHandler;
 
     private AudioMixer _audioMixer;
-    private float _backgroundVolume = 0.7f;
+    private float _backgroundVolume = 0.9f;
     private float _effectVolume = 1f;
 
     private AudioSource[] _audios;

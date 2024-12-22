@@ -538,7 +538,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE11:
                 Type11ChallengeData data11 = (Type11ChallengeData)data;
-                int moneyCount = UserInfo.TotalAddMoney;
+                long moneyCount = UserInfo.TotalAddMoney;
                 return moneyCount == 0 ? 0 : Math.Min(1, (float)moneyCount / data11.MoneyCount);
 
             case ChallengeType.TYPE12:
@@ -627,7 +627,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE32:
                 Type32ChallengeData data32 = (Type32ChallengeData)data;
-                int dailyAddMoney = UserInfo.DailyAddMoney;
+                long dailyAddMoney = UserInfo.DailyAddMoney;
                 return GetChallengeAchievementRate(dailyAddMoney, data32.Count);
 
             case ChallengeType.TYPE33:
@@ -672,6 +672,11 @@ public class ChallengeManager : MonoBehaviour
 
 
     private float GetChallengeAchievementRate(int currentValue, int targetValue)
+    {
+        return currentValue == 0 ? 0 : Math.Min(1, (float)currentValue / targetValue);
+    }
+
+    private float GetChallengeAchievementRate(long currentValue, long targetValue)
     {
         return currentValue == 0 ? 0 : Math.Min(1, (float)currentValue / targetValue);
     }
@@ -792,6 +797,7 @@ public class ChallengeManager : MonoBehaviour
                 continue;
 
             bool _isGives = true;
+
             for (int i = 0, cnt = data.NeedKitchenUtensilId.Length; i < cnt; i++)
             {
                 if (!UserInfo.IsGiveKitchenUtensil(data.NeedKitchenUtensilId[i]))
@@ -2049,7 +2055,7 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type32ChallengeCheck()
     {
-        int dailyAddMoney = UserInfo.DailyAddMoney;
+        long dailyAddMoney = UserInfo.DailyAddMoney;
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;

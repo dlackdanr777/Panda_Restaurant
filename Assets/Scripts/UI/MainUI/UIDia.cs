@@ -98,7 +98,7 @@ public class UIDia : MonoBehaviour
 
         while(time < 1)
         {
-            _diaText.text = Utility.ConvertToMoney(Mathf.Lerp(startMoney, targetMoney, time));
+            _diaText.text = Utility.ConvertToMoney(Mathf.FloorToInt(Mathf.Lerp(startMoney, targetMoney, time)));
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }

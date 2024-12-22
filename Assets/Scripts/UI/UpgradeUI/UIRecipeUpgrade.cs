@@ -12,11 +12,17 @@ public class UIRecipeUpgrade : MobileUIView
     [SerializeField] private UIUpgradeAreaGroup _currentLevelGroup;
     [SerializeField] private UIUpgradeAreaGroup _nextLevelGroup;
     [SerializeField] private UIUpgradeAreaGroup _maxLevelGroup;
+    [SerializeField] private ParticleSystem _flashEffect;
 
     [Header("Buttons")]
     [SerializeField] private UIButtonAndText _upgradeButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
+
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _upgradeSound;
+
 
     private FoodData _currentData;
 
@@ -32,6 +38,7 @@ public class UIRecipeUpgrade : MobileUIView
     public override void Hide()
     {
         VisibleState = VisibleState.Disappeared;
+        _flashEffect.Stop();
         gameObject.SetActive(false);
     }
 
@@ -119,11 +126,14 @@ public class UIRecipeUpgrade : MobileUIView
         int level = UserInfo.GetRecipeLevel(_currentData);
         if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
         {
-            if(UserInfo.IsMoneyValid(_currentData.GetUpgradePrice(level)))
+            int price = _currentData.GetUpgradePrice(level);
+            if (UserInfo.IsMoneyValid(price))
             {
                 UserInfo.UpgradeRecipe(_currentData);
-                UserInfo.AddMoney(-_currentData.GetUpgradePrice(level));
-                PopupManager.Instance.ShowDisplayText("직원 업그레이드를 완료했어요!");
+                UserInfo.AddMoney(-price);
+                PopupManager.Instance.ShowDisplayText("레시피 업그레이드를 완료했어요!");
+                SoundManager.Instance.PlayEffectAudio(_upgradeSound);
+                _flashEffect.Emit(1);
                 UpdateData();
                 return;
             }

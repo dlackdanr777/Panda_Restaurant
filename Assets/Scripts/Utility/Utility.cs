@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public static class Utility
 {
-    public static string ConvertToMoney(float value)
+    public static string ConvertToMoney(long value)
     {
         string text;
 
@@ -18,11 +18,13 @@ public static class Utility
         }
         else // 1천 미만
         {
-            text = ((int)value).ToString("N0");
+            text = (value).ToString("N0");
         }
 
         return text;
     }
+
+
 
     /// <summary>총문자열 갯수와 문자열을 받아 문자열 앞쪽에 -를 넣어주는 함수</summary>
     public static string StringAddHyphen(string str, int strLength)

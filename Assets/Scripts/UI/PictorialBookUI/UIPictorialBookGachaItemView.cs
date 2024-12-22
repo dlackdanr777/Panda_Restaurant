@@ -26,6 +26,10 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
     [SerializeField] private UIImageAndText _tipPerMinuteLayout;
     [SerializeField] private UIButtonAndText _upgradeButton;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _upgradeSound;
+
 
     private GachaItemData _data;
 
@@ -197,6 +201,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
 
         if(UserInfo.UpgradeGachaItem(_data))
         {
+            SoundManager.Instance.PlayEffectAudio(_upgradeSound);
             _flashEffect.Emit(1);
             UpgradeView();
         }

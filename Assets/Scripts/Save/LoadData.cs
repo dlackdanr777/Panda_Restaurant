@@ -14,9 +14,9 @@ public class LoadData
     public bool IsSpecialCustomer1TutorialClear;
     public bool IsSpecialCustomer2TutorialClear;
     public int Dia;
-    public int Money;
-    public int TotalAddMoney;
-    public int DailyAddMoney;
+    public long Money;
+    public long TotalAddMoney;
+    public long DailyAddMoney;
     public int Score;
     public int Tip;
     public int TotalCookCount;
@@ -72,9 +72,9 @@ public class LoadData
         IsSpecialCustomer1TutorialClear = json[0]["IsSpecialCustomer1TutorialClear"].ToString().ToLower() == "true";
         IsSpecialCustomer2TutorialClear = json[0]["IsSpecialCustomer2TutorialClear"].ToString().ToLower() == "true";
         Dia = json[0].ContainsKey("Dia") ?  int.Parse(json[0]["Dia"].ToString()) : 0;
-        Money = int.Parse(json[0]["Money"].ToString());
-        TotalAddMoney = int.Parse(json[0]["TotalAddMoney"].ToString());
-        DailyAddMoney = int.Parse(json[0]["DailyAddMoney"].ToString());
+        Money = long.Parse(json[0]["Money"].ToString());
+        TotalAddMoney = long.Parse(json[0]["TotalAddMoney"].ToString());
+        DailyAddMoney = long.Parse(json[0]["DailyAddMoney"].ToString());
         Score = int.Parse(json[0]["Score"].ToString());
         Tip = int.Parse(json[0]["Tip"].ToString());
         TotalCookCount = int.Parse(json[0]["TotalCookCount"].ToString());
@@ -247,7 +247,7 @@ public class LoadData
             {
                 // JSON 데이터를 클래스 객체로 변환
                 int coinCount = (int)item["CoinCount"];
-                int money = (int)item["Money"];
+                long money = (long)item["Money"];
                 SaveCoinAreaData data = new SaveCoinAreaData(coinCount, money);
 
                 // 리스트에 추가
@@ -299,9 +299,9 @@ public class SaveCountData
 public class SaveCoinAreaData
 {
     public int CoinCount;
-    public int Money;
+    public long Money;
 
-    public SaveCoinAreaData(int coinCount, int money)
+    public SaveCoinAreaData(int coinCount, long money)
     {
         CoinCount = coinCount;
         Money = money;

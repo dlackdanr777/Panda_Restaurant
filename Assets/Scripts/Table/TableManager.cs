@@ -381,7 +381,6 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].CurrentFood = data;
 
         int totalPrice = (int)(((data.Price * _tableDatas[index].CurrentCustomer.CurrentFoodPriceMul) + GameManager.Instance.AddFoodPrice) * GameManager.Instance.FoodPriceMul);
-        DebugLog.Log(GameManager.Instance.FoodPriceMul);
 
         _tableDatas[index].TotalPrice += totalPrice;
         _orderButtons[index].SetData(foodData);
