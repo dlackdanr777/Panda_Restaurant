@@ -1,4 +1,6 @@
 using Muks.PathFinding.AStar;
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -45,7 +47,6 @@ public class NormalCustomer : Customer
     {
         base.SetData(data);
         HideFood();
-        _moveSpeed *= GameManager.Instance.AddCustomerSpeedMul;
         _doublePricePercent = 0;
         _currentFoodPriceMul = 1;
         _orderCount = 1;
@@ -64,7 +65,7 @@ public class NormalCustomer : Customer
             data.Skill.Activate(this);
         }
 
-        if (Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100))
+        if (UnityEngine.Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100))
         {
             _currentFoodPriceMul = _currentFoodPriceMul * _foodPriceMul;
         }
@@ -159,5 +160,36 @@ public class NormalCustomer : Customer
     public void HideFood()
     {
         _foodRenderer.gameObject.SetActive(false);
+    }
+
+    protected override IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
+    {
+        _path = nodeList;
+
+        if (1 < nodeList.Count)
+            nodeList.RemoveAt(0);
+
+        foreach (Vector2 vec in nodeList)
+        {
+            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f) // 제곱 거리 비교
+            {
+                Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
+                SetSpriteDir(dir.x);
+                float step = Time.deltaTime * _moveSpeed * GameManager.Instance.AddCustomerSpeedMul * 0.7f; // 프레임 독립적 이동 속도
+                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
+                ChangeState(CustomerState.Run);
+                yield return null; // 프레임마다 실행
+            }
+        }
+
+        ChangeState(CustomerState.Idle);
+        SetSpriteDir(_moveEndDir);
+        onCompleted?.Invoke();
+
+        if (_isStairsMove)
+            yield break;
+
+        _moveCompleted?.Invoke();
+        _moveCompleted = null;
     }
 }

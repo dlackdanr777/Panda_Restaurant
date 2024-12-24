@@ -28,10 +28,9 @@ public class WaiterAction : IStaffAction
         Vector3 pos = _tableManager.GetStaffPos(index, StaffType.Waiter);
         staff.transform.position = pos;
         ObjectPoolManager.Instance.SpawnSmokeParticle(pos + new Vector3(0, 1f, 0), Quaternion.identity).Play();
-
         _tweenData = staff.SpriteRenderer.TweenAlpha(1, 0.1f).OnComplete(() =>
         {
-            _tweenData = Tween.Wait(0.2f, () =>
+            _tweenData = Tween.Wait(0.1f, () =>
             {
                 _tableManager.OnServing(index);
                 _tweenData = Tween.Wait(2.5f, () =>

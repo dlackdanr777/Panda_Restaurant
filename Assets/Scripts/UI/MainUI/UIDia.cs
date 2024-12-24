@@ -92,18 +92,19 @@ public class UIDia : MonoBehaviour
 
     private IEnumerator AddDiaAnime(int addDia)
     {
-        int startMoney = UserInfo.Dia - addDia;
-        int targetMoney = UserInfo.Dia;
+        int startDia = UserInfo.Dia - addDia;
+        int targetDia = UserInfo.Dia;
         float time = 0; 
 
         while(time < 1)
         {
-            _diaText.text = Utility.ConvertToMoney(Mathf.FloorToInt(Mathf.Lerp(startMoney, targetMoney, time)));
+            int currentDia = Mathf.FloorToInt(Mathf.Lerp(startDia, targetDia, time));
+            _diaText.SetText(Utility.ConvertToMoney(currentDia));
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
 
-        _diaText.text = Utility.ConvertToMoney(UserInfo.Dia);  
+        _diaText.SetText(Utility.ConvertToMoney(UserInfo.Dia));  
     }
 
     

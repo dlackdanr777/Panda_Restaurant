@@ -4,24 +4,24 @@ using UnityEngine.UI;
 
 public static class Utility
 {
+    private static readonly string BillionFormat = "#,##0.0B";
+    private static readonly string MillionFormat = "#,##0.0A";
+    private static readonly string NumberFormat = "N0";
+
     public static string ConvertToMoney(long value)
     {
-        string text;
-
         if (value >= 1_000_000_000) // 10억 이상
         {
-            text = (value / 1_000_000_000f).ToString("#,##0.0") + "B"; // 억 단위
+            return (value / 1_000_000_000f).ToString(BillionFormat);
         }
         else if (value >= 1_000_000) // 100만 이상
         {
-            text = (value / 1_000_000f).ToString("#,##0.0") + "A"; // 백만 단위
+            return (value / 1_000_000f).ToString(MillionFormat);
         }
         else // 1천 미만
         {
-            text = (value).ToString("N0");
+            return value.ToString(NumberFormat);
         }
-
-        return text;
     }
 
 

@@ -20,6 +20,7 @@ public class UIGacha : MobileUIView
     public event Action<int> GachaStepHandler;
 
     [Header("Components")]
+    [SerializeField] private MainScene _mainScene;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIBouncingBall _bouncingBall;
     [SerializeField] private ScrollingImage _scrollImage;
@@ -60,7 +61,6 @@ public class UIGacha : MobileUIView
     [Space]
     [Header("Audios")]
     [SerializeField] private AudioClip _backgroundAudio;
-    [SerializeField] private AudioClip _mainAudio;
     [SerializeField] private AudioClip _leverSound;
     [SerializeField] private AudioClip _shakeCapsuleSound;
     [SerializeField] private AudioClip _fallCapsuleSound;
@@ -179,7 +179,7 @@ public class UIGacha : MobileUIView
     public override void Hide()
     {
         VisibleState = VisibleState.Disappeared;
-        SoundManager.Instance.PlayBackgroundAudio(_mainAudio, 0.5f);
+        _mainScene.PlayMainMusic();
         _screenTouchWaitTime = 0;
         gameObject.SetActive(false);
     }
@@ -368,7 +368,7 @@ public class UIGacha : MobileUIView
     private void OnSingleGachaButtonClicked()
     {
 
-        if(1 <= UserInfo.Dia)
+        if(UserInfo.IsDiaValid(1))
         {
             _getItemList.Clear();
             _getItemIndex = 0;
@@ -393,7 +393,7 @@ public class UIGacha : MobileUIView
 
     private void OnTenGachaButtonClicked()
     {
-        if(10 <= UserInfo.Dia)
+        if(UserInfo.IsDiaValid(10))
         {
             _getItemList.Clear();
             _getItemIndex = 0;

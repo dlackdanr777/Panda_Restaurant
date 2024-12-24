@@ -36,12 +36,14 @@ namespace Muks.Tween
             }
 
             //tween.Clear();
+
             tween.enabled = true;
             tween.AddDataSequence(new TweenDataSequence(null, duration, Ease.Constant, null));
             tween.OnComplete(() =>
             {
                 onCompleted?.Invoke();
                 tween.enabled = false;
+                tween.Clear();
                 _tweenWaitQueue.Enqueue(tween);
             });
 

@@ -15,6 +15,7 @@ public enum BackgroundType
 public class UIRestaurantAdmin : MobileUIView
 {
     [Header("Components")]
+    [SerializeField] private MainScene _mainScene;
     [SerializeField] private UIStaff _staffUI;
     [SerializeField] private UIFurniture _furnitureUI;
     [SerializeField] private UIKitchen _kitchenUI;
@@ -53,7 +54,6 @@ public class UIRestaurantAdmin : MobileUIView
     [Space]
     [Header("Audios")]
     [SerializeField] private AudioClip _shopMusic;
-    [SerializeField] private AudioClip _mainMusic;
 
 
     public override void Init()
@@ -111,7 +111,7 @@ public class UIRestaurantAdmin : MobileUIView
         if(_mainUI.activeSelf)
         {
             VisibleState = VisibleState.Disappearing;
-            SoundManager.Instance.PlayBackgroundAudio(_mainMusic, 0.5f);
+            _mainScene.PlayMainMusic();
             _canvasGroup.blocksRaycasts = false;
             _canvasGroup.alpha = 1;
             _mainUI.transform.localScale = Vector3.one;
@@ -128,8 +128,8 @@ public class UIRestaurantAdmin : MobileUIView
 
         else
         {
-            SoundManager.Instance.PlayBackgroundAudio(_mainMusic, 0.5f);
-            VisibleState = VisibleState.Disappeared;
+            _mainScene.PlayMainMusic();
+             VisibleState = VisibleState.Disappeared;
             if (_uiNav.CheckActiveView("UIStaff"))
                 _uiNav.Pop("UIStaff");
 

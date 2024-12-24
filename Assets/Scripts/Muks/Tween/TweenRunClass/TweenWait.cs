@@ -1,3 +1,5 @@
+using System;
+
 namespace Muks.Tween
 {
     public class TweenWait : TweenData
@@ -5,8 +7,8 @@ namespace Muks.Tween
         public override void Clear()
         {
             base.Clear();
-            Tween.DequeueTweenWait(this);
         }
+
 
 
         protected override void SetData(TweenDataSequence dataSequence)

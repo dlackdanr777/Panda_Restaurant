@@ -14,6 +14,13 @@ public class UITweenFillAmountImage : MonoBehaviour
     [SerializeField] private Ease _tweenMode;
 
 
+    private void OnDisable()
+    {
+        _fillAmountImage.TweenStop();
+    }
+
+
+
     public void SetFillAmonut(float value)
     {
         _fillAmountImage.TweenStop();

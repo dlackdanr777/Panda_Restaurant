@@ -3,6 +3,7 @@ using Muks.BackEnd;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -29,6 +30,7 @@ public class GameManager : MonoBehaviour
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
+    public int FeverGaguge = 0;
 
     [SerializeField] private int _totalTabCount = 8;
     public int TotalTabCount => _totalTabCount;
@@ -36,13 +38,14 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _foodPriceMul = 0;
     public float FoodPriceMul => 1 + _foodPriceMul;
 
+    [SerializeField] private float _totalAddSpeedMul = 0;
 
     private int _addPromotionCustomer = 1;
     public int AddPromotionCustomer => _addPromotionCustomer;
 
     private int _maxWaitCustomerCount = 10;
     public int MaxWaitCustomerCount => Mathf.Clamp(_maxWaitCustomerCount + _addUpgradeGachaItemWaitCustomerMaxCount + _addEquipStaffMaxWaitCustomerCount, 0, 30);
-    public float AddCustomerSpeedMul => 1 + 0.01f * (_addUpgradeGachaItemCustomerSpeedPercent);
+    public float AddCustomerSpeedMul => 1 + _totalAddSpeedMul + (0.01f * _addUpgradeGachaItemCustomerSpeedPercent);
     public int AddSpecialCustomerMoney => _addUpgradeGachaItemSpecialCustomerMoney;
     public float AddSpecialCustomerSpawnMul => 1 +  0.01f * (_addUpgradeGachaItemSpecialCustomerSpawnPercent);
     public float AddGatecrasherCustomerDamageMul => 1 + 0.01f * (_addUpgradeGachaItemGatecrasherCustomerDamagePercent);
@@ -50,7 +53,7 @@ public class GameManager : MonoBehaviour
     
 
     [SerializeField] private float _cookingSpeedMul = 1;
-    public float CookingSpeedMul => 1 + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) + (_addEquipSetDataCookSpeedMul * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
+    public float CookingSpeedMul => 1 + _totalAddSpeedMul + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) + (_addEquipSetDataCookSpeedMul * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
     public float SubCookingTime => _subUpgradeGachaItemCookingTime;
     public int AddFoodPrice => _addUpgradeGachaItemFoodPrice;
     public float AddFoodDoublePricePercent => Mathf.Clamp(_addUpgradeGachaItemFoodDoublePricePercent, 0f, 100f);
@@ -64,7 +67,7 @@ public class GameManager : MonoBehaviour
     public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume + Mathf.FloorToInt((_addEquipKitchenUtensilTipVolume + _addEquipFurnitureMaxTipVolume) * _addUpgradeGachaItemMaxTipVolumePercent * 0.01f);
 
 
-
+    public float AddStaffSpeedMul => 1 + _totalAddSpeedMul;
     public float AddStaffSkillTime => _addUpgradeGachaItemStaffSkillTime;
     public float AddWaiterSkillTime => _addUpgradeGachaItemWaiterSkillTime;
     public float AddServerSkillTime => _addUpgradeGachaItemServerSkillTime;
@@ -156,6 +159,12 @@ public class GameManager : MonoBehaviour
         _addPromotionCustomer = Mathf.Clamp(_addPromotionCustomer + value, 1, 100);
     }
 
+    public void SetGameSpeed(float value)
+    {
+        value = Mathf.Clamp(value, 0, 5);
+        _totalAddSpeedMul = value;
+    }
+
 
     public void SaveGameData()
     {
@@ -185,6 +194,7 @@ public class GameManager : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
+        QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 60;
         UserInfo.DataBindTip();
         UserInfo.DataBindMoney();
@@ -207,6 +217,20 @@ public class GameManager : MonoBehaviour
         OnGiveGachaItemEffectCheck();
         OnGiveRecipeCheck();
         OnUpgradeGachaItemCheck();
+
+        SceneManager.activeSceneChanged += (scene1, scene2) =>
+        {
+            _foodPriceMul = 0;
+            _totalAddSpeedMul = 0;
+            _addPromotionCustomer = 1;
+            OnEquipStaffEffectCheck();
+            OnEquipFurnitureEffectCheck();
+            OnEquipKitchenUtensilEffectCheck();
+            CheckSetDataEnabled();
+            OnGiveGachaItemEffectCheck();
+            OnGiveRecipeCheck();
+            OnUpgradeGachaItemCheck();
+        };
     }
 
 

@@ -10,7 +10,9 @@ public class MainScene : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private UINavigation _uiMainNav;
+    [SerializeField] private UIFever _uiFever;
     [SerializeField] private AudioClip _mainSceneMusic;
+    [SerializeField] private AudioClip _feverMusic;
 
 
     [Space]
@@ -23,11 +25,22 @@ public class MainScene : MonoBehaviour
 
     private float _updateTimer;
 
+    public void PlayMainMusic()
+    {
+        if(!_uiFever.IsFeverStart)
+            SoundManager.Instance.PlayBackgroundAudio(_mainSceneMusic, 0.5f);
+
+        else
+            SoundManager.Instance.PlayBackgroundAudio(_feverMusic, 0.5f);
+    }
+
+
+
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        SoundManager.Instance.PlayBackgroundAudio(_mainSceneMusic, 0.5f);
+        PlayMainMusic();
         UpdateArea();
         StartCoroutine(CheckAttendanceRoutine());
 

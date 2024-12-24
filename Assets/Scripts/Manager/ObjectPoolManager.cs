@@ -58,6 +58,9 @@ public class ObjectPoolManager : MonoBehaviour
     private static int _uiCoinCount = 50;
     private static Queue<RectTransform> _uiCoinPool = new Queue<RectTransform>();
 
+    private static int _uiDiaCount = 50;
+    private static Queue<RectTransform> _uiDiaPool = new Queue<RectTransform>();
+
     private static int _uiEffectCount;
     private static Queue<UIParticleEffect>[] _uiEffectPool;
 
@@ -68,6 +71,7 @@ public class ObjectPoolManager : MonoBehaviour
     private static PointerDownSpriteRenderer _coinPrefab;
     private static SmokeParticle _smokeParticlePrefab;
     private static RectTransform _uiCoinPrefab;
+    private static RectTransform _uiDiaPrefab;
     private static PointerDownSpriteRenderer _garbagePrefab;
     private static TextMeshProUGUI _tmpPrefab;
     private static UIParticleEffect[] _uiEffectPrefabs = new UIParticleEffect[(int)UIEffectType.Length];
@@ -97,6 +101,7 @@ public class ObjectPoolManager : MonoBehaviour
         CustomerPooling();
         CoinPooling();
         UICoinPooling();
+        UIDiaPooling();
         GarbagePooling();
         TmpPooling();
         UIEffectPooling();
@@ -170,6 +175,19 @@ public class ObjectPoolManager : MonoBehaviour
             RectTransform coin = Instantiate(_uiCoinPrefab, _uiCanvas.transform);
             _uiCoinPool.Enqueue(coin);
             coin.gameObject.SetActive(false);
+        }
+    }
+
+    private static void UIDiaPooling()
+    {
+        if (_uiDiaPrefab == null)
+            _uiDiaPrefab = Resources.Load<RectTransform>("ObjectPool/UIDia");
+
+        for (int i = 0, count = _uiDiaCount; i < count; i++)
+        {
+            RectTransform dia = Instantiate(_uiDiaPrefab, _uiCanvas.transform);
+            _uiDiaPool.Enqueue(dia);
+            dia.gameObject.SetActive(false);
         }
     }
 
@@ -382,9 +400,38 @@ public class ObjectPoolManager : MonoBehaviour
 
     public void DespawnUICoin(RectTransform coin)
     {
-        coin.gameObject.SetActive(false);
         coin.TweenStop();
+        coin.SetParent(_uiCanvas.transform);
+        coin.gameObject.SetActive(false);
         _uiCoinPool.Enqueue(coin);
+    }
+
+
+    public RectTransform SpawnUIDia(Vector3 pos, Quaternion rot)
+    {
+        RectTransform dia;
+
+        if (_uiDiaPool.Count == 0)
+        {
+            dia = Instantiate(_uiDiaPrefab, pos, rot, _uiCanvas.transform);
+            return dia;
+        }
+
+        dia = _uiDiaPool.Dequeue();
+        dia.gameObject.SetActive(false);
+        dia.gameObject.SetActive(true);
+        dia.transform.position = pos;
+        dia.transform.rotation = rot;
+        return dia;
+    }
+
+
+    public void DespawnUIDia(RectTransform dia)
+    {
+        dia.TweenStop();
+        dia.SetParent(_uiCanvas.transform);
+        dia.gameObject.SetActive(false);
+        _uiDiaPool.Enqueue(dia);
     }
 
 

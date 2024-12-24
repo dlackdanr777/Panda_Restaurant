@@ -31,16 +31,19 @@ public class UIMainChallenge : MobileUIView
     [Space]
     [Header("Coin Animations")]
     [SerializeField] private UIMoney _uiMoney;
+    [SerializeField] private UIDia _uiDia;
     [SerializeField] private int _coinCount;
     [SerializeField] private RectTransform _coinPos;
+    [SerializeField] private RectTransform _coinParent;
     [SerializeField] private Transform _coinTargetPos;
+    [SerializeField] private Transform _coinTargetDiaPos;
     [SerializeField] private float _coinDuration;
     [SerializeField] private Ease _coinEase;
 
     [Space]
     [Header("Audios")]
     [SerializeField] private AudioClip _clearGoldSound;
-
+    [SerializeField] private AudioClip _clearDiaSound;
 
     private ChallengeData _currentData;
 
@@ -149,8 +152,20 @@ public class UIMainChallenge : MobileUIView
             return;
         }
 
-        UserInfo.AddMoney(_currentData.RewardMoney);
-        ChallengeClaerAnime();
+
+        if(_currentData.MoneyType == MoneyType.Gold)
+        {
+            UserInfo.AddMoney(_currentData.RewardMoney);
+            ChallengeClaerMoneyAnime();
+        }
+
+        else if(_currentData.MoneyType == MoneyType.Dia)
+        {
+            UserInfo.AddDia(_currentData.RewardMoney);
+            ChallengeClaerDiaAnime();
+        }
+
+
         UserInfo.ClearChallenge(_currentData.Id);
         UpdateData();
     }
@@ -173,7 +188,7 @@ public class UIMainChallenge : MobileUIView
         _currentData.ShortcutAction.Item?.Invoke();
     }
 
-    private void ChallengeClaerAnime()
+    private void ChallengeClaerMoneyAnime()
     {
         float time = 0;
         UserInfo.TipCollection();
@@ -185,6 +200,7 @@ public class UIMainChallenge : MobileUIView
             RectTransform coin = ObjectPoolManager.Instance.SpawnUICoin(_coinPos.transform.position, Quaternion.identity);
             Vector2 coinPos = UnityEngine.Random.insideUnitCircle * 300;
             coinPos = _coinPos.anchoredPosition + coinPos;
+            coin.SetParent(_coinParent);
             coin.TweenAnchoredPosition(coinPos, 0.45f, Ease.InQuad).OnComplete(() =>
             {
                 float height = 100;
@@ -196,7 +212,36 @@ public class UIMainChallenge : MobileUIView
                     ObjectPoolManager.Instance.DespawnUICoin(coin);
                     _uiMoney.StartAnime();
                 });
-                time += 0.02f;
+                time += 0.05f;
+            });
+        }
+    }
+
+    private void ChallengeClaerDiaAnime()
+    {
+        float time = 0;
+        UserInfo.TipCollection();
+        ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
+        SoundManager.Instance.PlayEffectAudio(_clearDiaSound);
+        for (int i = 0; i < _coinCount; ++i)
+        {
+            int index = i;
+            RectTransform dia = ObjectPoolManager.Instance.SpawnUIDia(_coinPos.transform.position, Quaternion.identity);
+            Vector2 coinPos = UnityEngine.Random.insideUnitCircle * 300;
+            coinPos = _coinPos.anchoredPosition + coinPos;
+            dia.SetParent(_coinParent);
+            dia.TweenAnchoredPosition(coinPos, 0.45f, Ease.InQuad).OnComplete(() =>
+            {
+                float height = 100;
+                if (dia.anchoredPosition.y < 0)
+                    height *= -1;
+
+                dia.TweenJump(_coinTargetDiaPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                {
+                    ObjectPoolManager.Instance.DespawnUIDia(dia);
+                    _uiDia.StartAnime();
+                });
+                time += 0.05f;
             });
         }
     }

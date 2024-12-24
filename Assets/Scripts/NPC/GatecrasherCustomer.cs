@@ -87,7 +87,7 @@ public class GatecrasherCustomer : Customer
         _guitarSource.Stop();
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
-
+        _spriteFillAmount.SetFillAmount(0);
         SoundManager.Instance.PlayEffectAudio(_visitSound, 0.15f);
 
         if (_enabledCoroutine != null)

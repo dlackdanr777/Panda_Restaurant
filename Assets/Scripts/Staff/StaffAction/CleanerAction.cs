@@ -68,7 +68,10 @@ public class CleanerAction : IStaffAction
                 }
 
                 staff.SetStaffState(EStaffState.Action);
-                _tweenData = Tween.Wait(staff.SecondValue / staff.SpeedMul, () =>
+                float speedMul = Mathf.Max(staff.SpeedMul, 0.01f); // SpeedMul이 0이 되지 않도록 최소값 설정
+                float addStaffSpeedMul = Mathf.Max(GameManager.Instance.AddStaffSpeedMul, 0.01f); // AddStaffSpeedMul 최소값 설정
+                float actionTime = Mathf.Max((staff.SecondValue / speedMul) / addStaffSpeedMul, 0.1f);
+                _tweenData = Tween.Wait(actionTime, () =>
                 {              
                     targetArea.CleanGarbage();
                     _tweenData = Tween.Wait(1, () =>

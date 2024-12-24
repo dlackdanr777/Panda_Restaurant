@@ -39,7 +39,7 @@ public class Customer : MonoBehaviour
     protected int _moveEndDir;
     protected float _moveSpeed;
     protected bool _isStairsMove;
-    private List<Vector2> _path;
+    protected List<Vector2> _path;
 
 
     public virtual void Init()
@@ -148,24 +148,24 @@ public class Customer : MonoBehaviour
     }
 
 
-    private IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
+    protected virtual IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {
         _path = nodeList;
 
-        if (2 <= nodeList.Count)
+        if (1 < nodeList.Count)
             nodeList.RemoveAt(0);
 
 
         foreach (Vector2 vec in nodeList)
         {
-            while (Vector3.Distance(_moveObj.transform.position, vec) > 0.1f)
+            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f) // 제곱 거리 비교
             {
-                float step = 0.01f * _moveSpeed; // 이동 거리 제한
-                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
                 SetSpriteDir(dir.x);
+                float step = Time.deltaTime * _moveSpeed * 0.7f; // 프레임 독립적 이동 속도
+                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
                 ChangeState(CustomerState.Run);
-                yield return YieldCache.WaitForSeconds(0.01f);
+                yield return null; // 프레임마다 실행
             }
         }
 

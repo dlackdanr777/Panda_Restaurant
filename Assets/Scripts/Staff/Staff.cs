@@ -3,8 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-
-
+using Muks.Tween;
 
 public class Staff : MonoBehaviour
 {
@@ -227,7 +226,7 @@ public class Staff : MonoBehaviour
         }
         else
         {
-            _skillTimer += Time.deltaTime * SpeedMul;
+            _skillTimer += Time.deltaTime * SpeedMul * GameManager.Instance.AddStaffSpeedMul;
         }
     }
 
@@ -235,6 +234,15 @@ public class Staff : MonoBehaviour
     private void Update()
     {
         UpdateAction();
+    }
+
+    private void OnDisable()
+    {
+        if(transform != null)
+            transform.TweenStop();
+
+        if (_spriteRenderer != null)
+            _spriteRenderer.TweenStop();
     }
 
     private void UpdateAction()
@@ -251,7 +259,7 @@ public class Staff : MonoBehaviour
         }
         else
         {
-            _actionTimer -= Time.deltaTime * SpeedMul;
+            _actionTimer -= Time.deltaTime * SpeedMul * GameManager.Instance.AddStaffSpeedMul;
         }
     }
 
@@ -352,19 +360,19 @@ public class Staff : MonoBehaviour
 
     private IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {
-        if (2 <= nodeList.Count)
+        if (1 < nodeList.Count)
             nodeList.RemoveAt(0);
 
         SetStaffState(EStaffState.Run);
         foreach (Vector2 vec in nodeList)
         {
-            while (Vector3.Distance(_moveObj.transform.position, vec) > 0.1f)
+            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f)
             {
-                float step = 0.02f * 5 * SpeedMul; // 이동 거리 제한
-                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
                 SetSpriteDir(dir.x);
-                yield return YieldCache.WaitForSeconds(0.01f);
+                float step = Time.deltaTime * 5 * SpeedMul * GameManager.Instance.AddStaffSpeedMul;
+                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
+                yield return null;
             }
 
             // 목표 지점에 정확히 도달하도록 위치 보정
