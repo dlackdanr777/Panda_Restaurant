@@ -1493,7 +1493,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (UserInfo.GetEffectSetKitchenUtensilCount(data.SetId) <= ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
+            if (UserInfo.GetEffectSetKitchenUtensilCount(data.SetId) < ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
                 continue;
 
             switch (data.Challenges)

@@ -75,7 +75,8 @@ public class FirstTutorial : MonoBehaviour
         _uiTutorial.ScreenButtonSetActive(true);
         _punchHole.gameObject.SetActive(false);
         _uiTutorial.StartTouch(Step2TouchEvent);
-        while(_touchCount < 3)
+        _touchCount = 0;
+        while (_touchCount < 3)
             yield return YieldCache.WaitForSeconds(0.02f);
         _touchCount = 0;
         _uiTutorial.StopTouch();
@@ -301,8 +302,7 @@ public class FirstTutorial : MonoBehaviour
         if (3 < _touchCount)
             return;
 
-        _touchCount++;
-
+        _touchCount += 1;
         for(int i = 0, cnt = _boomParticles.Length; i < cnt; ++i)
         {
             _boomParticles[i].Emit(1);
