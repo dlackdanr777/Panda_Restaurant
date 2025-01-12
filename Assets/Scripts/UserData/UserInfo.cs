@@ -320,53 +320,6 @@ public static class UserInfo
         return param;
     }
 
-    public static void SetFirstAccessTime(DateTime time)
-    {
-        if (string.IsNullOrEmpty(_userId))
-            _userId = "User" + UnityEngine.Random.Range(10000000, 20000000);
-
-        AddDia(100);
-        AddMoney(15000);
-        _firstAccessTime = time.ToString();
-    }
-
-
-    public static bool CheckAttendance()
-    {
-        if (string.IsNullOrWhiteSpace(_lastAttendanceTime))
-            return true;
-
-        DateTime currentServerTime = BackendManager.Instance.ServerTime;
-        DateTime lastAttendanceTime = DateTime.Parse(_lastAttendanceTime);
-        TimeSpan timeDifference = currentServerTime - lastAttendanceTime;
-
-        return 1 <= timeDifference.TotalDays;
-    }
-
-    public static bool CheckLastAccessTime()
-    {
-        if (string.IsNullOrWhiteSpace(_lastAccessTime))
-            return true;
-
-        DateTime currentServerTime = BackendManager.Instance.ServerTime;
-        DateTime lastAccessTime = DateTime.Parse(_lastAccessTime);
-        TimeSpan timeDifference = currentServerTime - lastAccessTime;
-
-        return 1 <= timeDifference.TotalDays;
-    }
-
-
-    public static void UpdateAttendanceData()
-    {
-        _lastAttendanceTime = BackendManager.Instance.ServerTime.ToString();
-        _totalAttendanceDays += 1;
-    }
-
-    public static int GetTotalAttendanceDays()
-    {
-        return _totalAttendanceDays;
-    }
-
 
     public static void LoadGameData(BackendReturnObject bro)
     {
@@ -476,6 +429,53 @@ public static class UserInfo
         OnGiveGachaItemHandler?.Invoke();
         OnUpgradeGachaItemHandler?.Invoke();
         DebugLog.Log("데이터 로드 완료");
+    }
+
+    public static void SetFirstAccessTime(DateTime time)
+    {
+        if (string.IsNullOrEmpty(_userId))
+            _userId = "User" + UnityEngine.Random.Range(10000000, 20000000);
+
+        AddDia(100);
+        AddMoney(15000);
+        _firstAccessTime = time.ToString();
+    }
+
+
+    public static bool CheckAttendance()
+    {
+        if (string.IsNullOrWhiteSpace(_lastAttendanceTime))
+            return true;
+
+        DateTime currentServerTime = BackendManager.Instance.ServerTime;
+        DateTime lastAttendanceTime = DateTime.Parse(_lastAttendanceTime);
+        TimeSpan timeDifference = currentServerTime - lastAttendanceTime;
+
+        return 1 <= timeDifference.TotalDays;
+    }
+
+    public static bool CheckLastAccessTime()
+    {
+        if (string.IsNullOrWhiteSpace(_lastAccessTime))
+            return true;
+
+        DateTime currentServerTime = BackendManager.Instance.ServerTime;
+        DateTime lastAccessTime = DateTime.Parse(_lastAccessTime);
+        TimeSpan timeDifference = currentServerTime - lastAccessTime;
+
+        return 1 <= timeDifference.TotalDays;
+    }
+
+
+    public static void UpdateAttendanceData()
+    {
+        _lastAttendanceTime = BackendManager.Instance.ServerTime.ToString();
+        _totalAttendanceDays += 1;
+    }
+
+    public static int GetTotalAttendanceDays()
+    {
+        return _totalAttendanceDays;
     }
 
 
