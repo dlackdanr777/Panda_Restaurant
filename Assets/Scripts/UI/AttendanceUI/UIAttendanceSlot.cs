@@ -81,7 +81,7 @@ public class UIAttendanceSlot : MonoBehaviour
     public void SetTotaySlotChecked()
     {
         _canvasGroup.alpha = 1f;
-        _todayArrow.gameObject.SetActive(true);
+        _todayArrow.gameObject.SetActive(false);
         _checkImage.gameObject.SetActive(true);
         _notCheckImage.gameObject.SetActive(false);
     }
@@ -96,7 +96,7 @@ public class UIAttendanceSlot : MonoBehaviour
 
     public void SetChecked()
     {
-        _canvasGroup.alpha = 0.7f;
+        _canvasGroup.alpha = 0.8f;
         _checkImage.gameObject.SetActive(true);
         _notCheckImage.gameObject.SetActive(false);
         _todayArrow.gameObject.SetActive(false);
@@ -106,7 +106,7 @@ public class UIAttendanceSlot : MonoBehaviour
 
     public void SetUnchecked()
     {
-        _canvasGroup.alpha = 0.7f;
+        _canvasGroup.alpha = 0.8f;
         _checkImage.gameObject.SetActive(false);
         _notCheckImage.gameObject.SetActive(true);
         _todayArrow.gameObject.SetActive(false);

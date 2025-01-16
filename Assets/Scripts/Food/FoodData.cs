@@ -16,6 +16,9 @@ public class FoodData : ShopData
     private FoodMiniGameData _foodMiniGameData;
     public FoodMiniGameData FoodMiniGameData => _foodMiniGameData;
 
+    private FoodType _foodType;
+    public FoodType FoodType => _foodType;
+
     public bool MiniGameNeeded => _foodMiniGameData != null ? true : false;
 
     public FoodData(Sprite sprite, Sprite thumbnailSprite, string name, string id, MoneyType moneyType, int buyScore, int buyPrice, string needItem, List<FoodLevelData> foodLevelDataList, FoodMiniGameData foodMiniGameData)
