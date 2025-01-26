@@ -12,6 +12,8 @@ public class UIChallenge : MobileUIView
     [SerializeField] private UIChallengeTab _uiAllTime;
     [SerializeField] private Button _uiDailyButton;
     [SerializeField] private Button _uiAllTimeButton;
+    [SerializeField] private GameObject _uiDailyAlarm;
+    [SerializeField] private GameObject _uiAllTimeAlarm;
 
     [Space]
     [Header("Animations")]
@@ -35,8 +37,6 @@ public class UIChallenge : MobileUIView
         ChallengeManager.Instance.OnDailyChallengeUpdateHandler += OnDailyUpdateUI;
         ChallengeManager.Instance.OnAllTimeChallengeUpdateHandler += OnAllTimeUpdateUI;
 
-
-
         gameObject.SetActive(false);
     }
 
@@ -46,8 +46,8 @@ public class UIChallenge : MobileUIView
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
         _dontTouchArea.gameObject.SetActive(false);
-        _uiDaily.UpdateUI();
-        _uiAllTime.UpdateUI();
+        _uiDailyAlarm.SetActive(_uiDaily.UpdateUI());
+        _uiAllTimeAlarm.SetActive(_uiAllTime.UpdateUI());
         _uiDaily.ResetScrollviewY();
         _uiAllTime.ResetScrollviewY();
         OnDailyButtonClicked();
@@ -98,7 +98,7 @@ public class UIChallenge : MobileUIView
         if (!gameObject.activeInHierarchy)
             return;
 
-        _uiDaily.UpdateUI();
+        _uiDailyAlarm.SetActive(_uiDaily.UpdateUI());
     }
 
 
@@ -107,8 +107,12 @@ public class UIChallenge : MobileUIView
         if (!gameObject.activeInHierarchy)
             return;
 
-        _uiAllTime.UpdateUI();
+        _uiAllTimeAlarm.SetActive(_uiAllTime.UpdateUI());
     }
 
-
+    private void OnDestroy()
+    {
+        ChallengeManager.Instance.OnDailyChallengeUpdateHandler -= OnDailyUpdateUI;
+        ChallengeManager.Instance.OnAllTimeChallengeUpdateHandler -= OnAllTimeUpdateUI;
+    }
 }

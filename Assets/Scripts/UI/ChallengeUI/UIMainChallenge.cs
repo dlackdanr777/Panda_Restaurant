@@ -94,6 +94,9 @@ public class UIMainChallenge : MobileUIView
 
     private void UpdateData()
     {
+        if (!gameObject.activeInHierarchy)
+            return;
+
         _currentData = ChallengeManager.Instance.GetCurrentMainChallengeData();
 
         if (_currentData == null)
@@ -244,5 +247,10 @@ public class UIMainChallenge : MobileUIView
                 time += 0.05f;
             });
         }
+    }
+
+    private void OnDestroy()
+    {
+        ChallengeManager.Instance.OnMainChallengeUpdateHandler -= UpdateData;
     }
 }

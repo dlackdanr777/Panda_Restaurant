@@ -380,8 +380,7 @@ public class TableManager : MonoBehaviour
         _tableDatas[index].TotalTip += tip + GameManager.Instance.AddFoodTip;
         _tableDatas[index].CurrentFood = data;
 
-        int totalPrice = (int)(((data.Price * _tableDatas[index].CurrentCustomer.CurrentFoodPriceMul) + GameManager.Instance.AddFoodPrice) * GameManager.Instance.FoodPriceMul);
-
+        int totalPrice = (int)((data.Price + GameManager.Instance.AddFoodPrice * _tableDatas[index].CurrentCustomer.CurrentFoodPriceMul) * GameManager.Instance.FoodPriceMul * GameManager.Instance.GetFoodTypePriceMul(foodData.FoodType));
         _tableDatas[index].TotalPrice += totalPrice;
         _orderButtons[index].SetData(foodData);
 

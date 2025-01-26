@@ -27,8 +27,9 @@ public class UIChallengeTab : RecyclableVerticalScrollView<ChallengeData>
     }
 
 
-    public void UpdateUI()
+    public bool UpdateUI()
     {
+        bool returnValue = false;
         List<ChallengeData> noneDataList = new List<ChallengeData>();
         List<ChallengeData> doneDataList = new List<ChallengeData>();
         List<ChallengeData> clearDataList = new List<ChallengeData>();
@@ -38,7 +39,10 @@ public class UIChallengeTab : RecyclableVerticalScrollView<ChallengeData>
                 clearDataList.Add(_dataList[i]);
 
             else if (UserInfo.GetIsDoneChallenge(_dataList[i]))
+            {
                 doneDataList.Add(_dataList[i]);
+                returnValue = true;
+            }
 
             else
                 noneDataList.Add(_dataList[i]);
@@ -49,5 +53,6 @@ public class UIChallengeTab : RecyclableVerticalScrollView<ChallengeData>
         returnList.AddRange(clearDataList);
 
         UpdateData(returnList);
+        return returnValue;
     }
 }

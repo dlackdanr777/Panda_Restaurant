@@ -203,7 +203,6 @@ public class Staff : MonoBehaviour
     {
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
         {
-            DebugLog.Log("튜토리얼 진행중");
             return;
         }
 

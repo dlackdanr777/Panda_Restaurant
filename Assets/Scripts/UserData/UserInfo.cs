@@ -45,6 +45,10 @@ public static class UserInfo
     public static event Action OnVisitSpecialCustomerHandler;
     public static event Action OnExterminationGatecrasherCustomerHandler;
 
+    public static event Action<string> OnAddNotificationHandler;
+    public static event Action<string> OnRemoveNotificationHandler;
+
+    public static event Action OnUpdateAttendanceDataHandler;
 
     public static bool IsTutorialStart = false;
     public static bool IsFirstTutorialClear = false;
@@ -160,6 +164,9 @@ public static class UserInfo
     private static HashSet<string> _clearDailyChallengeSet = new HashSet<string>();
 
     private static HashSet<string> _visitedCustomerSet = new HashSet<string>();
+
+    private static HashSet<string> _notificationMessageSet = new HashSet<string>(); //알림이 필요한 Id값을 모아두는 해쉬셋
+
 
 
     //################################환경 설정 관련 변수################################
@@ -298,6 +305,7 @@ public static class UserInfo
         param.Add("ClearAllTimeChallengeList", _clearAllTimeChallengeSet.ToList());
         param.Add("DoneDailyChallengeList", _doneDailyChallengeSet.ToList());
         param.Add("ClearDailyChallengeList", _clearDailyChallengeSet.ToList());
+        param.Add("NotificationMessageList", _notificationMessageSet.ToList());
 
         MainScene mainScene = UnityEngine.Object.FindAnyObjectByType<MainScene>();
         if(mainScene != null)
@@ -316,6 +324,8 @@ public static class UserInfo
         }
         param.Add("CoinAreaDataList", _saveCoinAreaDataList);
         param.Add("GarbageAreaDataList", _saveGarbageAreaDataList);
+
+
 
         return param;
     }
@@ -404,6 +414,8 @@ public static class UserInfo
         _saveCoinAreaDataList = loadData.CoinAreaDataList;
         _saveGarbageAreaDataList = loadData.GarbageAreaDataList;
 
+        _notificationMessageSet = loadData.NotificationMessageSet;
+
         if (CheckAttendance())
         {
             UpdateLastAccessTime();
@@ -471,6 +483,7 @@ public static class UserInfo
     {
         _lastAttendanceTime = BackendManager.Instance.ServerTime.ToString();
         _totalAttendanceDays += 1;
+        OnUpdateAttendanceDataHandler?.Invoke();
     }
 
     public static int GetTotalAttendanceDays()
@@ -1069,6 +1082,7 @@ public static class UserInfo
 
         _giveGachaItemCountDic.Add(data.Id, 0);
         _giveGachaItemLevelDic.Add(data.Id, 1);
+        AddNotification(data.Id);
         OnGiveGachaItemHandler?.Invoke();
         return true;
     }
@@ -1089,7 +1103,7 @@ public static class UserInfo
                 if (CanAddMoreItems(dataList[i]))
                 {
                     _giveGachaItemCountDic[dataList[i].Id]++;
-                    DebugLog.Log(dataList[i].Id + ", 보유량: " + (_giveGachaItemCountDic[dataList[i].Id]));
+                    AddNotification(dataList[i].Id);
                     continue;
                 }
 
@@ -1099,6 +1113,7 @@ public static class UserInfo
 
             _giveGachaItemCountDic.Add(dataList[i].Id, 0);
             _giveGachaItemLevelDic.Add(dataList[i].Id, 1);
+            AddNotification(dataList[i].Id);
         }
        
         OnGiveGachaItemHandler?.Invoke();
@@ -1127,6 +1142,7 @@ public static class UserInfo
 
         _giveGachaItemCountDic.Add(data.Id, 0);
         _giveGachaItemLevelDic.Add(data.Id, 1);
+        AddNotification(data.Id);
         OnGiveGachaItemHandler?.Invoke();
         return true;
     }
@@ -1973,6 +1989,52 @@ public static class UserInfo
         OnClearChallengeHandler?.Invoke();
         OnDoneChallengeHandler?.Invoke();
     }
+
+    #endregion
+
+    #region NotificationMessageData
+
+    public static void AddNotification(string id)
+    {
+        if(string.IsNullOrWhiteSpace(id))
+        {
+            DebugLog.LogError("현재 알림을 등록하려한 ID값이 잘못됬습니다: " + id);
+            return;
+        }
+
+        if (_notificationMessageSet.Contains(id))
+            return;
+
+        _notificationMessageSet.Add(id);
+        OnAddNotificationHandler?.Invoke(id);
+    }
+
+    public static void RemoveNotification(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            DebugLog.LogError("현재 알림을 해제하려한 ID값이 잘못됬습니다: " + id);
+            return;
+        }
+
+        if (!_notificationMessageSet.Contains(id))
+            return;
+
+        _notificationMessageSet.Remove(id);
+        OnRemoveNotificationHandler?.Invoke(id);
+    }
+
+    public static bool IsAddNotification(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            DebugLog.LogError("현재 알림을 확인하려한 ID값이 잘못됬습니다: " + id);
+            return false;
+        }
+
+        return _notificationMessageSet.Contains(id);
+    }
+
 
     #endregion
 

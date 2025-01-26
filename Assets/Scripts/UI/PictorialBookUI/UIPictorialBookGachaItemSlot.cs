@@ -5,6 +5,7 @@ using UnityEngine.UI;
 public class UIPictorialBookGachaItemSlot : MonoBehaviour
 {
     [SerializeField] private Button _slotButton;
+    [SerializeField] private UINotificationMessage _alarm;
     [SerializeField] private Image _itemImage;
     [SerializeField] private Image _normalFrameImage;
     [SerializeField] private Image _rareFrameImage;
@@ -24,6 +25,7 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
             _data = null;
             _itemImage.gameObject.SetActive(false);
             SetStar(GachaItemRank.Length);
+            _alarm.ChangeAlarmId(string.Empty);
             return;
         }
 
@@ -36,6 +38,7 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
         _itemImage.sprite = data.Sprite;
         Utility.ChangeImagePivot(_itemImage);
         SetStar(data.GachaItemRank);
+        _alarm.ChangeAlarmId(data.Id);
     }
 
 
@@ -47,6 +50,7 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
             if (_data == null)
                 return;
 
+            UserInfo.RemoveNotification(_data.Id);
             action?.Invoke(_data);
         });
     }

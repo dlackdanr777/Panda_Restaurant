@@ -63,6 +63,8 @@ public class LoadData
 
     public  List<SaveCoinAreaData> CoinAreaDataList = new List<SaveCoinAreaData>();
     public  List<SaveGarbageAreaData> GarbageAreaDataList = new List<SaveGarbageAreaData>();
+
+    public HashSet<string> NotificationMessageSet = new HashSet<string>();
     public LoadData(JsonData json)
     {
         IsFirstTutorialClear = json[0].ContainsKey("IsFirstTutorialClear") ? json[0]["IsFirstTutorialClear"].ToString().ToLower() == "true" : false;
@@ -267,6 +269,16 @@ public class LoadData
 
                 // 리스트에 추가
                 GarbageAreaDataList.Add(data);
+            }
+        }
+
+
+
+        if (json[0].ContainsKey("NotificationMessageList"))
+        {
+            foreach (JsonData item in json[0]["NotificationMessageList"])
+            {
+                NotificationMessageSet.Add(item.ToString());
             }
         }
     }

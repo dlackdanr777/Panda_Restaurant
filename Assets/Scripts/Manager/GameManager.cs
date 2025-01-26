@@ -2,6 +2,7 @@ using BackEnd;
 using Muks.BackEnd;
 using System;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,7 +12,7 @@ public class GameManager : MonoBehaviour
     {
         get
         {
-            if(_instance == null)
+            if (_instance == null)
             {
                 GameObject obj = new GameObject("GameManager");
                 _instance = obj.AddComponent<GameManager>();
@@ -37,6 +38,10 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private float _foodPriceMul = 0;
     public float FoodPriceMul => 1 + _foodPriceMul;
+
+    private float[] _foodTypePriceMul = new float[(int)FoodType.Length];
+    public float GetFoodTypePriceMul(FoodType type) { return 1 + _foodTypePriceMul[(int)type]; }
+
 
     [SerializeField] private float _totalAddSpeedMul = 0;
 
