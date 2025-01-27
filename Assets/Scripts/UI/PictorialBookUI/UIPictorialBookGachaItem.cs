@@ -5,6 +5,7 @@ public class UIPictorialBookGachaItem : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private UIPictorialBookGachaItemView _view;
+    [SerializeField] private GameObject _alarm;
 
     [Header("Slot Options")]
     [SerializeField] private RectTransform _slotParent;
@@ -27,13 +28,17 @@ public class UIPictorialBookGachaItem : MonoBehaviour
             _slotList.Add(slot);
         }
         ResetData();
+        CheckItemNotification(string.Empty);
         UserInfo.OnChangeGachaItemSortTypeHandler += OnChangeGachaItemSortTypeEvent;
+        UserInfo.OnAddNotificationHandler += CheckItemNotification;
+        UserInfo.OnRemoveNotificationHandler += CheckItemNotification;
     }
     
 
     public void ResetData()
     {
         _view.SetData(_gachaItemDataList[0] != null ? _gachaItemDataList[0] : null);
+        CheckItemNotification(string.Empty);
     }
 
 
@@ -78,5 +83,28 @@ public class UIPictorialBookGachaItem : MonoBehaviour
     private void OnSlotClicked(GachaItemData data)
     {
         _view.SetData(data);
+    }
+
+
+    private void CheckItemNotification(string id)
+    {
+        for(int i = 0, cnt = _gachaItemDataList.Count; i < cnt; ++i)
+        {
+            if (!UserInfo.IsAddNotification(_gachaItemDataList[i].Id))
+                continue;
+
+            _alarm.SetActive(true);
+            return;
+        }
+
+        _alarm.SetActive(false);
+    }
+
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeGachaItemSortTypeHandler -= OnChangeGachaItemSortTypeEvent;
+        UserInfo.OnAddNotificationHandler -= CheckItemNotification;
+        UserInfo.OnRemoveNotificationHandler -= CheckItemNotification;
     }
 }

@@ -57,6 +57,11 @@ public class ItemManager : MonoBehaviour
         };
     }
 
+    public List<GachaItemData> GetGachaItemDataList()
+    {
+        return _gachaItemDataList;
+    }
+
     public GachaItemData GetRandomGachaItem(List<GachaItemData> gachaItemDataList)
     {
         List<GachaItemData> itemList = new List<GachaItemData>();

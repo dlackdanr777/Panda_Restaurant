@@ -33,7 +33,7 @@ public class UICustomerSlot : MonoBehaviour
 
         _data = data;
         _itemImage.sprite = data.Sprite;
-        _itemImage.color = UserInfo.IsCustomerVisitEnabled(data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        _itemImage.color = UserInfo.GetCustomerEnableState(data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
 
         _normalFrame.SetActive(false);
         _specialFrame.SetActive(false);
@@ -74,7 +74,7 @@ public class UICustomerSlot : MonoBehaviour
 
     public void UpdateUI()
     {
-        _itemImage.color = UserInfo.IsCustomerVisitEnabled(_data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        _itemImage.color = UserInfo.GetCustomerEnableState(_data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
     }
 
     public void SetScaleImage(float scale, float offset = 0)

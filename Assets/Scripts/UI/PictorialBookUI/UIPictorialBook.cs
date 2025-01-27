@@ -1,5 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -54,7 +55,6 @@ public class UIPictorialBook : MobileUIView
         UserInfo.OnChangeScoreHandler += CustomerUpdateUI;
         UserInfo.OnGiveGachaItemHandler += CustomerUpdateUI;
         GameManager.Instance.OnChangeScoreHandler += CustomerUpdateUI;
-
         UserInfo.OnGiveGachaItemHandler += GachaItemUpdateUI;
 
         OnGachaItemButtonClicked();
@@ -138,5 +138,14 @@ public class UIPictorialBook : MobileUIView
             return;
 
         _uiGachaItem.UpdateUI();
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnGiveRecipeHandler -= CustomerUpdateUI;
+        UserInfo.OnChangeScoreHandler -= CustomerUpdateUI;
+        UserInfo.OnGiveGachaItemHandler -= CustomerUpdateUI;
+        GameManager.Instance.OnChangeScoreHandler -= CustomerUpdateUI;
+        UserInfo.OnGiveGachaItemHandler -= GachaItemUpdateUI;
     }
 }

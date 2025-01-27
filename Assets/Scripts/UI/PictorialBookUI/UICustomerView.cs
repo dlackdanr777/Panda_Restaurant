@@ -54,11 +54,7 @@ public class UICustomerView : MonoBehaviour
 
     public void SetData(CustomerData data)
     {
-        if (data == _data)
-            return;
-
         _blackImage.gameObject.SetActive(false);
-
         if (data == null)
         {
             _npcImage.gameObject.SetActive(false);
@@ -110,7 +106,7 @@ public class UICustomerView : MonoBehaviour
         }
 
 
-        if (!UserInfo.IsCustomerVisitEnabled(data))
+        if (!UserInfo.GetCustomerEnableState(data))
         {
             _blackImage.gameObject.SetActive(true);
             _blackImage.SetData(data);
@@ -143,7 +139,7 @@ public class UICustomerView : MonoBehaviour
 
 
         _npcImage.TweenStop();
-        Color npcColor = UserInfo.IsCustomerVisitEnabled(data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        Color npcColor = UserInfo.GetCustomerEnableState(data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
         npcColor.a = 0;
         _npcImage.color = npcColor;
         _npcImage.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);
@@ -158,7 +154,7 @@ public class UICustomerView : MonoBehaviour
             return;
 
         _npcImage.TweenStop();
-        Color npcColor = UserInfo.IsCustomerVisitEnabled(_data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        Color npcColor = UserInfo.GetCustomerEnableState(_data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
         npcColor.a = 0;
         _npcImage.color = npcColor;
         _npcImage.transform.localScale = new Vector3(1.2f, 1.2f, 1.2f);

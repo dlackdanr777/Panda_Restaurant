@@ -41,6 +41,7 @@ public static class UserInfo
     public static event Action OnDoneChallengeHandler;
     public static event Action OnClearChallengeHandler;
 
+    public static event Action OnEnabledCustomerHandler;
     public static event Action OnVisitedCustomerHandler;
     public static event Action OnVisitSpecialCustomerHandler;
     public static event Action OnExterminationGatecrasherCustomerHandler;
@@ -163,6 +164,7 @@ public static class UserInfo
     private static HashSet<string> _doneDailyChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearDailyChallengeSet = new HashSet<string>();
 
+    private static HashSet<string> _enabledCustomerSet = new HashSet<string>();
     private static HashSet<string> _visitedCustomerSet = new HashSet<string>();
 
     private static HashSet<string> _notificationMessageSet = new HashSet<string>(); //알림이 필요한 Id값을 모아두는 해쉬셋
@@ -1728,14 +1730,56 @@ public static class UserInfo
 
     #region CustomerData
 
-    public static bool IsCustomerVisitEnabled(CustomerData data)
+    public static void CustomerEnabled(string id)
     {
-        bool gachaItemCheck = !string.IsNullOrWhiteSpace(data.RequiredItem) && !IsGiveGachaItem(data.RequiredItem);
-        bool recipeCheck = !string.IsNullOrWhiteSpace(data.RequiredDish) && !IsGiveRecipe(data.RequiredDish);
-        if (gachaItemCheck || recipeCheck || !IsScoreValid(data.MinScore))
-            return false;
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            DebugLog.LogError("Id가 이상합니다: " + id);
+            return;
+        }
 
-        return true;
+        CustomerData data = CustomerDataManager.Instance.GetCustomerData(id);
+        if (data == null)
+        {
+            DebugLog.LogError("해당 Id값에 일치하는 손님 정보가 없습니다: " + id);
+            return;
+        }
+
+        CustomerEnabled(data);
+    }
+
+    public static void CustomerEnabled(CustomerData data)
+    {
+
+        if (_enabledCustomerSet.Contains(data.Id))
+            return;
+
+        _enabledCustomerSet.Add(data.Id);
+        OnEnabledCustomerHandler?.Invoke();
+    }
+
+
+    public static bool GetCustomerEnableState(CustomerData data)
+    {
+        return _enabledCustomerSet.Contains(data.Id);
+    }
+
+    public static bool GetCustomerEnableState(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            DebugLog.LogError("해당 손님의 id가 이상합니다: " + id);
+            return false;
+        }
+
+        CustomerData data = CustomerDataManager.Instance.GetCustomerData(id);
+        if (data == null)
+        {
+            DebugLog.LogError("해당 Id값에 일치하는 손님 정보가 없습니다: " + id);
+            return false;
+        }
+
+        return GetCustomerEnableState(data);
     }
 
 
@@ -1748,9 +1792,37 @@ public static class UserInfo
         OnVisitedCustomerHandler?.Invoke();
     }
 
+
     public static int GetVisitedCustomerCount()
     {
         return _visitedCustomerSet.Count;
+    }
+
+    public static CustomerVisitState GetCustomerVisitState(CustomerData data)
+    {
+        bool isScoreValid = IsScoreValid(data.MinScore);
+        bool isGiveRecipe = string.IsNullOrEmpty(data.RequiredDish) || IsGiveRecipe(data.RequiredDish);
+        bool isGiveItem = string.IsNullOrEmpty(data.RequiredItem) || IsGiveGachaItem(data.RequiredItem);
+
+        return new CustomerVisitState(isScoreValid, isGiveRecipe, isGiveItem);
+    }
+
+    public static CustomerVisitState GetCustomerVisitState(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            DebugLog.LogError("해당 손님의 id가 이상합니다: " + id);
+            return default;
+        }
+
+        CustomerData data = CustomerDataManager.Instance.GetCustomerData(id);
+        if (data == null)
+        {
+            DebugLog.LogError("해당 Id값에 일치하는 손님 정보가 없습니다: " + id);
+            return default;
+        }
+
+        return GetCustomerVisitState(data);
     }
 
     #endregion
@@ -2037,7 +2109,6 @@ public static class UserInfo
 
 
     #endregion
-
 
     #region 환경 설정
 

@@ -23,6 +23,11 @@ public class UICustomerBlackImage : MonoBehaviour
 
     public void SetData(CustomerData data)
     {
+        if (data == null)
+            return;
+
+        CustomerVisitState state = UserInfo.GetCustomerVisitState(data);
+
         if (string.IsNullOrWhiteSpace(data.RequiredItem))
         {
             _needItemSlot.gameObject.SetActive(false);
@@ -33,9 +38,8 @@ public class UICustomerBlackImage : MonoBehaviour
             _needItemSlot.gameObject.SetActive(true);
             _needItemSlot.SetSprite(itemData.Sprite);
 
-            bool isGiveItem = UserInfo.IsGiveGachaItem(data.RequiredItem);
-            _needItemSlot.TextColor = isGiveItem ? _needItemSlotTextColor : Utility.GetColor(ColorType.Negative);
-            _needItemSlot.SetImageMaterial(isGiveItem ? null : _grayMaterial);
+            _needItemSlot.TextColor = state.IsGiveItem ? _needItemSlotTextColor : Utility.GetColor(ColorType.Negative);
+            _needItemSlot.SetImageMaterial(state.IsGiveItem ? null : _grayMaterial);
         }
 
 
@@ -49,9 +53,8 @@ public class UICustomerBlackImage : MonoBehaviour
             _needFoodSlot.gameObject.SetActive(true);
             _needFoodSlot.SetSprite(foodData.Sprite);
 
-            bool isGiveRecipe = UserInfo.IsGiveRecipe(data.RequiredDish);
-            _needFoodSlot.TextColor = isGiveRecipe ? _needFoodSlotTextColor : Utility.GetColor(ColorType.Negative);
-            _needFoodSlot.SetImageMaterial(isGiveRecipe ? null : _grayMaterial);
+            _needFoodSlot.TextColor = state.IsGiveRecipe ? _needFoodSlotTextColor : Utility.GetColor(ColorType.Negative);
+            _needFoodSlot.SetImageMaterial(state.IsGiveRecipe ? null : _grayMaterial);
         }
 
         if(data.MinScore <= 0)
@@ -62,7 +65,7 @@ public class UICustomerBlackImage : MonoBehaviour
         {
             _needScoreSlot.gameObject.SetActive(true);
             _needScoreSlot.SetText1(data.MinScore.ToString());
-            _needScoreSlot.TextColor2 = UserInfo.IsScoreValid(data.MinScore) ? _needScoreSlotTextColor : Utility.GetColor(ColorType.Negative);
+            _needScoreSlot.TextColor2 = state.IsScoreValid ? _needScoreSlotTextColor : Utility.GetColor(ColorType.Negative);
         }
 
 

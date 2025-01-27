@@ -37,13 +37,18 @@ public class UINotificationMessage : UINotificationParent
     {
         if(string.IsNullOrWhiteSpace(_alarmId))
         {
-            DebugLog.LogError("현재 알람을 받고자 하는 ID값이 없습니다: " + _alarmId);
+            if (_alarmObj.activeSelf)
+                base.RefreshNotificationMessage();
+
             _alarmObj.SetActive(false);
             return;
         }
 
-        _alarmObj.SetActive(UserInfo.IsAddNotification(_alarmId));
-        base.RefreshNotificationMessage();
+        bool active = UserInfo.IsAddNotification(_alarmId);
+        if (active != _alarmObj.activeSelf)
+            base.RefreshNotificationMessage();
+
+        _alarmObj.SetActive(active);
     }
 
     private void OnAddNotificationEvent(string id)

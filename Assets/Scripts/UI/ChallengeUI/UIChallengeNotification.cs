@@ -48,11 +48,17 @@ public class UIChallengeNotification : UINotificationParent
 
     protected override void RefreshNotificationMessage()
     {
+        bool active = false;
+
         for(int i = 0, cnt = _daliyChallengeList.Count; i < cnt; ++i)
         {
             if (!UserInfo.GetIsClearChallenge(_daliyChallengeList[i].Id) && UserInfo.GetIsDoneChallenge(_daliyChallengeList[i].Id))
             {
-                _alarmObj.SetActive(true);
+                active = true;
+                if (active != _alarmObj.activeSelf)
+                    base.RefreshNotificationMessage();
+
+                _alarmObj.SetActive(active);
                 return;
             }            
         }
@@ -61,13 +67,20 @@ public class UIChallengeNotification : UINotificationParent
         {
             if (!UserInfo.GetIsClearChallenge(_allTimeChallengeList[i].Id) && UserInfo.GetIsDoneChallenge(_allTimeChallengeList[i].Id))
             {
-                _alarmObj.SetActive(true);
+                active = true;
+                if (active != _alarmObj.activeSelf)
+                    base.RefreshNotificationMessage();
+
+                _alarmObj.SetActive(active);
                 return;
             }
         }
 
-        _alarmObj.SetActive(false);
-        base.RefreshNotificationMessage();
+        active = false;
+        if (active != _alarmObj.activeSelf)
+            base.RefreshNotificationMessage();
+
+        _alarmObj.SetActive(active);
     }
 
 }

@@ -38,20 +38,33 @@ public class UIMainChallengeNotification : UINotificationParent
     protected override void RefreshNotificationMessage()
     {
         _currentData = ChallengeManager.Instance.GetCurrentMainChallengeData();
+        bool active = false;
         if(_currentData == null)
         {
-            _alarmObj.SetActive(false);
+            active = false;
+            if(active != _alarmObj.activeSelf)
+                base.RefreshNotificationMessage();
+
+            _alarmObj.SetActive(active);
             return;
         }
+
 
         if(UserInfo.GetIsDoneChallenge(_currentData))
         {
-            _alarmObj.SetActive(true);
+            active = true;
+            if (active != _alarmObj.activeSelf)
+                base.RefreshNotificationMessage();
+
+            _alarmObj.SetActive(active);
             return;
         }
 
-        _alarmObj.SetActive(false);
-        base.RefreshNotificationMessage();
+        active = false;
+        if (active != _alarmObj.activeSelf)
+            base.RefreshNotificationMessage();
+
+        _alarmObj.SetActive(active);
     }
 
 }

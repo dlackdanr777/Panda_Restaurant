@@ -34,13 +34,18 @@ public class CustomerDataManager : MonoBehaviour
         return data;
     }
 
+    public List<CustomerData> GetCustomerDataList()
+    {
+        return _customerDataList;
+    }
+
 
     public List<CustomerData> GetAppearNormalCustomerList()
     {
         List<CustomerData> returnList = new List<CustomerData>();
         for(int i = 0, cnt = _normalCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!CheckAppearCustomer(_normalCustomerDataList[i]))
+            if (!UserInfo.GetCustomerEnableState(_customerDataList[i].Id))
                 continue;
 
             returnList.Add(_normalCustomerDataList[i]);
@@ -54,7 +59,7 @@ public class CustomerDataManager : MonoBehaviour
         List<SpecialCustomerData> returnList = new List<SpecialCustomerData>();
         for (int i = 0, cnt = _specialCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!CheckAppearCustomer(_specialCustomerDataList[i]))
+            if (!UserInfo.GetCustomerEnableState(_customerDataList[i].Id))
                 continue;
 
             returnList.Add(_specialCustomerDataList[i]);
@@ -68,7 +73,7 @@ public class CustomerDataManager : MonoBehaviour
         List<GatecrasherCustomerData> returnList = new List<GatecrasherCustomerData>();
         for (int i = 0, cnt = _gatecrasherCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!CheckAppearCustomer(_gatecrasherCustomerDataList[i]))
+            if (!UserInfo.GetCustomerEnableState(_customerDataList[i].Id))
                 continue;
 
             returnList.Add(_gatecrasherCustomerDataList[i]);
@@ -89,6 +94,28 @@ public class CustomerDataManager : MonoBehaviour
             SortType.None => _customerDataList,
             _ => null
         };
+    }
+
+
+    private static void CheckEnableCustomer()
+    {
+        DebugLog.Log("실행");
+        for (int i = 0, cnt = _customerDataList.Count; i < cnt; ++i)
+        {
+            if (_customerDataList[i] == null || string.IsNullOrWhiteSpace(_customerDataList[i].Id))
+                continue;
+
+            if (UserInfo.GetCustomerEnableState(_customerDataList[i].Id))
+                continue;
+
+            CustomerVisitState state = UserInfo.GetCustomerVisitState(_customerDataList[i]);
+
+            if (!state.IsScoreValid || !state.IsGiveRecipe || !state.IsGiveItem)
+                continue;
+
+            DebugLog.Log(_customerDataList[i].Name + " 활성화");
+            UserInfo.CustomerEnabled(_customerDataList[i]);
+        }
     }
 
 
@@ -131,19 +158,19 @@ public class CustomerDataManager : MonoBehaviour
                 _normalCustomerDataList.Add(data);
             }
         }
+
+        UserInfo.OnChangeMoneyHandler += CheckEnableCustomer;
+        UserInfo.OnGiveGachaItemHandler += CheckEnableCustomer;
+        UserInfo.OnGiveRecipeHandler += CheckEnableCustomer;
+        GameManager.Instance.OnChangeScoreHandler += CheckEnableCustomer;
     }
 
-    private bool CheckAppearCustomer(CustomerData data)
+
+    private void OnDestroy()
     {
-        if (!UserInfo.IsScoreValid(data.MinScore))
-            return false;
-
-        if (!string.IsNullOrEmpty(data.RequiredDish) && !UserInfo.IsGiveRecipe(data.RequiredDish))
-            return false;
-
-        if(!string.IsNullOrEmpty(data.RequiredItem) && !UserInfo.IsGiveGachaItem(data.RequiredItem))
-            return false;
-
-        return true;
+        UserInfo.OnChangeMoneyHandler -= CheckEnableCustomer;
+        UserInfo.OnGiveGachaItemHandler -= CheckEnableCustomer;
+        UserInfo.OnGiveRecipeHandler -= CheckEnableCustomer;
+        GameManager.Instance.OnChangeScoreHandler -= CheckEnableCustomer;
     }
 }

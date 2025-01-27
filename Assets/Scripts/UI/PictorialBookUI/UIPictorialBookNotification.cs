@@ -19,7 +19,7 @@ public class UIPictorialBookNotification : UINotificationParent
 
     protected override void Awake()
     {
-        _gachaItemList = ItemManager.Instance.GetSortGachaItemDataList();
+        _gachaItemList = ItemManager.Instance.GetGachaItemDataList();
         UserInfo.OnAddNotificationHandler += OnAddNotificationEvent;
         UserInfo.OnRemoveNotificationHandler += OnRemoveNotificationEvent;
         base.Awake();
@@ -34,17 +34,26 @@ public class UIPictorialBookNotification : UINotificationParent
 
     protected override void RefreshNotificationMessage()
     {
+        bool active = false;
+
         foreach(GachaItemData item in _gachaItemList)
         {
             if (!UserInfo.IsAddNotification(item.Id))
                 continue;
 
-            _alarmObj.SetActive(true);
+            active = true;
+            if (active != _alarmObj.activeSelf)
+                base.RefreshNotificationMessage();
+
+            _alarmObj.SetActive(active);
             return;
         }
 
-        _alarmObj.SetActive(false);
-        base.RefreshNotificationMessage();
+        active = false;
+        if (active != _alarmObj.activeSelf)
+            base.RefreshNotificationMessage();
+
+        _alarmObj.SetActive(active);
     }
 
     private void OnAddNotificationEvent(string id)
