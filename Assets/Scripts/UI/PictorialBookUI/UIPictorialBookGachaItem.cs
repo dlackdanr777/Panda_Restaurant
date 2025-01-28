@@ -7,6 +7,7 @@ public class UIPictorialBookGachaItem : MonoBehaviour
     [SerializeField] private UIPictorialBookGachaItemView _view;
     [SerializeField] private GameObject _alarm;
 
+    [Space]
     [Header("Slot Options")]
     [SerializeField] private RectTransform _slotParent;
     [SerializeField] private UIPictorialBookGachaItemSlot _slotPrefab;
@@ -27,6 +28,7 @@ public class UIPictorialBookGachaItem : MonoBehaviour
             slot.SetData(_gachaItemDataList[i]);
             _slotList.Add(slot);
         }
+
         ResetData();
         CheckItemNotification(string.Empty);
         UserInfo.OnChangeGachaItemSortTypeHandler += OnChangeGachaItemSortTypeEvent;

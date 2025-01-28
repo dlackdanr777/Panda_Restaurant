@@ -99,7 +99,6 @@ public class CustomerDataManager : MonoBehaviour
 
     private static void CheckEnableCustomer()
     {
-        DebugLog.Log("실행");
         for (int i = 0, cnt = _customerDataList.Count; i < cnt; ++i)
         {
             if (_customerDataList[i] == null || string.IsNullOrWhiteSpace(_customerDataList[i].Id))
@@ -115,6 +114,8 @@ public class CustomerDataManager : MonoBehaviour
 
             DebugLog.Log(_customerDataList[i].Name + " 활성화");
             UserInfo.CustomerEnabled(_customerDataList[i]);
+            UserInfo.AddNotification(_customerDataList[i].Id);
+
         }
     }
 

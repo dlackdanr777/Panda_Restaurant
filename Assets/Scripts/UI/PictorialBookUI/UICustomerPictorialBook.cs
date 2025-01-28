@@ -1,11 +1,14 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class UICustomerPictorialBook : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private UICustomerView _view;
+    [SerializeField] private GameObject _alarm;
 
+    [Space]
     [Header("Slot Options")]
     [SerializeField] private RectTransform _slotParent;
     [SerializeField] private UICustomerSlot _slotPrefab;
@@ -29,13 +32,17 @@ public class UICustomerPictorialBook : MonoBehaviour
         }
 
         ResetData();
+        CheckCustomerNotification(string.Empty);
         UserInfo.OnChangeCustomerSortTypeHandler += OnChangeCustomerSortTypeEvent;
+        UserInfo.OnAddNotificationHandler += CheckCustomerNotification;
+        UserInfo.OnRemoveNotificationHandler += CheckCustomerNotification;
     }
     
 
     public void ResetData()
     {
         _view.SetData(_customerList[0] != null ? _customerList[0] : null);
+        CheckCustomerNotification(string.Empty);
     }
 
 
@@ -79,5 +86,28 @@ public class UICustomerPictorialBook : MonoBehaviour
     private void OnSlotClicked(CustomerData data)
     {
         _view.SetData(data);
+    }
+
+
+    private void CheckCustomerNotification(string id)
+    {
+        for (int i = 0, cnt = _customerList.Count; i < cnt; ++i)
+        {
+            if (!UserInfo.IsAddNotification(_customerList[i].Id))
+                continue;
+
+            _alarm.SetActive(true);
+            return;
+        }
+
+        _alarm.SetActive(false);
+    }
+
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeCustomerSortTypeHandler -= OnChangeCustomerSortTypeEvent;
+        UserInfo.OnAddNotificationHandler -= CheckCustomerNotification;
+        UserInfo.OnRemoveNotificationHandler -= CheckCustomerNotification;
     }
 }

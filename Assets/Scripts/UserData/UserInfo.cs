@@ -309,6 +309,9 @@ public static class UserInfo
         param.Add("ClearDailyChallengeList", _clearDailyChallengeSet.ToList());
         param.Add("NotificationMessageList", _notificationMessageSet.ToList());
 
+        param.Add("EnabledCustomerList", _enabledCustomerSet.ToList());
+        param.Add("VisitedCustomerList", _visitedCustomerSet.ToList());
+
         MainScene mainScene = UnityEngine.Object.FindAnyObjectByType<MainScene>();
         if(mainScene != null)
         {
@@ -412,6 +415,9 @@ public static class UserInfo
         _clearAllTimeChallengeSet = loadData.ClearAllTimeChallengeSet;
         _doneDailyChallengeSet = loadData.DoneDailyChallengeSet;
         _clearDailyChallengeSet = loadData.ClearDailyChallengeSet;
+
+        _enabledCustomerSet = loadData.EnabledCustomerSet;
+        _visitedCustomerSet = loadData.VisitedCustomerSet;
 
         _saveCoinAreaDataList = loadData.CoinAreaDataList;
         _saveGarbageAreaDataList = loadData.GarbageAreaDataList;

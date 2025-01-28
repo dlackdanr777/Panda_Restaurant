@@ -61,6 +61,10 @@ public class LoadData
     public HashSet<string> DoneDailyChallengeSet = new HashSet<string>();
     public HashSet<string> ClearDailyChallengeSet = new HashSet<string>();
 
+    public HashSet<string> EnabledCustomerSet = new HashSet<string>();
+    public HashSet<string> VisitedCustomerSet = new HashSet<string>();
+    
+
     public  List<SaveCoinAreaData> CoinAreaDataList = new List<SaveCoinAreaData>();
     public  List<SaveGarbageAreaData> GarbageAreaDataList = new List<SaveGarbageAreaData>();
 
@@ -244,6 +248,23 @@ public class LoadData
                 ClearDailyChallengeSet.Add(item.ToString());
             }
         }
+
+        if (json[0].ContainsKey("EnabledCustomerList"))
+        {
+            foreach (JsonData item in json[0]["EnabledCustomerList"])
+            {
+                EnabledCustomerSet.Add(item.ToString());
+            }
+        }
+
+        if (json[0].ContainsKey("VisitedCustomerList"))
+        {
+            foreach (JsonData item in json[0]["VisitedCustomerList"])
+            {
+                VisitedCustomerSet.Add(item.ToString());
+            }
+        }
+
 
         if (json[0].ContainsKey("CoinAreaDataList"))
         {

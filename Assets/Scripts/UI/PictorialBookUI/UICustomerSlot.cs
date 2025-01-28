@@ -5,6 +5,7 @@ using UnityEngine.UI;
 public class UICustomerSlot : MonoBehaviour
 {
     [SerializeField] private Button _slotButton;
+    [SerializeField] private UINotificationMessage _alarm;
     [SerializeField] private Image _itemImage;
     [SerializeField] private GameObject _normalFrame;
     [SerializeField] private GameObject _gatecrasherFrame;
@@ -28,16 +29,19 @@ public class UICustomerSlot : MonoBehaviour
         {
             _data = null;
             _itemImage.gameObject.SetActive(false);
+            _alarm.ChangeAlarmId(string.Empty);
             return;
         }
 
         _data = data;
         _itemImage.sprite = data.Sprite;
         _itemImage.color = UserInfo.GetCustomerEnableState(data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        _alarm.ChangeAlarmId(data.Id);
 
         _normalFrame.SetActive(false);
         _specialFrame.SetActive(false);
         _gatecrasherFrame.SetActive(false);
+
 
         if (data is SpecialCustomerData)
         {
@@ -68,6 +72,7 @@ public class UICustomerSlot : MonoBehaviour
             if (_data == null)
                 return;
 
+            UserInfo.RemoveNotification(_data.Id);
             action?.Invoke(_data);
         });
     }
