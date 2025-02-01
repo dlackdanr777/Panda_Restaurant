@@ -35,6 +35,7 @@ public class UIKitchen : MobileUIView
     [SerializeField] private AudioClip _dequipSound;
 
     private KitchenUtensilType _currentType;
+    private ERestaurantFloorType _currentFloorType;
     private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)KitchenUtensilType.Length];
     List<KitchenUtensilData> _currentTypeDataList;
 
@@ -59,7 +60,7 @@ public class UIKitchen : MobileUIView
             }
         }
 
-        UserInfo.OnChangeKitchenUtensilHandler += (type) => UpdateUI();
+        UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenEvent;
         UserInfo.OnGiveKitchenUtensilHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
@@ -111,9 +112,10 @@ public class UIKitchen : MobileUIView
     }
 
 
-    public void ShowUIKitchen(KitchenUtensilType type)
+    public void ShowUIKitchen(ERestaurantFloorType floorType, KitchenUtensilType type)
     {
         _uiNav.Push("UIKitchen");
+        _currentFloorType = floorType;
         SetKitchenUtensilDataData(type);
         SetKitchenPreview();
     }
@@ -127,7 +129,7 @@ public class UIKitchen : MobileUIView
         }
 
         _currentType = type;
-        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(type);
+        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(_currentFloorType, type);
         _currentTypeDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList(type);
 
         string typeStr = Utility.KitchenUtensilTypeStringConverter(type);
@@ -138,16 +140,16 @@ public class UIKitchen : MobileUIView
 
     private void SetKitchenPreview()
     {
-        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(_currentType);
+        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(_currentFloorType, _currentType);
 
         if(equipData == null)
         {
             KitchenUtensilData firstSlotData = _currentTypeDataList[0];
-            _uikitchenPreview.SetData(firstSlotData);
+            _uikitchenPreview.SetData(_currentFloorType, firstSlotData);
             return;
         }
 
-        _uikitchenPreview.SetData(equipData);
+        _uikitchenPreview.SetData(_currentFloorType, equipData);
     }
 
 
@@ -160,19 +162,19 @@ public class UIKitchen : MobileUIView
     }
 
     
-    private void OnEquipButtonClicked(ShopData data)
+    private void OnEquipButtonClicked(ERestaurantFloorType type, ShopData data)
     {
         if (data == null)
         {
             SoundManager.Instance.PlayEffectAudio(_dequipSound);
-            UserInfo.SetNullEquipKitchenUtensil(_currentType);
+            UserInfo.SetNullEquipKitchenUtensil(type, _currentType);
             SetKitchenUtensilDataData(_currentType);
             //SetKitchenPreview();
             return;
         }
 
         SoundManager.Instance.PlayEffectAudio(_equipSound);
-        UserInfo.SetEquipKitchenUtensil(data.Id);
+        UserInfo.SetEquipKitchenUtensil(type, data.Id);
         SetKitchenUtensilDataData(_currentType);
         SetKitchenPreview();
     }
@@ -226,7 +228,7 @@ public class UIKitchen : MobileUIView
 
         _uikitchenPreview.UpdateUI();
 
-        KitchenUtensilData equipStaffData = UserInfo.GetEquipKitchenUtensil(_currentType);
+        KitchenUtensilData equipStaffData = UserInfo.GetEquipKitchenUtensil(_currentFloorType, _currentType);
         int slotsIndex = (int)_currentType;
         KitchenUtensilData data;
         UIRestaurantAdminSlot slot;
@@ -244,7 +246,29 @@ public class UIKitchen : MobileUIView
 
             if (UserInfo.IsGiveKitchenUtensil(data))
             {
-                slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
+                ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipKitchenUtensilFloorType(data);
+                switch (furnitureFloorType)
+                {
+                    case ERestaurantFloorType.Floor1:
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "1층 배치중");
+                        break;
+
+                    case ERestaurantFloorType.Floor2:
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "2층 배치중");
+                        break;
+
+                    case ERestaurantFloorType.Floor3:
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "3층 배치중");
+                        break;
+
+                    case ERestaurantFloorType.Length:
+                        slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
+                        break;
+
+                    case ERestaurantFloorType.Error:
+                        slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
+                        break;
+                }
                 continue;
             }
 
@@ -258,13 +282,13 @@ public class UIKitchen : MobileUIView
 
                 if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
                 {
-                    _slots[slotsIndex][i].SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                    slot.SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     continue;
                 }
 
                 else if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
                 {
-                    _slots[slotsIndex][i].SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                    slot.SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     continue;
                 }
 
@@ -277,6 +301,22 @@ public class UIKitchen : MobileUIView
 
     private void OnSlotClicked(KitchenUtensilData data)
     {
-        _uikitchenPreview.SetData(data);
+        _uikitchenPreview.SetData(_currentFloorType, data);
+    }
+
+
+    private void OnChangeKitchenEvent(ERestaurantFloorType floorType, KitchenUtensilType type)
+    {
+        UpdateUI();
+    }
+
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeKitchenUtensilHandler -= OnChangeKitchenEvent;
+        UserInfo.OnGiveKitchenUtensilHandler -= UpdateUI;
+        UserInfo.OnChangeMoneyHandler -= UpdateUI;
+        UserInfo.OnChangeScoreHandler -= UpdateUI;
+        GameManager.Instance.OnChangeScoreHandler -= UpdateUI;
     }
 }

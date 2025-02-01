@@ -49,40 +49,40 @@ public class MainScene : MonoBehaviour
         UserInfo.AddMoney(10000000);
 
         UserInfo.GiveFurniture("TABLE08_01");
-        UserInfo.SetEquipFurniture("TABLE08_01");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_01");
 
         UserInfo.GiveFurniture("TABLE08_02");
-        UserInfo.SetEquipFurniture("TABLE08_02");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_02");
 
         UserInfo.GiveFurniture("TABLE08_03");
-        UserInfo.SetEquipFurniture("TABLE08_03");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_03");
 
         UserInfo.GiveFurniture("TABLE08_04");
-        UserInfo.SetEquipFurniture("TABLE08_04");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_04");
 
         UserInfo.GiveFurniture("TABLE08_05");
-        UserInfo.SetEquipFurniture("TABLE08_05");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_05");
 
         UserInfo.GiveFurniture("FLOWER08");
-        UserInfo.SetEquipFurniture("FLOWER08");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "FLOWER08");
 
         UserInfo.GiveFurniture("RACK08");
-        UserInfo.SetEquipFurniture("RACK08");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "RACK08");
 
         UserInfo.GiveFurniture("WALLPAPER08");
-        UserInfo.SetEquipFurniture("WALLPAPER08");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "WALLPAPER08");
 
         UserInfo.GiveFurniture("ACC08");
-        UserInfo.SetEquipFurniture("ACC08");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "ACC08");
 
         UserInfo.GiveFurniture("FRAME08");
-        UserInfo.SetEquipFurniture("FRAME08");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "FRAME08");
 
         UserInfo.GiveFurniture("COUNTER08");
-        UserInfo.SetEquipFurniture("COUNTER08");
+        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "COUNTER08");
 
         UserInfo.GiveKitchenUtensil("COOKER01_01");
-        UserInfo.SetEquipKitchenUtensil("COOKER01_01");
+        UserInfo.SetEquipKitchenUtensil(ERestaurantFloorType.Floor1, "COOKER01_01");
 #endif
     }
 

@@ -28,6 +28,7 @@ public class UIManagementSetEffect : MonoBehaviour
     [SerializeField] private UIManagementSetCount _setCountPrefab;
 
     private SetEffectType _currentSetEffectType;
+    private ERestaurantFloorType _currentFloorType;
     private List<UIManagementSetCount> _setCountList = new List<UIManagementSetCount>();
 
 
@@ -72,7 +73,7 @@ public class UIManagementSetEffect : MonoBehaviour
                 FurnitureData furniutreData;
                 for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
                 {
-                    furniutreData = UserInfo.GetEquipFurniture((FurnitureType)i);
+                    furniutreData = UserInfo.GetEquipFurniture(_currentFloorType, (FurnitureType)i);
                     if (furniutreData == null)
                         continue;
 
@@ -105,7 +106,7 @@ public class UIManagementSetEffect : MonoBehaviour
                 KitchenUtensilData kitchenData;
                 for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
                 {
-                    kitchenData = UserInfo.GetEquipKitchenUtensil((KitchenUtensilType)i);
+                    kitchenData = UserInfo.GetEquipKitchenUtensil(_currentFloorType, (KitchenUtensilType)i);
                     if (kitchenData == null)
                         continue;
 
@@ -146,7 +147,7 @@ public class UIManagementSetEffect : MonoBehaviour
 
         else if(page == 0)
         {
-            SetData setData = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureSetData() : UserInfo.GetEquipKitchenUntensilSetData();
+            SetData setData = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureSetData(_currentFloorType) : UserInfo.GetEquipKitchenUntensilSetData(_currentFloorType);
 
             bool setEnabled = setData != null;
             _setTitleText.text = setEnabled ? setData.Name : "비활성화";

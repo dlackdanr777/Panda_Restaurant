@@ -26,6 +26,9 @@ public class TableData : MonoBehaviour
     [SerializeField] private Transform _rightStaffTr;
     public Transform RightStaffTr => _rightStaffTr;
 
+    public TableButton OrderButton;
+
+    public TableButton ServingButton;
 
     public int TotalTip;
 
@@ -34,6 +37,8 @@ public class TableData : MonoBehaviour
     public int OrdersCount;
 
     public ETableState TableState;
+
+    public ERestaurantFloorType FloorType;
 
     public NormalCustomer CurrentCustomer;
 

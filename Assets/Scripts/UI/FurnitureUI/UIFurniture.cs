@@ -37,6 +37,7 @@ public class UIFurniture : MobileUIView
     [SerializeField] private AudioClip _dequipSound;
 
     private FurnitureType _currentType;
+    private ERestaurantFloorType _currentFloorType;
     private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)FurnitureType.Length];
     List<FurnitureData> _currentTypeDataList;
 
@@ -60,7 +61,7 @@ public class UIFurniture : MobileUIView
             }
         }
 
-        UserInfo.OnChangeFurnitureHandler += (type) => UpdateUI();
+        UserInfo.OnChangeFurnitureHandler += (floor, type) => UpdateUI();
         UserInfo.OnGiveFurnitureHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
@@ -120,7 +121,7 @@ public class UIFurniture : MobileUIView
         } 
 
         _currentType = type;
-        FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(type);
+        FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(_currentFloorType, type);
         _currentTypeDataList = FurnitureDataManager.Instance.GetFurnitureDataList(type);
         string furnitureName = Utility.FurnitureTypeStringConverter(type);
         _typeText.text = furnitureName;
@@ -130,8 +131,8 @@ public class UIFurniture : MobileUIView
 
     private void SetFurniturePreview()
     {
-        FurnitureData equipData = UserInfo.GetEquipFurniture(_currentType);
-        _uiFurniturePreview.SetData(equipData != null ? equipData : _currentTypeDataList[0]);
+        FurnitureData equipData = UserInfo.GetEquipFurniture(_currentFloorType, _currentType);
+        _uiFurniturePreview.SetData(_currentFloorType, equipData != null ? equipData : _currentTypeDataList[0]);
     }
 
 
@@ -144,19 +145,19 @@ public class UIFurniture : MobileUIView
     }
 
     
-    private void OnEquipButtonClicked(FurnitureData data)
+    private void OnEquipButtonClicked(ERestaurantFloorType type, FurnitureData data)
     {
         if (data == null)
         {
             SoundManager.Instance.PlayEffectAudio(_dequipSound);
-            UserInfo.SetNullEquipFurniture(_currentType);
+            UserInfo.SetNullEquipFurniture(type, _currentType);
             SetFurnitureData(_currentType);
             //SetFurniturePreview();
             return;
         }
 
         SoundManager.Instance.PlayEffectAudio(_equipSound);
-        UserInfo.SetEquipFurniture(data);
+        UserInfo.SetEquipFurniture(type, data);
         SetFurnitureData(_currentType);
         SetFurniturePreview();
     }
@@ -197,9 +198,10 @@ public class UIFurniture : MobileUIView
         PopupManager.Instance.ShowDisplayText("새로운 가구를 구매했어요!");
     }
 
-    public void ShowUIFurniture(FurnitureType type)
+    public void ShowUIFurniture(ERestaurantFloorType floorType, FurnitureType type)
     {
         _uiNav.Push("UIFurniture");
+        _currentFloorType = floorType;
         SetFurnitureData(type);
         SetFurniturePreview();
     }
@@ -213,24 +215,48 @@ public class UIFurniture : MobileUIView
             return;
 
         _uiFurniturePreview.UpdateUI();
-        FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(_currentType);
+        FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(_currentFloorType, _currentType);
 
         int slotsIndex = (int)_currentType;
         FurnitureData data;
+        UIRestaurantAdminSlot slot;
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
         {
             data = _currentTypeDataList[i];
-            _slots[slotsIndex][i].gameObject.SetActive(true);
+            slot = _slots[slotsIndex][i];
+            slot.gameObject.SetActive(true);
             if (equipFurnitureData != null && data.Id == equipFurnitureData.Id)
             {
-                _slots[slotsIndex][i].transform.SetAsFirstSibling();
-                _slots[slotsIndex][i].SetUse(data.ThumbnailSprite, data.Name, "배치중");
+                slot.transform.SetAsFirstSibling();
+                slot.SetUse(data.ThumbnailSprite, data.Name, "배치중");
                 continue;
             }
 
-            if (UserInfo.IsGiveFurniture(data))
+            else if (UserInfo.IsGiveFurniture(data))
             {
-                _slots[slotsIndex][i].SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
+                ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipFurnitureFloorType(data);
+                switch (furnitureFloorType)
+                {
+                    case ERestaurantFloorType.Floor1:
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "1층 배치중");
+                        break;
+
+                    case ERestaurantFloorType.Floor2:
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "2층 배치중");
+                        break;
+
+                    case ERestaurantFloorType.Floor3:
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "3층 배치중");
+                        break;
+
+                    case ERestaurantFloorType.Length:
+                        slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
+                        break;
+
+                    case ERestaurantFloorType.Error:
+                        slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
+                        break;
+                }
                 continue;
             }
 
@@ -238,23 +264,23 @@ public class UIFurniture : MobileUIView
             {
                 if (!UserInfo.IsScoreValid(data))
                 {
-                    _slots[slotsIndex][i].SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
+                    slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
                     continue;
                 }
 
                 if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
                 {
-                    _slots[slotsIndex][i].SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                    slot.SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     continue;
                 }
 
                 else if(data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
                 {
-                    _slots[slotsIndex][i].SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                    slot.SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
                     continue;
                 }
 
-                _slots[slotsIndex][i].SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice), data.MoneyType);
+                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice), data.MoneyType);
                 continue;
             }
         }
@@ -262,6 +288,6 @@ public class UIFurniture : MobileUIView
 
     private void OnSlotClicked(FurnitureData data)
     {
-        _uiFurniturePreview.SetData(data);
+        _uiFurniturePreview.SetData(_currentFloorType, data);
     }
 }

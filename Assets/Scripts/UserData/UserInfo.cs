@@ -30,11 +30,11 @@ public static class UserInfo
     public static event Action OnGiveGachaItemHandler;
     public static event Action OnUpgradeGachaItemHandler;
 
-    public static event Action<FurnitureType> OnChangeFurnitureHandler;
+    public static event Action<ERestaurantFloorType, FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
     public static event Action OnChangeFurnitureSetDataHandler;
 
-    public static event Action<KitchenUtensilType> OnChangeKitchenUtensilHandler;
+    public static event Action<ERestaurantFloorType, KitchenUtensilType> OnChangeKitchenUtensilHandler;
     public static event Action OnGiveKitchenUtensilHandler;
     public static event Action OnChangeKitchenUtensilSetDataHandler;
 
@@ -51,6 +51,7 @@ public static class UserInfo
 
     public static event Action OnUpdateAttendanceDataHandler;
 
+
     public static bool IsTutorialStart = false;
     public static bool IsFirstTutorialClear = false;
     public static bool IsMiniGameTutorialClear = false;
@@ -58,6 +59,9 @@ public static class UserInfo
     public static bool IsGatecrasher2TutorialClear = false;
     public static bool IsSpecialCustomer1TutorialClear = false;
     public static bool IsSpecialCustomer2TutorialClear = false;
+
+    private static ERestaurantFloorType _currentFloor;
+    public static ERestaurantFloorType CurrentFloor => _currentFloor;
 
     private static string _userId;
     public static string UserId => _userId;
@@ -142,14 +146,14 @@ public static class UserInfo
     private static Dictionary<string, int> _giveGachaItemCountDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _giveGachaItemLevelDic = new Dictionary<string, int>();
 
-    private static FurnitureData[] _equipFurnitureDatas = new FurnitureData[(int)FurnitureType.Length];
+    private static FurnitureData[,] _equipFurnitureDatas = new FurnitureData[(int)ERestaurantFloorType.Length, (int)FurnitureType.Length];
     private static List<string> _giveFurnitureList = new List<string>();
 
-    private static KitchenUtensilData[] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)KitchenUtensilType.Length];
+    private static KitchenUtensilData[,] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)ERestaurantFloorType.Length, (int)KitchenUtensilType.Length];
     private static List<string> _giveKitchenUtensilList = new List<string>();
 
-    private static SetData _furnitureEnabledSetData;
-    private static SetData _kitchenuntensilEnabledSetData;
+    private static SetData[] _furnitureEnabledSetData = new SetData[(int)ERestaurantFloorType.Length];
+    private static SetData[] _kitchenuntensilEnabledSetData = new SetData[(int)ERestaurantFloorType.Length];
 
     private static Dictionary<string, int> _furnitureEffectSetCountDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _kitchenUtensilEffectSetCountDic = new Dictionary<string, int>();
@@ -208,6 +212,7 @@ public static class UserInfo
         param.Add("IsSpecialCustomer1TutorialClear", IsSpecialCustomer1TutorialClear);
         param.Add("IsSpecialCustomer2TutorialClear", IsSpecialCustomer2TutorialClear);
 
+        param.Add("CurrentFloor", (int)_currentFloor);
         param.Add("Dia", _dia);
         param.Add("Money", _money);
         param.Add("TotalAddMoney", _totalAddMoney);
@@ -280,24 +285,34 @@ public static class UserInfo
         param.Add("GiveGachaItemLevelList", giveGachaItemLevelList);
 
         param.Add("GiveFurnitureList", _giveFurnitureList);
-        List<string> equipFurnitureList = new List<string>();
-        for (int i = 0, cnt = _equipFurnitureDatas.Length; i < cnt; ++i)
+        List<List<string>> equipFurnitureList = new List<List<string>>();
+        for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
         {
-            if (_equipFurnitureDatas[i] == null)
-                continue;
+            List<string> row = new List<string>();
+            for (int j = 0; j < (int)FurnitureType.Length; j++)
+            {
+                if (_equipFurnitureDatas[i, j] == null)
+                    continue;
 
-            equipFurnitureList.Add(_equipFurnitureDatas[i].Id);
+                row.Add(_equipFurnitureDatas[i, j].Id);
+            }
+            equipFurnitureList.Add(row);
         }
         param.Add("EquipFurnitureList", equipFurnitureList);
 
         param.Add("GiveKitchenUtensilList", _giveKitchenUtensilList);
-        List<string> equipKitchenUtensilList = new List<string>();
-        for (int i = 0, cnt = _equipKitchenUtensilDatas.Length; i < cnt; ++i)
+        List<List<string>> equipKitchenUtensilList = new List<List<string>>();
+        for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
         {
-            if (_equipKitchenUtensilDatas[i] == null)
-                continue;
+            List<string> row = new List<string>();
+            for (int j = 0; j < (int)KitchenUtensilType.Length; j++)
+            {
+                if (_equipKitchenUtensilDatas[i, j] == null)
+                    continue;
 
-            equipKitchenUtensilList.Add(_equipKitchenUtensilDatas[i].Id);
+                row.Add(_equipKitchenUtensilDatas[i, j].Id);
+            }
+            equipKitchenUtensilList.Add(row);
         }
         param.Add("EquipKitchenUtensilList", equipKitchenUtensilList);
 
@@ -330,8 +345,6 @@ public static class UserInfo
         param.Add("CoinAreaDataList", _saveCoinAreaDataList);
         param.Add("GarbageAreaDataList", _saveGarbageAreaDataList);
 
-
-
         return param;
     }
 
@@ -358,6 +371,8 @@ public static class UserInfo
         IsGatecrasher2TutorialClear = loadData.IsGatecrasher2TutorialClear;
         IsSpecialCustomer1TutorialClear = loadData.IsSpecialCustomer1TutorialClear;
         IsSpecialCustomer2TutorialClear = loadData.IsSpecialCustomer2TutorialClear;
+
+        _currentFloor = loadData.CurrentFloor;
         _dia = loadData.Dia;
         _money = loadData.Money;
         _totalAddMoney = loadData.TotalAddMoney;
@@ -399,15 +414,22 @@ public static class UserInfo
         _giveFurnitureList = loadData.GiveFurnitureList;
         for (int i = 0, cnt = loadData.EquipFurnitureList.Count; i < cnt; ++i)
         {
-            FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(loadData.EquipFurnitureList[i]);
-            SetEquipFurniture(data);
+            for(int j= 0, cntJ = loadData.EquipFurnitureList[i].Count; j < cntJ; ++j)
+            {
+                FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(loadData.EquipFurnitureList[i][j]);
+                SetEquipFurniture((ERestaurantFloorType)i, data);
+            }
         }
 
         _giveKitchenUtensilList = loadData.GiveKitchenUtensilList;
         for (int i = 0, cnt = loadData.EquipKitchenUtensilList.Count; i < cnt; ++i)
         {
-            KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(loadData.EquipKitchenUtensilList[i]);
-            SetEquipKitchenUtensil(data);
+            for(int j = 0, cntJ = loadData.EquipKitchenUtensilList[i].Count; j < cntJ; ++j)
+            {
+                KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(loadData.EquipKitchenUtensilList[i][j]);
+                SetEquipKitchenUtensil((ERestaurantFloorType)i, data);
+            }
+
         }
         _doneMainChallengeSet = loadData.DoneMainChallengeSet;
         _clearMainChallengeSet = loadData.ClearMainChallengeSet;
@@ -1367,17 +1389,17 @@ public static class UserInfo
 
     #region FurnitureData
 
-    public static SetData GetEquipFurnitureSetData()
+    public static SetData GetEquipFurnitureSetData(ERestaurantFloorType type)
     {
-        return _furnitureEnabledSetData;
+        return _furnitureEnabledSetData[(int)type];
     }
 
-    public static void SetEquipFurnitureSetData(SetData data)
+    public static void SetEquipFurnitureSetData(ERestaurantFloorType type, SetData data)
     {
-        if (_furnitureEnabledSetData == data)
+        if (_furnitureEnabledSetData[(int)type] == data)
             return;
 
-        _furnitureEnabledSetData = data;
+        _furnitureEnabledSetData[(int)type] = data;
         OnChangeFurnitureSetDataHandler?.Invoke();
     }
 
@@ -1433,21 +1455,52 @@ public static class UserInfo
     }
 
 
-    public static bool IsEquipFurniture(FurnitureData data)
+    public static bool IsEquipFurniture(ERestaurantFloorType type, FurnitureData data)
     {
-        for (int i = 0, cnt = _equipFurnitureDatas.Length; i < cnt; i++)
+        int typeIndex = (int)type;
+        for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; i++)
         {
-            if (_equipFurnitureDatas[i] == null)
+            if (_equipFurnitureDatas[typeIndex, i] == null)
                 continue;
 
-            if (_equipFurnitureDatas[i].Id == data.Id)
+            if (_equipFurnitureDatas[typeIndex, i].Id == data.Id)
                 return true;
         }
 
         return false;
     }
 
-    public static void SetEquipFurniture(FurnitureData data)
+    public static ERestaurantFloorType GetEquipFurnitureFloorType(FurnitureData data)
+    {
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
+            {
+                if (_equipFurnitureDatas[i, j] == null)
+                    continue;
+
+                if (_equipFurnitureDatas[i, j].Id == data.Id)
+                    return (ERestaurantFloorType)i;
+            }
+        }
+
+        return ERestaurantFloorType.Error;
+    }
+
+    public static ERestaurantFloorType GetEquipFurnitureFloorType(string id)
+    {
+        FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
+        if (data == null)
+        {
+            DebugLog.LogError("존재하지 않는 ID입니다" + id);
+            return ERestaurantFloorType.Error;
+        }
+
+        return GetEquipFurnitureFloorType(data);
+    }
+
+
+    public static void SetEquipFurniture(ERestaurantFloorType type, FurnitureData data)
     {
         if(!_giveFurnitureList.Contains(data.Id))
         {
@@ -1455,51 +1508,49 @@ public static class UserInfo
             return;
         }
 
-        _equipFurnitureDatas[(int)data.Type] = data;
-        OnChangeFurnitureHandler?.Invoke(data.Type);
+        _equipFurnitureDatas[(int)type, (int)data.Type] = data;
+        OnChangeFurnitureHandler?.Invoke(type, data.Type);
     }
 
-    public static void SetEquipFurniture(string id)
+    public static void SetEquipFurniture(ERestaurantFloorType type, string id)
     {
-        if (!_giveFurnitureList.Contains(id))
+        FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
+        if (data == null)
         {
-            DebugLog.LogError("현재 가구를 보유하지 않았습니다: " + id);
+            DebugLog.Log("존재하지 않는 ID입니다" + id);
             return;
         }
-
-        FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
-        _equipFurnitureDatas[(int)data.Type] = data;
-        OnChangeFurnitureHandler?.Invoke(data.Type);
+        SetEquipFurniture(type, data);
     }
 
 
-    public static void SetNullEquipFurniture(FurnitureType type)
+    public static void SetNullEquipFurniture(ERestaurantFloorType floor, FurnitureType type)
     {
-        _equipFurnitureDatas[(int)type] = null;
-        OnChangeFurnitureHandler?.Invoke(type);
+        _equipFurnitureDatas[(int)floor, (int)type] = null;
+        OnChangeFurnitureHandler?.Invoke(floor, type);
     }
 
 
-    public static FurnitureData GetEquipFurniture(FurnitureType type)
+    public static FurnitureData GetEquipFurniture(ERestaurantFloorType floor, FurnitureType type)
     {
-        return _equipFurnitureDatas[(int)type];
+        return _equipFurnitureDatas[(int)floor, (int)type];
     }
 
     #endregion
 
     #region KitchenData
 
-    public static SetData GetEquipKitchenUntensilSetData()
+    public static SetData GetEquipKitchenUntensilSetData(ERestaurantFloorType type)
     {
-        return _kitchenuntensilEnabledSetData;
+        return _kitchenuntensilEnabledSetData[(int)type];
     }
 
-    public static void SetEquipKitchenUntensilSetData(SetData data)
+    public static void SetEquipKitchenUntensilSetData(ERestaurantFloorType type, SetData data)
     {
-        if (_kitchenuntensilEnabledSetData == data)
+        if (_kitchenuntensilEnabledSetData[(int)type] == data)
             return;
 
-        _kitchenuntensilEnabledSetData = data;
+        _kitchenuntensilEnabledSetData[(int)type] = data;
         OnChangeKitchenUtensilSetDataHandler?.Invoke();
     }
 
@@ -1520,22 +1571,13 @@ public static class UserInfo
 
     public static void GiveKitchenUtensil(string id)
     {
-        if (_giveKitchenUtensilList.Contains(id))
-        {
-            DebugLog.Log("이미 가지고 있습니다.");
-            return;
-        }
-
         KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
         if (data == null)
         {
             DebugLog.Log("존재하지 않는 ID입니다" + id);
             return;
         }
-
-        _giveKitchenUtensilList.Add(id);
-        CheckKitchenSetCount();
-        OnGiveKitchenUtensilHandler?.Invoke();
+        GiveKitchenUtensil(data);
     }
 
     public static int GetGiveKitchenUtensilCount()
@@ -1555,21 +1597,52 @@ public static class UserInfo
     }
 
 
-    public static bool IsEquipKitchenUtensil(KitchenUtensilData data)
+    public static bool IsEquipKitchenUtensil(ERestaurantFloorType type, KitchenUtensilData data)
     {
-        for (int i = 0, cnt = _equipKitchenUtensilDatas.Length; i < cnt; i++)
+        int typeIndex = (int)type;
+        for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; i++)
         {
-            if (_equipKitchenUtensilDatas[i] == null)
+            if (_equipKitchenUtensilDatas[typeIndex, i] == null)
                 continue;
 
-            if (_equipKitchenUtensilDatas[i].Id == data.Id)
+            if (_equipKitchenUtensilDatas[typeIndex, i].Id == data.Id)
                 return true;
         }
 
         return false;
     }
 
-    public static void SetEquipKitchenUtensil(KitchenUtensilData data)
+    public static ERestaurantFloorType GetEquipKitchenUtensilFloorType(KitchenUtensilData data)
+    {
+        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            for(int j = 0, cntJ = (int)KitchenUtensilType.Length; j < cntJ; ++j)
+            {
+                if (_equipKitchenUtensilDatas[i, j] == null)
+                    continue;
+
+                if (_equipKitchenUtensilDatas[i, j].Id == data.Id)
+                    return (ERestaurantFloorType)i;
+            }
+        }
+
+        return ERestaurantFloorType.Error;
+    }
+
+    public static ERestaurantFloorType GetEquipKitchenUtensilFloorType(string id)
+    {
+        KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
+        if (data == null)
+        {
+            DebugLog.LogError("존재하지 않는 ID입니다" + id);
+            return ERestaurantFloorType.Error;
+        }
+
+        return GetEquipKitchenUtensilFloorType(data);
+    }
+
+
+    public static void SetEquipKitchenUtensil(ERestaurantFloorType type, KitchenUtensilData data)
     {
         if (!_giveKitchenUtensilList.Contains(data.Id))
         {
@@ -1577,38 +1650,32 @@ public static class UserInfo
             return;
         }
 
-        _equipKitchenUtensilDatas[(int)data.Type] = data;
-        OnChangeKitchenUtensilHandler?.Invoke(data.Type);
+        _equipKitchenUtensilDatas[(int)type, (int)data.Type] = data;
+        OnChangeKitchenUtensilHandler?.Invoke(type, data.Type);
     }
 
-    public static void SetEquipKitchenUtensil(string id)
+    public static void SetEquipKitchenUtensil(ERestaurantFloorType type, string id)
     {
-        if (!_giveKitchenUtensilList.Contains(id))
+        KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
+        if (data == null)
         {
-            DebugLog.LogError("현재 가구를 보유하지 않았습니다: " + id);
+            DebugLog.LogError("존재하지 않는 ID입니다" + id);
             return;
         }
 
-        KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
-        _equipKitchenUtensilDatas[(int)data.Type] = data;
-        OnChangeKitchenUtensilHandler?.Invoke(data.Type);
+        SetEquipKitchenUtensil(type, data);
     }
 
-    public static void SetNullEquipKitchenUtensil(KitchenUtensilType type)
+
+    public static void SetNullEquipKitchenUtensil(ERestaurantFloorType floor, KitchenUtensilType type)
     {
-        _equipKitchenUtensilDatas[(int)type] = null;
-        OnChangeKitchenUtensilHandler?.Invoke(type);
+        _equipKitchenUtensilDatas[(int)floor, (int)type] = null;
+        OnChangeKitchenUtensilHandler?.Invoke(floor, type);
     }
 
-    public static void DisarmEquipKitchenUtensil(KitchenUtensilType type)
+    public static KitchenUtensilData GetEquipKitchenUtensil(ERestaurantFloorType floor, KitchenUtensilType type)
     {
-        _equipKitchenUtensilDatas[(int)type] = null;
-        OnChangeKitchenUtensilHandler?.Invoke(type);
-    }
-
-    public static KitchenUtensilData GetEquipKitchenUtensil(KitchenUtensilType type)
-    {
-        return _equipKitchenUtensilDatas[(int)type];
+        return _equipKitchenUtensilDatas[(int)floor, (int)type];
     }
 
     #endregion

@@ -20,7 +20,7 @@ public class UIButtonAndText : MonoBehaviour
 
     public void Interactable(bool value)
     {
-        _button.interactable = value;        
+        _button.interactable = value;
     }
 
     public void SetText(string text)

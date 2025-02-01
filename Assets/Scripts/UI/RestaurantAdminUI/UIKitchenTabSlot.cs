@@ -15,7 +15,7 @@ public class UIKitchenTabSlot : MonoBehaviour
     [SerializeField] private Sprite _defalutSprite;
 
 
-    public void Init(UnityAction onButtonClicked)
+/*    public void Init(UnityAction onButtonClicked)
     {
         _slotButton.onClick.RemoveAllListeners();
         _slotButton.onClick.AddListener(onButtonClicked);
@@ -32,5 +32,5 @@ public class UIKitchenTabSlot : MonoBehaviour
             _image.sprite = data.ThumbnailSprite;
 
         _typeText.text = Utility.KitchenUtensilTypeStringConverter(type);
-    }
+    }*/
 }

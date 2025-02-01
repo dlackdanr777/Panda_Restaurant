@@ -206,10 +206,10 @@ public class GameManager : MonoBehaviour
 
         UserInfo.OnChangeStaffHandler += OnEquipStaffEffectCheck;
         UserInfo.OnUpgradeStaffHandler += OnEquipStaffEffectCheck;
-        UserInfo.OnChangeFurnitureHandler += (type) => OnEquipFurnitureEffectCheck();
-        UserInfo.OnChangeKitchenUtensilHandler += (type) => OnEquipKitchenUtensilEffectCheck();
-        UserInfo.OnChangeFurnitureHandler += (type) => CheckSetDataEnabled();
-        UserInfo.OnChangeKitchenUtensilHandler += (type) => CheckSetDataEnabled();
+        UserInfo.OnChangeFurnitureHandler += (floor, type) => OnEquipFurnitureEffectCheck();
+        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => OnEquipKitchenUtensilEffectCheck();
+        UserInfo.OnChangeFurnitureHandler += (floor, type) => CheckSetDataEnabled();
+        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => CheckSetDataEnabled();
         UserInfo.OnGiveRecipeHandler += OnGiveRecipeCheck;
         UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEffectCheck;
         UserInfo.OnGiveGachaItemHandler += OnUpgradeGachaItemCheck;
@@ -296,24 +296,28 @@ public class GameManager : MonoBehaviour
         int tipPerMinute = 0;
         int cookSpeedMul = 0;
 
-        for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
+        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
-            FurnitureData data = UserInfo.GetEquipFurniture((FurnitureType)i);
+            for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
+            {
+                FurnitureData data = UserInfo.GetEquipFurniture((ERestaurantFloorType)i, (FurnitureType)j);
 
-            if (data == null)
-                continue;
+                if (data == null)
+                    continue;
 
-            addScore += data.AddScore;
+                addScore += data.AddScore;
 
-            if (data.EquipEffectType == EquipEffectType.AddMaxTip)
-                maxTipVolume += data.EffectValue;
+                if (data.EquipEffectType == EquipEffectType.AddMaxTip)
+                    maxTipVolume += data.EffectValue;
 
-            else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
-                tipPerMinute += data.EffectValue;
+                else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
+                    tipPerMinute += data.EffectValue;
 
-            else if(data.EquipEffectType == EquipEffectType.AddCookSpeed)
-                cookSpeedMul += data.EffectValue;
+                else if (data.EquipEffectType == EquipEffectType.AddCookSpeed)
+                    cookSpeedMul += data.EffectValue;
+            }
         }
+        
 
         _addEquipFurnitureScore = addScore;
         _addEquipFurnitureMaxTipVolume = maxTipVolume;
@@ -334,24 +338,28 @@ public class GameManager : MonoBehaviour
         int cookSpeedMul = 0;
         int tipPerMinute = 0;
 
-        for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
+        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
-            KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil((KitchenUtensilType)i);
+            for (int j = 0, cntJ = (int)KitchenUtensilType.Length; j < cntJ; ++j)
+            {
+                KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil((ERestaurantFloorType)i, (KitchenUtensilType)j);
 
-            if (data == null)
-                continue;
+                if (data == null)
+                    continue;
 
-            addScore += data.AddScore;
+                addScore += data.AddScore;
 
-            if (data.EquipEffectType == EquipEffectType.AddMaxTip)
-                maxTipVolume += data.EffectValue;
+                if (data.EquipEffectType == EquipEffectType.AddMaxTip)
+                    maxTipVolume += data.EffectValue;
 
-            else if (data.EquipEffectType == EquipEffectType.AddCookSpeed)
-                cookSpeedMul += data.EffectValue;
+                else if (data.EquipEffectType == EquipEffectType.AddCookSpeed)
+                    cookSpeedMul += data.EffectValue;
 
-            else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
-                tipPerMinute += data.EffectValue;
+                else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
+                    tipPerMinute += data.EffectValue;
+            }
         }
+      
 
         _addEquipKitchenUtensilScore = addScore;
         _addEquipKitchenUtensilTipVolume = tipPerMinute;
@@ -387,18 +395,21 @@ public class GameManager : MonoBehaviour
         _addEquipSetDataTipPerMinute = 0;
         _addEquipSetDataCookSpeedMul = 0;
 
-        UserInfo.SetEquipFurnitureSetData(GetEquipFurnitureSetData());
-        UserInfo.SetEquipKitchenUntensilSetData(GetEquipKitchenUtensilSetData());
+        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            UserInfo.SetEquipFurnitureSetData(ERestaurantFloorType.Floor1, GetEquipFurnitureSetData((ERestaurantFloorType)i));
+            UserInfo.SetEquipKitchenUntensilSetData(ERestaurantFloorType.Floor1, GetEquipKitchenUtensilSetData((ERestaurantFloorType)i));
+        }
+
 
         OnChangeTipPerMinuteHandler?.Invoke();
 
-        SetData GetEquipFurnitureSetData()
+        SetData GetEquipFurnitureSetData(ERestaurantFloorType type)
         {
             string setId = string.Empty;
-
-            for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
+            for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
             {
-                FurnitureData data = UserInfo.GetEquipFurniture((FurnitureType)i);
+                FurnitureData data = UserInfo.GetEquipFurniture(type, (FurnitureType)j);
                 if (data == null)
                     return null;
 
@@ -428,13 +439,13 @@ public class GameManager : MonoBehaviour
             return setData;
         }
 
-        SetData GetEquipKitchenUtensilSetData()
+        SetData GetEquipKitchenUtensilSetData(ERestaurantFloorType type)
         {
             string setId = string.Empty;
 
             for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
             {
-                KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil((KitchenUtensilType)i);
+                KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil(type, (KitchenUtensilType)i);
                 if (data == null)
                     return null;
 

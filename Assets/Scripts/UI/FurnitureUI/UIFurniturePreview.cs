@@ -33,25 +33,27 @@ public class UIFurniturePreview : MonoBehaviour
     [SerializeField] private Sprite _questionMarkSprite;
 
     private Action<FurnitureData> _onBuyButtonClicked;
-    private Action<FurnitureData> _onEquipButtonClicked;
+    private Action<ERestaurantFloorType, FurnitureData> _onEquipButtonClicked;
     private FurnitureData _currentData;
+    private ERestaurantFloorType _currentType;
 
-    public void Init(Action<FurnitureData> onEquipButtonClicked, Action<FurnitureData> onBuyButtonClicked)
+
+    public void Init(Action<ERestaurantFloorType, FurnitureData> onEquipButtonClicked, Action<FurnitureData> onBuyButtonClicked)
     {
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
 
-        _buyButton.AddListener(OnBuyEvent);
-        _usingButton.AddListener(() => _onEquipButtonClicked(null));
-        _notEnoughMoneyButton.AddListener(OnBuyEvent);
-        _equipButton.AddListener(OnEquipEvent);
+        _buyButton.AddListener(OnBuyButtonClicked);
+        _usingButton.AddListener(OnUsingButtonClicked);
+        _notEnoughMoneyButton.AddListener(OnBuyButtonClicked);
+        _equipButton.AddListener(OnEquipButtonClicked);
     }
 
 
-    public void SetData(FurnitureData data)
+    public void SetData(ERestaurantFloorType type, FurnitureData data)
     {
         _currentData = data;
-
+        _currentType = type;
         _usingButton.gameObject.SetActive(false);
         _equipButton.gameObject.SetActive(false);
         _buyButton.gameObject.SetActive(false);
@@ -88,7 +90,7 @@ public class UIFurniturePreview : MonoBehaviour
         string effectText = Utility.GetEquipEffectDescription(data.EquipEffectType, data.EffectValue);
         _tipPerMinuteGroup.SetText(effectText);
 
-        FurnitureData equipData = UserInfo.GetEquipFurniture(data.Type);
+        FurnitureData equipData = UserInfo.GetEquipFurniture(type, data.Type);
         if (equipData == null)
         {
             _scoreSignGroup.Image1SetActive(false);
@@ -132,17 +134,47 @@ public class UIFurniturePreview : MonoBehaviour
         }
 
 
-        if (UserInfo.IsEquipFurniture(data))
+        if (UserInfo.IsEquipFurniture(type, data))
         {
             _usingButton.gameObject.SetActive(true);
+            _usingButton.SetText("배치중");
             _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
         }
         else
         {
             if (UserInfo.IsGiveFurniture(data))
             {
-                _equipButton.gameObject.SetActive(true);
-                _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipFurnitureFloorType(data);
+                switch (furnitureFloorType)
+                {
+                    case ERestaurantFloorType.Floor1:
+                        _usingButton.gameObject.SetActive(true);
+                        _usingButton.SetText("1층 배치중");
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                        break;
+
+                    case ERestaurantFloorType.Floor2:
+                        _usingButton.gameObject.SetActive(true);
+                        _usingButton.SetText("2층 배치중");
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                        break;
+
+                    case ERestaurantFloorType.Floor3:
+                        _usingButton.gameObject.SetActive(true);
+                        _usingButton.SetText("3층 배치중");
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                        break;
+
+                    case ERestaurantFloorType.Length:
+                        _equipButton.gameObject.SetActive(true);
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                        break;
+
+                    case ERestaurantFloorType.Error:
+                        _equipButton.gameObject.SetActive(true);
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                        break;
+                }
             }
             else
             {
@@ -193,11 +225,11 @@ public class UIFurniturePreview : MonoBehaviour
 
     public void UpdateUI()
     {
-        SetData(_currentData);
+        SetData(_currentType, _currentData);
     }
 
 
-    private void OnBuyEvent()
+    private void OnBuyButtonClicked()
     {
         if (_currentData == null)
         {
@@ -208,7 +240,7 @@ public class UIFurniturePreview : MonoBehaviour
         _onBuyButtonClicked?.Invoke(_currentData);
     }
 
-    private void OnEquipEvent()
+    private void OnEquipButtonClicked()
     {
         if (_currentData == null)
         {
@@ -216,6 +248,18 @@ public class UIFurniturePreview : MonoBehaviour
             return;
         }
 
-        _onEquipButtonClicked?.Invoke(_currentData);
+        _onEquipButtonClicked?.Invoke(_currentType, _currentData);
+    }
+
+    private void OnUsingButtonClicked()
+    {
+        if (_currentData == null)
+        {
+            DebugLog.Log("현재 데이터가 존재하지 않습니다.");
+            return;
+        }
+
+        ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(_currentData);
+        _onEquipButtonClicked?.Invoke(floorType, null);
     }
 }

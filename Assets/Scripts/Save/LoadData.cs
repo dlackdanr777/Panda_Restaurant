@@ -13,6 +13,8 @@ public class LoadData
     public bool IsGatecrasher2TutorialClear;
     public bool IsSpecialCustomer1TutorialClear;
     public bool IsSpecialCustomer2TutorialClear;
+
+    public ERestaurantFloorType CurrentFloor;
     public int Dia;
     public long Money;
     public long TotalAddMoney;
@@ -48,11 +50,11 @@ public class LoadData
     public Dictionary<string, int> GiveGachaItemCountDic = new Dictionary<string, int>();
     public Dictionary<string, int> GiveGachaItemLevelDic = new Dictionary<string, int>();
 
-    public List<string> GiveFurnitureList = new List<string>(); 
-    public List<string> EquipFurnitureList = new List<string>();
+    public List<string> GiveFurnitureList = new List<string>();
+    public List<List<string>> EquipFurnitureList = new List<List<string>>();
 
-    public List<string> EquipKitchenUtensilList = new List<string>();
     public List<string> GiveKitchenUtensilList = new List<string>();
+    public List<List<string>> EquipKitchenUtensilList = new List<List<string>>();
 
     public HashSet<string> DoneMainChallengeSet = new HashSet<string>();
     public HashSet<string> ClearMainChallengeSet = new HashSet<string>();
@@ -78,6 +80,7 @@ public class LoadData
         IsSpecialCustomer1TutorialClear = json[0].ContainsKey("IsSpecialCustomer1TutorialClear") ? json[0]["IsSpecialCustomer1TutorialClear"].ToString().ToLower() == "true" : false;
         IsSpecialCustomer2TutorialClear = json[0].ContainsKey("IsSpecialCustomer2TutorialClear") ? json[0]["IsSpecialCustomer2TutorialClear"].ToString().ToLower() == "true" : false;
 
+        CurrentFloor = json[0].ContainsKey("CurrentFloor") && int.TryParse(json[0]["CurrentFloor"].ToString(), out int floor) ? (ERestaurantFloorType)floor : ERestaurantFloorType.Floor1;
         Dia = json[0].ContainsKey("Dia") && int.TryParse(json[0]["Dia"].ToString(), out int dia) ? dia : 0;
         Money = json[0].ContainsKey("Money") && long.TryParse(json[0]["Money"].ToString(), out long money) ? money : 0;
         TotalAddMoney = json[0].ContainsKey("TotalAddMoney") && long.TryParse(json[0]["TotalAddMoney"].ToString(), out long totalAddMoney) ? totalAddMoney : 0;
@@ -178,11 +181,37 @@ public class LoadData
 
         if (json[0].ContainsKey("EquipFurnitureList"))
         {
-            foreach (JsonData item in json[0]["EquipFurnitureList"])
+            JsonData furnitureJsonList = json[0]["EquipFurnitureList"];
+            EquipFurnitureList.Clear();
+
+            if (furnitureJsonList.Count > 0 && furnitureJsonList[0].IsString)
             {
-                EquipFurnitureList.Add(item.ToString());
+                // 저장된 데이터가 1차원 배열인 경우 (이전 방식)
+                List<string> row = new List<string>();
+                foreach (JsonData item in furnitureJsonList)
+                {
+                    row.Add(item.ToString());
+                }
+                EquipFurnitureList.Add(row);
+            }
+            else
+            {
+                // 저장된 데이터가 2차원 배열인 경우 (새로운 방식)
+                for (int i = 0; i < furnitureJsonList.Count; i++)
+                {
+                    List<string> row = new List<string>();
+                    JsonData rowData = furnitureJsonList[i];
+
+                    for (int j = 0; j < rowData.Count; j++)
+                    {
+                        row.Add(rowData[j].ToString());
+                    }
+
+                    EquipFurnitureList.Add(row);
+                }
             }
         }
+
 
         if (json[0].ContainsKey("GiveKitchenUtensilList"))
         {
@@ -194,9 +223,34 @@ public class LoadData
 
         if (json[0].ContainsKey("EquipKitchenUtensilList"))
         {
-            foreach (JsonData item in json[0]["EquipKitchenUtensilList"])
+            JsonData utensilJsonList = json[0]["EquipKitchenUtensilList"];
+            EquipKitchenUtensilList.Clear();
+
+            if (utensilJsonList.Count > 0 && utensilJsonList[0].IsString)
             {
-                EquipKitchenUtensilList.Add(item.ToString());
+                // 저장된 데이터가 1차원 배열인 경우 (이전 방식)
+                List<string> row = new List<string>();
+                foreach (JsonData item in utensilJsonList)
+                {
+                    row.Add(item.ToString());
+                }
+                EquipKitchenUtensilList.Add(row);
+            }
+            else
+            {
+                // 저장된 데이터가 2차원 배열인 경우
+                for (int i = 0; i < utensilJsonList.Count; i++)
+                {
+                    List<string> row = new List<string>();
+                    JsonData rowData = utensilJsonList[i];
+
+                    for (int j = 0; j < rowData.Count; j++)
+                    {
+                        row.Add(rowData[j].ToString());
+                    }
+
+                    EquipKitchenUtensilList.Add(row);
+                }
             }
         }
 
