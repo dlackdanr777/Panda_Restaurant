@@ -28,6 +28,8 @@ public class Staff : MonoBehaviour
     private StaffType _staffType;
     private IStaffAction _staffAction;
     private EStaffState _state;
+    private ERestaurantFloorType _equipFloorType;
+    public ERestaurantFloorType EquipFloorType => _equipFloorType;
 
     private bool _usingSkill;
     private float _skillTimer;
@@ -69,7 +71,7 @@ public class Staff : MonoBehaviour
 
 
 
-    public void SetStaffData(StaffData staffData, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         if (staffData == _staffData)
             return;
@@ -94,6 +96,7 @@ public class Staff : MonoBehaviour
         gameObject.SetActive(true);
         _staffData = staffData;
         _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
+        _equipFloorType = equipFloorType;
         _staffAction = staffData.GetStaffAction(this, tableManager, kitchenSystem, customerController);
         _secondValue = staffData.SecondValue;
         _animator.enabled = staffData is CleanerData;

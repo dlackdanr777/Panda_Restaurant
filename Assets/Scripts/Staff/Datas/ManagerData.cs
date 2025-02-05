@@ -30,12 +30,13 @@ public class ManagerData : StaffData
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(1);
-        staff.transform.position = tableManager.GetStaffPos(0, StaffType.Manager);
+        staff.transform.position = tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Manager);
         staff.SetLayer("Manager", 0);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
+        staff.transform.position = Vector3.zero;
         staff.SetAlpha(0);
     }
 

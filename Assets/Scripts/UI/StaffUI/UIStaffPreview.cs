@@ -34,10 +34,13 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private Sprite _questionMarkSprite;
 
     private Action<StaffData> _onBuyButtonClicked;
-    private Action<StaffData> _onEquipButtonClicked;
+    private Action<ERestaurantFloorType, StaffData> _onEquipButtonClicked;
     private StaffData _currentData;
+    private ERestaurantFloorType _currentType;
 
-    public void Init(Action<StaffData> onEquipButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
+
+
+    public void Init(Action<ERestaurantFloorType, StaffData> onEquipButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
     {
         _selectGroup.Init();
         _skillEffectGroup.Init();
@@ -45,16 +48,17 @@ public class UIStaffPreview : MonoBehaviour
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
 
-        _buyButton.AddListener(OnBuyEvent);
-        _usingButton.AddListener(() => onEquipButtonClicked(null));
-        _notEnoughMoneyButton.AddListener(OnBuyEvent);
-        _equipButton.AddListener(OnEquipEvent);
+        _buyButton.AddListener(OnBuyButtonClicked);
+        _usingButton.AddListener(OnUsingButtonClicked);
+        _notEnoughMoneyButton.AddListener(OnBuyButtonClicked);
+        _equipButton.AddListener(OnEquipButtonClicked);
     }
 
 
-    public void SetData(StaffData data)
+    public void SetData(ERestaurantFloorType type, StaffData data)
     {
         _currentData = data;
+        _currentType = type;
         _selectGroup.SetData(data);
         _levelGroup.gameObject.SetActive(false);
         _usingButton.gameObject.SetActive(false);
@@ -89,7 +93,7 @@ public class UIStaffPreview : MonoBehaviour
         _addTipPercentGroup.SetText("메뉴별 팁 <color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddTipMul(level) + "%</color> 증가");
         _skillEffectGroup.SetData(data);
 
-        StaffData equipData = UserInfo.GetEquipStaff(StaffDataManager.Instance.GetStaffType(data));
+        StaffData equipData = UserInfo.GetEquipStaff(type, StaffDataManager.Instance.GetStaffType(data));
         int equipDataLevel = equipData == null ? 1 : UserInfo.IsGiveStaff(equipData) ? UserInfo.GetStaffLevel(equipData) : 1;
         if (equipData == null)
         {
@@ -134,10 +138,11 @@ public class UIStaffPreview : MonoBehaviour
         }
 
 
-        if (UserInfo.IsEquipStaff(data))
+        if (UserInfo.IsEquipStaff(type, data))
         {
             _levelGroup.gameObject.SetActive(true);
             _usingButton.gameObject.SetActive(true);
+            _usingButton.SetText("배치중");
             _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
             _levelGroup.SetText(data.UpgradeEnable(level) ? "Lv." + level : "Lv.Max");
         }
@@ -146,9 +151,39 @@ public class UIStaffPreview : MonoBehaviour
             if (UserInfo.IsGiveStaff(data))
             {
                 _levelGroup.gameObject.SetActive(true);
-                _equipButton.gameObject.SetActive(true);
-                _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                 _levelGroup.SetText(data.UpgradeEnable(level) ? "Lv." + level : "Lv.Max");
+                ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(data);
+                switch (furnitureFloorType)
+                {
+                    case ERestaurantFloorType.Floor1:
+                        _usingButton.gameObject.SetActive(true);
+                        _usingButton.SetText("1층 배치중");
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                        break;
+
+                    case ERestaurantFloorType.Floor2:
+                        _usingButton.gameObject.SetActive(true);
+                        _usingButton.SetText("2층 배치중");
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                        break;
+
+                    case ERestaurantFloorType.Floor3:
+                        _usingButton.gameObject.SetActive(true);
+                        _usingButton.SetText("3층 배치중");
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                        break;
+
+                    case ERestaurantFloorType.Length:
+                        _equipButton.gameObject.SetActive(true);
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+
+                        break;
+
+                    case ERestaurantFloorType.Error:
+                        _equipButton.gameObject.SetActive(true);
+                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                        break;
+                }
             }
             else
             {
@@ -198,10 +233,10 @@ public class UIStaffPreview : MonoBehaviour
 
     public void UpdateUI()
     {
-        SetData(_currentData);
+        SetData(_currentType, _currentData);
     }
 
-    private void OnBuyEvent()
+    private void OnBuyButtonClicked()
     {
         if (_currentData == null)
         {
@@ -211,8 +246,7 @@ public class UIStaffPreview : MonoBehaviour
 
         _onBuyButtonClicked?.Invoke(_currentData);
     }
-
-    private void OnEquipEvent()
+    private void OnEquipButtonClicked()
     {
         if (_currentData == null)
         {
@@ -220,6 +254,18 @@ public class UIStaffPreview : MonoBehaviour
             return;
         }
 
-        _onEquipButtonClicked?.Invoke(_currentData);
+        _onEquipButtonClicked?.Invoke(_currentType, _currentData);
+    }
+
+    private void OnUsingButtonClicked()
+    {
+        if (_currentData == null)
+        {
+            DebugLog.Log("현재 데이터가 존재하지 않습니다.");
+            return;
+        }
+
+        ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(_currentData);
+        _onEquipButtonClicked?.Invoke(floorType, null);
     }
 }

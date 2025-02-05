@@ -14,6 +14,7 @@ public class TableButton : MonoBehaviour
     public void Init()
     {
         UserInfo.OnGiveRecipeHandler += UpdateFoodImage;
+        UpdateFoodImage();
     }
 
     public void AddListener(UnityAction action)
@@ -66,5 +67,15 @@ public class TableButton : MonoBehaviour
             return;
 
         _foodImage.material = UserInfo.IsGiveRecipe(_currentData) ? null : _grayMat;
+    }
+
+    private void OnEnable()
+    {
+        UpdateFoodImage();
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnGiveRecipeHandler -= UpdateFoodImage;
     }
 }

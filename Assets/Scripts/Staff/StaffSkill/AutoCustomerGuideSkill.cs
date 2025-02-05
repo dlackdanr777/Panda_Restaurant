@@ -17,10 +17,10 @@ public class AutoCustomerGuideSkill : SkillBase
 
     public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        int index = tableManager.GetTableType(ETableState.NotUse);
-        if (index == -1)
+        TableData data = tableManager.GetTableType(staff.EquipFloorType, ETableState.NotUse);
+        if (data == null)
             return;
 
-        tableManager.OnCustomerGuide(index);
+        tableManager.OnCustomerGuide(data);
     }
 }

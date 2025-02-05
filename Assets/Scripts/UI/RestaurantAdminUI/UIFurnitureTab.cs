@@ -76,4 +76,9 @@ public class UIFurnitureTab : MonoBehaviour
     {
         _uiFurniture.ShowUIFurniture(_floorType, (FurnitureType)index);
     }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeFurnitureHandler -= UpdateUI;
+    }
 }

@@ -16,8 +16,6 @@ public class TableManager : MonoBehaviour
 
     [Space]
     [Header("Components")]
-
-    [SerializeField] private TableData[] _tableDatas;
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private FurnitureSystem _furnitureSystem;
     [SerializeField] private KitchenSystem _kitchenSystem;
@@ -25,10 +23,7 @@ public class TableManager : MonoBehaviour
 
     [Space]
     [Header("Button Option")]
-    [SerializeField] private Transform _buttonParent;
     [SerializeField] private Button _guideButton;
-    [SerializeField] private TableButton _orderButtonPrefab;
-    [SerializeField] private TableButton _servingButtonPrefab;
 
     [Space]
     [Header("Audios")]
@@ -37,9 +32,6 @@ public class TableManager : MonoBehaviour
     [Space]
     [Header("Tutorial Components")]
     [SerializeField] private GachaTutorial _miniGameTutorial;
-
-    private TableButton[] _orderButtons;
-    private TableButton[] _servingButtons;
 
     private int _totalGarbageCount => ObjectPoolManager.Instance.GetEnabledGarbageCount();
     private List<DropGarbageArea> _dropGarbageAreaList = new List<DropGarbageArea>();
@@ -68,76 +60,6 @@ public class TableManager : MonoBehaviour
     }
 
 
-
-    public int GetTableType(ETableState state)
-    {
-        for(int i = 0, cnt = _tableDatas.Length; i <  cnt; i++)
-        {
-            if (_tableDatas[i].TableState == state)
-                return i;
-        }
-
-        return -1;
-    }
-
-
-    public int GetTableTypeByNeedFood(ETableState state)
-    {
-        for (int i = 0, cnt = _tableDatas.Length; i < cnt; i++)
-        {
-            if (_tableDatas[i].TableState != state)
-                continue;
-
-            if (_tableDatas[i].CurrentFood.IsDefault())
-                continue;
-
-            if (!UserInfo.IsGiveRecipe(_tableDatas[i].CurrentFood.Id))
-                continue;
-
-            return i;
-        }
-
-        return -1;
-    }
-
-    public TableData GetTableData(int index)
-    {
-        if(index < 0 || _tableDatas.Length <= index)
-        {
-            DebugLog.LogError("테이블 범위를 벗어나는 인덱스입니다: " + index + " (테이블 배열 길이: " + _tableDatas.Length + ")");
-            return null;
-        }
-
-        return _tableDatas[index];
-    }
-
-    public List<NormalCustomer> GetSitCustomerList()
-    {
-        List<NormalCustomer> returnDataList = new List<NormalCustomer>();
-        for(int i = 0, cnt =  _tableDatas.Length; i < cnt; ++i)
-        {
-            returnDataList.Add(_tableDatas[i].TableState != ETableState.Move ? _tableDatas[i].CurrentCustomer : null);
-        }
-
-        return returnDataList;
-    }
-
-    public List<DropCoinArea> GetDropCoinAreaList()
-    {
-        List<DropCoinArea> dropCoinAreaList = new List<DropCoinArea>();
-        for (int i = 0, cnt = _tableDatas.Length; i < cnt; ++i)
-        {
-            for(int j = 0, cntJ = _tableDatas[i].DropCoinAreas.Length; j < cntJ; ++j)
-            {
-                if (_tableDatas[i].DropCoinAreas[j] == null)
-                    continue;
-
-                dropCoinAreaList.Add(_tableDatas[i].DropCoinAreas[j]);
-            }
-        }
-
-        return dropCoinAreaList;
-    }
 
 
 /*    public void UpdateTable()
@@ -194,7 +116,7 @@ public class TableManager : MonoBehaviour
     }*/
 
 
-    public void OnCustomerGuide(int index, int sitPos = -1)
+  /*  public void OnCustomerGuide(int index, int sitPos = -1)
     {
         if (_customerController.IsEmpty())
             return;
@@ -273,9 +195,9 @@ public class TableManager : MonoBehaviour
                 });
             });
         });
-    }
+    }*/
 
-    public void OnCustomerSeating(int index)
+    /*public void OnCustomerSeating(int index)
     {
         if (_tableDatas[index].TableState == ETableState.DontUse)
         {
@@ -502,7 +424,7 @@ public class TableManager : MonoBehaviour
             });
             time += 0.02f;
         }
-    }
+    }*/
 
 
     public void OnCustomerGuide(TableData data, int sitPos = -1)
@@ -831,17 +753,26 @@ public class TableManager : MonoBehaviour
 
     public void UpdateTable()
     {
-        int index = GetTableType(ETableState.NotUse);
-
-        if (index == -1)
+        if (_customerController.IsEmpty())
+        {
             _guideButton.gameObject.SetActive(false);
+            return;
+        }
 
-        else if (_customerController.IsEmpty())
-            _guideButton.gameObject.SetActive(false);
+        for (int i = 0, cnt = (int)UserInfo.CurrentFloor; i <= cnt; ++i)
+        {
+            TableData data = GetTableType((ERestaurantFloorType)i, ETableState.NotUse);
 
-        else
+            if (data == null)
+            {
+                _guideButton.gameObject.SetActive(false);
+                continue;
+            }
+
             _guideButton.gameObject.SetActive(true);
-
+            break;
+        }
+      
         OnTableUpdateHandler?.Invoke();
     }
 
@@ -851,29 +782,90 @@ public class TableManager : MonoBehaviour
         return _furnitureSystem.GetStaffPos(data, type);
     }
 
+    /// <summary> 직원 위치를 반환하는 함수(경호원, 청소부, 매니저, 셰프만 가능)</summary>
+    public Vector2 GetStaffPos(ERestaurantFloorType floorType, StaffType type)
+    {
+        return _furnitureSystem.GetStaffPos(floorType, type);
+    }
+
     public TableData GetTableType(ERestaurantFloorType floorType, ETableState state)
     {
         return _furnitureSystem.GetTableType(floorType, state);
     }
 
+    public TableData GetTableData(ERestaurantFloorType floorType, TableType type)
+    {
+        return _furnitureSystem.GetTableType(floorType, type);
+    }
 
-    public DropGarbageArea GetMinDistanceGarbageArea(Vector3 startPos)
+    public List<TableData> GetTableDataList(ERestaurantFloorType floorType)
+    {
+        return _furnitureSystem.GetTableDataList(floorType);
+    }
+
+    public List<DropCoinArea> GetDropCoinAreaList(ERestaurantFloorType floorType)
+    {
+        return _furnitureSystem.GetDropCoinAreaList(floorType);
+    }
+
+
+    public List<TableData> GetTableDataList(ERestaurantFloorType floorType, ETableState state)
+    {
+        List<TableData> returnDataList = new List<TableData>();
+        List<TableData> tableDataList = _furnitureSystem.GetTableDataList(floorType);
+        for (int i = 0, cnt = tableDataList.Count; i < cnt; ++i)
+        {
+            if (tableDataList[i].TableState != state)
+                continue;
+
+            returnDataList.Add(tableDataList[i]);
+        }
+
+        return returnDataList;
+    }
+
+    public TableData GetTableTypeByNeedFood(ERestaurantFloorType floorType, ETableState state)
+    {
+        List<TableData> tableDataList = _furnitureSystem.GetTableDataList(floorType);
+
+        for (int i = 0, cnt = tableDataList.Count; i < cnt; i++)
+        {
+            if (tableDataList[i].TableState != state)
+                continue;
+
+            if (tableDataList[i].CurrentFood.IsDefault())
+                continue;
+
+            if (!UserInfo.IsGiveRecipe(tableDataList[i].CurrentFood.Id))
+                continue;
+
+            return tableDataList[i];
+        }
+
+        return null;
+    }
+
+   
+
+
+    public DropGarbageArea GetMinDistanceGarbageArea(ERestaurantFloorType floorType, Vector3 startPos)
     {
         int moveObjFloor = AStar.Instance.GetTransformFloor(startPos);
         List<DropGarbageArea> equalFloorGarbageArea = new List<DropGarbageArea>();
         List<DropGarbageArea> notEqualFloorGarbageArea = new List<DropGarbageArea>();
 
-        for (int i = 0, cnt = _dropGarbageAreaList.Count; i < cnt; i++)
+        List<DropGarbageArea> floorGarbageArea = _furnitureSystem.GetDropGarbageAreaList(floorType);
+        for (int i = 0, cnt = floorGarbageArea.Count; i < cnt; i++)
         {
-            int targetFloor = AStar.Instance.GetTransformFloor(_dropGarbageAreaList[i].transform.position);
-            if (_dropGarbageAreaList[i].Count <= 0)
+            int targetFloor = AStar.Instance.GetTransformFloor(floorGarbageArea[i].transform.position);
+            if (floorGarbageArea[i].Count <= 0)
                 continue;
 
             if (moveObjFloor == targetFloor)
-                equalFloorGarbageArea.Add(_dropGarbageAreaList[i]);
+                equalFloorGarbageArea.Add(floorGarbageArea[i]);
 
             else if (moveObjFloor != targetFloor)
-                notEqualFloorGarbageArea.Add(_dropGarbageAreaList[i]);
+                notEqualFloorGarbageArea.Add(floorGarbageArea[i]);
         }
 
 

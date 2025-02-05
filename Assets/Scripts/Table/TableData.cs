@@ -30,15 +30,17 @@ public class TableData : MonoBehaviour
 
     public TableButton ServingButton;
 
+    public ETableState TableState;
+
+    public ERestaurantFloorType FloorType;
+
+    public TableType TableType;
+
     public int TotalTip;
 
     public int TotalPrice;
 
     public int OrdersCount;
-
-    public ETableState TableState;
-
-    public ERestaurantFloorType FloorType;
 
     public NormalCustomer CurrentCustomer;
 

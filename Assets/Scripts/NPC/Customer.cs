@@ -30,6 +30,9 @@ public class Customer : MonoBehaviour
     protected CustomerData _customerData;
     public CustomerData CustomerData => _customerData;
 
+    protected ERestaurantFloorType _visitFloorType;
+    public ERestaurantFloorType VisitFloorType => _visitFloorType;
+
     protected CustomerState _currentState;
     protected Coroutine _moveCoroutine;
     protected Coroutine _teleportCoroutine;
@@ -48,11 +51,12 @@ public class Customer : MonoBehaviour
     }
 
 
-    public virtual void SetData(CustomerData data)
+    public virtual void SetData(CustomerData data, ERestaurantFloorType visitFloorType)
     {
+        _customerData = data;
+        _visitFloorType = visitFloorType;
         _moveSpeed = data.MoveSpeed;
 
-        _customerData = data;
         _spriteParent.localScale = data.Scale <= 0 ? Vector3.one : Vector3.one * data.Scale;
         _spriteParent.transform.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
         _spriteRenderer.transform.localPosition = Vector3.zero;

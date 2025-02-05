@@ -204,7 +204,7 @@ public class GameManager : MonoBehaviour
         UserInfo.DataBindTip();
         UserInfo.DataBindMoney();
 
-        UserInfo.OnChangeStaffHandler += OnEquipStaffEffectCheck;
+        UserInfo.OnChangeStaffHandler += (floor, type) => OnEquipStaffEffectCheck();
         UserInfo.OnUpgradeStaffHandler += OnEquipStaffEffectCheck;
         UserInfo.OnChangeFurnitureHandler += (floor, type) => OnEquipFurnitureEffectCheck();
         UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => OnEquipKitchenUtensilEffectCheck();
@@ -260,23 +260,27 @@ public class GameManager : MonoBehaviour
         float addTipMul = 0;
         int maxWaitCustomerCount = 0;
 
-        for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
-            StaffData data = UserInfo.GetEquipStaff((StaffType)i);
-
-            if (data == null)
-                continue;
-
-            int level = UserInfo.GetStaffLevel(data);
-            if ((StaffType)i == StaffType.Manager)
+            for (int j = 0, cntJ = (int)StaffType.Length; j < cntJ; ++j)
             {
-                ManagerData managerData = (ManagerData)data;
-                maxWaitCustomerCount += Mathf.FloorToInt(managerData.GetActionValue(level));
-            }
+                StaffData data = UserInfo.GetEquipStaff((ERestaurantFloorType)i, (StaffType)j);
 
-            addScore += data.GetAddScore(level);
-            addTipMul += data.GetAddTipMul(level);
+                if (data == null)
+                    continue;
+
+                int level = UserInfo.GetStaffLevel(data);
+                if ((StaffType)j == StaffType.Manager)
+                {
+                    ManagerData managerData = (ManagerData)data;
+                    maxWaitCustomerCount += Mathf.FloorToInt(managerData.GetActionValue(level));
+                }
+
+                addScore += data.GetAddScore(level);
+                addTipMul += data.GetAddTipMul(level);
+            }
         }
+       
 
         _addEquipStaffScore = addScore;
         _addEquipStaffTipMul = addTipMul;

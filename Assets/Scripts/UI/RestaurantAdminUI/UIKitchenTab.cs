@@ -74,4 +74,9 @@ public class UIKitchenTab : MonoBehaviour
     {
         _uiKitchen.ShowUIKitchen(_floorType, (KitchenUtensilType)index);
     }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeKitchenUtensilHandler -= UpdateUI;
+    }
 }

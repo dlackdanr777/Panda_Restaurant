@@ -18,7 +18,7 @@ public static class UserInfo
     public static event Action OnAddAdvertisingViewCountHandler;
     public static event Action OnAddCleanCountHandler;
 
-    public static event Action OnChangeStaffHandler;
+    public static event Action<ERestaurantFloorType, StaffType> OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
     public static event Action OnUpgradeStaffHandler;
 
@@ -137,7 +137,7 @@ public static class UserInfo
 
 
 
-    private static StaffData[] _equipStaffDatas = new StaffData[(int)StaffType.Length];
+    private static StaffData[,] _equipStaffDatas = new StaffData[(int)ERestaurantFloorType.Length, (int)StaffType.Length];
     private static Dictionary<string, int> _giveStaffLevelDic = new Dictionary<string, int>();
 
     private static Dictionary<string, int> _giveRecipeLevelDic = new Dictionary<string, int>();
@@ -246,13 +246,18 @@ public static class UserInfo
         }
         param.Add("GiveStaffList", giveStaffSaveDataList);
 
-        List<string> equipStaffDataList = new List<string>();
-        for (int i = 0, cnt = _equipStaffDatas.Length; i < cnt; ++i)
+        List<List<string>> equipStaffDataList = new List<List<string>>();
+        for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
         {
-            if (_equipStaffDatas[i] == null)
-                continue;
+            List<string> row = new List<string>();
+            for (int j = 0, cntJ = (int)StaffType.Length; j < cntJ; ++j)
+            {
+                if (_equipStaffDatas[i,j] == null)
+                    continue;
 
-            equipStaffDataList.Add(_equipStaffDatas[i].Id);
+                row.Add(_equipStaffDatas[i,j].Id);
+            }
+            equipStaffDataList.Add(row);
         }
         param.Add("EquipStaffDatas", equipStaffDataList);
 
@@ -401,8 +406,11 @@ public static class UserInfo
         _giveStaffLevelDic = loadData.GiveStaffLevelDic;
         for (int i = 0, cnt = loadData.EquipStaffDataList.Count; i < cnt; ++i)
         {
-            StaffData data = StaffDataManager.Instance.GetStaffData(loadData.EquipStaffDataList[i]);
-            SetEquipStaff(data);
+            for (int j = 0, cntJ = loadData.EquipStaffDataList[i].Count; j < cntJ; ++j)
+            {
+                StaffData data = StaffDataManager.Instance.GetStaffData(loadData.EquipStaffDataList[i][j]);
+                SetEquipStaff((ERestaurantFloorType)i, data);
+            }
         }
 
         _giveRecipeLevelDic = loadData.GiveRecipeLevelDic;
@@ -429,8 +437,8 @@ public static class UserInfo
                 KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(loadData.EquipKitchenUtensilList[i][j]);
                 SetEquipKitchenUtensil((ERestaurantFloorType)i, data);
             }
-
         }
+
         _doneMainChallengeSet = loadData.DoneMainChallengeSet;
         _clearMainChallengeSet = loadData.ClearMainChallengeSet;
         _doneAllTimeChallengeSet = loadData.DoneAllTimeChallengeSet;
@@ -462,7 +470,6 @@ public static class UserInfo
         OnAddPromotionCountHandler?.Invoke();
         OnAddAdvertisingViewCountHandler?.Invoke();
         OnAddCleanCountHandler?.Invoke();
-        OnChangeStaffHandler?.Invoke();
         OnGiveStaffHandler?.Invoke();
         OnUpgradeStaffHandler?.Invoke();
         OnGiveRecipeHandler?.Invoke();
@@ -718,6 +725,14 @@ public static class UserInfo
         return true;
     }
 
+    public static bool IsFloorValid(ERestaurantFloorType type)
+    {
+        if (type < _currentFloor)
+            return false;
+
+        return true;
+    }
+
     #endregion
 
     #region StaffData
@@ -763,21 +778,40 @@ public static class UserInfo
         return _giveStaffLevelDic.ContainsKey(data.Id);
     }
 
-    public static bool IsEquipStaff(StaffData data)
+    public static bool IsEquipStaff(ERestaurantFloorType floorType, StaffData data)
     {
-        for(int i = 0, cnt = _equipStaffDatas.Length; i < cnt; i++)
+        int floorTypeIndex = (int)floorType;
+        for(int i = 0, cnt = (int)StaffType.Length; i < cnt; i++)
         {
-            if (_equipStaffDatas[i] == null)
+            if (_equipStaffDatas[floorTypeIndex, i] == null)
                 continue;
             
-            if (_equipStaffDatas[i].Id == data.Id)
+            if (_equipStaffDatas[floorTypeIndex, i].Id == data.Id)
                 return true;
         }
 
         return false;
     }
 
-    public static void SetEquipStaff(StaffData data)
+    public static ERestaurantFloorType GetEquipStaffFloorType(StaffData data)
+    {
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            for (int j = 0, cntJ = (int)StaffType.Length; j < cntJ; ++j)
+            {
+                if (_equipStaffDatas[i, j] == null)
+                    continue;
+
+                if (_equipStaffDatas[i, j].Id == data.Id)
+                    return (ERestaurantFloorType)i;
+            }
+        }
+
+        return ERestaurantFloorType.Error;
+    }
+
+
+    public static void SetEquipStaff(ERestaurantFloorType floorType, StaffData data)
     {
         if(!_giveStaffLevelDic.ContainsKey(data.Id))
         {
@@ -785,37 +819,30 @@ public static class UserInfo
             return;
         }
 
-        _equipStaffDatas[(int)StaffDataManager.Instance.GetStaffType(data)] = data;
-        OnChangeStaffHandler?.Invoke();
+        _equipStaffDatas[(int)floorType, (int)StaffDataManager.Instance.GetStaffType(data)] = data;
+        OnChangeStaffHandler?.Invoke(floorType, StaffDataManager.Instance.GetStaffType(data));
     }
 
-    public static void SetEquipStaff(string id)
+    public static void SetEquipStaff(ERestaurantFloorType floorType, string id)
     {
-        if (!_giveStaffLevelDic.ContainsKey(id))
-        {
-            DebugLog.LogError("해당 스탭은 현재 가지고 있지 않습니다: " + id);
-            return;
-        }
-
         StaffData data = StaffDataManager.Instance.GetStaffData(id);
         if (data == null)
             throw new Exception("해당 Id를 가진 스탭이 없습니다: " + id);
 
-        _equipStaffDatas[(int)StaffDataManager.Instance.GetStaffType(data)] = data;
-        OnChangeStaffHandler?.Invoke();
+        SetEquipStaff(floorType, data);
     }
 
 
-    public static void SetNullEquipStaff(StaffType type)
+    public static void SetNullEquipStaff(ERestaurantFloorType floorType, StaffType type)
     {
-        _equipStaffDatas[(int)type] = null;
-        OnChangeStaffHandler?.Invoke();
+        _equipStaffDatas[(int)floorType, (int)type] = null;
+        OnChangeStaffHandler?.Invoke(floorType, type);
     }
 
 
-    public static StaffData GetEquipStaff(StaffType type)
+    public static StaffData GetEquipStaff(ERestaurantFloorType floorType, StaffType type)
     {
-        return _equipStaffDatas[(int)type];
+        return _equipStaffDatas[(int)floorType, (int)type];
     }
 
     public static int GetStaffLevel(StaffData data)

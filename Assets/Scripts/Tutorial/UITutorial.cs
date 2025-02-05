@@ -563,7 +563,8 @@ public class UITutorial : MobileUIView
 
     private void OnOrderButtonClicked()
     {
-        _tableManager.OnCustomerOrder(0);
+        TableData data = _tableManager.GetTableData(ERestaurantFloorType.Floor1, TableType.Table1);
+        _tableManager.OnCustomerOrder(data);
         _orderHole.SetActive(false);
         _orderButton.gameObject.SetActive(false);
         _isButtonClicked = true;
@@ -571,7 +572,8 @@ public class UITutorial : MobileUIView
 
     private void OnServingButtonClicked()
     {
-        _tableManager.OnServing(0);
+        TableData data = _tableManager.GetTableData(ERestaurantFloorType.Floor1, TableType.Table1);
+        _tableManager.OnServing(data);
         _orderHole.SetActive(false);
         _servingButton.gameObject.SetActive(false);
         _isButtonClicked = true;
@@ -582,7 +584,7 @@ public class UITutorial : MobileUIView
         _table1Button.gameObject.SetActive(false);
         _table1Hole.SetActive(false);
 
-        TableData data = _tableManager.GetTableData(0);
+        TableData data = _tableManager.GetTableData(ERestaurantFloorType.Floor1, TableType.Table1);
         data.DropGarbageArea.CleanGarbage();
         for(int i = 0, cnt = data.DropCoinAreas.Length; i < cnt; ++i)
         {

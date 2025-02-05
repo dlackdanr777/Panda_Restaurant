@@ -129,9 +129,7 @@ public class UIKitchen : MobileUIView
         }
 
         _currentType = type;
-        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(_currentFloorType, type);
         _currentTypeDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList(type);
-
         string typeStr = Utility.KitchenUtensilTypeStringConverter(type);
         _typeText1.text = typeStr;
 
@@ -244,7 +242,7 @@ public class UIKitchen : MobileUIView
                 continue;
             }
 
-            if (UserInfo.IsGiveKitchenUtensil(data))
+            else if (UserInfo.IsGiveKitchenUtensil(data))
             {
                 ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipKitchenUtensilFloorType(data);
                 switch (furnitureFloorType)

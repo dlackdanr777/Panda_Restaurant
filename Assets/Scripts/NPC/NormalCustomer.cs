@@ -27,7 +27,6 @@ public class NormalCustomer : Customer
     private float _doublePricePercent;
     public float DoublePricePercent => _doublePricePercent;
 
-
     private Vector3 _tmpFoodSize;
     private float _tmpFoodSpriteHeight;
     private float _tmpFoodPosX;
@@ -43,9 +42,9 @@ public class NormalCustomer : Customer
     }
 
 
-    public override void SetData(CustomerData data)
+    public override void SetData(CustomerData data, ERestaurantFloorType visitFloorType)
     {
-        base.SetData(data);
+        base.SetData(data, visitFloorType);
         HideFood();
         _doublePricePercent = 0;
         _currentFoodPriceMul = 1;

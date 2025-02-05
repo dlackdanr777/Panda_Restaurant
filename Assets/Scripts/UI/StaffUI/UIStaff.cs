@@ -2,6 +2,7 @@ using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections.Generic;
 using TMPro;
+using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
 using UnityEngine.UIElements;
 
@@ -40,6 +41,7 @@ public class UIStaff : MobileUIView
     [SerializeField] private AudioClip _dequipSound;
 
     private StaffType _currentType;
+    private ERestaurantFloorType _currentFloorType;
     private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)StaffType.Length];
     List<StaffData> _currentTypeDataList;
 
@@ -64,7 +66,7 @@ public class UIStaff : MobileUIView
             }
         }
 
-        UserInfo.OnChangeStaffHandler += UpdateUI;
+        UserInfo.OnChangeStaffHandler += OnChangeStaffEvent;
         UserInfo.OnUpgradeStaffHandler += UpdateUI;
         UserInfo.OnGiveStaffHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
@@ -116,6 +118,14 @@ public class UIStaff : MobileUIView
         });
     }
 
+    public void ShowUIStaff(ERestaurantFloorType floorType, StaffType type)
+    {
+        _uiNav.Push("UIStaff");
+        _currentFloorType = floorType;
+        SetStaffData(type);
+        SetStaffPreview();
+    }
+
 
     private void SetStaffData(StaffType type)
     {
@@ -134,8 +144,8 @@ public class UIStaff : MobileUIView
 
     private void SetStaffPreview()
     {
-        StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
-        _uiStaffPreview.SetData(equipStaffData != null ? equipStaffData : _currentTypeDataList.Count <= 0 ? null : _currentTypeDataList[0]);
+        StaffData equipStaffData = UserInfo.GetEquipStaff(_currentFloorType, _currentType);
+        _uiStaffPreview.SetData(_currentFloorType, equipStaffData != null ? equipStaffData : _currentTypeDataList.Count <= 0 ? null : _currentTypeDataList[0]);
     }
 
 
@@ -148,18 +158,18 @@ public class UIStaff : MobileUIView
     }
 
     
-    private void OnEquipButtonClicked(StaffData data)
+    private void OnEquipButtonClicked(ERestaurantFloorType floorType, StaffData data)
     {
         if(data == null)
         {
             SoundManager.Instance.PlayEffectAudio(_dequipSound);
-            UserInfo.SetNullEquipStaff(_currentType);
+            UserInfo.SetNullEquipStaff(floorType, _currentType);
             SetStaffData(_currentType);
             //SetStaffPreview();
             return;
         }
         SoundManager.Instance.PlayEffectAudio(_equipSound);
-        UserInfo.SetEquipStaff(data);
+        UserInfo.SetEquipStaff(floorType, data);
         SetStaffData(_currentType);
         SetStaffPreview();
     }
@@ -219,7 +229,7 @@ public class UIStaff : MobileUIView
 
         _uiStaffPreview.UpdateUI();
 
-        StaffData equipStaffData = UserInfo.GetEquipStaff(_currentType);
+        StaffData equipStaffData = UserInfo.GetEquipStaff(_currentFloorType, _currentType);
         int slotsIndex = (int)_currentType;
         StaffData data;
         UIRestaurantAdminSlot slot;
@@ -235,9 +245,31 @@ public class UIStaff : MobileUIView
                 continue;
             }
 
-            if (UserInfo.IsGiveStaff(data))
+            else if (UserInfo.IsGiveStaff(data))
             {
-                slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
+                ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(data);
+                switch (furnitureFloorType)
+                {
+                    case ERestaurantFloorType.Floor1:
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "1층 배치중");
+                        break;
+
+                    case ERestaurantFloorType.Floor2:
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "2층 배치중");
+                        break;
+
+                    case ERestaurantFloorType.Floor3:
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "3층 배치중");
+                        break;
+
+                    case ERestaurantFloorType.Length:
+                        slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
+                        break;
+
+                    case ERestaurantFloorType.Error:
+                        slot.SetOperate(data.ThumbnailSprite, data.Name, "배치하기");
+                        break;
+                }
                 continue;
             }
 
@@ -268,16 +300,25 @@ public class UIStaff : MobileUIView
     }
 
 
-    public void ShowUIStaff(StaffType type)
+
+    private void OnChangeStaffEvent(ERestaurantFloorType floorType, StaffType type)
     {
-        _uiNav.Push("UIStaff");
-        SetStaffData(type);
-        SetStaffPreview();
+        UpdateUI();
     }
 
 
     private void OnSlotClicked(StaffData data)
     {
-        _uiStaffPreview.SetData(data);
+        _uiStaffPreview.SetData(_currentFloorType, data);
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeStaffHandler -= OnChangeStaffEvent;
+        UserInfo.OnUpgradeStaffHandler -= UpdateUI;
+        UserInfo.OnGiveStaffHandler -= UpdateUI;
+        UserInfo.OnChangeMoneyHandler -= UpdateUI;
+        UserInfo.OnChangeScoreHandler -= UpdateUI;
+        GameManager.Instance.OnChangeScoreHandler -= UpdateUI;
     }
 }

@@ -41,7 +41,7 @@ public class LoadData
     public string LastAttendanceTime;
     public int TotalAttendanceDays;
 
-    public List<string> EquipStaffDataList = new List<string>();
+    public List<List<string>> EquipStaffDataList = new List<List<string>>();
     public Dictionary<string, int> GiveStaffLevelDic = new Dictionary<string, int>();
 
     public Dictionary<string, int> GiveRecipeLevelDic = new Dictionary<string, int>();
@@ -121,11 +121,37 @@ public class LoadData
 
         if (json[0].ContainsKey("EquipStaffDatas"))
         {
-            foreach (JsonData item in json[0]["EquipStaffDatas"])
+            JsonData staffJsonList = json[0]["EquipStaffDatas"];
+            EquipStaffDataList.Clear();
+
+            if (staffJsonList.Count > 0 && staffJsonList[0].IsString)
             {
-                EquipStaffDataList.Add(item.ToString());
+                // 저장된 데이터가 1차원 배열인 경우 (이전 방식)
+                List<string> row = new List<string>();
+                foreach (JsonData item in staffJsonList)
+                {
+                    row.Add(item.ToString());
+                }
+                EquipStaffDataList.Add(row);
+            }
+            else
+            {
+                // 저장된 데이터가 2차원 배열인 경우 (새로운 방식)
+                for (int i = 0; i < staffJsonList.Count; i++)
+                {
+                    List<string> row = new List<string>();
+                    JsonData rowData = staffJsonList[i];
+
+                    for (int j = 0; j < rowData.Count; j++)
+                    {
+                        row.Add(rowData[j].ToString());
+                    }
+
+                    EquipStaffDataList.Add(row);
+                }
             }
         }
+
 
         if (json[0].ContainsKey("GiveRecipeList"))
         {

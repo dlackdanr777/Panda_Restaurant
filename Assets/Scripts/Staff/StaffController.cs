@@ -3,60 +3,39 @@ using UnityEngine;
 
 public class StaffController : MonoBehaviour
 {
-
+    [Header("Components")]
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private TableManager _tableManager;
     [SerializeField] private KitchenSystem _kitchenSystem;
-    private Staff[] _staffs;
+    [SerializeField] private StaffGroup[] _staffGroups;
+
+
+    private Dictionary<ERestaurantFloorType, StaffGroup> _staffGroupDic = new Dictionary<ERestaurantFloorType, StaffGroup>();
 
     private void Awake()
     {
-        _staffs = new Staff[(int)StaffType.Length];
-        Staff staffPrefab = Resources.Load<Staff>("Staff");
-
-        for(int i = 0, cnt = _staffs.Length; i < cnt; ++i)
+        for (int i = 0, cnt = _staffGroups.Length; i < cnt; ++i)
         {
-            Staff staff = Instantiate(staffPrefab, transform);
-            _staffs[i] = staff;
-            staff.Init();
-        }
-
-        for(int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
-        {
-            StaffData data = UserInfo.GetEquipStaff((StaffType)i);
-
-            if (data == null)
+            StaffGroup group = _staffGroups[i];
+            if (_staffGroupDic.ContainsKey(group.FloorType))
+            {
+                DebugLog.LogError("해당 타입이 이미 등록되어 있습니다: " + group.name + "(" + group.FloorType + ")");
                 continue;
+            }
 
-            _staffs[i].SetStaffData(data, _tableManager, _kitchenSystem, _customerController);
+            group.Init(_customerController, _tableManager, _kitchenSystem);
+            _staffGroupDic.Add(group.FloorType, group);
         }
-
-        UserInfo.OnChangeStaffHandler += OnEquipEvent;
     }
-
 
     private void Update()
     {
-        for (int i = 0, cnt = _staffs.Length; i < cnt; ++i)
+        foreach(StaffGroup group in _staffGroupDic.Values)
         {
-            if (_staffs[i] == null)
+            if (!UserInfo.IsFloorValid(group.FloorType))
                 continue;
 
-            if (!_staffs[i].gameObject.activeInHierarchy)
-                continue;
-
-            _staffs[i].StaffAction();
-            _staffs[i].UsingStaffSkill(_tableManager, _kitchenSystem, _customerController);
-        }
-    }
-
-
-    private void OnEquipEvent()
-    { 
-        for(int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
-        {
-            StaffData data = UserInfo.GetEquipStaff((StaffType)i);
-            _staffs[i].SetStaffData(data, _tableManager, _kitchenSystem, _customerController);
+            group.UpdateStaff();
         }
     }
 }

@@ -14,6 +14,8 @@ public class UIStaffTabSlot : MonoBehaviour
     [Header("Options")]
     [SerializeField] private Sprite _defalutSprite;
 
+    private ERestaurantFloorType _floorType;
+    private StaffData _staffData;
 
     public void Init(UnityAction onButtonClicked)
     {
@@ -22,48 +24,17 @@ public class UIStaffTabSlot : MonoBehaviour
     }
 
 
-    public void SetData(StaffType type)
+    public void SetData(ERestaurantFloorType floorType, StaffType type)
     {
-        StaffData data = UserInfo.GetEquipStaff(type);
+        _staffData = UserInfo.GetEquipStaff(floorType, type);
+        _floorType = floorType;
 
-        if(data == null)
+        if(_staffData == null)
             _staffImage.sprite = _defalutSprite;
         else
-            _staffImage.sprite = data.Sprite;
+            _staffImage.sprite = _staffData.Sprite;
 
-        switch (type)
-        {
-            case StaffType.Manager:
-                _typeText.text = "매니저";
-                break;
-
-            case StaffType.Waiter:
-                _typeText.text = "웨이터";
-                break;
-
-            case StaffType.Chef:
-                _typeText.text = "셰프";
-                break;
-
-            case StaffType.Cleaner:
-                _typeText.text = "청소부";
-                break;
-
-            case StaffType.Marketer:
-                _typeText.text = "마케터";
-                break;
-
-            case StaffType.Guard:
-                _typeText.text = "가드";
-                break;
-
-            case StaffType.Server:
-                _typeText.text = "서버";
-                break;
-
-            default:
-                _typeText.text = string.Empty;
-                break;
-        }
+        string typeStr = Utility.StaffTypeStringConverter(type);
+        _typeText.text = typeStr;
     }
 }

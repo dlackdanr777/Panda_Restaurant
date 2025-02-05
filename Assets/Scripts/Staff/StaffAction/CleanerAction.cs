@@ -9,7 +9,7 @@ public class CleanerAction : IStaffAction
     private float _time;
     private float _duration = 1f;
     private TweenData _tweenData;
-
+    private Vector3 _cleanerPos;
 
     public CleanerAction(Staff staff, TableManager tableManager)
     {
@@ -19,7 +19,8 @@ public class CleanerAction : IStaffAction
         _time = 0;
         _duration = staff.SecondValue;
 
-        staff.transform.position = _tableManager.CleanerWaitTr.position;
+        _cleanerPos = _tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Cleaner);
+        staff.transform.position = _cleanerPos;
         staff.SetAlpha(1);
     }
 
@@ -41,7 +42,7 @@ public class CleanerAction : IStaffAction
         }
 
         _isUsed = true;
-        DropGarbageArea targetArea = _tableManager.GetMinDistanceGarbageArea(staff.transform.position);
+        DropGarbageArea targetArea = _tableManager.GetMinDistanceGarbageArea(staff.EquipFloorType, staff.transform.position);
 
         if (targetArea == null)
         {
@@ -51,8 +52,8 @@ public class CleanerAction : IStaffAction
                 return;
 
             _isNoAction = true;
-            if (0.1f < Vector2.Distance(staff.transform.position, _tableManager.CleanerWaitTr.position))
-                staff.Move(_tableManager.CleanerWaitTr.position, -1);
+            if (0.1f < Vector2.Distance(staff.transform.position, _cleanerPos))
+                staff.Move(_cleanerPos, -1);
         }
 
         else

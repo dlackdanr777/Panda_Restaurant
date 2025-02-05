@@ -27,7 +27,7 @@ public class SpecialCustomer : Customer
     private Action _onCompleted;
 
 
-    public override void SetData(CustomerData data)
+    public override void SetData(CustomerData data, ERestaurantFloorType visitFloorType)
     {
         if(!(data is SpecialCustomerData))
         {
@@ -35,7 +35,7 @@ public class SpecialCustomer : Customer
             return;
         }
 
-        base.SetData(data);
+        base.SetData(data, visitFloorType);
         SpecialCustomerData specialData = (SpecialCustomerData)data;
 
         _normalSprite = specialData.Sprite;

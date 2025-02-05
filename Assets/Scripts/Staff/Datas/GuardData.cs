@@ -31,7 +31,7 @@ public class GuardData : StaffData
     {
         staff.SetAlpha(1);
         staff.SetSpriteDir(-1);
-        staff.transform.position = tableManager.GetStaffPos(0, StaffType.Guard);
+        staff.transform.position = tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Guard);
         staff.SetLayer("Guard", 0);
     }
 

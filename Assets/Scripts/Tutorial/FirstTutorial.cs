@@ -51,7 +51,7 @@ public class FirstTutorial : MonoBehaviour
         UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "WALLPAPER01");
 
         UserInfo.GiveStaff("STAFF11");
-        UserInfo.SetEquipStaff("STAFF11");
+        UserInfo.SetEquipStaff(ERestaurantFloorType.Floor1, "STAFF11");
         StartCoroutine(StartTutorial());
     }
 

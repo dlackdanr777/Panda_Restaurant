@@ -62,7 +62,7 @@ public class GatecrasherCustomer : Customer
     }
 
 
-    public override void SetData(CustomerData data)
+    public override void SetData(CustomerData data, ERestaurantFloorType visitFloorType)
     {
         if (!(data is GatecrasherCustomerData))
         {
@@ -71,7 +71,7 @@ public class GatecrasherCustomer : Customer
         }
         GatecrasherCustomerData gatecrasherData = (GatecrasherCustomerData)data;
         _animator.runtimeAnimatorController = gatecrasherData.Controller;
-        base.SetData(data);
+        base.SetData(data, visitFloorType);
         _activeDuration = gatecrasherData.ActiveDuration;
         _currentTouchCount = 0;
         _totalTouchCount = gatecrasherData.TouchCount;
@@ -354,57 +354,57 @@ public class GatecrasherCustomer : Customer
     private IEnumerator Gatecrasher2Action(TableManager tableManager)
     {
         yield return YieldCache.WaitForSeconds(2);
-        List<NormalCustomer> sitCustomerList = tableManager.GetSitCustomerList();
-        NormalCustomer[] tmpCustomers = new NormalCustomer[sitCustomerList.Count];
-        int maxIndex = 2;
+        List<TableData> tableDataList = tableManager.GetTableDataList(ERestaurantFloorType.Floor1);
+        TableData[] tmpTableDatas = new TableData[(int)tableDataList.Count];
+        int maxIndex = (int)TableType.Table2 + 1;
         float time = 0;
 
         while(time < _activeDuration * 0.5f)
         {
-            sitCustomerList = tableManager.GetSitCustomerList();
+            tableDataList = tableManager.GetTableDataList(ERestaurantFloorType.Floor1);
             for (int i = 0; i < maxIndex; ++i)
             {
-                if (sitCustomerList[i] == null)
+                if (tableDataList[i] == null)
                 {
-                    sitCustomerList[i] = null;
-                    tmpCustomers[i] = null;
+                    tableDataList[i] = null;
+                    tmpTableDatas[i] = null;
                     continue;
                 }
 
-                if (sitCustomerList[i] == tmpCustomers[i])
+                if (tableDataList[i] == tmpTableDatas[i])
                 {
-                    sitCustomerList[i].StartAnger();
-                    tableManager.ExitCustomer(i);
+                    tableDataList[i].CurrentCustomer.StartAnger();
+                    tableManager.ExitCustomer(tableDataList[i]);
                     continue;
                 }
 
-                tmpCustomers[i] = sitCustomerList[i];
+                tmpTableDatas[i] = tableDataList[i];
             }
             time += 1;
             yield return YieldCache.WaitForSeconds(1);
         }
 
-        maxIndex = sitCustomerList.Count;
+        maxIndex = (int)TableType.Length;
         while(time < _activeDuration)
         {
-            sitCustomerList = tableManager.GetSitCustomerList();
+            tableDataList = tableManager.GetTableDataList(ERestaurantFloorType.Floor1);
             for (int i = 0; i < maxIndex; ++i)
             {
-                if (sitCustomerList[i] == null)
+                if (tableDataList[i] == null)
                 {
-                    sitCustomerList[i] = null;
-                    tmpCustomers[i] = null;
+                    tableDataList[i] = null;
+                    tmpTableDatas[i] = null;
                     continue;
                 }
 
-                if (sitCustomerList[i] == tmpCustomers[i])
+                if (tableDataList[i] == tmpTableDatas[i])
                 {
-                    sitCustomerList[i].StartAnger();
-                    tableManager.ExitCustomer(i);
+                    tableDataList[i].CurrentCustomer.StartAnger();
+                    tableManager.ExitCustomer(tableDataList[i]);
                     continue;
                 }
 
-                tmpCustomers[i] = sitCustomerList[i];
+                tmpTableDatas[i] = tableDataList[i];
             }
             time += 1;
             yield return YieldCache.WaitForSeconds(1);

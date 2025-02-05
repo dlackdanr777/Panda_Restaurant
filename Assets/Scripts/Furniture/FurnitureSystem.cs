@@ -21,7 +21,13 @@ public class FurnitureSystem : MonoBehaviour
 
     public Vector3 GetStaffPos(TableData data, StaffType type)
     {
+        DebugLog.Log(data);
         return _furnitureGroupDic[data.FloorType].GetStaffPos(data, type);
+    }
+
+    public Vector3 GetStaffPos(ERestaurantFloorType floorType, StaffType type)
+    {
+        return _furnitureGroupDic[floorType].GetStaffPos(null, type);
     }
 
     public TableData GetFirstTableData()
@@ -42,7 +48,7 @@ public class FurnitureSystem : MonoBehaviour
         int count = 0;
         foreach(var data in _furnitureGroupDic)
         {
-            if (data.Key < UserInfo.CurrentFloor)
+            if (!UserInfo.IsFloorValid(data.Key))
                 continue;
 
             count += data.Value.GetUsableTableCount();
@@ -53,7 +59,7 @@ public class FurnitureSystem : MonoBehaviour
 
     public int GetUsableTableCount(ERestaurantFloorType floorType)
     {
-        if (floorType < UserInfo.CurrentFloor)
+        if (!UserInfo.IsFloorValid(floorType))
             return 0;
 
         return _furnitureGroupDic[floorType].GetUsableTableCount();
@@ -63,6 +69,12 @@ public class FurnitureSystem : MonoBehaviour
     {
        return _furnitureGroupDic[floorType].GetTableType(state);
     }
+
+    public TableData GetTableType(ERestaurantFloorType floorType, TableType type)
+    {
+        return _furnitureGroupDic[floorType].GetTableType(type);
+    }
+
 
     public List<TableData> GetTableDataList(ERestaurantFloorType floorType)
     {
@@ -77,6 +89,16 @@ public class FurnitureSystem : MonoBehaviour
             tableDataList.AddRange(group.GetTableDataList());
         }
         return tableDataList;
+    }
+
+    public List<DropGarbageArea> GetDropGarbageAreaList(ERestaurantFloorType floorType)
+    {
+        return _furnitureGroupDic[floorType].GetDropGarbageAreaList();
+    }
+
+    public List<DropCoinArea> GetDropCoinAreaList(ERestaurantFloorType floorType)
+    {
+        return _furnitureGroupDic[floorType].GetDropCoinAreaList();
     }
 
 

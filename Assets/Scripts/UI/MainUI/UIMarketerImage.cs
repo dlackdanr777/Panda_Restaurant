@@ -21,12 +21,17 @@ public class UIMarketerImage : MonoBehaviour
 
     private void OnEnable()
     {
-        OnChangeMarketerEvent();
+        OnChangeMarketerEvent(ERestaurantFloorType.Floor1, StaffType.Marketer);
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeStaffHandler -= OnChangeMarketerEvent;
     }
 
     public void Init()
     {
-        OnChangeMarketerEvent();
+        OnChangeMarketerEvent(ERestaurantFloorType.Floor1, StaffType.Marketer);
         UserInfo.OnChangeStaffHandler += OnChangeMarketerEvent;
     }
 
@@ -57,19 +62,26 @@ public class UIMarketerImage : MonoBehaviour
         _marketerImage.sprite = _marketerSprite;
     }
 
-    private void OnChangeMarketerEvent()
+    private void OnChangeMarketerEvent(ERestaurantFloorType floorType, StaffType type)
     {
-        MarketerData equipData = (MarketerData)UserInfo.GetEquipStaff(StaffType.Marketer);
-        if (equipData == _data)
+        if (floorType != ERestaurantFloorType.Floor1)
             return;
 
-        _data = equipData;
-        if(_data == null)
+        if (type != StaffType.Marketer)
+            return;
+
+        StaffData equipData = UserInfo.GetEquipStaff(floorType, type);
+        if (equipData == null)
         {
             gameObject.SetActive(false);
+            _data = null;
             return;
         }
 
+        if (equipData == _data)
+            return;
+
+        _data = (MarketerData)equipData;
         gameObject.SetActive(true);
         SetData(_data);
     }
