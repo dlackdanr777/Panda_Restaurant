@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using static UnityEngine.Analytics.IAnalytic;
 
 public class TableManager : MonoBehaviour
 {
@@ -590,8 +591,7 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        //TODO: 나중에 층수 추가시 변경 예정
-        _kitchenSystem.EqueueFood(ERestaurantFloorType.Floor1, data.CurrentFood);
+        _kitchenSystem.EqueueFood(data.FloorType, data.CurrentFood);
         data.TableState = ETableState.WaitFood;
         UpdateTable();
     }
@@ -753,6 +753,7 @@ public class TableManager : MonoBehaviour
 
     public void UpdateTable()
     {
+        OnTableUpdateHandler?.Invoke();
         if (_customerController.IsEmpty())
         {
             _guideButton.gameObject.SetActive(false);
@@ -762,7 +763,6 @@ public class TableManager : MonoBehaviour
         for (int i = 0, cnt = (int)UserInfo.CurrentFloor; i <= cnt; ++i)
         {
             TableData data = GetTableType((ERestaurantFloorType)i, ETableState.NotUse);
-
             if (data == null)
             {
                 _guideButton.gameObject.SetActive(false);
@@ -772,8 +772,6 @@ public class TableManager : MonoBehaviour
             _guideButton.gameObject.SetActive(true);
             break;
         }
-      
-        OnTableUpdateHandler?.Invoke();
     }
 
 

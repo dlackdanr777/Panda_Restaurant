@@ -1832,12 +1832,6 @@ public static class UserInfo
 
     public static void CustomerEnabled(string id)
     {
-        if (string.IsNullOrWhiteSpace(id))
-        {
-            DebugLog.LogError("Id가 이상합니다: " + id);
-            return;
-        }
-
         CustomerData data = CustomerDataManager.Instance.GetCustomerData(id);
         if (data == null)
         {
@@ -1850,7 +1844,6 @@ public static class UserInfo
 
     public static void CustomerEnabled(CustomerData data)
     {
-
         if (_enabledCustomerSet.Contains(data.Id))
             return;
 
@@ -1866,12 +1859,6 @@ public static class UserInfo
 
     public static bool GetCustomerEnableState(string id)
     {
-        if (string.IsNullOrWhiteSpace(id))
-        {
-            DebugLog.LogError("해당 손님의 id가 이상합니다: " + id);
-            return false;
-        }
-
         CustomerData data = CustomerDataManager.Instance.GetCustomerData(id);
         if (data == null)
         {

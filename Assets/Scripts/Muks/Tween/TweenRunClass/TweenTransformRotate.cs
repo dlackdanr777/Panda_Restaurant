@@ -23,7 +23,10 @@ namespace Muks.Tween
 
             float percent = _percentHandler[_tweenMode](ElapsedDuration, TotalDuration);
 
-            transform.eulerAngles = Vector3.LerpUnclamped(_startEulerAngles, _targetEulerAngles, percent);
+            transform.rotation = Quaternion.LerpUnclamped(
+                Quaternion.Euler(_startEulerAngles),
+                Quaternion.Euler(_targetEulerAngles),
+                percent);
         }
 
 

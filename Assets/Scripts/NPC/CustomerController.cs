@@ -59,6 +59,11 @@ public class CustomerController : MonoBehaviour
         List<GatecrasherCustomerData> gatecrasherCustomerDataList = CustomerDataManager.Instance.GetAppearGatecrasherCustomerDataList();
         int randInt = 0;
 
+        for(int i = 0, cnt = specialCustomerDataList.Count; i < cnt; i++)
+        {
+            DebugLog.Log(specialCustomerDataList[i].Name);
+        }
+
         for (int i = 0, cnt = GameManager.Instance.AddPromotionCustomer; i < cnt; i++)
         {
             if (IsMaxCount)

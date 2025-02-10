@@ -59,7 +59,7 @@ public class CustomerDataManager : MonoBehaviour
         List<SpecialCustomerData> returnList = new List<SpecialCustomerData>();
         for (int i = 0, cnt = _specialCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.GetCustomerEnableState(_customerDataList[i].Id))
+            if (!UserInfo.GetCustomerEnableState(_specialCustomerDataList[i].Id))
                 continue;
 
             returnList.Add(_specialCustomerDataList[i]);
@@ -73,7 +73,7 @@ public class CustomerDataManager : MonoBehaviour
         List<GatecrasherCustomerData> returnList = new List<GatecrasherCustomerData>();
         for (int i = 0, cnt = _gatecrasherCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.GetCustomerEnableState(_customerDataList[i].Id))
+            if (!UserInfo.GetCustomerEnableState(_gatecrasherCustomerDataList[i].Id))
                 continue;
 
             returnList.Add(_gatecrasherCustomerDataList[i]);

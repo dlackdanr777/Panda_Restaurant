@@ -34,7 +34,6 @@ public class UIDropDownMenuNotification : UINotificationParent
 
     protected override void RefreshNotificationMessage()
     {
-        DebugLog.Log(GetAlarmState());
         _alarmObj.SetActive(GetAlarmState());
         base.RefreshNotificationMessage();
     }

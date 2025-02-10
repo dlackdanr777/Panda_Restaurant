@@ -10,9 +10,11 @@ public class TableButton : MonoBehaviour
     [SerializeField] private Material _grayMat;
 
     private FoodData _currentData;
+    private Material _defalutMat;
 
     public void Init()
     {
+        _defalutMat = _foodImage.material;
         UserInfo.OnGiveRecipeHandler += UpdateFoodImage;
         UpdateFoodImage();
     }
@@ -46,15 +48,9 @@ public class TableButton : MonoBehaviour
             return;
         }
 
-        if (data == _currentData)
-        {
-            _foodImage.material = UserInfo.IsGiveRecipe(data) ? null : _grayMat;
-            return;
-        }
-
         _currentData = data;
         _foodImage.sprite = data.ThumbnailSprite;
-        _foodImage.material = UserInfo.IsGiveRecipe(data) ? null : _grayMat;
+        _foodImage.material = UserInfo.IsGiveRecipe(data) ? _defalutMat : _grayMat;
     }
 
 
@@ -66,7 +62,7 @@ public class TableButton : MonoBehaviour
         if (_currentData == null)
             return;
 
-        _foodImage.material = UserInfo.IsGiveRecipe(_currentData) ? null : _grayMat;
+        _foodImage.material = UserInfo.IsGiveRecipe(_currentData) ? _defalutMat : _grayMat;
     }
 
     private void OnEnable()

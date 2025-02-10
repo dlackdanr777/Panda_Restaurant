@@ -21,6 +21,7 @@ namespace Muks.Tween
             return sequence;
         }
 
+
         public static TweenWait Wait(float duration, Action onCompleted)
         {
             TweenWait tween = null;

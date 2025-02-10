@@ -242,17 +242,16 @@ public class FurnitureGroup : MonoBehaviour
         }
         else
         {
-            if (data.TableState != ETableState.NotUse)
+            if (data.TableState != ETableState.DontUse)
                 return;
 
-            data.TableState = ETableState.None;
+            data.TableState = ETableState.NotUse;
         }
     }
 
 
     private void OnTableUpdateEvent()
     {
-        DebugLog.Log("업데이트 실행");
         for(int i = 0, cnt = (int)TableType.Length; i < cnt; ++i)
         {
             TableType type = (TableType)i;

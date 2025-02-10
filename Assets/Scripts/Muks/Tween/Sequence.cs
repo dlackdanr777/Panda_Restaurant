@@ -105,7 +105,7 @@ namespace Muks.Tween
 
 
         /// <summary> Tween class에서 현재 시퀸스를 업데이트하기 위한 함수 (임의 사용 X) </summary>
-        public void Update(float _deltaTime)
+        internal void Update(float _deltaTime)
         {
             //시작중이 아니거나 끝난상태면 리턴
             if (!_isStart || _isEnd)
