@@ -17,7 +17,7 @@ public class AutoCustomerGuideSkill : SkillBase
 
     public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        TableData data = tableManager.GetTableType(staff.EquipFloorType, ETableState.NotUse);
+        TableData data = tableManager.GetTableType(staff.EquipFloorType, ETableState.Empty);
         if (data == null)
             return;
 

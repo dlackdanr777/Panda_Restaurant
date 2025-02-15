@@ -67,8 +67,8 @@ public class LoadData
     public HashSet<string> VisitedCustomerSet = new HashSet<string>();
     
 
-    public  List<SaveCoinAreaData> CoinAreaDataList = new List<SaveCoinAreaData>();
-    public  List<SaveGarbageAreaData> GarbageAreaDataList = new List<SaveGarbageAreaData>();
+    public  List<List<SaveCoinAreaData>> SaveCoinAreaDataList = new List<List<SaveCoinAreaData>>();
+    public  List<List<SaveGarbageAreaData>> SaveGarbageAreaDataList = new List<List<SaveGarbageAreaData>>();
 
     public HashSet<string> NotificationMessageSet = new HashSet<string>();
     public LoadData(JsonData json)
@@ -346,7 +346,51 @@ public class LoadData
         }
 
 
-        if (json[0].ContainsKey("CoinAreaDataList"))
+
+        if (json[0].ContainsKey("SaveCoinAreaDataList"))
+        {
+            JsonData coinJsonList = json[0]["SaveCoinAreaDataList"];
+            SaveCoinAreaDataList.Clear();
+
+            for (int i = 0; i < coinJsonList.Count; i++)
+            {
+                List<SaveCoinAreaData> row = new List<SaveCoinAreaData>();
+                JsonData rowData = coinJsonList[i];
+
+                for (int j = 0; j < rowData.Count; j++)
+                {
+                    int coinCount = (int)rowData[j]["CoinCount"];
+                    long giveMoney = (long)rowData[j]["Money"];
+                    row.Add(new SaveCoinAreaData(coinCount, giveMoney));
+                }
+
+                SaveCoinAreaDataList.Add(row);
+            }
+        }
+
+        if (json[0].ContainsKey("SaveGarbageAreaDataList"))
+        {
+            JsonData garbageJsonList = json[0]["SaveGarbageAreaDataList"];
+            SaveGarbageAreaDataList.Clear();
+
+            for (int i = 0; i < garbageJsonList.Count; i++)
+            {
+                List<SaveGarbageAreaData> row = new List<SaveGarbageAreaData>();
+                JsonData rowData = garbageJsonList[i];
+
+                for (int j = 0; j < rowData.Count; j++)
+                {
+                    int count = (int)rowData[j]["Count"];
+                    row.Add(new SaveGarbageAreaData(count));
+                }
+
+                SaveGarbageAreaDataList.Add(row);
+            }
+        }
+
+
+
+        /*if (json[0].ContainsKey("CoinAreaDataList"))
         {
             foreach (JsonData item in json[0]["CoinAreaDataList"])
             {
@@ -371,7 +415,7 @@ public class LoadData
                 // 리스트에 추가
                 GarbageAreaDataList.Add(data);
             }
-        }
+        }*/
 
 
 

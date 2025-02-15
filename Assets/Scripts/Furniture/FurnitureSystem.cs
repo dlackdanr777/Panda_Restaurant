@@ -78,6 +78,12 @@ public class FurnitureSystem : MonoBehaviour
 
     public List<TableData> GetTableDataList(ERestaurantFloorType floorType)
     {
+        if (!_furnitureGroupDic.ContainsKey(floorType))
+        {
+            DebugLog.LogError("현재 타입의 가구 데이터 그룹이 없습니다:" + floorType.ToString());
+            return null;
+        }
+
         return _furnitureGroupDic[floorType].GetTableDataList();
     }
 

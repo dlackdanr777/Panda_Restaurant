@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using static UnityEngine.Analytics.IAnalytic;
 
 public class TableManager : MonoBehaviour
 {
@@ -35,7 +34,15 @@ public class TableManager : MonoBehaviour
     [SerializeField] private GachaTutorial _miniGameTutorial;
 
     private int _totalGarbageCount => ObjectPoolManager.Instance.GetEnabledGarbageCount();
-    private List<DropGarbageArea> _dropGarbageAreaList = new List<DropGarbageArea>();
+    private static List<List<TableData>> _tableDataList = new List<List<TableData>>();
+
+
+    public static List<List<TableData>> GetTableDataList()
+    {
+        return _tableDataList;
+    }
+
+
 
     private void Start()
     {
@@ -48,20 +55,48 @@ public class TableManager : MonoBehaviour
     {
         _guideButton.onClick.AddListener(() => OnCustomerGuideButtonClicked(-1));
 
-        List<TableData> allTableDataList = _furnitureSystem.GetAllTableDataList();
-        for(int i = 0, cnt = allTableDataList.Count; i < cnt; ++i)
+        List<List<SaveGarbageAreaData>> saveGarbageAreaDataList = UserInfo.SaveGarbageAreaDataList;
+        List<List<SaveCoinAreaData>> saveCoinAreaDataList = UserInfo.SaveCounAreaDataList;
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
-            _dropGarbageAreaList.Add(allTableDataList[i].DropGarbageArea);
+            ERestaurantFloorType type = (ERestaurantFloorType)i;
+            List<TableData> tableDataList = _furnitureSystem.GetTableDataList(type);
+            _tableDataList.Add(tableDataList);   
         }
+
+
+
+        for(int i = 0, cnt = saveGarbageAreaDataList.Count; i < cnt; ++i)
+        {
+            List<SaveGarbageAreaData> garbageDataList = saveGarbageAreaDataList[i];
+            List<SaveCoinAreaData> coinDataList = saveCoinAreaDataList[i];
+            if (_tableDataList[i] == null || garbageDataList == null || coinDataList == null || _tableDataList[i].Count <= 0|| garbageDataList.Count <= 0 || coinDataList.Count <= 0)
+                continue;
+
+            int coinCount = 0;
+            for (int j = 0, cntJ = _tableDataList[i].Count; j < cntJ; ++j)
+            {
+                TableData data = _tableDataList[i][j];
+                SaveGarbageAreaData garbageData = garbageDataList[j];
+
+                if (data == null)
+                    continue;
+
+                data.DropGarbageArea.LoadData(garbageData.Count);
+                for (int k = 0, cntK = data.DropCoinAreas.Length; k < cntK; ++k)
+                {
+                    SaveCoinAreaData coinData = coinDataList[coinCount++];
+                    data.DropCoinAreas[k].LoadData(coinData.CoinCount, coinData.Money);
+                }
+            }
+        }
+
 
         UpdateTable();
         _customerController.OnAddCustomerHandler += UpdateTable;
         _customerController.OnGuideCustomerHandler += UpdateTable;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
     }
-
-
-
 
 /*    public void UpdateTable()
     {
@@ -439,7 +474,7 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        if (data.TableState != ETableState.NotUse)
+        if (data.TableState != ETableState.Empty)
             return;
 
         NormalCustomer currentCustomer = _customerController.GetFirstCustomer();
@@ -487,7 +522,7 @@ public class TableManager : MonoBehaviour
                     if (currentCustomer.CustomerData.MaxDiscomfortIndex < _totalGarbageCount)
                     {
                         data.CurrentCustomer = null;
-                        data.TableState = ETableState.NotUse;
+                        data.TableState = ETableState.Empty;
                         currentCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
                         currentCustomer.ChangeState(CustomerState.Idle);
                         currentCustomer.StartAnger();
@@ -576,7 +611,7 @@ public class TableManager : MonoBehaviour
             NormalCustomer currentCustomer = data.CurrentCustomer;
             currentCustomer.SetLayer("Customer", 0);
             data.CurrentCustomer = null;
-            data.TableState = ETableState.NotUse;
+            data.TableState = ETableState.Empty;
             currentCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
             currentCustomer.ChangeState(CustomerState.Idle);
             currentCustomer.StartAnger();
@@ -647,7 +682,7 @@ public class TableManager : MonoBehaviour
         exitCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
-        data.TableState = ETableState.NotUse;
+        data.TableState = ETableState.Empty;
         data.CurrentCustomer = null;
         data.TotalTip = 0;
         data.TotalPrice = 0;
@@ -762,7 +797,7 @@ public class TableManager : MonoBehaviour
 
         for (int i = 0, cnt = (int)UserInfo.CurrentFloor; i <= cnt; ++i)
         {
-            TableData data = GetTableType((ERestaurantFloorType)i, ETableState.NotUse);
+            TableData data = GetTableType((ERestaurantFloorType)i, ETableState.Empty);
             if (data == null)
             {
                 _guideButton.gameObject.SetActive(false);
@@ -909,7 +944,7 @@ public class TableManager : MonoBehaviour
 
     public void OnCustomerGuideButtonClicked(int sitPos = -1)
     {
-        TableData data = GetTableType(ERestaurantFloorType.Floor1, ETableState.NotUse);
+        TableData data = GetTableType(ERestaurantFloorType.Floor1, ETableState.Empty);
 
         if (data == null)
             return;

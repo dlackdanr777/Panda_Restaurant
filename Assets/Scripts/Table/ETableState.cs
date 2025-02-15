@@ -1,7 +1,7 @@
 public enum ETableState
 {
     None,
-    NotUse,
+    Empty,
     Move,
     Seating,
     WaitFood,

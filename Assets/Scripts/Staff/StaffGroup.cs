@@ -35,7 +35,7 @@ public class StaffGroup : MonoBehaviour
                 continue;
             staff.SetStaffData(data, _floorType, _tableManager, _kitchenSystem, _customerController);
         }
-        DebugLog.Log("Init");
+
         UserInfo.OnChangeStaffHandler += OnEquipEvent;
     }
 

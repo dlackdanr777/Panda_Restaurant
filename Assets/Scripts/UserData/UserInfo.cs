@@ -188,11 +188,11 @@ public static class UserInfo
 
 
     //################################코인, 쓰레기 맵에 존재하는지 확인 변수################################
-    private static List<SaveCoinAreaData> _saveCoinAreaDataList = new List<SaveCoinAreaData>();
-    public static List<SaveCoinAreaData> SaveCounAreaDataList => _saveCoinAreaDataList;
+    private static List<List<SaveCoinAreaData>> _saveCoinAreaDataList = new List<List<SaveCoinAreaData>>();
+    public static List<List<SaveCoinAreaData>> SaveCounAreaDataList => _saveCoinAreaDataList;
 
-    private static List<SaveGarbageAreaData> _saveGarbageAreaDataList = new List<SaveGarbageAreaData>();
-    public static List<SaveGarbageAreaData> SaveGarbageAreaDataList => _saveGarbageAreaDataList;
+    private static List<List<SaveGarbageAreaData>> _saveGarbageAreaDataList = new List<List<SaveGarbageAreaData>>();
+    public static List<List<SaveGarbageAreaData>> SaveGarbageAreaDataList => _saveGarbageAreaDataList;
 
 
     public static Param GetSaveGameData()
@@ -332,23 +332,42 @@ public static class UserInfo
         param.Add("EnabledCustomerList", _enabledCustomerSet.ToList());
         param.Add("VisitedCustomerList", _visitedCustomerSet.ToList());
 
-        MainScene mainScene = UnityEngine.Object.FindAnyObjectByType<MainScene>();
-        if(mainScene != null)
+        List<List<TableData>> _tableDataList = TableManager.GetTableDataList();
+        if(_tableDataList != null || 0 < _tableDataList.Count)
         {
+            _saveGarbageAreaDataList.Clear();
             _saveCoinAreaDataList.Clear();
-            for(int i = 0, cnt = mainScene.DropCoinAreas.Length; i < cnt; ++i)
+            for(int i = 0, cnt = _tableDataList.Count; i < cnt; ++i)
             {
-                _saveCoinAreaDataList.Add(new SaveCoinAreaData(mainScene.DropCoinAreas[i].Count, mainScene.DropCoinAreas[i].CurrentMoney));
+                List<TableData> dataList = _tableDataList[i];
+                List<SaveGarbageAreaData> saveGarbageAreaDataList = new List<SaveGarbageAreaData>();
+                List<SaveCoinAreaData> saveCoinAreaDataList = new List<SaveCoinAreaData>();
+
+                if (dataList == null || dataList.Count <= 0)
+                {
+                    _saveGarbageAreaDataList.Add(saveGarbageAreaDataList);
+                    _saveCoinAreaDataList.Add(saveCoinAreaDataList);
+                    continue;
+                }
+
+                for(int j = 0, cntJ = dataList.Count; j < cntJ; ++j)
+                {
+                    TableData tableData = dataList[j];
+                    saveGarbageAreaDataList.Add(new SaveGarbageAreaData(tableData.DropGarbageArea.Count));
+                    for(int k = 0, cntK = tableData.DropCoinAreas.Length; k < cntK; ++k)
+                    {
+                        DropCoinArea dropCoinArea = tableData.DropCoinAreas[k];
+                        saveCoinAreaDataList.Add(new SaveCoinAreaData(dropCoinArea.Count, dropCoinArea.CurrentMoney));
+                    }
+                }
+
+                _saveGarbageAreaDataList.Add(saveGarbageAreaDataList);
+                _saveCoinAreaDataList.Add(saveCoinAreaDataList);
             }
 
-            _saveGarbageAreaDataList.Clear();
-            for (int i = 0, cnt = mainScene.DropGarbageAreas.Length; i < cnt; ++i)
-            {
-                _saveGarbageAreaDataList.Add(new SaveGarbageAreaData(mainScene.DropGarbageAreas[i].Count));
-            }
         }
-        param.Add("CoinAreaDataList", _saveCoinAreaDataList);
-        param.Add("GarbageAreaDataList", _saveGarbageAreaDataList);
+        param.Add("SaveCoinAreaDataList", _saveCoinAreaDataList);
+        param.Add("SaveGarbageAreaDataList", _saveGarbageAreaDataList);
 
         return param;
     }
@@ -449,8 +468,8 @@ public static class UserInfo
         _enabledCustomerSet = loadData.EnabledCustomerSet;
         _visitedCustomerSet = loadData.VisitedCustomerSet;
 
-        _saveCoinAreaDataList = loadData.CoinAreaDataList;
-        _saveGarbageAreaDataList = loadData.GarbageAreaDataList;
+        _saveCoinAreaDataList = loadData.SaveCoinAreaDataList;
+        _saveGarbageAreaDataList = loadData.SaveGarbageAreaDataList;
 
         _notificationMessageSet = loadData.NotificationMessageSet;
 

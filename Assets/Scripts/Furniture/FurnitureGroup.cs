@@ -185,7 +185,7 @@ public class FurnitureGroup : MonoBehaviour
             TableType tableType = (TableType)i;
             TableData data = _tableDataDic[tableType];
             data.FloorType = _floorType;
-
+            data.TableState = ETableState.Empty;
             orderButton.AddListener(() => _tableManager.OnCustomerOrder(data));
             servingButton.AddListener(() => _tableManager.OnServing(data));
 
@@ -202,7 +202,7 @@ public class FurnitureGroup : MonoBehaviour
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
         UserInfo.OnChangeFurnitureHandler += CheckTableEnabled;
         OnTableUpdateEvent();
-        for(int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
         {
             FurnitureType type = (FurnitureType)i;
             OnChangeFurnitureEvent(_floorType, type);
@@ -245,7 +245,7 @@ public class FurnitureGroup : MonoBehaviour
             if (data.TableState != ETableState.DontUse)
                 return;
 
-            data.TableState = ETableState.NotUse;
+            data.TableState = ETableState.Empty;
         }
     }
 
@@ -256,7 +256,8 @@ public class FurnitureGroup : MonoBehaviour
         {
             TableType type = (TableType)i;
             TableData data = _tableDataDic[type];
-            if (UserInfo.GetEquipFurniture(ERestaurantFloorType.Floor1, (FurnitureType)i) == null)
+
+            if (UserInfo.GetEquipFurniture(_floorType, (FurnitureType)i) == null)
             {
                 _tableManager.NotFurnitureTable(data);
                 data.OrderButton.gameObject.SetActive(false);
@@ -264,11 +265,11 @@ public class FurnitureGroup : MonoBehaviour
             }
             else if (data.TableState == ETableState.DontUse)
             {
-                data.TableState = ETableState.NotUse;
+                data.TableState = ETableState.Empty;
                 data.OrderButton.gameObject.SetActive(false);
                 data.ServingButton.gameObject.SetActive(false);
             }
-            else if (data.TableState == ETableState.NotUse)
+            else if (data.TableState == ETableState.Empty)
             {
                 data.OrderButton.gameObject.SetActive(false);
                 data.ServingButton.gameObject.SetActive(false);
@@ -283,7 +284,7 @@ public class FurnitureGroup : MonoBehaviour
                 data.ServingButton.gameObject.SetActive(true);
                 data.OrderButton.gameObject.SetActive(false);
             }
-            else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating || data.TableState == ETableState.UseStaff || data.TableState == ETableState.DontUse)
+            else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating || data.TableState == ETableState.UseStaff || data.TableState == ETableState.DontUse || data.TableState == ETableState.None)
             {
                 data.OrderButton.gameObject.SetActive(false);
                 data.ServingButton.gameObject.SetActive(false);

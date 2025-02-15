@@ -15,14 +15,6 @@ public class MainScene : MonoBehaviour
     [SerializeField] private AudioClip _feverMusic;
 
 
-    [Space]
-    [Header("Areas")]
-    [SerializeField] private DropCoinArea[] _dropCoinAreas;
-    public DropCoinArea[] DropCoinAreas => _dropCoinAreas;
-
-    [SerializeField] private DropGarbageArea[] _dropGarbageAreas;
-    public DropGarbageArea[] DropGarbageAreas => _dropGarbageAreas;
-
     private float _updateTimer;
 
     public void PlayMainMusic()
@@ -38,7 +30,6 @@ public class MainScene : MonoBehaviour
     void Start()
     {
         PlayMainMusic();
-        UpdateArea();
         StartCoroutine(CheckAttendanceRoutine());
 
 #if UNITY_EDITOR
@@ -104,37 +95,6 @@ public class MainScene : MonoBehaviour
                 GameManager.Instance.AsyncSaveGameData();
             }
 
-        }
-    }
-
-
-    private void UpdateArea()
-    {
-        List<SaveCoinAreaData> coinAreaDataList = UserInfo.SaveCounAreaDataList;
-        List<SaveGarbageAreaData> garbageAreaDataList = UserInfo.SaveGarbageAreaDataList;
-
-        if(coinAreaDataList != null)
-        {
-            for(int i = 0; i < coinAreaDataList.Count; ++i)
-            {
-                if (_dropCoinAreas.Length <= i)
-                    break;
-
-                SaveCoinAreaData coinAreaData = coinAreaDataList[i];
-                _dropCoinAreas[i].LoadData(coinAreaData.CoinCount, coinAreaData.Money);
-            }
-        }
-
-        if(garbageAreaDataList != null)
-        {
-            for (int i = 0; i < garbageAreaDataList.Count; ++i)
-            {
-                if (_dropGarbageAreas.Length <= i)
-                    break;
-
-                SaveGarbageAreaData garbageAreaData = garbageAreaDataList[i];
-                _dropGarbageAreas[i].LoadData(garbageAreaData.Count);
-            }
         }
     }
 
