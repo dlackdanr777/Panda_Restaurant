@@ -9,6 +9,7 @@ using UnityEngine;
 
 public static class UserInfo
 {
+    public static event Action OnChangeFloorHandler;
     public static event Action OnChangeDiaHandler;
     public static event Action OnChangeMoneyHandler;
     public static event Action OnChangeTipHandler;
@@ -550,6 +551,15 @@ public static class UserInfo
 
     #region UserData
 
+
+    public static void ChangeFloor(ERestaurantFloorType floorType)
+    {
+        if (floorType <= _currentFloor)
+            return;
+
+        _currentFloor = floorType;
+        OnChangeFloorHandler?.Invoke();
+    }
 
     public static void AddDia(int value)
     {

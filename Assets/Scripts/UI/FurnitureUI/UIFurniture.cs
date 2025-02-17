@@ -208,15 +208,13 @@ public class UIFurniture : MobileUIView
 
     private void UpdateUI()
     {
-        if (!gameObject.activeSelf)
+        if (!gameObject.activeInHierarchy)
             return;
 
         if (_currentTypeDataList == null || _currentTypeDataList.Count == 0)
             return;
 
         _uiFurniturePreview.UpdateUI();
-        FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(_currentFloorType, _currentType);
-
         int slotsIndex = (int)_currentType;
         FurnitureData data;
         UIRestaurantAdminSlot slot;
@@ -225,14 +223,8 @@ public class UIFurniture : MobileUIView
             data = _currentTypeDataList[i];
             slot = _slots[slotsIndex][i];
             slot.gameObject.SetActive(true);
-            if (equipFurnitureData != null && data.Id == equipFurnitureData.Id)
-            {
-                slot.transform.SetAsFirstSibling();
-                slot.SetUse(data.ThumbnailSprite, data.Name, "¹èÄ¡Áß");
-                continue;
-            }
 
-            else if (UserInfo.IsGiveFurniture(data))
+            if (UserInfo.IsGiveFurniture(data))
             {
                 ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipFurnitureFloorType(data);
                 switch (furnitureFloorType)
@@ -284,6 +276,8 @@ public class UIFurniture : MobileUIView
                 continue;
             }
         }
+
+
     }
 
     private void OnSlotClicked(FurnitureData data)

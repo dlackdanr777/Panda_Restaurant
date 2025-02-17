@@ -16,11 +16,16 @@ public class UIFurniturePreview : MonoBehaviour
 
     [Space]
     [Header("Buttons")]
-    [SerializeField] private UIButtonAndText _usingButton;
-    [SerializeField] private UIButtonAndText _equipButton;
+    [SerializeField] private UIButtonAndTwoText _usingButton;
     [SerializeField] private UIButtonAndText _buyButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
+
+    [SerializeField] private GameObject _equipButtonGroup;
+    [SerializeField] private UIButtonAndText _equipButton;
+    [SerializeField] private UIButtonAndText _1fEquipButton;
+    [SerializeField] private UIButtonAndText _2fEquipButton;
+    [SerializeField] private UIButtonAndText _3fEquipButton;
 
     [Space]
     [Header("Sprites")]
@@ -46,7 +51,13 @@ public class UIFurniturePreview : MonoBehaviour
         _buyButton.AddListener(OnBuyButtonClicked);
         _usingButton.AddListener(OnUsingButtonClicked);
         _notEnoughMoneyButton.AddListener(OnBuyButtonClicked);
+
         _equipButton.AddListener(OnEquipButtonClicked);
+        _1fEquipButton.AddListener(On1FloorEquipButtonClicked);
+        _2fEquipButton.AddListener(On2FloorEquipButtonClicked);
+        _3fEquipButton.AddListener(On3FloorEquipButtonClicked);
+
+        UserInfo.OnChangeFloorHandler += OnFloorChangeEvent;
     }
 
 
@@ -59,6 +70,7 @@ public class UIFurniturePreview : MonoBehaviour
         _buyButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
+        _equipButtonGroup.gameObject.SetActive(false);
 
         if (data == null)
         {
@@ -134,94 +146,92 @@ public class UIFurniturePreview : MonoBehaviour
         }
 
 
-        if (UserInfo.IsEquipFurniture(type, data))
+
+        if (UserInfo.IsGiveFurniture(data))
         {
-            _usingButton.gameObject.SetActive(true);
-            _usingButton.SetText("배치중");
-            _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+            ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipFurnitureFloorType(data);
+            switch (furnitureFloorType)
+            {
+                case ERestaurantFloorType.Floor1:
+                    _usingButton.gameObject.SetActive(true);
+                    _usingButton.SetText1("배치중");
+                    _usingButton.SetText2("1f");
+                    _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                    break;
+
+                case ERestaurantFloorType.Floor2:
+                    _usingButton.gameObject.SetActive(true);
+                    _usingButton.SetText1("배치중");
+                    _usingButton.SetText2("2f");
+                    _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                    break;
+
+                case ERestaurantFloorType.Floor3:
+                    _usingButton.gameObject.SetActive(true);
+                    _usingButton.SetText1("배치중");
+                    _usingButton.SetText2("3f");
+                    _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                    break;
+
+                case ERestaurantFloorType.Length:
+                    _equipButton.gameObject.SetActive(true);
+                    _equipButton.SetText("배치하기");
+                    _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                    break;
+
+                case ERestaurantFloorType.Error:
+                    _equipButton.gameObject.SetActive(true);
+                    _equipButton.SetText("배치하기");
+                    _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                    break;
+            }
         }
         else
         {
-            if (UserInfo.IsGiveFurniture(data))
+            if (!UserInfo.IsScoreValid(data))
             {
-                ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipFurnitureFloorType(data);
-                switch (furnitureFloorType)
-                {
-                    case ERestaurantFloorType.Floor1:
-                        _usingButton.gameObject.SetActive(true);
-                        _usingButton.SetText("1층 배치중");
-                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
-                        break;
-
-                    case ERestaurantFloorType.Floor2:
-                        _usingButton.gameObject.SetActive(true);
-                        _usingButton.SetText("2층 배치중");
-                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
-                        break;
-
-                    case ERestaurantFloorType.Floor3:
-                        _usingButton.gameObject.SetActive(true);
-                        _usingButton.SetText("3층 배치중");
-                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
-                        break;
-
-                    case ERestaurantFloorType.Length:
-                        _equipButton.gameObject.SetActive(true);
-                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
-                        break;
-
-                    case ERestaurantFloorType.Error:
-                        _equipButton.gameObject.SetActive(true);
-                        _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
-                        break;
-                }
+                _selectGroup.ImageColor = Utility.GetColor(ColorType.None);
+                _scoreButton.gameObject.SetActive(true);
+                _scoreButton.SetText(data.BuyScore.ToString());
+                _selectGroup.SetSprite(_questionMarkSprite);
+                _scoreGroup.SetText("???");
+                _tipPerMinuteGroup.SetText("???");
+                _setGroup.SetText1("???");
+                _setGroup.SetText2("???");
+                _effectSignGroup.Image1SetActive(false);
+                _effectSignGroup.Image2SetActive(false);
+                _scoreSignGroup.Image1SetActive(false);
+                _scoreSignGroup.Image2SetActive(false);
+                return;
             }
-            else
+
+            _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
+            MoneyType moneyType = data.MoneyType;
+            int price = data.BuyPrice;
+
+            if (moneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(price))
             {
-                if (!UserInfo.IsScoreValid(data))
-                {
-                    _selectGroup.ImageColor = Utility.GetColor(ColorType.None);
-                    _scoreButton.gameObject.SetActive(true);
-                    _scoreButton.SetText(data.BuyScore.ToString());
-                    _selectGroup.SetSprite(_questionMarkSprite);
-                    _scoreGroup.SetText("???");
-                    _tipPerMinuteGroup.SetText("???");
-                    _setGroup.SetText1("???");
-                    _setGroup.SetText2("???");
-                    _effectSignGroup.Image1SetActive(false);
-                    _effectSignGroup.Image2SetActive(false);
-                    _scoreSignGroup.Image1SetActive(false);
-                    _scoreSignGroup.Image2SetActive(false);
-                    return;
-                }
-
-                _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
-                MoneyType moneyType = data.MoneyType;
-                int price = data.BuyPrice;
-
-                if (moneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(price))
-                {
-                    _notEnoughMoneyButton.gameObject.SetActive(true);
-                    _notEnoughImage.sprite = _notEnoughMoneySprite;
-                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
-                    return;
-                }
-
-                else if (moneyType == MoneyType.Dia && !UserInfo.IsDiaValid(price))
-                {
-                    _notEnoughMoneyButton.gameObject.SetActive(true);
-                    _notEnoughImage.sprite = _notEnoughDiaSprite;
-                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
-                    return;
-                }
-
-
-                _buyButton.gameObject.SetActive(true);
-                _buyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
-                _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
+                _notEnoughMoneyButton.gameObject.SetActive(true);
+                _notEnoughImage.sprite = _notEnoughMoneySprite;
+                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                return;
             }
+
+            else if (moneyType == MoneyType.Dia && !UserInfo.IsDiaValid(price))
+            {
+                _notEnoughMoneyButton.gameObject.SetActive(true);
+                _notEnoughImage.sprite = _notEnoughDiaSprite;
+                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+                return;
+            }
+
+
+            _buyButton.gameObject.SetActive(true);
+            _buyButton.SetText(data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
+            _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
         }
     }
+    
 
     public void UpdateUI()
     {
@@ -240,7 +250,7 @@ public class UIFurniturePreview : MonoBehaviour
         _onBuyButtonClicked?.Invoke(_currentData);
     }
 
-    private void OnEquipButtonClicked()
+    private void OnEquipEvent(ERestaurantFloorType type)
     {
         if (_currentData == null)
         {
@@ -248,8 +258,67 @@ public class UIFurniturePreview : MonoBehaviour
             return;
         }
 
-        _onEquipButtonClicked?.Invoke(_currentType, _currentData);
+        _equipButtonGroup.gameObject.SetActive(false);
+        _onEquipButtonClicked?.Invoke(type, _currentData);
     }
+
+
+    private void OnEquipButtonClicked()
+    {
+        bool value = !_equipButtonGroup.activeSelf;
+        _equipButtonGroup.gameObject.SetActive(value);
+        _equipButton.SetText(value ? "취소" : "배치하기");
+        OnFloorChangeEvent();
+    }
+
+
+    private void On1FloorEquipButtonClicked()
+    {
+        OnEquipEvent(ERestaurantFloorType.Floor1);
+    }
+
+    private void On2FloorEquipButtonClicked()
+    {
+        OnEquipEvent(ERestaurantFloorType.Floor2);
+    }
+
+    private void On3FloorEquipButtonClicked()
+    {
+        OnEquipEvent(ERestaurantFloorType.Floor3);
+    }
+
+    private void OnFloorChangeEvent()
+    {
+        if (!_equipButtonGroup.activeInHierarchy)
+            return;
+
+        ERestaurantFloorType currentFloorType = UserInfo.CurrentFloor;
+        if (currentFloorType == ERestaurantFloorType.Floor3)
+        {
+            _3fEquipButton.gameObject.SetActive(true);
+            _2fEquipButton.gameObject.SetActive(true);
+            _1fEquipButton.gameObject.SetActive(true);
+        }
+        else if (currentFloorType == ERestaurantFloorType.Floor2)
+        {
+            _3fEquipButton.gameObject.SetActive(false);
+            _2fEquipButton.gameObject.SetActive(true);
+            _1fEquipButton.gameObject.SetActive(true);
+        }
+        else if (currentFloorType == ERestaurantFloorType.Floor1)
+        {
+            _3fEquipButton.gameObject.SetActive(false);
+            _2fEquipButton.gameObject.SetActive(false);
+            _1fEquipButton.gameObject.SetActive(true);
+        }
+        else
+        {
+            _3fEquipButton.gameObject.SetActive(false);
+            _2fEquipButton.gameObject.SetActive(false);
+            _1fEquipButton.gameObject.SetActive(false);
+        }
+    }
+
 
     private void OnUsingButtonClicked()
     {
@@ -261,5 +330,10 @@ public class UIFurniturePreview : MonoBehaviour
 
         ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(_currentData);
         _onEquipButtonClicked?.Invoke(floorType, null);
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeFloorHandler -= OnFloorChangeEvent;
     }
 }

@@ -174,7 +174,7 @@ public class UIKitchen : MobileUIView
         SoundManager.Instance.PlayEffectAudio(_equipSound);
         UserInfo.SetEquipKitchenUtensil(type, data.Id);
         SetKitchenUtensilDataData(_currentType);
-        SetKitchenPreview();
+        //SetKitchenPreview();
     }
 
     private void OnBuyButtonClicked(ShopData data)
@@ -225,8 +225,6 @@ public class UIKitchen : MobileUIView
             return;
 
         _uikitchenPreview.UpdateUI();
-
-        KitchenUtensilData equipStaffData = UserInfo.GetEquipKitchenUtensil(_currentFloorType, _currentType);
         int slotsIndex = (int)_currentType;
         KitchenUtensilData data;
         UIRestaurantAdminSlot slot;
@@ -235,14 +233,8 @@ public class UIKitchen : MobileUIView
             data = _currentTypeDataList[i];
             slot = _slots[slotsIndex][i];
             slot.gameObject.SetActive(true);
-            if (equipStaffData != null && data.Id == equipStaffData.Id)
-            {
-                slot.transform.SetAsFirstSibling();
-                slot.SetUse(data.ThumbnailSprite, data.Name, "¹èÄ¡Áß");
-                continue;
-            }
 
-            else if (UserInfo.IsGiveKitchenUtensil(data))
+            if (UserInfo.IsGiveKitchenUtensil(data))
             {
                 ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipKitchenUtensilFloorType(data);
                 switch (furnitureFloorType)

@@ -50,7 +50,7 @@ public class TableButton : MonoBehaviour
 
         _currentData = data;
         _foodImage.sprite = data.ThumbnailSprite;
-        _foodImage.material = UserInfo.IsGiveRecipe(data) ? _defalutMat : _grayMat;
+        _foodImage.material = UserInfo.IsGiveRecipe(data.Id) ? _defalutMat : _grayMat;
     }
 
 
@@ -62,7 +62,7 @@ public class TableButton : MonoBehaviour
         if (_currentData == null)
             return;
 
-        _foodImage.material = UserInfo.IsGiveRecipe(_currentData) ? _defalutMat : _grayMat;
+        _foodImage.material = UserInfo.IsGiveRecipe(_currentData.Id) ? _defalutMat : _grayMat;
     }
 
     private void OnEnable()

@@ -221,15 +221,13 @@ public class UIStaff : MobileUIView
 
     private void UpdateUI()
     {
-        if (!gameObject.activeSelf)
+        if (!gameObject.activeInHierarchy)
             return;
 
         if (_currentTypeDataList == null || _currentTypeDataList.Count == 0)
             return;
 
         _uiStaffPreview.UpdateUI();
-
-        StaffData equipStaffData = UserInfo.GetEquipStaff(_currentFloorType, _currentType);
         int slotsIndex = (int)_currentType;
         StaffData data;
         UIRestaurantAdminSlot slot;
@@ -238,14 +236,7 @@ public class UIStaff : MobileUIView
             data = _currentTypeDataList[i];
             slot = _slots[slotsIndex][i];
             slot.gameObject.SetActive(true);
-            if (equipStaffData != null && data.Id == equipStaffData.Id)
-            {
-                slot.transform.SetAsFirstSibling();
-                slot.SetUse(data.ThumbnailSprite, data.Name, "¹èÄ¡Áß");
-                continue;
-            }
-
-            else if (UserInfo.IsGiveStaff(data))
+            if (UserInfo.IsGiveStaff(data))
             {
                 ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(data);
                 switch (furnitureFloorType)
