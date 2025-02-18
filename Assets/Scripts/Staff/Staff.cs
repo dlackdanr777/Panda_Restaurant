@@ -95,8 +95,8 @@ public class Staff : MonoBehaviour
 
         gameObject.SetActive(true);
         _staffData = staffData;
-        _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         _equipFloorType = equipFloorType;
+        _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         _staffAction = staffData.GetStaffAction(this, tableManager, kitchenSystem, customerController);
         _secondValue = staffData.SecondValue;
         _animator.enabled = staffData is CleanerData;
@@ -230,6 +230,12 @@ public class Staff : MonoBehaviour
         {
             _skillTimer += Time.deltaTime * SpeedMul * GameManager.Instance.AddStaffSpeedMul;
         }
+    }
+
+
+    public void DestroyStaff()
+    {
+        _staffData?.Destroy();
     }
 
 

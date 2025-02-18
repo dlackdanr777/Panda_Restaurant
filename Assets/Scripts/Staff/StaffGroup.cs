@@ -67,6 +67,11 @@ public class StaffGroup : MonoBehaviour
 
     private void OnDestroy()
     {
+        foreach(Staff staff in _staffDic.Values)
+        {
+            staff?.DestroyStaff();
+        }
+
         UserInfo.OnChangeStaffHandler -= OnEquipEvent;
     }
 }

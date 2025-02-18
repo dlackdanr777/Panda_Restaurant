@@ -822,6 +822,24 @@ public static class UserInfo
         return false;
     }
 
+    public static bool IsEquipStaff(StaffData data)
+    {
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            for (int j = 0, cntJ = (int)StaffType.Length; j < cntJ; ++j)
+            {
+                if (_equipStaffDatas[i, j] == null)
+                    continue;
+
+                if (_equipStaffDatas[i, j].Id == data.Id)
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
+
     public static ERestaurantFloorType GetEquipStaffFloorType(StaffData data)
     {
         for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
@@ -1525,6 +1543,14 @@ public static class UserInfo
 
         return false;
     }
+
+    public static bool IsEquipFurniture(ERestaurantFloorType floorType, FurnitureType type)
+    {
+        int floorTypeIndex = (int)floorType;
+        int typeIndex = (int)type;
+        return _equipFurnitureDatas[floorTypeIndex, typeIndex] != null;
+    }
+
 
     public static ERestaurantFloorType GetEquipFurnitureFloorType(FurnitureData data)
     {

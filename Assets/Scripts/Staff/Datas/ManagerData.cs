@@ -9,6 +9,10 @@ public class ManagerData : StaffData
     public override int MaxLevel => _managerLevelData.Length;
 
 
+    private bool _isSubscribed;
+    private Staff _staff;
+    private TableManager _tableManager;
+
     public override float GetActionValue(int level)
     {
         if (_managerLevelData.Length < level - 1 || level < 0)
@@ -29,16 +33,43 @@ public class ManagerData : StaffData
 
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
+        _staff = staff;
+        _tableManager = tableManager;
         staff.SetAlpha(1);
-        staff.transform.position = tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Manager);
         staff.SetLayer("Manager", 0);
+
+        Vector3 pos = tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Manager);
+        staff.transform.position = UserInfo.IsEquipFurniture(staff.EquipFloorType, FurnitureType.Counter) ? pos : pos - new Vector3(0, 1.75f, 0);
+
+        if(!_isSubscribed)
+        {
+            UserInfo.OnChangeFurnitureHandler += OnChangeCounterEvent;
+            _isSubscribed = true;
+        }
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.transform.position = Vector3.zero;
         staff.SetAlpha(0);
+
+        if (_isSubscribed)
+        {
+            UserInfo.OnChangeFurnitureHandler -= OnChangeCounterEvent;
+            _isSubscribed = false;
+        }
     }
+
+
+    public override void Destroy()
+    {
+        if (_isSubscribed)
+        {
+            UserInfo.OnChangeFurnitureHandler -= OnChangeCounterEvent;
+            _isSubscribed = false;
+        }
+    }
+
 
     public override int GetUpgradeMinScore(int level)
     {
@@ -63,6 +94,16 @@ public class ManagerData : StaffData
     {
         level = Mathf.Clamp(level - 1, 0, _managerLevelData.Length - 1);
         return _managerLevelData[level].TipAddPercent;
+    }
+
+
+    private void OnChangeCounterEvent(ERestaurantFloorType floorType, FurnitureType type)
+    {
+        if (floorType != _staff.EquipFloorType || type != FurnitureType.Counter)
+            return;
+
+        Vector3 pos = _tableManager.GetStaffPos(_staff.EquipFloorType, StaffType.Manager);
+        _staff.transform.position = UserInfo.IsEquipFurniture(_staff.EquipFloorType, FurnitureType.Counter) ? pos : pos - new Vector3(0, 1.75f, 0);
     }
 }
 

@@ -63,6 +63,7 @@ public class UIStaffPreview : MonoBehaviour
         _3fEquipButton.AddListener(On3FloorEquipButtonClicked);
 
         UserInfo.OnChangeFloorHandler += OnFloorChangeEvent;
+        UserInfo.OnUpgradeStaffHandler += UpdateUI;
         OnFloorChangeEvent();
     }
 
@@ -338,5 +339,6 @@ public class UIStaffPreview : MonoBehaviour
     private void OnDestroy()
     {
         UserInfo.OnChangeFloorHandler -= OnFloorChangeEvent;
+        UserInfo.OnUpgradeStaffHandler -= UpdateUI;
     }
 }

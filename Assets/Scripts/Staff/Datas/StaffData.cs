@@ -28,4 +28,9 @@ public abstract class StaffData : ShopData
     public abstract void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
 
     public abstract IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
+
+    public virtual void Destroy()
+    {
+
+    }
 }

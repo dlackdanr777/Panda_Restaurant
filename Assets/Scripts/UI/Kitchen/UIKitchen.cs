@@ -1,5 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -167,14 +168,12 @@ public class UIKitchen : MobileUIView
             SoundManager.Instance.PlayEffectAudio(_dequipSound);
             UserInfo.SetNullEquipKitchenUtensil(type, _currentType);
             SetKitchenUtensilDataData(_currentType);
-            //SetKitchenPreview();
             return;
         }
 
         SoundManager.Instance.PlayEffectAudio(_equipSound);
         UserInfo.SetEquipKitchenUtensil(type, data.Id);
         SetKitchenUtensilDataData(_currentType);
-        //SetKitchenPreview();
     }
 
     private void OnBuyButtonClicked(ShopData data)
@@ -228,6 +227,10 @@ public class UIKitchen : MobileUIView
         int slotsIndex = (int)_currentType;
         KitchenUtensilData data;
         UIRestaurantAdminSlot slot;
+
+        (ERestaurantFloorType, UIRestaurantAdminSlot)[] equipSlotArray = new (ERestaurantFloorType, UIRestaurantAdminSlot)[(int)ERestaurantFloorType.Length];
+        int equipSlotCount = 0;
+
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
         {
             data = _currentTypeDataList[i];
@@ -236,8 +239,13 @@ public class UIKitchen : MobileUIView
 
             if (UserInfo.IsGiveKitchenUtensil(data))
             {
-                ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipKitchenUtensilFloorType(data);
-                switch (furnitureFloorType)
+                ERestaurantFloorType floorType = UserInfo.GetEquipKitchenUtensilFloorType(data);
+                if (floorType < ERestaurantFloorType.Length)
+                {
+                    equipSlotArray[equipSlotCount++] = (floorType, slot);
+                }
+
+                switch (floorType)
                 {
                     case ERestaurantFloorType.Floor1:
                         slot.SetUse(data.ThumbnailSprite, data.Name, "1층 배치중");
@@ -285,6 +293,13 @@ public class UIKitchen : MobileUIView
                 slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice), data.MoneyType);
                 continue;
             }
+        }
+
+        //장착된 슬롯들을 순회하며 층수로 오름차순 정렬
+        Array.Sort(equipSlotArray, 0, equipSlotCount, Comparer<(ERestaurantFloorType, UIRestaurantAdminSlot)>.Create((a, b) => a.Item1.CompareTo(b.Item1)));
+        for (int i = 0; i < equipSlotCount; i++)
+        {
+            equipSlotArray[i].Item2.transform.SetSiblingIndex(i);
         }
     }
 

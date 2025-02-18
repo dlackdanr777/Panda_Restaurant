@@ -1,10 +1,9 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using System;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class UIStaff : MobileUIView
 {
@@ -67,7 +66,6 @@ public class UIStaff : MobileUIView
         }
 
         UserInfo.OnChangeStaffHandler += OnChangeStaffEvent;
-        UserInfo.OnUpgradeStaffHandler += UpdateUI;
         UserInfo.OnGiveStaffHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
@@ -146,6 +144,7 @@ public class UIStaff : MobileUIView
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(_currentFloorType, _currentType);
         _uiStaffPreview.SetData(_currentFloorType, equipStaffData != null ? equipStaffData : _currentTypeDataList.Count <= 0 ? null : _currentTypeDataList[0]);
+        DebugLog.Log("실행");
     }
 
 
@@ -165,13 +164,11 @@ public class UIStaff : MobileUIView
             SoundManager.Instance.PlayEffectAudio(_dequipSound);
             UserInfo.SetNullEquipStaff(floorType, _currentType);
             SetStaffData(_currentType);
-            //SetStaffPreview();
             return;
         }
         SoundManager.Instance.PlayEffectAudio(_equipSound);
         UserInfo.SetEquipStaff(floorType, data);
         SetStaffData(_currentType);
-        SetStaffPreview();
     }
 
 
@@ -231,15 +228,25 @@ public class UIStaff : MobileUIView
         int slotsIndex = (int)_currentType;
         StaffData data;
         UIRestaurantAdminSlot slot;
+
+        (ERestaurantFloorType, UIRestaurantAdminSlot)[] equipSlotArray = new (ERestaurantFloorType, UIRestaurantAdminSlot)[(int)ERestaurantFloorType.Length];
+        int equipSlotCount = 0;
+
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
         {
             data = _currentTypeDataList[i];
             slot = _slots[slotsIndex][i];
             slot.gameObject.SetActive(true);
+            slot.transform.SetSiblingIndex(i);
             if (UserInfo.IsGiveStaff(data))
             {
-                ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(data);
-                switch (furnitureFloorType)
+                ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(data);
+                if(floorType < ERestaurantFloorType.Length)
+                {
+                    equipSlotArray[equipSlotCount++] = (floorType, slot);
+                }
+
+                switch (floorType)
                 {
                     case ERestaurantFloorType.Floor1:
                         slot.SetUse(data.ThumbnailSprite, data.Name, "1층 배치중");
@@ -288,12 +295,22 @@ public class UIStaff : MobileUIView
                 continue;
             }
         }
+
+        //장착된 슬롯들을 순회하며 층수로 오름차순 정렬
+        Array.Sort(equipSlotArray, 0, equipSlotCount, Comparer<(ERestaurantFloorType, UIRestaurantAdminSlot)>.Create((a, b) => a.Item1.CompareTo(b.Item1)));
+        for (int i = 0; i < equipSlotCount; i++)
+        {
+            equipSlotArray[i].Item2.transform.SetSiblingIndex(i);
+        }
     }
 
 
 
     private void OnChangeStaffEvent(ERestaurantFloorType floorType, StaffType type)
     {
+        if (!gameObject.activeInHierarchy || _currentType != type)
+            return;
+
         UpdateUI();
     }
 
@@ -306,7 +323,6 @@ public class UIStaff : MobileUIView
     private void OnDestroy()
     {
         UserInfo.OnChangeStaffHandler -= OnChangeStaffEvent;
-        UserInfo.OnUpgradeStaffHandler -= UpdateUI;
         UserInfo.OnGiveStaffHandler -= UpdateUI;
         UserInfo.OnChangeMoneyHandler -= UpdateUI;
         UserInfo.OnChangeScoreHandler -= UpdateUI;
