@@ -21,12 +21,8 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private UIButtonAndText _buyButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
-
-    [SerializeField] private GameObject _equipButtonGroup;
     [SerializeField] private UIButtonAndText _equipButton;
-    [SerializeField] private UIButtonAndText _1fEquipButton;
-    [SerializeField] private UIButtonAndText _2fEquipButton;
-    [SerializeField] private UIButtonAndText _3fEquipButton;
+    [SerializeField] private UIEquipButtonGroup _equipButtonGroup;
 
     [Space]
     [Header("Sprites")]
@@ -49,6 +45,7 @@ public class UIStaffPreview : MonoBehaviour
     {
         _selectGroup.Init();
         _skillEffectGroup.Init();
+        _equipButtonGroup.Init(On1FloorEquipButtonClicked, On2FloorEquipButtonClicked, On3FloorEquipButtonClicked, OnEquipCancelButtonClicked);
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
@@ -58,13 +55,7 @@ public class UIStaffPreview : MonoBehaviour
         _notEnoughMoneyButton.AddListener(OnBuyButtonClicked);
         _equipButton.AddListener(OnEquipButtonClicked);
 
-        _1fEquipButton.AddListener(On1FloorEquipButtonClicked);
-        _2fEquipButton.AddListener(On2FloorEquipButtonClicked);
-        _3fEquipButton.AddListener(On3FloorEquipButtonClicked);
-
-        UserInfo.OnChangeFloorHandler += OnFloorChangeEvent;
         UserInfo.OnUpgradeStaffHandler += UpdateUI;
-        OnFloorChangeEvent();
     }
 
 
@@ -79,8 +70,7 @@ public class UIStaffPreview : MonoBehaviour
         _buyButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
-        _equipButtonGroup.gameObject.SetActive(false);
-        OnFloorChangeEvent();
+        _equipButtonGroup.HideNoAnime();
 
         if (data == null)
         {
@@ -255,6 +245,8 @@ public class UIStaffPreview : MonoBehaviour
 
         _onBuyButtonClicked?.Invoke(_currentData);
     }
+
+
     private void OnEquipEvent(ERestaurantFloorType type)
     {
         if (_currentData == null)
@@ -263,17 +255,21 @@ public class UIStaffPreview : MonoBehaviour
             return;
         }
 
-        _equipButtonGroup.gameObject.SetActive(false);
+        _equipButtonGroup.HideNoAnime();
+        _equipButton.gameObject.SetActive(false);
         _onEquipButtonClicked?.Invoke(type, _currentData);
     }
 
 
     private void OnEquipButtonClicked()
     {
-        bool value = !_equipButtonGroup.activeSelf;
-        _equipButtonGroup.gameObject.SetActive(value);
-        _equipButton.SetText(value ? "취소" : "배치하기");
-        OnFloorChangeEvent();
+        _equipButtonGroup.Show();
+        _equipButton.gameObject.SetActive(false);
+    }
+
+    private void OnEquipCancelButtonClicked()
+    {
+        _equipButtonGroup.Hide(() => _equipButton.gameObject.SetActive(true));
     }
 
 
@@ -292,37 +288,6 @@ public class UIStaffPreview : MonoBehaviour
         OnEquipEvent(ERestaurantFloorType.Floor3);
     }
 
-    private void OnFloorChangeEvent()
-    {
-        if (!_equipButtonGroup.activeInHierarchy)
-            return;
-
-        ERestaurantFloorType currentFloorType = UserInfo.CurrentFloor;
-        if (currentFloorType == ERestaurantFloorType.Floor3)
-        {
-            _3fEquipButton.gameObject.SetActive(true);
-            _2fEquipButton.gameObject.SetActive(true);
-            _1fEquipButton.gameObject.SetActive(true);
-        }
-        else if (currentFloorType == ERestaurantFloorType.Floor2)
-        {
-            _3fEquipButton.gameObject.SetActive(false);
-            _2fEquipButton.gameObject.SetActive(true);
-            _1fEquipButton.gameObject.SetActive(true);
-        }
-        else if (currentFloorType == ERestaurantFloorType.Floor1)
-        {
-            _3fEquipButton.gameObject.SetActive(false);
-            _2fEquipButton.gameObject.SetActive(false);
-            _1fEquipButton.gameObject.SetActive(true);
-        }
-        else
-        {
-            _3fEquipButton.gameObject.SetActive(false);
-            _2fEquipButton.gameObject.SetActive(false);
-            _1fEquipButton.gameObject.SetActive(false);
-        }
-    }
 
     private void OnUsingButtonClicked()
     {
@@ -338,7 +303,6 @@ public class UIStaffPreview : MonoBehaviour
 
     private void OnDestroy()
     {
-        UserInfo.OnChangeFloorHandler -= OnFloorChangeEvent;
         UserInfo.OnUpgradeStaffHandler -= UpdateUI;
     }
 }

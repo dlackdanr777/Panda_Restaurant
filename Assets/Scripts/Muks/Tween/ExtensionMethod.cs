@@ -550,6 +550,28 @@ namespace Muks.Tween
         }
 
 
+        /// <summary>목표 값으로 지속 시간동안 LayoutGroup의 spacing 수치를 조절하는 함수</summary>
+        public static TweenData TweenSpacing(this GridLayoutGroup target, Vector2 targetValue, float duration, Ease ease = Ease.Constant)
+        {
+            if (!target.TryGetComponent(out TweenGridLayoutGroupSpacing tweenData))
+                tweenData = target.gameObject.AddComponent<TweenGridLayoutGroupSpacing>();
+
+            TweenDataSequence tmpData = new TweenDataSequence(targetValue, duration, ease, target);
+
+            tweenData.IsLoop = false;
+            tweenData.AddDataSequence(tmpData);
+
+            if (!tweenData.enabled)
+            {
+                tweenData.ElapsedDuration = 0;
+                tweenData.TotalDuration = 0;
+                tweenData.enabled = true;
+            }
+
+            return tweenData;
+        }
+
+
         /// <summary>목표 값으로 지속 시간동안 카메라 사이즈 값을 변경하는 함수</summary>
         public static TweenData TweenOrthographicSize(this Camera target, float targetSize, float duration, Ease ease = Ease.Constant)
         {

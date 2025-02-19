@@ -144,7 +144,6 @@ public class UIStaff : MobileUIView
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(_currentFloorType, _currentType);
         _uiStaffPreview.SetData(_currentFloorType, equipStaffData != null ? equipStaffData : _currentTypeDataList.Count <= 0 ? null : _currentTypeDataList[0]);
-        DebugLog.Log("½ÇÇà");
     }
 
 

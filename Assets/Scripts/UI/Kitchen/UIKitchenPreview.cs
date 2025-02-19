@@ -21,12 +21,8 @@ public class UIKitchenPreview : MonoBehaviour
     [SerializeField] private UIButtonAndText _buyButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
-
-    [SerializeField] private GameObject _equipButtonGroup;
     [SerializeField] private UIButtonAndText _equipButton;
-    [SerializeField] private UIButtonAndText _1fEquipButton;
-    [SerializeField] private UIButtonAndText _2fEquipButton;
-    [SerializeField] private UIButtonAndText _3fEquipButton;
+    [SerializeField] private UIEquipButtonGroup _equipButtonGroup;
 
     [Space]
     [Header("Sprites")]
@@ -46,6 +42,7 @@ public class UIKitchenPreview : MonoBehaviour
 
     public void Init(Action<ERestaurantFloorType, ShopData> onEquipButtonClicked, Action<ShopData> onBuyButtonClicked)
     {
+        _equipButtonGroup.Init(On1FloorEquipButtonClicked, On2FloorEquipButtonClicked, On3FloorEquipButtonClicked, OnEquipCancelButtonClicked);
 
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
@@ -54,12 +51,6 @@ public class UIKitchenPreview : MonoBehaviour
         _usingButton.AddListener(OnUsingButtonClicked);
         _notEnoughMoneyButton.AddListener(OnBuyButtonClicked);
         _equipButton.AddListener(OnEquipButtonClicked);
-        _1fEquipButton.AddListener(On1FloorEquipButtonClicked);
-        _2fEquipButton.AddListener(On2FloorEquipButtonClicked);
-        _3fEquipButton.AddListener(On3FloorEquipButtonClicked);
-
-        _equipButtonGroup.gameObject.SetActive(false);
-        UserInfo.OnChangeFloorHandler += OnFloorChangeEvent;
     }
 
 
@@ -72,7 +63,8 @@ public class UIKitchenPreview : MonoBehaviour
         _buyButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
-        _equipButtonGroup.gameObject.SetActive(false);
+        _equipButtonGroup.HideNoAnime();
+
         if (data == null)
         {
             _scoreGroup.gameObject.SetActive(false);
@@ -268,17 +260,22 @@ public class UIKitchenPreview : MonoBehaviour
             DebugLog.Log("현재 데이터가 존재하지 않습니다.");
             return;
         }
-        _equipButtonGroup.gameObject.SetActive(false);
+
+        _equipButtonGroup.HideNoAnime();
+        _equipButton.gameObject.SetActive(false);
         _onEquipButtonClicked?.Invoke(type, _currentData);
     }
 
 
     private void OnEquipButtonClicked()
     {
-        bool value = !_equipButtonGroup.activeSelf;
-        _equipButtonGroup.gameObject.SetActive(value);
-        _equipButton.SetText(value ? "취소" : "배치하기");
-        OnFloorChangeEvent();
+        _equipButtonGroup.Show();
+        _equipButton.gameObject.SetActive(false);
+    }
+
+    private void OnEquipCancelButtonClicked()
+    {
+        _equipButtonGroup.Hide(() => _equipButton.gameObject.SetActive(true));
     }
 
 
@@ -287,49 +284,14 @@ public class UIKitchenPreview : MonoBehaviour
         OnEquipEvent(ERestaurantFloorType.Floor1);
     }
 
-
     private void On2FloorEquipButtonClicked()
     {
         OnEquipEvent(ERestaurantFloorType.Floor2);
     }
 
-
     private void On3FloorEquipButtonClicked()
     {
         OnEquipEvent(ERestaurantFloorType.Floor3);
-    }
-
-
-    private void OnFloorChangeEvent()
-    {
-        if (!_equipButtonGroup.activeInHierarchy)
-            return;
-
-        ERestaurantFloorType currentFloorType = UserInfo.CurrentFloor;
-        if (currentFloorType == ERestaurantFloorType.Floor3)
-        {
-            _3fEquipButton.gameObject.SetActive(true);
-            _2fEquipButton.gameObject.SetActive(true);
-            _1fEquipButton.gameObject.SetActive(true);
-        }
-        else if (currentFloorType == ERestaurantFloorType.Floor2)
-        {
-            _3fEquipButton.gameObject.SetActive(false);
-            _2fEquipButton.gameObject.SetActive(true);
-            _1fEquipButton.gameObject.SetActive(true);
-        }
-        else if (currentFloorType == ERestaurantFloorType.Floor1)
-        {
-            _3fEquipButton.gameObject.SetActive(false);
-            _2fEquipButton.gameObject.SetActive(false);
-            _1fEquipButton.gameObject.SetActive(true);
-        }
-        else
-        {
-            _3fEquipButton.gameObject.SetActive(false);
-            _2fEquipButton.gameObject.SetActive(false);
-            _1fEquipButton.gameObject.SetActive(false);
-        }
     }
 
 
@@ -343,11 +305,5 @@ public class UIKitchenPreview : MonoBehaviour
 
         ERestaurantFloorType floorType = UserInfo.GetEquipKitchenUtensilFloorType(_currentData);
         _onEquipButtonClicked?.Invoke(floorType, null);
-    }
-
-
-    private void OnDestroy()
-    {
-        UserInfo.OnChangeFloorHandler -= OnFloorChangeEvent;
     }
 }

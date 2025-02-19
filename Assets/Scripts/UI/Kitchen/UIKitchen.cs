@@ -236,6 +236,7 @@ public class UIKitchen : MobileUIView
             data = _currentTypeDataList[i];
             slot = _slots[slotsIndex][i];
             slot.gameObject.SetActive(true);
+            slot.transform.SetSiblingIndex(i);
 
             if (UserInfo.IsGiveKitchenUtensil(data))
             {

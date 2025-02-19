@@ -18,11 +18,6 @@ public class UINotificationImage : MonoBehaviour
         PlayAnime();
     }
 
-/*    private void OnDisable()
-    {
-        transform.TweenStop();
-    }
-*/
 
     private void PlayAnime()
     {
