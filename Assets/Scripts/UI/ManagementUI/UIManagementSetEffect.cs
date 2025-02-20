@@ -73,7 +73,7 @@ public class UIManagementSetEffect : MonoBehaviour
                 FurnitureData furniutreData;
                 for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
                 {
-                    furniutreData = UserInfo.GetEquipFurniture(_currentFloorType, (FurnitureType)i);
+                    furniutreData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _currentFloorType, (FurnitureType)i);
                     if (furniutreData == null)
                         continue;
 
@@ -147,7 +147,7 @@ public class UIManagementSetEffect : MonoBehaviour
 
         else if(page == 0)
         {
-            SetData setData = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureSetData(_currentFloorType) : UserInfo.GetEquipKitchenUntensilSetData(_currentFloorType);
+            SetData setData = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureSetData(UserInfo.CurrentStage, _currentFloorType) : UserInfo.GetEquipKitchenUntensilSetData(_currentFloorType);
 
             bool setEnabled = setData != null;
             _setTitleText.text = setEnabled ? setData.Name : "비활성화";

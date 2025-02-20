@@ -8,6 +8,10 @@ using Muks.BackEnd;
 
 public class MainScene : MonoBehaviour
 {
+    [Header("Option")]
+    [SerializeField] private EStage _stage;
+
+    [Space]
     [Header("Components")]
     [SerializeField] private UINavigation _uiMainNav;
     [SerializeField] private UIFever _uiFever;
@@ -27,6 +31,12 @@ public class MainScene : MonoBehaviour
     }
 
 
+    private void Awake()
+    {
+        UserInfo.ChangeStage(_stage);
+    }
+
+
     void Start()
     {
         PlayMainMusic();
@@ -36,38 +46,38 @@ public class MainScene : MonoBehaviour
         UserInfo.AddDia(1000);
         UserInfo.AddMoney(10000000);
 
-        UserInfo.GiveFurniture("TABLE08_01");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_01");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_01");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_01");
 
-        UserInfo.GiveFurniture("TABLE08_02");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_02");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_02");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_02");
 
-        UserInfo.GiveFurniture("TABLE08_03");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_03");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_03");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_03");
 
-        UserInfo.GiveFurniture("TABLE08_04");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_04");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_04");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_04");
 
-        UserInfo.GiveFurniture("TABLE08_05");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "TABLE08_05");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_05");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_05");
 
-        UserInfo.GiveFurniture("FLOWER08");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "FLOWER08");
+        UserInfo.GiveFurniture(EStage.Stage1, "FLOWER08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "FLOWER08");
 
-        UserInfo.GiveFurniture("RACK08");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "RACK08");
+        UserInfo.GiveFurniture(EStage.Stage1, "RACK08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "RACK08");
 
-        UserInfo.GiveFurniture("WALLPAPER08");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "WALLPAPER08");
+        UserInfo.GiveFurniture(EStage.Stage1, "WALLPAPER08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "WALLPAPER08");
 
-        UserInfo.GiveFurniture("ACC08");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "ACC08");
+        UserInfo.GiveFurniture(EStage.Stage1, "ACC08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "ACC08");
 
-        UserInfo.GiveFurniture("FRAME08");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "FRAME08");
+        UserInfo.GiveFurniture(EStage.Stage1, "FRAME08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "FRAME08");
 
-        UserInfo.GiveFurniture("COUNTER08");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "COUNTER08");
+        UserInfo.GiveFurniture(EStage.Stage1, "COUNTER08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "COUNTER08");
 
         UserInfo.GiveKitchenUtensil("COOKER01_01");
         UserInfo.SetEquipKitchenUtensil(ERestaurantFloorType.Floor1, "COOKER01_01");
@@ -77,6 +87,16 @@ public class MainScene : MonoBehaviour
 
     void Update()
     {
+        if(Input.GetKeyDown(KeyCode.K))
+        {
+            UserInfo.SaveStageData(UserInfo.CurrentStage);
+        }
+
+        if(Input.GetKeyDown(KeyCode.L))
+        {
+            UserInfo.LoadStageData(UserInfo.CurrentStage);
+        }
+
         _updateTimer += Time.deltaTime;
 
         if (60 <= _updateTimer)

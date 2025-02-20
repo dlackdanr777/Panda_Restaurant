@@ -68,7 +68,7 @@ public class UIStaffUpgrade : MobileUIView
         if (_currentData == null)
             throw new System.Exception("스탭 데이터가 NULL입니다.");
 
-        if(!UserInfo.IsGiveStaff(_currentData))
+        if(!UserInfo.IsGiveStaff(UserInfo.CurrentStage, _currentData))
             throw new System.Exception("해당 스탭을 고용하지 않았습니다.");
 
         _upgradeButton.gameObject.SetActive(false);
@@ -76,7 +76,7 @@ public class UIStaffUpgrade : MobileUIView
         _notEnoughDiaButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
 
-        int level = UserInfo.GetStaffLevel(_currentData);
+        int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, _currentData);
         _selectGroup.SetSprite(_currentData.ThumbnailSprite);
         _selectGroup.SetText(_currentData.Name);
 
@@ -136,10 +136,10 @@ public class UIStaffUpgrade : MobileUIView
         if (_currentData == null)
             throw new System.Exception("스태프 데이터가 NULL입니다.");
 
-        if (!UserInfo.IsGiveStaff(_currentData))
+        if (!UserInfo.IsGiveStaff(UserInfo.CurrentStage, _currentData))
             throw new System.Exception("해당 스탭을 고용하지 않았습니다.");
 
-        int level = UserInfo.GetStaffLevel(_currentData);
+        int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, _currentData);
         if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
         {
             UpgradeMoneyData upgradeMoneyData = _currentData.GetUpgradeMoneyData(level);
@@ -162,7 +162,7 @@ public class UIStaffUpgrade : MobileUIView
             else if (upgradeMoneyData.MoneyType == MoneyType.Dia)
                 UserInfo.AddDia(-upgradeMoneyData.Price);
 
-            UserInfo.UpgradeStaff(_currentData);
+            UserInfo.UpgradeStaff(UserInfo.CurrentStage, _currentData);
             PopupManager.Instance.ShowDisplayText("직원 업그레이드를 완료했어요!");
             SoundManager.Instance.PlayEffectAudio(_upgradeSound);
             _flashEffect.Emit(1);

@@ -29,7 +29,7 @@ public class StaffGroup : MonoBehaviour
             staff.Init();
 
             _staffDic.Add(type, staff);
-            StaffData data = UserInfo.GetEquipStaff(_floorType, type);
+            StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);
 
             if (data == null)
                 continue;
@@ -61,7 +61,7 @@ public class StaffGroup : MonoBehaviour
         if (floorType != _floorType)
             return;
 
-        StaffData data = UserInfo.GetEquipStaff(_floorType, type);
+        StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);
         _staffDic[type].SetStaffData(data, _floorType, _tableManager, _kitchenSystem, _customerController);
     }
 

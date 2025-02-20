@@ -34,7 +34,7 @@ public class Staff : MonoBehaviour
     private bool _usingSkill;
     private float _skillTimer;
     private float _skillCoolTime;
-    public int Level => _staffData != null ? UserInfo.GetStaffLevel(_staffData) : 0;
+    public int Level => _staffData != null ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, _staffData) : 0;
     private float _scaleX;
     private float _actionTimer;
     private float _secondValue;
@@ -60,7 +60,7 @@ public class Staff : MonoBehaviour
             throw new Exception("현재 스탭 데이터가 null입니다.");
         }
 
-        int level = UserInfo.GetStaffLevel(_staffData);
+        int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, _staffData);
         if(level <= 0)
         {
             throw new Exception("현재 스탭 데이터를 보유하고 있지 않습니다: " + _staffData.Id);

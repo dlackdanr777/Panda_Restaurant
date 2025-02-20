@@ -70,7 +70,7 @@ public class UIMarketerImage : MonoBehaviour
         if (type != StaffType.Marketer)
             return;
 
-        StaffData equipData = UserInfo.GetEquipStaff(floorType, type);
+        StaffData equipData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, floorType, type);
         if (equipData == null)
         {
             gameObject.SetActive(false);

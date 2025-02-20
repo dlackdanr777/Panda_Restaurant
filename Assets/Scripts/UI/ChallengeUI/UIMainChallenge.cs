@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using Muks.DataBind;
+using System.Collections.Generic;
 
 public class UIMainChallenge : MobileUIView
 {
@@ -46,6 +47,8 @@ public class UIMainChallenge : MobileUIView
     [SerializeField] private AudioClip _clearDiaSound;
 
     private ChallengeData _currentData;
+    private Dictionary<int, RectTransform> _coinDic = new Dictionary<int, RectTransform>();
+    private Dictionary<int, RectTransform> _diaDic = new Dictionary<int, RectTransform>();
 
     public override void Init()
     {
@@ -54,6 +57,10 @@ public class UIMainChallenge : MobileUIView
 
         UpdateData();
         ChallengeManager.Instance.OnMainChallengeUpdateHandler += UpdateData;
+        LoadingSceneManager.OnLoadSceneHandler += DespawnCoin;
+        LoadingSceneManager.OnLoadSceneHandler += DespawnDia;
+        LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
+
         gameObject.SetActive(false);
     }
 
@@ -201,9 +208,14 @@ public class UIMainChallenge : MobileUIView
         {
             int index = i;
             RectTransform coin = ObjectPoolManager.Instance.SpawnUICoin(_coinPos.transform.position, Quaternion.identity);
+
+            int coinID = coin.GetInstanceID();
+            _coinDic.Add(coinID, coin);
             Vector2 coinPos = UnityEngine.Random.insideUnitCircle * 300;
             coinPos = _coinPos.anchoredPosition + coinPos;
             coin.SetParent(_coinParent);
+
+
             coin.TweenAnchoredPosition(coinPos, 0.45f, Ease.InQuad).OnComplete(() =>
             {
                 float height = 100;
@@ -212,6 +224,9 @@ public class UIMainChallenge : MobileUIView
 
                 coin.TweenJump(_coinTargetPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
                 {
+                    if (_coinDic.ContainsKey(coinID))
+                        _coinDic.Remove(coinID);
+
                     ObjectPoolManager.Instance.DespawnUICoin(coin);
                     _uiMoney.StartAnime();
                 });
@@ -230,6 +245,10 @@ public class UIMainChallenge : MobileUIView
         {
             int index = i;
             RectTransform dia = ObjectPoolManager.Instance.SpawnUIDia(_coinPos.transform.position, Quaternion.identity);
+
+            int diaID = dia.GetInstanceID();
+            _diaDic.Add(diaID, dia);
+
             Vector2 coinPos = UnityEngine.Random.insideUnitCircle * 300;
             coinPos = _coinPos.anchoredPosition + coinPos;
             dia.SetParent(_coinParent);
@@ -241,6 +260,9 @@ public class UIMainChallenge : MobileUIView
 
                 dia.TweenJump(_coinTargetDiaPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
                 {
+                    if (_diaDic.ContainsKey(diaID))
+                        _diaDic.Remove(diaID);
+
                     ObjectPoolManager.Instance.DespawnUIDia(dia);
                     _uiDia.StartAnime();
                 });
@@ -249,8 +271,51 @@ public class UIMainChallenge : MobileUIView
         }
     }
 
+
     private void OnDestroy()
     {
         ChallengeManager.Instance.OnMainChallengeUpdateHandler -= UpdateData;
+    }
+
+
+    private void OnDisable()
+    {
+        DespawnCoin();
+        DespawnDia();
+    }
+
+
+    private void OnChangeSceneEvent()
+    {
+        DespawnCoin();
+        DespawnDia();
+        ChallengeManager.Instance.OnMainChallengeUpdateHandler -= UpdateData;
+        LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
+    }
+
+
+    private void DespawnCoin()
+    {
+        foreach (RectTransform coin in _coinDic.Values)
+        {
+            if (coin == null)
+                continue;
+
+            ObjectPoolManager.Instance.DespawnUICoin(coin);
+        }
+        _coinDic.Clear();
+    }
+
+
+    private void DespawnDia()
+    {
+        foreach (RectTransform dia in _diaDic.Values)
+        {
+            if (dia == null)
+                continue;
+
+            ObjectPoolManager.Instance.DespawnUIDia(dia);
+        }
+        _diaDic.Clear();
     }
 }

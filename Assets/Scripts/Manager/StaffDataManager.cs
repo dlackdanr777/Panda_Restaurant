@@ -28,7 +28,7 @@ public class StaffDataManager : MonoBehaviour
     public StaffData GetStaffData(string id)
     {
         if (!_staffDataDic.TryGetValue(id, out StaffData data))
-            throw new System.Exception("해당 id값이 존재하지 않습니다.");
+            throw new System.Exception("해당 id값이 존재하지 않습니다:" + id);
 
         return data;
     }

@@ -507,7 +507,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE05:
                 Type05ChallengeData data05 = (Type05ChallengeData)data;
-                if (UserInfo.IsGiveStaff(data05.NeedStaffId))
+                if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data05.NeedStaffId))
                     return 1;
                 return 0;
 
@@ -548,7 +548,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE13:
                 Type13ChallengeData data13 = (Type13ChallengeData)data;
-                int furnitureAndKitchenUtensilCount = UserInfo.GetFurnitureAndKitchenUtensilCount();
+                int furnitureAndKitchenUtensilCount = UserInfo.GetFurnitureAndKitchenUtensilCount(UserInfo.CurrentStage);
                 return furnitureAndKitchenUtensilCount == 0 ? 0 : Math.Min(1, (float)furnitureAndKitchenUtensilCount / data13.Count);
 
             case ChallengeType.TYPE14:
@@ -573,7 +573,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE18:
                 Type18ChallengeData data18 = (Type18ChallengeData)data;
-                int giveFurnitureCount = UserInfo.GetGiveFurnitureCount();
+                int giveFurnitureCount = UserInfo.GetGiveFurnitureCount(UserInfo.CurrentStage);
                 return giveFurnitureCount == 0 ? 0 : Math.Min(1, (float)giveFurnitureCount / data18.Count);
 
             case ChallengeType.TYPE19:
@@ -745,7 +745,7 @@ public class ChallengeManager : MonoBehaviour
             bool _isGives = true;
             for (int i = 0, cnt = data.NeedFurnitureIds.Length; i < cnt; i++)
             {
-                if (!UserInfo.IsGiveFurniture(data.NeedFurnitureIds[i]))
+                if (!UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data.NeedFurnitureIds[i]))
                 {
                     _isGives = false;
                     break;
@@ -951,7 +951,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (!UserInfo.IsGiveStaff(data.NeedStaffId))
+            if (!UserInfo.IsGiveStaff(UserInfo.CurrentStage, data.NeedStaffId))
                 continue;
 
             switch (data.Challenges)
@@ -1294,7 +1294,7 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type13ChallengeCheck()
     {
-        int furnitureCount = UserInfo.GetFurnitureAndKitchenUtensilCount();
+        int furnitureCount = UserInfo.GetFurnitureAndKitchenUtensilCount(UserInfo.CurrentStage);
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
@@ -1528,7 +1528,7 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type18ChallengeCheck()
     {
-        int giveFurnitureCount = UserInfo.GetGiveFurnitureCount();
+        int giveFurnitureCount = UserInfo.GetGiveFurnitureCount(UserInfo.CurrentStage);
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;

@@ -216,7 +216,7 @@ public class FurnitureGroup : MonoBehaviour
         if (floorType != _floorType)
             return;
 
-        FurnitureData equipFurniture = UserInfo.GetEquipFurniture(floorType, type);
+        FurnitureData equipFurniture = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, floorType, type);
 
         foreach (Furniture data in _furnitureDic[type])
         {
@@ -233,7 +233,7 @@ public class FurnitureGroup : MonoBehaviour
         if (type < FurnitureType.Table1 || FurnitureType.Table5 < type)
             return;
 
-        FurnitureData equipFurniture = UserInfo.GetEquipFurniture(_floorType, type);
+        FurnitureData equipFurniture = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _floorType, type);
         TableData data = _tableDataDic[(TableType)type];
         if (equipFurniture == null)
         {
@@ -257,7 +257,7 @@ public class FurnitureGroup : MonoBehaviour
             TableType type = (TableType)i;
             TableData data = _tableDataDic[type];
 
-            if (UserInfo.GetEquipFurniture(_floorType, (FurnitureType)i) == null)
+            if (UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _floorType, (FurnitureType)i) == null)
             {
                 _tableManager.NotFurnitureTable(data);
                 data.OrderButton.gameObject.SetActive(false);

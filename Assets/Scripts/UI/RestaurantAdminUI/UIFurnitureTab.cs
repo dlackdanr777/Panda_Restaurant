@@ -28,7 +28,7 @@ public class UIFurnitureTab : MonoBehaviour
             UITabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
             slot.Init(() => OnSlotClicked(index));
-            BasicData data = UserInfo.GetEquipFurniture(_floorType, (FurnitureType)index);
+            BasicData data = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _floorType, (FurnitureType)index);
             Sprite sprite = data != null ? data.ThumbnailSprite : null;
             slot.UpdateUI(sprite, Utility.FurnitureTypeStringConverter((FurnitureType)index));
             slot.name = "FurnitureTabSlot" + (i + 1);
@@ -66,7 +66,7 @@ public class UIFurnitureTab : MonoBehaviour
         if (_floorType != floorType)
             return;
 
-        BasicData data = UserInfo.GetEquipFurniture(floorType, type);
+        BasicData data = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, floorType, type);
         Sprite sprite = data != null ? data.ThumbnailSprite : null;
         _slots[(int)type].UpdateUI(sprite, Utility.FurnitureTypeStringConverter(type));
     }

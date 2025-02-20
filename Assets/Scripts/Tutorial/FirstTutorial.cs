@@ -43,15 +43,15 @@ public class FirstTutorial : MonoBehaviour
         _mainSceneUI.gameObject.SetActive(false);
         _punchHole.gameObject.SetActive(false);
         UserInfo.IsTutorialStart = true;
-        UserInfo.GiveFurniture("COUNTER01");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "COUNTER01");
-        UserInfo.GiveFurniture("WALLPAPER01");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "WALLPAPER01");
-        UserInfo.GiveFurniture("WALLPAPER01");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, "WALLPAPER01");
+        UserInfo.GiveFurniture(EStage.Stage1, "COUNTER01");
+        UserInfo.SetEquipFurniture(UserInfo.CurrentStage, ERestaurantFloorType.Floor1, "COUNTER01");
+        UserInfo.GiveFurniture(EStage.Stage1, "WALLPAPER01");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "WALLPAPER01");
+        UserInfo.GiveFurniture(EStage.Stage1, "WALLPAPER01");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "WALLPAPER01");
 
-        UserInfo.GiveStaff("STAFF11");
-        UserInfo.SetEquipStaff(ERestaurantFloorType.Floor1, "STAFF11");
+        UserInfo.GiveStaff(EStage.Stage1, "STAFF11");
+        UserInfo.SetEquipStaff(EStage.Stage1, ERestaurantFloorType.Floor1, "STAFF11");
         StartCoroutine(StartTutorial());
     }
 
@@ -121,7 +121,7 @@ public class FirstTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(1);
         _uiTutorial.BuyHoleSetActive(true);
         _uiTutorial.SetBuyHoleTargetObjectName("Buy Button");
-        while(!UserInfo.IsGiveFurniture("TABLE01_01"))
+        while(!UserInfo.IsGiveFurniture(EStage.Stage1, "TABLE01_01"))
             yield return YieldCache.WaitForSeconds(0.02f);
 
         yield return YieldCache.WaitForSeconds(1);
@@ -129,7 +129,7 @@ public class FirstTutorial : MonoBehaviour
         _uiTutorial.SetBuyHoleTargetObjectName("Equip Button");
         FurnitureData table1Data = FurnitureDataManager.Instance.GetFurnitureData("TABLE01_01");
 
-        while (!UserInfo.IsEquipFurniture(ERestaurantFloorType.Floor1, table1Data))
+        while (!UserInfo.IsEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, table1Data))
             yield return YieldCache.WaitForSeconds(0.02f);
 
         yield return YieldCache.WaitForSeconds(1);
@@ -313,11 +313,11 @@ public class FirstTutorial : MonoBehaviour
     private void OnSkipButtonClicked()
     {
         UserInfo.GiveRecipe("FOOD01");
-        UserInfo.GiveFurniture("TABLE01_01");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE01_01");
         UserInfo.GiveKitchenUtensil("COOKER01_01");
         KitchenUtensilData kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData("COOKER01_01");
         FurnitureData table1Data = FurnitureDataManager.Instance.GetFurnitureData("TABLE01_01");
-        UserInfo.SetEquipFurniture(ERestaurantFloorType.Floor1, table1Data);
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, table1Data);
         UserInfo.SetEquipKitchenUtensil(ERestaurantFloorType.Floor1, kitchenData);
 
         _uiTutorial.PopEnabled = true;

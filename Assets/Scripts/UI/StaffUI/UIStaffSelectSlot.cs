@@ -67,9 +67,9 @@ public class UIStaffSelectSlot : MonoBehaviour
         _image.gameObject.SetActive(true);
         _nameText.gameObject.SetActive(true);
 
-        if (UserInfo.IsGiveStaff(data))
+        if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
         {
-            int level = UserInfo.GetStaffLevel(data);
+            int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, data);
             if (data.UpgradeEnable(level))
             {
                 _upgradeImage.gameObject.SetActive(true);

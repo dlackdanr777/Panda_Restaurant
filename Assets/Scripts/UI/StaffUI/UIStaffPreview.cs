@@ -39,8 +39,6 @@ public class UIStaffPreview : MonoBehaviour
     private StaffData _currentData;
     private ERestaurantFloorType _currentType;
 
-
-
     public void Init(Action<ERestaurantFloorType, StaffData> onEquipButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
     {
         _selectGroup.Init();
@@ -90,7 +88,7 @@ public class UIStaffPreview : MonoBehaviour
             _addTipPercentGroup.gameObject.SetActive(true);
             _selectGroup.ImageColor = Color.white;
         }
-        int level = UserInfo.IsGiveStaff(data) ? UserInfo.GetStaffLevel(data) : 1;
+        int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
 
         _selectGroup.SetSprite(data.ThumbnailSprite);
         _selectGroup.SetText(data.Name);
@@ -98,8 +96,8 @@ public class UIStaffPreview : MonoBehaviour
         _addTipPercentGroup.SetText("메뉴별 팁 <color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddTipMul(level) + "%</color> 증가");
         _skillEffectGroup.SetData(data);
 
-        StaffData equipData = UserInfo.GetEquipStaff(type, StaffDataManager.Instance.GetStaffType(data));
-        int equipDataLevel = equipData == null ? 1 : UserInfo.IsGiveStaff(equipData) ? UserInfo.GetStaffLevel(equipData) : 1;
+        StaffData equipData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, type, StaffDataManager.Instance.GetStaffType(data));
+        int equipDataLevel = equipData == null ? 1 : UserInfo.IsGiveStaff(UserInfo.CurrentStage, equipData) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, equipData) : 1;
         if (equipData == null)
         {
             _scoreSignGroup.Image1SetActive(false);
@@ -142,11 +140,11 @@ public class UIStaffPreview : MonoBehaviour
             }
         }
 
-        if (UserInfo.IsGiveStaff(data))
+        if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
         {
             _levelGroup.gameObject.SetActive(true);
             _levelGroup.SetText(data.UpgradeEnable(level) ? "Lv." + level : "Lv.Max");
-            ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(data);
+            ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
             switch (furnitureFloorType)
             {
                 case ERestaurantFloorType.Floor1:
@@ -297,7 +295,7 @@ public class UIStaffPreview : MonoBehaviour
             return;
         }
 
-        ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(_currentData);
+        ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, _currentData);
         _onEquipButtonClicked?.Invoke(floorType, null);
     }
 

@@ -93,7 +93,7 @@ public class UIFurniturePreview : MonoBehaviour
         string effectText = Utility.GetEquipEffectDescription(data.EquipEffectType, data.EffectValue);
         _tipPerMinuteGroup.SetText(effectText);
 
-        FurnitureData equipData = UserInfo.GetEquipFurniture(type, data.Type);
+        FurnitureData equipData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, type, data.Type);
         if (equipData == null)
         {
             _scoreSignGroup.Image1SetActive(false);
@@ -138,9 +138,9 @@ public class UIFurniturePreview : MonoBehaviour
 
 
 
-        if (UserInfo.IsGiveFurniture(data))
+        if (UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data))
         {
-            ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipFurnitureFloorType(data);
+            ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, data);
             switch (furnitureFloorType)
             {
                 case ERestaurantFloorType.Floor1:
@@ -291,7 +291,7 @@ public class UIFurniturePreview : MonoBehaviour
             return;
         }
 
-        ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(_currentData);
+        ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, _currentData);
         _onEquipButtonClicked?.Invoke(floorType, null);
     }
 }

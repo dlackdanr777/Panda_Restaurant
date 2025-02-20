@@ -40,6 +40,8 @@ public class DropCoinArea : MonoBehaviour
             ObjectPoolManager.Instance.DespawnCoin(_coinList[i]);
         }
         _coinList.Clear();
+
+        LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
     }
 
 
@@ -156,5 +158,23 @@ public class DropCoinArea : MonoBehaviour
             endTime -= _coinAnimeInterval;
         }
         _coinList.Clear();
+    }
+
+
+    private void OnChangeSceneEvent()
+    {
+        DespawnCoin();
+        LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
+    }
+
+
+    private void DespawnCoin()
+    {
+        for(int i = 0, cnt = _coinList.Count; i < cnt; ++i)
+        {
+            ObjectPoolManager.Instance.DespawnCoin(_coinList[i]);         
+        }
+
+        _coinList?.Clear();
     }
 }

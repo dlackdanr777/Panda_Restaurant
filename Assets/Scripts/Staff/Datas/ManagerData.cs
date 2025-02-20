@@ -39,7 +39,7 @@ public class ManagerData : StaffData
         staff.SetLayer("Manager", 0);
 
         Vector3 pos = tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Manager);
-        staff.transform.position = UserInfo.IsEquipFurniture(staff.EquipFloorType, FurnitureType.Counter) ? pos : pos - new Vector3(0, 1.75f, 0);
+        staff.transform.position = UserInfo.IsEquipFurniture(UserInfo.CurrentStage, staff.EquipFloorType, FurnitureType.Counter) ? pos : pos - new Vector3(0, 1.75f, 0);
 
         if(!_isSubscribed)
         {
@@ -103,7 +103,7 @@ public class ManagerData : StaffData
             return;
 
         Vector3 pos = _tableManager.GetStaffPos(_staff.EquipFloorType, StaffType.Manager);
-        _staff.transform.position = UserInfo.IsEquipFurniture(_staff.EquipFloorType, FurnitureType.Counter) ? pos : pos - new Vector3(0, 1.75f, 0);
+        _staff.transform.position = UserInfo.IsEquipFurniture(UserInfo.CurrentStage, _staff.EquipFloorType, FurnitureType.Counter) ? pos : pos - new Vector3(0, 1.75f, 0);
     }
 }
 

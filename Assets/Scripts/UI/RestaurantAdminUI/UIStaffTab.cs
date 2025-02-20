@@ -26,7 +26,7 @@ public class UIStaffTab : MonoBehaviour
             UITabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
             slot.Init(() => OnSlotClicked(index));
-            BasicData data = UserInfo.GetEquipStaff(_floorType, (StaffType)index);
+            BasicData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, (StaffType)index);
             Sprite sprite = data != null ? data.ThumbnailSprite : null;
             slot.UpdateUI(sprite, Utility.StaffTypeStringConverter((StaffType)index));
             slot.name = "StaffTabSlot" + (i + 1);
@@ -61,7 +61,7 @@ public class UIStaffTab : MonoBehaviour
         if (_floorType != floorType)
             return;
 
-        BasicData data = UserInfo.GetEquipStaff(_floorType, type);
+        BasicData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);
         Sprite sprite = data != null ? data.ThumbnailSprite : null;
         _slots[(int)type].UpdateUI(sprite, Utility.StaffTypeStringConverter(type));
     }

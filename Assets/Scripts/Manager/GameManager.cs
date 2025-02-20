@@ -176,8 +176,9 @@ public class GameManager : MonoBehaviour
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 
-        Param param = UserInfo.GetSaveGameData();
+        Param param = UserInfo.GetSaveUserData();
         BackendManager.Instance.SaveGameData("GameData", 3, param);
+        UserInfo.SaveStageData();
         DebugLog.Log("저장");
     }
 
@@ -186,8 +187,9 @@ public class GameManager : MonoBehaviour
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 
-        Param param = UserInfo.GetSaveGameData();
+        Param param = UserInfo.GetSaveUserData();
         BackendManager.Instance.SaveGameDataAsync("GameData", 3, param);
+        UserInfo.SaveStageDataAsync();
         DebugLog.Log("저장");
     }
 
@@ -264,12 +266,12 @@ public class GameManager : MonoBehaviour
         {
             for (int j = 0, cntJ = (int)StaffType.Length; j < cntJ; ++j)
             {
-                StaffData data = UserInfo.GetEquipStaff((ERestaurantFloorType)i, (StaffType)j);
+                StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, (ERestaurantFloorType)i, (StaffType)j);
 
                 if (data == null)
                     continue;
 
-                int level = UserInfo.GetStaffLevel(data);
+                int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, data);
                 if ((StaffType)j == StaffType.Manager)
                 {
                     ManagerData managerData = (ManagerData)data;
@@ -304,7 +306,7 @@ public class GameManager : MonoBehaviour
         {
             for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
             {
-                FurnitureData data = UserInfo.GetEquipFurniture((ERestaurantFloorType)i, (FurnitureType)j);
+                FurnitureData data = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, (ERestaurantFloorType)i, (FurnitureType)j);
 
                 if (data == null)
                     continue;
@@ -401,7 +403,7 @@ public class GameManager : MonoBehaviour
 
         for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
-            UserInfo.SetEquipFurnitureSetData(ERestaurantFloorType.Floor1, GetEquipFurnitureSetData((ERestaurantFloorType)i));
+            UserInfo.SetEquipFurnitureSetData(UserInfo.CurrentStage, ERestaurantFloorType.Floor1, GetEquipFurnitureSetData((ERestaurantFloorType)i));
             UserInfo.SetEquipKitchenUntensilSetData(ERestaurantFloorType.Floor1, GetEquipKitchenUtensilSetData((ERestaurantFloorType)i));
         }
 
@@ -413,7 +415,7 @@ public class GameManager : MonoBehaviour
             string setId = string.Empty;
             for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
             {
-                FurnitureData data = UserInfo.GetEquipFurniture(type, (FurnitureType)j);
+                FurnitureData data = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, type, (FurnitureType)j);
                 if (data == null)
                     return null;
 

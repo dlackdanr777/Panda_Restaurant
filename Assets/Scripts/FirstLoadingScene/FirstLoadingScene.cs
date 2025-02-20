@@ -19,6 +19,7 @@ public class FirstLoadingScene : MonoBehaviour
             await BackendManager.Instance.GuestLogin(10, (bro) =>
             {
                 BackendManager.Instance.GetMyData("GameData", 10, UserInfo.LoadGameData);
+                UserInfo.LoadStageData();
                 Tween.Wait(1, () =>
                 {
                     _uiFirstLoadingScene.HideTitle(() =>

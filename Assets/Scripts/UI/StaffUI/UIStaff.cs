@@ -142,7 +142,7 @@ public class UIStaff : MobileUIView
 
     private void SetStaffPreview()
     {
-        StaffData equipStaffData = UserInfo.GetEquipStaff(_currentFloorType, _currentType);
+        StaffData equipStaffData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _currentFloorType, _currentType);
         _uiStaffPreview.SetData(_currentFloorType, equipStaffData != null ? equipStaffData : _currentTypeDataList.Count <= 0 ? null : _currentTypeDataList[0]);
     }
 
@@ -161,19 +161,19 @@ public class UIStaff : MobileUIView
         if(data == null)
         {
             SoundManager.Instance.PlayEffectAudio(_dequipSound);
-            UserInfo.SetNullEquipStaff(floorType, _currentType);
+            UserInfo.SetNullEquipStaff(UserInfo.CurrentStage, floorType, _currentType);
             SetStaffData(_currentType);
             return;
         }
         SoundManager.Instance.PlayEffectAudio(_equipSound);
-        UserInfo.SetEquipStaff(floorType, data);
+        UserInfo.SetEquipStaff(UserInfo.CurrentStage, floorType, data);
         SetStaffData(_currentType);
     }
 
 
     private void OnBuyButtonClicked(StaffData data)
     {
-        if (UserInfo.IsGiveStaff(data.Id))
+        if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data.Id))
         {
             PopupManager.Instance.ShowTextError();
             return;
@@ -203,7 +203,7 @@ public class UIStaff : MobileUIView
         else if (data.MoneyType == MoneyType.Dia)
             UserInfo.AddDia(-data.BuyPrice);
 
-        UserInfo.GiveStaff(data);
+        UserInfo.GiveStaff(UserInfo.CurrentStage, data);
         PopupManager.Instance.ShowDisplayText("새로운 직원을 채용했어요!");
     }
 
@@ -237,9 +237,9 @@ public class UIStaff : MobileUIView
             slot = _slots[slotsIndex][i];
             slot.gameObject.SetActive(true);
             slot.transform.SetSiblingIndex(i);
-            if (UserInfo.IsGiveStaff(data))
+            if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
             {
-                ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(data);
+                ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
                 if(floorType < ERestaurantFloorType.Length)
                 {
                     equipSlotArray[equipSlotCount++] = (floorType, slot);

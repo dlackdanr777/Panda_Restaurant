@@ -123,7 +123,7 @@ public class UIFurniture : MobileUIView
         } 
 
         _currentType = type;
-        FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(_currentFloorType, type);
+        FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _currentFloorType, type);
         _currentTypeDataList = FurnitureDataManager.Instance.GetFurnitureDataList(type);
         string furnitureName = Utility.FurnitureTypeStringConverter(type);
         _typeText.text = furnitureName;
@@ -133,7 +133,7 @@ public class UIFurniture : MobileUIView
 
     private void SetFurniturePreview()
     {
-        FurnitureData equipData = UserInfo.GetEquipFurniture(_currentFloorType, _currentType);
+        FurnitureData equipData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _currentFloorType, _currentType);
         _uiFurniturePreview.SetData(_currentFloorType, equipData != null ? equipData : _currentTypeDataList[0]);
     }
 
@@ -152,19 +152,19 @@ public class UIFurniture : MobileUIView
         if (data == null)
         {
             SoundManager.Instance.PlayEffectAudio(_dequipSound);
-            UserInfo.SetNullEquipFurniture(type, _currentType);
+            UserInfo.SetNullEquipFurniture(UserInfo.CurrentStage, type, _currentType);
             SetFurnitureData(_currentType);
             return;
         }
 
         SoundManager.Instance.PlayEffectAudio(_equipSound);
-        UserInfo.SetEquipFurniture(type, data);
+        UserInfo.SetEquipFurniture(UserInfo.CurrentStage, type, data);
         SetFurnitureData(_currentType);
     }
 
     private void OnBuyButtonClicked(FurnitureData data)
     {
-        if (UserInfo.IsGiveFurniture(data.Id))
+        if (UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data.Id))
         {
             PopupManager.Instance.ShowTextError();
             return;
@@ -194,7 +194,7 @@ public class UIFurniture : MobileUIView
         else if(data.MoneyType == MoneyType.Dia)
             UserInfo.AddDia(-data.BuyPrice);
 
-        UserInfo.GiveFurniture(data);
+        UserInfo.GiveFurniture(UserInfo.CurrentStage, data);
         PopupManager.Instance.ShowDisplayText("새로운 가구를 구매했어요!");
     }
 
@@ -229,9 +229,9 @@ public class UIFurniture : MobileUIView
             slot.gameObject.SetActive(true);
             slot.transform.SetSiblingIndex(i);
 
-            if (UserInfo.IsGiveFurniture(data))
+            if (UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data))
             {
-                ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(data);
+                ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, data);
                 if (floorType < ERestaurantFloorType.Length)
                 {
                     equipSlotArray[equipSlotCount++] = (floorType, slot);

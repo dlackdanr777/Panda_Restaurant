@@ -204,7 +204,7 @@ public static class Utility
     public static string GetStaffEffectDescription(StaffData data)
     {
         string description = string.Empty;
-        int level = UserInfo.IsGiveStaff(data) ? UserInfo.GetStaffLevel(data) : 1;
+        int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
 
         switch(data)
         {
@@ -243,7 +243,7 @@ public static class Utility
 
     public static string GetStaffSkillDescription(StaffData data)
     {
-        int level = UserInfo.IsGiveStaff(data) ? UserInfo.GetStaffLevel(data) : 1;
+        int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
         return data.Skill switch
         {
             SpeedUpSkill => $"행동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가 ({data.Skill.Duration}s)",
