@@ -18,24 +18,14 @@ public class DropGarbageArea : MonoBehaviour
     [SerializeField] private AudioClip _cleanSound;
 
     
+    private GarbageAreaData _garbageData;
     private List<PointerDownSpriteRenderer> _garbageList = new List<PointerDownSpriteRenderer>();
     public int Count => _garbageList.Count;
     private Vector3[] _rotate = new Vector3[7];
 
-    private void Awake()
+
+    public void Init(GarbageAreaData data)
     {
-        Init();
-    }
-
-
-    private void Init()
-    {
-        for (int i = 0; i < _garbageList.Count; i++)
-        {
-            ObjectPoolManager.Instance.DespawnGarbage(_garbageList[i]);
-        }
-        _garbageList.Clear();
-
         _rotate[0] = new Vector3(0, 0, 0);
         _rotate[1] = new Vector3(0, 0, 90);
         _rotate[2] = new Vector3(0, 0, 180);
@@ -43,11 +33,16 @@ public class DropGarbageArea : MonoBehaviour
         _rotate[4] = new Vector3(0, 0, -90);
         _rotate[5] = new Vector3(0, 0, -180);
         _rotate[6] = new Vector3(0, 0, -270);
+
+        LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
+        LoadData(data);
     }
 
-    public void LoadData(int count)
+
+    private void LoadData(GarbageAreaData data)
     {
-        count = Mathf.Clamp(count, 0, _maxGarbageCount);
+        _garbageData = data;
+        int count = Mathf.Clamp(_garbageData.Count, 0, _maxGarbageCount);
 
         for (int i = 0, cnt = _garbageList.Count; i < cnt; ++i)
         {
@@ -85,7 +80,7 @@ public class DropGarbageArea : MonoBehaviour
             if (transform == null)
                 return;
 
-            if (_maxGarbageCount <= _garbageList.Count)
+            if (_maxGarbageCount < _garbageList.Count)
             {
                 garbage.TweenStop();
                 ObjectPoolManager.Instance.DespawnGarbage(garbage);
@@ -93,6 +88,7 @@ public class DropGarbageArea : MonoBehaviour
             }
 
             _garbageList.Add(garbage);
+            _garbageData.SetCount(_garbageList.Count);
             garbage.AddEvent(CleanGarbage);
             garbage.transform.position = targetPos;
             garbage.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
@@ -126,5 +122,24 @@ public class DropGarbageArea : MonoBehaviour
 
         }
         _garbageList.Clear();
+        _garbageData.SetCount(0);
+    }
+
+
+    private void OnChangeSceneEvent()
+    {
+        DespawnGarbage();
+        LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
+    }
+
+
+    private void DespawnGarbage()
+    {
+        for (int i = 0, cnt = _garbageList.Count; i < cnt; ++i)
+        {
+            ObjectPoolManager.Instance.DespawnGarbage(_garbageList[i]);
+        }
+
+        _garbageList?.Clear();
     }
 }

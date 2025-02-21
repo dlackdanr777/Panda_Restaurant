@@ -23,7 +23,7 @@ MonoBehaviour:
   - m_enabled: 1
     m_path: Assets/Scenes/FirstLoadingScene.unity
   - m_enabled: 1
-    m_path: Assets/Scenes/MainScene.unity
+    m_path: Assets/Scenes/Stage1.unity
   - m_enabled: 1
     m_path: Assets/Scenes/LoadingScene.unity
   m_ScriptingDefines: []

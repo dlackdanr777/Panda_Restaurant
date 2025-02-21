@@ -62,7 +62,7 @@ public class GatecrasherCustomer : Customer
     }
 
 
-    public override void SetData(CustomerData data, ERestaurantFloorType visitFloorType)
+    public override void SetData(CustomerData data, TableManager tableManager, ERestaurantFloorType visitFloorType)
     {
         if (!(data is GatecrasherCustomerData))
         {
@@ -71,7 +71,7 @@ public class GatecrasherCustomer : Customer
         }
         GatecrasherCustomerData gatecrasherData = (GatecrasherCustomerData)data;
         _animator.runtimeAnimatorController = gatecrasherData.Controller;
-        base.SetData(data, visitFloorType);
+        base.SetData(data, tableManager, visitFloorType);
         _activeDuration = gatecrasherData.ActiveDuration;
         _currentTouchCount = 0;
         _totalTouchCount = gatecrasherData.TouchCount;
@@ -290,21 +290,20 @@ public class GatecrasherCustomer : Customer
 
     public DropCoinArea GetMinDistanceCoinArea(List<DropCoinArea> dropCoinAreaList, Vector3 startPos)
     {
-
-        int moveObjFloor = AStar.Instance.GetTransformFloor(startPos);
+        Vector3 targetDoorPos = _tableManager.GetDoorPos(startPos);
         List<DropCoinArea> equalFloorArea = new List<DropCoinArea>();
         List<DropCoinArea> notEqualFloorArea = new List<DropCoinArea>();
 
         for (int i = 0, cnt = dropCoinAreaList.Count; i < cnt; i++)
         {
-            int targetFloor = AStar.Instance.GetTransformFloor(dropCoinAreaList[i].transform.position);
+            Vector3 coinDoorPos = _tableManager.GetDoorPos(dropCoinAreaList[i].transform.position);
             if (dropCoinAreaList[i].Count <= 0)
                 continue;
 
-            if (moveObjFloor == targetFloor)
+            if (Vector3.Distance(targetDoorPos, coinDoorPos) <= 0.5f)
                 equalFloorArea.Add(dropCoinAreaList[i]);
 
-            else if (moveObjFloor != targetFloor)
+            else
                 notEqualFloorArea.Add(dropCoinAreaList[i]);
         }
 
@@ -335,10 +334,9 @@ public class GatecrasherCustomer : Customer
 
             for (int i = 0, cnt = notEqualFloorArea.Count; i < cnt; i++)
             {
-                int targetFloor = AStar.Instance.GetTransformFloor(notEqualFloorArea[i].transform.position);
-                Vector2 floorDoorPos = AStar.Instance.GetFloorPos(targetFloor);
+                Vector3 coinDoorPos = _tableManager.GetDoorPos(notEqualFloorArea[i].transform.position);
 
-                if (Vector2.Distance(notEqualFloorArea[i].transform.position, floorDoorPos) < minDis)
+                if (Vector2.Distance(notEqualFloorArea[i].transform.position, coinDoorPos) < minDis)
                 {
                     minDis = Vector2.Distance(notEqualFloorArea[i].transform.position, startPos);
                     minIndex = i;

@@ -23,15 +23,15 @@ public class UIBetaTestSurvey : MonoBehaviour
 
     private void OnGiveFurnitureEvent()
     {
-        bool isActive = UserInfo.IsActivatedFurnitureEffectSet("SET01");
+        bool isActive = UserInfo.IsActivatedFurnitureEffectSet(EStage.Stage1, "SET01");
         _alramImage.gameObject.SetActive(isActive);
     }
 
 
     private void OnButtonClicked()
     {
-        DebugLog.Log(UserInfo.GetEffectSetFurnitureCount("SET01"));
-        if(UserInfo.IsActivatedFurnitureEffectSet("SET01"))
+        DebugLog.Log(UserInfo.GetEffectSetFurnitureCount(EStage.Stage1, "SET01"));
+        if(UserInfo.IsActivatedFurnitureEffectSet(EStage.Stage1, "SET01"))
         {
             Application.OpenURL("https://naver.me/5XJ7mKyj");
             return;

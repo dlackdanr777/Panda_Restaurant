@@ -42,9 +42,9 @@ public class NormalCustomer : Customer
     }
 
 
-    public override void SetData(CustomerData data, ERestaurantFloorType visitFloorType)
+    public override void SetData(CustomerData data, TableManager tableManager, ERestaurantFloorType visitFloorType)
     {
-        base.SetData(data, visitFloorType);
+        base.SetData(data, tableManager, visitFloorType);
         HideFood();
         _doublePricePercent = 0;
         _currentFoodPriceMul = 1;

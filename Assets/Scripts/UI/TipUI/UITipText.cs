@@ -12,8 +12,8 @@ public class UITipText : MonoBehaviour
 
     private void Awake()
     {
-        _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
-        _currentTip = UserInfo.Tip;
+        _tipText.text = Utility.ConvertToMoney(UserInfo.GetTip(UserInfo.CurrentStage));
+        _currentTip = UserInfo.GetTip(UserInfo.CurrentStage);
 
         UserInfo.OnChangeTipHandler += OnChangeMoneyEvent;
     }
@@ -27,16 +27,16 @@ public class UITipText : MonoBehaviour
     {
         if (!gameObject.activeInHierarchy)
         {
-            _currentTip = UserInfo.Tip;
+            _currentTip = UserInfo.GetTip(UserInfo.CurrentStage);
             return;
         }
 
-        int addMoney = UserInfo.Tip - _currentTip;
+        int addMoney = UserInfo.GetTip(UserInfo.CurrentStage) - _currentTip;
 
         if (addMoney == 0)
             return;
 
-        _currentTip = UserInfo.Tip;
+        _currentTip = UserInfo.GetTip(UserInfo.CurrentStage);
 
         if (_moneyAnimeRoutine != null)
             StopCoroutine(_moneyAnimeRoutine);
@@ -46,8 +46,8 @@ public class UITipText : MonoBehaviour
 
     private IEnumerator AddMoneyAnime(int addMoney)
     {
-        int startMoney = UserInfo.Tip - addMoney;
-        int targetMoney = UserInfo.Tip;
+        int startMoney = UserInfo.GetTip(UserInfo.CurrentStage) - addMoney;
+        int targetMoney = UserInfo.GetTip(UserInfo.CurrentStage);
         float time = 0;
 
         while (time < 1)
@@ -56,6 +56,6 @@ public class UITipText : MonoBehaviour
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
+        _tipText.text = Utility.ConvertToMoney(UserInfo.GetTip(UserInfo.CurrentStage));
     }
 }

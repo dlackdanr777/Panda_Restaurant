@@ -26,7 +26,7 @@ public class StaffGroup : MonoBehaviour
         {
             StaffType type = (StaffType)i;
             Staff staff = Instantiate(staffPrefab, transform);
-            staff.Init();
+            staff.Init(tableManager);
 
             _staffDic.Add(type, staff);
             StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);

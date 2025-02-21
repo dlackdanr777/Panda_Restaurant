@@ -28,11 +28,11 @@ public class StaffController : MonoBehaviour
         }
     }
 
-    private void Update()
+    private void FixedUpdate()
     {
         foreach(StaffGroup group in _staffGroupDic.Values)
         {
-            if (!UserInfo.IsFloorValid(group.FloorType))
+            if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, group.FloorType))
                 continue;
 
             group.UpdateStaff();

@@ -51,8 +51,9 @@ public class UITip : MobileUIView
         _advertisingButton.onClick.AddListener(OnAdvertisingButtonClicked);
         UserInfo.OnChangeTipHandler += OnChangeMoneyEvent;
 
-        _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
-        _currentTip = UserInfo.Tip;
+        int tip = UserInfo.GetTip(UserInfo.CurrentStage);
+        _tipText.text = Utility.ConvertToMoney(tip);
+        _currentTip = tip;
 
         gameObject.SetActive(false);
     }
@@ -64,8 +65,9 @@ public class UITip : MobileUIView
         _dontTouchArea.gameObject.SetActive(false);
         _canvasGroup.blocksRaycasts = false;
 
-        _tipText.text = Utility.ConvertToMoney(UserInfo.Tip);
-        _currentTip = UserInfo.Tip;
+        int tip = UserInfo.GetTip(UserInfo.CurrentStage);
+        _tipText.text = Utility.ConvertToMoney(tip);
+        _currentTip = tip;
 
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
@@ -96,7 +98,7 @@ public class UITip : MobileUIView
 
     private void OnCollectTipButtonClicked()
     {
-        if (UserInfo.Tip <= 0)
+        if (UserInfo.GetTip(UserInfo.CurrentStage) <= 0)
         {
             PopupManager.Instance.ShowDisplayText("È¹µæ °¡´ÉÇÑ ÆÁÀÌ ¾ø½À´Ï´Ù.");
             return;
@@ -107,7 +109,7 @@ public class UITip : MobileUIView
 
     private void OnAdvertisingButtonClicked()
     {
-        if (UserInfo.Tip <= 0)
+        if (UserInfo.GetTip(UserInfo.CurrentStage) <= 0)
         {
             PopupManager.Instance.ShowDisplayText("È¹µæ °¡´ÉÇÑ ÆÁÀÌ ¾ø½À´Ï´Ù.");
             return;
@@ -126,10 +128,10 @@ public class UITip : MobileUIView
         Tween.Wait(_hideDuration, () =>
         {
             float time = 0;
-            int tip = isAds ? UserInfo.Tip * 2 : UserInfo.Tip;
+            int tip = isAds ? UserInfo.GetTip(UserInfo.CurrentStage) * 2 : UserInfo.GetTip(UserInfo.CurrentStage);
             int coinCnt = tip / 500;
             coinCnt = coinCnt <= 10 ? 10 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
-            UserInfo.TipCollection(isAds);
+            UserInfo.TipCollection(UserInfo.CurrentStage, isAds);
             ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
             SoundManager.Instance.PlayEffectAudio(_collectTipSound);
             for (int i = 0, cnt = coinCnt; i < cnt; ++i)
@@ -164,17 +166,17 @@ public class UITip : MobileUIView
     {
         if (VisibleState == VisibleState.Disappeared || VisibleState == VisibleState.Disappearing)
         {
-            _currentTip = UserInfo.Tip;
+            _currentTip = UserInfo.GetTip(UserInfo.CurrentStage);
             return;
         }
 
 
-        int addMoney = UserInfo.Tip - _currentTip;
+        int addMoney = UserInfo.GetTip(UserInfo.CurrentStage) - _currentTip;
 
         if (addMoney == 0)
             return;
 
-        _currentTip = UserInfo.Tip;
+        _currentTip = UserInfo.GetTip(UserInfo.CurrentStage);
 
         if (_moneyAnimeRoutine != null)
             StopCoroutine(_moneyAnimeRoutine);
@@ -184,8 +186,8 @@ public class UITip : MobileUIView
 
     private IEnumerator AddMoneyAnime(int addMoney)
     {
-        int startMoney = UserInfo.Tip - addMoney;
-        int targetMoney = UserInfo.Tip;
+        int startMoney = UserInfo.GetTip(UserInfo.CurrentStage) - addMoney;
+        int targetMoney = UserInfo.GetTip(UserInfo.CurrentStage);
         float time = 0;
 
         while (time < 1)
@@ -194,6 +196,6 @@ public class UITip : MobileUIView
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        _tipText.SetText(Utility.ConvertToMoney(UserInfo.Tip));
+        _tipText.SetText(Utility.ConvertToMoney(UserInfo.GetTip(UserInfo.CurrentStage)));
     }
 }

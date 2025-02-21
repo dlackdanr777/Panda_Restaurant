@@ -118,7 +118,7 @@ public class KitchenUtensilGroup: MonoBehaviour
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
         {
             type = (KitchenUtensilType)i;
-            equipData = UserInfo.GetEquipKitchenUtensil(_floorType, type);
+            equipData = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, _floorType, type);
             foreach (KitchenUtensil data in _kitchenUtensilDic[type])
             {
                 data.SetData(equipData);
@@ -138,7 +138,7 @@ public class KitchenUtensilGroup: MonoBehaviour
         if (_floorType != floorType)
             return;
 
-        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(floorType, type);
+        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, floorType, type);
         foreach (KitchenUtensil data in _kitchenUtensilDic[type])
         {
             data.SetData(equipData);
@@ -150,7 +150,7 @@ public class KitchenUtensilGroup: MonoBehaviour
             _burnerCount = 0;
             for (int i = 0, cnt = (int)KitchenUtensilType.Burner5; i <= cnt; i++)
             {
-                if (UserInfo.GetEquipKitchenUtensil(floorType, (KitchenUtensilType)i) != null)
+                if (UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, floorType, (KitchenUtensilType)i) != null)
                     _burnerCount++;
             }
 

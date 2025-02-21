@@ -479,7 +479,7 @@ public class ChallengeManager : MonoBehaviour
                 Type01ChallengeData data01 = (Type01ChallengeData)data;
                 for (int i = 0, cnt = data01.NeedFurnitureIds.Length; i < cnt; i++)
                 {
-                    if (UserInfo.IsGiveKitchenUtensil(data01.NeedFurnitureIds[i]))
+                    if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data01.NeedFurnitureIds[i]))
                         percent += 1f / cnt;
                 }
                 return percent;
@@ -488,7 +488,7 @@ public class ChallengeManager : MonoBehaviour
                 Type02ChallengeData data02 = (Type02ChallengeData)data;
                 for(int i = 0, cnt = data02.NeedKitchenUtensilId.Length; i < cnt; i++)
                 {
-                    if (UserInfo.IsGiveKitchenUtensil(data02.NeedKitchenUtensilId[i]))
+                    if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data02.NeedKitchenUtensilId[i]))
                         percent += 1f / cnt;
                 }
                 return percent;
@@ -553,22 +553,22 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE14:
                 Type14ChallengeData data14 = (Type14ChallengeData)data;
-                int furnitureSetCount = UserInfo.GetActivatedFurnitureEffectSetCount();
+                int furnitureSetCount = UserInfo.GetActivatedFurnitureEffectSetCount(UserInfo.CurrentStage);
                 return furnitureSetCount == 0 ? 0 : Math.Min(1, (float)furnitureSetCount / data14.Count);
 
             case ChallengeType.TYPE15:
                 Type15ChallengeData data15 = (Type15ChallengeData)data;
-                int kitchenUtensilSetCount = UserInfo.GetActivatedKitchenUtensilEffectSetCount();
+                int kitchenUtensilSetCount = UserInfo.GetActivatedKitchenUtensilEffectSetCount(UserInfo.CurrentStage);
                 return kitchenUtensilSetCount == 0 ? 0 : Math.Min(1, (float)kitchenUtensilSetCount / data15.Count);
 
             case ChallengeType.TYPE16:
                 Type16ChallengeData data16 = (Type16ChallengeData)data;
-                int giveFurnitureSetCount = UserInfo.GetEffectSetFurnitureCount(data16.SetId);
+                int giveFurnitureSetCount = UserInfo.GetEffectSetFurnitureCount(UserInfo.CurrentStage, data16.SetId);
                 return giveFurnitureSetCount == 0 ? 0 : Math.Min(1, (float)giveFurnitureSetCount / ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT);
 
             case ChallengeType.TYPE17:
                 Type17ChallengeData data17 = (Type17ChallengeData)data;
-                int giveKitchenUntensilSetCount = UserInfo.GetEffectSetKitchenUtensilCount(data17.SetId);
+                int giveKitchenUntensilSetCount = UserInfo.GetEffectSetKitchenUtensilCount(UserInfo.CurrentStage, data17.SetId);
                 return giveKitchenUntensilSetCount == 0 ? 0 : Math.Min(1, (float)giveKitchenUntensilSetCount / ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT);
 
             case ChallengeType.TYPE18:
@@ -578,7 +578,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE19:
                 Type19ChallengeData data19 = (Type19ChallengeData)data;
-                int giveKitchenUntensilCount = UserInfo.GetGiveKitchenUtensilCount();
+                int giveKitchenUntensilCount = UserInfo.GetGiveKitchenUtensilCount(UserInfo.CurrentStage);
                 return giveKitchenUntensilCount == 0 ? 0 : Math.Min(1, (float)giveKitchenUntensilCount / data19.Count);
 
             case ChallengeType.TYPE21:
@@ -800,7 +800,7 @@ public class ChallengeManager : MonoBehaviour
 
             for (int i = 0, cnt = data.NeedKitchenUtensilId.Length; i < cnt; i++)
             {
-                if (!UserInfo.IsGiveKitchenUtensil(data.NeedKitchenUtensilId[i]))
+                if (!UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data.NeedKitchenUtensilId[i]))
                 {
                     _isGives = false;
                     break;
@@ -1341,7 +1341,7 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type14ChallengeCheck()
     {
-        int furnitureSetCount = UserInfo.GetActivatedFurnitureEffectSetCount();
+        int furnitureSetCount = UserInfo.GetActivatedFurnitureEffectSetCount(UserInfo.CurrentStage);
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
@@ -1388,7 +1388,7 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type15ChallengeCheck()
     {
-        int kitchenUtensilSetCount = UserInfo.GetActivatedKitchenUtensilEffectSetCount();
+        int kitchenUtensilSetCount = UserInfo.GetActivatedKitchenUtensilEffectSetCount(UserInfo.CurrentStage);
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
@@ -1447,7 +1447,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (UserInfo.GetEffectSetFurnitureCount(data.SetId) < ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
+            if (UserInfo.GetEffectSetFurnitureCount(UserInfo.CurrentStage, data.SetId) < ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
                 continue;
 
             switch (data.Challenges)
@@ -1493,7 +1493,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (UserInfo.GetEffectSetKitchenUtensilCount(data.SetId) < ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
+            if (UserInfo.GetEffectSetKitchenUtensilCount(UserInfo.CurrentStage, data.SetId) < ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
                 continue;
 
             switch (data.Challenges)
@@ -1576,7 +1576,7 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type19ChallengeCheck()
     {
-        int giveKitchenUtensilCount = UserInfo.GetGiveKitchenUtensilCount();
+        int giveKitchenUtensilCount = UserInfo.GetGiveKitchenUtensilCount(UserInfo.CurrentStage);
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;

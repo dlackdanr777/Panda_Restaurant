@@ -98,7 +98,7 @@ namespace Muks.PathFinding.AStar
             }
         }
 
-        public Vector2 GetFloorPos(int i)
+/*        public Vector2 GetFloorPos(int i)
         {
             if (i <= 0)
                 return Vector2.zero;
@@ -126,7 +126,7 @@ namespace Muks.PathFinding.AStar
             }
 
             return tmpFloor;
-        }
+        }*/
 
 
         /// <summary> 멀티 스레드를 이용해 길찾기를 계산 후 콜백 함수를 실행하는 함수</summary>

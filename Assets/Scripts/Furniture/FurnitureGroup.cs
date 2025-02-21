@@ -27,6 +27,8 @@ public class FurnitureGroup : MonoBehaviour
     [SerializeField] private Transform _marketerTr;
     [SerializeField] private Transform _guardTr;
     [SerializeField] private Transform _cleanerWaitTr;
+    [SerializeField] private Transform _door1;
+    [SerializeField] private Transform _door2;
 
 
     private TableManager _tableManager;
@@ -51,7 +53,7 @@ public class FurnitureGroup : MonoBehaviour
             case StaffType.Server:
                 return data.RightStaffTr.position;
             case StaffType.Cleaner:
-                return data.CustomerMoveTr.position;
+                return _cleanerWaitTr.position;
             case StaffType.Manager:
                 return _cashTableTr.position;
             case StaffType.Marketer:
@@ -127,6 +129,18 @@ public class FurnitureGroup : MonoBehaviour
         return _dropCoinAreaList;
     }
 
+    public Vector3 GetDoorPos(Vector3 pos)
+    {
+        if (Mathf.Abs(_door1.position.y - pos.y) < 2)
+            return _door1.position;
+
+        else if (Mathf.Abs(_door2.position.y - pos.y) < 2)
+            return _door2.position;
+
+        DebugLog.LogError("위치 값이 이상합니다. door1: " + _door1.position + " door2: " + _door2.position + " tablePos: " + pos);
+        return Vector3.zero;
+    }
+
 
     public void Init(TableManager tableManager, RectTransform buttonParent, TableButton orderButtonPrefab, TableButton servingButtonPrefab)
     {
@@ -152,8 +166,6 @@ public class FurnitureGroup : MonoBehaviour
                 _dropCoinAreaList.Add(data.DropCoinAreas[i]);
             }
         }
-
-
 
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
         {
@@ -207,6 +219,20 @@ public class FurnitureGroup : MonoBehaviour
             FurnitureType type = (FurnitureType)i;
             OnChangeFurnitureEvent(_floorType, type);
             CheckTableEnabled(_floorType, type);
+        }
+
+        for(int i = 0, cnt = (int)TableType.Length; i < cnt; ++i)
+        {
+            TableType type = (TableType)i;
+            TableData table = _tableDataDic[type];
+            GarbageAreaData garbageData = UserInfo.GetGarbageAreaData(UserInfo.CurrentStage, _floorType, type);
+            table.DropGarbageArea.Init(garbageData);
+
+            for(int j = 0, cntJ = table.DropCoinAreas.Length; j < cntJ; ++j)
+            {
+                CoinAreaData coinData = UserInfo.GetCoinAreaData(UserInfo.CurrentStage, _floorType, type, j);
+                table.DropCoinAreas[j].Init(coinData);
+            }
         }
     }
 

@@ -28,7 +28,7 @@ public class UIKitchenTab : MonoBehaviour
             UITabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
             slot.Init(() => OnSlotClicked(index));
-            BasicData data = UserInfo.GetEquipKitchenUtensil(_floorType, (KitchenUtensilType)i);
+            BasicData data = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, _floorType, (KitchenUtensilType)i);
             Sprite sprite = data != null ? data.ThumbnailSprite : null;
             slot.UpdateUI(sprite, Utility.KitchenUtensilTypeStringConverter((KitchenUtensilType)i));
             slot.name = "KitchenTabSlot" + (i + 1);
@@ -65,7 +65,7 @@ public class UIKitchenTab : MonoBehaviour
         if (_floorType != floorType)
             return;
 
-        BasicData data = UserInfo.GetEquipKitchenUtensil(floorType, type);
+        BasicData data = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, floorType, type);
         Sprite sprite = data != null ? data.ThumbnailSprite : null;
         _slots[(int)type].UpdateUI(sprite, Utility.KitchenUtensilTypeStringConverter(type));
     }

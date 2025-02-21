@@ -20,7 +20,6 @@ public class LoadUserData
     public long TotalAddMoney;
     public long DailyAddMoney;
     public int Score;
-    public int Tip;
     public int TotalCookCount;
     public int DailyCookCount;
     public int TotalCumulativeCustomerCount;
@@ -41,20 +40,11 @@ public class LoadUserData
     public string LastAttendanceTime;
     public int TotalAttendanceDays;
 
-    public List<List<string>> EquipStaffDataList = new List<List<string>>();
-    public Dictionary<string, int> GiveStaffLevelDic = new Dictionary<string, int>();
-
     public Dictionary<string, int> GiveRecipeLevelDic = new Dictionary<string, int>();
     public Dictionary<string, int> RecipeCookCountDic = new Dictionary<string, int>();
 
     public Dictionary<string, int> GiveGachaItemCountDic = new Dictionary<string, int>();
     public Dictionary<string, int> GiveGachaItemLevelDic = new Dictionary<string, int>();
-
-    public List<string> GiveFurnitureList = new List<string>();
-    public List<List<string>> EquipFurnitureList = new List<List<string>>();
-
-    public List<string> GiveKitchenUtensilList = new List<string>();
-    public List<List<string>> EquipKitchenUtensilList = new List<List<string>>();
 
     public HashSet<string> DoneMainChallengeSet = new HashSet<string>();
     public HashSet<string> ClearMainChallengeSet = new HashSet<string>();
@@ -65,14 +55,9 @@ public class LoadUserData
 
     public HashSet<string> EnabledCustomerSet = new HashSet<string>();
     public HashSet<string> VisitedCustomerSet = new HashSet<string>();
-    
 
-    public  List<List<SaveCoinAreaData>> SaveCoinAreaDataList = new List<List<SaveCoinAreaData>>();
-    public  List<List<SaveGarbageAreaData>> SaveGarbageAreaDataList = new List<List<SaveGarbageAreaData>>();
 
     public HashSet<string> NotificationMessageSet = new HashSet<string>();
-
-    public ServerStageData[] ServerStageDatas = new ServerStageData[(int)EStage.Length];
 
 
     public LoadUserData(JsonData json)
@@ -89,7 +74,6 @@ public class LoadUserData
         TotalAddMoney = json[0].ContainsKey("TotalAddMoney") && long.TryParse(json[0]["TotalAddMoney"].ToString(), out long totalAddMoney) ? totalAddMoney : 0;
         DailyAddMoney = json[0].ContainsKey("DailyAddMoney") && long.TryParse(json[0]["DailyAddMoney"].ToString(), out long dailyAddMoney) ? dailyAddMoney : 0;
         Score = json[0].ContainsKey("Score") && int.TryParse(json[0]["Score"].ToString(), out int score) ? score : 0;
-        Tip = json[0].ContainsKey("Tip") && int.TryParse(json[0]["Tip"].ToString(), out int tip) ? tip : 0;
         TotalCookCount = json[0].ContainsKey("TotalCookCount") && int.TryParse(json[0]["TotalCookCount"].ToString(), out int totalCookCount) ? totalCookCount : 0;
         DailyCookCount = json[0].ContainsKey("DailyCookCount") && int.TryParse(json[0]["DailyCookCount"].ToString(), out int dailyCookCount) ? dailyCookCount : 0;
         TotalCumulativeCustomerCount = json[0].ContainsKey("TotalCumulativeCustomerCount") && int.TryParse(json[0]["TotalCumulativeCustomerCount"].ToString(), out int totalCustomerCount) ? totalCustomerCount : 0;
@@ -110,51 +94,6 @@ public class LoadUserData
         LastAccessTime = json[0].ContainsKey("LastAccessTime") ? json[0]["LastAccessTime"].ToString() : string.Empty;
         LastAttendanceTime = json[0].ContainsKey("LastAttendanceTime") ? json[0]["LastAttendanceTime"].ToString() : string.Empty;
         TotalAttendanceDays = json[0].ContainsKey("TotalAttendanceDays") && int.TryParse(json[0]["TotalAttendanceDays"].ToString(), out int totalAttendance) ? totalAttendance : 0;
-
-        if (json[0].ContainsKey("GiveStaffList"))
-        {
-            GiveStaffLevelDic.Clear();
-            foreach (JsonData item in json[0]["GiveStaffList"])
-            {
-                string key = item["Id"].ToString();
-                int value = int.Parse(item["Level"].ToString());
-                GiveStaffLevelDic[key] = value;
-            }
-        }
-
-        if (json[0].ContainsKey("EquipStaffDatas"))
-        {
-            JsonData staffJsonList = json[0]["EquipStaffDatas"];
-            EquipStaffDataList.Clear();
-
-            if (staffJsonList.Count > 0 && staffJsonList[0].IsString)
-            {
-                // 저장된 데이터가 1차원 배열인 경우 (이전 방식)
-                List<string> row = new List<string>();
-                foreach (JsonData item in staffJsonList)
-                {
-                    row.Add(item.ToString());
-                }
-                EquipStaffDataList.Add(row);
-            }
-            else
-            {
-                // 저장된 데이터가 2차원 배열인 경우 (새로운 방식)
-                for (int i = 0; i < staffJsonList.Count; i++)
-                {
-                    List<string> row = new List<string>();
-                    JsonData rowData = staffJsonList[i];
-
-                    for (int j = 0; j < rowData.Count; j++)
-                    {
-                        row.Add(rowData[j].ToString());
-                    }
-
-                    EquipStaffDataList.Add(row);
-                }
-            }
-        }
-
 
         if (json[0].ContainsKey("GiveRecipeList"))
         {
@@ -200,90 +139,7 @@ public class LoadUserData
             }
         }
 
-        if (json[0].ContainsKey("GiveFurnitureList"))
-        {
-            foreach (JsonData item in json[0]["GiveFurnitureList"])
-            {
-                GiveFurnitureList.Add(item.ToString());
-            }
-        }
-
-        if (json[0].ContainsKey("EquipFurnitureList"))
-        {
-            JsonData furnitureJsonList = json[0]["EquipFurnitureList"];
-            EquipFurnitureList.Clear();
-
-            if (furnitureJsonList.Count > 0 && furnitureJsonList[0].IsString)
-            {
-                // 저장된 데이터가 1차원 배열인 경우 (이전 방식)
-                List<string> row = new List<string>();
-                foreach (JsonData item in furnitureJsonList)
-                {
-                    row.Add(item.ToString());
-                }
-                EquipFurnitureList.Add(row);
-            }
-            else
-            {
-                // 저장된 데이터가 2차원 배열인 경우 (새로운 방식)
-                for (int i = 0; i < furnitureJsonList.Count; i++)
-                {
-                    List<string> row = new List<string>();
-                    JsonData rowData = furnitureJsonList[i];
-
-                    for (int j = 0; j < rowData.Count; j++)
-                    {
-                        row.Add(rowData[j].ToString());
-                    }
-
-                    EquipFurnitureList.Add(row);
-                }
-            }
-        }
-
-
-        if (json[0].ContainsKey("GiveKitchenUtensilList"))
-        {
-            foreach (JsonData item in json[0]["GiveKitchenUtensilList"])
-            {
-                GiveKitchenUtensilList.Add(item.ToString());
-            }
-        }
-
-        if (json[0].ContainsKey("EquipKitchenUtensilList"))
-        {
-            JsonData utensilJsonList = json[0]["EquipKitchenUtensilList"];
-            EquipKitchenUtensilList.Clear();
-
-            if (utensilJsonList.Count > 0 && utensilJsonList[0].IsString)
-            {
-                // 저장된 데이터가 1차원 배열인 경우 (이전 방식)
-                List<string> row = new List<string>();
-                foreach (JsonData item in utensilJsonList)
-                {
-                    row.Add(item.ToString());
-                }
-                EquipKitchenUtensilList.Add(row);
-            }
-            else
-            {
-                // 저장된 데이터가 2차원 배열인 경우
-                for (int i = 0; i < utensilJsonList.Count; i++)
-                {
-                    List<string> row = new List<string>();
-                    JsonData rowData = utensilJsonList[i];
-
-                    for (int j = 0; j < rowData.Count; j++)
-                    {
-                        row.Add(rowData[j].ToString());
-                    }
-
-                    EquipKitchenUtensilList.Add(row);
-                }
-            }
-        }
-
-
+ 
         if (json[0].ContainsKey("DoneMainChallengeList"))
         {
             foreach (JsonData item in json[0]["DoneMainChallengeList"])
@@ -349,79 +205,6 @@ public class LoadUserData
         }
 
 
-
-        if (json[0].ContainsKey("SaveCoinAreaDataList"))
-        {
-            JsonData coinJsonList = json[0]["SaveCoinAreaDataList"];
-            SaveCoinAreaDataList.Clear();
-
-            for (int i = 0; i < coinJsonList.Count; i++)
-            {
-                List<SaveCoinAreaData> row = new List<SaveCoinAreaData>();
-                JsonData rowData = coinJsonList[i];
-
-                for (int j = 0; j < rowData.Count; j++)
-                {
-                    int coinCount = (int)rowData[j]["CoinCount"];
-                    long giveMoney = (long)rowData[j]["Money"];
-                    row.Add(new SaveCoinAreaData(coinCount, giveMoney));
-                }
-
-                SaveCoinAreaDataList.Add(row);
-            }
-        }
-
-        if (json[0].ContainsKey("SaveGarbageAreaDataList"))
-        {
-            JsonData garbageJsonList = json[0]["SaveGarbageAreaDataList"];
-            SaveGarbageAreaDataList.Clear();
-
-            for (int i = 0; i < garbageJsonList.Count; i++)
-            {
-                List<SaveGarbageAreaData> row = new List<SaveGarbageAreaData>();
-                JsonData rowData = garbageJsonList[i];
-
-                for (int j = 0; j < rowData.Count; j++)
-                {
-                    int count = (int)rowData[j]["Count"];
-                    row.Add(new SaveGarbageAreaData(count));
-                }
-
-                SaveGarbageAreaDataList.Add(row);
-            }
-        }
-
-
-
-        /*if (json[0].ContainsKey("CoinAreaDataList"))
-        {
-            foreach (JsonData item in json[0]["CoinAreaDataList"])
-            {
-                // JSON 데이터를 클래스 객체로 변환
-                int coinCount = (int)item["CoinCount"];
-                long giveMoney = (long)item["Money"];
-                SaveCoinAreaData data = new SaveCoinAreaData(coinCount, giveMoney);
-
-                // 리스트에 추가
-                CoinAreaDataList.Add(data);
-            }
-        }
-
-        if (json[0].ContainsKey("GarbageAreaDataList"))
-        {
-            foreach (JsonData item in json[0]["GarbageAreaDataList"])
-            {
-                // JSON 데이터를 클래스 객체로 변환
-                int count = (int)item["Count"];
-                SaveGarbageAreaData data = new SaveGarbageAreaData(count);
-
-                // 리스트에 추가
-                GarbageAreaDataList.Add(data);
-            }
-        }*/
-
-
-
         if (json[0].ContainsKey("NotificationMessageList"))
         {
             foreach (JsonData item in json[0]["NotificationMessageList"])
@@ -458,24 +241,46 @@ public class SaveCountData
 }
 
 
-public class SaveCoinAreaData
+public class CoinAreaData
 {
-    public int CoinCount;
-    public long Money;
+    private int _coinCount;
+    public int CoinCount => _coinCount;
 
-    public SaveCoinAreaData(int coinCount, long money)
+    private long _money;
+    public long Money => _money;
+
+    public CoinAreaData()
     {
-        CoinCount = coinCount;
-        Money = money;
     }
+
+    public void SetCoinCount(int count)
+    {
+        _coinCount = count;
+    }
+
+    public void SetMoney(long money)
+    {
+        _money = money;
+    }
+
+    public void AddMoney(long money)
+    {
+        _money += money;
+    }
+
 }
 
-public class SaveGarbageAreaData
+public class GarbageAreaData
 {
-    public int Count;
+    private int _count;
+    public int Count => _count;
 
-    public SaveGarbageAreaData(int count)
+    public GarbageAreaData()
     {
-        Count = count;
+    }
+
+    public void SetCount(int count)
+    {
+        _count = count;
     }
 }

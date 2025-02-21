@@ -2,6 +2,7 @@ using Muks.PathFinding.AStar;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 
@@ -30,8 +31,8 @@ public class Customer : MonoBehaviour
     protected CustomerData _customerData;
     public CustomerData CustomerData => _customerData;
 
-    protected ERestaurantFloorType _visitFloorType;
-    public ERestaurantFloorType VisitFloorType => _visitFloorType;
+    protected ERestaurantFloorType _visitFloor;
+    public ERestaurantFloorType VisitFloor => _visitFloor;
 
     protected CustomerState _currentState;
     protected Coroutine _moveCoroutine;
@@ -43,7 +44,7 @@ public class Customer : MonoBehaviour
     protected float _moveSpeed;
     protected bool _isStairsMove;
     protected List<Vector2> _path;
-
+    protected TableManager _tableManager;
 
     public virtual void Init()
     {
@@ -51,10 +52,11 @@ public class Customer : MonoBehaviour
     }
 
 
-    public virtual void SetData(CustomerData data, ERestaurantFloorType visitFloorType)
+    public virtual void SetData(CustomerData data, TableManager tableManager, ERestaurantFloorType visitFloor)
     {
         _customerData = data;
-        _visitFloorType = visitFloorType;
+        _tableManager = tableManager;
+        _visitFloor = visitFloor;
         _moveSpeed = data.MoveSpeed;
 
         _spriteParent.localScale = data.Scale <= 0 ? Vector3.one : Vector3.one * data.Scale;
@@ -91,12 +93,17 @@ public class Customer : MonoBehaviour
             StopCoroutine(_teleportCoroutine);
 
         _moveCompleted = onCompleted;
-        int moveObjFloor = AStar.Instance.GetTransformFloor(_moveObj.transform.position);
-        _targetFloor = AStar.Instance.GetTransformFloor(targetPos);
+
+        Vector3 customerDoorPos = _tableManager.GetDoorPos(transform.position);
+        Vector3 targetDoorPos = _tableManager.GetDoorPos(targetPos);
         _targetPos = targetPos;
         _moveEndDir = moveEndDir;
-        AStar.Instance.RequestPath(_moveObj.transform.position, moveObjFloor == _targetFloor ? targetPos : AStar.Instance.GetFloorPos(moveObjFloor), moveObjFloor == _targetFloor ? TargetMove : StairsMove);
+
+        bool isEqualPos = customerDoorPos.y == targetDoorPos.y;
+        Vector3 pathPos = isEqualPos ? targetPos : customerDoorPos;
+        AStar.Instance.RequestPath(_moveObj.transform.position, pathPos, isEqualPos ? TargetMove : StairsMove);
     }
+
 
     public void StopMove()
     {
@@ -146,7 +153,7 @@ public class Customer : MonoBehaviour
 
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
-            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(AStar.Instance.GetFloorPos(_targetFloor), _targetPos, TargetMove)));
+            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(_tableManager.GetDoorPos(_targetPos), _targetPos, TargetMove)));
         }
         ));
     }
@@ -188,7 +195,7 @@ public class Customer : MonoBehaviour
     private IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
         yield return YieldCache.WaitForSeconds(1);
-        _moveObj.transform.position = AStar.Instance.GetFloorPos(_targetFloor);
+        _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos);
         SetSpriteDir(1);
         yield return YieldCache.WaitForSeconds(1);
         onCompleted?.Invoke();

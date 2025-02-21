@@ -8,6 +8,7 @@ public class ServerStageData
     public ERestaurantFloorType UnlockFloor;
 
     public int Score;
+    public int Tip;
 
     public List<List<string>> EquipStaffDataList = new List<List<string>>();
     public Dictionary<string, int> GiveStaffLevelDic = new Dictionary<string, int>();
@@ -18,6 +19,9 @@ public class ServerStageData
     public List<string> GiveKitchenUtensilList = new List<string>();
     public List<List<string>> EquipKitchenUtensilList = new List<List<string>>();
 
+    public List<List<CoinAreaData>> CoinAreaDataList = new List<List<CoinAreaData>>();
+    public List<List<GarbageAreaData>> GarbageAreaDataList = new List<List<GarbageAreaData>>();
+
 
     public Param GetParam()
     {
@@ -25,12 +29,15 @@ public class ServerStageData
 
         param.Add("UnlockFloor", (int)UnlockFloor);
         param.Add("Score", Score);
+        param.Add("Tip", Tip);
         param.Add("GiveStaffLevelDic", GiveStaffLevelDic.ToDictionary(x => x.Key, x => x.Value));
         param.Add("EquipStaffDataList", EquipStaffDataList);
         param.Add("GiveFurnitureList", GiveFurnitureList.ToList());
         param.Add("EquipFurnitureList", EquipFurnitureList);
         param.Add("GiveKitchenUtensilList", GiveKitchenUtensilList.ToList());
         param.Add("EquipKitchenUtensilList", EquipKitchenUtensilList);
+        param.Add("DropCoinAreaDataList", CoinAreaDataList);
+        param.Add("DropGarbageAreaDataList", GarbageAreaDataList);
 
         return param;
     }
@@ -51,6 +58,8 @@ public class ServerStageData
         // 기본 데이터 세팅
         UnlockFloor = (ERestaurantFloorType)GetInt("UnlockFloor");
         Score = GetInt("Score");
+        Tip = GetInt("Tip");
+
 
         // Dictionary 데이터 변환
         if (data.ContainsKey("GiveStaffLevelDic"))
@@ -59,7 +68,6 @@ public class ServerStageData
             GiveStaffLevelDic.Clear();
             foreach (var key in staffDic.Keys)
             {
-                DebugLog.Log(key);
                 int value = int.TryParse(staffDic[key].ToString(), out int level) ? level : 1;
                 GiveStaffLevelDic[key] = value;
             }
@@ -73,6 +81,12 @@ public class ServerStageData
         // List<string> 데이터 변환
         GiveFurnitureList = ConvertJsonToList(data, "GiveFurnitureList");
         GiveKitchenUtensilList = ConvertJsonToList(data, "GiveKitchenUtensilList");
+
+        if (data.ContainsKey("DropCoinAreaDataList"))
+            CoinAreaDataList = ConvertJsonToCoinAreaList(data["DropCoinAreaDataList"]);
+
+        if (data.ContainsKey("DropGarbageAreaDataList"))
+            GarbageAreaDataList = ConvertJsonToGarbageAreaList(data["DropGarbageAreaDataList"]);
     }
 
     //JSON 데이터를 1차원 리스트로 변환하는 헬퍼 함수
@@ -110,4 +124,52 @@ public class ServerStageData
         return list;
     }
 
+
+    private List<List<CoinAreaData>> ConvertJsonToCoinAreaList(JsonData jsonData)
+    {
+        List<List<CoinAreaData>> list = new List<List<CoinAreaData>>();
+
+        if (jsonData.IsArray)
+        {
+            foreach (JsonData row in jsonData)
+            {
+                List<CoinAreaData> rowList = new List<CoinAreaData>();
+                foreach (JsonData item in row)
+                {
+                    int coinCount = item.ContainsKey("CoinCount") ? int.Parse(item["CoinCount"].ToString()) : 0;
+                    long money = item.ContainsKey("Money") ? long.Parse(item["Money"].ToString()) : 0;
+                    CoinAreaData data = new CoinAreaData();
+                    data.SetCoinCount(coinCount);
+                    data.SetMoney(money);
+                    rowList.Add(data);
+                }
+                list.Add(rowList);
+            }
+        }
+        return list;
+    }
+
+    // 🔹 List<List<GarbageAreaData>> 변환 함수
+    private List<List<GarbageAreaData>> ConvertJsonToGarbageAreaList(JsonData jsonData)
+    {
+        List<List<GarbageAreaData>> list = new List<List<GarbageAreaData>>();
+
+        if (jsonData.IsArray)
+        {
+            foreach (JsonData row in jsonData)
+            {
+                List<GarbageAreaData> rowList = new List<GarbageAreaData>();
+                foreach (JsonData item in row)
+                {
+                    int count = item.ContainsKey("Count") ? int.Parse(item["Count"].ToString()) : 0;
+                    GarbageAreaData data = new GarbageAreaData();
+                    data.SetCount(count);
+                    rowList.Add(data);
+
+                }
+                list.Add(rowList);
+            }
+        }
+        return list;
+    }
 }

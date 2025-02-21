@@ -203,7 +203,7 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 60;
-        UserInfo.DataBindTip();
+        UserInfo.DataBindTip(UserInfo.CurrentStage);
         UserInfo.DataBindMoney();
 
         UserInfo.OnChangeStaffHandler += (floor, type) => OnEquipStaffEffectCheck();
@@ -348,7 +348,7 @@ public class GameManager : MonoBehaviour
         {
             for (int j = 0, cntJ = (int)KitchenUtensilType.Length; j < cntJ; ++j)
             {
-                KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil((ERestaurantFloorType)i, (KitchenUtensilType)j);
+                KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, (ERestaurantFloorType)i, (KitchenUtensilType)j);
 
                 if (data == null)
                     continue;
@@ -404,7 +404,7 @@ public class GameManager : MonoBehaviour
         for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
             UserInfo.SetEquipFurnitureSetData(UserInfo.CurrentStage, ERestaurantFloorType.Floor1, GetEquipFurnitureSetData((ERestaurantFloorType)i));
-            UserInfo.SetEquipKitchenUntensilSetData(ERestaurantFloorType.Floor1, GetEquipKitchenUtensilSetData((ERestaurantFloorType)i));
+            UserInfo.SetEquipKitchenUntensilSetData(UserInfo.CurrentStage, ERestaurantFloorType.Floor1, GetEquipKitchenUtensilSetData((ERestaurantFloorType)i));
         }
 
 
@@ -451,7 +451,7 @@ public class GameManager : MonoBehaviour
 
             for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
             {
-                KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil(type, (KitchenUtensilType)i);
+                KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, type, (KitchenUtensilType)i);
                 if (data == null)
                     return null;
 

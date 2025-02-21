@@ -107,7 +107,7 @@ public class UIKitchenPreview : MonoBehaviour
             _tipPerMinuteGroup.SetText(effectText);
         }
 
-        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(_floorType, data.Type);
+        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, _floorType, data.Type);
         if (equipData == null)
         {
             _scoreSignGroup.Image1SetActive(false);
@@ -150,9 +150,9 @@ public class UIKitchenPreview : MonoBehaviour
             }
         }
 
-        if (UserInfo.IsGiveKitchenUtensil(data))
+        if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data))
         {
-            ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipKitchenUtensilFloorType(data);
+            ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipKitchenUtensilFloorType(UserInfo.CurrentStage, data);
             switch (furnitureFloorType)
             {
                 case ERestaurantFloorType.Floor1:
@@ -303,7 +303,7 @@ public class UIKitchenPreview : MonoBehaviour
             return;
         }
 
-        ERestaurantFloorType floorType = UserInfo.GetEquipKitchenUtensilFloorType(_currentData);
+        ERestaurantFloorType floorType = UserInfo.GetEquipKitchenUtensilFloorType(UserInfo.CurrentStage, _currentData);
         _onEquipButtonClicked?.Invoke(floorType, null);
     }
 }

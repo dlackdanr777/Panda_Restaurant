@@ -24,7 +24,7 @@ public class FirstLoadingScene : MonoBehaviour
                 {
                     _uiFirstLoadingScene.HideTitle(() =>
                     {
-                        Tween.Wait(1f, () => LoadingSceneManager.LoadScene("MainScene"));
+                        Tween.Wait(1f, () => LoadingSceneManager.LoadScene("Stage1"));
                     });
                 });
             }, (bro) =>

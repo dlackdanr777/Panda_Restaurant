@@ -23,7 +23,7 @@ public class Staff : MonoBehaviour
     [Header("Audios")]
     [SerializeField] private AudioClip _skillActiveSound;
 
-
+    private TableManager _tableManager;
     private StaffData _staffData;
     private StaffType _staffType;
     private IStaffAction _staffAction;
@@ -46,8 +46,9 @@ public class Staff : MonoBehaviour
     private Coroutine _useSkillRoutine;
 
 
-    public void Init()
+    public void Init(TableManager tableManager)
     {
+        _tableManager = tableManager;
         _scaleX = transform.localScale.x;
         GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
         gameObject.SetActive(false);
@@ -311,17 +312,22 @@ public class Staff : MonoBehaviour
 
     public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
     {
-        int moveObjFloor = AStar.Instance.GetTransformFloor(_moveObj.transform.position);
-        _targetFloor = AStar.Instance.GetTransformFloor(targetPos);
-        _targetPos = targetPos;
-        _moveEndDir = moveEndDir;
+        if (_moveCoroutine != null)
+            StopCoroutine(_moveCoroutine);
+
+        if (_teleportCoroutine != null)
+            StopCoroutine(_teleportCoroutine);
+
         _moveCompleted = onCompleted;
 
-        if (moveObjFloor == _targetFloor)
-            AStar.Instance.RequestPath(_moveObj.transform.position, targetPos, TargetMove);
+        Vector3 customerDoorPos = _tableManager.GetDoorPos(transform.position);
+        Vector3 targetDoorPos = _tableManager.GetDoorPos(targetPos);
+        _targetPos = targetPos;
+        _moveEndDir = moveEndDir;
 
-        else
-            AStar.Instance.RequestPath(_moveObj.transform.position, AStar.Instance.GetFloorPos(moveObjFloor), StairsMove);
+        bool isEqualPos = customerDoorPos.y == targetDoorPos.y;
+        Vector3 pathPos = isEqualPos ? targetPos : customerDoorPos;
+        AStar.Instance.RequestPath(_moveObj.transform.position, pathPos, isEqualPos ? TargetMove : StairsMove);
     }
 
     public void StopMove()
@@ -360,7 +366,7 @@ public class Staff : MonoBehaviour
 
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
-            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(AStar.Instance.GetFloorPos(_targetFloor), _targetPos, TargetMove)));
+            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(_tableManager.GetDoorPos(_targetPos), _targetPos, TargetMove)));
         }
         ));
     }
@@ -402,7 +408,7 @@ public class Staff : MonoBehaviour
     private IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
         yield return YieldCache.WaitForSeconds(1);
-        _moveObj.transform.position = AStar.Instance.GetFloorPos(_targetFloor);
+        _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos);
         SetSpriteDir(1);
         yield return YieldCache.WaitForSeconds(1);
         onCompleted?.Invoke();

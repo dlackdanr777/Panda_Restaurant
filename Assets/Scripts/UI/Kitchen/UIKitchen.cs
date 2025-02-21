@@ -139,7 +139,7 @@ public class UIKitchen : MobileUIView
 
     private void SetKitchenPreview()
     {
-        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(_currentFloorType, _currentType);
+        KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, _currentFloorType, _currentType);
 
         if(equipData == null)
         {
@@ -166,19 +166,19 @@ public class UIKitchen : MobileUIView
         if (data == null)
         {
             SoundManager.Instance.PlayEffectAudio(_dequipSound);
-            UserInfo.SetNullEquipKitchenUtensil(type, _currentType);
+            UserInfo.SetNullEquipKitchenUtensil(UserInfo.CurrentStage, type, _currentType);
             SetKitchenUtensilDataData(_currentType);
             return;
         }
 
         SoundManager.Instance.PlayEffectAudio(_equipSound);
-        UserInfo.SetEquipKitchenUtensil(type, data.Id);
+        UserInfo.SetEquipKitchenUtensil(UserInfo.CurrentStage, type, data.Id);
         SetKitchenUtensilDataData(_currentType);
     }
 
     private void OnBuyButtonClicked(ShopData data)
     {
-        if (UserInfo.IsGiveKitchenUtensil(data.Id))
+        if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data.Id))
         {
             PopupManager.Instance.ShowTextError();
             return;
@@ -208,7 +208,7 @@ public class UIKitchen : MobileUIView
         else if (data.MoneyType == MoneyType.Dia)
             UserInfo.AddDia(-data.BuyPrice);
 
-        UserInfo.GiveKitchenUtensil(data.Id);
+        UserInfo.GiveKitchenUtensil(UserInfo.CurrentStage, data.Id);
         PopupManager.Instance.ShowDisplayText("새로운 주방 기구를 구매했어요!");
     }
 
@@ -238,9 +238,9 @@ public class UIKitchen : MobileUIView
             slot.gameObject.SetActive(true);
             slot.transform.SetSiblingIndex(i);
 
-            if (UserInfo.IsGiveKitchenUtensil(data))
+            if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data))
             {
-                ERestaurantFloorType floorType = UserInfo.GetEquipKitchenUtensilFloorType(data);
+                ERestaurantFloorType floorType = UserInfo.GetEquipKitchenUtensilFloorType(UserInfo.CurrentStage, data);
                 if (floorType < ERestaurantFloorType.Length)
                 {
                     equipSlotArray[equipSlotCount++] = (floorType, slot);

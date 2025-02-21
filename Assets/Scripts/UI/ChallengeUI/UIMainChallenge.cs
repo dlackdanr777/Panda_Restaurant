@@ -201,7 +201,6 @@ public class UIMainChallenge : MobileUIView
     private void ChallengeClaerMoneyAnime()
     {
         float time = 0;
-        UserInfo.TipCollection();
         ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
         SoundManager.Instance.PlayEffectAudio(_clearGoldSound);
         for (int i = 0; i < _coinCount; ++i)
@@ -238,7 +237,6 @@ public class UIMainChallenge : MobileUIView
     private void ChallengeClaerDiaAnime()
     {
         float time = 0;
-        UserInfo.TipCollection();
         ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
         SoundManager.Instance.PlayEffectAudio(_clearDiaSound);
         for (int i = 0; i < _coinCount; ++i)

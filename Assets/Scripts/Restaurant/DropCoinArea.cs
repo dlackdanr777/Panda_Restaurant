@@ -18,6 +18,8 @@ public class DropCoinArea : MonoBehaviour
     [Space]
     [SerializeField] private AudioClip _dropCoinSound;
 
+
+    private CoinAreaData _data;
     private List<PointerDownSpriteRenderer> _coinList = new List<PointerDownSpriteRenderer>();
     private long _currentMoney;
     public long CurrentMoney => _currentMoney;
@@ -25,14 +27,10 @@ public class DropCoinArea : MonoBehaviour
     private int _currentCoinCount;
     public int Count => _currentCoinCount;
 
-    private void Awake()
-    {
-        Init();
-    }
 
-
-    private void Init()
+    public void Init(CoinAreaData data)
     {
+        _data = data;
         _currentCoinCount = 0;
         _currentMoney = 0;
         for (int i = 0; i < _coinList.Count; i++)
@@ -42,13 +40,14 @@ public class DropCoinArea : MonoBehaviour
         _coinList.Clear();
 
         LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
+        LoadData(data);
     }
 
 
-    public void LoadData(int coinCount, long money)
-    {
-        _currentCoinCount = Mathf.Clamp(coinCount, 0, _maxCoinCount);
-        _currentMoney = money;
+    public void LoadData(CoinAreaData data)
+    { 
+        _currentCoinCount = Mathf.Clamp(data.CoinCount, 0, _maxCoinCount);
+        _currentMoney = data.Money;
 
         for(int i = 0, cnt = _coinList.Count; i < cnt; ++i)
         {
@@ -73,6 +72,7 @@ public class DropCoinArea : MonoBehaviour
     public void DropCoin(Vector3 startPos, int moneyValue)
     {
         _currentMoney += moneyValue;
+        _data.SetMoney(_currentMoney);
         PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
         coin.AddEvent(GiveCoin);
         SoundManager.Instance.PlayEffectAudio(_dropCoinSound, 0.05f);
@@ -85,6 +85,7 @@ public class DropCoinArea : MonoBehaviour
         }
 
         _currentCoinCount = Mathf.Clamp(_coinList.Count, 0, _maxCoinCount);
+        _data.SetCoinCount(_currentCoinCount);
         coin.TweenStop();
         coin.TweenMoveX(targetPos.x, 0.45f);
         coin.TweenMoveY(targetPos.y, 0.45f, Ease.InBack).OnComplete(() =>
@@ -95,6 +96,7 @@ public class DropCoinArea : MonoBehaviour
                 ObjectPoolManager.Instance.DespawnCoin(coin);
                 return;
             }
+
             coin.transform.position = targetPos;
             coin.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
         });
@@ -110,6 +112,8 @@ public class DropCoinArea : MonoBehaviour
         long currentMoney = _currentMoney;
         _currentMoney = 0;
         _currentCoinCount = 0;
+        _data.SetMoney(_currentMoney);
+        _data.SetCoinCount(_currentCoinCount);
         SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
@@ -140,6 +144,8 @@ public class DropCoinArea : MonoBehaviour
         int currentCoinCount = _currentCoinCount;
         _currentMoney = 0;
         _currentCoinCount = 0;
+        _data.SetMoney(_currentMoney);
+        _data.SetCoinCount(_currentCoinCount);
         SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)

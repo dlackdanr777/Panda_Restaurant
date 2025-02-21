@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,7 +22,6 @@ public class FurnitureSystem : MonoBehaviour
 
     public Vector3 GetStaffPos(TableData data, StaffType type)
     {
-        DebugLog.Log(data);
         return _furnitureGroupDic[data.FloorType].GetStaffPos(data, type);
     }
 
@@ -48,7 +48,7 @@ public class FurnitureSystem : MonoBehaviour
         int count = 0;
         foreach(var data in _furnitureGroupDic)
         {
-            if (!UserInfo.IsFloorValid(data.Key))
+            if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, data.Key))
                 continue;
 
             count += data.Value.GetUsableTableCount();
@@ -59,7 +59,7 @@ public class FurnitureSystem : MonoBehaviour
 
     public int GetUsableTableCount(ERestaurantFloorType floorType)
     {
-        if (!UserInfo.IsFloorValid(floorType))
+        if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, floorType))
             return 0;
 
         return _furnitureGroupDic[floorType].GetUsableTableCount();
@@ -106,6 +106,23 @@ public class FurnitureSystem : MonoBehaviour
     {
         return _furnitureGroupDic[floorType].GetDropCoinAreaList();
     }
+
+
+    public Vector3 GetDoorPos(Vector3 pos)
+    {
+        foreach(FurnitureGroup group in  _furnitureGroupDic.Values)
+        {
+            Vector3 doorPos = group.GetDoorPos(pos);
+            if (doorPos == Vector3.zero)
+                continue;
+
+            return doorPos;
+        }
+
+        DebugLog.LogError("해당 위치값에 맞는 문 위치값이 없습니다: " + pos);
+        return Vector3.zero;
+    }
+
 
 
     private void Awake()

@@ -1,9 +1,12 @@
+ï»¿using Muks.DataBind;
 using System;
 using System.Collections.Generic;
-using UnityEditor.SceneManagement;
 
 public class StageInfo
 {
+    public event Action OnChangeFloorHandler;
+    public static event Action OnChangeTipHandler;
+
     public event Action<ERestaurantFloorType, StaffType> OnChangeStaffHandler;
     public event Action OnGiveStaffHandler;
     public event Action OnUpgradeStaffHandler;
@@ -23,11 +26,14 @@ public class StageInfo
     private ERestaurantFloorType _unlockFloor;
     public ERestaurantFloorType UnlockFloor => _unlockFloor;
 
-    private ERestaurantFloorType _currentFloor;
-    public ERestaurantFloorType CurrentFloor => _currentFloor;
 
     private int _score;
     public int Score => _score;
+
+
+    private int _tip;
+    public int Tip => _tip;
+
 
     private StaffData[,] _equipStaffDatas = new StaffData[(int)ERestaurantFloorType.Length, (int)StaffType.Length];
     private Dictionary<string, int> _giveStaffLevelDic = new Dictionary<string, int>();
@@ -46,11 +52,72 @@ public class StageInfo
     private HashSet<string> _activatedFurnitureEffectSet = new HashSet<string>();
     private HashSet<string> _activatedKitchenUtensilEffectSet = new HashSet<string>();
 
+    private CoinAreaData[,] _coinAreaDatas = new CoinAreaData[(int)ERestaurantFloorType.Length, (int)TableType.Length * 2];
+
+    private GarbageAreaData[,] _garbageAreaDatas = new GarbageAreaData[(int)ERestaurantFloorType.Length, (int)TableType.Length];
+
 
     public StageInfo()
     {
+        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            for(int j = 0, cntJ = (int)TableType.Length; j < cntJ; ++j)
+            {
+                _garbageAreaDatas[i, j] = new GarbageAreaData();
+            }
+
+            for (int j = 0, cntJ = (int)TableType.Length; j < cntJ; ++j)
+            {
+                _coinAreaDatas[i, i * 2 + j] = new CoinAreaData();
+            }
+        }
     }
 
+    #region StageData
+
+    public void ChangeUnlockFloor(ERestaurantFloorType floor)
+    {
+        if (floor <= _unlockFloor)
+            return;
+
+        _unlockFloor = floor;
+        OnChangeFloorHandler?.Invoke();
+    }
+
+    public void TipCollection(bool isWatchingAds = false)
+    {
+        int addMoneyValue = isWatchingAds ? _tip * 2 : _tip;
+        UserInfo.AddMoney(addMoneyValue);
+        _tip = 0;
+
+        OnChangeTipHandler?.Invoke();
+    }
+
+
+    public void TipCollection(int value, bool isWatchingAds = false)
+    {
+        if (_tip < value)
+        {
+            DebugLog.LogError("ë³´ìœ  íŒ ë³´ë‹¤ ë§ì€ íŒì„ íšŒìˆ˜í•˜ë ¤ê³  í•©ë‹ˆë‹¤(Tip: " + _tip + ", Value: " + value + ")");
+            return;
+        }
+
+        _tip -= value;
+        int addMoneyValue = isWatchingAds ? value * 2 : value;
+        UserInfo.AddMoney(addMoneyValue);
+        OnChangeTipHandler?.Invoke();
+    }
+
+    public void AddTip(int value)
+    {
+        if (GameManager.Instance.MaxTipVolume <= _tip)
+            return;
+
+        _tip = _tip + value;
+        OnChangeTipHandler?.Invoke();
+    }
+
+    #endregion
 
     #region StaffData
 
@@ -58,7 +125,7 @@ public class StageInfo
     {
         if (_giveStaffLevelDic.ContainsKey(data.Id))
         {
-            DebugLog.Log("ÀÌ¹Ì °¡Áö°í ÀÖ½À´Ï´Ù.");
+            DebugLog.Log("ì´ë¯¸ ê°€ì§€ê³  ìˆìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -70,14 +137,14 @@ public class StageInfo
     {
         if (_giveStaffLevelDic.ContainsKey(id))
         {
-            DebugLog.Log("ÀÌ¹Ì °¡Áö°í ÀÖ½À´Ï´Ù.");
+            DebugLog.Log("ì´ë¯¸ ê°€ì§€ê³  ìˆìŠµë‹ˆë‹¤.");
             return;
         }
 
         StaffData data = StaffDataManager.Instance.GetStaffData(id);
         if (data == null)
         {
-            DebugLog.Log("Á¸ÀçÇÏÁö ¾Ê´Â IDÀÔ´Ï´Ù: " + id);
+            DebugLog.Log("ì¡´ì¬í•˜ì§€ ì•ŠëŠ” IDì…ë‹ˆë‹¤: " + id);
             return;
         }
 
@@ -144,7 +211,7 @@ public class StageInfo
     {
         if (!_giveStaffLevelDic.ContainsKey(data.Id))
         {
-            DebugLog.LogError("ÇØ´ç ½ºÅÇÀº ÇöÀç °¡Áö°í ÀÖÁö ¾Ê½À´Ï´Ù: " + data.Id);
+            DebugLog.LogError("í•´ë‹¹ ìŠ¤íƒ­ì€ í˜„ì¬ ê°€ì§€ê³  ìˆì§€ ì•ŠìŠµë‹ˆë‹¤: " + data.Id);
             return;
         }
 
@@ -156,7 +223,7 @@ public class StageInfo
     {
         StaffData data = StaffDataManager.Instance.GetStaffData(id);
         if (data == null)
-            throw new Exception("ÇØ´ç Id¸¦ °¡Áø ½ºÅÇÀÌ ¾ø½À´Ï´Ù: " + id);
+            throw new Exception("í•´ë‹¹ Idë¥¼ ê°€ì§„ ìŠ¤íƒ­ì´ ì—†ìŠµë‹ˆë‹¤: " + id);
 
         SetEquipStaff(floorType, data);
     }
@@ -182,7 +249,7 @@ public class StageInfo
             return level;
         }
 
-        throw new Exception("°¡Áö°í ÀÖÁö ¾ÊÀº ½ºÅÂÇÁ ÀÔ´Ï´Ù: " + data.Id);
+        throw new Exception("ê°€ì§€ê³  ìˆì§€ ì•Šì€ ìŠ¤íƒœí”„ ì…ë‹ˆë‹¤: " + data.Id);
     }
 
 
@@ -193,7 +260,7 @@ public class StageInfo
             return level;
         }
 
-        throw new Exception("°¡Áö°í ÀÖÁö ¾ÊÀº ½ºÅÂÇÁ ÀÔ´Ï´Ù: " + id);
+        throw new Exception("ê°€ì§€ê³  ìˆì§€ ì•Šì€ ìŠ¤íƒœí”„ ì…ë‹ˆë‹¤: " + id);
     }
 
 
@@ -208,11 +275,11 @@ public class StageInfo
                 return true;
             }
 
-            DebugLog.LogError("·¹º§ ÃÊ°ú: " + data.Id);
+            DebugLog.LogError("ë ˆë²¨ ì´ˆê³¼: " + data.Id);
             return false;
         }
 
-        DebugLog.LogError("¼ÒÀ¯ÁßÀÌÁö ¾ÊÀ½: " + data.Id);
+        DebugLog.LogError("ì†Œìœ ì¤‘ì´ì§€ ì•ŠìŒ: " + data.Id);
         return false;
     }
 
@@ -229,11 +296,11 @@ public class StageInfo
                 return true;
             }
 
-            DebugLog.LogError("·¹º§ ÃÊ°ú: " + id);
+            DebugLog.LogError("ë ˆë²¨ ì´ˆê³¼: " + id);
             return false;
         }
 
-        DebugLog.LogError("¼ÒÀ¯ÁßÀÌÁö ¾ÊÀ½: " + id);
+        DebugLog.LogError("ì†Œìœ ì¤‘ì´ì§€ ì•ŠìŒ: " + id);
         return false;
     }
 
@@ -270,7 +337,7 @@ public class StageInfo
     {
         if (_giveFurnitureList.Contains(data.Id))
         {
-            DebugLog.Log("ÀÌ¹Ì °¡Áö°í ÀÖ½À´Ï´Ù.");
+            DebugLog.Log("ì´ë¯¸ ê°€ì§€ê³  ìˆìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -284,14 +351,14 @@ public class StageInfo
     {
         if (_giveFurnitureList.Contains(id))
         {
-            DebugLog.Log("ÀÌ¹Ì °¡Áö°í ÀÖ½À´Ï´Ù.");
+            DebugLog.Log("ì´ë¯¸ ê°€ì§€ê³  ìˆìŠµë‹ˆë‹¤.");
             return;
         }
 
         FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
         if (data == null)
         {
-            DebugLog.Log("Á¸ÀçÇÏÁö ¾Ê´Â IDÀÔ´Ï´Ù" + id);
+            DebugLog.Log("ì¡´ì¬í•˜ì§€ ì•ŠëŠ” IDì…ë‹ˆë‹¤" + id);
             return;
         }
 
@@ -356,7 +423,7 @@ public class StageInfo
         FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
         if (data == null)
         {
-            DebugLog.LogError("Á¸ÀçÇÏÁö ¾Ê´Â IDÀÔ´Ï´Ù" + id);
+            DebugLog.LogError("ì¡´ì¬í•˜ì§€ ì•ŠëŠ” IDì…ë‹ˆë‹¤" + id);
             return ERestaurantFloorType.Error;
         }
 
@@ -368,7 +435,7 @@ public class StageInfo
     {
         if (!_giveFurnitureList.Contains(data.Id))
         {
-            DebugLog.LogError("ÇöÀç °¡±¸¸¦ º¸À¯ÇÏÁö ¾Ê¾Ò½À´Ï´Ù: " + data.Id);
+            DebugLog.LogError("í˜„ì¬ ê°€êµ¬ë¥¼ ë³´ìœ í•˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤: " + data.Id);
             return;
         }
 
@@ -381,7 +448,7 @@ public class StageInfo
         FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(id);
         if (data == null)
         {
-            DebugLog.Log("Á¸ÀçÇÏÁö ¾Ê´Â IDÀÔ´Ï´Ù" + id);
+            DebugLog.Log("ì¡´ì¬í•˜ì§€ ì•ŠëŠ” IDì…ë‹ˆë‹¤" + id);
             return;
         }
         SetEquipFurniture(type, data);
@@ -424,7 +491,7 @@ public class StageInfo
     {
         if (_giveKitchenUtensilList.Contains(data.Id))
         {
-            DebugLog.Log("ÀÌ¹Ì °¡Áö°í ÀÖ½À´Ï´Ù.");
+            DebugLog.Log("ì´ë¯¸ ê°€ì§€ê³  ìˆìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -439,7 +506,7 @@ public class StageInfo
         KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
         if (data == null)
         {
-            DebugLog.Log("Á¸ÀçÇÏÁö ¾Ê´Â IDÀÔ´Ï´Ù" + id);
+            DebugLog.Log("ì¡´ì¬í•˜ì§€ ì•ŠëŠ” IDì…ë‹ˆë‹¤" + id);
             return;
         }
         GiveKitchenUtensil(data);
@@ -492,7 +559,7 @@ public class StageInfo
         KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
         if (data == null)
         {
-            DebugLog.LogError("Á¸ÀçÇÏÁö ¾Ê´Â IDÀÔ´Ï´Ù" + id);
+            DebugLog.LogError("ì¡´ì¬í•˜ì§€ ì•ŠëŠ” IDì…ë‹ˆë‹¤" + id);
             return ERestaurantFloorType.Error;
         }
 
@@ -504,7 +571,7 @@ public class StageInfo
     {
         if (!_giveKitchenUtensilList.Contains(data.Id))
         {
-            DebugLog.LogError("ÇöÀç ÁÖ¹æ ±â±¸¸¦ º¸À¯ÇÏÁö ¾Ê¾Ò½À´Ï´Ù: " + data.Id);
+            DebugLog.LogError("í˜„ì¬ ì£¼ë°© ê¸°êµ¬ë¥¼ ë³´ìœ í•˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤: " + data.Id);
             return;
         }
 
@@ -517,7 +584,7 @@ public class StageInfo
         KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(id);
         if (data == null)
         {
-            DebugLog.LogError("Á¸ÀçÇÏÁö ¾Ê´Â IDÀÔ´Ï´Ù" + id);
+            DebugLog.LogError("ì¡´ì¬í•˜ì§€ ì•ŠëŠ” IDì…ë‹ˆë‹¤" + id);
             return;
         }
 
@@ -659,6 +726,35 @@ public class StageInfo
 
     #endregion
 
+    #region TableData
+
+    public CoinAreaData GetCoinAreaData(ERestaurantFloorType floor, TableType type, int index)
+    {
+        int floorIndex = (int)floor;
+        int typeIndex = (int)type;
+
+        if (_coinAreaDatas[floorIndex, typeIndex * 2 + index] == null)
+            _coinAreaDatas[floorIndex, typeIndex * 2 + index] = new CoinAreaData();
+
+        return _coinAreaDatas[floorIndex, typeIndex * 2 + index];
+    }
+
+
+    public GarbageAreaData GetGarbageAreaData(ERestaurantFloorType floor, TableType type)
+    {
+        int floorIndex = (int)floor;
+        int typeIndex = (int)type;
+
+        if (_garbageAreaDatas[floorIndex, typeIndex] == null)
+            _garbageAreaDatas[floorIndex, typeIndex] = new GarbageAreaData();   
+
+        return _garbageAreaDatas[floorIndex, typeIndex];
+    }
+
+
+
+
+    #endregion
 
     #region ServerData
 
@@ -668,26 +764,30 @@ public class StageInfo
 
         data.UnlockFloor = _unlockFloor;
         data.Score = _score;
+        data.Tip = _tip;
 
-        // 1. Á÷¿ø ÀåÂø µ¥ÀÌÅÍ º¯È¯ (StaffData[,] ¡æ List<List<string>>)
+        data.CoinAreaDataList = ConvertCoinAreaDataToList();
+        data.GarbageAreaDataList = ConvertGarbageAreaDataToList();
+
+        // 1. ì§ì› ì¥ì°© ë°ì´í„° ë³€í™˜ (StaffData[,] â†’ List<List<string>>)
         data.EquipStaffDataList = new List<List<string>>();
         for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
         {
             List<string> staffList = new List<string>();
             for (int j = 0; j < (int)StaffType.Length; j++)
             {
-                staffList.Add(_equipStaffDatas[i, j] != null ? _equipStaffDatas[i, j].Id : ""); // StaffData¿¡¼­ ID ÃßÃâ
+                staffList.Add(_equipStaffDatas[i, j] != null ? _equipStaffDatas[i, j].Id : ""); // StaffDataì—ì„œ ID ì¶”ì¶œ
             }
             data.EquipStaffDataList.Add(staffList);
         }
 
-        // 2. Á÷¿ø ·¹º§ Á¤º¸ º¹»ç (Dictionary ±×´ë·Î ÇÒ´ç)
+        // 2. ì§ì› ë ˆë²¨ ì •ë³´ ë³µì‚¬ (Dictionary ê·¸ëŒ€ë¡œ í• ë‹¹)
         data.GiveStaffLevelDic = new Dictionary<string, int>(_giveStaffLevelDic);
 
-        // 3. È¹µæÇÑ °¡±¸ Á¤º¸ (List ±×´ë·Î ÇÒ´ç)
+        // 3. íšë“í•œ ê°€êµ¬ ì •ë³´ (List ê·¸ëŒ€ë¡œ í• ë‹¹)
         data.GiveFurnitureList = new List<string>(_giveFurnitureList);
 
-        // 4. ÀåÂøµÈ °¡±¸ µ¥ÀÌÅÍ º¯È¯ (FurnitureData[,] ¡æ List<List<string>>)
+        // 4. ì¥ì°©ëœ ê°€êµ¬ ë°ì´í„° ë³€í™˜ (FurnitureData[,] â†’ List<List<string>>)
         data.EquipFurnitureList = new List<List<string>>();
         for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
         {
@@ -699,10 +799,10 @@ public class StageInfo
             data.EquipFurnitureList.Add(furnitureList);
         }
 
-        // 5. È¹µæÇÑ ÁÖ¹æ ±â±¸ Á¤º¸ (List ±×´ë·Î ÇÒ´ç)
+        // 5. íšë“í•œ ì£¼ë°© ê¸°êµ¬ ì •ë³´ (List ê·¸ëŒ€ë¡œ í• ë‹¹)
         data.GiveKitchenUtensilList = new List<string>(_giveKitchenUtensilList);
 
-        // 6. ÀåÂøµÈ ÁÖ¹æ ±â±¸ µ¥ÀÌÅÍ º¯È¯ (KitchenUtensilData[,] ¡æ List<List<string>>)
+        // 6. ì¥ì°©ëœ ì£¼ë°© ê¸°êµ¬ ë°ì´í„° ë³€í™˜ (KitchenUtensilData[,] â†’ List<List<string>>)
         data.EquipKitchenUtensilList = new List<List<string>>();
         for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
         {
@@ -722,8 +822,9 @@ public class StageInfo
         if (loadData == null)
             return false;
 
+        _unlockFloor = loadData.UnlockFloor;
         _score = loadData.Score;
-
+        _tip = loadData.Tip;
         _giveStaffLevelDic = loadData.GiveStaffLevelDic;
         for (int i = 0, cnt = loadData.EquipStaffDataList.Count; i < cnt; ++i)
         {
@@ -766,9 +867,78 @@ public class StageInfo
             }
         }
 
+        ConvertListToCoinAreaDataArray(loadData.CoinAreaDataList);
+        ConvertListToGarbageAreaDataArray(loadData.GarbageAreaDataList);
+
+        CheckKitchenSetCount();
+        CheckFurnitureSetCount();
         return true;
     }
 
+
+    private List<List<CoinAreaData>> ConvertCoinAreaDataToList()
+    {
+        List<List<CoinAreaData>> list = new List<List<CoinAreaData>>();
+        for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
+        {
+            List<CoinAreaData> row = new List<CoinAreaData>();
+            for (int j = 0; j < (int)TableType.Length * 2; j++)
+            {
+                CoinAreaData data = _coinAreaDatas[i, j];
+                row.Add(data ?? new CoinAreaData()); // NULL ë°©ì§€
+            }
+            list.Add(row);
+        }
+        return list;
+    }
+
+    // ğŸ”¹ `GarbageAreaData[,]` â†’ `List<List<GarbageAreaData>>` ë³€í™˜
+    private List<List<GarbageAreaData>> ConvertGarbageAreaDataToList()
+    {
+        List<List<GarbageAreaData>> list = new List<List<GarbageAreaData>>();
+        for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
+        {
+            List<GarbageAreaData> row = new List<GarbageAreaData>();
+            for (int j = 0; j < (int)TableType.Length; j++)
+            {
+                GarbageAreaData data = _garbageAreaDatas[i, j];
+                row.Add(data ?? new GarbageAreaData()); // NULL ë°©ì§€
+            }
+            list.Add(row);
+        }
+        return list;
+    }
+
+
+    private void ConvertListToCoinAreaDataArray(List<List<CoinAreaData>> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            for (int j = 0; j < list[i].Count; j++)
+            {
+                if (_coinAreaDatas[i, j] == null)
+                    _coinAreaDatas[i, j] = new CoinAreaData(); // NULL ë°©ì§€
+
+                _coinAreaDatas[i, j].SetCoinCount(list[i][j].CoinCount);
+                _coinAreaDatas[i, j].SetMoney(list[i][j].Money);
+            }
+        }
+    }
+
+    // ğŸ”¹ `List<List<GarbageAreaData>>` â†’ `GarbageAreaData[,]` ë³€í™˜ í•¨ìˆ˜
+    private void ConvertListToGarbageAreaDataArray(List<List<GarbageAreaData>> list)
+    {
+        for (int i = 0; i < list.Count; i++)
+        {
+            for (int j = 0; j < list[i].Count; j++)
+            {
+                if (_garbageAreaDatas[i, j] == null)
+                    _garbageAreaDatas[i, j] = new GarbageAreaData(); // NULL ë°©ì§€
+
+                _garbageAreaDatas[i, j].SetCount(list[i][j].Count);
+            }
+        }
+    }
 
     #endregion
 }

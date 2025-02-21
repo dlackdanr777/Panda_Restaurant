@@ -158,14 +158,14 @@ public class FirstTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(1);
         _uiTutorial.BuyHoleSetActive(true);
         _uiTutorial.SetBuyHoleTargetObjectName("Buy Button");
-        while (!UserInfo.IsGiveKitchenUtensil("COOKER01_01"))
+        while (!UserInfo.IsGiveKitchenUtensil(EStage.Stage1, "COOKER01_01"))
             yield return YieldCache.WaitForSeconds(0.02f);
 
         yield return YieldCache.WaitForSeconds(1);
         _uiTutorial.BuyHoleSetActive(true);
         _uiTutorial.SetBuyHoleTargetObjectName("Equip Button");
         KitchenUtensilData kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData("COOKER01_01");
-        while (!UserInfo.IsEquipKitchenUtensil(ERestaurantFloorType.Floor1, kitchenData))
+        while (!UserInfo.IsEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, kitchenData))
             yield return YieldCache.WaitForSeconds(0.02f);
 
         yield return YieldCache.WaitForSeconds(1);
@@ -314,11 +314,11 @@ public class FirstTutorial : MonoBehaviour
     {
         UserInfo.GiveRecipe("FOOD01");
         UserInfo.GiveFurniture(EStage.Stage1, "TABLE01_01");
-        UserInfo.GiveKitchenUtensil("COOKER01_01");
+        UserInfo.GiveKitchenUtensil(EStage.Stage1, "COOKER01_01");
         KitchenUtensilData kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData("COOKER01_01");
         FurnitureData table1Data = FurnitureDataManager.Instance.GetFurnitureData("TABLE01_01");
         UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, table1Data);
-        UserInfo.SetEquipKitchenUtensil(ERestaurantFloorType.Floor1, kitchenData);
+        UserInfo.SetEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, kitchenData);
 
         _uiTutorial.PopEnabled = true;
         _uiDescriptionNPC.PopEnabled = true;

@@ -99,7 +99,7 @@ public class UIEquipButtonGroup : MonoBehaviour
         if (!gameObject.activeInHierarchy)
             return;
 
-        ERestaurantFloorType currentFloorType = UserInfo.CurrentFloor;
+        ERestaurantFloorType currentFloorType = UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
         if (currentFloorType == ERestaurantFloorType.Floor3)
         {
             _floor3Button.gameObject.SetActive(true);

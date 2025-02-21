@@ -79,8 +79,8 @@ public class MainScene : MonoBehaviour
         UserInfo.GiveFurniture(EStage.Stage1, "COUNTER08");
         UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "COUNTER08");
 
-        UserInfo.GiveKitchenUtensil("COOKER01_01");
-        UserInfo.SetEquipKitchenUtensil(ERestaurantFloorType.Floor1, "COOKER01_01");
+        UserInfo.GiveKitchenUtensil(EStage.Stage1, "COOKER01_01");
+        UserInfo.SetEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, "COOKER01_01");
 #endif
     }
 
@@ -102,7 +102,7 @@ public class MainScene : MonoBehaviour
         if (60 <= _updateTimer)
         {
             _updateTimer = 0;
-            UserInfo.AddTip(GameManager.Instance.TipPerMinute);
+            UserInfo.AddTip(UserInfo.CurrentStage, GameManager.Instance.TipPerMinute);
             GameManager.Instance.AsyncSaveGameData();
             if (UserInfo.CheckLastAccessTime())
             {
