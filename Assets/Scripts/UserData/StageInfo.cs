@@ -23,7 +23,7 @@ public class StageInfo
     public EStage Stage => _stage;
 
 
-    private ERestaurantFloorType _unlockFloor;
+    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor2;
     public ERestaurantFloorType UnlockFloor => _unlockFloor;
 
 
@@ -323,16 +323,6 @@ public class StageInfo
         return _furnitureEnabledSetData[(int)type];
     }
 
-    public void SetEquipFurnitureSetData(ERestaurantFloorType type, SetData data)
-    {
-        if (_furnitureEnabledSetData[(int)type] == data)
-            return;
-
-        _furnitureEnabledSetData[(int)type] = data;
-        OnChangeFurnitureSetDataHandler?.Invoke();
-    }
-
-
     public void GiveFurniture(FurnitureData data)
     {
         if (_giveFurnitureList.Contains(data.Id))
@@ -440,6 +430,7 @@ public class StageInfo
         }
 
         _equipFurnitureDatas[(int)type, (int)data.Type] = data;
+        CheckFurnitureSetData();
         OnChangeFurnitureHandler?.Invoke(type, data.Type);
     }
 
@@ -452,13 +443,13 @@ public class StageInfo
             return;
         }
         SetEquipFurniture(type, data);
-        OnChangeFurnitureHandler?.Invoke(type, data.Type);
     }
 
 
     public void SetNullEquipFurniture(ERestaurantFloorType floor, FurnitureType type)
     {
         _equipFurnitureDatas[(int)floor, (int)type] = null;
+        CheckFurnitureSetData();
         OnChangeFurnitureHandler?.Invoke(floor, type);
     }
 
@@ -475,15 +466,6 @@ public class StageInfo
     public SetData GetEquipKitchenUntensilSetData(ERestaurantFloorType type)
     {
         return _kitchenuntensilEnabledSetData[(int)type];
-    }
-
-    public void SetEquipKitchenUntensilSetData(ERestaurantFloorType type, SetData data)
-    {
-        if (_kitchenuntensilEnabledSetData[(int)type] == data)
-            return;
-
-        _kitchenuntensilEnabledSetData[(int)type] = data;
-        OnChangeKitchenUtensilSetDataHandler?.Invoke();
     }
 
 
@@ -576,6 +558,7 @@ public class StageInfo
         }
 
         _equipKitchenUtensilDatas[(int)type, (int)data.Type] = data;
+        CheckKitchenSetData();
         OnChangeKitchenUtensilHandler?.Invoke(type, data.Type);
     }
 
@@ -595,6 +578,7 @@ public class StageInfo
     public void SetNullEquipKitchenUtensil(ERestaurantFloorType floor, KitchenUtensilType type)
     {
         _equipKitchenUtensilDatas[(int)floor, (int)type] = null;
+        CheckKitchenSetData();
         OnChangeKitchenUtensilHandler?.Invoke(floor, type);
     }
 
@@ -723,6 +707,104 @@ public class StageInfo
         }
     }
 
+
+    private void CheckFurnitureSetData()
+    {
+        bool isFurnitureSetChanged = false;
+
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            SetData furnitureSetData = _furnitureEnabledSetData[i];
+
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            _furnitureEnabledSetData[i] = GetEquipFurnitureSetData(floor);
+
+            if (furnitureSetData != _furnitureEnabledSetData[i])
+                isFurnitureSetChanged = true;
+        }
+
+        if(isFurnitureSetChanged)
+            OnChangeFurnitureSetDataHandler?.Invoke();
+
+
+        SetData GetEquipFurnitureSetData(ERestaurantFloorType type)
+        {
+            string setId = string.Empty;
+            for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
+            {
+                FurnitureData data = GetEquipFurniture(type, (FurnitureType)j);
+                if (data == null)
+                    return null;
+
+                if (string.IsNullOrEmpty(setId))
+                {
+                    setId = data.SetId;
+                    continue;
+                }
+
+                if (setId != data.SetId)
+                    return null;
+            }
+
+            SetData setData = SetDataManager.Instance.GetSetData(setId);
+            if (setData == null)
+            {
+                DebugLog.LogError("해당 세트옵션 데이터가 데이터베이스에 존재하지 않습니다. 확인해주세요: " + setId);
+                return null;
+            }
+
+            return setData;
+        }
+    }
+
+
+    private void CheckKitchenSetData()
+    {
+        bool isKitchenSetChanged = false;
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            SetData kitchenSetData = _kitchenuntensilEnabledSetData[i];
+
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            _kitchenuntensilEnabledSetData[i] = GetEquipKitchenUtensilSetData(floor);
+  
+            if (kitchenSetData != _kitchenuntensilEnabledSetData[i])
+                isKitchenSetChanged = true;
+        }
+
+        if (isKitchenSetChanged)
+            OnChangeKitchenUtensilSetDataHandler?.Invoke();
+
+  
+        SetData GetEquipKitchenUtensilSetData(ERestaurantFloorType type)
+        {
+            string setId = string.Empty;
+            for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
+            {
+                KitchenUtensilData data = GetEquipKitchenUtensil(type, (KitchenUtensilType)i);
+                if (data == null)
+                    return null;
+
+                if (string.IsNullOrEmpty(setId))
+                {
+                    setId = data.SetId;
+                    continue;
+                }
+
+                if (setId != data.SetId)
+                    return null;
+            }
+
+            SetData setData = SetDataManager.Instance.GetSetData(setId);
+            if (setData == null)
+            {
+                DebugLog.LogError("해당 세트옵션 데이터가 데이터베이스에 존재하지 않습니다. 확인해주세요: " + setId);
+                return null;
+            }
+
+            return setData;
+        }
+    }
 
     #endregion
 

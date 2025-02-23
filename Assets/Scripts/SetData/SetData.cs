@@ -12,6 +12,9 @@ public abstract class SetData : ScriptableObject
     [TextArea][SerializeField] string _description;
     public string Description => _description;
 
+    [SerializeField] private FoodType _setFoodType;
+    public FoodType SetFoodType => _setFoodType;
+
     public abstract float Value { get; }
 
 

@@ -1,4 +1,4 @@
-using Muks.PathFinding.AStar;
+using Muks.WeightedRandom;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -42,9 +42,9 @@ public class NormalCustomer : Customer
     }
 
 
-    public override void SetData(CustomerData data, TableManager tableManager, ERestaurantFloorType visitFloorType)
+    public override void SetData(CustomerData data, TableManager tableManager)
     {
-        base.SetData(data, tableManager, visitFloorType);
+        base.SetData(data, tableManager);
         HideFood();
         _doublePricePercent = 0;
         _currentFoodPriceMul = 1;
@@ -93,6 +93,30 @@ public class NormalCustomer : Customer
             _foodRenderer.transform.localPosition = new Vector3(-_tmpFoodPosX, _foodRenderer.transform.localPosition.y, 0);
         }
 
+    }
+
+    public WeightedRandom<FoodType> GetFoodTypeWeightDic()
+    {
+        WeightedRandom<FoodType> _foodRandom = new WeightedRandom<FoodType>();
+        for (int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
+        {
+            _foodRandom.Add((FoodType)i, 0);
+        }
+
+        if (!string.IsNullOrWhiteSpace(_customerData.RequiredDish))
+        {
+            FoodData foodData = FoodDataManager.Instance.GetFoodData(_customerData.RequiredDish);
+            _foodRandom.Add(foodData.FoodType, 1);
+        }
+
+        // 林巩等 澜侥甸 贸府
+        foreach (var order in _customerData.OrderFoods)
+        {
+            FoodData foodData = FoodDataManager.Instance.GetFoodData(order);
+            _foodRandom.Add(foodData.FoodType, 1);
+        }
+
+        return _foodRandom;
     }
 
 
@@ -160,6 +184,8 @@ public class NormalCustomer : Customer
     {
         _foodRenderer.gameObject.SetActive(false);
     }
+
+
 
     protected override IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {

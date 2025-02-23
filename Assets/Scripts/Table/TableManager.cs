@@ -1,7 +1,9 @@
-using Muks.PathFinding.AStar;
+﻿using Muks.PathFinding.AStar;
 using Muks.Tween;
+using Muks.WeightedRandom;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -51,7 +53,7 @@ public class TableManager : MonoBehaviour
 
     private void Init()
     {
-        _guideButton.onClick.AddListener(() => OnCustomerGuideButtonClicked(-1));
+        _guideButton.onClick.AddListener(() => OnCustomerGuideEventPlaySound(-1));
 
         UpdateTable();
         _customerController.OnAddCustomerHandler += UpdateTable;
@@ -60,10 +62,28 @@ public class TableManager : MonoBehaviour
     }
 
 
-    public void OnCustomerGuide(TableData data, int sitPos = -1)
+    public void OnCustomerGuideEvent(int sitPos = -1)
     {
         if (_customerController.IsEmpty())
             return;
+
+        NormalCustomer customer = _customerController.GetFirstCustomer();
+        if (customer == null)
+        {
+            DebugLog.LogError("손님 정보가 없습니다.");
+            return;
+        }
+
+        TableData data = GetTableType(ETableState.Empty);
+        if (data == null)
+        {
+            DebugLog.LogError("남는 테이블이 없습니다.");
+            UpdateTable();
+            return;
+        }
+
+        ERestaurantFloorType choiceFloor = GetWeightRandomChoiceFloor(customer);
+        data = GetTableType(choiceFloor, ETableState.Empty);
 
         if (data.TableState == ETableState.DontUse)
         {
@@ -71,14 +91,26 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        if (data.TableState != ETableState.Empty)
-            return;
+        sitPos = Mathf.Clamp(sitPos, -1, 1);
+        customer.SetVisitFloor(choiceFloor);
+        OnCustomerGuide(customer, data, sitPos);
 
-        NormalCustomer currentCustomer = _customerController.GetFirstCustomer();
-        data.CurrentCustomer = currentCustomer;
-        currentCustomer.SetLayer("Customer", 0);
+    }
+
+    public void OnCustomerGuideEventPlaySound(int sitPos = -1)
+    {
+        OnCustomerGuideEvent(sitPos);
+        SoundManager.Instance.PlayEffectAudio(_callSound);
+    }
+
+
+
+    private void OnCustomerGuide(NormalCustomer customer, TableData data, int sitPos = -1)
+    {
+        data.CurrentCustomer = customer;
+        customer.SetLayer("Customer", 0);
         data.TableState = ETableState.Move;
-        data.OrdersCount = currentCustomer.OrderCount;
+        data.OrdersCount = customer.OrderCount;
 
         if (sitPos != 0 && sitPos != 1)
         {
@@ -103,32 +135,32 @@ public class TableManager : MonoBehaviour
                 if (data.CurrentCustomer == null)
                     return;
 
-                currentCustomer.transform.position = data.ChairTrs[data.SitIndex].position;
+                customer.transform.position = data.ChairTrs[data.SitIndex].position;
                 data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
                 data.ServingButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
 
-                currentCustomer.SetSpriteDir(-data.SitDir);
-                currentCustomer.SetLayer("SitCustomer", 0);
-                currentCustomer.ChangeState(CustomerState.Sit);
+                customer.SetSpriteDir(-data.SitDir);
+                customer.SetLayer("SitCustomer", 0);
+                customer.ChangeState(CustomerState.Sit);
 
                 Tween.Wait(1f, () =>
                 {
                     if (data.CurrentCustomer == null)
                         return;
 
-                    if (currentCustomer.CustomerData.MaxDiscomfortIndex < _totalGarbageCount)
+                    if (customer.CustomerData.MaxDiscomfortIndex < _totalGarbageCount)
                     {
                         data.CurrentCustomer = null;
                         data.TableState = ETableState.Empty;
-                        currentCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
-                        currentCustomer.ChangeState(CustomerState.Idle);
-                        currentCustomer.StartAnger();
-                        currentCustomer.HideFood();
-                        currentCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
+                        customer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
+                        customer.ChangeState(CustomerState.Idle);
+                        customer.StartAnger();
+                        customer.HideFood();
+                        customer.Move(GameManager.Instance.OutDoorPos, 0, () =>
                         {
-                            currentCustomer.StopAnger();
-                            ObjectPoolManager.Instance.DespawnNormalCustomer(currentCustomer);
-                            currentCustomer = null;
+                            customer.StopAnger();
+                            ObjectPoolManager.Instance.DespawnNormalCustomer(customer);
+                            customer = null;
                         });
 
                         UpdateTable();
@@ -412,7 +444,7 @@ public class TableManager : MonoBehaviour
         return _furnitureSystem.GetStaffPos(data, type);
     }
 
-    /// <summary> ���� ��ġ�� ��ȯ�ϴ� �Լ�(��ȣ��, û�Һ�, �Ŵ���, ������ ����)</summary>
+    /// <summary> 직원 위치를 반환하는 함수(경호원, 청소부, 매니저, 셰프만 가능)</summary>
     public Vector2 GetStaffPos(ERestaurantFloorType floorType, StaffType type)
     {
         return _furnitureSystem.GetStaffPos(floorType, type);
@@ -421,6 +453,11 @@ public class TableManager : MonoBehaviour
     public TableData GetTableType(ERestaurantFloorType floorType, ETableState state)
     {
         return _furnitureSystem.GetTableType(floorType, state);
+    }
+
+    public TableData GetTableType(ETableState state)
+    {
+        return _furnitureSystem.GetTableType(state);
     }
 
     public TableData GetTableData(ERestaurantFloorType floorType, TableType type)
@@ -537,16 +574,39 @@ public class TableManager : MonoBehaviour
         }
     }
 
-    public void OnCustomerGuideButtonClicked(int sitPos = -1)
+
+    private ERestaurantFloorType GetWeightRandomChoiceFloor(NormalCustomer customer)
     {
-        TableData data = GetTableType(ERestaurantFloorType.Floor1, ETableState.Empty);
+        //선호 음식 가중치를 계산 후 랜덤으로 Floor을 지정한다.
+        WeightedRandom<FoodType> foodRandom = customer.GetFoodTypeWeightDic();
 
-        if (data == null)
-            return;
+        Dictionary<FoodType, List<ERestaurantFloorType>> floorDataDic = new();
+        HashSet<FoodType> enabledFoodTypes = new();
 
-        sitPos = Mathf.Clamp(sitPos, -1, 1);
-        OnCustomerGuide(data, sitPos);
-        SoundManager.Instance.PlayEffectAudio(_callSound);
+        int maxFloorIndex = (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
+        for (int i = 0; i <= maxFloorIndex; i++)
+        {
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            TableData tableData = GetTableType(floor, ETableState.Empty);
+            if (tableData == null) continue;
+
+            FoodType foodType = _furnitureSystem.GetFoodType(floor);
+            if (!floorDataDic.ContainsKey(foodType))
+                floorDataDic.Add(foodType, new List<ERestaurantFloorType>());
+
+            floorDataDic[foodType].Add(floor);
+            foodRandom.Add(foodType, 0.1f);
+            enabledFoodTypes.Add(foodType);
+        }
+
+        // 활성화되지 않은 FoodType 한 번만 제거 (불필요한 전체 루프 제거)
+        foodRandom.RemoveAll(f => !enabledFoodTypes.Contains(f));
+
+        // 확률 기반 FoodType 선택
+        FoodType choiceFoodType = foodRandom.GetRamdomItem();
+        List<ERestaurantFloorType> availableFloors = floorDataDic[choiceFoodType];
+        ERestaurantFloorType choiceFloor = availableFloors[UnityEngine.Random.Range(0, availableFloors.Count)];
+        return choiceFloor;
     }
 
 

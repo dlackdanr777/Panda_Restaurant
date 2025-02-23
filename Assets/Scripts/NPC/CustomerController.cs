@@ -70,7 +70,6 @@ public class CustomerController : MonoBehaviour
                 break;
 
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);
-            ERestaurantFloorType visitFloor = (ERestaurantFloorType)UnityEngine.Random.Range(0, (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage) + 1);
             if (!UserInfo.IsTutorialStart && _breakCustomerEnabled && _breakInCustomerTimer <= 0 && randSpawnProbability < ConstValue.DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT)
             {
                 WeightedRandom<CustomerData> randomDataList = new WeightedRandom<CustomerData>();
@@ -87,13 +86,14 @@ public class CustomerController : MonoBehaviour
                 }
 
                 CustomerData getData = randomDataList.GetRamdomItem();
-
-                if(getData is SpecialCustomerData)
+                ERestaurantFloorType visitFloor = (ERestaurantFloorType)UnityEngine.Random.Range(0, (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage) + 1);
+                if (getData is SpecialCustomerData)
                 {
                     _breakInCustomerTimer = _breakInCustomerTime;
                     _breakCustomerEnabled = false;
                     SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-                    specialCustomer.SetData(getData, _tableManager, visitFloor);
+                    specialCustomer.SetData(getData, _tableManager);
+                    specialCustomer.SetVisitFloor(visitFloor);
                     specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
                     UserInfo.AddVisitSpecialCustomerCount();
                     _uiCustomerTutorial.ShowTutorial(getData);
@@ -103,7 +103,8 @@ public class CustomerController : MonoBehaviour
                     _breakInCustomerTimer = _breakInCustomerTime;
                     _breakCustomerEnabled = false;
                     _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-                    _gatecrasherCustomer.SetData(getData, _tableManager, visitFloor);
+                    _gatecrasherCustomer.SetData(getData, _tableManager);
+                    _gatecrasherCustomer.SetVisitFloor(visitFloor);
                     if (getData is GatecrasherCustomer1Data)
                     {
                         _gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(visitFloor), _specialCustomerTargetPosList, OnCustomerEvent, () => _uiCustomerTutorial.ShowTutorial(getData));
@@ -121,7 +122,7 @@ public class CustomerController : MonoBehaviour
                 NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
                 CustomerData customerData = normalCustomerDataList[randInt];
-                customer.SetData(customerData, _tableManager, visitFloor);
+                customer.SetData(customerData, _tableManager);
                 _customers.Enqueue(customer);
                 UserInfo.CustomerVisits(customerData);
                 UserInfo.AddPromotionCount();
@@ -226,27 +227,30 @@ public class CustomerController : MonoBehaviour
         if (data is GatecrasherCustomer1Data)
         {
             _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            _gatecrasherCustomer.SetData(data, _tableManager, visitFloor);
+            _gatecrasherCustomer.SetData(data, _tableManager);
+            _gatecrasherCustomer.SetVisitFloor(visitFloor);
             _gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(visitFloor), _specialCustomerTargetPosList, OnCustomerEvent);
         }
         else if (data is GatecrasherCustomer2Data)
         {
             _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            _gatecrasherCustomer.SetData(data, _tableManager, visitFloor);
+            _gatecrasherCustomer.SetData(data, _tableManager);
+            _gatecrasherCustomer.SetVisitFloor(visitFloor);
             _gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
         }
 
         else if(data is SpecialCustomerData)
         {
             SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            specialCustomer.SetData(data, _tableManager, visitFloor);
+            specialCustomer.SetData(data, _tableManager);
+            specialCustomer.SetVisitFloor(visitFloor);
             specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
         }
 
         else
         {
             NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            customer.SetData(data, _tableManager, visitFloor);
+            customer.SetData(data, _tableManager);
             _customers.Enqueue(customer);
             UserInfo.CustomerVisits(data);
 

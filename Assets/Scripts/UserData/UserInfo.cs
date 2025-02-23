@@ -895,13 +895,6 @@ public static class UserInfo
     }
 
 
-    public static void SetEquipFurnitureSetData(EStage stage, ERestaurantFloorType type, SetData data)
-    {
-        int stageIndex = (int)stage;
-        _stageInfos[stageIndex].SetEquipFurnitureSetData(type, data);
-    }
-
-
     public static void GiveFurniture(EStage stage, FurnitureData data)
     {
         int stageIndex = (int)stage;
@@ -997,12 +990,6 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].GetEquipKitchenUntensilSetData(type);
-    }
-
-    public static void SetEquipKitchenUntensilSetData(EStage stage, ERestaurantFloorType floor, SetData data)
-    {
-        int stageIndex = (int)stage;
-        _stageInfos[stageIndex].SetEquipKitchenUntensilSetData(floor, data);
     }
 
 

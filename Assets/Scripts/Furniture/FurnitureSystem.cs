@@ -70,6 +70,22 @@ public class FurnitureSystem : MonoBehaviour
        return _furnitureGroupDic[floorType].GetTableType(state);
     }
 
+
+    public TableData GetTableType(ETableState state)
+    {
+        for(int i = 0, cnt = (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage); i <= cnt; ++i)
+        {
+            TableData data = _furnitureGroupDic[(ERestaurantFloorType)i].GetTableType(state);
+            if (data == null)
+                continue;
+
+            return data;
+        }
+
+        return null;
+    }
+
+
     public TableData GetTableType(ERestaurantFloorType floorType, TableType type)
     {
         return _furnitureGroupDic[floorType].GetTableType(type);
@@ -121,6 +137,14 @@ public class FurnitureSystem : MonoBehaviour
 
         DebugLog.LogError("해당 위치값에 맞는 문 위치값이 없습니다: " + pos);
         return Vector3.zero;
+    }
+
+    public FoodType GetFoodType(ERestaurantFloorType floor)
+    {
+        if (!_furnitureGroupDic.TryGetValue(floor, out FurnitureGroup group))
+            throw new Exception("해당 Floor타입을 가진 가구 그룹이 없습니다: " + floor);
+
+        return group.GetFoodType();
     }
 
 

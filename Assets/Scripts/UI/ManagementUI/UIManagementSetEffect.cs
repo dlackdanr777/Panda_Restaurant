@@ -130,7 +130,7 @@ public class UIManagementSetEffect : MonoBehaviour
                         break;
 
                     _setCountList[i].gameObject.SetActive(true);
-                    _setCountList[i].SetData(SetDataManager.Instance.GetSetData(sortList[i].Key), sortList[i].Value, ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT);
+                    _setCountList[i].SetData(SetDataManager.Instance.GetSetData(sortList[i].Key), sortList[i].Value, ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT);
                 }
                 return;
         }

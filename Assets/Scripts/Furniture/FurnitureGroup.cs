@@ -37,6 +37,7 @@ public class FurnitureGroup : MonoBehaviour
     private List<TableData> _tableDataList = new List<TableData>();
     private List<DropCoinArea> _dropCoinAreaList = new List<DropCoinArea>();
     private List<DropGarbageArea> _dropGarbageAreaList = new List<DropGarbageArea>();
+    private FoodType _foodType;
 
     public TableData GetTableData(TableType type)
     {
@@ -141,6 +142,11 @@ public class FurnitureGroup : MonoBehaviour
         return Vector3.zero;
     }
 
+    public FoodType GetFoodType()
+    {
+        return _foodType;
+    }
+
 
     public void Init(TableManager tableManager, RectTransform buttonParent, TableButton orderButtonPrefab, TableButton servingButtonPrefab)
     {
@@ -243,11 +249,12 @@ public class FurnitureGroup : MonoBehaviour
             return;
 
         FurnitureData equipFurniture = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, floorType, type);
-
         foreach (Furniture data in _furnitureDic[type])
         {
             data.SetFurnitureData(equipFurniture);
         }
+
+        OnChangeFoodTypeEvent();
     }
 
 
@@ -316,6 +323,19 @@ public class FurnitureGroup : MonoBehaviour
                 data.ServingButton.gameObject.SetActive(false);
             }
         }
+    }
+
+    private void OnChangeFoodTypeEvent()
+    {
+        SetData setData = UserInfo.GetEquipFurnitureSetData(UserInfo.CurrentStage, _floorType);
+
+        if (setData == null)
+        {
+            _foodType = FoodType.None;
+            return;
+        }
+
+        _foodType = setData.SetFoodType;
     }
 
 

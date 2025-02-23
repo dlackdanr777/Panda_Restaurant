@@ -52,11 +52,10 @@ public class Customer : MonoBehaviour
     }
 
 
-    public virtual void SetData(CustomerData data, TableManager tableManager, ERestaurantFloorType visitFloor)
+    public virtual void SetData(CustomerData data, TableManager tableManager)
     {
         _customerData = data;
         _tableManager = tableManager;
-        _visitFloor = visitFloor;
         _moveSpeed = data.MoveSpeed;
 
         _spriteParent.localScale = data.Scale <= 0 ? Vector3.one : Vector3.one * data.Scale;
@@ -64,6 +63,11 @@ public class Customer : MonoBehaviour
         _spriteRenderer.transform.localPosition = Vector3.zero;
         _spriteRenderer.sprite = data.Sprite;
         _spriteRenderer.color = Color.white;
+    }
+
+    public void SetVisitFloor(ERestaurantFloorType floor)
+    {
+        _visitFloor = floor;
     }
 
 

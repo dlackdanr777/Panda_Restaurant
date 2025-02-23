@@ -80,17 +80,34 @@ namespace Muks.WeightedRandom
         }
 
 
-        /// <summary>현재 리스트에 있는 아이템의 가중치를 모두 더해 반환</summary>
-        public int TotalWeight()
+        /// <summary> 특정 조건을 만족하는 모든 아이템을 제거 </summary>
+        public void RemoveAll(Predicate<T> match)
         {
-            int totalWeight = 0;
+            List<T> itemsToRemove = new List<T>();
 
-            //딕셔너리에 입력된 모든 아이템 가중치 값을 더한다.
-            foreach (int value in _itemDic.Values)
+            foreach (var item in _itemDic.Keys)
+            {
+                if (match(item))
+                {
+                    itemsToRemove.Add(item);
+                }
+            }
+
+            foreach (var item in itemsToRemove)
+            {
+                _itemDic.Remove(item);
+            }
+        }
+
+
+        /// <summary>현재 리스트에 있는 아이템의 가중치를 모두 더해 반환</summary>
+        public float TotalWeight()
+        {
+            float totalWeight = 0;
+            foreach (float value in _itemDic.Values)
             {
                 totalWeight += value;
             }
-
             return totalWeight;
         }
 
@@ -111,7 +128,7 @@ namespace Muks.WeightedRandom
 
 
         /// <summary> 아이템 리스트에서 랜덤으로 아이템을 뽑아 반환(뽑힌 아이템의 갯수 -1) </summary>
-        public T GetRamdomItemAfterSub()
+        public T GetRamdomItemAfterSub(float subValue)
         {
             //딕셔너리에 들어있는 아이템 갯수가 0이하면
             if (_itemDic.Count <= 0)
@@ -137,7 +154,7 @@ namespace Muks.WeightedRandom
                 if (pivot <= weight)
                 {
                     
-                    _itemDic[item.Key] -= 1;
+                    _itemDic[item.Key] -= subValue;
 
                     if (_itemDic[item.Key] <= 0)
                         Remove(item.Key);
@@ -228,5 +245,9 @@ namespace Muks.WeightedRandom
             return randFloat;
         }
 
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
     }
 }
