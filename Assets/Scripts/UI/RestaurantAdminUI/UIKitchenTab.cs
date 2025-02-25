@@ -1,13 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UIKitchenTab : MonoBehaviour
+public class UIKitchenTab : UIRestaurantAdminTab
 {
     [Header("Components")]
     [SerializeField] private UIKitchen _uiKitchen;
-    [SerializeField] private Button _floor1Button;
-    [SerializeField] private Button _floor2Button;
-    [SerializeField] private Button _floor3Button;
+    [SerializeField] private UIRestaurantAdminFloorButtonGroup _floorButtonGroup;
 
 
     [Space]
@@ -19,7 +17,7 @@ public class UIKitchenTab : MonoBehaviour
     private UITabSlot[] _slots;
     private ERestaurantFloorType _floorType;
 
-    public void Init()
+    public override void Init()
     {
         _slots = new UITabSlot[(int)KitchenUtensilType.Length];
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; i++)
@@ -34,24 +32,25 @@ public class UIKitchenTab : MonoBehaviour
             slot.name = "KitchenTabSlot" + (i + 1);
         }
 
-        _floor1Button.onClick.AddListener(() => ChangeFloorType(ERestaurantFloorType.Floor1));
-        _floor2Button.onClick.AddListener(() => ChangeFloorType(ERestaurantFloorType.Floor2));
-        _floor3Button.onClick.AddListener(() => ChangeFloorType(ERestaurantFloorType.Floor3));
-
+        _floorButtonGroup.Init(() => ChangeFloorType(ERestaurantFloorType.Floor1), () => ChangeFloorType(ERestaurantFloorType.Floor2), () => ChangeFloorType(ERestaurantFloorType.Floor3));
         UserInfo.OnChangeKitchenUtensilHandler += UpdateUI;
     }
 
-    public void ChangeFloorType(ERestaurantFloorType floorType)
-    {
-        if (_floorType == floorType)
-            return;
 
-        _floorType = floorType;
-        UpdateUI();
+    public override void SetAttention()
+    {
+        _floorButtonGroup.SetActive(true);
+        _floorButtonGroup.Hide();
     }
 
 
-    public void UpdateUI()
+    public override void SetNotAttention()
+    {
+        _floorButtonGroup.SetActive(false);
+    }
+
+
+    public override void UpdateUI()
     {
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; i++)
         {
@@ -68,6 +67,16 @@ public class UIKitchenTab : MonoBehaviour
         BasicData data = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, floorType, type);
         Sprite sprite = data != null ? data.ThumbnailSprite : null;
         _slots[(int)type].UpdateUI(sprite, Utility.KitchenUtensilTypeStringConverter(type));
+    }
+
+    private void ChangeFloorType(ERestaurantFloorType floorType)
+    {
+        if (_floorType == floorType)
+            return;
+
+        _floorType = floorType;
+        _floorButtonGroup.SetFloorText(_floorType);
+        UpdateUI();
     }
 
     private void OnSlotClicked(int index)

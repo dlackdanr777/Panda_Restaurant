@@ -183,6 +183,8 @@ public static class UserInfo
             _stageInfos[i] = new StageInfo();
 
             _stageInfos[i].OnChangeFloorHandler += OnChangeFloorEvent;
+            _stageInfos[i].OnChangeTipHandler += OnChangeTipEvent;
+
             _stageInfos[i].OnChangeStaffHandler += OnChangeStaffEvent;
             _stageInfos[i].OnGiveStaffHandler += OnGiveStaffEvent;
             _stageInfos[i].OnUpgradeStaffHandler += OnUpgradeStaffEvent;
@@ -200,6 +202,11 @@ public static class UserInfo
     private static void OnChangeFloorEvent()
     {
         OnChangeFloorHandler?.Invoke();
+    }
+
+    private static void OnChangeTipEvent()
+    {
+        OnChangeTipHandler?.Invoke();
     }
 
     private static void OnChangeStaffEvent(ERestaurantFloorType floor, StaffType type)
@@ -1189,6 +1196,7 @@ public static class UserInfo
             return level;
         }
 
+        DebugLog.LogError("해당 음식을 보유하고 있지 않습니다: " + id);
         return 1;
     }
 
@@ -1199,7 +1207,8 @@ public static class UserInfo
             return level;
         }
 
-        throw new Exception("해당 음식을 보유하고 있지 않습니다: " + data.Id);
+        DebugLog.LogError("해당 음식을 보유하고 있지 않습니다: " + data.Id);
+        return 1;
     }
 
     public static int GetCookCount(string id)

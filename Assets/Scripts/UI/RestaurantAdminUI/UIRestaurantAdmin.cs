@@ -170,6 +170,11 @@ public class UIRestaurantAdmin : MobileUIView
         _recipeButton.UnselectedButton();
         _kitchenButton.UnselectedButton();
 
+        _staffTab.SetAttention();
+        _kitchenTab.SetNotAttention();
+        _recipeTab.SetNotAttention();
+        _furnitureTab.SetNotAttention();
+
         SetBackgroundImage(BackgroundType.Staff);
     }
 
@@ -181,6 +186,11 @@ public class UIRestaurantAdmin : MobileUIView
         _staffButton.UnselectedButton();
         _recipeButton.UnselectedButton();
         _kitchenButton.UnselectedButton();
+
+        _staffTab.SetNotAttention();
+        _kitchenTab.SetNotAttention();
+        _recipeTab.SetNotAttention();
+        _furnitureTab.SetAttention();
 
         SetBackgroundImage(BackgroundType.Furniture);
     }
@@ -194,6 +204,11 @@ public class UIRestaurantAdmin : MobileUIView
         _staffButton.UnselectedButton();
         _kitchenButton.UnselectedButton();
 
+        _staffTab.SetNotAttention();
+        _kitchenTab.SetNotAttention();
+        _recipeTab.SetAttention();
+        _furnitureTab.SetNotAttention();
+
         SetBackgroundImage(BackgroundType.Recipe);
     }
 
@@ -205,6 +220,11 @@ public class UIRestaurantAdmin : MobileUIView
         _furnitureButton.UnselectedButton();
         _staffButton.UnselectedButton();
         _recipeButton.UnselectedButton();
+
+        _staffTab.SetNotAttention();
+        _kitchenTab.SetAttention();
+        _recipeTab.SetNotAttention();
+        _furnitureTab.SetNotAttention();
 
         SetBackgroundImage(BackgroundType.Kitchen);
     }

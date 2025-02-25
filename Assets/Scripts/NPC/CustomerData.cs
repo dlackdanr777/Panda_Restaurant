@@ -50,22 +50,71 @@ public class CustomerData : ScriptableObject
     public CustomerSkill Skill => _skill;
 
 
-    public string GetRandomOrderFood()
+    public FoodData GetRandomOrderFood()
     {
-        List<string> orderFoodList = new List<string>();
-        
-        if(!string.IsNullOrWhiteSpace(_requiredDish))
-            orderFoodList.Add(_requiredDish);   
+        var giveFoodList = new List<FoodData>();
+        var noGiveFoodList = new List<FoodData>();
 
-        for (int i = 0, cnt = _orderFoods.Length; i < cnt; i++)
+        void AddFood(string dish)
         {
-                orderFoodList.Add(_orderFoods[i]);
+            if (string.IsNullOrWhiteSpace(dish)) return;
+
+            FoodData foodData = FoodDataManager.Instance.GetFoodData(dish);
+            if (foodData == null) return;
+
+            if (UserInfo.IsGiveRecipe(foodData))
+                giveFoodList.Add(foodData);
+            else
+                noGiveFoodList.Add(foodData);
         }
 
-        if (_orderFoods.Length == 0 || orderFoodList.Count == 0)
-            throw new System.Exception("주문 가능한 음식 리스트가 비어있습니다. 확인해주세요.");
+        AddFood(_requiredDish);
+        foreach (var dish in _orderFoods)
+        {
+            AddFood(dish);
+        }
 
-        int randInt = UnityEngine.Random.Range(0, orderFoodList.Count);
-        return orderFoodList[randInt];
+        // 90% 확률로 '가지고 있는 음식 리스트' (giveFoodList) 선택,
+        // 단, noGiveFoodList가 존재할 때만 10% 확률로 선택.
+        // 만약 noGiveFoodList가 비어있다면 giveFoodList를 사용.
+        List<FoodData> selectedList = (0 < giveFoodList.Count && UnityEngine.Random.Range(0f, 1f) < 0.9f)
+                                      ? giveFoodList
+                                      : (0 < noGiveFoodList.Count ? noGiveFoodList : giveFoodList);
+
+        if (selectedList.Count == 0)
+            throw new System.Exception("주문 가능한 음식이 없습니다.");
+
+        return selectedList[UnityEngine.Random.Range(0, selectedList.Count)];
+    }
+
+
+
+    public List<FoodData> GetGiveOrderFoodList()
+    {
+        var orderFoodList = new List<FoodData>();
+
+        void AddFoodIfValid(string dish)
+        {
+            if (string.IsNullOrWhiteSpace(dish)) return;
+
+            FoodData foodData = FoodDataManager.Instance.GetFoodData(dish);
+            if (foodData != null && UserInfo.IsGiveRecipe(foodData))
+            {
+                orderFoodList.Add(foodData);
+            }
+        }
+
+        AddFoodIfValid(_requiredDish);
+        foreach (var dish in _orderFoods)
+        {
+            AddFoodIfValid(dish);
+        }
+
+        if (orderFoodList.Count == 0)
+        {
+            DebugLog.LogError("주문 가능한 요리 수가 0개 입니다.");
+        }
+
+        return orderFoodList;
     }
 }

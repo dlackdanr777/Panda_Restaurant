@@ -2,7 +2,7 @@ using Muks.MobileUI;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class UIRecipeTab : MonoBehaviour
+public class UIRecipeTab : UIRestaurantAdminTab
 {
     [Header("Components")]
     [SerializeField] private MobileUINavigation _uiNav;
@@ -18,7 +18,7 @@ public class UIRecipeTab : MonoBehaviour
     private List<FoodData> _foodDataList;
     private Dictionary<FoodData, UIRestaurantAdminSlot> _slotDic = new Dictionary<FoodData, UIRestaurantAdminSlot>();
 
-    public void Init()
+    public override void Init()
     {
         _foodDataList = FoodDataManager.Instance.GetFoodDataList();
         _uiRecipePreview.Init(OnBuyButtonClicked, OnUpgradeButtonClicked);
@@ -56,7 +56,7 @@ public class UIRecipeTab : MonoBehaviour
     }
 
 
-    public void UpdateUI()
+    public override void UpdateUI()
     {
         if (!gameObject.activeSelf)
             return;
@@ -110,6 +110,14 @@ public class UIRecipeTab : MonoBehaviour
             _slots[i].SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice), data.MoneyType);
             continue;
         }
+    }
+
+    public override void SetAttention()
+    {
+    }
+
+    public override void SetNotAttention()
+    {
     }
 
 

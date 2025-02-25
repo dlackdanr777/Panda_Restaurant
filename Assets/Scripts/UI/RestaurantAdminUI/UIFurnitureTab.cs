@@ -2,13 +2,11 @@ using System;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UIFurnitureTab : MonoBehaviour
+public class UIFurnitureTab : UIRestaurantAdminTab
 {
     [Header("Components")]
     [SerializeField] private UIFurniture _uiFurniture;
-    [SerializeField] private Button _floor1Button;
-    [SerializeField] private Button _floor2Button;
-    [SerializeField] private Button _floor3Button;
+    [SerializeField] private UIRestaurantAdminFloorButtonGroup _floorButtonGroup;
 
     [Space]
     [Header("Slots")]
@@ -19,7 +17,7 @@ public class UIFurnitureTab : MonoBehaviour
     private UITabSlot[] _slots;
     private ERestaurantFloorType _floorType;
 
-    public void Init()
+    public override void Init()
     {
         _slots = new UITabSlot[(int)FurnitureType.Length];
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; i++)
@@ -34,30 +32,28 @@ public class UIFurnitureTab : MonoBehaviour
             slot.name = "FurnitureTabSlot" + (i + 1);
         }
 
-        _floor1Button.onClick.AddListener(() => ChangeFloorType(ERestaurantFloorType.Floor1));
-        _floor2Button.onClick.AddListener(() => ChangeFloorType(ERestaurantFloorType.Floor2));
-        _floor3Button.onClick.AddListener(() => ChangeFloorType(ERestaurantFloorType.Floor3));
-
+        _floorButtonGroup.Init(() => ChangeFloorType(ERestaurantFloorType.Floor1), () => ChangeFloorType(ERestaurantFloorType.Floor2), () => ChangeFloorType(ERestaurantFloorType.Floor3));
         UserInfo.OnChangeFurnitureHandler += UpdateUI;
     }
 
 
-    public void ChangeFloorType(ERestaurantFloorType floorType)
-    {
-        if (_floorType == floorType)
-            return;
-
-        _floorType = floorType;
-        UpdateUI();
-    }
-
-
-    public void UpdateUI()
+    public override void UpdateUI()
     {
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; i++)
         {
             UpdateUI(_floorType, (FurnitureType)i);
         }
+    }
+
+    public override void SetAttention()
+    {
+        _floorButtonGroup.SetActive(true);
+        _floorButtonGroup.Hide();
+    }
+
+    public override void SetNotAttention()
+    {
+        _floorButtonGroup.SetActive(false);
     }
 
 
@@ -71,6 +67,16 @@ public class UIFurnitureTab : MonoBehaviour
         _slots[(int)type].UpdateUI(sprite, Utility.FurnitureTypeStringConverter(type));
     }
 
+
+    public void ChangeFloorType(ERestaurantFloorType floorType)
+    {
+        if (_floorType == floorType)
+            return;
+
+        _floorType = floorType;
+        _floorButtonGroup.SetFloorText(_floorType);
+        UpdateUI();
+    }
 
     private void OnSlotClicked(int index)
     {

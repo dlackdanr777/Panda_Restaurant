@@ -98,21 +98,14 @@ public class NormalCustomer : Customer
     public WeightedRandom<FoodType> GetFoodTypeWeightDic()
     {
         WeightedRandom<FoodType> _foodRandom = new WeightedRandom<FoodType>();
+        List<FoodData> orderFoodDataList = _customerData.GetGiveOrderFoodList();
         for (int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
         {
             _foodRandom.Add((FoodType)i, 0);
         }
-
-        if (!string.IsNullOrWhiteSpace(_customerData.RequiredDish))
-        {
-            FoodData foodData = FoodDataManager.Instance.GetFoodData(_customerData.RequiredDish);
-            _foodRandom.Add(foodData.FoodType, 1);
-        }
-
         // 林巩等 澜侥甸 贸府
-        foreach (var order in _customerData.OrderFoods)
+        foreach (FoodData foodData in orderFoodDataList)
         {
-            FoodData foodData = FoodDataManager.Instance.GetFoodData(order);
             _foodRandom.Add(foodData.FoodType, 1);
         }
 

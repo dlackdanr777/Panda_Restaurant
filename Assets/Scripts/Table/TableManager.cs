@@ -189,8 +189,7 @@ public class TableManager : MonoBehaviour
         data.CurrentCustomer.ChangeState(CustomerState.Idle);
         data.CurrentCustomer.HideFood();
 
-        string foodDataId = data.CurrentCustomer.CustomerData.GetRandomOrderFood();
-        FoodData foodData = FoodDataManager.Instance.GetFoodData(foodDataId);
+        FoodData foodData = data.CurrentCustomer.CustomerData.GetRandomOrderFood();
 
         bool isMiniGameNeeded = foodData.MiniGameNeeded && string.IsNullOrWhiteSpace(foodData.NeedItem);
         if (isMiniGameNeeded && !UserInfo.IsMiniGameTutorialClear)
@@ -198,7 +197,7 @@ public class TableManager : MonoBehaviour
             _miniGameTutorial.StartTutorial(foodData, data.transform);
         }
 
-        int foodLevel = UserInfo.GetRecipeLevel(foodDataId);
+        int foodLevel = UserInfo.GetRecipeLevel(foodData);
         CookingData cookingData = new CookingData(foodData.Id, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), foodData.Sprite, () =>
         {
             if (data.TableState != ETableState.WaitFood || data.CurrentCustomer == null)

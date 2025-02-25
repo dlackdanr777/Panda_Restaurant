@@ -200,7 +200,7 @@ public class Customer : MonoBehaviour
     {
         yield return YieldCache.WaitForSeconds(1);
         _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos);
-        SetSpriteDir(1);
+        SetSpriteDir(-1);
         yield return YieldCache.WaitForSeconds(1);
         onCompleted?.Invoke();
     }

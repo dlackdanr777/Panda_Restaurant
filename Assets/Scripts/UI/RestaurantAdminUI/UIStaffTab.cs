@@ -1,12 +1,10 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UIStaffTab : MonoBehaviour
+public class UIStaffTab : UIRestaurantAdminTab
 {
     [SerializeField] private UIStaff _uiStaff;
-    [SerializeField] private Button _floor1Button;
-    [SerializeField] private Button _floor2Button;
-    [SerializeField] private Button _floor3Button;
+    [SerializeField] private UIRestaurantAdminFloorButtonGroup _floorButtonGroup;
 
     [Header("Slots")]
     [SerializeField] private UITabSlot _slotPrefab;
@@ -17,7 +15,7 @@ public class UIStaffTab : MonoBehaviour
     private ERestaurantFloorType _floorType;
 
 
-    public void Init()
+    public override void Init()
     {
         _slots = new UITabSlot[(int)StaffType.Length];
         for(int i = 0, cnt = (int)StaffType.Length; i < cnt; i++)
@@ -32,29 +30,30 @@ public class UIStaffTab : MonoBehaviour
             slot.name = "StaffTabSlot" + (i + 1);
         }
 
-        _floor1Button.onClick.AddListener(() => ChangeFloorType(ERestaurantFloorType.Floor1));
-        _floor2Button.onClick.AddListener(() => ChangeFloorType(ERestaurantFloorType.Floor2));
-        _floor3Button.onClick.AddListener(() => ChangeFloorType(ERestaurantFloorType.Floor3));
-
+        _floorButtonGroup.Init(() => ChangeFloorType(ERestaurantFloorType.Floor1), () => ChangeFloorType(ERestaurantFloorType.Floor2), () => ChangeFloorType(ERestaurantFloorType.Floor3));
         UserInfo.OnChangeStaffHandler += UpdateUI;
     }
 
-    public void ChangeFloorType(ERestaurantFloorType floorType)
-    {
-        if (_floorType == floorType)
-            return;
 
-        _floorType = floorType;
-        UpdateUI();
-    }
-
-    public void UpdateUI()
+    public override void UpdateUI()
     {
         for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
         {
             UpdateUI(_floorType, (StaffType)i);
         }
     }
+
+    public override void SetAttention()
+    {
+        _floorButtonGroup.SetActive(true);
+        _floorButtonGroup.Hide();
+    }
+
+    public override void SetNotAttention()
+    {
+        _floorButtonGroup.SetActive(false);
+    }
+
 
     private void UpdateUI(ERestaurantFloorType floorType, StaffType type)
     {
@@ -64,6 +63,16 @@ public class UIStaffTab : MonoBehaviour
         BasicData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);
         Sprite sprite = data != null ? data.ThumbnailSprite : null;
         _slots[(int)type].UpdateUI(sprite, Utility.StaffTypeStringConverter(type));
+    }
+
+    private void ChangeFloorType(ERestaurantFloorType floorType)
+    {
+        if (_floorType == floorType)
+            return;
+
+        _floorType = floorType;
+        _floorButtonGroup.SetFloorText(_floorType);
+        UpdateUI();
     }
 
     private void OnSlotClicked(int index)

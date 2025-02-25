@@ -5,7 +5,7 @@ using System.Collections.Generic;
 public class StageInfo
 {
     public event Action OnChangeFloorHandler;
-    public static event Action OnChangeTipHandler;
+    public event Action OnChangeTipHandler;
 
     public event Action<ERestaurantFloorType, StaffType> OnChangeStaffHandler;
     public event Action OnGiveStaffHandler;
