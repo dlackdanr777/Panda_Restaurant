@@ -54,7 +54,7 @@ public static class UserInfo
 
 
     public static bool IsTutorialStart = false;
-    public static bool IsFirstTutorialClear = true;
+    public static bool IsFirstTutorialClear = false;
     public static bool IsMiniGameTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
     public static bool IsGatecrasher2TutorialClear = false;
@@ -483,7 +483,7 @@ public static class UserInfo
 
         _notificationMessageSet = loadData.NotificationMessageSet;
 
-        if (CheckAttendance())
+        if (CheckNoAttendance())
         {
             UpdateLastAccessTime();
             ResetDailyChallenges();
@@ -517,7 +517,7 @@ public static class UserInfo
     }
 
 
-    public static bool CheckAttendance()
+    public static bool CheckNoAttendance()
     {
         if (string.IsNullOrWhiteSpace(_lastAttendanceTime))
             return true;

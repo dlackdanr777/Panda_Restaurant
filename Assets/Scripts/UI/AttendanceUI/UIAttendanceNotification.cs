@@ -20,13 +20,13 @@ public class UIAttendanceNotification : UINotificationParent
 
     public override bool GetAlarmState()
     {
-        return UserInfo.CheckAttendance();
+        return UserInfo.CheckNoAttendance();
     }
 
     protected override void RefreshNotificationMessage()
     {
         DebugLog.Log("출석 체크");
-        _alarmObj.SetActive(UserInfo.CheckAttendance());
+        _alarmObj.SetActive(UserInfo.CheckNoAttendance());
         base.RefreshNotificationMessage();
     }
 }

@@ -1,5 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using System.Collections;
 using UnityEngine;
 
 public class UICustomerTutorial : MobileUIView
@@ -78,20 +79,24 @@ public class UICustomerTutorial : MobileUIView
         if (UserInfo.IsTutorialStart)
             return;
 
-        if(data is GatecrasherCustomerData)
+        SequentialCommandManager.Instance.EnqueueCommand(() => ExecuteShowUICommand(data), () => !_uiNav.CheckActiveView("UICustomerTutorial"), 5);
+    }
+
+
+    private void ExecuteShowUICommand(CustomerData data)
+    {
+        if (data is GatecrasherCustomerData)
         {
-            if(!UserInfo.IsGatecrasher1TutorialClear && data is GatecrasherCustomer1Data)
+            if (!UserInfo.IsGatecrasher1TutorialClear && data is GatecrasherCustomer1Data)
             {
                 UserInfo.IsGatecrasher1TutorialClear = true;
                 ShowGatecrasher1();
-                return;
             }
 
-            if(!UserInfo.IsGatecrasher2TutorialClear && data is GatecrasherCustomer2Data)
+            if (!UserInfo.IsGatecrasher2TutorialClear && data is GatecrasherCustomer2Data)
             {
                 UserInfo.IsGatecrasher2TutorialClear = true;
                 ShowGatecrasher2();
-                return;
             }
 
             return;
@@ -99,18 +104,16 @@ public class UICustomerTutorial : MobileUIView
 
         else if (data is SpecialCustomerData)
         {
-            if(!UserInfo.IsSpecialCustomer1TutorialClear && data.Id == "CUSTOMER78")
+            if (!UserInfo.IsSpecialCustomer1TutorialClear && data.Id == "CUSTOMER78")
             {
                 UserInfo.IsSpecialCustomer1TutorialClear = true;
                 ShowSpecialCustomer1();
-                return;
             }
 
             if (!UserInfo.IsSpecialCustomer2TutorialClear && data.Id == "CUSTOMER79")
             {
                 UserInfo.IsSpecialCustomer2TutorialClear = true;
                 ShowSpecialCustomer2();
-                return;
             }
 
             return;

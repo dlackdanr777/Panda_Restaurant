@@ -40,7 +40,12 @@ public class MainScene : MonoBehaviour
     void Start()
     {
         PlayMainMusic();
-        StartCoroutine(CheckAttendanceRoutine());
+
+        if (UserInfo.CheckNoAttendance())
+        {
+            SequentialCommandManager.Instance.EnqueueCommand(() => { _uiMainNav.Push("UIAttendance"); DebugLog.Log("출석 실행"); }, () => !_uiMainNav.CheckActiveView("UIAttendance"), 1);
+        }
+
 
 #if UNITY_EDITOR
         UserInfo.AddDia(1000);
@@ -116,28 +121,5 @@ public class MainScene : MonoBehaviour
             }
 
         }
-    }
-
-
-    private IEnumerator CheckAttendanceRoutine()
-    {
-        yield return YieldCache.WaitForSeconds(0.1f);
-
-        if (!UserInfo.CheckAttendance())
-        {
-            DebugLog.Log("이미 출석함");
-            yield break;
-        }
-
-
-        while(UserInfo.IsTutorialStart)
-            yield return YieldCache.WaitForSeconds(0.02f);
-
-        yield return YieldCache.WaitForSeconds(0.5f);
-        while(!_uiMainNav.ViewsVisibleStateCheck())
-            yield return YieldCache.WaitForSeconds(0.02f);
-
-        _uiMainNav.Push("UIAttendance");
-
     }
 }

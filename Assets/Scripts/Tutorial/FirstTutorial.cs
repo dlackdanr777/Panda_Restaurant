@@ -32,7 +32,7 @@ public class FirstTutorial : MonoBehaviour
 
     private int _touchCount;
 
-    private void Start()
+    private void Awake()
     {
         if (UserInfo.IsFirstTutorialClear)
         {
@@ -52,11 +52,18 @@ public class FirstTutorial : MonoBehaviour
 
         UserInfo.GiveStaff(EStage.Stage1, "STAFF11");
         UserInfo.SetEquipStaff(EStage.Stage1, ERestaurantFloorType.Floor1, "STAFF11");
-        StartCoroutine(StartTutorial());
+
+        SequentialCommandManager.Instance.EnqueueCommand(StartTutorial, () => UserInfo.IsFirstTutorialClear, 0);
     }
 
 
-    private IEnumerator StartTutorial()
+    private void StartTutorial()
+    {
+        StartCoroutine(StartTutorialRoutine());
+    }
+
+
+    private IEnumerator StartTutorialRoutine()
     {
         _uiDescriptionNPC.OnSkipOkButtonClicked(OnSkipButtonClicked);
         yield return YieldCache.WaitForSeconds(0.02f);

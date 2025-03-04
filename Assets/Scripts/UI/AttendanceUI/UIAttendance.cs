@@ -113,7 +113,7 @@ public class UIAttendance : MobileUIView
 
     private void OnAttendanceCheck(bool isAd)
     {
-        if (!UserInfo.CheckAttendance())
+        if (!UserInfo.CheckNoAttendance())
         {
             DebugLog.LogError("이미 출석 체크를 진행했습니다.");
             return;
@@ -139,7 +139,7 @@ public class UIAttendance : MobileUIView
 
     private void UpdateUI()
     {
-        bool checkAttendance = UserInfo.CheckAttendance();
+        bool checkAttendance = UserInfo.CheckNoAttendance();
         int adjustedDays = checkAttendance ? UserInfo.GetTotalAttendanceDays() : UserInfo.GetTotalAttendanceDays() - 1;
 
         // UI 갱신: 현재 주의 슬롯만 업데이트
