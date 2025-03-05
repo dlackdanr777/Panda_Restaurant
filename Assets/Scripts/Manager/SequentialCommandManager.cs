@@ -44,9 +44,10 @@ public class SequentialCommandManager : MonoBehaviour
         _commandQueue = new SortedSet<Command>(new CommandComparer());
     }
 
-    public void EnqueueCommand(Action execute, Func<bool> isFinished, int priority)
+    public void EnqueueCommand(Action execute, Func<bool> canExecute, Func<bool> isFinished, int priority, float interval = 1)
     {
-        _commandQueue.Add(new Command(execute, isFinished, priority, _commandCounter++)); // 동일 우선순위 대비 순서 유지
+        interval = Mathf.Clamp(interval, 0f, interval);
+        _commandQueue.Add(new Command(execute, canExecute, isFinished, priority, interval, _commandCounter++)); // 동일 우선순위 대비 순서 유지
 
         // 새로운 명령이 추가되면 터치 방지 스크린 활성화
         _dontTouchCanvas.gameObject.SetActive(true);
@@ -66,27 +67,27 @@ public class SequentialCommandManager : MonoBehaviour
     private IEnumerator ExecuteCommand(Command command)
     {
         _isExecuting = true;
-        yield return new WaitForSeconds(0.5f); //간격 추가
+        yield return YieldCache.WaitForSeconds(command.Interval);
 
         // 실행 중에는 터치 방지 스크린 비활성화
         _dontTouchCanvas.gameObject.SetActive(false);
 
+        yield return new WaitUntil(command.CanExecute);
+
         command.Execute();
 
-        yield return new WaitForSeconds(0.1f); // 0.1초 간격 추가
+        yield return YieldCache.WaitForSeconds(0.1f);
         yield return new WaitUntil(command.IsFinished);
 
         _isExecuting = false;
 
         if (_commandQueue.Count > 0)
         {
-            // 다음 명령이 있다면 다시 터치 방지 스크린 활성화
             _dontTouchCanvas.gameObject.SetActive(true);
             TryExecuteNext();
         }
         else
         {
-            // 큐가 비어 있으면 터치 방지 스크린 완전히 비활성화
             _dontTouchCanvas.gameObject.SetActive(false);
         }
     }
@@ -94,15 +95,20 @@ public class SequentialCommandManager : MonoBehaviour
     private class Command
     {
         public readonly Action Execute;
+        public readonly Func<bool> CanExecute;
         public readonly Func<bool> IsFinished;
         public readonly int Priority;
-        public readonly int Order; // 추가된 순서
+        public readonly int Order;
+        public readonly float Interval;
 
-        public Command(Action execute, Func<bool> isFinished, int priority, int order)
+
+        public Command(Action execute, Func<bool> canExecute, Func<bool> isFinished, int priority, float interval, int order)
         {
             Execute = execute;
+            CanExecute = canExecute;
             IsFinished = isFinished;
             Priority = priority;
+            Interval = interval;
             Order = order;
         }
     }
@@ -114,7 +120,7 @@ public class SequentialCommandManager : MonoBehaviour
             int priorityComparison = x.Priority.CompareTo(y.Priority);
             if (priorityComparison == 0)
             {
-                return x.Order.CompareTo(y.Order); // 우선순위가 같으면 먼저 추가된 순서대로 실행
+                return x.Order.CompareTo(y.Order);
             }
             return priorityComparison;
         }
