@@ -43,7 +43,7 @@ public class MainScene : MonoBehaviour
 
         if (UserInfo.CheckNoAttendance())
         {
-            SequentialCommandManager.Instance.EnqueueCommand(() =>  _uiMainNav.Push("UIAttendance"), () => _uiMainNav.ViewsVisibleStateCheck(), () => !_uiMainNav.CheckActiveView("UIAttendance"), 1, 0.5f);
+            SequentialCommandManager.Instance.EnqueueCommand(() => { _uiMainNav.Push("UIAttendance"); DebugLog.Log("출석 실행"); }, () => !_uiMainNav.CheckActiveView("UIAttendance"), 1);
         }
 
 

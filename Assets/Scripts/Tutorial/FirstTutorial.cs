@@ -53,7 +53,7 @@ public class FirstTutorial : MonoBehaviour
         UserInfo.GiveStaff(EStage.Stage1, "STAFF11");
         UserInfo.SetEquipStaff(EStage.Stage1, ERestaurantFloorType.Floor1, "STAFF11");
 
-        SequentialCommandManager.Instance.EnqueueCommand(StartTutorial, () => true, () => UserInfo.IsFirstTutorialClear, 0, 0.3f);
+        SequentialCommandManager.Instance.EnqueueCommand(StartTutorial, () => UserInfo.IsFirstTutorialClear, 0);
     }
 
 

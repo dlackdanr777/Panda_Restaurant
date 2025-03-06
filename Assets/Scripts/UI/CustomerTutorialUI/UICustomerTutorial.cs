@@ -79,7 +79,7 @@ public class UICustomerTutorial : MobileUIView
         if (UserInfo.IsTutorialStart)
             return;
 
-        SequentialCommandManager.Instance.EnqueueCommand(() => ExecuteShowUICommand(data),() => _uiNav.ViewsVisibleStateCheck(), () => !_uiNav.CheckActiveView("UICustomerTutorial"), 5, 1);
+        SequentialCommandManager.Instance.EnqueueCommand(() => ExecuteShowUICommand(data), () => !_uiNav.CheckActiveView("UICustomerTutorial"), 5);
     }
 
 
