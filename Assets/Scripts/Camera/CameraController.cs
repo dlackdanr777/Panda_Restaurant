@@ -1,212 +1,122 @@
+using Muks.Tween;
+using System;
 using System.Collections.Generic;
+using TMPro.Examples;
+using UnityEditor.Rendering;
 using UnityEngine;
-using UnityEngine.EventSystems; // UI 감지용
 
 [RequireComponent(typeof(Camera))]
 public class CameraController : MonoBehaviour
 {
-    private static bool _canMove = true; // 이동 가능 여부 (true = 이동 가능, false = 이동 불가)
-
-    [SerializeField] private Camera _cam;
-    [SerializeField] private int _currentBoundIndex = 0;
-    [SerializeField] private float _moveSpeed = 1.25f;
-    [SerializeField] private float _slowMoveSpeed = 0f;
-
-    [Space]
-    [Header("Draggable Layer Mask")]
-    [SerializeField] private LayerMask _draggableLayerMask; // 특정 레이어만 감지
-
-    [Space]
-    [Header("Camera Move Area")]
-    [SerializeField] private List<Rect> _cameraBounds;
-
-
-
-    private Vector2 _lastTouchPosition;
-    private Vector2 _startTouchPosition;
-    private bool _isDragging = false;
-    private bool _isTouchOnDraggable = false; // 특정 스프라이트에서 터치 시작 여부
-    private float _slowMoveThreshold = 0.1f; // 0.5cm
-    private float _targetAspect = 2.3333f;
-
-
-    public static void SetCameraMove(bool value)
+    public enum RestaurantType
     {
-        _canMove = value;
+        Hall,
+        Kitchen,
+    }
+
+    [Header("Components")]
+    [SerializeField] private Camera _cam;
+    [SerializeField] private UICamera _uiCamera;
+
+    [Space]
+    [Header("Option")]
+    [SerializeField] private float _duration;
+    [SerializeField] private Ease _ease;
+
+    [Space]
+    [Header("Pos")]
+    [SerializeField] private float _floor1Pos_Y;
+    [SerializeField] private float _floor2Pos_Y;
+    [SerializeField] private float _floor3Pos_Y;
+
+    [SerializeField] private float _hallPos_X;
+    [SerializeField] private float _kitchenPos_X;
+
+
+    private RestaurantType _currentRestaurant;
+    public RestaurantType CurrentRestaurant => _currentRestaurant;
+
+    private ERestaurantFloorType _currentFloor;
+    public ERestaurantFloorType CurrentFloor => _currentFloor;
+
+    private float _targetAspect = 2.3333f;
+    private Dictionary<ERestaurantFloorType, Dictionary<RestaurantType, Vector3>> _targetPosDic = new Dictionary<ERestaurantFloorType, Dictionary<RestaurantType, Vector3>>();
+
+
+    public void MoveCamera(ERestaurantFloorType floor, RestaurantType moveType, Action onCompleted = null)
+    {
+        if (_currentFloor == floor && _currentRestaurant == moveType)
+            return;
+
+        _currentFloor = floor;
+        _currentRestaurant = moveType;
+
+        _cam.TweenStop();
+        TweenData tween;
+        tween = _cam.TweenMove(_targetPosDic[_currentFloor][_currentRestaurant], _duration, _ease);
+        tween.OnComplete(onCompleted);
+    }
+
+    public void MoveCamera(ERestaurantFloorType floor, Action onCompleted = null)
+    {
+        if (_currentFloor == floor)
+            return;
+
+        _currentFloor = floor;
+
+        _cam.TweenStop();
+        TweenData tween;
+        tween = _cam.TweenMove(_targetPosDic[_currentFloor][_currentRestaurant], _duration, _ease);
+        tween.OnComplete(onCompleted);
+    }
+
+    public void MoveCamera(RestaurantType moveType, Action onCompleted = null)
+    {
+        if (_currentRestaurant == moveType)
+            return;
+
+        _currentRestaurant = moveType;
+
+        _cam.TweenStop();
+        TweenData tween;
+        tween = _cam.TweenMove(_targetPosDic[_currentFloor][_currentRestaurant], _duration, _ease);
+        tween.OnComplete(onCompleted);
     }
 
 
     private void Awake()
     {
         AdjustCamera();
+        _uiCamera.Init(this);
+
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            _targetPosDic.Add((ERestaurantFloorType)i, new Dictionary<RestaurantType, Vector3>());
+        }
+
+        float cameraPosZ = _cam.transform.position.z;
+        _targetPosDic[ERestaurantFloorType.Floor1].Add(RestaurantType.Hall, new Vector3(_hallPos_X,  _floor1Pos_Y, cameraPosZ));
+        _targetPosDic[ERestaurantFloorType.Floor1].Add(RestaurantType.Kitchen, new Vector3(_kitchenPos_X, _floor1Pos_Y, cameraPosZ));
+
+        _targetPosDic[ERestaurantFloorType.Floor2].Add(RestaurantType.Hall, new Vector3(_hallPos_X, _floor2Pos_Y, cameraPosZ));
+        _targetPosDic[ERestaurantFloorType.Floor2].Add(RestaurantType.Kitchen, new Vector3(_kitchenPos_X, _floor2Pos_Y, cameraPosZ));
+
+        _targetPosDic[ERestaurantFloorType.Floor3].Add(RestaurantType.Hall, new Vector3(_hallPos_X, _floor3Pos_Y, cameraPosZ));
+        _targetPosDic[ERestaurantFloorType.Floor3].Add(RestaurantType.Kitchen, new Vector3(_kitchenPos_X, _floor3Pos_Y, cameraPosZ));
+
+        _currentFloor = ERestaurantFloorType.Floor1;
+        _currentRestaurant = RestaurantType.Hall;
     }
+
 
     private void AdjustCamera()
     {
-        Camera camera = GetComponent<Camera>();
         float deviceAspect = (float)Screen.width / Screen.height;
         float scaleHeight = deviceAspect / _targetAspect;
 
         if (scaleHeight < 1.0f)
-            camera.orthographicSize = camera.orthographicSize / scaleHeight;
+            _cam.orthographicSize = _cam.orthographicSize / scaleHeight;
     }
 
-    private void Update()
-    {
-        if (!_canMove || UserInfo.IsTutorialStart) return; // 이동이 불가능하면 바로 리턴
-
-        if (Application.isMobilePlatform)
-        {
-            HandleTouchInput();
-        }
-        else
-        {
-            HandleMouseInput();
-        }
-    }
-
-    private void HandleTouchInput()
-    {
-        if (Input.touchCount == 1)
-        {
-            Touch touch = Input.GetTouch(0);
-            Vector2 touchWorldPos = Camera.main.ScreenToWorldPoint(touch.position);
-
-            switch (touch.phase)
-            {
-                case TouchPhase.Began:
-                    if (!IsPointerOverUI() && IsTouchingDraggableSprite(touchWorldPos)) // UI 위가 아니면서 특정 레이어 감지
-                    {
-                        _isTouchOnDraggable = true;
-                        _startTouchPosition = touch.position;
-                        _lastTouchPosition = touch.position;
-                        _isDragging = false;
-                    }
-                    break;
-
-                case TouchPhase.Moved:
-                    if (_isTouchOnDraggable && _canMove) // 이동 가능할 때만 실행
-                    {
-                        ProcessMovement(touch.position);
-                    }
-                    break;
-
-                case TouchPhase.Ended:
-                    _isTouchOnDraggable = false;
-                    break;
-            }
-        }
-    }
-
-    private void HandleMouseInput()
-    {
-        if (Input.GetMouseButtonDown(0))
-        {
-            Vector2 mouseWorldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-
-            if (!IsPointerOverUI() && IsTouchingDraggableSprite(mouseWorldPos)) // UI 위가 아니면서 특정 레이어 감지
-            {
-                _isTouchOnDraggable = true;
-                _startTouchPosition = Input.mousePosition;
-                _lastTouchPosition = Input.mousePosition;
-                _isDragging = false;
-            }
-        }
-
-        if (Input.GetMouseButton(0) && _isTouchOnDraggable && _canMove && !UserInfo.IsTutorialStart) // 이동 가능할 때만 실행
-        {
-            ProcessMovement(Input.mousePosition);
-        }
-
-        if (Input.GetMouseButtonUp(0))
-        {
-            _isTouchOnDraggable = false;
-        }
-    }
-
-    private void ProcessMovement(Vector2 currentPosition)
-    {
-        if (!_canMove || UserInfo.IsTutorialStart) return; // 이동 중이라도 _canMove가 false가 되면 즉시 멈춤
-
-        Vector2 delta = currentPosition - _lastTouchPosition;
-        float totalDistanceMoved = Mathf.Abs(currentPosition.x - _startTouchPosition.x) + Mathf.Abs(currentPosition.y - _startTouchPosition.y);
-
-        if (!_isDragging && totalDistanceMoved >= _slowMoveThreshold * Screen.dpi)
-        {
-            _isDragging = true;
-        }
-
-        MoveCamera(delta * (_isDragging ? _moveSpeed : _slowMoveSpeed));
-        _lastTouchPosition = currentPosition;
-    }
-
-    private void MoveCamera(Vector2 delta)
-    {
-        if (!_canMove || UserInfo.IsTutorialStart ||  _cameraBounds.Count == 0) return;
-
-        Vector3 move = new Vector3(-delta.x, -delta.y, 0) * Time.deltaTime;
-        Vector3 newPosition = _cam.transform.position + move;
-
-        Rect currentBounds = _cameraBounds[_currentBoundIndex];
-
-        float clampedX = Mathf.Clamp(newPosition.x, currentBounds.xMin, currentBounds.xMax);
-        float clampedY = Mathf.Clamp(newPosition.y, currentBounds.yMin, currentBounds.yMax);
-
-        _cam.transform.position = new Vector3(clampedX, clampedY, _cam.transform.position.z);
-    }
-
-    public void ChangeBounds(int newIndex)
-    {
-        if (newIndex >= 0 && newIndex < _cameraBounds.Count)
-        {
-            _currentBoundIndex = newIndex;
-        }
-    }
-
-    private void OnDrawGizmos()
-    {
-        if (_cameraBounds == null || _cameraBounds.Count == 0) return;
-
-        Gizmos.color = Color.green;
-
-        foreach (Rect bounds in _cameraBounds)
-        {
-            Vector3 bottomLeft = new Vector3(bounds.xMin, bounds.yMin, 0);
-            Vector3 bottomRight = new Vector3(bounds.xMax, bounds.yMin, 0);
-            Vector3 topLeft = new Vector3(bounds.xMin, bounds.yMax, 0);
-            Vector3 topRight = new Vector3(bounds.xMax, bounds.yMax, 0);
-
-            Gizmos.DrawLine(bottomLeft, bottomRight);
-            Gizmos.DrawLine(bottomRight, topRight);
-            Gizmos.DrawLine(topRight, topLeft);
-            Gizmos.DrawLine(topLeft, bottomLeft);
-        }
-    }
-
-    private bool IsTouchingDraggableSprite(Vector2 touchWorldPosition)
-    {
-        Vector3 rayOrigin = new Vector3(touchWorldPosition.x, touchWorldPosition.y, _cam.transform.position.z);
-        RaycastHit hit;
-
-        // 카메라 방향으로 Z축을 따라 특정 레이어만 감지
-        if (Physics.Raycast(rayOrigin, Vector3.forward, out hit, 20f, _draggableLayerMask))
-        {
-            return true;
-        }
-
-        return false;
-    }
-
-    private bool IsPointerOverUI()
-    {
-        PointerEventData eventData = new PointerEventData(EventSystem.current)
-        {
-            position = Input.mousePosition
-        };
-
-        List<RaycastResult> results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(eventData, results);
-
-        return results.Count > 0; // UI 요소가 감지되면 true 반환
-    }
+    
 }

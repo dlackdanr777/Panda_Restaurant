@@ -14,13 +14,13 @@ public class UITipText : MonoBehaviour
     {
         _tipText.text = Utility.ConvertToMoney(UserInfo.GetTip(UserInfo.CurrentStage));
         _currentTip = UserInfo.GetTip(UserInfo.CurrentStage);
-
         UserInfo.OnChangeTipHandler += OnChangeMoneyEvent;
     }
 
     private void OnEnable()
     {
-        OnChangeMoneyEvent();
+        _tipText.text = Utility.ConvertToMoney(UserInfo.GetTip(UserInfo.CurrentStage));
+        _currentTip = UserInfo.GetTip(UserInfo.CurrentStage);
     }
 
     private void OnChangeMoneyEvent()

@@ -5,21 +5,21 @@ using UnityEngine.EventSystems;
 
 public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
-    [SerializeField] private Vector3 _targetScale;
-    [SerializeField] private float _pressDuration;
-    [SerializeField] private Ease _buttonDownTweenMode;
-    [SerializeField] private Ease _buttonUpTweenMode;
+    [SerializeField] protected Vector3 _targetScale;
+    [SerializeField] protected float _pressDuration;
+    [SerializeField] protected Ease _buttonDownTweenMode;
+    [SerializeField] protected Ease _buttonUpTweenMode;
 
     public bool Interactable = true;
-    private Action _onButtonClickEvent;
-    private Vector3 _tmpScale;
+    protected Action _onButtonClickEvent;
+    protected Vector3 _tmpScale;
 
-    public void Awake()
+    public virtual void Awake()
     {
         _tmpScale = transform.localScale;
     }
 
-    public void OnEnable()
+    public virtual void OnEnable()
     {
         transform.localScale = _tmpScale;
     }
@@ -34,13 +34,13 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
         _onButtonClickEvent = null;
     }
 
-    public void ResetScale()
+    public virtual void ResetScale()
     {
         gameObject.TweenStop();
         gameObject.TweenScale(_tmpScale, _pressDuration, _buttonUpTweenMode);
     }
 
-    public void OnPointerDown(PointerEventData eventData)
+    public virtual void OnPointerDown(PointerEventData eventData)
     {
         if (!Interactable)
             return;
@@ -50,7 +50,7 @@ public class ButtonPressEffect : MonoBehaviour, IPointerDownHandler, IPointerUpH
         gameObject.TweenScale(_targetScale, _pressDuration, _buttonDownTweenMode);
     }
 
-    public void OnPointerUp(PointerEventData eventData)
+    public virtual void OnPointerUp(PointerEventData eventData)
     {
         if (!Interactable)
             return;

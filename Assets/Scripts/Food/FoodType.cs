@@ -1,10 +1,12 @@
 public enum FoodType
 {
     None,
-    Korean,
-    Chinese,
-    Japanese,
-    Western,
-    Dessert,
+    Cozy,
+    Vintage,
+    Natural,
+    Tropical,
+    Modern,
+    Luxury,
+    Traditional,
     Length
 }

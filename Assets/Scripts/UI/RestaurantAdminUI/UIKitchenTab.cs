@@ -5,7 +5,7 @@ public class UIKitchenTab : UIRestaurantAdminTab
 {
     [Header("Components")]
     [SerializeField] private UIKitchen _uiKitchen;
-    [SerializeField] private UIRestaurantAdminFloorButtonGroup _floorButtonGroup;
+    [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
 
 
     [Space]

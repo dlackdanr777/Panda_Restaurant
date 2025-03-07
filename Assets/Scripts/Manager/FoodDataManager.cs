@@ -140,22 +140,24 @@ public class FoodDataManager : MonoBehaviour
             }
 
             string name = row[1];
-            string description = row[2];
-            string needItem = row[4].Replace(" ", "");
-            if (!int.TryParse(row[5].Replace(" ", ""), out int buyScore))
+            FoodType foodType = GetFoodType(row[2].Replace(" ", ""));
+            string description = row[3];
+            string needItem = row[5].Replace(" ", "");
+            if (!int.TryParse(row[6].Replace(" ", ""), out int buyScore))
                 buyScore = 0;
 
-            if (!int.TryParse(row[7].Replace(" ", ""), out int buyPrice))
+            if (!int.TryParse(row[8].Replace(" ", ""), out int buyPrice))
                 buyPrice = 0;
 
-            int level1SellPrice = int.Parse(row[8].Replace(" ", ""));
-            float level1CookSpeed = float.Parse(row[9].Replace(" ", ""));
-            int level1UpgradeScore = int.Parse(row[10].Replace(" ", ""));
-            string level1UpgradeNeedItem = row[11].Replace(" ", "");
-            int level1UpgradePrice = int.Parse(row[13].Replace(" ", ""));
+            int level1SellPrice = int.Parse(row[9].Replace(" ", ""));
+            float level1CookSpeed = float.Parse(row[10].Replace(" ", ""));
+            int level1UpgradeScore = int.Parse(row[11].Replace(" ", ""));
+            string level1UpgradeNeedItem = row[12].Replace(" ", "");
 
-            int level2SellPrice = int.Parse(row[14].Replace(" ", ""));
-            float level2CookSpeed = float.Parse(row[15].Replace(" ", ""));
+            int level1UpgradePrice = int.Parse(row[15].Replace(" ", ""));
+
+            int level2SellPrice = int.Parse(row[16].Replace(" ", ""));
+            float level2CookSpeed = float.Parse(row[17].Replace(" ", ""));
             int level2UpgradeScore = 0;
             string level2UpgradeNeedItem = string.Empty;
             int level2UpgradePrice = 0;
@@ -167,7 +169,7 @@ public class FoodDataManager : MonoBehaviour
             if (!_foodMiniGameDataDic.TryGetValue(id, out FoodMiniGameData foodMiniGameData))
                 foodMiniGameData = null;
 
-            FoodData foodData = new FoodData(sprite, thumbnailSprite, name, id, MoneyType.Gold, buyScore, buyPrice, needItem, foodLevelDataList, foodMiniGameData);
+            FoodData foodData = new FoodData(sprite, thumbnailSprite, name, id, foodType, MoneyType.Gold, buyScore, buyPrice, needItem, foodLevelDataList, foodMiniGameData);
 
             _foodDataList.Add(foodData);
             _foodDataDic.Add(id, foodData);
@@ -185,5 +187,21 @@ public class FoodDataManager : MonoBehaviour
 
         else
             return str;
+    }
+
+
+    private FoodType GetFoodType(string foodTypeStr)
+    {
+        return foodTypeStr switch
+        {
+            "내추럴" => FoodType.Natural,
+            "전통적" => FoodType.Traditional,
+            "빈티지" => FoodType.Vintage,
+            "럭셔리" => FoodType.Luxury,
+            "모던" => FoodType.Modern,
+            "코지" => FoodType.Cozy,
+            "트로피컬" => FoodType.Tropical,
+            _ => throw new System.Exception("해당 음식 문자열이 이상합니다: " + foodTypeStr)
+        };
     }
 }

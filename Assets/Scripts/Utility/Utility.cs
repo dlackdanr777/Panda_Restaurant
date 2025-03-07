@@ -103,6 +103,21 @@ public static class Utility
         };
     }
 
+    public static string FoodTypeStringConverter(FoodType type)
+    {
+        return type switch
+        {
+            FoodType.Natural => "내추럴",
+            FoodType.Traditional => "전통적",
+            FoodType.Vintage => "빈티지",
+            FoodType.Luxury => "럭셔리",
+            FoodType.Modern => "모던",
+            FoodType.Cozy => "코지",
+            FoodType.Tropical => "트로피컬",
+            _ => throw new System.Exception("해당 타입이 이상합니다: " + type)
+        };
+    }
+
     public static string GachaItemRankStringConverter(GachaItemRank rank)
     {
         return rank switch

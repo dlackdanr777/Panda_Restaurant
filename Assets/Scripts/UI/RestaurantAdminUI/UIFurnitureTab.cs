@@ -6,7 +6,7 @@ public class UIFurnitureTab : UIRestaurantAdminTab
 {
     [Header("Components")]
     [SerializeField] private UIFurniture _uiFurniture;
-    [SerializeField] private UIRestaurantAdminFloorButtonGroup _floorButtonGroup;
+    [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
 
     [Space]
     [Header("Slots")]

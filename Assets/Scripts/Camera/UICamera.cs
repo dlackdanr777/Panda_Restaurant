@@ -1,82 +1,97 @@
 using Muks.DataBind;
 using Muks.Tween;
 using Muks.UI;
+using TMPro.Examples;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UICamera : MonoBehaviour 
 {
-    public enum CameraTr
-    {
-        Restaurant,
-        Kitchen,
-    }
 
     [Header("Components")]
     [SerializeField] private UINavigation _uiNav;
-    [SerializeField] private CameraController _cameraController;
     [SerializeField] private Button _leftArrowButton;
     [SerializeField] private Button _rightArrowButton;
+    [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
 
-    [Space]
-    [Header("Camera Move Options")]
-    [SerializeField] private float _moveSpeed;
-    [SerializeField] private Ease _moveTweenMode;
-    [SerializeField] private Transform _restaurantTr;
-    [SerializeField] private Transform _kitchenTr;
+    private CameraController _cameraController;
 
-    private CameraTr _currentTr;
-
-
-    private void Awake()
+    public void Init(CameraController cameraController)
     {
+        _cameraController = cameraController;
+
         _leftArrowButton.gameObject.SetActive(true);
         _rightArrowButton.gameObject.SetActive(false);
 
-        _leftArrowButton.onClick.AddListener(() => ArrowButtonClicked(CameraTr.Kitchen));
-        _rightArrowButton.onClick.AddListener(() => ArrowButtonClicked(CameraTr.Restaurant));
+        _leftArrowButton.onClick.AddListener(() =>
+        {
+            _leftArrowButton.gameObject.SetActive(false);
+            _rightArrowButton.gameObject.SetActive(false);
+            _cameraController.MoveCamera(CameraController.RestaurantType.Kitchen, () => _rightArrowButton.gameObject.SetActive(true));
+        });
+
+        _rightArrowButton.onClick.AddListener(() =>
+        {
+            _leftArrowButton.gameObject.SetActive(false);
+            _rightArrowButton.gameObject.SetActive(false);
+            _cameraController.MoveCamera(CameraController.RestaurantType.Hall, () => _leftArrowButton.gameObject.SetActive(true));
+        });
+
+
+        _floorButtonGroup.Init(() => MoveFloor(ERestaurantFloorType.Floor1), () => MoveFloor(ERestaurantFloorType.Floor2), () => MoveFloor(ERestaurantFloorType.Floor3));
+
 
         DataBind.SetUnityActionValue("ShowRestaurant", () => 
         {
             _uiNav.AllPop();
-            ArrowButtonClicked(CameraTr.Restaurant);
+            MoveHall();
             });
 
         DataBind.SetUnityActionValue("ShowKitchen", () =>
         {
             _uiNav.AllPop();
-            ArrowButtonClicked(CameraTr.Kitchen);
+            MoveKitchen();
+        });
+
+        MoveHall();
+    }
+
+    private void MoveFloor(ERestaurantFloorType floor)
+    {
+        if (_cameraController.CurrentFloor == floor)
+            return;
+
+        _leftArrowButton.gameObject.SetActive(false);
+        _rightArrowButton.gameObject.SetActive(false);
+        _floorButtonGroup.SetFloorText(floor);
+        _cameraController.MoveCamera(floor, () =>
+        {
+            bool isLeftButtonActive = _cameraController.CurrentRestaurant == CameraController.RestaurantType.Hall;
+            _leftArrowButton.gameObject.SetActive(isLeftButtonActive);
+            _rightArrowButton.gameObject.SetActive(!isLeftButtonActive);
+            _floorButtonGroup.SetFloorText(_cameraController.CurrentFloor);
         });
     }
 
-    /// <summary>맵 전환 버튼을 눌렀을 경우 카메라의 위치를 변경하는 함수</summary>
-    public void ArrowButtonClicked(CameraTr moveTr)
+    private void MoveKitchen()
     {
-        if (_currentTr == moveTr)
+        if (_cameraController.CurrentRestaurant == CameraController.RestaurantType.Kitchen)
             return;
 
-        _currentTr = moveTr;
-        transform.TweenStop();
-        TweenData tween;
         _leftArrowButton.gameObject.SetActive(false);
         _rightArrowButton.gameObject.SetActive(false);
-        if (moveTr == CameraTr.Restaurant)
-        {
-            tween = _cameraController.transform.TweenMove(_restaurantTr.position, _moveSpeed, _moveTweenMode);
-            tween.OnComplete(() =>
-            {
-                _leftArrowButton.gameObject.SetActive(true);
-            });
-        }
+        _cameraController.MoveCamera(CameraController.RestaurantType.Kitchen, () => _rightArrowButton.gameObject.SetActive(true));
+    }
 
-        else if (moveTr == CameraTr.Kitchen)
-        {
-            tween = _cameraController.transform.TweenMove(_kitchenTr.position, _moveSpeed, _moveTweenMode);
-            tween.OnComplete(() =>
-            {
-                _rightArrowButton.gameObject.SetActive(true);
-            });
-        }
+
+    private void MoveHall()
+    {
+        if (_cameraController.CurrentRestaurant == CameraController.RestaurantType.Hall)
+            return;
+
+        _leftArrowButton.gameObject.SetActive(false);
+        _rightArrowButton.gameObject.SetActive(false);
+        _cameraController.MoveCamera(CameraController.RestaurantType.Hall, () => _leftArrowButton.gameObject.SetActive(true));
     }
 
 }

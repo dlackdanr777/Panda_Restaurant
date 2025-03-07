@@ -4,7 +4,7 @@ using UnityEngine.UI;
 public class UIStaffTab : UIRestaurantAdminTab
 {
     [SerializeField] private UIStaff _uiStaff;
-    [SerializeField] private UIRestaurantAdminFloorButtonGroup _floorButtonGroup;
+    [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
 
     [Header("Slots")]
     [SerializeField] private UITabSlot _slotPrefab;
