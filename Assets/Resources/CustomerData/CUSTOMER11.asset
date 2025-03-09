@@ -20,6 +20,9 @@ MonoBehaviour:
   _moveSpeed: 6
   _scale: 1
   _maxDiscomfortIndex: 25
+  _waitingTime: 35
+  _orderWaitTime: 25
+  _foodWaitTime: 25
   _minScore: 0
   _requiredDish: FOOD11
   _requiredItem: 

@@ -17,7 +17,9 @@ public class CustomerFoodPriceUpSkill : CustomerSkill
             return;
         }
         NormalCustomer normalCustomer = (NormalCustomer)customer;
-        normalCustomer.AddFoodPricePercent(_foodPriceMul);
+
+        if (Random.Range(0f, 100f) < SkillActivatePercent)
+            normalCustomer.AddFoodPricePercent(_foodPriceMul);
     }
 
     public override void Deactivate(Customer customer)

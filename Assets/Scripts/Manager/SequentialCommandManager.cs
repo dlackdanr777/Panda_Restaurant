@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class SequentialCommandManager : MonoBehaviour
 {
@@ -42,7 +43,10 @@ public class SequentialCommandManager : MonoBehaviour
 
         // 우선순위 큐를 생성 (우선순위 낮은 값이 먼저 실행되도록 설정)
         _commandQueue = new SortedSet<Command>(new CommandComparer());
+        SceneManager.activeSceneChanged += (scene1, scene2) => ResetCommand();
     }
+
+
 
     public void EnqueueCommand(Action execute, Func<bool> canExecute, Func<bool> isFinished, int priority, float interval = 1)
     {
@@ -90,6 +94,13 @@ public class SequentialCommandManager : MonoBehaviour
         {
             _dontTouchCanvas.gameObject.SetActive(false);
         }
+    }
+
+    private void ResetCommand()
+    {
+        _commandQueue.Clear();
+        StopAllCoroutines();
+        _dontTouchCanvas.gameObject.SetActive(false);
     }
 
     private class Command

@@ -13,12 +13,16 @@ MonoBehaviour:
   m_Name: CUSTOMER81
   m_EditorClassIdentifier: 
   _sprite: {fileID: 21300000, guid: 96eed7090ed98a04c9ab9585b7a7c6e9, type: 3}
-  _name: "\uB77D\uCEE4 \uCE58\uD0A4"
+  _name: "\uC9C0\uB178"
   _id: CUSTOMER81
-  _description: 
+  _description: "\uC18C\uC74C \uC720\uBC1C\uC790.\n\uB9C8\uC774\uD06C\uB97C \uC7A1\uACE0
+    \uBA48\uCD94\uB294 \uC21C\uAC04 \uACF5\uC5F0\uC774 \uC2DC\uC791\uB41C\uB2E4."
   _moveSpeed: 4.5
   _scale: 1
   _maxDiscomfortIndex: 25
+  _waitingTime: 1
+  _orderWaitTime: 1
+  _foodWaitTime: 1
   _minScore: 1000
   _requiredDish: 
   _requiredItem: 

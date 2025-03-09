@@ -113,9 +113,9 @@ public class NormalCustomer : Customer
     }
 
 
-    public void SetOrderCount(int value)
+    public void AddOrderCount(int value)
     {
-        _orderCount = value;
+        _orderCount += value;
     }
 
     public void AddFoodPricePercent(float value)

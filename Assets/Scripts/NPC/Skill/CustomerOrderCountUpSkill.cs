@@ -18,7 +18,7 @@ public class CustomerOrderCountUpSkill : CustomerSkill
         NormalCustomer normalCustomer = (NormalCustomer)customer;
 
         if (Random.Range(0f, 100f) < SkillActivatePercent)
-            normalCustomer.SetOrderCount(_addOrderCount + 1);
+            normalCustomer.AddOrderCount(_addOrderCount);
     }
 
     public override void Deactivate(Customer customer)

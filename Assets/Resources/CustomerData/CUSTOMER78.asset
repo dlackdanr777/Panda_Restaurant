@@ -20,6 +20,9 @@ MonoBehaviour:
   _moveSpeed: 3.5
   _scale: 1
   _maxDiscomfortIndex: 25
+  _waitingTime: 1
+  _orderWaitTime: 1
+  _foodWaitTime: 1
   _minScore: 250
   _requiredDish: 
   _requiredItem: GOTCHA103
