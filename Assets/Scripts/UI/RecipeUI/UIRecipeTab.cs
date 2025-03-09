@@ -12,11 +12,10 @@ public class UIRecipeTab : UIRestaurantAdminTab
     [Space]
     [Header("Slot Option")]
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UIRestaurantAdminSlot _slotPrefab;
+    [SerializeField] private UIRestaurantAdminRecipeSlot _slotPrefab;
 
-    private UIRestaurantAdminSlot[] _slots;
+    private UIRestaurantAdminRecipeSlot[] _slots;
     private List<FoodData> _foodDataList;
-    private Dictionary<FoodData, UIRestaurantAdminSlot> _slotDic = new Dictionary<FoodData, UIRestaurantAdminSlot>();
 
     public override void Init()
     {
@@ -27,17 +26,16 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
         int foodCount = _foodDataList.Count;
 
-        _slots = new UIRestaurantAdminSlot[foodCount];
+        _slots = new UIRestaurantAdminRecipeSlot[foodCount];
 
         for (int i = 0; i < foodCount; ++i)
         {
-            UIRestaurantAdminSlot slot = Instantiate(_slotPrefab, _slotParnet);
+            UIRestaurantAdminRecipeSlot slot = Instantiate(_slotPrefab, _slotParnet);
 
             int index = i;
             FoodData data = _foodDataList[index];
             slot.Init(() => OnSlotClicked(data));
             _slots[i] = slot;
-            _slotDic.Add(data, slot);
         }
 
         UpdateUI();
@@ -70,7 +68,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
         for(int i = 0, cnt = _foodDataList.Count; i < cnt; i++)
         {
             data = _foodDataList[i];
-
+            _slots[i].SetFoodType(data.FoodType);
             if(UserInfo.IsGiveRecipe(data.Id))
             {
                 _slots[i].SetNone(data.ThumbnailSprite, data.Name);

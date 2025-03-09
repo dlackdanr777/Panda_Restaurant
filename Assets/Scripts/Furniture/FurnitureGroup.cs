@@ -331,7 +331,7 @@ public class FurnitureGroup : MonoBehaviour
 
         if (setData == null)
         {
-            _foodType = FoodType.None;
+            _foodType = FoodType.Length;
             return;
         }
 

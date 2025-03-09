@@ -37,6 +37,7 @@ public class UIFloorButtonGroup : MonoBehaviour
         }
 
         UserInfo.OnChangeFloorHandler += OnChangeUnlockFloorEvent;
+        OnChangeUnlockFloorEvent();
         Hide();
     }
 
@@ -81,6 +82,7 @@ public class UIFloorButtonGroup : MonoBehaviour
             return;
 
         ERestaurantFloorType currentFloorType = UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
+        DebugLog.Log(currentFloorType + ", " + name);
         if (currentFloorType == ERestaurantFloorType.Floor3)
         {
             _floor3Button.interactable = true;

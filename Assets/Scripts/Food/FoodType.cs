@@ -1,6 +1,5 @@
 public enum FoodType
 {
-    None,
     Cozy,
     Vintage,
     Natural,

@@ -1,14 +1,14 @@
 using System;
-using TMPro;
 using UnityEngine;
-using UnityEngine.Events;
-using UnityEngine.UI;
 
 public class UIRestaurantAdminRecipeSlot : UIRestaurantAdminSlot
 {
+    [Space]
+    [Header("Recipe")]
+    [SerializeField] private UIFoodType _uiFoodType;
 
-    public void SetFoodType(FoodType type)
+    public void SetFoodType(FoodType foodType)
     {
-
+        _uiFoodType.SetFoodType(foodType);
     }
 }

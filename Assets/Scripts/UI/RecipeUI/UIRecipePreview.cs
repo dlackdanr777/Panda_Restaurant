@@ -14,6 +14,7 @@ public class UIRecipePreview : MonoBehaviour
     [SerializeField] private UITextAndText _descriptionGroup;
     [SerializeField] private GameObject _priceTextGroup;
     [SerializeField] private GameObject _cookSpeedTextGroup;
+    [SerializeField] private UIFoodType _uiFoodType;
 
     [Space]
     [Header("Buttons")]
@@ -35,7 +36,6 @@ public class UIRecipePreview : MonoBehaviour
     [SerializeField] private Sprite _questionMarkSprite;
 
     private Action<FoodData> _onBuyButtonClicked;
-    private Action<FoodData> _onUpgradeButtonClicked;
     private FoodData _currentData;
 
     public void Init(Action<FoodData> onBuyButonClicked, Action<FoodData> onUpgradeButtonClicked)
@@ -76,6 +76,7 @@ public class UIRecipePreview : MonoBehaviour
             _descriptionGroup.gameObject.SetActive(false);
             _priceTextGroup.gameObject.SetActive(false);
             _cookSpeedTextGroup.gameObject.SetActive(false);
+            _uiFoodType.gameObject.SetActive(false);
             _descriptionGroup.SetText1(string.Empty);
             _descriptionGroup.SetText2(string.Empty);
             _selectGroup.ImageColor = new Color(1, 1, 1, 0);
@@ -89,8 +90,10 @@ public class UIRecipePreview : MonoBehaviour
             _descriptionGroup.gameObject.SetActive(true);
             _priceTextGroup.gameObject.SetActive(true);
             _cookSpeedTextGroup.gameObject.SetActive(true);
+            _uiFoodType.gameObject.SetActive(true);
             _selectGroup.ImageColor = Color.white;
         }
+        _uiFoodType.SetFoodType(data.FoodType);
         int level = UserInfo.IsGiveRecipe(data) ? UserInfo.GetRecipeLevel(data) : 1;
 
         _selectGroup.SetSprite(data.ThumbnailSprite);

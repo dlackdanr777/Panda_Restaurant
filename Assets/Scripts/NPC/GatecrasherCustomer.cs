@@ -352,31 +352,22 @@ public class GatecrasherCustomer : Customer
     private IEnumerator Gatecrasher2Action(TableManager tableManager)
     {
         yield return YieldCache.WaitForSeconds(2);
-        List<TableData> tableDataList = tableManager.GetTableDataList(ERestaurantFloorType.Floor1);
-        TableData[] tmpTableDatas = new TableData[(int)tableDataList.Count];
+        List<TableData> tableDataList = tableManager.GetTableDataList(_visitFloor);
         int maxIndex = (int)TableType.Table2 + 1;
         float time = 0;
 
         while(time < _activeDuration * 0.5f)
         {
-            tableDataList = tableManager.GetTableDataList(ERestaurantFloorType.Floor1);
+            tableDataList = tableManager.GetTableDataList(_visitFloor);
             for (int i = 0; i < maxIndex; ++i)
             {
-                if (tableDataList[i] == null)
-                {
-                    tableDataList[i] = null;
-                    tmpTableDatas[i] = null;
-                    continue;
-                }
 
-                if (tableDataList[i] == tmpTableDatas[i])
+                if (tableDataList[i].CurrentCustomer != null)
                 {
                     tableDataList[i].CurrentCustomer.StartAnger();
                     tableManager.ExitCustomer(tableDataList[i]);
                     continue;
                 }
-
-                tmpTableDatas[i] = tableDataList[i];
             }
             time += 1;
             yield return YieldCache.WaitForSeconds(1);
@@ -385,24 +376,16 @@ public class GatecrasherCustomer : Customer
         maxIndex = (int)TableType.Length;
         while(time < _activeDuration)
         {
-            tableDataList = tableManager.GetTableDataList(ERestaurantFloorType.Floor1);
+            tableDataList = tableManager.GetTableDataList(_visitFloor);
             for (int i = 0; i < maxIndex; ++i)
             {
-                if (tableDataList[i] == null)
-                {
-                    tableDataList[i] = null;
-                    tmpTableDatas[i] = null;
-                    continue;
-                }
 
-                if (tableDataList[i] == tmpTableDatas[i])
+                if (tableDataList[i].CurrentCustomer != null)
                 {
                     tableDataList[i].CurrentCustomer.StartAnger();
                     tableManager.ExitCustomer(tableDataList[i]);
                     continue;
                 }
-
-                tmpTableDatas[i] = tableDataList[i];
             }
             time += 1;
             yield return YieldCache.WaitForSeconds(1);
