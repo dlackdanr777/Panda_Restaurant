@@ -27,6 +27,17 @@ public class CustomerData : ScriptableObject
     [Range(1, 25)][SerializeField] private int _maxDiscomfortIndex;
     public int MaxDiscomfortIndex => _maxDiscomfortIndex;
 
+    [Range(1f, 100f)][SerializeField] private float _waitingTime;
+    public float WaitingTime => _waitingTime;
+
+
+    [Range(1f, 100f)][SerializeField] private float _orderWaitTime;
+    public float OrderWaitTime => _orderWaitTime;
+
+    [Range(1f, 100f)][SerializeField] private float _foodWaitTime;
+    public float FoodWaitTime => _foodWaitTime;
+
+
     [Space]
     [Header("등장 옵션")]
 

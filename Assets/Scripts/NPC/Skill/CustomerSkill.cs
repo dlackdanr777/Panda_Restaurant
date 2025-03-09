@@ -17,5 +17,4 @@ public abstract class CustomerSkill : ScriptableObject
 
     public abstract void Activate(Customer customer);
     public abstract void Deactivate(Customer customer);
-
 }

@@ -1,8 +1,8 @@
 using Muks.PathFinding.AStar;
+using Muks.Tween;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 
 
@@ -170,7 +170,7 @@ public class Customer : MonoBehaviour
         if (1 < nodeList.Count)
             nodeList.RemoveAt(0);
 
-
+        _spriteRenderer.color = Color.white;
         foreach (Vector2 vec in nodeList)
         {
             while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f) // 제곱 거리 비교
@@ -198,10 +198,12 @@ public class Customer : MonoBehaviour
 
     private IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
-        yield return YieldCache.WaitForSeconds(1);
-        _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos);
-        SetSpriteDir(-1);
-        yield return YieldCache.WaitForSeconds(1);
+        yield return YieldCache.WaitForSeconds(0.6f);
+        _spriteRenderer.TweenAlpha(0, 0.4f, Ease.Constant).OnComplete(() => _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos));
+        //SetSpriteDir(-1);
+        yield return YieldCache.WaitForSeconds(1f);
+        _spriteRenderer.TweenAlpha(1, 0.4f, Ease.Constant);
+        yield return YieldCache.WaitForSeconds(1f);
         onCompleted?.Invoke();
     }
 

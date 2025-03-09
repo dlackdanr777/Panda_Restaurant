@@ -29,6 +29,7 @@ public class UITutorialDescriptionNPC : MobileUIView
         _isScreenClicked = false;
         _screenButton.onClick.AddListener(() => _isScreenClicked = true);
         gameObject.SetActive(false);
+        _skipButton.gameObject.SetActive(false);
     }
 
 
@@ -46,6 +47,7 @@ public class UITutorialDescriptionNPC : MobileUIView
 
         VisibleState = VisibleState.Appeared;
         gameObject.SetActive(true);
+        _skipButton.gameObject.SetActive(true);
     }
 
 
@@ -62,6 +64,7 @@ public class UITutorialDescriptionNPC : MobileUIView
 
         VisibleState = VisibleState.Disappeared;
         gameObject.SetActive(false);
+        _skipButton.gameObject.SetActive(false);
     }
 
 
