@@ -4,6 +4,7 @@ using Muks.UI;
 using TMPro.Examples;
 using UnityEngine;
 using UnityEngine.UI;
+using static CameraController;
 
 public class UICamera : MonoBehaviour 
 {
@@ -23,18 +24,13 @@ public class UICamera : MonoBehaviour
         _leftArrowButton.gameObject.SetActive(true);
         _rightArrowButton.gameObject.SetActive(false);
 
-        _leftArrowButton.onClick.AddListener(() =>
-        {
-            _leftArrowButton.gameObject.SetActive(false);
-            _rightArrowButton.gameObject.SetActive(false);
-            _cameraController.MoveCamera(CameraController.RestaurantType.Kitchen, () => _rightArrowButton.gameObject.SetActive(true));
-        });
+        _leftArrowButton.onClick.AddListener(MoveKitchen);
 
         _rightArrowButton.onClick.AddListener(() =>
         {
             _leftArrowButton.gameObject.SetActive(false);
             _rightArrowButton.gameObject.SetActive(false);
-            _cameraController.MoveCamera(CameraController.RestaurantType.Hall, () => _leftArrowButton.gameObject.SetActive(true));
+            _cameraController.MoveCamera(CameraController.RestaurantType.Hall);
         });
 
 
@@ -53,6 +49,8 @@ public class UICamera : MonoBehaviour
             MoveKitchen();
         });
 
+        _cameraController.OnStartMoveCameraHandler += OnStartMoveCameraEvent;
+        _cameraController.OnEndMoveCameraHandler += OnEndMoveCameraEvent;
         MoveHall();
     }
 
@@ -61,16 +59,7 @@ public class UICamera : MonoBehaviour
         if (_cameraController.CurrentFloor == floor)
             return;
 
-        _leftArrowButton.gameObject.SetActive(false);
-        _rightArrowButton.gameObject.SetActive(false);
-        _floorButtonGroup.SetFloorText(floor);
-        _cameraController.MoveCamera(floor, () =>
-        {
-            bool isLeftButtonActive = _cameraController.CurrentRestaurant == CameraController.RestaurantType.Hall;
-            _leftArrowButton.gameObject.SetActive(isLeftButtonActive);
-            _rightArrowButton.gameObject.SetActive(!isLeftButtonActive);
-            _floorButtonGroup.SetFloorText(_cameraController.CurrentFloor);
-        });
+        _cameraController.MoveCamera(floor);
     }
 
     private void MoveKitchen()
@@ -78,9 +67,7 @@ public class UICamera : MonoBehaviour
         if (_cameraController.CurrentRestaurant == CameraController.RestaurantType.Kitchen)
             return;
 
-        _leftArrowButton.gameObject.SetActive(false);
-        _rightArrowButton.gameObject.SetActive(false);
-        _cameraController.MoveCamera(CameraController.RestaurantType.Kitchen, () => _rightArrowButton.gameObject.SetActive(true));
+        _cameraController.MoveCamera(CameraController.RestaurantType.Kitchen);
     }
 
 
@@ -89,9 +76,21 @@ public class UICamera : MonoBehaviour
         if (_cameraController.CurrentRestaurant == CameraController.RestaurantType.Hall)
             return;
 
-        _leftArrowButton.gameObject.SetActive(false);
-        _rightArrowButton.gameObject.SetActive(false);
-        _cameraController.MoveCamera(CameraController.RestaurantType.Hall, () => _leftArrowButton.gameObject.SetActive(true));
+        _cameraController.MoveCamera(CameraController.RestaurantType.Hall);
     }
 
+
+    private void OnStartMoveCameraEvent()
+    {
+        _rightArrowButton.gameObject.SetActive(false);
+        _leftArrowButton.gameObject.SetActive(false);
+    }
+
+    private void OnEndMoveCameraEvent(ERestaurantFloorType floor, RestaurantType restaurant)
+    {
+        bool isLeftArrowButtonEnabled = restaurant == RestaurantType.Hall;
+        _leftArrowButton.gameObject.SetActive(isLeftArrowButtonEnabled);
+        _rightArrowButton.gameObject.SetActive(!isLeftArrowButtonEnabled);
+        _floorButtonGroup.SetFloorText(floor);
+    }
 }

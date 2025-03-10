@@ -43,7 +43,7 @@ public class SequentialCommandManager : MonoBehaviour
 
         // 우선순위 큐를 생성 (우선순위 낮은 값이 먼저 실행되도록 설정)
         _commandQueue = new SortedSet<Command>(new CommandComparer());
-        SceneManager.activeSceneChanged += (scene1, scene2) => ResetCommand();
+        LoadingSceneManager.OnLoadSceneHandler += ResetCommand;
     }
 
 

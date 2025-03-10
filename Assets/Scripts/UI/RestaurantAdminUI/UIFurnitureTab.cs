@@ -6,7 +6,6 @@ public class UIFurnitureTab : UIRestaurantAdminTab
 {
     [Header("Components")]
     [SerializeField] private UIFurniture _uiFurniture;
-    [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
 
     [Space]
     [Header("Slots")]
@@ -32,7 +31,6 @@ public class UIFurnitureTab : UIRestaurantAdminTab
             slot.name = "FurnitureTabSlot" + (i + 1);
         }
 
-        _floorButtonGroup.Init(() => ChangeFloorType(ERestaurantFloorType.Floor1), () => ChangeFloorType(ERestaurantFloorType.Floor2), () => ChangeFloorType(ERestaurantFloorType.Floor3));
         UserInfo.OnChangeFurnitureHandler += UpdateUI;
     }
 
@@ -47,13 +45,20 @@ public class UIFurnitureTab : UIRestaurantAdminTab
 
     public override void SetAttention()
     {
-        _floorButtonGroup.SetActive(true);
-        _floorButtonGroup.Hide();
+
     }
 
     public override void SetNotAttention()
     {
-        _floorButtonGroup.SetActive(false);
+    }
+
+    public void ChangeFloorType(ERestaurantFloorType floorType)
+    {
+        if (_floorType == floorType)
+            return;
+
+        _floorType = floorType;
+        UpdateUI();
     }
 
 
@@ -67,16 +72,6 @@ public class UIFurnitureTab : UIRestaurantAdminTab
         _slots[(int)type].UpdateUI(sprite, Utility.FurnitureTypeStringConverter(type));
     }
 
-
-    public void ChangeFloorType(ERestaurantFloorType floorType)
-    {
-        if (_floorType == floorType)
-            return;
-
-        _floorType = floorType;
-        _floorButtonGroup.SetFloorText(_floorType);
-        UpdateUI();
-    }
 
     private void OnSlotClicked(int index)
     {

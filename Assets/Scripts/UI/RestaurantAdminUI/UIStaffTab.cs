@@ -4,7 +4,6 @@ using UnityEngine.UI;
 public class UIStaffTab : UIRestaurantAdminTab
 {
     [SerializeField] private UIStaff _uiStaff;
-    [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
 
     [Header("Slots")]
     [SerializeField] private UITabSlot _slotPrefab;
@@ -30,7 +29,6 @@ public class UIStaffTab : UIRestaurantAdminTab
             slot.name = "StaffTabSlot" + (i + 1);
         }
 
-        _floorButtonGroup.Init(() => ChangeFloorType(ERestaurantFloorType.Floor1), () => ChangeFloorType(ERestaurantFloorType.Floor2), () => ChangeFloorType(ERestaurantFloorType.Floor3));
         UserInfo.OnChangeStaffHandler += UpdateUI;
     }
 
@@ -45,13 +43,21 @@ public class UIStaffTab : UIRestaurantAdminTab
 
     public override void SetAttention()
     {
-        _floorButtonGroup.SetActive(true);
-        _floorButtonGroup.Hide();
+
     }
 
     public override void SetNotAttention()
     {
-        _floorButtonGroup.SetActive(false);
+
+    }
+
+    public void ChangeFloorType(ERestaurantFloorType floorType)
+    {
+        if (_floorType == floorType)
+            return;
+
+        _floorType = floorType;
+        UpdateUI();
     }
 
 
@@ -65,15 +71,6 @@ public class UIStaffTab : UIRestaurantAdminTab
         _slots[(int)type].UpdateUI(sprite, Utility.StaffTypeStringConverter(type));
     }
 
-    private void ChangeFloorType(ERestaurantFloorType floorType)
-    {
-        if (_floorType == floorType)
-            return;
-
-        _floorType = floorType;
-        _floorButtonGroup.SetFloorText(_floorType);
-        UpdateUI();
-    }
 
     private void OnSlotClicked(int index)
     {

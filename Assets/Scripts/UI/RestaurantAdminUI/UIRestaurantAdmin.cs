@@ -21,6 +21,7 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private UIKitchen _kitchenUI;
     [SerializeField] private GameObject _mainUI;
     [SerializeField] private CanvasGroup _canvasGroup;
+    [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
 
     [Header("BackgroundImage")]
     [SerializeField] private ScrollingImage[] _scrollImages;
@@ -56,6 +57,8 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private AudioClip _shopMusic;
 
 
+    private ERestaurantFloorType _floorType;
+
     public override void Init()
     {
         _staffButton.OnClickEvent(ShowStaffTab);
@@ -66,8 +69,9 @@ public class UIRestaurantAdmin : MobileUIView
         _recipeTab.Init();
         _furnitureTab.Init();
         _kitchenTab.Init();
+        _floorButtonGroup.Init(() => ChangeFloorType(ERestaurantFloorType.Floor1), () => ChangeFloorType(ERestaurantFloorType.Floor2), () => ChangeFloorType(ERestaurantFloorType.Floor3));
 
-        for(int i = 0, cnt = _scrollImages.Length; i < cnt; i++)
+        for (int i = 0, cnt = _scrollImages.Length; i < cnt; i++)
         {
             _scrollImages[i].Init();
         }
@@ -90,10 +94,9 @@ public class UIRestaurantAdmin : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
 
-        _staffTab.UpdateUI();
-        _furnitureTab.UpdateUI();
+        ChangeFloorType(_mainScene.CurrentFloor);
+
         _recipeTab.UpdateUI();
-        _kitchenTab.UpdateUI();
 
         TweenData tween = _canvasGroup.TweenAlpha(1, 0.1f);
         tween.OnComplete(() =>
@@ -175,6 +178,8 @@ public class UIRestaurantAdmin : MobileUIView
         _recipeTab.SetNotAttention();
         _furnitureTab.SetNotAttention();
 
+        _floorButtonGroup.SetActive(true);
+
         SetBackgroundImage(BackgroundType.Staff);
     }
 
@@ -191,6 +196,8 @@ public class UIRestaurantAdmin : MobileUIView
         _kitchenTab.SetNotAttention();
         _recipeTab.SetNotAttention();
         _furnitureTab.SetAttention();
+
+        _floorButtonGroup.SetActive(true);
 
         SetBackgroundImage(BackgroundType.Furniture);
     }
@@ -209,6 +216,8 @@ public class UIRestaurantAdmin : MobileUIView
         _recipeTab.SetAttention();
         _furnitureTab.SetNotAttention();
 
+        _floorButtonGroup.SetActive(false);
+
         SetBackgroundImage(BackgroundType.Recipe);
     }
 
@@ -225,6 +234,8 @@ public class UIRestaurantAdmin : MobileUIView
         _kitchenTab.SetAttention();
         _recipeTab.SetNotAttention();
         _furnitureTab.SetNotAttention();
+
+        _floorButtonGroup.SetActive(true);
 
         SetBackgroundImage(BackgroundType.Kitchen);
     }
@@ -251,4 +262,15 @@ public class UIRestaurantAdmin : MobileUIView
         }
     }
 
+    private void ChangeFloorType(ERestaurantFloorType floorType)
+    {
+        if (_floorType == floorType)
+            return;
+
+        _floorType = floorType;
+        _kitchenTab.ChangeFloorType(_floorType);
+        _furnitureTab.ChangeFloorType(_floorType);
+        _staffTab.ChangeFloorType(_floorType);
+        _floorButtonGroup.SetFloorText(_floorType);
+    }
 }

@@ -1,13 +1,10 @@
-using System.Collections.Generic;
-using UnityEngine;
-using Muks.MobileUI;
 using Muks.UI;
-using System.Collections;
-using BackEnd;
-using Muks.BackEnd;
+using UnityEngine;
 
 public class MainScene : MonoBehaviour
 {
+
+
     [Header("Option")]
     [SerializeField] private EStage _stage;
 
@@ -18,7 +15,8 @@ public class MainScene : MonoBehaviour
     [SerializeField] private AudioClip _mainSceneMusic;
     [SerializeField] private AudioClip _feverMusic;
 
-
+    private ERestaurantFloorType _currentFloor;
+    public ERestaurantFloorType CurrentFloor => _currentFloor;
     private float _updateTimer;
 
     public void PlayMainMusic()
@@ -30,6 +28,10 @@ public class MainScene : MonoBehaviour
             SoundManager.Instance.PlayBackgroundAudio(_feverMusic, 0.5f);
     }
 
+    public void SetFloor(ERestaurantFloorType floor)
+    {
+        _currentFloor = floor;
+    }
 
     private void Awake()
     {

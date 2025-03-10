@@ -9,6 +9,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
     [SerializeField] private UIRecipeUpgrade _uiUpgrade;
     [SerializeField] private UIRecipePreview _uiRecipePreview;
 
+
     [Space]
     [Header("Slot Option")]
     [SerializeField] private Transform _slotParnet;

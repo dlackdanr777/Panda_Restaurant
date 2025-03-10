@@ -5,7 +5,6 @@ public class UIKitchenTab : UIRestaurantAdminTab
 {
     [Header("Components")]
     [SerializeField] private UIKitchen _uiKitchen;
-    [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
 
 
     [Space]
@@ -32,21 +31,17 @@ public class UIKitchenTab : UIRestaurantAdminTab
             slot.name = "KitchenTabSlot" + (i + 1);
         }
 
-        _floorButtonGroup.Init(() => ChangeFloorType(ERestaurantFloorType.Floor1), () => ChangeFloorType(ERestaurantFloorType.Floor2), () => ChangeFloorType(ERestaurantFloorType.Floor3));
         UserInfo.OnChangeKitchenUtensilHandler += UpdateUI;
     }
 
 
     public override void SetAttention()
     {
-        _floorButtonGroup.SetActive(true);
-        _floorButtonGroup.Hide();
     }
 
 
     public override void SetNotAttention()
     {
-        _floorButtonGroup.SetActive(false);
     }
 
 
@@ -56,6 +51,15 @@ public class UIKitchenTab : UIRestaurantAdminTab
         {
             UpdateUI(_floorType, (KitchenUtensilType)i);
         }
+    }
+
+    public void ChangeFloorType(ERestaurantFloorType floorType)
+    {
+        if (_floorType == floorType)
+            return;
+
+        _floorType = floorType;
+        UpdateUI();
     }
 
 
@@ -69,15 +73,6 @@ public class UIKitchenTab : UIRestaurantAdminTab
         _slots[(int)type].UpdateUI(sprite, Utility.KitchenUtensilTypeStringConverter(type));
     }
 
-    private void ChangeFloorType(ERestaurantFloorType floorType)
-    {
-        if (_floorType == floorType)
-            return;
-
-        _floorType = floorType;
-        _floorButtonGroup.SetFloorText(_floorType);
-        UpdateUI();
-    }
 
     private void OnSlotClicked(int index)
     {

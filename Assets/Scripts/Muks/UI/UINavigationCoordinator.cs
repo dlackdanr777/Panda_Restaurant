@@ -13,6 +13,18 @@ namespace Muks.UI
         private LinkedList<NavigationData> _navList = new LinkedList<NavigationData>();
 
 
+        public int GetOpenViewCount()
+        {
+            int count = 0;
+            foreach (NavigationData navData in _navList)
+            {
+                count += navData.UiNav.Count;
+            }
+
+            return count;
+        }
+
+
         private void Start()
         {
             Init();
@@ -115,18 +127,7 @@ namespace Muks.UI
             {
                 navData.UiNav.AllHide();
             }
-        }
-
-        public int GetOpenViewCount()
-        {
-            int count = 0;
-            foreach (NavigationData navData in _navList)
-            {
-                count += navData.UiNav.Count;
-            }
-
-            return count;
-        }
+        }       
     }
 }
 
