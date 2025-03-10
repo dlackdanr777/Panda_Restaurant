@@ -1,8 +1,6 @@
 using Muks.Tween;
 using System;
 using System.Collections.Generic;
-using TMPro.Examples;
-using UnityEditor.Rendering;
 using UnityEngine;
 
 [RequireComponent(typeof(Camera))]
