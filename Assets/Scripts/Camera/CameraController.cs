@@ -184,7 +184,6 @@ public class CameraController : MonoBehaviour
                 _isStopAction = true;
                 _isDragging = false;
                 _isDraggingEnabled = false;
-                _isMoveAction = false;
                 Vector3 targetPos = _targetPosDic[CurrentFloor][_currentRestaurant];
                 if (_cam.transform.position != targetPos)
                 {
@@ -194,6 +193,7 @@ public class CameraController : MonoBehaviour
 
             return;
         }
+
         _isStopAction = false;
 #if UNITY_EDITOR
         HandleMouseInput();
@@ -249,11 +249,9 @@ public class CameraController : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            DebugLog.Log("마우스 다운");
             Vector2 mouseWorldPos = _cam.ScreenToWorldPoint(Input.mousePosition);
             if (IsPointerOverUI() || !IsTouchingDraggableSprite(mouseWorldPos))
             {
-                DebugLog.Log("없음");
                 _isDragging = false; // ❌ 드래그 시작 X
                 return;
             }
@@ -333,15 +331,14 @@ public class CameraController : MonoBehaviour
     {
         Vector3 rayOrigin = _cam.ScreenToWorldPoint(new Vector3(touchWorldPosition.x, touchWorldPosition.y, _cam.nearClipPlane));
         Vector3 rayDirection = _cam.transform.forward;
+
         int ignoredLayers = _ignoredLayer.value; // 무시할 레이어
         int detectionMask = _draggableLayerMask & ~ignoredLayers; // 무시할 레이어 제외
 
         if (Physics.Raycast(rayOrigin, rayDirection, out RaycastHit hit, 30f, detectionMask))
         {
-            DebugLog.Log(hit.transform.name);
             return true;
         }
-        DebugLog.Log("안걸림");
         return false;
     }
 
@@ -362,7 +359,7 @@ public class CameraController : MonoBehaviour
             {
                 continue;
             }
-            DebugLog.Log(result.gameObject.name);
+
             return true;
         }
 
@@ -382,7 +379,6 @@ public class CameraController : MonoBehaviour
                 {
                     continue;
                 }
-                DebugLog.Log(result.gameObject.name);
                 return true;
             }
         }
