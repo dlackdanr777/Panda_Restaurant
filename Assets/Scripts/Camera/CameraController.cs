@@ -313,7 +313,7 @@ public class CameraController : MonoBehaviour
         if (camDistance > _moveThreshold)
         {
             float normalizedDistance = Mathf.Clamp01((camDistance - _moveThreshold) / (_moveThreshold * 0.9f));
-            speedFactor = Mathf.Lerp(1.0f, 0.03f, normalizedDistance); // 점진적 속도 감소
+            speedFactor = Mathf.Lerp(1.0f, 0.05f, normalizedDistance); // 점진적 속도 감소
         }
 
         // 🔹 최종 이동 적용 (현재 위치에서 이동값 추가)
