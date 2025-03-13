@@ -37,7 +37,6 @@ public class GameManager : MonoBehaviour
     public int TotalTabCount => _totalTabCount;
 
     [SerializeField] private float _foodPriceMul = 0;
-    public float FoodPriceMul => 1 + _foodPriceMul;
 
     private float[] _foodTypePriceMul = new float[(int)FoodType.Length];
     public float GetFoodTypePriceMul(FoodType type) { return 1 + _foodTypePriceMul[(int)type]; }
@@ -58,7 +57,6 @@ public class GameManager : MonoBehaviour
     
 
     [SerializeField] private float _cookingSpeedMul = 1;
-    public float CookingSpeedMul => 1 + _totalAddSpeedMul + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) + (_addEquipFurnitureSetDataCookSpeedMul * 0.01f) + (_addEquipKitchenSetDataCookSpeedMul * 0.01f)  + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
     public float SubCookingTime => _subUpgradeGachaItemCookingTime;
     public int AddFoodPrice => _addUpgradeGachaItemFoodPrice;
     public float AddFoodDoublePricePercent => Mathf.Clamp(_addUpgradeGachaItemFoodDoublePricePercent, 0f, 100f);
@@ -68,7 +66,7 @@ public class GameManager : MonoBehaviour
     public int AddSocre => _addEquipStaffScore + _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore + _addUpgradeGachaItemScore;
     public float TipMul => Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f);
 
-    public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addEquipFurnitureSetDataTipPerMinute + _addEquipKitchenSetDataTipPerMinute + _addGiveGachaItemTipPerMinute + _addUpgradeGachaItemTipPerMinute;
+    public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addGiveGachaItemTipPerMinute + _addUpgradeGachaItemTipPerMinute;
     public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume + Mathf.FloorToInt((_addEquipKitchenUtensilTipVolume + _addEquipFurnitureMaxTipVolume) * _addUpgradeGachaItemMaxTipVolumePercent * 0.01f);
 
 
@@ -95,6 +93,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int _addEquipStaffScore;
     [SerializeField] private float _addEquipStaffTipMul;
     [SerializeField] private int _addEquipStaffMaxWaitCustomerCount;
+    [SerializeField] private float[] _addEquipStaffCookSpeedMul = new float[(int)ERestaurantFloorType.Length];
+
 
     [SerializeField] private int _addEquipFurnitureScore;
     [SerializeField] private int _addEquipFurnitureCookSpeedMul;
@@ -102,15 +102,13 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int _addEquipFurnitureMaxTipVolume;
 
     [SerializeField] private int _addEquipKitchenUtensilScore;
-    [SerializeField] private int _addEquipKitchenUtensilCookSpeedMul;
+    [SerializeField] private float _addEquipKitchenUtensilCookSpeedMul;
     [SerializeField] private int _addEquipKitchenUtensilTipPerMinute;
     [SerializeField] private int _addEquipKitchenUtensilTipVolume;
 
-    [SerializeField] private int _addEquipFurnitureSetDataTipPerMinute;
-    [SerializeField] private float _addEquipFurnitureSetDataCookSpeedMul;
+    private float[,] _addSetFoodPriceMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //음식 가격 증가 비율
+    private float[,] _addSetCookSpeedMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //음식 조리 속도
 
-    [SerializeField] private int _addEquipKitchenSetDataTipPerMinute;
-    [SerializeField] private float _addEquipKitchenSetDataCookSpeedMul;
 
     [SerializeField] private int _addGiveGachaItemScore;
     [SerializeField] private int _addGiveGachaItemTipPerMinute;
@@ -154,13 +152,19 @@ public class GameManager : MonoBehaviour
         _foodPriceMul = Mathf.Clamp(_foodPriceMul + value * 0.01f, 0, 100);
     }
 
-
-    public void AddCookingSpeedMul(float value)
+    public float GetCookingSpeedMul(ERestaurantFloorType floor, FoodType type)
     {
-        _cookingSpeedMul += value * 0.01f;
-        _cookingSpeedMul = Mathf.Clamp(_cookingSpeedMul, 1, 100);
+        float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) + (_addEquipStaffCookSpeedMul[(int)floor] * 0.01f);
+        DebugLog.Log("음식 속도: "+ cookSpeedMul);
+        return cookSpeedMul;
     }
 
+    public float GetFoodPriceMul(ERestaurantFloorType floor, FoodType type)
+    {
+        float foodPriceMul = 1 + _foodPriceMul + (_addSetFoodPriceMul[(int)floor, (int)type] * 0.01f);
+        DebugLog.Log("음식 값: "+ foodPriceMul);
+        return foodPriceMul;
+    }
 
     public void AppendPromotionCustomer(int value)
     {
@@ -213,8 +217,8 @@ public class GameManager : MonoBehaviour
         UserInfo.OnUpgradeStaffHandler += OnEquipStaffEffectCheck;
         UserInfo.OnChangeFurnitureHandler += (floor, type) => OnEquipFurnitureEffectCheck();
         UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => OnEquipKitchenUtensilEffectCheck();
-        UserInfo.OnChangeFurnitureHandler +=  CheckFurnitureSetData;
-        UserInfo.OnChangeKitchenUtensilHandler += CheckKitchenSetData;
+        UserInfo.OnChangeFurnitureHandler += (floor, type) => CheckSetDataEffect(floor);
+        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => CheckSetDataEffect(floor);
         UserInfo.OnGiveRecipeHandler += OnGiveRecipeCheck;
         UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEffectCheck;
         UserInfo.OnGiveGachaItemHandler += OnUpgradeGachaItemCheck;
@@ -229,8 +233,7 @@ public class GameManager : MonoBehaviour
         for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
             ERestaurantFloorType floor = (ERestaurantFloorType)i;
-            CheckFurnitureSetData(floor, FurnitureType.Table1);
-            CheckKitchenSetData(floor, KitchenUtensilType.Burner1);
+            CheckSetDataEffect(floor);
         }
 
         SceneManager.activeSceneChanged += (scene1, scene2) =>
@@ -245,8 +248,7 @@ public class GameManager : MonoBehaviour
             for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
             {
                 ERestaurantFloorType floor = (ERestaurantFloorType)i;
-                CheckFurnitureSetData(floor, FurnitureType.Table1);
-                CheckKitchenSetData(floor, KitchenUtensilType.Burner1);
+                CheckSetDataEffect(floor);
             }
 
             OnGiveGachaItemEffectCheck();
@@ -277,6 +279,11 @@ public class GameManager : MonoBehaviour
         float addTipMul = 0;
         int maxWaitCustomerCount = 0;
 
+        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            _addEquipStaffCookSpeedMul[i] = 0;
+        }
+
         for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
             for (int j = 0, cntJ = (int)StaffType.Length; j < cntJ; ++j)
@@ -291,6 +298,12 @@ public class GameManager : MonoBehaviour
                 {
                     ManagerData managerData = (ManagerData)data;
                     maxWaitCustomerCount += Mathf.FloorToInt(managerData.GetActionValue(level));
+                }
+
+                else if((StaffType)j == StaffType.Chef)
+                {
+                    ChefData chefData = (ChefData)data;
+                    _addEquipStaffCookSpeedMul[i] += chefData.GetActionValue(level);
                 }
 
                 addScore += data.GetAddScore(level);
@@ -411,49 +424,30 @@ public class GameManager : MonoBehaviour
     }
 
 
-    private  void CheckKitchenSetData(ERestaurantFloorType floor, KitchenUtensilType type)
+    private void CheckSetDataEffect(ERestaurantFloorType floor)
     {
-        int tmpTipPerMinute = _addEquipKitchenSetDataTipPerMinute;
-        _addEquipKitchenSetDataTipPerMinute = 0;
-        _addEquipKitchenSetDataCookSpeedMul = 0;
-
-        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        int floorIndex = (int)floor;
+        for(int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
         {
-            ERestaurantFloorType floorType = (ERestaurantFloorType)i;
-            SetData kitchenSetData = UserInfo.GetEquipKitchenUntensilSetData(UserInfo.CurrentStage, floorType);
-
-            if (kitchenSetData is TipPerMinuteSetData)
-                _addEquipKitchenSetDataTipPerMinute += (int)kitchenSetData.Value;
-
-            else if (kitchenSetData is CookingSpeedUpSetData)
-                _addEquipKitchenSetDataCookSpeedMul += kitchenSetData.Value;
-        }
-       
-        if(tmpTipPerMinute != _addEquipKitchenSetDataTipPerMinute)
-            OnChangeTipPerMinuteHandler?.Invoke();
-    }
-
-
-    private void CheckFurnitureSetData(ERestaurantFloorType floor, FurnitureType type)
-    {
-        int tmpTipPerMinute = _addEquipFurnitureSetDataTipPerMinute;
-        _addEquipFurnitureSetDataTipPerMinute = 0;
-        _addEquipFurnitureSetDataCookSpeedMul = 0;
-
-        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
-        {
-            ERestaurantFloorType floorType = (ERestaurantFloorType)i;
-            SetData furnitureSetData = UserInfo.GetEquipFurnitureSetData(UserInfo.CurrentStage, floorType);
-
-            if (furnitureSetData is TipPerMinuteSetData)
-                _addEquipFurnitureSetDataTipPerMinute += (int)furnitureSetData.Value;
-
-            else if (furnitureSetData is CookingSpeedUpSetData)
-                _addEquipFurnitureSetDataCookSpeedMul += furnitureSetData.Value;
+            int foodTypeIndex = i;
+            _addSetCookSpeedMul[floorIndex, foodTypeIndex] = 0;
+            _addSetFoodPriceMul[floorIndex, foodTypeIndex] = 0;
         }
 
-        if (tmpTipPerMinute != _addEquipFurnitureSetDataTipPerMinute)
-            OnChangeTipPerMinuteHandler?.Invoke();
+        SetData kitchenSetData = UserInfo.GetEquipKitchenUntensilSetData(UserInfo.CurrentStage, floor);
+        SetData furnitureSetData = UserInfo.GetEquipFurnitureSetData(UserInfo.CurrentStage, floor);
+
+        if (kitchenSetData is FoodTypePriceUpSetData)
+            _addSetFoodPriceMul[floorIndex, (int)kitchenSetData.FoodType] += kitchenSetData.Value;
+
+        else if (kitchenSetData is CookingSpeedUpSetData)
+            _addSetCookSpeedMul[floorIndex, (int)kitchenSetData.FoodType] += kitchenSetData.Value;
+
+        if (furnitureSetData is FoodTypePriceUpSetData)
+            _addSetFoodPriceMul[floorIndex, (int)furnitureSetData.FoodType] += furnitureSetData.Value;
+
+        else if (furnitureSetData is CookingSpeedUpSetData)
+            _addSetCookSpeedMul[floorIndex, (int)furnitureSetData.FoodType] += furnitureSetData.Value;
     }
 
 

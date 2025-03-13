@@ -198,7 +198,7 @@ public class TableManager : MonoBehaviour
         }
 
         int foodLevel = UserInfo.GetRecipeLevel(foodData);
-        CookingData cookingData = new CookingData(foodData.Id, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), foodData.Sprite, () =>
+        CookingData cookingData = new CookingData(foodData, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), () =>
         {
             if (data.TableState != ETableState.WaitFood || data.CurrentCustomer == null)
                 return;
@@ -213,7 +213,7 @@ public class TableManager : MonoBehaviour
         data.TotalTip += tip + GameManager.Instance.AddFoodTip;
         data.CurrentFood = cookingData;
 
-        int totalPrice = (int)((cookingData.Price + GameManager.Instance.AddFoodPrice * data.CurrentCustomer.CurrentFoodPriceMul) * GameManager.Instance.FoodPriceMul * GameManager.Instance.GetFoodTypePriceMul(foodData.FoodType));
+        int totalPrice = (int)((cookingData.Price + GameManager.Instance.AddFoodPrice * data.CurrentCustomer.CurrentFoodPriceMul) * GameManager.Instance.GetFoodPriceMul(data.FloorType, foodData.FoodType) * GameManager.Instance.GetFoodTypePriceMul(foodData.FoodType));
         data.TotalPrice += totalPrice;
         data.ServingButton.SetData(foodData);
 
@@ -233,7 +233,7 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        string orderFoodId = data.CurrentFood.Id;
+        string orderFoodId = data.CurrentFood.FoodData.Id;
         if (!UserInfo.IsGiveRecipe(orderFoodId))
         {
             NormalCustomer currentCustomer = data.CurrentCustomer;
@@ -268,7 +268,7 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        FoodData foodData = FoodDataManager.Instance.GetFoodData(data.CurrentFood.Id);
+        FoodData foodData = FoodDataManager.Instance.GetFoodData(data.CurrentFood.FoodData.Id);
         data.TableState = ETableState.Eating;
         Tween.Wait(0.5f, () =>
         {
@@ -502,7 +502,7 @@ public class TableManager : MonoBehaviour
             if (tableDataList[i].CurrentFood.IsDefault())
                 continue;
 
-            if (!UserInfo.IsGiveRecipe(tableDataList[i].CurrentFood.Id))
+            if (!UserInfo.IsGiveRecipe(tableDataList[i].CurrentFood.FoodData.Id))
                 continue;
 
             return tableDataList[i];

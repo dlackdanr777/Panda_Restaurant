@@ -199,7 +199,7 @@ public static class Utility
 
         switch (setData)
         {
-            case TipPerMinuteSetData:
+            case FoodTypePriceUpSetData:
                 description = "∫–¥Á »πµÊ ∆¡ <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + (setData.Value) + "</color> ¡ı∞°";
                 break;
 

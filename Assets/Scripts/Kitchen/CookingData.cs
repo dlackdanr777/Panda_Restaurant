@@ -3,32 +3,29 @@ using UnityEngine;
 
 public struct CookingData
 {
-    private string _id;
-    public string Id => _id;
+    private FoodData _foodData;
+    public FoodData FoodData => _foodData;
 
-    private float _cookingTime;
-    public float CookingTime => _cookingTime;
+    private float _cookTime;
+    public float CookTime => _cookTime;
 
     private float _price;
     public float Price => _price;
 
-    private Sprite _sprite;
-    public Sprite Sprite => _sprite;
 
     private Action _onCompleted;
     public Action OnCompleted => _onCompleted;
 
-    public CookingData(string id, float cookingTime, float price, Sprite sprite, Action onCompleted)
+    public CookingData(FoodData foodData, float cookTime, float cellPrice, Action onCompleted)
     {
-        _id = id;
-        _cookingTime = cookingTime;
-        _price = price;
-        _sprite = sprite;
+        _foodData = foodData;
+        _cookTime = cookTime;
+        _price = cellPrice;
         _onCompleted = onCompleted;
     }
 
     public bool IsDefault()
     {
-        return string.IsNullOrEmpty(_id);
+        return _foodData == null;
     }
 }

@@ -29,13 +29,11 @@ public class ChefData : StaffData
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(1);
-        GameManager.Instance.AddCookingSpeedMul(_chefLevelData[staff.Level - 1].FoodSpeedAddPercent);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(0);
-        GameManager.Instance.AddCookingSpeedMul(-_chefLevelData[staff.Level - 1].FoodSpeedAddPercent);
     }
 
     public override int GetUpgradeMinScore(int level)

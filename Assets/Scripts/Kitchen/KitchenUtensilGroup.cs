@@ -70,8 +70,8 @@ public class KitchenUtensilGroup: MonoBehaviour
 
             else
             {
-                _burnerDatas[i].Time -= Time.deltaTime * GameManager.Instance.CookingSpeedMul;
-                _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookingTime));
+                _burnerDatas[i].Time -= Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, _burnerDatas[i].CookingData.FoodData.FoodType);
+                _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookTime));
             }
         }
     }
@@ -87,7 +87,7 @@ public class KitchenUtensilGroup: MonoBehaviour
     {
         if (!_burnerDatas[burnerIndex].CookingData.IsDefault())
         {
-            UserInfo.AddCookCount(_burnerDatas[burnerIndex].CookingData.Id);
+            UserInfo.AddCookCount(_burnerDatas[burnerIndex].CookingData.FoodData.Id);
             _burnerDatas[burnerIndex].CookingData.OnCompleted?.Invoke();
         }
 
@@ -103,11 +103,11 @@ public class KitchenUtensilGroup: MonoBehaviour
 
         CookingData cookingData = _cookingQueue.Dequeue();
         _burnerDatas[burnerIndex].CookingData = cookingData;
-        _burnerDatas[burnerIndex].Time = cookingData.CookingTime;
+        _burnerDatas[burnerIndex].Time = cookingData.CookTime;
         _burnerTimers[burnerIndex].SetActive(true);
         _smokeAnimations[burnerIndex].gameObject.SetActive(true);
         _burnerTimers[burnerIndex].SetFillAmount(0);
-        _burnerTimers[burnerIndex].SetImage(cookingData.Sprite);
+        _burnerTimers[burnerIndex].SetImage(cookingData.FoodData.ThumbnailSprite);
     }
 
     private void UpdateKitchen()

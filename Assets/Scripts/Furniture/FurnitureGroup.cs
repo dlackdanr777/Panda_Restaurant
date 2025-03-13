@@ -335,7 +335,7 @@ public class FurnitureGroup : MonoBehaviour
             return;
         }
 
-        _foodType = setData.SetFoodType;
+        _foodType = setData.FoodType;
     }
 
 

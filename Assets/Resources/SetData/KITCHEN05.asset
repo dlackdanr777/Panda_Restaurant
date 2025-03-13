@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: KITCHEN05
   m_EditorClassIdentifier: 
   _id: KITCHEN05
-  _name: "\uC804\uD1B5\uC801\uC778 \uC8FC\uBC29\uAE30\uAD6C"
+  _name: "\uD2B8\uB85C\uD53C\uCEEC \uC138\uD2B8"
   _description: "\uC694\uB9AC \uD6A8\uC728 5% \uC99D\uAC00"
-  _cookingSpeedUpMul: 5
+  _foodType: 3
+  _cookingSpeedUpMul: 20
