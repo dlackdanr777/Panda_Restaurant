@@ -13,11 +13,9 @@ public class StageInfo
 
     public event Action<ERestaurantFloorType, FurnitureType> OnChangeFurnitureHandler;
     public event Action OnGiveFurnitureHandler;
-    public event Action OnChangeFurnitureSetDataHandler;
 
     public event Action<ERestaurantFloorType, KitchenUtensilType> OnChangeKitchenUtensilHandler;
     public event Action OnGiveKitchenUtensilHandler;
-    public event Action OnChangeKitchenUtensilSetDataHandler;
 
     private EStage _stage;
     public EStage Stage => _stage;
@@ -43,14 +41,6 @@ public class StageInfo
 
     private List<string> _giveKitchenUtensilList = new List<string>();
     private KitchenUtensilData[,] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)ERestaurantFloorType.Length, (int)KitchenUtensilType.Length];
-
-    private SetData[] _furnitureEnabledSetData = new SetData[(int)ERestaurantFloorType.Length];
-    private SetData[] _kitchenuntensilEnabledSetData = new SetData[(int)ERestaurantFloorType.Length];
-
-    private Dictionary<string, int> _furnitureEffectSetCountDic = new Dictionary<string, int>();
-    private Dictionary<string, int> _kitchenUtensilEffectSetCountDic = new Dictionary<string, int>();
-    private HashSet<string> _activatedFurnitureEffectSet = new HashSet<string>();
-    private HashSet<string> _activatedKitchenUtensilEffectSet = new HashSet<string>();
 
     private CoinAreaData[,] _coinAreaDatas = new CoinAreaData[(int)ERestaurantFloorType.Length, (int)TableType.Length * 2];
 
@@ -318,10 +308,6 @@ public class StageInfo
 
     #region FurnitureData
 
-    public SetData GetEquipFurnitureSetData(ERestaurantFloorType type)
-    {
-        return _furnitureEnabledSetData[(int)type];
-    }
 
     public void GiveFurniture(FurnitureData data)
     {
@@ -332,7 +318,6 @@ public class StageInfo
         }
 
         _giveFurnitureList.Add(data.Id);
-        CheckFurnitureSetCount();
         OnGiveFurnitureHandler?.Invoke();
     }
 
@@ -353,13 +338,17 @@ public class StageInfo
         }
 
         _giveFurnitureList.Add(id);
-        CheckFurnitureSetCount();
         OnGiveFurnitureHandler?.Invoke();
     }
 
     public int GetGiveFurnitureCount()
     {
         return _giveFurnitureList.Count;
+    }
+
+    public FoodType GetEquipFurnitureSetType(ERestaurantFloorType type)
+    {
+
     }
 
 
@@ -430,7 +419,6 @@ public class StageInfo
         }
 
         _equipFurnitureDatas[(int)type, (int)data.Type] = data;
-        CheckFurnitureSetData();
         OnChangeFurnitureHandler?.Invoke(type, data.Type);
     }
 
@@ -449,7 +437,6 @@ public class StageInfo
     public void SetNullEquipFurniture(ERestaurantFloorType floor, FurnitureType type)
     {
         _equipFurnitureDatas[(int)floor, (int)type] = null;
-        CheckFurnitureSetData();
         OnChangeFurnitureHandler?.Invoke(floor, type);
     }
 
@@ -463,12 +450,7 @@ public class StageInfo
 
     #region KitchenData
 
-    public SetData GetEquipKitchenUntensilSetData(ERestaurantFloorType type)
-    {
-        return _kitchenuntensilEnabledSetData[(int)type];
-    }
-
-
+ 
     public void GiveKitchenUtensil(KitchenUtensilData data)
     {
         if (_giveKitchenUtensilList.Contains(data.Id))
@@ -478,7 +460,6 @@ public class StageInfo
         }
 
         _giveKitchenUtensilList.Add(data.Id);
-        CheckKitchenSetCount();
         OnGiveKitchenUtensilHandler?.Invoke();
     }
 
@@ -558,7 +539,6 @@ public class StageInfo
         }
 
         _equipKitchenUtensilDatas[(int)type, (int)data.Type] = data;
-        CheckKitchenSetData();
         OnChangeKitchenUtensilHandler?.Invoke(type, data.Type);
     }
 
@@ -578,7 +558,6 @@ public class StageInfo
     public void SetNullEquipKitchenUtensil(ERestaurantFloorType floor, KitchenUtensilType type)
     {
         _equipKitchenUtensilDatas[(int)floor, (int)type] = null;
-        CheckKitchenSetData();
         OnChangeKitchenUtensilHandler?.Invoke(floor, type);
     }
 
@@ -589,224 +568,6 @@ public class StageInfo
 
     #endregion
 
-    #region EffectSetData
-
-    public int GetActivatedFurnitureEffectSetCount()
-    {
-        return _activatedFurnitureEffectSet.Count;
-    }
-
-    public int GetActivatedKitchenUtensilEffectSetCount()
-    {
-        return _activatedKitchenUtensilEffectSet.Count;
-    }
-
-    public bool IsActivatedFurnitureEffectSet(string setId)
-    {
-        if (_activatedFurnitureEffectSet.Contains(setId))
-            return true;
-
-        return false;
-    }
-
-
-    public bool IsActivatedKitchenUtensilEffectSet(string setId)
-    {
-        if (_activatedKitchenUtensilEffectSet.Contains(setId))
-            return true;
-
-        return false;
-    }
-
-
-    public int GetEffectSetFurnitureCount(string setId)
-    {
-        if (_activatedFurnitureEffectSet.Contains(setId))
-            return ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT;
-
-        if (_furnitureEffectSetCountDic.ContainsKey(setId))
-            return _furnitureEffectSetCountDic[setId];
-
-        _furnitureEffectSetCountDic.Add(setId, 0);
-        return 0;
-    }
-
-
-    public int GetEffectSetKitchenUtensilCount(string setId)
-    {
-        if (_activatedKitchenUtensilEffectSet.Contains(setId))
-            return ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT;
-
-        if (_kitchenUtensilEffectSetCountDic.ContainsKey(setId))
-            return _kitchenUtensilEffectSetCountDic[setId];
-
-        _kitchenUtensilEffectSetCountDic.Add(setId, 0);
-        return 0;
-    }
-
-    private void CheckFurnitureSetCount()
-    {
-        _furnitureEffectSetCountDic.Clear();
-        string setId = string.Empty;
-
-        for (int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
-        {
-            var furnitureData = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]);
-            if (furnitureData == null)
-                continue;
-
-            setId = furnitureData.SetId;
-            if (string.IsNullOrEmpty(setId) || SetDataManager.Instance.GetSetData(setId) == null)
-                continue;
-
-            if (_furnitureEffectSetCountDic.ContainsKey(setId))
-                _furnitureEffectSetCountDic[setId] += 1;
-            else
-                _furnitureEffectSetCountDic.Add(setId, 1);
-        }
-
-        foreach (var data in _furnitureEffectSetCountDic)
-        {
-            if (_activatedFurnitureEffectSet.Contains(data.Key))
-                continue;
-
-            if (data.Value >= ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
-                _activatedFurnitureEffectSet.Add(data.Key);
-        }
-    }
-
-
-    private void CheckKitchenSetCount()
-    {
-        _kitchenUtensilEffectSetCountDic.Clear();
-        string setId = string.Empty;
-
-        for (int i = 0, cnt = _giveKitchenUtensilList.Count; i < cnt; ++i)
-        {
-            var kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]);
-            if (kitchenData == null)
-                continue;
-
-            setId = kitchenData.SetId;
-            if (string.IsNullOrEmpty(setId) || SetDataManager.Instance.GetSetData(setId) == null)
-                continue;
-
-            if (_kitchenUtensilEffectSetCountDic.ContainsKey(setId))
-                _kitchenUtensilEffectSetCountDic[setId] += 1;
-            else
-                _kitchenUtensilEffectSetCountDic.Add(setId, 1);
-        }
-
-        foreach (var data in _kitchenUtensilEffectSetCountDic)
-        {
-            if (_activatedKitchenUtensilEffectSet.Contains(data.Key))
-                continue;
-
-            if (data.Value >= ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
-                _activatedKitchenUtensilEffectSet.Add(data.Key);
-        }
-    }
-
-
-    private void CheckFurnitureSetData()
-    {
-        bool isFurnitureSetChanged = false;
-
-        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
-        {
-            SetData furnitureSetData = _furnitureEnabledSetData[i];
-
-            ERestaurantFloorType floor = (ERestaurantFloorType)i;
-            _furnitureEnabledSetData[i] = GetEquipFurnitureSetData(floor);
-
-            if (furnitureSetData != _furnitureEnabledSetData[i])
-                isFurnitureSetChanged = true;
-        }
-
-        if(isFurnitureSetChanged)
-            OnChangeFurnitureSetDataHandler?.Invoke();
-
-
-        SetData GetEquipFurnitureSetData(ERestaurantFloorType type)
-        {
-            string setId = string.Empty;
-            for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
-            {
-                FurnitureData data = GetEquipFurniture(type, (FurnitureType)j);
-                if (data == null)
-                    return null;
-
-                if (string.IsNullOrEmpty(setId))
-                {
-                    setId = data.SetId;
-                    continue;
-                }
-
-                if (setId != data.SetId)
-                    return null;
-            }
-
-            SetData setData = SetDataManager.Instance.GetSetData(setId);
-            if (setData == null)
-            {
-                DebugLog.LogError("해당 세트옵션 데이터가 데이터베이스에 존재하지 않습니다. 확인해주세요: " + setId);
-                return null;
-            }
-
-            return setData;
-        }
-    }
-
-
-    private void CheckKitchenSetData()
-    {
-        bool isKitchenSetChanged = false;
-        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
-        {
-            SetData kitchenSetData = _kitchenuntensilEnabledSetData[i];
-
-            ERestaurantFloorType floor = (ERestaurantFloorType)i;
-            _kitchenuntensilEnabledSetData[i] = GetEquipKitchenUtensilSetData(floor);
-  
-            if (kitchenSetData != _kitchenuntensilEnabledSetData[i])
-                isKitchenSetChanged = true;
-        }
-
-        if (isKitchenSetChanged)
-            OnChangeKitchenUtensilSetDataHandler?.Invoke();
-
-  
-        SetData GetEquipKitchenUtensilSetData(ERestaurantFloorType type)
-        {
-            string setId = string.Empty;
-            for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
-            {
-                KitchenUtensilData data = GetEquipKitchenUtensil(type, (KitchenUtensilType)i);
-                if (data == null)
-                    return null;
-
-                if (string.IsNullOrEmpty(setId))
-                {
-                    setId = data.SetId;
-                    continue;
-                }
-
-                if (setId != data.SetId)
-                    return null;
-            }
-
-            SetData setData = SetDataManager.Instance.GetSetData(setId);
-            if (setData == null)
-            {
-                DebugLog.LogError("해당 세트옵션 데이터가 데이터베이스에 존재하지 않습니다. 확인해주세요: " + setId);
-                return null;
-            }
-
-            return setData;
-        }
-    }
-
-    #endregion
 
     #region TableData
 
@@ -951,9 +712,6 @@ public class StageInfo
 
         ConvertListToCoinAreaDataArray(loadData.CoinAreaDataList);
         ConvertListToGarbageAreaDataArray(loadData.GarbageAreaDataList);
-
-        CheckKitchenSetCount();
-        CheckFurnitureSetCount();
         return true;
     }
 

@@ -118,6 +118,21 @@ public static class Utility
         };
     }
 
+    public static FoodType GetFoodType(string foodTypeStr)
+    {
+        return foodTypeStr switch
+        {
+            "내추럴" => FoodType.Natural,
+            "전통적" => FoodType.Traditional,
+            "빈티지" => FoodType.Vintage,
+            "럭셔리" => FoodType.Luxury,
+            "모던" => FoodType.Modern,
+            "코지" => FoodType.Cozy,
+            "트로피컬" => FoodType.Tropical,
+            _ => throw new System.Exception("해당 음식 문자열이 이상합니다: " + foodTypeStr)
+        };
+    }
+
     public static string GachaItemRankStringConverter(GachaItemRank rank)
     {
         return rank switch
@@ -193,25 +208,15 @@ public static class Utility
     }
 
 
-    public static string GetSetEffectDescription(SetData setData)
+    public static string GetFurnitureFoodTypeSetEffectDescription(FoodType type)
     {
-        string description = string.Empty;
+        string description = FoodTypeStringConverter(type) + " 속성 음식 수익 10% 증가";
+        return description;
+    }
 
-        switch (setData)
-        {
-            case FoodTypePriceUpSetData:
-                description = "분당 획득 팁 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + (setData.Value) + "</color> 증가";
-                break;
-
-            case CookingSpeedUpSetData:
-                description = "요리 효율 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + (setData.Value) + "%</color> 증가";
-                break;
-
-            default:
-                description = "알 수 없는 효과";
-                break;
-        }
-
+    public static string GetKitchenFoodTypeSetEffectDescription(FoodType type)
+    {
+        string description = FoodTypeStringConverter(type) + " 속성 음식 조리 속도 10% 증가";
         return description;
     }
 

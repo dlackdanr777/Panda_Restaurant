@@ -20,6 +20,9 @@ public class KitchenUtensilData : ShopData
     [SerializeField] private KitchenUtensilType _type;
     public KitchenUtensilType Type => _type;
 
+    private FoodType _foodType;
+    public FoodType FoodType => _foodType;
+
     [SerializeField] private string _setId;
     public string SetId => _setId;
 

@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class SetDataManager : MonoBehaviour
 {
-    public static SetDataManager Instance
+/*    public static SetDataManager Instance
     {
         get
         {
@@ -52,7 +52,7 @@ public class SetDataManager : MonoBehaviour
 
     private static void InitSetData()
     {
-        if (0 < _setDataList.Count)
+*//*        if (0 < _setDataList.Count)
             return;
 
         _setDataList.Clear();
@@ -64,6 +64,6 @@ public class SetDataManager : MonoBehaviour
         {
             data = _setDataList[i];
             _setDataDic.Add(data.Id, data);
-        }
-    }
+        }*//*
+    }*/
 }

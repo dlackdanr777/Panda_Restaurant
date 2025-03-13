@@ -86,9 +86,8 @@ public class UIFurniturePreview : MonoBehaviour
         _selectGroup.SetText(data.Name);
         _scoreGroup.SetText("<color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.AddScore.ToString() + "</color> ¡° ¡ı∞°");
 
-        SetData setData = SetDataManager.Instance.GetSetData(data.SetId);
-        _setGroup.SetText1(setData.Name);
-        _setGroup.SetText2(setData != null ? Utility.GetSetEffectDescription(setData) : string.Empty);
+        _setGroup.SetText1(Utility.FoodTypeStringConverter(data.FoodType));
+        _setGroup.SetText2(Utility.GetFurnitureFoodTypeSetEffectDescription(data.FoodType));
 
         string effectText = Utility.GetEquipEffectDescription(data.EquipEffectType, data.EffectValue);
         _tipPerMinuteGroup.SetText(effectText);

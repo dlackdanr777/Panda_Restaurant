@@ -33,11 +33,9 @@ public static class UserInfo
 
     public static event Action<ERestaurantFloorType, FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
-    public static event Action OnChangeFurnitureSetDataHandler;
 
     public static event Action<ERestaurantFloorType, KitchenUtensilType> OnChangeKitchenUtensilHandler;
     public static event Action OnGiveKitchenUtensilHandler;
-    public static event Action OnChangeKitchenUtensilSetDataHandler;
 
     public static event Action OnDoneChallengeHandler;
     public static event Action OnClearChallengeHandler;
@@ -191,11 +189,9 @@ public static class UserInfo
 
             _stageInfos[i].OnChangeFurnitureHandler += OnChangeFurnitureEvent;
             _stageInfos[i].OnGiveFurnitureHandler += OnGiveFurnitureEvent;
-            _stageInfos[i].OnChangeFurnitureSetDataHandler += OnChangeFurnitureSetDataEvent;
 
             _stageInfos[i].OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEvent;
             _stageInfos[i].OnGiveKitchenUtensilHandler += OnGiveKitchenUtensilEvent;
-            _stageInfos[i].OnChangeKitchenUtensilSetDataHandler += OnChangeKitchenUtensilSetDataEvent;
         }
     }
 
@@ -235,11 +231,6 @@ public static class UserInfo
         OnGiveFurnitureHandler?.Invoke();
     }
 
-    private static void OnChangeFurnitureSetDataEvent()
-    {
-        OnChangeFurnitureSetDataHandler?.Invoke();
-    }
-
 
     private static void OnChangeKitchenUtensilEvent(ERestaurantFloorType floor, KitchenUtensilType type)
     {
@@ -250,12 +241,6 @@ public static class UserInfo
     {
         OnGiveKitchenUtensilHandler?.Invoke();
     }
-
-    private static void OnChangeKitchenUtensilSetDataEvent()
-    {
-        OnChangeKitchenUtensilSetDataHandler?.Invoke();
-    }
-
 
     #endregion
 
@@ -1084,52 +1069,6 @@ public static class UserInfo
 
     #endregion
 
-    #region EffectSetData
-
-
-    public static int GetActivatedFurnitureEffectSetCount(EStage stage)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetActivatedFurnitureEffectSetCount();
-    }
-
-
-    public static int GetActivatedKitchenUtensilEffectSetCount(EStage stage)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetActivatedKitchenUtensilEffectSetCount();
-    }
-
-
-    public static bool IsActivatedFurnitureEffectSet(EStage stage, string setId)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].IsActivatedFurnitureEffectSet(setId);
-    }
-
-
-    public static bool IsActivatedKitchenUtensilEffectSet(EStage stage, string setId)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].IsActivatedKitchenUtensilEffectSet(setId);
-    }
-
-
-    public static int GetEffectSetFurnitureCount(EStage stage, string setId)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetEffectSetFurnitureCount(setId);
-    }
-
-
-    public static int GetEffectSetKitchenUtensilCount(EStage stage, string setId)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetEffectSetKitchenUtensilCount(setId);
-    }
-
-
-    #endregion
 
     #region GarbageAndCoinData
 

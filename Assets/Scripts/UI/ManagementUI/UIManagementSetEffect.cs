@@ -46,18 +46,18 @@ public class UIManagementSetEffect : MonoBehaviour
 
         OnChagneSetEffectType(_currentSetEffectType);
         OnChangeSetEffect(0);
-        OnChangeSlotData();
+        //OnChangeSlotData();
         _scrollSwipe.OnChangePageHandler += OnChangeSetEffect;
     }
 
     public void UpdateUI()
     {
         OnChangeSetEffect(_scrollSwipe.CurrentPage);
-        OnChangeSlotData();
+        //OnChangeSlotData();
     }
 
 
-    private void OnChangeSlotData()
+/*    private void OnChangeSlotData()
     {
         for (int i = 0, cnt = _setCountList.Count; i < cnt; ++i)
         {
@@ -134,7 +134,7 @@ public class UIManagementSetEffect : MonoBehaviour
                 }
                 return;
         }
-    }
+    }*/
 
 
     private void OnChangeSetEffect(int page)
@@ -151,7 +151,7 @@ public class UIManagementSetEffect : MonoBehaviour
 
             bool setEnabled = setData != null;
             _setTitleText.text = setEnabled ? setData.Name : "비활성화";
-            _setDescriptionText.text = setEnabled ? Utility.GetSetEffectDescription(setData) : "적용중인 효과 없음";
+            //_setDescriptionText.text = setEnabled ? Utility.GetFoodTypeSetEffectDescription(setData) : "적용중인 효과 없음";
         }
 
     }
@@ -180,7 +180,7 @@ public class UIManagementSetEffect : MonoBehaviour
             _setCameraGroup.TweenAnchoredPosition(new Vector2(0, -6), 0.3f, Ease.Smoothstep);
             _scrollSwipe.ChagneIndex(0);
             OnChangeSetEffect(0);
-            OnChangeSlotData();
+            //OnChangeSlotData();
             return;
         }
 
@@ -189,7 +189,7 @@ public class UIManagementSetEffect : MonoBehaviour
             _setCameraGroup.TweenAnchoredPosition(new Vector2(-546, -6), 0.3f, Ease.Smoothstep);
             _scrollSwipe.ChagneIndex(0);
             OnChangeSetEffect(0);
-            OnChangeSlotData();
+            //OnChangeSlotData();
             return;
         }
     }

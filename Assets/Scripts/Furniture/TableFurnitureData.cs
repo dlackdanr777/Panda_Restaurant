@@ -1,6 +1,5 @@
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "TableFurnitureData", menuName = "Scriptable Object/FurnitureData/TableFurnitureData")]
 public class TableFurnitureData : FurnitureData
 {
     [Space]
@@ -11,7 +10,14 @@ public class TableFurnitureData : FurnitureData
     [SerializeField] private Sprite _chairSprite;
     public Sprite ChairSprite => _chairSprite;
 
-    [Tooltip("우측 의자 스프라이트(없으면 좌측 스프라이트로 대체함)")]
-    [SerializeField] private Sprite _rightChairSprite;
+    private Sprite _rightChairSprite;
     public Sprite RightChairSprite => _rightChairSprite;
+
+
+    public TableFurnitureData(Sprite sprite, Sprite thumbnailSprite, string id, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, float scale, Sprite leftChair, Sprite rightChair) : base(sprite, thumbnailSprite, id, name, moneyType, buyScore, buyPrice, furnitureType, foodType, addScore, euipEffectType, effectValue)
+    {
+        _scale = scale;
+        _chairSprite = sprite;
+        _rightChairSprite = thumbnailSprite;
+    }
 }

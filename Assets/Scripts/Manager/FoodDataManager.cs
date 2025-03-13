@@ -140,7 +140,7 @@ public class FoodDataManager : MonoBehaviour
             }
 
             string name = row[1];
-            FoodType foodType = GetFoodType(row[2].Replace(" ", ""));
+            FoodType foodType = Utility.GetFoodType(row[2].Replace(" ", ""));
             string description = row[3];
             string needItem = row[5].Replace(" ", "");
             if (!int.TryParse(row[6].Replace(" ", ""), out int buyScore))
@@ -187,21 +187,5 @@ public class FoodDataManager : MonoBehaviour
 
         else
             return str;
-    }
-
-
-    private FoodType GetFoodType(string foodTypeStr)
-    {
-        return foodTypeStr switch
-        {
-            "내추럴" => FoodType.Natural,
-            "전통적" => FoodType.Traditional,
-            "빈티지" => FoodType.Vintage,
-            "럭셔리" => FoodType.Luxury,
-            "모던" => FoodType.Modern,
-            "코지" => FoodType.Cozy,
-            "트로피컬" => FoodType.Tropical,
-            _ => throw new System.Exception("해당 음식 문자열이 이상합니다: " + foodTypeStr)
-        };
     }
 }
