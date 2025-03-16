@@ -13,9 +13,11 @@ public class StageInfo
 
     public event Action<ERestaurantFloorType, FurnitureType> OnChangeFurnitureHandler;
     public event Action OnGiveFurnitureHandler;
+    public event Action OnChangeFurnitureSetDataHandler;
 
     public event Action<ERestaurantFloorType, KitchenUtensilType> OnChangeKitchenUtensilHandler;
     public event Action OnGiveKitchenUtensilHandler;
+    public event Action OnChangeKitchenUtensilSetDataHandler;
 
     private EStage _stage;
     public EStage Stage => _stage;
@@ -43,9 +45,14 @@ public class StageInfo
     private KitchenUtensilData[,] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)ERestaurantFloorType.Length, (int)KitchenUtensilType.Length];
 
     private CoinAreaData[,] _coinAreaDatas = new CoinAreaData[(int)ERestaurantFloorType.Length, (int)TableType.Length * 2];
-
     private GarbageAreaData[,] _garbageAreaDatas = new GarbageAreaData[(int)ERestaurantFloorType.Length, (int)TableType.Length];
 
+    private FoodType[] _furnitureEnabledFoodType = new FoodType[(int)ERestaurantFloorType.Length];
+    private FoodType[] _kitchenuntensilEnabledFoodType = new FoodType[(int)ERestaurantFloorType.Length];
+
+    //서버에 저장 X
+    private List<string> _collectFurnitureSetDataList = new List<string>();
+    private List<string> _collectKitchenUtensilSetDataList = new List<string>();
 
     public StageInfo()
     {
@@ -308,7 +315,6 @@ public class StageInfo
 
     #region FurnitureData
 
-
     public void GiveFurniture(FurnitureData data)
     {
         if (_giveFurnitureList.Contains(data.Id))
@@ -318,6 +324,7 @@ public class StageInfo
         }
 
         _giveFurnitureList.Add(data.Id);
+        CheckCollectFurnitureSetData();
         OnGiveFurnitureHandler?.Invoke();
     }
 
@@ -337,18 +344,12 @@ public class StageInfo
             return;
         }
 
-        _giveFurnitureList.Add(id);
-        OnGiveFurnitureHandler?.Invoke();
+        GiveFurniture(data);
     }
 
     public int GetGiveFurnitureCount()
     {
         return _giveFurnitureList.Count;
-    }
-
-    public FoodType GetEquipFurnitureSetType(ERestaurantFloorType type)
-    {
-
     }
 
 
@@ -419,6 +420,7 @@ public class StageInfo
         }
 
         _equipFurnitureDatas[(int)type, (int)data.Type] = data;
+        CheckFurnitureFoodType(type);
         OnChangeFurnitureHandler?.Invoke(type, data.Type);
     }
 
@@ -437,6 +439,7 @@ public class StageInfo
     public void SetNullEquipFurniture(ERestaurantFloorType floor, FurnitureType type)
     {
         _equipFurnitureDatas[(int)floor, (int)type] = null;
+        CheckFurnitureFoodType(floor);
         OnChangeFurnitureHandler?.Invoke(floor, type);
     }
 
@@ -450,7 +453,6 @@ public class StageInfo
 
     #region KitchenData
 
- 
     public void GiveKitchenUtensil(KitchenUtensilData data)
     {
         if (_giveKitchenUtensilList.Contains(data.Id))
@@ -460,6 +462,7 @@ public class StageInfo
         }
 
         _giveKitchenUtensilList.Add(data.Id);
+        CheckCollectKitchenUtensilSetData();
         OnGiveKitchenUtensilHandler?.Invoke();
     }
 
@@ -539,6 +542,7 @@ public class StageInfo
         }
 
         _equipKitchenUtensilDatas[(int)type, (int)data.Type] = data;
+        CheckKitchenUtensilFoodType(type);
         OnChangeKitchenUtensilHandler?.Invoke(type, data.Type);
     }
 
@@ -558,6 +562,7 @@ public class StageInfo
     public void SetNullEquipKitchenUtensil(ERestaurantFloorType floor, KitchenUtensilType type)
     {
         _equipKitchenUtensilDatas[(int)floor, (int)type] = null;
+        CheckKitchenUtensilFoodType(floor);
         OnChangeKitchenUtensilHandler?.Invoke(floor, type);
     }
 
@@ -568,6 +573,190 @@ public class StageInfo
 
     #endregion
 
+    #region EffectSetData
+
+
+    public FoodType GetEquipFurnitureFoodType(ERestaurantFloorType type)
+    {
+        return _furnitureEnabledFoodType[(int)type];
+    }
+
+
+    public FoodType GetEquipKitchenFoodType(ERestaurantFloorType type)
+    {
+        return _kitchenuntensilEnabledFoodType[(int)type];
+    }
+
+
+    public int GetFurnitureFoodTypeCount(FoodType type)
+    {
+        int count = 0;
+        for(int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
+        {
+            FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]);
+            if(data.FoodType == type)
+                count++;
+        }
+        return count;
+    }
+
+
+    public int GetKitchenUtensilFoodTypeCount(FoodType type)
+    {
+        int count = 0;
+        for (int i = 0, cnt = _giveKitchenUtensilList.Count; i < cnt; ++i)
+        {
+            KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]);
+            if (data.FoodType == type)
+                count++;
+        }
+        return count;
+    }
+
+
+    public List<string> GetCollectKitchenUtensilSetDataList()
+    {
+        return _collectKitchenUtensilSetDataList;
+    }
+
+    public List<string> GetCollectFurnitureSetDataList()
+    {
+        return _collectFurnitureSetDataList;
+    }
+
+
+    private void CheckKitchenUtensilFoodType()
+    {
+        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            CheckFurnitureFoodType(floor);
+        }
+    }
+
+    private void CheckFurnitureFoodType()
+    {
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            CheckKitchenUtensilFoodType(floor);
+        }
+    }
+
+    private void CheckFurnitureFoodType(ERestaurantFloorType floor)
+    {
+        int floorIndex = (int)floor;
+
+        if (_equipFurnitureDatas[floorIndex, 0] == null)
+        {
+            _furnitureEnabledFoodType[floorIndex] = FoodType.None;
+            return;
+        }
+        FoodType foodType = _equipFurnitureDatas[floorIndex, 0].FoodType;
+
+        for (int i = 1, cnt = (int)FurnitureType.Length; i < cnt; ++i)
+        {
+            FurnitureData data = _equipFurnitureDatas[floorIndex, i];
+            if (data == null)
+            {
+                _furnitureEnabledFoodType[floorIndex] = FoodType.None;
+                return;
+            }
+
+            if(foodType != data.FoodType)
+            {
+                _furnitureEnabledFoodType[floorIndex] = FoodType.None;
+                return;
+            }
+        }
+
+        _furnitureEnabledFoodType[floorIndex] = foodType;
+    }
+
+
+    private void CheckKitchenUtensilFoodType(ERestaurantFloorType floor)
+    {
+        int floorIndex = (int)floor;
+        KitchenUtensilData data = _equipKitchenUtensilDatas[floorIndex, 0];
+        if (data == null)
+        {
+            _kitchenuntensilEnabledFoodType[floorIndex] = FoodType.None;
+            return;
+        }
+        FoodType foodType = _equipKitchenUtensilDatas[floorIndex, 0].FoodType;
+
+        for (int i = 1, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
+        {
+            data = _equipKitchenUtensilDatas[floorIndex, i];
+            if (data == null)
+            {
+                _kitchenuntensilEnabledFoodType[floorIndex] = FoodType.None;
+                return;
+            }
+
+            if (foodType != data.FoodType)
+            {
+                _kitchenuntensilEnabledFoodType[floorIndex] = FoodType.None;
+                return;
+            }
+        }
+
+        _kitchenuntensilEnabledFoodType[floorIndex] = foodType;
+    }
+
+    private void CheckCollectFurnitureSetData()
+    {
+        _collectFurnitureSetDataList.Clear();
+       Dictionary<string, int> _setDataCountDic = new Dictionary<string, int>();
+        for(int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
+        {
+            FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]);
+            if (data == null)
+                throw new Exception("해당 id를 가진 가구 데이터가 존재하지 않습니다: " + _giveFurnitureList[i]);
+
+            if (_setDataCountDic.ContainsKey(data.Id))
+                _setDataCountDic[data.Id]++;
+            else
+                _setDataCountDic.Add(data.Id, 1);
+
+        }
+
+        foreach(var v in _setDataCountDic)
+        {
+            if (v.Value < ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
+                continue;
+
+            _collectFurnitureSetDataList.Add(v.Key);
+        }
+    }
+
+    private void CheckCollectKitchenUtensilSetData()
+    {
+        _collectKitchenUtensilSetDataList.Clear();
+        Dictionary<string, int> _setDataCountDic = new Dictionary<string, int>();
+        for (int i = 0, cnt = _giveKitchenUtensilList.Count; i < cnt; ++i)
+        {
+            KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]);
+            if (data == null)
+                throw new Exception("해당 id를 가진 주방 기구 데이터가 존재하지 않습니다: " + _giveKitchenUtensilList[i]);
+
+            if (_setDataCountDic.ContainsKey(data.Id))
+                _setDataCountDic[data.Id]++;
+            else
+                _setDataCountDic.Add(data.Id, 1);
+
+        }
+
+        foreach (var v in _setDataCountDic)
+        {
+            if (v.Value < ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
+                continue;
+
+            _collectKitchenUtensilSetDataList.Add(v.Key);
+        }
+    }
+
+    #endregion
 
     #region TableData
 
@@ -712,6 +901,12 @@ public class StageInfo
 
         ConvertListToCoinAreaDataArray(loadData.CoinAreaDataList);
         ConvertListToGarbageAreaDataArray(loadData.GarbageAreaDataList);
+
+        CheckKitchenUtensilFoodType();
+        CheckFurnitureFoodType();
+
+        CheckCollectKitchenUtensilSetData();
+        CheckCollectFurnitureSetData();
         return true;
     }
 

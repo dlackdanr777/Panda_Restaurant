@@ -5,6 +5,7 @@ using Muks.DataBind;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public static class UserInfo
@@ -33,9 +34,11 @@ public static class UserInfo
 
     public static event Action<ERestaurantFloorType, FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
+    public static event Action OnChangeFurnitureSetDataHandler;
 
     public static event Action<ERestaurantFloorType, KitchenUtensilType> OnChangeKitchenUtensilHandler;
     public static event Action OnGiveKitchenUtensilHandler;
+    public static event Action OnChangeKitchenUtensilSetDataHandler;
 
     public static event Action OnDoneChallengeHandler;
     public static event Action OnClearChallengeHandler;
@@ -189,9 +192,11 @@ public static class UserInfo
 
             _stageInfos[i].OnChangeFurnitureHandler += OnChangeFurnitureEvent;
             _stageInfos[i].OnGiveFurnitureHandler += OnGiveFurnitureEvent;
+            _stageInfos[i].OnChangeFurnitureSetDataHandler += OnChangeFurnitureSetDataEvent;
 
             _stageInfos[i].OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEvent;
             _stageInfos[i].OnGiveKitchenUtensilHandler += OnGiveKitchenUtensilEvent;
+            _stageInfos[i].OnChangeKitchenUtensilSetDataHandler += OnChangeKitchenUtensilSetDataEvent;
         }
     }
 
@@ -231,6 +236,11 @@ public static class UserInfo
         OnGiveFurnitureHandler?.Invoke();
     }
 
+    private static void OnChangeFurnitureSetDataEvent()
+    {
+        OnChangeFurnitureSetDataHandler?.Invoke();
+    }
+
 
     private static void OnChangeKitchenUtensilEvent(ERestaurantFloorType floor, KitchenUtensilType type)
     {
@@ -241,6 +251,12 @@ public static class UserInfo
     {
         OnGiveKitchenUtensilHandler?.Invoke();
     }
+
+    private static void OnChangeKitchenUtensilSetDataEvent()
+    {
+        OnChangeKitchenUtensilSetDataHandler?.Invoke();
+    }
+
 
     #endregion
 
@@ -880,13 +896,6 @@ public static class UserInfo
 
     #region FurnitureData
 
-    public static SetData GetEquipFurnitureSetData(EStage stage, ERestaurantFloorType type)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetEquipFurnitureSetData(type);
-    }
-
-
     public static void GiveFurniture(EStage stage, FurnitureData data)
     {
         int stageIndex = (int)stage;
@@ -977,14 +986,6 @@ public static class UserInfo
 
     #region KitchenData
 
-
-    public static SetData GetEquipKitchenUntensilSetData(EStage stage, ERestaurantFloorType type)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetEquipKitchenUntensilSetData(type);
-    }
-
-
     public static void GiveKitchenUtensil(EStage stage, KitchenUtensilData data)
     {
         int stageIndex = (int)stage;
@@ -1069,6 +1070,46 @@ public static class UserInfo
 
     #endregion
 
+    #region EffectSetData
+
+    public static FoodType GetEquipFurnitureFoodType(EStage stage, ERestaurantFloorType type)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetEquipFurnitureFoodType(type);
+    }
+
+    public static FoodType GetEquipKitchenUtensilFoodType(EStage stage, ERestaurantFloorType type)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetEquipKitchenFoodType(type);
+    }
+
+    public static int GetFurnitureFoodTypeCount(EStage stage, FoodType foodType)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetFurnitureFoodTypeCount(foodType);
+    }
+
+
+    public static int GetKitchenUtensilFoodTypeCount(EStage stage, FoodType foodType)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetKitchenUtensilFoodTypeCount(foodType);
+    }
+
+    public static List<string> GetCollectKitchenUtensilSetDataList(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetCollectKitchenUtensilSetDataList();
+    }
+
+    public static List<string> GetCollectFurnitureSetDataList(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetCollectFurnitureSetDataList();
+    }
+
+    #endregion
 
     #region GarbageAndCoinData
 

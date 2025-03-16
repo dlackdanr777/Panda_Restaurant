@@ -88,11 +88,12 @@ public class FurnitureDataManager : MonoBehaviour
                 string spriteName = sprite.name;
                 bool isThumbnail = spriteName.Contains("썸네일"); // 썸네일 여부 확인
                 bool isChair = spriteName.Contains("의자");
-
                 string key = CutStringUpToChar(spriteName, '_'); // 기본 키 생성
-                DebugLog.Log(spriteName);
                 if (isThumbnail)
+                {
                     _thumbnailSpriteDic.Add(key, sprite);
+                }
+
                 else if(isChair)
                 {
                     if (spriteName.Contains("좌"))
@@ -106,7 +107,6 @@ public class FurnitureDataManager : MonoBehaviour
                     else
                     {
                         _leftChairSpriteDic.Add(key, sprite);
-                        _rightChairSpriteDic.Add(key, sprite);
                     }
 
                 }
@@ -136,7 +136,6 @@ public class FurnitureDataManager : MonoBehaviour
         {
             string[] row = data[i].Split(',');
             string id = row[0].Trim();
-            DebugLog.Log(id);
             if (string.IsNullOrWhiteSpace(id))
             {
                 Debug.LogError("Id값이 이상합니다: " + id);
@@ -147,6 +146,7 @@ public class FurnitureDataManager : MonoBehaviour
             string attribute = row[2].Trim();
             FoodType foodType = Utility.GetFoodType(attribute);
 
+            string setId = (row[3].Trim());
             int addScore = int.Parse(row[4].Trim());
 
             int effectValue = int.Parse(row[5].Trim());
@@ -171,6 +171,7 @@ public class FurnitureDataManager : MonoBehaviour
                 sprite,
                 thumbnailSprite,
                 id,
+                setId,
                 name,
                 moneyType,
                 unlockScore,
@@ -205,7 +206,6 @@ public class FurnitureDataManager : MonoBehaviour
         {
             string[] row = data[i].Split(',');
             string id = row[0].Trim();
-            DebugLog.Log(id);
             if (string.IsNullOrWhiteSpace(id))
             {
                 Debug.LogError("Id값이 이상합니다: " + id);
@@ -215,11 +215,11 @@ public class FurnitureDataManager : MonoBehaviour
             string name = row[1].Trim();
             string attribute = row[2].Trim();
             FoodType foodType = Utility.GetFoodType(attribute);
-
+            string setId = (row[3].Trim());
             int table1AddScore = int.Parse(row[4].Trim());
 
             int effectValue = int.Parse(row[5].Trim());
-            MoneyType moneyType = row[6].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
+            MoneyType moneyType = row[6].Trim() == "게임 머니" || row[6].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
             int table1BuyScore = int.Parse(row[7].Trim());
             int table1BuyPrice = int.Parse(row[8].Trim());
 
@@ -262,14 +262,15 @@ public class FurnitureDataManager : MonoBehaviour
             if (!_rightChairSpriteDic.TryGetValue(id, out Sprite rightChairSprite))
             {
                 DebugLog.LogError($"우측 의자 스프라이트가 없습니다: {id}");
-                continue;
+                rightChairSprite = null;
             }
 
 
             FurnitureData table1Data = new TableFurnitureData(
                 sprite,
                 thumbnailSprite,
-                id,
+                id + "_01",
+                setId,
                 name,
                 moneyType,
                 table1BuyScore,
@@ -287,7 +288,8 @@ public class FurnitureDataManager : MonoBehaviour
             FurnitureData table2Data = new TableFurnitureData(
     sprite,
     thumbnailSprite,
-    id,
+    id + "_02",
+    setId,
     name,
     moneyType,
     table2BuyScore,
@@ -305,7 +307,8 @@ public class FurnitureDataManager : MonoBehaviour
             FurnitureData table3Data = new TableFurnitureData(
 sprite,
 thumbnailSprite,
-id,
+id + "_03",
+setId,
 name,
 moneyType,
 table3BuyScore,
@@ -323,7 +326,8 @@ rightChairSprite
             FurnitureData table4Data = new TableFurnitureData(
 sprite,
 thumbnailSprite,
-id,
+id + "_04",
+setId,
 name,
 moneyType,
 table4BuyScore,
@@ -341,7 +345,8 @@ rightChairSprite
             FurnitureData table5Data = new TableFurnitureData(
 sprite,
 thumbnailSprite,
-id,
+id + "_05",
+setId,
 name,
 moneyType,
 table5BuyScore,

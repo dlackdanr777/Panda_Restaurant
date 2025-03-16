@@ -107,6 +107,7 @@ public static class Utility
     {
         return type switch
         {
+            FoodType.None => "없음",
             FoodType.Natural => "내추럴",
             FoodType.Traditional => "전통적",
             FoodType.Vintage => "빈티지",
@@ -132,6 +133,40 @@ public static class Utility
             _ => throw new System.Exception("해당 음식 문자열이 이상합니다: " + foodTypeStr)
         };
     }
+
+    public static FoodType GetFoodTypeByFurnitureSetId(string setId)
+    {
+        return setId switch
+        {
+            "없음" => FoodType.None,
+            "SET01" => FoodType.Natural,
+            "SET04" => FoodType.Traditional,
+            "SET03" => FoodType.Vintage,
+            "SET06" => FoodType.Luxury,
+            "SET02" => FoodType.Modern,
+            "SET07" => FoodType.Cozy,
+            "SET05" => FoodType.Tropical,
+            _ => throw new System.Exception("해당 음식 문자열이 이상합니다: " + setId)
+        };
+    }
+
+    public static FoodType GetFoodTypeByKitchenSetId(string setId)
+    {
+        return setId switch
+        {
+            "없음" => FoodType.None,
+            "KITCHEN01" => FoodType.Natural,
+            "KITCHEN04" => FoodType.Traditional,
+            "KITCHEN03" => FoodType.Vintage,
+            "KITCHEN06" => FoodType.Luxury,
+            "KITCHEN02" => FoodType.Modern,
+            "KITCHEN07" => FoodType.Cozy,
+            "KITCHEN05" => FoodType.Tropical,
+            _ => throw new System.Exception("해당 음식 문자열이 이상합니다: " + setId)
+        };
+    }
+
+
 
     public static string GachaItemRankStringConverter(GachaItemRank rank)
     {

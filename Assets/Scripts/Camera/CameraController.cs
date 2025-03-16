@@ -317,7 +317,7 @@ public class CameraController : MonoBehaviour
         }
 
         // 🔹 최종 이동 적용 (현재 위치에서 이동값 추가)
-        Vector3 moveAmount = new Vector3(-moveDelta.x, -moveDelta.y, 0) * Time.deltaTime * _dragSpeed * speedFactor;
+        Vector3 moveAmount = new Vector3(-moveDelta.x, -moveDelta.y, 0) * Time.fixedDeltaTime * _dragSpeed * speedFactor;
         _cam.transform.position += moveAmount;  // ❗ 현재 위치에서 이동값을 더함 (덮어씌우는 문제 해결)
 
         // 🔹 새로운 기준점 설정 (이전 터치 위치 업데이트)

@@ -327,15 +327,11 @@ public class FurnitureGroup : MonoBehaviour
 
     private void OnChangeFoodTypeEvent()
     {
-        SetData setData = UserInfo.GetEquipFurnitureSetData(UserInfo.CurrentStage, _floorType);
-
-        if (setData == null)
-        {
-            _foodType = FoodType.Length;
+        FoodType foodType = UserInfo.GetEquipFurnitureFoodType(UserInfo.CurrentStage, _floorType);
+        if (_foodType == foodType)
             return;
-        }
 
-        _foodType = setData.FoodType;
+        _foodType = foodType;
     }
 
 

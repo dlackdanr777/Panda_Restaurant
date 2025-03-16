@@ -147,11 +147,11 @@ public class UIManagementSetEffect : MonoBehaviour
 
         else if(page == 0)
         {
-            SetData setData = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureSetData(UserInfo.CurrentStage, _currentFloorType) : UserInfo.GetEquipKitchenUntensilSetData(UserInfo.CurrentStage, _currentFloorType);
+            FoodType foodType = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureFoodType(UserInfo.CurrentStage, _currentFloorType) : UserInfo.GetEquipKitchenUtensilFoodType(UserInfo.CurrentStage, _currentFloorType);
 
-            bool setEnabled = setData != null;
-            _setTitleText.text = setEnabled ? setData.Name : "비활성화";
-            //_setDescriptionText.text = setEnabled ? Utility.GetFoodTypeSetEffectDescription(setData) : "적용중인 효과 없음";
+            bool setEnabled = foodType != FoodType.None;
+            _setTitleText.text = setEnabled ? Utility.FoodTypeStringConverter(foodType) + " 세트" : "비활성화";
+            _setDescriptionText.text = !setEnabled ? "적용중인 효과 없음" : _currentSetEffectType == SetEffectType.Furniture ? Utility.GetFurnitureFoodTypeSetEffectDescription(foodType) : Utility.GetKitchenFoodTypeSetEffectDescription(foodType);
         }
 
     }

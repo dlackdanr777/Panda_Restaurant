@@ -7,5 +7,6 @@ public enum FoodType
     Modern,
     Luxury,
     Traditional,
-    Length
+    Length,
+    None,
 }

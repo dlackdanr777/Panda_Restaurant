@@ -20,12 +20,13 @@ public class FurnitureData : ShopData
     private int _effectValue;
     public int EffectValue => _effectValue;
 
-    public FurnitureData(Sprite sprite, Sprite thumbnailSprite, string id, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType,  FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue)
+    public FurnitureData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType,  FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue)
     {
         _sprite = sprite;
         _thumbnailSPrite = thumbnailSprite;
         _name = name;
         _id = id;
+        _setId = setId;
         _foodType = foodType;
         _moneyType = moneyType;
         _buyScore = buyScore;

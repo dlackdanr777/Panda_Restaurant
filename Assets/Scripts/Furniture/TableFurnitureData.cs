@@ -14,10 +14,10 @@ public class TableFurnitureData : FurnitureData
     public Sprite RightChairSprite => _rightChairSprite;
 
 
-    public TableFurnitureData(Sprite sprite, Sprite thumbnailSprite, string id, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, float scale, Sprite leftChair, Sprite rightChair) : base(sprite, thumbnailSprite, id, name, moneyType, buyScore, buyPrice, furnitureType, foodType, addScore, euipEffectType, effectValue)
+    public TableFurnitureData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, float scale, Sprite leftChair, Sprite rightChair) : base(sprite, thumbnailSprite, id, setId, name, moneyType, buyScore, buyPrice, furnitureType, foodType, addScore, euipEffectType, effectValue)
     {
         _scale = scale;
-        _chairSprite = sprite;
-        _rightChairSprite = thumbnailSprite;
+        _chairSprite = leftChair;
+        _rightChairSprite = rightChair;
     }
 }

@@ -6,7 +6,7 @@ public class UIBetaTestSurvey : MonoBehaviour
     [Header("Components")]
     [SerializeField] private Button _surveyButton;
     [SerializeField] private Image _alramImage;
-
+/*
     private void Awake()
     {
         _surveyButton.onClick.AddListener(OnButtonClicked);
@@ -19,9 +19,9 @@ public class UIBetaTestSurvey : MonoBehaviour
     {
         OnGiveFurnitureEvent();
     }
+*/
 
-
-    private void OnGiveFurnitureEvent()
+   /* private void OnGiveFurnitureEvent()
     {
         bool isActive = UserInfo.IsActivatedFurnitureEffectSet(EStage.Stage1, "SET01");
         _alramImage.gameObject.SetActive(isActive);
@@ -38,5 +38,5 @@ public class UIBetaTestSurvey : MonoBehaviour
         }
 
         PopupManager.Instance.ShowDisplayText("원스토어 리워드를 참가하시려면\n가구 '평범한 세트' 를 완성해 주세요!");
-    }
+    }*/
 }

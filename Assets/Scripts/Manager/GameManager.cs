@@ -2,7 +2,6 @@ using BackEnd;
 using Muks.BackEnd;
 using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -434,20 +433,18 @@ public class GameManager : MonoBehaviour
             _addSetFoodPriceMul[floorIndex, foodTypeIndex] = 0;
         }
 
-        SetData kitchenSetData = UserInfo.GetEquipKitchenUntensilSetData(UserInfo.CurrentStage, floor);
-        SetData furnitureSetData = UserInfo.GetEquipFurnitureSetData(UserInfo.CurrentStage, floor);
+        FoodType kitchenFoodType = UserInfo.GetEquipKitchenUtensilFoodType(UserInfo.CurrentStage, floor);
+        FoodType furnitureFoodType = UserInfo.GetEquipFurnitureFoodType(UserInfo.CurrentStage, floor);
 
-        if (kitchenSetData is FoodTypePriceUpSetData)
-            _addSetFoodPriceMul[floorIndex, (int)kitchenSetData.FoodType] += kitchenSetData.Value;
+        if(kitchenFoodType != FoodType.None)
+        {
+            _addSetCookSpeedMul[floorIndex, (int)kitchenFoodType] += 10;
+        }
 
-        else if (kitchenSetData is CookingSpeedUpSetData)
-            _addSetCookSpeedMul[floorIndex, (int)kitchenSetData.FoodType] += kitchenSetData.Value;
-
-        if (furnitureSetData is FoodTypePriceUpSetData)
-            _addSetFoodPriceMul[floorIndex, (int)furnitureSetData.FoodType] += furnitureSetData.Value;
-
-        else if (furnitureSetData is CookingSpeedUpSetData)
-            _addSetCookSpeedMul[floorIndex, (int)furnitureSetData.FoodType] += furnitureSetData.Value;
+        if(furnitureFoodType != FoodType.None)
+        {
+            _addSetFoodPriceMul[floorIndex, (int)furnitureFoodType] += 10;
+        }
     }
 
 

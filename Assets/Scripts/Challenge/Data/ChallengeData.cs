@@ -304,7 +304,7 @@ public class Type13ChallengeData : ChallengeData
 }
 
 
-/// <summary>레스토랑 가구 세트 갯수 달성 도전과제</summary>
+/// <summary>누적 식당 가구 세트 획득 달성(속성 구분 없이) 도전과제 </summary>
 public class Type14ChallengeData : ChallengeData
 {
     protected int _count;
@@ -324,7 +324,7 @@ public class Type14ChallengeData : ChallengeData
 }
 
 
-/// <summary>주방 가구 세트 갯수 달성 도전과제</summary>
+/// <summary>누적 주방 가구 세트 획득 달성(속성 구분 없이) 도전과제</summary>
 public class Type15ChallengeData : ChallengeData
 {
     protected int _count;
@@ -344,7 +344,7 @@ public class Type15ChallengeData : ChallengeData
 }
 
 
-/// <summary>특정 레스토랑 가구 세트 달성 도전과제</summary>
+/// <summary>특정 속성 식당 세트 효과 달성 달성 도전과제</summary>
 public class Type16ChallengeData : ChallengeData
 {
     protected string _setId;
@@ -364,7 +364,7 @@ public class Type16ChallengeData : ChallengeData
 }
 
 
-/// <summary>특정 주방 가구 세트 달성 도전과제</summary>
+/// <summary>특정 속성 주방 세트 효과 달성 달성 도전과제</summary>
 public class Type17ChallengeData : ChallengeData
 {
     protected string _setId;

@@ -115,8 +115,8 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnGiveKitchenUtensilHandler += Type13ChallengeCheck;
         UserInfo.OnGiveFurnitureHandler += Type14ChallengeCheck;
         UserInfo.OnGiveKitchenUtensilHandler += Type15ChallengeCheck;
-        UserInfo.OnGiveFurnitureHandler += Type16ChallengeCheck;
-        UserInfo.OnGiveKitchenUtensilHandler += Type17ChallengeCheck;
+        UserInfo.OnChangeFurnitureHandler += (floor, type) => Type16ChallengeCheck();
+        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) =>  Type17ChallengeCheck();
         UserInfo.OnGiveFurnitureHandler += Type18ChallengeCheck;
         UserInfo.OnGiveKitchenUtensilHandler += Type19ChallengeCheck;
 
@@ -195,7 +195,7 @@ public class ChallengeManager : MonoBehaviour
         Dictionary<string, ChallengeData> dic = new Dictionary<string, ChallengeData>();
         string[] data = csvData.text.Split(new char[] { '\n' });
         string[] row;
-
+        DebugLog.Log(challenges + ": " + data.Length);
         for (int i = 1, cnt = data.Length - 1; i < cnt; ++i)
         {
             row = data[i].Split(new char[] { ',' });
@@ -553,23 +553,58 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE14:
                 Type14ChallengeData data14 = (Type14ChallengeData)data;
-                int furnitureSetCount = UserInfo.GetActivatedFurnitureEffectSetCount(UserInfo.CurrentStage);
-                return furnitureSetCount == 0 ? 0 : Math.Min(1, (float)furnitureSetCount / data14.Count);
+                int collectFurnitureSetCount = UserInfo.GetCollectFurnitureSetDataList(UserInfo.CurrentStage).Count;
+                return collectFurnitureSetCount == 0 ? 0 : Math.Min(1, (float)collectFurnitureSetCount / data14.Count);
 
             case ChallengeType.TYPE15:
                 Type15ChallengeData data15 = (Type15ChallengeData)data;
-                int kitchenUtensilSetCount = UserInfo.GetActivatedKitchenUtensilEffectSetCount(UserInfo.CurrentStage);
-                return kitchenUtensilSetCount == 0 ? 0 : Math.Min(1, (float)kitchenUtensilSetCount / data15.Count);
+                int collectKitchenUtensilSetCount = UserInfo.GetCollectKitchenUtensilSetDataList(UserInfo.CurrentStage).Count;
+                return collectKitchenUtensilSetCount == 0 ? 0 : Math.Min(1, (float)collectKitchenUtensilSetCount / data15.Count);
 
             case ChallengeType.TYPE16:
                 Type16ChallengeData data16 = (Type16ChallengeData)data;
-                int giveFurnitureSetCount = UserInfo.GetEffectSetFurnitureCount(UserInfo.CurrentStage, data16.SetId);
-                return giveFurnitureSetCount == 0 ? 0 : Math.Min(1, (float)giveFurnitureSetCount / ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT);
+
+                List<int> _equipSetList = new List<int>();
+                for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+                {
+                    ERestaurantFloorType floor = (ERestaurantFloorType)i;
+                    int equipFurnitureSetCount = 0;
+                    for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
+                    {
+                        FurnitureType type = (FurnitureType)j;
+                        FurnitureData furnitureData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, floor, type);
+
+                        if (furnitureData == null || !furnitureData.SetId.Equals(data16.SetId))
+                            continue;
+
+                        equipFurnitureSetCount++;
+                    }
+                    _equipSetList.Add(equipFurnitureSetCount);
+                }
+                int maxFurnitureCount = _equipSetList.Max();
+                return maxFurnitureCount == 0 ? 0 : Math.Min(1, (float)maxFurnitureCount / ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT);
 
             case ChallengeType.TYPE17:
                 Type17ChallengeData data17 = (Type17ChallengeData)data;
-                int giveKitchenUntensilSetCount = UserInfo.GetEffectSetKitchenUtensilCount(UserInfo.CurrentStage, data17.SetId);
-                return giveKitchenUntensilSetCount == 0 ? 0 : Math.Min(1, (float)giveKitchenUntensilSetCount / ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT);
+                List<int> _equipKitchenSetList = new List<int>();
+                for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+                {
+                    ERestaurantFloorType floor = (ERestaurantFloorType)i;
+                    int equipKitchenSetCount = 0;
+                    for (int j = 0, cntJ = (int)KitchenUtensilType.Length; j < cntJ; ++j)
+                    {
+                        KitchenUtensilType type = (KitchenUtensilType)j;
+                        KitchenUtensilData kitchenData = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, floor, type);
+
+                        if (kitchenData == null || !kitchenData.SetId.Equals(data17.SetId))
+                            continue;
+
+                        equipKitchenSetCount++;
+                    }
+                    _equipKitchenSetList.Add(equipKitchenSetCount);
+                }
+                int maxKitchenCount = _equipKitchenSetList.Max();
+                return maxKitchenCount == 0 ? 0 : Math.Min(1, (float)maxKitchenCount / ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT);
 
             case ChallengeType.TYPE18:
                 Type18ChallengeData data18 = (Type18ChallengeData)data;
@@ -1341,11 +1376,11 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type14ChallengeCheck()
     {
-        int furnitureSetCount = UserInfo.GetActivatedFurnitureEffectSetCount(UserInfo.CurrentStage);
+        DebugLog.Log("실행14");
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
-
+        int collectFurnitureSetCount = UserInfo.GetCollectFurnitureSetDataList(UserInfo.CurrentStage).Count;
         foreach (Type14ChallengeData data in _type14ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1354,7 +1389,8 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (furnitureSetCount < data.Count)
+
+            if (collectFurnitureSetCount < data.Count)
                 continue;
 
             switch (data.Challenges)
@@ -1388,11 +1424,11 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type15ChallengeCheck()
     {
-        int kitchenUtensilSetCount = UserInfo.GetActivatedKitchenUtensilEffectSetCount(UserInfo.CurrentStage);
+        DebugLog.Log("실행15");
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
-
+        int collectKitchenUtensilSetCount = UserInfo.GetCollectKitchenUtensilSetDataList(UserInfo.CurrentStage).Count;
         foreach (Type15ChallengeData data in _type15ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -1401,7 +1437,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (kitchenUtensilSetCount < data.Count)
+            if (collectKitchenUtensilSetCount < data.Count)
                 continue;
 
             switch (data.Challenges)
@@ -1435,9 +1471,27 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type16ChallengeCheck()
     {
+        DebugLog.Log("실행16");
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
+
+        Dictionary<ERestaurantFloorType, List<string>> equipSetDataDic = new Dictionary<ERestaurantFloorType, List<string>>();
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            equipSetDataDic.Add(floor, new List<string>());
+            for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
+            {
+                FurnitureType type = (FurnitureType)j;
+                FurnitureData data = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, floor, type);
+
+                if (data == null)
+                    continue;
+
+                equipSetDataDic[floor].Add(data.SetId);
+            }
+        }
 
         foreach (Type16ChallengeData data in _type16ChallengeDataDic.Values)
         {
@@ -1447,7 +1501,17 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (UserInfo.GetEffectSetFurnitureCount(UserInfo.CurrentStage, data.SetId) < ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
+            int maxSameSetIdCount = 0;
+
+            foreach (var kvp in equipSetDataDic)
+            {
+                int count = kvp.Value.Count(setId => setId == data.SetId);
+                maxSameSetIdCount = Mathf.Max(maxSameSetIdCount, count);
+            }
+
+            DebugLog.Log(maxSameSetIdCount);
+            // 가장 많은 동일한 SetId 개수가 설정 값보다 작다면 스킵
+            if (maxSameSetIdCount < ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
                 continue;
 
             switch (data.Challenges)
@@ -1479,11 +1543,36 @@ public class ChallengeManager : MonoBehaviour
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE16);
     }
 
+
     private void Type17ChallengeCheck()
     {
+        DebugLog.Log("실행17");
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
+
+        Dictionary<ERestaurantFloorType, Dictionary<string, int>> equipSetDataDic = new Dictionary<ERestaurantFloorType, Dictionary<string, int>>();
+
+        // 층별로 주방 기구 데이터 저장
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            equipSetDataDic[floor] = new Dictionary<string, int>();
+
+            for (int j = 0, cntJ = (int)KitchenUtensilType.Length; j < cntJ; ++j)
+            {
+                KitchenUtensilType type = (KitchenUtensilType)j;
+                KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, floor, type);
+
+                if (data == null)
+                    continue;
+
+                if (!equipSetDataDic[floor].ContainsKey(data.SetId))
+                    equipSetDataDic[floor][data.SetId] = 0;
+
+                equipSetDataDic[floor][data.SetId]++;
+            }
+        }
 
         foreach (Type17ChallengeData data in _type17ChallengeDataDic.Values)
         {
@@ -1493,26 +1582,39 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (UserInfo.GetEffectSetKitchenUtensilCount(UserInfo.CurrentStage, data.SetId) < ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
+            int maxSameSetIdCount = 0;
+
+            // 층별로 data.SetId 개수 확인 후, 가장 큰 값 찾기
+            foreach (var kvp in equipSetDataDic)
+            {
+                if (kvp.Value.TryGetValue(data.SetId, out int count))
+                {
+                    maxSameSetIdCount = Mathf.Max(maxSameSetIdCount, count);
+                }
+            }
+            DebugLog.Log(maxSameSetIdCount);
+            // 가장 많은 동일한 SetId 개수가 설정 값보다 작다면 스킵
+            if (maxSameSetIdCount < ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
                 continue;
 
+            // 조건 충족 시 해당 챌린지 활성화
             switch (data.Challenges)
             {
                 case Challenges.Daily:
                     dailyUpdateEnabled = true;
                     break;
-
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
-
                 case Challenges.Main:
                     mainUpdateEnabled = true;
                     break;
             }
+
             UserInfo.DoneChallenge(data);
         }
 
+        // 챌린지 업데이트
         if (dailyUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Daily);
 
