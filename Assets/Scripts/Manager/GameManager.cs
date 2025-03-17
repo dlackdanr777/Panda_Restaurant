@@ -199,6 +199,24 @@ public class GameManager : MonoBehaviour
         DebugLog.Log("¿˙¿Â");
     }
 
+    public void ChanceScene()
+    {
+        _foodPriceMul = 0;
+        _totalAddSpeedMul = 0;
+        _addPromotionCustomer = 1;
+        OnEquipStaffEffectCheck();
+        OnEquipFurnitureEffectCheck();
+        OnEquipKitchenUtensilEffectCheck();
+        UserInfo.DataBindTip(UserInfo.CurrentStage);
+        UserInfo.DataBindMoney();
+
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            CheckSetDataEffect(floor);
+        }
+    }
+
 
     private void Awake()
     {
@@ -234,26 +252,6 @@ public class GameManager : MonoBehaviour
             ERestaurantFloorType floor = (ERestaurantFloorType)i;
             CheckSetDataEffect(floor);
         }
-
-        SceneManager.activeSceneChanged += (scene1, scene2) =>
-        {
-            _foodPriceMul = 0;
-            _totalAddSpeedMul = 0;
-            _addPromotionCustomer = 1;
-            OnEquipStaffEffectCheck();
-            OnEquipFurnitureEffectCheck();
-            OnEquipKitchenUtensilEffectCheck();
-
-            for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
-            {
-                ERestaurantFloorType floor = (ERestaurantFloorType)i;
-                CheckSetDataEffect(floor);
-            }
-
-            OnGiveGachaItemEffectCheck();
-            OnGiveRecipeCheck();
-            OnUpgradeGachaItemCheck();
-        };
     }
 
 

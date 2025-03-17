@@ -9,7 +9,6 @@ public enum KitchenUtensilType
     Cabinet,
     Window,
     Sink,
-    Plate,
     Kitchenrack,
     CookingTools,
     Length

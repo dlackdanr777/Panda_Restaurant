@@ -89,6 +89,8 @@ public class MainScene : MonoBehaviour
         UserInfo.GiveKitchenUtensil(EStage.Stage1, "COOKER01_01");
         UserInfo.SetEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, "COOKER01_01");
 #endif
+
+        GameManager.Instance.ChanceScene();
     }
 
 

@@ -195,7 +195,7 @@ public class ChallengeManager : MonoBehaviour
         Dictionary<string, ChallengeData> dic = new Dictionary<string, ChallengeData>();
         string[] data = csvData.text.Split(new char[] { '\n' });
         string[] row;
-        DebugLog.Log(challenges + ": " + data.Length);
+
         for (int i = 1, cnt = data.Length - 1; i < cnt; ++i)
         {
             row = data[i].Split(new char[] { ',' });
@@ -1376,7 +1376,6 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type14ChallengeCheck()
     {
-        DebugLog.Log("실행14");
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
@@ -1424,7 +1423,6 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type15ChallengeCheck()
     {
-        DebugLog.Log("실행15");
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
@@ -1471,7 +1469,6 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type16ChallengeCheck()
     {
-        DebugLog.Log("실행16");
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
@@ -1509,8 +1506,6 @@ public class ChallengeManager : MonoBehaviour
                 maxSameSetIdCount = Mathf.Max(maxSameSetIdCount, count);
             }
 
-            DebugLog.Log(maxSameSetIdCount);
-            // 가장 많은 동일한 SetId 개수가 설정 값보다 작다면 스킵
             if (maxSameSetIdCount < ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT)
                 continue;
 
@@ -1546,7 +1541,6 @@ public class ChallengeManager : MonoBehaviour
 
     private void Type17ChallengeCheck()
     {
-        DebugLog.Log("실행17");
         bool dailyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
@@ -1592,7 +1586,7 @@ public class ChallengeManager : MonoBehaviour
                     maxSameSetIdCount = Mathf.Max(maxSameSetIdCount, count);
                 }
             }
-            DebugLog.Log(maxSameSetIdCount);
+
             // 가장 많은 동일한 SetId 개수가 설정 값보다 작다면 스킵
             if (maxSameSetIdCount < ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT)
                 continue;

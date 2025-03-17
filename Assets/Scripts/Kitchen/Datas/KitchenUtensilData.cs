@@ -11,33 +11,49 @@ public enum EquipEffectType
 }
 
 
-[CreateAssetMenu(fileName = "KitchenUtensilData", menuName = "Scriptable Object/KitchenUtensilData/KitchenUtensilData")]
 public class KitchenUtensilData : ShopData
 {
-    [Space]
-    [Header("KitchenUtensilData")]
 
-    [SerializeField] private KitchenUtensilType _type;
+    private KitchenUtensilType _type;
     public KitchenUtensilType Type => _type;
 
     private FoodType _foodType;
     public FoodType FoodType => _foodType;
 
-    [SerializeField] private string _setId;
+    private string _setId;
     public string SetId => _setId;
 
-    [SerializeField] private int _addScore;
+    private int _addScore;
     public int AddScore => _addScore;
 
     [SerializeField] private float _sizeMul = 1;
     public float SizeMul => _sizeMul;
     
-
-    [Space]
-    [Header("EquipData")]
-    [SerializeField] private EquipEffectType _equipEffectType;
+    private EquipEffectType _equipEffectType;
     public EquipEffectType EquipEffectType => _equipEffectType;
 
-    [Range(0, 1000000)] [SerializeField] private int _effectValue;
+    private int _effectValue;
     public int EffectValue => _effectValue;
+
+
+    public KitchenUtensilData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, KitchenUtensilType kitchenType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, float size)
+    {
+        _sprite = sprite;
+        _thumbnailSPrite = thumbnailSprite;
+        _name = name;
+        _id = id;
+        _setId = setId;
+        _foodType = foodType;
+        _moneyType = moneyType;
+        _buyScore = buyScore;
+        _buyPrice = buyPrice;
+
+        _type = kitchenType;
+        _foodType = foodType;
+        _addScore = addScore;
+
+        _equipEffectType = euipEffectType;
+        _effectValue = effectValue;
+        _sizeMul = size;
+    }
 }

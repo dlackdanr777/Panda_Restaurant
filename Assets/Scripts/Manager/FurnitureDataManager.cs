@@ -20,14 +20,31 @@ public class FurnitureDataManager : MonoBehaviour
     }
     private static FurnitureDataManager _instance;
 
-    private static List<FurnitureData> _furnitureDataList = new List<FurnitureData>();
-    private static Dictionary<string, FurnitureData> _furnitureDataDic = new Dictionary<string, FurnitureData>();
     private static List<FurnitureData>[] _furnitureDataListType = new List<FurnitureData>[(int)FurnitureType.Length];
+    private static Dictionary<string, FurnitureData> _furnitureDataDic = new Dictionary<string, FurnitureData>();
 
     private static Dictionary<string, Sprite> _spriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _thumbnailSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _leftChairSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _rightChairSpriteDic = new Dictionary<string, Sprite>();
+
+
+
+
+    public FurnitureData GetFurnitureData(string id)
+    {
+        if (!_furnitureDataDic.TryGetValue(id, out FurnitureData data))
+            throw new System.Exception($"해당 ID가 존재하지 않습니다: {id}");
+
+        return data;
+    }
+
+
+    public List<FurnitureData> GetFurnitureDataList(FurnitureType type)
+    {
+        return _furnitureDataListType[(int)type];
+    }
+
 
     private void Awake()
     {
@@ -41,10 +58,6 @@ public class FurnitureDataManager : MonoBehaviour
 
     private static void InitData()
     {
-        if (_furnitureDataList.Count > 0)
-            return;
-
-        _furnitureDataList.Clear();
         _furnitureDataDic.Clear();
         _spriteDic.Clear();
         _thumbnailSpriteDic.Clear();
@@ -56,9 +69,7 @@ public class FurnitureDataManager : MonoBehaviour
             _furnitureDataListType[i] = new List<FurnitureData>();
         }
 
-        // 🔹 가구 세트별 폴더에서 스프라이트 로드
         LoadFurnitureSprites("FurnitureData/Sprites");
-        // 🔹 가구 데이터 CSV 파싱
 
         string basePath = "FurnitureData/CSVData/";
         TableDataParse(basePath + "TableData", EquipEffectType.AddTipPerMinute);
@@ -70,10 +81,7 @@ public class FurnitureDataManager : MonoBehaviour
         FurnitureDataParse(basePath + "WallpaperData", FurnitureType.Wallpaper, EquipEffectType.AddTipPerMinute);
     }
 
-    /// <summary>
-    /// 가구 세트별 폴더에서 모든 스프라이트 로드
-    /// </summary>
-    /// 
+
     private static void LoadFurnitureSprites(string basePath)
     {
         string[] setFolders = { "01", "02", "03", "04", "05", "06", "07", "08" };
@@ -184,7 +192,6 @@ public class FurnitureDataManager : MonoBehaviour
             );
 
             // 🔹 리스트 및 딕셔너리에 추가
-            _furnitureDataList.Add(furnitureData);
             _furnitureDataDic.Add(id, furnitureData);
             _furnitureDataListType[(int)furnitureData.Type].Add(furnitureData);
         }
@@ -361,12 +368,6 @@ leftChairSprite,
 rightChairSprite
 );
 
-            // 🔹 리스트 및 딕셔너리에 추가
-            _furnitureDataList.Add(table1Data);
-            _furnitureDataList.Add(table2Data);
-            _furnitureDataList.Add(table3Data);
-            _furnitureDataList.Add(table4Data);
-            _furnitureDataList.Add(table5Data);
             _furnitureDataDic.Add(id + "_01", table1Data);
             _furnitureDataDic.Add(id + "_02", table2Data);
             _furnitureDataDic.Add(id + "_03", table3Data);
@@ -380,24 +381,6 @@ rightChairSprite
         }
     }
 
-
-    public FurnitureData GetFurnitureData(string id)
-    {
-        if (!_furnitureDataDic.TryGetValue(id, out FurnitureData data))
-            throw new System.Exception($"해당 ID가 존재하지 않습니다: {id}");
-
-        return data;
-    }
-
-    public List<FurnitureData> GetFurnitureDataList()
-    {
-        return _furnitureDataList;
-    }
-
-    public List<FurnitureData> GetFurnitureDataList(FurnitureType type)
-    {
-        return _furnitureDataListType[(int)type];
-    }
 
     private static string CutStringUpToChar(string str, char delimiter)
     {

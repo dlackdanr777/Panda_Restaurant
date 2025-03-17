@@ -588,32 +588,6 @@ public class StageInfo
     }
 
 
-    public int GetFurnitureFoodTypeCount(FoodType type)
-    {
-        int count = 0;
-        for(int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
-        {
-            FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]);
-            if(data.FoodType == type)
-                count++;
-        }
-        return count;
-    }
-
-
-    public int GetKitchenUtensilFoodTypeCount(FoodType type)
-    {
-        int count = 0;
-        for (int i = 0, cnt = _giveKitchenUtensilList.Count; i < cnt; ++i)
-        {
-            KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]);
-            if (data.FoodType == type)
-                count++;
-        }
-        return count;
-    }
-
-
     public List<string> GetCollectKitchenUtensilSetDataList()
     {
         return _collectKitchenUtensilSetDataList;

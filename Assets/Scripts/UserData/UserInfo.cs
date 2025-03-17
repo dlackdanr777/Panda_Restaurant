@@ -1084,24 +1084,13 @@ public static class UserInfo
         return _stageInfos[stageIndex].GetEquipKitchenFoodType(type);
     }
 
-    public static int GetFurnitureFoodTypeCount(EStage stage, FoodType foodType)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetFurnitureFoodTypeCount(foodType);
-    }
-
-
-    public static int GetKitchenUtensilFoodTypeCount(EStage stage, FoodType foodType)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetKitchenUtensilFoodTypeCount(foodType);
-    }
 
     public static List<string> GetCollectKitchenUtensilSetDataList(EStage stage)
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].GetCollectKitchenUtensilSetDataList();
     }
+
 
     public static List<string> GetCollectFurnitureSetDataList(EStage stage)
     {
