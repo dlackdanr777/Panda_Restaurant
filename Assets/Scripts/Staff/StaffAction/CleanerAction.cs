@@ -7,7 +7,7 @@ public class CleanerAction : IStaffAction
     private bool _isUsed = false;
     private bool _isNoAction;
     private float _time;
-    private float _duration = 1f;
+    private float _duration = 2f;
     private TweenData _tweenData;
     private Vector3 _cleanerPos;
 
@@ -17,8 +17,7 @@ public class CleanerAction : IStaffAction
         _isUsed = false;
         _isNoAction = false;
         _time = 0;
-        _duration = staff.SecondValue;
-
+        _duration = 2f;
         _cleanerPos = _tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Cleaner);
         staff.transform.position = _cleanerPos;
         staff.SetAlpha(1);
@@ -34,10 +33,11 @@ public class CleanerAction : IStaffAction
         if (_isUsed)
             return;
 
+        float speedMul = staff.SpeedMul;
 
         if(_time < _duration)
         {
-            _time += Time.deltaTime;
+            _time += Time.deltaTime * speedMul;
             return;
         }
 
@@ -69,13 +69,10 @@ public class CleanerAction : IStaffAction
                 }
 
                 staff.SetStaffState(EStaffState.Action);
-                float speedMul = Mathf.Max(staff.SpeedMul, 0.01f); // SpeedMul이 0이 되지 않도록 최소값 설정
-                float addStaffSpeedMul = Mathf.Max(GameManager.Instance.AddStaffSpeedMul, 0.01f); // AddStaffSpeedMul 최소값 설정
-                float actionTime = Mathf.Max((staff.SecondValue / speedMul) / addStaffSpeedMul, 0.1f);
-                _tweenData = Tween.Wait(actionTime, () =>
+                _tweenData = Tween.Wait(_duration / speedMul, () =>
                 {              
                     targetArea.CleanGarbage();
-                    _tweenData = Tween.Wait(1, () =>
+                    _tweenData = Tween.Wait(1 / speedMul, () =>
                     {
                         staff.SetStaffState(EStaffState.None);
                         _isUsed = false;

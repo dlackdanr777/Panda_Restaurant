@@ -47,7 +47,7 @@ public class GameManager : MonoBehaviour
     public int AddPromotionCustomer => _addPromotionCustomer;
 
     private int _maxWaitCustomerCount = 10;
-    public int MaxWaitCustomerCount => Mathf.Clamp(_maxWaitCustomerCount + _addUpgradeGachaItemWaitCustomerMaxCount + _addEquipStaffMaxWaitCustomerCount, 0, 30);
+    public int MaxWaitCustomerCount => Mathf.Clamp(_maxWaitCustomerCount + _addUpgradeGachaItemWaitCustomerMaxCount /*+ _addEquipStaffMaxWaitCustomerCount*/, 0, 30);
     public float AddCustomerSpeedMul => 1 + _totalAddSpeedMul + (0.01f * _addUpgradeGachaItemCustomerSpeedPercent);
     public int AddSpecialCustomerMoney => _addUpgradeGachaItemSpecialCustomerMoney;
     public float AddSpecialCustomerSpawnMul => 1 +  0.01f * (_addUpgradeGachaItemSpecialCustomerSpawnPercent);
@@ -62,8 +62,8 @@ public class GameManager : MonoBehaviour
     public int AddFoodTip => _addUpgradeGachaItemFoodTip;
 
 
-    public int AddSocre => _addEquipStaffScore + _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore + _addUpgradeGachaItemScore;
-    public float TipMul => Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f);
+    public int AddSocre => /*_addEquipStaffScore +*/ _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore + _addUpgradeGachaItemScore;
+    public float TipMul =>  1 /*Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f)*/;
 
     public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addGiveGachaItemTipPerMinute + _addUpgradeGachaItemTipPerMinute;
     public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume + Mathf.FloorToInt((_addEquipKitchenUtensilTipVolume + _addEquipFurnitureMaxTipVolume) * _addUpgradeGachaItemMaxTipVolumePercent * 0.01f);
@@ -88,11 +88,11 @@ public class GameManager : MonoBehaviour
     public float AddMiniGameTime => _addUpgradeGachaItemMiniGameTime + _addGiveRecipeMiniGameTime;
 
 
-
-    [SerializeField] private int _addEquipStaffScore;
+/*[SerializeField] private int _addEquipStaffScore;
     [SerializeField] private float _addEquipStaffTipMul;
     [SerializeField] private int _addEquipStaffMaxWaitCustomerCount;
-    [SerializeField] private float[] _addEquipStaffCookSpeedMul = new float[(int)ERestaurantFloorType.Length];
+    [SerializeField] private float[] _addEquipStaffCookSpeedMul = new float[(int)ERestaurantFloorType.Length];*/
+    
 
 
     [SerializeField] private int _addEquipFurnitureScore;
@@ -153,7 +153,7 @@ public class GameManager : MonoBehaviour
 
     public float GetCookingSpeedMul(ERestaurantFloorType floor, FoodType type)
     {
-        float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) + (_addEquipStaffCookSpeedMul[(int)floor] * 0.01f);
+        float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) /*+ (_addEquipStaffCookSpeedMul[(int)floor] * 0.01f)*/;
         DebugLog.Log("음식 속도: "+ cookSpeedMul);
         return cookSpeedMul;
     }
@@ -204,7 +204,7 @@ public class GameManager : MonoBehaviour
         _foodPriceMul = 0;
         _totalAddSpeedMul = 0;
         _addPromotionCustomer = 1;
-        OnEquipStaffEffectCheck();
+        //OnEquipStaffEffectCheck();
         OnEquipFurnitureEffectCheck();
         OnEquipKitchenUtensilEffectCheck();
         UserInfo.DataBindTip(UserInfo.CurrentStage);
@@ -230,8 +230,8 @@ public class GameManager : MonoBehaviour
         UserInfo.DataBindTip(UserInfo.CurrentStage);
         UserInfo.DataBindMoney();
 
-        UserInfo.OnChangeStaffHandler += (floor, type) => OnEquipStaffEffectCheck();
-        UserInfo.OnUpgradeStaffHandler += OnEquipStaffEffectCheck;
+        //UserInfo.OnChangeStaffHandler += (floor, type) => OnEquipStaffEffectCheck();
+        //UserInfo.OnUpgradeStaffHandler += OnEquipStaffEffectCheck;
         UserInfo.OnChangeFurnitureHandler += (floor, type) => OnEquipFurnitureEffectCheck();
         UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => OnEquipKitchenUtensilEffectCheck();
         UserInfo.OnChangeFurnitureHandler += (floor, type) => CheckSetDataEffect(floor);
@@ -241,7 +241,7 @@ public class GameManager : MonoBehaviour
         UserInfo.OnGiveGachaItemHandler += OnUpgradeGachaItemCheck;
         UserInfo.OnUpgradeGachaItemHandler += OnUpgradeGachaItemCheck;
 
-        OnEquipStaffEffectCheck();
+        //OnEquipStaffEffectCheck();
         OnEquipFurnitureEffectCheck();
         OnEquipKitchenUtensilEffectCheck();
         OnGiveGachaItemEffectCheck();
@@ -267,7 +267,7 @@ public class GameManager : MonoBehaviour
     }
 
 
-    private void OnEquipStaffEffectCheck()
+   /* private void OnEquipStaffEffectCheck()
     {
         _addEquipStaffScore = 0;
         _addEquipStaffTipMul = 0;
@@ -314,7 +314,7 @@ public class GameManager : MonoBehaviour
         _addEquipStaffMaxWaitCustomerCount = maxWaitCustomerCount;
         OnChangeScoreHandler?.Invoke();
         OnChangeMaxWaitCustomerCountHandler?.Invoke();
-    }
+    }*/
 
 
     private void OnEquipFurnitureEffectCheck()

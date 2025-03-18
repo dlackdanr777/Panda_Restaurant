@@ -9,12 +9,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2166c039b7672614f9452cc7ec63189a, type: 3}
-  m_Name: Staff01Skill
+  m_Script: {fileID: 11500000, guid: 15efc14f4db31c4479b80bcb04a376d5, type: 3}
+  m_Name: STAFF01SKILL
   m_EditorClassIdentifier: 
   _sprite: {fileID: 0}
   _skillName: 
   _description: 
   _cooldown: 200
   _duration: 20
-  _foodPriceUpPercent: 10
+  _speedUpMul: 50

@@ -92,13 +92,13 @@ public class UIStaffPreview : MonoBehaviour
 
         _selectGroup.SetSprite(data.ThumbnailSprite);
         _selectGroup.SetText(data.Name);
-        _scoreGroup.SetText("<color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddScore(level).ToString() + "</color> 점 증가");
-        _addTipPercentGroup.SetText("메뉴별 팁 <color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddTipMul(level) + "%</color> 증가");
+/*        _scoreGroup.SetText("<color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddScore(level).ToString() + "</color> 점 증가");
+        _addTipPercentGroup.SetText("메뉴별 팁 <color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddTipMul(level) + "%</color> 증가");*/
         _skillEffectGroup.SetData(data);
 
         StaffData equipData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, type, StaffDataManager.Instance.GetStaffType(data));
         int equipDataLevel = equipData == null ? 1 : UserInfo.IsGiveStaff(UserInfo.CurrentStage, equipData) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, equipData) : 1;
-        if (equipData == null)
+/*        if (equipData == null)
         {
             _scoreSignGroup.Image1SetActive(false);
             _scoreSignGroup.Image2SetActive(false);
@@ -139,7 +139,7 @@ public class UIStaffPreview : MonoBehaviour
                 _effectSignGroup.Image2SetActive(false);
             }
         }
-
+*/
         if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
         {
             _levelGroup.gameObject.SetActive(true);

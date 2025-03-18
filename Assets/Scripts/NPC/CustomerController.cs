@@ -12,6 +12,7 @@ public class CustomerController : MonoBehaviour
 
     [Header("Components")]
     [SerializeField] private TableManager _tableManager;
+    [SerializeField] private UIAddCutomerController _uiController;
     [SerializeField] private UICustomerTutorial _uiCustomerTutorial;
 
     [Space]
@@ -23,7 +24,7 @@ public class CustomerController : MonoBehaviour
 
 
     private Queue<NormalCustomer> _customers = new Queue<NormalCustomer>();
-    private GatecrasherCustomer _gatecrasherCustomer;
+    private GatecrasherCustomer[] _gatecrasherCustomers = new global::GatecrasherCustomer[(int)ERestaurantFloorType.Length];
     private Coroutine _sortCoroutine;
     private float _breakInCustomerTime => 60;
     private float _breakInCustomerTimer;
@@ -31,9 +32,15 @@ public class CustomerController : MonoBehaviour
 
 
     public Vector3 _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
-    public GatecrasherCustomer GatecrasherCustomer => _gatecrasherCustomer;
+    public GatecrasherCustomer[] GatecrasherCustomer => _gatecrasherCustomers;
     public int Count => _customers.Count;
     public bool IsMaxCount => GameManager.Instance.MaxWaitCustomerCount <= _customers.Count;
+
+
+    public void AddCustomerButtonClickEvent()
+    {
+        _uiController.OnAddCustomerButtonClicked();
+    }
 
 
     public NormalCustomer GetFirstCustomer()
@@ -102,17 +109,19 @@ public class CustomerController : MonoBehaviour
                 {
                     _breakInCustomerTimer = _breakInCustomerTime;
                     _breakCustomerEnabled = false;
-                    _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-                    _gatecrasherCustomer.SetData(getData, _tableManager);
-                    _gatecrasherCustomer.SetVisitFloor(visitFloor);
+
+                    int floorIndex = (int)visitFloor;
+                    _gatecrasherCustomers[floorIndex] = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+                    _gatecrasherCustomers[floorIndex].SetData(getData, _tableManager);
+                    _gatecrasherCustomers[floorIndex].SetVisitFloor(visitFloor);
                     if (getData is GatecrasherCustomer1Data)
                     {
-                        _gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(visitFloor), _specialCustomerTargetPosList, OnCustomerEvent, () => _uiCustomerTutorial.ShowTutorial(getData));
+                        _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(visitFloor), _specialCustomerTargetPosList, OnCustomerEvent, () => _uiCustomerTutorial.ShowTutorial(getData));
                     }
                     else if (getData is GatecrasherCustomer2Data)
                     {
                         _uiCustomerTutorial.ShowTutorial(getData);
-                        _gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
+                        _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
                     }
                 }
             }
@@ -182,14 +191,18 @@ public class CustomerController : MonoBehaviour
 
     private void CheckGatecrasherCustomer()
     {
-        if (_gatecrasherCustomer == null)
-            return;
-
         if (!UserInfo.IsTutorialStart)
             return;
 
-        ObjectPoolManager.Instance.DespawnGatecrasherCustomer(_gatecrasherCustomer);
-        _gatecrasherCustomer = null;
+        for (int i = 0, cnt = _gatecrasherCustomers.Length; i < cnt; i++)
+        {
+            if (_gatecrasherCustomers[i] == null)
+                continue;
+
+            ObjectPoolManager.Instance.DespawnGatecrasherCustomer(_gatecrasherCustomers[i]);
+            _gatecrasherCustomers[i] = null;
+        }
+
     }
 
 
@@ -210,11 +223,20 @@ public class CustomerController : MonoBehaviour
         }
     }
 
-    private void OnCustomerEvent()
+    private void OnCustomerEvent(Customer customer)
     {
         _breakInCustomerTimer = _breakInCustomerTime;
         _breakCustomerEnabled = true;
-        _gatecrasherCustomer = null;
+
+        for(int i = 0, cnt = _gatecrasherCustomers.Length; i < cnt; ++i)
+        {
+            if (_gatecrasherCustomers[i] != customer)
+                continue;
+
+            _gatecrasherCustomers[i] = null;
+            return;
+        }
+
     }
 
 
@@ -224,19 +246,20 @@ public class CustomerController : MonoBehaviour
         _uiCustomerTutorial.ShowTutorial(data);
 
         ERestaurantFloorType visitFloor = (ERestaurantFloorType)UnityEngine.Random.Range(0, (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage) + 1);
+        int floorIndex = (int)visitFloor;
         if (data is GatecrasherCustomer1Data)
         {
-            _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            _gatecrasherCustomer.SetData(data, _tableManager);
-            _gatecrasherCustomer.SetVisitFloor(visitFloor);
-            _gatecrasherCustomer.StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(visitFloor), _specialCustomerTargetPosList, OnCustomerEvent);
+            _gatecrasherCustomers[floorIndex] = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+            _gatecrasherCustomers[floorIndex].SetData(data, _tableManager);
+            _gatecrasherCustomers[floorIndex].SetVisitFloor(visitFloor);
+            _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(visitFloor), _specialCustomerTargetPosList, OnCustomerEvent);
         }
         else if (data is GatecrasherCustomer2Data)
         {
-            _gatecrasherCustomer = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            _gatecrasherCustomer.SetData(data, _tableManager);
-            _gatecrasherCustomer.SetVisitFloor(visitFloor);
-            _gatecrasherCustomer.StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
+            _gatecrasherCustomers[floorIndex] = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+            _gatecrasherCustomers[floorIndex].SetData(data, _tableManager);
+            _gatecrasherCustomers[floorIndex].SetVisitFloor(visitFloor);
+            _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
         }
 
         else if(data is SpecialCustomerData)

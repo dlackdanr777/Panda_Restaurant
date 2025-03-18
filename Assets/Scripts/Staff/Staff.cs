@@ -34,14 +34,12 @@ public class Staff : MonoBehaviour
     private bool _usingSkill;
     private float _skillTimer;
     private float _skillCoolTime;
-    public int Level => _staffData != null ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, _staffData) : 0;
+    public int Level => _staffData != null ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, _staffData) : 1;
     private float _scaleX;
-    private float _actionTimer;
-    private float _secondValue;
-    public float SecondValue => _secondValue;
 
+    private float _moveSpeed;
     private float _speedMul;
-    public float SpeedMul => 1 + _speedMul;
+    public float SpeedMul => Mathf.Clamp((1 + _speedMul) * GameManager.Instance.AddStaffSpeedMul, 0.5f, 3f);
 
     private Coroutine _useSkillRoutine;
 
@@ -51,6 +49,7 @@ public class Staff : MonoBehaviour
         _tableManager = tableManager;
         _scaleX = transform.localScale.x;
         GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+        UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
         gameObject.SetActive(false);
     }
 
@@ -67,7 +66,7 @@ public class Staff : MonoBehaviour
             throw new Exception("현재 스탭 데이터를 보유하고 있지 않습니다: " + _staffData.Id);
         }
 
-        return _staffData.GetActionValue(level) / SpeedMul;
+        return _staffData.GetActionValue(level);
     }
 
 
@@ -99,10 +98,10 @@ public class Staff : MonoBehaviour
         _equipFloorType = equipFloorType;
         _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         _staffAction = staffData.GetStaffAction(this, tableManager, kitchenSystem, customerController);
-        _secondValue = staffData.SecondValue;
         _animator.enabled = staffData is CleanerData;
         _cleanerItem.gameObject.SetActive(staffData is CleanerData);
         _cleanParticle.gameObject.SetActive(false);
+        _moveSpeed = staffData.GetSpeed(Level);
         _speedMul = 0;
         _usingSkill = false;
         _skillTimer = 0;
@@ -125,7 +124,6 @@ public class Staff : MonoBehaviour
         };
 
         OnChangeSkillValueEvent();
-        ResetAction();
     }
 
     public void SetAlpha(float alpha)
@@ -134,16 +132,12 @@ public class Staff : MonoBehaviour
         _spriteRenderer.color = new Color(nowColor.r, nowColor.g, nowColor.b, alpha);
     }
 
+
     public void AddSpeedMul(float value)
     {
         _speedMul = Mathf.Clamp(_speedMul + value * 0.01f, 0f, 10f);
     }
 
-    public void ResetAction()
-    {
-        _actionTimer = _staffData.GetActionValue(Level);
-        _state = EStaffState.None;
-    }
 
     public void PlayCleanSound()
     {
@@ -185,18 +179,10 @@ public class Staff : MonoBehaviour
         _spriteRenderer.sortingOrder = orderInLayer;
     }
 
+
     public void StaffAction()
     {
-        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
-        {
-            DebugLog.Log("튜토리얼 진행중");
-            return;
-        }   
-
         if(_staffAction == null)
-            return;
-
-        if (_state != EStaffState.ActionEnable)
             return;
 
         _staffAction.PerformAction(this);
@@ -229,7 +215,7 @@ public class Staff : MonoBehaviour
         }
         else
         {
-            _skillTimer += Time.deltaTime * SpeedMul * GameManager.Instance.AddStaffSpeedMul;
+            _skillTimer += Time.deltaTime * SpeedMul;
         }
     }
 
@@ -240,11 +226,6 @@ public class Staff : MonoBehaviour
     }
 
 
-    private void Update()
-    {
-        UpdateAction();
-    }
-
     private void OnDisable()
     {
         if(transform != null)
@@ -254,23 +235,6 @@ public class Staff : MonoBehaviour
             _spriteRenderer.TweenStop();
     }
 
-    private void UpdateAction()
-    {
-        if (_staffData == null)
-            return;
-
-        if (_state != EStaffState.None)
-            return;
-
-        if (_actionTimer <= 0)
-        {
-            _state = EStaffState.ActionEnable;
-        }
-        else
-        {
-            _actionTimer -= Time.deltaTime * SpeedMul * GameManager.Instance.AddStaffSpeedMul;
-        }
-    }
 
     private IEnumerator UseSkillCoroutine(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
@@ -384,7 +348,7 @@ public class Staff : MonoBehaviour
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
                 SetSpriteDir(dir.x);
-                float step = Time.deltaTime * 5 * SpeedMul * GameManager.Instance.AddStaffSpeedMul;
+                float step = Time.deltaTime * _moveSpeed * SpeedMul;
                 _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
                 yield return null;
             }
@@ -407,10 +371,12 @@ public class Staff : MonoBehaviour
 
     private IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
-        yield return YieldCache.WaitForSeconds(1);
-        _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos);
-        SetSpriteDir(1);
-        yield return YieldCache.WaitForSeconds(1);
+        yield return YieldCache.WaitForSeconds(0.6f);
+        _spriteRenderer.TweenAlpha(0, 0.4f, Ease.Constant).OnComplete(() => _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos));
+        //SetSpriteDir(-1);
+        yield return YieldCache.WaitForSeconds(1f);
+        _spriteRenderer.TweenAlpha(1, 0.4f, Ease.Constant);
+        yield return YieldCache.WaitForSeconds(1f);
         onCompleted?.Invoke();
     }
 
@@ -434,6 +400,15 @@ public class Staff : MonoBehaviour
         };
 
         _skillCoolTime = _skillCoolTime < 0.1f ? 0.1f : _skillCoolTime;
+    }
+
+
+    private void OnLevelUpEvent()
+    {
+        if (_staffData == null)
+            return;
+
+        _moveSpeed = _staffData.GetSpeed(Level);
     }
 }
 

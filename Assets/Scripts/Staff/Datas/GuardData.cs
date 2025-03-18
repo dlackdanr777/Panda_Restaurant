@@ -4,15 +4,21 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "GuardData", menuName = "Scriptable Object/Staff/Guard")]
 public class GuardData : StaffData
 {
-    [Range(0f, 10f)] [SerializeField] private float _actionTime;
+
     [SerializeField] private GuardLevelData[] _guardLevelData;
     public override float SecondValue => 0;
     public override int MaxLevel => _guardLevelData.Length;
 
 
+    public override float GetSpeed(int level) => _speed;
+
     public override float GetActionValue(int level)
     {
-        return _actionTime;
+        level -= 1;
+        if (_guardLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("웨이터 레벨의 범위를 넘어섰습니다.");
+
+        return _guardLevelData[level].ActionTime;
     }
 
     public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
@@ -42,27 +48,20 @@ public class GuardData : StaffData
 
     public override int GetUpgradeMinScore(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _guardLevelData.Length - 1);
+        level -= 1;
+        if (_guardLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("웨이터 레벨의 범위를 넘어섰습니다.");
         return _guardLevelData[level].UpgradeMinScore;
     }
 
 
     public override UpgradeMoneyData GetUpgradeMoneyData(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _guardLevelData.Length - 1);
+        level -= 1;
+        if (_guardLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("웨이터 레벨의 범위를 넘어섰습니다.");
+
         return _guardLevelData[level].UpgradeMoneyData;
-    }
-
-    public override int GetAddScore(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _guardLevelData.Length - 1);
-        return _guardLevelData[level].ScoreIncrement;
-    }
-
-    public override float GetAddTipMul(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _guardLevelData.Length - 1);
-        return _guardLevelData[level].TipAddPercent;
     }
 }
 
@@ -70,4 +69,6 @@ public class GuardData : StaffData
 [Serializable]
 public class GuardLevelData : StaffLevelData
 {
+    [Range(0f, 10f)][SerializeField] private float _actionTime;
+    public float ActionTime => _actionTime;
 }

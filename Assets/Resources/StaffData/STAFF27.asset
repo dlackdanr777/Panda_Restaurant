@@ -20,7 +20,7 @@ MonoBehaviour:
   _moneyType: 1
   _buyScore: 350
   _buyPrice: 250
-  _skill: {fileID: 11400000, guid: cce27c6a58e2f564fa4758e3f6e14d71, type: 2}
+  _skill: {fileID: 11400000, guid: 4803555ba0e7f7f46af709248b6ac2be, type: 2}
   _chefLevelData:
   - _tipAddPercent: 50
     _scoreIncrement: 300

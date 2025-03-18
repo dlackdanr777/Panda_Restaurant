@@ -35,11 +35,17 @@ public class UIAddCutomerController : MonoBehaviour
     }
 
 
-    private void OnAddCustomerButtonClicked()
+    public void OnAddCustomerButtonClicked()
+    {
+        SetButtonGaguge();
+        _marketerImage.StartAnime();
+    }
+
+
+    private void SetButtonGaguge()
     {
         _audioSource.PlayOneShot(_callSound);
-
-        if(GameManager.Instance.TotalTabCount - 1 <= _tabCount)
+        if (GameManager.Instance.TotalTabCount - 1 <= _tabCount)
         {
             if(_customerController.IsMaxCount)
             {

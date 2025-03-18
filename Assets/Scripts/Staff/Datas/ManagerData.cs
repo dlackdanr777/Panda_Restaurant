@@ -13,17 +13,21 @@ public class ManagerData : StaffData
     private Staff _staff;
     private TableManager _tableManager;
 
+
+    public override float GetSpeed(int level) => _speed;
+
     public override float GetActionValue(int level)
     {
-        if (_managerLevelData.Length < level - 1 || level < 0)
+        level -= 1;
+        if (_managerLevelData.Length <= level || level < 0)
             throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
 
-        return _managerLevelData[level - 1].MaxWaitCustomerCount;
+        return _managerLevelData[level].CustomerGuideTime;
     }
 
     public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        return new ManagerAction(tableManager);
+        return new ManagerAction(staff, tableManager);
     }
 
     public override bool UpgradeEnable(int level)
@@ -73,29 +77,22 @@ public class ManagerData : StaffData
 
     public override int GetUpgradeMinScore(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _managerLevelData.Length - 1);
+        level -= 1;
+        if (_managerLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
+
         return _managerLevelData[level].UpgradeMinScore;
     }
 
 
     public override UpgradeMoneyData GetUpgradeMoneyData(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _managerLevelData.Length - 1);
+        level -= 1;
+        if (_managerLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
+
         return _managerLevelData[level].UpgradeMoneyData;
     }
-
-    public override int GetAddScore(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _managerLevelData.Length - 1);
-        return _managerLevelData[level].ScoreIncrement;
-    }
-
-    public override float GetAddTipMul(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _managerLevelData.Length - 1);
-        return _managerLevelData[level].TipAddPercent;
-    }
-
 
     private void OnChangeCounterEvent(ERestaurantFloorType floorType, FurnitureType type)
     {
@@ -111,6 +108,6 @@ public class ManagerData : StaffData
 [Serializable]
 public class ManagerLevelData : StaffLevelData
 {
-    [Range(0, 100)] [SerializeField] private int _maxWaitCustomerCount;
-    public int MaxWaitCustomerCount => _maxWaitCustomerCount;
+    [Range(0.02f, 100f)] [SerializeField] private float _customerGuideTime;
+    public float CustomerGuideTime => _customerGuideTime;
 }

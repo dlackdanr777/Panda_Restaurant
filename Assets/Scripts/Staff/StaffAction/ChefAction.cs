@@ -12,7 +12,7 @@ public class ChefAction : IStaffAction
     {
     }
 
-    void IStaffAction.PerformAction(Staff staff)
+    public void PerformAction(Staff staff)
     {
     }
 }

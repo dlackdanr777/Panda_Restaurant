@@ -766,10 +766,7 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         ERestaurantFloorType unlockFloor = _stageInfos[stageIndex].UnlockFloor;
-        if (type < unlockFloor)
-            return false;
-
-        return true;
+        return type <= unlockFloor;
     }
 
     #endregion

@@ -209,15 +209,16 @@ public static class Utility
     }
 
 
-    public static string GetFurnitureFoodTypeSetEffectDescription(FoodType type)
+    public static string GetFurnitureFoodTypeSetEffectDescription( FoodType type)
     {
-        string description = FoodTypeStringConverter(type) + " 속성 음식 수익 10% 증가";
+
+        string description = FoodTypeStringConverter(type) + $"속성 음식 수익(<color={ColorToHex(GetColor(ColorType.Positive))}> +10% </color>증가";;
         return description;
     }
 
     public static string GetKitchenFoodTypeSetEffectDescription(FoodType type)
     {
-        string description = FoodTypeStringConverter(type) + " 속성 음식 조리 속도 10% 증가";
+        string description = FoodTypeStringConverter(type) + $"속성 음식 조리 속도(<color={ColorToHex(GetColor(ColorType.Positive))}> +10% </color>증가";
         return description;
     }
 
@@ -230,15 +231,15 @@ public static class Utility
         switch(data)
         {
             case ManagerData:
-                description = $"최대 대기 손님(<color={ColorToHex(GetColor(ColorType.Positive))}>{Mathf.FloorToInt(data.GetActionValue(level))}</color> 명 추가)";
+                description = $"손님 자동 배치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초)";
                 break;
 
             case WaiterData:
-                description = $"자동 음식 서빙하기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 1개)";
+                description = $"음식 자동 배달(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
                 break;
 
             case MarketerData:
-                description = $"자동 손님 호출하기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.SecondValue}%</color> 확률)";
+                description = $"자동 손님 호출 버튼 클릭(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초)";
                 break;
 
             case ServerData:
@@ -246,7 +247,7 @@ public static class Utility
                 break;
 
             case CleanerData:
-                description = $"자동 쓰레기 청소 하기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.SecondValue}</color>초)";
+                description = $"쓰레기 및 코인 수집(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
                 break;
 
             case GuardData:
@@ -254,7 +255,7 @@ public static class Utility
                 break;
 
             case ChefData:
-                description = $"요리 효율 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
+                description = $"조리 효율 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
                 break;
         }
 

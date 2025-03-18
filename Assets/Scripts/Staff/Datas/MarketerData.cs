@@ -4,7 +4,6 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "MarketerData", menuName = "Scriptable Object/Staff/Marketer")]
 public class MarketerData : StaffData
 {
-    [Range(0f, 100f)] [SerializeField] private float _customerCallPercentage;
     [SerializeField] private MarketerLevelData[] _marketerLevelData;
 
     [Header("Animation Option")]
@@ -31,20 +30,24 @@ public class MarketerData : StaffData
 
 
 
-    public override float SecondValue => _customerCallPercentage;
+    public override float SecondValue => 0;
     public override int MaxLevel => _marketerLevelData.Length;
+
+
+    public override float GetSpeed(int level) => _speed;
 
     public override float GetActionValue(int level)
     {
-        if (_marketerLevelData.Length < level - 1 || level < 0)
+        level -= 1;
+        if (_marketerLevelData.Length <= level || level < 0)
             throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
 
-        return _marketerLevelData[level - 1].MarketingTime;
+        return _marketerLevelData[level].MarketingTime;
     }
 
     public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        return new MarketerAction(customerController);
+        return new MarketerAction(staff, customerController);
     }
 
     public override bool UpgradeEnable(int level)
@@ -64,27 +67,19 @@ public class MarketerData : StaffData
 
     public override int GetUpgradeMinScore(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
+        level -= 1;
+        if (_marketerLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
         return _marketerLevelData[level].UpgradeMinScore;
     }
 
 
     public override UpgradeMoneyData GetUpgradeMoneyData(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
+        level -= 1;
+        if (_marketerLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
         return _marketerLevelData[level].UpgradeMoneyData;
-    }
-
-    public override int GetAddScore(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
-        return _marketerLevelData[level].ScoreIncrement;
-    }
-
-    public override float GetAddTipMul(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _marketerLevelData.Length - 1);
-        return _marketerLevelData[level].TipAddPercent;
     }
 }
 

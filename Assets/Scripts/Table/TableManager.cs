@@ -77,7 +77,7 @@ public class TableManager : MonoBehaviour
         TableData data = GetTableType(ETableState.Empty);
         if (data == null)
         {
-            DebugLog.LogError("남는 테이블이 없습니다.");
+            DebugLog.Log("남는 테이블이 없습니다.");
             UpdateTable();
             return;
         }

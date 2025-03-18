@@ -18,6 +18,7 @@ public class GuardAction : IStaffAction
         _customerController = customerController;
         _tableManager = tableManager;
         _actionTimer = _actionTime;
+        _startAction = false;
     }
 
 
@@ -31,28 +32,32 @@ public class GuardAction : IStaffAction
         if (_startAction)
             return;
 
-        _actionTimer -= Time.deltaTime;
-
-        if (_actionTimer < 0)
+        float speedMul = staff.SpeedMul;
+        _actionTimer -= Time.deltaTime * speedMul;
+        DebugLog.Log(_actionTimer);
+        if (0 < _actionTimer)
             return;
 
         _actionTimer = _actionTime;
 
-        if(_gatecrasherCustomer == null)
+        if(_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy)
         {
-            if (_customerController.GatecrasherCustomer == null)
+            DebugLog.Log("111");
+            if (_customerController.GatecrasherCustomer[(int)staff.EquipFloorType] == null)
                 return;
 
-            if (_customerController.GatecrasherCustomer.CustomerData is GatecrasherCustomer1Data)
+            if (_customerController.GatecrasherCustomer[(int)staff.EquipFloorType].CustomerData is GatecrasherCustomer1Data)
             {
-                _gatecrasherCustomer = _customerController.GatecrasherCustomer;
+                DebugLog.Log("222");
+                _gatecrasherCustomer = _customerController.GatecrasherCustomer[(int)staff.EquipFloorType];
                 return;
             }
         }
 
         else
         {
-            if(_gatecrasherCustomer.IsEndEvent)
+
+            if (_gatecrasherCustomer.IsEndEvent)
             {
                 _gatecrasherCustomer = null;
                 _startAction = false;
@@ -64,18 +69,18 @@ public class GuardAction : IStaffAction
                 _startAction = false;
                 return;
             }
-                
+
             _startAction = true;
-            Tween.Wait(1, () =>
+            Tween.Wait(1 / speedMul, () =>
             {
                 if (!staff.gameObject.activeInHierarchy)
                     return;
 
-                staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(() =>
+                staff.SpriteRenderer.TweenAlpha(0, 0.25f / speedMul).OnComplete(() =>
                 {
                     staff.transform.position = _gatecrasherCustomer.transform.position + new Vector3(0.2f, 0);
                     staff.SetSpriteDir(-1);
-                    staff.SpriteRenderer.TweenAlpha(1, 0.25f).OnComplete(() =>
+                    staff.SpriteRenderer.TweenAlpha(1, 0.25f / speedMul).OnComplete(() =>
                     {
                         if (_gatecrasherCustomer.IsEndEvent)
                             return;
@@ -94,20 +99,19 @@ public class GuardAction : IStaffAction
 
     private void EliminatingGatecrasherCustomer2(Staff staff)
     {
+        float speedMul = staff.SpeedMul;
         if (_gatecrasherCustomer == null)
         {
-            DebugLog.Log("실행1");
-            Tween.Wait(1f, () =>
+            Tween.Wait(1f / speedMul, () =>
             {
                 if (!staff.gameObject.activeInHierarchy)
                     return;
 
-                DebugLog.Log("실행11");
-                staff.SpriteRenderer.TweenAlpha(0, 0.3f).OnComplete(() =>
+                staff.SpriteRenderer.TweenAlpha(0, 0.3f / speedMul).OnComplete(() =>
                 {
                     staff.transform.position = _tableManager.GetStaffPos(0, StaffType.Guard);
                     staff.SetSpriteDir(-1);
-                    staff.SpriteRenderer.TweenAlpha(1, 0.3f).OnComplete(() =>
+                    staff.SpriteRenderer.TweenAlpha(1, 0.3f / speedMul).OnComplete(() =>
                     {
                         _startAction = false;
                     });
@@ -124,12 +128,12 @@ public class GuardAction : IStaffAction
             {
                 if (!staff.gameObject.activeInHierarchy)
                     return;
-                DebugLog.Log("실행22");
-                staff.SpriteRenderer.TweenAlpha(0, 1).OnComplete(() =>
+
+                staff.SpriteRenderer.TweenAlpha(0, 1 / speedMul).OnComplete(() =>
                 {
                     staff.transform.position = _tableManager.GetStaffPos(0, StaffType.Guard);
                     staff.SetSpriteDir(-1);
-                    staff.SpriteRenderer.TweenAlpha(1, 1).OnComplete(() =>
+                    staff.SpriteRenderer.TweenAlpha(1, 1 / speedMul).OnComplete(() =>
                     {
                         _startAction = false;
                     });
@@ -138,9 +142,7 @@ public class GuardAction : IStaffAction
             return;
         }
 
-        float speedMul = Mathf.Max(staff.SpeedMul, 0.01f);
-        float addStaffSpeedMul = Mathf.Max(GameManager.Instance.AddStaffSpeedMul, 0.01f);
-        float duration = (staff.GetActionValue() / (speedMul * addStaffSpeedMul)) / Mathf.Max(_gatecrasherCustomer.TotalTouchCount, 1) ;
+        float duration = (staff.GetActionValue() / staff.SpeedMul) / Mathf.Max(_gatecrasherCustomer.TotalTouchCount, 1);
         Tween.Wait(duration, () =>
         {
             if (!staff.gameObject.activeInHierarchy)

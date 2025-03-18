@@ -37,7 +37,6 @@ public class WaiterAction : IStaffAction
                 {
                     staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(() =>
                     {
-                        staff.ResetAction();
                         staff.transform.position = Vector3.zero;
                     });
                 });

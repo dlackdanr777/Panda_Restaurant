@@ -46,7 +46,7 @@ public class GatecrasherCustomer : Customer
     private Coroutine _enabledCoroutine;
     private Coroutine _speedRecoveryCoroutine;
     private TweenData _tween;
-    private Action _onCompleted;
+    private Action<Customer> _onCompleted;
     private Action _gatecrasher1OnChangeShape;
 
     private float _touchDamage => 1;
@@ -103,7 +103,7 @@ public class GatecrasherCustomer : Customer
             StopCoroutine(_speedRecoveryCoroutine);
     }
 
-    public void StartGatecreasherCustomer2Event(Vector3 targetPos, TableManager tableManager, Action onCompleted)
+    public void StartGatecreasherCustomer2Event(Vector3 targetPos, TableManager tableManager, Action<Customer> onCompleted)
     {
         _touchEnabled = false;
         _onCompleted = onCompleted;
@@ -132,7 +132,7 @@ public class GatecrasherCustomer : Customer
         });
     }
 
-    public void StartGatecreasherCustomer1Event(List<DropCoinArea> dropCoinAreaList, List<Vector3> noCoinTargetPosList, Action onCompleted, Action onChangeShape = null)
+    public void StartGatecreasherCustomer1Event(List<DropCoinArea> dropCoinAreaList, List<Vector3> noCoinTargetPosList, Action<Customer> onCompleted, Action onChangeShape = null)
     {
         _touchEnabled = true;
         _isInDisguise = true;
@@ -282,7 +282,7 @@ public class GatecrasherCustomer : Customer
             _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnGatecrasherCustomer(this));
             _guitarSource.Stop();
             UserInfo.AddExterminationGatecrasherCustomerCount(_customerData);
-            _onCompleted?.Invoke();
+            _onCompleted?.Invoke(this);
             return;
         }
     }
@@ -416,7 +416,7 @@ public class GatecrasherCustomer : Customer
         _spriteGroup.TweenSetAlpha(0, 0.7f);
         _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnGatecrasherCustomer(this));
         _guitarSource.Stop();
-        _onCompleted?.Invoke();
+        _onCompleted?.Invoke(this);
     }
 
     private IEnumerator SpeedRecoveryRoutine()

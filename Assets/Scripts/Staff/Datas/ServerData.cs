@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "ServerData", menuName = "Scriptable Object/Staff/Server")]
 public class ServerData : StaffData
 {
-    [SerializeField] private WaiterLevelData[] _serverLevelData;
+    [SerializeField] private ServerLevelData[] _serverLevelData;
     public override float SecondValue => 0;
     public override int MaxLevel => _serverLevelData.Length;
 
@@ -52,16 +52,9 @@ public class ServerData : StaffData
         return _serverLevelData[level].UpgradeMoneyData;
     }
 
-    public override int GetAddScore(int level)
+    public override float GetSpeed(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _serverLevelData.Length - 1);
-        return _serverLevelData[level].ScoreIncrement;
-    }
-
-    public override float GetAddTipMul(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _serverLevelData.Length - 1);
-        return _serverLevelData[level].TipAddPercent;
+        throw new NotImplementedException();
     }
 }
 

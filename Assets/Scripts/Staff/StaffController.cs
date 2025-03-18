@@ -30,7 +30,12 @@ public class StaffController : MonoBehaviour
 
     private void FixedUpdate()
     {
-        foreach(StaffGroup group in _staffGroupDic.Values)
+        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
+        {
+            return;
+        }
+
+        foreach (StaffGroup group in _staffGroupDic.Values)
         {
             if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, group.FloorType))
                 continue;

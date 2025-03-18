@@ -86,15 +86,15 @@ public class UIStaffUpgrade : MobileUIView
             _levelText.text = "Lv." + level;
             _lowerFrame.gameObject.SetActive(true);
             _maxLevelGroup.gameObject.SetActive(false);
-            _currentLevelGroup.SetData(level, _currentData.GetAddScore(level).ToString(), _currentData.GetAddTipMul(level) + "%");
-            _nextLevelGroup.SetData(level + 1, _currentData.GetAddScore(level + 1).ToString(), _currentData.GetAddTipMul(level + 1) + "%");
+/*            _currentLevelGroup.SetData(level, _currentData.GetAddScore(level).ToString(), _currentData.GetAddTipMul(level) + "%");
+            _nextLevelGroup.SetData(level + 1, _currentData.GetAddScore(level + 1).ToString(), _currentData.GetAddTipMul(level + 1) + "%");*/
         }
         else
         {
             _levelText.text = "Lv.Max";
             _lowerFrame.gameObject.SetActive(false);
             _maxLevelGroup.gameObject.SetActive(true);
-            _maxLevelGroup.SetData(level, _currentData.GetAddScore(level).ToString(), _currentData.GetAddTipMul(level) + "%");
+/*            _maxLevelGroup.SetData(level, _currentData.GetAddScore(level).ToString(), _currentData.GetAddTipMul(level) + "%");*/
         }
 
 

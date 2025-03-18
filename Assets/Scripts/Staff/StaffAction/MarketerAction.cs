@@ -1,12 +1,15 @@
-
-using Random = UnityEngine.Random;
+using UnityEngine;
 
 public class MarketerAction : IStaffAction
 {
     private CustomerController _customerController;
-    public MarketerAction(CustomerController customerController)
+    private float _actionCoolTime = 0;
+
+
+    public MarketerAction(Staff staff, CustomerController customerController)
     {
         _customerController = customerController;
+        _actionCoolTime = staff.GetActionValue();
     }
 
     public void Destructor()
@@ -16,9 +19,14 @@ public class MarketerAction : IStaffAction
 
     public void PerformAction(Staff staff)
     {
-        if(Random.Range(0f, 100f) < staff.SecondValue)
-            _customerController.AddCustomer();
-
-        staff.ResetAction();
+        if (_actionCoolTime <= 0)
+        {
+            _customerController.AddCustomerButtonClickEvent();
+            _actionCoolTime = staff.GetActionValue();
+        }
+        else
+        {
+            _actionCoolTime -= Time.deltaTime * staff.SpeedMul;
+        }
     }
 }

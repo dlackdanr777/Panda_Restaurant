@@ -35,7 +35,6 @@ public class ServerAction : IStaffAction
                 _tableManager.OnCustomerOrder(tableData);
                 _tweenData = staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(() =>
                 {
-                    staff.ResetAction();
                     staff.transform.position = Vector3.zero;
                 });
 

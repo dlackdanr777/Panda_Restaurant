@@ -24,7 +24,7 @@ public class SpecialCustomer : Customer
     private Sprite _touchSprite;
     private Coroutine _coroutine;
     private Coroutine _touchCoroutine;
-    private Action _onCompleted;
+    private Action<Customer> _onCompleted;
 
 
     public override void SetData(CustomerData data, TableManager tableManager)
@@ -60,7 +60,7 @@ public class SpecialCustomer : Customer
     }
 
 
-    public void StartEvent(List<Vector3> targetPosList, Action onCompleted)
+    public void StartEvent(List<Vector3> targetPosList, Action<Customer> onCompleted)
     {
         LoopEvent(-1, targetPosList);
         _onCompleted = onCompleted;
@@ -112,7 +112,7 @@ public class SpecialCustomer : Customer
                 _spriteRenderer.TweenAlpha(0, 0.5f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
             });
 
-            _onCompleted?.Invoke();
+            _onCompleted?.Invoke(this);
             return;
         }
     }
@@ -136,7 +136,7 @@ public class SpecialCustomer : Customer
         {
             _spriteRenderer.TweenAlpha(0, 0.5f).OnComplete(() => ObjectPoolManager.Instance.DespawnSpecialCustomer(this));
         });
-        _onCompleted?.Invoke();
+        _onCompleted?.Invoke(this);
     }
 
     private IEnumerator OnTouchRoutine()

@@ -26,6 +26,7 @@ public class StaffGroup : MonoBehaviour
         {
             StaffType type = (StaffType)i;
             Staff staff = Instantiate(staffPrefab, transform);
+            staff.name = _floorType.ToString() + "_" + (StaffType)i;
             staff.Init(tableManager);
 
             _staffDic.Add(type, staff);
@@ -46,7 +47,6 @@ public class StaffGroup : MonoBehaviour
         {
             if (staff == null)
                 continue;
-
             if (!staff.gameObject.activeInHierarchy)
                 continue;
 

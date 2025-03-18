@@ -8,6 +8,8 @@ public class ChefData : StaffData
     public override float SecondValue => _chefLevelData[0].FoodSpeedAddPercent;
     public override int MaxLevel => _chefLevelData.Length;
 
+    public override float GetSpeed(int level) => _speed;
+
     public override float GetActionValue(int level)
     {
         if (_chefLevelData.Length < level - 1 || level < 0)
@@ -36,6 +38,7 @@ public class ChefData : StaffData
         staff.SetAlpha(0);
     }
 
+
     public override int GetUpgradeMinScore(int level)
     {
         level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
@@ -47,18 +50,6 @@ public class ChefData : StaffData
     {
         level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
         return _chefLevelData[level].UpgradeMoneyData;
-    }
-
-    public override int GetAddScore(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
-        return _chefLevelData[level].ScoreIncrement;
-    }
-
-    public override float GetAddTipMul(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _chefLevelData.Length - 1);
-        return _chefLevelData[level].TipAddPercent;
     }
 }
 

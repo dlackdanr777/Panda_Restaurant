@@ -8,12 +8,19 @@ public class WaiterData : StaffData
     public override float SecondValue => 0;
     public override int MaxLevel => _waiterLevelData.Length;
 
+    public override float GetSpeed(int level)
+    {
+        level -= 1;
+        if (_waiterLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
+
+        return _speed + _waiterLevelData[level].AddSpeed;
+    }
+
     public override float GetActionValue(int level)
     {
-        if (_waiterLevelData.Length < level - 1 || level < 0)
-            throw new ArgumentOutOfRangeException("웨이터 레벨의 범위를 넘어섰습니다.");
-
-        return _waiterLevelData[level - 1].ServingTime;
+        DebugLog.Log("사용하지 않음");
+        return 0;
     }
 
     public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
@@ -39,26 +46,20 @@ public class WaiterData : StaffData
 
     public override int GetUpgradeMinScore(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
+        level -= 1;
+        if (_waiterLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
+
         return _waiterLevelData[level].UpgradeMinScore;
     }
 
     public override UpgradeMoneyData GetUpgradeMoneyData(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
+        level -= 1;
+        if (_waiterLevelData.Length <= level || level < 0)
+            throw new ArgumentOutOfRangeException("레벨의 범위를 넘어섰습니다.");
+
         return _waiterLevelData[level].UpgradeMoneyData;
-    }
-
-    public override int GetAddScore(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
-        return _waiterLevelData[level].ScoreIncrement;
-    }
-
-    public override float GetAddTipMul(int level)
-    {
-        level = Mathf.Clamp(level - 1, 0, _waiterLevelData.Length - 1);
-        return _waiterLevelData[level].TipAddPercent;
     }
 }
 
@@ -66,6 +67,6 @@ public class WaiterData : StaffData
 [Serializable]
 public class WaiterLevelData : StaffLevelData
 {
-    [SerializeField] private float _servingTime;
-    public float ServingTime => _servingTime;
+    [Range(0, 10)][SerializeField] private float _addSpeed;
+    public float AddSpeed => _addSpeed;
 }
