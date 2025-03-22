@@ -511,66 +511,85 @@ public class TableManager : MonoBehaviour
         return null;
     }
 
-   
+
 
 
     public DropGarbageArea GetMinDistanceGarbageArea(ERestaurantFloorType floorType, Vector3 startPos)
     {
         Vector3 targetDoorPos = GetDoorPos(startPos);
-        List<DropGarbageArea> equalFloorArea = new List<DropGarbageArea>();
-        List<DropGarbageArea> notEqualFloorArea = new List<DropGarbageArea>();
+        DropGarbageArea minEqualArea = null;
+        DropGarbageArea minNotEqualArea = null;
 
-        List<DropGarbageArea> floorGarbageAreaList = _furnitureSystem.GetDropGarbageAreaList(floorType);
-        for (int i = 0, cnt = floorGarbageAreaList.Count; i < cnt; i++)
+        float minEqualDist = float.MaxValue;
+        float minNotEqualDist = float.MaxValue;
+
+        foreach (var area in _furnitureSystem.GetDropGarbageAreaList(floorType))
         {
-            Vector3 doorPos = GetDoorPos(floorGarbageAreaList[i].transform.position);
-            if (floorGarbageAreaList[i].Count <= 0)
+            if (area.Count <= 0)
                 continue;
 
-            if (Vector3.Distance(targetDoorPos, doorPos) <= 0.5f)
-                equalFloorArea.Add(floorGarbageAreaList[i]);
+            Vector3 doorPos = GetDoorPos(area.transform.position);
+            float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
+            float startDistance = Vector2.Distance(area.transform.position, startPos);
 
+            if (doorDistance <= 0.5f)
+            {
+                if (startDistance < minEqualDist)
+                {
+                    minEqualDist = startDistance;
+                    minEqualArea = area;
+                }
+            }
             else
-                notEqualFloorArea.Add(floorGarbageAreaList[i]);
-        }
-
-
-        if (equalFloorArea.Count == 0 && notEqualFloorArea.Count == 0)
-            return null;
-
-        else if (0 < equalFloorArea.Count)
-        {
-            float minDis = 10000000;
-            int minIndex = 0;
-            for (int i = 0, cnt = equalFloorArea.Count; i < cnt; i++)
             {
-                if (Vector2.Distance(equalFloorArea[i].transform.position, startPos) < minDis)
+                if (startDistance < minNotEqualDist)
                 {
-                    minDis = Vector2.Distance(equalFloorArea[i].transform.position, startPos);
-                    minIndex = i;
+                    minNotEqualDist = startDistance;
+                    minNotEqualArea = area;
                 }
             }
-            return equalFloorArea[minIndex];
         }
 
+        return minEqualArea ?? minNotEqualArea;
+    }
 
-        else
+    public DropCoinArea GetMinDistanceCoinArea(ERestaurantFloorType floorType, Vector3 startPos)
+    {
+        Vector3 targetDoorPos = GetDoorPos(startPos);
+        DropCoinArea minEqualArea = null;
+        DropCoinArea minNotEqualArea = null;
+
+        float minEqualDist = float.MaxValue;
+        float minNotEqualDist = float.MaxValue;
+
+        foreach (var area in _furnitureSystem.GetDropCoinAreaList(floorType))
         {
-            float minDis = 10000000;
-            int minIndex = 0;
+            if (area.Count <= 0)
+                continue;
 
-            for (int i = 0, cnt = notEqualFloorArea.Count; i < cnt; i++)
+            Vector3 doorPos = GetDoorPos(area.transform.position);
+            float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
+            float startDistance = Vector2.Distance(area.transform.position, startPos);
+
+            if (doorDistance <= 0.5f)
             {
-                Vector3 doorPos = GetDoorPos(floorGarbageAreaList[i].transform.position);
-                if (Vector2.Distance(notEqualFloorArea[i].transform.position, doorPos) < minDis)
+                if (startDistance < minEqualDist)
                 {
-                    minDis = Vector2.Distance(notEqualFloorArea[i].transform.position, startPos);
-                    minIndex = i;
+                    minEqualDist = startDistance;
+                    minEqualArea = area;
                 }
             }
-
-            return notEqualFloorArea[minIndex];
+            else
+            {
+                if (startDistance < minNotEqualDist)
+                {
+                    minNotEqualDist = startDistance;
+                    minNotEqualArea = area;
+                }
+            }
         }
+
+        return minEqualArea ?? minNotEqualArea;
     }
 
 

@@ -13,9 +13,9 @@ public class UIRecipeTab : UIRestaurantAdminTab
     [Space]
     [Header("Slot Option")]
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UIRestaurantAdminRecipeSlot _slotPrefab;
+    [SerializeField] private UIRestaurantAdminFoodTypeSlot _slotPrefab;
 
-    private UIRestaurantAdminRecipeSlot[] _slots;
+    private UIRestaurantAdminFoodTypeSlot[] _slots;
     private List<FoodData> _foodDataList;
 
     public override void Init()
@@ -27,11 +27,11 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
         int foodCount = _foodDataList.Count;
 
-        _slots = new UIRestaurantAdminRecipeSlot[foodCount];
+        _slots = new UIRestaurantAdminFoodTypeSlot[foodCount];
 
         for (int i = 0; i < foodCount; ++i)
         {
-            UIRestaurantAdminRecipeSlot slot = Instantiate(_slotPrefab, _slotParnet);
+            UIRestaurantAdminFoodTypeSlot slot = Instantiate(_slotPrefab, _slotParnet);
 
             int index = i;
             FoodData data = _foodDataList[index];

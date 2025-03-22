@@ -9,9 +9,9 @@ public class UIStaffUpgrade : MobileUIView
     [SerializeField] private TextMeshProUGUI _levelText;
     [SerializeField] private UIImageAndText _selectGroup;
     [SerializeField] private GameObject _lowerFrame;
-    [SerializeField] private UIUpgradeAreaGroup _currentLevelGroup;
-    [SerializeField] private UIUpgradeAreaGroup _nextLevelGroup;
-    [SerializeField] private UIUpgradeAreaGroup _maxLevelGroup;
+    [SerializeField] private UIUpgradeStaffLevelArea _currentLevelGroup;
+    [SerializeField] private UIUpgradeStaffLevelArea _nextLevelGroup;
+    [SerializeField] private UIUpgradeStaffLevelArea _maxLevelGroup;
     [SerializeField] private ParticleSystem _flashEffect;
 
     [Header("Buttons")]
@@ -86,15 +86,19 @@ public class UIStaffUpgrade : MobileUIView
             _levelText.text = "Lv." + level;
             _lowerFrame.gameObject.SetActive(true);
             _maxLevelGroup.gameObject.SetActive(false);
-/*            _currentLevelGroup.SetData(level, _currentData.GetAddScore(level).ToString(), _currentData.GetAddTipMul(level) + "%");
-            _nextLevelGroup.SetData(level + 1, _currentData.GetAddScore(level + 1).ToString(), _currentData.GetAddTipMul(level + 1) + "%");*/
+ 
+            _currentLevelGroup.SetLevelText(level);
+            _currentLevelGroup.SetEffectText(Utility.GetStaffEffectDescription(_currentData, level));
+            _nextLevelGroup.SetLevelText(level + 1);
+            _nextLevelGroup.SetEffectText(Utility.GetStaffEffectDescription(_currentData, level + 1));
         }
         else
         {
             _levelText.text = "Lv.Max";
             _lowerFrame.gameObject.SetActive(false);
             _maxLevelGroup.gameObject.SetActive(true);
-/*            _maxLevelGroup.SetData(level, _currentData.GetAddScore(level).ToString(), _currentData.GetAddTipMul(level) + "%");*/
+            _maxLevelGroup.SetLevelText(level);
+            _maxLevelGroup.SetEffectText(Utility.GetStaffEffectDescription(_currentData, level));
         }
 
 

@@ -28,7 +28,7 @@ public class UIKitchen : MobileUIView
     [Space]
     [Header("Slot Option")]
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UIRestaurantAdminSlot _slotPrefab;
+    [SerializeField] private UIRestaurantAdminFoodTypeSlot _slotPrefab;
 
     [Space]
     [Header("Audios")]
@@ -37,7 +37,7 @@ public class UIKitchen : MobileUIView
 
     private KitchenUtensilType _currentType;
     private ERestaurantFloorType _currentFloorType;
-    private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)KitchenUtensilType.Length];
+    private List<UIRestaurantAdminFoodTypeSlot>[] _slots = new List<UIRestaurantAdminFoodTypeSlot>[(int)KitchenUtensilType.Length];
     List<KitchenUtensilData> _currentTypeDataList;
 
 
@@ -50,11 +50,11 @@ public class UIKitchen : MobileUIView
         for (int i = 0, cntI = (int)KitchenUtensilType.Length; i < cntI; ++i)
         {
             List<KitchenUtensilData> typeDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList((KitchenUtensilType)i);
-            _slots[i] = new List<UIRestaurantAdminSlot>();
+            _slots[i] = new List<UIRestaurantAdminFoodTypeSlot>();
             for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
             {
                 int index = j;
-                UIRestaurantAdminSlot slot = Instantiate(_slotPrefab, _slotParnet);
+                UIRestaurantAdminFoodTypeSlot slot = Instantiate(_slotPrefab, _slotParnet);
                 slot.Init(() => OnSlotClicked(typeDataList[index]));
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
@@ -226,9 +226,9 @@ public class UIKitchen : MobileUIView
         _uikitchenPreview.UpdateUI();
         int slotsIndex = (int)_currentType;
         KitchenUtensilData data;
-        UIRestaurantAdminSlot slot;
+        UIRestaurantAdminFoodTypeSlot slot;
 
-        (ERestaurantFloorType, UIRestaurantAdminSlot)[] equipSlotArray = new (ERestaurantFloorType, UIRestaurantAdminSlot)[(int)ERestaurantFloorType.Length];
+        (ERestaurantFloorType, UIRestaurantAdminFoodTypeSlot)[] equipSlotArray = new (ERestaurantFloorType, UIRestaurantAdminFoodTypeSlot)[(int)ERestaurantFloorType.Length];
         int equipSlotCount = 0;
 
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
@@ -236,6 +236,7 @@ public class UIKitchen : MobileUIView
             data = _currentTypeDataList[i];
             slot = _slots[slotsIndex][i];
             slot.gameObject.SetActive(true);
+            slot.SetFoodType(data.FoodType);
             slot.transform.SetSiblingIndex(i);
 
             if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data))

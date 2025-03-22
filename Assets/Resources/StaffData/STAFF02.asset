@@ -21,39 +21,30 @@ MonoBehaviour:
   _buyScore: 20
   _buyPrice: 15000
   _skill: {fileID: 11400000, guid: 9bd6d0278c021c04680bdded85a56132, type: 2}
+  _speed: 7
   _waiterLevelData:
-  - _tipAddPercent: 20
-    _scoreIncrement: 10
-    _upgradeMinScore: 30
+  - _upgradeMinScore: 30
     _upgradeMoneyData:
       _moneyType: 0
       _price: 3000
-    _servingTime: 18
-  - _tipAddPercent: 22
-    _scoreIncrement: 12
-    _upgradeMinScore: 50
+    _addSpeed: 0
+  - _upgradeMinScore: 50
     _upgradeMoneyData:
       _moneyType: 0
       _price: 7000
-    _servingTime: 18
-  - _tipAddPercent: 24
-    _scoreIncrement: 14
-    _upgradeMinScore: 70
+    _addSpeed: 0
+  - _upgradeMinScore: 70
     _upgradeMoneyData:
       _moneyType: 0
       _price: 15000
-    _servingTime: 18
-  - _tipAddPercent: 26
-    _scoreIncrement: 16
-    _upgradeMinScore: 90
+    _addSpeed: 0
+  - _upgradeMinScore: 90
     _upgradeMoneyData:
       _moneyType: 0
       _price: 30000
-    _servingTime: 18
-  - _tipAddPercent: 28
-    _scoreIncrement: 20
-    _upgradeMinScore: -1
+    _addSpeed: 0
+  - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _servingTime: 18
+    _addSpeed: 0

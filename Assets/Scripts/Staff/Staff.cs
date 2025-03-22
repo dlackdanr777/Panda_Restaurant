@@ -35,8 +35,8 @@ public class Staff : MonoBehaviour
     private float _skillTimer;
     private float _skillCoolTime;
     public int Level => _staffData != null ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, _staffData) : 1;
-    private float _scaleX;
 
+    private float _scaleX;
     private float _moveSpeed;
     private float _speedMul;
     public float SpeedMul => Mathf.Clamp((1 + _speedMul) * GameManager.Instance.AddStaffSpeedMul, 0.5f, 3f);
@@ -353,7 +353,6 @@ public class Staff : MonoBehaviour
                 yield return null;
             }
 
-            // 목표 지점에 정확히 도달하도록 위치 보정
             _moveObj.transform.position = vec;
         }
 

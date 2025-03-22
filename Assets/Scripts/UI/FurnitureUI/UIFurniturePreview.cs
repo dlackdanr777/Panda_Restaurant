@@ -12,6 +12,7 @@ public class UIFurniturePreview : MonoBehaviour
     [SerializeField] private UIImageAndImage _effectSignGroup;
     [SerializeField] private UITextAndText _setGroup;
     [SerializeField] private GameObject _effetGroup;
+    [SerializeField] private UIFoodType _uiFoodType;
 
     [Space]
     [Header("Buttons")]
@@ -69,6 +70,7 @@ public class UIFurniturePreview : MonoBehaviour
             _setGroup.gameObject.SetActive(false);
             _effetGroup.gameObject.SetActive(false);
             _tipPerMinuteGroup.gameObject.SetActive(false);
+            _uiFoodType.gameObject.SetActive(false);
             _selectGroup.ImageColor = new Color(1, 1, 1, 0);
             _selectGroup.SetText(string.Empty);
             return;
@@ -79,8 +81,11 @@ public class UIFurniturePreview : MonoBehaviour
             _setGroup.gameObject.SetActive(true);
             _effetGroup.gameObject.SetActive(true);
             _tipPerMinuteGroup.gameObject.SetActive(true);
+            _uiFoodType.gameObject.SetActive(true);
             _selectGroup.ImageColor = Color.white;
         }
+
+        _uiFoodType.SetFoodType(data.FoodType);
 
         _selectGroup.SetSprite(data.ThumbnailSprite);
         _selectGroup.SetText(data.Name);

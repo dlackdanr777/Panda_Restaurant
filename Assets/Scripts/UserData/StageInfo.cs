@@ -1,6 +1,6 @@
-﻿using Muks.DataBind;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public class StageInfo
 {
@@ -23,7 +23,7 @@ public class StageInfo
     public EStage Stage => _stage;
 
 
-    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor1;
+    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor2;
     public ERestaurantFloorType UnlockFloor => _unlockFloor;
 
 
@@ -36,7 +36,7 @@ public class StageInfo
 
 
     private StaffData[,] _equipStaffDatas = new StaffData[(int)ERestaurantFloorType.Length, (int)StaffType.Length];
-    private Dictionary<string, int> _giveStaffLevelDic = new Dictionary<string, int>();
+    private Dictionary<string, SaveStaffData> _giveStaffDic = new Dictionary<string, SaveStaffData>();
 
     private List<string> _giveFurnitureList = new List<string>();
     private FurnitureData[,] _equipFurnitureDatas = new FurnitureData[(int)ERestaurantFloorType.Length, (int)FurnitureType.Length];
@@ -120,19 +120,20 @@ public class StageInfo
 
     public void GiveStaff(StaffData data)
     {
-        if (_giveStaffLevelDic.ContainsKey(data.Id))
+        if (_giveStaffDic.ContainsKey(data.Id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
         }
 
-        _giveStaffLevelDic.Add(data.Id, 1);
+        SaveStaffData saveData = new SaveStaffData(data.Id, 1);
+        _giveStaffDic.Add(data.Id, saveData);
         OnGiveStaffHandler?.Invoke();
     }
 
     public void GiveStaff(string id)
     {
-        if (_giveStaffLevelDic.ContainsKey(id))
+        if (_giveStaffDic.ContainsKey(id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
             return;
@@ -145,20 +146,19 @@ public class StageInfo
             return;
         }
 
-        _giveStaffLevelDic.Add(id, 1);
-        OnGiveStaffHandler?.Invoke();
+        GiveStaff(data);
     }
 
 
     public bool IsGiveStaff(string id)
     {
-        return _giveStaffLevelDic.ContainsKey(id);
+        return _giveStaffDic.ContainsKey(id);
     }
 
 
     public bool IsGiveStaff(StaffData data)
     {
-        return _giveStaffLevelDic.ContainsKey(data.Id);
+        return _giveStaffDic.ContainsKey(data.Id);
     }
 
 
@@ -206,7 +206,7 @@ public class StageInfo
 
     public void SetEquipStaff(ERestaurantFloorType floorType, StaffData data)
     {
-        if (!_giveStaffLevelDic.ContainsKey(data.Id))
+        if (!_giveStaffDic.ContainsKey(data.Id))
         {
             DebugLog.LogError("해당 스탭은 현재 가지고 있지 않습니다: " + data.Id);
             return;
@@ -241,9 +241,9 @@ public class StageInfo
 
     public int GetStaffLevel(StaffData data)
     {
-        if (_giveStaffLevelDic.TryGetValue(data.Id, out int level))
+        if (_giveStaffDic.TryGetValue(data.Id, out SaveStaffData saveData))
         {
-            return level;
+            return saveData.Level;
         }
 
         throw new Exception("가지고 있지 않은 스태프 입니다: " + data.Id);
@@ -252,9 +252,9 @@ public class StageInfo
 
     public int GetStaffLevel(string id)
     {
-        if (_giveStaffLevelDic.TryGetValue(id, out int level))
+        if (_giveStaffDic.TryGetValue(id, out SaveStaffData saveData))
         {
-            return level;
+            return saveData.Level;
         }
 
         throw new Exception("가지고 있지 않은 스태프 입니다: " + id);
@@ -263,11 +263,11 @@ public class StageInfo
 
     public bool UpgradeStaff(StaffData data)
     {
-        if (_giveStaffLevelDic.TryGetValue(data.Id, out int level))
+        if (_giveStaffDic.TryGetValue(data.Id, out SaveStaffData saveData))
         {
-            if (data.UpgradeEnable(level))
+            if (data.UpgradeEnable(saveData.Level))
             {
-                _giveStaffLevelDic[data.Id] = level + 1;
+                _giveStaffDic[data.Id].LevelUp();
                 OnUpgradeStaffHandler?.Invoke();
                 return true;
             }
@@ -283,22 +283,8 @@ public class StageInfo
 
     public bool UpgradeStaff(string id)
     {
-        if (_giveStaffLevelDic.TryGetValue(id, out int level))
-        {
-            StaffData data = StaffDataManager.Instance.GetStaffData(id);
-            if (data.UpgradeEnable(level))
-            {
-                _giveStaffLevelDic[id] = level + 1;
-                OnUpgradeStaffHandler?.Invoke();
-                return true;
-            }
-
-            DebugLog.LogError("레벨 초과: " + id);
-            return false;
-        }
-
-        DebugLog.LogError("소유중이지 않음: " + id);
-        return false;
+        StaffData data = StaffDataManager.Instance.GetStaffData(id);
+        return UpgradeStaff(data);
     }
 
     #endregion
@@ -787,8 +773,8 @@ public class StageInfo
             data.EquipStaffDataList.Add(staffList);
         }
 
-        // 2. 직원 레벨 정보 복사 (Dictionary 그대로 할당)
-        data.GiveStaffLevelDic = new Dictionary<string, int>(_giveStaffLevelDic);
+        // 2. 직원 정보 복사
+        data.GiveStaffList = _giveStaffDic.Values.ToList();
 
         // 3. 획득한 가구 정보 (List 그대로 할당)
         data.GiveFurnitureList = new List<string>(_giveFurnitureList);
@@ -831,7 +817,17 @@ public class StageInfo
         _unlockFloor = loadData.UnlockFloor;
         _score = loadData.Score;
         _tip = loadData.Tip;
-        _giveStaffLevelDic = loadData.GiveStaffLevelDic;
+
+        _giveStaffDic.Clear();
+        for (int i = 0, cnt = loadData.GiveStaffList.Count; i < cnt; ++i)
+        {
+            if (string.IsNullOrWhiteSpace(loadData.GiveStaffList[i].Id))
+                throw new Exception("아이디 값이 이상합니다: " + loadData.GiveStaffList[i].Id);
+
+            _giveStaffDic.Add(loadData.GiveStaffList[i].Id, loadData.GiveStaffList[i]);
+        }
+
+
         for (int i = 0, cnt = loadData.EquipStaffDataList.Count; i < cnt; ++i)
         {
             for (int j = 0, cntJ = loadData.EquipStaffDataList[i].Count; j < cntJ; ++j)

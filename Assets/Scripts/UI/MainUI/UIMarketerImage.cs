@@ -5,6 +5,8 @@ using UnityEngine.UI;
 public class UIMarketerImage : MonoBehaviour
 {
     [Header("Components")]
+    [SerializeField] private CameraController _camera;
+    [SerializeField] private MainScene _mainScene;
     [SerializeField] private Animator _animator;
     [SerializeField] private UIParticle _uiParticle;
     [SerializeField] private ParticleSystem _particleSystem;
@@ -17,11 +19,12 @@ public class UIMarketerImage : MonoBehaviour
     private Sprite _animationSprite;
     private MarketerData _data;
     private int _particleCount;
-
+    private ERestaurantFloorType _currentFloor;
 
     private void OnEnable()
     {
-        OnChangeMarketerEvent(ERestaurantFloorType.Floor1, StaffType.Marketer);
+        _currentFloor = _mainScene.CurrentFloor;
+        OnChangeMarketerEvent(_currentFloor, StaffType.Marketer);
     }
 
     private void OnDestroy()
@@ -31,8 +34,10 @@ public class UIMarketerImage : MonoBehaviour
 
     public void Init()
     {
-        OnChangeMarketerEvent(ERestaurantFloorType.Floor1, StaffType.Marketer);
+        _currentFloor = _mainScene.CurrentFloor;
+        OnChangeMarketerEvent(_currentFloor, StaffType.Marketer);
         UserInfo.OnChangeStaffHandler += OnChangeMarketerEvent;
+        _camera.OnEndMoveCameraHandler += OnChangeFloorEvent;
     }
 
     public void StartAnime()
@@ -62,9 +67,17 @@ public class UIMarketerImage : MonoBehaviour
         _marketerImage.sprite = _marketerSprite;
     }
 
+
+    private void OnChangeFloorEvent(ERestaurantFloorType floor, CameraController.RestaurantType type)
+    {
+        _currentFloor = _mainScene.CurrentFloor;
+        OnChangeMarketerEvent(_currentFloor, StaffType.Marketer);
+    }
+
+
     private void OnChangeMarketerEvent(ERestaurantFloorType floorType, StaffType type)
     {
-        if (floorType != ERestaurantFloorType.Floor1)
+        if (floorType != _currentFloor)
             return;
 
         if (type != StaffType.Marketer)

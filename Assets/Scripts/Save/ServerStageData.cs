@@ -11,7 +11,7 @@ public class ServerStageData
     public int Tip;
 
     public List<List<string>> EquipStaffDataList = new List<List<string>>();
-    public Dictionary<string, int> GiveStaffLevelDic = new Dictionary<string, int>();
+    public List<SaveStaffData> GiveStaffList = new List<SaveStaffData>();
 
     public List<string> GiveFurnitureList = new List<string>();
     public List<List<string>> EquipFurnitureList = new List<List<string>>();
@@ -30,7 +30,7 @@ public class ServerStageData
         param.Add("UnlockFloor", (int)UnlockFloor);
         param.Add("Score", Score);
         param.Add("Tip", Tip);
-        param.Add("GiveStaffLevelDic", GiveStaffLevelDic.ToDictionary(x => x.Key, x => x.Value));
+        param.Add("GiveStaffList", GiveStaffList);
         param.Add("EquipStaffDataList", EquipStaffDataList);
         param.Add("GiveFurnitureList", GiveFurnitureList.ToList());
         param.Add("EquipFurnitureList", EquipFurnitureList);
@@ -61,15 +61,16 @@ public class ServerStageData
         Tip = GetInt("Tip");
 
 
-        // Dictionary 데이터 변환
-        if (data.ContainsKey("GiveStaffLevelDic"))
+        if (data.ContainsKey("GiveStaffList"))
         {
-            JsonData staffDic = data["GiveStaffLevelDic"];
-            GiveStaffLevelDic.Clear();
-            foreach (var key in staffDic.Keys)
+            JsonData staffListJson = data["GiveStaffList"];
+            GiveStaffList.Clear();
+
+            foreach (JsonData staffData in staffListJson)
             {
-                int value = int.TryParse(staffDic[key].ToString(), out int level) ? level : 1;
-                GiveStaffLevelDic[key] = value;
+                string id = staffData["Id"].ToString();
+                int level = int.TryParse(staffData["Level"].ToString(), out int parsedLevel) ? parsedLevel : 1;
+                GiveStaffList.Add(new SaveStaffData(id, level));
             }
         }
 

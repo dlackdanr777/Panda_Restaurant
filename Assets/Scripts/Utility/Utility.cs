@@ -212,13 +212,13 @@ public static class Utility
     public static string GetFurnitureFoodTypeSetEffectDescription( FoodType type)
     {
 
-        string description = FoodTypeStringConverter(type) + $"속성 음식 수익(<color={ColorToHex(GetColor(ColorType.Positive))}> +10% </color>증가";;
+        string description = FoodTypeStringConverter(type) + $" 속성 음식 수익 증가(<color={ColorToHex(GetColor(ColorType.Positive))}>+10%</color>)";;
         return description;
     }
 
     public static string GetKitchenFoodTypeSetEffectDescription(FoodType type)
     {
-        string description = FoodTypeStringConverter(type) + $"속성 음식 조리 속도(<color={ColorToHex(GetColor(ColorType.Positive))}> +10% </color>증가";
+        string description = FoodTypeStringConverter(type) + $" 속성 음식 조리 속도 증가(<color={ColorToHex(GetColor(ColorType.Positive))}>+10%</color>)";
         return description;
     }
 
@@ -231,7 +231,7 @@ public static class Utility
         switch(data)
         {
             case ManagerData:
-                description = $"손님 자동 배치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초)";
+                description = $"손님 테이블로 자동 배치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초당 <color={ColorToHex(GetColor(ColorType.Positive))}>1</color>명)";
                 break;
 
             case WaiterData:
@@ -247,7 +247,44 @@ public static class Utility
                 break;
 
             case CleanerData:
-                description = $"쓰레기 및 코인 수집(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                description = $"쓰레기 및 코인 수집(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
+                break;
+
+            case GuardData:
+                description = $"도둑 퇴치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초 소요)";
+                break;
+
+            case ChefData:
+                description = $"조리 효율 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
+                break;
+        }
+
+        return description;
+    }
+
+    public static string GetStaffEffectDescription(StaffData data, int level)
+    {
+        string description = string.Empty;
+        switch (data)
+        {
+            case ManagerData:
+                description = $"손님 테이블로 자동 배치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초당 <color={ColorToHex(GetColor(ColorType.Positive))}>1</color>명)";
+                break;
+
+            case WaiterData:
+                description = $"음식 자동 배달(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                break;
+
+            case MarketerData:
+                description = $"자동 손님 호출 버튼 클릭(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초)";
+                break;
+
+            case ServerData:
+                description = $"자동 음식 주문 받기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 1테이블)";
+                break;
+
+            case CleanerData:
+                description = $"쓰레기 및 코인 수집(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
                 break;
 
             case GuardData:
@@ -268,10 +305,10 @@ public static class Utility
         int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
         return data.Skill switch
         {
-            SpeedUpSkill => $"행동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가 ({data.Skill.Duration}s)",
-            FoodPriceUpSkill => $"주문 당 음식 가격 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가 ({data.Skill.Duration}s)",
+            SpeedUpSkill => $"기본 능력 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> UP! (<color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.Duration}</color>초)" ,
+            FoodPriceUpSkill => $"주문 당 음식 가격 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가",
             AutoCustomerGuideSkill => $"손님 자동 안내 ({data.Skill.Duration}s)",
-            AddPromotionCustomerSkill => $"홍보당 손님 호출 인원 <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)data.Skill.FirstValue}</color>명 증가({data.Skill.Duration}s)",
+            AddPromotionCustomerSkill => $"홍보당 손님 호출 인원 <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)data.Skill.FirstValue}</color>명 증가",
             _ => string.Empty
         };
 

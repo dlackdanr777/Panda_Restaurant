@@ -21,40 +21,35 @@ MonoBehaviour:
   _buyScore: 140
   _buyPrice: 2000000
   _skill: {fileID: 11400000, guid: 8700ffc1d7466c449b5dbefcf0d09cde, type: 2}
+  _speed: 8
   _cleanerLevelData:
-  - _tipAddPercent: 65
-    _scoreIncrement: 180
-    _upgradeMinScore: 180
+  - _upgradeMinScore: 180
     _upgradeMoneyData:
       _moneyType: 0
       _price: 140000
     _cleaningTime: 1
-  - _tipAddPercent: 69
-    _scoreIncrement: 230
-    _upgradeMinScore: 200
+    _addSpeed: 0
+  - _upgradeMinScore: 200
     _upgradeMoneyData:
       _moneyType: 0
       _price: 160000
     _cleaningTime: 1
-  - _tipAddPercent: 73
-    _scoreIncrement: 280
-    _upgradeMinScore: 220
+    _addSpeed: 0
+  - _upgradeMinScore: 220
     _upgradeMoneyData:
       _moneyType: 0
       _price: 180000
     _cleaningTime: 1
-  - _tipAddPercent: 77
-    _scoreIncrement: 330
-    _upgradeMinScore: 240
+    _addSpeed: 0
+  - _upgradeMinScore: 240
     _upgradeMoneyData:
       _moneyType: 0
       _price: 190000
     _cleaningTime: 1
-  - _tipAddPercent: 82
-    _scoreIncrement: 380
-    _upgradeMinScore: -1
+    _addSpeed: 0
+  - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
     _cleaningTime: 1
-  _waitDuration: 2.5
+    _addSpeed: 0

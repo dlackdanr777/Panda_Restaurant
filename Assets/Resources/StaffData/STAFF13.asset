@@ -21,39 +21,29 @@ MonoBehaviour:
   _buyScore: 90
   _buyPrice: 100000
   _skill: {fileID: 11400000, guid: 1ccaed5bb4e717c4180679099fa58efa, type: 2}
-  _customerCallPercentage: 20
+  _speed: 6
   _marketerLevelData:
-  - _tipAddPercent: 38
-    _scoreIncrement: 35
-    _upgradeMinScore: 130
+  - _upgradeMinScore: 130
     _upgradeMoneyData:
       _moneyType: 0
       _price: 30000
     _marketingTime: 2
-  - _tipAddPercent: 40
-    _scoreIncrement: 38
-    _upgradeMinScore: 150
+  - _upgradeMinScore: 150
     _upgradeMoneyData:
       _moneyType: 0
       _price: 90000
     _marketingTime: 2
-  - _tipAddPercent: 42
-    _scoreIncrement: 41
-    _upgradeMinScore: 170
+  - _upgradeMinScore: 170
     _upgradeMoneyData:
       _moneyType: 0
       _price: 120000
     _marketingTime: 2
-  - _tipAddPercent: 44
-    _scoreIncrement: 44
-    _upgradeMinScore: 190
+  - _upgradeMinScore: 190
     _upgradeMoneyData:
       _moneyType: 0
       _price: 150000
     _marketingTime: 2
-  - _tipAddPercent: 46
-    _scoreIncrement: 50
-    _upgradeMinScore: -1
+  - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1

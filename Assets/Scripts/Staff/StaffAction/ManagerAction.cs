@@ -17,13 +17,10 @@ public class ManagerAction : IStaffAction
 
     public void PerformAction(Staff staff)
     {
-        DebugLog.Log("액션 실행중: " + _actionCoolTime);
         if (_actionCoolTime <= 0)
         {
             _tableManager.OnCustomerGuideEvent();
             _actionCoolTime = staff.GetActionValue();
-            DebugLog.Log("매니저 실행: " + _actionCoolTime);
-
         }
         else
         {

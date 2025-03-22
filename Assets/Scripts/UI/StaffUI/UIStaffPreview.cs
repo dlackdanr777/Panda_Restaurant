@@ -8,12 +8,11 @@ public class UIStaffPreview : MonoBehaviour
     [Header("Components")]
     [SerializeField] private UIStaffSelectSlot _selectGroup;
     [SerializeField] private UIImageAndText _levelGroup;
-    [SerializeField] private UIImageAndText _scoreGroup;
-    [SerializeField] private UIImageAndText _addTipPercentGroup;
-    [SerializeField] private UIImageAndImage _scoreSignGroup;
-    [SerializeField] private UIImageAndImage _effectSignGroup;
-    [SerializeField] private UIStaffSkillEffect _skillEffectGroup;
-    [SerializeField] private GameObject _effetGroup;
+    [SerializeField] private UITextAndText _staffEffectGroup;
+    [SerializeField] private UITextAndText _skillGroup;
+    [SerializeField] private UITextAndText _coolTimeGroup;
+    [SerializeField] private TextMeshProUGUI _descriptionText;
+    [SerializeField] private GameObject _effectGroup;
 
     [Space]
     [Header("Buttons")]
@@ -42,7 +41,6 @@ public class UIStaffPreview : MonoBehaviour
     public void Init(Action<ERestaurantFloorType, StaffData> onEquipButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
     {
         _selectGroup.Init();
-        _skillEffectGroup.Init();
         _equipButtonGroup.Init(On1FloorEquipButtonClicked, On2FloorEquipButtonClicked, On3FloorEquipButtonClicked, OnEquipCancelButtonClicked);
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         _onEquipButtonClicked = onEquipButtonClicked;
@@ -72,74 +70,36 @@ public class UIStaffPreview : MonoBehaviour
 
         if (data == null)
         {
-            _scoreGroup.gameObject.SetActive(false);
-            _skillEffectGroup.gameObject.SetActive(false);
-            _effetGroup.gameObject.SetActive(false);
-            _addTipPercentGroup.gameObject.SetActive(false);
+            _effectGroup.gameObject.SetActive(false);
+            _staffEffectGroup.gameObject.SetActive(false);
+            _skillGroup.gameObject.SetActive(false);
+            _coolTimeGroup.gameObject.SetActive(false);
             _selectGroup.ImageColor = new Color(1, 1, 1, 0);
             _selectGroup.SetText(string.Empty);
+            _descriptionText.SetText(string.Empty);
             return;
         }
         else
         {
-            _scoreGroup.gameObject.SetActive(true);
-            _skillEffectGroup.gameObject.SetActive(true);
-            _effetGroup.gameObject.SetActive(true);
-            _addTipPercentGroup.gameObject.SetActive(true);
+            _staffEffectGroup.gameObject.SetActive(true);
+            _skillGroup.gameObject.SetActive(true);
+            _coolTimeGroup.gameObject.SetActive(true);
+            _effectGroup.gameObject.SetActive(true);
             _selectGroup.ImageColor = Color.white;
         }
         int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
 
         _selectGroup.SetSprite(data.ThumbnailSprite);
         _selectGroup.SetText(data.Name);
-/*        _scoreGroup.SetText("<color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddScore(level).ToString() + "</color> 점 증가");
-        _addTipPercentGroup.SetText("메뉴별 팁 <color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.GetAddTipMul(level) + "%</color> 증가");*/
-        _skillEffectGroup.SetData(data);
+
+        _staffEffectGroup.SetText2(Utility.GetStaffEffectDescription(data));
+        _skillGroup.SetText2(Utility.GetStaffSkillDescription(data));
+        _coolTimeGroup.SetText2(data.Skill.Cooldown + "s");
+        _descriptionText.SetText(data.Description);
 
         StaffData equipData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, type, StaffDataManager.Instance.GetStaffType(data));
         int equipDataLevel = equipData == null ? 1 : UserInfo.IsGiveStaff(UserInfo.CurrentStage, equipData) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, equipData) : 1;
-/*        if (equipData == null)
-        {
-            _scoreSignGroup.Image1SetActive(false);
-            _scoreSignGroup.Image2SetActive(false);
-            _effectSignGroup.Image1SetActive(false);
-            _effectSignGroup.Image2SetActive(false);
-        }
-        else
-        {
-            if (equipData.GetAddScore(equipDataLevel) < data.GetAddScore(level))
-            {
-                _scoreSignGroup.Image1SetActive(false);
-                _scoreSignGroup.Image2SetActive(true);
-            }
-            else if (data.GetAddScore(level) < equipData.GetAddScore(equipDataLevel))
-            {
-                _scoreSignGroup.Image1SetActive(true);
-                _scoreSignGroup.Image2SetActive(false);
-            }
-            else
-            {
-                _scoreSignGroup.Image1SetActive(false);
-                _scoreSignGroup.Image2SetActive(false);
-            }
 
-            if (equipData.GetAddTipMul(equipDataLevel) < data.GetAddTipMul(level))
-            {
-                _effectSignGroup.Image1SetActive(false);
-                _effectSignGroup.Image2SetActive(true);
-            }
-            else if (data.GetAddTipMul(level) < equipData.GetAddTipMul(equipDataLevel))
-            {
-                _effectSignGroup.Image1SetActive(true);
-                _effectSignGroup.Image2SetActive(false);
-            }
-            else
-            {
-                _effectSignGroup.Image1SetActive(false);
-                _effectSignGroup.Image2SetActive(false);
-            }
-        }
-*/
         if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
         {
             _levelGroup.gameObject.SetActive(true);
@@ -190,13 +150,10 @@ public class UIStaffPreview : MonoBehaviour
                 _scoreButton.gameObject.SetActive(true);
                 _scoreButton.SetText(data.BuyScore.ToString());
                 _selectGroup.SetSprite(_questionMarkSprite);
-                _scoreGroup.SetText("???");
-                _addTipPercentGroup.SetText("???");
-                _skillEffectGroup.SetData(null);
-                _effectSignGroup.Image1SetActive(false);
-                _effectSignGroup.Image2SetActive(false);
-                _scoreSignGroup.Image1SetActive(false);
-                _scoreSignGroup.Image2SetActive(false);
+                _staffEffectGroup.SetText2("???");
+                _skillGroup.SetText2("???");
+                _coolTimeGroup.SetText2("???");
+                _descriptionText.SetText("???");
                 return;
             }
 

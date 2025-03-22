@@ -87,14 +87,6 @@ public class GameManager : MonoBehaviour
 
     public float AddMiniGameTime => _addUpgradeGachaItemMiniGameTime + _addGiveRecipeMiniGameTime;
 
-
-/*[SerializeField] private int _addEquipStaffScore;
-    [SerializeField] private float _addEquipStaffTipMul;
-    [SerializeField] private int _addEquipStaffMaxWaitCustomerCount;
-    [SerializeField] private float[] _addEquipStaffCookSpeedMul = new float[(int)ERestaurantFloorType.Length];*/
-    
-
-
     [SerializeField] private int _addEquipFurnitureScore;
     [SerializeField] private int _addEquipFurnitureCookSpeedMul;
     [SerializeField] private int _addEquipFurnitureTipPerMinute;
@@ -265,56 +257,6 @@ public class GameManager : MonoBehaviour
         }
 #endif
     }
-
-
-   /* private void OnEquipStaffEffectCheck()
-    {
-        _addEquipStaffScore = 0;
-        _addEquipStaffTipMul = 0;
-        _addEquipStaffMaxWaitCustomerCount = 0;
-        int addScore = 0;
-        float addTipMul = 0;
-        int maxWaitCustomerCount = 0;
-
-        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
-        {
-            _addEquipStaffCookSpeedMul[i] = 0;
-        }
-
-        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
-        {
-            for (int j = 0, cntJ = (int)StaffType.Length; j < cntJ; ++j)
-            {
-                StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, (ERestaurantFloorType)i, (StaffType)j);
-
-                if (data == null)
-                    continue;
-
-                int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, data);
-                if ((StaffType)j == StaffType.Manager)
-                {
-                    ManagerData managerData = (ManagerData)data;
-                    maxWaitCustomerCount += Mathf.FloorToInt(managerData.GetActionValue(level));
-                }
-
-                else if((StaffType)j == StaffType.Chef)
-                {
-                    ChefData chefData = (ChefData)data;
-                    _addEquipStaffCookSpeedMul[i] += chefData.GetActionValue(level);
-                }
-
-                addScore += data.GetAddScore(level);
-                addTipMul += data.GetAddTipMul(level);
-            }
-        }
-       
-
-        _addEquipStaffScore = addScore;
-        _addEquipStaffTipMul = addTipMul;
-        _addEquipStaffMaxWaitCustomerCount = maxWaitCustomerCount;
-        OnChangeScoreHandler?.Invoke();
-        OnChangeMaxWaitCustomerCountHandler?.Invoke();
-    }*/
 
 
     private void OnEquipFurnitureEffectCheck()

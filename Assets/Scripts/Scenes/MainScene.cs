@@ -1,9 +1,9 @@
 using Muks.UI;
+using System;
 using UnityEngine;
 
 public class MainScene : MonoBehaviour
 {
-
 
     [Header("Option")]
     [SerializeField] private EStage _stage;
