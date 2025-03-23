@@ -7,13 +7,12 @@ public class StaffGroup : MonoBehaviour
     [SerializeField] private ERestaurantFloorType _floorType;
     public ERestaurantFloorType FloorType => _floorType;
 
-
-
     private CustomerController _customerController;
     private TableManager _tableManager;
     private KitchenSystem _kitchenSystem;
-
     private Dictionary<StaffType, Staff> _staffDic = new Dictionary<StaffType, Staff>();
+
+
 
     public void Init(CustomerController customerController, TableManager tableManager, KitchenSystem kitchenSystem)
     {
@@ -21,11 +20,10 @@ public class StaffGroup : MonoBehaviour
         _tableManager = tableManager;
         _kitchenSystem = kitchenSystem;
 
-        Staff staffPrefab = Resources.Load<Staff>("Staff");
         for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
         {
             StaffType type = (StaffType)i;
-            Staff staff = Instantiate(staffPrefab, transform);
+            Staff staff = ObjectPoolManager.Instance.SpawnStaff(type, transform.position, transform);;
             staff.name = _floorType.ToString() + "_" + (StaffType)i;
             staff.Init(tableManager);
 

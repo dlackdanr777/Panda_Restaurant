@@ -1,6 +1,4 @@
 using Muks.Tween;
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -28,56 +26,64 @@ public class ObjectPoolManager : MonoBehaviour
 
     private static ObjectPoolManager _instance;
 
+
+    private static int _staffCount = (int)ERestaurantFloorType.Length;
+    private static GameObject _staffParent;
+    private static GameObject[] _staffParents = new GameObject[(int)StaffType.Length];
+    private static Staff[] _staffPrefabs = new Staff[(int)StaffType.Length];
+    private static Queue<Staff>[] _staffPools = new Queue<Staff>[(int)StaffType.Length];
+
     private static int _customerCount = 30;
     private static int _specialCustomerCount = 5;
     private static int _gatecrasherCustomerCount = 5;
     private static GameObject _customerParent;
+    private static NormalCustomer _normalCustomerPrefab;
+    private static SpecialCustomer _specialCustomerPrefab;
+    private static GatecrasherCustomer _gatecrasherCustomerPrefab;
     private static Queue<NormalCustomer> _normalCustomerPool = new Queue<NormalCustomer>();
     private static Queue<SpecialCustomer> _specialCustomerPool = new Queue<SpecialCustomer>();
     private static Queue<GatecrasherCustomer> _gatecrasherCustomerPool = new Queue<GatecrasherCustomer>();
 
+
     private static int _coinCount = 50;
     private static GameObject _coinParent;
+    private static PointerDownSpriteRenderer _coinPrefab;
     private static Queue<PointerDownSpriteRenderer> _coinPool = new Queue<PointerDownSpriteRenderer>();
 
 
     private static int _garbageCount = 100;
     private static GameObject _garbageParent;
+    private static PointerDownSpriteRenderer _garbagePrefab;
     private static Queue<PointerDownSpriteRenderer> _garbagePool = new Queue<PointerDownSpriteRenderer>();
     private static List<PointerDownSpriteRenderer> _enabledGarbagePool = new List<PointerDownSpriteRenderer>();
 
     private static int _tmpCount = 20;
     private static GameObject _tmpParent;
+    private static TextMeshProUGUI _tmpPrefab;
     private static Queue<TextMeshProUGUI> _tmpPool = new Queue<TextMeshProUGUI>();
     private static List<TextMeshProUGUI> _enabledTmpPool = new List<TextMeshProUGUI>();
 
     private static int _smokeParitcleCount = 10;
     private static GameObject _particleParent;
+    private static SmokeParticle _smokeParticlePrefab;
     private static Queue<SmokeParticle> _smokeParitclePool = new Queue<SmokeParticle>();
 
     private static int _uiCoinCount = 50;
+    private static RectTransform _uiCoinPrefab;
     private static Queue<RectTransform> _uiCoinPool = new Queue<RectTransform>();
 
     private static int _uiDiaCount = 50;
+    private static RectTransform _uiDiaPrefab;
     private static Queue<RectTransform> _uiDiaPool = new Queue<RectTransform>();
 
-    private static int _uiEffectCount;
+    private static int _uiEffectCount = 10;
+    private static UIParticleEffect[] _uiEffectPrefabs = new UIParticleEffect[(int)UIEffectType.Length];
     private static Queue<UIParticleEffect>[] _uiEffectPool;
 
 
-    private static NormalCustomer _normalCustomerPrefab;
-    private static SpecialCustomer _specialCustomerPrefab;
-    private static GatecrasherCustomer _gatecrasherCustomerPrefab;
-    private static PointerDownSpriteRenderer _coinPrefab;
-    private static SmokeParticle _smokeParticlePrefab;
-    private static RectTransform _uiCoinPrefab;
-    private static RectTransform _uiDiaPrefab;
-    private static PointerDownSpriteRenderer _garbagePrefab;
-    private static TextMeshProUGUI _tmpPrefab;
-    private static UIParticleEffect[] _uiEffectPrefabs = new UIParticleEffect[(int)UIEffectType.Length];
-
     private static Sprite[] _garbageImages;
     private static Canvas _uiCanvas;
+
 
     private void Awake()
     {
@@ -98,6 +104,7 @@ public class ObjectPoolManager : MonoBehaviour
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
         scaler.matchWidthOrHeight = 1;
 
+        StaffPooling();
         CustomerPooling();
         CoinPooling();
         UICoinPooling();
@@ -106,6 +113,39 @@ public class ObjectPoolManager : MonoBehaviour
         TmpPooling();
         UIEffectPooling();
         SmokeParticlePooling();
+    }
+
+
+    private static void StaffPooling()
+    {
+        _staffParent = new GameObject("StaffParent");
+        _staffParent.transform.parent = _instance.transform;
+
+        for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        {
+            if (_staffParents[i] == null)
+            {
+                _staffParents[i] = new GameObject((StaffType)i + "_Parent");
+                _staffParents[i].transform.parent = _staffParent.transform;
+            }
+
+            _staffPools[i] = new Queue<Staff>();
+
+            if (_staffPrefabs[i] == null)
+                _staffPrefabs[i] = Resources.Load<Staff>("Staff/Staff");
+        }
+
+        _staffPrefabs[(int)StaffType.Cleaner] = Resources.Load<StaffCleaner>("Staff/Cleaner");
+        _staffCount = (int)ERestaurantFloorType.Length;
+        for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        {
+            for (int j = 0; j < _staffCount; ++j)
+            {
+                Staff staff = Instantiate(_staffPrefabs[i], _staffParents[i].transform);
+                _staffPools[i].Enqueue(staff);
+                staff.gameObject.SetActive(false);
+            }
+        }
     }
 
 
@@ -272,6 +312,35 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
+    public Staff SpawnStaff(StaffType type, Vector3 pos, Transform parent)
+    {
+        Staff staff;
+        int typeIndex = (int)type;
+        if (_staffPools[typeIndex].Count == 0)
+        {
+            staff = Instantiate(_staffPrefabs[typeIndex], pos, Quaternion.identity, parent);
+            return staff;
+        }
+
+        staff = _staffPools[typeIndex].Dequeue();
+        staff.gameObject.SetActive(false);
+        staff.gameObject.SetActive(true);
+        staff.transform.position = pos;
+        staff.transform.rotation = Quaternion.identity;
+        staff.transform.SetParent(parent);
+        staff.ObjectPoolSpawnEvent();
+        return staff;
+    }
+
+
+    public void DespawnStaff(StaffType type, Staff staff)
+    {
+        int typeIndex = (int)type;
+        staff.gameObject.SetActive(false);
+        staff.ObjectPoolDespawnEvent();
+        staff.transform.SetParent(_staffParents[typeIndex].transform);
+        _staffPools[typeIndex].Enqueue(staff);
+    }
 
 
     public NormalCustomer SpawnNormalCustomer(Vector3 pos, Quaternion rot)

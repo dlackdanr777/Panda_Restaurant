@@ -7,44 +7,37 @@ using Muks.Tween;
 
 public class Staff : MonoBehaviour
 {
-    [SerializeField] private GameObject _moveObj;
-    [SerializeField] private GameObject _spriteParent;
-    [SerializeField] private SpriteRenderer _spriteRenderer;
+    [SerializeField] protected GameObject _moveObj;
+    [SerializeField] protected GameObject _spriteParent;
+    [SerializeField] protected SpriteRenderer _spriteRenderer;
     public SpriteRenderer SpriteRenderer => _spriteRenderer;
-
-    [Header("Cleaner Components")]
-    [SerializeField] private Animator _animator;
-    [SerializeField] private AudioSource _audio;
-    [SerializeField] private AudioClip _cleanSound;
-    [SerializeField] private GameObject _cleanerItem;
-    [SerializeField] private GameObject _cleanParticle;
 
     [Space]
     [Header("Audios")]
     [SerializeField] private AudioClip _skillActiveSound;
 
-    private TableManager _tableManager;
-    private StaffData _staffData;
-    private StaffType _staffType;
-    private IStaffAction _staffAction;
-    private EStaffState _state;
-    private ERestaurantFloorType _equipFloorType;
+    protected TableManager _tableManager;
+    protected StaffData _staffData;
+    protected StaffType _staffType;
+    protected IStaffAction _staffAction;
+    protected EStaffState _state;
+    protected ERestaurantFloorType _equipFloorType;
     public ERestaurantFloorType EquipFloorType => _equipFloorType;
 
-    private bool _usingSkill;
-    private float _skillTimer;
-    private float _skillCoolTime;
+    protected bool _usingSkill;
+    protected float _skillTimer;
+    protected float _skillCoolTime;
     public int Level => _staffData != null ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, _staffData) : 1;
 
-    private float _scaleX;
-    private float _moveSpeed;
-    private float _speedMul;
+    protected float _scaleX;
+    protected float _moveSpeed;
+    protected float _speedMul;
     public float SpeedMul => Mathf.Clamp((1 + _speedMul) * GameManager.Instance.AddStaffSpeedMul, 0.5f, 3f);
 
-    private Coroutine _useSkillRoutine;
+    protected Coroutine _useSkillRoutine;
 
 
-    public void Init(TableManager tableManager)
+    public virtual void Init(TableManager tableManager)
     {
         _tableManager = tableManager;
         _scaleX = transform.localScale.x;
@@ -71,7 +64,7 @@ public class Staff : MonoBehaviour
 
 
 
-    public void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public virtual void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         if (staffData == _staffData)
             return;
@@ -98,9 +91,6 @@ public class Staff : MonoBehaviour
         _equipFloorType = equipFloorType;
         _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
         _staffAction = staffData.GetStaffAction(this, tableManager, kitchenSystem, customerController);
-        _animator.enabled = staffData is CleanerData;
-        _cleanerItem.gameObject.SetActive(staffData is CleanerData);
-        _cleanParticle.gameObject.SetActive(false);
         _moveSpeed = staffData.GetSpeed(Level);
         _speedMul = 0;
         _usingSkill = false;
@@ -138,27 +128,9 @@ public class Staff : MonoBehaviour
         _speedMul = Mathf.Clamp(_speedMul + value * 0.01f, 0f, 10f);
     }
 
-
-    public void PlayCleanSound()
-    {
-        _audio.PlayOneShot(_cleanSound);
-    }
-
-    public void StopSound()
-    {
-        if (!_audio.isPlaying)
-            return;
-
-        _audio.Stop();
-    }
-
-
-    public void SetStaffState(EStaffState state)
+    public virtual void SetStaffState(EStaffState state)
     {
         _state = state;
-
-        if(_animator.enabled)
-            _animator.SetInteger("State", (int)_state);
     }
 
 
@@ -408,6 +380,23 @@ public class Staff : MonoBehaviour
             return;
 
         _moveSpeed = _staffData.GetSpeed(Level);
+    }
+
+    public void ObjectPoolSpawnEvent()
+    {
+        LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
+    }
+
+    public void ObjectPoolDespawnEvent()
+    {
+        LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
+    }
+
+
+    private void OnChangeSceneEvent()
+    {
+        _staffData = null;
+        ObjectPoolManager.Instance.DespawnStaff(_staffType, this);
     }
 }
 

@@ -7,7 +7,7 @@ public class CleanerAction : IStaffAction
     private bool _isUsed = false;
     private bool _isNoAction;
     private float _time;
-    private float _duration = 2f;
+    private float _duration = 1f;
     private TweenData _tweenData;
     private Vector3 _cleanerPos;
 
@@ -17,7 +17,7 @@ public class CleanerAction : IStaffAction
         _isUsed = false;
         _isNoAction = false;
         _time = 0;
-        _duration = 2f;
+        _duration = 1f;
         _cleanerPos = _tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Cleaner);
         staff.transform.position = _cleanerPos;
         staff.SetAlpha(1);
