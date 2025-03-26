@@ -19,11 +19,13 @@ public class StageInfo
     public event Action OnGiveKitchenUtensilHandler;
     public event Action OnChangeKitchenUtensilSetDataHandler;
 
+    public event Action OnAddSinkBowlHandler;
+
     private EStage _stage;
     public EStage Stage => _stage;
 
 
-    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor2;
+    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor1;
     public ERestaurantFloorType UnlockFloor => _unlockFloor;
 
 
@@ -50,6 +52,8 @@ public class StageInfo
     private FoodType[] _furnitureEnabledFoodType = new FoodType[(int)ERestaurantFloorType.Length];
     private FoodType[] _kitchenuntensilEnabledFoodType = new FoodType[(int)ERestaurantFloorType.Length];
 
+    private SaveKitchenData[] _saveKitchenDatas = new SaveKitchenData[(int)ERestaurantFloorType.Length];
+
     //서버에 저장 X
     private List<string> _collectFurnitureSetDataList = new List<string>();
     private List<string> _collectKitchenUtensilSetDataList = new List<string>();
@@ -58,7 +62,8 @@ public class StageInfo
     {
         for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
-            for(int j = 0, cntJ = (int)TableType.Length; j < cntJ; ++j)
+            _saveKitchenDatas[i] = new SaveKitchenData();
+            for (int j = 0, cntJ = (int)TableType.Length; j < cntJ; ++j)
             {
                 _garbageAreaDatas[i, j] = new GarbageAreaData();
             }
@@ -745,6 +750,42 @@ public class StageInfo
 
 
 
+
+    #endregion
+
+
+    #region KitchenData
+
+    public int GetSinkBowlCount(ERestaurantFloorType floor)
+    {
+        int floorIndex = (int)floor;
+        return _saveKitchenDatas[floorIndex].SinkBowlCount;
+    }
+
+    public int GetMaxSinkBowlCount(ERestaurantFloorType floor)
+    {
+        int floorIndex = (int)floor;
+        return _saveKitchenDatas[floorIndex].MaxSinkBowlCount;
+    }
+
+    public void AddSinkBowlCount(ERestaurantFloorType floor)
+    {
+        int floorIndex = (int)floor;
+        if (!_saveKitchenDatas[floorIndex].GetBowlAddEnabled())
+        {
+            DebugLog.LogError("현재 씽크대가 꽉찼습니다:" + _saveKitchenDatas[floorIndex].SinkBowlCount + "/" + _saveKitchenDatas[floorIndex].MaxSinkBowlCount);
+            return;
+        }
+
+        _saveKitchenDatas[floorIndex].AddSinkBowlCount();
+        OnAddSinkBowlHandler?.Invoke();
+    }
+
+    public bool GetBowlAddEnabled(ERestaurantFloorType floor)
+    {
+        int floorIndex = (int)floor;
+        return _saveKitchenDatas[floorIndex].GetBowlAddEnabled();
+    }
 
     #endregion
 

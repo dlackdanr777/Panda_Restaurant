@@ -20,7 +20,10 @@ public class FurnitureData : ShopData
     private int _effectValue;
     public int EffectValue => _effectValue;
 
-    public FurnitureData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType,  FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue)
+    private UnlockConditionData _unlockData;
+    public UnlockConditionData UnlockData => _unlockData;
+
+    public FurnitureData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType,  FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount)
     {
         _sprite = sprite;
         _thumbnailSPrite = thumbnailSprite;
@@ -38,5 +41,7 @@ public class FurnitureData : ShopData
 
         _equipEffectType = euipEffectType;
         _effectValue = effectValue;
+
+        _unlockData = new UnlockConditionData(unlockType, unlockId, unlockCount);
     }
 }

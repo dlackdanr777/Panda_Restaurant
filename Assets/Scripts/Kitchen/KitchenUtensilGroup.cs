@@ -12,9 +12,6 @@ public class KitchenUtensilGroup: MonoBehaviour
     [Header("Components")]
     [SerializeField] private KitchenUtensil[] _kitchenUtensils;
     [SerializeField] private GameObject[] _smokeAnimations;
-    [SerializeField] private int _burnerCount = 0;
-
-
 
     [Space]
     [Header("UI Options")]
@@ -51,9 +48,10 @@ public class KitchenUtensilGroup: MonoBehaviour
 
         for (int i = 0, cnt = _kitchenUtensils.Length; i < cnt; ++i)
         {
-            _kitchenUtensils[i].Init();
+            _kitchenUtensils[i].Init(_floorType);
             _kitchenUtensilDic[_kitchenUtensils[i].Type].Add(_kitchenUtensils[i]);
         }
+        _burnerDatas[0].IsUsable = true;
         UpdateKitchen();
         UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEvent;
     }
@@ -61,8 +59,11 @@ public class KitchenUtensilGroup: MonoBehaviour
 
     void Update()
     {
-        for(int i = 0; i < _burnerCount; ++i)
+        for(int i = 0, cnt = _burnerDatas.Length; i < cnt; ++i)
         {
+            if (!_burnerDatas[i].IsUsable)
+                continue;
+
             if (_burnerDatas[i].Time <= 0)
             {
                 DequeueFood(i);
@@ -93,11 +94,7 @@ public class KitchenUtensilGroup: MonoBehaviour
 
         if (_cookingQueue.Count == 0)
         {
-            _burnerDatas[burnerIndex].CookingData = default;
-            _burnerDatas[burnerIndex].Time = 0;
-            _burnerTimers[burnerIndex].SetFillAmount(0);
-            _burnerTimers[burnerIndex].SetActive(false);
-            _smokeAnimations[burnerIndex].SetActive(false);
+            ResetBurnerData(burnerIndex);
             return;
         }
 
@@ -114,7 +111,6 @@ public class KitchenUtensilGroup: MonoBehaviour
     {
         KitchenUtensilData equipData;
         KitchenUtensilType type;
-        _burnerCount = 0;
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
         {
             type = (KitchenUtensilType)i;
@@ -124,11 +120,19 @@ public class KitchenUtensilGroup: MonoBehaviour
                 data.SetData(equipData);
             }
 
-            if ((type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5) && equipData != null)
+            if ((type >= KitchenUtensilType.Burner2 && type <= KitchenUtensilType.Burner5))
             {
-                _burnerCount++;
-            }
+                if(equipData != null)
+                {
+                    _burnerDatas[i].IsUsable = true;
+                }
+                else
+                {
+                    _burnerDatas[i].IsUsable = false;
+                    SetDefalutBurnerData(i);
+                }
 
+            }
         }
     }
 
@@ -144,36 +148,36 @@ public class KitchenUtensilGroup: MonoBehaviour
             data.SetData(equipData);
         }
 
-        if(type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5)
+        if(type >= KitchenUtensilType.Burner2 && type <= KitchenUtensilType.Burner5)
         {
-            int _tmpBurnerCount = _burnerCount;
-            _burnerCount = 0;
-            for (int i = 0, cnt = (int)KitchenUtensilType.Burner5; i <= cnt; i++)
+            if(equipData == null)
             {
-                if (UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, floorType, (KitchenUtensilType)i) != null)
-                    _burnerCount++;
+                _burnerDatas[(int)type].IsUsable = false;
+                SetDefalutBurnerData((int)type);
             }
-
-            for(int i = _tmpBurnerCount; i < _burnerCount; ++i)
+            else
             {
-                _burnerDatas[i].Time = 0;
-                _burnerTimers[i].SetActive(false);
-                _burnerTimers[i].SetWorldTransform(_burnerTimerTrs[i]);
-                _smokeAnimations[i].gameObject.SetActive(false);
-            }
-
-            for (int i = _burnerCount, cnt = _burnerDatas.Length; i < cnt; ++i)
-            {
-                if (!_burnerDatas[i].CookingData.IsDefault())
-                    _cookingQueue.Enqueue(_burnerDatas[i].CookingData);
-
-                _burnerDatas[i].CookingData = default;
-                _burnerTimers[i].SetFillAmount(0);
-                _burnerTimers[i].SetActive(false);
-                _smokeAnimations[i].gameObject.SetActive(false);
-                _burnerTimers[i].SetWorldTransform(_burnerTimerTrs[i]);
+                _burnerDatas[(int)type].IsUsable = true;
             }
         }
+    }
+
+    private void ResetBurnerData(int index)
+    {
+        _burnerDatas[index].Time = 0;
+        _burnerDatas[index].CookingData.SetDefault();
+        _burnerTimers[index].SetFillAmount(0);
+        _burnerTimers[index].SetActive(false);
+        _smokeAnimations[index].gameObject.SetActive(false);
+    }
+
+    private void SetDefalutBurnerData(int index)
+    {
+        if (!_burnerDatas[index].CookingData.IsDefault())
+        {
+            _cookingQueue.Enqueue(_burnerDatas[index].CookingData);
+        }
+        ResetBurnerData(index);
     }
 
 

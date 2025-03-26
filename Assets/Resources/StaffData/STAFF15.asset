@@ -16,7 +16,8 @@ MonoBehaviour:
   _thumbnailSPrite: {fileID: 21300000, guid: f0994e83a381b694e88aba7c7e8f3d8b, type: 3}
   _name: "\uD1A0\uB8E8\uAFBC"
   _id: STAFF15
-  _description: 
+  _description: "\uB098\uBB34 \uB300\uC2E0 \uC190\uB2D8\uC744 \uBCA0\uC5B4\uC624\uB294
+    \uC529\uC529\uD55C \uD1A0\uB8E8\uB8E8\r"
   _moneyType: 1
   _buyScore: 150
   _buyPrice: 45

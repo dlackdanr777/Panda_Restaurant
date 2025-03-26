@@ -25,6 +25,7 @@ public class FurnitureDataManager : MonoBehaviour
 
     private static Dictionary<string, Sprite> _spriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _thumbnailSpriteDic = new Dictionary<string, Sprite>();
+    private static Dictionary<string, Sprite> _dirtyTableSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _leftChairSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _rightChairSpriteDic = new Dictionary<string, Sprite>();
 
@@ -96,6 +97,7 @@ public class FurnitureDataManager : MonoBehaviour
                 string spriteName = sprite.name;
                 bool isThumbnail = spriteName.Contains("썸네일"); // 썸네일 여부 확인
                 bool isChair = spriteName.Contains("의자");
+                bool isDirtyTable = spriteName.Contains("설거지");
                 string key = CutStringUpToChar(spriteName, '_'); // 기본 키 생성
                 if (isThumbnail)
                 {
@@ -117,6 +119,11 @@ public class FurnitureDataManager : MonoBehaviour
                         _leftChairSpriteDic.Add(key, sprite);
                     }
 
+                }
+
+                else if(isDirtyTable)
+                {
+                    _dirtyTableSpriteDic.Add(key, sprite);
                 }
 
                 else
@@ -161,6 +168,12 @@ public class FurnitureDataManager : MonoBehaviour
             int unlockScore = int.Parse(row[6].Trim());
             MoneyType moneyType = row[7].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
             int price = int.Parse(row[8].Trim());
+            UnlockConditionType unlockType = row.Length < 10 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[9].Trim());
+            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[10].Trim();
+            if (unlockType == UnlockConditionType.None || !int.TryParse(row[11].Trim(), out int unlockCount))
+            {
+                unlockCount = 0;
+            }
 
             // 🔹 스프라이트 가져오기 (딕셔너리에서 가져오므로 성능 향상)
             if (!_spriteDic.TryGetValue(id, out Sprite sprite))
@@ -188,7 +201,10 @@ public class FurnitureDataManager : MonoBehaviour
                 foodType,
                 addScore,
                 effectType, // 엑셀에 해당 데이터가 없다면 기본값 사용
-                effectValue
+                effectValue,
+                unlockType,
+                unlockId,
+                unlockCount
             );
 
             // 🔹 리스트 및 딕셔너리에 추가
@@ -227,26 +243,32 @@ public class FurnitureDataManager : MonoBehaviour
 
             int effectValue = int.Parse(row[5].Trim());
             MoneyType moneyType = row[6].Trim() == "게임 머니" || row[6].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
-            int table1BuyScore = int.Parse(row[7].Trim());
-            int table1BuyPrice = int.Parse(row[8].Trim());
+            UnlockConditionType unlockType = Utility.GetUnlockConditionType(row[7].Trim());
+            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[8].Trim();
+            if (unlockType == UnlockConditionType.None || !int.TryParse(row[9].Trim(), out int unlockCount))
+            {
+                unlockCount = 0;
+            }
+            int table1BuyScore = int.Parse(row[11].Trim());
+            int table1BuyPrice = int.Parse(row[12].Trim());
 
-            int table2BuyScore = int.Parse(row[9].Trim());
-            int table2BuyPrice = int.Parse(row[10].Trim());
-            int table2AddScore = int.Parse(row[11].Trim());
+            int table2BuyScore = int.Parse(row[13].Trim());
+            int table2BuyPrice = int.Parse(row[14].Trim());
+            int table2AddScore = int.Parse(row[15].Trim());
 
-            int table3BuyScore = int.Parse(row[12].Trim());
-            int table3BuyPrice = int.Parse(row[13].Trim());
-            int table3AddScore = int.Parse(row[14].Trim());
+            int table3BuyScore = int.Parse(row[16].Trim());
+            int table3BuyPrice = int.Parse(row[17].Trim());
+            int table3AddScore = int.Parse(row[18].Trim());
 
-            int table4BuyScore = int.Parse(row[15].Trim());
-            int table4BuyPrice = int.Parse(row[16].Trim());
-            int table4AddScore = int.Parse(row[17].Trim());
+            int table4BuyScore = int.Parse(row[19].Trim());
+            int table4BuyPrice = int.Parse(row[20].Trim());
+            int table4AddScore = int.Parse(row[21].Trim());
 
-            int table5BuyScore = int.Parse(row[18].Trim());
-            int table5BuyPrice = int.Parse(row[19].Trim());
-            int table5AddScore = int.Parse(row[20].Trim());
+            int table5BuyScore = int.Parse(row[22].Trim());
+            int table5BuyPrice = int.Parse(row[23].Trim());
+            int table5AddScore = int.Parse(row[24].Trim());
 
-            float size = float.Parse(row[21].Trim());
+            float size = float.Parse(row[25].Trim());
 
             // 🔹 스프라이트 가져오기 (딕셔너리에서 가져오므로 성능 향상)
             if (!_spriteDic.TryGetValue(id, out Sprite sprite))
@@ -272,6 +294,11 @@ public class FurnitureDataManager : MonoBehaviour
                 rightChairSprite = null;
             }
 
+            if(!_dirtyTableSpriteDic.TryGetValue(id, out Sprite dirtyTableSprite))
+            {
+                dirtyTableSprite = sprite;
+            }
+
 
             FurnitureData table1Data = new TableFurnitureData(
                 sprite,
@@ -287,9 +314,13 @@ public class FurnitureDataManager : MonoBehaviour
                 table1AddScore,
                 effectType,
                 effectValue,
+                unlockType,
+                unlockId,
+                unlockCount,
                 size,
                 leftChairSprite,
-                rightChairSprite
+                rightChairSprite,
+                dirtyTableSprite
             );
 
             FurnitureData table2Data = new TableFurnitureData(
@@ -306,9 +337,13 @@ public class FurnitureDataManager : MonoBehaviour
     table2AddScore,
     effectType,
     effectValue,
+                    unlockType,
+                unlockId,
+                unlockCount,
     size,
     leftChairSprite,
-    rightChairSprite
+    rightChairSprite,
+    dirtyTableSprite
 );
 
             FurnitureData table3Data = new TableFurnitureData(
@@ -325,9 +360,13 @@ foodType,
 table3AddScore,
 effectType,
 effectValue,
+                unlockType,
+                unlockId,
+                unlockCount,
 size,
 leftChairSprite,
-rightChairSprite
+rightChairSprite,
+dirtyTableSprite
 );
 
             FurnitureData table4Data = new TableFurnitureData(
@@ -344,9 +383,13 @@ foodType,
 table4AddScore,
 effectType,
 effectValue,
+                unlockType,
+                unlockId,
+                unlockCount,
 size,
 leftChairSprite,
-rightChairSprite
+rightChairSprite,
+dirtyTableSprite
 );
 
             FurnitureData table5Data = new TableFurnitureData(
@@ -363,9 +406,13 @@ foodType,
 table5AddScore,
 effectType,
 effectValue,
+                unlockType,
+                unlockId,
+                unlockCount,
 size,
 leftChairSprite,
-rightChairSprite
+rightChairSprite,
+dirtyTableSprite
 );
 
             _furnitureDataDic.Add(id + "_01", table1Data);

@@ -147,6 +147,28 @@ public static class Utility
         };
     }
 
+    public static ERestaurantFloorType GetFloorTypeByStr(string str)
+    {
+        return str switch
+        {
+            "FLOOR01" => ERestaurantFloorType.Floor1,
+            "FLOOR02" => ERestaurantFloorType.Floor2,
+            "FLOOR03" => ERestaurantFloorType.Floor3,
+            _ => throw new System.Exception("해당 층 수 문자열이 이상합니다: " + str)
+        };
+    }
+
+    public static string GetFloorStrByType(ERestaurantFloorType type)
+    {
+        return type switch
+        {
+            ERestaurantFloorType.Floor1 => "1층",
+            ERestaurantFloorType.Floor2 => "2층",
+            ERestaurantFloorType.Floor3 => "3층",
+            _ => throw new System.Exception("해당 층 수 타입이 이상합니다: " + type)
+        };
+    }
+
     public static string GetGachaItemEffectDescription(GachaItemData data)
     {
         if (data == null)
@@ -268,15 +290,15 @@ public static class Utility
         switch (data)
         {
             case ManagerData:
-                description = $"손님 테이블로 자동 배치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초당 <color={ColorToHex(GetColor(ColorType.Positive))}>1</color>명)";
+                description = $"테이블로 손님 자동 배치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초)";
                 break;
 
             case WaiterData:
-                description = $"음식 자동 배달(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                description = $"음식을 손님에게 자동 배달(기본 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
                 break;
 
             case MarketerData:
-                description = $"자동 손님 호출 버튼 클릭(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초)";
+                description = $"레스토랑으로 손님 자동 호출(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초)";
                 break;
 
             case ServerData:
@@ -284,15 +306,15 @@ public static class Utility
                 break;
 
             case CleanerData:
-                description = $"쓰레기 및 코인 수집(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
+                description = $"쓰레기 & 코인 수집(기본 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
                 break;
 
             case GuardData:
-                description = $"도둑 퇴치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초 소요)";
+                description = $"진상 손님 퇴치(퇴치 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
                 break;
 
             case ChefData:
-                description = $"조리 효율 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
+                description = $"주방에서 음식 제작 효율 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color> 상승)";
                 break;
         }
 
@@ -357,6 +379,37 @@ public static class Utility
             EquipEffectType.AddMaxTip => "팁 저장량 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + value + "</color> 증가",
             _ => string.Empty
         };
+    }
+
+
+    public static UnlockConditionType GetUnlockConditionType(string str)
+    {
+        switch (str)
+        {
+            case "TYPE01":
+                return UnlockConditionType.UnlockTargetFloor;
+
+            case "TYPE02":
+                return UnlockConditionType.NeedItem;
+
+            case "TYPE03":
+                return UnlockConditionType.NeedRecipe;
+
+            case "TYPE04":
+                return UnlockConditionType.NeedCustomer;
+
+            case "TYPE05":
+                return UnlockConditionType.NeedStaff;
+
+            case "TYPE06":
+                return UnlockConditionType.NeedFurniture;
+
+            case "TYPE07":
+                return UnlockConditionType.NeedKitchenUtensil;
+
+            default:
+                return UnlockConditionType.None;
+        }
     }
 
 

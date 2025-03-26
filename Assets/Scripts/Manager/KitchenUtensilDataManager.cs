@@ -139,6 +139,14 @@ public class KitchenUtensilDataManager : MonoBehaviour
             int price = int.Parse(row[8].Trim());
             float size = float.Parse(row[9].Trim());
 
+            UnlockConditionType unlockType = row.Length < 11 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[10].Trim());
+            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[11].Trim();
+            if(unlockType == UnlockConditionType.None || !int.TryParse(row[12].Trim(), out int unlockCount))
+            {
+                unlockCount = 0;
+            }
+
+
             if (!_spriteDic.TryGetValue(id, out Sprite sprite))
             {
                 Debug.LogError($"스프라이트가 없습니다: {id}");
@@ -164,7 +172,10 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 addScore,
                 effectType,
                 effectValue,
-                size
+                size,
+                unlockType,
+                unlockId,
+                unlockCount
             );
 
 
@@ -223,6 +234,13 @@ public class KitchenUtensilDataManager : MonoBehaviour
 
             float size = float.Parse(row[21].Trim());
 
+            UnlockConditionType unlockType = row.Length < 23 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[22].Trim());
+            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[23].Trim();
+            if (unlockType == UnlockConditionType.None || !int.TryParse(row[24].Trim(), out int unlockCount))
+            {
+                unlockCount = 0;
+            }
+
             if (!_spriteDic.TryGetValue(id, out Sprite sprite))
             {
                 Debug.LogError($"스프라이트가 없습니다: {id}");
@@ -248,7 +266,10 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 table1AddScore,
                 effectType,
                 effectValue,
-                size
+                size,
+                                unlockType,
+                unlockId,
+                unlockCount
             );
 
             KitchenUtensilData cooker02Data = new KitchenUtensilData(
@@ -265,7 +286,10 @@ public class KitchenUtensilDataManager : MonoBehaviour
     table2AddScore,
     effectType,
     effectValue,
-    size
+    size,
+                    unlockType,
+                unlockId,
+                unlockCount
 );
 
             KitchenUtensilData cooker03Data = new KitchenUtensilData(
@@ -282,7 +306,10 @@ public class KitchenUtensilDataManager : MonoBehaviour
     table3AddScore,
     effectType,
     effectValue,
-    size
+    size,
+                    unlockType,
+                unlockId,
+                unlockCount
 );
 
             KitchenUtensilData cooker04Data = new KitchenUtensilData(
@@ -299,7 +326,10 @@ public class KitchenUtensilDataManager : MonoBehaviour
     table4AddScore,
     effectType,
     effectValue,
-    size
+    size,
+                    unlockType,
+                unlockId,
+                unlockCount
 );
 
             KitchenUtensilData cooker05Data = new KitchenUtensilData(
@@ -316,7 +346,10 @@ public class KitchenUtensilDataManager : MonoBehaviour
     table5AddScore,
     effectType,
     effectValue,
-    size
+    size,
+                    unlockType,
+                unlockId,
+                unlockCount
 );
 
 

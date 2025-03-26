@@ -39,6 +39,8 @@ public static class UserInfo
     public static event Action OnGiveKitchenUtensilHandler;
     public static event Action OnChangeKitchenUtensilSetDataHandler;
 
+    public static event Action OnAddSinkBowlHandler;
+
     public static event Action OnDoneChallengeHandler;
     public static event Action OnClearChallengeHandler;
 
@@ -196,6 +198,8 @@ public static class UserInfo
             _stageInfos[i].OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEvent;
             _stageInfos[i].OnGiveKitchenUtensilHandler += OnGiveKitchenUtensilEvent;
             _stageInfos[i].OnChangeKitchenUtensilSetDataHandler += OnChangeKitchenUtensilSetDataEvent;
+
+            _stageInfos[i].OnAddSinkBowlHandler += OnAddSinkBowlEvent;
         }
     }
 
@@ -254,6 +258,11 @@ public static class UserInfo
     private static void OnChangeKitchenUtensilSetDataEvent()
     {
         OnChangeKitchenUtensilSetDataHandler?.Invoke();
+    }
+
+    private static void OnAddSinkBowlEvent()
+    {
+        OnAddSinkBowlHandler?.Invoke();
     }
 
 
@@ -1611,7 +1620,35 @@ public static class UserInfo
     }
 
 
-    #endregion 
+    #endregion
+
+    #region KitchenData
+
+    public static int GetSinkBowlCount(EStage stage, ERestaurantFloorType floor)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetSinkBowlCount(floor);
+    }
+
+    public static int GetMaxSinkBowlCount(EStage stage, ERestaurantFloorType floor)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetMaxSinkBowlCount(floor);
+    }
+
+    public static void AddSinkBowlCount(EStage stage, ERestaurantFloorType floor)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].AddSinkBowlCount(floor);
+    }
+
+    public static bool GetBowlAddEnabled(EStage stage, ERestaurantFloorType floor)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetBowlAddEnabled(floor);
+    }
+
+    #endregion
 
     #region CustomerData
 

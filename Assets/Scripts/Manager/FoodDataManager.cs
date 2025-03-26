@@ -169,7 +169,7 @@ public class FoodDataManager : MonoBehaviour
             if (!_foodMiniGameDataDic.TryGetValue(id, out FoodMiniGameData foodMiniGameData))
                 foodMiniGameData = null;
 
-            FoodData foodData = new FoodData(sprite, thumbnailSprite, name, id, foodType, MoneyType.Gold, buyScore, buyPrice, needItem, foodLevelDataList, foodMiniGameData);
+            FoodData foodData = new FoodData(sprite, thumbnailSprite, name, id, description, foodType, MoneyType.Gold, buyScore, buyPrice, needItem, foodLevelDataList, foodMiniGameData);
 
             _foodDataList.Add(foodData);
             _foodDataDic.Add(id, foodData);

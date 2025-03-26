@@ -17,8 +17,11 @@ public class KitchenUtensil : MonoBehaviour
 
     private float _initialSpriteHeight; // 초기 스프라이트 높이 저장용
 
-    public void Init()
+    protected ERestaurantFloorType _floorType;
+
+    public virtual void Init(ERestaurantFloorType floor)
     {
+        _floorType = floor;
         if (_spriteRenderer.sprite != null)
         {
             _initialSpriteHeight = _spriteRenderer.sprite.bounds.size.y;
@@ -40,16 +43,20 @@ public class KitchenUtensil : MonoBehaviour
             else
             {
                 _spriteRenderer.sprite = _defalutSprite;
+                SetRendererScale(null);
             }
             return;
         }
 
         _spriteRenderer.gameObject.SetActive(true);
         _spriteRenderer.sprite = data.Sprite;
+        SetRendererScale(data);
+    }
 
-        // 현재 스프라이트 높이 계산
+    private void SetRendererScale(KitchenUtensilData data)
+    {
         float newSpriteHeight = _spriteRenderer.sprite.bounds.size.y;
-
+        float sizeMul = data == null ? 1 : data.SizeMul;
         if (_initialSpriteHeight > 0 && newSpriteHeight > 0)
         {
             // 높이를 기준으로 스케일 비율 계산
@@ -57,8 +64,8 @@ public class KitchenUtensil : MonoBehaviour
 
             // 새로운 스케일 설정 (SizeMul 적용)
             Vector3 newScale = _spriteRenderer.transform.localScale;
-            newScale.x = heightRatio * data.SizeMul;
-            newScale.y = heightRatio * data.SizeMul;
+            newScale.x = heightRatio * sizeMul;
+            newScale.y = heightRatio * sizeMul;
             _spriteRenderer.transform.localScale = newScale;
         }
 

@@ -35,8 +35,11 @@ public class KitchenUtensilData : ShopData
     private int _effectValue;
     public int EffectValue => _effectValue;
 
+    private UnlockConditionData _unlockData;
+    public UnlockConditionData UnlockData => _unlockData;
 
-    public KitchenUtensilData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, KitchenUtensilType kitchenType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, float size)
+
+    public KitchenUtensilData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, KitchenUtensilType kitchenType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, float size, UnlockConditionType unlockType, string unlockId, int unlockCount)
     {
         _sprite = sprite;
         _thumbnailSPrite = thumbnailSprite;
@@ -55,5 +58,7 @@ public class KitchenUtensilData : ShopData
         _equipEffectType = euipEffectType;
         _effectValue = effectValue;
         _sizeMul = size;
+
+        _unlockData = new UnlockConditionData(unlockType, unlockId, unlockCount);
     }
 }

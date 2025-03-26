@@ -25,14 +25,14 @@ public class StaffGroup : MonoBehaviour
             StaffType type = (StaffType)i;
             Staff staff = ObjectPoolManager.Instance.SpawnStaff(type, transform.position, transform);;
             staff.name = _floorType.ToString() + "_" + (StaffType)i;
-            staff.Init(tableManager);
+            staff.Init(tableManager, kitchenSystem, customerController);
 
             _staffDic.Add(type, staff);
             StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);
 
             if (data == null)
                 continue;
-            staff.SetStaffData(data, _floorType, _tableManager, _kitchenSystem, _customerController);
+            staff.SetStaffData(data, _floorType);
         }
 
         UserInfo.OnChangeStaffHandler += OnEquipEvent;
@@ -45,6 +45,7 @@ public class StaffGroup : MonoBehaviour
         {
             if (staff == null)
                 continue;
+
             if (!staff.gameObject.activeInHierarchy)
                 continue;
 
@@ -60,7 +61,7 @@ public class StaffGroup : MonoBehaviour
             return;
 
         StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);
-        _staffDic[type].SetStaffData(data, _floorType, _tableManager, _kitchenSystem, _customerController);
+        _staffDic[type].SetStaffData(data, _floorType);
     }
 
     private void OnDestroy()

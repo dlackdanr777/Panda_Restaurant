@@ -265,6 +265,12 @@ public class UIFurniture : MobileUIView
 
             else
             {
+                if(!UnlockConditionManager.GetConditionEnabled(data.UnlockData))
+                {
+                    slot.SetLock(data.ThumbnailSprite, data.Name);
+                    continue;
+                }
+
                 if (!UserInfo.IsScoreValid(data))
                 {
                     slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
@@ -289,7 +295,7 @@ public class UIFurniture : MobileUIView
         }
 
         //장착된 슬롯들을 순회하며 층수로 오름차순 정렬
-        Array.Sort(equipSlotArray, 0, equipSlotCount, Comparer<(ERestaurantFloorType, UIRestaurantAdminSlot)>.Create((a, b) => a.Item1.CompareTo(b.Item1)));
+        Array.Sort(equipSlotArray, 0, equipSlotCount, Comparer<(ERestaurantFloorType, UIRestaurantAdminFoodTypeSlot)>.Create((a, b) => a.Item1.CompareTo(b.Item1)));
         for (int i = 0; i < equipSlotCount; i++)
         {
             equipSlotArray[i].Item2.transform.SetSiblingIndex(i);

@@ -16,43 +16,35 @@ MonoBehaviour:
   _thumbnailSPrite: {fileID: 21300000, guid: 9ea8bad1855a04b41b75f31f5a7a0ed2, type: 3}
   _name: "\uCC28\uC774\uB098 \uB8E8\uD30C"
   _id: STAFF19
-  _description: 
+  _description: "\uADC0\uC5EC\uC6B4 \uB524\uC12C \uC804\uBB38\uAC00\n\uCD5C\uACE0\uC758
+    \uC694\uB9AC\uC2E4\uB825!\r"
   _moneyType: 0
   _buyScore: 130
   _buyPrice: 150000
   _skill: {fileID: 11400000, guid: 67fad8354daa0194fbbcf5833b9ebdca, type: 2}
+  _speed: 6
   _serverLevelData:
-  - _tipAddPercent: 38
-    _scoreIncrement: 45
-    _upgradeMinScore: 170
+  - _upgradeMinScore: 170
     _upgradeMoneyData:
       _moneyType: 0
       _price: 140000
     _servingTime: 10
-  - _tipAddPercent: 40
-    _scoreIncrement: 50
-    _upgradeMinScore: 190
+  - _upgradeMinScore: 190
     _upgradeMoneyData:
       _moneyType: 0
       _price: 180000
     _servingTime: 10
-  - _tipAddPercent: 42
-    _scoreIncrement: 55
-    _upgradeMinScore: 210
+  - _upgradeMinScore: 210
     _upgradeMoneyData:
       _moneyType: 0
       _price: 190000
     _servingTime: 10
-  - _tipAddPercent: 44
-    _scoreIncrement: 60
-    _upgradeMinScore: 230
+  - _upgradeMinScore: 230
     _upgradeMoneyData:
       _moneyType: 0
       _price: 200000
     _servingTime: 10
-  - _tipAddPercent: 47
-    _scoreIncrement: 70
-    _upgradeMinScore: -1
+  - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1

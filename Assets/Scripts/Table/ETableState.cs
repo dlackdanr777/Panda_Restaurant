@@ -8,6 +8,7 @@ public enum ETableState
     CanServing,
     Eating,
     UseStaff,
+    NeedCleaning,
     DontUse,
     Length
 }

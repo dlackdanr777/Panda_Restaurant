@@ -2,21 +2,75 @@ using UnityEngine;
 
 public class TableFurniture : Furniture
 {
+    [Space]
+    [Header("Table Furniture")]
+    [SerializeField] private Sprite _chairDefalutSprite;
     [SerializeField] private SpriteRenderer _leftChairSpriteRenderer;
     [SerializeField] private SpriteRenderer _rightChairSpriteRenderer;
+    [SerializeField] private PointerDownSpriteRenderer _pointerDownSpriteRenderer;
+
+
+    private TableFurnitureData _tableFurnitureData;
+    private TableData _tableData;
+
+
+    public override void Init(TableManager manager)
+    {
+        base.Init(manager);
+        manager.OnTableUpdateHandler += OnTableUpdateEvent;
+        _pointerDownSpriteRenderer.AddEvent(OnTouchEvent);
+    }
+
+
+    public void SetTableData(TableData data)
+    {
+        _tableData = data;
+        OnTableUpdateEvent();
+    }
+
+
+    private void OnTableUpdateEvent()
+    {
+        if (_tableFurnitureData == null)
+        {
+            DebugLog.LogError("테이블 데이터가 없습니다.");
+            return;
+        }
+
+        if (_tableData.TableState == ETableState.NeedCleaning)
+        {
+            _spriteRenderer.sprite = _tableFurnitureData.DirtyTableSprite;
+        }
+
+        else
+        {
+            _spriteRenderer.sprite = _tableFurnitureData.Sprite;
+        }
+    }
+
 
     public override void SetFurnitureData(FurnitureData data)
     {
         if (data == null)
         {
+            _tableFurnitureData = null;
             if (_defalutSprite == null)
+            {
                 _spriteRenderer.gameObject.SetActive(false);
+                _leftChairSpriteRenderer.gameObject.SetActive(false);
+                _rightChairSpriteRenderer.gameObject.SetActive(false);
+            }
+
 
             else
+            {
                 _spriteRenderer.sprite = _defalutSprite;
+                _leftChairSpriteRenderer.sprite = _chairDefalutSprite;
+                _rightChairSpriteRenderer.sprite = _chairDefalutSprite;
+                _rightChairSpriteRenderer.flipX = true;
+                SetRendererScale(null);
+            }
 
-            _leftChairSpriteRenderer.gameObject.SetActive(false);
-            _rightChairSpriteRenderer.gameObject.SetActive(false);
             return;
         }
 
@@ -26,24 +80,31 @@ public class TableFurniture : Furniture
             return;
         }
 
-        TableFurnitureData tableData = (TableFurnitureData)data;
+        _tableFurnitureData = (TableFurnitureData)data;
 
         _spriteRenderer.gameObject.SetActive(true);
         _leftChairSpriteRenderer.gameObject.SetActive(true);
         _rightChairSpriteRenderer.gameObject.SetActive(true);
         _spriteRenderer.sprite = data.Sprite;
-        _leftChairSpriteRenderer.sprite = tableData.ChairSprite;
-        _rightChairSpriteRenderer.sprite = tableData.RightChairSprite == null ? tableData.ChairSprite : tableData.RightChairSprite;
-        _rightChairSpriteRenderer.flipX = tableData.RightChairSprite == null ? true : false;
+        _leftChairSpriteRenderer.sprite = _tableFurnitureData.ChairSprite;
+        _rightChairSpriteRenderer.sprite = _tableFurnitureData.RightChairSprite == null ? _tableFurnitureData.ChairSprite : _tableFurnitureData.RightChairSprite;
+        _rightChairSpriteRenderer.flipX = _tableFurnitureData.RightChairSprite == null ? true : false;
+        OnTableUpdateEvent();
+        SetRendererScale(_tableFurnitureData);
 
-        Vector3 scale = tableData.Scale <= 0 ? _tmpScale : tableData.Scale * _tmpScale;
+
+    }
+
+    private void SetRendererScale(TableFurnitureData tableData)
+    {
+        Vector3 scale = tableData == null || tableData.Scale <= 0 ? _tmpScale : tableData.Scale * _tmpScale;
         _spriteRenderer.transform.localScale = scale;
         _leftChairSpriteRenderer.transform.localScale = scale;
         _rightChairSpriteRenderer.transform.localScale = scale;
 
-        float heightMul = (data.Sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;
-        float leftChairHeightMul = (tableData.ChairSprite.bounds.size.y * 0.5f) * _leftChairSpriteRenderer.transform.lossyScale.y;
-        float rightChairHeightMul = tableData.RightChairSprite == null ? (tableData.ChairSprite.bounds.size.y * 0.5f) * _leftChairSpriteRenderer.transform.lossyScale.y : (tableData.RightChairSprite.bounds.size.y * 0.5f) * _rightChairSpriteRenderer.transform.lossyScale.y;
+        float heightMul = (_spriteRenderer.sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;
+        float leftChairHeightMul = (_leftChairSpriteRenderer.sprite.bounds.size.y * 0.5f) * _leftChairSpriteRenderer.transform.lossyScale.y;
+        float rightChairHeightMul = (_rightChairSpriteRenderer.sprite.bounds.size.y * 0.5f) * _rightChairSpriteRenderer.transform.lossyScale.y;
 
         if (_batchType == FurnitureBatchTypeY.Lower)
         {
@@ -63,6 +124,18 @@ public class TableFurniture : Furniture
             _leftChairSpriteRenderer.transform.localPosition = new Vector3(_leftChairSpriteRenderer.transform.localPosition.x, 0, 0);
             _rightChairSpriteRenderer.transform.localPosition = new Vector3(_rightChairSpriteRenderer.transform.position.x, 0, 0);
         }
+    }
 
+    private void OnTouchEvent()
+    {
+        if (_tableData.TableState != ETableState.NeedCleaning)
+        {
+            DebugLog.Log("더러운 상태가 아닙니다: " + _tableData.TableType);
+            return;
+        }
+
+
+        _tableData.TableState = ETableState.None;
+        _tableManager.UpdateTable();
     }
 }

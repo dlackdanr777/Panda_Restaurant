@@ -28,4 +28,9 @@ public struct CookingData
     {
         return _foodData == null;
     }
+
+    public void SetDefault()
+    {
+        _foodData = null;
+    }
 }

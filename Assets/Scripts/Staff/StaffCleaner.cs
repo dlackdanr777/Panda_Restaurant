@@ -10,12 +10,12 @@ public class StaffCleaner : Staff
     [SerializeField] private GameObject _cleanParticle;
 
 
-    public override void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public override void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType)
     {
         if (!(staffData is CleanerData))
             throw new System.Exception("청소부 스탭에게 청소부 데이터가 들어오지 않았습니다.");
 
-        base.SetStaffData(staffData, equipFloorType, tableManager, kitchenSystem, customerController);
+        base.SetStaffData(staffData, equipFloorType);
         _cleanerItem.gameObject.SetActive(true);
         _cleanParticle.gameObject.SetActive(false);
     }

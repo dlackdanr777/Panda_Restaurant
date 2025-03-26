@@ -17,6 +17,8 @@ public class Staff : MonoBehaviour
     [SerializeField] private AudioClip _skillActiveSound;
 
     protected TableManager _tableManager;
+    protected KitchenSystem _kitchenSystem;
+    protected CustomerController _customerController;
     protected StaffData _staffData;
     protected StaffType _staffType;
     protected IStaffAction _staffAction;
@@ -37,8 +39,11 @@ public class Staff : MonoBehaviour
     protected Coroutine _useSkillRoutine;
 
 
-    public virtual void Init(TableManager tableManager)
+    public virtual void Init(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
+        _tableManager = tableManager;
+        _customerController = customerController;
+        _kitchenSystem = kitchenSystem;
         _tableManager = tableManager;
         _scaleX = transform.localScale.x;
         GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
@@ -64,19 +69,20 @@ public class Staff : MonoBehaviour
 
 
 
-    public virtual void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public virtual void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType)
     {
+        StopAllCoroutines();
+
         if (staffData == _staffData)
             return;
 
         if (_staffData != null)
-            _staffData.RemoveSlot(this, tableManager, kitchenSystem, customerController);
+        {
+            _staffData.RemoveSlot(this, _tableManager, _kitchenSystem, _customerController);
 
-        if (_useSkillRoutine != null)
-            StopCoroutine(_useSkillRoutine);
-
-        if(_usingSkill)
-            _staffData.Skill.Deactivate(this, tableManager, kitchenSystem, customerController);
+            if (_usingSkill)
+                _staffData.Skill.Deactivate(this, _tableManager, _kitchenSystem, _customerController);
+        }
 
         if (staffData == null)
         {
@@ -89,8 +95,8 @@ public class Staff : MonoBehaviour
         gameObject.SetActive(true);
         _staffData = staffData;
         _equipFloorType = equipFloorType;
-        _staffData.AddSlot(this, tableManager, kitchenSystem, customerController);
-        _staffAction = staffData.GetStaffAction(this, tableManager, kitchenSystem, customerController);
+        _staffData.AddSlot(this, _tableManager, _kitchenSystem, _customerController);
+        _staffAction = staffData.GetStaffAction(this, _tableManager, _kitchenSystem, _customerController);
         _moveSpeed = staffData.GetSpeed(Level);
         _speedMul = 0;
         _usingSkill = false;
@@ -385,17 +391,32 @@ public class Staff : MonoBehaviour
     public void ObjectPoolSpawnEvent()
     {
         LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
+        GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+        UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
     }
 
     public void ObjectPoolDespawnEvent()
     {
+
         LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
+        GameManager.Instance.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
+        UserInfo.OnUpgradeStaffHandler -= OnLevelUpEvent;
     }
 
 
     private void OnChangeSceneEvent()
     {
+        if (_staffData != null)
+        {
+            _staffData.RemoveSlot(this, _tableManager, _kitchenSystem, _customerController);
+
+            if(_staffData.Skill != null && _usingSkill)
+                _staffData.Skill.Deactivate(this, _tableManager, _kitchenSystem, _customerController);
+        }
+
+        StopAllCoroutines();
         _staffData = null;
+        _staffAction = null;
         ObjectPoolManager.Instance.DespawnStaff(_staffType, this);
     }
 }

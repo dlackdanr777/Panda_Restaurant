@@ -18,6 +18,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
     [SerializeField] private UIImageAndText _notEnoughDiaPriceImage;
     [SerializeField] private UIImageAndText _needItemImage;
     [SerializeField] private UIImageAndText _scoreImage;
+    [SerializeField] private UIImageAndText _unlockImage;
     [SerializeField] private Sprite _questionMarkSprite;
 
     [Space]
@@ -41,6 +42,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _notEnoughPriceImage?.gameObject.SetActive(false);
         _needItemImage?.gameObject.SetActive(false);
         _notEnoughDiaPriceImage?.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(false);
         _alarmImage?.SetActive(false);
         _lockImgae?.SetActive(false);
 
@@ -60,6 +62,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _notEnoughPriceImage?.gameObject.SetActive(false);
         _needItemImage?.gameObject.SetActive(false);
         _notEnoughDiaPriceImage?.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(false);
         _alarmImage?.SetActive(false);
         _lockImgae?.SetActive(false);
 
@@ -79,6 +82,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _notEnoughPriceImage?.gameObject.SetActive(false);
         _needItemImage?.gameObject.SetActive(false);
         _notEnoughDiaPriceImage?.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(false);
         _alarmImage?.SetActive(true);
         _lockImgae?.SetActive(false);
         _priceImage.SetSprite(type == MoneyType.Gold ? _moneyPriceSprite : _diaPriceSprite);
@@ -99,6 +103,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _operateImage?.gameObject.SetActive(false);
         _scoreImage?.gameObject.SetActive(false);
         _needItemImage?.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(false);
         _alarmImage?.SetActive(false);
         _lockImgae?.SetActive(false);
 
@@ -118,6 +123,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _operateImage?.gameObject.SetActive(false);
         _scoreImage?.gameObject.SetActive(false);
         _needItemImage.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(false);
         _alarmImage?.SetActive(false);
         _lockImgae?.SetActive(false);
 
@@ -137,6 +143,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _notEnoughPriceImage?.gameObject.SetActive(false);
         _needItemImage.gameObject.SetActive(false);
         _notEnoughDiaPriceImage?.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(false);
         _lockImgae?.SetActive(true);
         _alarmImage?.SetActive(false);
 
@@ -155,6 +162,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _operateImage?.gameObject.SetActive(false);
         _notEnoughPriceImage?.gameObject.SetActive(false);
         _notEnoughDiaPriceImage?.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(false);
         _lockImgae?.SetActive(false);
         _alarmImage?.SetActive(false);
 
@@ -176,6 +184,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _operateImage?.gameObject.SetActive(false);
         _notEnoughPriceImage?.gameObject.SetActive(false);
         _notEnoughDiaPriceImage?.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(false);
         _lockImgae?.SetActive(false);
         _alarmImage?.SetActive(true);
 
@@ -188,6 +197,26 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _needItemImage.SetSprite(data.Sprite);
     }
 
+
+    public void SetLock(Sprite sprite, string name)
+    {
+        _scoreImage?.gameObject.SetActive(false);
+        _priceImage?.gameObject.SetActive(false);
+        _useImage?.gameObject.SetActive(false);
+        _operateImage?.gameObject.SetActive(false);
+        _notEnoughPriceImage?.gameObject.SetActive(false);
+        _needItemImage.gameObject.SetActive(false);
+        _notEnoughDiaPriceImage?.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(true);
+        _lockImgae?.SetActive(true);
+        _alarmImage?.SetActive(false);
+
+        _image.color = Utility.GetColor(ColorType.None);
+        _image.sprite = _questionMarkSprite;
+        _nameText.text = name;
+    }
+
+
     public void SetNone(Sprite sprite, string name)
     {
         _scoreImage?.gameObject.SetActive(false);
@@ -197,6 +226,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _notEnoughPriceImage?.gameObject.SetActive(false);
         _needItemImage.gameObject.SetActive(false);
         _notEnoughDiaPriceImage?.gameObject.SetActive(false);
+        _unlockImage.gameObject.SetActive(false);
         _lockImgae?.SetActive(false);
         _alarmImage?.SetActive(false);
 

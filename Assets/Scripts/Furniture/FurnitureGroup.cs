@@ -33,6 +33,7 @@ public class FurnitureGroup : MonoBehaviour
 
     private TableManager _tableManager;
     private Dictionary<FurnitureType, List<Furniture>> _furnitureDic = new Dictionary<FurnitureType, List<Furniture>>();
+    private Dictionary<TableType, TableFurniture> _tableFurnitureDic = new Dictionary<TableType, TableFurniture>();
     private Dictionary<TableType, TableData> _tableDataDic = new Dictionary<TableType, TableData>();
     private List<TableData> _tableDataList = new List<TableData>();
     private List<DropCoinArea> _dropCoinAreaList = new List<DropCoinArea>();
@@ -173,6 +174,19 @@ public class FurnitureGroup : MonoBehaviour
             }
         }
 
+
+        for(int i = 0, cnt = (int)TableType.Length; i < cnt; ++i)
+        {
+            TableType type = (TableType)i;
+            TableFurniture tableFurniture = (TableFurniture)_furniture[i];
+
+            if (tableFurniture == null)
+                throw new Exception("테이블이 아닙니다: " + type);
+
+            _tableFurnitureDic.Add(type, tableFurniture);
+            tableFurniture.SetTableData(_tableDataDic[type]);
+        }
+
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
         {
             _furnitureDic.Add((FurnitureType)i, new List<Furniture>());
@@ -181,7 +195,7 @@ public class FurnitureGroup : MonoBehaviour
         for (int i = 0, cnt = _furniture.Length; i < cnt; ++i)
         {
             _furnitureDic[_furniture[i].Type].Add(_furniture[i]);
-            _furniture[i].Init();
+            _furniture[i].Init(tableManager);
         }
 
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
@@ -224,7 +238,6 @@ public class FurnitureGroup : MonoBehaviour
         {
             FurnitureType type = (FurnitureType)i;
             OnChangeFurnitureEvent(_floorType, type);
-            CheckTableEnabled(_floorType, type);
         }
 
         for(int i = 0, cnt = (int)TableType.Length; i < cnt; ++i)
@@ -263,7 +276,7 @@ public class FurnitureGroup : MonoBehaviour
         if (_floorType != floorType)
             return;
 
-        if (type < FurnitureType.Table1 || FurnitureType.Table5 < type)
+        if (type < FurnitureType.Table2 || FurnitureType.Table5 < type)
             return;
 
         FurnitureData equipFurniture = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _floorType, type);
@@ -289,8 +302,7 @@ public class FurnitureGroup : MonoBehaviour
         {
             TableType type = (TableType)i;
             TableData data = _tableDataDic[type];
-
-            if (UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _floorType, (FurnitureType)i) == null)
+            if ((TableType.Table2 <= type && type <= TableType.Table5) && UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _floorType, (FurnitureType)i) == null)
             {
                 _tableManager.NotFurnitureTable(data);
                 data.OrderButton.gameObject.SetActive(false);
@@ -298,7 +310,6 @@ public class FurnitureGroup : MonoBehaviour
             }
             else if (data.TableState == ETableState.DontUse)
             {
-                data.TableState = ETableState.Empty;
                 data.OrderButton.gameObject.SetActive(false);
                 data.ServingButton.gameObject.SetActive(false);
             }
@@ -318,6 +329,11 @@ public class FurnitureGroup : MonoBehaviour
                 data.OrderButton.gameObject.SetActive(false);
             }
             else if (data.TableState == ETableState.Move || data.TableState == ETableState.WaitFood || data.TableState == ETableState.Eating || data.TableState == ETableState.UseStaff || data.TableState == ETableState.DontUse || data.TableState == ETableState.None)
+            {
+                data.OrderButton.gameObject.SetActive(false);
+                data.ServingButton.gameObject.SetActive(false);
+            }
+            else if(data.TableState == ETableState.NeedCleaning)
             {
                 data.OrderButton.gameObject.SetActive(false);
                 data.ServingButton.gameObject.SetActive(false);

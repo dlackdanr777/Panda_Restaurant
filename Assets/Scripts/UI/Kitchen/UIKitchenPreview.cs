@@ -14,6 +14,7 @@ public class UIKitchenPreview : MonoBehaviour
     [SerializeField] private UIImageAndImage _effectSignGroup;
     [SerializeField] private UITextAndText _setGroup;
     [SerializeField] private GameObject _effetGroup;
+    [SerializeField] private UIImageAndText _unlockGroup;
     [SerializeField] private UIFoodType _uiFoodType;
 
     [Space]
@@ -64,6 +65,7 @@ public class UIKitchenPreview : MonoBehaviour
         _buyButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
+        _unlockGroup.gameObject.SetActive(false);
         _equipButtonGroup.HideNoAnime();
 
         if (data == null)
@@ -194,11 +196,55 @@ public class UIKitchenPreview : MonoBehaviour
         }
         else
         {
-            if (!UserInfo.IsScoreValid(data))
+            if (UnlockConditionManager.GetConditionEnabled(data.UnlockData))
             {
+                if (!UserInfo.IsScoreValid(data))
+                {
+                    _selectGroup.ImageColor = Utility.GetColor(ColorType.None);
+                    _scoreButton.gameObject.SetActive(true);
+                    _scoreButton.SetText(data.BuyScore.ToString());
+                    _selectGroup.SetSprite(_questionMarkSprite);
+                    _scoreGroup.SetText("???");
+                    _tipPerMinuteGroup.SetText("???");
+                    _setGroup.SetText1("???");
+                    _setGroup.SetText2("???");
+                    _effectSignGroup.Image1SetActive(false);
+                    _effectSignGroup.Image2SetActive(false);
+                    _scoreSignGroup.Image1SetActive(false);
+                    _scoreSignGroup.Image2SetActive(false);
+                    return;
+                }
+
+                _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
+                MoneyType moneyType = data.MoneyType;
+                int price = data.BuyPrice;
+
+                if (moneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(price))
+                {
+                    _notEnoughMoneyButton.gameObject.SetActive(true);
+                    _notEnoughImage.sprite = _notEnoughMoneySprite;
+                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
+                    return;
+                }
+
+                else if (moneyType == MoneyType.Dia && !UserInfo.IsDiaValid(price))
+                {
+                    _notEnoughMoneyButton.gameObject.SetActive(true);
+                    _notEnoughImage.sprite = _notEnoughDiaSprite;
+                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
+                    return;
+                }
+
+
+                _buyButton.gameObject.SetActive(true);
+                _buyButton.SetText(data.BuyPrice <= 0 ? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
+                _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
+            }
+
+            else
+            {
+                _unlockGroup.gameObject.SetActive(true);
                 _selectGroup.ImageColor = Utility.GetColor(ColorType.None);
-                _scoreButton.gameObject.SetActive(true);
-                _scoreButton.SetText(data.BuyScore.ToString());
                 _selectGroup.SetSprite(_questionMarkSprite);
                 _scoreGroup.SetText("???");
                 _tipPerMinuteGroup.SetText("???");
@@ -208,33 +254,8 @@ public class UIKitchenPreview : MonoBehaviour
                 _effectSignGroup.Image2SetActive(false);
                 _scoreSignGroup.Image1SetActive(false);
                 _scoreSignGroup.Image2SetActive(false);
-                return;
+                _unlockGroup.SetText(UnlockConditionManager.GetConditionStr(data.UnlockData));
             }
-
-            _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
-            MoneyType moneyType = data.MoneyType;
-            int price = data.BuyPrice;
-
-            if (moneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(price))
-            {
-                _notEnoughMoneyButton.gameObject.SetActive(true);
-                _notEnoughImage.sprite = _notEnoughMoneySprite;
-                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
-                return;
-            }
-
-            else if (moneyType == MoneyType.Dia && !UserInfo.IsDiaValid(price))
-            {
-                _notEnoughMoneyButton.gameObject.SetActive(true);
-                _notEnoughImage.sprite = _notEnoughDiaSprite;
-                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
-                return;
-            }
-
-
-            _buyButton.gameObject.SetActive(true);
-            _buyButton.SetText(data.BuyPrice <= 0 ? "公丰" : Utility.ConvertToMoney(data.BuyPrice));
-            _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
         }
     }
     

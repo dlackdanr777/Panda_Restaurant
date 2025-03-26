@@ -21,12 +21,13 @@ public class FoodData : ShopData
 
     public bool MiniGameNeeded => _foodMiniGameData != null ? true : false;
 
-    public FoodData(Sprite sprite, Sprite thumbnailSprite, string name, string id, FoodType foodType, MoneyType moneyType, int buyScore, int buyPrice, string needItem, List<FoodLevelData> foodLevelDataList, FoodMiniGameData foodMiniGameData)
+    public FoodData(Sprite sprite, Sprite thumbnailSprite, string name, string id, string description, FoodType foodType, MoneyType moneyType, int buyScore, int buyPrice, string needItem, List<FoodLevelData> foodLevelDataList, FoodMiniGameData foodMiniGameData)
     {
         _sprite = sprite;
         _thumbnailSPrite = thumbnailSprite;
         _name = name;
         _id = id;
+        _description = description;
         _foodType = foodType;
         _moneyType = moneyType;
         _buyScore = buyScore;

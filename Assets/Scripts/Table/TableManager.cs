@@ -11,8 +11,6 @@ public class TableManager : MonoBehaviour
 {
     public event Action OnTableUpdateHandler;
 
-
-    [Range(0, 10)]
     [Header("Transform")]
     [SerializeField] private Transform _moneyUITr;
 
@@ -310,12 +308,10 @@ public class TableManager : MonoBehaviour
         exitCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
-        data.TableState = ETableState.Empty;
         data.CurrentCustomer = null;
         data.TotalTip = 0;
         data.TotalPrice = 0;
-        UpdateTable();
-
+        DirtyTable(data);
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
             ObjectPoolManager.Instance.DespawnNormalCustomer(exitCustomer);
@@ -327,6 +323,9 @@ public class TableManager : MonoBehaviour
 
     public void NotFurnitureTable(TableData data)
     {
+        if (data.TableType == TableType.Table1)
+            return;
+
         data.TotalTip = 0;
         data.TotalPrice = 0;
 
@@ -366,7 +365,6 @@ public class TableManager : MonoBehaviour
         data.CurrentCustomer.HideFood();
         StartCoinAnime(data);
         StartGarbageAnime(data);
-
         Tween.Wait(0.5f, () =>
         {
             if (data.CurrentCustomer == null)
@@ -377,6 +375,19 @@ public class TableManager : MonoBehaviour
             UserInfo.AddTip(UserInfo.CurrentStage, tip);
             UpdateTable();
         });
+    }
+
+
+    private void DirtyTable(TableData data)
+    {
+        if (data.TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(data);
+            return;
+        }
+
+        data.TableState = ETableState.NeedCleaning;
+        UpdateTable();
     }
 
 

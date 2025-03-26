@@ -28,9 +28,10 @@ public class Furniture : MonoBehaviour
     [SerializeField] protected Sprite _defalutSprite;
 
     protected Vector3 _tmpScale;
-
-    public void Init()
+    protected TableManager _tableManager;
+    public virtual void Init(TableManager tableManager)
     {
+        _tableManager = tableManager;
         _tmpScale = _spriteRenderer.transform.localScale;
     }
 
@@ -43,22 +44,29 @@ public class Furniture : MonoBehaviour
                 _spriteRenderer.gameObject.SetActive(false);
 
             else
+            {
                 _spriteRenderer.sprite = _defalutSprite;
+                SetRendererScale();
+            }
 
             return;
         }
 
         _spriteRenderer.gameObject.SetActive(true);
         _spriteRenderer.sprite = _thumbnailSpriteEnabled ? data.ThumbnailSprite : data.Sprite;
+        SetRendererScale();
+    }
 
+    private void SetRendererScale()
+    {
         float y = 0;
         float x = 0;
 
         if (_batchType == FurnitureBatchTypeY.Lower)
-            y = data.Sprite.bounds.size.y * 0.5f * _spriteRenderer.transform.lossyScale.y;
+            y = _spriteRenderer.sprite.bounds.size.y * 0.5f * _spriteRenderer.transform.lossyScale.y;
 
         else if (_batchType == FurnitureBatchTypeY.Upper)
-            y = -(data.Sprite.bounds.size.y * 0.5f * _spriteRenderer.transform.lossyScale.y);
+            y = -(_spriteRenderer.sprite.bounds.size.y * 0.5f * _spriteRenderer.transform.lossyScale.y);
 
         else if (_batchType == FurnitureBatchTypeY.Center)
             y = 0;
@@ -68,10 +76,10 @@ public class Furniture : MonoBehaviour
 
 
         if (_batchTypeX == FurnitureBatchTypeX.Left)
-            x = data.Sprite.bounds.size.x * 0.5f * _spriteRenderer.transform.lossyScale.x;
+            x = _spriteRenderer.sprite.bounds.size.x * 0.5f * _spriteRenderer.transform.lossyScale.x;
 
         else if (_batchTypeX == FurnitureBatchTypeX.Right)
-            x = -(data.Sprite.bounds.size.x * 0.5f * _spriteRenderer.transform.lossyScale.x);
+            x = -(_spriteRenderer.sprite.bounds.size.x * 0.5f * _spriteRenderer.transform.lossyScale.x);
 
         else if (_batchTypeX == FurnitureBatchTypeX.Center)
             x = 0;
