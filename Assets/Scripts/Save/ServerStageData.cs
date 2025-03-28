@@ -22,6 +22,7 @@ public class ServerStageData
     public List<List<CoinAreaData>> CoinAreaDataList = new List<List<CoinAreaData>>();
     public List<List<GarbageAreaData>> GarbageAreaDataList = new List<List<GarbageAreaData>>();
 
+    public List<SaveKitchenData> SaveKitchenDataList = new List<SaveKitchenData>();
     public List<List<SaveTableData>> SaveTableDataList = new List<List<SaveTableData>>();
 
 
@@ -41,6 +42,7 @@ public class ServerStageData
         param.Add("DropCoinAreaDataList", CoinAreaDataList);
         param.Add("DropGarbageAreaDataList", GarbageAreaDataList);
         param.Add("SaveTableDataList", SaveTableDataList);
+        param.Add("SaveKitchenDataList", SaveKitchenDataList);
 
         return param;
     }
@@ -94,6 +96,9 @@ public class ServerStageData
 
         if(data.ContainsKey("SaveTableDataList"))
             SaveTableDataList = ConvertJsonToSaveTableList(data["SaveTableDataList"]);
+
+        if (data.ContainsKey("SaveKitchenDataList"))
+            SaveKitchenDataList = ConvertJsonToKitchenList(data["SaveKitchenDataList"]);
     }
 
     //JSON 데이터를 1차원 리스트로 변환하는 헬퍼 함수
@@ -238,5 +243,33 @@ public class ServerStageData
         }
 
         return result;
+    }
+
+    private List<SaveKitchenData> ConvertJsonToKitchenList(JsonData jsonData)
+    {
+        List<SaveKitchenData> list = new List<SaveKitchenData>();
+
+        if (jsonData.IsArray)
+        {
+            foreach (JsonData item in jsonData)
+            {
+                var kitchenData = new SaveKitchenData();
+
+                if (item.ContainsKey("FloorType"))
+                    kitchenData.SetFloorType((ERestaurantFloorType)int.Parse(item["FloorType"].ToString()));
+
+                if (item.ContainsKey("MaxSinkBowlCount"))
+                    kitchenData.SetMaxSinkBowlCount(int.Parse(item["MaxSinkBowlCount"].ToString()));
+
+                if (item.ContainsKey("SinkBowlCount"))
+                    kitchenData.SetSinkBowlCount(int.Parse(item["SinkBowlCount"].ToString()));
+
+                // 필요한 필드 추가
+
+                list.Add(kitchenData);
+            }
+        }
+
+        return list;
     }
 }

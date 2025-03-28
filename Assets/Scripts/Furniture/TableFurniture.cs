@@ -153,7 +153,7 @@ public class TableFurniture : Furniture
 
         if(!UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _floor))
         {
-            DebugLog.Log("¾ÅÅ©´ë°¡ ²ËÃ¡½À´Ï´Ù.");
+            PopupManager.Instance.ShowDisplayText("½ÌÅ©´ë°¡ ²Ë Â÷, ±×¸©À» Á¤¸®ÇÒ ¼ö ¾ø½À´Ï´Ù.");
             return;
         }
 

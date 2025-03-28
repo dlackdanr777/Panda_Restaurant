@@ -1,37 +1,43 @@
 using UnityEngine;
 
+[System.Serializable]
 public class SaveKitchenData
 {
-    private int _sinkBowlCount;
-    public int SinkBowlCount => _sinkBowlCount;
+    public ERestaurantFloorType FloorType { get; private set; }
 
-    private int _maxSinkBowlCount = 6;
-    public int MaxSinkBowlCount => _maxSinkBowlCount;
+    public int SinkBowlCount { get; private set; }
+
+    public int MaxSinkBowlCount { get; private set; } = 6;
 
     public SaveKitchenData()
     {
 
     }
 
+    public void SetFloorType(ERestaurantFloorType floor)
+    {
+        FloorType = floor;
+    }
+
     public void SetMaxSinkBowlCount(int count)
     {
-        _maxSinkBowlCount = Mathf.Clamp(count, 1, 30);
+        MaxSinkBowlCount = Mathf.Clamp(count, 1, 30);
     }
 
     public void SetSinkBowlCount(int count)
     {
-        _sinkBowlCount = Mathf.Clamp(count, 0, _maxSinkBowlCount);
+        SinkBowlCount = Mathf.Clamp(count, 0, MaxSinkBowlCount);
     }
 
 
 
     public void AddSinkBowlCount()
     {
-        _sinkBowlCount = Mathf.Clamp(_sinkBowlCount + 1, 0, _maxSinkBowlCount);
+        SinkBowlCount = Mathf.Clamp(SinkBowlCount + 1, 0, MaxSinkBowlCount);
     }
 
     public bool GetBowlAddEnabled()
     {
-        return _sinkBowlCount < _maxSinkBowlCount;
+        return SinkBowlCount < MaxSinkBowlCount;
     }
 }

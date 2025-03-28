@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using static UnityEngine.Rendering.DebugUI.Table;
 
 public class StageInfo
 {
@@ -46,6 +47,7 @@ public class StageInfo
     private List<string> _giveKitchenUtensilList = new List<string>();
     private KitchenUtensilData[,] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)ERestaurantFloorType.Length, (int)KitchenUtensilType.Length];
 
+    private SaveKitchenData[] _saveKitchenDatas = new SaveKitchenData[(int)ERestaurantFloorType.Length];
     private SaveTableData[,] _saveTableDatas = new SaveTableData[(int)ERestaurantFloorType.Length, (int)TableType.Length];
     private CoinAreaData[,] _coinAreaDatas = new CoinAreaData[(int)ERestaurantFloorType.Length, (int)TableType.Length * 2];
     private GarbageAreaData[,] _garbageAreaDatas = new GarbageAreaData[(int)ERestaurantFloorType.Length, (int)TableType.Length];
@@ -53,7 +55,7 @@ public class StageInfo
     private FoodType[] _furnitureEnabledFoodType = new FoodType[(int)ERestaurantFloorType.Length];
     private FoodType[] _kitchenuntensilEnabledFoodType = new FoodType[(int)ERestaurantFloorType.Length];
 
-    private SaveKitchenData[] _saveKitchenDatas = new SaveKitchenData[(int)ERestaurantFloorType.Length];
+
 
     //서버에 저장 X
     private List<string> _collectFurnitureSetDataList = new List<string>();
@@ -74,15 +76,7 @@ public class StageInfo
         for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
             _saveKitchenDatas[i] = new SaveKitchenData();
-            for (int j = 0, cntJ = (int)TableType.Length; j < cntJ; ++j)
-            {
-                _garbageAreaDatas[i, j] = new GarbageAreaData();
-            }
-
-            for (int j = 0, cntJ = (int)TableType.Length; j < cntJ; ++j)
-            {
-                _coinAreaDatas[i, i * 2 + j] = new CoinAreaData();
-            }
+            _saveKitchenDatas[i].SetFloorType((ERestaurantFloorType)i);
         }
     }
 
@@ -792,6 +786,7 @@ public class StageInfo
         data.Score = _score;
         data.Tip = _tip;
 
+        data.SaveKitchenDataList = ConvertKitchenDataToList();
         data.SaveTableDataList = ConvertTableDataToList();
         data.CoinAreaDataList = ConvertCoinAreaDataToList();
         data.GarbageAreaDataList = ConvertGarbageAreaDataToList();
@@ -904,6 +899,14 @@ public class StageInfo
             }
         }
 
+        for(int i = 0; i < loadData.SaveKitchenDataList.Count; ++i)
+        {
+            SaveKitchenData kitchenData = loadData.SaveKitchenDataList[i];
+
+            int floorIndex = (int)kitchenData.FloorType;
+            _saveKitchenDatas[floorIndex] = kitchenData;
+        }
+
         for (int i = 0; i < loadData.SaveTableDataList.Count; i++)
         {
             var floorList = loadData.SaveTableDataList[i];
@@ -969,6 +972,18 @@ public class StageInfo
             }
             list.Add(row);
         }
+        return list;
+    }
+
+    private List<SaveKitchenData> ConvertKitchenDataToList()
+    {
+        List<SaveKitchenData> list = new List<SaveKitchenData>();
+        for (int i = 0; i < _saveKitchenDatas.Length; i++)
+        {
+            SaveKitchenData data = _saveKitchenDatas[i];
+            list.Add(data);
+        }
+
         return list;
     }
 
