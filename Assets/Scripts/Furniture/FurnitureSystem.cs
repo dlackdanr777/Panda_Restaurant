@@ -139,6 +139,14 @@ public class FurnitureSystem : MonoBehaviour
         return Vector3.zero;
     }
 
+    public Vector3 GetFoodPos(ERestaurantFloorType floor, RestaurantType type)
+    {
+        if (!_furnitureGroupDic.TryGetValue(floor, out FurnitureGroup group))
+            throw new Exception("해당 Floor타입을 가진 가구 그룹이 없습니다: " + floor);
+
+        return group.GetFoodPos(type);
+    }
+
     public FoodType GetFoodType(ERestaurantFloorType floor)
     {
         if (!_furnitureGroupDic.TryGetValue(floor, out FurnitureGroup group))

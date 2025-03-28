@@ -3,7 +3,6 @@ using Muks.Tween;
 using Muks.WeightedRandom;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -485,6 +484,10 @@ public class TableManager : MonoBehaviour
         return _furnitureSystem.GetDropCoinAreaList(floorType);
     }
 
+    public Vector3 GetFoodPos(ERestaurantFloorType floorType, RestaurantType type)
+    {
+        return _furnitureSystem.GetFoodPos(floorType, type);
+    }
 
     public List<TableData> GetTableDataList(ERestaurantFloorType floorType, ETableState state)
     {
@@ -553,9 +556,10 @@ public class TableManager : MonoBehaviour
             }
             else
             {
+                float areaDoorDistance = Vector3.Distance(area.transform.position, doorPos);
                 if (startDistance < minNotEqualDist)
                 {
-                    minNotEqualDist = startDistance;
+                    minNotEqualDist = areaDoorDistance;
                     minNotEqualArea = area;
                 }
             }
@@ -592,15 +596,54 @@ public class TableManager : MonoBehaviour
             }
             else
             {
+                float areaDoorDistance = Vector3.Distance(area.transform.position, doorPos);
                 if (startDistance < minNotEqualDist)
                 {
-                    minNotEqualDist = startDistance;
+                    minNotEqualDist = areaDoorDistance;
                     minNotEqualArea = area;
                 }
             }
         }
 
         return minEqualArea ?? minNotEqualArea;
+    }
+
+
+    public TableData GetMinDistanceTable(ERestaurantFloorType floorType, Vector3 startPos, List<TableData> tableDataList)
+    {
+        Vector3 targetDoorPos = GetDoorPos(startPos);
+        TableData minEqualTable = null;
+        TableData minNotEqualTable = null;
+
+        float minEqualDist = float.MaxValue;
+        float minNotEqualDist = float.MaxValue;
+
+        foreach (var table in tableDataList)
+        {
+            Vector3 doorPos = GetDoorPos(table.transform.position);
+            float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
+            float startDistance = Vector2.Distance(table.transform.position, startPos);
+
+            if (doorDistance <= 1f)
+            {
+                if (startDistance < minEqualDist)
+                {
+                    minEqualDist = startDistance;
+                    minEqualTable = table;
+                }
+            }
+            else
+            {
+                float tableDoorDistance = Vector3.Distance(table.transform.position, doorPos);
+                if (tableDoorDistance < minNotEqualDist)
+                {
+                    minNotEqualDist = tableDoorDistance;
+                    minNotEqualTable = table;
+                }
+            }
+        }
+
+        return minEqualTable ?? minNotEqualTable;
     }
 
 

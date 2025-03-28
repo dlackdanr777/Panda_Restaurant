@@ -36,6 +36,10 @@ public class TableData : MonoBehaviour
 
     public TableType TableType;
 
+    public TableFurniture TableFurniture;
+
+
+
     public int TotalTip;
 
     public int TotalPrice;

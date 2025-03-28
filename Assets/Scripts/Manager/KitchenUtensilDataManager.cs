@@ -212,7 +212,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
             int table1AddScore = int.Parse(row[4].Trim());
             int effectValue = int.Parse(row[5].Trim());
             MoneyType moneyType = row[6].Trim() == "게임 머니" || row[6].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
-            DebugLog.Log(row[6] + ", " + moneyType);
+
             int table1BuyScore = int.Parse(row[7].Trim());
             int table1BuyPrice = int.Parse(row[8].Trim());
 

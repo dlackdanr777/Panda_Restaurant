@@ -39,7 +39,7 @@ public static class UserInfo
     public static event Action OnGiveKitchenUtensilHandler;
     public static event Action OnChangeKitchenUtensilSetDataHandler;
 
-    public static event Action OnAddSinkBowlHandler;
+    public static event Action OnChangeSinkBowlHandler;
 
     public static event Action OnDoneChallengeHandler;
     public static event Action OnClearChallengeHandler;
@@ -262,7 +262,7 @@ public static class UserInfo
 
     private static void OnAddSinkBowlEvent()
     {
-        OnAddSinkBowlHandler?.Invoke();
+        OnChangeSinkBowlHandler?.Invoke();
     }
 
 
@@ -1105,18 +1105,12 @@ public static class UserInfo
 
     #endregion
 
-    #region GarbageAndCoinData
+    #region TableData
 
-    public static GarbageAreaData GetGarbageAreaData(EStage stage, ERestaurantFloorType floor, TableType type)
+    public static SaveTableData GetTableData(EStage stage, ERestaurantFloorType floor, TableType type)
     {
         int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetGarbageAreaData(floor, type);
-    }
-
-    public static CoinAreaData GetCoinAreaData(EStage stage, ERestaurantFloorType floor, TableType type, int index)
-    {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].GetCoinAreaData(floor, type, index);
+        return _stageInfos[stageIndex].GetTableData(floor, type);
     }
 
 

@@ -39,6 +39,11 @@ public class SpriteFillAmount : MonoBehaviour
         _coroutine = StartCoroutine(TweenFillAmountRoutine(amount, time));
     }
 
+    public void SetColor(Color color)
+    {
+        _spriteRenderer.color = color;
+    }
+
     public void SetActive(bool value)
     {
         gameObject.SetActive(value);

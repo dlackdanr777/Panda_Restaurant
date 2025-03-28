@@ -106,6 +106,11 @@ public class MainScene : MonoBehaviour
             UserInfo.LoadStageData(UserInfo.CurrentStage);
         }
 
+        if(Input.GetKeyDown(KeyCode.J))
+        {
+            UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, CurrentFloor);
+        }
+
         _updateTimer += Time.deltaTime;
 
         if (60 <= _updateTimer)

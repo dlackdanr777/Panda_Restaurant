@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 public class FurnitureGroup : MonoBehaviour
 {
@@ -23,13 +24,15 @@ public class FurnitureGroup : MonoBehaviour
 
     [Space]
     [Header("Transforms")]
+    [SerializeField] private Transform _defaultWaiterPos;
     [SerializeField] private Transform _cashTableTr;
     [SerializeField] private Transform _marketerTr;
     [SerializeField] private Transform _guardTr;
     [SerializeField] private Transform _cleanerWaitTr;
     [SerializeField] private Transform _door1;
     [SerializeField] private Transform _door2;
-
+    [SerializeField] private Transform _hallFoodPos;
+    [SerializeField] private Transform _kitchenFoodPos;
 
     private TableManager _tableManager;
     private Dictionary<FurnitureType, List<Furniture>> _furnitureDic = new Dictionary<FurnitureType, List<Furniture>>();
@@ -51,7 +54,7 @@ public class FurnitureGroup : MonoBehaviour
         switch (type)
         {
             case StaffType.Waiter:
-                return data.LeftStaffTr.position;
+                return _defaultWaiterPos.position;
             case StaffType.Server:
                 return data.RightStaffTr.position;
             case StaffType.Cleaner:
@@ -143,6 +146,17 @@ public class FurnitureGroup : MonoBehaviour
         return Vector3.zero;
     }
 
+
+    public Vector3 GetFoodPos(RestaurantType type)
+    {
+        if (type == RestaurantType.Hall)
+            return _hallFoodPos.position;
+        else if(type == RestaurantType.Kitchen)
+            return _kitchenFoodPos.position;
+
+        throw new Exception("타입이 이상합니다: " + type);
+    }
+
     public FoodType GetFoodType()
     {
         return _foodType;
@@ -175,18 +189,6 @@ public class FurnitureGroup : MonoBehaviour
         }
 
 
-        for(int i = 0, cnt = (int)TableType.Length; i < cnt; ++i)
-        {
-            TableType type = (TableType)i;
-            TableFurniture tableFurniture = (TableFurniture)_furniture[i];
-
-            if (tableFurniture == null)
-                throw new Exception("테이블이 아닙니다: " + type);
-
-            _tableFurnitureDic.Add(type, tableFurniture);
-            tableFurniture.SetTableData(_tableDataDic[type]);
-        }
-
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
         {
             _furnitureDic.Add((FurnitureType)i, new List<Furniture>());
@@ -195,7 +197,7 @@ public class FurnitureGroup : MonoBehaviour
         for (int i = 0, cnt = _furniture.Length; i < cnt; ++i)
         {
             _furnitureDic[_furniture[i].Type].Add(_furniture[i]);
-            _furniture[i].Init(tableManager);
+            _furniture[i].Init(tableManager, _floorType);
         }
 
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
@@ -208,6 +210,7 @@ public class FurnitureGroup : MonoBehaviour
 
         for (int i = 0, cnt = (int)FurnitureType.Table5; i <= cnt; ++i)
         {
+            TableType type = (TableType)i;
             TableButton orderButton = Instantiate(orderButtonPrefab, obj.transform);
             TableButton servingButton = Instantiate(servingButtonPrefab, obj.transform);
 
@@ -216,6 +219,7 @@ public class FurnitureGroup : MonoBehaviour
 
             TableType tableType = (TableType)i;
             TableData data = _tableDataDic[tableType];
+
             data.FloorType = _floorType;
             data.TableState = ETableState.Empty;
             orderButton.AddListener(() => _tableManager.OnCustomerOrder(data));
@@ -227,32 +231,36 @@ public class FurnitureGroup : MonoBehaviour
             data.ServingButton = servingButton;
             data.OrderButton = orderButton;
 
+            SaveTableData saveTableData = UserInfo.GetTableData(UserInfo.CurrentStage, _floorType, type);
+            GarbageAreaData garbageData = saveTableData.GarbageAreaData;
+            data.DropGarbageArea.Init(garbageData);
+            data.TableState = saveTableData.NeedCleaning ? ETableState.NeedCleaning : data.TableState;
+
+            for (int j = 0, cntJ = data.DropCoinAreas.Length; j < cntJ; ++j)
+            {
+                CoinAreaData coinData = saveTableData.CoinAreaDatas[j];
+                data.DropCoinAreas[j].Init(coinData);
+            }
+
+            TableFurniture tableFurniture = (TableFurniture)_furniture[i];
+            if (tableFurniture == null)
+                throw new Exception("테이블이 아닙니다: " + type);
+
+            _tableFurnitureDic.Add(type, tableFurniture);
+            tableFurniture.SetTableData(_tableDataDic[type], saveTableData);
+
             CheckTableEnabled(_floorType, (FurnitureType)i);
         }
 
         _tableManager.OnTableUpdateHandler += OnTableUpdateEvent;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
         UserInfo.OnChangeFurnitureHandler += CheckTableEnabled;
-        OnTableUpdateEvent();
         for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
         {
             FurnitureType type = (FurnitureType)i;
             OnChangeFurnitureEvent(_floorType, type);
         }
-
-        for(int i = 0, cnt = (int)TableType.Length; i < cnt; ++i)
-        {
-            TableType type = (TableType)i;
-            TableData table = _tableDataDic[type];
-            GarbageAreaData garbageData = UserInfo.GetGarbageAreaData(UserInfo.CurrentStage, _floorType, type);
-            table.DropGarbageArea.Init(garbageData);
-
-            for(int j = 0, cntJ = table.DropCoinAreas.Length; j < cntJ; ++j)
-            {
-                CoinAreaData coinData = UserInfo.GetCoinAreaData(UserInfo.CurrentStage, _floorType, type, j);
-                table.DropCoinAreas[j].Init(coinData);
-            }
-        }
+        _tableManager.UpdateTable();
     }
 
 

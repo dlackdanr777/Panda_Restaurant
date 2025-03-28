@@ -27,12 +27,15 @@ public class Furniture : MonoBehaviour
     [SerializeField] protected SpriteRenderer _spriteRenderer;
     [SerializeField] protected Sprite _defalutSprite;
 
-    protected Vector3 _tmpScale;
     protected TableManager _tableManager;
-    public virtual void Init(TableManager tableManager)
+    protected Vector3 _tmpScale;
+    protected ERestaurantFloorType _floor;
+
+    public virtual void Init(TableManager tableManager, ERestaurantFloorType floor)
     {
         _tableManager = tableManager;
         _tmpScale = _spriteRenderer.transform.localScale;
+        _floor = floor;
     }
 
 

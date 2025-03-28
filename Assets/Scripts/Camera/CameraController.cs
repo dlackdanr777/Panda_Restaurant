@@ -9,12 +9,6 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Camera))]
 public class CameraController : MonoBehaviour
 {
-    public enum RestaurantType
-    {
-        Hall,
-        Kitchen,
-    }
-
     public Action OnStartMoveCameraHandler;
     public Action<ERestaurantFloorType, RestaurantType> OnEndMoveCameraHandler;
 

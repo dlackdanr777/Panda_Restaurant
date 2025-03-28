@@ -2,10 +2,15 @@ using UnityEngine;
 
 public class SinkKitchenUtensil : KitchenUtensil
 {
+    [Space]
+    [Header("Sink")]
+    [SerializeField] private SinkGaugeBar _sinkGaugeBar;
+
     public override void Init(ERestaurantFloorType floor)
     {
         base.Init(floor);
-        UserInfo.OnAddSinkBowlHandler += UpdateSink;
+        UserInfo.OnChangeSinkBowlHandler += UpdateSink;
+        _sinkGaugeBar.Init();
         UpdateSink();
     }
 
@@ -14,12 +19,11 @@ public class SinkKitchenUtensil : KitchenUtensil
     {
         int cntBowlCount = UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _floorType);
         int maxBowlCount = UserInfo.GetMaxSinkBowlCount(UserInfo.CurrentStage, _floorType);
-
-        DebugLog.Log(cntBowlCount + "/" +  maxBowlCount);
+        _sinkGaugeBar.SetGauge(cntBowlCount, maxBowlCount);
     }
 
     private void OnDestroy()
     {
-        UserInfo.OnAddSinkBowlHandler -= UpdateSink;
+        UserInfo.OnChangeSinkBowlHandler -= UpdateSink;
     }
 }

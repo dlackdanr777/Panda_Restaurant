@@ -90,7 +90,7 @@ GameObject:
   - component: {fileID: 381238288571434408}
   - component: {fileID: 836775552964357237}
   m_Layer: 5
-  m_Name: UI Burner Timer
+  m_Name: Burner Timer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

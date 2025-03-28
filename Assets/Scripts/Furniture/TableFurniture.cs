@@ -8,43 +8,64 @@ public class TableFurniture : Furniture
     [SerializeField] private SpriteRenderer _leftChairSpriteRenderer;
     [SerializeField] private SpriteRenderer _rightChairSpriteRenderer;
     [SerializeField] private PointerDownSpriteRenderer _pointerDownSpriteRenderer;
-
+    [SerializeField] private SpriteRenderer _bowlRenderer;
 
     private TableFurnitureData _tableFurnitureData;
     private TableData _tableData;
+    private SaveTableData _saveTableData;
 
-
-    public override void Init(TableManager manager)
+    public override void Init(TableManager manager, ERestaurantFloorType floor)
     {
-        base.Init(manager);
+        base.Init(manager, floor);
         manager.OnTableUpdateHandler += OnTableUpdateEvent;
         _pointerDownSpriteRenderer.AddEvent(OnTouchEvent);
     }
 
 
-    public void SetTableData(TableData data)
+    public void SetTableData(TableData data, SaveTableData saveData)
     {
         _tableData = data;
-        OnTableUpdateEvent();
+        _saveTableData = saveData;
+        _tableData.TableFurniture = this;
+        _saveTableData.SetNeedCleaning(_tableData.TableState == ETableState.NeedCleaning);
+    }
+
+
+    public void OnCleanAction()
+    {
+        if (_tableData.TableState != ETableState.NeedCleaning)
+        {
+            DebugLog.Log("더러운 상태가 아닙니다: " + _tableData.TableType);
+            return;
+        }
+
+        _tableData.TableState = ETableState.Empty;
+        _tableManager.UpdateTable();
     }
 
 
     private void OnTableUpdateEvent()
     {
-        if (_tableFurnitureData == null)
+        if (_tableFurnitureData == null || _tableData == null)
         {
             DebugLog.LogError("테이블 데이터가 없습니다.");
             return;
         }
 
+
+
         if (_tableData.TableState == ETableState.NeedCleaning)
         {
-            _spriteRenderer.sprite = _tableFurnitureData.DirtyTableSprite;
+            _bowlRenderer.gameObject.SetActive(true);
+            _saveTableData.SetNeedCleaning(true);
+            //_spriteRenderer.sprite = _tableFurnitureData.DirtyTableSprite;
         }
 
         else
         {
-            _spriteRenderer.sprite = _tableFurnitureData.Sprite;
+            _bowlRenderer.gameObject.SetActive(false);
+            _saveTableData.SetNeedCleaning(false);
+            //_spriteRenderer.sprite = _tableFurnitureData.Sprite;
         }
     }
 
@@ -98,33 +119,29 @@ public class TableFurniture : Furniture
     private void SetRendererScale(TableFurnitureData tableData)
     {
         Vector3 scale = tableData == null || tableData.Scale <= 0 ? _tmpScale : tableData.Scale * _tmpScale;
+
         _spriteRenderer.transform.localScale = scale;
         _leftChairSpriteRenderer.transform.localScale = scale;
         _rightChairSpriteRenderer.transform.localScale = scale;
 
-        float heightMul = (_spriteRenderer.sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;
-        float leftChairHeightMul = (_leftChairSpriteRenderer.sprite.bounds.size.y * 0.5f) * _leftChairSpriteRenderer.transform.lossyScale.y;
-        float rightChairHeightMul = (_rightChairSpriteRenderer.sprite.bounds.size.y * 0.5f) * _rightChairSpriteRenderer.transform.lossyScale.y;
+        float mainY = GetBatchYOffset(_batchType, _spriteRenderer);
+        float leftY = GetBatchYOffset(_batchType, _leftChairSpriteRenderer);
+        float rightY = GetBatchYOffset(_batchType, _rightChairSpriteRenderer);
 
-        if (_batchType == FurnitureBatchTypeY.Lower)
+        _spriteRenderer.transform.localPosition = new Vector3(0, mainY, 0);
+        _leftChairSpriteRenderer.transform.localPosition = new Vector3(
+            _leftChairSpriteRenderer.transform.localPosition.x, leftY, 0);
+        _rightChairSpriteRenderer.transform.localPosition = new Vector3(
+            _rightChairSpriteRenderer.transform.localPosition.x, rightY, 0);
+
+        // 그릇 위치 = 테이블 위치에 그대로 맞춤
+        if (_bowlRenderer != null && _spriteRenderer.sprite != null)
         {
-            _spriteRenderer.transform.localPosition = new Vector3(0, heightMul, 0);
-            _leftChairSpriteRenderer.transform.localPosition = new Vector3(_leftChairSpriteRenderer.transform.localPosition.x, leftChairHeightMul, 0);
-            _rightChairSpriteRenderer.transform.localPosition = new Vector3(_rightChairSpriteRenderer.transform.localPosition.x, rightChairHeightMul, 0);
-        }
-        else if (_batchType == FurnitureBatchTypeY.Upper)
-        {
-            _spriteRenderer.transform.localPosition = new Vector3(0, -heightMul, 0);
-            _leftChairSpriteRenderer.transform.localPosition = new Vector3(_leftChairSpriteRenderer.transform.localPosition.x, -leftChairHeightMul, 0);
-            _rightChairSpriteRenderer.transform.localPosition = new Vector3(_rightChairSpriteRenderer.transform.localPosition.x, -rightChairHeightMul, 0);
-        }
-        else if (_batchType == FurnitureBatchTypeY.Center)
-        {
-            _spriteRenderer.transform.localPosition = Vector3.zero;
-            _leftChairSpriteRenderer.transform.localPosition = new Vector3(_leftChairSpriteRenderer.transform.localPosition.x, 0, 0);
-            _rightChairSpriteRenderer.transform.localPosition = new Vector3(_rightChairSpriteRenderer.transform.position.x, 0, 0);
+            _bowlRenderer.transform.localPosition = _spriteRenderer.transform.localPosition;
         }
     }
+
+
 
     private void OnTouchEvent()
     {
@@ -134,8 +151,48 @@ public class TableFurniture : Furniture
             return;
         }
 
+        if(!UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _floor))
+        {
+            DebugLog.Log("씽크대가 꽉찼습니다.");
+            return;
+        }
 
-        _tableData.TableState = ETableState.None;
+        _tableData.TableState = ETableState.Empty;
+        UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, _floor);
         _tableManager.UpdateTable();
     }
+
+
+    private float GetBatchYOffset(FurnitureBatchTypeY typeY, SpriteRenderer renderer)
+    {
+        if (renderer == null || renderer.sprite == null)
+            return 0f;
+
+        Sprite sprite = renderer.sprite;
+        float height = sprite.bounds.size.y;
+        float scaleY = renderer.transform.lossyScale.y;
+
+        float pivotY = sprite.pivot.y / sprite.rect.height;
+
+        switch (typeY)
+        {
+            case FurnitureBatchTypeY.Lower:
+                // 바닥 정렬: 피벗이 0일 때 기준 → 현재 피벗만큼 위로 올려야 함
+                return height * pivotY * scaleY;
+
+            case FurnitureBatchTypeY.Upper:
+                // 천장 정렬: 피벗이 1일 때 기준 → (1 - pivotY) 만큼 내려야 함
+                return -height * (1f - pivotY) * scaleY;
+
+            case FurnitureBatchTypeY.Center:
+                // 중앙 정렬: 피벗이 0.5일 때 기준 → (0.5 - pivotY) 보정
+                return (0.5f - pivotY) * height * scaleY;
+
+            case FurnitureBatchTypeY.None:
+            default:
+                return renderer.transform.localPosition.y;
+        }
+    }
+
+
 }

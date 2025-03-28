@@ -24,14 +24,12 @@ public class DropCoinArea : MonoBehaviour
     private long _currentMoney;
     public long CurrentMoney => _currentMoney;
 
-    private int _currentCoinCount;
-    public int Count => _currentCoinCount;
+    public int Count => _coinList.Count;
 
 
     public void Init(CoinAreaData data)
     {
         _data = data;
-        _currentCoinCount = 0;
         _currentMoney = 0;
         for (int i = 0; i < _coinList.Count; i++)
         {
@@ -45,8 +43,8 @@ public class DropCoinArea : MonoBehaviour
 
 
     public void LoadData(CoinAreaData data)
-    { 
-        _currentCoinCount = Mathf.Clamp(data.CoinCount, 0, _maxCoinCount);
+    {
+        int count = Mathf.Clamp(data.CoinCount, 0, _maxCoinCount);
         _currentMoney = data.Money;
 
         for(int i = 0, cnt = _coinList.Count; i < cnt; ++i)
@@ -55,7 +53,7 @@ public class DropCoinArea : MonoBehaviour
         }
         _coinList.Clear();
 
-        for(int i = 0, cnt = _currentCoinCount;  i < cnt; i++)
+        for(int i = 0, cnt = count;  i < cnt; i++)
         {
             int index = i;
             Vector3 targetPos = _dropArea.position;
@@ -77,20 +75,19 @@ public class DropCoinArea : MonoBehaviour
         coin.AddEvent(GiveCoin);
         SoundManager.Instance.PlayEffectAudio(_dropCoinSound, 0.05f);
         Vector3 targetPos = _dropArea.position;
-        targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * _currentCoinCount), 0, 0);
+        targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * Count), 0, 0);
 
-        if(_coinList.Count < _maxCoinCount)
+        if(Count < _maxCoinCount)
         {
             _coinList.Add(coin);
+            _data.SetCoinCount(Mathf.Clamp(Count, 0, _maxCoinCount));
         }
 
-        _currentCoinCount = Mathf.Clamp(_coinList.Count, 0, _maxCoinCount);
-        _data.SetCoinCount(_currentCoinCount);
         coin.TweenStop();
         coin.TweenMoveX(targetPos.x, 0.45f);
         coin.TweenMoveY(targetPos.y, 0.45f, Ease.InBack).OnComplete(() =>
         {
-            if (_maxCoinCount <= _currentCoinCount)
+            if (_maxCoinCount < Count)
             {
                 coin.TweenStop();
                 ObjectPoolManager.Instance.DespawnCoin(coin);
@@ -111,9 +108,8 @@ public class DropCoinArea : MonoBehaviour
         float endTime = _coinEndTime;
         long currentMoney = _currentMoney;
         _currentMoney = 0;
-        _currentCoinCount = 0;
         _data.SetMoney(_currentMoney);
-        _data.SetCoinCount(_currentCoinCount);
+        _data.SetCoinCount(0);
         SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
@@ -141,11 +137,10 @@ public class DropCoinArea : MonoBehaviour
 
         float endTime = _coinEndTime;
         long currentMoney = _currentMoney;
-        int currentCoinCount = _currentCoinCount;
+        int currentCoinCount = Count;
         _currentMoney = 0;
-        _currentCoinCount = 0;
         _data.SetMoney(_currentMoney);
-        _data.SetCoinCount(_currentCoinCount);
+        _data.SetCoinCount(0);
         SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)

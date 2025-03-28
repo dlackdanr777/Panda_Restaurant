@@ -46,6 +46,7 @@ public class StageInfo
     private List<string> _giveKitchenUtensilList = new List<string>();
     private KitchenUtensilData[,] _equipKitchenUtensilDatas = new KitchenUtensilData[(int)ERestaurantFloorType.Length, (int)KitchenUtensilType.Length];
 
+    private SaveTableData[,] _saveTableDatas = new SaveTableData[(int)ERestaurantFloorType.Length, (int)TableType.Length];
     private CoinAreaData[,] _coinAreaDatas = new CoinAreaData[(int)ERestaurantFloorType.Length, (int)TableType.Length * 2];
     private GarbageAreaData[,] _garbageAreaDatas = new GarbageAreaData[(int)ERestaurantFloorType.Length, (int)TableType.Length];
 
@@ -60,6 +61,16 @@ public class StageInfo
 
     public StageInfo()
     {
+        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            for (int j = 0, cntJ = (int)TableType.Length; j < cntJ; ++j)
+            {
+                TableType type = (TableType)j;
+                _saveTableDatas[i, j] = new SaveTableData(floor, type);
+            }
+        }
+
         for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
             _saveKitchenDatas[i] = new SaveKitchenData();
@@ -725,31 +736,13 @@ public class StageInfo
 
     #region TableData
 
-    public CoinAreaData GetCoinAreaData(ERestaurantFloorType floor, TableType type, int index)
+    public SaveTableData GetTableData(ERestaurantFloorType floor, TableType type)
     {
         int floorIndex = (int)floor;
         int typeIndex = (int)type;
 
-        if (_coinAreaDatas[floorIndex, typeIndex * 2 + index] == null)
-            _coinAreaDatas[floorIndex, typeIndex * 2 + index] = new CoinAreaData();
-
-        return _coinAreaDatas[floorIndex, typeIndex * 2 + index];
+        return _saveTableDatas[floorIndex, typeIndex];
     }
-
-
-    public GarbageAreaData GetGarbageAreaData(ERestaurantFloorType floor, TableType type)
-    {
-        int floorIndex = (int)floor;
-        int typeIndex = (int)type;
-
-        if (_garbageAreaDatas[floorIndex, typeIndex] == null)
-            _garbageAreaDatas[floorIndex, typeIndex] = new GarbageAreaData();   
-
-        return _garbageAreaDatas[floorIndex, typeIndex];
-    }
-
-
-
 
     #endregion
 
@@ -799,6 +792,7 @@ public class StageInfo
         data.Score = _score;
         data.Tip = _tip;
 
+        data.SaveTableDataList = ConvertTableDataToList();
         data.CoinAreaDataList = ConvertCoinAreaDataToList();
         data.GarbageAreaDataList = ConvertGarbageAreaDataToList();
 
@@ -910,6 +904,30 @@ public class StageInfo
             }
         }
 
+        for (int i = 0; i < loadData.SaveTableDataList.Count; i++)
+        {
+            var floorList = loadData.SaveTableDataList[i];
+            for (int j = 0; j < floorList.Count; j++)
+            {
+                SaveTableData tableData = floorList[j];
+
+                // enum 인덱스 변환
+                int floorIndex = (int)tableData.FloorType;
+                int tableIndex = (int)tableData.TableType;
+
+                // 배열 범위 체크
+                if (floorIndex >= 0 && floorIndex < (int)ERestaurantFloorType.Length &&
+                    tableIndex >= 0 && tableIndex < (int)TableType.Length)
+                {
+                    _saveTableDatas[floorIndex, tableIndex] = tableData;
+                }
+                else
+                {
+                    DebugLog.LogError($"[LoadData] 잘못된 테이블 인덱스 floor:{floorIndex}, table:{tableIndex}");
+                }
+            }
+        }
+
         ConvertListToCoinAreaDataArray(loadData.CoinAreaDataList);
         ConvertListToGarbageAreaDataArray(loadData.GarbageAreaDataList);
 
@@ -932,6 +950,22 @@ public class StageInfo
             {
                 CoinAreaData data = _coinAreaDatas[i, j];
                 row.Add(data ?? new CoinAreaData()); // NULL 방지
+            }
+            list.Add(row);
+        }
+        return list;
+    }
+
+    private List<List<SaveTableData>> ConvertTableDataToList()
+    {
+        List<List<SaveTableData>> list = new List<List<SaveTableData>>();
+        for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
+        {
+            List<SaveTableData> row = new List<SaveTableData>();
+            for (int j = 0; j < (int)TableType.Length; j++)
+            {
+                SaveTableData data = _saveTableDatas[i, j];
+                row.Add(data ?? new SaveTableData((ERestaurantFloorType)i, (TableType)j)); // NULL 방지
             }
             list.Add(row);
         }

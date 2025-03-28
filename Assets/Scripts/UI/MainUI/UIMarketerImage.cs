@@ -68,7 +68,7 @@ public class UIMarketerImage : MonoBehaviour
     }
 
 
-    private void OnChangeFloorEvent(ERestaurantFloorType floor, CameraController.RestaurantType type)
+    private void OnChangeFloorEvent(ERestaurantFloorType floor, RestaurantType type)
     {
         _currentFloor = _mainScene.CurrentFloor;
         OnChangeMarketerEvent(_currentFloor, StaffType.Marketer);

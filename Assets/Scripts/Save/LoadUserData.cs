@@ -3,6 +3,7 @@
 using BackEnd;
 using LitJson;
 using Muks.BackEnd;
+using System;
 using System.Collections.Generic;
 
 public class LoadUserData
@@ -240,7 +241,7 @@ public class SaveCountData
     }
 }
 
-
+[Serializable]
 public class CoinAreaData
 {
     private int _coinCount;
@@ -270,6 +271,7 @@ public class CoinAreaData
 
 }
 
+[Serializable]
 public class GarbageAreaData
 {
     private int _count;

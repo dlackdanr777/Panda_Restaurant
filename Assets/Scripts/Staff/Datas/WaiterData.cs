@@ -25,7 +25,7 @@ public class WaiterData : StaffData
 
     public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        return new WaiterAction(tableManager);
+        return new WaiterAction(staff, tableManager);
     }
 
     public override bool UpgradeEnable(int level)

@@ -72,6 +72,12 @@ public class DropGarbageArea : MonoBehaviour
         Vector3 targetPos = _dropArea.position;
         targetPos += new Vector3(-(_areaRangeX * 0.5f) + ((_areaRangeX / _maxGarbageCount) * _garbageList.Count), 0, 0);
 
+        if (Count < _maxGarbageCount)
+        {
+            _garbageList.Add(garbage);
+            _garbageData.SetCount(Mathf.Clamp(Count, 0, _maxGarbageCount));
+        }
+
         garbage.TweenStop();
         garbage.TweenRotate(_rotate[Random.Range(0, _rotate.Length)], 0.5f, Ease.InQuad);
         garbage.TweenMoveX(targetPos.x, 0.5f);
@@ -87,8 +93,6 @@ public class DropGarbageArea : MonoBehaviour
                 return;
             }
 
-            _garbageList.Add(garbage);
-            _garbageData.SetCount(_garbageList.Count);
             garbage.AddEvent(CleanGarbage);
             garbage.transform.position = targetPos;
             garbage.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);

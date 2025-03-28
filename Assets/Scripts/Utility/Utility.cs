@@ -257,7 +257,7 @@ public static class Utility
                 break;
 
             case WaiterData:
-                description = $"음식 자동 배달(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                description = $"음식 자동 배달(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
                 break;
 
             case MarketerData:

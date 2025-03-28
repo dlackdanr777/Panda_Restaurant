@@ -1,13 +1,16 @@
 using Muks.Tween;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class CleanerAction : IStaffAction
 {
+    private const float _duration = 1f;
+
     private TableManager _tableManager;
     private bool _isUsed = false;
     private bool _isNoAction;
     private float _time;
-    private float _duration = 1f;
     private TweenData _tweenData;
     private Vector3 _cleanerPos;
 
@@ -17,7 +20,6 @@ public class CleanerAction : IStaffAction
         _isUsed = false;
         _isNoAction = false;
         _time = 0;
-        _duration = 1f;
         _cleanerPos = _tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Cleaner);
         staff.transform.position = _cleanerPos;
         staff.SetAlpha(1);
@@ -42,59 +44,95 @@ public class CleanerAction : IStaffAction
         }
 
         _isUsed = true;
-        DropGarbageArea garbageArea = _tableManager.GetMinDistanceGarbageArea(staff.EquipFloorType, staff.transform.position);
-        DropCoinArea coinArea = _tableManager.GetMinDistanceCoinArea(staff.EquipFloorType, staff.transform.position);
 
-        if (UserInfo.IsTutorialStart || (garbageArea == null && coinArea == null))
+        Vector3 staffPos = staff.transform.position;
+
+        // 대상 수집
+        DropGarbageArea garbageArea = _tableManager.GetMinDistanceGarbageArea(staff.EquipFloorType, staffPos);
+        DropCoinArea coinArea = _tableManager.GetMinDistanceCoinArea(staff.EquipFloorType, staffPos);
+        TableData tableData = _tableManager.GetMinDistanceTable(
+            staff.EquipFloorType,
+            staffPos,
+            _tableManager.GetTableDataList(staff.EquipFloorType, ETableState.NeedCleaning)
+        );
+
+        if (UserInfo.IsTutorialStart || (garbageArea == null && coinArea == null && tableData == null))
         {
             ResetStaffState(staff);
             return;
         }
 
-        // 위치 정보 계산
-        Vector3 staffPos = staff.transform.position;
-        float garbageDistanceY = garbageArea != null ? Mathf.Abs(garbageArea.transform.position.y - staffPos.y) : float.MaxValue;
-        float coinDistanceY = coinArea != null ? Mathf.Abs(coinArea.transform.position.y - staffPos.y) : float.MaxValue;
-        float garbageDistanceX = garbageArea != null ? Mathf.Abs(garbageArea.transform.position.x - staffPos.x) : float.MaxValue;
-        float coinDistanceX = coinArea != null ? Mathf.Abs(coinArea.transform.position.x - staffPos.x) : float.MaxValue;
+        // 거리 계산 함수
+        float GetYDist(Transform t) => Mathf.Abs(t.position.y - staffPos.y);
+        float GetXDist(Transform t) => Mathf.Abs(t.position.x - staffPos.x);
+        float TOLERANCE_Y = 1f;
 
-        bool isGarbageValid = garbageDistanceY <= 1;
-        bool isCoinValid = coinDistanceY <= 1;
+        // 후보 리스트 구성
+        var candidates = new List<(string type, Transform transform)>
+    {
+        ("Garbage", garbageArea?.transform),
+        ("Coin", coinArea?.transform),
+        ("Table", tableData?.transform)
+    };
 
-        // 가장 가까운 유효한 장소 선택
-        DropGarbageArea selectedGarbageArea = null;
-        DropCoinArea selectedCoinArea = null;
+        // 1. Y 유효 거리 내 대상만 추려서 X 거리 기준 정렬
+        var valid = candidates
+            .Where(c => c.transform != null && GetYDist(c.transform) <= TOLERANCE_Y)
+            .Select(c => (c.type, dist: GetXDist(c.transform)))
+            .ToList();
 
-        if (isGarbageValid && isCoinValid)
+        string selectedType = null;
+
+        if (valid.Count > 0)
         {
-            if (garbageDistanceX < coinDistanceX)
-                selectedGarbageArea = garbageArea;
-            else
-                selectedCoinArea = coinArea;
-        }
-        else if (isGarbageValid)
-        {
-            selectedGarbageArea = garbageArea;
-        }
-        else if (isCoinValid)
-        {
-            selectedCoinArea = coinArea;
+            selectedType = valid.OrderBy(c => c.dist).First().type;
         }
         else
         {
-            // 둘 다 Y 범위를 벗어났을 경우 X 거리 비교
-            if (garbageDistanceX < coinDistanceX)
-                selectedGarbageArea = garbageArea;
-            else
-                selectedCoinArea = coinArea;
+            // 2. Y 거리 가장 작은 값 찾기
+            float garbageY = garbageArea ? GetYDist(garbageArea.transform) : float.MaxValue;
+            float coinY = coinArea ? GetYDist(coinArea.transform) : float.MaxValue;
+            float tableY = tableData ? GetYDist(tableData.transform) : float.MaxValue;
+
+            float minY = Mathf.Min(garbageY, coinY, tableY);
+
+            // 3. 오차 범위 내(Y 차이 ±1) 후보 추림
+            var yMinCandidates = new List<(string type, Transform transform)>
+        {
+            (Mathf.Abs(garbageY - minY) <= TOLERANCE_Y && garbageArea != null ? "Garbage" : null, garbageArea?.transform),
+            (Mathf.Abs(coinY - minY) <= TOLERANCE_Y && coinArea != null ? "Coin" : null, coinArea?.transform),
+            (Mathf.Abs(tableY - minY) <= TOLERANCE_Y && tableData != null ? "Table" : null, tableData?.transform),
+        }.Where(c => c.type != null).ToList();
+
+            // 4. 문 위치와의 거리 기준으로 선택
+            selectedType = yMinCandidates
+                .OrderBy(c => Vector3.Distance(_tableManager.GetDoorPos(c.transform.position), c.transform.position))
+                .First().type;
         }
 
-        // 선택된 장소에 맞는 액션 실행
-        if (selectedGarbageArea != null)
-            CleanGarbageAction(staff, selectedGarbageArea);
-        else if (selectedCoinArea != null)
-            GiveCoinAction(staff, selectedCoinArea);
+        // 최종 대상에 맞는 액션 수행
+        switch (selectedType)
+        {
+            case "Garbage":
+                if (garbageArea != null)
+                    CleanGarbageAction(staff, garbageArea);
+                break;
+            case "Coin":
+                if (coinArea != null)
+                    GiveCoinAction(staff, coinArea);
+                break;
+            case "Table":
+                if (tableData != null)
+                    CleanTableAction(staff, tableData);
+                break;
+            default:
+                ResetStaffState(staff);
+                break;
+        }
     }
+
+
+
 
     private void ResetStaffState(Staff staff)
     {
@@ -152,6 +190,33 @@ public class CleanerAction : IStaffAction
             _tweenData = Tween.Wait(_duration / speedMul, () =>
             {
                 area.GiveCoin();
+                _tweenData = Tween.Wait(1 / speedMul, () =>
+                {
+                    staff.SetStaffState(EStaffState.None);
+                    _isUsed = false;
+                    _time = 0;
+                });
+            });
+        });
+    }
+
+
+    private void CleanTableAction(Staff staff, TableData data)
+    {
+        float speedMul = staff.SpeedMul;
+        _isNoAction = false;
+        staff.Move(data.transform.position, 0, () =>
+        {
+            if (UserInfo.IsTutorialStart || data.TableState != ETableState.NeedCleaning)
+            {
+                ResetStaffState(staff);
+                return;
+            }
+
+            staff.SetStaffState(EStaffState.Action);
+            _tweenData = Tween.Wait(_duration / speedMul, () =>
+            {
+                data.TableFurniture.OnCleanAction();
                 _tweenData = Tween.Wait(1 / speedMul, () =>
                 {
                     staff.SetStaffState(EStaffState.None);

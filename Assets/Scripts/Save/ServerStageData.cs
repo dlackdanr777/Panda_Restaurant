@@ -22,6 +22,8 @@ public class ServerStageData
     public List<List<CoinAreaData>> CoinAreaDataList = new List<List<CoinAreaData>>();
     public List<List<GarbageAreaData>> GarbageAreaDataList = new List<List<GarbageAreaData>>();
 
+    public List<List<SaveTableData>> SaveTableDataList = new List<List<SaveTableData>>();
+
 
     public Param GetParam()
     {
@@ -38,6 +40,7 @@ public class ServerStageData
         param.Add("EquipKitchenUtensilList", EquipKitchenUtensilList);
         param.Add("DropCoinAreaDataList", CoinAreaDataList);
         param.Add("DropGarbageAreaDataList", GarbageAreaDataList);
+        param.Add("SaveTableDataList", SaveTableDataList);
 
         return param;
     }
@@ -88,6 +91,9 @@ public class ServerStageData
 
         if (data.ContainsKey("DropGarbageAreaDataList"))
             GarbageAreaDataList = ConvertJsonToGarbageAreaList(data["DropGarbageAreaDataList"]);
+
+        if(data.ContainsKey("SaveTableDataList"))
+            SaveTableDataList = ConvertJsonToSaveTableList(data["SaveTableDataList"]);
     }
 
     //JSON 데이터를 1차원 리스트로 변환하는 헬퍼 함수
@@ -172,5 +178,65 @@ public class ServerStageData
             }
         }
         return list;
+    }
+
+
+    private List<List<SaveTableData>> ConvertJsonToSaveTableList(JsonData jsonData)
+    {
+        List<List<SaveTableData>> result = new List<List<SaveTableData>>();
+
+        if (jsonData.IsArray)
+        {
+            foreach (JsonData row in jsonData)
+            {
+                List<SaveTableData> innerList = new List<SaveTableData>();
+                foreach (JsonData item in row)
+                {
+                    var saveData = new SaveTableData(ERestaurantFloorType.Floor1, TableType.Table1); // 기본값 생성 후 setter로 채움
+
+                    if (item.ContainsKey("FloorType"))
+                        saveData.SetFloorType((ERestaurantFloorType)int.Parse(item["FloorType"].ToString()));
+
+                    if (item.ContainsKey("TableType"))
+                        saveData.SetTableType((TableType)int.Parse(item["TableType"].ToString()));
+
+                    if (item.ContainsKey("NeedCleaning"))
+                        saveData.SetNeedCleaning(item["NeedCleaning"].ToString().ToLower() == "true");
+
+                    // CoinAreaData[]
+                    if (item.ContainsKey("CoinAreaDatas"))
+                    {
+                        JsonData coinArray = item["CoinAreaDatas"];
+                        for (int i = 0; i < coinArray.Count && i < 2; i++)
+                        {
+                            var coinItem = coinArray[i];
+                            int coinCount = coinItem.ContainsKey("CoinCount") ? int.Parse(coinItem["CoinCount"].ToString()) : 0;
+                            long money = coinItem.ContainsKey("Money") ? long.Parse(coinItem["Money"].ToString()) : 0;
+
+                            var coinData = new CoinAreaData();
+                            coinData.SetCoinCount(coinCount);
+                            coinData.SetMoney(money);
+                            saveData.SetCoinAreaData(i, coinData);
+                        }
+                    }
+
+                    // GarbageAreaData
+                    if (item.ContainsKey("GarbageAreaData"))
+                    {
+                        JsonData g = item["GarbageAreaData"];
+                        int count = g.ContainsKey("Count") ? int.Parse(g["Count"].ToString()) : 0;
+
+                        var garbageData = new GarbageAreaData();
+                        garbageData.SetCount(count);
+                        saveData.SetGarbageAreaData(garbageData);
+                    }
+
+                    innerList.Add(saveData);
+                }
+                result.Add(innerList);
+            }
+        }
+
+        return result;
     }
 }
