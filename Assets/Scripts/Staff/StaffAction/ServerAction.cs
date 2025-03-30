@@ -25,7 +25,7 @@ public class ServerAction : IStaffAction
         staff.SetAlpha(0);
         staff.SetStaffState(EStaffState.Used);
         _tableManager.OnUseStaff(tableData);
-        Vector3 pos = _tableManager.GetStaffPos(tableData, StaffType.Server);
+        Vector3 pos = _tableManager.GetStaffPos(tableData, EquipStaffType.Waiter2);
         staff.transform.position = pos;
         ObjectPoolManager.Instance.SpawnSmokeParticle(pos + new Vector3(0, 1f, 0), Quaternion.identity).Play();
         _tweenData = staff.SpriteRenderer.TweenAlpha(1, 0.1f).OnComplete(() =>

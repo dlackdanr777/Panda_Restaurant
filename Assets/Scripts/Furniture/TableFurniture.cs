@@ -31,19 +31,6 @@ public class TableFurniture : Furniture
     }
 
 
-    public void OnCleanAction()
-    {
-        if (_tableData.TableState != ETableState.NeedCleaning)
-        {
-            DebugLog.Log("더러운 상태가 아닙니다: " + _tableData.TableType);
-            return;
-        }
-
-        _tableData.TableState = ETableState.Empty;
-        _tableManager.UpdateTable();
-    }
-
-
     private void OnTableUpdateEvent()
     {
         if (_tableFurnitureData == null || _tableData == null)
@@ -142,6 +129,24 @@ public class TableFurniture : Furniture
     }
 
 
+    public void OnCleanAction()
+    {
+        if (_tableData.TableState != ETableState.NeedCleaning)
+        {
+            DebugLog.Log("더러운 상태가 아닙니다: " + _tableData.TableType);
+            return;
+        }
+
+        if (!UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _floor))
+        {
+            return;
+        }
+
+        _tableData.TableState = ETableState.Empty;
+        UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, _floor);
+        _tableManager.UpdateTable();
+    }
+
 
     private void OnTouchEvent()
     {
@@ -153,7 +158,7 @@ public class TableFurniture : Furniture
 
         if(!UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _floor))
         {
-            PopupManager.Instance.ShowDisplayText("싱크대가 꽉 차, 그릇을 정리할 수 없습니다.");
+            PopupManager.Instance.ShowDisplayText("싱크대가 꽉 차 정리할 수 없습니다.");
             return;
         }
 

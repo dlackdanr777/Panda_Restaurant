@@ -39,9 +39,9 @@ public class UIStaff : MobileUIView
     [SerializeField] private AudioClip _equipSound;
     [SerializeField] private AudioClip _dequipSound;
 
-    private StaffType _currentType;
+    private EquipStaffType _currentType;
     private ERestaurantFloorType _currentFloorType;
-    private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)StaffType.Length];
+    private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)EquipStaffType.Length];
     List<StaffData> _currentTypeDataList;
 
 
@@ -49,11 +49,11 @@ public class UIStaff : MobileUIView
     {
         _leftArrowButton.AddListener(() => ChangeStaffData(-1));
         _rightArrowButton.AddListener(() => ChangeStaffData(1));
-        _uiStaffPreview.Init(OnEquipButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
+        _uiStaffPreview.Init(OnEquipButtonClicked, OnUsingButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
 
-        for (int i = 0, cntI = (int)StaffType.Length; i < cntI; ++i)
+        for (int i = 0, cntI = (int)EquipStaffType.Length; i < cntI; ++i)
         {
-            List<StaffData> typeDataList = StaffDataManager.Instance.GetStaffDataList((StaffType)i);
+            List<StaffData> typeDataList = StaffDataManager.Instance.GetStaffDataList((EquipStaffType)i);
             _slots[i] = new List<UIRestaurantAdminSlot>();
             for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
             {
@@ -71,7 +71,7 @@ public class UIStaff : MobileUIView
         UserInfo.OnChangeScoreHandler += UpdateUI;
         GameManager.Instance.OnChangeScoreHandler += UpdateUI;
 
-        SetStaffData(StaffType.Manager);
+        SetStaffData(EquipStaffType.Manager);
         SetStaffPreview();
         gameObject.SetActive(false);
     }
@@ -83,7 +83,7 @@ public class UIStaff : MobileUIView
         gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-        SetStaffData(StaffType.Manager);
+        SetStaffData(EquipStaffType.Manager);
         SetStaffPreview();
         _uiRestaurantAdmin.ShowStaffTab();
         _uiRestaurantAdmin.MainUISetActive(false);
@@ -116,7 +116,7 @@ public class UIStaff : MobileUIView
         });
     }
 
-    public void ShowUIStaff(ERestaurantFloorType floorType, StaffType type)
+    public void ShowUIStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
         _uiNav.Push("UIStaff");
         _currentFloorType = floorType;
@@ -125,7 +125,7 @@ public class UIStaff : MobileUIView
     }
 
 
-    private void SetStaffData(StaffType type)
+    private void SetStaffData(EquipStaffType type)
     {
         for (int i = 0, cnt = _slots[(int)_currentType].Count; i < cnt; ++i)
         {
@@ -143,32 +143,33 @@ public class UIStaff : MobileUIView
     private void SetStaffPreview()
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _currentFloorType, _currentType);
-        _uiStaffPreview.SetData(_currentFloorType, equipStaffData != null ? equipStaffData : _currentTypeDataList.Count <= 0 ? null : _currentTypeDataList[0]);
+        _uiStaffPreview.SetData(_currentFloorType, _currentType, equipStaffData != null ? equipStaffData : _currentTypeDataList.Count <= 0 ? null : _currentTypeDataList[0]);
     }
 
 
     private void ChangeStaffData(int dir)
     {
-        StaffType newTypeIndex = _currentType + dir;
-        newTypeIndex = newTypeIndex < 0 ? StaffType.Length - 1 : (StaffType)((int)newTypeIndex % (int)StaffType.Length);
+        EquipStaffType newTypeIndex = _currentType + dir;
+        newTypeIndex = newTypeIndex < 0 ? EquipStaffType.Length - 1 : (EquipStaffType)((int)newTypeIndex % (int)EquipStaffType.Length);
         SetStaffData(newTypeIndex);
         SetStaffPreview();
     }
 
     
-    private void OnEquipButtonClicked(ERestaurantFloorType floorType, StaffData data)
+    private void OnEquipButtonClicked(ERestaurantFloorType floorType, EquipStaffType type, StaffData data)
     {
-        if(data == null)
-        {
-            SoundManager.Instance.PlayEffectAudio(_dequipSound);
-            UserInfo.SetNullEquipStaff(UserInfo.CurrentStage, floorType, _currentType);
-            SetStaffData(_currentType);
-            return;
-        }
         SoundManager.Instance.PlayEffectAudio(_equipSound);
-        UserInfo.SetEquipStaff(UserInfo.CurrentStage, floorType, data);
+        UserInfo.SetEquipStaff(UserInfo.CurrentStage, floorType, type, data);
         SetStaffData(_currentType);
     }
+
+    private void OnUsingButtonClicked(ERestaurantFloorType floorType, StaffData data)
+    {
+        SoundManager.Instance.PlayEffectAudio(_dequipSound);
+        UserInfo.SetNullEquipStaff(UserInfo.CurrentStage, floorType, data);
+        SetStaffData(_currentType);
+    }
+
 
 
     private void OnBuyButtonClicked(StaffData data)
@@ -305,9 +306,9 @@ public class UIStaff : MobileUIView
 
 
 
-    private void OnChangeStaffEvent(ERestaurantFloorType floorType, StaffType type)
+    private void OnChangeStaffEvent(ERestaurantFloorType floorType, EquipStaffType type)
     {
-        if (!gameObject.activeInHierarchy || _currentType != type)
+        if (!gameObject.activeInHierarchy)
             return;
 
         UpdateUI();
@@ -316,7 +317,7 @@ public class UIStaff : MobileUIView
 
     private void OnSlotClicked(StaffData data)
     {
-        _uiStaffPreview.SetData(_currentFloorType, data);
+        _uiStaffPreview.SetData(_currentFloorType, _currentType, data);
     }
 
     private void OnDestroy()

@@ -24,7 +24,7 @@ public class UIMarketerImage : MonoBehaviour
     private void OnEnable()
     {
         _currentFloor = _mainScene.CurrentFloor;
-        OnChangeMarketerEvent(_currentFloor, StaffType.Marketer);
+        OnChangeMarketerEvent(_currentFloor, EquipStaffType.Marketer);
     }
 
     private void OnDestroy()
@@ -35,7 +35,7 @@ public class UIMarketerImage : MonoBehaviour
     public void Init()
     {
         _currentFloor = _mainScene.CurrentFloor;
-        OnChangeMarketerEvent(_currentFloor, StaffType.Marketer);
+        OnChangeMarketerEvent(_currentFloor, EquipStaffType.Marketer);
         UserInfo.OnChangeStaffHandler += OnChangeMarketerEvent;
         _camera.OnEndMoveCameraHandler += OnChangeFloorEvent;
     }
@@ -71,16 +71,16 @@ public class UIMarketerImage : MonoBehaviour
     private void OnChangeFloorEvent(ERestaurantFloorType floor, RestaurantType type)
     {
         _currentFloor = _mainScene.CurrentFloor;
-        OnChangeMarketerEvent(_currentFloor, StaffType.Marketer);
+        OnChangeMarketerEvent(_currentFloor, EquipStaffType.Marketer);
     }
 
 
-    private void OnChangeMarketerEvent(ERestaurantFloorType floorType, StaffType type)
+    private void OnChangeMarketerEvent(ERestaurantFloorType floorType, EquipStaffType type)
     {
         if (floorType != _currentFloor)
             return;
 
-        if (type != StaffType.Marketer)
+        if (type != EquipStaffType.Marketer)
             return;
 
         StaffData equipData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, floorType, type);

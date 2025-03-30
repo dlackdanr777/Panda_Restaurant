@@ -49,21 +49,21 @@ public class FurnitureGroup : MonoBehaviour
     }
 
 
-    public Vector2 GetStaffPos(TableData data, StaffType type)
+    public Vector2 GetStaffPos(TableData data, EquipStaffType type)
     {
         switch (type)
         {
-            case StaffType.Waiter:
+            case EquipStaffType.Waiter1:
                 return _defaultWaiterPos.position;
-            case StaffType.Server:
-                return data.RightStaffTr.position;
-            case StaffType.Cleaner:
+            case EquipStaffType.Waiter2:
+                return _defaultWaiterPos.position;
+            case EquipStaffType.Cleaner:
                 return _cleanerWaitTr.position;
-            case StaffType.Manager:
+            case EquipStaffType.Manager:
                 return _cashTableTr.position;
-            case StaffType.Marketer:
+            case EquipStaffType.Marketer:
                 return _marketerTr.position;
-            case StaffType.Guard:
+            case EquipStaffType.Guard:
                 return _guardTr.position;
         }
 

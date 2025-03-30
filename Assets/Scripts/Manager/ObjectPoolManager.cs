@@ -29,9 +29,9 @@ public class ObjectPoolManager : MonoBehaviour
 
     private static int _staffCount = (int)ERestaurantFloorType.Length;
     private static GameObject _staffParent;
-    private static GameObject[] _staffParents = new GameObject[(int)StaffType.Length];
-    private static Staff[] _staffPrefabs = new Staff[(int)StaffType.Length];
-    private static Queue<Staff>[] _staffPools = new Queue<Staff>[(int)StaffType.Length];
+    private static GameObject[] _staffParents = new GameObject[(int)EquipStaffType.Length];
+    private static Staff[] _staffPrefabs = new Staff[(int)EquipStaffType.Length];
+    private static Queue<Staff>[] _staffPools = new Queue<Staff>[(int)EquipStaffType.Length];
 
     private static int _customerCount = 30;
     private static int _specialCustomerCount = 5;
@@ -121,11 +121,11 @@ public class ObjectPoolManager : MonoBehaviour
         _staffParent = new GameObject("StaffParent");
         _staffParent.transform.parent = _instance.transform;
 
-        for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
         {
             if (_staffParents[i] == null)
             {
-                _staffParents[i] = new GameObject((StaffType)i + "_Parent");
+                _staffParents[i] = new GameObject((EquipStaffType)i + "_Parent");
                 _staffParents[i].transform.parent = _staffParent.transform;
             }
 
@@ -135,9 +135,9 @@ public class ObjectPoolManager : MonoBehaviour
                 _staffPrefabs[i] = Resources.Load<Staff>("Staff/Staff");
         }
 
-        _staffPrefabs[(int)StaffType.Cleaner] = Resources.Load<StaffCleaner>("Staff/Cleaner");
+        _staffPrefabs[(int)EquipStaffType.Cleaner] = Resources.Load<StaffCleaner>("Staff/Cleaner");
         _staffCount = (int)ERestaurantFloorType.Length;
-        for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
         {
             for (int j = 0; j < _staffCount; ++j)
             {
@@ -312,7 +312,7 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public Staff SpawnStaff(StaffType type, Vector3 pos, Transform parent)
+    public Staff SpawnStaff(EquipStaffType type, Vector3 pos, Transform parent)
     {
         Staff staff;
         int typeIndex = (int)type;
@@ -333,7 +333,7 @@ public class ObjectPoolManager : MonoBehaviour
     }
 
 
-    public void DespawnStaff(StaffType type, Staff staff)
+    public void DespawnStaff(EquipStaffType type, Staff staff)
     {
         int typeIndex = (int)type;
         staff.gameObject.SetActive(false);

@@ -42,7 +42,7 @@ public class ManagerData : StaffData
         staff.SetAlpha(1);
         staff.SetLayer("Manager", 0);
 
-        Vector3 pos = tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Manager);
+        Vector3 pos = tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Manager);
         //staff.transform.position = UserInfo.IsEquipFurniture(UserInfo.CurrentStage, staff.EquipFloorType, FurnitureType.Counter) ? pos : pos - new Vector3(0, 1.75f, 0);
         staff.transform.position = pos;
 /*        if(!_isSubscribed)

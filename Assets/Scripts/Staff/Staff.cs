@@ -20,7 +20,7 @@ public class Staff : MonoBehaviour
     protected KitchenSystem _kitchenSystem;
     protected CustomerController _customerController;
     protected StaffData _staffData;
-    protected StaffType _staffType;
+    protected EquipStaffType _staffType;
     protected IStaffAction _staffAction;
     protected EStaffState _state;
     protected ERestaurantFloorType _equipFloorType;
@@ -109,14 +109,14 @@ public class Staff : MonoBehaviour
 
         _staffType = staffData switch
         {
-            ManagerData => StaffType.Manager,
-            MarketerData => StaffType.Marketer,
-            WaiterData => StaffType.Waiter,
-            ServerData => StaffType.Server,
-            CleanerData => StaffType.Cleaner,
-            GuardData => StaffType.Guard,
-            ChefData => StaffType.Chef,
-            _ => StaffType.Length
+            ManagerData => EquipStaffType.Manager,
+            MarketerData => EquipStaffType.Marketer,
+            WaiterData => EquipStaffType.Waiter1,
+            ServerData => EquipStaffType.Waiter2,
+            CleanerData => EquipStaffType.Cleaner,
+            GuardData => EquipStaffType.Guard,
+            ChefData => EquipStaffType.Chef1,
+            _ => EquipStaffType.Length
         };
 
         OnChangeSkillValueEvent();
@@ -223,11 +223,11 @@ public class Staff : MonoBehaviour
 
         float duration = _staffData.Skill.Duration + GameManager.Instance.AddStaffSkillTime + _staffType switch
         {
-            StaffType.Marketer => GameManager.Instance.AddMarketerSkillTime,
-            StaffType.Waiter => GameManager.Instance.AddWaiterSkillTime,
-            StaffType.Server => GameManager.Instance.AddServerSkillTime,
-            StaffType.Cleaner => GameManager.Instance.AddCleanerSkillTime,
-            StaffType.Guard => GameManager.Instance.AddGuardSkillTime,
+            EquipStaffType.Marketer => GameManager.Instance.AddMarketerSkillTime,
+            EquipStaffType.Waiter1 => GameManager.Instance.AddWaiterSkillTime,
+            EquipStaffType.Waiter2 => GameManager.Instance.AddServerSkillTime,
+            EquipStaffType.Cleaner => GameManager.Instance.AddCleanerSkillTime,
+            EquipStaffType.Guard => GameManager.Instance.AddGuardSkillTime,
             _ => 0
         };
         float timer = 0;
@@ -368,11 +368,11 @@ public class Staff : MonoBehaviour
 
         _skillCoolTime = _staffData.Skill.Cooldown + GameManager.Instance.SubStaffSkillCoolTime + _staffType switch
         {
-            StaffType.Marketer => GameManager.Instance.SubMarketerSkillCoolTime,
-            StaffType.Waiter => GameManager.Instance.SubWaiterSkillCoolTime,
-            StaffType.Server => GameManager.Instance.SubServerSkillCoolTime,
-            StaffType.Cleaner => GameManager.Instance.SubCleanerSkillCoolTime,
-            StaffType.Guard => GameManager.Instance.SubGuardSkillCoolTime,
+            EquipStaffType.Marketer => GameManager.Instance.SubMarketerSkillCoolTime,
+            EquipStaffType.Waiter1 => GameManager.Instance.SubWaiterSkillCoolTime,
+            EquipStaffType.Waiter2 => GameManager.Instance.SubServerSkillCoolTime,
+            EquipStaffType.Cleaner => GameManager.Instance.SubCleanerSkillCoolTime,
+            EquipStaffType.Guard => GameManager.Instance.SubGuardSkillCoolTime,
             _ => 0
         };
 

@@ -20,7 +20,7 @@ public class CleanerAction : IStaffAction
         _isUsed = false;
         _isNoAction = false;
         _time = 0;
-        _cleanerPos = _tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Cleaner);
+        _cleanerPos = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Cleaner);
         staff.transform.position = _cleanerPos;
         staff.SetAlpha(1);
     }
@@ -50,11 +50,11 @@ public class CleanerAction : IStaffAction
         // 대상 수집
         DropGarbageArea garbageArea = _tableManager.GetMinDistanceGarbageArea(staff.EquipFloorType, staffPos);
         DropCoinArea coinArea = _tableManager.GetMinDistanceCoinArea(staff.EquipFloorType, staffPos);
-        TableData tableData = _tableManager.GetMinDistanceTable(
+        TableData tableData = UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, staff.EquipFloorType) ? _tableManager.GetMinDistanceTable(
             staff.EquipFloorType,
             staffPos,
-            _tableManager.GetTableDataList(staff.EquipFloorType, ETableState.NeedCleaning)
-        );
+            _tableManager.GetTableDataList(staff.EquipFloorType, ETableState.NeedCleaning))
+            : null;
 
         if (UserInfo.IsTutorialStart || (garbageArea == null && coinArea == null && tableData == null))
         {

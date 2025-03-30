@@ -22,7 +22,7 @@ public class WaiterAction : IStaffAction
         _isUsed = false;
         _isNoAction = false;
         _time = 0;
-        _defaultPos = _tableManager.GetStaffPos(staff.EquipFloorType, StaffType.Waiter);
+        _defaultPos = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Waiter1);
         staff.transform.position = _defaultPos;
         staff.SetAlpha(1);
     }
@@ -197,7 +197,7 @@ public class WaiterAction : IStaffAction
         staff.SetAlpha(0);
         staff.SetStaffState(EStaffState.Used);
         _tableManager.OnUseStaff(data);
-        Vector3 pos = _tableManager.GetStaffPos(data, StaffType.Waiter);
+        Vector3 pos = _tableManager.GetStaffPos(data, EquipStaffType.Waiter1);
         staff.transform.position = pos;
         ObjectPoolManager.Instance.SpawnSmokeParticle(pos + new Vector3(0, 1f, 0), Quaternion.identity).Play();
         _tweenData = staff.SpriteRenderer.TweenAlpha(1, 0.1f).OnComplete(() =>

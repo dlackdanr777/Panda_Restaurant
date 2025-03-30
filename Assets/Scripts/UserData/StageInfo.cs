@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using static UnityEngine.Rendering.DebugUI.Table;
 
 public class StageInfo
@@ -8,7 +9,7 @@ public class StageInfo
     public event Action OnChangeFloorHandler;
     public event Action OnChangeTipHandler;
 
-    public event Action<ERestaurantFloorType, StaffType> OnChangeStaffHandler;
+    public event Action<ERestaurantFloorType, EquipStaffType> OnChangeStaffHandler;
     public event Action OnGiveStaffHandler;
     public event Action OnUpgradeStaffHandler;
 
@@ -38,7 +39,7 @@ public class StageInfo
     public int Tip => _tip;
 
 
-    private StaffData[,] _equipStaffDatas = new StaffData[(int)ERestaurantFloorType.Length, (int)StaffType.Length];
+    private StaffData[,] _equipStaffDatas = new StaffData[(int)ERestaurantFloorType.Length, (int)EquipStaffType.Length];
     private Dictionary<string, SaveStaffData> _giveStaffDic = new Dictionary<string, SaveStaffData>();
 
     private List<string> _giveFurnitureList = new List<string>();
@@ -175,46 +176,70 @@ public class StageInfo
     public bool IsEquipStaff(ERestaurantFloorType floor, StaffData data)
     {
         int floorIndex = (int)floor;
-        int typeIndex = (int)StaffDataManager.Instance.GetStaffType(data);
-        StaffData equipData = _equipStaffDatas[floorIndex, typeIndex];
+        for(int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
+        {
+            EquipStaffType type = (EquipStaffType)i;
+            StaffData equipData = _equipStaffDatas[floorIndex, i];
+            if (equipData == null || equipData.Id != data.Id)
+                continue;
 
-        return equipData != null && equipData.Id == data.Id;
+            return true;
+        }
+
+        return false;
     }
 
     public bool IsEquipStaff(StaffData data)
     {
-        int typeIndex = (int)StaffDataManager.Instance.GetStaffType(data);
         for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
-            if (_equipStaffDatas[i, typeIndex] == null)
-                continue;
-
-            if (_equipStaffDatas[i, typeIndex].Id == data.Id)
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            if (IsEquipStaff(floor, data))
                 return true;
         }
 
         return false;
     }
 
+    public EquipStaffType GetEquipStaffType(StaffData data)
+    {
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            for (int j = 0, cntJ = (int)EquipStaffType.Length; j < cntJ; ++j)
+            {
+                StaffData equipData = _equipStaffDatas[i, j];
+                if (equipData == null || equipData.Id != data.Id)
+                    continue;
+
+                return (EquipStaffType)j;
+            }
+        }
+
+        DebugLog.LogError("해당 스탭이 장착되어있지 않습니다:" + data.Id);
+        return EquipStaffType.Length;
+    }
+
 
     public ERestaurantFloorType GetEquipStaffFloorType(StaffData data)
     {
-        int typeIndex = (int)StaffDataManager.Instance.GetStaffType(data);
-
         for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
-            if (_equipStaffDatas[i, typeIndex] == null)
-                continue;
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            for (int j = 0, cntJ = (int)EquipStaffType.Length; j < cntJ; ++j)
+            {
+                StaffData equipData = _equipStaffDatas[i, j];
+                if (equipData == null || equipData.Id != data.Id)
+                    continue;
 
-            if (_equipStaffDatas[i, typeIndex].Id == data.Id)
-                return (ERestaurantFloorType)i;
+                return floor;
+            }
         }
 
         return ERestaurantFloorType.Error;
     }
 
 
-    public void SetEquipStaff(ERestaurantFloorType floorType, StaffData data)
+    public void SetEquipStaff(ERestaurantFloorType floorType, EquipStaffType equipType, StaffData data)
     {
         if (!_giveStaffDic.ContainsKey(data.Id))
         {
@@ -222,28 +247,59 @@ public class StageInfo
             return;
         }
 
-        _equipStaffDatas[(int)floorType, (int)StaffDataManager.Instance.GetStaffType(data)] = data;
-        OnChangeStaffHandler?.Invoke(floorType, StaffDataManager.Instance.GetStaffType(data));
+        List<EquipStaffType> equipStaffTypeList = StaffDataManager.Instance.GetEquipStaffTypeList(data);
+        if(!equipStaffTypeList.Contains(equipType))
+        {
+            DebugLog.LogError("해당 스탭과 관련 없는 장착 슬롯입니다: (스탭 타입 " + StaffDataManager.Instance.GetStaffGroupType(data) + ")(장착 슬롯" + equipType + ")");
+            return;
+        }
+        _equipStaffDatas[(int)floorType, (int)equipType] = data;
+        OnChangeStaffHandler?.Invoke(floorType, equipType);
     }
 
-    public void SetEquipStaff(ERestaurantFloorType floorType, string id)
+    public void SetEquipStaff(ERestaurantFloorType floorType, EquipStaffType equipType, string id)
     {
         StaffData data = StaffDataManager.Instance.GetStaffData(id);
         if (data == null)
             throw new Exception("해당 Id를 가진 스탭이 없습니다: " + id);
 
-        SetEquipStaff(floorType, data);
+        SetEquipStaff(floorType, equipType, data);
     }
 
 
-    public void SetNullEquipStaff(ERestaurantFloorType floorType, StaffType type)
+    public void SetNullEquipStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
         _equipStaffDatas[(int)floorType, (int)type] = null;
         OnChangeStaffHandler?.Invoke(floorType, type);
     }
 
+    public void SetNullEquipStaff(ERestaurantFloorType floorType, StaffData data)
+    {
+        if(data == null)
+        {
+            DebugLog.LogError("Null이 들어왔습니다.");
+            return;
+        }
 
-    public StaffData GetEquipStaff(ERestaurantFloorType floorType, StaffType type)
+        for(int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
+        {
+            if (_equipStaffDatas[(int)floorType, i] == null)
+                continue;
+
+            if (_equipStaffDatas[(int)floorType, i].Id != data.Id)
+                continue;
+
+            EquipStaffType type = (EquipStaffType)i;
+            _equipStaffDatas[(int)floorType, i] = null;
+            OnChangeStaffHandler?.Invoke(floorType, type);
+            return;
+        }
+
+        DebugLog.LogError("해당 스탭이 장착되어 있지 않습니다: " + data.Id);
+    }
+
+
+    public StaffData GetEquipStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
         return _equipStaffDatas[(int)floorType, (int)type];
     }
@@ -796,7 +852,7 @@ public class StageInfo
         for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
         {
             List<string> staffList = new List<string>();
-            for (int j = 0; j < (int)StaffType.Length; j++)
+            for (int j = 0; j < (int)EquipStaffType.Length; j++)
             {
                 staffList.Add(_equipStaffDatas[i, j] != null ? _equipStaffDatas[i, j].Id : ""); // StaffData에서 ID 추출
             }
@@ -867,7 +923,7 @@ public class StageInfo
                     continue;
 
                 StaffData data = StaffDataManager.Instance.GetStaffData(staffId);
-                SetEquipStaff((ERestaurantFloorType)i, data);
+                SetEquipStaff((ERestaurantFloorType)i, (EquipStaffType)j, data);
             }
         }
 

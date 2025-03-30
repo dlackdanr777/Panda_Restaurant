@@ -109,7 +109,7 @@ public class GuardAction : IStaffAction
 
                 staff.SpriteRenderer.TweenAlpha(0, 0.3f / speedMul).OnComplete(() =>
                 {
-                    staff.transform.position = _tableManager.GetStaffPos(0, StaffType.Guard);
+                    staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
                     staff.SetSpriteDir(-1);
                     staff.SpriteRenderer.TweenAlpha(1, 0.3f / speedMul).OnComplete(() =>
                     {
@@ -131,7 +131,7 @@ public class GuardAction : IStaffAction
 
                 staff.SpriteRenderer.TweenAlpha(0, 1 / speedMul).OnComplete(() =>
                 {
-                    staff.transform.position = _tableManager.GetStaffPos(0, StaffType.Guard);
+                    staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
                     staff.SetSpriteDir(-1);
                     staff.SpriteRenderer.TweenAlpha(1, 1 / speedMul).OnComplete(() =>
                     {

@@ -16,16 +16,16 @@ public class UIStaffTab : UIRestaurantAdminTab
 
     public override void Init()
     {
-        _slots = new UITabSlot[(int)StaffType.Length];
-        for(int i = 0, cnt = (int)StaffType.Length; i < cnt; i++)
+        _slots = new UITabSlot[(int)EquipStaffType.Length];
+        for(int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; i++)
         {
             int index = i;
             UITabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
             slot.Init(() => OnSlotClicked(index));
-            BasicData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, (StaffType)index);
+            BasicData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, (EquipStaffType)index);
             Sprite sprite = data != null ? data.ThumbnailSprite : null;
-            slot.UpdateUI(sprite, Utility.StaffTypeStringConverter((StaffType)index));
+            slot.UpdateUI(sprite, Utility.StaffTypeStringConverter((EquipStaffType)index));
             slot.name = "StaffTabSlot" + (i + 1);
         }
 
@@ -35,9 +35,9 @@ public class UIStaffTab : UIRestaurantAdminTab
 
     public override void UpdateUI()
     {
-        for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
         {
-            UpdateUI(_floorType, (StaffType)i);
+            UpdateUI(_floorType, (EquipStaffType)i);
         }
     }
 
@@ -61,7 +61,7 @@ public class UIStaffTab : UIRestaurantAdminTab
     }
 
 
-    private void UpdateUI(ERestaurantFloorType floorType, StaffType type)
+    private void UpdateUI(ERestaurantFloorType floorType, EquipStaffType type)
     {
         if (_floorType != floorType)
             return;
@@ -74,7 +74,7 @@ public class UIStaffTab : UIRestaurantAdminTab
 
     private void OnSlotClicked(int index)
     {
-        _uiStaff.ShowUIStaff(_floorType, (StaffType)index);
+        _uiStaff.ShowUIStaff(_floorType, (EquipStaffType)index);
     }
 
     private void OnDestroy()

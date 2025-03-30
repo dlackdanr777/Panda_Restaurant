@@ -24,7 +24,7 @@ public class UIStaffTabSlot : MonoBehaviour
     }
 
 
-    public void SetData(ERestaurantFloorType floorType, StaffType type)
+    public void SetData(ERestaurantFloorType floorType, EquipStaffType type)
     {
         _staffData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, floorType, type);
         _floorType = floorType;

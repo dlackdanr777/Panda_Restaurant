@@ -10,7 +10,7 @@ public class StaffGroup : MonoBehaviour
     private CustomerController _customerController;
     private TableManager _tableManager;
     private KitchenSystem _kitchenSystem;
-    private Dictionary<StaffType, Staff> _staffDic = new Dictionary<StaffType, Staff>();
+    private Dictionary<EquipStaffType, Staff> _staffDic = new Dictionary<EquipStaffType, Staff>();
 
 
 
@@ -20,11 +20,11 @@ public class StaffGroup : MonoBehaviour
         _tableManager = tableManager;
         _kitchenSystem = kitchenSystem;
 
-        for (int i = 0, cnt = (int)StaffType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
         {
-            StaffType type = (StaffType)i;
+            EquipStaffType type = (EquipStaffType)i;
             Staff staff = ObjectPoolManager.Instance.SpawnStaff(type, transform.position, transform);;
-            staff.name = _floorType.ToString() + "_" + (StaffType)i;
+            staff.name = _floorType.ToString() + "_" + (EquipStaffType)i;
             staff.Init(tableManager, kitchenSystem, customerController);
 
             _staffDic.Add(type, staff);
@@ -55,7 +55,7 @@ public class StaffGroup : MonoBehaviour
     }
 
 
-    private void OnEquipEvent(ERestaurantFloorType floorType, StaffType type)
+    private void OnEquipEvent(ERestaurantFloorType floorType, EquipStaffType type)
     {
         if (floorType != _floorType)
             return;

@@ -5,6 +5,7 @@ using Muks.DataBind;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public static class UserInfo
@@ -19,7 +20,7 @@ public static class UserInfo
     public static event Action OnAddAdvertisingViewCountHandler;
     public static event Action OnAddCleanCountHandler;
 
-    public static event Action<ERestaurantFloorType, StaffType> OnChangeStaffHandler;
+    public static event Action<ERestaurantFloorType, EquipStaffType> OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
     public static event Action OnUpgradeStaffHandler;
 
@@ -213,7 +214,7 @@ public static class UserInfo
         OnChangeTipHandler?.Invoke();
     }
 
-    private static void OnChangeStaffEvent(ERestaurantFloorType floor, StaffType type)
+    private static void OnChangeStaffEvent(ERestaurantFloorType floor, EquipStaffType type)
     {
         OnChangeStaffHandler?.Invoke(floor, type);
     }
@@ -830,31 +831,61 @@ public static class UserInfo
     }
 
 
-    public static void SetEquipStaff(EStage stage, ERestaurantFloorType floor, StaffData data)
+    public static EquipStaffType GetEquipStaffType(EStage stage, StaffData data)
     {
         int stageIndex = (int)stage;
-        _stageInfos[stageIndex].SetEquipStaff(floor, data);
+        return _stageInfos[stageIndex].GetEquipStaffType(data);
     }
 
 
-    public static void SetEquipStaff(EStage stage, ERestaurantFloorType floor, string id)
+    public static void SetEquipStaff(EStage stage, ERestaurantFloorType floor, EquipStaffType type, StaffData data)
     {
         int stageIndex = (int)stage;
-        _stageInfos[stageIndex].SetEquipStaff(floor, id);
+        _stageInfos[stageIndex].SetEquipStaff(floor, type, data);
     }
 
 
-    public static void SetNullEquipStaff(EStage stage, ERestaurantFloorType floor, StaffType type)
+    public static void SetEquipStaff(EStage stage, ERestaurantFloorType floor, EquipStaffType type, string id)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SetEquipStaff(floor, type, id);
+    }
+
+
+    public static void SetNullEquipStaff(EStage stage, ERestaurantFloorType floor, EquipStaffType type)
     {
         int stageIndex = (int)stage;
         _stageInfos[stageIndex].SetNullEquipStaff(floor, type);
     }
 
+    public static void SetNullEquipStaff(EStage stage, ERestaurantFloorType floor, StaffData data)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SetNullEquipStaff(floor, data);
+    }
 
-    public static StaffData GetEquipStaff(EStage stage, ERestaurantFloorType floor, StaffType type)
+
+    public static StaffData GetEquipStaff(EStage stage, ERestaurantFloorType floor, EquipStaffType type)
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].GetEquipStaff(floor, type);
+    }
+
+
+    public static StaffData GetEquipStaff(EStage stage, ERestaurantFloorType floor)
+    {
+        int stageIndex = (int)stage;
+        for(int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
+        {
+            EquipStaffType type = (EquipStaffType)i;
+            StaffData data = GetEquipStaff(stage, floor, type);
+            if (data == null)
+                continue;
+
+            return data;
+        }
+
+        return null;
     }
 
 

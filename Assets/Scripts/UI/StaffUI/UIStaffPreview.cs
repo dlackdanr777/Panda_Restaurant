@@ -1,4 +1,6 @@
+using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -34,18 +36,20 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private Sprite _questionMarkSprite;
 
     private Action<StaffData> _onBuyButtonClicked;
-    private Action<ERestaurantFloorType, StaffData> _onEquipButtonClicked;
+    private Action<ERestaurantFloorType, EquipStaffType, StaffData> _onEquipButtonClicked;
+    private Action<ERestaurantFloorType, StaffData> _onUsingButtonClicked;
     private StaffData _currentData;
-    private ERestaurantFloorType _currentType;
+    private ERestaurantFloorType _currentFloor;
+    private EquipStaffType _equipStaffType;
 
-    public void Init(Action<ERestaurantFloorType, StaffData> onEquipButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
+    public void Init(Action<ERestaurantFloorType, EquipStaffType, StaffData> onEquipButtonClicked, Action<ERestaurantFloorType, StaffData> onUsingButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
     {
         _selectGroup.Init();
         _equipButtonGroup.Init(On1FloorEquipButtonClicked, On2FloorEquipButtonClicked, On3FloorEquipButtonClicked, OnEquipCancelButtonClicked);
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
-
+        _onUsingButtonClicked = onUsingButtonClicked;
         _buyButton.AddListener(OnBuyButtonClicked);
         _usingButton.AddListener(OnUsingButtonClicked);
         _notEnoughMoneyButton.AddListener(OnBuyButtonClicked);
@@ -55,10 +59,11 @@ public class UIStaffPreview : MonoBehaviour
     }
 
 
-    public void SetData(ERestaurantFloorType type, StaffData data)
+    public void SetData(ERestaurantFloorType floor, EquipStaffType type, StaffData data)
     {
         _currentData = data;
-        _currentType = type;
+        _currentFloor = floor;
+        _equipStaffType = type;
         _selectGroup.SetData(data);
         _levelGroup.gameObject.SetActive(false);
         _usingButton.gameObject.SetActive(false);
@@ -97,7 +102,8 @@ public class UIStaffPreview : MonoBehaviour
         _coolTimeGroup.SetText2(data.Skill.Cooldown + "s");
         _descriptionText.SetText(data.Description);
 
-        StaffData equipData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, type, StaffDataManager.Instance.GetStaffType(data));
+
+        StaffData equipData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, floor, _equipStaffType);
         int equipDataLevel = equipData == null ? 1 : UserInfo.IsGiveStaff(UserInfo.CurrentStage, equipData) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, equipData) : 1;
 
         if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
@@ -105,25 +111,42 @@ public class UIStaffPreview : MonoBehaviour
             _levelGroup.gameObject.SetActive(true);
             _levelGroup.SetText(data.UpgradeEnable(level) ? "Lv." + level : "Lv.Max");
             ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
+        
+            string equipText = string.Empty;
+            if(UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
+            {
+                List<EquipStaffType> staffTypeList = StaffDataManager.Instance.GetEquipStaffTypeList(data);
+                if (staffTypeList.Count == 1)
+                {
+                    equipText = "배치중";
+                }
+                else
+                {
+                    EquipStaffType equipType = UserInfo.GetEquipStaffType(UserInfo.CurrentStage, data);
+                    Utility.StaffTypeStringConverter(equipType);
+                    equipText = Utility.StaffTypeStringConverter(equipType) + " 배치중";
+                }
+            }
+
             switch (furnitureFloorType)
             {
                 case ERestaurantFloorType.Floor1:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetText1("배치중");
+                    _usingButton.SetText1(equipText);
                     _usingButton.SetText2("1f");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
 
                 case ERestaurantFloorType.Floor2:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetText1("배치중");
+                    _usingButton.SetText1(equipText);
                     _usingButton.SetText2("2f");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
 
                 case ERestaurantFloorType.Floor3:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetText1("배치중");
+                    _usingButton.SetText1(equipText);
                     _usingButton.SetText2("3f");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
@@ -187,7 +210,7 @@ public class UIStaffPreview : MonoBehaviour
 
     public void UpdateUI()
     {
-        SetData(_currentType, _currentData);
+        SetData(_currentFloor, _equipStaffType, _currentData);
     }
 
     private void OnBuyButtonClicked()
@@ -212,7 +235,16 @@ public class UIStaffPreview : MonoBehaviour
 
         _equipButtonGroup.HideNoAnime();
         _equipButton.gameObject.SetActive(false);
-        _onEquipButtonClicked?.Invoke(type, _currentData);
+
+        if(UserInfo.IsEquipStaff(UserInfo.CurrentStage, _currentData))
+        {
+            _onUsingButtonClicked?.Invoke(_currentFloor, _currentData);
+        }
+        else
+        {
+            _onEquipButtonClicked?.Invoke(type, _equipStaffType, _currentData);
+        }
+
     }
 
 
@@ -253,7 +285,7 @@ public class UIStaffPreview : MonoBehaviour
         }
 
         ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, _currentData);
-        _onEquipButtonClicked?.Invoke(floorType, null);
+        _onUsingButtonClicked?.Invoke(floorType, _currentData);
     }
 
     private void OnDestroy()
