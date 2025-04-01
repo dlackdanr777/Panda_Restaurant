@@ -18,10 +18,9 @@ public class SinkGaugeBar : MonoBehaviour
     {
     }
 
-    public void SetGauge(int currentBowlCount, int maxBowlCount)
+    public void SetGauge(int currentBowlCount, int maxBowlCount, float gauge)
     {
-        float gauge = Mathf.Clamp((float)currentBowlCount / maxBowlCount, 0, 1);
-        _spriteFillAmount.TweenFillAmount(gauge, 0.05f);
+        _spriteFillAmount.SetFillAmount(gauge);
         _tmp.SetText(currentBowlCount + "/" + maxBowlCount);
         SetChangeRenderer(gauge);
     }

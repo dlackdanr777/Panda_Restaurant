@@ -200,7 +200,7 @@ public static class UserInfo
             _stageInfos[i].OnGiveKitchenUtensilHandler += OnGiveKitchenUtensilEvent;
             _stageInfos[i].OnChangeKitchenUtensilSetDataHandler += OnChangeKitchenUtensilSetDataEvent;
 
-            _stageInfos[i].OnAddSinkBowlHandler += OnAddSinkBowlEvent;
+            _stageInfos[i].OnChangeSinkBowlHandler += OnAddSinkBowlEvent;
         }
     }
 
@@ -1665,6 +1665,12 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         _stageInfos[stageIndex].AddSinkBowlCount(floor);
+    }
+
+    public static void SubSinkBowlCount(EStage stage, ERestaurantFloorType floor)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SubSinkBowlCount(floor);
     }
 
     public static bool GetBowlAddEnabled(EStage stage, ERestaurantFloorType floor)

@@ -132,10 +132,12 @@ public class ObjectPoolManager : MonoBehaviour
             _staffPools[i] = new Queue<Staff>();
 
             if (_staffPrefabs[i] == null)
-                _staffPrefabs[i] = Resources.Load<Staff>("Staff/Staff");
+                _staffPrefabs[i] = Resources.Load<Staff>("ObjectPool/Staff/Staff");
         }
 
-        _staffPrefabs[(int)EquipStaffType.Cleaner] = Resources.Load<StaffCleaner>("Staff/Cleaner");
+        _staffPrefabs[(int)EquipStaffType.Cleaner] = Resources.Load<StaffCleaner>("ObjectPool/Staff/Cleaner");
+        _staffPrefabs[(int)EquipStaffType.Waiter1] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
+        _staffPrefabs[(int)EquipStaffType.Waiter2] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
         _staffCount = (int)ERestaurantFloorType.Length;
         for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
         {

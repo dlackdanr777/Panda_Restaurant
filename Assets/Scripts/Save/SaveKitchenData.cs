@@ -36,6 +36,11 @@ public class SaveKitchenData
         SinkBowlCount = Mathf.Clamp(SinkBowlCount + 1, 0, MaxSinkBowlCount);
     }
 
+    public void SubSinkBowlCount()
+    {
+        SinkBowlCount = Mathf.Clamp(SinkBowlCount - 1, 0, MaxSinkBowlCount);
+    }
+
     public bool GetBowlAddEnabled()
     {
         return SinkBowlCount < MaxSinkBowlCount;

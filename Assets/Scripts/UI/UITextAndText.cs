@@ -19,11 +19,11 @@ public class UITextAndText : MonoBehaviour
 
     public void SetText1(string text)
     {
-        _text1.text = text;
+        _text1.SetText(text);
     }
 
     public void SetText2(string text)
     {
-        _text2.text = text;
+        _text2.SetText(text);
     }
 }

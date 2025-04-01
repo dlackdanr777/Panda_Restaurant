@@ -19,15 +19,9 @@ public class FurnitureSystem : MonoBehaviour
 
     private Dictionary<ERestaurantFloorType, FurnitureGroup> _furnitureGroupDic = new Dictionary<ERestaurantFloorType, FurnitureGroup>();
 
-
-    public Vector3 GetStaffPos(TableData data, EquipStaffType type)
-    {
-        return _furnitureGroupDic[data.FloorType].GetStaffPos(data, type);
-    }
-
     public Vector3 GetStaffPos(ERestaurantFloorType floorType, EquipStaffType type)
     {
-        return _furnitureGroupDic[floorType].GetStaffPos(null, type);
+        return _furnitureGroupDic[floorType].GetStaffPos(type);
     }
 
     public TableData GetFirstTableData()

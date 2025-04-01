@@ -12,19 +12,31 @@ public class WaiterAction : IStaffAction
 
     private bool _isUsed = false;
     private bool _isNoAction = false;
+    private bool _notEqulsFloor = false;
+
     private float _time;
     private Vector3 _defaultPos;
-
+    private StaffWaiter _waiter;
 
     public WaiterAction(Staff staff, TableManager tableManager)
     {
+        if (!(staff is StaffWaiter))
+            throw new System.Exception("웨이터가 아닌 일반 스탭이 들어왔습니다.");
+
+        _waiter = (StaffWaiter)staff;
         _tableManager = tableManager;
         _isUsed = false;
         _isNoAction = false;
+        _notEqulsFloor = false;
         _time = 0;
-        _defaultPos = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Waiter1);
+        EquipStaffType type = UserInfo.GetEquipStaffType(UserInfo.CurrentStage, staff.StaffData);
+        if (type == EquipStaffType.Length)
+            throw new System.Exception("웨이터 타입이 이상합니다:" + type);
+
+        _defaultPos = _tableManager.GetStaffPos(staff.EquipFloorType, type);
         staff.transform.position = _defaultPos;
         staff.SetAlpha(1);
+        staff.SetSpriteDir(1);
     }
 
 
@@ -55,6 +67,7 @@ public class WaiterAction : IStaffAction
 
         List<TableData> servingTableList =  _tableManager.GetTableDataList(ERestaurantFloorType.Floor1, ETableState.CanServing);
         List<TableData> orderTableList = _tableManager.GetTableDataList(staff.EquipFloorType, ETableState.Seating);
+        _isUsed = true;
         if (servingTableList.Count == 0 && orderTableList.Count == 0)
         {
             ResetStaffState(staff);
@@ -63,21 +76,23 @@ public class WaiterAction : IStaffAction
 
         else if(0 < servingTableList.Count)
         {
-            ServingAction(staff, servingTableList);
+            ServingAction(servingTableList);
         }
 
         else if(0 < orderTableList.Count)
         {
-            OrderAction(staff, orderTableList);
+            OrderAction(orderTableList);
         }
 
-        _isUsed = true;
+
     }
 
 
     private void ResetStaffState(Staff staff)
     {
+        _waiter.BowlSetActive(false);
         _isUsed = false;
+        _notEqulsFloor = false;
         _time = 0;
 
         if (_isNoAction)
@@ -85,99 +100,128 @@ public class WaiterAction : IStaffAction
 
         _isNoAction = true;
         if (Vector2.Distance(staff.transform.position, _defaultPos) > 0.1f)
-            staff.Move(_defaultPos, -1);
+            staff.Move(_defaultPos, 1);
     }
 
 
-    private void ServingAction(Staff staff, List<TableData> servingTableList)
+    private void ServingAction(List<TableData> servingTableList)
     {
-        TableData data = _tableManager.GetMinDistanceTable(staff.EquipFloorType, staff.transform.position, servingTableList);
+        TableData data = _tableManager.GetMinDistanceTable(_waiter.EquipFloorType, _waiter.transform.position, servingTableList);
         if (data == null)
             return;
 
-        float speedMul = staff.SpeedMul;
+        if(1 < Mathf.Abs(data.transform.position.y - _waiter.transform.position.y) && !_notEqulsFloor)
+        {
+            _waiter.SetStaffState(EStaffState.None);
+            _notEqulsFloor = true;
+            _isUsed = false;
+            return;
+        }
+
+        _waiter.BowlSetActive(false);
+        float speedMul = _waiter.SpeedMul;
         _isNoAction = false;
         _tableManager.OnUseStaff(data);
-        staff.Move(_tableManager.GetFoodPos(staff.EquipFloorType, RestaurantType.Hall), 0, () =>
+        _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall), 0, () =>
         {
             _tweenData = Tween.Wait(_duration / speedMul, () =>
             {
                 if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
                 {
-                    staff.SetStaffState(EStaffState.None);
+                    _waiter.SetStaffState(EStaffState.None);
                     _isUsed = false;
+                    _notEqulsFloor = false;
                     _time = 0;
                     return;
                 }
 
-                staff.Move(data.transform.position, 0, () =>
+                _waiter.BowlSetActive(true);
+                _waiter.Move(data.transform.position, data.SitDir, () =>
                 {
-                    _tweenData = Tween.Wait(_duration / speedMul, () =>
+                    _tweenData = Tween.Wait((_duration / speedMul) * 0.5f, () =>
                     {
-                        if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
+                        _waiter.BowlSetAction();
+                        _waiter.ShowFood(data.CurrentFood.FoodData);
+                        _tweenData = Tween.Wait(_duration / speedMul, () =>
                         {
-                            staff.SetStaffState(EStaffState.None);
-                            _isUsed = false;
-                            _time = 0;
-                            return;
-                        }
+                            if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
+                            {
+                                _waiter.SetStaffState(EStaffState.None);
+                                _isUsed = false;
+                                _notEqulsFloor = false;
+                                _time = 0;
+                                return;
+                            }
 
-                        staff.SetStaffState(EStaffState.Action);
-                        _tableManager.OnServing(data);
-                        _tweenData = Tween.Wait(1 / speedMul, () =>
-                        {
-                            staff.SetStaffState(EStaffState.None);
-                            _isUsed = false;
-                            _time = 0;
+                            _waiter.HideFood();
+                            _tableManager.OnServing(data);
+                            _tweenData = Tween.Wait(1 / speedMul, () =>
+                            {
+                                _waiter.SetStaffState(EStaffState.None);
+                                _isUsed = false;
+                                _notEqulsFloor = false;
+                                _time = 0;
+                            });
                         });
                     });
                 });
             });
-
         });
     }
 
-    private void OrderAction(Staff staff, List<TableData> orderTableList)
+    private void OrderAction(List<TableData> orderTableList)
     {
-        TableData data = _tableManager.GetMinDistanceTable(staff.EquipFloorType, staff.transform.position, orderTableList);
+        TableData data = _tableManager.GetMinDistanceTable(_waiter.EquipFloorType, _waiter.transform.position, orderTableList);
         if (data == null)
             return;
 
-        float speedMul = staff.SpeedMul;
+        if (1 < Mathf.Abs(data.transform.position.y - _waiter.transform.position.y) && !_notEqulsFloor)
+        {
+            _waiter.SetStaffState(EStaffState.None);
+            _notEqulsFloor = true;
+            _isUsed = false;
+            return;
+        }
+
+        _waiter.BowlSetActive(false);
+        float speedMul = _waiter.SpeedMul;
         _isNoAction = false;
         _tableManager.OnUseStaff(data);
-        staff.Move(data.transform.position, 0, () =>
+        _waiter.Move(data.transform.position, data.SitDir, () =>
         {
             _tweenData = Tween.Wait(_duration / speedMul, () =>
             {
                 if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
                 {
-                    staff.SetStaffState(EStaffState.None);
+                    _waiter.SetStaffState(EStaffState.None);
                     _isUsed = false;
+                    _notEqulsFloor = false;
                     _time = 0;
                     return;
                 }
 
-                staff.Move(_tableManager.GetFoodPos(staff.EquipFloorType, RestaurantType.Hall), 0, () =>
+                _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall), 0, () =>
                 {
 
                     _tweenData = Tween.Wait(_duration / speedMul, () =>
                     {
                         if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
                         {
-                            staff.SetStaffState(EStaffState.None);
+                            _waiter.SetStaffState(EStaffState.None);
                             _isUsed = false;
+                            _notEqulsFloor = false;
                             _time = 0;
                             return;
                         }
 
-                        staff.SetStaffState(EStaffState.Action);
+                        _waiter.SetStaffState(EStaffState.Action);
 
                         _tableManager.OnCustomerOrder(data);
                         _tweenData = Tween.Wait(1 / speedMul, () =>
                         {
-                            staff.SetStaffState(EStaffState.None);
+                            _waiter.SetStaffState(EStaffState.None);
                             _isUsed = false;
+                            _notEqulsFloor = false;
                             _time = 0;
                         });
                     });
@@ -188,7 +232,7 @@ public class WaiterAction : IStaffAction
     }
 
 
-    private void OldAction(Staff staff)
+/*    private void OldAction(Staff staff)
     {
         TableData data = _tableManager.GetTableTypeByNeedFood(staff.EquipFloorType, ETableState.CanServing);
         if (data == null)
@@ -214,5 +258,5 @@ public class WaiterAction : IStaffAction
                 });
             });
         });
-    }
+    }*/
 }

@@ -21,7 +21,7 @@ public class StageInfo
     public event Action OnGiveKitchenUtensilHandler;
     public event Action OnChangeKitchenUtensilSetDataHandler;
 
-    public event Action OnAddSinkBowlHandler;
+    public event Action OnChangeSinkBowlHandler;
 
     private EStage _stage;
     public EStage Stage => _stage;
@@ -821,7 +821,20 @@ public class StageInfo
         }
 
         _saveKitchenDatas[floorIndex].AddSinkBowlCount();
-        OnAddSinkBowlHandler?.Invoke();
+        OnChangeSinkBowlHandler?.Invoke();
+    }
+
+    public void SubSinkBowlCount(ERestaurantFloorType floor)
+    {
+        int floorIndex = (int)floor;
+        if (_saveKitchenDatas[floorIndex].SinkBowlCount <= 0)
+        {
+            DebugLog.LogError("현재 씽크대가 비어있습니다.");
+            return;
+        }
+
+        _saveKitchenDatas[floorIndex].SubSinkBowlCount();
+        OnChangeSinkBowlHandler?.Invoke();
     }
 
     public bool GetBowlAddEnabled(ERestaurantFloorType floor)

@@ -18,7 +18,7 @@ public class ServerAction : IStaffAction
 
     public void PerformAction(Staff staff)
     {
-        TableData tableData = _tableManager.GetTableTypeByNeedFood(staff.EquipFloorType, ETableState.Seating);
+/*        TableData tableData = _tableManager.GetTableTypeByNeedFood(staff.EquipFloorType, ETableState.Seating);
         if (tableData == null)
             return;
 
@@ -42,6 +42,6 @@ public class ServerAction : IStaffAction
         });
 
 
-        return;
+        return;*/
     }
 }

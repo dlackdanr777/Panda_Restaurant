@@ -24,7 +24,8 @@ public class FurnitureGroup : MonoBehaviour
 
     [Space]
     [Header("Transforms")]
-    [SerializeField] private Transform _defaultWaiterPos;
+    [SerializeField] private Transform _defaultWaiter1Pos;
+    [SerializeField] private Transform _defaultWaiter2Pos;
     [SerializeField] private Transform _cashTableTr;
     [SerializeField] private Transform _marketerTr;
     [SerializeField] private Transform _guardTr;
@@ -49,14 +50,14 @@ public class FurnitureGroup : MonoBehaviour
     }
 
 
-    public Vector2 GetStaffPos(TableData data, EquipStaffType type)
+    public Vector2 GetStaffPos(EquipStaffType type)
     {
         switch (type)
         {
             case EquipStaffType.Waiter1:
-                return _defaultWaiterPos.position;
+                return _defaultWaiter1Pos.position;
             case EquipStaffType.Waiter2:
-                return _defaultWaiterPos.position;
+                return _defaultWaiter2Pos.position;
             case EquipStaffType.Cleaner:
                 return _cleanerWaitTr.position;
             case EquipStaffType.Manager:

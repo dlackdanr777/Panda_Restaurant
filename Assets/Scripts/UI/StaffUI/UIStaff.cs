@@ -31,7 +31,7 @@ public class UIStaff : MobileUIView
     [Header("Slot Option")]
     [SerializeField] private int _createSlotValue;
     [SerializeField] private Transform _slotParnet;
-    [SerializeField] private UIRestaurantAdminSlot _slotPrefab;
+    [SerializeField] private UIRestaurantAdminStaffSlot _slotPrefab;
 
 
     [Space]
@@ -41,7 +41,7 @@ public class UIStaff : MobileUIView
 
     private EquipStaffType _currentType;
     private ERestaurantFloorType _currentFloorType;
-    private List<UIRestaurantAdminSlot>[] _slots = new List<UIRestaurantAdminSlot>[(int)EquipStaffType.Length];
+    private List<UIRestaurantAdminStaffSlot>[] _slots = new List<UIRestaurantAdminStaffSlot>[(int)EquipStaffType.Length];
     List<StaffData> _currentTypeDataList;
 
 
@@ -54,11 +54,11 @@ public class UIStaff : MobileUIView
         for (int i = 0, cntI = (int)EquipStaffType.Length; i < cntI; ++i)
         {
             List<StaffData> typeDataList = StaffDataManager.Instance.GetStaffDataList((EquipStaffType)i);
-            _slots[i] = new List<UIRestaurantAdminSlot>();
+            _slots[i] = new List<UIRestaurantAdminStaffSlot>();
             for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
             {
                 int index = j;
-                UIRestaurantAdminSlot slot = Instantiate(_slotPrefab, _slotParnet);
+                UIRestaurantAdminStaffSlot slot = Instantiate(_slotPrefab, _slotParnet);
                 slot.Init(() => OnSlotClicked(typeDataList[index]));
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
@@ -227,9 +227,9 @@ public class UIStaff : MobileUIView
         _uiStaffPreview.UpdateUI();
         int slotsIndex = (int)_currentType;
         StaffData data;
-        UIRestaurantAdminSlot slot;
+        UIRestaurantAdminStaffSlot slot;
 
-        (ERestaurantFloorType, UIRestaurantAdminSlot)[] equipSlotArray = new (ERestaurantFloorType, UIRestaurantAdminSlot)[(int)ERestaurantFloorType.Length];
+        (ERestaurantFloorType, UIRestaurantAdminStaffSlot)[] equipSlotArray = new (ERestaurantFloorType, UIRestaurantAdminStaffSlot)[(int)ERestaurantFloorType.Length];
         int equipSlotCount = 0;
 
         for (int i = 0, cnt = _currentTypeDataList.Count; i < cnt; ++i)
@@ -238,6 +238,8 @@ public class UIStaff : MobileUIView
             slot = _slots[slotsIndex][i];
             slot.gameObject.SetActive(true);
             slot.transform.SetSiblingIndex(i);
+            slot.EquipGroupSetActive(false);
+
             if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
             {
                 ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
@@ -245,6 +247,14 @@ public class UIStaff : MobileUIView
                 {
                     equipSlotArray[equipSlotCount++] = (floorType, slot);
                 }
+
+                if (UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
+                {
+                    slot.EquipGroupSetActive(true);
+                    EquipStaffType equipType = UserInfo.GetEquipStaffType(UserInfo.CurrentStage, data);
+                    slot.SetEquipText(Utility.StaffTypeStringConverter(equipType));
+                }
+
 
                 switch (floorType)
                 {
@@ -297,7 +307,7 @@ public class UIStaff : MobileUIView
         }
 
         //장착된 슬롯들을 순회하며 층수로 오름차순 정렬
-        Array.Sort(equipSlotArray, 0, equipSlotCount, Comparer<(ERestaurantFloorType, UIRestaurantAdminSlot)>.Create((a, b) => a.Item1.CompareTo(b.Item1)));
+        Array.Sort(equipSlotArray, 0, equipSlotCount, Comparer<(ERestaurantFloorType, UIRestaurantAdminStaffSlot)>.Create((a, b) => a.Item1.CompareTo(b.Item1)));
         for (int i = 0; i < equipSlotCount; i++)
         {
             equipSlotArray[i].Item2.transform.SetSiblingIndex(i);

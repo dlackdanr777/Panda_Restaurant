@@ -265,43 +265,6 @@ public static class Utility
         string description = string.Empty;
         int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
 
-        switch(data)
-        {
-            case ManagerData:
-                description = $"손님 테이블로 자동 배치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초당 <color={ColorToHex(GetColor(ColorType.Positive))}>1</color>명)";
-                break;
-
-            case WaiterData:
-                description = $"음식 자동 배달(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
-                break;
-
-            case MarketerData:
-                description = $"자동 손님 호출 버튼 클릭(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초)";
-                break;
-
-            case ServerData:
-                description = $"자동 음식 주문 받기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 1테이블)";
-                break;
-
-            case CleanerData:
-                description = $"쓰레기 및 코인 수집(이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
-                break;
-
-            case GuardData:
-                description = $"도둑 퇴치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>초 소요)";
-                break;
-
-            case ChefData:
-                description = $"조리 효율 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
-                break;
-        }
-
-        return description;
-    }
-
-    public static string GetStaffEffectDescription(StaffData data, int level)
-    {
-        string description = string.Empty;
         switch (data)
         {
             case ManagerData:
@@ -309,7 +272,7 @@ public static class Utility
                 break;
 
             case WaiterData:
-                description = $"음식을 손님에게 자동 배달(기본 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                description = $"음식을 손님에게 자동 배달(기본 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
                 break;
 
             case MarketerData:
@@ -329,7 +292,44 @@ public static class Utility
                 break;
 
             case ChefData:
-                description = $"주방에서 음식 제작 효율 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color> 상승)";
+                description = $"주방 음식 제작 효율 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
+                break;
+        }
+
+        return description;
+    }
+
+    public static string GetStaffEffectDescription(StaffData data, int level)
+    {
+        string description = string.Empty;
+        switch (data)
+        {
+            case ManagerData:
+                description = $"테이블로 손님 자동 배치(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초)";
+                break;
+
+            case WaiterData:
+                description = $"음식을 손님에게 자동 배달(기본 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
+                break;
+
+            case MarketerData:
+                description = $"레스토랑으로 손님 자동 호출(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초)";
+                break;
+
+            case ServerData:
+                description = $"자동 음식 주문 받기(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> 초당 1테이블)";
+                break;
+
+            case CleanerData:
+                description = $"쓰레기 & 코인 수집(기본 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
+                break;
+
+            case GuardData:
+                description = $"진상 손님 퇴치(퇴치 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                break;
+
+            case ChefData:
+                description = $"주방 음식 제작 효율 상승(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
                 break;
         }
 

@@ -448,11 +448,6 @@ public class TableManager : MonoBehaviour
     }
 
 
-    public Vector2 GetStaffPos(TableData data, EquipStaffType type)
-    {
-        return _furnitureSystem.GetStaffPos(data, type);
-    }
-
     /// <summary> 직원 위치를 반환하는 함수(경호원, 청소부, 매니저, 셰프만 가능)</summary>
     public Vector2 GetStaffPos(ERestaurantFloorType floorType, EquipStaffType type)
     {

@@ -1,3 +1,4 @@
+using JetBrains.Annotations;
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private UITextAndText _staffEffectGroup;
     [SerializeField] private UITextAndText _skillGroup;
     [SerializeField] private UITextAndText _coolTimeGroup;
+    [SerializeField] private UITextAndText _equipTextGroup;
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private GameObject _effectGroup;
 
@@ -71,6 +73,7 @@ public class UIStaffPreview : MonoBehaviour
         _buyButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
+        _equipTextGroup.gameObject.SetActive(false);
         _equipButtonGroup.HideNoAnime();
 
         if (data == null)
@@ -112,41 +115,32 @@ public class UIStaffPreview : MonoBehaviour
             _levelGroup.SetText(data.UpgradeEnable(level) ? "Lv." + level : "Lv.Max");
             ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
         
-            string equipText = string.Empty;
             if(UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
             {
-                List<EquipStaffType> staffTypeList = StaffDataManager.Instance.GetEquipStaffTypeList(data);
-                if (staffTypeList.Count == 1)
-                {
-                    equipText = "배치중";
-                }
-                else
-                {
-                    EquipStaffType equipType = UserInfo.GetEquipStaffType(UserInfo.CurrentStage, data);
-                    Utility.StaffTypeStringConverter(equipType);
-                    equipText = Utility.StaffTypeStringConverter(equipType) + " 배치중";
-                }
+                _equipTextGroup.gameObject.SetActive(true);
+                EquipStaffType equipType = UserInfo.GetEquipStaffType(UserInfo.CurrentStage, data);
+                _equipTextGroup.SetText1(Utility.StaffTypeStringConverter(equipType));
             }
 
             switch (furnitureFloorType)
             {
                 case ERestaurantFloorType.Floor1:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetText1(equipText);
+                    _usingButton.SetText1("배치중");
                     _usingButton.SetText2("1f");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
 
                 case ERestaurantFloorType.Floor2:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetText1(equipText);
+                    _usingButton.SetText1("배치중");
                     _usingButton.SetText2("2f");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
 
                 case ERestaurantFloorType.Floor3:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetText1(equipText);
+                    _usingButton.SetText1("배치중");
                     _usingButton.SetText2("3f");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;

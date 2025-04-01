@@ -25,7 +25,7 @@ public class StaffGroup : MonoBehaviour
             EquipStaffType type = (EquipStaffType)i;
             Staff staff = ObjectPoolManager.Instance.SpawnStaff(type, transform.position, transform);;
             staff.name = _floorType.ToString() + "_" + (EquipStaffType)i;
-            staff.Init(tableManager, kitchenSystem, customerController);
+            staff.Init(type, tableManager, kitchenSystem, customerController);
 
             _staffDic.Add(type, staff);
             StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);

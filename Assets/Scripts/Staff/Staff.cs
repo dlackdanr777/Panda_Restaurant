@@ -20,6 +20,8 @@ public class Staff : MonoBehaviour
     protected KitchenSystem _kitchenSystem;
     protected CustomerController _customerController;
     protected StaffData _staffData;
+    public StaffData StaffData => _staffData;
+
     protected EquipStaffType _staffType;
     protected IStaffAction _staffAction;
     protected EStaffState _state;
@@ -39,12 +41,14 @@ public class Staff : MonoBehaviour
     protected Coroutine _useSkillRoutine;
 
 
-    public virtual void Init(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
+        _staffType = type;
         _tableManager = tableManager;
         _customerController = customerController;
         _kitchenSystem = kitchenSystem;
         _tableManager = tableManager;
+        _spriteRenderer.color = Color.white;
         _scaleX = transform.localScale.x;
         GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
         UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
@@ -107,17 +111,6 @@ public class Staff : MonoBehaviour
         _spriteRenderer.transform.localPosition = Vector3.zero;
         _spriteRenderer.enabled = true;
 
-        _staffType = staffData switch
-        {
-            ManagerData => EquipStaffType.Manager,
-            MarketerData => EquipStaffType.Marketer,
-            WaiterData => EquipStaffType.Waiter1,
-            ServerData => EquipStaffType.Waiter2,
-            CleanerData => EquipStaffType.Cleaner,
-            GuardData => EquipStaffType.Guard,
-            ChefData => EquipStaffType.Chef1,
-            _ => EquipStaffType.Length
-        };
 
         OnChangeSkillValueEvent();
     }
@@ -126,6 +119,11 @@ public class Staff : MonoBehaviour
     {
         Color nowColor = _spriteRenderer.color;
         _spriteRenderer.color = new Color(nowColor.r, nowColor.g, nowColor.b, alpha);
+    }
+
+    public virtual void TweenAlpha(float alpha, float duration, Ease ease, Action onCompleted = null)
+    {
+        _spriteRenderer.TweenAlpha(alpha, duration, ease).OnComplete(onCompleted);
     }
 
 
@@ -243,14 +241,14 @@ public class Staff : MonoBehaviour
     }
 
 
-    private Coroutine _moveCoroutine;
-    private Coroutine _teleportCoroutine;
+    protected Coroutine _moveCoroutine;
+    protected Coroutine _teleportCoroutine;
 
-    private Action _moveCompleted;
-    private Vector2 _targetPos;
-    private int _targetFloor;
-    private int _moveEndDir;
-    private bool _isStairsMove;
+    protected Action _moveCompleted;
+    protected Vector2 _targetPos;
+    protected int _targetFloor;
+    protected int _moveEndDir;
+    protected bool _isStairsMove;
 
     public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
     {
@@ -283,7 +281,7 @@ public class Staff : MonoBehaviour
     }
 
 
-    private void TargetMove(List<Vector2> nodeList)
+    protected void TargetMove(List<Vector2> nodeList)
     {
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
@@ -296,7 +294,7 @@ public class Staff : MonoBehaviour
     }
 
 
-    private void StairsMove(List<Vector2> nodeList)
+    protected virtual void StairsMove(List<Vector2> nodeList)
     {
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
@@ -314,7 +312,7 @@ public class Staff : MonoBehaviour
     }
 
 
-    private IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
+    protected IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {
         if (1 < nodeList.Count)
             nodeList.RemoveAt(0);
@@ -346,13 +344,12 @@ public class Staff : MonoBehaviour
     }
 
 
-    private IEnumerator TeleportFloorRoutine(Action onCompleted)
+    protected IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
         yield return YieldCache.WaitForSeconds(0.6f);
-        _spriteRenderer.TweenAlpha(0, 0.4f, Ease.Constant).OnComplete(() => _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos));
-        //SetSpriteDir(-1);
+        TweenAlpha(0, 0.4f, Ease.Constant, () => _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos));
         yield return YieldCache.WaitForSeconds(1f);
-        _spriteRenderer.TweenAlpha(1, 0.4f, Ease.Constant);
+        TweenAlpha(1, 0.4f, Ease.Constant);
         yield return YieldCache.WaitForSeconds(1f);
         onCompleted?.Invoke();
     }
@@ -419,5 +416,7 @@ public class Staff : MonoBehaviour
         _staffAction = null;
         ObjectPoolManager.Instance.DespawnStaff(_staffType, this);
     }
+
+
 }
 

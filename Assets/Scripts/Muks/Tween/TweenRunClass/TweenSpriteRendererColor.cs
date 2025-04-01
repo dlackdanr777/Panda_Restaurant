@@ -4,8 +4,8 @@ namespace Muks.Tween
 {
     public class TweenSpriteRendererColor : TweenData
     {
-        private Color _startColor;
-        private Color _targetColor;
+        [SerializeField] private Color _startColor;
+        [SerializeField] private Color _targetColor;
         private SpriteRenderer _spriteRenderer;
 
 
