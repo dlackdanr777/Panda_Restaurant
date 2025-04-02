@@ -4,219 +4,171 @@ using UnityEngine;
 
 namespace Muks.PathFinding.AStar
 {
-    /// <summary>AStar 길찾기 매니저</summary>
     public class AStar : MonoBehaviour
     {
+        public static AStar Instance { get; private set; }
 
-        public static AStar Instance
-        {
-            get
-            {
-                if (_instance == null)
-                {
-                    GameObject obj = new GameObject("AStarManager");
-                    _instance = obj.AddComponent<AStar>();
-                }
-
-                return _instance;
-            }
-        }
-        private static AStar _instance;
-
-        public float NodeSize;
-        public Vector2 MapBottomLeft;
-        [SerializeField] private Vector2Int _mapSize;
-        [SerializeField] private Transform[] _stairsTr;
+        [Header("맵 설정")]
         [SerializeField] private bool _drawGizmos;
+        [Range(0.01f, 100000f)] [SerializeField] private float _nodeSize = 1f;
+        public float NodeSize => _nodeSize;
+        [SerializeField] private MapInfo[] _mapInfos;
 
-        private int[] _dirX = new int[8] { 0, 0, 1, -1, 1, 1, -1, -1 };
-        private int[] _dirY = new int[8] { 1, -1, 0, 0, 1, -1, -1, 1 };
-        private int[] _cost = new int[8] { 10, 10, 10, 10, 14, 14, 14, 14 };
-
-        private Node[,] _nodes;
-        private int _sizeX;
-        private int _sizeY;
-
+        private Dictionary<string, MapData> _maps = new();
+        private readonly int[] _dirX = { 0, 0, 1, -1, 1, 1, -1, -1 };
+        private readonly int[] _dirY = { 1, -1, 0, 0, 1, -1, -1, 1 };
+        private readonly int[] _cost = { 10, 10, 10, 10, 14, 14, 14, 14 };
 
         private void Awake()
         {
-            if (_instance != null)
-                return;
+            if (Instance != null) return;
+            Instance = this;
 
-            _instance = this;
-            Init();
+            foreach (var info in _mapInfos)
+                AddMap(info);
         }
 
-
-        private void OnDestroy()
+        private void AddMap(MapInfo info)
         {
-            _instance = null;
+            var map = new MapData(info.MapBottomLeft, info.MapSize);
+            GenerateNodes(map);
+            _maps[info.MapKey] = map;
         }
 
-
-        private void Init()
+        private void GenerateNodes(MapData map)
         {
-            _sizeX = Mathf.CeilToInt(_mapSize.x / NodeSize);
-            _sizeY = Mathf.CeilToInt(_mapSize.y / NodeSize);
+            float nodeSize = NodeSize;
 
-            _nodes = new Node[_sizeX, _sizeY];
-
-            for (int i = 0; i < _sizeX; ++i)
+            for (int i = 0; i < map.SizeX; i++)
             {
-                float posX = MapBottomLeft.x + (i + 0.5f) * NodeSize;
-
-                for (int j = 0; j < _sizeY; ++j)
+                float posX = map.MapBottomLeft.x + (i + 0.5f) * nodeSize;
+                for (int j = 0; j < map.SizeY; j++)
                 {
-                    float posY = MapBottomLeft.y + (j + 0.5f) * NodeSize;
-                    bool isWall = false;
-                    bool isGround = false;
-                    foreach (Collider2D col in Physics2D.OverlapCircleAll(new Vector2(posX, posY), NodeSize * 0.4f))
-                    {
-                        if (col.gameObject.layer == LayerMask.NameToLayer("Wall") || col.gameObject.layer == LayerMask.NameToLayer("Ground"))
+                    float posY = map.MapBottomLeft.y + (j + 0.5f) * nodeSize;
+
+                    bool isWall = false, isGround = false;
+                    foreach (Collider2D col in Physics2D.OverlapCircleAll(new Vector2(posX, posY), nodeSize * 0.4f))
+                        if (col.gameObject.layer == LayerMask.NameToLayer("Wall"))
                             isWall = true;
 
-                    }
-
-                    if(j != 0)
+                    if (!isWall && j != 0)
                     {
-                        float groundPosY = MapBottomLeft.y + (j - 1 + 0.5f) * NodeSize;
-                        foreach (Collider2D col in Physics2D.OverlapCircleAll(new Vector2(posX, groundPosY), NodeSize * 0.4f))
-                        {
-                            if (isWall)
-                                break;
-
+                        float groundY = map.MapBottomLeft.y + (j - 1 + 0.5f) * nodeSize;
+                        foreach (Collider2D col in Physics2D.OverlapCircleAll(new Vector2(posX, groundY), nodeSize * 0.4f))
                             if (col.gameObject.layer == LayerMask.NameToLayer("Ground"))
                                 isGround = true;
-
-                        }
                     }
 
-                    Node node = new Node(isWall, isGround, i, j);
-                    _nodes[i, j] = node;
-
+                    map.Nodes[i, j] = new Node(isWall, isGround, i, j);
                 }
             }
         }
 
-/*        public Vector2 GetFloorPos(int i)
+
+        /// <summary>맵 키 없이 자동으로 포함된 맵에서 길찾기</summary>
+        public void RequestPath(Vector2 start, Vector2 end, Action<List<Vector2>> callback)
         {
-            if (i <= 0)
-                return Vector2.zero;
+            var map = FindBestMatchingMap(start);
 
-            return _stairsTr[--i].transform.position;
-        }
-
-
-        public int GetTransformFloor(Vector2 pos)
-        {
-            float tmpY = 10000;
-            int floor = 1;
-            int tmpFloor = 1;
-            foreach (Transform t in _stairsTr)
+            if (map == null)
             {
-                float y = pos.y - t.position.y;
-
-                if (Mathf.Abs(y) < Mathf.Abs(tmpY))
-                {
-                    tmpY = y;
-                    tmpFloor = floor;
-                }
-
-                floor++;
+                Debug.LogError($"No map contains start position: {start}");
+                callback(new List<Vector2>());
+                return;
             }
 
-            return tmpFloor;
-        }*/
-
-
-        /// <summary> 멀티 스레드를 이용해 길찾기를 계산 후 콜백 함수를 실행하는 함수</summary>
-        public void RequestPath(Vector2 startPos, Vector2 targetPos, Action<List<Vector2>> callback)
-        {
             PathfindingQueue.Instance.Enqueue(() =>
             {
-                List<Vector2> pathResult = PathFinding(startPos, targetPos);
-                MainThreadDispatcher.Instance.Enqueue(() => callback(pathResult));
+                var result = PathFinding(map, start, end);
+                MainThreadDispatcher.Instance.Enqueue(() => callback(result));
             });
         }
 
-
-        /// <summary>AStar 알고리즘을 이용, 출발지에서 목적지까지 최단거리를 List<Node> 형태로 반환</summary>
-        private List<Vector2> PathFinding(Vector2 startPos, Vector2 targetPos)
+        /// <summary>위치가 포함된 맵들 중, 중심에 가장 가까운 맵 반환</summary>
+        private MapData FindBestMatchingMap(Vector2 pos)
         {
-            Vector2Int sPos = WorldToNodePos(startPos);
-            Vector2Int tPos = WorldToNodePos(targetPos);
+            MapData bestMap = null;
+            float bestDistance = float.MaxValue;
 
-            for (int i = 0; i < _sizeX; ++i)
+            foreach (var map in _maps.Values)
             {
-                for (int j = 0; j < _sizeY; ++j)
+                Rect rect = new Rect(map.MapBottomLeft, map.MapSize);
+                if (rect.Contains(pos))
                 {
-                    _nodes[i, j].H = 0;
-                    _nodes[i, j].G = int.MaxValue;
-                    _nodes[i, j].ParentNode = null;
+                    Vector2 center = map.MapBottomLeft + new Vector2(map.MapSize.x, map.MapSize.y) * 0.5f;
+                    float dist = Vector2.SqrMagnitude(pos - center); // 거리의 제곱
+                    if (dist < bestDistance)
+                    {
+                        bestDistance = dist;
+                        bestMap = map;
+                    }
                 }
             }
 
-            Node startNode = _nodes[sPos.x, sPos.y];
-            Node targetNode = _nodes[tPos.x, tPos.y];
+            return bestMap;
+        }
 
-            List<Node> openList = new List<Node>() { startNode };
-            List<Node> closedList = new List<Node>();
-            List<Vector2> tmpList = new List<Vector2>();
+        private List<Vector2> PathFinding(MapData map, Vector2 start, Vector2 end)
+        {
+            Vector2Int sPos = map.WorldToNodePos(start);
+            Vector2Int tPos = map.WorldToNodePos(end);
 
-
-            while (0 < openList.Count)
+            foreach (var node in map.Nodes)
             {
-                Node currentNode = openList[0];
-                for (int i = 1, cnt = openList.Count; i < cnt; ++i)
-                {
-                    if (openList[i].F <= currentNode.F && openList[i].H < currentNode.H)
-                        currentNode = openList[i];
-                }
+                node.G = int.MaxValue;
+                node.H = 0;
+                node.ParentNode = null;
+            }
 
-                openList.Remove(currentNode);
-                closedList.Add(currentNode);
+            var startNode = map.Nodes[sPos.x, sPos.y];
+            var targetNode = map.Nodes[tPos.x, tPos.y];
 
-                if (currentNode.X == targetNode.X && currentNode.Y == targetNode.Y)
+            var openList = new List<Node> { startNode };
+            var closedSet = new HashSet<Node>();
+
+            while (openList.Count > 0)
+            {
+                Node current = openList[0];
+                for (int i = 1; i < openList.Count; i++)
+                    if (openList[i].F < current.F || (openList[i].F == current.F && openList[i].H < current.H))
+                        current = openList[i];
+
+                openList.Remove(current);
+                closedSet.Add(current);
+
+                if (current == targetNode)
                 {
+                    var path = new List<Vector2>();
                     Node node = targetNode;
                     while (node != startNode)
                     {
-                        tmpList.Add(node.toWorldPosition());
+                        path.Add(node.toWorldPosition(map.MapBottomLeft));
                         node = node.ParentNode;
                     }
 
-                    tmpList.Add(startNode.toWorldPosition());
-                    tmpList.Reverse();
-                    return tmpList;
+                    path.Add(startNode.toWorldPosition(map.MapBottomLeft));
+                    path.Reverse();
+                    return path;
                 }
-  
 
-                int dirCnt = 4;
-                for (int i = 0; i < dirCnt; ++i)
+                for (int d = 0; d < 4; d++)
                 {
+                    int nx = current.X + _dirX[d];
+                    int ny = current.Y + _dirY[d];
+                    if (nx < 0 || ny < 0 || nx >= map.SizeX || ny >= map.SizeY)
+                        continue;
 
-                    int nextX = currentNode.X + _dirX[i];
-                    int nextY = currentNode.Y + _dirY[i];
+                    Node next = map.Nodes[nx, ny];
+                    if (next.IsWall || !next.IsGround || closedSet.Contains(next))
+                        continue;
 
-                    if (0 <= nextX && nextX < _sizeX && 0 <= nextY && nextY < _sizeY)
+                    int moveCost = current.G + _cost[d];
+                    if (moveCost < next.G || !openList.Contains(next))
                     {
-                        Node nextNode = _nodes[nextX, nextY];
-                        if (nextNode.IsWall || !nextNode.IsGround)
-                            continue;
-
-                        if (closedList.Contains(nextNode))
-                            continue;
-
-                        int moveCost = currentNode.G + _cost[i];
-
-                        if (moveCost < nextNode.G || !openList.Contains(nextNode))
-                        {
-                            nextNode.G = moveCost;
-                            nextNode.H = (Math.Abs(nextNode.X - targetNode.X) + Math.Abs(nextNode.Y - targetNode.Y)) * 10;
-                            nextNode.ParentNode = currentNode;
-
-                            openList.Add(nextNode);
-                        }
+                        next.G = moveCost;
+                        next.H = (Mathf.Abs(nx - tPos.x) + Mathf.Abs(ny - tPos.y)) * 10;
+                        next.ParentNode = current;
+                        if (!openList.Contains(next)) openList.Add(next);
                     }
                 }
             }
@@ -224,72 +176,53 @@ namespace Muks.PathFinding.AStar
             return new List<Vector2>();
         }
 
-        /// <summary> 월드 좌표를 노드 좌표로 변환하는 함수 </summary>
-        private Vector2Int WorldToNodePos(Vector2 pos)
-        {
-            int posX = Mathf.FloorToInt((pos.x - MapBottomLeft.x) / NodeSize);
-            int posY = Mathf.FloorToInt((pos.y - MapBottomLeft.y) / NodeSize);
-
-            posX = Mathf.Clamp(posX, 0, _sizeX - 1);
-            posY = Mathf.Clamp(posY, 0, _sizeY - 1);
-
-            return new Vector2Int(posX, posY);
-        }
-
-
         private void OnDrawGizmos()
         {
             if (!_drawGizmos)
                 return;
 
+            float nodeSize = NodeSize;
 
-            // 전체 맵을 그리는 코드
-            Vector2 mapCenter = new Vector2(MapBottomLeft.x + _mapSize.x * 0.5f, MapBottomLeft.y + _mapSize.y * 0.5f);
-            Vector2 mapSize = new Vector2(_mapSize.x, _mapSize.y);
-            Gizmos.DrawWireCube(mapCenter, mapSize);
-
-            if (NodeSize <= 0)
-                return;
-
-            int sizeX = Mathf.CeilToInt(_mapSize.x / NodeSize);
-            int sizeY = Mathf.CeilToInt(_mapSize.y / NodeSize);
-
-            // 각 노드를 그리는 코드
-            for (int i = 0; i < sizeX; i++)
+            foreach (var info in _mapInfos)
             {
-                float posX = MapBottomLeft.x + (i + 0.5f) * NodeSize;
-                for (int j = 0; j < sizeY; j++)
+                // 맵 외곽 박스 표시
+                Vector2 mapCenter = info.MapBottomLeft + new Vector2(info.MapSize.x, info.MapSize.y) * 0.5f;
+                Gizmos.color = Color.white;
+                Gizmos.DrawWireCube(mapCenter, info.MapSize);
+
+                int sizeX = Mathf.CeilToInt(info.MapSize.x / nodeSize);
+                int sizeY = Mathf.CeilToInt(info.MapSize.y / nodeSize);
+
+                for (int i = 0; i < sizeX; i++)
                 {
-                    float posY = MapBottomLeft.y + (j + 0.5f) * NodeSize;
+                    float posX = info.MapBottomLeft.x + (i + 0.5f) * nodeSize;
 
-                    if (_nodes != null)
+                    for (int j = 0; j < sizeY; j++)
                     {
-                        if (_nodes[i, j].IsWall)
+                        float posY = info.MapBottomLeft.y + (j + 0.5f) * nodeSize;
+                        Vector2 nodePos = new Vector2(posX, posY);
+
+                        Color color = Color.white;
+
+                        // 게임 실행 중이고 노드가 초기화되어 있으면 색상 구분
+                        if (_maps.TryGetValue(info.MapKey, out var map) && map.Nodes != null &&
+                            i < map.SizeX && j < map.SizeY)
                         {
-                            Gizmos.color = Color.red;
-                            Gizmos.DrawCube(new Vector2(posX, posY), Vector2.one * NodeSize);
+                            Node node = map.Nodes[i, j];
+                            if (node != null)
+                            {
+                                color = node.IsWall ? Color.red :
+                                        node.IsGround ? Color.green :
+                                        Color.white;
+                            }
                         }
 
-                        else if (_nodes[i, j].IsGround)
-                        {
-                            Gizmos.color = Color.green;
-                            Gizmos.DrawCube(new Vector2(posX, posY), Vector2.one * NodeSize);
-                        }
-
-                        else
-                        {
-                            Gizmos.color = Color.white;
-                            Gizmos.DrawWireCube(new Vector2(posX, posY), Vector2.one * NodeSize);
-                        }
+                        Gizmos.color = color;
+                        Gizmos.DrawWireCube(nodePos, Vector2.one * nodeSize * 0.95f);
                     }
-                    else
-                    {
-                        Gizmos.color = Color.white;
-                        Gizmos.DrawWireCube(new Vector2(posX, posY), Vector2.one * NodeSize);
-                    }
-
                 }
             }
         }
+
     }
 }

@@ -14,9 +14,6 @@ namespace Muks.PathFinding.AStar
         public bool IsGround;
         public Node ParentNode;
 
-        private float _nodeSize => AStar.Instance.NodeSize;
-        private Vector2 _mapBottomLeft => AStar.Instance.MapBottomLeft;
-
         public Node(bool isWall, bool isGround, int x, int y)
         {
             IsWall = isWall;
@@ -33,12 +30,12 @@ namespace Muks.PathFinding.AStar
         }
 
 
-        /// <summary> 노드 좌표를 월드 좌표로 변환해 반환</summary>
-        public Vector2 toWorldPosition()
+        public Vector2 toWorldPosition(Vector2 mapBottomLeft)
         {
-            float posX = _mapBottomLeft.x + (X + 0.5f) * _nodeSize;
-            float posY = _mapBottomLeft.y + (Y + 0.5f) * _nodeSize;
-            return new Vector2(posX, posY);
+            float nodeSize = AStar.Instance.NodeSize;
+            return new Vector2(mapBottomLeft.x + (X + 0.5f) * nodeSize,
+                               mapBottomLeft.y + (Y + 0.5f) * nodeSize);
         }
+
     }
 }
