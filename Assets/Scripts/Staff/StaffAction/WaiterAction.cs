@@ -122,7 +122,7 @@ public class WaiterAction : IStaffAction
         float speedMul = _waiter.SpeedMul;
         _isNoAction = false;
         _tableManager.OnUseStaff(data);
-        _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall), 0, () =>
+        _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall, _waiter.transform.position), 0, () =>
         {
             _tweenData = Tween.Wait(_duration / speedMul, () =>
             {
@@ -200,7 +200,7 @@ public class WaiterAction : IStaffAction
                     return;
                 }
 
-                _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall), 0, () =>
+                _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall, _waiter.transform.position), 0, () =>
                 {
 
                     _tweenData = Tween.Wait(_duration / speedMul, () =>

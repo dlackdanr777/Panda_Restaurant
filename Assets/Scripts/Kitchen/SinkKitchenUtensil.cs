@@ -40,8 +40,6 @@ public class SinkKitchenUtensil : KitchenUtensil
     }
 
 
-
-
     private void FixedUpdate()
     {
         if (UserInfo.IsTutorialStart)

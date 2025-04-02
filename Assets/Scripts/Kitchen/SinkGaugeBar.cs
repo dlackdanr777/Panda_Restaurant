@@ -22,12 +22,13 @@ public class SinkGaugeBar : MonoBehaviour
     {
         _spriteFillAmount.SetFillAmount(gauge);
         _tmp.SetText(currentBowlCount + "/" + maxBowlCount);
-        SetChangeRenderer(gauge);
+        SetChangeRenderer(currentBowlCount, maxBowlCount);
     }
 
-    private void SetChangeRenderer(float gauge)
+    private void SetChangeRenderer(int currentBowlCount, int maxBowlCount)
     {
-        if (1 <= gauge)
+        bool isFull = maxBowlCount <= currentBowlCount;
+        if (isFull)
         {
             _emptyRenderer.gameObject.SetActive(false);
             _fullRenderer.gameObject.SetActive(true);

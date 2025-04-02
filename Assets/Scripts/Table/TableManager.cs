@@ -479,9 +479,9 @@ public class TableManager : MonoBehaviour
         return _furnitureSystem.GetDropCoinAreaList(floorType);
     }
 
-    public Vector3 GetFoodPos(ERestaurantFloorType floorType, RestaurantType type)
+    public Vector3 GetFoodPos(ERestaurantFloorType floorType, RestaurantType type, Vector3 pos)
     {
-        return _furnitureSystem.GetFoodPos(floorType, type);
+        return _furnitureSystem.GetFoodPos(floorType, type, pos);
     }
 
     public List<TableData> GetTableDataList(ERestaurantFloorType floorType, ETableState state)

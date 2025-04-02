@@ -32,8 +32,8 @@ public class FurnitureGroup : MonoBehaviour
     [SerializeField] private Transform _cleanerWaitTr;
     [SerializeField] private Transform _door1;
     [SerializeField] private Transform _door2;
-    [SerializeField] private Transform _hallFoodPos;
-    [SerializeField] private Transform _kitchenFoodPos;
+    [SerializeField] private Transform[] _hallFoodPos;
+    [SerializeField] private Transform[] _kitchenFoodPos;
 
     private TableManager _tableManager;
     private Dictionary<FurnitureType, List<Furniture>> _furnitureDic = new Dictionary<FurnitureType, List<Furniture>>();
@@ -148,12 +148,32 @@ public class FurnitureGroup : MonoBehaviour
     }
 
 
-    public Vector3 GetFoodPos(RestaurantType type)
+    public Vector3 GetFoodPos(RestaurantType type, Vector3 pos)
     {
         if (type == RestaurantType.Hall)
-            return _hallFoodPos.position;
+        {
+            for(int i = 0, cnt = _hallFoodPos.Length; i < cnt; ++i)
+            {
+                if (1 < Mathf.Abs(_hallFoodPos[i].position.y - pos.y))
+                    continue;
+
+                return _hallFoodPos[i].position;
+            }
+
+            throw new Exception("홀의 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요.");
+        }
         else if(type == RestaurantType.Kitchen)
-            return _kitchenFoodPos.position;
+        {
+            for (int i = 0, cnt = _kitchenFoodPos.Length; i < cnt; ++i)
+            {
+                if (1 < Mathf.Abs(_kitchenFoodPos[i].position.y - pos.y))
+                    continue;
+
+                return _kitchenFoodPos[i].position;
+            }
+
+            throw new Exception("주방 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요.");
+        }
 
         throw new Exception("타입이 이상합니다: " + type);
     }
