@@ -39,4 +39,34 @@ public class KitchenSystem : MonoBehaviour
 
         group.EqueueFood(foodData);
     }
+
+    public List<KitchenBurnerData> GetCookingBurnerDataList(ERestaurantFloorType floorType)
+    {
+        return _kitchenUtensilGroupDic[floorType].GetCookingBurnerDataList();
+    }
+
+    public SinkKitchenUtensil GetSinkKitchenUtensil(ERestaurantFloorType floorType)
+    {
+        return _kitchenUtensilGroupDic[floorType].GetSinkKitchenUtensil();
+    }
+
+    public Vector3 GetStaffPos(ERestaurantFloorType floorType, EquipStaffType type)
+    {
+        return _kitchenUtensilGroupDic[floorType].GetStaffPos(type);
+    }
+
+    public Vector3 GetDoorPos(Vector3 pos)
+    {
+        foreach (KitchenUtensilGroup group in _kitchenUtensilGroupDic.Values)
+        {
+            Vector3 doorPos = group.GetDoorPos(pos);
+            if (doorPos == Vector3.zero)
+                continue;
+
+            return doorPos;
+        }
+
+        DebugLog.LogError("해당 위치값에 맞는 문 위치값이 없습니다: " + pos);
+        return Vector3.zero;
+    }
 }

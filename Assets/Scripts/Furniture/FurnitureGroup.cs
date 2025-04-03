@@ -68,7 +68,7 @@ public class FurnitureGroup : MonoBehaviour
                 return _guardTr.position;
         }
 
-        Debug.LogError("직원 종류 값이 잘못 입력되었습니다.");
+        Debug.LogError("직원 종류 값이 잘못 입력되었습니다:" + type);
         return new Vector2(0, 0);
     }
 

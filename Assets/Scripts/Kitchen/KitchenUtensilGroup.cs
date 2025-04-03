@@ -19,12 +19,66 @@ public class KitchenUtensilGroup: MonoBehaviour
     [SerializeField] private UIBurnerTimer _burnerTimerPrefab;
     [SerializeField] private Transform[] _burnerTimerTrs;
 
+    [Space]
+    [Header("Transforms")]
+    [SerializeField] private Transform _defaultChef1Pos;
+    [SerializeField] private Transform _defaultChef2Pos;
+    [SerializeField] private Transform _door1;
+    [SerializeField] private Transform _door2;
+
 
     private UIBurnerTimer[] _burnerTimers;
     private KitchenBurnerData[] _burnerDatas;
     private Dictionary<KitchenUtensilType, List<KitchenUtensil>> _kitchenUtensilDic = new Dictionary<KitchenUtensilType, List<KitchenUtensil>>();
     private Queue<CookingData> _cookingQueue = new Queue<CookingData>();
+    private SinkKitchenUtensil _sinkKitchenUtensil;
 
+    public List<KitchenBurnerData> GetCookingBurnerDataList()
+    {
+        List<KitchenBurnerData> dataList = new List<KitchenBurnerData>();
+        for(int i = 0, cnt = _burnerDatas.Length; i < cnt; ++i)
+        {
+            if (!_burnerDatas[i].IsUsable || _burnerDatas[i].CookingData.IsDefault() || _burnerDatas[i].IsStaffUsable)
+                continue;
+
+            dataList.Add(_burnerDatas[i]);
+        }
+
+        return dataList;
+    }
+
+    public SinkKitchenUtensil GetSinkKitchenUtensil()
+    {
+        return _sinkKitchenUtensil;
+    }
+
+
+
+    public Vector2 GetStaffPos(EquipStaffType type)
+    {
+        switch (type)
+        {
+            case EquipStaffType.Chef1:
+                return _defaultChef1Pos.position;
+            case EquipStaffType.Chef2:
+                return _defaultChef2Pos.position;
+        }
+
+        Debug.LogError("직원 종류 값이 잘못 입력되었습니다:" + type);
+        return new Vector2(0, 0);
+    }
+
+    public Vector3 GetDoorPos(Vector3 pos)
+    {
+        if (Mathf.Abs(_door1.position.y - pos.y) < 2)
+            return _door1.position;
+
+        else if (Mathf.Abs(_door2.position.y - pos.y) < 2)
+            return _door2.position;
+
+        DebugLog.LogError("위치 값이 이상합니다. door1: " + _door1.position + " door2: " + _door2.position + " tablePos: " + pos);
+        return Vector3.zero;
+    }
 
     public void Init()
     {   
@@ -33,6 +87,7 @@ public class KitchenUtensilGroup: MonoBehaviour
         for (int i = 0, cnt = (int)KitchenUtensilType.Burner5 + 1; i < cnt; ++i)
         {
             _burnerDatas[i] = new KitchenBurnerData();
+            _burnerDatas[i].SetKitchenUtensil(_kitchenUtensils[i]);
             _burnerTimers[i] = Instantiate(_burnerTimerPrefab, _burnerTimerParent);
             _burnerTimers[i].Init();
             _burnerTimers[i].SetWorldTransform(_burnerTimerTrs[i]);
@@ -52,6 +107,7 @@ public class KitchenUtensilGroup: MonoBehaviour
             _kitchenUtensilDic[_kitchenUtensils[i].Type].Add(_kitchenUtensils[i]);
         }
         _burnerDatas[0].IsUsable = true;
+        _sinkKitchenUtensil = (SinkKitchenUtensil)_kitchenUtensilDic[KitchenUtensilType.Sink][0];
         UpdateKitchen();
         UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEvent;
     }

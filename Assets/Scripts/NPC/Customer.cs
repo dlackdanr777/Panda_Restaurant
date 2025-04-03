@@ -98,8 +98,8 @@ public class Customer : MonoBehaviour
 
         _moveCompleted = onCompleted;
 
-        Vector3 customerDoorPos = _tableManager.GetDoorPos(transform.position);
-        Vector3 targetDoorPos = _tableManager.GetDoorPos(targetPos);
+        Vector3 customerDoorPos = _tableManager.GetDoorPos(RestaurantType.Hall, transform.position);
+        Vector3 targetDoorPos = _tableManager.GetDoorPos(RestaurantType.Hall, targetPos);
         _targetPos = targetPos;
         _moveEndDir = moveEndDir;
 
@@ -157,7 +157,7 @@ public class Customer : MonoBehaviour
 
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
-            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(_tableManager.GetDoorPos(_targetPos), _targetPos, TargetMove)));
+            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(_tableManager.GetDoorPos(RestaurantType.Hall, _targetPos), _targetPos, TargetMove)));
         }
         ));
     }
@@ -199,7 +199,7 @@ public class Customer : MonoBehaviour
     private IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
         yield return YieldCache.WaitForSeconds(0.6f);
-        _spriteRenderer.TweenAlpha(0, 0.4f, Ease.Constant).OnComplete(() => _moveObj.transform.position = _tableManager.GetDoorPos(_targetPos));
+        _spriteRenderer.TweenAlpha(0, 0.4f, Ease.Constant).OnComplete(() => _moveObj.transform.position = _tableManager.GetDoorPos(RestaurantType.Hall, _targetPos));
         //SetSpriteDir(-1);
         yield return YieldCache.WaitForSeconds(1f);
         _spriteRenderer.TweenAlpha(1, 0.4f, Ease.Constant);

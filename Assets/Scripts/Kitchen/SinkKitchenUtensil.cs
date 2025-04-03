@@ -9,8 +9,13 @@ public class SinkKitchenUtensil : KitchenUtensil
     [SerializeField] private AudioSource _washingSound;
 
     private bool _isStaffWashing;
+    public bool IsStaffWashing => _isStaffWashing;
     private bool _isTouchWashing;
     private float _washGauge;
+
+    public Staff UseStaff => _useStaff;
+    public void SetUseStaff(Staff staff) => _useStaff = staff;
+    private Staff _useStaff;
 
     public override void Init(ERestaurantFloorType floor)
     {

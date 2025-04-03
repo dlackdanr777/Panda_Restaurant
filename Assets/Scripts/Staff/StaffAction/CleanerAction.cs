@@ -106,7 +106,7 @@ public class CleanerAction : IStaffAction
 
             // 4. 문 위치와의 거리 기준으로 선택
             selectedType = yMinCandidates
-                .OrderBy(c => Vector3.Distance(_tableManager.GetDoorPos(c.transform.position), c.transform.position))
+                .OrderBy(c => Vector3.Distance(_tableManager.GetDoorPos(RestaurantType.Hall, c.transform.position), c.transform.position))
                 .First().type;
         }
 

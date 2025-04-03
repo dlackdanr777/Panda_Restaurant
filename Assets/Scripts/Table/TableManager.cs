@@ -35,9 +35,13 @@ public class TableManager : MonoBehaviour
     private int _totalGarbageCount => ObjectPoolManager.Instance.GetEnabledGarbageCount();
 
 
-    public Vector3 GetDoorPos(Vector3 pos)
+    public Vector3 GetDoorPos(RestaurantType type, Vector3 pos)
     {
-        return _furnitureSystem.GetDoorPos(pos);
+        if (type == RestaurantType.Kitchen)
+            return _kitchenSystem.GetDoorPos(pos);
+
+        else
+            return _furnitureSystem.GetDoorPos(pos);
     }
 
 
@@ -448,10 +452,17 @@ public class TableManager : MonoBehaviour
     }
 
 
-    /// <summary> 직원 위치를 반환하는 함수(경호원, 청소부, 매니저, 셰프만 가능)</summary>
+    /// <summary> 직원 위치를 반환하는 함수</summary>
     public Vector2 GetStaffPos(ERestaurantFloorType floorType, EquipStaffType type)
     {
-        return _furnitureSystem.GetStaffPos(floorType, type);
+        if (type == EquipStaffType.Chef1 || type == EquipStaffType.Chef2)
+        {
+            return _kitchenSystem.GetStaffPos(floorType, type);
+        }
+        else
+        {
+            return _furnitureSystem.GetStaffPos(floorType, type);
+        }
     }
 
     public TableData GetTableType(ERestaurantFloorType floorType, ETableState state)
@@ -525,7 +536,7 @@ public class TableManager : MonoBehaviour
 
     public DropGarbageArea GetMinDistanceGarbageArea(ERestaurantFloorType floorType, Vector3 startPos)
     {
-        Vector3 targetDoorPos = GetDoorPos(startPos);
+        Vector3 targetDoorPos = GetDoorPos(RestaurantType.Hall, startPos);
         DropGarbageArea minEqualArea = null;
         DropGarbageArea minNotEqualArea = null;
 
@@ -537,7 +548,7 @@ public class TableManager : MonoBehaviour
             if (area.Count <= 0)
                 continue;
 
-            Vector3 doorPos = GetDoorPos(area.transform.position);
+            Vector3 doorPos = GetDoorPos(RestaurantType.Hall, area.transform.position);
             float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
             float startDistance = Vector2.Distance(area.transform.position, startPos);
 
@@ -565,7 +576,7 @@ public class TableManager : MonoBehaviour
 
     public DropCoinArea GetMinDistanceCoinArea(ERestaurantFloorType floorType, Vector3 startPos)
     {
-        Vector3 targetDoorPos = GetDoorPos(startPos);
+        Vector3 targetDoorPos = GetDoorPos(RestaurantType.Hall, startPos);
         DropCoinArea minEqualArea = null;
         DropCoinArea minNotEqualArea = null;
 
@@ -577,7 +588,7 @@ public class TableManager : MonoBehaviour
             if (area.Count <= 0)
                 continue;
 
-            Vector3 doorPos = GetDoorPos(area.transform.position);
+            Vector3 doorPos = GetDoorPos(RestaurantType.Hall, area.transform.position);
             float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
             float startDistance = Vector2.Distance(area.transform.position, startPos);
 
@@ -606,7 +617,7 @@ public class TableManager : MonoBehaviour
 
     public TableData GetMinDistanceTable(ERestaurantFloorType floorType, Vector3 startPos, List<TableData> tableDataList)
     {
-        Vector3 targetDoorPos = GetDoorPos(startPos);
+        Vector3 targetDoorPos = GetDoorPos(RestaurantType.Hall, startPos);
         TableData minEqualTable = null;
         TableData minNotEqualTable = null;
 
@@ -615,7 +626,7 @@ public class TableManager : MonoBehaviour
 
         foreach (var table in tableDataList)
         {
-            Vector3 doorPos = GetDoorPos(table.transform.position);
+            Vector3 doorPos = GetDoorPos(RestaurantType.Hall, table.transform.position);
             float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
             float startDistance = Vector2.Distance(table.transform.position, startPos);
 
@@ -639,6 +650,44 @@ public class TableManager : MonoBehaviour
         }
 
         return minEqualTable ?? minNotEqualTable;
+    }
+
+
+    public KitchenBurnerData GetMinDistanceBurner(ERestaurantFloorType floorType, Vector3 startPos, List<KitchenBurnerData> dataList)
+    {
+        Vector3 targetDoorPos = GetDoorPos(RestaurantType.Kitchen, startPos);
+        KitchenBurnerData minEqualData = null;
+        KitchenBurnerData minNotEqualData = null;
+
+        float minEqualDist = float.MaxValue;
+        float minNotEqualDist = float.MaxValue;
+
+        foreach (var data in dataList)
+        {
+            Vector3 doorPos = GetDoorPos(RestaurantType.Kitchen, data.KitchenUtensil.transform.position);
+            float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
+            float startDistance = Vector2.Distance(data.KitchenUtensil.transform.position, startPos);
+
+            if (doorDistance <= 1f)
+            {
+                if (startDistance < minEqualDist)
+                {
+                    minEqualDist = startDistance;
+                    minEqualData = data;
+                }
+            }
+            else
+            {
+                float tableDoorDistance = Vector3.Distance(data.KitchenUtensil.transform.position, doorPos);
+                if (tableDoorDistance < minNotEqualDist)
+                {
+                    minNotEqualDist = tableDoorDistance;
+                    minNotEqualData = data;
+                }
+            }
+        }
+
+        return minEqualData ?? minNotEqualData;
     }
 
 

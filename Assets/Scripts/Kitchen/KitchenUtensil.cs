@@ -1,3 +1,4 @@
+using Muks.PathFinding.AStar;
 using UnityEngine;
 
 public class KitchenUtensil : MonoBehaviour
@@ -73,7 +74,7 @@ public class KitchenUtensil : MonoBehaviour
         float heightAdjustment = (_spriteRenderer.sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;
         if (_batchType == KitchenUtensilBatchType.Lower)
         {
-            _spriteRenderer.transform.localPosition = new Vector3(0, heightAdjustment, 0);
+            _spriteRenderer.transform.localPosition = new Vector3(0, heightAdjustment - AStar.Instance.NodeSize  * 0.5f, 0);
         }
         else if (_batchType == KitchenUtensilBatchType.Upper)
         {

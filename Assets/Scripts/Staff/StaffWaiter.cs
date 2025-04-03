@@ -102,7 +102,7 @@ public class StaffWaiter : Staff
             _bowlAnimator.enabled = false;
             _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() =>
             {
-                AStar.Instance.RequestPath(_tableManager.GetDoorPos(_targetPos), _targetPos, TargetMove);
+                AStar.Instance.RequestPath(_tableManager.GetDoorPos(RestaurantType.Hall, _targetPos), _targetPos, TargetMove);
                 _bowlAnimator.enabled = true;
             }));
         }

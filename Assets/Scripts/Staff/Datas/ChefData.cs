@@ -20,7 +20,7 @@ public class ChefData : StaffData
 
     public override IStaffAction GetStaffAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        return new ChefAction(kitchenSystem);
+        return new ChefAction(staff, tableManager, kitchenSystem);
     }
 
     public override bool UpgradeEnable(int level)
@@ -31,6 +31,9 @@ public class ChefData : StaffData
     public override void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         staff.SetAlpha(1);
+        staff.SetSpriteDir(-1);
+        EquipStaffType type = UserInfo.GetEquipStaffType(UserInfo.CurrentStage, staff.StaffData);
+        staff.transform.position = tableManager.GetStaffPos(staff.EquipFloorType, type);
     }
 
     public override void RemoveSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)

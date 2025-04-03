@@ -290,13 +290,13 @@ public class GatecrasherCustomer : Customer
 
     public DropCoinArea GetMinDistanceCoinArea(List<DropCoinArea> dropCoinAreaList, Vector3 startPos)
     {
-        Vector3 targetDoorPos = _tableManager.GetDoorPos(startPos);
+        Vector3 targetDoorPos = _tableManager.GetDoorPos(RestaurantType.Hall, startPos);
         List<DropCoinArea> equalFloorArea = new List<DropCoinArea>();
         List<DropCoinArea> notEqualFloorArea = new List<DropCoinArea>();
 
         for (int i = 0, cnt = dropCoinAreaList.Count; i < cnt; i++)
         {
-            Vector3 coinDoorPos = _tableManager.GetDoorPos(dropCoinAreaList[i].transform.position);
+            Vector3 coinDoorPos = _tableManager.GetDoorPos(RestaurantType.Hall, dropCoinAreaList[i].transform.position);
             if (dropCoinAreaList[i].Count <= 0)
                 continue;
 
@@ -334,7 +334,7 @@ public class GatecrasherCustomer : Customer
 
             for (int i = 0, cnt = notEqualFloorArea.Count; i < cnt; i++)
             {
-                Vector3 coinDoorPos = _tableManager.GetDoorPos(notEqualFloorArea[i].transform.position);
+                Vector3 coinDoorPos = _tableManager.GetDoorPos(RestaurantType.Hall, notEqualFloorArea[i].transform.position);
 
                 if (Vector2.Distance(notEqualFloorArea[i].transform.position, coinDoorPos) < minDis)
                 {
