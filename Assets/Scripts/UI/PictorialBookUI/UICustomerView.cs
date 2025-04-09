@@ -12,6 +12,7 @@ public class UICustomerView : MonoBehaviour
     [SerializeField] private UIImageAndText _gatecrasherFrameImage;
     [SerializeField] private Image _normalFrameImage;
     [SerializeField] private Image _npcImage;
+    [SerializeField] private UITextAndText _visitCountGroup;
     [SerializeField] private TextMeshProUGUI _npcNameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private UIImageAndText _orderFoodTitle;
@@ -22,11 +23,10 @@ public class UICustomerView : MonoBehaviour
     [Space]
     [Header("OrderFood Slot Options")]
     [SerializeField] private RectTransform _orderFoodParent;
-    [SerializeField] private UIImageSlot _orderFoodSlotPrefab;
-    [SerializeField] private int _orderFoodSlotCount;
+    [SerializeField] private UIOrderFoodSlot _orderFoodSlotPrefab;
 
     private CustomerData _data;
-    private List<UIImageSlot> _orderFoodSlotList = new List<UIImageSlot>();
+    private List<UIOrderFoodSlot> _orderFoodSlotList = new List<UIOrderFoodSlot>();
 
     private Vector2 _originalSize;
     private Vector3 _originalPosition;
@@ -38,9 +38,9 @@ public class UICustomerView : MonoBehaviour
 
         _blackImage.Init();
         _blackImage.gameObject.SetActive(false);
-        for (int i = 0; i < _orderFoodSlotCount; ++i)
+        for (int i = 0; i < 6; ++i)
         {
-            UIImageSlot slot = Instantiate(_orderFoodSlotPrefab, _orderFoodParent);
+            UIOrderFoodSlot slot = Instantiate(_orderFoodSlotPrefab, _orderFoodParent);
             slot.gameObject.SetActive(false);
             _orderFoodSlotList.Add(slot);
         }
@@ -60,6 +60,7 @@ public class UICustomerView : MonoBehaviour
             _npcImage.gameObject.SetActive(false);
             _orderFoodTitle.gameObject.SetActive(true);
             _effectTitle.gameObject.SetActive(false);
+            _visitCountGroup.gameObject.SetActive(false);
             _normalFrameImage.gameObject.SetActive(true);
             _npcNameText.text = string.Empty;
             _descriptionText.text = string.Empty;
@@ -108,6 +109,7 @@ public class UICustomerView : MonoBehaviour
 
         if (!UserInfo.GetCustomerEnableState(data))
         {
+            _visitCountGroup.gameObject.SetActive(false);
             _blackImage.gameObject.SetActive(true);
             _blackImage.SetData(data);
             HideOrderFoodSlots();
@@ -124,7 +126,9 @@ public class UICustomerView : MonoBehaviour
         }
         else
         {
-            SetOrderFoodSlot(data);
+            _visitCountGroup.gameObject.SetActive(true);
+            _visitCountGroup.SetText1(UserInfo.GetVisitedCustomerCount(data).ToString());
+            SetOrderFood(data);
             _npcNameText.text = data.Name;
             _descriptionText.text = data.Description;
 
@@ -186,33 +190,50 @@ public class UICustomerView : MonoBehaviour
         }
     }
 
-    private void SetOrderFoodSlot(CustomerData data)
+
+    private void SetOrderFood(CustomerData data)
     {
         HideOrderFoodSlots();
         if (data is SpecialCustomerData || data is GatecrasherCustomerData)
             return;
 
-        List<string> orderFoodList = new List<string>();
-        orderFoodList.Add(data.RequiredDish);
-        orderFoodList.AddRange(data.OrderFoods);
+        int visitCount = UserInfo.GetVisitedCustomerCount(data);
 
-        FoodData foodData;
-        int slotIndex = 0;
-        for (int i = 0, cnt = orderFoodList.Count; i < cnt; ++i)
+        SetOrderFoodSlot(0, data.RequiredDish, true, string.Empty);
+        SetOrderFoodSlot(1, data.VisitCount100Food, 100 <= visitCount, "방문 " + Utility.SetStringColor(100.ToString(), ColorType.Negative) + "회");
+        SetOrderFoodSlot(2, data.VisitCount200Food, 200 <= visitCount, "방문 " + Utility.SetStringColor(200.ToString(), ColorType.Negative) + "회");
+        SetOrderFoodSlot(3, data.VisitCount300Food, 300 <= visitCount, "방문 " + Utility.SetStringColor(300.ToString(), ColorType.Negative) + "회");
+        SetOrderFoodSlot(4, data.VisitCount400Food, 400 <= visitCount, "방문 " + Utility.SetStringColor(400.ToString(), ColorType.Negative) + "회");
+        SetOrderFoodSlot(5, data.VisitCount500Food, 500 <= visitCount, "방문 " + Utility.SetStringColor(500.ToString(), ColorType.Negative) + "회");
+    }
+
+
+    private void SetOrderFoodSlot(int index, string foodId, bool isUnlock, string lockText)
+    {
+        if (index < 0 || index >= _orderFoodSlotList.Count)
+            return;
+
+        if(string.IsNullOrWhiteSpace(foodId))
         {
-            if (string.IsNullOrWhiteSpace(orderFoodList[i]))
-                continue;
+            DebugLog.LogError("해당 음식의 id값이 없습니다: " + foodId);
+            _orderFoodSlotList[index].gameObject.SetActive(false);
+            return;
+        }
 
-            foodData = FoodDataManager.Instance.GetFoodData(orderFoodList[i]);
-            if (foodData == null)
-                continue;
+        FoodData foodData = FoodDataManager.Instance.GetFoodData(foodId);
+        _orderFoodSlotList[index].gameObject.SetActive(true);
+        _orderFoodSlotList[index].SetSprite(foodData.Sprite);
+        _orderFoodSlotList[index].SetMaterial(UserInfo.IsGiveRecipe(foodData) ? null : _grayMat);
+        _orderFoodSlotList[index].SetColor(UserInfo.IsGiveRecipe(foodData) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive));
 
-            _orderFoodSlotList[slotIndex].gameObject.SetActive(true);
-            _orderFoodSlotList[slotIndex].SetSprite(foodData.Sprite);
-            _orderFoodSlotList[slotIndex].SetMaterial(UserInfo.IsGiveRecipe(foodData) ? null : _grayMat);
-            _orderFoodSlotList[slotIndex].SetColor(UserInfo.IsGiveRecipe(foodData) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive));
-
-            slotIndex++;
+        if(isUnlock)
+        {
+             _orderFoodSlotList[index].DisableLockGroup();
+            
+        }
+        else
+        {
+            _orderFoodSlotList[index].EnableLockGroup(lockText);
         }
     }
 }

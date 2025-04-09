@@ -154,8 +154,7 @@ public static class UserInfo
     private static HashSet<string> _doneDailyChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearDailyChallengeSet = new HashSet<string>();
 
-    private static HashSet<string> _enabledCustomerSet = new HashSet<string>();
-    private static HashSet<string> _visitedCustomerSet = new HashSet<string>();
+    private static Dictionary<string, SaveCustomerData> _enabledCustomerDic = new Dictionary<string, SaveCustomerData>();
 
     private static HashSet<string> _notificationMessageSet = new HashSet<string>(); //알림이 필요한 Id값을 모아두는 해쉬셋
 
@@ -340,6 +339,9 @@ public static class UserInfo
         }
         param.Add("GiveGachaItemLevelList", giveGachaItemLevelList);
 
+        List<SaveCustomerData> _saveCustomerDataList = _enabledCustomerDic.Values.ToList();
+        param.Add("EnabledCustomerDataList", _saveCustomerDataList);
+
         param.Add("DoneMainChallengeList", _doneMainChallengeSet.ToList());
         param.Add("ClearMainChallengeList", _clearMainChallengeSet.ToList());
         param.Add("DoneAllTimeChallengeList", _doneAllTimeChallengeSet.ToList());
@@ -347,9 +349,6 @@ public static class UserInfo
         param.Add("DoneDailyChallengeList", _doneDailyChallengeSet.ToList());
         param.Add("ClearDailyChallengeList", _clearDailyChallengeSet.ToList());
         param.Add("NotificationMessageList", _notificationMessageSet.ToList());
-
-        param.Add("EnabledCustomerList", _enabledCustomerSet.ToList());
-        param.Add("VisitedCustomerList", _visitedCustomerSet.ToList());
 
         return param;
     }
@@ -488,8 +487,7 @@ public static class UserInfo
         _doneDailyChallengeSet = loadData.DoneDailyChallengeSet;
         _clearDailyChallengeSet = loadData.ClearDailyChallengeSet;
 
-        _enabledCustomerSet = loadData.EnabledCustomerSet;
-        _visitedCustomerSet = loadData.VisitedCustomerSet;
+        _enabledCustomerDic = loadData.EnabledCustomerDataDic;
 
         _notificationMessageSet = loadData.NotificationMessageSet;
 
@@ -1697,17 +1695,17 @@ public static class UserInfo
 
     public static void CustomerEnabled(CustomerData data)
     {
-        if (_enabledCustomerSet.Contains(data.Id))
+        if (_enabledCustomerDic.ContainsKey(data.Id))
             return;
 
-        _enabledCustomerSet.Add(data.Id);
+        _enabledCustomerDic.Add(data.Id, new SaveCustomerData(data.Id, 0));
         OnEnabledCustomerHandler?.Invoke();
     }
 
 
     public static bool GetCustomerEnableState(CustomerData data)
     {
-        return _enabledCustomerSet.Contains(data.Id);
+        return _enabledCustomerDic.ContainsKey(data.Id);
     }
 
     public static bool GetCustomerEnableState(string id)
@@ -1725,17 +1723,38 @@ public static class UserInfo
 
     public static void CustomerVisits(CustomerData customer)
     {
-        if (_visitedCustomerSet.Contains(customer.Id))
+        if (!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData data))
             return;
 
-        _visitedCustomerSet.Add(customer.Id);
+        _enabledCustomerDic[customer.Id].AddVisitCount();
         OnVisitedCustomerHandler?.Invoke();
     }
 
-
-    public static int GetVisitedCustomerCount()
+    public static int GetVisitedCustomerCount(string id)
     {
-        return _visitedCustomerSet.Count;
+        if (_enabledCustomerDic.TryGetValue(id, out SaveCustomerData data))
+            return data.VisitCount;
+
+        DebugLog.LogError("해당 Id값에 일치하는 손님 정보가 없습니다: " + id);
+        return 0;
+    }
+
+    public static int GetVisitedCustomerCount(CustomerData customer)
+    {
+        return GetVisitedCustomerCount(customer.Id);
+    }
+
+
+    public static int GetVisitedCustomerTypeCount()
+    {
+        int visitCount = 0;
+        foreach(var customer in _enabledCustomerDic.Values)
+        {
+            if(0 < customer.VisitCount)
+                visitCount++;
+        }
+
+        return visitCount;
     }
 
     public static CustomerVisitState GetCustomerVisitState(CustomerData data)

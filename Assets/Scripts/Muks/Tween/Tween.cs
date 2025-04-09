@@ -11,10 +11,10 @@ namespace Muks.Tween
 
         private static GameObject _waitQueueParent;
 
-        /// <summary> Tween Sequence ±â´ÉÀ» »ç¿ëÇÏ±â À§ÇØ Sequence Class¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö </summary>
+        /// <summary> Tween Sequence ìƒì„±ì„ ìœ„í•œ Sequence Classë¥¼ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜ </summary>
         public static Sequence Sequence()
-        {
-            //Å¬·¡½º¸¦ »ı¼ºÇÏ°í UpdateList¿¡ ¿Ã¸°´Ù.
+        {        
+            //í´ë˜ìŠ¤ë¥¼ ìƒì„±í•˜ê³  UpdateListì— ì¶”ê°€í•¨.
             Sequence sequence = new Sequence();
             _sequenceUpdateList.Add(sequence);
 
@@ -35,8 +35,6 @@ namespace Muks.Tween
             {
                 tween = _tweenWaitQueue.Dequeue();
             }
-
-            //tween.Clear();
 
             tween.enabled = true;
             tween.AddDataSequence(new TweenDataSequence(null, duration, Ease.Constant, null));

@@ -7,6 +7,7 @@ public class SinkKitchenUtensil : KitchenUtensil
     [SerializeField] private SinkGaugeBar _sinkGaugeBar;
     [SerializeField] private SpriteTouchEvent _touchEvent;
     [SerializeField] private AudioSource _washingSound;
+    [SerializeField] private GameObject _washingEffect;
 
     private bool _isStaffWashing;
     public bool IsStaffWashing => _isStaffWashing;
@@ -20,11 +21,12 @@ public class SinkKitchenUtensil : KitchenUtensil
     public override void Init(ERestaurantFloorType floor)
     {
         base.Init(floor);
+        _isStaffWashing = false;
         _isTouchWashing = false;
         _washGauge = 0;
         _sinkGaugeBar.Init();
         _washingSound.Stop();
-
+        _washingEffect.SetActive(false);
         _touchEvent.AddDownEvent(TouchDownEvent);
         _touchEvent.AddUpEvent(TouchUpEvent);
         UpdateSink();
@@ -51,18 +53,36 @@ public class SinkKitchenUtensil : KitchenUtensil
         {
             _isTouchWashing = false;
             _isStaffWashing = false;
+            _washingEffect.gameObject.SetActive(false);
+            _washingSound.Stop();
         }
 
         if (UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _floorType) <= 0)
         {
             _washGauge = 0;
+
+            if (_washingEffect.activeSelf)
+            {
+                _washingEffect.SetActive(false);
+                _washingSound.Stop();
+            }
             return;
         }
 
         if (!_isTouchWashing && !_isStaffWashing)
+        {
+            _washingEffect.SetActive(false);
+            _washingSound.Stop();
             return;
+        }
 
-        if(1 <= _washGauge)
+        if (!_washingEffect.activeSelf)
+        {
+            _washingEffect.SetActive(true);
+            _washingSound.Play();
+        }
+
+        if (1 <= _washGauge)
         {
             UserInfo.SubSinkBowlCount(UserInfo.CurrentStage, _floorType);
             _washGauge = 0;
@@ -74,6 +94,8 @@ public class SinkKitchenUtensil : KitchenUtensil
 
     public void StartStaffAction()
     {
+        _washingEffect.SetActive(true);
+        _washingSound.Play();
         _isStaffWashing = true;
     }
 

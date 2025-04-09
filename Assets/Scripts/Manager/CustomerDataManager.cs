@@ -97,6 +97,12 @@ public class CustomerDataManager : MonoBehaviour
     }
 
 
+    public bool CheckCustomerTendency(CustomerTendencyType type)
+    {
+        return true;
+    }
+
+
     private static void CheckEnableCustomer()
     {
         for (int i = 0, cnt = _customerDataList.Count; i < cnt; ++i)

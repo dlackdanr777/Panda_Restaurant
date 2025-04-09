@@ -19,13 +19,15 @@ MonoBehaviour:
     \uC5B4\uB9B0 \uC5EC\uC6B0\uB4E4\uC744 \uAC00\uB974\uCE58\uACE0 \uC788\uB2E4."
   _moveSpeed: 6
   _scale: 1
-  _maxDiscomfortIndex: 10
-  _waitingTime: 35
-  _orderWaitTime: 25
-  _foodWaitTime: 25
   _minScore: 0
   _requiredDish: FOOD14
   _requiredItem: GOTCHA97
-  _orderFoods:
-  - FOOD15
+  _visitCount100Food: FOOD17
+  _visitCount200Food: FOOD21
+  _visitCount300Food: FOOD25
+  _visitCount400Food: FOOD29
+  _visitCount500Food: FOOD33
+  _tendencyType: 2
+  _orderFoodTime: 20
+  _wiatTime: 20
   _skill: {fileID: 0}

@@ -18,6 +18,10 @@ public class KitchenBurnerData
     public bool IsStaffUsable => _staffUsable;
     public bool SetStaffUsable(bool value) => _staffUsable = value;
 
+    private Staff _useStaff;
+    public Staff UseStaff => _useStaff;
+    public void SetUseStaff(Staff value) => _useStaff = value;
+
 }
 
 

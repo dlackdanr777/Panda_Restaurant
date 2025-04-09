@@ -189,14 +189,14 @@ public class NormalCustomer : Customer
 
         foreach (Vector2 vec in nodeList)
         {
-            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f) // 제곱 거리 비교
+            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f)
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
                 SetSpriteDir(dir.x);
-                float step = Time.deltaTime * _moveSpeed * GameManager.Instance.AddCustomerSpeedMul * 0.7f; // 프레임 독립적 이동 속도
+                float step = Time.deltaTime * _moveSpeed * GameManager.Instance.AddCustomerSpeedMul * 0.7f;
                 _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
                 ChangeState(CustomerState.Run);
-                yield return null; // 프레임마다 실행
+                yield return null;
             }
         }
 

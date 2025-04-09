@@ -1,7 +1,6 @@
 using Muks.Tween;
 using System;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 
 public class ChefAction : IStaffAction
@@ -107,7 +106,6 @@ public class ChefAction : IStaffAction
             {
                 int bowlCount = UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, staff.EquipFloorType);
                 List<KitchenBurnerData> burnerDataList = _kitchenSystem.GetCookingBurnerDataList(staff.EquipFloorType);
-                DebugLog.Log("±×¸© °¹¼ö: " + bowlCount + ", ¿ä¸®Áß °¹¼ö: " + burnerDataList.Count);
                 return (0 < burnerDataList.Count) || (bowlCount <= 0);
             });
 
@@ -136,7 +134,7 @@ public class ChefAction : IStaffAction
             return;
 
         _isNoAction = true;
-        if (Vector2.Distance(staff.transform.position, _defaultPos) > 0.1f)
+        if (Vector2.Distance(staff.transform.position, _defaultPos) > 0.05f)
             staff.Move(_defaultPos, 1);
     }
 
@@ -161,12 +159,23 @@ public class ChefAction : IStaffAction
 
         float speedMul = _staff.SpeedMul;
         _isNoAction = false;
+
+        if (data.CookingData.IsDefault() || data.UseStaff != null)
+        {
+            _staff.SetStaffState(EStaffState.None);
+            _isUsed = false;
+            _notEqulsFloor = false;
+            _time = 0;
+            return;
+        }
+
         data.SetStaffUsable(true);
+        data.SetUseStaff(_staff);
         _staff.Move(data.KitchenUtensil.transform.position, 0, () =>
         {
             _tweenData = Tween.Wait(_duration / speedMul, () =>
             {
-                if (data.CookingData.IsDefault())
+                if (data.CookingData.IsDefault() || (data.UseStaff != null && data.UseStaff != _staff))
                 {
                     _staff.SetStaffState(EStaffState.None);
                     _isUsed = false;
@@ -212,6 +221,7 @@ public class ChefAction : IStaffAction
     {
         if (_sink.UseStaff == null || _sink.UseStaff != _staff || UserInfo.IsTutorialStart || stopResult())
         {
+            _isNoAction = false;
             ResetStaffState(_staff);
             return;
         }
@@ -227,16 +237,56 @@ public class ChefAction : IStaffAction
 
     private void UpdateBurnerAction(KitchenBurnerData data)
     {
-        DebugLog.Log("ÁøÇàÁß");
-        if (UserInfo.IsTutorialStart || data.CookingData.IsDefault())
+        if (data.UseStaff == null)
         {
             ResetStaffState(_staff);
-            data.SetAddCookSpeedMul(0);
             return;
         }
 
+        if (data.UseStaff != null && data.UseStaff != _staff)
+        {
+            ResetStaffState(_staff);
+            return;
+        }
+
+        if (UserInfo.IsTutorialStart)
+        {
+            ResetStaffState(_staff);
+            if(data.UseStaff != null && data.UseStaff == _staff)
+            {
+                data.SetStaffUsable(false);
+                data.SetUseStaff(null);
+                data.SetAddCookSpeedMul(0);
+            }
+            return;
+        }
+
+        if (data.CookingData.IsDefault())
+        {
+            ResetStaffState(_staff);
+            if (data.UseStaff != null && data.UseStaff == _staff)
+            {
+                data.SetStaffUsable(false);
+                data.SetUseStaff(null);
+                data.SetAddCookSpeedMul(0);
+            }
+
+            return;
+        }
+
+        if(!_sink.IsStaffWashing && !UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _staff.EquipFloorType) && _sink.UseStaff == null)
+        {
+            ResetStaffState(_staff);
+            if (data.UseStaff != null && data.UseStaff == _staff)
+            {
+                data.SetStaffUsable(false);
+                data.SetUseStaff(null);
+                data.SetAddCookSpeedMul(0);
+            }
+        }
+
         data.SetAddCookSpeedMul(_staff.GetActionValue());
-        _tweenData = Tween.Wait(0.1f, () =>
+        _tweenData = Tween.Wait(1f, () =>
         {
             UpdateBurnerAction(data);
         });

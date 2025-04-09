@@ -133,7 +133,6 @@ public class CustomerController : MonoBehaviour
                 CustomerData customerData = normalCustomerDataList[randInt];
                 customer.SetData(customerData, _tableManager);
                 _customers.Enqueue(customer);
-                UserInfo.CustomerVisits(customerData);
                 UserInfo.AddPromotionCount();
 
                 if (_sortCoroutine != null)
@@ -275,8 +274,7 @@ public class CustomerController : MonoBehaviour
             NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
             customer.SetData(data, _tableManager);
             _customers.Enqueue(customer);
-            UserInfo.CustomerVisits(data);
-
+            
             if (_sortCoroutine != null)
                 StopCoroutine(_sortCoroutine);
             _sortCoroutine = StartCoroutine(SortCustomerLine());

@@ -20,14 +20,15 @@ MonoBehaviour:
     \uD1A0\uB77C\uC838 \uAC00\uCD9C\uD588\uB2E4."
   _moveSpeed: 6
   _scale: 1
-  _maxDiscomfortIndex: 25
-  _waitingTime: 35
-  _orderWaitTime: 25
-  _foodWaitTime: 25
   _minScore: 270
   _requiredDish: FOOD15
   _requiredItem: GOTCHA96
-  _orderFoods:
-  - FOOD13
-  - FOOD22
+  _visitCount100Food: FOOD18
+  _visitCount200Food: FOOD22
+  _visitCount300Food: FOOD26
+  _visitCount400Food: FOOD30
+  _visitCount500Food: FOOD34
+  _tendencyType: 0
+  _orderFoodTime: 30
+  _wiatTime: 30
   _skill: {fileID: 0}

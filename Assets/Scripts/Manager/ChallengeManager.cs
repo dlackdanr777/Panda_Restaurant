@@ -533,7 +533,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE10:
                 Type10ChallengeData data10 = (Type10ChallengeData)data;
-                int visitedCustomerCount = UserInfo.GetVisitedCustomerCount();
+                int visitedCustomerCount = UserInfo.GetVisitedCustomerTypeCount();
                 return visitedCustomerCount == 0 ? 0 : Math.Min(1, (float)visitedCustomerCount / data10.CustomerCount);
 
             case ChallengeType.TYPE11:
@@ -1203,7 +1203,7 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetIsClearChallenge(data.Id))
                 continue;
 
-            if (UserInfo.GetVisitedCustomerCount() < data.CustomerCount)
+            if (UserInfo.GetVisitedCustomerTypeCount() < data.CustomerCount)
                 continue;
 
             switch (data.Challenges)

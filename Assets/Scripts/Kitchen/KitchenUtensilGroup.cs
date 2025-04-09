@@ -127,7 +127,13 @@ public class KitchenUtensilGroup: MonoBehaviour
 
             else
             {
-                _burnerDatas[i].Time -= Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, _burnerDatas[i].CookingData.FoodData.FoodType);
+                if (_burnerDatas[i].CookingData.TableData == null || _burnerDatas[i].CookingData.TableData.CurrentCustomer == null)
+                {
+                    DequeueFood(i);
+                    return;
+                }
+
+                _burnerDatas[i].Time -= Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, _burnerDatas[i].CookingData.FoodData.FoodType) * (1 + _burnerDatas[i].AddCookSpeedMul * 0.01f * (_burnerDatas[i].UseStaff != null ? _burnerDatas[i].UseStaff.SpeedMul : 1));
                 _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookTime));
             }
         }

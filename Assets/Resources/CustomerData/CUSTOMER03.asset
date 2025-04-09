@@ -20,13 +20,15 @@ MonoBehaviour:
     \uC788\uB2E4."
   _moveSpeed: 6
   _scale: 1
-  _maxDiscomfortIndex: 10
-  _waitingTime: 40
-  _orderWaitTime: 30
-  _foodWaitTime: 30
   _minScore: 15
   _requiredDish: FOOD03
   _requiredItem: 
-  _orderFoods:
-  - FOOD05
+  _visitCount100Food: FOOD06
+  _visitCount200Food: FOOD10
+  _visitCount300Food: FOOD14
+  _visitCount400Food: FOOD18
+  _visitCount500Food: FOOD22
+  _tendencyType: 2
+  _orderFoodTime: 20
+  _wiatTime: 20
   _skill: {fileID: 11400000, guid: b779baf596903cc49ab62126c8092e61, type: 2}

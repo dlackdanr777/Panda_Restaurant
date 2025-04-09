@@ -18,24 +18,12 @@ public class CustomerData : ScriptableObject
     [TextArea][SerializeField] private string _description;
     public string Description => _description;
 
-    [SerializeField] private float _moveSpeed = 4f;
+    [SerializeField] private float _moveSpeed = 6f;
     public float MoveSpeed => _moveSpeed;
 
     [SerializeField] private float _scale = 1;
     public float Scale => _scale;
 
-    [Range(1, 25)][SerializeField] private int _maxDiscomfortIndex;
-    public int MaxDiscomfortIndex => _maxDiscomfortIndex;
-
-    [Range(1f, 100f)][SerializeField] private float _waitingTime;
-    public float WaitingTime => _waitingTime;
-
-
-    [Range(1f, 100f)][SerializeField] private float _orderWaitTime;
-    public float OrderWaitTime => _orderWaitTime;
-
-    [Range(1f, 100f)][SerializeField] private float _foodWaitTime;
-    public float FoodWaitTime => _foodWaitTime;
 
 
     [Space]
@@ -50,11 +38,36 @@ public class CustomerData : ScriptableObject
     [SerializeField] private string _requiredItem;
     public string RequiredItem => _requiredItem;
 
-    [SerializeField] private string[] _orderFoods;
-    public string[] OrderFoods => _orderFoods;
 
+    [Space]
+    [Header("주문 음식")]
 
+    [SerializeField] private string _visitCount100Food;
+    public string VisitCount100Food => _visitCount100Food;
 
+    [SerializeField] private string _visitCount200Food;
+    public string VisitCount200Food => _visitCount200Food;
+
+    [SerializeField] private string _visitCount300Food;
+    public string VisitCount300Food => _visitCount300Food;
+
+    [SerializeField] private string _visitCount400Food;
+    public string VisitCount400Food => _visitCount400Food;
+
+    [SerializeField] private string _visitCount500Food;
+    public string VisitCount500Food => _visitCount500Food;
+
+    [Space]
+    [Header("불만도")]
+
+    [SerializeField] CustomerTendencyType _tendencyType;
+    public CustomerTendencyType TendencyType => _tendencyType;
+
+    [SerializeField] private int _orderFoodTime;
+    public int OrderFoodTime => _orderFoodTime;
+
+    [SerializeField] private int _wiatTime;
+    public int WaitTime => _wiatTime;
 
     [Space]
     [SerializeField] private CustomerSkill _skill;
@@ -65,7 +78,8 @@ public class CustomerData : ScriptableObject
     {
         var giveFoodList = new List<FoodData>();
         var noGiveFoodList = new List<FoodData>();
-
+        int visitCount = UserInfo.GetVisitedCustomerCount(_id);
+        
         void AddFood(string dish)
         {
             if (string.IsNullOrWhiteSpace(dish)) return;
@@ -79,11 +93,12 @@ public class CustomerData : ScriptableObject
                 noGiveFoodList.Add(foodData);
         }
 
-        AddFood(_requiredDish);
-        foreach (var dish in _orderFoods)
-        {
-            AddFood(dish);
-        }
+        AddFood(_requiredDish);  
+        if (visitCount >= 100) AddFood(_visitCount100Food);
+        if (visitCount >= 200) AddFood(_visitCount200Food);
+        if (visitCount >= 300) AddFood(_visitCount300Food);
+        if (visitCount >= 400) AddFood(_visitCount400Food);
+        if (visitCount >= 500) AddFood(_visitCount500Food);
 
         // 90% 확률로 '가지고 있는 음식 리스트' (giveFoodList) 선택,
         // 단, noGiveFoodList가 존재할 때만 10% 확률로 선택.
@@ -103,7 +118,8 @@ public class CustomerData : ScriptableObject
     public List<FoodData> GetGiveOrderFoodList()
     {
         var orderFoodList = new List<FoodData>();
-
+        int visitCount = UserInfo.GetVisitedCustomerCount(_id);
+        
         void AddFoodIfValid(string dish)
         {
             if (string.IsNullOrWhiteSpace(dish)) return;
@@ -115,11 +131,15 @@ public class CustomerData : ScriptableObject
             }
         }
 
+        // 기본 음식과 _orderFoods 배열의 음식 추가
         AddFoodIfValid(_requiredDish);
-        foreach (var dish in _orderFoods)
-        {
-            AddFoodIfValid(dish);
-        }
+    
+        // 방문 횟수에 따른 추가 음식 목록 추가
+        if (visitCount >= 100) AddFoodIfValid(_visitCount100Food);
+        if (visitCount >= 200) AddFoodIfValid(_visitCount200Food);
+        if (visitCount >= 300) AddFoodIfValid(_visitCount300Food);
+        if (visitCount >= 400) AddFoodIfValid(_visitCount400Food);
+        if (visitCount >= 500) AddFoodIfValid(_visitCount500Food);
 
         if (orderFoodList.Count == 0)
         {

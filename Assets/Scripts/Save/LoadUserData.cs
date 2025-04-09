@@ -1,5 +1,3 @@
-
-
 using BackEnd;
 using LitJson;
 using Muks.BackEnd;
@@ -54,168 +52,146 @@ public class LoadUserData
     public HashSet<string> DoneDailyChallengeSet = new HashSet<string>();
     public HashSet<string> ClearDailyChallengeSet = new HashSet<string>();
 
-    public HashSet<string> EnabledCustomerSet = new HashSet<string>();
-    public HashSet<string> VisitedCustomerSet = new HashSet<string>();
-
+    public Dictionary<string, SaveCustomerData> EnabledCustomerDataDic = new Dictionary<string, SaveCustomerData>();
 
     public HashSet<string> NotificationMessageSet = new HashSet<string>();
 
-
     public LoadUserData(JsonData json)
     {
-        IsFirstTutorialClear = json[0].ContainsKey("IsFirstTutorialClear") ? json[0]["IsFirstTutorialClear"].ToString().ToLower() == "true" : false;
-        IsMiniGameTutorialClear = json[0].ContainsKey("IsMiniGameTutorialClear") ? json[0]["IsMiniGameTutorialClear"].ToString().ToLower() == "true" : false;
-        IsGatecrasher1TutorialClear = json[0].ContainsKey("IsGatecrasher1TutorialClear") ? json[0]["IsGatecrasher1TutorialClear"].ToString().ToLower() == "true" : false;
-        IsGatecrasher2TutorialClear = json[0].ContainsKey("IsGatecrasher2TutorialClear") ? json[0]["IsGatecrasher2TutorialClear"].ToString().ToLower() == "true" : false;
-        IsSpecialCustomer1TutorialClear = json[0].ContainsKey("IsSpecialCustomer1TutorialClear") ? json[0]["IsSpecialCustomer1TutorialClear"].ToString().ToLower() == "true" : false;
-        IsSpecialCustomer2TutorialClear = json[0].ContainsKey("IsSpecialCustomer2TutorialClear") ? json[0]["IsSpecialCustomer2TutorialClear"].ToString().ToLower() == "true" : false;
+        if (json == null || json.Count == 0)
+            return;
 
-        Dia = json[0].ContainsKey("Dia") && int.TryParse(json[0]["Dia"].ToString(), out int dia) ? dia : 0;
-        Money = json[0].ContainsKey("Money") && long.TryParse(json[0]["Money"].ToString(), out long money) ? money : 0;
-        TotalAddMoney = json[0].ContainsKey("TotalAddMoney") && long.TryParse(json[0]["TotalAddMoney"].ToString(), out long totalAddMoney) ? totalAddMoney : 0;
-        DailyAddMoney = json[0].ContainsKey("DailyAddMoney") && long.TryParse(json[0]["DailyAddMoney"].ToString(), out long dailyAddMoney) ? dailyAddMoney : 0;
-        Score = json[0].ContainsKey("Score") && int.TryParse(json[0]["Score"].ToString(), out int score) ? score : 0;
-        TotalCookCount = json[0].ContainsKey("TotalCookCount") && int.TryParse(json[0]["TotalCookCount"].ToString(), out int totalCookCount) ? totalCookCount : 0;
-        DailyCookCount = json[0].ContainsKey("DailyCookCount") && int.TryParse(json[0]["DailyCookCount"].ToString(), out int dailyCookCount) ? dailyCookCount : 0;
-        TotalCumulativeCustomerCount = json[0].ContainsKey("TotalCumulativeCustomerCount") && int.TryParse(json[0]["TotalCumulativeCustomerCount"].ToString(), out int totalCustomerCount) ? totalCustomerCount : 0;
-        DailyCumulativeCustomerCount = json[0].ContainsKey("DailyCumulativeCustomerCount") && int.TryParse(json[0]["DailyCumulativeCustomerCount"].ToString(), out int dailyCustomerCount) ? dailyCustomerCount : 0;
-        PromotionCount = json[0].ContainsKey("PromotionCount") && int.TryParse(json[0]["PromotionCount"].ToString(), out int promotionCount) ? promotionCount : 0;
-        TotalAdvertisingViewCount = json[0].ContainsKey("TotalAdvertisingViewCount") && int.TryParse(json[0]["TotalAdvertisingViewCount"].ToString(), out int totalAdCount) ? totalAdCount : 0;
-        DailyAdvertisingViewCount = json[0].ContainsKey("DailyAdvertisingViewCount") && int.TryParse(json[0]["DailyAdvertisingViewCount"].ToString(), out int dailyAdCount) ? dailyAdCount : 0;
-        TotalCleanCount = json[0].ContainsKey("TotalCleanCount") && int.TryParse(json[0]["TotalCleanCount"].ToString(), out int totalCleanCount) ? totalCleanCount : 0;
-        DailyCleanCount = json[0].ContainsKey("DailyCleanCount") && int.TryParse(json[0]["DailyCleanCount"].ToString(), out int dailyCleanCount) ? dailyCleanCount : 0;
-
-        TotalVisitSpecialCustomerCount = json[0].ContainsKey("TotalVisitSpecialCustomerCount") && int.TryParse(json[0]["TotalVisitSpecialCustomerCount"].ToString(), out int specialCustomerCount) ? specialCustomerCount : 0;
-        TotalExterminationGatecrasherCustomer1Count = json[0].ContainsKey("TotalExterminationGatecrasherCustomer1Count") && int.TryParse(json[0]["TotalExterminationGatecrasherCustomer1Count"].ToString(), out int gatecrasher1Count) ? gatecrasher1Count : 0;
-        TotalExterminationGatecrasherCustomer2Count = json[0].ContainsKey("TotalExterminationGatecrasherCustomer2Count") && int.TryParse(json[0]["TotalExterminationGatecrasherCustomer2Count"].ToString(), out int gatecrasher2Count) ? gatecrasher2Count : 0;
-        TotalUseGachaMachineCount = json[0].ContainsKey("TotalUseGachaMachineCount") && int.TryParse(json[0]["TotalUseGachaMachineCount"].ToString(), out int gachaCount) ? gachaCount : 0;
-
-        UserId = json[0].ContainsKey("UserId") ? json[0]["UserId"].ToString() : string.Empty;
-        FirstAccessTime = json[0].ContainsKey("FirstAccessTime") ? json[0]["FirstAccessTime"].ToString() : string.Empty;
-        LastAccessTime = json[0].ContainsKey("LastAccessTime") ? json[0]["LastAccessTime"].ToString() : string.Empty;
-        LastAttendanceTime = json[0].ContainsKey("LastAttendanceTime") ? json[0]["LastAttendanceTime"].ToString() : string.Empty;
-        TotalAttendanceDays = json[0].ContainsKey("TotalAttendanceDays") && int.TryParse(json[0]["TotalAttendanceDays"].ToString(), out int totalAttendance) ? totalAttendance : 0;
-
-        if (json[0].ContainsKey("GiveRecipeList"))
+        try
         {
-            GiveRecipeLevelDic.Clear();
-            foreach (JsonData item in json[0]["GiveRecipeList"])
+            JsonData data = json[0];
+
+            // 안전한 데이터 가져오기 헬퍼 함수
+            bool GetBool(string key) => data.ContainsKey(key) && data[key].ToString().ToLower() == "true";
+            int GetInt(string key) => data.ContainsKey(key) && int.TryParse(data[key].ToString(), out int value) ? value : 0;
+            long GetLong(string key) => data.ContainsKey(key) && long.TryParse(data[key].ToString(), out long value) ? value : 0;
+            string GetString(string key) => data.ContainsKey(key) ? data[key].ToString() : string.Empty;
+
+            IsFirstTutorialClear = GetBool("IsFirstTutorialClear");
+            IsMiniGameTutorialClear = GetBool("IsMiniGameTutorialClear");
+            IsGatecrasher1TutorialClear = GetBool("IsGatecrasher1TutorialClear");
+            IsGatecrasher2TutorialClear = GetBool("IsGatecrasher2TutorialClear");
+            IsSpecialCustomer1TutorialClear = GetBool("IsSpecialCustomer1TutorialClear");
+            IsSpecialCustomer2TutorialClear = GetBool("IsSpecialCustomer2TutorialClear");
+
+            Dia = GetInt("Dia");
+            Money = GetLong("Money");
+            TotalAddMoney = GetLong("TotalAddMoney");
+            DailyAddMoney = GetLong("DailyAddMoney");
+            Score = GetInt("Score");
+            TotalCookCount = GetInt("TotalCookCount");
+            DailyCookCount = GetInt("DailyCookCount");
+            TotalCumulativeCustomerCount = GetInt("TotalCumulativeCustomerCount");
+            DailyCumulativeCustomerCount = GetInt("DailyCumulativeCustomerCount");
+            PromotionCount = GetInt("PromotionCount");
+            TotalAdvertisingViewCount = GetInt("TotalAdvertisingViewCount");
+            DailyAdvertisingViewCount = GetInt("DailyAdvertisingViewCount");
+            TotalCleanCount = GetInt("TotalCleanCount");
+            DailyCleanCount = GetInt("DailyCleanCount");
+            TotalVisitSpecialCustomerCount = GetInt("TotalVisitSpecialCustomerCount");
+            TotalExterminationGatecrasherCustomer1Count = GetInt("TotalExterminationGatecrasherCustomer1Count");
+            TotalExterminationGatecrasherCustomer2Count = GetInt("TotalExterminationGatecrasherCustomer2Count");
+            TotalUseGachaMachineCount = GetInt("TotalUseGachaMachineCount");
+            TotalAttendanceDays = GetInt("TotalAttendanceDays");
+
+            UserId = GetString("UserId");
+            FirstAccessTime = GetString("FirstAccessTime");
+            LastAccessTime = GetString("LastAccessTime");
+            LastAttendanceTime = GetString("LastAttendanceTime");
+
+            LoadDictionaryData(data, "GiveRecipeList", GiveRecipeLevelDic, "Id", "Level");
+            LoadDictionaryData(data, "RecipeCookCountList", RecipeCookCountDic, "Id", "Count");
+            LoadDictionaryData(data, "GiveGachaItemCountList", GiveGachaItemCountDic, "Id", "Count");
+            LoadDictionaryData(data, "GiveGachaItemLevelList", GiveGachaItemLevelDic, "Id", "Level");
+
+            LoadCustomerDataList(data);
+
+            LoadStringSet(data, "DoneMainChallengeList", DoneMainChallengeSet);
+            LoadStringSet(data, "ClearMainChallengeList", ClearMainChallengeSet);
+            LoadStringSet(data, "DoneAllTimeChallengeList", DoneAllTimeChallengeSet);
+            LoadStringSet(data, "ClearAllTimeChallengeList", ClearAllTimeChallengeSet);
+            LoadStringSet(data, "DoneDailyChallengeList", DoneDailyChallengeSet);
+            LoadStringSet(data, "ClearDailyChallengeList", ClearDailyChallengeSet);
+            LoadStringSet(data, "NotificationMessageList", NotificationMessageSet);
+        }
+        catch (Exception e)
+        {
+            DebugLog.LogError($"Failed to load user data: {e.Message}");
+        }
+    }
+
+    // 문자열 세트를 로드하는 헬퍼 메서드
+    private void LoadStringSet(JsonData data, string key, HashSet<string> targetSet)
+    {
+        targetSet.Clear();
+        if (data.ContainsKey(key) && data[key].IsArray)
+        {
+            foreach (JsonData item in data[key])
             {
-                string key = item["Id"].ToString();
-                int value = int.Parse(item["Level"].ToString());
-                GiveRecipeLevelDic[key] = value;
+                try
+                {
+                    targetSet.Add(item.ToString());
+                }
+                catch (Exception) { /* 오류 항목 스킵 */ }
             }
         }
+    }
 
-        if (json[0].ContainsKey("RecipeCookCountList"))
+    // 딕셔너리 데이터를 로드하는 헬퍼 메서드
+    private void LoadDictionaryData<T>(JsonData data, string key, Dictionary<string, T> targetDict,
+        string keyField, string valueField)
+    {
+        targetDict.Clear();
+        if (data.ContainsKey(key) && data[key].IsArray)
         {
-            RecipeCookCountDic.Clear();
-            foreach (JsonData item in json[0]["RecipeCookCountList"])
+            foreach (JsonData item in data[key])
             {
-                string key = item["Id"].ToString();
-                int value = int.Parse(item["Count"].ToString());
-                RecipeCookCountDic[key] = value;
+                try
+                {
+                    if (item.ContainsKey(keyField) && item.ContainsKey(valueField))
+                    {
+                        string dictKey = item[keyField].ToString();
+                        if (typeof(T) == typeof(int))
+                        {
+                            int value;
+                            if (int.TryParse(item[valueField].ToString(), out value))
+                                targetDict[dictKey] = (T)(object)value;
+                        }
+                        // 다른 타입이 필요하다면 여기에 추가
+                    }
+                }
+                catch (Exception) { /* 오류 항목 스킵 */ }
             }
         }
+    }
 
-        if (json[0].ContainsKey("GiveGachaItemCountList"))
+    // 고객 데이터 목록 로드 (특별한 구조를 가진 데이터)
+    private void LoadCustomerDataList(JsonData data)
+    {
+        EnabledCustomerDataDic.Clear();
+        if (data.ContainsKey("EnabledCustomerDataList") && data["EnabledCustomerDataList"].IsArray)
         {
-            GiveGachaItemCountDic.Clear();
-            foreach (JsonData item in json[0]["GiveGachaItemCountList"])
+            foreach (JsonData item in data["EnabledCustomerDataList"])
             {
-                string key = item["Id"].ToString();
-                int value = int.Parse(item["Count"].ToString());
-                GiveGachaItemCountDic[key] = value;
-            }
-        }
-
-        if (json[0].ContainsKey("GiveGachaItemLevelList"))
-        {
-            GiveGachaItemLevelDic.Clear();
-            foreach (JsonData item in json[0]["GiveGachaItemLevelList"])
-            {
-                string key = item["Id"].ToString();
-                int value = int.Parse(item["Level"].ToString());
-                GiveGachaItemLevelDic[key] = value;
-            }
-        }
-
- 
-        if (json[0].ContainsKey("DoneMainChallengeList"))
-        {
-            foreach (JsonData item in json[0]["DoneMainChallengeList"])
-            {
-                DoneMainChallengeSet.Add(item.ToString());
-            }
-        }
-
-        if (json[0].ContainsKey("ClearMainChallengeList"))
-        {
-            foreach (JsonData item in json[0]["ClearMainChallengeList"])
-            {
-                ClearMainChallengeSet.Add(item.ToString());
-            }
-        }
-
-        if (json[0].ContainsKey("DoneAllTimeChallengeList"))
-        {
-            foreach (JsonData item in json[0]["DoneAllTimeChallengeList"])
-            {
-                DoneAllTimeChallengeSet.Add(item.ToString());
-            }
-        }
-
-        if (json[0].ContainsKey("ClearAllTimeChallengeList"))
-        {
-            foreach (JsonData item in json[0]["ClearAllTimeChallengeList"])
-            {
-                ClearAllTimeChallengeSet.Add(item.ToString());
-            }
-        }
-
-        if (json[0].ContainsKey("DoneDailyChallengeList"))
-        {
-            foreach (JsonData item in json[0]["DoneDailyChallengeList"])
-            {
-                DoneDailyChallengeSet.Add(item.ToString());
-            }
-        }
-
-        if (json[0].ContainsKey("ClearDailyChallengeList"))
-        {
-            foreach (JsonData item in json[0]["ClearDailyChallengeList"])
-            {
-                ClearDailyChallengeSet.Add(item.ToString());
-            }
-        }
-
-        if (json[0].ContainsKey("EnabledCustomerList"))
-        {
-            foreach (JsonData item in json[0]["EnabledCustomerList"])
-            {
-                EnabledCustomerSet.Add(item.ToString());
-            }
-        }
-
-        if (json[0].ContainsKey("VisitedCustomerList"))
-        {
-            foreach (JsonData item in json[0]["VisitedCustomerList"])
-            {
-                VisitedCustomerSet.Add(item.ToString());
-            }
-        }
-
-
-        if (json[0].ContainsKey("NotificationMessageList"))
-        {
-            foreach (JsonData item in json[0]["NotificationMessageList"])
-            {
-                NotificationMessageSet.Add(item.ToString());
+                try
+                {
+                    if (item.ContainsKey("Id") && item.ContainsKey("VisitCount"))
+                    {
+                        string id = item["Id"].ToString();
+                        int visitCount;
+                        if (int.TryParse(item["VisitCount"].ToString(), out visitCount))
+                            EnabledCustomerDataDic.Add(id, new SaveCustomerData(id, visitCount));
+                    }
+                }
+                catch (Exception) { /* 오류 항목 스킵 */ }
             }
         }
     }
 }
-
 
 public class SaveLevelData
 {
@@ -268,7 +244,6 @@ public class CoinAreaData
     {
         _money += money;
     }
-
 }
 
 [Serializable]

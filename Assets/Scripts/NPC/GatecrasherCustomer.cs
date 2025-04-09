@@ -89,7 +89,7 @@ public class GatecrasherCustomer : Customer
         _spritePressEffect.AddListener(OnTouchEvent);
         _spriteFillAmount.SetFillAmount(0);
         SoundManager.Instance.PlayEffectAudio(_visitSound, 0.15f);
-
+        UserInfo.CustomerVisits(data);
         if (_enabledCoroutine != null)
             StopCoroutine(_enabledCoroutine);
 

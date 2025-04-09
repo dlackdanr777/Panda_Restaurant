@@ -2,6 +2,7 @@
 using Muks.Tween;
 using Muks.WeightedRandom;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -133,9 +134,10 @@ public class TableManager : MonoBehaviour
         {
             Tween.Wait(0.1f, () =>
             {
+                DebugLog.Log(data.name + " Sit " + "11");
                 if (data.CurrentCustomer == null)
                     return;
-
+                DebugLog.Log(data.name + " Sit " + "22");
                 customer.transform.position = data.ChairTrs[data.SitIndex].position;
                 data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
                 data.ServingButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
@@ -146,10 +148,12 @@ public class TableManager : MonoBehaviour
 
                 Tween.Wait(1f, () =>
                 {
+                    DebugLog.Log(data.name + " Sit " + "33");
                     if (data.CurrentCustomer == null)
                         return;
 
-                    if (customer.CustomerData.MaxDiscomfortIndex < _totalGarbageCount)
+                    DebugLog.Log(data.name + " Sit " + "44");
+                    if (!CustomerDataManager.Instance.CheckCustomerTendency(customer.CustomerData.TendencyType))
                     {
                         data.CurrentCustomer = null;
                         data.TableState = ETableState.Empty;
@@ -199,10 +203,14 @@ public class TableManager : MonoBehaviour
         }
 
         int foodLevel = UserInfo.GetRecipeLevel(foodData);
-        CookingData cookingData = new CookingData(foodData, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), () =>
+        CookingData cookingData = new CookingData(foodData, data, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), () =>
         {
-            if (data.TableState != ETableState.WaitFood || data.CurrentCustomer == null)
+            if (data.CurrentCustomer == null)
+            {
+                DebugLog.Log("현재 손님이 비어있습니다.");
                 return;
+            }
+
 
             data.TableState = ETableState.CanServing;
             data.ServingButton.SetData(foodData);
@@ -271,25 +279,39 @@ public class TableManager : MonoBehaviour
 
         FoodData foodData = FoodDataManager.Instance.GetFoodData(data.CurrentFood.FoodData.Id);
         data.TableState = ETableState.Eating;
-        Tween.Wait(0.5f, () =>
-        {
-            if (data.CurrentCustomer == null)
-                return;
-            data.CurrentCustomer.transform.position = data.ChairTrs[data.SitIndex].position;
-            data.CurrentCustomer.ChangeState(CustomerState.Eat);
-            data.CurrentCustomer.ShowFood(foodData.Sprite);
-            Tween.Wait(1.5f, () =>
-            {
-                if (data.CurrentCustomer == null)
-                    return;
-
-                if (data.OrdersCount <= 0)
-                    EndEat(data);
-                else
-                    OnCustomerSeating(data);
-            });
-        });
+        StartCoroutine(EatRoutine(data, foodData));
         UpdateTable();
+    }
+
+
+    private IEnumerator EatRoutine(TableData data, FoodData foodData)
+    {
+        DebugLog.Log(data.name + " 11");
+        yield return YieldCache.WaitForSeconds(0.5f);
+        if (data.CurrentCustomer == null)
+            yield break;
+
+        DebugLog.Log(data.name + " 22");
+        data.CurrentCustomer.transform.position = data.ChairTrs[data.SitIndex].position;
+        data.CurrentCustomer.ChangeState(CustomerState.Eat);
+        data.CurrentCustomer.ShowFood(foodData.Sprite);
+
+        yield return YieldCache.WaitForSeconds(1.5f);
+        DebugLog.Log(data.name + " 33");
+
+        if (data.OrdersCount <= 0)
+        {
+            EndEat(data);
+            DebugLog.Log(data.name + " 44");
+        }
+
+        else
+        {
+            OnCustomerSeating(data);
+            DebugLog.Log(data.name + " 55");
+        }
+
+
     }
 
     public void OnUseStaff(TableData data)
@@ -361,11 +383,19 @@ public class TableManager : MonoBehaviour
 
     private void EndEat(TableData data)
     {
+        if (data.CurrentCustomer == null)
+        {
+            DebugLog.Log("손님이 없습니다.");
+            return;
+        }
+
         int tip = data.TotalTip;
         int totalPrice = data.TotalPrice;
 
         data.CurrentCustomer.ChangeState(CustomerState.Idle);
         data.CurrentCustomer.HideFood();
+        UserInfo.CustomerVisits(data.CurrentCustomer.CustomerData);
+        UserInfo.AddCustomerCount();
         StartCoinAnime(data);
         StartGarbageAnime(data);
         Tween.Wait(0.5f, () =>
@@ -374,7 +404,7 @@ public class TableManager : MonoBehaviour
                 return;
 
             ExitCustomer(data);
-            UserInfo.AddCustomerCount();
+ 
             UserInfo.AddTip(UserInfo.CurrentStage, tip);
             UpdateTable();
         });
@@ -724,7 +754,6 @@ public class TableManager : MonoBehaviour
         ERestaurantFloorType choiceFloor = availableFloors[UnityEngine.Random.Range(0, availableFloors.Count)];
         return choiceFloor;
     }
-
 
     private void OnDestroy()
     {
