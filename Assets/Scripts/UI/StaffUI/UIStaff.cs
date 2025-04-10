@@ -53,7 +53,7 @@ public class UIStaff : MobileUIView
 
         for (int i = 0, cntI = (int)EquipStaffType.Length; i < cntI; ++i)
         {
-            List<StaffData> typeDataList = StaffDataManager.Instance.GetStaffDataList((EquipStaffType)i);
+            List<StaffData> typeDataList = StaffDataManager.Instance.GetSortStaffDataList((EquipStaffType)i);
             _slots[i] = new List<UIRestaurantAdminStaffSlot>();
             for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
             {
@@ -133,7 +133,7 @@ public class UIStaff : MobileUIView
         }
 
         _currentType = type;
-        _currentTypeDataList = StaffDataManager.Instance.GetStaffDataList(type);
+        _currentTypeDataList = StaffDataManager.Instance.GetSortStaffDataList(type);
         _typeText.text = Utility.StaffTypeStringConverter(type);
 
         UpdateUI();

@@ -49,10 +49,10 @@ public class ItemManager : MonoBehaviour
     {
         return UserInfo.GachaItemSortType switch
         {
-            SortType.NameAscending => _gachaItemDataList.OrderBy(data => data.Name).ToList(),
-            SortType.NameDescending => _gachaItemDataList.OrderByDescending(data => data.Name).ToList(),
-            SortType.GradeAscending => _gachaItemDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
-            SortType.GradeDescending => _gachaItemDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            GradeSortType.NameAscending => _gachaItemDataList.OrderBy(data => data.Name).ToList(),
+            GradeSortType.NameDescending => _gachaItemDataList.OrderByDescending(data => data.Name).ToList(),
+            GradeSortType.GradeAscending => _gachaItemDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            GradeSortType.GradeDescending => _gachaItemDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
             _ => null
         };
     }

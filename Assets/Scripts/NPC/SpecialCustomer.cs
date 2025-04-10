@@ -27,7 +27,7 @@ public class SpecialCustomer : Customer
     private Action<Customer> _onCompleted;
 
 
-    public override void SetData(CustomerData data, TableManager tableManager)
+    public override void SetData(CustomerData data, CustomerController customerController, TableManager tableManager)
     {
         if(!(data is SpecialCustomerData))
         {
@@ -35,7 +35,7 @@ public class SpecialCustomer : Customer
             return;
         }
 
-        base.SetData(data, tableManager);
+        base.SetData(data, customerController, tableManager);
         SpecialCustomerData specialData = (SpecialCustomerData)data;
 
         _normalSprite = specialData.Sprite;

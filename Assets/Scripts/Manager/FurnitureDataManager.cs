@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 
 public class FurnitureDataManager : MonoBehaviour
@@ -44,6 +45,19 @@ public class FurnitureDataManager : MonoBehaviour
     public List<FurnitureData> GetFurnitureDataList(FurnitureType type)
     {
         return _furnitureDataListType[(int)type];
+    }
+
+    public List<FurnitureData> GetSortFurnitureDataList(FurnitureType type)
+    {
+        return UserInfo.FurnitureSortType switch
+        {
+            ShopSortType.NameAscending => _furnitureDataListType[(int)type].OrderBy(data => data.Name).ToList(),
+            ShopSortType.NameDescending => _furnitureDataListType[(int)type].OrderByDescending(data => data.Name).ToList(),
+            ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_furnitureDataListType[(int)type], true),
+            ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_furnitureDataListType[(int)type], false),
+            ShopSortType.None => _furnitureDataListType[(int)type],
+            _ => null
+        };
     }
 
 

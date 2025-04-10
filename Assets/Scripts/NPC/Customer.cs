@@ -44,6 +44,8 @@ public class Customer : MonoBehaviour
     protected float _moveSpeed;
     protected bool _isStairsMove;
     protected List<Vector2> _path;
+
+    protected CustomerController _customerController;
     protected TableManager _tableManager;
 
     public virtual void Init()
@@ -52,9 +54,10 @@ public class Customer : MonoBehaviour
     }
 
 
-    public virtual void SetData(CustomerData data, TableManager tableManager)
+    public virtual void SetData(CustomerData data, CustomerController customerController, TableManager tableManager)
     {
         _customerData = data;
+        _customerController = customerController;
         _tableManager = tableManager;
         _moveSpeed = data.MoveSpeed;
 

@@ -12,7 +12,7 @@ public class UIMain : MonoBehaviour
 
     private void Awake()
     {
-        _customerController.OnAddCustomerHandler += OnChangeCustomerCountEvent;
+        _customerController.OnChangeCustomerHandler += OnChangeCustomerCountEvent;
         _customerController.OnGuideCustomerHandler += OnChangeCustomerCountEvent;
         GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnChangeCustomerCountEvent;
         //_customerController.OnAddCustomerHandler += OnUpdateAdButtonEvent;

@@ -49,7 +49,7 @@ public class UIKitchen : MobileUIView
 
         for (int i = 0, cntI = (int)KitchenUtensilType.Length; i < cntI; ++i)
         {
-            List<KitchenUtensilData> typeDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList((KitchenUtensilType)i);
+            List<KitchenUtensilData> typeDataList = KitchenUtensilDataManager.Instance.GetSortKitchenUtensilDataList((KitchenUtensilType)i);
             _slots[i] = new List<UIRestaurantAdminFoodTypeSlot>();
             for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
             {
@@ -130,7 +130,7 @@ public class UIKitchen : MobileUIView
         }
 
         _currentType = type;
-        _currentTypeDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList(type);
+        _currentTypeDataList = KitchenUtensilDataManager.Instance.GetSortKitchenUtensilDataList(type);
         string typeStr = Utility.KitchenUtensilTypeStringConverter(type);
         _typeText1.text = typeStr;
 

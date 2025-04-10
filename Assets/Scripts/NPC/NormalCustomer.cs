@@ -16,6 +16,11 @@ public class NormalCustomer : Customer
 
     private CustomerSkill _skill;
 
+    private TableData _sitTableData;
+
+    private Coroutine _waitingCoroutine;
+    private Coroutine _orderFoodCoroutine;
+
     private int _orderCount = 1;
     public int OrderCount => _orderCount;
 
@@ -27,25 +32,24 @@ public class NormalCustomer : Customer
     private float _doublePricePercent;
     public float DoublePricePercent => _doublePricePercent;
 
-    private Vector3 _tmpFoodSize;
-    private float _tmpFoodSpriteHeight;
     private float _tmpFoodPosX;
     private float _tmpEatAnimePosX;
 
     public override void Init() 
     {
-        _tmpFoodSize = _foodRenderer.transform.localScale;
-        _tmpFoodSpriteHeight = _foodRenderer.sprite.texture.height;
         _tmpFoodPosX = _foodRenderer.transform.localPosition.x;
         _tmpEatAnimePosX = _eatAnimation.transform.localPosition.x;
         HideFood();
     }
 
 
-    public override void SetData(CustomerData data, TableManager tableManager)
+    public override void SetData(CustomerData data, CustomerController customerController, TableManager tableManager)
     {
-        base.SetData(data, tableManager);
+        base.SetData(data, customerController, tableManager);
+
+        StopCoroutines();
         HideFood();
+
         _doublePricePercent = 0;
         _currentFoodPriceMul = 1;
         _orderCount = 1;
@@ -68,7 +72,11 @@ public class NormalCustomer : Customer
         {
             _currentFoodPriceMul = _currentFoodPriceMul * _foodPriceMul;
         }
+    }
 
+    public void SetSitTableData(TableData tableData)
+    {
+        _sitTableData = tableData;
     }
 
     public override void ChangeState(CustomerState state)
@@ -92,7 +100,6 @@ public class NormalCustomer : Customer
             _eatAnimation.transform.localPosition = new Vector3(-_tmpEatAnimePosX, _eatAnimation.transform.localPosition.y, 0);
             _foodRenderer.transform.localPosition = new Vector3(-_tmpFoodPosX, _foodRenderer.transform.localPosition.y, 0);
         }
-
     }
 
     public WeightedRandom<FoodType> GetFoodTypeWeightDic()
@@ -179,6 +186,83 @@ public class NormalCustomer : Customer
     }
 
 
+    // 대기열 진입 시 호출
+    public void StartWaiting()
+    {
+        StopCoroutines();
+        _waitingCoroutine = StartCoroutine(WaitingInLineCoroutine());
+    }
+
+    public void StopWaiting()
+    {
+        StopCoroutines();
+    }
+    
+
+    // 테이블에 앉고 음식 주문 시 호출
+    public void StartWaitingForFood()
+    {
+        _orderFoodCoroutine = StartCoroutine(WaitingForFoodCoroutine());
+    }
+
+    
+    // 음식 서빙 시 호출
+    public void StopWaitingForFood()
+    {
+        StopCoroutines();
+    }
+    
+
+    private IEnumerator WaitingInLineCoroutine()
+    {
+        float elapsedTime = 0f;
+        float maxWaitTime = CustomerData.WaitTime;
+        
+        while (elapsedTime < maxWaitTime)
+        {
+            elapsedTime += 0.02f;
+            yield return YieldCache.WaitForSeconds(0.02f);
+        }
+        
+        StartAnger();
+        LeaveRestaurant();
+    }
+    
+
+    private IEnumerator WaitingForFoodCoroutine()
+    {
+        float elapsedTime = 0f;
+        float maxWaitTime = CustomerData.OrderFoodTime;
+        
+        while (elapsedTime < maxWaitTime)
+        {
+            elapsedTime += 0.02f;
+            yield return YieldCache.WaitForSeconds(0.02f);
+        }
+        
+        StartAnger();
+        LeaveTableAndRestaurant();
+    }
+    
+    // 화가 나서 떠날 때 호출 (대기열에서)
+    private void LeaveRestaurant()
+    {
+        DebugLog.Log("줄서다 나감");
+        _customerController.RemoveCustomerFromLineQueue(this);
+        Move(GameManager.Instance.OutDoorPos, 0, () =>
+        {
+            ObjectPoolManager.Instance.DespawnNormalCustomer(this);
+        });
+    }
+    
+    // 테이블에서 화가 나서 떠날 때
+    private void LeaveTableAndRestaurant()
+    {
+        DebugLog.Log("테이블에서 나감");
+        _tableManager.AngerExitCustomer(_sitTableData);
+    }
+
+
 
     protected override IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {
@@ -209,5 +293,25 @@ public class NormalCustomer : Customer
 
         _moveCompleted?.Invoke();
         _moveCompleted = null;
+    }
+
+    private void StopCoroutines()
+    {
+        if (_waitingCoroutine != null)
+        {
+            StopCoroutine(_waitingCoroutine);
+            _waitingCoroutine = null;
+        }
+        
+        if (_orderFoodCoroutine != null)
+        {
+            StopCoroutine(_orderFoodCoroutine);
+            _orderFoodCoroutine = null;
+        }
+    }
+
+    private void OnDisable()
+    {
+        StopCoroutines();
     }
 }

@@ -58,7 +58,7 @@ public class TableManager : MonoBehaviour
         _guideButton.onClick.AddListener(() => OnCustomerGuideEventPlaySound(-1));
 
         UpdateTable();
-        _customerController.OnAddCustomerHandler += UpdateTable;
+        _customerController.OnChangeCustomerHandler += UpdateTable;
         _customerController.OnGuideCustomerHandler += UpdateTable;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
     }
@@ -111,6 +111,7 @@ public class TableManager : MonoBehaviour
     {
         data.CurrentCustomer = customer;
         customer.SetLayer("Customer", 0);
+        customer.StopWaiting();
         data.TableState = ETableState.Move;
         data.OrdersCount = customer.OrderCount;
 
@@ -139,6 +140,7 @@ public class TableManager : MonoBehaviour
                     return;
                 DebugLog.Log(data.name + " Sit " + "22");
                 customer.transform.position = data.ChairTrs[data.SitIndex].position;
+                customer.SetSitTableData(data);
                 data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
                 data.ServingButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
 
@@ -155,20 +157,7 @@ public class TableManager : MonoBehaviour
                     DebugLog.Log(data.name + " Sit " + "44");
                     if (!CustomerDataManager.Instance.CheckCustomerTendency(customer.CustomerData.TendencyType))
                     {
-                        data.CurrentCustomer = null;
-                        data.TableState = ETableState.Empty;
-                        customer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
-                        customer.ChangeState(CustomerState.Idle);
-                        customer.StartAnger();
-                        customer.HideFood();
-                        customer.Move(GameManager.Instance.OutDoorPos, 0, () =>
-                        {
-                            customer.StopAnger();
-                            ObjectPoolManager.Instance.DespawnNormalCustomer(customer);
-                            customer = null;
-                        });
-
-                        UpdateTable();
+                        AngerExitCustomer(data);
                         return;
                     }
 
@@ -228,6 +217,8 @@ public class TableManager : MonoBehaviour
 
         data.TableState = ETableState.Seating;
         data.OrdersCount -= 1;
+
+        data.CurrentCustomer.StartWaitingForFood();
         UpdateTable();
     }
 
@@ -245,21 +236,7 @@ public class TableManager : MonoBehaviour
         string orderFoodId = data.CurrentFood.FoodData.Id;
         if (!UserInfo.IsGiveRecipe(orderFoodId))
         {
-            NormalCustomer currentCustomer = data.CurrentCustomer;
-            currentCustomer.SetLayer("Customer", 0);
-            data.CurrentCustomer = null;
-            data.TableState = ETableState.Empty;
-            currentCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
-            currentCustomer.ChangeState(CustomerState.Idle);
-            currentCustomer.StartAnger();
-            currentCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
-            {
-                currentCustomer.StopAnger();
-                ObjectPoolManager.Instance.DespawnNormalCustomer(currentCustomer);
-                currentCustomer = null;
-            });
-
-            UpdateTable();
+            ExitCustomer(data);
             return;
         }
 
@@ -276,7 +253,7 @@ public class TableManager : MonoBehaviour
             NotFurnitureTable(data);
             return;
         }
-
+        data.CurrentCustomer.StopWaitingForFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(data.CurrentFood.FoodData.Id);
         data.TableState = ETableState.Eating;
         StartCoroutine(EatRoutine(data, foodData));
@@ -337,8 +314,38 @@ public class TableManager : MonoBehaviour
         data.TotalTip = 0;
         data.TotalPrice = 0;
         DirtyTable(data);
+        UpdateTable();
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
+            ObjectPoolManager.Instance.DespawnNormalCustomer(exitCustomer);
+            exitCustomer = null;
+            UpdateTable();
+        });
+    }
+
+
+        public void AngerExitCustomer(TableData data)
+    {
+        if (data.TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(data);
+            return;
+        }
+
+        NormalCustomer exitCustomer = data.CurrentCustomer;
+        exitCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
+        exitCustomer.ChangeState(CustomerState.Idle);
+        exitCustomer.SetLayer("Customer", 0);
+        exitCustomer.HideFood();
+        exitCustomer.StartAnger();
+        data.CurrentCustomer = null;
+        data.TotalTip = 0;
+        data.TotalPrice = 0;
+        data.TableState = ETableState.Empty;
+        UpdateTable();
+        exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
+        {
+            exitCustomer.StopAnger();
             ObjectPoolManager.Instance.DespawnNormalCustomer(exitCustomer);
             exitCustomer = null;
             UpdateTable();
@@ -757,7 +764,7 @@ public class TableManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        _customerController.OnAddCustomerHandler -= UpdateTable;
+        _customerController.OnChangeCustomerHandler -= UpdateTable;
         _customerController.OnGuideCustomerHandler -= UpdateTable;
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEvent;
     }

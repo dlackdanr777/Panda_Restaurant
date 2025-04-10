@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class FoodDataManager : MonoBehaviour
 {
@@ -38,6 +39,19 @@ public class FoodDataManager : MonoBehaviour
     public List<FoodData> GetFoodDataList()
     {
         return _foodDataList;
+    }
+
+    public List<FoodData> GetSortFoodDataList()
+    {
+        return UserInfo.FoodSortType switch
+        {
+            ShopSortType.NameAscending => _foodDataList.OrderBy(data => data.Name).ToList(),
+            ShopSortType.NameDescending => _foodDataList.OrderByDescending(data => data.Name).ToList(),
+            ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_foodDataList, true),
+            ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_foodDataList, false),
+            ShopSortType.None => _foodDataList,
+            _ => null
+        };
     }
 
 

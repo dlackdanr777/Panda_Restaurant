@@ -62,7 +62,7 @@ public class GatecrasherCustomer : Customer
     }
 
 
-    public override void SetData(CustomerData data, TableManager tableManager)
+    public override void SetData(CustomerData data, CustomerController customerController, TableManager tableManager)
     {
         if (!(data is GatecrasherCustomerData))
         {
@@ -71,7 +71,7 @@ public class GatecrasherCustomer : Customer
         }
         GatecrasherCustomerData gatecrasherData = (GatecrasherCustomerData)data;
         _animator.runtimeAnimatorController = gatecrasherData.Controller;
-        base.SetData(data, tableManager);
+        base.SetData(data,customerController, tableManager);
         _activeDuration = gatecrasherData.ActiveDuration;
         _currentTouchCount = 0;
         _totalTouchCount = gatecrasherData.TouchCount;

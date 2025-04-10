@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class KitchenUtensilDataManager : MonoBehaviour
 {
@@ -39,6 +40,19 @@ public class KitchenUtensilDataManager : MonoBehaviour
     public List<KitchenUtensilData> GetKitchenUtensilDataList(KitchenUtensilType type)
     {
         return _kitchenUtensilDataListType[(int)type];
+    }
+
+    public List<KitchenUtensilData> GetSortKitchenUtensilDataList(KitchenUtensilType type)
+    {
+        return UserInfo.KitchenUtensilSortType switch
+        {
+            ShopSortType.NameAscending => _kitchenUtensilDataListType[(int)type].OrderBy(data => data.Name).ToList(),
+            ShopSortType.NameDescending => _kitchenUtensilDataListType[(int)type].OrderByDescending(data => data.Name).ToList(),
+            ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_kitchenUtensilDataListType[(int)type], true),
+            ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_kitchenUtensilDataListType[(int)type], false),
+            ShopSortType.None => _kitchenUtensilDataListType[(int)type],
+            _ => null
+        };
     }
 
 

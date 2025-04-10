@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+
 
 public class StaffDataManager : MonoBehaviour
 {
@@ -42,6 +44,21 @@ public class StaffDataManager : MonoBehaviour
     {
         int typeIndex = (int)GetStaffGroupType(type);
         return _staffTypeDataList[(int)typeIndex];
+    }
+
+    public List<StaffData> GetSortStaffDataList(EquipStaffType type)
+    {
+        int typeIndex = (int)GetStaffGroupType(type);
+        return UserInfo.StaffSortType switch
+        {
+            ShopSortType.NameAscending => _staffTypeDataList[typeIndex].OrderBy(data => data.Name).ToList(),
+            ShopSortType.NameDescending => _staffTypeDataList[typeIndex].OrderByDescending(data => data.Name).ToList(),
+            ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_staffTypeDataList[typeIndex], true),
+            ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_staffTypeDataList[typeIndex], false),
+            ShopSortType.None => _staffTypeDataList[typeIndex],
+            _ => null
+        };
+
     }
 
 

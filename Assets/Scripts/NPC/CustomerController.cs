@@ -3,11 +3,12 @@ using Muks.WeightedRandom;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class CustomerController : MonoBehaviour
 {
-    public event Action OnAddCustomerHandler;
+    public event Action OnChangeCustomerHandler;
     public event Action OnGuideCustomerHandler;
 
     [Header("Components")]
@@ -48,6 +49,22 @@ public class CustomerController : MonoBehaviour
         return _customers.Peek();
     }
 
+    public void RemoveCustomerFromLineQueue(NormalCustomer customer)
+    {
+        if (_customers.Count <= 0)
+            return;
+
+        if (!_customers.Contains(customer))
+        {
+            DebugLog.LogError("해당 고객이 대기열에 없습니다.");
+            return;
+        }
+
+        _customers = new Queue<NormalCustomer>(_customers.Where(c => c != customer));
+        SortCustomerLine();
+        OnChangeCustomerHandler?.Invoke();
+    }
+
 
     public bool IsEmpty()
     {
@@ -65,11 +82,6 @@ public class CustomerController : MonoBehaviour
         List<SpecialCustomerData> specialCustomerDataList = CustomerDataManager.Instance.GetAppearSpecialCustomerDataList();
         List<GatecrasherCustomerData> gatecrasherCustomerDataList = CustomerDataManager.Instance.GetAppearGatecrasherCustomerDataList();
         int randInt = 0;
-
-        for(int i = 0, cnt = specialCustomerDataList.Count; i < cnt; i++)
-        {
-            DebugLog.Log(specialCustomerDataList[i].Name);
-        }
 
         for (int i = 0, cnt = GameManager.Instance.AddPromotionCustomer; i < cnt; i++)
         {
@@ -99,7 +111,7 @@ public class CustomerController : MonoBehaviour
                     _breakInCustomerTimer = _breakInCustomerTime;
                     _breakCustomerEnabled = false;
                     SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-                    specialCustomer.SetData(getData, _tableManager);
+                    specialCustomer.SetData(getData, this, _tableManager);
                     specialCustomer.SetVisitFloor(visitFloor);
                     specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
                     UserInfo.AddVisitSpecialCustomerCount();
@@ -112,7 +124,7 @@ public class CustomerController : MonoBehaviour
 
                     int floorIndex = (int)visitFloor;
                     _gatecrasherCustomers[floorIndex] = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-                    _gatecrasherCustomers[floorIndex].SetData(getData, _tableManager);
+                    _gatecrasherCustomers[floorIndex].SetData(getData, this, _tableManager);
                     _gatecrasherCustomers[floorIndex].SetVisitFloor(visitFloor);
                     if (getData is GatecrasherCustomer1Data)
                     {
@@ -131,18 +143,16 @@ public class CustomerController : MonoBehaviour
                 NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
                 CustomerData customerData = normalCustomerDataList[randInt];
-                customer.SetData(customerData, _tableManager);
+                customer.SetData(customerData, this, _tableManager);
+                customer.StartWaiting();
                 _customers.Enqueue(customer);
                 UserInfo.AddPromotionCount();
 
-                if (_sortCoroutine != null)
-                    StopCoroutine(_sortCoroutine);
-
-                _sortCoroutine = StartCoroutine(SortCustomerLine());
+                SortCustomerLine();
             }
         }
 
-        OnAddCustomerHandler?.Invoke();
+        OnChangeCustomerHandler?.Invoke();
     }
 
 
@@ -152,13 +162,9 @@ public class CustomerController : MonoBehaviour
             return false;
 
         Customer customer = _customers.Dequeue();
-
         customer.Move(targetPos, moveEndDir, onCompleted);
 
-        if (_sortCoroutine != null)
-            StopCoroutine(_sortCoroutine);
-
-        _sortCoroutine = StartCoroutine(SortCustomerLine());
+        SortCustomerLine();
         OnGuideCustomerHandler.Invoke();
         return true;
     }
@@ -205,7 +211,15 @@ public class CustomerController : MonoBehaviour
     }
 
 
-    private IEnumerator SortCustomerLine()
+    private void SortCustomerLine()
+    {
+        if (_sortCoroutine != null)
+            StopCoroutine(_sortCoroutine);
+
+        _sortCoroutine = StartCoroutine(SortCustomerLineRoutine());
+    }
+
+    private IEnumerator SortCustomerLineRoutine()
     {
         yield return YieldCache.WaitForSeconds(0.5f);
         Vector2 startLinePos = _startLine.position;
@@ -249,14 +263,14 @@ public class CustomerController : MonoBehaviour
         if (data is GatecrasherCustomer1Data)
         {
             _gatecrasherCustomers[floorIndex] = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            _gatecrasherCustomers[floorIndex].SetData(data, _tableManager);
+            _gatecrasherCustomers[floorIndex].SetData(data, this, _tableManager);
             _gatecrasherCustomers[floorIndex].SetVisitFloor(visitFloor);
             _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer1Event(_tableManager.GetDropCoinAreaList(visitFloor), _specialCustomerTargetPosList, OnCustomerEvent);
         }
         else if (data is GatecrasherCustomer2Data)
         {
             _gatecrasherCustomers[floorIndex] = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            _gatecrasherCustomers[floorIndex].SetData(data, _tableManager);
+            _gatecrasherCustomers[floorIndex].SetData(data, this, _tableManager);
             _gatecrasherCustomers[floorIndex].SetVisitFloor(visitFloor);
             _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
         }
@@ -264,7 +278,7 @@ public class CustomerController : MonoBehaviour
         else if(data is SpecialCustomerData)
         {
             SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            specialCustomer.SetData(data, _tableManager);
+            specialCustomer.SetData(data, this, _tableManager);
             specialCustomer.SetVisitFloor(visitFloor);
             specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
         }
@@ -272,15 +286,14 @@ public class CustomerController : MonoBehaviour
         else
         {
             NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            customer.SetData(data, _tableManager);
+            customer.SetData(data, this, _tableManager);
+            customer.StartWaiting();
             _customers.Enqueue(customer);
             
-            if (_sortCoroutine != null)
-                StopCoroutine(_sortCoroutine);
-            _sortCoroutine = StartCoroutine(SortCustomerLine());
+            SortCustomerLine();
             UserInfo.AddPromotionCount();
         }
 
-        OnAddCustomerHandler?.Invoke();
+        OnChangeCustomerHandler?.Invoke();
     }
 }

@@ -87,11 +87,11 @@ public class CustomerDataManager : MonoBehaviour
     {
         return UserInfo.CustomerSortType switch
         {
-            SortType.NameAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
-            SortType.NameDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
-            SortType.GradeAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
-            SortType.GradeDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
-            SortType.None => _customerDataList,
+            GradeSortType.NameAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
+            GradeSortType.NameDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
+            GradeSortType.GradeAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
+            GradeSortType.GradeDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
+            GradeSortType.None => _customerDataList,
             _ => null
         };
     }

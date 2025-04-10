@@ -51,7 +51,7 @@ public class UIFurniture : MobileUIView
 
         for(int i = 0, cntI = (int)FurnitureType.Length; i < cntI; ++i)
         {
-            List<FurnitureData> typeDataList = FurnitureDataManager.Instance.GetFurnitureDataList((FurnitureType)i);
+            List<FurnitureData> typeDataList = FurnitureDataManager.Instance.GetSortFurnitureDataList((FurnitureType)i);
             _slots[i] = new List<UIRestaurantAdminFoodTypeSlot>();
             for (int j = 0, cntJ = typeDataList.Count; j < cntJ; ++j)
             {
@@ -124,7 +124,7 @@ public class UIFurniture : MobileUIView
 
         _currentType = type;
         FurnitureData equipFurnitureData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _currentFloorType, type);
-        _currentTypeDataList = FurnitureDataManager.Instance.GetFurnitureDataList(type);
+        _currentTypeDataList = FurnitureDataManager.Instance.GetSortFurnitureDataList(type);
         string furnitureName = Utility.FurnitureTypeStringConverter(type);
         _typeText.text = furnitureName;
 

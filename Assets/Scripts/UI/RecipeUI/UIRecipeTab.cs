@@ -20,7 +20,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
     public override void Init()
     {
-        _foodDataList = FoodDataManager.Instance.GetFoodDataList();
+        _foodDataList = FoodDataManager.Instance.GetSortFoodDataList();
         _uiRecipePreview.Init(OnBuyButtonClicked, OnUpgradeButtonClicked);
         _uiRecipePreview.SetData(_foodDataList[0]);
         _uiUpgrade.SetData(_foodDataList[0]);

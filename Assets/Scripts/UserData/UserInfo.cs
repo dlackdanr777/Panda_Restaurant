@@ -165,11 +165,23 @@ public static class UserInfo
     public static Action OnChangeCustomerSortTypeHandler;
 
 
-    public static SortType _customerSortType = SortType.None;
-    public static SortType CustomerSortType => _customerSortType;
+    public static GradeSortType _customerSortType = GradeSortType.None;
+    public static GradeSortType CustomerSortType => _customerSortType;
 
-    private static SortType _gachaItemSortType = SortType.GradeDescending;
-    public static SortType GachaItemSortType => _gachaItemSortType;
+    private static GradeSortType _gachaItemSortType = GradeSortType.GradeDescending;
+    public static GradeSortType GachaItemSortType => _gachaItemSortType;
+
+    private static ShopSortType _furnitureSortType = ShopSortType.PriceAscending;
+    public static ShopSortType FurnitureSortType => _furnitureSortType;
+
+    private static ShopSortType _kitchenUtensilSortType = ShopSortType.PriceAscending;
+    public static ShopSortType KitchenUtensilSortType => _kitchenUtensilSortType;
+
+    private static ShopSortType _staffSortType = ShopSortType.PriceAscending;
+    public static ShopSortType StaffSortType => _staffSortType;
+
+    private static ShopSortType _foodSortType = ShopSortType.PriceAscending;
+    public static ShopSortType FoodSortType => _foodSortType;
 
 
     private static StageInfo[] _stageInfos = new StageInfo[(int)EStage.Length];
@@ -2071,7 +2083,7 @@ public static class UserInfo
 
     #region 환경 설정
 
-    public static void ChangeGachaItemSortType(SortType sortType)
+    public static void ChangeGachaItemSortType(GradeSortType sortType)
     {
         if (_gachaItemSortType == sortType)
             return;
@@ -2081,7 +2093,7 @@ public static class UserInfo
     }
 
 
-    public static void ChangeCustomerSortType(SortType sortType)
+    public static void ChangeCustomerSortType(GradeSortType sortType)
     {
         if (_customerSortType == sortType)
             return;
