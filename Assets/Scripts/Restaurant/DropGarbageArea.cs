@@ -1,9 +1,12 @@
 using Muks.Tween;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class DropGarbageArea : MonoBehaviour
 {
+    public event Action OnChangeGarbageCountHandler;
+
     [Header("Area Options")]
     [SerializeField] private Transform _dropArea;
     [SerializeField] private float _areaRangeX;
@@ -61,6 +64,9 @@ public class DropGarbageArea : MonoBehaviour
             garbage.AddEvent(CleanGarbage);
             _garbageList.Add(garbage);
         }
+
+        if(0 < _garbageList.Count)
+            OnChangeGarbageCountHandler?.Invoke();
     }
 
 
@@ -79,7 +85,7 @@ public class DropGarbageArea : MonoBehaviour
         }
 
         garbage.TweenStop();
-        garbage.TweenRotate(_rotate[Random.Range(0, _rotate.Length)], 0.5f, Ease.InQuad);
+        garbage.TweenRotate(_rotate[UnityEngine.Random.Range(0, _rotate.Length)], 0.5f, Ease.InQuad);
         garbage.TweenMoveX(targetPos.x, 0.5f);
         garbage.TweenMoveY(targetPos.y, 0.5f, Ease.InBack).OnComplete(() =>
         {
@@ -96,6 +102,7 @@ public class DropGarbageArea : MonoBehaviour
             garbage.AddEvent(CleanGarbage);
             garbage.transform.position = targetPos;
             garbage.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
+            OnChangeGarbageCountHandler?.Invoke();
         });
     }
 
@@ -127,6 +134,7 @@ public class DropGarbageArea : MonoBehaviour
         }
         _garbageList.Clear();
         _garbageData.SetCount(0);
+        OnChangeGarbageCountHandler?.Invoke();
     }
 
 

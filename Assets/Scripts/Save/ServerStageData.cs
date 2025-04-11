@@ -10,6 +10,8 @@ public class ServerStageData
     public int Score;
     public int Tip;
 
+    public int Satisfaction;
+
     public List<List<string>> EquipStaffDataList = new List<List<string>>();
     public List<SaveStaffData> GiveStaffList = new List<SaveStaffData>();
 
@@ -33,6 +35,8 @@ public class ServerStageData
         param.Add("UnlockFloor", (int)UnlockFloor);
         param.Add("Score", Score);
         param.Add("Tip", Tip);
+        param.Add("Satisfaction", Satisfaction);
+
         param.Add("GiveStaffList", GiveStaffList);
         param.Add("EquipStaffDataList", EquipStaffDataList);
         param.Add("GiveFurnitureList", GiveFurnitureList.ToList());
@@ -64,6 +68,7 @@ public class ServerStageData
         UnlockFloor = (ERestaurantFloorType)GetInt("UnlockFloor");
         Score = GetInt("Score");
         Tip = GetInt("Tip");
+        Satisfaction = GetInt("Satisfaction");
 
 
         if (data.ContainsKey("GiveStaffList"))

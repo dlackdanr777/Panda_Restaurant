@@ -367,17 +367,19 @@ public static class Utility
             description = data is GatecrasherCustomer1Data ? $"{gatecrasherCustomerData.ActiveDuration}초 동안 돌아다니며 동전을 훔친다" : $"{gatecrasherCustomerData.ActiveDuration}초 동안 고성방가로 손님들을 쫒아낸다";
         }
 
-        else
+        else if(data is NormalCustomerData)
         {
-            if (data.Skill == null)
+            NormalCustomerData normalCustomerData = (NormalCustomerData)data;
+
+            if (normalCustomerData.Skill == null)
                 description = "없음";
 
             else
             {
-                if(data.Skill is CustomerFoodPriceUpSkill)
-                    description = $"{data.Skill.SkillActivatePercent}% 확률로 음식 가격의 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}</color>배 지불한다";
-                else if(data.Skill is CustomerOrderCountUpSkill)
-                    description = $"{data.Skill.SkillActivatePercent}% 확률로 음식을 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}</color>개 주문한다";
+                if(normalCustomerData.Skill is CustomerFoodPriceUpSkill)
+                    description = $"{normalCustomerData.Skill.SkillActivatePercent}%확률로 음식 가격의 <color={ColorToHex(GetColor(ColorType.Positive))}>{normalCustomerData.Skill.FirstValue}</color>배 지불한다";
+                else if(normalCustomerData.Skill is CustomerOrderCountUpSkill)
+                    description = $"{normalCustomerData.Skill.SkillActivatePercent}%확률로 음식을 <color={ColorToHex(GetColor(ColorType.Positive))}>{normalCustomerData.Skill.FirstValue}</color>개 주문한다";
             }      
         }
 
@@ -477,5 +479,26 @@ public static class Utility
         int g = Mathf.Clamp(Mathf.FloorToInt(color.g * 255), 0, 255);
         int b = Mathf.Clamp(Mathf.FloorToInt(color.b * 255), 0, 255);
         return $"#{r:X2}{g:X2}{b:X2}";
+    }
+
+    public static string CutStringUpToChar(string str, char delimiter)
+    {
+        str = str.ToUpper();
+        int index = str.IndexOf(delimiter);
+
+        if (index >= 0)
+            return str.Substring(0, index);
+        else
+            return str;
+    }
+
+    public static string GetStringAfterChar(string str, char delimiter)
+    {
+        int index = str.IndexOf(delimiter);
+    
+        if (index >= 0 && index < str.Length - 1)
+            return str.Substring(index + 1);
+        else
+            return string.Empty;
     }
 }

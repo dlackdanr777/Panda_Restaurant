@@ -13,8 +13,6 @@ public class UIFever : MonoBehaviour
     [SerializeField] private RectTransform _feverAnimeObj;
 
     private Coroutine _feverRoutine;
-    private bool _isFeverStart = false;
-    public bool IsFeverStart => _isFeverStart;
 
     private Vector3 _tmpButtonScale;
 
@@ -50,7 +48,7 @@ public class UIFever : MonoBehaviour
 
     private void OnVisitCustomerEvent()
     {
-        if (_isFeverStart || UserInfo.IsTutorialStart || !gameObject.activeInHierarchy)
+        if (_mainScene.IsFeverStart || UserInfo.IsTutorialStart || !gameObject.activeInHierarchy)
             return;
 
         GameManager.Instance.FeverGaguge = Mathf.Clamp(GameManager.Instance.FeverGaguge + 1, 0, ConstValue.MAX_PEVER_GAUGE);
@@ -74,7 +72,7 @@ public class UIFever : MonoBehaviour
 
     private void OnFeverButtonClicked()
     {
-        if (_isFeverStart || UserInfo.IsTutorialStart || !gameObject.activeInHierarchy)
+        if (_mainScene.IsFeverStart || UserInfo.IsTutorialStart || !gameObject.activeInHierarchy)
             return;
 
         if (GameManager.Instance.FeverGaguge < ConstValue.MAX_PEVER_GAUGE)
@@ -91,8 +89,7 @@ public class UIFever : MonoBehaviour
 
     private IEnumerator FeverCoroutine()
     {
-
-        _isFeverStart = true;
+        _mainScene.SetFever(true);
         _feverButton.interactable = false;
         _mainScene.PlayMainMusic();
         GameManager.Instance.SetGameSpeed(1);
@@ -107,7 +104,7 @@ public class UIFever : MonoBehaviour
         _feverAnimeObj.position = _animeStartPos.position;
         _feverEffects.SetActive(false);
         GameManager.Instance.SetGameSpeed(0);
-        _isFeverStart = false;
+        _mainScene.SetFever(false);
         _feverButton.interactable = false;
         _mainScene.PlayMainMusic();
         GameManager.Instance.FeverGaguge = 0;

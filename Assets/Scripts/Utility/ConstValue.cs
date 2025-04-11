@@ -9,4 +9,9 @@ public static class ConstValue
     //피버 관련 변수
     public const int MAX_PEVER_GAUGE = 100;
     public const float PEVER_TIME = 8f;
+
+
+   //스테이지 관련 변수
+    public const int MAX_SATISFACTION = 50;
+    public const int MIN_SATISFACTION = -50; 
 }

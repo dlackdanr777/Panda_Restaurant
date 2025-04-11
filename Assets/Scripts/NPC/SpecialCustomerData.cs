@@ -20,4 +20,14 @@ public class SpecialCustomerData : CustomerData
 
     [Range(0, 10000)][SerializeField] private int _touchAddMoney;
     public int TouchAddMoney => _touchAddMoney;
+
+
+    public SpecialCustomerData(Sprite sprite, Sprite touchSprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, int activeDuration, int touchCount, int touchAddMoney, float spawnChance) : base(sprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
+    {
+        _touchSprite = touchSprite;
+        _activeDuration = activeDuration;
+        _touchCount = touchCount;
+        _touchAddMoney = touchAddMoney;
+        _spawnChance = spawnChance;
+    }
 }

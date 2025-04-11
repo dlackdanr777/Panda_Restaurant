@@ -45,6 +45,7 @@ public class GatecrasherCustomer : Customer
     private Coroutine _actionCoroutine;
     private Coroutine _enabledCoroutine;
     private Coroutine _speedRecoveryCoroutine;
+    private Coroutine _subSatisfactionCoroutine;
     private TweenData _tween;
     private Action<Customer> _onCompleted;
     private Action _gatecrasher1OnChangeShape;
@@ -90,6 +91,7 @@ public class GatecrasherCustomer : Customer
         _spriteFillAmount.SetFillAmount(0);
         SoundManager.Instance.PlayEffectAudio(_visitSound, 0.15f);
         UserInfo.CustomerVisits(data);
+        UserInfo.AddSatisfaction(UserInfo.CurrentStage, -5);
         if (_enabledCoroutine != null)
             StopCoroutine(_enabledCoroutine);
 
@@ -101,6 +103,9 @@ public class GatecrasherCustomer : Customer
 
         if(_speedRecoveryCoroutine != null)
             StopCoroutine(_speedRecoveryCoroutine);
+
+        if(_subSatisfactionCoroutine != null)
+            StopCoroutine(_subSatisfactionCoroutine);
     }
 
     public void StartGatecreasherCustomer2Event(Vector3 targetPos, TableManager tableManager, Action<Customer> onCompleted)
@@ -120,6 +125,10 @@ public class GatecrasherCustomer : Customer
                 _guitarSource.Play();
                 if (_gatecrasher1Coroutine != null)
                     StopCoroutine(_gatecrasher1Coroutine);
+
+                if (_subSatisfactionCoroutine != null)
+                    StopCoroutine(_subSatisfactionCoroutine);
+                _subSatisfactionCoroutine = StartCoroutine(SubSatisfactionRoutine());
 
                 if (_enabledCoroutine != null)
                     StopCoroutine(_enabledCoroutine);
@@ -148,6 +157,10 @@ public class GatecrasherCustomer : Customer
         if (_enabledCoroutine != null)
             StopCoroutine(_enabledCoroutine);
         _enabledCoroutine = StartCoroutine(OnEndTimeEvent());
+
+        if (_subSatisfactionCoroutine != null)
+            StopCoroutine(_subSatisfactionCoroutine);
+        _subSatisfactionCoroutine = StartCoroutine(SubSatisfactionRoutine());
 
         if (_actionCoroutine != null)
             StopCoroutine(_actionCoroutine);
@@ -275,6 +288,9 @@ public class GatecrasherCustomer : Customer
             if (_speedRecoveryCoroutine != null)
                 StopCoroutine(_speedRecoveryCoroutine);
 
+            if (_subSatisfactionCoroutine != null)
+                StopCoroutine(_subSatisfactionCoroutine);
+
             StopMove();
             _spritePressEffect.Interactable = false;
             _spriteGroup.SetAlpha(1);
@@ -282,6 +298,7 @@ public class GatecrasherCustomer : Customer
             _spriteRenderer.TweenAlpha(0, 0.7f).OnComplete(() => ObjectPoolManager.Instance.DespawnGatecrasherCustomer(this));
             _guitarSource.Stop();
             UserInfo.AddExterminationGatecrasherCustomerCount(_customerData);
+            UserInfo.AddSatisfaction(UserInfo.CurrentStage, 5);
             _onCompleted?.Invoke(this);
             return;
         }
@@ -411,6 +428,9 @@ public class GatecrasherCustomer : Customer
         if (_speedRecoveryCoroutine != null)
             StopCoroutine(_speedRecoveryCoroutine);
 
+        if (_subSatisfactionCoroutine != null)
+            StopCoroutine(_subSatisfactionCoroutine);
+
         StopMove();
         _spritePressEffect.Interactable = false;
         _spriteGroup.TweenSetAlpha(0, 0.7f);
@@ -435,5 +455,15 @@ public class GatecrasherCustomer : Customer
         }
 
         _moveSpeed = targetSpeed;
+    }
+
+    private IEnumerator SubSatisfactionRoutine()
+    {
+        while(true)
+        {
+            yield return YieldCache.WaitForSeconds(10f);
+            UserInfo.AddSatisfaction(UserInfo.CurrentStage, -3);        
+        }
+
     }
 }

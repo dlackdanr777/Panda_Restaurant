@@ -19,6 +19,8 @@ public class TableManager : MonoBehaviour
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private FurnitureSystem _furnitureSystem;
     [SerializeField] private KitchenSystem _kitchenSystem;
+    [SerializeField] private SatisfactionSystem _satisfactionSystem;
+    [SerializeField] private MainScene _mainScene;
 
 
     [Space]
@@ -155,7 +157,7 @@ public class TableManager : MonoBehaviour
                         return;
 
                     DebugLog.Log(data.name + " Sit " + "44");
-                    if (!CustomerDataManager.Instance.CheckCustomerTendency(customer.CustomerData.TendencyType))
+                    if (!_satisfactionSystem.CheckCustomerTendency(customer.NormalCustomerData.TendencyType))
                     {
                         AngerExitCustomer(data);
                         return;
@@ -177,13 +179,19 @@ public class TableManager : MonoBehaviour
             return;
         }
 
+        if (!_satisfactionSystem.CheckCustomerTendency(data.CurrentCustomer.NormalCustomerData.TendencyType))
+        {
+            AngerExitCustomer(data);
+            return;
+        }
+
         if (data.OrdersCount <= 0)
             EndEat(data);
 
         data.CurrentCustomer.ChangeState(CustomerState.Idle);
         data.CurrentCustomer.HideFood();
 
-        FoodData foodData = data.CurrentCustomer.CustomerData.GetRandomOrderFood();
+        FoodData foodData = data.CurrentCustomer.NormalCustomerData.GetRandomOrderFood();
 
         bool isMiniGameNeeded = foodData.MiniGameNeeded && string.IsNullOrWhiteSpace(foodData.NeedItem);
         if (isMiniGameNeeded && !UserInfo.IsMiniGameTutorialClear)
@@ -198,8 +206,7 @@ public class TableManager : MonoBehaviour
             {
                 DebugLog.Log("현재 손님이 비어있습니다.");
                 return;
-            }
-
+            }    
 
             data.TableState = ETableState.CanServing;
             data.ServingButton.SetData(foodData);
@@ -207,7 +214,7 @@ public class TableManager : MonoBehaviour
             UpdateTable();
         });
 
-        int tip = Mathf.FloorToInt(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul);
+        int tip = Mathf.FloorToInt(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul * _satisfactionSystem.AddCustomerTipMul(data.CurrentCustomer.NormalCustomerData.TendencyType));
         data.TotalTip += tip + GameManager.Instance.AddFoodTip;
         data.CurrentFood = cookingData;
 
@@ -219,6 +226,13 @@ public class TableManager : MonoBehaviour
         data.OrdersCount -= 1;
 
         data.CurrentCustomer.StartWaitingForFood();
+
+        //만약 설거지거리가 쌓여있는 상태에서 주문이 발생하면 만족도 -4점 감소
+        if(!UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, data.FloorType))
+        {
+            UserInfo.AddSatisfaction(UserInfo.CurrentStage, -4);
+        }
+
         UpdateTable();
     }
 
@@ -236,7 +250,13 @@ public class TableManager : MonoBehaviour
         string orderFoodId = data.CurrentFood.FoodData.Id;
         if (!UserInfo.IsGiveRecipe(orderFoodId))
         {
-            ExitCustomer(data);
+            AngerExitCustomer(data);
+            return;
+        }
+
+        if (!_satisfactionSystem.CheckCustomerTendency(data.CurrentCustomer.NormalCustomerData.TendencyType))
+        {
+            AngerExitCustomer(data);
             return;
         }
 
@@ -253,10 +273,30 @@ public class TableManager : MonoBehaviour
             NotFurnitureTable(data);
             return;
         }
+
+        if (!_satisfactionSystem.CheckCustomerTendency(data.CurrentCustomer.NormalCustomerData.TendencyType))
+        {
+            AngerExitCustomer(data);
+            return;
+        }
+
         data.CurrentCustomer.StopWaitingForFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(data.CurrentFood.FoodData.Id);
         data.TableState = ETableState.Eating;
         StartCoroutine(EatRoutine(data, foodData));
+
+        //만약 주문 요리와 손님의 등장요리가 같다면 만족도 2점 증가
+        if(data.CurrentFood.FoodData.Id.Equals(data.CurrentCustomer.NormalCustomerData.RequiredDish))
+        {
+            UserInfo.AddSatisfaction(UserInfo.CurrentStage, 2);
+        }
+
+        //만약 피버중 서빙이 성공한다면 만족도 1점 증가
+        if(_mainScene.IsFeverStart)
+        {
+            UserInfo.AddSatisfaction(UserInfo.CurrentStage, 1);
+        }
+
         UpdateTable();
     }
 
@@ -307,7 +347,8 @@ public class TableManager : MonoBehaviour
         }
 
         NormalCustomer exitCustomer = data.CurrentCustomer;
-
+        exitCustomer.StopWaitingForFood();
+        exitCustomer.StopWaiting();
         Vector3 customerPos = data.ChairTrs[data.SitIndex].position;
         customerPos.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
         exitCustomer.transform.position = customerPos;
@@ -336,6 +377,8 @@ public class TableManager : MonoBehaviour
         }
 
         NormalCustomer exitCustomer = data.CurrentCustomer;
+        exitCustomer.StopWaitingForFood();
+        exitCustomer.StopWaiting();
         Vector3 customerPos = data.ChairTrs[data.SitIndex].position;
         customerPos.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
         exitCustomer.transform.position = customerPos;

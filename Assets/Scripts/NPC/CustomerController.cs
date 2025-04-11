@@ -27,7 +27,7 @@ public class CustomerController : MonoBehaviour
     private Queue<NormalCustomer> _customers = new Queue<NormalCustomer>();
     private GatecrasherCustomer[] _gatecrasherCustomers = new global::GatecrasherCustomer[(int)ERestaurantFloorType.Length];
     private Coroutine _sortCoroutine;
-    private float _breakInCustomerTime => 60;
+    private float _breakInCustomerTime => 1200;
     private float _breakInCustomerTimer;
     private bool _breakCustomerEnabled = true;
 

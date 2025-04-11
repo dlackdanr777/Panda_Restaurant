@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class DropCoinArea : MonoBehaviour
 {
+
     [Header("Area Options")]
     [SerializeField] private Transform _dropArea;
     [SerializeField] private float _areaRangeX;

@@ -2,7 +2,6 @@ using UnityEngine;
 
 public interface ISkill
 {
-    string SkillName { get; }
     string Description { get; }
     float Cooldown { get; }
     float Duration { get; }
@@ -12,16 +11,12 @@ public interface ISkill
 
 public abstract class SkillBase : ScriptableObject, ISkill
 {
-    [SerializeField] private Sprite _sprite;
-    [SerializeField] private string _skillName;
+
     [TextArea][SerializeField] private string _description;
     [SerializeField] private float _cooldown;
     [SerializeField] private float _duration;
     public abstract float FirstValue { get; }
     public abstract float SecondValue { get; }
-
-    public Sprite Sprite => _sprite;
-    public string SkillName => _skillName;
     public string Description => _description;
     public float Cooldown => _cooldown;
     public float Duration => _duration;

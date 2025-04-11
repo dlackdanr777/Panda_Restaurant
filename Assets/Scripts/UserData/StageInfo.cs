@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using static UnityEngine.Rendering.DebugUI.Table;
 
 public class StageInfo
 {
@@ -23,6 +22,8 @@ public class StageInfo
 
     public event Action OnChangeSinkBowlHandler;
 
+    public event Action OnChangeSatisfactionHandler;
+
     private EStage _stage;
     public EStage Stage => _stage;
 
@@ -34,9 +35,11 @@ public class StageInfo
     private int _score;
     public int Score => _score;
 
-
     private int _tip;
     public int Tip => _tip;
+
+    private int _satisfaction;
+    public int Satisfaction => _satisfaction;
 
 
     private StaffData[,] _equipStaffDatas = new StaffData[(int)ERestaurantFloorType.Length, (int)EquipStaffType.Length];
@@ -82,6 +85,11 @@ public class StageInfo
     }
 
     #region StageData
+    public void AddSatisfaction(int value)
+    {
+        _satisfaction = Mathf.Clamp(_satisfaction + value, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
+        OnChangeSatisfactionHandler?.Invoke();
+    }
 
     public void ChangeUnlockFloor(ERestaurantFloorType floor)
     {
@@ -854,6 +862,7 @@ public class StageInfo
         data.UnlockFloor = _unlockFloor;
         data.Score = _score;
         data.Tip = _tip;
+        data.Satisfaction = _satisfaction;
 
         data.SaveKitchenDataList = ConvertKitchenDataToList();
         data.SaveTableDataList = ConvertTableDataToList();
@@ -916,6 +925,7 @@ public class StageInfo
         _unlockFloor = loadData.UnlockFloor;
         _score = loadData.Score;
         _tip = loadData.Tip;
+        _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
 
         _giveStaffDic.Clear();
         for (int i = 0, cnt = loadData.GiveStaffList.Count; i < cnt; ++i)

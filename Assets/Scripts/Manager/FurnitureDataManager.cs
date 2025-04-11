@@ -108,8 +108,8 @@ public class FurnitureDataManager : MonoBehaviour
             foreach (var sprite in sprites)
             {
                 string spriteName = sprite.name;
-                string key = CutStringUpToChar(spriteName, '_'); // 기본 키 생성
-                string afterUnderStr = GetStringAfterChar(spriteName, '_'); // 언더바 이후 문자열
+                string key = Utility.CutStringUpToChar(spriteName, '_'); // 기본 키 생성
+                string afterUnderStr = Utility.GetStringAfterChar(spriteName, '_'); // 언더바 이후 문자열
                 bool isThumbnail = spriteName.Contains("썸네일"); // 썸네일 여부 확인
                 bool isChair = afterUnderStr.Contains("의자") || afterUnderStr.Contains("체어");
                 DebugLog.Log(spriteName);
@@ -423,26 +423,4 @@ rightChairSprite
             _furnitureDataListType[(int)table5Data.Type].Add(table5Data);
         }
     }
-
-
-    private static string CutStringUpToChar(string str, char delimiter)
-    {
-        str = str.ToUpper();
-        int index = str.IndexOf(delimiter);
-
-        if (index >= 0)
-            return str.Substring(0, index);
-        else
-            return str;
-    }
-
-    private static string GetStringAfterChar(string str, char delimiter)
-{
-    int index = str.IndexOf(delimiter);
-    
-    if (index >= 0 && index < str.Length - 1)
-        return str.Substring(index + 1);
-    else
-        return string.Empty;
-}
 }

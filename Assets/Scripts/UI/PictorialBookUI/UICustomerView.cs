@@ -194,17 +194,18 @@ public class UICustomerView : MonoBehaviour
     private void SetOrderFood(CustomerData data)
     {
         HideOrderFoodSlots();
-        if (data is SpecialCustomerData || data is GatecrasherCustomerData)
+        if (!(data is NormalCustomerData))
             return;
 
+        NormalCustomerData normalData = (NormalCustomerData)data;
         int visitCount = UserInfo.GetVisitedCustomerCount(data);
 
-        SetOrderFoodSlot(0, data.RequiredDish, true, string.Empty);
-        SetOrderFoodSlot(1, data.VisitCount100Food, 100 <= visitCount, "방문 " + Utility.SetStringColor(100.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(2, data.VisitCount200Food, 200 <= visitCount, "방문 " + Utility.SetStringColor(200.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(3, data.VisitCount300Food, 300 <= visitCount, "방문 " + Utility.SetStringColor(300.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(4, data.VisitCount400Food, 400 <= visitCount, "방문 " + Utility.SetStringColor(400.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(5, data.VisitCount500Food, 500 <= visitCount, "방문 " + Utility.SetStringColor(500.ToString(), ColorType.Negative) + "회");
+        SetOrderFoodSlot(0, normalData.RequiredDish, true, string.Empty);
+        SetOrderFoodSlot(1, normalData.VisitCount100Food, 100 <= visitCount, "방문 " + Utility.SetStringColor(100.ToString(), ColorType.Negative) + "회");
+        SetOrderFoodSlot(2, normalData.VisitCount200Food, 200 <= visitCount, "방문 " + Utility.SetStringColor(200.ToString(), ColorType.Negative) + "회");
+        SetOrderFoodSlot(3, normalData.VisitCount300Food, 300 <= visitCount, "방문 " + Utility.SetStringColor(300.ToString(), ColorType.Negative) + "회");
+        SetOrderFoodSlot(4, normalData.VisitCount400Food, 400 <= visitCount, "방문 " + Utility.SetStringColor(400.ToString(), ColorType.Negative) + "회");
+        SetOrderFoodSlot(5, normalData.VisitCount500Food, 500 <= visitCount, "방문 " + Utility.SetStringColor(500.ToString(), ColorType.Negative) + "회");
     }
 
 

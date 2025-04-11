@@ -1,10 +1,10 @@
 using Muks.UI;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class MainScene : MonoBehaviour
 {
-
     [Header("Option")]
     [SerializeField] private EStage _stage;
 
@@ -18,10 +18,13 @@ public class MainScene : MonoBehaviour
     private ERestaurantFloorType _currentFloor;
     public ERestaurantFloorType CurrentFloor => _currentFloor;
     private float _updateTimer;
+    private bool _isFeverStart = false;
+    public bool IsFeverStart => _isFeverStart;
+    public void SetFever(bool isFeverStart) => _isFeverStart = isFeverStart;
 
     public void PlayMainMusic()
     {
-        if(!_uiFever.IsFeverStart)
+        if(!_isFeverStart)
             SoundManager.Instance.PlayBackgroundAudio(_mainSceneMusic, 0.5f);
 
         else
@@ -35,7 +38,7 @@ public class MainScene : MonoBehaviour
 
     private void Awake()
     {
-        UserInfo.ChangeStage(_stage);
+        UserInfo.ChangeStage(_stage);     
     }
 
 

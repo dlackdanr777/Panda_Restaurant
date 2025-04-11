@@ -14,6 +14,8 @@ public class NormalCustomer : Customer
     [SerializeField] private GameObject _eatAnimation;
     [SerializeField] private SpriteRenderer _foodRenderer;
 
+    private NormalCustomerData _normalCustomerData;
+    public NormalCustomerData NormalCustomerData => _normalCustomerData;
     private CustomerSkill _skill;
 
     private TableData _sitTableData;
@@ -45,7 +47,14 @@ public class NormalCustomer : Customer
 
     public override void SetData(CustomerData data, CustomerController customerController, TableManager tableManager)
     {
+        if (!(data is NormalCustomerData))
+        {
+            DebugLog.LogError("해당 오브젝트는 NormalCustomerData만 받을 수 있습니다.");
+            return;
+        }
+        _normalCustomerData = (NormalCustomerData)data;
         base.SetData(data, customerController, tableManager);
+
 
         StopCoroutines();
         HideFood();
@@ -62,10 +71,10 @@ public class NormalCustomer : Customer
         if (_skill != null)
             _skill.Deactivate(this);
 
-        if(data.Skill != null)
+        if(_normalCustomerData.Skill != null)
         {
-            _skill = data.Skill;
-            data.Skill.Activate(this);
+            _skill = _normalCustomerData.Skill;
+            _normalCustomerData.Skill.Activate(this);
         }
 
         if (UnityEngine.Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100))
@@ -105,7 +114,7 @@ public class NormalCustomer : Customer
     public WeightedRandom<FoodType> GetFoodTypeWeightDic()
     {
         WeightedRandom<FoodType> _foodRandom = new WeightedRandom<FoodType>();
-        List<FoodData> orderFoodDataList = _customerData.GetGiveOrderFoodList();
+        List<FoodData> orderFoodDataList = _normalCustomerData.GetGiveOrderFoodList();
         for (int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
         {
             _foodRandom.Add((FoodType)i, 0);
@@ -128,7 +137,6 @@ public class NormalCustomer : Customer
     public void AddFoodPricePercent(float value)
     {
         _currentFoodPriceMul = Mathf.Clamp(value, 0, 100);
-        
     }
 
     public void StartAnger()
@@ -216,7 +224,7 @@ public class NormalCustomer : Customer
     private IEnumerator WaitingInLineCoroutine()
     {
         float elapsedTime = 0f;
-        float maxWaitTime = CustomerData.WaitTime;
+        float maxWaitTime = _normalCustomerData.WaitTime;
         
         while (elapsedTime < maxWaitTime)
         {
@@ -232,7 +240,7 @@ public class NormalCustomer : Customer
     private IEnumerator WaitingForFoodCoroutine()
     {
         float elapsedTime = 0f;
-        float maxWaitTime = CustomerData.OrderFoodTime;
+        float maxWaitTime = _normalCustomerData.OrderFoodTime;
         
         while (elapsedTime < maxWaitTime)
         {

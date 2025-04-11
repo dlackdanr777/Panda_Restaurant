@@ -63,6 +63,7 @@ public class SpecialCustomer : Customer
     public void StartEvent(List<Vector3> targetPosList, Action<Customer> onCompleted)
     {
         LoopEvent(-1, targetPosList);
+        UserInfo.AddSatisfaction(UserInfo.CurrentStage, 5);
         _onCompleted = onCompleted;
     }
 

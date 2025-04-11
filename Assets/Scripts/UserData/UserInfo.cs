@@ -42,6 +42,8 @@ public static class UserInfo
 
     public static event Action OnChangeSinkBowlHandler;
 
+    public static event Action OnChangeSatisfactionHandler;
+
     public static event Action OnDoneChallengeHandler;
     public static event Action OnClearChallengeHandler;
 
@@ -212,6 +214,8 @@ public static class UserInfo
             _stageInfos[i].OnChangeKitchenUtensilSetDataHandler += OnChangeKitchenUtensilSetDataEvent;
 
             _stageInfos[i].OnChangeSinkBowlHandler += OnAddSinkBowlEvent;
+
+            _stageInfos[i].OnChangeSatisfactionHandler += OnChangeSatisfactionEvent;
         }
     }
 
@@ -275,6 +279,12 @@ public static class UserInfo
     private static void OnAddSinkBowlEvent()
     {
         OnChangeSinkBowlHandler?.Invoke();
+    }
+
+
+    private static void OnChangeSatisfactionEvent()
+    {
+        OnChangeSatisfactionHandler?.Invoke();
     }
 
 
@@ -584,6 +594,18 @@ public static class UserInfo
     public static void ChangeStage(EStage stage)
     {
         _currentStage = stage;
+    }
+
+    public static int GetSatisfaction(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].Satisfaction;
+    }
+
+    public static void AddSatisfaction(EStage stage, int value)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].AddSatisfaction(value);
     }
 
 
