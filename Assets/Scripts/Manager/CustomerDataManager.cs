@@ -173,6 +173,9 @@ public class CustomerDataManager : MonoBehaviour
     }
 
 
+    
+
+
     private void OnDestroy()
     {
         UserInfo.OnChangeMoneyHandler -= CheckEnableCustomer;

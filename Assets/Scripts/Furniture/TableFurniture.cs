@@ -4,7 +4,8 @@ public class TableFurniture : Furniture
 {
     [Space]
     [Header("Table Furniture")]
-    [SerializeField] private Sprite _chairDefalutSprite;
+    [SerializeField] private Sprite _defalutLeftChairSprite;
+        [SerializeField] private Sprite _defalutRightChairSprite;
     [SerializeField] private SpriteRenderer _leftChairSpriteRenderer;
     [SerializeField] private SpriteRenderer _rightChairSpriteRenderer;
     [SerializeField] private PointerDownSpriteRenderer _pointerDownSpriteRenderer;
@@ -33,13 +34,18 @@ public class TableFurniture : Furniture
 
     private void OnTableUpdateEvent()
     {
-        if (_tableFurnitureData == null || _tableData == null)
+        if (_tableData == null)
         {
             DebugLog.LogError("테이블 데이터가 없습니다.");
             return;
         }
 
-
+        if(_tableFurnitureData == null && _type != FurnitureType.Table1)
+        {
+            DebugLog.Log("현재 장착되어있는 가구 데이터가 없습니다.");
+            _bowlRenderer.gameObject.SetActive(false);
+            return;
+        }
 
         if (_tableData.TableState == ETableState.NeedCleaning)
         {
@@ -73,10 +79,9 @@ public class TableFurniture : Furniture
             else
             {
                 _spriteRenderer.sprite = _defalutSprite;
-                _leftChairSpriteRenderer.sprite = _chairDefalutSprite;
-                _rightChairSpriteRenderer.sprite = _chairDefalutSprite;
-                _rightChairSpriteRenderer.flipX = true;
-                SetRendererScale(null);
+                _leftChairSpriteRenderer.sprite = _defalutLeftChairSprite;
+                _rightChairSpriteRenderer.sprite = _defalutRightChairSprite;
+                SetRendererScale();
             }
 
             return;
@@ -98,33 +103,41 @@ public class TableFurniture : Furniture
         _rightChairSpriteRenderer.sprite = _tableFurnitureData.RightChairSprite == null ? _tableFurnitureData.ChairSprite : _tableFurnitureData.RightChairSprite;
         _rightChairSpriteRenderer.flipX = _tableFurnitureData.RightChairSprite == null ? true : false;
         OnTableUpdateEvent();
-        SetRendererScale(_tableFurnitureData);
+        SetRendererScale();
 
 
     }
 
-    private void SetRendererScale(TableFurnitureData tableData)
+    private void SetRendererScale()
     {
-        Vector3 scale = tableData == null || tableData.Scale <= 0 ? _tmpScale : tableData.Scale * _tmpScale;
+        // Vector3 scale = tableData == null || tableData.Scale <= 0 ? _tmpScale : tableData.Scale * _tmpScale;
 
-        _spriteRenderer.transform.localScale = scale;
-        _leftChairSpriteRenderer.transform.localScale = scale;
-        _rightChairSpriteRenderer.transform.localScale = scale;
+        // _spriteRenderer.transform.localScale = scale;
+        // _leftChairSpriteRenderer.transform.localScale = scale;
+        // _rightChairSpriteRenderer.transform.localScale = scale;
 
         float mainY = GetBatchYOffset(_batchType, _spriteRenderer);
         float leftY = GetBatchYOffset(_batchType, _leftChairSpriteRenderer);
         float rightY = GetBatchYOffset(_batchType, _rightChairSpriteRenderer);
 
-        _spriteRenderer.transform.localPosition = new Vector3(0, mainY, 0);
-        _leftChairSpriteRenderer.transform.localPosition = new Vector3(
-            _leftChairSpriteRenderer.transform.localPosition.x, leftY, 0);
-        _rightChairSpriteRenderer.transform.localPosition = new Vector3(
-            _rightChairSpriteRenderer.transform.localPosition.x, rightY, 0);
+        float mainX = GetBatchXOffset(_spriteRenderer);
+        float leftX = GetBatchXOffset(_leftChairSpriteRenderer);
+        float rightX = GetBatchXOffset(_rightChairSpriteRenderer);
+
+        _spriteRenderer.transform.localPosition = new Vector3(mainX, mainY, 0);
+        _leftChairSpriteRenderer.transform.localPosition = new Vector3(leftX, leftY, 0);
+        _rightChairSpriteRenderer.transform.localPosition = new Vector3(rightX, rightY, 0);
 
         // 그릇 위치 = 테이블 위치에 그대로 맞춤
         if (_bowlRenderer != null && _spriteRenderer.sprite != null)
         {
             _bowlRenderer.transform.localPosition = _spriteRenderer.transform.localPosition;
+        }
+
+        if(_tableData != null)
+        {
+            _tableData.SetLeftChairTrPos(_leftChairSpriteRenderer.transform.position);
+            _tableData.SetRightChairTrPos(_rightChairSpriteRenderer.transform.position);
         }
     }
 
@@ -183,15 +196,15 @@ public class TableFurniture : Furniture
         {
             case FurnitureBatchTypeY.Lower:
                 // 바닥 정렬: 피벗이 0일 때 기준 → 현재 피벗만큼 위로 올려야 함
-                return height * pivotY * scaleY;
+                return height * pivotY * scaleY - 1.43f;
 
             case FurnitureBatchTypeY.Upper:
                 // 천장 정렬: 피벗이 1일 때 기준 → (1 - pivotY) 만큼 내려야 함
-                return -height * (1f - pivotY) * scaleY;
+                return -height * (1f - pivotY) * scaleY - 1.43f;
 
             case FurnitureBatchTypeY.Center:
                 // 중앙 정렬: 피벗이 0.5일 때 기준 → (0.5 - pivotY) 보정
-                return (0.5f - pivotY) * height * scaleY;
+                return (0.5f - pivotY) * height * scaleY - 1.43f;
 
             case FurnitureBatchTypeY.None:
             default:
@@ -199,5 +212,21 @@ public class TableFurniture : Furniture
         }
     }
 
+/// <summary> 스프라이트의 피벗을 고려하여 X 좌표 오프셋을 계산하고 반환하는 함수 </summary>>
+    private float GetBatchXOffset(SpriteRenderer renderer)
+    {
+        if (renderer == null || renderer.sprite == null)
+            return 0f;
 
+        Sprite sprite = renderer.sprite;
+        float width = sprite.bounds.size.x;
+        float scaleX = renderer.transform.lossyScale.x;
+
+        // 실제 피벗 X 비율 (0~1 사이 값)
+        float pivotX = sprite.pivot.x / sprite.rect.width;
+    
+        // 피벗이 0.5(중앙)이 아닌 경우 보정
+        // 피벗이 0.5보다 작으면 오른쪽으로, 크면 왼쪽으로 이동
+        return -(0.5f - pivotX) * width * scaleX;
+    }
 }

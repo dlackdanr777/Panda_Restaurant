@@ -47,10 +47,10 @@ TagManager:
   - name: Rack
     uniqueID: 871353087
     locked: 0
-  - name: Chair
+  - name: Frame
     uniqueID: 2526321389
     locked: 0
-  - name: Frame
+  - name: Chair
     uniqueID: 1889931585
     locked: 0
   - name: SitCustomer

@@ -127,8 +127,8 @@ public class TableManager : MonoBehaviour
             data.SitIndex = sitPos;
         }
 
-        Vector3 targetPos = data.ChairTrs[data.SitIndex].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
-
+        Vector3 targetPos = data.ChairTrs[data.SitIndex].position;
+        targetPos.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
         UpdateTable();
 
         _customerController.GuideCustomer(targetPos, 0, () =>
@@ -307,7 +307,10 @@ public class TableManager : MonoBehaviour
         }
 
         NormalCustomer exitCustomer = data.CurrentCustomer;
-        exitCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
+
+        Vector3 customerPos = data.ChairTrs[data.SitIndex].position;
+        customerPos.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
+        exitCustomer.transform.position = customerPos;
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
         data.CurrentCustomer = null;
@@ -333,7 +336,9 @@ public class TableManager : MonoBehaviour
         }
 
         NormalCustomer exitCustomer = data.CurrentCustomer;
-        exitCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
+        Vector3 customerPos = data.ChairTrs[data.SitIndex].position;
+        customerPos.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
+        exitCustomer.transform.position = customerPos;
         exitCustomer.ChangeState(CustomerState.Idle);
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
@@ -370,7 +375,11 @@ public class TableManager : MonoBehaviour
         NormalCustomer exitCustomer = data.CurrentCustomer;
 
         if (data.TableState != ETableState.Move)
-            exitCustomer.transform.position = data.ChairTrs[data.SitDir == -1 ? 0 : 1].position - new Vector3(0, AStar.Instance.NodeSize * 2, 0);
+        {
+            Vector3 customerPos = data.ChairTrs[data.SitIndex].position;
+            customerPos.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
+            exitCustomer.transform.position = customerPos;
+        }
 
         data.CurrentCustomer = null;
         exitCustomer.SetLayer("Customer", 0);
