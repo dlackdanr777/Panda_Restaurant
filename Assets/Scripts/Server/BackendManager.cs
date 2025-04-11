@@ -1,6 +1,7 @@
 using BackEnd;
 using LitJson;
 using System;
+using System.Collections.Generic;  // Dictionary를 위한 추가
 using System.Data;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -42,7 +43,9 @@ namespace Muks.BackEnd
 
         private static BackendManager _instance;
 
-
+        // 저장 가능 상태를 추적하는 플래그
+        private static bool _isSaveEnabled = true;
+        public static bool IsSaveEnabled => _isSaveEnabled;
 
         /// <summary>이 값이 참일 때만 서버에 정보를 보냅니다.(로그인 실패인데 정보를 보내면 서버 정보가 초기화)</summary> 
         public bool _isLogin = false;
@@ -65,16 +68,12 @@ namespace Muks.BackEnd
                     DateTime dateTime = DateTime.Parse(time);
                     return dateTime;
                 }
-
                 else
                 {
                     return LocalTime;
                 }
-
             }
         }
-
-
 
         private void Awake()
         {
@@ -83,17 +82,107 @@ namespace Muks.BackEnd
 
             _instance = this;
             DontDestroyOnLoad(gameObject);
+            
+            // 전역 오류 처리기 설정
+            SetupGlobalErrorHandler();
+            
             Init();
         }
-
+        
+        // 전역 예외 핸들러 설정
+        private void SetupGlobalErrorHandler()
+        {
+            Application.logMessageReceived += HandleLog;
+            Debug.Log("[BackendManager] 전역 오류 감지 시스템이 활성화되었습니다.");
+        }
+        
+        private void OnDestroy()
+        {
+            // 이벤트 구독 해제
+            Application.logMessageReceived -= HandleLog;
+        }
+        
+        // 전역 오류 플래그 관리 메서드
+        public static void DisableSaving(string reason)
+        {
+            if (_isSaveEnabled)
+            {
+                _isSaveEnabled = false;
+                Debug.LogError($"[BackendManager] 심각한 오류 발생으로 데이터 저장이 비활성화되었습니다! 이유: {reason}");
+                
+                // 안전하게 로그 업로드 시도
+                try
+                {
+                    if (Instance != null && Instance._isLogin)
+                    {
+                        Instance.LogUpload("CriticalError", $"저장 기능 비활성화: {reason}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[BackendManager] 오류 로그 업로드 중 추가 예외 발생: {ex.Message}");
+                }
+            }
+        }
+        
+        public static void EnableSaving()
+        {
+            _isSaveEnabled = true;
+            Debug.Log("[BackendManager] 데이터 저장이 다시 활성화되었습니다.");
+        }
+        
+        private void HandleLog(string logString, string stackTrace, LogType type)
+        {
+            if (type == LogType.Exception || type == LogType.Error)
+            {
+                // 치명적인 오류 패턴 확인
+                if (IsCriticalError(logString))
+                {
+                    string truncatedMessage = logString;
+                    if (logString.Length > 100)
+                        truncatedMessage = logString.Substring(0, 100) + "...";
+                        
+                    DisableSaving($"치명적 오류 감지: {truncatedMessage}");
+                    
+                    // 오류 로그 업로드 시도 (무한 루프 방지를 위해 try-catch 사용)
+                    try
+                    {
+                        LogUpload("CriticalErrorDetails", 
+                            $"오류: {logString}\n스택 트레이스: {stackTrace}");
+                    }
+                    catch { }
+                }
+            }
+        }
+        
+        private bool IsCriticalError(string errorMessage)
+        {
+            string[] criticalPatterns = {
+                "NullReferenceException",
+                "IndexOutOfRangeException",
+                "ArgumentNullException",
+                "MissingReferenceException",
+                "KeyNotFoundException",
+                "OutOfMemoryException",
+                "StackOverflowException",
+                "AccessViolationException"
+            };
+            
+            foreach (var pattern in criticalPatterns)
+            {
+                if (errorMessage.Contains(pattern))
+                    return true;
+            }
+            
+            return false;
+        }
+        
         private async void Init()
         {
             await BackendInit(10);
         }
 
-
         /// <summary>뒤끝 초기 설정</summary>
-
         private async Task BackendInit(int maxRepeatCount = 10)
         {
             await ExecuteWithRetryAsync(maxRepeatCount, Backend.Initialize, (bro) =>
@@ -104,7 +193,6 @@ namespace Muks.BackEnd
             {
                 Debug.LogError("뒤끝을 초기화하지 못했습니다. 다시 실행:" + state);
             });
-
         }
 
         public void GetServerTimeAsync(Action<DateTime> onCompleted = null, Action<BackendReturnObject> onFailed = null)
@@ -125,7 +213,6 @@ namespace Muks.BackEnd
             });
         }
 
-
         /// <summary> id, pw, 서버 연결 실패시 반복횟수, 완료 시 실행할 함수를 받아 로그인을 진행하는 함수 </summary>
         public async Task CustomLogin(string id, string pw, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
         {
@@ -140,7 +227,6 @@ namespace Muks.BackEnd
                 onFailed?.Invoke(state);
             });
         }
-
 
         /// <summary>게스트 로그인을 진행하는 함수 </summary>
         public async Task GuestLogin(int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
@@ -166,8 +252,6 @@ namespace Muks.BackEnd
 
                     return;
                 }
-
-
 
                 Debug.Log("게스트 로그인 성공");
                 if(bro.GetStatusCode() == "201")
@@ -215,7 +299,6 @@ namespace Muks.BackEnd
             _isLoaded = false;
         }
 
-
         /// <summary> id, pw, 서버 연결 실패시 반복횟수, 완료 시 실행할 함수를 받아 회원가입을 진행하는 함수 </summary>
         public async Task CustomSignup(string id, string pw, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
         {
@@ -230,7 +313,6 @@ namespace Muks.BackEnd
                 onFailed?.Invoke(state);
             });
         }
-
 
         /// <summary> 내 데이터 ID를 받아 서버 연결 확인 후 받은 함수를 처리해주는 함수 </summary>
         public void GetMyData(string selectedProbabilityFileId, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
@@ -259,7 +341,6 @@ namespace Muks.BackEnd
             });
         }
 
-
         /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝에서 ChartData를 받아오는 함수 </summary>
         public void GetChartData(string selectedProbabilityFileId, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
@@ -285,9 +366,19 @@ namespace Muks.BackEnd
             });
         }
 
-
         public void SaveGameData(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
+            // 저장 기능이 비활성화되었는지 확인
+            if (!_isSaveEnabled)
+            {
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                BackendReturnObject errorBro = new BackendReturnObject();
+                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
+                onFailed?.Invoke(errorBro);
+                return;
+            }
+            
+            // 기존 코드
             if (!Backend.IsLogin && !_isLogin)
             {
 #if !UNITY_EDITOR
@@ -330,9 +421,19 @@ namespace Muks.BackEnd
              });
         }
 
-
         public async void SaveGameDataAsync(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
+            // 저장 기능이 비활성화되었는지 확인
+            if (!_isSaveEnabled)
+            {
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                BackendReturnObject errorBro = new BackendReturnObject();
+                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
+                onFailed?.Invoke(errorBro);
+                return;
+            }
+            
+            // 기존 코드
             if (!Backend.IsLogin && !_isLogin)
             {
 #if !UNITY_EDITOR
@@ -374,10 +475,18 @@ namespace Muks.BackEnd
            });
         }
 
-
-        /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝 GameData란에 정보를 동기적으로 추가하는 함수 </summary>
         public void InsertGameData(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
+            if (!_isSaveEnabled)
+            {
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                BackendReturnObject errorBro = new BackendReturnObject();
+                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
+                onFailed?.Invoke(errorBro);
+                return;
+            }
+            
+            // 기존 코드...
             if (!Backend.IsLogin && !_isLogin)
             {
 #if !UNITY_EDITOR
@@ -407,10 +516,18 @@ namespace Muks.BackEnd
             });
         }
 
-
-        /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝 GameData란에 정보를 비동기적으로 추가하는 함수 </summary>
         public void InsertGameDataAsync(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
+            if (!_isSaveEnabled)
+            {
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                BackendReturnObject errorBro = new BackendReturnObject();
+                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
+                onFailed?.Invoke(errorBro);
+                return;
+            }
+            
+            // 기존 코드...
             if (!Backend.IsLogin && !_isLogin)
             {
 #if !UNITY_EDITOR
@@ -450,10 +567,18 @@ namespace Muks.BackEnd
             });      
         }
 
-
-        /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝 GameData란에 정보를 동기적으로 추가하는 함수 </summary>
         public void UpdateGameData(string selectedProbabilityFileId, string inDate, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
+            if (!_isSaveEnabled)
+            {
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                BackendReturnObject errorBro = new BackendReturnObject();
+                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
+                onFailed?.Invoke(errorBro);
+                return;
+            }
+            
+            // 기존 코드...
             if (!Backend.IsLogin && !_isLogin)
             {
 #if !UNITY_EDITOR
@@ -482,10 +607,18 @@ namespace Muks.BackEnd
             });
         }
 
-
-        /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝 GameData란에 정보를 비동기적으로 추가하는 함수 </summary>
         public void UpdateGameDataAsync(string selectedProbabilityFileId, string inDate, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
         {
+            if (!_isSaveEnabled)
+            {
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                BackendReturnObject errorBro = new BackendReturnObject();
+                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
+                onFailed?.Invoke(errorBro);
+                return;
+            }
+            
+            // 기존 코드...
             if (!Backend.IsLogin && !_isLogin)
             {
 #if !UNITY_EDITOR
@@ -524,7 +657,6 @@ namespace Muks.BackEnd
                 }
             });
         }
-
 
         private void ExecuteWithRetry(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendState> onFail)
         {
@@ -574,7 +706,6 @@ namespace Muks.BackEnd
             onFail?.Invoke(bro);
         }
 
-
         private async Task ExecuteWithRetryAsync(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendState> onFail)
         {
             BackendReturnObject bro = action.Invoke();
@@ -600,7 +731,6 @@ namespace Muks.BackEnd
             onFail?.Invoke(state);
         }
 
-
         private async Task ExecuteWithRetryAsync(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendReturnObject> onFail)
         {
             BackendReturnObject bro = action.Invoke();
@@ -625,9 +755,6 @@ namespace Muks.BackEnd
 
             onFail?.Invoke(bro);
         }
-
-
-
 
         /// <summary> 서버와 연결 상태를 체크하고 BackendState값을 반환하는 함수 </summary>
         public BackendState HandleError(BackendReturnObject bro)
@@ -665,15 +792,6 @@ namespace Muks.BackEnd
                 {
                     return RefreshTheBackendToken(3) ? BackendState.Retry : BackendState.Failure;
                 }
-
-/*                //만약 기기에는 로그인 정보가 남아있는데 서버에 데이터가 없으면
-                //기기에 저장된 로그인 정보를 삭제한다.
-                else if (bro.GetMessage() == "bad customId, 잘못된 customId 입니다")
-                {
-                    Backend.BMember.DeleteGuestInfo();
-                }
-*/
-
                 else
                 {
                     DebugLog.LogError(bro.GetErrorCode() + ", " + bro.GetErrorMessage());
@@ -681,8 +799,6 @@ namespace Muks.BackEnd
                 }
             }
         }
-
-
 
         /// <summary> 뒤끝 토큰 재발급 함수 </summary>
         /// maxRepeatCount : 서버 연결 실패시 재 시도할 횟수
@@ -731,7 +847,6 @@ namespace Muks.BackEnd
             }
         }
 
-
         /// <summary>닉네임을 변경하는 함수, 성공시 true, 중복 닉네임 혹은 실패시 false 반환</summary>
         public bool UpdateNickName(string nickName)
         {
@@ -743,7 +858,6 @@ namespace Muks.BackEnd
             BackendReturnObject bro = Backend.BMember.UpdateNickname(nickName);
             return bro.IsSuccess();
         }
-
 
         /// <summary>닉네임을 생성하는 함수, 성공시 true, 중복 닉네임 혹은 실패시 false 반환</summary>
         public bool CreateNickName(string nickName)
@@ -757,7 +871,6 @@ namespace Muks.BackEnd
             return bro.IsSuccess();
         }
 
-
         public void ErrorLogUpload(BackendReturnObject bro)
         {
             if (!Backend.IsLogin || !_isLogin)
@@ -769,7 +882,6 @@ namespace Muks.BackEnd
             Backend.GameLog.InsertLogV2("ErrorLogs", logParam);
         }
 
-
         public void LogUpload(string logName, string logDescription)
         {
             if (!Backend.IsLogin || !_isLogin)
@@ -779,7 +891,6 @@ namespace Muks.BackEnd
             logParam.Add(logName, logDescription);
             Backend.GameLog.InsertLogV2("UserLogs", logParam, bro => { });
         }
-
 
         public void BugReportUpload(string userId, string email, string logDescription)
         {
@@ -793,13 +904,11 @@ namespace Muks.BackEnd
             Backend.GameLog.InsertLogV2("BugReport", logParam);
         }
 
-
         /// <summary>서버 오류 팝업을 띄워주는 함수</summary>
         public void ShowPopup(string title, string description, Action onButtonClicked = null)
         {
             PopupManager.Instance.ShowPopup(title, description, onButtonClicked);
         }
-
 
         private void ExitApp()
         {
