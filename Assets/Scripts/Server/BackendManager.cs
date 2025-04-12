@@ -51,7 +51,7 @@ namespace Muks.BackEnd
         public static bool IsSaveEnabled => _isSaveEnabled;
 
         /// <summary>이 값이 참일 때만 서버에 정보를 보냅니다.(로그인 실패인데 정보를 보내면 서버 정보가 초기화)</summary> 
-        public bool _isLogin = false;
+        private bool _isLogin = false;
         public bool IsLogin => _isLogin;
 
         private bool _isLoaded = false;
@@ -220,11 +220,10 @@ namespace Muks.BackEnd
             }
         }
         
-
-        #region 비동기 작업 처리를 위한 공통 메서드
+        #region 비동기/동기 작업 처리를 위한 공통 메서드
 
         /// <summary>
-        /// 백엔드 API 호출을 처리하는 중앙 함수
+        /// 백엔드 API 호출을 처리하는 중앙 함수 (비동기)
         /// </summary>
         private void ProcessBackendAPI(
             string operationName,
@@ -285,6 +284,87 @@ namespace Muks.BackEnd
             
             // API 호출
             backendFunction(HandleCallback);
+        }
+
+        /// <summary>
+        /// 백엔드 API 호출을 처리하는 중앙 함수 (동기)
+        /// </summary>
+        /// <param name="operationName">작업 이름</param>
+        /// <param name="backendFunction">동기 백엔드 함수를 호출하는 람다식</param>
+        /// <param name="maxRetries">최대 재시도 횟수</param>
+        /// <param name="usePopup">실패 시 팝업 표시 여부</param>
+        /// <returns>처리 결과 (백엔드 반환 객체)</returns>
+        private BackendReturnObject ProcessBackendAPISync(
+            string operationName,
+            Func<BackendReturnObject> backendFunction,
+            int maxRetries = 3,
+            bool usePopup = true)
+        {
+            if (!_isSaveEnabled && operationName.Contains("저장"))
+            {
+                Debug.LogWarning($"[BackendManager] 저장이 비활성화되어 있어 {operationName}이 중단되었습니다.");
+                return null;
+            }
+
+            // 로그인 검사 (초기화, 로그인 관련 작업은 제외)
+            if (!IsLogin && !operationName.Contains("초기화") && !operationName.Contains("로그인"))
+            {
+                Debug.LogError($"[BackendManager] 로그인이 필요한 작업({operationName})이 로그인 없이 시도되었습니다.");
+                return null;
+            }
+
+            try
+            {
+                int retryCount = 0;
+                BackendReturnObject bro = null;
+                BackendState state = BackendState.Failure;
+                
+                do
+                {
+                    // API 호출
+                    bro = backendFunction();
+                    state = HandleError(bro);
+
+                    if (state == BackendState.Success)
+                    {
+                        Debug.Log($"[BackendManager] {operationName} 성공");
+                        return bro;
+                    }
+                    else if (state == BackendState.Retry && retryCount < maxRetries)
+                    {
+                        retryCount++;
+                        Debug.Log($"[BackendManager] {operationName} 재시도({retryCount}/{maxRetries})");
+                        continue;
+                    }
+                    else
+                    {
+                        string errorMessage = bro.GetMessage();
+                        Debug.LogError($"[BackendManager] {operationName} 실패: {errorMessage}");
+                        
+                        if (usePopup)
+                        {
+                            ShowPopup("네트워크 에러", 
+                                $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
+                        }
+                        
+                        return bro;
+                    }
+                } while (state == BackendState.Retry && retryCount <= maxRetries);
+                
+                return bro;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                Debug.LogError($"[BackendManager] {operationName} 처리 중 예외 발생: {ex.Message}");
+                
+                if (usePopup)
+                {
+                    ShowPopup("오류 발생", $"{operationName} 실행 중 오류가 발생했습니다: {ex.Message}");
+                }
+                
+                return null;
+            }
         }
 
         #endregion
@@ -387,6 +467,13 @@ namespace Muks.BackEnd
                 true
             );
         }
+
+
+        public void LogOut()
+        {
+            _isSaveEnabled = false;
+            _isLogin = false;
+        }
         
         /// <summary>
         /// 회원가입을 비동기적으로 수행합니다
@@ -458,7 +545,7 @@ namespace Muks.BackEnd
         #endregion
         
         #region 사용자 인증 관련 메서드 (동기)
-        
+
         /// <summary>
         /// 커스텀 로그인을 동기적으로 수행합니다
         /// </summary>
@@ -470,35 +557,21 @@ namespace Muks.BackEnd
                 return true;
             }
             
-            try
+            BackendReturnObject bro = ProcessBackendAPISync(
+                "커스텀 로그인",
+                () => Backend.BMember.CustomLogin(id, pw),
+                3,
+                true
+            );
+            
+            if (bro != null && bro.IsSuccess())
             {
-                if (!_isSaveEnabled)
-                {
-                    Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 로그인이 중단되었습니다.");
-                    return false;
-                }
-                
-                BackendReturnObject bro = Backend.BMember.CustomLogin(id, pw);
-                BackendState state = HandleError(bro);
-                
-                if (state == BackendState.Success)
-                {
-                    _isLogin = true;
-                    Debug.Log("[BackendManager] 커스텀 로그인 성공");
-                    return true;
-                }
-                else
-                {
-                    Debug.LogError($"[BackendManager] 커스텀 로그인 실패: {bro.GetMessage()}");
-                    ShowPopup("로그인 실패", $"로그인에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
-                    return false;
-                }
+                _isLogin = true;
+                Debug.Log("[BackendManager] 커스텀 로그인 성공");
+                return true;
             }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
+            
+            return false;
         }
         
         /// <summary>
@@ -512,74 +585,51 @@ namespace Muks.BackEnd
                 return true;
             }
             
-            try
+            // 특수 케이스: 게스트 정보가 없는 경우 처리
+            BackendReturnObject bro = Backend.BMember.GuestLogin();
+            if (bro.GetStatusCode() == "401")
             {
-                if (!_isSaveEnabled)
-                {
-                    Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 로그인이 중단되었습니다.");
-                    return false;
-                }
+                Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
+                Backend.BMember.DeleteGuestInfo();
                 
-                BackendReturnObject bro = Backend.BMember.GuestLogin();
-                
-                // 특수 케이스: 게스트 정보 삭제 후 재시도
-                if (bro.GetStatusCode() == "401")
-                {
-                    Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
-                    Backend.BMember.DeleteGuestInfo();
-                    bro = Backend.BMember.GuestLogin();
-                }
-                
-                BackendState state = HandleError(bro);
-                
-                if (state == BackendState.Success)
-                {
-                    _isLogin = true;
-                    
-                    // 신규 가입 또는 기존 로그인 처리
-                    if (bro.GetStatusCode() == "201")
-                    {
-                        Debug.Log("[BackendManager] 게스트 신규 가입 성공");
-                        OnGuestSignupHandler?.Invoke();
-                    }
-                    else if (bro.GetStatusCode() == "200")
-                    {
-                        Debug.Log("[BackendManager] 게스트 로그인 성공");
-                        OnGuestLoginHandler?.Invoke();
-                    }
-                    
-                    return true;
-                }
-                else
-                {
-                    Debug.LogError($"[BackendManager] 게스트 로그인 실패: {bro.GetMessage()}");
-                    ShowPopup("로그인 실패", $"게스트 로그인에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
-                    return false;
-                }
+                bro = ProcessBackendAPISync(
+                    "게스트 로그인",
+                    () => Backend.BMember.GuestLogin(),
+                    3,
+                    true
+                );
             }
-            catch (Exception ex)
+            else
             {
-                Debug.LogException(ex);
-                return false;
+                // 정상적인 처리 과정
+                bro = ProcessBackendAPISync(
+                    "게스트 로그인",
+                    () => bro,  // 이미 호출된 결과 사용
+                    3,
+                    true
+                );
             }
-        }
-        
-        /// <summary>
-        /// 로그아웃을 수행합니다
-        /// </summary>
-        public void LogOut()
-        {
-            if (!Backend.IsLogin && !_isLogin)
-            {
-                Debug.LogError("[BackendManager] 로그인이 되어있지 않아 로그아웃을 수행할 수 없습니다.");
-                return;
-            }
-
-            _isLogin = false;
-            _isLoaded = false;
             
-            // 로그아웃 API 호출은 생략 (필요시 추가)
-            Debug.Log("[BackendManager] 로그아웃 완료");
+            if (bro != null && bro.IsSuccess())
+            {
+                _isLogin = true;
+                
+                // 신규 가입 또는 기존 로그인 처리
+                if (bro.GetStatusCode() == "201")
+                {
+                    Debug.Log("[BackendManager] 게스트 신규 가입 성공");
+                    OnGuestSignupHandler?.Invoke();
+                }
+                else if (bro.GetStatusCode() == "200")
+                {
+                    Debug.Log("[BackendManager] 게스트 로그인 성공");
+                    OnGuestLoginHandler?.Invoke();
+                }
+                
+                return true;
+            }
+            
+            return false;
         }
         
         /// <summary>
@@ -587,28 +637,14 @@ namespace Muks.BackEnd
         /// </summary>
         public bool CustomSignup(string id, string pw)
         {
-            try
-            {
-                BackendReturnObject bro = Backend.BMember.CustomSignUp(id, pw);
-                BackendState state = HandleError(bro);
-                
-                if (state == BackendState.Success)
-                {
-                    Debug.Log("[BackendManager] 회원가입 성공");
-                    return true;
-                }
-                else
-                {
-                    Debug.LogError($"[BackendManager] 회원가입 실패: {bro.GetMessage()}");
-                    ShowPopup("회원가입 실패", $"회원가입에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
+            BackendReturnObject bro = ProcessBackendAPISync(
+                "회원가입",
+                () => Backend.BMember.CustomSignUp(id, pw),
+                3,
+                true
+            );
+            
+            return bro != null && bro.IsSuccess();
         }
         
         /// <summary>
@@ -616,40 +652,26 @@ namespace Muks.BackEnd
         /// </summary>
         public bool CreateNickName(string nickName)
         {
-            try
-            {
-                // 중복 체크
-                BackendReturnObject checkBro = Backend.BMember.CheckNicknameDuplication(nickName);
-                BackendState checkState = HandleError(checkBro);
-                
-                if (checkState != BackendState.Success)
-                {
-                    Debug.LogError($"[BackendManager] 닉네임 중복 체크 실패: {checkBro.GetMessage()}");
-                    ShowPopup("닉네임 중복 체크 실패", $"중복 체크에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {checkBro.GetErrorCode()}");
-                    return false;
-                }
-                
-                // 닉네임 생성
-                BackendReturnObject createBro = Backend.BMember.CreateNickname(nickName);
-                BackendState createState = HandleError(createBro);
-                
-                if (createState == BackendState.Success)
-                {
-                    Debug.Log("[BackendManager] 닉네임 생성 성공");
-                    return true;
-                }
-                else
-                {
-                    Debug.LogError($"[BackendManager] 닉네임 생성 실패: {createBro.GetMessage()}");
-                    ShowPopup("닉네임 생성 실패", $"닉네임 생성에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {createBro.GetErrorCode()}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
+            // 중복 체크
+            BackendReturnObject checkBro = ProcessBackendAPISync(
+                "닉네임 중복 체크",
+                () => Backend.BMember.CheckNicknameDuplication(nickName),
+                1,
+                true
+            );
+            
+            if (checkBro == null || !checkBro.IsSuccess())
                 return false;
-            }
+            
+            // 닉네임 생성
+            BackendReturnObject createBro = ProcessBackendAPISync(
+                "닉네임 생성",
+                () => Backend.BMember.CreateNickname(nickName),
+                2,
+                true
+            );
+            
+            return createBro != null && createBro.IsSuccess();
         }
         
         /// <summary>
@@ -657,42 +679,28 @@ namespace Muks.BackEnd
         /// </summary>
         public bool UpdateNickName(string nickName)
         {
-            try
-            {
-                // 중복 체크
-                BackendReturnObject checkBro = Backend.BMember.CheckNicknameDuplication(nickName);
-                BackendState checkState = HandleError(checkBro);
-                
-                if (checkState != BackendState.Success)
-                {
-                    Debug.LogError($"[BackendManager] 닉네임 중복 체크 실패: {checkBro.GetMessage()}");
-                    ShowPopup("닉네임 중복 체크 실패", $"중복 체크에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {checkBro.GetErrorCode()}");
-                    return false;
-                }
-                
-                // 닉네임 업데이트
-                BackendReturnObject updateBro = Backend.BMember.UpdateNickname(nickName);
-                BackendState updateState = HandleError(updateBro);
-                
-                if (updateState == BackendState.Success)
-                {
-                    Debug.Log("[BackendManager] 닉네임 업데이트 성공");
-                    return true;
-                }
-                else
-                {
-                    Debug.LogError($"[BackendManager] 닉네임 업데이트 실패: {updateBro.GetMessage()}");
-                    ShowPopup("닉네임 업데이트 실패", $"닉네임 업데이트에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {updateBro.GetErrorCode()}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
+            // 중복 체크
+            BackendReturnObject checkBro = ProcessBackendAPISync(
+                "닉네임 중복 체크",
+                () => Backend.BMember.CheckNicknameDuplication(nickName),
+                1,
+                true
+            );
+            
+            if (checkBro == null || !checkBro.IsSuccess())
                 return false;
-            }
+            
+            // 닉네임 업데이트
+            BackendReturnObject updateBro = ProcessBackendAPISync(
+                "닉네임 업데이트",
+                () => Backend.BMember.UpdateNickname(nickName),
+                2,
+                true
+            );
+            
+            return updateBro != null && updateBro.IsSuccess();
         }
-        
+
         #endregion
 
         #region 데이터 관련 메서드 (비동기)
@@ -892,34 +900,25 @@ namespace Muks.BackEnd
                 return null;
             }
             
-            try
+            // 유저 조건 생성
+            Where where = new Where();
+            where.Equal("owner_inDate", Backend.UserInDate);
+            
+            BackendReturnObject bro = ProcessBackendAPISync(
+                $"{tableId} 데이터 조회",
+                () => Backend.GameData.Get(tableId, where),
+                3,
+                true
+            );
+            
+            if (bro != null && bro.IsSuccess())
             {
-                // 유저 조건 생성
-                Where where = new Where();
-                where.Equal("owner_inDate", Backend.UserInDate);
-                
-                BackendReturnObject bro = Backend.GameData.Get(tableId, where);
-                BackendState state = HandleError(bro);
-                
-                if (state == BackendState.Success)
-                {
-                    Debug.Log($"[BackendManager] {tableId} 데이터 조회 성공");
-                    _isLoaded = true;
-                    return bro;
-                }
-                else
-                {
-                    Debug.LogError($"[BackendManager] {tableId} 데이터 조회 실패: {bro.GetMessage()}");
-                    return null;
-                }
+                _isLoaded = true;
             }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return null;
-            }
+            
+            return bro;
         }
-        
+
         /// <summary>
         /// 차트 데이터를 조회합니다 (동기식)
         /// </summary>
@@ -931,29 +930,14 @@ namespace Muks.BackEnd
                 return null;
             }
             
-            try
-            {
-                BackendReturnObject bro = Backend.Chart.GetChartContents(chartId);
-                BackendState state = HandleError(bro);
-                
-                if (state == BackendState.Success)
-                {
-                    Debug.Log($"[BackendManager] {chartId} 차트 데이터 조회 성공");
-                    return bro;
-                }
-                else
-                {
-                    Debug.LogError($"[BackendManager] {chartId} 차트 데이터 조회 실패: {bro.GetMessage()}");
-                    return null;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return null;
-            }
+            return ProcessBackendAPISync(
+                $"{chartId} 차트 조회",
+                () => Backend.Chart.GetChartContents(chartId),
+                3,
+                true
+            );
         }
-        
+
         /// <summary>
         /// 게임 데이터를 안전하게 저장합니다 (동기식)
         /// </summary>
@@ -971,70 +955,61 @@ namespace Muks.BackEnd
                 return false;
             }
             
-            try
+            // 유저 정보 조회를 위한 조건
+            Where where = new Where();
+            where.Equal("owner_inDate", Backend.UserInDate);
+            
+            // 데이터 존재 확인
+            BackendReturnObject getBro = ProcessBackendAPISync(
+                $"{tableId} 데이터 확인",
+                () => Backend.GameData.Get(tableId, where),
+                2,
+                true
+            );
+            
+            if (getBro == null || !getBro.IsSuccess())
             {
-                // 유저 정보 조회를 위한 조건
-                Where where = new Where();
-                where.Equal("owner_inDate", Backend.UserInDate);
-                
-                // 데이터 존재 확인
-                BackendReturnObject getBro = Backend.GameData.Get(tableId, where);
-                BackendState getState = HandleError(getBro);
-                
-                if (getState != BackendState.Success)
-                {
-                    Debug.LogError($"[BackendManager] {tableId} 데이터 조회 실패: {getBro.GetMessage()}");
-                    return false;
-                }
-                
-                var rows = getBro.FlattenRows();
-                
-                // 결과에 따라 삽입 또는 업데이트
-                if (rows != null && rows.Count > 0)
-                {
-                    string inDate = getBro.GetInDate();
-                    
-                    // 업데이트 수행
-                    BackendReturnObject updateBro = Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param);
-                    BackendState updateState = HandleError(updateBro);
-                    
-                    if (updateState == BackendState.Success)
-                    {
-                        Debug.Log($"[BackendManager] {tableId} 데이터 업데이트 성공");
-                        return true;
-                    }
-                    else
-                    {
-                        Debug.LogError($"[BackendManager] {tableId} 데이터 업데이트 실패: {updateBro.GetMessage()}");
-                        return false;
-                    }
-                }
-                else
-                {
-                    // 삽입 수행
-                    BackendReturnObject insertBro = Backend.GameData.Insert(tableId, param);
-                    BackendState insertState = HandleError(insertBro);
-                    
-                    if (insertState == BackendState.Success)
-                    {
-                        Debug.Log($"[BackendManager] {tableId} 데이터 삽입 성공");
-                        OnInsertGameDataHandler?.Invoke(insertBro);
-                        return true;
-                    }
-                    else
-                    {
-                        Debug.LogError($"[BackendManager] {tableId} 데이터 삽입 실패: {insertBro.GetMessage()}");
-                        return false;
-                    }
-                }
+                Debug.LogError($"[BackendManager] {tableId} 데이터 조회 실패");
+                return false;
             }
-            catch (Exception ex)
+            
+            var rows = getBro.FlattenRows();
+            
+            // 결과에 따라 삽입 또는 업데이트
+            if (rows != null && rows.Count > 0)
             {
-                Debug.LogException(ex);
+                string inDate = getBro.GetInDate();
+                
+                // 업데이트 수행
+                BackendReturnObject updateBro = ProcessBackendAPISync(
+                    $"{tableId} 데이터 업데이트",
+                    () => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param),
+                    3,
+                    true
+                );
+                
+                return updateBro != null && updateBro.IsSuccess();
+            }
+            else
+            {
+                // 삽입 수행
+                BackendReturnObject insertBro = ProcessBackendAPISync(
+                    $"{tableId} 데이터 삽입",
+                    () => Backend.GameData.Insert(tableId, param),
+                    3,
+                    true
+                );
+                
+                if (insertBro != null && insertBro.IsSuccess())
+                {
+                    OnInsertGameDataHandler?.Invoke(insertBro);
+                    return true;
+                }
+                
                 return false;
             }
         }
-        
+
         /// <summary>
         /// 게임 데이터를 삽입합니다 (동기식)
         /// </summary>
@@ -1052,30 +1027,22 @@ namespace Muks.BackEnd
                 return false;
             }
             
-            try
+            BackendReturnObject insertBro = ProcessBackendAPISync(
+                $"{tableId} 데이터 삽입",
+                () => Backend.GameData.Insert(tableId, param),
+                3,
+                true
+            );
+            
+            if (insertBro != null && insertBro.IsSuccess())
             {
-                BackendReturnObject insertBro = Backend.GameData.Insert(tableId, param);
-                BackendState insertState = HandleError(insertBro);
-                
-                if (insertState == BackendState.Success)
-                {
-                    Debug.Log($"[BackendManager] {tableId} 데이터 삽입 성공");
-                    OnInsertGameDataHandler?.Invoke(insertBro);
-                    return true;
-                }
-                else
-                {
-                    Debug.LogError($"[BackendManager] {tableId} 데이터 삽입 실패: {insertBro.GetMessage()}");
-                    return false;
-                }
+                OnInsertGameDataHandler?.Invoke(insertBro);
+                return true;
             }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
+            
+            return false;
         }
-        
+
         /// <summary>
         /// 게임 데이터를 업데이트합니다 (동기식)
         /// </summary>
@@ -1093,27 +1060,14 @@ namespace Muks.BackEnd
                 return false;
             }
             
-            try
-            {
-                BackendReturnObject updateBro = Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param);
-                BackendState updateState = HandleError(updateBro);
-                
-                if (updateState == BackendState.Success)
-                {
-                    Debug.Log($"[BackendManager] {tableId} 데이터 업데이트 성공");
-                    return true;
-                }
-                else
-                {
-                    Debug.LogError($"[BackendManager] {tableId} 데이터 업데이트 실패: {updateBro.GetMessage()}");
-                    return false;
-                }
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
+            BackendReturnObject updateBro = ProcessBackendAPISync(
+                $"{tableId} 데이터 업데이트",
+                () => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param),
+                3,
+                true
+            );
+            
+            return updateBro != null && updateBro.IsSuccess();
         }
 
         #endregion
@@ -1236,17 +1190,17 @@ namespace Muks.BackEnd
         }
         
         /// <summary>
-        /// 오류 로그를 서버에 업로드합니다
+        /// 오류 로그를 서버에 업로드합니다 (동기)
         /// </summary>
-        public void ErrorLogUpload(BackendReturnObject bro)
+        public bool ErrorLogUpload(BackendReturnObject errorBro)
         {
             if (!Backend.IsLogin || !_isLogin)
-                return;
+                return false;
 
             try
             {
                 Param logParam = new Param();
-                logParam.Add("ErrorLog", bro.ToString());
+                logParam.Add("ErrorLog", errorBro.ToString());
                 
                 // 오류 발생 시간 추가
                 logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
@@ -1255,32 +1209,49 @@ namespace Muks.BackEnd
                 logParam.Add("Device", SystemInfo.deviceModel);
                 logParam.Add("OS", SystemInfo.operatingSystem);
                 
-                Backend.GameLog.InsertLogV2("ErrorLogs", logParam);
+                BackendReturnObject bro = ProcessBackendAPISync(
+                    "오류 로그 업로드",
+                    () => Backend.GameLog.InsertLogV2("ErrorLogs", logParam),
+                    1,  // 한 번만 시도
+                    false // 팝업 표시 안 함
+                );
+                
+                return bro != null && bro.IsSuccess();
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[BackendManager] 오류 로그 업로드 중 예외 발생: {ex.Message}");
+                return false;
             }
         }
         
         /// <summary>
-        /// 일반 로그를 서버에 업로드합니다
+        /// 일반 로그를 서버에 업로드합니다 (동기)
         /// </summary>
-        public void LogUpload(string logName, string logDescription)
+        public bool LogUpload(string logName, string logDescription)
         {
             if (!Backend.IsLogin || !_isLogin)
-                return;
+                return false;
 
             try
             {
                 Param logParam = new Param();
                 logParam.Add(logName, logDescription);
                 logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                Backend.GameLog.InsertLogV2("UserLogs", logParam);
+                
+                BackendReturnObject bro = ProcessBackendAPISync(
+                    "일반 로그 업로드",
+                    () => Backend.GameLog.InsertLogV2("UserLogs", logParam),
+                    1,  // 한 번만 시도
+                    false // 팝업 표시 안 함
+                );
+                
+                return bro != null && bro.IsSuccess();
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[BackendManager] 로그 업로드 중 예외 발생: {ex.Message}");
+                return false;
             }
         }
         
@@ -1322,22 +1293,20 @@ namespace Muks.BackEnd
                 return false;
             }
 
-            try
-            {
-                Param logParam = new Param();
-                logParam.Add("Description", logDescription);
-                logParam.Add("Email", email);
-                logParam.Add("UserId", userId);
-                logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                
-                BackendReturnObject bro = Backend.GameLog.InsertLogV2("BugReport", logParam);
-                return bro.IsSuccess();
-            }
-            catch (Exception ex)
-            {
-                Debug.LogException(ex);
-                return false;
-            }
+            Param logParam = new Param();
+            logParam.Add("Description", logDescription);
+            logParam.Add("Email", email);
+            logParam.Add("UserId", userId);
+            logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            
+            BackendReturnObject bro = ProcessBackendAPISync(
+                "버그 리포트 업로드",
+                () => Backend.GameLog.InsertLogV2("BugReport", logParam),
+                1,  // 한 번만 시도
+                false // 팝업 표시 안 함
+            );
+            
+            return bro != null && bro.IsSuccess();
         }
 
         #endregion
@@ -1375,24 +1344,29 @@ namespace Muks.BackEnd
                 OnExitHandler?.Invoke();
             }
         }
-        
+
         private void CheckTokenValidity()
         {
             if (_isLogin)
             {
-                // 토큰 유효성 검사를 위한 간단한 API 호출
-                Backend.BMember.GetUserInfo((bro) => {
-                    if (!bro.IsSuccess())
+                // 토큰 유효성 검사를 위한 API 호출
+                BackendReturnObject bro = ProcessBackendAPISync(
+                    "토큰 유효성 검사",
+                    () => Backend.BMember.GetUserInfo(),
+                    1,  // 한 번만 시도
+                    false // 팝업 표시 안 함
+                );
+
+                if (bro == null || !bro.IsSuccess())
+                {
+                    if (bro != null && bro.IsBadAccessTokenError() && !RefreshTheBackendToken(1))
                     {
-                        if (bro.IsBadAccessTokenError() && !RefreshTheBackendToken(1))
-                        {
-                            // 토큰 갱신 실패 시 로그아웃 처리
-                            Debug.LogWarning("[BackendManager] 세션이 만료되어 로그아웃합니다.");
-                            LogOut();
-                            ShowPopup("세션 만료", "세션이 만료되었습니다. 다시 로그인해주세요.");
-                        }
+                        // 토큰 갱신 실패 시 로그아웃 처리
+                        Debug.LogWarning("[BackendManager] 세션이 만료되어 로그아웃합니다.");
+                        LogOut();
+                        ShowPopup("세션 만료", "세션이 만료되었습니다. 다시 접속해 주세요.", ExitApp);
                     }
-                });
+                }
             }
         }
 
