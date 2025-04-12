@@ -15,9 +15,9 @@ public class GetHashScene : MonoBehaviour
         Init();
     }
 
-    private async void Init()
+    private void Init()
     {
-        await BackendManager.Instance.GuestLogin(10);
+        BackendManager.Instance.GuestLoginAsync();
 
         _button.onClick.RemoveAllListeners();
         _button.onClick.AddListener(OnButtonClicked);

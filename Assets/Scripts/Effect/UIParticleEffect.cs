@@ -12,7 +12,7 @@ public class UIParticleEffect : MonoBehaviour
     private IEnumerator _ienumerator;
     private Coroutine _coroutine;
 
-
+    [Obsolete]
     public void Init(UIEffectType type)
     {
         _ienumerator = StartHide(_particleSystem.duration);

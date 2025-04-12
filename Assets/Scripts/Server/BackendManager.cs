@@ -1,30 +1,33 @@
 using BackEnd;
 using LitJson;
 using System;
-using System.Collections.Generic;  // Dictionary를 위한 추가
+using System.Collections.Generic;
 using System.Data;
-using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace Muks.BackEnd
 {
     /// <summary>서버와의 연결 상태을 확인 하는 열거형</summary>
     public enum BackendState
     {
+        NotSave,
+        NotLogin,
         Failure,
         Maintainance,
         Retry,
         Success,
     }
 
-
-    /// <summary> 뒤끝과 연동할 수 있게 해주는 싱글톤 클래스 </summary>
+    /// <summary>뒤끝과 연동할 수 있게 해주는 싱글톤 클래스</summary>
     public class BackendManager : MonoBehaviour
     {
         public static event Action OnGuestSignupHandler;
         public static event Action OnGuestLoginHandler;
         public static event Action<BackendReturnObject> OnInsertGameDataHandler;
+
+        public static event Action OnPauseHandler;
+        public static event Action OnResumeHandler;
+        public static event Action OnExitHandler;
 
         public static BackendManager Instance
         {
@@ -78,7 +81,10 @@ namespace Muks.BackEnd
         private void Awake()
         {
             if (_instance != null)
+            {
+                Destroy(gameObject);
                 return;
+            }
 
             _instance = this;
             DontDestroyOnLoad(gameObject);
@@ -86,6 +92,7 @@ namespace Muks.BackEnd
             // 전역 오류 처리기 설정
             SetupGlobalErrorHandler();
             
+            // 초기화
             Init();
         }
         
@@ -101,36 +108,7 @@ namespace Muks.BackEnd
             // 이벤트 구독 해제
             Application.logMessageReceived -= HandleLog;
         }
-        
-        // 전역 오류 플래그 관리 메서드
-        public static void DisableSaving(string reason)
-        {
-            if (_isSaveEnabled)
-            {
-                _isSaveEnabled = false;
-                Debug.LogError($"[BackendManager] 심각한 오류 발생으로 데이터 저장이 비활성화되었습니다! 이유: {reason}");
-                
-                // 안전하게 로그 업로드 시도
-                try
-                {
-                    if (Instance != null && Instance._isLogin)
-                    {
-                        Instance.LogUpload("CriticalError", $"저장 기능 비활성화: {reason}");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Debug.LogError($"[BackendManager] 오류 로그 업로드 중 추가 예외 발생: {ex.Message}");
-                }
-            }
-        }
-        
-        public static void EnableSaving()
-        {
-            _isSaveEnabled = true;
-            Debug.Log("[BackendManager] 데이터 저장이 다시 활성화되었습니다.");
-        }
-        
+
         private void HandleLog(string logString, string stackTrace, LogType type)
         {
             if (type == LogType.Exception || type == LogType.Error)
@@ -177,636 +155,1064 @@ namespace Muks.BackEnd
             return false;
         }
         
-        private async void Init()
+        // 전역 오류 플래그 관리 메서드
+        public static void DisableSaving(string reason)
         {
-            await BackendInit(10);
+            if (_isSaveEnabled)
+            {
+                _isSaveEnabled = false;
+                Debug.LogError($"[BackendManager] 심각한 오류 발생으로 데이터 저장이 비활성화되었습니다! 이유: {reason}");
+                
+                // 안전하게 로그 업로드 시도
+                try
+                {
+                    if (Instance != null && Instance._isLogin)
+                    {
+                        Instance.LogUpload("CriticalError", $"저장 기능 비활성화: {reason}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"[BackendManager] 오류 로그 업로드 중 추가 예외 발생: {ex.Message}");
+                }
+            }
         }
-
-        /// <summary>뒤끝 초기 설정</summary>
-        private async Task BackendInit(int maxRepeatCount = 10)
+        
+        public static void EnableSaving()
         {
-            await ExecuteWithRetryAsync(maxRepeatCount, Backend.Initialize, (bro) =>
-            {
-                Debug.Log("초기화 성공");
-            }, 
-            (BackendState state) =>
-            {
-                Debug.LogError("뒤끝을 초기화하지 못했습니다. 다시 실행:" + state);
-            });
+            _isSaveEnabled = true;
+            Debug.Log("[BackendManager] 데이터 저장이 다시 활성화되었습니다.");
         }
-
-        public void GetServerTimeAsync(Action<DateTime> onCompleted = null, Action<BackendReturnObject> onFailed = null)
+        
+        private void Init()
         {
-            Backend.Utils.GetServerTime((bro) =>
+            // 동기식 초기화 호출
+            bool isSuccess = InitializeBackend();
+            if (!isSuccess)
             {
+                Debug.LogError("[BackendManager] 뒤끝 초기화 실패");
+            }
+        }
+        
+        /// <summary>
+        /// 뒤끝 초기화 (동기식)
+        /// </summary>
+        private bool InitializeBackend()
+        {
+            try
+            {
+                BackendReturnObject bro = Backend.Initialize();
                 if (bro.IsSuccess())
                 {
+                    Debug.Log("[BackendManager] 뒤끝 초기화 성공");
+                    return true;
+                }
+                else
+                {
+                    Debug.LogError($"[BackendManager] 뒤끝 초기화 실패: {bro.GetMessage()}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+        
+
+        #region 비동기 작업 처리를 위한 공통 메서드
+
+        /// <summary>
+        /// 백엔드 API 호출을 처리하는 중앙 함수
+        /// </summary>
+        private void ProcessBackendAPI(
+            string operationName,
+            Action<Action<BackendReturnObject>> backendFunction, 
+            Action<BackendReturnObject> onSuccess = null,
+            Action<BackendState> onFail = null, 
+            int maxRetries = 3,
+            bool usePopup = true)
+        {
+            if (!_isSaveEnabled && operationName.Contains("저장"))
+            {
+                Debug.LogWarning($"[BackendManager] 저장이 비활성화되어 있어 {operationName}이 중단되었습니다.");
+                onFail?.Invoke(BackendState.NotSave);
+                return;
+            }
+
+            // 로그인 검사 (초기화, 로그인 관련 작업은 제외)
+            if (!IsLogin && !operationName.Contains("초기화") && !operationName.Contains("로그인"))
+            {
+                Debug.LogError($"[BackendManager] 로그인이 필요한 작업({operationName})이 로그인 없이 시도되었습니다.");
+                onFail?.Invoke(BackendState.NotLogin);
+                return;
+            }
+
+            int retryCount = 0;
+
+            // 콜백 처리 함수
+            void HandleCallback(BackendReturnObject bro)
+            {
+                BackendState state = HandleError(bro);
+                
+                if (state == BackendState.Success)
+                {
+                    Debug.Log($"[BackendManager] {operationName} 성공");
+                    onSuccess?.Invoke(bro);
+                }
+                else if (state == BackendState.Retry && retryCount < maxRetries)
+                {
+                    retryCount++;
+                    Debug.Log($"[BackendManager] {operationName} 재시도({retryCount}/{maxRetries})");
+                    backendFunction(HandleCallback);
+                }
+                else
+                {
+                    string errorMessage = bro.GetMessage();
+                    Debug.LogError($"[BackendManager] {operationName} 실패: {errorMessage}");
+                    
+                    if (usePopup)
+                    {
+                        ShowPopup("네트워크 에러", 
+                            $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}",
+                            () => backendFunction(HandleCallback));
+                    }
+                    
+                    onFail?.Invoke(state);
+                }
+            }
+            
+            // API 호출
+            backendFunction(HandleCallback);
+        }
+
+        #endregion
+
+        #region 사용자 인증 관련 메서드 (비동기)
+
+        /// <summary>
+        /// 서버 시간을 비동기적으로 가져옵니다
+        /// </summary>
+        public void GetServerTimeAsync(Action<DateTime> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            ProcessBackendAPI(
+                "서버 시간 조회",
+                (callback) => Backend.Utils.GetServerTime(),
+                (bro) => {
                     string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
                     DateTime dateTime = DateTime.Parse(time);
-                    onCompleted?.Invoke(dateTime);
-                }
-                else
-                {
-                    onCompleted?.Invoke(LocalTime);
-                    onFailed?.Invoke(bro);
-                }
-            });
+                    onSuccess?.Invoke(dateTime);
+                },
+                onFail,
+                1, // 서버 시간은 한 번만 시도
+                false // 팝업 표시 안함
+            );
         }
-
-        /// <summary> id, pw, 서버 연결 실패시 반복횟수, 완료 시 실행할 함수를 받아 로그인을 진행하는 함수 </summary>
-        public async Task CustomLogin(string id, string pw, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
-        {
-            await ExecuteWithRetryAsync(maxRepeatCount, () => Backend.BMember.CustomLogin(id, pw), (bro) =>
-            {
-                Debug.Log("커스텀 로그인 성공");
-                onCompleted?.Invoke(bro);
-            },
-            (state) =>
-            {
-                Debug.LogError("커스텀 로그인 에러 발생:" + state);
-                onFailed?.Invoke(state);
-            });
-        }
-
-        /// <summary>게스트 로그인을 진행하는 함수 </summary>
-        public async Task GuestLogin(int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
+        
+        /// <summary>
+        /// 커스텀 로그인을 비동기적으로 수행합니다
+        /// </summary>
+        public void CustomLoginAsync(string id, string pw, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
             if (IsLogin)
-                return;
-
-            await ExecuteWithRetryAsync(maxRepeatCount, () => Backend.BMember.GuestLogin(), async (bro) =>
             {
-                if(!Backend.IsLogin)
-                {
+                Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
+                return;
+            }
+            
+            ProcessBackendAPI(
+                "커스텀 로그인",
+                (callback) => Backend.BMember.CustomLogin(id, pw, (bro) => callback?.Invoke(bro)),
+                (bro) => {
+                    _isLogin = true;
+                    Debug.Log("[BackendManager] 커스텀 로그인 성공");
+                    onSuccess?.Invoke(bro);
+                },
+                onFail,
+                3,
+                true
+            );
+        }
+        
+        /// <summary>
+        /// 게스트 로그인을 비동기적으로 수행합니다
+        /// </summary>
+        public void GuestLoginAsync(Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            if (IsLogin)
+            {
+                Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
+                return;
+            }
+
+            void HandleGuestLogin(Action<BackendReturnObject> callback)
+            {
+                Backend.BMember.GuestLogin((bro) => {
+                    // 특수 케이스: 게스트 정보 삭제 후 재시도
                     if (bro.GetStatusCode() == "401")
                     {
-                        Debug.Log("게스트 로그인 실패: 서버에 정보가 없음");
+                        Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
                         Backend.BMember.DeleteGuestInfo();
-                        await GuestLogin(maxRepeatCount - 1, onCompleted, onFailed);
+                        Backend.BMember.GuestLogin();
+                        return;
                     }
-                    else
+                    
+                    callback(bro);
+                });
+            }
+            
+            ProcessBackendAPI(
+                "게스트 로그인",
+                HandleGuestLogin,
+                (bro) => {
+                    _isLogin = true;
+                    
+                    // 신규 가입 또는 기존 로그인 처리
+                    if (bro.GetStatusCode() == "201")
                     {
-                        ShowPopup("로그인 에러", "로그인에 실패했습니다. \n오류 코드: " + bro.GetErrorCode(), Application.Quit);
-                        Debug.Log("게스트 로그인 실패: " + bro.GetMessage());
+                        Debug.Log("[BackendManager] 게스트 신규 가입 성공");
+                        OnGuestSignupHandler?.Invoke();
                     }
+                    else if (bro.GetStatusCode() == "200")
+                    {
+                        Debug.Log("[BackendManager] 게스트 로그인 성공");
+                        OnGuestLoginHandler?.Invoke();
+                    }
+                    
+                    onSuccess?.Invoke(bro);
+                },
+                onFail,
+                3,
+                true
+            );
+        }
+        
+        /// <summary>
+        /// 회원가입을 비동기적으로 수행합니다
+        /// </summary>
+        public void CustomSignupAsync(string id, string pw, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            ProcessBackendAPI(
+                "회원가입",
+                (callback) => Backend.BMember.CustomSignUp(id, pw, (bro) => callback?.Invoke(bro)),
+                onSuccess,
+                onFail,
+                3,
+                true
+            );
+        }
+        
+        /// <summary>
+        /// 닉네임을 생성합니다
+        /// </summary>
+        public void CreateNickNameAsync(string nickName, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            // 중복 체크 먼저 수행
+            ProcessBackendAPI(
+                "닉네임 중복 체크",
+                (callback) => Backend.BMember.CheckNicknameDuplication(nickName, (bro) => callback?.Invoke(bro)),
+                (checkBro) => {
+                    // 닉네임 생성
+                    ProcessBackendAPI(
+                        "닉네임 생성",
+                        (callback) => Backend.BMember.CreateNickname(nickName, (bro) => callback?.Invoke(bro)),
+                        onSuccess,
+                        onFail,
+                        2,
+                        true
+                    );
+                },
+                onFail,
+                1,
+                true
+            );
+        }
+        
+        /// <summary>
+        /// 닉네임을 업데이트합니다
+        /// </summary>
+        public void UpdateNickNameAsync(string nickName, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            // 중복 체크 먼저 수행
+            ProcessBackendAPI(
+                "닉네임 중복 체크",
+                (callback) => Backend.BMember.CheckNicknameDuplication(nickName, (bro) => callback?.Invoke(bro)),
+                (checkBro) => {
+                    // 닉네임 업데이트
+                    ProcessBackendAPI(
+                        "닉네임 업데이트",
+                        (callback) => Backend.BMember.UpdateNickname(nickName, (bro) => callback?.Invoke(bro)),
+                        onSuccess,
+                        onFail,
+                        2,
+                        true
+                    );
+                },
+                onFail,
+                1,
+                true
+            );
+        }
 
-                    return;
-                }
-
-                Debug.Log("게스트 로그인 성공");
-                if(bro.GetStatusCode() == "201")
-                {
-                    UserInfo.SetFirstAccessTime(ServerTime);
-                    OnGuestSignupHandler?.Invoke();
-                }
-
-                else if(bro.GetStatusCode() == "200")
-                {
-                    OnGuestLoginHandler?.Invoke();
-                }
-                onCompleted?.Invoke(bro);
-                _isLogin = true;
-
-            },
-            async (BackendReturnObject bro) =>
+        #endregion
+        
+        #region 사용자 인증 관련 메서드 (동기)
+        
+        /// <summary>
+        /// 커스텀 로그인을 동기적으로 수행합니다
+        /// </summary>
+        public bool CustomLogin(string id, string pw)
+        {
+            if (IsLogin)
             {
-                if (bro.GetStatusCode() == "401")
+                Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
+                return true;
+            }
+            
+            try
+            {
+                if (!_isSaveEnabled)
                 {
-                    Debug.Log("게스트 로그인 실패: 서버에 정보가 없음");
-                    Backend.BMember.DeleteGuestInfo();
-                    await GuestLogin(maxRepeatCount - 1, onCompleted, onFailed);
+                    Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 로그인이 중단되었습니다.");
+                    return false;
+                }
+                
+                BackendReturnObject bro = Backend.BMember.CustomLogin(id, pw);
+                BackendState state = HandleError(bro);
+                
+                if (state == BackendState.Success)
+                {
+                    _isLogin = true;
+                    Debug.Log("[BackendManager] 커스텀 로그인 성공");
+                    return true;
                 }
                 else
                 {
-                    ShowPopup("로그인 에러", "로그인에 실패했습니다. \n오류 코드: " + bro.GetErrorCode(), Application.Quit);
-                    Debug.Log("게스트 로그인 실패: " + bro.GetMessage());
+                    Debug.LogError($"[BackendManager] 커스텀 로그인 실패: {bro.GetMessage()}");
+                    ShowPopup("로그인 실패", $"로그인에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
+                    return false;
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
         }
-
+        
+        /// <summary>
+        /// 게스트 로그인을 동기적으로 수행합니다
+        /// </summary>
+        public bool GuestLogin()
+        {
+            if (IsLogin)
+            {
+                Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
+                return true;
+            }
+            
+            try
+            {
+                if (!_isSaveEnabled)
+                {
+                    Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 로그인이 중단되었습니다.");
+                    return false;
+                }
+                
+                BackendReturnObject bro = Backend.BMember.GuestLogin();
+                
+                // 특수 케이스: 게스트 정보 삭제 후 재시도
+                if (bro.GetStatusCode() == "401")
+                {
+                    Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
+                    Backend.BMember.DeleteGuestInfo();
+                    bro = Backend.BMember.GuestLogin();
+                }
+                
+                BackendState state = HandleError(bro);
+                
+                if (state == BackendState.Success)
+                {
+                    _isLogin = true;
+                    
+                    // 신규 가입 또는 기존 로그인 처리
+                    if (bro.GetStatusCode() == "201")
+                    {
+                        Debug.Log("[BackendManager] 게스트 신규 가입 성공");
+                        OnGuestSignupHandler?.Invoke();
+                    }
+                    else if (bro.GetStatusCode() == "200")
+                    {
+                        Debug.Log("[BackendManager] 게스트 로그인 성공");
+                        OnGuestLoginHandler?.Invoke();
+                    }
+                    
+                    return true;
+                }
+                else
+                {
+                    Debug.LogError($"[BackendManager] 게스트 로그인 실패: {bro.GetMessage()}");
+                    ShowPopup("로그인 실패", $"게스트 로그인에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// 로그아웃을 수행합니다
+        /// </summary>
         public void LogOut()
         {
             if (!Backend.IsLogin && !_isLogin)
             {
-#if !UNITY_EDITOR
-                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
-#endif
-                Debug.LogError("로그인이 되어있지 않습니다.");
+                Debug.LogError("[BackendManager] 로그인이 되어있지 않아 로그아웃을 수행할 수 없습니다.");
                 return;
             }
 
             _isLogin = false;
             _isLoaded = false;
-        }
-
-        /// <summary> id, pw, 서버 연결 실패시 반복횟수, 완료 시 실행할 함수를 받아 회원가입을 진행하는 함수 </summary>
-        public async Task CustomSignup(string id, string pw, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendState> onFailed = null)
-        {
-            await ExecuteWithRetryAsync(maxRepeatCount, () => Backend.BMember.CustomSignUp(id, pw), (bro) =>
-            {
-                Debug.Log("계정 생성 성공");
-                onCompleted?.Invoke(bro);
-            },
-            (state) =>
-            {
-                Debug.LogError("계정 생성 에러 발생: " + state);
-                onFailed?.Invoke(state);
-            });
-        }
-
-        /// <summary> 내 데이터 ID를 받아 서버 연결 확인 후 받은 함수를 처리해주는 함수 </summary>
-        public void GetMyData(string selectedProbabilityFileId, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
-        {
-            if (!Backend.IsLogin && !_isLogin)
-            {
-                Debug.LogError("로그인이 되어있지 않습니다.");
-                return;
-            }
-
-            Where where = new Where();
-            where.Equal("owner_inDate", Backend.UserInDate);
-
-            ExecuteWithRetry(maxRepeatCount, () => Backend.GameData.Get(selectedProbabilityFileId, where), (bro) =>
-            {
-                Debug.Log("내 정보 불러오기 성공:" + selectedProbabilityFileId);
-                onCompleted?.Invoke(bro);
-                _isLoaded = true;
-            },
-            (BackendReturnObject state) =>
-            {
-                ShowPopup("네트워크 에러", "정보를 불러오는데 실패했습니다. \n다시 시도 해주세요. \n오류 코드: " + state.GetErrorCode(), () => GetMyData(selectedProbabilityFileId, maxRepeatCount, onCompleted, onFailed));
-                Debug.LogError("내 정보 불러오기 에러 발생:" + selectedProbabilityFileId + "  State: " + state);
-                onFailed?.Invoke(state);
-                _isLoaded = false;
-            });
-        }
-
-        /// <summary> 차트 ID와 반복 횟수, 연결이 됬을 경우 실행할 함수를 받아 뒤끝에서 ChartData를 받아오는 함수 </summary>
-        public void GetChartData(string selectedProbabilityFileId, int maxRepeatCount = 10, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
-        {
-            if (!Backend.IsLogin && !_isLogin)
-            {
-#if !UNITY_EDITOR
-                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
-#endif
-                Debug.LogError("로그인이 되어있지 않습니다.");
-                return;
-            }
-
-            ExecuteWithRetry(maxRepeatCount, () => Backend.Chart.GetOneChartAndSave(selectedProbabilityFileId), (bro) =>
-            {
-                Debug.LogError("차트 불러오기 성공:" + selectedProbabilityFileId);
-                onCompleted?.Invoke(bro);
-            },
-            (state) =>
-            {
-                Debug.LogError("차트 불러오기 에러 발생:" + selectedProbabilityFileId);
-                ShowPopup("네트워크 에러", "정보를 불러오는데 실패했습니다. \n다시 시도 해주세요. \n오류 코드: " + state.GetErrorCode(), () => GetChartData(selectedProbabilityFileId, maxRepeatCount, onCompleted, onFailed));
-                onFailed?.Invoke(state);
-            });
-        }
-
-        public void SaveGameData(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
-        {
-            // 저장 기능이 비활성화되었는지 확인
-            if (!_isSaveEnabled)
-            {
-                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
-                BackendReturnObject errorBro = new BackendReturnObject();
-                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
-                onFailed?.Invoke(errorBro);
-                return;
-            }
             
-            // 기존 코드
-            if (!Backend.IsLogin && !_isLogin)
+            // 로그아웃 API 호출은 생략 (필요시 추가)
+            Debug.Log("[BackendManager] 로그아웃 완료");
+        }
+        
+        /// <summary>
+        /// 회원가입을 동기적으로 수행합니다
+        /// </summary>
+        public bool CustomSignup(string id, string pw)
+        {
+            try
             {
-#if !UNITY_EDITOR
-                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
-#endif
-                Debug.LogError("로그인이 되어있지 않습니다.");
-                return;
-            }
-
-            if (!IsLoaded)
-            {
-                DebugLog.LogError("게임 정보를 삽입하려 했으나 현재 로드가 되어있지 않습니다.");
-                return;
-            }
-
-            Where where = new Where();
-            where.Equal("owner_inDate", Backend.UserInDate);
-            ExecuteWithRetry(maxRepeatCount, () => Backend.GameData.Get(selectedProbabilityFileId, where), (bro) =>
-            {
-                var rows = bro.FlattenRows();
-                if (rows != null && 0 < rows.Count)
+                BackendReturnObject bro = Backend.BMember.CustomSignUp(id, pw);
+                BackendState state = HandleError(bro);
+                
+                if (state == BackendState.Success)
                 {
-                    UpdateGameData(selectedProbabilityFileId, bro.GetInDate(), maxRepeatCount, param, onCompleted, onFailed);
-                    return;
+                    Debug.Log("[BackendManager] 회원가입 성공");
+                    return true;
                 }
-
                 else
                 {
-                    InsertGameData(selectedProbabilityFileId, maxRepeatCount, param, onCompleted, onFailed);
-                    return;
+                    Debug.LogError($"[BackendManager] 회원가입 실패: {bro.GetMessage()}");
+                    ShowPopup("회원가입 실패", $"회원가입에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
+                    return false;
                 }
-
-            },
-            (BackendReturnObject state) =>
-            {
-                ShowPopup("네트워크 에러", "유저 정보 저장에 실패했습니다. \n다시 시도해 주세요. \n오류 코드: " + state.GetErrorCode(), () => SaveGameData(selectedProbabilityFileId, maxRepeatCount, param, onCompleted, onFailed));
-                Debug.LogError("게임 정보 저장 에러 발생:" + selectedProbabilityFileId + "  State: " + state);
-                 onFailed?.Invoke(state);
-                 return;
-             });
-        }
-
-        public async void SaveGameDataAsync(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
-        {
-            // 저장 기능이 비활성화되었는지 확인
-            if (!_isSaveEnabled)
-            {
-                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
-                BackendReturnObject errorBro = new BackendReturnObject();
-                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
-                onFailed?.Invoke(errorBro);
-                return;
             }
-            
-            // 기존 코드
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// 닉네임을 생성합니다 (동기식)
+        /// </summary>
+        public bool CreateNickName(string nickName)
+        {
+            try
+            {
+                // 중복 체크
+                BackendReturnObject checkBro = Backend.BMember.CheckNicknameDuplication(nickName);
+                BackendState checkState = HandleError(checkBro);
+                
+                if (checkState != BackendState.Success)
+                {
+                    Debug.LogError($"[BackendManager] 닉네임 중복 체크 실패: {checkBro.GetMessage()}");
+                    ShowPopup("닉네임 중복 체크 실패", $"중복 체크에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {checkBro.GetErrorCode()}");
+                    return false;
+                }
+                
+                // 닉네임 생성
+                BackendReturnObject createBro = Backend.BMember.CreateNickname(nickName);
+                BackendState createState = HandleError(createBro);
+                
+                if (createState == BackendState.Success)
+                {
+                    Debug.Log("[BackendManager] 닉네임 생성 성공");
+                    return true;
+                }
+                else
+                {
+                    Debug.LogError($"[BackendManager] 닉네임 생성 실패: {createBro.GetMessage()}");
+                    ShowPopup("닉네임 생성 실패", $"닉네임 생성에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {createBro.GetErrorCode()}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+        
+        /// <summary>
+        /// 닉네임을 업데이트합니다 (동기식)
+        /// </summary>
+        public bool UpdateNickName(string nickName)
+        {
+            try
+            {
+                // 중복 체크
+                BackendReturnObject checkBro = Backend.BMember.CheckNicknameDuplication(nickName);
+                BackendState checkState = HandleError(checkBro);
+                
+                if (checkState != BackendState.Success)
+                {
+                    Debug.LogError($"[BackendManager] 닉네임 중복 체크 실패: {checkBro.GetMessage()}");
+                    ShowPopup("닉네임 중복 체크 실패", $"중복 체크에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {checkBro.GetErrorCode()}");
+                    return false;
+                }
+                
+                // 닉네임 업데이트
+                BackendReturnObject updateBro = Backend.BMember.UpdateNickname(nickName);
+                BackendState updateState = HandleError(updateBro);
+                
+                if (updateState == BackendState.Success)
+                {
+                    Debug.Log("[BackendManager] 닉네임 업데이트 성공");
+                    return true;
+                }
+                else
+                {
+                    Debug.LogError($"[BackendManager] 닉네임 업데이트 실패: {updateBro.GetMessage()}");
+                    ShowPopup("닉네임 업데이트 실패", $"닉네임 업데이트에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {updateBro.GetErrorCode()}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
+        }
+        
+        #endregion
+
+        #region 데이터 관련 메서드 (비동기)
+        
+        /// <summary>
+        /// 유저 데이터를 조회합니다
+        /// </summary>
+        public void GetMyDataAsync(string tableId, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
             if (!Backend.IsLogin && !_isLogin)
             {
-#if !UNITY_EDITOR
-                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
-#endif
-                Debug.LogError("로그인이 되어있지 않습니다.");
+                Debug.LogError("[BackendManager] 로그인이 되어있지 않아 데이터를 조회할 수 없습니다.");
+                onFail?.Invoke(BackendState.NotLogin);
                 return;
             }
 
-            if (!IsLoaded)
-            {
-                DebugLog.LogError("게임 정보를 삽입하려 했으나 현재 로드가 되어있지 않습니다.");
-                return;
-            }
-
+            // 유저 조건 생성
             Where where = new Where();
             where.Equal("owner_inDate", Backend.UserInDate);
-            await ExecuteWithRetryAsync(maxRepeatCount, () => Backend.GameData.Get(selectedProbabilityFileId, where), (bro) =>
-           {
-               var rows = bro.FlattenRows();
-               if (rows != null && 0 < rows.Count)
-               {
-                   UpdateGameDataAsync(selectedProbabilityFileId, bro.GetInDate(), maxRepeatCount, param, onCompleted, onFailed);
-                   return;
-               }
 
-               else
-               {
-                   InsertGameDataAsync(selectedProbabilityFileId, maxRepeatCount, param, onCompleted, onFailed);
-                   return;
-               }
-
-           },
-           (state) =>
-           {
-               Debug.LogError("게임 정보 저장 에러 발생:" + selectedProbabilityFileId + "  State: " + state);
-               onFailed?.Invoke(state);
-               return;
-           });
+            ProcessBackendAPI(
+                $"{tableId} 데이터 조회",
+                (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
+                (bro) => {
+                    Debug.Log($"[BackendManager] {tableId} 데이터 조회 성공");
+                    _isLoaded = true;
+                    onSuccess?.Invoke(bro);
+                },
+                onFail,
+                3,
+                true
+            );
         }
+        
+        /// <summary>
+        /// 차트 데이터를 조회합니다
+        /// </summary>
+        public void GetChartDataAsync(string chartId, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            if (!Backend.IsLogin && !_isLogin)
+            {
+                Debug.LogError("[BackendManager] 로그인이 되어있지 않아 차트 데이터를 조회할 수 없습니다.");
+                onFail?.Invoke(BackendState.NotLogin);
+                return;
+            }
 
-        public void InsertGameData(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
+            ProcessBackendAPI(
+                $"{chartId} 차트 조회",
+                (callback) => Backend.Chart.GetChartContents(chartId, (bro) => callback?.Invoke(bro)),
+                onSuccess,
+                onFail,
+                3,
+                true
+            );
+        }
+        
+        /// <summary>
+        /// 게임 데이터를 안전하게 저장합니다
+        /// </summary>
+        public void SaveGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
-                BackendReturnObject errorBro = new BackendReturnObject();
-                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
-                onFailed?.Invoke(errorBro);
+                onFail?.Invoke(BackendState.NotSave);
                 return;
             }
             
-            // 기존 코드...
-            if (!Backend.IsLogin && !_isLogin)
+            if (!IsLogin || !_isLoaded)
             {
-#if !UNITY_EDITOR
-                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
-#endif
-                Debug.LogError("로그인이 되어있지 않습니다.");
+                Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
+                onFail?.Invoke(BackendState.NotLogin);
                 return;
             }
-
-            if (!IsLoaded)
-            {
-                DebugLog.LogError("게임 정보를 삽입하려 했으나 현재 로드가 되어있지 않습니다.");
-                return;
-            }
-
-            ExecuteWithRetry(maxRepeatCount, () => Backend.GameData.Insert(selectedProbabilityFileId, param), (bro) =>
-            {
-                Debug.Log("게임 정보 삽입 성공:" + selectedProbabilityFileId);
-                onCompleted?.Invoke(bro);
-                OnInsertGameDataHandler?.Invoke(bro);
-            },
-            (state) =>
-            {
-                ShowPopup("네트워크 에러", "유저 정보 저장에 실패했습니다. \n다시 시도해 주세요. \n오류 코드: " + state.GetErrorCode(), () => InsertGameData(selectedProbabilityFileId, maxRepeatCount, param, onCompleted, onFailed));
-                Debug.LogError("게임 정보 삽입 에러 발생:" + selectedProbabilityFileId);
-                onFailed?.Invoke(state);
-            });
+            
+            // 유저 정보 조회를 위한 조건
+            Where where = new Where();
+            where.Equal("owner_inDate", Backend.UserInDate);
+            
+            // 데이터 존재 확인 후 업데이트 또는 삽입
+            ProcessBackendAPI(
+                $"{tableId} 데이터 확인",
+                (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
+                (getBro) => {
+                    var rows = getBro.FlattenRows();
+                    
+                    // 결과에 따라 삽입 또는 업데이트
+                    if (rows != null && rows.Count > 0)
+                    {
+                        string inDate = getBro.GetInDate();
+                        
+                        // 업데이트 수행
+                        ProcessBackendAPI(
+                            $"{tableId} 데이터 업데이트",
+                            (callback) => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param, (bro) => callback?.Invoke(bro)),
+                            onSuccess,
+                            onFail,
+                            3,
+                            true
+                        );
+                    }
+                    else
+                    {
+                        // 삽입 수행
+                        ProcessBackendAPI(
+                            $"{tableId} 데이터 삽입",
+                            (callback) => Backend.GameData.Insert(tableId, param, (bro) => callback?.Invoke(bro)),
+                            (insertBro) => {
+                                OnInsertGameDataHandler?.Invoke(insertBro);
+                                onSuccess?.Invoke(insertBro);
+                            },
+                            onFail,
+                            3,
+                            true
+                        );
+                    }
+                },
+                onFail,
+                2,
+                true
+            );
         }
-
-        public void InsertGameDataAsync(string selectedProbabilityFileId, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
+        
+        /// <summary>
+        /// 게임 데이터를 삽입합니다
+        /// </summary>
+        public void InsertGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
-                BackendReturnObject errorBro = new BackendReturnObject();
-                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
-                onFailed?.Invoke(errorBro);
+                onFail?.Invoke(BackendState.NotSave);
                 return;
             }
             
-            // 기존 코드...
+            if (!IsLogin || !_isLoaded)
+            {
+                Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
+                onFail?.Invoke(BackendState.NotLogin);
+                return;
+            }
+            
+            ProcessBackendAPI(
+                $"{tableId} 데이터 삽입",
+                (callback) => Backend.GameData.Insert(tableId, param, (bro) => callback?.Invoke(bro)),
+                (insertBro) => {
+                    OnInsertGameDataHandler?.Invoke(insertBro);
+                    onSuccess?.Invoke(insertBro);
+                },
+                onFail,
+                3,
+                true
+            );
+        }
+        
+        /// <summary>
+        /// 게임 데이터를 업데이트합니다
+        /// </summary>
+        public void UpdateGameDataAsync(string tableId, string inDate, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            if (!_isSaveEnabled)
+            {
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                onFail?.Invoke(BackendState.NotSave);
+                return;
+            }
+            
+            if (!IsLogin || !_isLoaded)
+            {
+                Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
+                onFail?.Invoke(BackendState.NotLogin);
+                return;
+            }
+            
+            ProcessBackendAPI(
+                $"{tableId} 데이터 업데이트",
+                (callback) => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param, (bro) => callback?.Invoke(bro)),
+                onSuccess,
+                onFail,
+                3,
+                true
+            );
+        }
+
+        #endregion
+        
+        #region 데이터 관련 메서드 (동기)
+
+        /// <summary>
+        /// 유저 데이터를 조회합니다 (동기식)
+        /// </summary>
+        public BackendReturnObject GetMyData(string tableId)
+        {
             if (!Backend.IsLogin && !_isLogin)
             {
-#if !UNITY_EDITOR
-                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
-#endif
-                Debug.LogError("로그인이 되어있지 않습니다.");
-                return;
+                Debug.LogError("[BackendManager] 로그인이 되어있지 않아 데이터를 조회할 수 없습니다.");
+                return null;
             }
-
-            if(maxRepeatCount <= 0)
+            
+            try
             {
-                Debug.LogError("재시도 횟수를 전부 사용했습니다: " + selectedProbabilityFileId);
-                return;
-            }
-
-            Backend.GameData.Insert(selectedProbabilityFileId, param, bro =>
-            {
-                switch (HandleError(bro))
+                // 유저 조건 생성
+                Where where = new Where();
+                where.Equal("owner_inDate", Backend.UserInDate);
+                
+                BackendReturnObject bro = Backend.GameData.Get(tableId, where);
+                BackendState state = HandleError(bro);
+                
+                if (state == BackendState.Success)
                 {
-                    case BackendState.Failure:
-                        onFailed?.Invoke(bro);
-                        break;
-
-                    case BackendState.Maintainance:
-                        onFailed?.Invoke(bro);
-                        break;
-
-                    case BackendState.Retry:
-                        InsertGameDataAsync(selectedProbabilityFileId, maxRepeatCount - 1, param, onCompleted, onFailed);
-                        break;
-
-                    case BackendState.Success:
-                        onCompleted?.Invoke(bro);
-                        OnInsertGameDataHandler?.Invoke(bro);
-                        break;
+                    Debug.Log($"[BackendManager] {tableId} 데이터 조회 성공");
+                    _isLoaded = true;
+                    return bro;
                 }
-            });      
-        }
-
-        public void UpdateGameData(string selectedProbabilityFileId, string inDate, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
-        {
-            if (!_isSaveEnabled)
-            {
-                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
-                BackendReturnObject errorBro = new BackendReturnObject();
-                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
-                onFailed?.Invoke(errorBro);
-                return;
-            }
-            
-            // 기존 코드...
-            if (!Backend.IsLogin && !_isLogin)
-            {
-#if !UNITY_EDITOR
-                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
-#endif
-                Debug.LogError("로그인이 되어있지 않습니다.");
-                return;
-            }
-
-            if (!IsLoaded)
-            {
-                DebugLog.LogError("게임 정보를 갱신하려 했으나 현재 로드가 되어있지 않습니다.");
-                return;
-            }
-
-            ExecuteWithRetry(maxRepeatCount, () => Backend.GameData.UpdateV2(selectedProbabilityFileId, inDate, Backend.UserInDate, param), (bro) =>
-            {
-                Debug.Log("게임 정보 갱신 성공:" + selectedProbabilityFileId);
-                onCompleted?.Invoke(bro);
-            },
-            (state) =>
-            {
-                ShowPopup("네트워크 에러", "유저 정보 저장에 실패했습니다. \n다시 시도해 주세요. \n오류 코드: " + state.GetErrorCode(), () => UpdateGameData(selectedProbabilityFileId, inDate, maxRepeatCount, param, onCompleted, onFailed));
-                Debug.LogError("게임 정보 갱신 에러 발생:" + selectedProbabilityFileId);
-                onFailed?.Invoke(state);
-            });
-        }
-
-        public void UpdateGameDataAsync(string selectedProbabilityFileId, string inDate, int maxRepeatCount, Param param, Action<BackendReturnObject> onCompleted = null, Action<BackendReturnObject> onFailed = null)
-        {
-            if (!_isSaveEnabled)
-            {
-                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
-                BackendReturnObject errorBro = new BackendReturnObject();
-                //errorBro.SetMessage("저장이 비활성화되어 있습니다.");
-                onFailed?.Invoke(errorBro);
-                return;
-            }
-            
-            // 기존 코드...
-            if (!Backend.IsLogin && !_isLogin)
-            {
-#if !UNITY_EDITOR
-                ShowPopup("로그인 에러", "로그인이 되지 않았습니다. \n다시 접속해 주세요.", Application.Quit);
-#endif
-                Debug.LogError("로그인이 되어있지 않습니다.");
-                return;
-            }
-
-            if (maxRepeatCount <= 0)
-            {
-                Debug.LogError("재시도 횟수를 전부 사용했습니다: " + selectedProbabilityFileId);
-                return;
-            }
-
-            Backend.GameData.UpdateV2(selectedProbabilityFileId, inDate, Backend.UserInDate, param, bro =>
-            {
-                switch (HandleError(bro))
+                else
                 {
-                    case BackendState.Failure:
-                        ShowPopup("네트워크 에러", "유저 정보 저장에 실패했습니다. \n다시 시도해 주세요. \n오류 코드: " + bro.GetErrorCode(), () => UpdateGameDataAsync(selectedProbabilityFileId, inDate, maxRepeatCount, param, onCompleted, onFailed));
-                        onFailed?.Invoke(bro);
-                        break;
-
-                    case BackendState.Maintainance:
-                        onFailed?.Invoke(bro);
-                        break;
-
-                    case BackendState.Retry:
-                        UpdateGameDataAsync(selectedProbabilityFileId, inDate, maxRepeatCount - 1, param, onCompleted, onFailed);
-                        break;
-
-                    case BackendState.Success:
-                        onCompleted?.Invoke(bro);
-                        break;
+                    Debug.LogError($"[BackendManager] {tableId} 데이터 조회 실패: {bro.GetMessage()}");
+                    return null;
                 }
-            });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return null;
+            }
         }
-
-        private void ExecuteWithRetry(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendState> onFail)
+        
+        /// <summary>
+        /// 차트 데이터를 조회합니다 (동기식)
+        /// </summary>
+        public BackendReturnObject GetChartData(string chartId)
         {
-            BackendReturnObject bro = action.Invoke();
-            BackendState state = HandleError(bro);
-            if (maxRepeatCount <= 0)
+            if (!Backend.IsLogin && !_isLogin)
             {
-                onFail?.Invoke(state);
-                return;
+                Debug.LogError("[BackendManager] 로그인이 되어있지 않아 차트 데이터를 조회할 수 없습니다.");
+                return null;
             }
-
-            if (state == BackendState.Retry)
+            
+            try
             {
-                ExecuteWithRetry(maxRepeatCount - 1, action, onSuccess, onFail);
-                return;
+                BackendReturnObject bro = Backend.Chart.GetChartContents(chartId);
+                BackendState state = HandleError(bro);
+                
+                if (state == BackendState.Success)
+                {
+                    Debug.Log($"[BackendManager] {chartId} 차트 데이터 조회 성공");
+                    return bro;
+                }
+                else
+                {
+                    Debug.LogError($"[BackendManager] {chartId} 차트 데이터 조회 실패: {bro.GetMessage()}");
+                    return null;
+                }
             }
-            else if (state == BackendState.Success)
+            catch (Exception ex)
             {
-                onSuccess?.Invoke(bro);
-                return;
+                Debug.LogException(ex);
+                return null;
             }
-
-            onFail?.Invoke(state);
         }
-
-        private void ExecuteWithRetry(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendReturnObject> onFail)
+        
+        /// <summary>
+        /// 게임 데이터를 안전하게 저장합니다 (동기식)
+        /// </summary>
+        public bool SaveGameData(string tableId, Param param)
         {
-            BackendReturnObject bro = action.Invoke();
-            BackendState state = HandleError(bro);
-            if (maxRepeatCount <= 0)
+            if (!_isSaveEnabled)
             {
-                onFail?.Invoke(bro);
-                return;
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                return false;
             }
-
-            if (state == BackendState.Retry)
+            
+            if (!IsLogin || !_isLoaded)
             {
-                ExecuteWithRetry(maxRepeatCount - 1, action, onSuccess, onFail);
-                return;
+                Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
+                return false;
             }
-            else if (state == BackendState.Success)
+            
+            try
             {
-                onSuccess?.Invoke(bro);
-                return;
+                // 유저 정보 조회를 위한 조건
+                Where where = new Where();
+                where.Equal("owner_inDate", Backend.UserInDate);
+                
+                // 데이터 존재 확인
+                BackendReturnObject getBro = Backend.GameData.Get(tableId, where);
+                BackendState getState = HandleError(getBro);
+                
+                if (getState != BackendState.Success)
+                {
+                    Debug.LogError($"[BackendManager] {tableId} 데이터 조회 실패: {getBro.GetMessage()}");
+                    return false;
+                }
+                
+                var rows = getBro.FlattenRows();
+                
+                // 결과에 따라 삽입 또는 업데이트
+                if (rows != null && rows.Count > 0)
+                {
+                    string inDate = getBro.GetInDate();
+                    
+                    // 업데이트 수행
+                    BackendReturnObject updateBro = Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param);
+                    BackendState updateState = HandleError(updateBro);
+                    
+                    if (updateState == BackendState.Success)
+                    {
+                        Debug.Log($"[BackendManager] {tableId} 데이터 업데이트 성공");
+                        return true;
+                    }
+                    else
+                    {
+                        Debug.LogError($"[BackendManager] {tableId} 데이터 업데이트 실패: {updateBro.GetMessage()}");
+                        return false;
+                    }
+                }
+                else
+                {
+                    // 삽입 수행
+                    BackendReturnObject insertBro = Backend.GameData.Insert(tableId, param);
+                    BackendState insertState = HandleError(insertBro);
+                    
+                    if (insertState == BackendState.Success)
+                    {
+                        Debug.Log($"[BackendManager] {tableId} 데이터 삽입 성공");
+                        OnInsertGameDataHandler?.Invoke(insertBro);
+                        return true;
+                    }
+                    else
+                    {
+                        Debug.LogError($"[BackendManager] {tableId} 데이터 삽입 실패: {insertBro.GetMessage()}");
+                        return false;
+                    }
+                }
             }
-
-            onFail?.Invoke(bro);
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
         }
-
-        private async Task ExecuteWithRetryAsync(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendState> onFail)
+        
+        /// <summary>
+        /// 게임 데이터를 삽입합니다 (동기식)
+        /// </summary>
+        public bool InsertGameData(string tableId, Param param)
         {
-            BackendReturnObject bro = action.Invoke();
-            BackendState state = HandleError(bro);
-            if (maxRepeatCount <= 0)
+            if (!_isSaveEnabled)
             {
-                onFail?.Invoke(state);
-                return;
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                return false;
             }
-
-            if(state == BackendState.Retry)
+            
+            if (!IsLogin || !_isLoaded)
             {
-                await Task.Delay(100);
-                await ExecuteWithRetryAsync(maxRepeatCount - 1, action, onSuccess, onFail);
-                return;
+                Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
+                return false;
             }
-            else if(state == BackendState.Success)
+            
+            try
             {
-                onSuccess?.Invoke(bro);
-                return;
+                BackendReturnObject insertBro = Backend.GameData.Insert(tableId, param);
+                BackendState insertState = HandleError(insertBro);
+                
+                if (insertState == BackendState.Success)
+                {
+                    Debug.Log($"[BackendManager] {tableId} 데이터 삽입 성공");
+                    OnInsertGameDataHandler?.Invoke(insertBro);
+                    return true;
+                }
+                else
+                {
+                    Debug.LogError($"[BackendManager] {tableId} 데이터 삽입 실패: {insertBro.GetMessage()}");
+                    return false;
+                }
             }
-
-            onFail?.Invoke(state);
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
         }
-
-        private async Task ExecuteWithRetryAsync(int maxRepeatCount, Func<BackendReturnObject> action, Action<BackendReturnObject> onSuccess, Action<BackendReturnObject> onFail)
+        
+        /// <summary>
+        /// 게임 데이터를 업데이트합니다 (동기식)
+        /// </summary>
+        public bool UpdateGameData(string tableId, string inDate, Param param)
         {
-            BackendReturnObject bro = action.Invoke();
-            BackendState state = HandleError(bro);
-            if (maxRepeatCount <= 0)
+            if (!_isSaveEnabled)
             {
-                onFail?.Invoke(bro);
-                return;
+                Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
+                return false;
             }
-
-            if (state == BackendState.Retry)
+            
+            if (!IsLogin || !_isLoaded)
             {
-                await Task.Delay(100);
-                await ExecuteWithRetryAsync(maxRepeatCount - 1, action, onSuccess, onFail);
-                return;
+                Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
+                return false;
             }
-            else if (state == BackendState.Success)
+            
+            try
             {
-                onSuccess?.Invoke(bro);
-                return;
+                BackendReturnObject updateBro = Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param);
+                BackendState updateState = HandleError(updateBro);
+                
+                if (updateState == BackendState.Success)
+                {
+                    Debug.Log($"[BackendManager] {tableId} 데이터 업데이트 성공");
+                    return true;
+                }
+                else
+                {
+                    Debug.LogError($"[BackendManager] {tableId} 데이터 업데이트 실패: {updateBro.GetMessage()}");
+                    return false;
+                }
             }
-
-            onFail?.Invoke(bro);
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
         }
 
-        /// <summary> 서버와 연결 상태를 체크하고 BackendState값을 반환하는 함수 </summary>
+        #endregion
+
+        #region 로그 및 오류 처리
+
+        /// <summary>
+        /// 백엔드 오류를 분류하고 적절한 처리 방향을 결정합니다
+        /// </summary>
         public BackendState HandleError(BackendReturnObject bro)
         {
+            if (bro == null)
+                return BackendState.Failure;
+                
             if (bro.IsSuccess())
-            {
                 return BackendState.Success;
-            }
-            else
+            
+            try
             {
+                // 오류 로그 업로드 (실패해도 계속 진행)
                 ErrorLogUpload(bro);
-
-                if (bro.IsClientRequestFailError()) // 클라이언트의 일시적인 네트워크 끊김 시
-                {
-                    Debug.LogError("일시적인 네트워크 끊김");
-                    return BackendState.Retry;
-                }
-                else if (bro.IsServerError()) // 서버의 이상 발생 시
-                {
-                    Debug.LogError("서버 이상 발생");
-                    return BackendState.Retry;
-                }
-                else if (bro.IsMaintenanceError()) // 서버 상태가 '점검'일 시
-                {
-                    ShowPopup("서버 점검중", "현재 서버 점검중 입니다. \n점검이 끝난 후 접속해 주세요. \n오류 코드: " + bro.GetErrorCode(), Application.Quit);
-                    return BackendState.Maintainance;
-                }
-                else if (bro.IsTooManyRequestError()) // 단기간에 많은 요청을 보낼 경우 발생하는 403 Forbbiden 발생 시
-                {
-                    //단기간에 많은 요청을 보내면 발생합니다. 5분동안 뒤끝의 함수 요청을 중지해야합니다.  
-                    DebugLog.LogError("단기간에 많은 요청을 보냈습니다. 5분간 사용 불가");
-                    return BackendState.Failure;
-                }
-                else if (bro.IsBadAccessTokenError())
-                {
-                    return RefreshTheBackendToken(3) ? BackendState.Retry : BackendState.Failure;
-                }
-                else
-                {
-                    DebugLog.LogError(bro.GetErrorCode() + ", " + bro.GetErrorMessage());
-                    return BackendState.Failure;
-                }
             }
-        }
-
-        /// <summary> 뒤끝 토큰 재발급 함수 </summary>
-        /// maxRepeatCount : 서버 연결 실패시 재 시도할 횟수
-        public bool RefreshTheBackendToken(int maxRepeatCount)
-        {
-            if (maxRepeatCount <= 0)
+            catch {}
+            
+            // 오류 유형 분석
+            string errorCode = bro.GetErrorCode();
+            string statusCode = bro.GetStatusCode();
+            
+            // 상태 코드별 처리
+            switch (statusCode)
             {
-                Debug.Log("토큰 발급 실패");
+                case "401": // 인증 오류
+                    if (errorCode == "BadUnauthorizedException" || 
+                        errorCode == "UnauthorizedSessionException")
+                    {
+                        // 토큰 갱신 시도
+                        if (RefreshTheBackendToken(1))
+                            return BackendState.Retry;
+                        else
+                            return BackendState.Failure;
+                    }
+                    break;
+                    
+                case "400": // 요청 오류 (일반적으로 재시도해도 동일 결과)
+                    return BackendState.Failure;
+                    
+                case "403": // 권한 오류
+                    if (bro.IsTooManyRequestError())
+                    {
+                        Debug.LogWarning("[BackendManager] 과도한 요청으로 잠시 차단됨. 5분 후 다시 시도해주세요.");
+                        return BackendState.Failure;
+                    }
+                    break;
+                    
+                case "408": // 타임아웃
+                case "500": // 서버 오류
+                case "502": // 게이트웨이 오류
+                case "503": // 서비스 일시 중지
+                    return BackendState.Retry;
+                    
+                case "429": // 요청 제한 초과
+                    Debug.LogWarning("[BackendManager] 요청 제한을 초과했습니다. 잠시 후 다시 시도해주세요.");
+                    return BackendState.Retry;
+            }
+            
+            // 뒤끝의 확장된 오류 확인 메서드 사용
+            if (bro.IsClientRequestFailError())
+            {
+                Debug.Log("[BackendManager] 일시적인 네트워크 문제. 재시도합니다.");
+                return BackendState.Retry;
+            }
+            else if (bro.IsServerError())
+            {
+                Debug.Log("[BackendManager] 서버 오류. 재시도합니다.");
+                return BackendState.Retry;
+            }
+            else if (bro.IsMaintenanceError())
+            {
+                ShowPopup("서버 점검중", "현재 서버 점검중 입니다. 점검이 끝난 후 접속해 주세요.", Application.Quit);
+                return BackendState.Maintainance;
+            }
+            else if (bro.IsBadAccessTokenError())
+            {
+                return RefreshTheBackendToken(3) ? BackendState.Retry : BackendState.Failure;
+            }
+            
+            // 기타 오류
+            Debug.LogError($"[BackendManager] 처리되지 않은 오류: {errorCode}, {bro.GetMessage()}");
+            return BackendState.Failure;
+        }
+        
+        /// <summary>
+        /// 뒤끝 토큰 갱신을 시도합니다
+        /// </summary>
+        public bool RefreshTheBackendToken(int maxRetries)
+        {
+            if (maxRetries <= 0)
+            {
+                Debug.Log("[BackendManager] 토큰 갱신 실패");
                 return false;
             }
             
@@ -814,102 +1220,199 @@ namespace Muks.BackEnd
 
             if (callback.IsSuccess())
             {
-                Debug.Log("토큰 발급 성공");
+                Debug.Log("[BackendManager] 토큰 갱신 성공");
                 return true;
             }
             else
             {
-                if (callback.IsClientRequestFailError()) // 클라이언트의 일시적인 네트워크 끊김 시
+                if (callback.IsClientRequestFailError() || callback.IsServerError())
                 {
-                    return RefreshTheBackendToken(maxRepeatCount - 1);
+                    return RefreshTheBackendToken(maxRetries - 1);
                 }
-                else if (callback.IsServerError()) // 서버의 이상 발생 시
-                {
-                    return RefreshTheBackendToken(maxRepeatCount - 1);
-                }
-                else if (callback.IsMaintenanceError()) // 서버 상태가 '점검'일 시
-                {
-                    //점검 팝업창 + 로그인 화면으로 보내기
-                    return false;
-                }
-                else if (callback.IsTooManyRequestError()) // 단기간에 많은 요청을 보낼 경우 발생하는 403 Forbbiden 발생 시
-                {
-                    //너무 많은 요청을 보내는 중
-                    return false;
-                }
-                else
-                {
-                    //재시도를 해도 액세스토큰 재발급이 불가능한 경우
-                    //커스텀 로그인 혹은 페데레이션 로그인을 통해 수동 로그인을 진행해야합니다.  
-                    //중복 로그인일 경우 401 bad refreshToken 에러와 함께 발생할 수 있습니다.  
-                    return false;
-                }
+                
+                Debug.LogError($"[BackendManager] 토큰 갱신 실패: {callback.GetMessage()}");
+                return false;
             }
         }
-
-        /// <summary>닉네임을 변경하는 함수, 성공시 true, 중복 닉네임 혹은 실패시 false 반환</summary>
-        public bool UpdateNickName(string nickName)
-        {
-            BackendReturnObject checkBro = Backend.BMember.CheckNicknameDuplication(nickName);
-
-            if (!checkBro.IsSuccess())
-                return false;
-
-            BackendReturnObject bro = Backend.BMember.UpdateNickname(nickName);
-            return bro.IsSuccess();
-        }
-
-        /// <summary>닉네임을 생성하는 함수, 성공시 true, 중복 닉네임 혹은 실패시 false 반환</summary>
-        public bool CreateNickName(string nickName)
-        {
-            BackendReturnObject checkBro = Backend.BMember.CheckNicknameDuplication(nickName);
-
-            if(!checkBro.IsSuccess())
-                return false;
-
-            BackendReturnObject bro = Backend.BMember.CreateNickname(nickName);
-            return bro.IsSuccess();
-        }
-
+        
+        /// <summary>
+        /// 오류 로그를 서버에 업로드합니다
+        /// </summary>
         public void ErrorLogUpload(BackendReturnObject bro)
         {
             if (!Backend.IsLogin || !_isLogin)
                 return;
 
-            Param logParam = new Param();
-            logParam.Add(Backend.UserNickName + "ErrorLog", bro.ToString());
-
-            Backend.GameLog.InsertLogV2("ErrorLogs", logParam);
+            try
+            {
+                Param logParam = new Param();
+                logParam.Add("ErrorLog", bro.ToString());
+                
+                // 오류 발생 시간 추가
+                logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                
+                // 디바이스 정보 추가
+                logParam.Add("Device", SystemInfo.deviceModel);
+                logParam.Add("OS", SystemInfo.operatingSystem);
+                
+                Backend.GameLog.InsertLogV2("ErrorLogs", logParam);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[BackendManager] 오류 로그 업로드 중 예외 발생: {ex.Message}");
+            }
         }
-
+        
+        /// <summary>
+        /// 일반 로그를 서버에 업로드합니다
+        /// </summary>
         public void LogUpload(string logName, string logDescription)
         {
             if (!Backend.IsLogin || !_isLogin)
                 return;
 
-            Param logParam = new Param();
-            logParam.Add(logName, logDescription);
-            Backend.GameLog.InsertLogV2("UserLogs", logParam, bro => { });
+            try
+            {
+                Param logParam = new Param();
+                logParam.Add(logName, logDescription);
+                logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                Backend.GameLog.InsertLogV2("UserLogs", logParam);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[BackendManager] 로그 업로드 중 예외 발생: {ex.Message}");
+            }
         }
-
-        public void BugReportUpload(string userId, string email, string logDescription)
+        
+        /// <summary>
+        /// 버그 리포트를 서버에 업로드합니다 (비동기)
+        /// </summary>
+        public void BugReportUploadAsync(string userId, string email, string logDescription, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
             if (!Backend.IsLogin || !_isLogin)
+            {
+                onFail?.Invoke(BackendState.NotLogin);
                 return;
+            }
 
             Param logParam = new Param();
             logParam.Add("Description", logDescription);
             logParam.Add("Email", email);
             logParam.Add("UserId", userId);
-            Backend.GameLog.InsertLogV2("BugReport", logParam);
+            logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            
+            ProcessBackendAPI(
+                "버그 리포트 업로드",
+                (callback) => Backend.GameLog.InsertLogV2("BugReport", logParam, (bro) => callback?.Invoke(bro)),
+                onSuccess,
+                onFail,
+                1,
+                false
+            );
+        }
+        
+        /// <summary>
+        /// 버그 리포트를 서버에 업로드합니다 (동기)
+        /// </summary>
+        public bool BugReportUpload(string userId, string email, string logDescription)
+        {
+            if (!Backend.IsLogin || !_isLogin)
+            {
+                Debug.LogError("[BackendManager] 로그인이 되어있지 않아 버그 리포트를 업로드할 수 없습니다.");
+                return false;
+            }
+
+            try
+            {
+                Param logParam = new Param();
+                logParam.Add("Description", logDescription);
+                logParam.Add("Email", email);
+                logParam.Add("UserId", userId);
+                logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                
+                BackendReturnObject bro = Backend.GameLog.InsertLogV2("BugReport", logParam);
+                return bro.IsSuccess();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+                return false;
+            }
         }
 
-        /// <summary>서버 오류 팝업을 띄워주는 함수</summary>
+        #endregion
+
+        #region 애플리케이션 생명주기
+
+        private void OnApplicationPause(bool isPaused)
+        {
+            if (isPaused)
+            {
+                // 앱이 백그라운드로 전환될 때
+                Debug.Log("[BackendManager] 앱 일시정지, 중요 데이터 저장 시도...");
+                
+                if (_isLogin && _isSaveEnabled)
+                {
+                    OnPauseHandler?.Invoke();
+                }
+            }
+            else
+            {
+                // 앱이 포그라운드로 돌아올 때
+                Debug.Log("[BackendManager] 앱 재시작");
+                OnResumeHandler?.Invoke();
+                // 토큰 유효성 검증
+                CheckTokenValidity();
+            }
+        }
+        
+        private void OnApplicationQuit()
+        {
+            // 앱 종료 시
+            if (_isLogin && _isSaveEnabled)
+            {
+                Debug.Log("[BackendManager] 앱 종료, 중요 데이터 저장 시도...");
+                OnExitHandler?.Invoke();
+            }
+        }
+        
+        private void CheckTokenValidity()
+        {
+            if (_isLogin)
+            {
+                // 토큰 유효성 검사를 위한 간단한 API 호출
+                Backend.BMember.GetUserInfo((bro) => {
+                    if (!bro.IsSuccess())
+                    {
+                        if (bro.IsBadAccessTokenError() && !RefreshTheBackendToken(1))
+                        {
+                            // 토큰 갱신 실패 시 로그아웃 처리
+                            Debug.LogWarning("[BackendManager] 세션이 만료되어 로그아웃합니다.");
+                            LogOut();
+                            ShowPopup("세션 만료", "세션이 만료되었습니다. 다시 로그인해주세요.");
+                        }
+                    }
+                });
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// 팝업을 표시합니다
+        /// </summary>
         public void ShowPopup(string title, string description, Action onButtonClicked = null)
         {
-            PopupManager.Instance.ShowPopup(title, description, onButtonClicked);
+            // 사용자 팝업 매니저 연동
+            if (PopupManager.Instance != null)
+                PopupManager.Instance.ShowPopup(title, description, onButtonClicked);
+            else
+                Debug.LogWarning($"[BackendManager] 팝업 표시: {title} - {description}");
         }
-
+        
+        /// <summary>
+        /// 앱을 종료합니다
+        /// </summary>
         private void ExitApp()
         {
             Application.Quit();

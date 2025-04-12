@@ -404,7 +404,7 @@ public static class UserInfo
         }
 
         Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameData(stage.ToString()+ "Data", 3, param);
+        BackendManager.Instance.SaveGameData(stage.ToString()+ "Data", param);
     }
 
 
@@ -418,7 +418,7 @@ public static class UserInfo
         }
 
         Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameDataAsync(stage.ToString() + "Data", 3, param);
+        BackendManager.Instance.SaveGameDataAsync(stage.ToString() + "Data", param);
     }
 
 
@@ -430,10 +430,34 @@ public static class UserInfo
         }
     }
 
+    public static void LoadStageDataAsync()
+    {
+        for (int i = 0, cnt = (int)EStage.Length; i < cnt; ++i)
+        {
+            LoadStageDataAsync((EStage)i);
+        }
+    }
+
 
     public static void LoadStageData(EStage stage)
     {
-        BackendManager.Instance.GetMyData(stage.ToString() + "Data", 10, (bro) =>
+        BackendReturnObject bro = BackendManager.Instance.GetMyData(stage.ToString() + "Data");
+        
+            JsonData json = bro.FlattenRows();
+            if (json.Count <= 0)
+            {
+                Debug.LogError("저장된 데이터가 없습니다.");
+                return;
+            }
+
+            ServerStageData data = new ServerStageData();
+            data.SetData(json);
+            _stageInfos[(int)stage].LoadData(data);    
+    }
+
+    public static void LoadStageDataAsync(EStage stage)
+    {
+        BackendManager.Instance.GetMyDataAsync(stage.ToString() + "Data", (bro) =>
         {
             JsonData json = bro.FlattenRows();
             if (json.Count <= 0)
@@ -451,6 +475,12 @@ public static class UserInfo
 
     public static void LoadGameData(BackendReturnObject bro)
     {
+        if(!bro.IsSuccess())
+        {
+            Debug.LogError("로드 데이터를 파싱하는 과정에서 오류가 발생했습니다.");
+            return;
+        }
+
         JsonData json = bro.FlattenRows();
         if (json.Count <= 0)
         {

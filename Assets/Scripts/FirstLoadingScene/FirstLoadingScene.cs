@@ -14,25 +14,22 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void StartLoadData()
     {
-        _uiFirstLoadingScene.ShowTitle(async () =>
+        _uiFirstLoadingScene.ShowTitle(() =>
         {
-            await BackendManager.Instance.GuestLogin(10, (bro) =>
+            BackendManager.Instance.GuestLoginAsync( (bro) =>
             {
-                BackendManager.Instance.GetMyData("GameData", 10, UserInfo.LoadGameData);
-                UserInfo.LoadStageData();
-                Tween.Wait(1, () =>
+                BackendManager.Instance.GetMyDataAsync("GameData", (bro) =>{
+                    UserInfo.LoadGameData(bro);
+                    UserInfo.LoadStageData();
+                    Tween.Wait(1, () =>
                 {
                     _uiFirstLoadingScene.HideTitle(() =>
                     {
                         Tween.Wait(1f, () => LoadingSceneManager.LoadScene("Stage1"));
                     });
                 });
-            }, (bro) =>
-            {
-                _uiFirstLoadingScene.ShowErrorText(bro.GetErrorCode() + "\n" + bro.GetErrorMessage());
-                //실패하면 여기서 팝업 띄우기
-            });
-            
+            });         
+        });            
         });
     }
 

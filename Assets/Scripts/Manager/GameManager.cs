@@ -3,7 +3,6 @@ using Muks.BackEnd;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -175,7 +174,7 @@ public class GameManager : MonoBehaviour
             return;
 
         Param param = UserInfo.GetSaveUserData();
-        BackendManager.Instance.SaveGameData("GameData", 3, param);
+        BackendManager.Instance.SaveGameData("GameData", param);
         UserInfo.SaveStageData();
         DebugLog.Log("저장");
     }
@@ -186,9 +185,10 @@ public class GameManager : MonoBehaviour
             return;
 
         Param param = UserInfo.GetSaveUserData();
-        BackendManager.Instance.SaveGameDataAsync("GameData", 3, param);
-        UserInfo.SaveStageDataAsync();
-        DebugLog.Log("저장");
+        BackendManager.Instance.SaveGameDataAsync("GameData", param, (bro) =>{
+            UserInfo.SaveStageDataAsync();
+            DebugLog.Log("비동기 저장");
+        });
     }
 
     public void ChanceScene()
@@ -232,6 +232,8 @@ public class GameManager : MonoBehaviour
         UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEffectCheck;
         UserInfo.OnGiveGachaItemHandler += OnUpgradeGachaItemCheck;
         UserInfo.OnUpgradeGachaItemHandler += OnUpgradeGachaItemCheck;
+        BackendManager.OnExitHandler += SaveGameData;
+        BackendManager.OnPauseHandler += SaveGameData;
 
         //OnEquipStaffEffectCheck();
         OnEquipFurnitureEffectCheck();
@@ -253,7 +255,7 @@ public class GameManager : MonoBehaviour
 #if UNITY_EDITOR
         if (Input.GetKeyDown(KeyCode.S))
         {
-            BackendManager.Instance.GetMyData("GameData", 10, UserInfo.LoadGameData);
+            UserInfo.LoadGameData(BackendManager.Instance.GetMyData("GameData"));
         }
 #endif
     }
@@ -575,18 +577,5 @@ public class GameManager : MonoBehaviour
         OnChangeScoreHandler?.Invoke();
         OnChangeStaffSkillValueHandler?.Invoke();
         OnChangeMaxWaitCustomerCountHandler?.Invoke();
-    }
-
-    private void OnApplicationPause(bool pause)
-    {
-        if (!pause)
-            return;
-
-        SaveGameData();
-    }
-
-    private void OnApplicationQuit()
-    {
-        SaveGameData();
     }
 }
