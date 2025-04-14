@@ -265,7 +265,7 @@ public class UIMiniGame : MobileUIView
             _jarAnimator.SetFloat("StickSpeedMul", 0);
             _panda3Animator.SetFloat("StickSpeed", -1);
             SoundManager.Instance.StopBackgroundAudio(0.5f);
-            SoundManager.Instance.PlayEffectAudio(_startAndEndSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _startAndEndSound);
         }
 
         _currentTime -= Time.deltaTime;
@@ -280,7 +280,7 @@ public class UIMiniGame : MobileUIView
             _currentGauge = 0;
             _currentHealth = _firstHealth + (_totalCount * _addHealth);
             _successCountText.text = Mathf.Abs(_currentCount).ToString();
-            SoundManager.Instance.PlayEffectAudio(_gaugeUpSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _gaugeUpSound);
 
             if (_currentCount == -1 && _miniGameState == MiniGameState.Start)
             {
@@ -332,15 +332,15 @@ public class UIMiniGame : MobileUIView
 
         yield return YieldCache.WaitForSeconds(0.5f);
         _3Image.gameObject.SetActive(true);
-        SoundManager.Instance.PlayEffectAudio(_countSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _countSound);
         yield return YieldCache.WaitForSeconds(1);
         _2Image.gameObject.SetActive(true);
         _3Image.gameObject.SetActive(false);
-        SoundManager.Instance.PlayEffectAudio(_countSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _countSound);
         yield return YieldCache.WaitForSeconds(1);
         _1Image.gameObject.SetActive(true);
         _2Image.gameObject.SetActive(false);
-        SoundManager.Instance.PlayEffectAudio(_countSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _countSound);
         yield return YieldCache.WaitForSeconds(1);
         _descriptionGroup.gameObject.SetActive(false);
         _descriptionText.gameObject.SetActive(false);
@@ -353,7 +353,7 @@ public class UIMiniGame : MobileUIView
         _2Image.gameObject.SetActive(false);
         _3Image.gameObject.SetActive(false);
         _miniGameState = MiniGameState.Start;
-        SoundManager.Instance.PlayEffectAudio(_startAndEndSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _startAndEndSound);
         SoundManager.Instance.PlayBackgroundAudio(_bgAudio, 0.5f);
     }
 
@@ -419,12 +419,12 @@ public class UIMiniGame : MobileUIView
             _itemImage.gameObject.SetActive(true);
             _resultGroup.gameObject.SetActive(true);
             _timeOver.gameObject.SetActive(false);
-            SoundManager.Instance.PlayEffectAudio(_successSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _successSound);
             yield return YieldCache.WaitForSeconds(1.2f);
             _resultDescription.gameObject.SetActive(true);
             _resultEffect.gameObject.SetActive(true);
             _boomEffect.gameObject.SetActive(false);
-            SoundManager.Instance.PlayEffectAudio(_getSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _getSound);
             yield return YieldCache.WaitForSeconds(0.2f);
 
             while (!_onButtonClicked)
@@ -439,7 +439,7 @@ public class UIMiniGame : MobileUIView
         else
         {
             _popEnabled = true;
-            SoundManager.Instance.PlayEffectAudio(_failSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _failSound);
             _descriptionGroup.gameObject.SetActive(false);
             _uiNav.Pop("UIMiniGame");
         }
@@ -453,6 +453,6 @@ public class UIMiniGame : MobileUIView
             return;
 
         _currentPower = Mathf.Clamp(_currentPower + _touchPower, 0, _maxPower);
-        SoundManager.Instance.PlayEffectAudio(_touchSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _touchSound);
     }
 }

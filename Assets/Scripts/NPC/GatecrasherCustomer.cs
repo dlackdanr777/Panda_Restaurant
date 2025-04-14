@@ -89,7 +89,7 @@ public class GatecrasherCustomer : Customer
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
         _spriteFillAmount.SetFillAmount(0);
-        SoundManager.Instance.PlayEffectAudio(_visitSound, 0.15f);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _visitSound, 0.15f);
         UserInfo.CustomerVisits(data);
         UserInfo.AddSatisfaction(UserInfo.CurrentStage, -5);
         if (_enabledCoroutine != null)
@@ -266,7 +266,7 @@ public class GatecrasherCustomer : Customer
         if (_customerData == null)
             return;
 
-        SoundManager.Instance.PlayEffectAudio(_touchSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _touchSound);
         _currentTouchCount += _touchDamage * GameManager.Instance.AddGatecrasherCustomerDamageMul;
         _touchParticle.Emit(UnityEngine.Random.Range(2, 4));
         _spriteGroup.SetAlpha(1);

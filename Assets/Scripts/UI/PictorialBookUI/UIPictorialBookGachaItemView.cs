@@ -201,7 +201,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
 
         if(UserInfo.UpgradeGachaItem(_data))
         {
-            SoundManager.Instance.PlayEffectAudio(_upgradeSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
             _flashEffect.Emit(1);
             UpgradeView();
         }

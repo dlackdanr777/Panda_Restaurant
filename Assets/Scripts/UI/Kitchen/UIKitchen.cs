@@ -165,13 +165,13 @@ public class UIKitchen : MobileUIView
     {
         if (data == null)
         {
-            SoundManager.Instance.PlayEffectAudio(_dequipSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _dequipSound);
             UserInfo.SetNullEquipKitchenUtensil(UserInfo.CurrentStage, type, _currentType);
             SetKitchenUtensilDataData(_currentType);
             return;
         }
 
-        SoundManager.Instance.PlayEffectAudio(_equipSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _equipSound);
         UserInfo.SetEquipKitchenUtensil(UserInfo.CurrentStage, type, data.Id);
         SetKitchenUtensilDataData(_currentType);
     }

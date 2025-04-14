@@ -378,14 +378,15 @@ public class GameManager : MonoBehaviour
         FoodType kitchenFoodType = UserInfo.GetEquipKitchenUtensilFoodType(UserInfo.CurrentStage, floor);
         FoodType furnitureFoodType = UserInfo.GetEquipFurnitureFoodType(UserInfo.CurrentStage, floor);
 
+        float effectValue = kitchenFoodType != FoodType.None && furnitureFoodType != FoodType.None && kitchenFoodType == furnitureFoodType ? 15f : 10f;
         if(kitchenFoodType != FoodType.None)
         {
-            _addSetCookSpeedMul[floorIndex, (int)kitchenFoodType] += 10;
+            _addSetCookSpeedMul[floorIndex, (int)kitchenFoodType] += effectValue;
         }
 
         if(furnitureFoodType != FoodType.None)
         {
-            _addSetFoodPriceMul[floorIndex, (int)furnitureFoodType] += 10;
+            _addSetFoodPriceMul[floorIndex, (int)furnitureFoodType] += effectValue;
         }
     }
 

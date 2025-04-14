@@ -53,10 +53,7 @@ public class CameraController : MonoBehaviour
     private List<GraphicRaycaster> _graphicRaycasters = new List<GraphicRaycaster>(); // UI 감지용
 
 
-
-
-    private RestaurantType _currentRestaurant;
-    public RestaurantType CurrentRestaurant => _currentRestaurant;
+    public RestaurantType CurrentRestaurant => _mainScene.CurrentRestaurantType;
     public ERestaurantFloorType CurrentFloor => _mainScene.CurrentFloor;
 
     private float _targetAspect = 2.3333f;
@@ -68,15 +65,14 @@ public class CameraController : MonoBehaviour
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
         _mainScene.SetFloor(floor);
-        _currentRestaurant = moveType;
-
+        _mainScene.SetRestaurantType(moveType);
         _cam.TweenStop();
         TweenData tween;
-        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][_currentRestaurant], _duration, _ease);
+        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], _duration, _ease);
         tween.OnComplete(() =>
         {
             _isMoveAction = false;
-            OnEndMoveCameraHandler?.Invoke(CurrentFloor, _currentRestaurant);
+            OnEndMoveCameraHandler?.Invoke(CurrentFloor, CurrentRestaurant);
         });
     }
 
@@ -88,11 +84,11 @@ public class CameraController : MonoBehaviour
 
         _cam.TweenStop();
         TweenData tween;
-        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][_currentRestaurant], _duration, _ease);
+        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], _duration, _ease);
         tween.OnComplete(() =>
         {
             _isMoveAction = false;
-            OnEndMoveCameraHandler?.Invoke(CurrentFloor, _currentRestaurant);
+            OnEndMoveCameraHandler?.Invoke(CurrentFloor, CurrentRestaurant);
         });
     }
 
@@ -100,15 +96,14 @@ public class CameraController : MonoBehaviour
     {
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
-        _currentRestaurant = moveType;
-
+        _mainScene.SetRestaurantType(moveType);
         _cam.TweenStop();
         TweenData tween;
-        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][_currentRestaurant], _duration, _ease);
+        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], _duration, _ease);
         tween.OnComplete(() =>
         {
             _isMoveAction = false;
-            OnEndMoveCameraHandler?.Invoke(CurrentFloor, _currentRestaurant);
+            OnEndMoveCameraHandler?.Invoke(CurrentFloor, CurrentRestaurant);
         });
     }
 
@@ -134,9 +129,9 @@ public class CameraController : MonoBehaviour
         _targetPosDic[ERestaurantFloorType.Floor3].Add(RestaurantType.Kitchen, new Vector3(_kitchenPos_X, _floor3Pos_Y, cameraPosZ));
 
         _mainScene.SetFloor(ERestaurantFloorType.Floor1);
-        _currentRestaurant = RestaurantType.Hall;
+        _mainScene.SetRestaurantType(RestaurantType.Hall);
 
-        MoveCamera(CurrentFloor, _currentRestaurant);
+        MoveCamera(CurrentFloor, CurrentRestaurant);
     }
 
     private void Start()
@@ -178,10 +173,10 @@ public class CameraController : MonoBehaviour
                 _isStopAction = true;
                 _isDragging = false;
                 _isDraggingEnabled = false;
-                Vector3 targetPos = _targetPosDic[CurrentFloor][_currentRestaurant];
+                Vector3 targetPos = _targetPosDic[CurrentFloor][CurrentRestaurant];
                 if (_cam.transform.position != targetPos)
                 {
-                    MoveCamera(CurrentFloor, _currentRestaurant);
+                    MoveCamera(CurrentFloor, CurrentRestaurant);
                 }
             }
 
@@ -383,13 +378,13 @@ public class CameraController : MonoBehaviour
     private void HandleCameraSnapBackOrMove()
     {
         Vector3 currentPos = _cam.transform.position;
-        Vector3 targetPos = _targetPosDic[CurrentFloor][_currentRestaurant];
+        Vector3 targetPos = _targetPosDic[CurrentFloor][CurrentRestaurant];
 
         float xDiff = currentPos.x - targetPos.x; // X축 이동 거리
         float yDiff = currentPos.y - targetPos.y; // Y축 이동 거리
 
         ERestaurantFloorType nextFloor = CurrentFloor;
-        RestaurantType nextRestaurant = _currentRestaurant;
+        RestaurantType nextRestaurant = CurrentRestaurant;
 
         // 🔹 Hall ↔ Kitchen 전환
         if (Mathf.Abs(xDiff) >= _moveThreshold)
@@ -405,7 +400,7 @@ public class CameraController : MonoBehaviour
             // 범위를 벗어나면 원래 위치로 복귀
             if (nextFloorIndex > (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage) || nextFloorIndex < (int)ERestaurantFloorType.Floor1)
             {
-                MoveCamera(CurrentFloor, _currentRestaurant);
+                MoveCamera(CurrentFloor, CurrentRestaurant);
                 return;
             }
 
@@ -413,13 +408,13 @@ public class CameraController : MonoBehaviour
         }
 
         // 🔹 최종 이동 결정
-        if (nextFloor != CurrentFloor || nextRestaurant != _currentRestaurant)
+        if (nextFloor != CurrentFloor || nextRestaurant != CurrentRestaurant)
         {
             MoveCamera(nextFloor, nextRestaurant);
         }
         else
         {
-            MoveCamera(CurrentFloor, _currentRestaurant);
+            MoveCamera(CurrentFloor, CurrentRestaurant);
         }
     }
 }

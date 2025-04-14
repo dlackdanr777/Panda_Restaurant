@@ -74,7 +74,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -40456075
-  m_SortingLayer: 14
+  m_SortingLayer: 15
   m_SortingOrder: 1
   m_Sprite: {fileID: 21300000, guid: c311d22cee04be9499c6ed5f8dd9d372, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -153,7 +153,7 @@ AudioSource:
   m_GameObject: {fileID: 1019491737176982585}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: -8255085393572701672, guid: a0643f799b36058488b1970e70901b91,
+  OutputAudioMixerGroup: {fileID: -7604366092642880957, guid: a0643f799b36058488b1970e70901b91,
     type: 2}
   m_audioClip: {fileID: 8300000, guid: 7cfd574c92a8c7b4f87994f38e1e517b, type: 3}
   m_Resource: {fileID: 8300000, guid: 7cfd574c92a8c7b4f87994f38e1e517b, type: 3}
@@ -339,7 +339,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -40456075
-  m_SortingLayer: 14
+  m_SortingLayer: 15
   m_SortingOrder: 0
   m_Sprite: {fileID: 21300000, guid: 95f41209fe59f1d4d8890af6e142ac38, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -5216,7 +5216,7 @@ ParticleSystemRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -594438969
-  m_SortingLayer: 16
+  m_SortingLayer: 17
   m_SortingOrder: 0
   m_RenderMode: 0
   m_MeshDistribution: 0

@@ -104,7 +104,7 @@ public class TableManager : MonoBehaviour
     public void OnCustomerGuideEventPlaySound(int sitPos = -1)
     {
         OnCustomerGuideEvent(sitPos);
-        SoundManager.Instance.PlayEffectAudio(_callSound);
+        SoundManager.Instance.PlayEffectAudio( EffectType.None, _callSound);
     }
 
 

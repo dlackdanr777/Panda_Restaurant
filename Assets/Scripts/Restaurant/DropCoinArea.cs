@@ -74,7 +74,7 @@ public class DropCoinArea : MonoBehaviour
         _data.SetMoney(_currentMoney);
         PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
         coin.AddEvent(GiveCoin);
-        SoundManager.Instance.PlayEffectAudio(_dropCoinSound, 0.05f);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _dropCoinSound, 0.05f);
         Vector3 targetPos = _dropArea.position;
         targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * Count), 0, 0);
 
@@ -111,7 +111,7 @@ public class DropCoinArea : MonoBehaviour
         _currentMoney = 0;
         _data.SetMoney(_currentMoney);
         _data.SetCoinCount(0);
-        SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
         {
@@ -142,7 +142,7 @@ public class DropCoinArea : MonoBehaviour
         _currentMoney = 0;
         _data.SetMoney(_currentMoney);
         _data.SetCoinCount(0);
-        SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
         {

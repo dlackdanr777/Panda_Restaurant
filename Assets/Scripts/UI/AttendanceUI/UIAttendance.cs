@@ -107,7 +107,7 @@ public class UIAttendance : MobileUIView
     {
         OnAttendanceCheck(isAd);
         GameManager.Instance.SaveGameData();
-        SoundManager.Instance.PlayEffectAudio(_attendanceSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.None, _attendanceSound);
     }
 
 

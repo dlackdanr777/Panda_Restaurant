@@ -168,7 +168,7 @@ public class UIStaffUpgrade : MobileUIView
 
             UserInfo.UpgradeStaff(UserInfo.CurrentStage, _currentData);
             PopupManager.Instance.ShowDisplayText("직원 업그레이드를 완료했어요!");
-            SoundManager.Instance.PlayEffectAudio(_upgradeSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
             _flashEffect.Emit(1);
             UpdateData();
             return;

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class MainScene : MonoBehaviour
 {
     [Header("Option")]
@@ -10,6 +11,7 @@ public class MainScene : MonoBehaviour
 
     [Space]
     [Header("Components")]
+    [SerializeField] private UINavigationCoordinator _uiNavCoordinator;
     [SerializeField] private UINavigation _uiMainNav;
     [SerializeField] private UIFever _uiFever;
     [SerializeField] private AudioClip _mainSceneMusic;
@@ -17,6 +19,10 @@ public class MainScene : MonoBehaviour
 
     private ERestaurantFloorType _currentFloor;
     public ERestaurantFloorType CurrentFloor => _currentFloor;
+
+    private RestaurantType _restaurantType;
+    public RestaurantType CurrentRestaurantType => _restaurantType;
+
     private float _updateTimer;
     private bool _isFeverStart = false;
     public bool IsFeverStart => _isFeverStart;
@@ -36,16 +42,29 @@ public class MainScene : MonoBehaviour
         _currentFloor = floor;
     }
 
+    public void SetRestaurantType(RestaurantType type)
+    {
+        if(_restaurantType == type)
+            return;
+
+        _restaurantType = type;
+        if(SoundManager.Instance.EffectType != EffectType.UI)
+            SoundManager.Instance.ChangePlayEffectType(_restaurantType == RestaurantType.Hall ? EffectType.Hall : EffectType.Kitchen, 0.1f);
+    }
+
     private void Awake()
     {
-        UserInfo.ChangeStage(_stage);     
+        UserInfo.ChangeStage(_stage);
+        SoundManager.Instance.ChangePlayEffectType(EffectType.Hall);
+        _uiNavCoordinator.OnShowUIHandler += OnUIEvent;
+        _uiNavCoordinator.OnHideUIHandler += OnUIEvent;
     }
 
 
     void Start()
     {
         PlayMainMusic();
-
+        OnUIEvent();
         if (UserInfo.CheckNoAttendance())
         {
             SequentialCommandManager.Instance.EnqueueCommand(() =>  _uiMainNav.Push("UIAttendance"), () => _uiMainNav.ViewsVisibleStateCheck(), () => !_uiMainNav.CheckActiveView("UIAttendance"), 1, 0.5f);
@@ -132,6 +151,19 @@ public class MainScene : MonoBehaviour
                 GameManager.Instance.AsyncSaveGameData();
             }
 
+        }
+    }
+
+
+    private void OnUIEvent()
+    {
+        if(_uiNavCoordinator.GetOpenViewCount() <= 0)
+        {
+            SoundManager.Instance.ChangePlayEffectType(_restaurantType == RestaurantType.Hall ? EffectType.Hall : EffectType.Kitchen, 0.1f);
+        }
+        else
+        {
+            SoundManager.Instance.ChangePlayEffectType(EffectType.UI, 0.1f);
         }
     }
 }

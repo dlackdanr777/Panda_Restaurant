@@ -84,32 +84,32 @@ public class UIGacha : MobileUIView
 
     public void PlayLeverSound()
     {
-        SoundManager.Instance.PlayEffectAudio(_leverSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _leverSound);
     }
 
     public void PlayShakeCapsuleSound()
     {
-        SoundManager.Instance.PlayEffectAudio(_shakeCapsuleSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _shakeCapsuleSound);
     }
 
     public void PlayFallCapsuleSound()
     {
-        SoundManager.Instance.PlayEffectAudio(_fallCapsuleSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _fallCapsuleSound);
     }
 
     public void PlayOpenDoorSound()
     {
-        SoundManager.Instance.PlayEffectAudio(_openDoorSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _openDoorSound);
     }
 
     public void PlayBoomSound()
     {
-        SoundManager.Instance.PlayEffectAudio(_boomSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _boomSound);
     }
 
     public void PlayGetItemSound()
     {
-        SoundManager.Instance.PlayEffectAudio(_getItemSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _getItemSound);
     }
 
     public override void Init()

@@ -158,14 +158,14 @@ public class UIStaff : MobileUIView
     
     private void OnEquipButtonClicked(ERestaurantFloorType floorType, EquipStaffType type, StaffData data)
     {
-        SoundManager.Instance.PlayEffectAudio(_equipSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _equipSound);
         UserInfo.SetEquipStaff(UserInfo.CurrentStage, floorType, type, data);
         SetStaffData(_currentType);
     }
 
     private void OnUsingButtonClicked(ERestaurantFloorType floorType, StaffData data)
     {
-        SoundManager.Instance.PlayEffectAudio(_dequipSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _dequipSound);
         UserInfo.SetNullEquipStaff(UserInfo.CurrentStage, floorType, data);
         SetStaffData(_currentType);
     }

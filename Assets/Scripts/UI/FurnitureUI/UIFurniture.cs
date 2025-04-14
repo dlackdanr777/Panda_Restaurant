@@ -151,13 +151,13 @@ public class UIFurniture : MobileUIView
     {
         if (data == null)
         {
-            SoundManager.Instance.PlayEffectAudio(_dequipSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _dequipSound);
             UserInfo.SetNullEquipFurniture(UserInfo.CurrentStage, type, _currentType);
             SetFurnitureData(_currentType);
             return;
         }
 
-        SoundManager.Instance.PlayEffectAudio(_equipSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _equipSound);
         UserInfo.SetEquipFurniture(UserInfo.CurrentStage, type, data);
         SetFurnitureData(_currentType);
     }
