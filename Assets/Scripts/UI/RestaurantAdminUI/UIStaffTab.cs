@@ -51,6 +51,11 @@ public class UIStaffTab : UIRestaurantAdminTab
 
     }
 
+    public void ShowUIStaff(EquipStaffType type)
+    {
+        _uiStaff.ShowUIStaff(_floorType, type);
+    }
+
     public void ChangeFloorType(ERestaurantFloorType floorType)
     {
         if (_floorType == floorType)
@@ -70,7 +75,6 @@ public class UIStaffTab : UIRestaurantAdminTab
         Sprite sprite = data != null ? data.ThumbnailSprite : null;
         _slots[(int)type].UpdateUI(sprite, Utility.StaffTypeStringConverter(type));
     }
-
 
     private void OnSlotClicked(int index)
     {

@@ -225,7 +225,7 @@ namespace Muks.BackEnd
         /// <summary>
         /// 백엔드 API 호출을 처리하는 중앙 함수 (비동기)
         /// </summary>
-        private void ProcessBackendAPI(
+        internal void ProcessBackendAPI(
             string operationName,
             Action<Action<BackendReturnObject>> backendFunction, 
             Action<BackendReturnObject> onSuccess = null,
@@ -241,7 +241,7 @@ namespace Muks.BackEnd
             }
 
             // 로그인 검사 (초기화, 로그인 관련 작업은 제외)
-            if (!IsLogin && !operationName.Contains("초기화") && !operationName.Contains("로그인"))
+            if (!IsLogin && !operationName.Contains("초기화") && !operationName.Contains("로그인") && !operationName.Contains("버전"))
             {
                 Debug.LogError($"[BackendManager] 로그인이 필요한 작업({operationName})이 로그인 없이 시도되었습니다.");
                 onFail?.Invoke(BackendState.NotLogin);
@@ -294,7 +294,7 @@ namespace Muks.BackEnd
         /// <param name="maxRetries">최대 재시도 횟수</param>
         /// <param name="usePopup">실패 시 팝업 표시 여부</param>
         /// <returns>처리 결과 (백엔드 반환 객체)</returns>
-        private BackendReturnObject ProcessBackendAPISync(
+        internal BackendReturnObject ProcessBackendAPISync(
             string operationName,
             Func<BackendReturnObject> backendFunction,
             int maxRetries = 3,

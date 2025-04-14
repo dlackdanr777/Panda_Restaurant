@@ -7,6 +7,7 @@ using Muks.Tween;
 
 public class Staff : MonoBehaviour
 {
+    public event Action OnLevelUpEventHandler;
     [SerializeField] protected GameObject _moveObj;
     [SerializeField] protected GameObject _spriteParent;
     [SerializeField] protected SpriteRenderer _spriteRenderer;
@@ -87,6 +88,8 @@ public class Staff : MonoBehaviour
 
             if (_usingSkill)
                 _staffData.Skill.Deactivate(this, _tableManager, _kitchenSystem, _customerController);
+
+            _staffAction?.Destructor();
         }
 
         if (staffData == null)
@@ -394,6 +397,7 @@ public class Staff : MonoBehaviour
             return;
 
         _moveSpeed = _staffData.GetSpeed(Level);
+        OnLevelUpEventHandler?.Invoke();
     }
 
     public void ObjectPoolSpawnEvent()

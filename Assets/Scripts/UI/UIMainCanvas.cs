@@ -9,7 +9,6 @@ public class UIMainCanvas : MonoBehaviour
 
     [SerializeField] private UIRestaurantAdmin _uiAdmin;
 
-
     private void Awake()
     {
         _uiNav = GetComponent<MobileUINavigation>();
@@ -86,8 +85,36 @@ public class UIMainCanvas : MonoBehaviour
         DataBind.SetUnityActionValue("HideUserReportUI", OnHideUserReportUI);
         DataBind.SetUnityActionValue("HideNoAnimeUserReportUI", OnHideNoAnimeUserReportUI);
 
+        DataBind.SetUnityActionValue("ShowFurnitureTable1", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table1));
+        DataBind.SetUnityActionValue("ShowFurnitureTable2", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table2));
+        DataBind.SetUnityActionValue("ShowFurnitureTable3", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table3));
+        DataBind.SetUnityActionValue("ShowFurnitureTable4", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table4));
+        DataBind.SetUnityActionValue("ShowFurnitureTable5", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table5));
+        DataBind.SetUnityActionValue("ShowFurnitureCounter", () => _uiAdmin.ShowUIFurniture(FurnitureType.Counter));
+        DataBind.SetUnityActionValue("ShowFurnitureRack", () => _uiAdmin.ShowUIFurniture(FurnitureType.Rack));
+        DataBind.SetUnityActionValue("ShowFurnitureFrame", () => _uiAdmin.ShowUIFurniture(FurnitureType.Frame));
+        DataBind.SetUnityActionValue("ShowFurnitureFlower", () => _uiAdmin.ShowUIFurniture(FurnitureType.Flower));
+        DataBind.SetUnityActionValue("ShowFurnitureAcc", () => _uiAdmin.ShowUIFurniture(FurnitureType.Acc));
+        DataBind.SetUnityActionValue("ShowFurnitureWallpaper", () => _uiAdmin.ShowUIFurniture(FurnitureType.Wallpaper));
 
+        DataBind.SetUnityActionValue("ShowKitchenBurner1", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner1));
+        DataBind.SetUnityActionValue("ShowKitchenBurner2", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner2));
+        DataBind.SetUnityActionValue("ShowKitchenBurner3", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner3));
+        DataBind.SetUnityActionValue("ShowKitchenBurner4", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner4));
+        DataBind.SetUnityActionValue("ShowKitchenBurner5", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner5));
+        DataBind.SetUnityActionValue("ShowKitchenFridge", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Fridge));
+        DataBind.SetUnityActionValue("ShowKitchenCabinet", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Cabinet));
+        DataBind.SetUnityActionValue("ShowKitchenWindow", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Window));
+        DataBind.SetUnityActionValue("ShowKitchenSink", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Sink));
+        DataBind.SetUnityActionValue("ShowKitchenKitchenrack", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Kitchenrack));
+        DataBind.SetUnityActionValue("ShowKitchenCookingTools", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.CookingTools));
 
+        DataBind.SetUnityActionValue("ShowStaffManager", () => _uiAdmin.ShowUIStaff(EquipStaffType.Manager));
+        DataBind.SetUnityActionValue("ShowStaffMarketer", () => _uiAdmin.ShowUIStaff(EquipStaffType.Marketer));
+        DataBind.SetUnityActionValue("ShowStaffWaiter", () => _uiAdmin.ShowUIStaff(EquipStaffType.Waiter1));
+        DataBind.SetUnityActionValue("ShowStaffCleaner", () => _uiAdmin.ShowUIStaff(EquipStaffType.Cleaner));
+        DataBind.SetUnityActionValue("ShowStaffGuard", () => _uiAdmin.ShowUIStaff(EquipStaffType.Guard));
+        DataBind.SetUnityActionValue("ShowStaffChef", () => _uiAdmin.ShowUIStaff(EquipStaffType.Chef1));
     }
 
 

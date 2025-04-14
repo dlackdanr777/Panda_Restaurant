@@ -34,11 +34,9 @@ public static class UserInfo
 
     public static event Action<ERestaurantFloorType, FurnitureType> OnChangeFurnitureHandler;
     public static event Action OnGiveFurnitureHandler;
-    public static event Action OnChangeFurnitureSetDataHandler;
 
     public static event Action<ERestaurantFloorType, KitchenUtensilType> OnChangeKitchenUtensilHandler;
     public static event Action OnGiveKitchenUtensilHandler;
-    public static event Action OnChangeKitchenUtensilSetDataHandler;
 
     public static event Action OnChangeSinkBowlHandler;
 
@@ -207,11 +205,9 @@ public static class UserInfo
 
             _stageInfos[i].OnChangeFurnitureHandler += OnChangeFurnitureEvent;
             _stageInfos[i].OnGiveFurnitureHandler += OnGiveFurnitureEvent;
-            _stageInfos[i].OnChangeFurnitureSetDataHandler += OnChangeFurnitureSetDataEvent;
 
             _stageInfos[i].OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEvent;
             _stageInfos[i].OnGiveKitchenUtensilHandler += OnGiveKitchenUtensilEvent;
-            _stageInfos[i].OnChangeKitchenUtensilSetDataHandler += OnChangeKitchenUtensilSetDataEvent;
 
             _stageInfos[i].OnChangeSinkBowlHandler += OnAddSinkBowlEvent;
 
@@ -255,11 +251,6 @@ public static class UserInfo
         OnGiveFurnitureHandler?.Invoke();
     }
 
-    private static void OnChangeFurnitureSetDataEvent()
-    {
-        OnChangeFurnitureSetDataHandler?.Invoke();
-    }
-
 
     private static void OnChangeKitchenUtensilEvent(ERestaurantFloorType floor, KitchenUtensilType type)
     {
@@ -270,11 +261,7 @@ public static class UserInfo
     {
         OnGiveKitchenUtensilHandler?.Invoke();
     }
-
-    private static void OnChangeKitchenUtensilSetDataEvent()
-    {
-        OnChangeKitchenUtensilSetDataHandler?.Invoke();
-    }
+    
 
     private static void OnAddSinkBowlEvent()
     {

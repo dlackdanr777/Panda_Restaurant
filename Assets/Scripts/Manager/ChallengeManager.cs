@@ -758,6 +758,96 @@ public class ChallengeManager : MonoBehaviour
             case "ShortCut13":
                 return DataBind.GetUnityActionBindData("ShowSettingUI");
 
+            case "ShortCut14":
+                return DataBind.GetUnityActionBindData("ShowFurnitureTable1");
+
+            case "ShortCut15":
+                return DataBind.GetUnityActionBindData("ShowFurnitureTable2");
+
+            case "ShortCut16":
+                return DataBind.GetUnityActionBindData("ShowFurnitureTable3");
+
+            case "ShortCut17":
+                return DataBind.GetUnityActionBindData("ShowFurnitureTable4");
+
+            case "ShortCut18":
+                return DataBind.GetUnityActionBindData("ShowFurnitureTable5");
+
+            case "ShortCut19":
+                return DataBind.GetUnityActionBindData("ShowFurnitureCounter");
+
+            case "ShortCut20":
+                return DataBind.GetUnityActionBindData("ShowFurnitureRack");
+
+            case "ShortCut21":
+                return DataBind.GetUnityActionBindData("ShowFurnitureFrame");
+
+            case "ShortCut22":
+                return DataBind.GetUnityActionBindData("ShowFurnitureFlower");
+
+            case "ShortCut23":
+                return DataBind.GetUnityActionBindData("ShowFurnitureAcc");
+
+            case "ShortCut24":
+                return DataBind.GetUnityActionBindData("ShowFurnitureWallpaper");
+
+            case "ShortCut25":
+                return DataBind.GetUnityActionBindData("ShowKitchenBurner1");
+
+            case "ShortCut26":
+                return DataBind.GetUnityActionBindData("ShowKitchenBurner2");
+
+            case "ShortCut27":
+                return DataBind.GetUnityActionBindData("ShowKitchenBurner3");
+
+            case "ShortCut28":
+                return DataBind.GetUnityActionBindData("ShowKitchenBurner4");
+
+            case "ShortCut29":
+                return DataBind.GetUnityActionBindData("ShowKitchenBurner5");
+
+            case "ShortCut30":
+                return DataBind.GetUnityActionBindData("ShowKitchenFridge");
+
+            case "ShortCut31":
+                return DataBind.GetUnityActionBindData("ShowKitchenCabinet");
+
+            case "ShortCut32":
+                return DataBind.GetUnityActionBindData("ShowKitchenWindow");
+
+            case "ShortCut33":
+                return DataBind.GetUnityActionBindData("ShowKitchenSink");
+
+            case "ShortCut34":
+                return DataBind.GetUnityActionBindData("ShowKitchenKitchenrack");
+
+            case "ShortCut35":
+                return DataBind.GetUnityActionBindData("ShowKitchenCookingTools");
+
+            case "ShortCut36":
+                return DataBind.GetUnityActionBindData("ShowFurnitureWallpaper");
+
+            case "ShortCut37":
+                return DataBind.GetUnityActionBindData("ShowStaffManager");
+
+            case "ShortCut38":
+                return DataBind.GetUnityActionBindData("ShowStaffMarketer");
+
+            case "ShortCut39":
+                return DataBind.GetUnityActionBindData("ShowStaffWaiter");
+
+            case "ShortCut40":
+                return DataBind.GetUnityActionBindData("ShowStaffWaiter");
+
+            case "ShortCut41":
+                return DataBind.GetUnityActionBindData("ShowStaffCleaner");
+
+            case "ShortCut42":
+                return DataBind.GetUnityActionBindData("ShowStaffGuard");
+
+            case "ShortCut43":
+                return DataBind.GetUnityActionBindData("ShowStaffChef");
+
             default:
                 return DataBind.GetUnityActionBindData("PopUI");
         }

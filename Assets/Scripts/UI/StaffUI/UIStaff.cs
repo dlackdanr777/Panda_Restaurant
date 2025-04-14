@@ -316,7 +316,7 @@ public class UIStaff : MobileUIView
 
 
 
-    private void OnChangeStaffEvent(ERestaurantFloorType floorType, EquipStaffType type)
+    public void OnChangeStaffEvent(ERestaurantFloorType floorType, EquipStaffType type)
     {
         if (!gameObject.activeInHierarchy)
             return;

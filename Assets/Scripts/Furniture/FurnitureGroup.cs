@@ -12,7 +12,8 @@ public class FurnitureGroup : MonoBehaviour
     [Space]
     [Header("Components")]
     [SerializeField] private Furniture[] _furniture;
-
+    [SerializeField] private FoodDistributionCounter _floor1FoodDistributionCounter;
+    [SerializeField] private FoodDistributionCounter _floor2FoodDistributionCounter;
 
     [Space]
     [Header("TableData")]
@@ -273,6 +274,9 @@ public class FurnitureGroup : MonoBehaviour
             CheckTableEnabled(_floorType, (FurnitureType)i);
         }
 
+        _floor1FoodDistributionCounter.Init(_floorType, new List<TableData> { _table1Data, _table2Data });
+        _floor2FoodDistributionCounter.Init(_floorType, new List<TableData> { _table3Data, _table4Data, _table5Data });
+
         _tableManager.OnTableUpdateHandler += OnTableUpdateEvent;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
         UserInfo.OnChangeFurnitureHandler += CheckTableEnabled;
@@ -363,6 +367,11 @@ public class FurnitureGroup : MonoBehaviour
                 data.ServingButton.gameObject.SetActive(false);
             }
             else if(data.TableState == ETableState.NeedCleaning)
+            {
+                data.OrderButton.gameObject.SetActive(false);
+                data.ServingButton.gameObject.SetActive(false);
+            }
+            else
             {
                 data.OrderButton.gameObject.SetActive(false);
                 data.ServingButton.gameObject.SetActive(false);

@@ -24,7 +24,7 @@ public class UIFurnitureTab : UIRestaurantAdminTab
             int index = i;
             UITabSlot slot = Instantiate(_slotPrefab, _slotParent);
             _slots[index] = slot;
-            slot.Init(() => OnSlotClicked(index));
+            slot.Init(() => ShowUIFurniture(index));
             BasicData data = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _floorType, (FurnitureType)index);
             Sprite sprite = data != null ? data.ThumbnailSprite : null;
             slot.UpdateUI(sprite, Utility.FurnitureTypeStringConverter((FurnitureType)index));
@@ -73,9 +73,14 @@ public class UIFurnitureTab : UIRestaurantAdminTab
     }
 
 
-    private void OnSlotClicked(int index)
+    public void ShowUIFurniture(int index)
     {
         _uiFurniture.ShowUIFurniture(_floorType, (FurnitureType)index);
+    }
+
+    public void ShowUIFurniture(FurnitureType type)
+    {
+        _uiFurniture.ShowUIFurniture(_floorType, type);
     }
 
     private void OnDestroy()

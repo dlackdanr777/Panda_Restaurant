@@ -4,6 +4,8 @@ using UnityEngine;
 [Serializable]
 public class TableData : MonoBehaviour
 {
+    public event Action<ETableState> OnChangeTableStateHandler;
+
     [SerializeField] private Transform _customerMoveTr;
     public Transform CustomerMoveTr => _customerMoveTr;
 
@@ -27,11 +29,34 @@ public class TableData : MonoBehaviour
 
     public TableButton ServingButton;
 
-    public ETableState TableState;
+    private ETableState _tableState;
+    public ETableState TableState
+    {
+        get => _tableState;
+        set
+        {
+            if(value == _tableState)
+                return;
+
+            _beforeTableState = _tableState;
+            _tableState = value;
+            OnChangeTableStateHandler?.Invoke(_tableState);
+        }
+    }
+
+    private ETableState _beforeTableState;
+    public ETableState BeforeTableState => _beforeTableState;
+
 
     public ERestaurantFloorType FloorType;
 
-    public TableType TableType;
+    private TableType _tableType;
+    public TableType TableType
+    {
+        get => _tableType;
+        set => _tableType = value;
+    }
+
 
     public TableFurniture TableFurniture;
 

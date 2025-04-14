@@ -12,10 +12,14 @@ public class StaffCleaner : Staff
 
     public override void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType)
     {
+        base.SetStaffData(staffData, equipFloorType);
+        if (staffData == null)
+            return;
+
         if (!(staffData is CleanerData))
             throw new System.Exception("청소부 스탭에게 청소부 데이터가 들어오지 않았습니다.");
 
-        base.SetStaffData(staffData, equipFloorType);
+
         _cleanerItem.gameObject.SetActive(true);
         _cleanParticle.gameObject.SetActive(false);
     }

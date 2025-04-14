@@ -14,11 +14,8 @@ public class StageInfo
 
     public event Action<ERestaurantFloorType, FurnitureType> OnChangeFurnitureHandler;
     public event Action OnGiveFurnitureHandler;
-    public event Action OnChangeFurnitureSetDataHandler;
-
     public event Action<ERestaurantFloorType, KitchenUtensilType> OnChangeKitchenUtensilHandler;
     public event Action OnGiveKitchenUtensilHandler;
-    public event Action OnChangeKitchenUtensilSetDataHandler;
 
     public event Action OnChangeSinkBowlHandler;
 

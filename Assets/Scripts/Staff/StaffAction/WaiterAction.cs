@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class WaiterAction : IStaffAction
 {
-    private const float _duration = 1.5f;
+    private const float _duration = 2f;
 
     private TableManager _tableManager;
     private TweenData _tweenData;
@@ -15,6 +15,9 @@ public class WaiterAction : IStaffAction
     private bool _notEqulsFloor = false;
 
     private float _time;
+    private float _durationMul;
+
+
     private Vector3 _defaultPos;
     private StaffWaiter _waiter;
 
@@ -35,13 +38,19 @@ public class WaiterAction : IStaffAction
 
         _defaultPos = _tableManager.GetStaffPos(staff.EquipFloorType, type);
         staff.transform.position = _defaultPos;
+
+        _durationMul = 6f / staff.StaffData.GetSpeed(staff.Level);
+    
         staff.SetAlpha(1);
         staff.SetSpriteDir(1);
+
+        _waiter.OnLevelUpEventHandler += OnLevelUpEvent;
     }
 
 
     public void Destructor()
     {
+        _waiter.OnLevelUpEventHandler -= OnLevelUpEvent;
         _tweenData?.TweenStop();
     }
 
@@ -52,8 +61,7 @@ public class WaiterAction : IStaffAction
             return;
 
         float speedMul = staff.SpeedMul;
-
-        if (_time < _duration)
+        if (_time < (_duration * _durationMul))
         {
             _time += Time.deltaTime * speedMul;
             return;
@@ -122,9 +130,9 @@ public class WaiterAction : IStaffAction
         float speedMul = _waiter.SpeedMul;
         _isNoAction = false;
         _tableManager.OnUseStaff(data);
-        _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall, _waiter.transform.position), 0, () =>
+        _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall, data.TableFurniture.transform.position), 0, () =>
         {
-            _tweenData = Tween.Wait(_duration / speedMul, () =>
+            _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
             {
                 if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
                 {
@@ -135,16 +143,17 @@ public class WaiterAction : IStaffAction
                     return;
                 }
 
+                _tableManager.OnServigStaff(data);
                 _waiter.BowlSetActive(true);
                 _waiter.Move(data.transform.position, data.SitDir, () =>
                 {
-                    _tweenData = Tween.Wait((_duration / speedMul) * 0.5f, () =>
+                    _tweenData = Tween.Wait(((_duration * _durationMul) / speedMul) * 0.5f, () =>
                     {
                         _waiter.BowlSetAction();
                         _waiter.ShowFood(data.CurrentFood.FoodData);
-                        _tweenData = Tween.Wait(_duration / speedMul, () =>
+                        _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
                         {
-                            if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
+                            if (data.CurrentCustomer == null || data.TableState != ETableState.StaffServing)
                             {
                                 _waiter.SetStaffState(EStaffState.None);
                                 _isUsed = false;
@@ -189,7 +198,7 @@ public class WaiterAction : IStaffAction
         _tableManager.OnUseStaff(data);
         _waiter.Move(data.transform.position, data.SitDir, () =>
         {
-            _tweenData = Tween.Wait(_duration / speedMul, () =>
+            _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
             {
                 if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
                 {
@@ -203,7 +212,7 @@ public class WaiterAction : IStaffAction
                 _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall, _waiter.transform.position), 0, () =>
                 {
 
-                    _tweenData = Tween.Wait(_duration / speedMul, () =>
+                    _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
                     {
                         if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
                         {
@@ -231,32 +240,11 @@ public class WaiterAction : IStaffAction
         });
     }
 
-
-/*    private void OldAction(Staff staff)
+    private void OnLevelUpEvent()
     {
-        TableData data = _tableManager.GetTableTypeByNeedFood(staff.EquipFloorType, ETableState.CanServing);
-        if (data == null)
+        if (_waiter == null)
             return;
 
-        staff.SetAlpha(0);
-        staff.SetStaffState(EStaffState.Used);
-        _tableManager.OnUseStaff(data);
-        Vector3 pos = _tableManager.GetStaffPos(data, EquipStaffType.Waiter1);
-        staff.transform.position = pos;
-        ObjectPoolManager.Instance.SpawnSmokeParticle(pos + new Vector3(0, 1f, 0), Quaternion.identity).Play();
-        _tweenData = staff.SpriteRenderer.TweenAlpha(1, 0.1f).OnComplete(() =>
-        {
-            _tweenData = Tween.Wait(0.1f, () =>
-            {
-                _tableManager.OnServing(data);
-                _tweenData = Tween.Wait(2.5f, () =>
-                {
-                    staff.SpriteRenderer.TweenAlpha(0, 0.25f).OnComplete(() =>
-                    {
-                        staff.transform.position = Vector3.zero;
-                    });
-                });
-            });
-        });
-    }*/
+        _durationMul = 6f / _waiter.StaffData.GetSpeed(_waiter.Level);
+    }
 }

@@ -337,6 +337,12 @@ public class TableManager : MonoBehaviour
         UpdateTable();
     }
 
+    public void OnServigStaff(TableData data)
+    {
+        data.TableState = ETableState.StaffServing;
+        UpdateTable();
+    }
+
 
     public void ExitCustomer(TableData data)
     {

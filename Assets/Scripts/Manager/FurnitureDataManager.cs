@@ -29,6 +29,8 @@ public class FurnitureDataManager : MonoBehaviour
     private static Dictionary<string, Sprite> _leftChairSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _rightChairSpriteDic = new Dictionary<string, Sprite>();
 
+    private static Dictionary<string, Sprite> _leftChairArmrestSpriteDic = new Dictionary<string, Sprite>();
+    private static Dictionary<string, Sprite> _rightChairArmrestSpriteDic = new Dictionary<string, Sprite>();
 
 
 
@@ -120,13 +122,33 @@ public class FurnitureDataManager : MonoBehaviour
 
                 else if(isChair)
                 {
+                    DebugLog.Log(spriteName);
                     if (afterUnderStr.Contains("L") || spriteName.Contains("좌"))
                     {
-                        _leftChairSpriteDic.Add(key, sprite);
+                        if(afterUnderStr.Contains("팔걸이"))
+                        {
+                            DebugLog.Log("11");
+                            _leftChairArmrestSpriteDic.Add(key, sprite);
+                        }
+                        else
+                        {
+                            DebugLog.Log("22");
+                            _leftChairSpriteDic.Add(key, sprite);
+                        }
                     }
+
                     else if (afterUnderStr.Contains("R") || spriteName.Contains("우"))
                     {
-                        _rightChairSpriteDic.Add(key, sprite);
+                        if (afterUnderStr.Contains("팔걸이"))
+                        {
+                            DebugLog.Log("33");
+                            _rightChairArmrestSpriteDic.Add(key, sprite);
+                        }
+                        else
+                        {
+                            DebugLog.Log("44");
+                            _rightChairSpriteDic.Add(key, sprite);
+                        }
                     }
                     else
                     {
@@ -162,7 +184,7 @@ public class FurnitureDataManager : MonoBehaviour
             if (string.IsNullOrWhiteSpace(id))
             {
                 Debug.LogError("Id값이 이상합니다: " + id);
-                continue;
+                break;
             }
 
             string name = row[1].Trim();
@@ -281,6 +303,8 @@ public class FurnitureDataManager : MonoBehaviour
                 unlockCount = 0;
             }
 
+            bool isChairForward = row[28].Contains("앞");
+
             // 🔹 스프라이트 가져오기 (딕셔너리에서 가져오므로 성능 향상)
             if (!_spriteDic.TryGetValue(id, out Sprite sprite))
             {
@@ -305,6 +329,9 @@ public class FurnitureDataManager : MonoBehaviour
                 rightChairSprite = null;
             }
 
+            _leftChairArmrestSpriteDic.TryGetValue(id, out Sprite leftChairArmrestSprite);
+            _rightChairArmrestSpriteDic.TryGetValue(id, out Sprite rightChairArmrestSprite);
+
 
             FurnitureData table1Data = new TableFurnitureData(
                 sprite,
@@ -324,7 +351,10 @@ public class FurnitureDataManager : MonoBehaviour
                 unlockId,
                 unlockCount,
                 leftChairSprite,
-                rightChairSprite
+                rightChairSprite,
+                leftChairArmrestSprite,
+                rightChairArmrestSprite,
+                isChairForward
             );
 
             FurnitureData table2Data = new TableFurnitureData(
@@ -345,7 +375,10 @@ public class FurnitureDataManager : MonoBehaviour
                 unlockId,
                 unlockCount,
     leftChairSprite,
-    rightChairSprite
+    rightChairSprite,
+                    leftChairArmrestSprite,
+                rightChairArmrestSprite,
+    isChairForward
 );
 
             FurnitureData table3Data = new TableFurnitureData(
@@ -366,7 +399,10 @@ table3EffectValue,
                 unlockId,
                 unlockCount,
 leftChairSprite,
-rightChairSprite
+rightChairSprite,
+                leftChairArmrestSprite,
+                rightChairArmrestSprite,
+isChairForward
 );
 
             FurnitureData table4Data = new TableFurnitureData(
@@ -387,7 +423,10 @@ table4EffectValue,
                 unlockId,
                 unlockCount,
 leftChairSprite,
-rightChairSprite
+rightChairSprite,
+                leftChairArmrestSprite,
+                rightChairArmrestSprite,
+isChairForward
 );
 
             FurnitureData table5Data = new TableFurnitureData(
@@ -408,7 +447,10 @@ table5EffectValue,
                 unlockId,
                 unlockCount,
 leftChairSprite,
-rightChairSprite
+rightChairSprite,
+                leftChairArmrestSprite,
+                rightChairArmrestSprite,
+isChairForward
 );
 
             _furnitureDataDic.Add(id + "_01", table1Data);

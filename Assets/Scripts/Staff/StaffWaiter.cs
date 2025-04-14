@@ -22,10 +22,13 @@ public class StaffWaiter : Staff
 
     public override void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType)
     {
+        base.SetStaffData(staffData, equipFloorType);
+        if(staffData == null)
+            return;
+            
         if (!(staffData is WaiterData))
             throw new System.Exception("웨이터 스탭에게 웨이터 데이터가 들어오지 않았습니다.");
 
-        base.SetStaffData(staffData, equipFloorType);
         _bowlAnimator.enabled = true;
 
         int order = (int)_staffType - (int)EquipStaffType.Waiter1;

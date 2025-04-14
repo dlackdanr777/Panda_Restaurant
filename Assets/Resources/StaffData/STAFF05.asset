@@ -33,19 +33,19 @@ MonoBehaviour:
     _upgradeMoneyData:
       _moneyType: 0
       _price: 25000
-    _addSpeed: 0
+    _addSpeed: 1
   - _upgradeMinScore: 110
     _upgradeMoneyData:
       _moneyType: 0
       _price: 45000
-    _addSpeed: 0
+    _addSpeed: 2
   - _upgradeMinScore: 130
     _upgradeMoneyData:
       _moneyType: 0
       _price: 90000
-    _addSpeed: 0
+    _addSpeed: 3
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _addSpeed: 0
+    _addSpeed: 4

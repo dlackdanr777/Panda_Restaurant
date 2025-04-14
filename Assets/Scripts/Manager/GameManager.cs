@@ -337,7 +337,7 @@ public class GameManager : MonoBehaviour
       
 
         _addEquipKitchenUtensilScore = addScore;
-        _addEquipKitchenUtensilTipVolume = tipPerMinute;
+        _addEquipKitchenUtensilTipVolume = maxTipVolume;
         _addEquipKitchenUtensilCookSpeedMul = cookSpeedMul;
         _addEquipKitchenUtensilTipPerMinute = tipPerMinute;
         OnChangeScoreHandler?.Invoke();

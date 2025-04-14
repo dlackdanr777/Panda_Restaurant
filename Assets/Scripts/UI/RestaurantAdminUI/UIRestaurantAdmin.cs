@@ -240,6 +240,22 @@ public class UIRestaurantAdmin : MobileUIView
         SetBackgroundImage(BackgroundType.Kitchen);
     }
 
+
+    public void ShowUIFurniture(FurnitureType type)
+    {
+        _furnitureTab.ShowUIFurniture(type);
+    }
+
+    public void ShowUIStaff(EquipStaffType type)
+    {
+        _staffTab.ShowUIStaff(type);
+    }
+
+    public void ShowUIKitchen(KitchenUtensilType type)
+    {
+        _kitchenTab.ShowUIKitchen(type);
+    }
+
     private void SetBackgroundImage(BackgroundType type)
     {
         for(int i = 0, cnt = _scrollImages.Length; i < cnt; i++)

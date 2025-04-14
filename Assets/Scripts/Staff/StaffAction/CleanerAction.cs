@@ -11,22 +11,33 @@ public class CleanerAction : IStaffAction
     private bool _isUsed = false;
     private bool _isNoAction;
     private float _time;
+    private float _durationMul;
     private TweenData _tweenData;
     private Vector3 _cleanerPos;
+    private StaffCleaner _cleaner;
+
 
     public CleanerAction(Staff staff, TableManager tableManager)
     {
+        _cleaner = (StaffCleaner)staff;
+
         _tableManager = tableManager;
         _isUsed = false;
         _isNoAction = false;
         _time = 0;
         _cleanerPos = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Cleaner);
         staff.transform.position = _cleanerPos;
+
+        _durationMul = 6f / staff.StaffData.GetSpeed(staff.Level);
+
         staff.SetAlpha(1);
+
+        _cleaner.OnLevelUpEventHandler += OnLevelUpEvent;
     }
 
     public void Destructor()
     {
+        _cleaner.OnLevelUpEventHandler -= OnLevelUpEvent;
         _tweenData?.TweenStop();
     }
 
@@ -37,7 +48,7 @@ public class CleanerAction : IStaffAction
 
         float speedMul = staff.SpeedMul;
 
-        if (_time < _duration)
+        if (_time < _duration * _durationMul)
         {
             _time += Time.deltaTime * speedMul;
             return;
@@ -161,10 +172,10 @@ public class CleanerAction : IStaffAction
             }
 
             staff.SetStaffState(EStaffState.Action);
-            _tweenData = Tween.Wait(_duration / speedMul, () =>
+            _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
             {
                 area.CleanGarbage();
-                _tweenData = Tween.Wait(1 / speedMul, () =>
+                _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
                 {
                     staff.SetStaffState(EStaffState.None);
                     _isUsed = false;
@@ -187,10 +198,10 @@ public class CleanerAction : IStaffAction
             }
 
             staff.SetStaffState(EStaffState.Action);
-            _tweenData = Tween.Wait(_duration / speedMul, () =>
+            _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
             {
                 area.GiveCoin();
-                _tweenData = Tween.Wait(1 / speedMul, () =>
+                _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
                 {
                     staff.SetStaffState(EStaffState.None);
                     _isUsed = false;
@@ -214,10 +225,10 @@ public class CleanerAction : IStaffAction
             }
 
             staff.SetStaffState(EStaffState.Action);
-            _tweenData = Tween.Wait(_duration / speedMul, () =>
+            _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
             {
                 data.TableFurniture.OnCleanAction();
-                _tweenData = Tween.Wait(1 / speedMul, () =>
+                _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
                 {
                     staff.SetStaffState(EStaffState.None);
                     _isUsed = false;
@@ -225,5 +236,13 @@ public class CleanerAction : IStaffAction
                 });
             });
         });
+    }
+
+    private void OnLevelUpEvent()
+    {
+        if(_cleaner == null)
+            return;
+
+        _durationMul = 6f / _cleaner.StaffData.GetSpeed(_cleaner.Level);
     }
 }

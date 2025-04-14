@@ -8,6 +8,8 @@ public class TableFurniture : Furniture
         [SerializeField] private Sprite _defalutRightChairSprite;
     [SerializeField] private SpriteRenderer _leftChairSpriteRenderer;
     [SerializeField] private SpriteRenderer _rightChairSpriteRenderer;
+    [SerializeField] private SpriteRenderer _leftChairArmrestSpriteRenderer;
+    [SerializeField] private SpriteRenderer _rightChairArmrestSpriteRenderer;
     [SerializeField] private PointerDownSpriteRenderer _pointerDownSpriteRenderer;
     [SerializeField] private SpriteRenderer _bowlRenderer;
 
@@ -51,14 +53,12 @@ public class TableFurniture : Furniture
         {
             _bowlRenderer.gameObject.SetActive(true);
             _saveTableData.SetNeedCleaning(true);
-            //_spriteRenderer.sprite = _tableFurnitureData.DirtyTableSprite;
         }
 
         else
         {
             _bowlRenderer.gameObject.SetActive(false);
             _saveTableData.SetNeedCleaning(false);
-            //_spriteRenderer.sprite = _tableFurnitureData.Sprite;
         }
     }
 
@@ -68,19 +68,23 @@ public class TableFurniture : Furniture
         if (data == null)
         {
             _tableFurnitureData = null;
+
             if (_defalutSprite == null)
             {
                 _spriteRenderer.gameObject.SetActive(false);
                 _leftChairSpriteRenderer.gameObject.SetActive(false);
                 _rightChairSpriteRenderer.gameObject.SetActive(false);
+                _leftChairArmrestSpriteRenderer.gameObject.SetActive(false);
+                _rightChairArmrestSpriteRenderer.gameObject.SetActive(false);
             }
-
 
             else
             {
                 _spriteRenderer.sprite = _defalutSprite;
                 _leftChairSpriteRenderer.sprite = _defalutLeftChairSprite;
                 _rightChairSpriteRenderer.sprite = _defalutRightChairSprite;
+                _leftChairArmrestSpriteRenderer.sprite = null;
+                _rightChairArmrestSpriteRenderer.sprite = null;
                 SetRendererScale();
             }
 
@@ -102,10 +106,17 @@ public class TableFurniture : Furniture
         _leftChairSpriteRenderer.sprite = _tableFurnitureData.ChairSprite;
         _rightChairSpriteRenderer.sprite = _tableFurnitureData.RightChairSprite == null ? _tableFurnitureData.ChairSprite : _tableFurnitureData.RightChairSprite;
         _rightChairSpriteRenderer.flipX = _tableFurnitureData.RightChairSprite == null ? true : false;
+
+        _leftChairSpriteRenderer.sortingLayerID = _tableFurnitureData.IsChairForward ?
+            SortingLayer.NameToID("ForwardChair") : SortingLayer.NameToID("Chair");
+        _rightChairSpriteRenderer.sortingLayerID = _tableFurnitureData.IsChairForward ?
+            SortingLayer.NameToID("ForwardChair") : SortingLayer.NameToID("Chair");
+
+        _leftChairArmrestSpriteRenderer.sprite = _tableFurnitureData.LeftChairArmrestSprite;
+        _rightChairArmrestSpriteRenderer.sprite = _tableFurnitureData.RightChairArmrestSprite;
+        
         OnTableUpdateEvent();
         SetRendererScale();
-
-
     }
 
     private void SetRendererScale()
@@ -127,6 +138,26 @@ public class TableFurniture : Furniture
         _spriteRenderer.transform.localPosition = new Vector3(mainX, mainY, 0);
         _leftChairSpriteRenderer.transform.localPosition = new Vector3(leftX, leftY, 0);
         _rightChairSpriteRenderer.transform.localPosition = new Vector3(rightX, rightY, 0);
+
+        if(_leftChairArmrestSpriteRenderer != null && _leftChairArmrestSpriteRenderer.sprite != null)
+        {
+            _leftChairArmrestSpriteRenderer.gameObject.SetActive(true);
+            _leftChairArmrestSpriteRenderer.transform.localPosition = new Vector3(leftX, leftY, 0);
+        }
+        else
+        {
+            _leftChairArmrestSpriteRenderer.gameObject.SetActive(false);
+        }
+
+        if(_rightChairArmrestSpriteRenderer != null && _rightChairArmrestSpriteRenderer.sprite != null)
+        {
+            _rightChairArmrestSpriteRenderer.gameObject.SetActive(true);
+            _rightChairArmrestSpriteRenderer.transform.localPosition = new Vector3(rightX, rightY, 0);
+        }
+        else
+        {
+            _rightChairArmrestSpriteRenderer.gameObject.SetActive(false);
+        }
 
         // 그릇 위치 = 테이블 위치에 그대로 맞춤
         if (_bowlRenderer != null && _spriteRenderer.sprite != null)
@@ -196,15 +227,15 @@ public class TableFurniture : Furniture
         {
             case FurnitureBatchTypeY.Lower:
                 // 바닥 정렬: 피벗이 0일 때 기준 → 현재 피벗만큼 위로 올려야 함
-                return height * pivotY * scaleY - 1.43f;
+                return height * pivotY * scaleY - 1.4f;
 
             case FurnitureBatchTypeY.Upper:
                 // 천장 정렬: 피벗이 1일 때 기준 → (1 - pivotY) 만큼 내려야 함
-                return -height * (1f - pivotY) * scaleY - 1.43f;
+                return -height * (1f - pivotY) * scaleY - 1.4f;
 
             case FurnitureBatchTypeY.Center:
                 // 중앙 정렬: 피벗이 0.5일 때 기준 → (0.5 - pivotY) 보정
-                return (0.5f - pivotY) * height * scaleY - 1.43f;
+                return (0.5f - pivotY) * height * scaleY - 1.4f;
 
             case FurnitureBatchTypeY.None:
             default:

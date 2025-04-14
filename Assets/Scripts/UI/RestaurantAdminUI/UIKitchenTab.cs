@@ -44,6 +44,11 @@ public class UIKitchenTab : UIRestaurantAdminTab
     {
     }
 
+    public void ShowUIKitchen(KitchenUtensilType type)
+    {
+        _uiKitchen.ShowUIKitchen(_floorType, type);
+    }
+
 
     public override void UpdateUI()
     {
