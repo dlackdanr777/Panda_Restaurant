@@ -27,6 +27,9 @@ public class SpecialCustomer : Customer
     private Action<Customer> _onCompleted;
 
 
+    private FeverSystem _feverSystem;
+
+
     public override void SetData(CustomerData data, CustomerController customerController, TableManager tableManager)
     {
         if(!(data is SpecialCustomerData))
@@ -67,6 +70,11 @@ public class SpecialCustomer : Customer
         _onCompleted = onCompleted;
     }
 
+    public void SetFeverSystem(FeverSystem feverSystem)
+    {
+        _feverSystem = feverSystem;
+    }
+
 
     private void LoopEvent(int currentIndex, List<Vector3> targetPosList)
     {
@@ -100,6 +108,7 @@ public class SpecialCustomer : Customer
         _touchCoroutine = StartCoroutine(OnTouchRoutine());
 
         UserInfo.AddMoney(_touchAddMoney + GameManager.Instance.AddSpecialCustomerMoney);
+        _feverSystem?.AddFeverGauge();
         SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _goldSound);
         if (_touchCount <= 0)
         {

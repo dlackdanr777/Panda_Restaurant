@@ -23,6 +23,8 @@ public class ChefAction : IStaffAction
     private TweenData _tweenData;
     private Staff _staff;
 
+    private KitchenBurnerData _burnerData;
+
 
     public ChefAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem)
     {
@@ -56,6 +58,13 @@ public class ChefAction : IStaffAction
         {
             _sink.SetUseStaff(null);
             _sink.EndStaffAction();
+        }
+
+        if (_burnerData != null && _burnerData.UseStaff != null && _burnerData.UseStaff == _staff)
+        {
+            _burnerData.SetStaffUsable(false);
+            _burnerData.SetUseStaff(null);
+            _burnerData.SetAddCookSpeedMul(0);
         }
     }
 
@@ -171,6 +180,7 @@ public class ChefAction : IStaffAction
 
         data.SetStaffUsable(true);
         data.SetUseStaff(_staff);
+        _burnerData = data;
         _staff.Move(data.KitchenUtensil.transform.position, 0, () =>
         {
             _tweenData = Tween.Wait(_duration / speedMul, () =>
@@ -257,6 +267,7 @@ public class ChefAction : IStaffAction
                 data.SetStaffUsable(false);
                 data.SetUseStaff(null);
                 data.SetAddCookSpeedMul(0);
+                _burnerData = null;
             }
             return;
         }
@@ -269,6 +280,7 @@ public class ChefAction : IStaffAction
                 data.SetStaffUsable(false);
                 data.SetUseStaff(null);
                 data.SetAddCookSpeedMul(0);
+                _burnerData = null;
             }
 
             return;
@@ -282,6 +294,7 @@ public class ChefAction : IStaffAction
                 data.SetStaffUsable(false);
                 data.SetUseStaff(null);
                 data.SetAddCookSpeedMul(0);
+                _burnerData = null;
             }
         }
 

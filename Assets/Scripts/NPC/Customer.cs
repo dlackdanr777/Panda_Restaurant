@@ -48,6 +48,8 @@ public class Customer : MonoBehaviour
     protected CustomerController _customerController;
     protected TableManager _tableManager;
 
+
+
     public virtual void Init()
     {
 

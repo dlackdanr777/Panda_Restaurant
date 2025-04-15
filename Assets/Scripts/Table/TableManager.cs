@@ -21,6 +21,7 @@ public class TableManager : MonoBehaviour
     [SerializeField] private KitchenSystem _kitchenSystem;
     [SerializeField] private SatisfactionSystem _satisfactionSystem;
     [SerializeField] private MainScene _mainScene;
+    [SerializeField] private FeverSystem _feverSystem;
 
 
     [Space]
@@ -265,6 +266,24 @@ public class TableManager : MonoBehaviour
         UpdateTable();
     }
 
+    public void OnWaitFood(TableData data)
+    {
+        if (data.TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(data);
+            return;
+        }
+
+        if (!_satisfactionSystem.CheckCustomerTendency(data.CurrentCustomer.NormalCustomerData.TendencyType))
+        {
+            AngerExitCustomer(data);
+            return;
+        }
+
+        data.TableState = ETableState.WaitFood;
+        UpdateTable();
+    }
+
 
     public void OnServing(TableData data)
     {
@@ -292,7 +311,7 @@ public class TableManager : MonoBehaviour
         }
 
         //만약 피버중 서빙이 성공한다면 만족도 1점 증가
-        if(_mainScene.IsFeverStart)
+        if(_feverSystem.IsFeverStart)
         {
             UserInfo.AddSatisfaction(UserInfo.CurrentStage, 1);
         }
@@ -455,8 +474,6 @@ public class TableManager : MonoBehaviour
         }
 
         int tip = data.TotalTip;
-        int totalPrice = data.TotalPrice;
-
         data.CurrentCustomer.ChangeState(CustomerState.Idle);
         data.CurrentCustomer.HideFood();
         UserInfo.CustomerVisits(data.CurrentCustomer.CustomerData);
@@ -492,8 +509,9 @@ public class TableManager : MonoBehaviour
     private void StartCoinAnime(TableData data)
     {
         int sitIndex = data.SitIndex;
-        int foodPrice = data.TotalPrice;
 
+        //피버상태일 경우 1.5배의 가격을 지불한다.
+        int foodPrice = (int)(data.TotalPrice * (_feverSystem.IsFeverStart ? 1.5f : 1f));
         data.DropCoinAreas[sitIndex].DropCoin(data.ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0), foodPrice);
         data.TotalPrice = 0;
         data.TotalTip = 0;

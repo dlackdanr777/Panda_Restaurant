@@ -9,6 +9,12 @@ public class UISatisfaction : MonoBehaviour
     [SerializeField] private Image _satisfactionImage;
 
     [Space]
+    [Header("Animations")]
+    [SerializeField] private Animator _satisfactionEffectAnimator;
+    [SerializeField] private Image _satisfactionEffectImage1;
+    [SerializeField] private Image _satisfactionEffectImage2;
+
+    [Space]
     [Header("Sprites")]
 
     [SerializeField] private Sprite _satisfactorySprite;
@@ -24,6 +30,7 @@ public class UISatisfaction : MonoBehaviour
 
     public void Init(SatisfactionSystem satisfactionSystem)
     {
+        _satisfactionEffectAnimator.gameObject.SetActive(false);
         _satisfactionSystem = satisfactionSystem;
 
         _satisfactionImage.rectTransform.anchorMax = new Vector2(0, 0.5f);
@@ -71,6 +78,7 @@ public class UISatisfaction : MonoBehaviour
         SatisfactionType satisfactionType = _satisfactionSystem.GetSatisfactionType();
         if(satisfactionType != _satisfactionType)
         {
+            int dir = (int)satisfactionType - (int)_satisfactionType;
             _satisfactionType = satisfactionType;
             _satisfactionImage.transform.localScale = Vector3.one;
             _satisfactionImage.TweenScale(Vector3.one * 1.2f, 0.05f, Ease.OutBack).OnComplete(() =>
@@ -78,6 +86,9 @@ public class UISatisfaction : MonoBehaviour
                 _satisfactionImage.TweenScale(Vector3.one, 0.08f, Ease.InBack);
             });
 
+            _satisfactionEffectAnimator.gameObject.SetActive(true);
+            _satisfactionEffectImage1.sprite = dir <= 0 ? _veryDissatisfactorySprite : _satisfactorySprite;
+            _satisfactionEffectImage2.sprite = dir <= 0 ? _veryDissatisfactorySprite : _satisfactorySprite;
             SetSatisfactionImage();
         }
     }
@@ -99,5 +110,11 @@ public class UISatisfaction : MonoBehaviour
                 _satisfactionImage.sprite = _veryDissatisfactorySprite;
                 break;
         }
+    }
+
+
+    private void OnDisable()
+    {
+        _satisfactionEffectAnimator.gameObject.SetActive(false);
     }
 }

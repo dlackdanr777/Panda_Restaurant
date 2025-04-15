@@ -4,6 +4,13 @@ using UnityEngine;
 
 public class WaiterAction : IStaffAction
 {
+    private enum WaiterActionType
+    {
+        None,
+        Serving,
+        Order,
+    }
+
     private const float _duration = 2f;
 
     private TableManager _tableManager;
@@ -20,6 +27,9 @@ public class WaiterAction : IStaffAction
 
     private Vector3 _defaultPos;
     private StaffWaiter _waiter;
+
+    private TableData _currentData;
+    private WaiterActionType _actionType = WaiterActionType.None;
 
     public WaiterAction(Staff staff, TableManager tableManager)
     {
@@ -52,6 +62,13 @@ public class WaiterAction : IStaffAction
     {
         _waiter.OnLevelUpEventHandler -= OnLevelUpEvent;
         _tweenData?.TweenStop();
+
+        if(_tweenData != null && _actionType != WaiterActionType.None)
+        {
+            _currentData.OrdersCount += 1;
+            _tableManager.OnCustomerSeating(_currentData);
+            _currentData = null;
+        }
     }
 
 
@@ -121,6 +138,7 @@ public class WaiterAction : IStaffAction
         if(1 < Mathf.Abs(data.transform.position.y - _waiter.transform.position.y) && !_notEqulsFloor)
         {
             _waiter.SetStaffState(EStaffState.None);
+            _actionType = WaiterActionType.None;
             _notEqulsFloor = true;
             _isUsed = false;
             return;
@@ -130,6 +148,9 @@ public class WaiterAction : IStaffAction
         float speedMul = _waiter.SpeedMul;
         _isNoAction = false;
         _tableManager.OnUseStaff(data);
+        _actionType = WaiterActionType.Serving;
+        _currentData = data;
+
         _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall, data.TableFurniture.transform.position), 0, () =>
         {
             _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
@@ -137,6 +158,7 @@ public class WaiterAction : IStaffAction
                 if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
                 {
                     _waiter.SetStaffState(EStaffState.None);
+                    _actionType = WaiterActionType.None;
                     _isUsed = false;
                     _notEqulsFloor = false;
                     _time = 0;
@@ -156,6 +178,7 @@ public class WaiterAction : IStaffAction
                             if (data.CurrentCustomer == null || data.TableState != ETableState.StaffServing)
                             {
                                 _waiter.SetStaffState(EStaffState.None);
+                                _actionType = WaiterActionType.None;
                                 _isUsed = false;
                                 _notEqulsFloor = false;
                                 _time = 0;
@@ -167,6 +190,7 @@ public class WaiterAction : IStaffAction
                             _tweenData = Tween.Wait(1 / speedMul, () =>
                             {
                                 _waiter.SetStaffState(EStaffState.None);
+                                _actionType = WaiterActionType.None;
                                 _isUsed = false;
                                 _notEqulsFloor = false;
                                 _time = 0;
@@ -187,6 +211,7 @@ public class WaiterAction : IStaffAction
         if (1 < Mathf.Abs(data.transform.position.y - _waiter.transform.position.y) && !_notEqulsFloor)
         {
             _waiter.SetStaffState(EStaffState.None);
+            _actionType = WaiterActionType.None;
             _notEqulsFloor = true;
             _isUsed = false;
             return;
@@ -196,6 +221,9 @@ public class WaiterAction : IStaffAction
         float speedMul = _waiter.SpeedMul;
         _isNoAction = false;
         _tableManager.OnUseStaff(data);
+        _actionType = WaiterActionType.Order;
+        _currentData = data;
+
         _waiter.Move(data.transform.position, data.SitDir, () =>
         {
             _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
@@ -203,6 +231,7 @@ public class WaiterAction : IStaffAction
                 if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
                 {
                     _waiter.SetStaffState(EStaffState.None);
+                    _actionType = WaiterActionType.None;
                     _isUsed = false;
                     _notEqulsFloor = false;
                     _time = 0;
@@ -217,6 +246,7 @@ public class WaiterAction : IStaffAction
                         if (data.CurrentCustomer == null || data.TableState != ETableState.UseStaff)
                         {
                             _waiter.SetStaffState(EStaffState.None);
+                            _actionType = WaiterActionType.None;
                             _isUsed = false;
                             _notEqulsFloor = false;
                             _time = 0;
@@ -229,6 +259,7 @@ public class WaiterAction : IStaffAction
                         _tweenData = Tween.Wait(1 / speedMul, () =>
                         {
                             _waiter.SetStaffState(EStaffState.None);
+                            _actionType = WaiterActionType.None;
                             _isUsed = false;
                             _notEqulsFloor = false;
                             _time = 0;

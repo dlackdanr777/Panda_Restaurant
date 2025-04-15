@@ -106,7 +106,7 @@ public class UIAttendance : MobileUIView
     private void OnAttendanceButtonClicked(bool isAd)
     {
         OnAttendanceCheck(isAd);
-        GameManager.Instance.SaveGameData();
+        GameManager.Instance.AsyncSaveGameData();
         SoundManager.Instance.PlayEffectAudio(EffectType.None, _attendanceSound);
     }
 

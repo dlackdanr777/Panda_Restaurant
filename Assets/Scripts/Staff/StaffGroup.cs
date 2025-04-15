@@ -32,6 +32,13 @@ public class StaffGroup : MonoBehaviour
 
             if (data == null)
                 continue;
+
+            if (type == EquipStaffType.Marketer)
+            {
+                StaffMarketer marketer = (StaffMarketer)_staffDic[type];
+                marketer.SetSkillEffect(_customerController.MarketerSkillEffect);
+            }
+            
             staff.SetStaffData(data, _floorType);
         }
 

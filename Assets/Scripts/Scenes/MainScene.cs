@@ -13,7 +13,7 @@ public class MainScene : MonoBehaviour
     [Header("Components")]
     [SerializeField] private UINavigationCoordinator _uiNavCoordinator;
     [SerializeField] private UINavigation _uiMainNav;
-    [SerializeField] private UIFever _uiFever;
+    [SerializeField] private FeverSystem _feverSystem;
     [SerializeField] private AudioClip _mainSceneMusic;
     [SerializeField] private AudioClip _feverMusic;
 
@@ -24,13 +24,11 @@ public class MainScene : MonoBehaviour
     public RestaurantType CurrentRestaurantType => _restaurantType;
 
     private float _updateTimer;
-    private bool _isFeverStart = false;
-    public bool IsFeverStart => _isFeverStart;
-    public void SetFever(bool isFeverStart) => _isFeverStart = isFeverStart;
+
 
     public void PlayMainMusic()
     {
-        if(!_isFeverStart)
+        if(!_feverSystem.IsFeverStart)
             SoundManager.Instance.PlayBackgroundAudio(_mainSceneMusic, 0.5f);
 
         else

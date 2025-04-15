@@ -14,7 +14,7 @@ public class TableButton : MonoBehaviour
 
     public void Init()
     {
-        _defalutMat = _foodImage.material;
+        _defalutMat = null;
         UserInfo.OnGiveRecipeHandler += UpdateFoodImage;
         UpdateFoodImage();
     }

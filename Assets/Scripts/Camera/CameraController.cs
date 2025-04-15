@@ -49,7 +49,7 @@ public class CameraController : MonoBehaviour
     private bool _isMoveAction = false;
     private bool _isStopAction = false;
     private bool _moveHorizontally; // X축 이동 여부 결정 변수
-    private float _initialTouchThreshold = 0.5f; // 0.5cm 이내에서는 이동 X
+    private float _initialTouchThreshold = 0.1f; // 0.5cm 이내에서는 이동 X
     private List<GraphicRaycaster> _graphicRaycasters = new List<GraphicRaycaster>(); // UI 감지용
 
 

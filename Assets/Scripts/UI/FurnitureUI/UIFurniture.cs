@@ -4,7 +4,7 @@ using Muks.Tween;
 using System;
 using System.Collections.Generic;
 using TMPro;
-using UnityEditor.ShaderGraph.Internal;
+
 using UnityEngine;
 
 public class UIFurniture : MobileUIView

@@ -29,8 +29,6 @@ public class GameManager : MonoBehaviour
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
-    public int FeverGaguge = 0;
-
     [SerializeField] private int _totalTabCount = 8;
     public int TotalTabCount => _totalTabCount;
 

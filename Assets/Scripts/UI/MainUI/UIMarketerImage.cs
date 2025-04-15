@@ -14,6 +14,9 @@ public class UIMarketerImage : MonoBehaviour
     [SerializeField] private Image _leftHandImage;
     [SerializeField] private Image _rightHandImage;
 
+    [SerializeField] private Image _marketerSkillEffect;
+    public Image MarketerSkillEffect => _marketerSkillEffect;
+
 
     private Sprite _marketerSprite;
     private Sprite _animationSprite;
