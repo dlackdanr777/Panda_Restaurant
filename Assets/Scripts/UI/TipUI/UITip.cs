@@ -133,7 +133,7 @@ public class UITip : MobileUIView
             coinCnt = coinCnt <= 10 ? 10 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
             UserInfo.TipCollection(UserInfo.CurrentStage, isAds);
             ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
-            SoundManager.Instance.PlayEffectAudio(_collectTipSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.None, _collectTipSound);
             for (int i = 0, cnt = coinCnt; i < cnt; ++i)
             {
                 int index = i;

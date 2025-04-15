@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CustomerController : MonoBehaviour
 {
@@ -13,7 +14,9 @@ public class CustomerController : MonoBehaviour
 
     [Header("Components")]
     [SerializeField] private TableManager _tableManager;
+    [SerializeField] private FeverSystem _feverSystem;
     [SerializeField] private UIAddCutomerController _uiController;
+    public Image MarketerSkillEffect => _uiController.MarketerSkillEffect;
     [SerializeField] private UICustomerTutorial _uiCustomerTutorial;
 
     [Space]
@@ -40,7 +43,7 @@ public class CustomerController : MonoBehaviour
 
     public void AddCustomerButtonClickEvent()
     {
-        _uiController.OnAddCustomerButtonClicked();
+        _uiController.AddCustomerNoSound();
     }
 
 
@@ -113,6 +116,7 @@ public class CustomerController : MonoBehaviour
                     SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                     specialCustomer.SetData(getData, this, _tableManager);
                     specialCustomer.SetVisitFloor(visitFloor);
+                    specialCustomer.SetFeverSystem(_feverSystem);
                     specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
                     UserInfo.AddVisitSpecialCustomerCount();
                     _uiCustomerTutorial.ShowTutorial(getData);
@@ -280,6 +284,7 @@ public class CustomerController : MonoBehaviour
             SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
             specialCustomer.SetData(data, this, _tableManager);
             specialCustomer.SetVisitFloor(visitFloor);
+            specialCustomer.SetFeverSystem(_feverSystem);
             specialCustomer.StartEvent(_specialCustomerTargetPosList, OnCustomerEvent);
         }
 

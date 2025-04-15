@@ -10,8 +10,7 @@ namespace Muks.MobileUI
 
     public class MobileUINavigation : UINavigation
     {
-        public event Action OnShowUIHandler;
-        public event Action OnHideUIHandler;
+
 
         [Header("Views")]
         [Tooltip("√÷ªÛ¿ß lootUIView")]
@@ -95,7 +94,7 @@ namespace Muks.MobileUI
                 uiView.gameObject.SetActive(true);
                 uiView.VisibleState = VisibleState.Appeared;
                 OnFocusHandler?.Invoke();
-                OnHideUIHandler?.Invoke();
+                OnShowUIHandler?.Invoke();
             }
         }
 

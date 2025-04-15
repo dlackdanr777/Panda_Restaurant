@@ -132,7 +132,7 @@ public class UIRecipeUpgrade : MobileUIView
                 UserInfo.UpgradeRecipe(_currentData);
                 UserInfo.AddMoney(-price);
                 PopupManager.Instance.ShowDisplayText("레시피 업그레이드를 완료했어요!");
-                SoundManager.Instance.PlayEffectAudio(_upgradeSound);
+                SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
                 _flashEffect.Emit(1);
                 UpdateData();
                 return;

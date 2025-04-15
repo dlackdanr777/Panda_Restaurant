@@ -113,7 +113,7 @@ public class DropGarbageArea : MonoBehaviour
             return;
 
         UserInfo.AddCleanCount();
-        SoundManager.Instance.PlayEffectAudio(_cleanSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _cleanSound);
 
         for (int i = 0; i < _garbageList.Count; i++)
         {

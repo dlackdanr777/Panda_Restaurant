@@ -27,6 +27,9 @@ public class SpecialCustomer : Customer
     private Action<Customer> _onCompleted;
 
 
+    private FeverSystem _feverSystem;
+
+
     public override void SetData(CustomerData data, CustomerController customerController, TableManager tableManager)
     {
         if(!(data is SpecialCustomerData))
@@ -48,7 +51,7 @@ public class SpecialCustomer : Customer
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
 
-        SoundManager.Instance.PlayEffectAudio(_visitSound, 0.15f);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _visitSound, 0.15f);
 
         if (_touchCoroutine != null)
             StopCoroutine(_touchCoroutine);
@@ -65,6 +68,11 @@ public class SpecialCustomer : Customer
         LoopEvent(-1, targetPosList);
         UserInfo.AddSatisfaction(UserInfo.CurrentStage, 5);
         _onCompleted = onCompleted;
+    }
+
+    public void SetFeverSystem(FeverSystem feverSystem)
+    {
+        _feverSystem = feverSystem;
     }
 
 
@@ -100,7 +108,8 @@ public class SpecialCustomer : Customer
         _touchCoroutine = StartCoroutine(OnTouchRoutine());
 
         UserInfo.AddMoney(_touchAddMoney + GameManager.Instance.AddSpecialCustomerMoney);
-        SoundManager.Instance.PlayEffectAudio(_goldSound);
+        _feverSystem?.AddFeverGauge();
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _goldSound);
         if (_touchCount <= 0)
         {
             _isEndEvent = true;

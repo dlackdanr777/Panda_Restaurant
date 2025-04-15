@@ -14,7 +14,8 @@ public class Staff : MonoBehaviour
     public SpriteRenderer SpriteRenderer => _spriteRenderer;
 
     [Space]
-    [Header("Audios")]
+    [Header("Skill")]
+    [SerializeField] private SpriteRenderer _skillEffect;
     [SerializeField] private AudioClip _skillActiveSound;
 
     protected TableManager _tableManager;
@@ -78,7 +79,7 @@ public class Staff : MonoBehaviour
     public virtual void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType)
     {
         StopAllCoroutines();
-
+        SkillEffectSetActive(false);
         if (staffData == _staffData)
             return;
 
@@ -127,6 +128,7 @@ public class Staff : MonoBehaviour
 
     public virtual void TweenAlpha(float alpha, float duration, Ease ease, Action onCompleted = null)
     {
+        _skillEffect?.TweenAlpha(alpha, duration, ease);
         _spriteRenderer.TweenAlpha(alpha, duration, ease).OnComplete(onCompleted);
     }
 
@@ -205,7 +207,6 @@ public class Staff : MonoBehaviour
         _staffData?.Destroy();
     }
 
-
     private void OnDisable()
     {
         if(transform != null)
@@ -220,7 +221,8 @@ public class Staff : MonoBehaviour
     {
         _usingSkill = true;
         Vibration.Vibrate(500);
-        //SoundManager.Instance.PlayEffectAudio(_skillActiveSound);
+        SkillEffectSetActive(true);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Restaurant, _skillActiveSound);
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 
         float duration = _staffData.Skill.Duration + GameManager.Instance.AddStaffSkillTime + _staffType switch
@@ -239,7 +241,7 @@ public class Staff : MonoBehaviour
             timer += 0.02f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-
+        SkillEffectSetActive(false);
         _staffData.Skill.Deactivate(this, tableManager, kitchenSystem, customerController);
         _usingSkill = false;
     }
@@ -388,6 +390,14 @@ public class Staff : MonoBehaviour
         };
 
         _skillCoolTime = _skillCoolTime < 0.1f ? 0.1f : _skillCoolTime;
+    }
+
+    protected virtual void SkillEffectSetActive(bool isActive)
+    {
+        if (_skillEffect == null)
+            return;
+
+        _skillEffect.gameObject.SetActive(isActive);
     }
 
 

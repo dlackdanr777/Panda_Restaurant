@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -7,6 +8,9 @@ namespace Muks.UI
     /// <summary> UI Navigation.cs들을 관리하는 클래스 (없어도 UINav 독립 사용가능)</summary>
     public class UINavigationCoordinator : MonoBehaviour
     {
+        public event Action OnShowUIHandler;
+        public event Action OnHideUIHandler;
+
         [Header("Components")]
         [SerializeField] private NavigationData[] _navDatas;
 
@@ -39,6 +43,8 @@ namespace Muks.UI
                 int index = i;
                 _navDatas[index].UiNav.OnFocusHandler += () => OnFocusEvent(_navDatas[index]);
                 _navList.AddLast(_navDatas[index]);
+                _navDatas[index].UiNav.OnShowUIHandler += () => OnShowUIHandler?.Invoke();
+                _navDatas[index].UiNav.OnHideUIHandler += () => OnHideUIHandler?.Invoke();
             }
         }
 

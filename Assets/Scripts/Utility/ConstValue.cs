@@ -7,8 +7,9 @@ public static class ConstValue
     public const int DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT = 10;
 
     //피버 관련 변수
-    public const int MAX_PEVER_GAUGE = 100;
-    public const float PEVER_TIME = 8f;
+    public const int MAX_PEVER_GAUGE = 1000;
+    public const float PEVER_TIME = 10f;
+    public const int ADD_PEVER_GAUGE = 5;
 
 
    //스테이지 관련 변수

@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class StaffChef : Staff
 {
-    [Header("Waiter Components")]
+    [Header("Chef Components")]
     [SerializeField] private Animator _animator;
 
 
@@ -21,9 +21,6 @@ public class StaffChef : Staff
             
         if (!(staffData is ChefData))
             throw new System.Exception("셰프 스탭에게 셰프 데이터가 들어오지 않았습니다.");
-
-
-
     }
 
     public override void SetStaffState(EStaffState state)

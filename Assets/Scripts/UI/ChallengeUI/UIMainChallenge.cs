@@ -202,7 +202,7 @@ public class UIMainChallenge : MobileUIView
     {
         float time = 0;
         ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
-        SoundManager.Instance.PlayEffectAudio(_clearGoldSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _clearGoldSound);
         for (int i = 0; i < _coinCount; ++i)
         {
             int index = i;
@@ -238,7 +238,7 @@ public class UIMainChallenge : MobileUIView
     {
         float time = 0;
         ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, _coinPos.transform.position, Quaternion.identity);
-        SoundManager.Instance.PlayEffectAudio(_clearDiaSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _clearDiaSound);
         for (int i = 0; i < _coinCount; ++i)
         {
             int index = i;

@@ -111,13 +111,13 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
         if(_data.MoneyType == MoneyType.Gold)
         {
             UserInfo.AddMoney(_data.RewardMoney);
-            SoundManager.Instance.PlayEffectAudio(SoundEffectType.GoldSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.GoldSound);
         }
 
         else if(_data.MoneyType == MoneyType.Dia)
         {
             UserInfo.AddDia(_data.RewardMoney);
-            SoundManager.Instance.PlayEffectAudio(SoundEffectType.DiaSound);
+            SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.DiaSound);
         }
         UserInfo.ClearChallenge(_data);
     }

@@ -1,11 +1,13 @@
-using Coffee.UIExtensions;
 using Muks.Tween;
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIAddCutomerController : MonoBehaviour
 {
     public event Action OnAddCustomerHandelr;
+
+    public Image MarketerSkillEffect => _marketerImage.MarketerSkillEffect;
 
     [Header("Components")]
     [SerializeField] private TableManager _tableManager;
@@ -35,16 +37,24 @@ public class UIAddCutomerController : MonoBehaviour
     }
 
 
-    public void OnAddCustomerButtonClicked()
+
+
+    public void AddCustomerNoSound()
     {
         SetButtonGaguge();
         _marketerImage.StartAnime();
     }
 
+    private void OnAddCustomerButtonClicked()
+    {
+        SetButtonGaguge();
+        _audioSource.PlayOneShot(_callSound);
+        _marketerImage.StartAnime();
+    }
 
     private void SetButtonGaguge()
     {
-        _audioSource.PlayOneShot(_callSound);
+
         if (GameManager.Instance.TotalTabCount - 1 <= _tabCount)
         {
             if(_customerController.IsMaxCount)
