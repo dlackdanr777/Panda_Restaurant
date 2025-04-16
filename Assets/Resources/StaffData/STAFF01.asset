@@ -22,7 +22,7 @@ MonoBehaviour:
   _buyScore: 10
   _buyPrice: 4500
   _skill: {fileID: 11400000, guid: e02701bebe44c864688b4304e4a359c2, type: 2}
-  _speed: 25
+  _speed: 6
   _waiterLevelData:
   - _upgradeMinScore: 20
     _upgradeMoneyData:

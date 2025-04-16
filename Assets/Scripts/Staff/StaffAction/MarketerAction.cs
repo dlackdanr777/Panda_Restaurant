@@ -21,7 +21,7 @@ public class MarketerAction : IStaffAction
     {
         if (_actionCoolTime <= 0)
         {
-            _customerController.AddCustomerButtonClickEvent();
+            _customerController.AddTabCount();
             _actionCoolTime = staff.GetActionValue();
         }
         else

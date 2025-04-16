@@ -84,7 +84,7 @@ public class WaiterAction : IStaffAction
             return;
         }
 
-        if (UserInfo.IsTutorialStart || !UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, staff.EquipFloorType))
+        if (UserInfo.IsTutorialStart)
         {
             ResetStaffState(staff);
             return;

@@ -117,7 +117,7 @@ public class TableManager : MonoBehaviour
         customer.StopWaiting();
         data.TableState = ETableState.Move;
         data.OrdersCount = customer.OrderCount;
-
+        data.Satisfaction = 0;
         if (sitPos != 0 && sitPos != 1)
         {
             int randInt = UnityEngine.Random.Range(0, data.ChairTrs.Length);
@@ -234,6 +234,12 @@ public class TableManager : MonoBehaviour
             UserInfo.AddSatisfaction(UserInfo.CurrentStage, -4);
         }
 
+        //만약 주문 요리와 손님의 등장요리가 같다면 만족도 2점 증가
+        if (data.CurrentFood.FoodData.Id.Equals(data.CurrentCustomer.NormalCustomerData.RequiredDish))
+        {
+            data.Satisfaction += 2;
+        }
+
         UpdateTable();
     }
 
@@ -303,19 +309,6 @@ public class TableManager : MonoBehaviour
         FoodData foodData = FoodDataManager.Instance.GetFoodData(data.CurrentFood.FoodData.Id);
         data.TableState = ETableState.Eating;
         StartCoroutine(EatRoutine(data, foodData));
-
-        //만약 주문 요리와 손님의 등장요리가 같다면 만족도 2점 증가
-        if(data.CurrentFood.FoodData.Id.Equals(data.CurrentCustomer.NormalCustomerData.RequiredDish))
-        {
-            UserInfo.AddSatisfaction(UserInfo.CurrentStage, 2);
-        }
-
-        //만약 피버중 서빙이 성공한다면 만족도 1점 증가
-        if(_feverSystem.IsFeverStart)
-        {
-            UserInfo.AddSatisfaction(UserInfo.CurrentStage, 1);
-        }
-
         UpdateTable();
     }
 
@@ -379,9 +372,11 @@ public class TableManager : MonoBehaviour
         exitCustomer.transform.position = customerPos;
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
+        UserInfo.AddSatisfaction(UserInfo.CurrentStage, data.Satisfaction);
         data.CurrentCustomer = null;
         data.TotalTip = 0;
         data.TotalPrice = 0;
+        data.Satisfaction = 0;
         DirtyTable(data);
         UpdateTable();
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
@@ -415,6 +410,8 @@ public class TableManager : MonoBehaviour
         data.TotalTip = 0;
         data.TotalPrice = 0;
         data.TableState = ETableState.Empty;
+
+        UserInfo.AddSatisfaction(UserInfo.CurrentStage, -5);
         UpdateTable();
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
@@ -478,6 +475,7 @@ public class TableManager : MonoBehaviour
         data.CurrentCustomer.HideFood();
         UserInfo.CustomerVisits(data.CurrentCustomer.CustomerData);
         UserInfo.AddCustomerCount();
+
         StartCoinAnime(data);
         StartGarbageAnime(data);
         Tween.Wait(0.5f, () =>

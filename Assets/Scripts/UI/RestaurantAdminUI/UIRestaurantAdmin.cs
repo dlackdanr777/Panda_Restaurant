@@ -22,6 +22,7 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private GameObject _mainUI;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
+    [SerializeField] private RectTransform _dontTouchArea;
 
     [Header("BackgroundImage")]
     [SerializeField] private ScrollingImage[] _scrollImages;
@@ -93,7 +94,7 @@ public class UIRestaurantAdmin : MobileUIView
         ShowFurnitureTab();
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
-
+        _dontTouchArea.gameObject.SetActive(true);
         ChangeFloorType(_mainScene.CurrentFloor);
 
         _recipeTab.UpdateUI();
@@ -105,7 +106,11 @@ public class UIRestaurantAdmin : MobileUIView
             _mainUI.SetActive(true);
             _mainUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
             TweenData tween2 = _mainUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
-            tween2.OnComplete(() => _canvasGroup.blocksRaycasts = true);
+            tween2.OnComplete(() => 
+            {
+                _canvasGroup.blocksRaycasts = true;
+                _dontTouchArea.gameObject.SetActive(false);
+            });
         });
     }
 
@@ -117,6 +122,7 @@ public class UIRestaurantAdmin : MobileUIView
             _mainScene.PlayMainMusic();
             _canvasGroup.blocksRaycasts = false;
             _canvasGroup.alpha = 1;
+            _dontTouchArea.gameObject.SetActive(true);
             _mainUI.transform.localScale = Vector3.one;
             TweenData tween = _mainUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
             tween.OnComplete(() =>
@@ -124,7 +130,11 @@ public class UIRestaurantAdmin : MobileUIView
                 _mainUI.SetActive(false);
                 ResetBackgroundImageOffset();
                 TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
-                tween2.OnComplete(() => gameObject.SetActive(false));
+                tween2.OnComplete(() => 
+                {
+                    gameObject.SetActive(false);
+                    _dontTouchArea.gameObject.SetActive(false);
+                });
                 VisibleState = VisibleState.Disappeared;
             });
         }

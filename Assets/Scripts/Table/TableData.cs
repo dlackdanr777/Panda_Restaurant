@@ -69,6 +69,8 @@ public class TableData : MonoBehaviour
 
     public int OrdersCount;
 
+    [HideInInspector] public int Satisfaction = 0;
+
     public NormalCustomer CurrentCustomer;
 
     public CookingData CurrentFood;

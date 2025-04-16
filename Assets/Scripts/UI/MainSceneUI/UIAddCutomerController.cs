@@ -23,7 +23,6 @@ public class UIAddCutomerController : MonoBehaviour
     [SerializeField] private AudioSource _audioSource;
     [SerializeField] private AudioClip _callSound;
 
-    private int _tabCount = 0;
     private Vector3 _addCustomerButtonTmpPos;
     private Vector3 _addCustomerButtonTmpScale;
 
@@ -32,58 +31,51 @@ public class UIAddCutomerController : MonoBehaviour
         _marketerImage.Init();
         _addCustomerButtonTmpPos = _addCustomerButton.transform.position;
         _addCustomerButtonTmpScale = _addCustomerButton.transform.localScale;
-        _addCustomerButton.AddListener(OnAddCustomerButtonClicked);
-        _addCustomerButton.AddListener(_marketerImage.StartAnime);
+        _addCustomerButton.AddListener(() => OnAddCustomerButtonClicked(true));
+
+        _customerController.OnAddCustomerHandler += OnAddCustomerEvent;
+        _customerController.OnMaxCustomerHandler += OnMaxCustomerEvent;
+        _customerController.OnAddTabCountHandler += OnAddTabCountEvent;
     }
 
 
-
-
-    public void AddCustomerNoSound()
+    public void OnAddCustomerButtonClicked(bool isSoundPlay)
     {
-        SetButtonGaguge();
+        _customerController.AddTabCount();
+
+        if (isSoundPlay)
+            _audioSource.PlayOneShot(_callSound);
+    }
+
+    private void OnMaxCustomerEvent()
+    {
+        _addCustomerButton.TweenStop();
+        _addCustomerButton.transform.position = _addCustomerButtonTmpPos;
+        _addCustomerButton.transform.localScale = _addCustomerButtonTmpScale;
+        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 10, 0.05f);
+        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x - 10, 0.05f);
+        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 8, 0.03f);
+        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x - 7, 0.02f);
+        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 3, 0.02f);
+        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x, 0.1f);
+    }
+
+    private void OnAddCustomerEvent()
+    {
+        _addCustomerButton.SetFillAmonut(0);
         _marketerImage.StartAnime();
+        OnAddCustomerHandelr?.Invoke();
     }
 
-    private void OnAddCustomerButtonClicked()
+    private void OnAddTabCountEvent()
     {
-        SetButtonGaguge();
-        _audioSource.PlayOneShot(_callSound);
-        _marketerImage.StartAnime();
-    }
-
-    private void SetButtonGaguge()
-    {
-
-        if (GameManager.Instance.TotalTabCount - 1 <= _tabCount)
-        {
-            if(_customerController.IsMaxCount)
-            {
-                _addCustomerButton.TweenStop();
-                _addCustomerButton.transform.position = _addCustomerButtonTmpPos;
-                _addCustomerButton.transform.localScale = _addCustomerButtonTmpScale;
-                _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 10, 0.05f);
-                _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x - 10, 0.05f);
-                _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 8, 0.03f);
-                _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x - 7, 0.02f);
-                _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 3, 0.02f);
-                _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x, 0.1f);
-
-                //PopupManager.Instance.ShowDisplayText("ÁÙÀÌ ²ËÃ¡½À´Ï´Ù.");
-                return;
-            }
-
-            _customerController.AddCustomer();
-            _addCustomerButton.SetFillAmonut(0);
-            _tabCount = 0;
-            OnAddCustomerHandelr?.Invoke();
-            return;
-        }
-
-        float cntFillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + ((float)_tabCount / (GameManager.Instance.TotalTabCount - 1)) * 0.725f;
+        int tabCount = _customerController.TabCount;
+        int beforeTabCount = tabCount - 1;
+        DebugLog.Log(tabCount + ", " + beforeTabCount);
+        float cntFillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + (beforeTabCount <= 0 ? 0 : ((float)beforeTabCount / (GameManager.Instance.TotalTabCount - 1))) * 0.725f;
         _addCustomerButton.SetFillAmountNoAnime(cntFillAmount);
-        _tabCount++;
-        float nextFillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + ((float)_tabCount / (GameManager.Instance.TotalTabCount - 1)) * 0.725f;
+        float nextFillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + ((float)tabCount / (GameManager.Instance.TotalTabCount - 1)) * 0.725f;
         _addCustomerButton.SetFillAmonut(nextFillAmount);
+        _marketerImage.StartAnime();
     }
 }

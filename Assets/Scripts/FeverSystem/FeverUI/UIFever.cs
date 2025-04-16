@@ -11,6 +11,7 @@ public class UIFever : MonoBehaviour
     [SerializeField] private RectTransform _feverAnimeObj;
     [SerializeField] private Animator _feverAnimator;
     [SerializeField] private RectTransform _feverShineEffectObj;
+    [SerializeField] private Animator _mirrorBallAnimator;
 
 
     [Header("FeverMeter")]
@@ -40,10 +41,12 @@ public class UIFever : MonoBehaviour
             _feverButton.transform.localScale = _tmpButtonScale;
             _feverButton.TweenStop();
             _feverButton.TweenScale(_tmpButtonScale * 1.2f, 0.5f, Ease.InOutBack).Loop(LoopType.Yoyo);
+            _mirrorBallAnimator.SetBool("Action", true);
         }
         else
         {
             _feverButton.TweenStop();
+            _mirrorBallAnimator.SetBool("Action", false);
         }
 
         _feverButton.AddListener(OnFeverButtonClicked);
@@ -98,10 +101,12 @@ public class UIFever : MonoBehaviour
             _feverButton.transform.localScale = _tmpButtonScale;
             _feverButton.TweenStop();
             _feverButton.TweenScale(_tmpButtonScale * 0.95f, 1f, Ease.InOutBack).Loop(LoopType.Yoyo);
+            _mirrorBallAnimator.SetBool("Action", true);
         }
         else
         {
             _feverButton.TweenStop();
+            _mirrorBallAnimator.SetBool("Action", false);
         }
     }
 
@@ -138,7 +143,7 @@ public class UIFever : MonoBehaviour
         _feverAnimeObj.TweenAnchoredPosition(_animeEndPos.anchoredPosition, tweenTime, Ease.OutBack).OnComplete(() =>{
             _feverShineEffectObj.gameObject.SetActive(true);
             _feverAnimator.SetFloat("Speed", 1f);
-            GameManager.Instance.SetGameSpeed(0.5f);
+            GameManager.Instance.SetGameSpeed(1f);
         });
 
         yield return YieldCache.WaitForSeconds(ConstValue.PEVER_TIME + tweenTime);
@@ -153,7 +158,8 @@ public class UIFever : MonoBehaviour
         _feverShineEffectObj.gameObject.SetActive(false);
         _feverAnimator.SetFloat("Speed", 0f);
         _fillAmountImage.SetFillAmonut(_ferverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)_ferverSystem.FeverGauge / _ferverSystem.CurrentMaxFeverGauge) * 0.7f);
-
+        _mirrorBallAnimator.SetBool("Action", false);
+        yield return YieldCache.WaitForSeconds(0.5f);
         _feverAnimeObj.TweenAnchoredPosition(_animeStartPos.anchoredPosition, tweenTime, Ease.OutBack).OnComplete(() =>
         {
             _feverEffects.gameObject.SetActive(false);

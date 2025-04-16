@@ -38,6 +38,7 @@ public static class UserInfo
     public static event Action OnGiveKitchenUtensilHandler;
 
     public static event Action OnChangeSinkBowlHandler;
+    public static event Action OnChangeMaxSinkBowlHandler;
 
     public static event Action OnChangeSatisfactionHandler;
 
@@ -209,7 +210,7 @@ public static class UserInfo
             _stageInfos[i].OnGiveKitchenUtensilHandler += OnGiveKitchenUtensilEvent;
 
             _stageInfos[i].OnChangeSinkBowlHandler += OnAddSinkBowlEvent;
-
+            _stageInfos[i].OnChangeMaxSinkBowlHandler += OnChangeMaxBowlEvent;
             _stageInfos[i].OnChangeSatisfactionHandler += OnChangeSatisfactionEvent;
         }
     }
@@ -265,6 +266,12 @@ public static class UserInfo
     private static void OnAddSinkBowlEvent()
     {
         OnChangeSinkBowlHandler?.Invoke();
+    }
+
+    public static void OnChangeMaxBowlEvent()
+
+    {
+        OnChangeMaxSinkBowlHandler?.Invoke();
     }
 
 

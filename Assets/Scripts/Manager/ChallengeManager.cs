@@ -604,7 +604,7 @@ public class ChallengeManager : MonoBehaviour
                     _equipKitchenSetList.Add(equipKitchenSetCount);
                 }
                 int maxKitchenCount = _equipKitchenSetList.Max();
-                return maxKitchenCount == 0 ? 0 : Math.Min(1, (float)maxKitchenCount / ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT);
+                return maxKitchenCount == 0 ? 0 : Math.Min(1, (float)maxKitchenCount / ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT);
 
             case ChallengeType.TYPE18:
                 Type18ChallengeData data18 = (Type18ChallengeData)data;
@@ -685,6 +685,221 @@ public class ChallengeManager : MonoBehaviour
         }
     }
 
+
+    public string GetChallengeCountStr(ChallengeData data)
+    {
+        float percent = 0;
+        int clearCount = 0;
+        switch (data.Type)
+        {
+            case ChallengeType.TYPE01:
+                Type01ChallengeData data01 = (Type01ChallengeData)data;
+                for (int i = 0, cnt = data01.NeedFurnitureIds.Length; i < cnt; i++)
+                {
+                    if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data01.NeedFurnitureIds[i]))
+                        clearCount++;
+                }
+                return $"{clearCount} / {data01.NeedFurnitureIds.Length}";
+
+            case ChallengeType.TYPE02:
+                Type02ChallengeData data02 = (Type02ChallengeData)data;
+                for (int i = 0, cnt = data02.NeedKitchenUtensilId.Length; i < cnt; i++)
+                {
+                    if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data02.NeedKitchenUtensilId[i]))
+                        clearCount++;
+                }
+                return $"{clearCount} / {data02.NeedKitchenUtensilId.Length}";
+
+            case ChallengeType.TYPE03:
+                Type03ChallengeData data03 = (Type03ChallengeData)data;
+                if (UserInfo.IsGiveRecipe(data03.BuyRecipeId))
+                    clearCount++;
+                return $"{clearCount} / 1";
+
+            case ChallengeType.TYPE04:
+                Type04ChallengeData data04 = (Type04ChallengeData)data;
+                if (UserInfo.IsGiveRecipe(data04.NeedRecipeId))
+                    clearCount++;
+                return $"{clearCount} / 1";
+
+            case ChallengeType.TYPE05:
+                Type05ChallengeData data05 = (Type05ChallengeData)data;
+                if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data05.NeedStaffId))
+                    clearCount++;
+                return $"{clearCount} / 1";
+
+            case ChallengeType.TYPE06:
+                Type06ChallengeData data06 = (Type06ChallengeData)data;
+                int recipeCount = UserInfo.GetRecipeCount();
+                return $"{recipeCount} / {data06.RecipeCount}";
+
+            case ChallengeType.TYPE07:
+                Type07ChallengeData data07 = (Type07ChallengeData)data;
+                int cookCount = UserInfo.GetCookCount(data07.Id);
+                return $"{cookCount} / {data07.CookCount}";
+
+            case ChallengeType.TYPE08:
+                Type08ChallengeData data08 = (Type08ChallengeData)data;
+                int socre = UserInfo.Score;
+                return $"{socre} / {data08.Rank}";
+
+            case ChallengeType.TYPE09:
+                Type09ChallengeData data09 = (Type09ChallengeData)data;
+                int customerCount = UserInfo.TotalCumulativeCustomerCount;
+                return $"{customerCount} / {data09.CustomerCount}";
+
+            case ChallengeType.TYPE10:
+                Type10ChallengeData data10 = (Type10ChallengeData)data;
+                int visitedCustomerCount = UserInfo.GetVisitedCustomerTypeCount();
+                return $"{visitedCustomerCount} / {data10.CustomerCount}";
+
+            case ChallengeType.TYPE11:
+                Type11ChallengeData data11 = (Type11ChallengeData)data;
+                long moneyCount = UserInfo.TotalAddMoney;
+                return $"{moneyCount} / {data11.MoneyCount}";
+
+            case ChallengeType.TYPE12:
+                Type12ChallengeData data12 = (Type12ChallengeData)data;
+                int promotionCount = UserInfo.PromotionCount;
+                return $"{promotionCount} / {data12.PromotionCount}";
+
+            case ChallengeType.TYPE13:
+                Type13ChallengeData data13 = (Type13ChallengeData)data;
+                int furnitureAndKitchenUtensilCount = UserInfo.GetFurnitureAndKitchenUtensilCount(UserInfo.CurrentStage);
+                return $"{furnitureAndKitchenUtensilCount} / {data13.Count}";
+
+            case ChallengeType.TYPE14:
+                Type14ChallengeData data14 = (Type14ChallengeData)data;
+                int collectFurnitureSetCount = UserInfo.GetCollectFurnitureSetDataList(UserInfo.CurrentStage).Count;
+                return $"{collectFurnitureSetCount} / {data14.Count}";
+
+            case ChallengeType.TYPE15:
+                Type15ChallengeData data15 = (Type15ChallengeData)data;
+                int collectKitchenUtensilSetCount = UserInfo.GetCollectKitchenUtensilSetDataList(UserInfo.CurrentStage).Count;
+                return $"{collectKitchenUtensilSetCount} / {data15.Count}";
+
+            case ChallengeType.TYPE16:
+                Type16ChallengeData data16 = (Type16ChallengeData)data;
+
+                List<int> _equipSetList = new List<int>();
+                for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+                {
+                    ERestaurantFloorType floor = (ERestaurantFloorType)i;
+                    int equipFurnitureSetCount = 0;
+                    for (int j = 0, cntJ = (int)FurnitureType.Length; j < cntJ; ++j)
+                    {
+                        FurnitureType type = (FurnitureType)j;
+                        FurnitureData furnitureData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, floor, type);
+
+                        if (furnitureData == null || !furnitureData.SetId.Equals(data16.SetId))
+                            continue;
+
+                        equipFurnitureSetCount++;
+                    }
+                    _equipSetList.Add(equipFurnitureSetCount);
+                }
+                int maxFurnitureCount = _equipSetList.Max();
+                return $"{maxFurnitureCount} / {ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT}"; 
+
+            case ChallengeType.TYPE17:
+                Type17ChallengeData data17 = (Type17ChallengeData)data;
+                List<int> _equipKitchenSetList = new List<int>();
+                for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+                {
+                    ERestaurantFloorType floor = (ERestaurantFloorType)i;
+                    int equipKitchenSetCount = 0;
+                    for (int j = 0, cntJ = (int)KitchenUtensilType.Length; j < cntJ; ++j)
+                    {
+                        KitchenUtensilType type = (KitchenUtensilType)j;
+                        KitchenUtensilData kitchenData = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, floor, type);
+
+                        if (kitchenData == null || !kitchenData.SetId.Equals(data17.SetId))
+                            continue;
+
+                        equipKitchenSetCount++;
+                    }
+                    _equipKitchenSetList.Add(equipKitchenSetCount);
+                }
+                int maxKitchenCount = _equipKitchenSetList.Max();
+                return $"{maxKitchenCount} / {ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT}";
+
+            case ChallengeType.TYPE18:
+                Type18ChallengeData data18 = (Type18ChallengeData)data;
+                int giveFurnitureCount = UserInfo.GetGiveFurnitureCount(UserInfo.CurrentStage);
+                return $"{giveFurnitureCount} / {data18.Count}";
+
+            case ChallengeType.TYPE19:
+                Type19ChallengeData data19 = (Type19ChallengeData)data;
+                int giveKitchenUntensilCount = UserInfo.GetGiveKitchenUtensilCount(UserInfo.CurrentStage);
+                return $"{giveKitchenUntensilCount} / {data19.Count}";
+
+            case ChallengeType.TYPE21:
+                Type21ChallengeData data21 = (Type21ChallengeData)data;
+                int totalVisitSpecialCustomerCount = UserInfo.TotalVisitSpecialCustomerCount;
+                return $"{totalVisitSpecialCustomerCount} / {data21.Count}";
+
+            case ChallengeType.TYPE22:
+                Type22ChallengeData data22 = (Type22ChallengeData)data;
+                int totalExterminationGatecrasherCustomer1Count = UserInfo.TotalExterminationGatecrasherCustomer1Count;
+                return $"{totalExterminationGatecrasherCustomer1Count} / {data22.Count}";
+
+            case ChallengeType.TYPE23:
+                Type23ChallengeData data23 = (Type23ChallengeData)data;
+                int totalExterminationGatecrasherCustomer2Count = UserInfo.TotalExterminationGatecrasherCustomer2Count;
+                return $"{totalExterminationGatecrasherCustomer2Count} / {data23.Count}";
+
+            case ChallengeType.TYPE24:
+                Type24ChallengeData data24 = (Type24ChallengeData)data;
+                int totalExterminationGatecrasherCustomerCount = UserInfo.TotalExterminationGatecrasherCustomer1Count + UserInfo.TotalExterminationGatecrasherCustomer2Count;
+                return $"{totalExterminationGatecrasherCustomerCount} / {data24.Count}";
+
+            case ChallengeType.TYPE25:
+                Type25ChallengeData data25 = (Type25ChallengeData)data;
+                int totalUseGachaMachineCount = UserInfo.TotalUseGachaMachineCount;
+                return $"{totalUseGachaMachineCount} / {data25.Count}";
+
+            case ChallengeType.TYPE26:
+                Type26ChallengeData data26 = (Type26ChallengeData)data;
+                int totalGachaMachineTypeCount = UserInfo.GetGiveGachaItemDic().Count;
+                return $"{totalGachaMachineTypeCount} / {data26.Count}";
+
+            case ChallengeType.TYPE28:
+                Type28ChallengeData data28 = (Type28ChallengeData)data;
+                int cleanCount = UserInfo.TotalCleanCount;
+                return $"{cleanCount} / {data28.Count}";
+
+            case ChallengeType.TYPE30:
+                int dailyClearCount = UserInfo.GetClearDailyChallengeCount();
+                return $"{dailyClearCount} / {_dailyChallengeDataDic.Count - 1}";
+
+            case ChallengeType.TYPE31:
+                Type31ChallengeData data31 = (Type31ChallengeData)data;
+                int dailyCustomerCount = UserInfo.DailyCumulativeCustomerCount;
+                return $"{dailyCustomerCount} / {data31.Count}";
+
+            case ChallengeType.TYPE32:
+                Type32ChallengeData data32 = (Type32ChallengeData)data;
+                long dailyAddMoney = UserInfo.DailyAddMoney;
+                return $"{dailyAddMoney} / {data32.Count}";
+
+            case ChallengeType.TYPE33:
+                Type33ChallengeData data33 = (Type33ChallengeData)data;
+                int dailyCookCount = UserInfo.DailyCookCount;
+                return $"{dailyCookCount} / {data33.Count}";
+
+            case ChallengeType.TYPE34:
+                Type34ChallengeData data34 = (Type34ChallengeData)data;
+                int dailyCleanCount = UserInfo.DailyCleanCount;
+                return $"{dailyCleanCount} / {data34.Count}";
+
+            case ChallengeType.TYPE35:
+                Type35ChallengeData data35 = (Type35ChallengeData)data;
+                int dailyAdvertisingViewCount = UserInfo.DailyAdvertisingViewCount;
+                return $"{dailyAdvertisingViewCount} / {data35.Count}";
+
+            default: return string.Empty;
+        }
+    }
 
     public void UpdateChallengeByChallenges(Challenges challenges)
     {

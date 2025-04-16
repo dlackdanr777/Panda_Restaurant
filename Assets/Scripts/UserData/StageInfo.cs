@@ -18,6 +18,7 @@ public class StageInfo
     public event Action OnGiveKitchenUtensilHandler;
 
     public event Action OnChangeSinkBowlHandler;
+    public event Action OnChangeMaxSinkBowlHandler;
 
     public event Action OnChangeSatisfactionHandler;
 
@@ -84,6 +85,8 @@ public class StageInfo
     #region StageData
     public void AddSatisfaction(int value)
     {
+        if(value == 0)
+            return;
         _satisfaction = Mathf.Clamp(_satisfaction + value, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
         OnChangeSatisfactionHandler?.Invoke();
     }
@@ -808,6 +811,13 @@ public class StageInfo
     {
         int floorIndex = (int)floor;
         return _saveKitchenDatas[floorIndex].SinkBowlCount;
+    }
+
+    public void SetMaxSinkBowlCount(ERestaurantFloorType floor, int maxBowlCount)
+    {
+        int floorIndex = (int)floor;
+        _saveKitchenDatas[floorIndex].SetMaxSinkBowlCount(maxBowlCount);
+        OnChangeMaxSinkBowlHandler?.Invoke();
     }
 
     public int GetMaxSinkBowlCount(ERestaurantFloorType floor)
