@@ -5,13 +5,17 @@ public class TableFurniture : Furniture
     [Space]
     [Header("Table Furniture")]
     [SerializeField] private Sprite _defalutLeftChairSprite;
-        [SerializeField] private Sprite _defalutRightChairSprite;
+    [SerializeField] private Sprite _defalutRightChairSprite;
     [SerializeField] private SpriteRenderer _leftChairSpriteRenderer;
     [SerializeField] private SpriteRenderer _rightChairSpriteRenderer;
     [SerializeField] private SpriteRenderer _leftChairArmrestSpriteRenderer;
     [SerializeField] private SpriteRenderer _rightChairArmrestSpriteRenderer;
     [SerializeField] private PointerDownSpriteRenderer _pointerDownSpriteRenderer;
     [SerializeField] private SpriteRenderer _bowlRenderer;
+
+    [Space]
+    [Header("Sounds")]
+    [SerializeField] private AudioClip _cleanSound;
 
     private TableFurnitureData _tableFurnitureData;
     private TableData _tableData;
@@ -182,12 +186,13 @@ public class TableFurniture : Furniture
         }
 
         if (!UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _floor))
-        {
+        {   
             return;
         }
 
         _tableData.TableState = ETableState.Empty;
         UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, _floor);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _cleanSound);
         _tableManager.UpdateTable();
     }
 
@@ -208,6 +213,7 @@ public class TableFurniture : Furniture
 
         _tableData.TableState = ETableState.Empty;
         UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, _floor);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _cleanSound);
         _tableManager.UpdateTable();
     }
 
