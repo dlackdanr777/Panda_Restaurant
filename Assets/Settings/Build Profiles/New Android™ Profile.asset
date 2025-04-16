@@ -202,7 +202,7 @@ MonoBehaviour:
     - line: '|   overrideDefaultApplicationIdentifier: 1'
     - line: '|   AndroidBundleVersionCode: 10'
     - line: '|   AndroidMinSdkVersion: 23'
-    - line: '|   AndroidTargetSdkVersion: 0'
+    - line: '|   AndroidTargetSdkVersion: 33'
     - line: '|   AndroidPreferredInstallLocation: 1'
     - line: '|   aotOptions: '
     - line: '|   stripEngineCode: 1'
