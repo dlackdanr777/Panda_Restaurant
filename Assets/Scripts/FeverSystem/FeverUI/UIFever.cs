@@ -21,7 +21,6 @@ public class UIFever : MonoBehaviour
     [SerializeField] private RectTransform _feverGaugeEffectObj;
     [SerializeField] private Animator _feverGaugeEffectAnimator;
 
-    private Coroutine _feverRoutine;
     private Vector3 _tmpButtonScale;
     private FeverSystem _ferverSystem;
 
@@ -50,6 +49,8 @@ public class UIFever : MonoBehaviour
         }
 
         _feverButton.AddListener(OnFeverButtonClicked);
+        _ferverSystem.OnStartFeverHandler += StartFeverEvent;
+        _ferverSystem.OnEndFeverHandler += EndFeverEvent;
     }
 
 
@@ -121,37 +122,34 @@ public class UIFever : MonoBehaviour
 
         _feverButton.TweenStop();
         _feverButton.transform.localScale = _tmpButtonScale;
-
-        if (_feverRoutine != null)
-            StopCoroutine(_feverRoutine);
-        _feverRoutine = StartCoroutine(FeverCoroutine());
+        _ferverSystem.FeverStart();
     }
 
 
-    private IEnumerator FeverCoroutine()
+    private void StartFeverEvent()
     {
         float tweenTime = 1;
-        _ferverSystem.SetFeverStart(true);
+
         _feverButton.interactable = false;
         _mainScene.PlayMainMusic();
-
         _feverEffects.SetActive(true);
         _feverShineEffectObj.gameObject.SetActive(false);
         _feverAnimeObj.TweenStop();
         _feverAnimator.SetFloat("Speed", 0f);
         _feverAnimeObj.transform.position = _animeStartPos.position;
-        _feverAnimeObj.TweenAnchoredPosition(_animeEndPos.anchoredPosition, tweenTime, Ease.OutBack).OnComplete(() =>{
+        _feverAnimeObj.TweenAnchoredPosition(_animeEndPos.anchoredPosition, tweenTime, Ease.OutBack).OnComplete(() =>
+        {
             _feverShineEffectObj.gameObject.SetActive(true);
             _feverAnimator.SetFloat("Speed", 1f);
-            GameManager.Instance.SetGameSpeed(1f);
         });
+    }
 
-        yield return YieldCache.WaitForSeconds(ConstValue.PEVER_TIME + tweenTime);
+    private void EndFeverEvent()
+    {
+        float tweenTime = 1;
 
-        _ferverSystem.SetFeverStart(false);
         _feverAnimeObj.TweenStop();
         _feverAnimeObj.position = _animeEndPos.position;
-        GameManager.Instance.SetGameSpeed(0);
         _feverButton.interactable = false;
         _mainScene.PlayMainMusic();
         _ferverSystem.SetFeverGauge(0);
@@ -159,10 +157,9 @@ public class UIFever : MonoBehaviour
         _feverAnimator.SetFloat("Speed", 0f);
         _fillAmountImage.SetFillAmonut(_ferverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)_ferverSystem.FeverGauge / _ferverSystem.CurrentMaxFeverGauge) * 0.7f);
         _mirrorBallAnimator.SetBool("Action", false);
-        yield return YieldCache.WaitForSeconds(0.5f);
         _feverAnimeObj.TweenAnchoredPosition(_animeStartPos.anchoredPosition, tweenTime, Ease.OutBack).OnComplete(() =>
         {
             _feverEffects.gameObject.SetActive(false);
         });
-    }
+    } 
 }

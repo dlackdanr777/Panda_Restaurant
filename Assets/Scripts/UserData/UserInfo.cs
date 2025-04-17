@@ -587,11 +587,30 @@ public static class UserInfo
         if (string.IsNullOrWhiteSpace(_lastAccessTime))
             return true;
 
+        // 서버 시간을 가져옴 (UTC 시간일 가능성 높음)
         DateTime currentServerTime = BackendManager.Instance.ServerTime;
-        DateTime lastAccessTime = DateTime.Parse(_lastAccessTime);
-        TimeSpan timeDifference = currentServerTime - lastAccessTime;
 
-        return 1 <= timeDifference.TotalDays;
+        // 한국 시간대 정보 생성 (UTC+9)
+        TimeZoneInfo koreaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Korea Standard Time");
+
+        // 서버 시간을 한국 시간으로 변환
+        DateTime currentKoreaTime = TimeZoneInfo.ConvertTimeFromUtc(currentServerTime.ToUniversalTime(), koreaTimeZone);
+
+        // 마지막 접속 시간도 한국 시간으로 변환
+        DateTime lastAccessTime;
+        if (DateTime.TryParse(_lastAccessTime, out lastAccessTime))
+        {
+            DateTime lastAccessKoreaTime = TimeZoneInfo.ConvertTimeFromUtc(lastAccessTime.ToUniversalTime(), koreaTimeZone);
+
+            // 날짜만 비교 (시간 무시)
+            bool isDifferentDay = currentKoreaTime.Date > lastAccessKoreaTime.Date;
+
+            DebugLog.Log($"현재 한국 시간: {currentKoreaTime}, 마지막 접속 한국 시간: {lastAccessKoreaTime}, 날짜 차이: {isDifferentDay}");
+
+            return isDifferentDay;
+        }
+
+        return true;  // 파싱 실패 시 기본값
     }
 
 
@@ -773,9 +792,17 @@ public static class UserInfo
 
     public static void UpdateLastAccessTime()
     {
-        BackendManager.Instance.GetServerTimeAsync((serverTime) => _lastAccessTime = serverTime.ToString());
-    }
+        DateTime serverTime = BackendManager.Instance.ServerTime;
 
+        // 한국 시간대 정보 생성 (UTC+9)
+        TimeZoneInfo koreaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Korea Standard Time");
+
+        // 서버 시간을 한국 시간으로 변환
+        DateTime koreaTime = TimeZoneInfo.ConvertTimeFromUtc(serverTime.ToUniversalTime(), koreaTimeZone);
+
+        _lastAccessTime = koreaTime.ToString();
+        DebugLog.Log($"마지막 접속 시간 업데이트: {_lastAccessTime} (한국 시간)");
+    }
 
     public static bool IsScoreValid(ShopData data)
     {
@@ -2069,7 +2096,7 @@ public static class UserInfo
         _dailyCleanCount = 0;
         _dailyCookCount = 0;
         _dailyCumulativeCustomerCount = 0;
-
+        DebugLog.Log("???");
         _doneDailyChallengeSet.Clear();
         _clearDailyChallengeSet.Clear();
 

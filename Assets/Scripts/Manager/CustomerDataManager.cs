@@ -123,7 +123,6 @@ public class CustomerDataManager : MonoBehaviour
             DebugLog.Log(_customerDataList[i].Name + " È°¼ºÈ­");
             UserInfo.CustomerEnabled(_customerDataList[i]);
             UserInfo.AddNotification(_customerDataList[i].Id);
-
         }
     }
 

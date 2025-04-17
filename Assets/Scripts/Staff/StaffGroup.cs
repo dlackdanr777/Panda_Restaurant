@@ -10,22 +10,25 @@ public class StaffGroup : MonoBehaviour
     private CustomerController _customerController;
     private TableManager _tableManager;
     private KitchenSystem _kitchenSystem;
+
+    private FeverSystem _feverSystem;
+
     private Dictionary<EquipStaffType, Staff> _staffDic = new Dictionary<EquipStaffType, Staff>();
 
 
 
-    public void Init(CustomerController customerController, TableManager tableManager, KitchenSystem kitchenSystem)
+    public void Init(CustomerController customerController, TableManager tableManager, KitchenSystem kitchenSystem, FeverSystem feverStstem)
     {
         _customerController = customerController;
         _tableManager = tableManager;
         _kitchenSystem = kitchenSystem;
-
+        _feverSystem = feverStstem;
         for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
         {
             EquipStaffType type = (EquipStaffType)i;
             Staff staff = ObjectPoolManager.Instance.SpawnStaff(type, transform.position, transform);;
             staff.name = _floorType.ToString() + "_" + (EquipStaffType)i;
-            staff.Init(type, tableManager, kitchenSystem, customerController);
+            staff.Init(type, tableManager, kitchenSystem, customerController, feverStstem);
 
             _staffDic.Add(type, staff);
             StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);

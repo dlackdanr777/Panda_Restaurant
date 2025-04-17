@@ -1,8 +1,12 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
 public class FeverSystem : MonoBehaviour
 {
+    public event Action OnStartFeverHandler;
+    public event Action OnEndFeverHandler;
+
     [SerializeField] private MainScene _mainScene;
     [SerializeField] private UIFever _uiFever;
     [SerializeField] private CustomerController _customerController;
@@ -31,9 +35,12 @@ public class FeverSystem : MonoBehaviour
     }
 
 
-    public void SetFeverStart(bool value)
+    public void FeverStart()
     {
-        _isFeverStart = value;
+        if(_isFeverStart)
+            return;
+
+        _isFeverStart = true;
 
         if(_feverRoutine != null)
         {
@@ -41,10 +48,8 @@ public class FeverSystem : MonoBehaviour
             _feverRoutine = null;
         }
 
-        if(value)
-        {
-            _feverRoutine = StartCoroutine(StartFeverRoutine());
-        }
+        _feverRoutine = StartCoroutine(StartFeverRoutine());
+
     }
 
     private void Awake()
@@ -96,7 +101,12 @@ public class FeverSystem : MonoBehaviour
 
     private IEnumerator StartFeverRoutine()
     {
-        while(true)
+        float time = ConstValue.PEVER_TIME;
+        float timer = 0;
+        OnStartFeverHandler?.Invoke();
+        _mainScene.PlayMainMusic();
+        GameManager.Instance.SetGameSpeed(1f);
+        while (timer < time)
         {
             yield return YieldCache.WaitForSeconds(0.5f);
 
@@ -104,6 +114,13 @@ public class FeverSystem : MonoBehaviour
             {
                 _customerController.AddTabCount();
             }
+
+            timer += 0.5f;
         }
+
+        _isFeverStart = false;
+        _mainScene.PlayMainMusic();
+        GameManager.Instance.SetGameSpeed(0);
+        OnEndFeverHandler?.Invoke();
     }
 }

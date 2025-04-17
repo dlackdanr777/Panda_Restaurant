@@ -386,6 +386,18 @@ public static class Utility
         return description;
     }
 
+
+    public static string GetTendencyTypeToStr(CustomerTendencyType type)
+    {
+        return type switch
+        {
+            CustomerTendencyType.Normal => "¹«³­ÇÔ",
+            CustomerTendencyType.Sensitive => "¿¹¹ÎÇÔ",
+            CustomerTendencyType.HighlySensitive => "ÃÊ¿¹¹Î",
+            _ => string.Empty
+        };
+    }
+
     public static string GetEquipEffectDescription(EquipEffectType type, int value)
     {
         return type switch

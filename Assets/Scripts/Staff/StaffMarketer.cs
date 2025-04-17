@@ -3,11 +3,11 @@ using UnityEngine.UI;
 public class StaffMarketer : Staff
 {
 
-    private Image _skillEffect;
+    private Image _skillEffectImage;
 
-    public override void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public override void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController, FeverSystem feverSystem)
     {
-        base.Init(type, tableManager, kitchenSystem, customerController);
+        base.Init(type, tableManager, kitchenSystem, customerController, feverSystem);
     }
 
     public override void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType)
@@ -23,12 +23,12 @@ public class StaffMarketer : Staff
 
     public void SetSkillEffect(Image skillEffect)
     {
-        _skillEffect = skillEffect;
+        _skillEffectImage = skillEffect;
     }
 
     protected override void SkillEffectSetActive(bool isActive)
     {
-        _skillEffect?.gameObject.SetActive(isActive);
+        _skillEffectImage?.gameObject.SetActive(isActive);
     }
 }
 
