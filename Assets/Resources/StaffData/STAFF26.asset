@@ -19,30 +19,30 @@ MonoBehaviour:
   _description: "\uAC15\uB82C\uD55C \uCE74\uB9AC\uC2A4\uB9C8\uB85C \uC9C4\uC0C1\uC744
     \uD1F4\uCE58\n\uC0AC\uC2E4\uC740 \uADC0\uC5EC\uC6B4\uAC78 \uC88B\uC544\uD568\r"
   _moneyType: 0
-  _buyScore: 300
-  _buyPrice: 7000000
+  _buyScore: 1200
+  _buyPrice: 600000
   _skill: {fileID: 11400000, guid: f3029210afede654ca6f3c33a2016896, type: 2}
   _speed: 6
   _guardLevelData:
-  - _upgradeMinScore: 350
+  - _upgradeMinScore: 1800
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 200000
+      _price: 900000
     _actionTime: 7
-  - _upgradeMinScore: 370
+  - _upgradeMinScore: 2400
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 230000
+      _price: 1350000
     _actionTime: 6.5
-  - _upgradeMinScore: 390
+  - _upgradeMinScore: 3000
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 240000
+      _price: 2025000
     _actionTime: 6
-  - _upgradeMinScore: 410
+  - _upgradeMinScore: 3600
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 250000
+      _price: 3037500
     _actionTime: 5.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:

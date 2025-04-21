@@ -14,38 +14,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _sprite: {fileID: 21300000, guid: 9d7e2d4163aa03645b724e14da4a0e4f, type: 3}
   _thumbnailSPrite: {fileID: 21300000, guid: 9d7e2d4163aa03645b724e14da4a0e4f, type: 3}
-  _name: "\uC219\uB2EC\uB41C \uB9E4\uB2C8\uC800 \uD3EC\uC57C"
+  _name: "\uB9E4\uB2C8\uC800 \uD3EC\uC57C"
   _id: STAFF07
   _description: "\uC628\uD654\uD55C \uBBF8\uC18C\uB85C \uC190\uB2D8\uC744 \uB9DE\uC73C\uBA70\n\uB9E4\uB044\uB7EC\uC6B4
     \uC2DD\uB2F9 \uC6B4\uC601\uC744 \uCC45\uC784\uC9C0\uB294 \uD3EC\uC57C\r"
   _moneyType: 0
-  _buyScore: 30
+  _buyScore: 200
   _buyPrice: 80000
   _skill: {fileID: 11400000, guid: 18348c8c96719374da1f6ba1bcd2987d, type: 2}
   _speed: 6
   _managerLevelData:
-  - _upgradeMinScore: 50
+  - _upgradeMinScore: 300
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 4000
-    _customerGuideTime: 0
-  - _upgradeMinScore: 70
+      _price: 120000
+    _customerGuideTime: 2.7
+  - _upgradeMinScore: 400
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 9000
-    _customerGuideTime: 0
-  - _upgradeMinScore: 90
+      _price: 180000
+    _customerGuideTime: 2.5
+  - _upgradeMinScore: 500
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 30000
-    _customerGuideTime: 0
-  - _upgradeMinScore: 110
+      _price: 270000
+    _customerGuideTime: 2.3
+  - _upgradeMinScore: 600
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 50000
-    _customerGuideTime: 0
+      _price: 405000
+    _customerGuideTime: 2.1
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _customerGuideTime: 0
+    _customerGuideTime: 1.9

@@ -7,6 +7,7 @@ public class StaffController : MonoBehaviour
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private TableManager _tableManager;
     [SerializeField] private KitchenSystem _kitchenSystem;
+    [SerializeField] private FeverSystem _feverSystem;
     [SerializeField] private StaffGroup[] _staffGroups;
 
 
@@ -23,7 +24,7 @@ public class StaffController : MonoBehaviour
                 continue;
             }
 
-            group.Init(_customerController, _tableManager, _kitchenSystem);
+            group.Init(_customerController, _tableManager, _kitchenSystem, _feverSystem);
             _staffGroupDic.Add(group.FloorType, group);
         }
     }

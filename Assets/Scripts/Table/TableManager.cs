@@ -67,16 +67,16 @@ public class TableManager : MonoBehaviour
     }
 
 
-    public void OnCustomerGuideEvent(int sitPos = -1)
+    public bool OnCustomerGuideEvent(int sitPos = -1)
     {
         if (_customerController.IsEmpty())
-            return;
+            return false;
 
         NormalCustomer customer = _customerController.GetFirstCustomer();
         if (customer == null)
         {
             DebugLog.LogError("손님 정보가 없습니다.");
-            return;
+            return false;
         }
 
         TableData data = GetTableType(ETableState.Empty);
@@ -84,7 +84,7 @@ public class TableManager : MonoBehaviour
         {
             DebugLog.Log("남는 테이블이 없습니다.");
             UpdateTable();
-            return;
+            return false;
         }
 
         ERestaurantFloorType choiceFloor = GetWeightRandomChoiceFloor(customer);
@@ -93,19 +93,19 @@ public class TableManager : MonoBehaviour
         if (data.TableState == ETableState.DontUse)
         {
             NotFurnitureTable(data);
-            return;
+            return false;
         }
 
         sitPos = Mathf.Clamp(sitPos, -1, 1);
         customer.SetVisitFloor(choiceFloor);
         OnCustomerGuide(customer, data, sitPos);
-
+        return true;
     }
 
     public void OnCustomerGuideEventPlaySound(int sitPos = -1)
     {
-        OnCustomerGuideEvent(sitPos);
-        SoundManager.Instance.PlayEffectAudio( EffectType.None, _callSound);
+        if(OnCustomerGuideEvent(sitPos))
+            SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _callSound);
     }
 
 
@@ -117,7 +117,7 @@ public class TableManager : MonoBehaviour
         customer.StopWaiting();
         data.TableState = ETableState.Move;
         data.OrdersCount = customer.OrderCount;
-
+        data.Satisfaction = 0;
         if (sitPos != 0 && sitPos != 1)
         {
             int randInt = UnityEngine.Random.Range(0, data.ChairTrs.Length);
@@ -234,6 +234,12 @@ public class TableManager : MonoBehaviour
             UserInfo.AddSatisfaction(UserInfo.CurrentStage, -4);
         }
 
+        //만약 주문 요리와 손님의 등장요리가 같다면 만족도 2점 증가
+        if (data.CurrentFood.FoodData.Id.Equals(data.CurrentCustomer.NormalCustomerData.RequiredDish))
+        {
+            data.Satisfaction += 2;
+        }
+
         UpdateTable();
     }
 
@@ -303,19 +309,6 @@ public class TableManager : MonoBehaviour
         FoodData foodData = FoodDataManager.Instance.GetFoodData(data.CurrentFood.FoodData.Id);
         data.TableState = ETableState.Eating;
         StartCoroutine(EatRoutine(data, foodData));
-
-        //만약 주문 요리와 손님의 등장요리가 같다면 만족도 2점 증가
-        if(data.CurrentFood.FoodData.Id.Equals(data.CurrentCustomer.NormalCustomerData.RequiredDish))
-        {
-            UserInfo.AddSatisfaction(UserInfo.CurrentStage, 2);
-        }
-
-        //만약 피버중 서빙이 성공한다면 만족도 1점 증가
-        if(_feverSystem.IsFeverStart)
-        {
-            UserInfo.AddSatisfaction(UserInfo.CurrentStage, 1);
-        }
-
         UpdateTable();
     }
 
@@ -379,9 +372,11 @@ public class TableManager : MonoBehaviour
         exitCustomer.transform.position = customerPos;
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
+        UserInfo.AddSatisfaction(UserInfo.CurrentStage, data.Satisfaction);
         data.CurrentCustomer = null;
         data.TotalTip = 0;
         data.TotalPrice = 0;
+        data.Satisfaction = 0;
         DirtyTable(data);
         UpdateTable();
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
@@ -415,6 +410,8 @@ public class TableManager : MonoBehaviour
         data.TotalTip = 0;
         data.TotalPrice = 0;
         data.TableState = ETableState.Empty;
+
+        UserInfo.AddSatisfaction(UserInfo.CurrentStage, -5);
         UpdateTable();
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
@@ -478,6 +475,7 @@ public class TableManager : MonoBehaviour
         data.CurrentCustomer.HideFood();
         UserInfo.CustomerVisits(data.CurrentCustomer.CustomerData);
         UserInfo.AddCustomerCount();
+
         StartCoinAnime(data);
         StartGarbageAnime(data);
         Tween.Wait(0.5f, () =>
@@ -510,8 +508,8 @@ public class TableManager : MonoBehaviour
     {
         int sitIndex = data.SitIndex;
 
-        //피버상태일 경우 1.5배의 가격을 지불한다.
-        int foodPrice = (int)(data.TotalPrice * (_feverSystem.IsFeverStart ? 1.5f : 1f));
+        //피버상태일 경우 2배의 가격을 지불한다.
+        int foodPrice = (int)(data.TotalPrice * (_feverSystem.IsFeverStart ? 2f : 1f));
         data.DropCoinAreas[sitIndex].DropCoin(data.ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0), foodPrice);
         data.TotalPrice = 0;
         data.TotalTip = 0;

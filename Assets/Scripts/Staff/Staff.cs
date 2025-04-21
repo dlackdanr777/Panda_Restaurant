@@ -21,6 +21,8 @@ public class Staff : MonoBehaviour
     protected TableManager _tableManager;
     protected KitchenSystem _kitchenSystem;
     protected CustomerController _customerController;
+    protected FeverSystem _feverSystem;
+
     protected StaffData _staffData;
     public StaffData StaffData => _staffData;
 
@@ -44,17 +46,20 @@ public class Staff : MonoBehaviour
     protected Coroutine _useSkillRoutine;
 
 
-    public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController, FeverSystem feverSystem)
     {
         _staffType = type;
         _tableManager = tableManager;
         _customerController = customerController;
         _kitchenSystem = kitchenSystem;
+        _feverSystem = feverSystem;
         _tableManager = tableManager;
         _spriteRenderer.color = Color.white;
         _scaleX = transform.localScale.x;
         GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
         UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
+        _feverSystem.OnStartFeverHandler += OnStartFeverEvent;
+        _feverSystem.OnEndFeverHandler += OnEndFeverEvent;
         gameObject.SetActive(false);
     }
 
@@ -154,6 +159,12 @@ public class Staff : MonoBehaviour
     {
         _spriteRenderer.sortingLayerName = sortingLayerName;
         _spriteRenderer.sortingOrder = orderInLayer;
+
+        if(_skillEffect != null)
+        {
+            _skillEffect.sortingLayerName = sortingLayerName;
+            _skillEffect.sortingOrder = orderInLayer - 1;
+        }
     }
 
     public void SetOrderLayer(int orderInLayer)
@@ -222,6 +233,7 @@ public class Staff : MonoBehaviour
         _usingSkill = true;
         Vibration.Vibrate(500);
         SkillEffectSetActive(true);
+        DebugLog.Log("스킬 사용: " + name);
         SoundManager.Instance.PlayEffectAudio(EffectType.Restaurant, _skillActiveSound);
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 
@@ -241,7 +253,7 @@ public class Staff : MonoBehaviour
             timer += 0.02f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        SkillEffectSetActive(false);
+        SkillEffectSetActive(_feverSystem.IsFeverStart);
         _staffData.Skill.Deactivate(this, tableManager, kitchenSystem, customerController);
         _usingSkill = false;
     }
@@ -442,6 +454,24 @@ public class Staff : MonoBehaviour
         ObjectPoolManager.Instance.DespawnStaff(_staffType, this);
     }
 
+    private void OnStartFeverEvent()
+    {
+        if(!gameObject.activeInHierarchy)
+            return;
+
+        SkillEffectSetActive(true);
+    }
+
+    private void OnEndFeverEvent()
+    {
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        if(_usingSkill)
+            return;
+
+        SkillEffectSetActive(false);
+    }
 
 }
 

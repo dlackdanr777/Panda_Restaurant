@@ -4,6 +4,7 @@ using UnityEngine;
 public class SpriteFillAmount : MonoBehaviour
 {
     [SerializeField] private SpriteRenderer _spriteRenderer;
+    public SpriteRenderer SpriteRenderer => _spriteRenderer;
     [Range(0f, 1f)][SerializeField] private float _value;
 
     private Vector2 _tmpSize;

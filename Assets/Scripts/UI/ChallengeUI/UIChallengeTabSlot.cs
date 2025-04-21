@@ -17,7 +17,11 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
     [SerializeField] private Image _moneyImage;
     [SerializeField] private Image _diaImage;
     [SerializeField] private TextMeshProUGUI _rewardText;
+    [SerializeField] private TextMeshProUGUI _countText;
 
+    [Space]
+    [Header("Option")]
+    [SerializeField] private Color _doneColor;
 
     private ChallengeData _data;
     public ChallengeData Data => _data;
@@ -55,7 +59,8 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
         _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(data);
         _descriptionText.text = data.Description;
         _rewardText.text = Utility.ConvertToMoney(data.RewardMoney);
-
+        _countText.SetText(ChallengeManager.Instance.GetChallengeCountStr(data));
+        
         if (UserInfo.GetIsClearChallenge(_data.Id))
         {
             _clearButton.gameObject.SetActive(true);
@@ -63,6 +68,7 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             _shortCutButton.gameObject.SetActive(false);
             _layoutImage.color = new Color(0.8f, 0.8f, 0.8f, 1);
             _percentBar.fillAmount = 1;
+            _percentBar.color = _doneColor;
             return;
         }
         else if (UserInfo.GetIsDoneChallenge(_data.Id))
@@ -72,6 +78,7 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             _clearButton.gameObject.SetActive(false);
             _layoutImage.color = Color.white;
             _percentBar.fillAmount = 1;
+            _percentBar.color = _doneColor;
             return;
         }
         else
@@ -80,6 +87,7 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             _doneButton.gameObject.SetActive(false);
             _clearButton.gameObject.SetActive(false);
             _layoutImage.color = Color.white;
+            _percentBar.color = Color.white;
             return;
         }
     }

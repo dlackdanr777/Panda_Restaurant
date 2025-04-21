@@ -41,11 +41,34 @@ public class CustomerController : MonoBehaviour
     public bool IsMaxCount => GameManager.Instance.MaxWaitCustomerCount <= _customers.Count;
 
 
-    public void AddCustomerButtonClickEvent()
-    {
-        _uiController.AddCustomerNoSound();
-    }
+    //// UI관련 변수
+    public event Action OnAddCustomerHandler;
+    public event Action OnAddTabCountHandler;
+    public event Action OnMaxCustomerHandler; 
 
+    private int _tabCount = 0;
+    public int TabCount => _tabCount;
+
+
+    public void AddTabCount()
+    {
+
+        if (GameManager.Instance.TotalTabCount - 1 <= _tabCount)
+        {
+            if (IsMaxCount)
+            {
+                OnMaxCustomerHandler?.Invoke();
+                return;
+            }
+
+            _tabCount = 0;
+            AddCustomer();
+            OnAddCustomerHandler?.Invoke();
+            return;
+        }
+        _tabCount++;
+        OnAddTabCountHandler?.Invoke();
+    }
 
     public NormalCustomer GetFirstCustomer()
     {

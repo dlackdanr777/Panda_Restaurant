@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _description: 
   _cooldown: 200
-  _duration: 20
-  _speedUpMul: 50
+  _duration: 7
+  _speedUpMul: 100

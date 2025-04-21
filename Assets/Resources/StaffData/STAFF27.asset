@@ -14,33 +14,38 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _sprite: {fileID: 21300000, guid: 5d98947ce8f73c94da13c1501cda6176, type: 3}
   _thumbnailSPrite: {fileID: 21300000, guid: 5d98947ce8f73c94da13c1501cda6176, type: 3}
-  _name: "\uBBF8\uC2A4\uD130 \uBC31"
+  _name: "\uACE0\uB4E0 \uD32C\uC9C0"
   _id: STAFF27
   _description: "\uBD80\uB4DC\uB7EC\uC6B4 \uBBF8\uC18C\uB85C \uC8FC\uBC29\uC744 \uC9C0\uD718\uD558\uB294
     \uBCA0\uD14C\uB791 \uC694\uB9AC\uC0AC\n\uACE0\uB4E0 \uD32C\uC9C0!\r"
   _moneyType: 1
-  _buyScore: 350
+  _buyScore: 11000
   _buyPrice: 250
   _skill: {fileID: 11400000, guid: 4803555ba0e7f7f46af709248b6ac2be, type: 2}
   _speed: 6
   _chefLevelData:
-  - _upgradeMinScore: 380
+  - _upgradeMinScore: 16500
     _upgradeMoneyData:
       _moneyType: 1
       _price: 25
-    _foodSpeedAddPercent: 1.5
-  - _upgradeMinScore: 400
+    _foodSpeedAddPercent: 12
+  - _upgradeMinScore: 22000
     _upgradeMoneyData:
       _moneyType: 1
       _price: 50
-    _foodSpeedAddPercent: 1.5
-  - _upgradeMinScore: 420
+    _foodSpeedAddPercent: 13
+  - _upgradeMinScore: 27500
     _upgradeMoneyData:
       _moneyType: 1
       _price: 75
-    _foodSpeedAddPercent: 1.5
-  - _upgradeMinScore: 440
+    _foodSpeedAddPercent: 14
+  - _upgradeMinScore: 33000
     _upgradeMoneyData:
       _moneyType: 1
       _price: 100
-    _foodSpeedAddPercent: 1.5
+    _foodSpeedAddPercent: 15
+  - _upgradeMinScore: 440
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: -1
+    _foodSpeedAddPercent: 16

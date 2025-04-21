@@ -19,8 +19,8 @@ MonoBehaviour:
   _description: "\uBD88\uD3C9\uC774 \uB9CE\uC9C0\uB9CC \uC5B4\uB514\uB4E0 \uAE54\uB054\uD558\uAC8C
     \uCCAD\uC18C\uD558\uB294 \uBA5C\uB85C\r"
   _moneyType: 0
-  _buyScore: 100
-  _buyPrice: 1000000
+  _buyScore: 550
+  _buyPrice: 200000
   _skill: {fileID: 11400000, guid: b3c20e5aa6d608e488f3918712c9e32b, type: 2}
   _speed: 6
   _cleanerLevelData:
@@ -30,27 +30,27 @@ MonoBehaviour:
       _price: 100000
     _cleaningTime: 1
     _addSpeed: 0
-  - _upgradeMinScore: 160
+  - _upgradeMinScore: 1100
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 120000
+      _price: 450000
     _cleaningTime: 1
-    _addSpeed: 0
-  - _upgradeMinScore: 180
+    _addSpeed: 0.5
+  - _upgradeMinScore: 1375
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 140000
+      _price: 675000
     _cleaningTime: 1
-    _addSpeed: 0
-  - _upgradeMinScore: 200
+    _addSpeed: 1
+  - _upgradeMinScore: 1650
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 160000
+      _price: 1012500
     _cleaningTime: 1
-    _addSpeed: 0
+    _addSpeed: 1.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
     _cleaningTime: 1
-    _addSpeed: 0
+    _addSpeed: 2

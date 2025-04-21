@@ -54,6 +54,7 @@ namespace Muks.MobileUI
         /// <summary>이름을 받아 현재 이름의 view를 열어주는 함수</summary>
         public override void Push(string viewName)
         {
+            DebugLog.Log(viewName + "을(를) 열었습니다.");
             //애니메이션이 진행중인 View가 있으면 Push, Pop을 막는다.
             if (!ViewsVisibleStateCheck())
                 return;
@@ -71,7 +72,6 @@ namespace Muks.MobileUI
                     _activeViewList.Add(uiView);
                     uiView.gameObject.SetActive(true);
                 }
-
                 uiView.transform.SetAsLastSibling();
                 OnFocusHandler?.Invoke();
                 OnShowUIHandler?.Invoke();

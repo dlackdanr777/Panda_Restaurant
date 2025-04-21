@@ -22,30 +22,30 @@ MonoBehaviour:
   _buyScore: 10
   _buyPrice: 4500
   _skill: {fileID: 11400000, guid: e02701bebe44c864688b4304e4a359c2, type: 2}
-  _speed: 25
+  _speed: 6
   _waiterLevelData:
   - _upgradeMinScore: 20
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 2500
+      _price: 6750
     _addSpeed: 0
   - _upgradeMinScore: 40
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 5000
-    _addSpeed: 0
+      _price: 10125
+    _addSpeed: 0.5
   - _upgradeMinScore: 60
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 10000
-    _addSpeed: 0
+      _price: 15187
+    _addSpeed: 1
   - _upgradeMinScore: 80
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 15000
-    _addSpeed: 0
+      _price: 22780
+    _addSpeed: 1.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _addSpeed: 0
+    _addSpeed: 2

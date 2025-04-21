@@ -24,7 +24,7 @@ public class SinkKitchenUtensil : KitchenUtensil
         _isStaffWashing = false;
         _isTouchWashing = false;
         _washGauge = 0;
-        _sinkGaugeBar.Init();
+        _sinkGaugeBar.Init(floor);
         _washingSound.Stop();
         _washingEffect.SetActive(false);
         _touchEvent.AddDownEvent(TouchDownEvent);
