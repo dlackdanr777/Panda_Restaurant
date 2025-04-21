@@ -346,6 +346,7 @@ public static class Utility
             FoodPriceUpSkill => $"주문 당 음식 가격 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가",
             AutoCustomerGuideSkill => $"손님 자동 안내 ({data.Skill.Duration}s)",
             AddPromotionCustomerSkill => $"홍보당 손님 호출 인원 <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)data.Skill.FirstValue}</color>명 증가",
+            TouchAddCustomerButtonSkill => $"레스토랑 손님 자동 호출 (<color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}</color>초)",
             _ => string.Empty
         };
 

@@ -12,9 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 15efc14f4db31c4479b80bcb04a376d5, type: 3}
   m_Name: STAFF25SKILL
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 0}
-  _skillName: 
   _description: 
   _cooldown: 80
-  _duration: 30
-  _speedUpMul: 50
+  _duration: 20
+  _speedUpMul: 100

@@ -27,22 +27,22 @@ MonoBehaviour:
   - _upgradeMinScore: 60
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 3000
+      _price: 1500
     _customerGuideTime: 3
   - _upgradeMinScore: 80
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 7000
+      _price: 2250
     _customerGuideTime: 2.8
   - _upgradeMinScore: 100
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 15000
+      _price: 3375
     _customerGuideTime: 2.6
   - _upgradeMinScore: 120
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 30000
+      _price: 5062
     _customerGuideTime: 2.4
   - _upgradeMinScore: -1
     _upgradeMoneyData:

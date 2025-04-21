@@ -19,33 +19,33 @@ MonoBehaviour:
   _description: "\uCCAD\uC18C\uD558\uB2E4 \uB9D0\uACE0 \uAC11\uC790\uAE30\n\uCFF5\uD478
     \uB3D9\uC791\uC744 \uBCF4\uC5EC\uC8FC\uB294 \uC5C9\uB6B1\uD55C \uBA5C\uB85C\n"
   _moneyType: 0
-  _buyScore: 160
-  _buyPrice: 2500000
+  _buyScore: 6300
+  _buyPrice: 1990000
   _skill: {fileID: 11400000, guid: 829f6ba2388631644919520e82a9de3c, type: 2}
   _speed: 9
   _cleanerLevelData:
-  - _upgradeMinScore: 200
+  - _upgradeMinScore: 9450
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 150000
+      _price: 2985000
     _cleaningTime: 1
-    _addSpeed: 0
-  - _upgradeMinScore: 220
+    _addSpeed: 0.5
+  - _upgradeMinScore: 12600
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 170000
+      _price: 4477500
     _cleaningTime: 1
-    _addSpeed: 0
-  - _upgradeMinScore: 240
+    _addSpeed: 1
+  - _upgradeMinScore: 15750
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 190000
+      _price: 6716250
     _cleaningTime: 1
-    _addSpeed: 0
-  - _upgradeMinScore: 260
+    _addSpeed: 1.5
+  - _upgradeMinScore: 18900
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 200000
+      _price: 10074375
     _cleaningTime: 1
     _addSpeed: 0
   - _upgradeMinScore: -1
@@ -53,4 +53,4 @@ MonoBehaviour:
       _moneyType: 0
       _price: -1
     _cleaningTime: 1
-    _addSpeed: 0
+    _addSpeed: 2

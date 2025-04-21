@@ -19,7 +19,7 @@ public class ManagerAction : IStaffAction
     {
         if (_actionCoolTime <= 0)
         {
-            _tableManager.OnCustomerGuideEvent();
+            _tableManager.OnCustomerGuideEventPlaySound();
             _actionCoolTime = staff.GetActionValue();
         }
         else

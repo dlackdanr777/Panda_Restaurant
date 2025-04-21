@@ -233,6 +233,7 @@ public class Staff : MonoBehaviour
         _usingSkill = true;
         Vibration.Vibrate(500);
         SkillEffectSetActive(true);
+        DebugLog.Log("스킬 사용: " + name);
         SoundManager.Instance.PlayEffectAudio(EffectType.Restaurant, _skillActiveSound);
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 

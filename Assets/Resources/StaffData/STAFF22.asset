@@ -19,38 +19,38 @@ MonoBehaviour:
   _description: "\uBB34\uC2A8\uC77C\uC778\uC9C0 \uBB35\uBB35\uD558\uAC8C\n\uAC00\uAC8C\uB97C
     \uBE5B\uB0B4\uC8FC\uB294 \uCCAD\uC18C\uC758 \uB2EC\uC778\r"
   _moneyType: 0
-  _buyScore: 120
-  _buyPrice: 1500000
+  _buyScore: 800
+  _buyPrice: 350000
   _skill: {fileID: 11400000, guid: 44d111fa7e4c9634f8b2045f742c3bac, type: 2}
   _speed: 7
   _cleanerLevelData:
-  - _upgradeMinScore: 160
+  - _upgradeMinScore: 1200
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 120000
+      _price: 525000
     _cleaningTime: 1
     _addSpeed: 0
-  - _upgradeMinScore: 180
+  - _upgradeMinScore: 1600
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 130000
+      _price: 787500
     _cleaningTime: 1
-    _addSpeed: 0
-  - _upgradeMinScore: 200
+    _addSpeed: 0.5
+  - _upgradeMinScore: 2000
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 150000
+      _price: 1181250
     _cleaningTime: 1
-    _addSpeed: 0
-  - _upgradeMinScore: 220
+    _addSpeed: 1
+  - _upgradeMinScore: 2400
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 170000
+      _price: 1771875
     _cleaningTime: 1
-    _addSpeed: 0
+    _addSpeed: 1.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
     _cleaningTime: 1
-    _addSpeed: 0
+    _addSpeed: 2

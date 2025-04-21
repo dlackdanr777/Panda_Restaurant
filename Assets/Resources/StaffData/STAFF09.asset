@@ -19,33 +19,33 @@ MonoBehaviour:
   _description: "\uB0C9\uCCA0\uD55C \uC804\uB7B5\uAC00 \uD3EC\uC57C\n\uC131\uC774
     \uC81C\uAC08\uC77C \uAC83\uB9CC \uAC19\uB2E4\r"
   _moneyType: 0
-  _buyScore: 90
-  _buyPrice: 130000
+  _buyScore: 6800
+  _buyPrice: 1300000
   _skill: {fileID: 11400000, guid: 3576053ed0b398d43a296e16eaf3aff6, type: 2}
   _speed: 6
   _managerLevelData:
-  - _upgradeMinScore: 110
+  - _upgradeMinScore: 10200
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 15000
-    _customerGuideTime: 0
-  - _upgradeMinScore: 130
+      _price: 1950000
+    _customerGuideTime: 2.1
+  - _upgradeMinScore: 13600
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 20000
-    _customerGuideTime: 0
-  - _upgradeMinScore: 150
+      _price: 2925000
+    _customerGuideTime: 1.9
+  - _upgradeMinScore: 17000
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 30000
-    _customerGuideTime: 0
-  - _upgradeMinScore: 170
+      _price: 4387500
+    _customerGuideTime: 1.7
+  - _upgradeMinScore: 20400
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 80000
-    _customerGuideTime: 0
+      _price: 6581250
+    _customerGuideTime: 1.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _customerGuideTime: 0
+    _customerGuideTime: 1.3

@@ -19,36 +19,36 @@ MonoBehaviour:
   _description: "\uBE75 \uB0C4\uC0C8\uB97C \uB9E1\uACE0 \uC190\uB2D8\uBCF4\uB2E4
     \uB354 \uD765\uBD84\uD55C \uD1A0\uB8E8\uB8E8\r"
   _moneyType: 0
-  _buyScore: 90
-  _buyPrice: 100000
-  _skill: {fileID: 11400000, guid: 1ccaed5bb4e717c4180679099fa58efa, type: 2}
+  _buyScore: 2500
+  _buyPrice: 570000
+  _skill: {fileID: 11400000, guid: cc1627697d70f09418e134e717be2a29, type: 2}
   _speed: 6
   _marketerLevelData:
-  - _upgradeMinScore: 130
+  - _upgradeMinScore: 3750
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 30000
-    _marketingTime: 2
-  - _upgradeMinScore: 150
+      _price: 855000
+    _marketingTime: 13
+  - _upgradeMinScore: 5000
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 90000
-    _marketingTime: 2
-  - _upgradeMinScore: 170
+      _price: 1282500
+    _marketingTime: 12.5
+  - _upgradeMinScore: 6250
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 120000
-    _marketingTime: 2
-  - _upgradeMinScore: 190
+      _price: 1923750
+    _marketingTime: 12
+  - _upgradeMinScore: 7500
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 150000
-    _marketingTime: 2
+      _price: 2885625
+    _marketingTime: 11.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _marketingTime: 2
+    _marketingTime: 11
   _uiSprite: {fileID: 21300000, guid: cdcf2d8272fd1404ea881e67fa4bb7f1, type: 3}
   _animationSprite: {fileID: 21300000, guid: 8dca3533148bea24a8b9c7927d55c7e7, type: 3}
   _leftHandSprite: {fileID: 21300000, guid: 907e24f290c5b3f4eba58655c9b1ae7f, type: 3}

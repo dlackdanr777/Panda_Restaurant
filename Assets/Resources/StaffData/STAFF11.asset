@@ -27,28 +27,28 @@ MonoBehaviour:
   - _upgradeMinScore: 120
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 7000
-    _marketingTime: 18
+      _price: 30000
+    _marketingTime: 15
   - _upgradeMinScore: 140
     _upgradeMoneyData:
       _moneyType: 0
       _price: 60000
-    _marketingTime: 17.5
+    _marketingTime: 14.5
   - _upgradeMinScore: 160
     _upgradeMoneyData:
       _moneyType: 0
       _price: 90000
-    _marketingTime: 17
+    _marketingTime: 14
   - _upgradeMinScore: 180
     _upgradeMoneyData:
       _moneyType: 0
       _price: 90000
-    _marketingTime: 16.5
+    _marketingTime: 13.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _marketingTime: 16
+    _marketingTime: 13
   _uiSprite: {fileID: 21300000, guid: c9f79ec54bc2c0840bff6c273651b0fd, type: 3}
   _animationSprite: {fileID: 21300000, guid: 4e1db93a6752e744c9b13e01bd5cf203, type: 3}
   _leftHandSprite: {fileID: 21300000, guid: edc024e7563eda64183a802a405befe9, type: 3}
