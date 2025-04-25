@@ -8,10 +8,12 @@ public class UIMoney : MonoBehaviour
     [Header("Components")]
     [SerializeField] private RectTransform _uiMoney;
     [SerializeField] private TextMeshProUGUI _moneyText;
+    [SerializeField] private ParticleSystem _animeEffect;
 
     [Space]
     [Header("Animations")]
     [SerializeField] private RectTransform _effectSpawnPos;
+    public RectTransform EffectSpawnPos => _effectSpawnPos;
     [SerializeField] private RectTransform _animeParent;
     [SerializeField] private float _moveY;
     [SerializeField] private float _moveDuration;
@@ -46,6 +48,7 @@ public class UIMoney : MonoBehaviour
 
     public void StartAnime()
     {
+        _animeEffect.Emit(Random.Range(5, 11));
         _uiMoney.TweenStop();
         _uiMoney.localScale = _tmpScale;
         _uiMoney.TweenScale(_tmpScale * 1.1f, 0.05f, Ease.Constant).OnComplete(() =>
@@ -103,7 +106,7 @@ public class UIMoney : MonoBehaviour
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        _moneyText.SetText(Utility.ConvertToMoney(UserInfo.Money));  
+        _moneyText.SetText(Utility.ConvertToMoney(UserInfo.Money));
     }
 
     

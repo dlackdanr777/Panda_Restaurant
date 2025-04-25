@@ -26,12 +26,20 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
     private ChallengeData _data;
     public ChallengeData Data => _data;
 
+
+    private UIChallenge _uiChallenge;
+
     public override void Init()
     {
         _shortCutButton.onClick.AddListener(OnShortcutButtonClicked);
         _doneButton.onClick.AddListener(OnDoneButtonClicked);
 
         ChallengeManager.Instance.OnChallengePercentUpdateHandler += UpdatePercent;
+    }
+
+    public void SetUIChellenge(UIChallenge uiChallenge)
+    {
+        _uiChallenge = uiChallenge;
     }
 
     public override void UpdateSlot(ChallengeData data)
@@ -120,12 +128,14 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
         {
             UserInfo.AddMoney(_data.RewardMoney);
             SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.GoldSound);
+            _uiChallenge.StartCoinAnime(_data.RewardMoney, _moneyImage.transform.position);
         }
 
         else if(_data.MoneyType == MoneyType.Dia)
         {
             UserInfo.AddDia(_data.RewardMoney);
             SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.DiaSound);
+            _uiChallenge.StartDiaAnime(_data.RewardMoney, _diaImage.transform.position);
         }
         UserInfo.ClearChallenge(_data);
     }

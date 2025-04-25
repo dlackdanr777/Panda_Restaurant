@@ -29,14 +29,29 @@ public class PopupManager : MonoBehaviour
     private static bool _isShowPopup;
     public static bool IsShowPopup => _isShowPopup;
 
-    public void ShowPopup(string title, string description, Action onOkButtonClicked)
+    public void ShowPopup(string title, string description)
     {
         _isShowPopup = true;
-        _uiPopup.Show(title, description, () =>
+        _uiPopup.Show(title, description);
+    }
+
+    public void SetPopupButton1(string buttonText, Action buttonClicked)
+    {
+        _uiPopup.SetButton1(buttonText, () =>
         {
             _isShowPopup = false;
             _uiPopup.Hide();
-            onOkButtonClicked?.Invoke();
+            buttonClicked?.Invoke();
+        });
+    }
+
+    public void SetPopupButton2(string buttonText, Action buttonClicked)
+    {
+        _uiPopup.SetButton2(buttonText, () =>
+        {
+            _isShowPopup = false;
+            _uiPopup.Hide();
+            buttonClicked?.Invoke();
         });
     }
 

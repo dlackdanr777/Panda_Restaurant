@@ -119,7 +119,12 @@ namespace Muks.BackEnd
                     string truncatedMessage = logString;
                     if (logString.Length > 100)
                         truncatedMessage = logString.Substring(0, 100) + "...";
-                        
+
+#if !UNITY_EDITOR
+                    ShowPopup("알 수 없는 오류", "오류가 발생하여 게임을 종료합니다.\n게임을 재시작 해주세요.");
+                    ShowPopupExitButton();   
+#endif
+
                     DisableSaving($"치명적 오류 감지: {truncatedMessage}");
                     
                     // 오류 로그 업로드 시도 (무한 루프 방지를 위해 try-catch 사용)
@@ -274,8 +279,9 @@ namespace Muks.BackEnd
                     if (usePopup)
                     {
                         ShowPopup("네트워크 에러", 
-                            $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}",
-                            () => backendFunction(HandleCallback));
+                            $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
+                        SetPopupButton1("재시도", () => backendFunction(HandleCallback));
+                        ShowPopupExitButton();
                     }
                     
                     onFail?.Invoke(state);
@@ -1146,7 +1152,8 @@ namespace Muks.BackEnd
             }
             else if (bro.IsMaintenanceError())
             {
-                ShowPopup("서버 점검중", "현재 서버 점검중 입니다. 점검이 끝난 후 접속해 주세요.", Application.Quit);
+                ShowPopup("서버 점검중", "현재 서버 점검중 입니다. 점검이 끝난 후 접속해 주세요.");
+                ShowPopupExitButton();
                 return BackendState.Maintainance;
             }
             else if (bro.IsBadAccessTokenError())
@@ -1364,7 +1371,8 @@ namespace Muks.BackEnd
                         // 토큰 갱신 실패 시 로그아웃 처리
                         Debug.LogWarning("[BackendManager] 세션이 만료되어 로그아웃합니다.");
                         LogOut();
-                        ShowPopup("세션 만료", "세션이 만료되었습니다. 다시 접속해 주세요.", ExitApp);
+                        ShowPopup("세션 만료", "세션이 만료되었습니다. 다시 접속해 주세요.");
+                        ShowPopupExitButton();
                     }
                 }
             }
@@ -1375,13 +1383,38 @@ namespace Muks.BackEnd
         /// <summary>
         /// 팝업을 표시합니다
         /// </summary>
-        public void ShowPopup(string title, string description, Action onButtonClicked = null)
+        public void ShowPopup(string title, string description)
         {
             // 사용자 팝업 매니저 연동
             if (PopupManager.Instance != null)
-                PopupManager.Instance.ShowPopup(title, description, onButtonClicked);
+                PopupManager.Instance.ShowPopup(title, description);
             else
                 Debug.LogWarning($"[BackendManager] 팝업 표시: {title} - {description}");
+        }
+
+        public void ShowPopupExitButton()
+        {
+            // 사용자 팝업 매니저 연동
+            if (PopupManager.Instance != null)
+                PopupManager.Instance.SetPopupButton2("종료", ExitApp);
+            else
+                Debug.LogWarning("[BackendManager] 팝업 종료 버튼 표시");
+        }
+
+        public void SetPopupButton1(string buttonText, Action buttonClicked)
+        {
+            if (PopupManager.Instance != null)
+                PopupManager.Instance.SetPopupButton1(buttonText, buttonClicked);
+            else
+                Debug.LogWarning($"[BackendManager] 버튼 설정: {buttonText}");
+        }
+
+        public void SetPopupButton2(string buttonText, Action buttonClicked)
+        {
+            if (PopupManager.Instance != null)
+                PopupManager.Instance.SetPopupButton2(buttonText, buttonClicked);
+            else
+                Debug.LogWarning($"[BackendManager] 버튼 설정: {buttonText}");
         }
         
         /// <summary>

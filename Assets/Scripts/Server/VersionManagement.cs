@@ -37,7 +37,8 @@ namespace Muks.BackEnd
             {
                 string errorName = "버전 조회 오류";
                 string errorDescription = "서버에 접속하지 못했습니다. \n다시 접속 해주세요.";
-                BackendManager.Instance.ShowPopup(errorName, errorDescription, () => Application.Quit());
+                BackendManager.Instance.ShowPopup(errorName, errorDescription);
+                BackendManager.Instance.ShowPopupExitButton();
                 return false;
             }
 
@@ -95,12 +96,12 @@ namespace Muks.BackEnd
         {
             string errorName = "업데이트 필요";
             string errorDescription = "최신 버전이 존재합니다. \n업데이트를 진행해 주세요.";
-            BackendManager.Instance.ShowPopup(errorName, errorDescription, () =>
+            BackendManager.Instance.ShowPopup(errorName, errorDescription);
+            BackendManager.Instance.SetPopupButton1("업데이트", () =>
             {
                 Application.OpenURL(_oneStoreLink);
                 Application.Quit();
             });
-
         }
 
         public void Dispose()

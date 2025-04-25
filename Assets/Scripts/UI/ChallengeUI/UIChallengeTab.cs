@@ -7,7 +7,28 @@ public class UIChallengeTab : RecyclableVerticalScrollView<ChallengeData>
 {
     [Header("Components")]
     [SerializeField] private RectTransform _rectTransform;
-    private Dictionary<string, UIChallengeTabSlot> _challengeDataDic = new Dictionary<string, UIChallengeTabSlot>();
+
+
+    private UIChallenge _uiChallenge;
+    private List<UIChallengeTabSlot> _uiChallengeTabSlotList = new List<UIChallengeTabSlot>();
+
+    public override void Init(List<ChallengeData> dataList)
+    {
+        base.Init(dataList);
+        foreach(var slot in _slotList)
+        {
+            if(slot is UIChallengeTabSlot uiChallengeTabSlot)
+            {
+                _uiChallengeTabSlotList.Add(uiChallengeTabSlot);
+                uiChallengeTabSlot.SetUIChellenge(_uiChallenge);
+            }
+        }
+    }
+
+    public void Init(UIChallenge uiChallenge)
+    {
+        _uiChallenge = uiChallenge;
+    }
 
     public void ResetScrollviewY()
     {

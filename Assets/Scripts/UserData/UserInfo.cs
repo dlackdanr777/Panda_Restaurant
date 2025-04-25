@@ -2096,7 +2096,6 @@ public static class UserInfo
         _dailyCleanCount = 0;
         _dailyCookCount = 0;
         _dailyCumulativeCustomerCount = 0;
-        DebugLog.Log("???");
         _doneDailyChallengeSet.Clear();
         _clearDailyChallengeSet.Clear();
 

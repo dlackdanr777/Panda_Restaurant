@@ -22,8 +22,8 @@ public class TouchAddCustomerButtonSkill : SkillBase
 
     public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        _timer += Time.deltaTime * staff.SpeedMul;
-        if (_timer >= _touchInterval)
+        _timer += 0.02f * staff.SpeedMul;
+        if (_touchInterval <= _timer)
         {
             _timer = 0;
             customerController.AddTabCount();

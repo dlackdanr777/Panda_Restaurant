@@ -88,7 +88,7 @@ public class SinkKitchenUtensil : KitchenUtensil
             _washGauge = 0;
         }
 
-        _washGauge += Time.deltaTime / (_isTouchWashing && _isStaffWashing ? 2 : 4);
+        _washGauge += Time.deltaTime / (_isTouchWashing && _isStaffWashing ? 1 : 2);
         UpdateSink();
     }
 

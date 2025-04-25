@@ -8,10 +8,12 @@ public class UIDia : MonoBehaviour
     [Header("Components")]
     [SerializeField] private RectTransform _uiDia;
     [SerializeField] private TextMeshProUGUI _diaText;
+    [SerializeField] private ParticleSystem _animeEffect;
 
     [Space]
     [Header("Animations")]
     [SerializeField] private RectTransform _effectSpawnPos;
+    public RectTransform EffectSpawnPos => _effectSpawnPos;
     [SerializeField] private RectTransform _animeParent;
     [SerializeField] private float _moveY;
     [SerializeField] private float _moveDuration;
@@ -45,6 +47,7 @@ public class UIDia : MonoBehaviour
 
     public void StartAnime()
     {
+        _animeEffect.Emit(Random.Range(5, 11));
         _uiDia.TweenStop();
         _uiDia.localScale = _tmpScale;
         _uiDia.TweenScale(_tmpScale * 1.1f, 0.05f, Ease.Constant).OnComplete(() =>
@@ -104,7 +107,7 @@ public class UIDia : MonoBehaviour
             yield return YieldCache.WaitForSeconds(0.02f);
         }
 
-        _diaText.SetText(Utility.ConvertToMoney(UserInfo.Dia));  
+        _diaText.SetText(Utility.ConvertToMoney(UserInfo.Dia));
     }
 
     

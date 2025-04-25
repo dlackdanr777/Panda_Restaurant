@@ -6,6 +6,8 @@ using UnityEngine.UI;
 public class UIChallenge : MobileUIView
 {
     [Header("Components")]
+    [SerializeField] private UIMoney _uiMoney;
+    [SerializeField] private UIDia _uiDia;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private RectTransform _dontTouchArea;
     [SerializeField] private UIChallengeTab _uiDaily;
@@ -25,9 +27,16 @@ public class UIChallenge : MobileUIView
     [SerializeField] private float _hideDuration;
     [SerializeField] private Ease _hideTweenMode;
 
+    [Space]
+    [Header("Coin Animations")]
+    [SerializeField] private int _coinMaxCount;
+    [SerializeField] private float _coinDuration;
+    [SerializeField] private Ease _coinEase;
 
     public override void Init()
     {
+        _uiDaily.Init(this);
+        _uiAllTime.Init(this);
         _uiDaily.Init(ChallengeManager.Instance.GetDailyChallenge());
         _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge());
 
@@ -110,9 +119,65 @@ public class UIChallenge : MobileUIView
         _uiAllTimeAlarm.SetActive(_uiAllTime.UpdateUI());
     }
 
+    public void StartCoinAnime(int money, Vector3 coinPos)
+    {
+            float time = 0;
+            int coinCnt = money / 1000;
+            coinCnt = coinCnt <= 5 ? 5 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
+            ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, coinPos, Quaternion.identity);
+            for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+            {
+                int index = i;
+                RectTransform coin = ObjectPoolManager.Instance.SpawnUICoin(coinPos, Quaternion.identity);
+                Vector2 targetCoinPos = UnityEngine.Random.insideUnitCircle * 100;
+                coin.TweenAnchoredPosition(coin.anchoredPosition + targetCoinPos, 0.3f, Ease.InQuad).OnComplete(() =>
+                {
+                    float height = 100;
+                    if (coin.anchoredPosition.y < 0)
+                        height *= -1;
+
+                    coin.TweenJump(_uiMoney.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                    {
+                        ObjectPoolManager.Instance.DespawnUICoin(coin);
+                        _uiMoney.StartAnime();
+                    });
+                    time += 0.05f;
+                });
+            }
+    }
+
+    public void StartDiaAnime(int money, Vector3 coinPos)
+    {
+            float time = 0;
+            int coinCnt = money / 1000;
+            coinCnt = coinCnt <= 5 ? 5 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
+            ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, coinPos, Quaternion.identity);
+            for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+            {
+                int index = i;
+                RectTransform dia = ObjectPoolManager.Instance.SpawnUIDia(coinPos, Quaternion.identity);
+                Vector2 targetCoinPos = UnityEngine.Random.insideUnitCircle * 100;
+                dia.TweenAnchoredPosition(dia.anchoredPosition + targetCoinPos, 0.3f, Ease.InQuad).OnComplete(() =>
+                {
+                    float height = 100;
+                    if (dia.anchoredPosition.y < 0)
+                        height *= -1;
+
+                    dia.TweenJump(_uiMoney.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                    {
+                        ObjectPoolManager.Instance.DespawnUIDia(dia);
+                        _uiDia.StartAnime();
+                    });
+                    time += 0.05f;
+                });
+            }
+    }
+
     private void OnDestroy()
     {
         ChallengeManager.Instance.OnDailyChallengeUpdateHandler -= OnDailyUpdateUI;
         ChallengeManager.Instance.OnAllTimeChallengeUpdateHandler -= OnAllTimeUpdateUI;
     }
+
+
 }
