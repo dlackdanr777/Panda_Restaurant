@@ -71,7 +71,6 @@ public class UIAddCutomerController : MonoBehaviour
     {
         int tabCount = _customerController.TabCount;
         int beforeTabCount = tabCount - 1;
-        DebugLog.Log(tabCount + ", " + beforeTabCount);
         float cntFillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + (beforeTabCount <= 0 ? 0 : ((float)beforeTabCount / (GameManager.Instance.TotalTabCount - 1))) * 0.725f;
         _addCustomerButton.SetFillAmountNoAnime(cntFillAmount);
         float nextFillAmount = GameManager.Instance.TotalTabCount <= 0 ? 0 : 0.275f + ((float)tabCount / (GameManager.Instance.TotalTabCount - 1)) * 0.725f;

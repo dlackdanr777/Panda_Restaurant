@@ -112,7 +112,6 @@ public class SinkGaugeBar : MonoBehaviour
             if (i < _bigGraduationList.Count)
             {
                 _bigGraduationList[i].transform.localPosition = position;
-                Debug.Log($"Big graduation {i} position: {position}");
             }
         }
         

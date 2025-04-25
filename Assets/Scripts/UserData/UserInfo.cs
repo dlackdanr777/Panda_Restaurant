@@ -470,21 +470,21 @@ public static class UserInfo
     {
         if(!bro.IsSuccess())
         {
-            Debug.LogError("로드 데이터를 파싱하는 과정에서 오류가 발생했습니다.");
+            Debug.LogError("bro Not Success");
             return;
         }
 
         JsonData json = bro.FlattenRows();
         if (json.Count <= 0)
         {
-            Debug.LogError("저장된 데이터가 없습니다.");
+            Debug.LogError("No Server Data");
             return;
         }
 
         LoadUserData loadData = new LoadUserData(json);
         if (loadData == null)
         {
-            Debug.LogError("로드 데이터를 파싱하는 과정에서 오류가 발생했습니다.");
+            Debug.LogError("Parsing Error");
             return;
         }
 
@@ -575,11 +575,24 @@ public static class UserInfo
         if (string.IsNullOrWhiteSpace(_lastAttendanceTime))
             return true;
 
-        DateTime currentServerTime = BackendManager.Instance.ServerTime;
-        DateTime lastAttendanceTime = DateTime.Parse(_lastAttendanceTime);
-        TimeSpan timeDifference = currentServerTime - lastAttendanceTime;
-
-        return 1 <= timeDifference.TotalDays;
+        try
+        {
+            // 서버 시간을 한국 시간으로 변환
+            DateTime currentServerTime = GetKoreanTime();
+            
+            // 저장된 시간은 이미 한국 시간이므로 그대로 사용
+            if (DateTime.TryParse(_lastAttendanceTime, out DateTime lastAttendanceTime))
+            {
+                TimeSpan timeDifference = currentServerTime - lastAttendanceTime;
+                return 1 <= timeDifference.TotalDays;
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogError($"출석 체크 중 오류 발생: {ex.Message}");
+            return true;
+        }
     }
 
     public static bool CheckLastAccessTime()
@@ -587,32 +600,27 @@ public static class UserInfo
         if (string.IsNullOrWhiteSpace(_lastAccessTime))
             return true;
 
-        // 서버 시간을 가져옴 (UTC 시간일 가능성 높음)
-        DateTime currentServerTime = BackendManager.Instance.ServerTime;
-
-        // 한국 시간대 정보 생성 (UTC+9)
-        TimeZoneInfo koreaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Korea Standard Time");
-
-        // 서버 시간을 한국 시간으로 변환
-        DateTime currentKoreaTime = TimeZoneInfo.ConvertTimeFromUtc(currentServerTime.ToUniversalTime(), koreaTimeZone);
-
-        // 마지막 접속 시간도 한국 시간으로 변환
-        DateTime lastAccessTime;
-        if (DateTime.TryParse(_lastAccessTime, out lastAccessTime))
+        try
         {
-            DateTime lastAccessKoreaTime = TimeZoneInfo.ConvertTimeFromUtc(lastAccessTime.ToUniversalTime(), koreaTimeZone);
+            // 현재 한국 시간 가져오기
+            DateTime currentKoreaTime = GetKoreanTime();
 
-            // 날짜만 비교 (시간 무시)
-            bool isDifferentDay = currentKoreaTime.Date > lastAccessKoreaTime.Date;
-
-            DebugLog.Log($"현재 한국 시간: {currentKoreaTime}, 마지막 접속 한국 시간: {lastAccessKoreaTime}, 날짜 차이: {isDifferentDay}");
-
-            return isDifferentDay;
+            // 저장된 마지막 접속 시간은 이미 한국 시간이므로 그대로 파싱
+            if (DateTime.TryParse(_lastAccessTime, out DateTime lastAccessTime))
+            {
+                // 날짜만 비교 (시간 무시)
+                bool isDifferentDay = currentKoreaTime.Date > lastAccessTime.Date;
+                DebugLog.Log($"현재 시간: {currentKoreaTime}, 마지막 접속 시간: {lastAccessTime}, 날짜 차이: {isDifferentDay}");
+                return isDifferentDay;
+            }
+            return true;
         }
-
-        return true;  // 파싱 실패 시 기본값
+        catch (Exception ex)
+        {
+            DebugLog.LogError($"접속 시간 확인 중 오류 발생: {ex.Message}");
+            return true;  // 오류 발생 시 기본값으로 true 반환
+        }
     }
-
 
     public static void UpdateAttendanceData()
     {
@@ -792,16 +800,47 @@ public static class UserInfo
 
     public static void UpdateLastAccessTime()
     {
-        DateTime serverTime = BackendManager.Instance.ServerTime;
+        try
+        {
+            // 현재 한국 시간 가져와서 저장
+            DateTime koreaTime = GetKoreanTime();
+            _lastAccessTime = koreaTime.ToString();
+            DebugLog.Log($"마지막 접속 시간 업데이트: {_lastAccessTime}");
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogError($"접속 시간 업데이트 중 오류 발생: {ex.Message}");
+        }
+    }
 
-        // 한국 시간대 정보 생성 (UTC+9)
-        TimeZoneInfo koreaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Korea Standard Time");
-
-        // 서버 시간을 한국 시간으로 변환
-        DateTime koreaTime = TimeZoneInfo.ConvertTimeFromUtc(serverTime.ToUniversalTime(), koreaTimeZone);
-
-        _lastAccessTime = koreaTime.ToString();
-        DebugLog.Log($"마지막 접속 시간 업데이트: {_lastAccessTime} (한국 시간)");
+    // 현재 한국 시간(UTC+9)을 반환하는 메서드
+    private static DateTime GetKoreanTime()
+    {
+        try
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // 안드로이드에서는 서버 시간에 9시간을 더한 값 사용
+            return BackendManager.Instance.ServerTime.ToUniversalTime().AddHours(9);
+#else
+            try
+            {
+                // 다른 플랫폼에서는 시스템 타임존 사용 시도
+                TimeZoneInfo koreaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Korea Standard Time");
+                return TimeZoneInfo.ConvertTimeFromUtc(BackendManager.Instance.ServerTime.ToUniversalTime(), koreaTimeZone);
+            }
+            catch
+            {
+                // 타임존 정보를 찾을 수 없는 경우 UTC+9 사용
+                return BackendManager.Instance.ServerTime.ToUniversalTime().AddHours(9);
+            }
+#endif
+        }
+        catch (Exception ex)
+        {
+            // 모든 방법 실패 시 로컬 시간 + 9시간 사용
+            DebugLog.LogError($"한국 시간 변환 오류: {ex.Message}, 로컬 시간으로 대체합니다.");
+            return DateTime.UtcNow.AddHours(9);
+        }
     }
 
     public static bool IsScoreValid(ShopData data)

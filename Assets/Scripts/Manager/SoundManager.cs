@@ -601,7 +601,6 @@ public class SoundManager : MonoBehaviour
                         _audioMixer.SetFloat("Kitchen", dbValue);
 
                     // 디버그 로그 추가하여 현재 볼륨 값이 어떻게 변하는지 확인
-                    DebugLog.Log($"[SoundManager] 페이드 인 - 타입: {type}, 진행: {t:F2}, 볼륨: {dbValue:F2}");
                 }
             }
             else if (type == EffectType.UI)
