@@ -19,7 +19,13 @@ public class MiniGame1_GaugeBar : MonoBehaviour
 
     public void Init()
     {
+        ResetScore();
+    }
+
+    public void ResetScore()
+    {
         _gaugeBarImage.color = _normalColor;
+        _gaugeBar.SetFillAmountNoAnime(0);
         _scoreText.SetText("0");
     }
 
