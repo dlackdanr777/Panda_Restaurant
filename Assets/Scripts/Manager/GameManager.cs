@@ -255,6 +255,11 @@ public class GameManager : MonoBehaviour
         {
             UserInfo.LoadGameData(BackendManager.Instance.GetMyData("GameData"));
         }
+
+        if(Input.GetKeyDown(KeyCode.A))
+        {
+            TimeManager.Instance.AddTime("Test", 100);
+        }
 #endif
     }
 

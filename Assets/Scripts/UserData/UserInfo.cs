@@ -159,7 +159,6 @@ public static class UserInfo
     private static HashSet<string> _notificationMessageSet = new HashSet<string>(); //알림이 필요한 Id값을 모아두는 해쉬셋
 
 
-
     //################################환경 설정 관련 변수################################
     public static Action OnChangeGachaItemSortTypeHandler;
     public static Action OnChangeCustomerSortTypeHandler;
@@ -365,6 +364,14 @@ public static class UserInfo
         param.Add("ClearDailyChallengeList", _clearDailyChallengeSet.ToList());
         param.Add("NotificationMessageList", _notificationMessageSet.ToList());
 
+        Dictionary<string, int> timeDic = TimeManager.Instance.GetTimeDic();
+        List<SaveTimeData> timeDataList = new List<SaveTimeData>();
+        foreach (var data in timeDic)
+        {
+            timeDataList.Add(new SaveTimeData(data.Key, data.Value));
+        }
+        param.Add("TimeDataList", timeDataList);
+
         return param;
     }
 
@@ -535,11 +542,44 @@ public static class UserInfo
         _enabledCustomerDic = loadData.EnabledCustomerDataDic;
 
         _notificationMessageSet = loadData.NotificationMessageSet;
-
         if (CheckNoAttendance())
         {
             UpdateLastAccessTime();
             ResetDailyChallenges();
+        }
+
+        Dictionary<string, SaveTimeData> timeDic = loadData.TimeDataDic;
+        TimeManager.Instance.ResetTime();
+
+        // 마지막 접속 시간과 현재 서버 시간의 차이(분) 계산
+        int elapsedSeconds = 0;
+        DateTime currentServerTime = GetKoreanTime();
+
+        if (!string.IsNullOrEmpty(_lastAccessTime) && DateTime.TryParse(_lastAccessTime, out DateTime lastAccessTime))
+        {
+            // 시간 차이 계산 (분 단위)
+            TimeSpan timeDifference = currentServerTime - lastAccessTime;
+            elapsedSeconds = Mathf.Clamp((int)timeDifference.TotalSeconds, 0, int.MaxValue);
+
+            DebugLog.Log($"마지막 접속 후 {elapsedSeconds}초가 경과했습니다.");
+        }
+
+        // 타이머 데이터 처리
+        foreach (var data in timeDic)
+        {
+            // 경과 시간만큼 타이머 시간 감소
+            int remainingTime = data.Value.Time - elapsedSeconds;
+
+            // 남은 시간이 0보다 큰 경우에만 타이머 추가
+            if (remainingTime > 0)
+            {
+                TimeManager.Instance.AddTime(data.Key, remainingTime);
+                DebugLog.Log($"타이머 {data.Key}: {data.Value.Time}초 -> {remainingTime}초으로 조정됨");
+            }
+            else
+            {
+                DebugLog.Log($"타이머 {data.Key}: 시간 만료로 추가되지 않음");
+            }
         }
 
         OnChangeMoneyHandler?.Invoke();
@@ -2146,7 +2186,6 @@ public static class UserInfo
     #endregion
 
     #region NotificationMessageData
-
     public static void AddNotification(string id)
     {
         if(string.IsNullOrWhiteSpace(id))
@@ -2188,10 +2227,10 @@ public static class UserInfo
         return _notificationMessageSet.Contains(id);
     }
 
-
     #endregion
 
     #region 환경 설정
+
 
     public static void ChangeGachaItemSortType(GradeSortType sortType)
     {

@@ -33,9 +33,28 @@ public class MiniGame1_SelectFrame : MonoBehaviour
         }
     }
 
+    public void Hide()
+    {
+        gameObject.SetActive(false);
+        _itemDataList.Clear();
+        
+        // 아이템 이미지 비활성화
+        foreach(var itemImage in _itemImageList)
+        {
+            itemImage.gameObject.SetActive(false);
+        }
+        
+        // 화살표 비활성화
+        foreach(var arrowImage in _arrowImageList)
+        {
+            arrowImage.gameObject.SetActive(false);
+        }
+    }
+
 
     public void SetItemImage(List<MiniGame1ItemData> itemDataList)
     {
+        gameObject.SetActive(true);
         _itemDataList = itemDataList;
         
         // 아이템 이미지 설정

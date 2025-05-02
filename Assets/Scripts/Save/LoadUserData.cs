@@ -56,6 +56,8 @@ public class LoadUserData
 
     public HashSet<string> NotificationMessageSet = new HashSet<string>();
 
+    public Dictionary<string, SaveTimeData> TimeDataDic = new Dictionary<string, SaveTimeData>();
+
     public LoadUserData(JsonData json)
     {
         if (json == null || json.Count == 0)
@@ -107,8 +109,15 @@ public class LoadUserData
             LoadDictionaryData(data, "RecipeCookCountList", RecipeCookCountDic, "Id", "Count");
             LoadDictionaryData(data, "GiveGachaItemCountList", GiveGachaItemCountDic, "Id", "Count");
             LoadDictionaryData(data, "GiveGachaItemLevelList", GiveGachaItemLevelDic, "Id", "Level");
+            LoadDictionaryData(data, "TimeDataList", TimeDataDic, "Id", "Time");
 
             LoadCustomerDataList(data);
+            LoadTimeData(data);
+            foreach (var item in TimeDataDic)
+            {
+                DebugLog.Log($"TimeDataDic: {item.Key} - {item.Value.Time}");
+            }
+
 
             LoadStringSet(data, "DoneMainChallengeList", DoneMainChallengeSet);
             LoadStringSet(data, "ClearMainChallengeList", ClearMainChallengeSet);
@@ -191,6 +200,41 @@ public class LoadUserData
             }
         }
     }
+
+    // 타이머 데이터 목록 로드 (특별한 구조를 가진 데이터)
+    private void LoadTimeData(JsonData data)
+    {
+        TimeDataDic.Clear();
+        if (data.ContainsKey("TimeDataList") && data["TimeDataList"].IsArray)
+        {
+            foreach (JsonData item in data["TimeDataList"])
+            {
+                try
+                {
+                    if (item.ContainsKey("Id") && item.ContainsKey("Time"))
+                    {
+                        string id = item["Id"].ToString();
+                        int time;
+                        if (int.TryParse(item["Time"].ToString(), out time))
+                        {
+                            TimeDataDic.Add(id, new SaveTimeData(id, time));
+                            DebugLog.Log($"타이머 데이터 로드: {id} - {time}초");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    DebugLog.LogError($"타이머 데이터 로드 오류: {ex.Message}");
+                }
+            }
+        }
+        else
+        {
+            DebugLog.Log("TimeDataList 없음 또는 배열 형식이 아님");
+        }
+    }
+
+
 }
 
 public class SaveLevelData

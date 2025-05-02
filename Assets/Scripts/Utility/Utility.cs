@@ -514,4 +514,25 @@ public static class Utility
         else
             return string.Empty;
     }
+
+
+    /// <summary>
+    /// 초 단위 시간을 "00:00" 형식의 문자열로 변환합니다.
+    /// </summary>
+    /// <param name="totalSeconds">변환할 초 단위 시간</param>
+    /// <returns>"00:00" 형식의 시간 문자열</returns>
+    public static string SecondsToTimeString(int totalSeconds)
+    {
+        // 음수 시간 처리
+        if (totalSeconds < 0)
+            totalSeconds = 0;
+
+        // 분과 초 계산
+        int minutes = totalSeconds / 60;
+        int seconds = totalSeconds % 60;
+
+        // 두 자리 숫자 형식으로 변환 (00:00)
+        return $"{minutes:D2}:{seconds:D2}";
+    }
+
 }

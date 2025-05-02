@@ -1,11 +1,14 @@
 using System;
+using TMPro;
+using UnityEditor.Timeline;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class UIRecipePreview : MonoBehaviour
 {
     [Header("Components")]
-    [SerializeField] private UIMiniGame _uiMiniGame;
+    [SerializeField] private UIMiniGameController _uiMiniGame;
+    [SerializeField] private UITimeSkip _uiTimeSkip;
     [SerializeField] private UIRecipeSelectSlot _selectGroup;
     [SerializeField] private UIImageAndText _levelGroup;
     [SerializeField] private UIImageAndText _priceGroup;
@@ -21,7 +24,7 @@ public class UIRecipePreview : MonoBehaviour
     [SerializeField] private UIButtonAndText _buyButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
-    [SerializeField] private UIButtonAndImage _minigameButton;
+    [SerializeField] private UIButtonImageText _minigameButton;
     [SerializeField] private Button _needItemButton;
     [SerializeField] private UIImageAndText _needItemImage;
 
@@ -54,6 +57,9 @@ public class UIRecipePreview : MonoBehaviour
         UserInfo.OnChangeScoreHandler += UpdateUI;
         UserInfo.OnAddCookCountHandler += UpdateUI;
         GameManager.Instance.OnChangeScoreHandler += UpdateUI;
+        TimeManager.Instance.OnUpdateTimeHandler += TimeManagerUpdateEvent;
+        TimeManager.Instance.OnAddTimeHandler += TimeManagerAddRemoveEvent;
+        TimeManager.Instance.OnRemoveTimeHandler += TimeManagerAddRemoveEvent;
     }
 
 
@@ -138,9 +144,19 @@ public class UIRecipePreview : MonoBehaviour
                     _needItemImage.SetText(gachaItemData.Name);
                     return;
                 }
-
+                int waitTime = TimeManager.Instance.GetTime(data.Id + "_MiniGame");
                 _minigameButton.gameObject.SetActive(true);
                 _minigameButton.SetImage(gachaItemData.Sprite);
+                if (0 < waitTime)
+                {
+                    _minigameButton.SetText(Utility.SecondsToTimeString(waitTime));
+                    return;
+                }
+                else
+                {
+                    _minigameButton.SetText("조리 시작");
+                }
+
                 return;
             }
 
@@ -172,8 +188,9 @@ public class UIRecipePreview : MonoBehaviour
                 _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
             }
         }
-
     }
+
+
 
 
     public void UpdateUI()
@@ -196,20 +213,22 @@ public class UIRecipePreview : MonoBehaviour
 
     private void OnMiniGameButtonClicked()
     {
+        DebugLog.Log("미니게임 버튼 클릭");
         if(_currentData == null)
         {
             DebugLog.LogError("현재 음식 데이터가 없습니다.");
             return;
         }
 
-        FoodMiniGameData data = _currentData.FoodMiniGameData;
-        if(data == null)
+        int waitTime = TimeManager.Instance.GetTime(_currentData.Id + "_MiniGame");
+        if (0 < waitTime)
         {
-            DebugLog.LogError("해당 음식은 미니게임을 할 수 없습니다: " + _currentData.Id);
-            return;
+            _uiTimeSkip.ShowTimeSkipUI(_currentData.Id + "_MiniGame");
         }
-
-        _uiMiniGame.StartMiniGame(data);
+        else
+        {
+            _uiMiniGame.ShowMiniGame1(_currentData);
+        }
     }
 
 
@@ -229,5 +248,87 @@ public class UIRecipePreview : MonoBehaviour
         }
 
         PopupManager.Instance.ShowDisplayText("캡슐 뽑기를 통해\n" + Utility.SetStringColor(itemData.Name, ColorType.Positive) + " 아이템이 필요합니다.");
+    }
+
+    private void TimeManagerUpdateEvent()
+    {
+
+        if (!_minigameButton.gameObject.activeInHierarchy)
+        {
+            DebugLog.LogError("미니게임 버튼이 활성화 되어 있지 않습니다.");
+            return;
+        }
+
+        if (_currentData == null)
+        {
+            DebugLog.LogError("현재 음식 데이터가 없습니다.");
+            return;
+        }
+
+        if(string.IsNullOrWhiteSpace(_currentData.NeedItem))
+        {
+            DebugLog.LogError("이 음식은 요구 아이템이 없습니다.");
+            return;
+        }
+
+        int waitTime = TimeManager.Instance.GetTime(_currentData.Id + "_MiniGame");
+        if (0 < waitTime)
+        {
+            _minigameButton.SetText(Utility.SecondsToTimeString(waitTime));
+        }
+        else
+        {
+            _minigameButton.SetText("조리 시작");
+        }
+    }
+
+    private void TimeManagerAddRemoveEvent(string id)
+    {
+        if (!_minigameButton.gameObject.activeInHierarchy)
+        {
+            DebugLog.LogError("미니게임 버튼이 활성화 되어 있지 않습니다.");
+            return;
+        }
+
+        if (_currentData == null)
+        {
+            DebugLog.LogError("현재 음식 데이터가 없습니다.");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_currentData.NeedItem))
+        {
+            DebugLog.LogError("이 음식은 요구 아이템이 없습니다.");
+            return;
+        }
+
+        if(!id.Equals(_currentData.Id + "_MiniGame"))
+        {
+            DebugLog.LogError("미니게임 아이디가 다릅니다.");
+            return;
+        }
+
+        int waitTime = TimeManager.Instance.GetTime(_currentData.Id + "_MiniGame");
+        if (0 < waitTime)
+        {
+            _minigameButton.SetText(Utility.SecondsToTimeString(waitTime));
+        }
+        else
+        {
+            _minigameButton.SetText("조리 시작");
+        }
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnUpgradeRecipeHandler -= UpdateUI;
+        UserInfo.OnGiveRecipeHandler -= UpdateUI;
+        UserInfo.OnChangeMoneyHandler -= UpdateUI;
+        UserInfo.OnChangeScoreHandler -= UpdateUI;
+        UserInfo.OnAddCookCountHandler -= UpdateUI;
+        GameManager.Instance.OnChangeScoreHandler -= UpdateUI;
+        TimeManager.Instance.OnUpdateTimeHandler -= TimeManagerUpdateEvent;
+        TimeManager.Instance.OnAddTimeHandler -= TimeManagerAddRemoveEvent;
+        TimeManager.Instance.OnRemoveTimeHandler -= TimeManagerAddRemoveEvent;
     }
 }
