@@ -6,15 +6,13 @@ public class UIMiniGameJarGroup : MonoBehaviour
     [SerializeField] private AudioSource _audioSource;
     [SerializeField] private AudioClip _shakeSound;
 
-    private UIMiniGame _uiMiniGame;
     private int _lastIndex;
     private int _firstIndex;
 
-    public void Init(UIMiniGame uiMiniGame)
+    public void Init()
     {
-        _uiMiniGame = uiMiniGame;
         _lastIndex = transform.childCount;
-        _firstIndex = _lastIndex - 5;
+        _firstIndex = 0;
     }
 
     public void StickSetSiblingIndex(int index)
@@ -25,7 +23,6 @@ public class UIMiniGameJarGroup : MonoBehaviour
 
     public void PlayShakeSound()
     {
-        _audioSource.pitch = Mathf.Clamp(0.5f + _uiMiniGame.CurrentPower * 0.02f, 0.5f, 2);
         _audioSource.PlayOneShot(_shakeSound);
     }
 

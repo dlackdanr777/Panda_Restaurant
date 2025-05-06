@@ -19,6 +19,8 @@ public class MiniGame1 : MiniGameSystem
     [SerializeField] private MiniGame1_SelectFrame _selectFrame;
     [SerializeField] private MiniGameTimer _timer;
     [SerializeField] private MiniGameStartTimer _startTimer;
+    [SerializeField] private UIMiniGameJarGroup _jarGroup;
+    [SerializeField] private Animator _jarAnimator;
     [SerializeField] private RectTransform _dontTouchArea;   
     [SerializeField] private AudioSource _timerAudio;
     [SerializeField] private GameObject _correctImage;
@@ -103,9 +105,11 @@ public class MiniGame1 : MiniGameSystem
         LoadDataFromDatabases();
         CreateSlots();
 
+
         _scoreBar.Init();
         _selectFrame.Init();
         _startTimer.Init();
+        _jarGroup.Init();
         // 초기 UI 상태 설정
         _correctImage.SetActive(false);
         _wrongImage.SetActive(false);
@@ -286,7 +290,7 @@ public class MiniGame1 : MiniGameSystem
         }
 
         MiniGame1ItemData correctData = _selectedItemList[_selectedItemListIndex];
-        
+        _jarAnimator.SetTrigger("Play");
         if (data.Id == correctData.Id)
         {
             HandleCorrectAnswer();
