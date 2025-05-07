@@ -66,6 +66,7 @@ public class MiniGameTimer : MonoBehaviour
     {
         value = Mathf.Clamp01(value);
         _timerBar.SetFillAmountNoAnime(value);
+        DebugLog.Log($"SetTimer: {value}");
         UpdateFootImagePosition();
     }
 

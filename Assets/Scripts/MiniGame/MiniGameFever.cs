@@ -40,6 +40,9 @@ public class MiniGameFever : MonoBehaviour
     [SerializeField] private GameObject _dontTouchArea;
     [SerializeField] private Button _screenTouchButton;
 
+    [SerializeField] private Animator _jarAnimator;
+    [SerializeField] private Animator _panda3Animator;
+
     [Space]
     [Header("Reward")]
     [SerializeField] private UIImageAndText _rewardImage;
@@ -65,6 +68,8 @@ public class MiniGameFever : MonoBehaviour
 
     //터치 관련 필트
     private bool _isScreenTouch = false;
+
+    private float _currentPower;
 
 
     public void Show(FeverRewardConfig feverRewardConfig)
@@ -97,6 +102,11 @@ public class MiniGameFever : MonoBehaviour
     private void Update()
     {
         UpdateTimer();
+
+        if(_roundEnd)
+            return;
+
+
     }
 
 
@@ -123,11 +133,15 @@ public class MiniGameFever : MonoBehaviour
         _isScreenTouch = false;
         _remainingTime = 0;
         _touchCount = 0;
+        _currentPower = 0;
 
         _timer.ResetTimer();
         _timer.SetClearSprite();
         _miniGame_GaugeBar.ResetScore();
         _miniGame_GaugeBar.SetClearSprite();
+
+        _jarAnimator.SetFloat("StickSpeed", -1);
+        _panda3Animator.SetFloat("StickSpeed", -1);
 
         _rewardImage.gameObject.SetActive(false);
     }
@@ -160,6 +174,9 @@ public class MiniGameFever : MonoBehaviour
         yield return new WaitUntil(() => _roundEnd);
         _dontTouchArea.SetActive(true);
         StopTimer();
+        _currentPower = 0;
+        _jarAnimator.SetFloat("StickSpeed", -1);
+        _panda3Animator.SetFloat("StickSpeed", -1);
         yield return YieldCache.WaitForSeconds(0.5f);
         _startTimer.ShowClearImage();
         Reward();
@@ -170,7 +187,7 @@ public class MiniGameFever : MonoBehaviour
         _isScreenTouch = false;
         _screenTouchButton.gameObject.SetActive(true);
         yield return new WaitUntil(() => _isScreenTouch);
-        Hide();
+        _uiMiniGameController.HideUI();
     }
 
 
@@ -237,6 +254,7 @@ public class MiniGameFever : MonoBehaviour
             return;
 
         _touchCount++;
+        _currentPower++;
         _miniGame_GaugeBar.SetScore(_touchCount, _touchCount);
     }
 
@@ -270,8 +288,18 @@ public class MiniGameFever : MonoBehaviour
             _remainingTime -= Time.deltaTime;
 
             // 타이머 UI 업데이트 (1.0 ~ 0.0)
-            float normalizedTime = Mathf.Clamp01(_remainingTime / 6 + GameManager.Instance.AddMiniGameTime);
+            float normalizedTime = Mathf.Clamp01(_remainingTime / (6 + GameManager.Instance.AddMiniGameTime));
+
             _timer.SetTimer(normalizedTime);
+            if (-2 < _currentPower)
+                _currentPower -= Time.deltaTime * 3 * Mathf.Lerp(1, 3, _currentPower <= 0 ? 0 : _currentPower / 60);
+            else if (_currentPower < -2)
+                _currentPower = -2;
+
+            _currentPower = Mathf.Clamp(_currentPower, -2, 30);
+            _jarAnimator.SetFloat("StickSpeed", _currentPower * 0.1f);
+            _jarAnimator.SetFloat("StickSpeedMul", Mathf.Clamp(_currentPower * 0.3f, 0, 10f));
+            _panda3Animator.SetFloat("StickSpeed", _currentPower * 0.2f);
 
             // 타이머가 0이 되면 시간 초과 처리
             if (_remainingTime <= 0)

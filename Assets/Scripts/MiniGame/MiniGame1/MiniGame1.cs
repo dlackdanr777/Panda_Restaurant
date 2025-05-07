@@ -109,7 +109,6 @@ public class MiniGame1 : MiniGameSystem
         _scoreBar.Init();
         _selectFrame.Init();
         _startTimer.Init();
-        _jarGroup.Init();
         // 초기 UI 상태 설정
         _correctImage.SetActive(false);
         _wrongImage.SetActive(false);
@@ -471,7 +470,7 @@ public class MiniGame1 : MiniGameSystem
             _remainingTime -= Time.deltaTime;
             
             // 타이머 UI 업데이트 (1.0 ~ 0.0)
-            float normalizedTime = Mathf.Clamp01(_remainingTime / _currentStageData.StageTime + GameManager.Instance.AddMiniGameTime);
+            float normalizedTime = Mathf.Clamp01(_remainingTime / (_currentStageData.StageTime + GameManager.Instance.AddMiniGameTime));
             _timer.SetTimer(normalizedTime);
             
             // 타이머가 0이 되면 시간 초과 처리

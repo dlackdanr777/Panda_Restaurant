@@ -9,7 +9,7 @@ public class UIMiniGameJarGroup : MonoBehaviour
     private int _lastIndex;
     private int _firstIndex;
 
-    public void Init()
+    private void Awake()
     {
         _lastIndex = transform.childCount;
         _firstIndex = 0;

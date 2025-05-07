@@ -102,7 +102,6 @@ public class UIMiniGame : MobileUIView
 
     public override void Init()
     {
-        _jarGroup.Init();
         _screenButton.onClick.AddListener(() => _onButtonClicked = true);
         _leftTouchButton.AddListener(OnTouchButtonClicked);
         _rightTouchButton.AddListener(OnTouchButtonClicked);
