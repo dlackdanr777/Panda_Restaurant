@@ -288,9 +288,6 @@ public class SoundManager : MonoBehaviour
             return;
         }
 
-        if (_delayPlayEffectAudioRoutine != null)
-            StopCoroutine(_delayPlayEffectAudioRoutine);
-
         if (waitTime == 0)
         {
             bool isRestaurantRelated = (type == EffectType.Restaurant || type == EffectType.Hall || type == EffectType.Kitchen);
@@ -317,7 +314,7 @@ public class SoundManager : MonoBehaviour
         }
         else
         {
-            _delayPlayEffectAudioRoutine = StartCoroutine(IEDelayPlayEffectAudio(type, clip, waitTime));
+            StartCoroutine(IEDelayPlayEffectAudio(type, clip, waitTime));
         }
     }
 

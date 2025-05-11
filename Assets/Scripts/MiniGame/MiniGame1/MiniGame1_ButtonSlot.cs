@@ -12,6 +12,7 @@ public class MiniGame1_ButtonSlot : MonoBehaviour
 
     [Header("Option")]
     [SerializeField] private float _flipSpeed = 0.3f;
+    public float FlipSpeed => _flipSpeed;
     [SerializeField] private float _flipScale = 1.2f;
 
     private MiniGame1ItemData _currentData;
@@ -46,6 +47,7 @@ public class MiniGame1_ButtonSlot : MonoBehaviour
         _itemImage.gameObject.SetActive(false);
         _backImage.gameObject.SetActive(true);
         _rectTransform.localRotation = Quaternion.Euler(0, 180, 0);
+
     }
 
     public void FlipBackAnimation()

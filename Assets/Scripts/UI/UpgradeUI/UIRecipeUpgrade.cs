@@ -6,6 +6,7 @@ using UnityEngine.UI;
 public class UIRecipeUpgrade : MobileUIView
 {
     [Header("Components")]
+    [SerializeField] private UIMiniGameController _miniGameController;
     [SerializeField] private TextMeshProUGUI _levelText;
     [SerializeField] private UIImageAndText _selectGroup;
     [SerializeField] private GameObject _lowerFrame;
@@ -129,12 +130,15 @@ public class UIRecipeUpgrade : MobileUIView
             int price = _currentData.GetUpgradePrice(level);
             if (UserInfo.IsMoneyValid(price))
             {
-                UserInfo.UpgradeRecipe(_currentData);
                 UserInfo.AddMoney(-price);
-                PopupManager.Instance.ShowDisplayText("레시피 업그레이드를 완료했어요!");
-                SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
-                _flashEffect.Emit(1);
-                UpdateData();
+                _miniGameController.StartMiniGame1(_currentData, () =>
+                {
+                    PopupManager.Instance.ShowDisplayText("레시피 업그레이드를 완료했어요!");
+                    SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
+                    _flashEffect.Emit(1);
+                    UpdateData();
+                });
+                //UserInfo.UpgradeRecipe(_currentData);
                 return;
             }
             else

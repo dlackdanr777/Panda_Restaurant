@@ -12,6 +12,11 @@ public class MiniGameStartTimer : MonoBehaviour
     [SerializeField] private RectTransform _gameOverImage;
     [SerializeField] private RectTransform _claerImage;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _countSound;
+    [SerializeField] private AudioClip _startSound;
+
     public void Init()
     {
         ResetTimer();
@@ -29,6 +34,12 @@ public class MiniGameStartTimer : MonoBehaviour
         _gameOverImage.gameObject.SetActive(true);
     }
 
+    public void ShowBlackImage()
+    {
+        ResetTimer();
+        _blackImage.gameObject.SetActive(true);
+    }
+
     public void ResetTimer()
     {
         _blackImage.gameObject.SetActive(false);
@@ -43,19 +54,22 @@ public class MiniGameStartTimer : MonoBehaviour
     public IEnumerator StartTimer()
     {
         ResetTimer();
-        DebugLog.Log("StartTimer()");
         _blackImage.gameObject.SetActive(true);
         yield return YieldCache.WaitForSeconds(0.5f);
         _3Image.gameObject.SetActive(true);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _countSound);
         yield return YieldCache.WaitForSeconds(1f);
         _3Image.gameObject.SetActive(false);
         _2Image.gameObject.SetActive(true);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _countSound);
         yield return YieldCache.WaitForSeconds(1f);
         _2Image.gameObject.SetActive(false);
         _1Image.gameObject.SetActive(true);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _countSound);
         yield return YieldCache.WaitForSeconds(1f);
         _1Image.gameObject.SetActive(false);
         _startImage.gameObject.SetActive(true);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _startSound);
         yield return YieldCache.WaitForSeconds(1f);
         _startImage.gameObject.SetActive(false);
         _blackImage.gameObject.SetActive(false);

@@ -53,9 +53,17 @@ public class MiniGameFever : MonoBehaviour
     [SerializeField] private Sprite _bigGoldSprite;
     [SerializeField] private Sprite _bigDiaSprite;
 
+    [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _bgSound;
+    [SerializeField] private AudioClip _startSound;
+    [SerializeField] private AudioClip _endSound;
+    [SerializeField] private AudioClip _touchSound;
+
 
 
     private bool _roundEnd = false;
+    private Action _onComplete;
     private UIMiniGameController _uiMiniGameController;
 
     //보상 관련 필드
@@ -66,13 +74,13 @@ public class MiniGameFever : MonoBehaviour
     private float _remainingTime;
     private bool _isTimerRunning;
 
-    //터치 관련 필트
+    //터치 관련 필드
     private bool _isScreenTouch = false;
 
     private float _currentPower;
 
 
-    public void Show(FeverRewardConfig feverRewardConfig)
+    public void Show(FeverRewardConfig feverRewardConfig, Action onComplete = null)
     {
         if(feverRewardConfig.IsDefault())
         {
@@ -80,6 +88,8 @@ public class MiniGameFever : MonoBehaviour
             return;
         }
         _feverRewardConfig = feverRewardConfig;
+        _onComplete = onComplete;
+
         gameObject.SetActive(true);
         _dontTouchArea.SetActive(true);
         _screenTouchButton.gameObject.SetActive(false);
@@ -165,24 +175,32 @@ public class MiniGameFever : MonoBehaviour
     private IEnumerator Play()
     {
         _dontTouchArea.SetActive(true);
+        SoundManager.Instance.StopBackgroundAudio();
+        yield return YieldCache.WaitForSeconds(0.5f);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _startSound);
         StopEffects();
-        yield return YieldCache.WaitForSeconds(1f);
+        yield return YieldCache.WaitForSeconds(2f);
         yield return StartCoroutine(_startTimer.StartTimer());
+
+        SoundManager.Instance.PlayBackgroundAudio(_bgSound, 0.5f);
         _dontTouchArea.SetActive(false);
         StartTimer();
         StartEffects();
         yield return new WaitUntil(() => _roundEnd);
+
         _dontTouchArea.SetActive(true);
         StopTimer();
         _currentPower = 0;
         _jarAnimator.SetFloat("StickSpeed", -1);
         _panda3Animator.SetFloat("StickSpeed", -1);
-        yield return YieldCache.WaitForSeconds(0.5f);
-        _startTimer.ShowClearImage();
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _endSound);
+        yield return YieldCache.WaitForSeconds(2f);
+        //_startTimer.ShowClearImage();
         Reward();
         ShowRewardImage();
 
         yield return YieldCache.WaitForSeconds(0.2f);
+        _onComplete?.Invoke();
         _dontTouchArea.SetActive(false);
         _isScreenTouch = false;
         _screenTouchButton.gameObject.SetActive(true);
@@ -256,11 +274,13 @@ public class MiniGameFever : MonoBehaviour
         _touchCount++;
         _currentPower++;
         _miniGame_GaugeBar.SetScore(_touchCount, _touchCount);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _touchSound);
     }
 
     private void OnScreenTouchButtonClicked()
     {
         _isScreenTouch = true;
+        _uiMiniGameController.HideUI();
     }
 
 

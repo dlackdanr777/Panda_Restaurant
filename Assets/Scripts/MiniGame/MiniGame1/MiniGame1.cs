@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,16 +21,31 @@ public class MiniGame1 : MiniGameSystem
     [SerializeField] private MiniGameTimer _timer;
     [SerializeField] private MiniGameStartTimer _startTimer;
     [SerializeField] private UIMiniGameJarGroup _jarGroup;
+    [SerializeField] private UIMiniGameResultGroup _resultGroup;
     [SerializeField] private Animator _jarAnimator;
     [SerializeField] private RectTransform _dontTouchArea;   
     [SerializeField] private AudioSource _timerAudio;
     [SerializeField] private GameObject _correctImage;
     [SerializeField] private GameObject _wrongImage;
+    [SerializeField] private Button _screenButton;
+
 
     [Space]
+    [Header("Audios")]
+    [SerializeField] private AudioClip _toturialAudio;
+    [SerializeField] private AudioClip _bgAudio;
+    [SerializeField] private AudioClip _cardSettingAudio;
+    [SerializeField] private AudioClip _cardFlipAudio;
+    [SerializeField] private AudioClip _cardClickAudio;
+    [SerializeField] private AudioClip _wrongAudio;
+    [SerializeField] private AudioClip _correctAudio;
+    [SerializeField] private AudioClip _gaugeAudio;
+
+
+[Space]
     [Header("Slot Option")]
     [SerializeField] private MiniGame1_ButtonSlot _buttonSlotPrefab;
-    [SerializeField] private GridLayoutGroup _buttonSlotParent;
+    [SerializeField] private UIMiniGame1GridLayout _buttonSlotParent;
     #endregion
 
     #region Private Fields
@@ -39,6 +55,7 @@ public class MiniGame1 : MiniGameSystem
     private List<MiniGame1_ButtonSlot> _buttonSlotList = new List<MiniGame1_ButtonSlot>();
 
     // 스테이지 관련 필드
+    private Action _onComplete;
     private MiniGame1StageData _currentStageData;
     private FoodData _currentFoodData;
     private int _currentStage = 0;
@@ -77,6 +94,7 @@ public class MiniGame1 : MiniGameSystem
     
     private void ResetGameState()
     {
+        _screenButton.gameObject.SetActive(false);
         _selectedItemListIndex = 0;
         _wrongCount = 0;
         _currentStage = 0;
@@ -105,13 +123,16 @@ public class MiniGame1 : MiniGameSystem
         LoadDataFromDatabases();
         CreateSlots();
 
-
         _scoreBar.Init();
         _selectFrame.Init();
         _startTimer.Init();
+        _resultGroup.Hide();
+        _buttonSlotParent.Init();
+
         // 초기 UI 상태 설정
         _correctImage.SetActive(false);
         _wrongImage.SetActive(false);
+        _screenButton.gameObject.SetActive(false);
     }
     
     private void LoadDataFromDatabases()
@@ -137,19 +158,24 @@ public class MiniGame1 : MiniGameSystem
     #endregion
 
     #region Public Interface
-    public override void Show(FoodData foodData)
+    public override void Show(FoodData foodData, Action onComplete = null)
     {
         if(foodData == null)
             throw new System.Exception("FoodData is null.");
 
+        _onComplete = onComplete;
+        SoundManager.Instance.PlayBackgroundAudio(_bgAudio, 0.5f);
         gameObject.SetActive(true);
         _wrongImage.SetActive(false);
         _correctImage.SetActive(false);
+        _screenButton.gameObject.SetActive(false);
+        _resultGroup.Hide();
         HideSlots();
         _currentFoodData = foodData;
         _miniGameFever.Hide();       
         StopAllCoroutines();
         ResetGameState();
+        _startTimer.ShowBlackImage();
         StartCoroutine(MainGameLoop());
     }
 
@@ -178,8 +204,6 @@ public class MiniGame1 : MiniGameSystem
 
             else if(IsGameClear())
             {
-                FeverRewardConfig feverRewardConfig = new FeverRewardConfig(8, 1, MoneyType.Dia);
-                _miniGameFever.Show(feverRewardConfig);
                 if(UserInfo.IsGiveRecipe(_currentFoodData.Id))
                 {
                     DebugLog.Log("레시피 업그레이드");
@@ -190,12 +214,13 @@ public class MiniGame1 : MiniGameSystem
                     DebugLog.Log("레시피 획득");
                     UserInfo.GiveRecipe(_currentFoodData.Id);
                 }
+                StartCoroutine(ShowResult(_currentFoodData));
                 yield break;
             }
 
             _scoreBar.SetStage(_currentStage + 1);
             _scoreBar.SetScore(_currentScore, CLEAR_SCORE);
-            
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _gaugeAudio);
             bool isClear = CLEAR_SCORE <= _currentScore;
             if(isClear)
             {
@@ -290,6 +315,7 @@ public class MiniGame1 : MiniGameSystem
 
         MiniGame1ItemData correctData = _selectedItemList[_selectedItemListIndex];
         _jarAnimator.SetTrigger("Play");
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _cardClickAudio);
         if (data.Id == correctData.Id)
         {
             HandleCorrectAnswer();
@@ -349,7 +375,7 @@ public class MiniGame1 : MiniGameSystem
         if(_currentStageData == null)
             throw new System.Exception("Current stage data is null.");
             
-        _buttonSlotParent.constraintCount = _currentStageData.CardSize.x;
+        _buttonSlotParent.SetConstraintCount(_currentStageData.CardSize.x);
         int cardSize = _currentStageData.CardSize.x * _currentStageData.CardSize.y;
         int itemCount = _itemList.Count;
 
@@ -400,6 +426,7 @@ public class MiniGame1 : MiniGameSystem
     #region Animation
     private IEnumerator SpawnSlotAnimation()
     {
+        float duration = 0.5f;
         foreach (var slot in _buttonSlotList)
         {
             if(slot.CurrentData == null)
@@ -407,8 +434,9 @@ public class MiniGame1 : MiniGameSystem
 
             slot.gameObject.SetActive(true);
             slot.FlipBack();
-            slot.ScaleAnimation(1.2f, 1f, 0.5f);
-            yield return new WaitForSeconds(SPAWN_DELAY);
+            slot.ScaleAnimation(1.2f, 1f, duration);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _cardSettingAudio, duration * 0.5f);
+            yield return YieldCache.WaitForSeconds(SPAWN_DELAY);
         }
     }
 
@@ -420,14 +448,30 @@ public class MiniGame1 : MiniGameSystem
                 continue;
 
             slot.FlipForwardAnimation();
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _cardFlipAudio, slot.FlipSpeed * 0.5f);
             yield return new WaitForSeconds(FLIP_DELAY);
         }
+    }
+
+    private IEnumerator ShowResult(FoodData foodData)
+    {
+        _resultGroup.SetResult(foodData.ThumbnailSprite, foodData.Name);
+        yield return YieldCache.WaitForSeconds(1f);
+        _screenButton.gameObject.SetActive(true);
+        _screenButton.onClick.RemoveAllListeners();
+        _screenButton.onClick.AddListener(() =>
+        {
+            FeverRewardConfig feverRewardConfig = new FeverRewardConfig(8, 1, MoneyType.Dia);
+            _miniGameFever.Show(feverRewardConfig, _onComplete);
+            _screenButton.gameObject.SetActive(false);
+        });
     }
 
     private void ShowCorrectImage()
     {
         _wrongImage.SetActive(false);
         _correctImage.SetActive(true);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _correctAudio);
         AnimateUIElement(_correctImage);
     }
 
@@ -435,6 +479,7 @@ public class MiniGame1 : MiniGameSystem
     {
         _wrongImage.SetActive(true);
         _correctImage.SetActive(false);
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _wrongAudio);
         AnimateUIElement(_wrongImage);
     }
     
@@ -510,7 +555,7 @@ public class MiniGame1 : MiniGameSystem
         // Fisher-Yates 셔플
         for (int i = 0; i < size; i++)
         {
-            int randomIndex = Random.Range(i, size);
+            int randomIndex = UnityEngine.Random.Range(i, size);
             int temp = indexArray[i];
             indexArray[i] = indexArray[randomIndex];
             indexArray[randomIndex] = temp;

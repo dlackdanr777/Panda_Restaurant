@@ -1,6 +1,4 @@
 using System;
-using TMPro;
-using UnityEditor.Timeline;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -227,7 +225,7 @@ public class UIRecipePreview : MonoBehaviour
         }
         else
         {
-            _uiMiniGame.ShowMiniGame1(_currentData);
+            _uiMiniGame.StartMiniGame1(_currentData);
         }
     }
 

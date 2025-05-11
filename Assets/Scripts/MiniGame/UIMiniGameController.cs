@@ -1,3 +1,4 @@
+using System;
 using Muks.MobileUI;
 using Muks.Tween;
 using Muks.UI;
@@ -6,6 +7,7 @@ using UnityEngine;
 public class UIMiniGameController : MobileUIView
 {
     [Header("Components")]
+    [SerializeField] private MainScene _mainScene;
     [SerializeField] private GameObject _dontTouchArea;
     [SerializeField] private MiniGame1 _miniGame1;
     [SerializeField] private MiniGameFever _miniGameFever;
@@ -23,10 +25,7 @@ public class UIMiniGameController : MobileUIView
     [SerializeField] private float _hideDuration;
     [SerializeField] private Ease _hideTweenMode;
 
-    [Space]
-    [Header("Audios")]
-    [SerializeField] private AudioClip _toturialAudio;
-    [SerializeField] private AudioClip _bgAudio;
+
 
     public override void Init()
     {
@@ -42,7 +41,6 @@ public class UIMiniGameController : MobileUIView
         _dontTouchArea.SetActive(true);
         PopEnabled = false;
         VisibleState = VisibleState.Appearing;
-        SoundManager.Instance.PlayBackgroundAudio(_bgAudio, 0.5f);
         _startPos.anchoredPosition = new Vector2(Screen.width, 0);
         _animeUI.position = _startPos.position;
         transform.SetAsLastSibling();
@@ -61,7 +59,7 @@ public class UIMiniGameController : MobileUIView
     public override void Hide()
     {
         VisibleState = VisibleState.Disappearing;
-
+        _mainScene.PlayMainMusic();
         StopAllCoroutines();
         gameObject.SetActive(true);
         _dontTouchArea.SetActive(true);
@@ -85,10 +83,13 @@ public class UIMiniGameController : MobileUIView
         _uiNav.Pop("UIMiniGame");
     }
 
-    public void ShowMiniGame1(FoodData foodData)
+    public void StartMiniGame1(FoodData foodData, Action onComplete = null)
     {
+        if(VisibleState != VisibleState.Disappeared)
+            return;
+            
         _uiNav.Push("UIMiniGame");
-        _miniGame1.Show(foodData);
+        _miniGame1.Show(foodData, onComplete);
         _miniGameFever.Hide();
     }
 }
