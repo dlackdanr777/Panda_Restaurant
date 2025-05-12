@@ -44,45 +44,24 @@ public class GameManager : MonoBehaviour
     public int AddPromotionCustomer => _addPromotionCustomer;
 
     private int _maxWaitCustomerCount = 10;
-    public int MaxWaitCustomerCount => Mathf.Clamp(_maxWaitCustomerCount + _addUpgradeGachaItemWaitCustomerMaxCount /*+ _addEquipStaffMaxWaitCustomerCount*/, 0, 30);
-    public float AddCustomerSpeedMul => 1 + _totalAddSpeedMul + (0.01f * _addUpgradeGachaItemCustomerSpeedPercent);
-    public int AddSpecialCustomerMoney => _addUpgradeGachaItemSpecialCustomerMoney;
-    public float AddSpecialCustomerSpawnMul => 1 +  0.01f * (_addUpgradeGachaItemSpecialCustomerSpawnPercent);
-    public float AddGatecrasherCustomerDamageMul => 1 + 0.01f * (_addUpgradeGachaItemGatecrasherCustomerDamagePercent);
-    public float AddGatecrasherCustomerSpeedDownTime => _addUpgradeGachaItemGatecrasherCustomerSpeedDownTime;
+    public int MaxWaitCustomerCount => Mathf.Clamp(_maxWaitCustomerCount + _addGachaItemWaitCustomerMaxCount /*+ _addEquipStaffMaxWaitCustomerCount*/, 0, 30);
+    public float AddCustomerSpeedMul => 1 + _totalAddSpeedMul + (0.01f * _addGachaItemCustomerSpeedPercent);
+    public float AddSpecialCustomerSpawnMul => 1;
+    public float AddGatecrasherCustomerDamageMul => 1;
     
 
     [SerializeField] private float _cookingSpeedMul = 1;
-    public float SubCookingTime => _subUpgradeGachaItemCookingTime;
-    public int AddFoodPrice => _addUpgradeGachaItemFoodPrice;
-    public float AddFoodDoublePricePercent => Mathf.Clamp(_addUpgradeGachaItemFoodDoublePricePercent, 0f, 100f);
-    public int AddFoodTip => _addUpgradeGachaItemFoodTip;
+    public float SubCookingTime => _subGachaItemAllCookingTime;
+    public int AddFoodPrice => _addGachaItemAllFoodPriceMul;
 
 
-    public int AddSocre => /*_addEquipStaffScore +*/ _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore + _addUpgradeGachaItemScore;
+    public int AddSocre => _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore;
     public float TipMul =>  1 /*Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f)*/;
 
-    public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addGiveGachaItemTipPerMinute + _addUpgradeGachaItemTipPerMinute;
-    public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume + Mathf.FloorToInt((_addEquipKitchenUtensilTipVolume + _addEquipFurnitureMaxTipVolume) * _addUpgradeGachaItemMaxTipVolumePercent * 0.01f);
+    public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addGiveGachaItemTipPerMinute;
+    public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume + Mathf.FloorToInt(_addEquipKitchenUtensilTipVolume + _addEquipFurnitureMaxTipVolume);
 
-
-    public float AddStaffSpeedMul => 1 + _totalAddSpeedMul;
-    public float AddStaffSkillTime => _addUpgradeGachaItemStaffSkillTime;
-    public float AddWaiterSkillTime => _addUpgradeGachaItemWaiterSkillTime;
-    public float AddServerSkillTime => _addUpgradeGachaItemServerSkillTime;
-    public float AddMarketerSkillTime => _addUpgradeGachaItemMarketerSkillTime;
-    public float AddGuardSkillTime => _addUpgradeGachaItemGuardSkillTime;
-    public float AddCleanerSkillTime => _addUpgradeGachaItemCleanerSkillTime;
-
-    public float SubStaffSkillCoolTime => -_subUpgradeGachaItemStaffCoolTime;
-    public float SubWaiterSkillCoolTime => -_subUpgradeGachaItemWaiterCoolTime;
-    public float SubServerSkillCoolTime => -_subUpgradeGachaItemServerCoolTime;
-    public float SubMarketerSkillCoolTime => -_subUpgradeGachaItemMarketerCoolTime;
-    public float SubGuardSkillCoolTime => -_subUpgradeGachaItemGuardCoolTime;
-    public float SubCleanerSkillCoolTime => -_subUpgradeGachaItemCleanerCoolTime;
-
-
-    public float AddMiniGameTime => _addUpgradeGachaItemMiniGameTime + _addGiveRecipeMiniGameTime;
+    public float AddFerverTime => _addGachaItemFeverTime;
 
     [SerializeField] private int _addEquipFurnitureScore;
     [SerializeField] private int _addEquipFurnitureCookSpeedMul;
@@ -98,38 +77,240 @@ public class GameManager : MonoBehaviour
     private float[,] _addSetCookSpeedMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //음식 조리 속도
 
 
+
+
+
     [SerializeField] private int _addGiveGachaItemScore;
     [SerializeField] private int _addGiveGachaItemTipPerMinute;
-
     [SerializeField] private int _addGiveRecipeMiniGameTime;
 
-    [SerializeField] private int _addUpgradeGachaItemScore; // 전체 평점 상승(+)
-    [SerializeField] private int _addUpgradeGachaItemTipPerMinute; //분당 팁 증가(+)
-    [SerializeField] private int _addUpgradeGachaItemFoodPrice; //음식 가격 증가(+)
-    [SerializeField] private int _addUpgradeGachaItemFoodTip; //주문 수 마다 팁 증가(+)
-    [SerializeField] private int _addUpgradeGachaItemWaitCustomerMaxCount; //최대 줄서기 손님 증가(+)
-    [SerializeField] private int _addUpgradeGachaItemSpecialCustomerMoney; //스페셜 손님 터치시 코인 획득량 증가(+)
-    [SerializeField] private float _addUpgradeGachaItemCustomerSpeedPercent; //손님 스피드 상승(%)
-    [SerializeField] private float _addUpgradeGachaItemMaxTipVolumePercent; //최대 팁 보유량 증가(%)
-    [SerializeField] private float _subUpgradeGachaItemCookingTime; //요리 시간 단축(-)
-    [SerializeField] private float _addUpgradeGachaItemFoodDoublePricePercent; //음식 가격 두배 확률 증가(%)
-    [SerializeField] private float _addUpgradeGachaItemSpecialCustomerSpawnPercent; //스페셜 손님 등장 확률 증가(%)
-    [SerializeField] private float _addUpgradeGachaItemGatecrasherCustomerDamagePercent; //진상에게 가하는 피해 증가(%)
-    [SerializeField] private float _addUpgradeGachaItemGatecrasherCustomerSpeedDownTime; //진상 터치시 속도 둔화 시간 증가(+)
-    [SerializeField] private float _addUpgradeGachaItemMiniGameTime; //미니 게임 제작 시간 증가(+)
 
-    [SerializeField] private float _subUpgradeGachaItemStaffCoolTime; //전체 스탭 스킬 쿨타임 감소(-)
-    [SerializeField] private float _addUpgradeGachaItemStaffSkillTime; //전체 스탭 스킬 유지 시간 증가(+)
-    [SerializeField] private float _subUpgradeGachaItemWaiterCoolTime; //웨이터 스킬 쿨타임 감소(-)
-    [SerializeField] private float _addUpgradeGachaItemWaiterSkillTime; //웨이터 스킬 유지 시간 증가(+)
-    [SerializeField] private float _subUpgradeGachaItemServerCoolTime; //서버 스킬 쿨타임 감소(-)
-    [SerializeField] private float _addUpgradeGachaItemServerSkillTime; //서버 스킬 유지 시간 증가(+)
-    [SerializeField] private float _subUpgradeGachaItemMarketerCoolTime; //치어리더 스킬 쿨타임 감소(-)
-    [SerializeField] private float _addUpgradeGachaItemMarketerSkillTime; //치어리더 스킬 유지 시간 증가(+)
-    [SerializeField] private float _subUpgradeGachaItemGuardCoolTime; //가드 스킬 쿨타임 감소(-)
-    [SerializeField] private float _addUpgradeGachaItemGuardSkillTime; //가드 스킬 유지 시간 증가(+)
-    [SerializeField] private float _subUpgradeGachaItemCleanerCoolTime; //청소부 스킬 쿨타임 감소(-)
-    [SerializeField] private float _addUpgradeGachaItemCleanerSkillTime; //청소부 스킬 유지 시간 증가(+)
+    [SerializeField] private float _addGachaItemCustomerSpeedPercent; //손님 스피드 상승 n% (UPGRADE01)
+
+    [SerializeField] private float _subGachaItemAllCookingTime; //전체 요리 시간 -n초 단축 (UPGRADE02)
+    [SerializeField] private Dictionary<FoodType, float> _subGachaItemFoodCookingTimeMulDic = new Dictionary<FoodType, float>(); //속성 요리 시간 -n초 단축 (UPGRADE03 ~ 09)
+
+    [SerializeField] private int _addGachaItemAllFoodPriceMul; //전체 음식 가격 증가 n% (UPGRADE10)
+    private Dictionary<FoodType, int> _addGachaItemFoodPriceMulDic = new Dictionary<FoodType, int>(); //속성 음식 가격 증가 n% (UPGRADE11 ~ 17)
+
+    [SerializeField] private float _addGachaItemStaffSkillTime; //전체 스탭 스킬 유지 시간 증가(+) (UPGRADE18)
+    [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSkillTimeDic = new Dictionary<StaffGroupType, float>(); //스탭 쿨타임 감소 n% (UPGRADE18 ~ 24)
+
+    [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSpeedMulDic = new Dictionary<StaffGroupType, float>(); //스탭 스피드 증가 n% (UPGRADE25 ~ 28)
+
+    [SerializeField] private float _addGachaItemFeverTime; //피버 타임 시간 증가 + (UPGRADE29)
+
+    [SerializeField] private int _addGachaItemWaitCustomerMaxCount; //최대 줄서기 손님 증가 + (UPGRADE30)
+
+
+    public float GetStaffSpeedMul(StaffGroupType type)
+    {
+        if (_addGachaItemStaffSpeedMulDic.TryGetValue(type, out float value))
+            return  _totalAddSpeedMul + (value * 0.01f);
+
+        DebugLog.LogError("스탭 스피드 증가 효과를 찾을 수 없습니다: " + type);
+        return _totalAddSpeedMul;
+    }
+
+    public float GetStaffSkillTimeMul(StaffGroupType type)
+    {
+        if (_addGachaItemStaffSkillTimeDic.TryGetValue(type, out float value))
+            return (_addGachaItemStaffSkillTime * 0.01f) + (value * 0.01f);
+
+        DebugLog.LogError("스탭 스킬 시간 증가 효과를 찾을 수 없습니다: " + type);
+        return 0;
+    }
+
+    public float GetSubCookingTimeMul(FoodType type)
+    {
+        if (_subGachaItemFoodCookingTimeMulDic.TryGetValue(type, out float value))
+            return (_subGachaItemAllCookingTime * 0.01f) + (value * 0.01f);
+
+        DebugLog.LogError("요리 시간 감소 효과를 찾을 수 없습니다: " + type);
+        return 0;
+    }
+
+    public float GetAddFoodPriceMul(FoodType type)
+    {
+        if (_addGachaItemFoodPriceMulDic.TryGetValue(type, out int value))
+            return (_addGachaItemAllFoodPriceMul * 0.01f) + (value * 0.01f);
+
+        DebugLog.LogError("음식 가격 증가 효과를 찾을 수 없습니다: " + type);
+        return 0;
+    }
+
+
+    private void OnUpgradeGachaItemCheck()
+    {
+        _addGachaItemCustomerSpeedPercent = 0;
+        _subGachaItemAllCookingTime = 0;
+        _addGachaItemAllFoodPriceMul = 0;
+        _addGachaItemStaffSkillTime = 0;
+        _addGachaItemFeverTime = 0;
+        _addGachaItemWaitCustomerMaxCount = 0;
+
+        for(int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
+        {
+            _subGachaItemFoodCookingTimeMulDic[(FoodType)i] = 0;
+            _addGachaItemFoodPriceMulDic[(FoodType)i] = 0;
+        }
+
+        for(int i = 0, cnt = (int)StaffGroupType.Length; i < cnt; ++i)
+        {
+            _addGachaItemStaffSkillTimeDic[(StaffGroupType)i] = 0;
+            _addGachaItemStaffSpeedMulDic[(StaffGroupType)i] = 0;
+        }
+
+        Dictionary<string, int> giveGachaItemLevelDic = UserInfo.GetGiveGachaItemLevelDic();
+        GachaItemData gachaItemData;
+
+        foreach (var data in giveGachaItemLevelDic)
+        {
+            gachaItemData = ItemManager.Instance.GetGachaItemData(data.Key);
+            int itemLevel = data.Value;
+            if (gachaItemData == null)
+            {
+                DebugLog.LogError("아이템 정보가 데이터베이스에 존재하지 않습니다: " + data.Key);
+                continue;
+            }
+
+            if (!UserInfo.IsGiveGachaItem(gachaItemData))
+            {
+                DebugLog.LogError("해당 아이템의 레벨은 존재하나 보유중이지 않습니다: " + data.Key);
+                continue;
+            }
+
+            float addValue = gachaItemData.DefaultValue + ((itemLevel - 1) * gachaItemData.UpgradeValue);
+
+            switch (gachaItemData.UpgradeType)
+            {
+                case UpgradeType.UPGRADE01:
+                    _addGachaItemCustomerSpeedPercent += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE02:
+                    _subGachaItemAllCookingTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE03:
+                    _subGachaItemFoodCookingTimeMulDic[FoodType.Natural] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE04:
+                    _subGachaItemFoodCookingTimeMulDic[FoodType.Modern] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE05:
+                    _subGachaItemFoodCookingTimeMulDic[FoodType.Vintage] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE06:
+                    _subGachaItemFoodCookingTimeMulDic[FoodType.Traditional] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE07:
+                    _subGachaItemFoodCookingTimeMulDic[FoodType.Tropical] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE08:
+                    _subGachaItemFoodCookingTimeMulDic[FoodType.Luxury] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE09:
+                    _subGachaItemFoodCookingTimeMulDic[FoodType.Cozy] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE10:
+                    _addGachaItemAllFoodPriceMul += (int)addValue;
+                    break;
+
+                case UpgradeType.UPGRADE11:
+                    _addGachaItemFoodPriceMulDic[FoodType.Natural] += (int)addValue;
+                    break;
+
+                case UpgradeType.UPGRADE12:
+                    _addGachaItemFoodPriceMulDic[FoodType.Modern] += (int)addValue;
+                    break;
+
+                case UpgradeType.UPGRADE13:
+                    _addGachaItemFoodPriceMulDic[FoodType.Vintage] += (int)addValue;
+                    break;
+
+                case UpgradeType.UPGRADE14:
+                    _addGachaItemFoodPriceMulDic[FoodType.Traditional] += (int)addValue;
+                    break;
+
+                case UpgradeType.UPGRADE15:
+                    _addGachaItemFoodPriceMulDic[FoodType.Tropical] += (int)addValue;
+                    break;
+
+                case UpgradeType.UPGRADE16:
+                    _addGachaItemFoodPriceMulDic[FoodType.Luxury] += (int)addValue;
+                    break;
+
+                case UpgradeType.UPGRADE17:
+                    _addGachaItemFoodPriceMulDic[FoodType.Cozy] += (int)addValue;
+                    break;
+
+                case UpgradeType.UPGRADE18:
+                    _addGachaItemStaffSkillTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE19:
+                    _addGachaItemStaffSkillTimeDic[StaffGroupType.Manager] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE20:
+                    _addGachaItemStaffSkillTimeDic[StaffGroupType.Waiter] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE21:
+                    _addGachaItemStaffSkillTimeDic[StaffGroupType.Chef] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE22:
+                    _addGachaItemStaffSkillTimeDic[StaffGroupType.Marketer] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE23:
+                    _addGachaItemStaffSkillTimeDic[StaffGroupType.Cleaner] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE24:
+                    _addGachaItemStaffSkillTimeDic[StaffGroupType.Guard] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE25:
+                    _addGachaItemStaffSpeedMulDic[StaffGroupType.Manager] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE26:
+                    _addGachaItemStaffSpeedMulDic[StaffGroupType.Chef] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE27:
+                    _addGachaItemStaffSpeedMulDic[StaffGroupType.Cleaner] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE28:
+                    _addGachaItemStaffSpeedMulDic[StaffGroupType.Guard] += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE29:
+                    _addGachaItemFeverTime += addValue;
+                    break;
+
+                case UpgradeType.UPGRADE30:
+                    _addGachaItemWaitCustomerMaxCount += (int)addValue;
+                    break;
+
+            }
+        }
+        
+        OnChangeScoreHandler?.Invoke();
+        OnChangeStaffSkillValueHandler?.Invoke();
+        OnChangeMaxWaitCustomerCountHandler?.Invoke();
+    }
 
 
 
@@ -363,7 +544,7 @@ public class GameManager : MonoBehaviour
             if(!FoodDataManager.Instance.IsNeedMiniGame(giveRecipeList[i]))
                 continue;
 
-            _addGiveRecipeMiniGameTime += 5;
+            //_addGiveRecipeMiniGameTime += 5;
         }
     }
 
@@ -417,169 +598,5 @@ public class GameManager : MonoBehaviour
         _addGiveGachaItemScore = addScore;
         _addGiveGachaItemTipPerMinute = addTipPerMinute;
         OnChangeScoreHandler?.Invoke();
-    }
-
-
-    private void OnUpgradeGachaItemCheck()
-    {
-        _addUpgradeGachaItemScore = 0;
-        _addUpgradeGachaItemScore = 0;
-        _addUpgradeGachaItemTipPerMinute = 0;
-        _addUpgradeGachaItemFoodPrice = 0;
-        _addUpgradeGachaItemFoodTip = 0;
-        _addUpgradeGachaItemWaitCustomerMaxCount = 0;
-        _addUpgradeGachaItemSpecialCustomerMoney = 0;
-        _addUpgradeGachaItemCustomerSpeedPercent = 0;
-        _addUpgradeGachaItemMaxTipVolumePercent = 0;
-        _subUpgradeGachaItemCookingTime = 0;
-        _addUpgradeGachaItemFoodDoublePricePercent = 0;
-        _addUpgradeGachaItemSpecialCustomerSpawnPercent = 0;
-        _addUpgradeGachaItemGatecrasherCustomerDamagePercent = 0;
-        _addUpgradeGachaItemGatecrasherCustomerSpeedDownTime = 0;
-        _addUpgradeGachaItemMiniGameTime = 0;
-        _subUpgradeGachaItemStaffCoolTime = 0;
-        _addUpgradeGachaItemStaffSkillTime = 0;
-        _subUpgradeGachaItemWaiterCoolTime = 0;
-        _addUpgradeGachaItemWaiterSkillTime = 0;
-        _subUpgradeGachaItemServerCoolTime = 0;
-        _addUpgradeGachaItemServerSkillTime = 0;
-        _subUpgradeGachaItemMarketerCoolTime = 0;
-        _addUpgradeGachaItemMarketerSkillTime = 0;
-        _subUpgradeGachaItemGuardCoolTime = 0;
-        _addUpgradeGachaItemGuardSkillTime = 0;
-        _subUpgradeGachaItemCleanerCoolTime = 0;
-        _addUpgradeGachaItemCleanerSkillTime = 0;
-
-        Dictionary<string, int> giveGachaItemLevelDic = UserInfo.GetGiveGachaItemLevelDic();
-        GachaItemData gachaItemData;
-
-        foreach (var data in giveGachaItemLevelDic)
-        {
-            gachaItemData = ItemManager.Instance.GetGachaItemData(data.Key);
-            int itemLevel = data.Value;
-            if (gachaItemData == null)
-            {
-                DebugLog.LogError("아이템 정보가 데이터베이스에 존재하지 않습니다: " + data.Key);
-                continue;
-            }
-
-            if (!UserInfo.IsGiveGachaItem(gachaItemData))
-            {
-                DebugLog.LogError("해당 아이템의 레벨은 존재하나 보유중이지 않습니다: " + data.Key);
-                continue;
-            }
-
-            float addValue = gachaItemData.DefaultValue + ((itemLevel - 1) * gachaItemData.UpgradeValue);
-
-            switch (gachaItemData.UpgradeType)
-            {
-                case UpgradeType.UPGRADE01:
-                    _addUpgradeGachaItemScore += (int)addValue;
-                    break;
-
-                case UpgradeType.UPGRADE02:
-                    _addUpgradeGachaItemCustomerSpeedPercent += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE03:
-                    _addUpgradeGachaItemTipPerMinute += (int)addValue;
-                    break;
-
-                case UpgradeType.UPGRADE04:
-                    _addUpgradeGachaItemMaxTipVolumePercent += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE05:
-                    _addUpgradeGachaItemFoodPrice += (int)addValue;
-                    break;
-
-                case UpgradeType.UPGRADE06:
-                    _subUpgradeGachaItemCookingTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE07:
-                    _addUpgradeGachaItemFoodDoublePricePercent += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE08:
-                    _addUpgradeGachaItemFoodTip += (int)addValue;
-                    break;
-
-                case UpgradeType.UPGRADE09:
-                    _subUpgradeGachaItemWaiterCoolTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE10:
-                    _addUpgradeGachaItemWaiterSkillTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE11:
-                    _subUpgradeGachaItemServerCoolTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE12:
-                    _addUpgradeGachaItemServerSkillTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE13:
-                    _subUpgradeGachaItemMarketerCoolTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE14:
-                    _addUpgradeGachaItemMarketerSkillTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE15:
-                    _subUpgradeGachaItemCleanerCoolTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE16:
-                    _addUpgradeGachaItemCleanerSkillTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE17:
-                    _subUpgradeGachaItemGuardCoolTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE18:
-                    _addUpgradeGachaItemGuardSkillTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE19:
-                    _addUpgradeGachaItemGatecrasherCustomerDamagePercent += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE20:
-                    _addUpgradeGachaItemSpecialCustomerMoney += (int)addValue;
-                    break;
-
-                case UpgradeType.UPGRADE21:
-                    _addUpgradeGachaItemGatecrasherCustomerSpeedDownTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE22:
-                    _subUpgradeGachaItemStaffCoolTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE23:
-                    _addUpgradeGachaItemStaffSkillTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE24:
-                    _addUpgradeGachaItemMiniGameTime += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE25:
-                    _addUpgradeGachaItemSpecialCustomerSpawnPercent += addValue;
-                    break;
-
-                case UpgradeType.UPGRADE26:
-                    _addUpgradeGachaItemWaitCustomerMaxCount += (int)addValue;
-                    break;
-            }
-        }
-        OnChangeScoreHandler?.Invoke();
-        OnChangeStaffSkillValueHandler?.Invoke();
-        OnChangeMaxWaitCustomerCountHandler?.Invoke();
     }
 }

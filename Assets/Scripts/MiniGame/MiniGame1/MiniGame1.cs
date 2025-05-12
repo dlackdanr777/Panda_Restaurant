@@ -494,7 +494,7 @@ public class MiniGame1 : MiniGameSystem
     #region Timer Management
     private void StartTimer()
     {
-        _remainingTime = _currentStageData.StageTime + GameManager.Instance.AddMiniGameTime;
+        _remainingTime = _currentStageData.StageTime;
         _isTimerRunning = true;
         _timer.ResetTimer();
         _timer.StartAnimation();
@@ -515,7 +515,7 @@ public class MiniGame1 : MiniGameSystem
             _remainingTime -= Time.deltaTime;
             
             // 타이머 UI 업데이트 (1.0 ~ 0.0)
-            float normalizedTime = Mathf.Clamp01(_remainingTime / (_currentStageData.StageTime + GameManager.Instance.AddMiniGameTime));
+            float normalizedTime = Mathf.Clamp01(_remainingTime / _currentStageData.StageTime);
             _timer.SetTimer(normalizedTime);
             
             // 타이머가 0이 되면 시간 초과 처리

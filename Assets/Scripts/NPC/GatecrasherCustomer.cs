@@ -444,7 +444,7 @@ public class GatecrasherCustomer : Customer
         _moveSpeed = 0.1f;
         float startSpeed = 0.1f;
         float targetSpeed = _customerData.MoveSpeed;
-        float targetTime = 0.1f + GameManager.Instance.AddGatecrasherCustomerSpeedDownTime;
+        float targetTime = 0.1f;
         float timer = 0;
 
         while(timer < targetTime)

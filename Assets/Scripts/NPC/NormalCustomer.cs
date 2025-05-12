@@ -77,7 +77,7 @@ public class NormalCustomer : Customer
             _normalCustomerData.Skill.Activate(this);
         }
 
-        if (UnityEngine.Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100))
+        if (UnityEngine.Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent, 0, 100))
         {
             _currentFoodPriceMul = _currentFoodPriceMul * _foodPriceMul;
         }

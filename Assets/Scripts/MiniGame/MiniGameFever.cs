@@ -287,7 +287,7 @@ public class MiniGameFever : MonoBehaviour
     #region Timer Management
     private void StartTimer()
     {
-        _remainingTime = 6 + GameManager.Instance.AddMiniGameTime;
+        _remainingTime = ConstValue.DEFAULT_MINIGAME_FEVER_TIME;
         _isTimerRunning = true;
         _timer.ResetTimer();
         _timer.StartAnimation();
@@ -308,7 +308,7 @@ public class MiniGameFever : MonoBehaviour
             _remainingTime -= Time.deltaTime;
 
             // 타이머 UI 업데이트 (1.0 ~ 0.0)
-            float normalizedTime = Mathf.Clamp01(_remainingTime / (6 + GameManager.Instance.AddMiniGameTime));
+            float normalizedTime = Mathf.Clamp01(_remainingTime / ConstValue.DEFAULT_MINIGAME_FEVER_TIME);
 
             _timer.SetTimer(normalizedTime);
             if (-2 < _currentPower)

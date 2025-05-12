@@ -41,7 +41,7 @@ public class Staff : MonoBehaviour
     protected float _scaleX;
     protected float _moveSpeed;
     protected float _speedMul;
-    public float SpeedMul => Mathf.Clamp((1 + _speedMul) * GameManager.Instance.AddStaffSpeedMul, 0.5f, 3f);
+    public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(StaffDataManager.Instance.GetStaffGroupType(_staffType))), 0.5f, 3f);
 
     protected Coroutine _useSkillRoutine;
 
@@ -237,15 +237,8 @@ public class Staff : MonoBehaviour
         SoundManager.Instance.PlayEffectAudio(EffectType.Restaurant, _skillActiveSound);
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 
-        float duration = _staffData.Skill.Duration + GameManager.Instance.AddStaffSkillTime + _staffType switch
-        {
-            EquipStaffType.Marketer => GameManager.Instance.AddMarketerSkillTime,
-            EquipStaffType.Waiter1 => GameManager.Instance.AddWaiterSkillTime,
-            EquipStaffType.Waiter2 => GameManager.Instance.AddServerSkillTime,
-            EquipStaffType.Cleaner => GameManager.Instance.AddCleanerSkillTime,
-            EquipStaffType.Guard => GameManager.Instance.AddGuardSkillTime,
-            _ => 0
-        };
+        float multiplier = 1f + GameManager.Instance.GetStaffSkillTimeMul(StaffDataManager.Instance.GetStaffGroupType(_staffType));
+        float duration = _staffData.Skill.Duration * multiplier;
         float timer = 0;
         while (timer < duration)
         {
@@ -391,16 +384,7 @@ public class Staff : MonoBehaviour
         if (_staffData.Skill == null)
             return;
 
-        _skillCoolTime = _staffData.Skill.Cooldown + GameManager.Instance.SubStaffSkillCoolTime + _staffType switch
-        {
-            EquipStaffType.Marketer => GameManager.Instance.SubMarketerSkillCoolTime,
-            EquipStaffType.Waiter1 => GameManager.Instance.SubWaiterSkillCoolTime,
-            EquipStaffType.Waiter2 => GameManager.Instance.SubServerSkillCoolTime,
-            EquipStaffType.Cleaner => GameManager.Instance.SubCleanerSkillCoolTime,
-            EquipStaffType.Guard => GameManager.Instance.SubGuardSkillCoolTime,
-            _ => 0
-        };
-
+        _skillCoolTime = _staffData.Skill.Cooldown;
         _skillCoolTime = _skillCoolTime < 0.1f ? 0.1f : _skillCoolTime;
     }
 

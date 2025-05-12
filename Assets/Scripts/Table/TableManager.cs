@@ -216,7 +216,7 @@ public class TableManager : MonoBehaviour
         });
 
         int tip = Mathf.FloorToInt(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul * _satisfactionSystem.AddCustomerTipMul(data.CurrentCustomer.NormalCustomerData.TendencyType));
-        data.TotalTip += tip + GameManager.Instance.AddFoodTip;
+        data.TotalTip += tip;
         data.CurrentFood = cookingData;
 
         int totalPrice = (int)((cookingData.Price + GameManager.Instance.AddFoodPrice * data.CurrentCustomer.CurrentFoodPriceMul) * GameManager.Instance.GetFoodPriceMul(data.FloorType, foodData.FoodType) * GameManager.Instance.GetFoodTypePriceMul(foodData.FoodType));

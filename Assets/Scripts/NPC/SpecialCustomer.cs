@@ -107,7 +107,7 @@ public class SpecialCustomer : Customer
             StopCoroutine(_touchCoroutine);
         _touchCoroutine = StartCoroutine(OnTouchRoutine());
 
-        UserInfo.AddMoney(_touchAddMoney + GameManager.Instance.AddSpecialCustomerMoney);
+        UserInfo.AddMoney(_touchAddMoney);
         _feverSystem?.AddFeverGauge();
         SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _goldSound);
         if (_touchCount <= 0)

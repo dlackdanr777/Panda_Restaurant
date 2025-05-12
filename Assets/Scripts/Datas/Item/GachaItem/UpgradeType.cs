@@ -1,82 +1,95 @@
 
 public enum UpgradeType
 {
-    /// <summary>전체 평점 상승 nn(+n) 증가</summary>
+    /// <summary>전체 손님 기본 속도 +n% 증가</summary>
     UPGRADE01,
 
-    /// <summary>전체 손님 속도 n%(+n.n) 증가</summary>
+    /// <summary>모든 메뉴 제작 시간 n% 단축</summary>
     UPGRADE02,
 
-    /// <summary>분당 팁 n(+n)증가</summary>
+    /// <summary>내추럴 메뉴 제작 시간 n% 단축</summary>
     UPGRADE03,
 
-    /// <summary>보유 가능한 팁 n%(+n%)증가</summary>
+    /// <summary>모던 메뉴 제작 시간 n% 단축</summary>
     UPGRADE04,
 
-    /// <summary>판매하는 메뉴의 가격 n코인(+n) 증가</summary>
+    /// <summary>빈티지 메뉴 제작 시간 n% 단축</summary>
     UPGRADE05,
 
-    /// <summary>모든 메뉴 제작 시간 n초(+n.n초)단축</summary>
+    /// <summary>전통적 메뉴 제작 시간 n% 단축</summary>
     UPGRADE06,
 
-    /// <summary>손님이 지불하는 음식가격 두배 확률 n%(+n.n%)증가</summary>
+    /// <summary>트로피컬 메뉴 제작 시간 n% 단축</summary>
     UPGRADE07,
 
-    /// <summary>손님의 메뉴 주문당 지급 코인 n(+n)증가(팁)</summary>
+    /// <summary>럭셔리 메뉴 제작 시간 n% 단축</summary>
     UPGRADE08,
 
-    /// <summary>웨이터 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
+    /// <summary>코지 메뉴 제작 시간 n% 단축</summary>
     UPGRADE09,
 
-    /// <summary>웨이터 스텝 스킬 타임 n초(+n.n초)증가</summary>
+    /// <summary>판매하는 모든 메뉴의 가격 n% 증가</summary>
     UPGRADE10,
 
-    /// <summary>알바 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
+    /// <summary>판매하는 내추럴 메뉴의 수익 n% 증가</summary>
     UPGRADE11,
 
-    /// <summary>알바 스텝 스킬 타임 n초(+n.n초)증가</summary>
+    /// <summary>판매하는 모던 메뉴의 수익 n% 증가</summary>
     UPGRADE12,
 
-    /// <summary>치어리더 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
+    /// <summary>판매하는 빈티지 메뉴의 수익 n% 증가</summary>
     UPGRADE13,
 
-    /// <summary>치어리더 스텝 스킬 타임 n초(+n.n초)증가</summary>
+    /// <summary>판매하는 전통적 메뉴의 수익 n% 증가</summary>
     UPGRADE14,
 
-    /// <summary>청소부 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
+    /// <summary>판매하는 트로피컬 메뉴의 수익 n% 증가</summary>
     UPGRADE15,
 
-    /// <summary>청소부 스텝 스킬 타임 n초(+n.n초)증가</summary>
+    /// <summary>판매하는 럭셔리 메뉴의 수익 n% 증가</summary>
     UPGRADE16,
 
-    /// <summary>가드 스텝 스킬 쿨타임 n초(+n.n초) 감소</summary>
+    /// <summary>판매하는 코지 메뉴의 수익 n% 증가</summary>
     UPGRADE17,
 
-    /// <summary>가드 스텝 스킬 타임 n초(+n.n초)증가</summary>
+    /// <summary>전체 스텝 스킬 타임 n% 증가</summary>
     UPGRADE18,
 
-    /// <summary>진상에게 가하는 피해 n%(+n.n%)증가</summary>
+    /// <summary>매니저 스텝 스킬 타임 n% 증가</summary>
     UPGRADE19,
 
-    /// <summary>스페셜 손님에게 획득 코인 nn(+n)증가</summary>
+    /// <summary>웨이터 스텝 스킬 타임 n% 증가</summary>
     UPGRADE20,
 
-    /// <summary>도둑 손님이 속도 둔화 n.n초(+n.n초)증가</summary>
+    /// <summary>주방장 스텝 스킬 타임 n% 증가</summary>
     UPGRADE21,
 
-    /// <summary>전체 스텝 스킬 쿨타임 n초(+n초) 감소</summary>
+    /// <summary>치어리더 스텝 스킬 타임 n% 증가</summary>
     UPGRADE22,
 
-    /// <summary>전체 스텝 스킬 타임 n초(+n.n초)증가</summary>
+    /// <summary>청소부 스텝 스킬 타임 n% 증가</summary>
     UPGRADE23,
 
-    /// <summary>미니게임 제작 시간 n.n초 (+n.n)증가</summary>
+    /// <summary>가드 스텝 스킬 타임 n% 증가</summary>
     UPGRADE24,
 
-    /// <summary>스페셜 손님 등장 확률 n.n% (+n.n%)증가</summary>
+    /// <summary>웨이터 스텝 이동 속도 n% 증가</summary>
     UPGRADE25,
 
-    /// <summary>최대 줄서기 손님 n명(+n)증가</summary>
-    UPGRADE26, 
+    /// <summary>주방장 스텝 이동 속도 n% 증가</summary>
+    UPGRADE26,
+
+    /// <summary>청소부 스텝 이동 속도 n% 증가</summary>
+    UPGRADE27,
+
+    /// <summary>가드 스텝 이동 속도 n% 증가</summary>
+    UPGRADE28,
+
+    /// <summary>피버 타임 n초 증가</summary>
+    UPGRADE29,
+
+    /// <summary>최대 줄서기 손님 n명 증가</summary>
+    UPGRADE30,
+
     Length,
 }

@@ -79,7 +79,7 @@ public class UIMiniGame : MobileUIView
     [SerializeField] private AudioClip _getSound;
 
 
-    private float _totalTime => ConstValue.DEFAULT_MINIGAME_TIME + GameManager.Instance.AddMiniGameTime;
+    private float _totalTime => ConstValue.DEFAULT_MINIGAME_FEVER_TIME;
 
     private FoodMiniGameData _currentData;
     private int _successCount;

@@ -101,7 +101,7 @@ public class FeverSystem : MonoBehaviour
 
     private IEnumerator StartFeverRoutine()
     {
-        float time = ConstValue.PEVER_TIME;
+        float time = ConstValue.PEVER_TIME + GameManager.Instance.AddFerverTime;
         float timer = 0;
         OnStartFeverHandler?.Invoke();
         _mainScene.PlayMainMusic();

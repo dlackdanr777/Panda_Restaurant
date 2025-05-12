@@ -253,7 +253,6 @@ public class UIRecipePreview : MonoBehaviour
 
         if (!_minigameButton.gameObject.activeInHierarchy)
         {
-            DebugLog.LogError("미니게임 버튼이 활성화 되어 있지 않습니다.");
             return;
         }
 
