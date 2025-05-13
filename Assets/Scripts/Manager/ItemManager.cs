@@ -57,6 +57,18 @@ public class ItemManager : MonoBehaviour
         };
     }
 
+    public List<GachaItemData> GetSortGachaItemDataList(GradeSortType sortType)
+    {
+        return sortType switch
+        {
+            GradeSortType.NameAscending => _gachaItemDataList.OrderBy(data => data.Name).ToList(),
+            GradeSortType.NameDescending => _gachaItemDataList.OrderByDescending(data => data.Name).ToList(),
+            GradeSortType.GradeAscending => _gachaItemDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            GradeSortType.GradeDescending => _gachaItemDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            _ => null
+        };
+    }
+
     public List<GachaItemData> GetGachaItemDataList()
     {
         return _gachaItemDataList;
@@ -64,29 +76,69 @@ public class ItemManager : MonoBehaviour
 
     public GachaItemData GetRandomGachaItem(List<GachaItemData> gachaItemDataList)
     {
-        List<GachaItemData> itemList = new List<GachaItemData>();
-        float randF = UnityEngine.Random.Range(0f, 1f);
-        float tmp = 0;
-        GachaItemRank currentRank = GachaItemRank.Normal1;
-        for(int i = 0, cnt = (int)GachaItemRank.Length; i < cnt; ++i)
+        if (gachaItemDataList == null || gachaItemDataList.Count == 0)
         {
-            tmp += Utility.GetGachaItemRankRange((GachaItemRank)i);
-            if(randF < tmp)
+            DebugLog.LogError("가챠 아이템 리스트가 비어있습니다.");
+            return null;
+        }
+
+        // 랭크별로 아이템 분류 (존재하는 랭크만 저장)
+        Dictionary<GachaItemRank, List<GachaItemData>> rankItemDict = new Dictionary<GachaItemRank, List<GachaItemData>>();
+        List<GachaItemRank> availableRanks = new List<GachaItemRank>();
+
+        foreach (var item in gachaItemDataList)
+        {
+            if (!rankItemDict.ContainsKey(item.GachaItemRank))
             {
-                currentRank = (GachaItemRank)i;
-                break;
+                rankItemDict[item.GachaItemRank] = new List<GachaItemData>();
+                availableRanks.Add(item.GachaItemRank);
             }
+            rankItemDict[item.GachaItemRank].Add(item);
         }
 
-        for(int i = 0, cnt = gachaItemDataList.Count; i < cnt; ++i)
+        // 랭크 선택 시도
+        int maxAttempts = 5; // 최대 시도 횟수 제한
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
-            if (gachaItemDataList[i].GachaItemRank != currentRank)
-                continue;
+            float randF = UnityEngine.Random.Range(0f, 1f);
+            float tmp = 0;
+            GachaItemRank currentRank = GachaItemRank.Normal1;
 
-            itemList.Add(gachaItemDataList[i]); 
+            // 랭크 선택
+            for (int i = 0, cnt = (int)GachaItemRank.Length; i < cnt; ++i)
+            {
+                tmp += Utility.GetGachaItemRankRange((GachaItemRank)i);
+                if (randF < tmp)
+                {
+                    currentRank = (GachaItemRank)i;
+                    break;
+                }
+            }
+
+            // 선택된 랭크에 아이템이 있는지 확인
+            if (rankItemDict.ContainsKey(currentRank) && rankItemDict[currentRank].Count > 0)
+            {
+                // 해당 랭크의 아이템 중 하나를 랜덤 선택
+                List<GachaItemData> itemsOfRank = rankItemDict[currentRank];
+                return itemsOfRank[UnityEngine.Random.Range(0, itemsOfRank.Count)];
+            }
+
+            // 해당 랭크에 아이템이 없으면 로그 출력
+            DebugLog.Log($"랭크 {currentRank}에 아이템이 없어 다시 시도합니다. (시도 {attempt + 1}/{maxAttempts})");
         }
 
-        return itemList[UnityEngine.Random.Range(0, itemList.Count)];
+        // 여러 번 시도 후에도 실패했다면 사용 가능한 랭크에서 무작위로 선택
+        if (availableRanks.Count > 0)
+        {
+            GachaItemRank fallbackRank = availableRanks[UnityEngine.Random.Range(0, availableRanks.Count)];
+            DebugLog.Log($"랭크 선택 실패, 대체 랭크 {fallbackRank} 사용");
+            List<GachaItemData> fallbackItems = rankItemDict[fallbackRank];
+            return fallbackItems[UnityEngine.Random.Range(0, fallbackItems.Count)];
+        }
+
+        // 여기까지 오면 심각한 문제가 있음
+        DebugLog.LogError("사용 가능한 가챠 아이템이 없습니다.");
+        return null;
     }
 
 
@@ -114,23 +166,26 @@ public class ItemManager : MonoBehaviour
         {
             row = data[i].Split(new char[] { ',' });
             string id = row[0].Replace(" ", ""); ;
-
+            DebugLog.Log("id: " + id);
             if (string.IsNullOrWhiteSpace(id))
                 continue;
 
             string name = row[1];
             string description = row[2];
-            int addScore = int.Parse(row[4].Replace(" ", ""));
-            int minutePerTip = int.Parse(row[5].Replace(" ", ""));
-            int rank = int.Parse(row[6].Replace(" ", ""));
+            int addScore = ReplaceIntValue(row[4]);
+            int minutePerTip = ReplaceIntValue(row[5]);
+            int rank = ReplaceIntValue(row[6]);
             UpgradeType upgradeType = StrToUpgradeType(row[8].Replace(" ", ""));
-            float defaultValue = float.Parse(row[9].Replace(" ", ""));
-            float upgradeValue = float.Parse(row[10].Replace(" ", ""));
-            int maxLevel = int.Parse(row[11].Replace(" ", ""));
+            float defaultValue = ReplaceFloatValue(row[9]);
+            float upgradeValue = ReplaceFloatValue(row[10]);
+            int maxLevel = ReplaceIntValue(row[11]) == 0 ? 1 : ReplaceIntValue(row[11]);
 
             GachaItemData gachaItemData = new GachaItemData(id, name, description, addScore, minutePerTip, rank, upgradeType, defaultValue, upgradeValue, maxLevel, spriteDic[id]);
             _gachaItemDataList.Add(gachaItemData);
             _gachaItemDataDic.Add(id, gachaItemData);
+
+            float ReplaceFloatValue(string str) => float.TryParse(str.Replace(" ", ""), out float value) ? value : 0f;
+            int ReplaceIntValue(string str) => int.TryParse(str.Replace(" ", ""), out int value) ? value : 0;
         }
     }
 
@@ -152,6 +207,7 @@ public class ItemManager : MonoBehaviour
         if (Enum.TryParse(str, true, out UpgradeType upgradeType))
             return upgradeType;
 
-        throw new ArgumentException("해당 문자열을 가진 UpgradeType이 없습니다: " + str);
+        DebugLog.Log("해당 문자열을 가진 UpgradeType이 없습니다: " + str);
+        return UpgradeType.None;
     }
 }

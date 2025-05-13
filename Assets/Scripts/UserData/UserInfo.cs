@@ -96,7 +96,7 @@ public static class UserInfo
     public static long DailyAddMoney => _dailyAddMoney;
 
     private static int _score;
-    public static int Score => GameManager.Instance.AddSocre;
+    public static int Score => GameManager.Instance.AddScore;
 
     private static int _totalCookCount;
     public static int TotalCookCount => _totalCookCount;
@@ -1530,15 +1530,19 @@ public static class UserInfo
 
         if (_giveGachaItemCountDic.ContainsKey(data.Id))
         {
-            if (CanAddMoreItems(data))
-            {
-                _giveGachaItemCountDic[data.Id]++;
-                OnGiveGachaItemHandler?.Invoke();
-                return true;
-            }
+            _giveGachaItemCountDic[data.Id]++;
+            OnGiveGachaItemHandler?.Invoke();
+            return true;
 
-            DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
-            return false;
+            // if (CanAddMoreItems(data))
+            // {
+            //     _giveGachaItemCountDic[data.Id]++;
+            //     OnGiveGachaItemHandler?.Invoke();
+            //     return true;
+            // }
+
+            // DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
+            // return false;
         }
 
         _giveGachaItemCountDic.Add(data.Id, 0);
@@ -1561,15 +1565,18 @@ public static class UserInfo
 
             if (_giveGachaItemCountDic.ContainsKey(dataList[i].Id))
             {
-                if (CanAddMoreItems(dataList[i]))
-                {
-                    _giveGachaItemCountDic[dataList[i].Id]++;
-                    AddNotification(dataList[i].Id);
-                    continue;
-                }
-
-                DebugLog.LogError("더이상 획득할 수 없습니다: " + dataList[i].Id);
+                _giveGachaItemCountDic[dataList[i].Id]++;
+                AddNotification(dataList[i].Id);
                 continue;
+                // if (CanAddMoreItems(dataList[i]))
+                // {
+                //     _giveGachaItemCountDic[dataList[i].Id]++;
+                //     AddNotification(dataList[i].Id);
+                //     continue;
+                // }
+
+                // DebugLog.LogError("더이상 획득할 수 없습니다: " + dataList[i].Id);
+                // continue;
             }
 
             _giveGachaItemCountDic.Add(dataList[i].Id, 0);
@@ -1591,14 +1598,17 @@ public static class UserInfo
 
         if (_giveGachaItemCountDic.ContainsKey(data.Id))
         {
-            if (CanAddMoreItems(data))
-            {
-                _giveGachaItemCountDic[data.Id]++;
-                OnGiveGachaItemHandler?.Invoke();
-                return true;
-            }
-            DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
-            return false;
+            _giveGachaItemCountDic[data.Id]++;
+            OnGiveGachaItemHandler?.Invoke();
+            return true;
+            // if (CanAddMoreItems(data))
+            // {
+            //     _giveGachaItemCountDic[data.Id]++;
+            //     OnGiveGachaItemHandler?.Invoke();
+            //     return true;
+            // }
+            // DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
+            // return false;
         }
 
         _giveGachaItemCountDic.Add(data.Id, 0);
@@ -1706,33 +1716,33 @@ public static class UserInfo
     }
 
 
-    public static bool CanAddMoreItems(GachaItemData data)
-    {
-        if(_giveGachaItemCountDic.TryGetValue(data.Id, out int giveCount))
-        {
-            int itemLevel = _giveGachaItemLevelDic[data.Id];
-            int maxLevel = data.MaxLevel;
+    // public static bool CanAddMoreItems(GachaItemData data)
+    // {
+    //     if(_giveGachaItemCountDic.TryGetValue(data.Id, out int giveCount))
+    //     {
+    //         int itemLevel = _giveGachaItemLevelDic[data.Id];
+    //         int maxLevel = data.MaxLevel;
 
-            if(maxLevel <= itemLevel)
-            {
-                DebugLog.Log("아이템이 이미 최대 레벨입니다.: " + data.Id + "Lv." + itemLevel);
-                return false;
-            }
+    //         if(maxLevel <= itemLevel)
+    //         {
+    //             DebugLog.Log("아이템이 이미 최대 레벨입니다.: " + data.Id + "Lv." + itemLevel);
+    //             return false;
+    //         }
 
-            int requiredItems = 0;
-            for(int level = itemLevel; level < maxLevel; level++)
-            {
-                requiredItems += level * ConstValue.ADD_ITEM_UPGRADE_COUNT;
-            }
+    //         int requiredItems = 0;
+    //         for(int level = itemLevel; level < maxLevel; level++)
+    //         {
+    //             requiredItems += level * ConstValue.ADD_ITEM_UPGRADE_COUNT;
+    //         }
 
-            if (giveCount < requiredItems)
-                return true;
+    //         if (giveCount < requiredItems)
+    //             return true;
 
-            return false;
-        }
+    //         return false;
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
     public static int GetMaxUpgradeRequiredItemCount(GachaItemData data)
     {

@@ -35,7 +35,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _foodPriceMul = 0;
 
     private float[] _foodTypePriceMul = new float[(int)FoodType.Length];
-    public float GetFoodTypePriceMul(FoodType type) { return 1 + _foodTypePriceMul[(int)type]; }
 
 
     [SerializeField] private float _totalAddSpeedMul = 0;
@@ -51,15 +50,14 @@ public class GameManager : MonoBehaviour
     
 
     [SerializeField] private float _cookingSpeedMul = 1;
-    public float SubCookingTime => _subGachaItemAllCookingTime;
-    public int AddFoodPrice => _addGachaItemAllFoodPriceMul;
+    public float SubCookingTime => _addGachaItemAllCookingTimeMul;
 
 
-    public int AddSocre => _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore;
+    public int AddScore => _addEquipFurnitureScore + _addEquipKitchenUtensilScore + _addGiveGachaItemScore;
     public float TipMul =>  1 /*Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f)*/;
 
     public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addGiveGachaItemTipPerMinute;
-    public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume + Mathf.FloorToInt(_addEquipKitchenUtensilTipVolume + _addEquipFurnitureMaxTipVolume);
+    public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume;
 
     public float AddFerverTime => _addGachaItemFeverTime;
 
@@ -87,11 +85,11 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private float _addGachaItemCustomerSpeedPercent; //손님 스피드 상승 n% (UPGRADE01)
 
-    [SerializeField] private float _subGachaItemAllCookingTime; //전체 요리 시간 -n초 단축 (UPGRADE02)
-    [SerializeField] private Dictionary<FoodType, float> _subGachaItemFoodCookingTimeMulDic = new Dictionary<FoodType, float>(); //속성 요리 시간 -n초 단축 (UPGRADE03 ~ 09)
+    [SerializeField] private float _addGachaItemAllCookingTimeMul; //전체 요리 시간 n% 단축 (UPGRADE02)
+    [SerializeField] private Dictionary<FoodType, float> _addGachaItemFoodCookingTimeMulDic = new Dictionary<FoodType, float>(); //속성 요리 시간 n%초 단축 (UPGRADE03 ~ 09)
 
-    [SerializeField] private int _addGachaItemAllFoodPriceMul; //전체 음식 가격 증가 n% (UPGRADE10)
-    private Dictionary<FoodType, int> _addGachaItemFoodPriceMulDic = new Dictionary<FoodType, int>(); //속성 음식 가격 증가 n% (UPGRADE11 ~ 17)
+    [SerializeField] private float _addGachaItemAllFoodPriceMul; //전체 음식 가격 증가 n% (UPGRADE10)
+    private Dictionary<FoodType, float> _addGachaItemFoodPriceMulDic = new Dictionary<FoodType, float>(); //속성 음식 가격 증가 n% (UPGRADE11 ~ 17)
 
     [SerializeField] private float _addGachaItemStaffSkillTime; //전체 스탭 스킬 유지 시간 증가(+) (UPGRADE18)
     [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSkillTimeDic = new Dictionary<StaffGroupType, float>(); //스탭 쿨타임 감소 n% (UPGRADE18 ~ 24)
@@ -121,29 +119,10 @@ public class GameManager : MonoBehaviour
         return 0;
     }
 
-    public float GetSubCookingTimeMul(FoodType type)
-    {
-        if (_subGachaItemFoodCookingTimeMulDic.TryGetValue(type, out float value))
-            return (_subGachaItemAllCookingTime * 0.01f) + (value * 0.01f);
-
-        DebugLog.LogError("요리 시간 감소 효과를 찾을 수 없습니다: " + type);
-        return 0;
-    }
-
-    public float GetAddFoodPriceMul(FoodType type)
-    {
-        if (_addGachaItemFoodPriceMulDic.TryGetValue(type, out int value))
-            return (_addGachaItemAllFoodPriceMul * 0.01f) + (value * 0.01f);
-
-        DebugLog.LogError("음식 가격 증가 효과를 찾을 수 없습니다: " + type);
-        return 0;
-    }
-
-
     private void OnUpgradeGachaItemCheck()
     {
         _addGachaItemCustomerSpeedPercent = 0;
-        _subGachaItemAllCookingTime = 0;
+        _addGachaItemAllCookingTimeMul = 0;
         _addGachaItemAllFoodPriceMul = 0;
         _addGachaItemStaffSkillTime = 0;
         _addGachaItemFeverTime = 0;
@@ -151,7 +130,7 @@ public class GameManager : MonoBehaviour
 
         for(int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
         {
-            _subGachaItemFoodCookingTimeMulDic[(FoodType)i] = 0;
+            _addGachaItemFoodCookingTimeMulDic[(FoodType)i] = 0;
             _addGachaItemFoodPriceMulDic[(FoodType)i] = 0;
         }
 
@@ -189,35 +168,35 @@ public class GameManager : MonoBehaviour
                     break;
 
                 case UpgradeType.UPGRADE02:
-                    _subGachaItemAllCookingTime += addValue;
+                    _addGachaItemAllCookingTimeMul += addValue;
                     break;
 
                 case UpgradeType.UPGRADE03:
-                    _subGachaItemFoodCookingTimeMulDic[FoodType.Natural] += addValue;
+                    _addGachaItemFoodCookingTimeMulDic[FoodType.Natural] += addValue;
                     break;
 
                 case UpgradeType.UPGRADE04:
-                    _subGachaItemFoodCookingTimeMulDic[FoodType.Modern] += addValue;
+                    _addGachaItemFoodCookingTimeMulDic[FoodType.Modern] += addValue;
                     break;
 
                 case UpgradeType.UPGRADE05:
-                    _subGachaItemFoodCookingTimeMulDic[FoodType.Vintage] += addValue;
+                    _addGachaItemFoodCookingTimeMulDic[FoodType.Vintage] += addValue;
                     break;
 
                 case UpgradeType.UPGRADE06:
-                    _subGachaItemFoodCookingTimeMulDic[FoodType.Traditional] += addValue;
+                    _addGachaItemFoodCookingTimeMulDic[FoodType.Traditional] += addValue;
                     break;
 
                 case UpgradeType.UPGRADE07:
-                    _subGachaItemFoodCookingTimeMulDic[FoodType.Tropical] += addValue;
+                    _addGachaItemFoodCookingTimeMulDic[FoodType.Tropical] += addValue;
                     break;
 
                 case UpgradeType.UPGRADE08:
-                    _subGachaItemFoodCookingTimeMulDic[FoodType.Luxury] += addValue;
+                    _addGachaItemFoodCookingTimeMulDic[FoodType.Luxury] += addValue;
                     break;
 
                 case UpgradeType.UPGRADE09:
-                    _subGachaItemFoodCookingTimeMulDic[FoodType.Cozy] += addValue;
+                    _addGachaItemFoodCookingTimeMulDic[FoodType.Cozy] += addValue;
                     break;
 
                 case UpgradeType.UPGRADE10:
@@ -318,12 +297,13 @@ public class GameManager : MonoBehaviour
 
     public void AddFoodPriceMul(float value)
     {
-        _foodPriceMul = Mathf.Clamp(_foodPriceMul + value * 0.01f, 0, 100);
+        _foodPriceMul = Mathf.Clamp(_foodPriceMul + value * 0.01f, 0f, 1000000f);
     }
 
     public float GetCookingSpeedMul(ERestaurantFloorType floor, FoodType type)
     {
-        float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f) /*+ (_addEquipStaffCookSpeedMul[(int)floor] * 0.01f)*/;
+        float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
+        cookSpeedMul += (_addGachaItemAllCookingTimeMul * 0.01f) + _addGachaItemFoodCookingTimeMulDic[type] * 0.01f;
         DebugLog.Log("음식 속도: "+ cookSpeedMul);
         return cookSpeedMul;
     }
@@ -331,6 +311,8 @@ public class GameManager : MonoBehaviour
     public float GetFoodPriceMul(ERestaurantFloorType floor, FoodType type)
     {
         float foodPriceMul = 1 + _foodPriceMul + (_addSetFoodPriceMul[(int)floor, (int)type] * 0.01f);
+        foodPriceMul += (_addGachaItemAllFoodPriceMul * 0.01f) + _addGachaItemFoodPriceMulDic[type] * 0.01f;
+        foodPriceMul += _foodTypePriceMul[(int)type] * 0.01f;
         DebugLog.Log("음식 값: "+ foodPriceMul);
         return foodPriceMul;
     }

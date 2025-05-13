@@ -115,7 +115,7 @@ public class UIGacha : MobileUIView
     public override void Init()
     {
         _scrollImage.Init();
-        _itemDataList = ItemManager.Instance.GetSortGachaItemDataList();
+        _itemDataList = ItemManager.Instance.GetSortGachaItemDataList(GradeSortType.GradeDescending);
         _gachaItemList.Init(_itemDataList);
 
         for (int i = 0; i < 10; ++i)
@@ -404,8 +404,8 @@ public class UIGacha : MobileUIView
             {
                 item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
 
-                if (!UserInfo.CanAddMoreItems(item))
-                    continue;
+                // if (!UserInfo.CanAddMoreItems(item))
+                //     continue;
 
                 _getItemList.Add(item);
                 i++;

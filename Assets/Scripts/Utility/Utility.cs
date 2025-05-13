@@ -10,15 +10,15 @@ public static class Utility
 
     public static string ConvertToMoney(long value)
     {
-        if (value >= 1_000_000_000) // 10¾ï ÀÌ»ó
+        if (value >= 1_000_000_000) // 10ì–µ ì´ìƒ
         {
             return (value / 1_000_000_000f).ToString(BillionFormat);
         }
-        else if (value >= 1_000_000) // 100¸¸ ÀÌ»ó
+        else if (value >= 1_000_000) // 100ë§Œ ì´ìƒ
         {
             return (value / 1_000_000f).ToString(MillionFormat);
         }
-        else // 1Ãµ ¹Ì¸¸
+        else // 1ì²œ ë¯¸ë§Œ
         {
             return value.ToString(NumberFormat);
         }
@@ -26,7 +26,7 @@ public static class Utility
 
 
 
-    /// <summary>ÃÑ¹®ÀÚ¿­ °¹¼ö¿Í ¹®ÀÚ¿­À» ¹Ş¾Æ ¹®ÀÚ¿­ ¾ÕÂÊ¿¡ -¸¦ ³Ö¾îÁÖ´Â ÇÔ¼ö</summary>
+    /// <summary>ì´ë¬¸ìì—´ ê°¯ìˆ˜ì™€ ë¬¸ìì—´ì„ ë°›ì•„ ë¬¸ìì—´ ì•ìª½ì— -ë¥¼ ë„£ì–´ì£¼ëŠ” í•¨ìˆ˜</summary>
     public static string StringAddHyphen(string str, int strLength)
     {
         if (strLength <= str.Length)
@@ -52,17 +52,17 @@ public static class Utility
     {
         return type switch
         {
-            FurnitureType.Table1 => "Å×ÀÌºí1",
-            FurnitureType.Table2 => "Å×ÀÌºí2",
-            FurnitureType.Table3 => "Å×ÀÌºí3",
-            FurnitureType.Table4 => "Å×ÀÌºí4",
-            FurnitureType.Table5 => "Å×ÀÌºí5",
-            FurnitureType.Counter => "Ä«¿îÅÍ",
-            FurnitureType.Rack => "¼±¹İ",
-            FurnitureType.Frame => "¾×ÀÚ",
-            FurnitureType.Flower => "È­ºĞ",
-            FurnitureType.Acc => "Á¶¸í",
-            FurnitureType.Wallpaper => "º®Áö",
+            FurnitureType.Table1 => "í…Œì´ë¸”1",
+            FurnitureType.Table2 => "í…Œì´ë¸”2",
+            FurnitureType.Table3 => "í…Œì´ë¸”3",
+            FurnitureType.Table4 => "í…Œì´ë¸”4",
+            FurnitureType.Table5 => "í…Œì´ë¸”5",
+            FurnitureType.Counter => "ì¹´ìš´í„°",
+            FurnitureType.Rack => "ì„ ë°˜",
+            FurnitureType.Frame => "ì•¡ì",
+            FurnitureType.Flower => "í™”ë¶„",
+            FurnitureType.Acc => "ì¡°ëª…",
+            FurnitureType.Wallpaper => "ë²½ì§€",
             _ => string.Empty
         };
     }
@@ -71,17 +71,17 @@ public static class Utility
     {
         return type switch
         {
-            KitchenUtensilType.Burner1 => "Á¶¸®±â1",
-            KitchenUtensilType.Burner2 => "Á¶¸®±â2",
-            KitchenUtensilType.Burner3 => "Á¶¸®±â3",
-            KitchenUtensilType.Burner4 => "Á¶¸®±â4",
-            KitchenUtensilType.Burner5 => "Á¶¸®±â5",
-            KitchenUtensilType.Fridge => "³ÃÀå°í",
-            KitchenUtensilType.Cabinet => "Àå½ÄÀå",
-            KitchenUtensilType.Window => "Ã¢¹®",
-            KitchenUtensilType.Sink => "½ÌÅ©´ë",
-            KitchenUtensilType.CookingTools => "µµ±¸ ¼±¹İ",
-            KitchenUtensilType.Kitchenrack => "ÁÖ¹æ ¼±¹İ",
+            KitchenUtensilType.Burner1 => "ì¡°ë¦¬ê¸°1",
+            KitchenUtensilType.Burner2 => "ì¡°ë¦¬ê¸°2",
+            KitchenUtensilType.Burner3 => "ì¡°ë¦¬ê¸°3",
+            KitchenUtensilType.Burner4 => "ì¡°ë¦¬ê¸°4",
+            KitchenUtensilType.Burner5 => "ì¡°ë¦¬ê¸°5",
+            KitchenUtensilType.Fridge => "ëƒ‰ì¥ê³ ",
+            KitchenUtensilType.Cabinet => "ì¥ì‹ì¥",
+            KitchenUtensilType.Window => "ì°½ë¬¸",
+            KitchenUtensilType.Sink => "ì‹±í¬ëŒ€",
+            KitchenUtensilType.CookingTools => "ë„êµ¬ ì„ ë°˜",
+            KitchenUtensilType.Kitchenrack => "ì£¼ë°© ì„ ë°˜",
             _ => string.Empty
         };
     }
@@ -105,14 +105,14 @@ public static class Utility
     {
         return type switch
         {
-            EquipStaffType.Manager => "¸Å´ÏÀú",
-            EquipStaffType.Marketer => "Ä¡¾î¸®´õ",
-            EquipStaffType.Waiter1 => "¿şÀÌÅÍ1",
-            EquipStaffType.Waiter2 => "¿şÀÌÅÍ2",
-            EquipStaffType.Cleaner => "Ã»¼ÒºÎ",
-            EquipStaffType.Guard => "°æÈ£¿ø",
-            EquipStaffType.Chef1 => "ÁÖ¹æÀå",
-            EquipStaffType.Chef2 => "ºÎÁÖ¹æÀå",
+            EquipStaffType.Manager => "ë§¤ë‹ˆì €",
+            EquipStaffType.Marketer => "ì¹˜ì–´ë¦¬ë”",
+            EquipStaffType.Waiter1 => "ì›¨ì´í„°1",
+            EquipStaffType.Waiter2 => "ì›¨ì´í„°2",
+            EquipStaffType.Cleaner => "ì²­ì†Œë¶€",
+            EquipStaffType.Guard => "ê²½í˜¸ì›",
+            EquipStaffType.Chef1 => "ì£¼ë°©ì¥",
+            EquipStaffType.Chef2 => "ë¶€ì£¼ë°©ì¥",
             _ => string.Empty
         };
     }
@@ -121,12 +121,12 @@ public static class Utility
     {
         return type switch
         {
-            StaffGroupType.Manager => "¸Å´ÏÀú",
-            StaffGroupType.Marketer => "Ä¡¾î¸®´õ",
-            StaffGroupType.Waiter => "¿şÀÌÅÍ",
-            StaffGroupType.Cleaner => "Ã»¼ÒºÎ",
-            StaffGroupType.Guard => "°æÈ£¿ø",
-            StaffGroupType.Chef => "ÁÖ¹æÀå",
+            StaffGroupType.Manager => "ë§¤ë‹ˆì €",
+            StaffGroupType.Marketer => "ì¹˜ì–´ë¦¬ë”",
+            StaffGroupType.Waiter => "ì›¨ì´í„°",
+            StaffGroupType.Cleaner => "ì²­ì†Œë¶€",
+            StaffGroupType.Guard => "ê²½í˜¸ì›",
+            StaffGroupType.Chef => "ì£¼ë°©ì¥",
             _ => string.Empty
         };
     }
@@ -135,15 +135,15 @@ public static class Utility
     {
         return type switch
         {
-            FoodType.None => "¾øÀ½",
-            FoodType.Natural => "³»Ãß·²",
-            FoodType.Traditional => "ÀüÅëÀû",
-            FoodType.Vintage => "ºóÆ¼Áö",
-            FoodType.Luxury => "·°¼Å¸®",
-            FoodType.Modern => "¸ğ´ø",
-            FoodType.Cozy => "ÄÚÁö",
-            FoodType.Tropical => "Æ®·ÎÇÇÄÃ",
-            _ => throw new System.Exception("ÇØ´ç Å¸ÀÔÀÌ ÀÌ»óÇÕ´Ï´Ù: " + type)
+            FoodType.None => "ì—†ìŒ",
+            FoodType.Natural => "ë‚´ì¶”ëŸ´",
+            FoodType.Traditional => "ì „í†µì ",
+            FoodType.Vintage => "ë¹ˆí‹°ì§€",
+            FoodType.Luxury => "ëŸ­ì…”ë¦¬",
+            FoodType.Modern => "ëª¨ë˜",
+            FoodType.Cozy => "ì½”ì§€",
+            FoodType.Tropical => "íŠ¸ë¡œí”¼ì»¬",
+            _ => throw new System.Exception("í•´ë‹¹ íƒ€ì…ì´ ì´ìƒí•©ë‹ˆë‹¤: " + type)
         };
     }
 
@@ -151,14 +151,14 @@ public static class Utility
     {
         return foodTypeStr switch
         {
-            "³»Ãß·²" => FoodType.Natural,
-            "ÀüÅëÀû" => FoodType.Traditional,
-            "ºóÆ¼Áö" => FoodType.Vintage,
-            "·°¼Å¸®" => FoodType.Luxury,
-            "¸ğ´ø" => FoodType.Modern,
-            "ÄÚÁö" => FoodType.Cozy,
-            "Æ®·ÎÇÇÄÃ" => FoodType.Tropical,
-            _ => throw new System.Exception("ÇØ´ç À½½Ä ¹®ÀÚ¿­ÀÌ ÀÌ»óÇÕ´Ï´Ù: " + foodTypeStr)
+            "ë‚´ì¶”ëŸ´" => FoodType.Natural,
+            "ì „í†µì " => FoodType.Traditional,
+            "ë¹ˆí‹°ì§€" => FoodType.Vintage,
+            "ëŸ­ì…”ë¦¬" => FoodType.Luxury,
+            "ëª¨ë˜" => FoodType.Modern,
+            "ì½”ì§€" => FoodType.Cozy,
+            "íŠ¸ë¡œí”¼ì»¬" => FoodType.Tropical,
+            _ => throw new System.Exception("í•´ë‹¹ ìŒì‹ ë¬¸ìì—´ì´ ì´ìƒí•©ë‹ˆë‹¤: " + foodTypeStr)
         };
     }
 
@@ -167,11 +167,11 @@ public static class Utility
     {
         return rank switch
         {
-            GachaItemRank.Normal1 => "³ë¸»",
-            GachaItemRank.Normal2 => "³ë¸»",
-            GachaItemRank.Rare => "·¹¾î",
-            GachaItemRank.Unique => "À¯´ÏÅ©",
-            GachaItemRank.Special => "½ºÆä¼È",
+            GachaItemRank.Normal1 => "ë…¸ë§",
+            GachaItemRank.Normal2 => "ë…¸ë§",
+            GachaItemRank.Rare => "ë ˆì–´",
+            GachaItemRank.Unique => "ìœ ë‹ˆí¬",
+            GachaItemRank.Special => "ìŠ¤í˜ì…œ",
             _ => string.Empty
         };
     }
@@ -183,7 +183,7 @@ public static class Utility
             "FLOOR01" => ERestaurantFloorType.Floor1,
             "FLOOR02" => ERestaurantFloorType.Floor2,
             "FLOOR03" => ERestaurantFloorType.Floor3,
-            _ => throw new System.Exception("ÇØ´ç Ãş ¼ö ¹®ÀÚ¿­ÀÌ ÀÌ»óÇÕ´Ï´Ù: " + str)
+            _ => throw new System.Exception("í•´ë‹¹ ì¸µ ìˆ˜ ë¬¸ìì—´ì´ ì´ìƒí•©ë‹ˆë‹¤: " + str)
         };
     }
 
@@ -191,59 +191,59 @@ public static class Utility
     {
         return type switch
         {
-            ERestaurantFloorType.Floor1 => "1Ãş",
-            ERestaurantFloorType.Floor2 => "2Ãş",
-            ERestaurantFloorType.Floor3 => "3Ãş",
-            _ => throw new System.Exception("ÇØ´ç Ãş ¼ö Å¸ÀÔÀÌ ÀÌ»óÇÕ´Ï´Ù: " + type)
+            ERestaurantFloorType.Floor1 => "1ì¸µ",
+            ERestaurantFloorType.Floor2 => "2ì¸µ",
+            ERestaurantFloorType.Floor3 => "3ì¸µ",
+            _ => throw new System.Exception("í•´ë‹¹ ì¸µ ìˆ˜ íƒ€ì…ì´ ì´ìƒí•©ë‹ˆë‹¤: " + type)
         };
     }
 
     public static string GetGachaItemEffectDescription(GachaItemData data)
     {
         if (data == null)
-            throw new System.Exception("Àü´Ş ¹ŞÀº °¡Ã­ ¾ÆÀÌÅÛ µ¥ÀÌÅÍ°¡ null ÀÔ´Ï´Ù.");
+            throw new System.Exception("ì „ë‹¬ ë°›ì€ ê°€ì±  ì•„ì´í…œ ë°ì´í„°ê°€ null ì…ë‹ˆë‹¤.");
 
         int level = UserInfo.GetGachaItemLevel(data);
         level = level <= 0 ? 1 : level;
         float upgradeValue = UserInfo.IsGachaItemMaxLevel(data) ? 0 : data.UpgradeValue;
         string effectDescription = data.UpgradeType switch
         {
-            UpgradeType.UPGRADE01 => "ÀüÃ¼ ¼Õ´Ô ±âº» ¼Óµµ\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) Áõ°¡",
+            UpgradeType.UPGRADE01 => "ì „ì²´ ì†ë‹˜ ê¸°ë³¸ ì†ë„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
 
-            UpgradeType.UPGRADE02 => "¸ğµç ¸Ş´º Á¦ÀÛ ½Ã°£\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ´ÜÃà",
-            UpgradeType.UPGRADE03 => FoodTypeStringConverter(FoodType.Natural) + " ¸Ş´º Á¦ÀÛ ½Ã°£\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ´ÜÃà",
-            UpgradeType.UPGRADE04 => FoodTypeStringConverter(FoodType.Modern) + " ¸Ş´º Á¦ÀÛ ½Ã°£\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ´ÜÃà",
-            UpgradeType.UPGRADE05 => FoodTypeStringConverter(FoodType.Vintage) + " ¸Ş´º Á¦ÀÛ ½Ã°£\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ´ÜÃà",
-            UpgradeType.UPGRADE06 => FoodTypeStringConverter(FoodType.Traditional) + " ¸Ş´º Á¦ÀÛ ½Ã°£\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ´ÜÃà",
-            UpgradeType.UPGRADE07 => FoodTypeStringConverter(FoodType.Tropical) + " ¸Ş´º Á¦ÀÛ ½Ã°£\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ´ÜÃà",
-            UpgradeType.UPGRADE08 => FoodTypeStringConverter(FoodType.Luxury) + " ¸Ş´º Á¦ÀÛ ½Ã°£\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ´ÜÃà",
-            UpgradeType.UPGRADE09 => FoodTypeStringConverter(FoodType.Cozy) + " ¸Ş´º Á¦ÀÛ ½Ã°£\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ´ÜÃà",
+            UpgradeType.UPGRADE02 => "ëª¨ë“  ë©”ë‰´ ì œì‘ ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ë‹¨ì¶•",
+            UpgradeType.UPGRADE03 => FoodTypeStringConverter(FoodType.Natural) + " ë©”ë‰´ ì œì‘ ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ë‹¨ì¶•",
+            UpgradeType.UPGRADE04 => FoodTypeStringConverter(FoodType.Modern) + " ë©”ë‰´ ì œì‘ ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ë‹¨ì¶•",
+            UpgradeType.UPGRADE05 => FoodTypeStringConverter(FoodType.Vintage) + " ë©”ë‰´ ì œì‘ ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ë‹¨ì¶•",
+            UpgradeType.UPGRADE06 => FoodTypeStringConverter(FoodType.Traditional) + " ë©”ë‰´ ì œì‘ ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ë‹¨ì¶•",
+            UpgradeType.UPGRADE07 => FoodTypeStringConverter(FoodType.Tropical) + " ë©”ë‰´ ì œì‘ ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ë‹¨ì¶•",
+            UpgradeType.UPGRADE08 => FoodTypeStringConverter(FoodType.Luxury) + " ë©”ë‰´ ì œì‘ ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ë‹¨ì¶•",
+            UpgradeType.UPGRADE09 => FoodTypeStringConverter(FoodType.Cozy) + " ë©”ë‰´ ì œì‘ ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ë‹¨ì¶•",
 
-            UpgradeType.UPGRADE10 => "ÀüÃ¼ ¸Ş´º ÆÇ¸Å ¼öÀÍ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE11 => FoodTypeStringConverter(FoodType.Natural) + " ¸Ş´º ÆÇ¸Å ¼öÀÍ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE12 => FoodTypeStringConverter(FoodType.Modern) + " ¸Ş´º ÆÇ¸Å ¼öÀÍ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE13 => FoodTypeStringConverter(FoodType.Vintage) + " ¸Ş´º ÆÇ¸Å ¼öÀÍ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE14 => FoodTypeStringConverter(FoodType.Traditional) + " ¸Ş´º ÆÇ¸Å ¼öÀÍ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE15 => FoodTypeStringConverter(FoodType.Tropical) + " ¸Ş´º ÆÇ¸Å ¼öÀÍ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE16 => FoodTypeStringConverter(FoodType.Luxury) + " ¸Ş´º ÆÇ¸Å ¼öÀÍ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE17 => FoodTypeStringConverter(FoodType.Cozy) + " ¸Ş´º ÆÇ¸Å ¼öÀÍ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
+            UpgradeType.UPGRADE10 => "ì „ì²´ ë©”ë‰´ íŒë§¤ ìˆ˜ìµ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE11 => FoodTypeStringConverter(FoodType.Natural) + " ë©”ë‰´ íŒë§¤ ìˆ˜ìµ\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE12 => FoodTypeStringConverter(FoodType.Modern) + " ë©”ë‰´ íŒë§¤ ìˆ˜ìµ\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE13 => FoodTypeStringConverter(FoodType.Vintage) + " ë©”ë‰´ íŒë§¤ ìˆ˜ìµ\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE14 => FoodTypeStringConverter(FoodType.Traditional) + " ë©”ë‰´ íŒë§¤ ìˆ˜ìµ\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE15 => FoodTypeStringConverter(FoodType.Tropical) + " ë©”ë‰´ íŒë§¤ ìˆ˜ìµ\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE16 => FoodTypeStringConverter(FoodType.Luxury) + " ë©”ë‰´ íŒë§¤ ìˆ˜ìµ\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE17 => FoodTypeStringConverter(FoodType.Cozy) + " ë©”ë‰´ íŒë§¤ ìˆ˜ìµ\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
             
-            UpgradeType.UPGRADE18 => "ÀüÃ¼ Á÷¿ø ½ºÅ³ Áö¼Ó ½Ã°£\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE19 => StaffTypeStringConverter(StaffGroupType.Manager) + " ½ºÅ³ Áö¼Ó ½Ã°£\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE20 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ½ºÅ³ Áö¼Ó ½Ã°£\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE21 => StaffTypeStringConverter(StaffGroupType.Chef) + " ½ºÅ³ Áö¼Ó ½Ã°£\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE22 => StaffTypeStringConverter(StaffGroupType.Marketer) + " ½ºÅ³ Áö¼Ó ½Ã°£\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE23=> StaffTypeStringConverter(StaffGroupType.Cleaner) + " ½ºÅ³ Áö¼Ó ½Ã°£\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE24 => StaffTypeStringConverter(StaffGroupType.Guard) + " ½ºÅ³ Áö¼Ó ½Ã°£\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
+            UpgradeType.UPGRADE18 => "ì „ì²´ ì§ì› ìŠ¤í‚¬ ì§€ì† ì‹œê°„\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE19 => StaffTypeStringConverter(StaffGroupType.Manager) + " ìŠ¤í‚¬ ì§€ì† ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE20 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ìŠ¤í‚¬ ì§€ì† ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE21 => StaffTypeStringConverter(StaffGroupType.Chef) + " ìŠ¤í‚¬ ì§€ì† ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE22 => StaffTypeStringConverter(StaffGroupType.Marketer) + " ìŠ¤í‚¬ ì§€ì† ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE23=> StaffTypeStringConverter(StaffGroupType.Cleaner) + " ìŠ¤í‚¬ ì§€ì† ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE24 => StaffTypeStringConverter(StaffGroupType.Guard) + " ìŠ¤í‚¬ ì§€ì† ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
 
-            UpgradeType.UPGRADE25 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ÀÌµ¿ ¼Óµµ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE26 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ÀÌµ¿ ¼Óµµ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE27 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ÀÌµ¿ ¼Óµµ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
-            UpgradeType.UPGRADE28 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ÀÌµ¿ ¼Óµµ\n" + (int)(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "%</color>) Áõ°¡",
+            UpgradeType.UPGRADE25 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ì´ë™ ì†ë„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE26 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ì´ë™ ì†ë„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE27 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ì´ë™ ì†ë„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
+            UpgradeType.UPGRADE28 => StaffTypeStringConverter(StaffGroupType.Waiter) + " ì´ë™ ì†ë„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) ì¦ê°€",
 
-            UpgradeType.UPGRADE29 => "ÇÇ¹ö Å¸ÀÓ ½Ã°£\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "ÃÊ(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "ÃÊ</color>) Áõ°¡",
-            UpgradeType.UPGRADE30 => "ÃÖ´ë ´ë±â ¼Õ´Ô\n" + ((int)data.DefaultValue + (int)data.UpgradeValue * (level - 1)) + "¸í(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "¸í</color>) Áõ°¡",
-            _ => string.Empty
+            UpgradeType.UPGRADE29 => "í”¼ë²„ íƒ€ì„ ì‹œê°„\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "ì´ˆ(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "ì´ˆ</color>) ì¦ê°€",
+            UpgradeType.UPGRADE30 => "ìµœëŒ€ ëŒ€ê¸° ì†ë‹˜\n" + ((int)data.DefaultValue + (int)data.UpgradeValue * (level - 1)) + "ëª…(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "ëª…</color>) ì¦ê°€",
+            _ => "íš¨ê³¼ ì—†ìŒ"
         };
         return effectDescription;
     }
@@ -272,13 +272,13 @@ public static class Utility
     public static string GetFurnitureFoodTypeSetEffectDescription( FoodType type)
     {
 
-        string description = FoodTypeStringConverter(type) + $" ¼Ó¼º À½½Ä ¼öÀÍ Áõ°¡(<color={ColorToHex(GetColor(ColorType.Positive))}>+10%</color>)";;
+        string description = FoodTypeStringConverter(type) + $" ì†ì„± ìŒì‹ ìˆ˜ìµ ì¦ê°€(<color={ColorToHex(GetColor(ColorType.Positive))}>+10%</color>)";;
         return description;
     }
 
     public static string GetKitchenFoodTypeSetEffectDescription(FoodType type)
     {
-        string description = FoodTypeStringConverter(type) + $" ¼Ó¼º À½½Ä Á¶¸® ¼Óµµ Áõ°¡(<color={ColorToHex(GetColor(ColorType.Positive))}>+10%</color>)";
+        string description = FoodTypeStringConverter(type) + $" ì†ì„± ìŒì‹ ì¡°ë¦¬ ì†ë„ ì¦ê°€(<color={ColorToHex(GetColor(ColorType.Positive))}>+10%</color>)";
         return description;
     }
 
@@ -291,31 +291,31 @@ public static class Utility
         switch (data)
         {
             case ManagerData:
-                description = $"Å×ÀÌºí·Î ¼Õ´Ô ÀÚµ¿ ¹èÄ¡(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ÃÊ)";
+                description = $"í…Œì´ë¸”ë¡œ ì†ë‹˜ ìë™ ë°°ì¹˜(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ì´ˆ)";
                 break;
 
             case WaiterData:
-                description = $"À½½ÄÀ» ¼Õ´Ô¿¡°Ô ÀÚµ¿ ¹è´Ş(±âº» ¼Óµµ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
+                description = $"ìŒì‹ì„ ì†ë‹˜ì—ê²Œ ìë™ ë°°ë‹¬(ê¸°ë³¸ ì†ë„ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
                 break;
 
             case MarketerData:
-                description = $"·¹½ºÅä¶ûÀ¸·Î ¼Õ´Ô ÀÚµ¿ È£Ãâ(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ÃÊ)";
+                description = $"ë ˆìŠ¤í† ë‘ìœ¼ë¡œ ì†ë‹˜ ìë™ í˜¸ì¶œ(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ì´ˆ)";
                 break;
 
             case ServerData:
-                description = $"ÀÚµ¿ À½½Ä ÁÖ¹® ¹Ş±â(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ÃÊ´ç 1Å×ÀÌºí)";
+                description = $"ìë™ ìŒì‹ ì£¼ë¬¸ ë°›ê¸°(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ì´ˆë‹¹ 1í…Œì´ë¸”)";
                 break;
 
             case CleanerData:
-                description = $"¾²·¹±â & ÄÚÀÎ ¼öÁı(±âº» ¼Óµµ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
+                description = $"ì“°ë ˆê¸° & ì½”ì¸ ìˆ˜ì§‘(ê¸°ë³¸ ì†ë„ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
                 break;
 
             case GuardData:
-                description = $"Áø»ó ¼Õ´Ô ÅğÄ¡(ÅğÄ¡ ¼Óµµ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                description = $"ì§„ìƒ ì†ë‹˜ í‡´ì¹˜(í‡´ì¹˜ ì†ë„ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
                 break;
 
             case ChefData:
-                description = $"ÁÖ¹æ À½½Ä Á¦ÀÛ È¿À² »ó½Â(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
+                description = $"ì£¼ë°© ìŒì‹ ì œì‘ íš¨ìœ¨ ìƒìŠ¹(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
                 break;
         }
 
@@ -328,31 +328,31 @@ public static class Utility
         switch (data)
         {
             case ManagerData:
-                description = $"Å×ÀÌºí·Î ¼Õ´Ô ÀÚµ¿ ¹èÄ¡(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ÃÊ)";
+                description = $"í…Œì´ë¸”ë¡œ ì†ë‹˜ ìë™ ë°°ì¹˜(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ì´ˆ)";
                 break;
 
             case WaiterData:
-                description = $"À½½ÄÀ» ¼Õ´Ô¿¡°Ô ÀÚµ¿ ¹è´Ş(±âº» ¼Óµµ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
+                description = $"ìŒì‹ì„ ì†ë‹˜ì—ê²Œ ìë™ ë°°ë‹¬(ê¸°ë³¸ ì†ë„ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
                 break;
 
             case MarketerData:
-                description = $"·¹½ºÅä¶ûÀ¸·Î ¼Õ´Ô ÀÚµ¿ È£Ãâ(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ÃÊ)";
+                description = $"ë ˆìŠ¤í† ë‘ìœ¼ë¡œ ì†ë‹˜ ìë™ í˜¸ì¶œ(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ì´ˆ)";
                 break;
 
             case ServerData:
-                description = $"ÀÚµ¿ À½½Ä ÁÖ¹® ¹Ş±â(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ÃÊ´ç 1Å×ÀÌºí)";
+                description = $"ìë™ ìŒì‹ ì£¼ë¬¸ ë°›ê¸°(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color> ì´ˆë‹¹ 1í…Œì´ë¸”)";
                 break;
 
             case CleanerData:
-                description = $"¾²·¹±â & ÄÚÀÎ ¼öÁı(±âº» ¼Óµµ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
+                description = $"ì“°ë ˆê¸° & ì½”ì¸ ìˆ˜ì§‘(ê¸°ë³¸ ì†ë„ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetSpeed(level)}</color>)";
                 break;
 
             case GuardData:
-                description = $"Áø»ó ¼Õ´Ô ÅğÄ¡(ÅğÄ¡ ¼Óµµ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                description = $"ì§„ìƒ ì†ë‹˜ í‡´ì¹˜(í‡´ì¹˜ ì†ë„ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
                 break;
 
             case ChefData:
-                description = $"ÁÖ¹æ À½½Ä Á¦ÀÛ È¿À² »ó½Â(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
+                description = $"ì£¼ë°© ìŒì‹ ì œì‘ íš¨ìœ¨ ìƒìŠ¹(<color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}%</color>)";
                 break;
         }
 
@@ -365,11 +365,11 @@ public static class Utility
         int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
         return data.Skill switch
         {
-            SpeedUpSkill => $"±âº» ´É·Â ¼Óµµ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> UP! (<color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.Duration}</color>ÃÊ)" ,
-            FoodPriceUpSkill => $"ÁÖ¹® ´ç À½½Ä °¡°İ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> Áõ°¡",
-            AutoCustomerGuideSkill => $"¼Õ´Ô ÀÚµ¿ ¾È³» ({data.Skill.Duration}s)",
-            AddPromotionCustomerSkill => $"È«º¸´ç ¼Õ´Ô È£Ãâ ÀÎ¿ø <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)data.Skill.FirstValue}</color>¸í Áõ°¡",
-            TouchAddCustomerButtonSkill => $"·¹½ºÅä¶û ¼Õ´Ô ÀÚµ¿ È£Ãâ (<color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}</color>ÃÊ)",
+            SpeedUpSkill => $"ê¸°ë³¸ ëŠ¥ë ¥ ì†ë„ <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> UP! (<color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.Duration}</color>ì´ˆ)" ,
+            FoodPriceUpSkill => $"ì£¼ë¬¸ ë‹¹ ìŒì‹ ê°€ê²© <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> ì¦ê°€",
+            AutoCustomerGuideSkill => $"ì†ë‹˜ ìë™ ì•ˆë‚´ ({data.Skill.Duration}s)",
+            AddPromotionCustomerSkill => $"í™ë³´ë‹¹ ì†ë‹˜ í˜¸ì¶œ ì¸ì› <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)data.Skill.FirstValue}</color>ëª… ì¦ê°€",
+            TouchAddCustomerButtonSkill => $"ë ˆìŠ¤í† ë‘ ì†ë‹˜ ìë™ í˜¸ì¶œ (<color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}</color>ì´ˆ)",
             _ => string.Empty
         };
 
@@ -382,13 +382,13 @@ public static class Utility
         if (data is SpecialCustomerData)
         {
             SpecialCustomerData specialCustomerData = (SpecialCustomerData)data;
-            description = $"{specialCustomerData.ActiveDuration}ÃÊ µ¿¾È µ¹¾Æ´Ù´Ï¸ç \nÅÍÄ¡½Ã <color={ColorToHex(GetColor(ColorType.Positive))}>{specialCustomerData.TouchAddMoney}</color>°ñµå¸¦ È¹µæÇÑ´Ù";
+            description = $"{specialCustomerData.ActiveDuration}ì´ˆ ë™ì•ˆ ëŒì•„ë‹¤ë‹ˆë©° \ní„°ì¹˜ì‹œ <color={ColorToHex(GetColor(ColorType.Positive))}>{specialCustomerData.TouchAddMoney}</color>ê³¨ë“œë¥¼ íšë“í•œë‹¤";
         }
 
         else if(data is GatecrasherCustomerData)
         {
             GatecrasherCustomerData gatecrasherCustomerData = (GatecrasherCustomerData)data;
-            description = data is GatecrasherCustomer1Data ? $"{gatecrasherCustomerData.ActiveDuration}ÃÊ µ¿¾È µ¹¾Æ´Ù´Ï¸ç µ¿ÀüÀ» ÈÉÄ£´Ù" : $"{gatecrasherCustomerData.ActiveDuration}ÃÊ µ¿¾È °í¼º¹æ°¡·Î ¼Õ´ÔµéÀ» ¦i¾Æ³½´Ù";
+            description = data is GatecrasherCustomer1Data ? $"{gatecrasherCustomerData.ActiveDuration}ì´ˆ ë™ì•ˆ ëŒì•„ë‹¤ë‹ˆë©° ë™ì „ì„ í›”ì¹œë‹¤" : $"{gatecrasherCustomerData.ActiveDuration}ì´ˆ ë™ì•ˆ ê³ ì„±ë°©ê°€ë¡œ ì†ë‹˜ë“¤ì„ ì«’ì•„ë‚¸ë‹¤";
         }
 
         else if(data is NormalCustomerData)
@@ -396,14 +396,14 @@ public static class Utility
             NormalCustomerData normalCustomerData = (NormalCustomerData)data;
 
             if (normalCustomerData.Skill == null)
-                description = "¾øÀ½";
+                description = "ì—†ìŒ";
 
             else
             {
                 if(normalCustomerData.Skill is CustomerFoodPriceUpSkill)
-                    description = $"{normalCustomerData.Skill.SkillActivatePercent}%È®·ü·Î À½½Ä °¡°İÀÇ <color={ColorToHex(GetColor(ColorType.Positive))}>{normalCustomerData.Skill.FirstValue}</color>¹è ÁöºÒÇÑ´Ù";
+                    description = $"{normalCustomerData.Skill.SkillActivatePercent}%í™•ë¥ ë¡œ ìŒì‹ ê°€ê²©ì˜ <color={ColorToHex(GetColor(ColorType.Positive))}>{normalCustomerData.Skill.FirstValue}</color>ë°° ì§€ë¶ˆí•œë‹¤";
                 else if(normalCustomerData.Skill is CustomerOrderCountUpSkill)
-                    description = $"{normalCustomerData.Skill.SkillActivatePercent}%È®·ü·Î À½½ÄÀ» <color={ColorToHex(GetColor(ColorType.Positive))}>{normalCustomerData.Skill.FirstValue}</color>°³ ÁÖ¹®ÇÑ´Ù";
+                    description = $"{normalCustomerData.Skill.SkillActivatePercent}%í™•ë¥ ë¡œ ìŒì‹ì„ <color={ColorToHex(GetColor(ColorType.Positive))}>{normalCustomerData.Skill.FirstValue}</color>ê°œ ì£¼ë¬¸í•œë‹¤";
             }      
         }
 
@@ -415,9 +415,9 @@ public static class Utility
     {
         return type switch
         {
-            CustomerTendencyType.Normal => "¹«³­ÇÔ",
-            CustomerTendencyType.Sensitive => "¿¹¹ÎÇÔ",
-            CustomerTendencyType.HighlySensitive => "ÃÊ¿¹¹Î",
+            CustomerTendencyType.Normal => "ë¬´ë‚œí•¨",
+            CustomerTendencyType.Sensitive => "ì˜ˆë¯¼í•¨",
+            CustomerTendencyType.HighlySensitive => "ì´ˆì˜ˆë¯¼",
             _ => string.Empty
         };
     }
@@ -426,10 +426,10 @@ public static class Utility
     {
         return type switch
         {
-            EquipEffectType.AddScore => $"ÆòÁ¡ <color={ColorToHex(GetColor(ColorType.Positive))}>{value}</color> Á¡ Áõ°¡",
-            EquipEffectType.AddTipPerMinute => $"ºĞ´ç È¹µæ ÆÁ <color={ColorToHex(GetColor(ColorType.Positive))}>{value}</color> Áõ°¡",
-            EquipEffectType.AddCookSpeed => "¿ä¸® È¿À² <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + value + "%</color> Áõ°¡",
-            EquipEffectType.AddMaxTip => "ÆÁ ÀúÀå·® <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + value + "</color> Áõ°¡",
+            EquipEffectType.AddScore => $"í‰ì  <color={ColorToHex(GetColor(ColorType.Positive))}>{value}</color> ì  ì¦ê°€",
+            EquipEffectType.AddTipPerMinute => $"ë¶„ë‹¹ íšë“ íŒ <color={ColorToHex(GetColor(ColorType.Positive))}>{value}</color> ì¦ê°€",
+            EquipEffectType.AddCookSpeed => "ìš”ë¦¬ íš¨ìœ¨ <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + value + "%</color> ì¦ê°€",
+            EquipEffectType.AddMaxTip => "íŒ ì €ì¥ëŸ‰ <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + value + "</color> ì¦ê°€",
             _ => string.Empty
         };
     }
@@ -466,30 +466,30 @@ public static class Utility
     }
 
 
-    /// <summary>ImageÀÇ Sprite ÇÇ¹ş°ª¿¡ ¸ÂÃç Image ÄÄÆ÷³ÍÆ® ÇÇ¹ş°ªÀ» ÀÌµ¿ÇÏ´Â ÇÔ¼ö</summary>
+    /// <summary>Imageì˜ Sprite í”¼ë²—ê°’ì— ë§ì¶° Image ì»´í¬ë„ŒíŠ¸ í”¼ë²—ê°’ì„ ì´ë™í•˜ëŠ” í•¨ìˆ˜</summary>
     public static void ChangeImagePivot(Image image)
     {
-        // ½ºÇÁ¶óÀÌÆ®ÀÇ ÇöÀç ÇÇ¹ş°ú Å©±â¸¦ ±¸ÇÔ
+        // ìŠ¤í”„ë¼ì´íŠ¸ì˜ í˜„ì¬ í”¼ë²—ê³¼ í¬ê¸°ë¥¼ êµ¬í•¨
         Vector2 spritePivot = image.sprite.pivot;
         Vector2 spriteSize = image.sprite.rect.size;
         Vector2 normalizedPivot = new Vector2(spritePivot.x / spriteSize.x, spritePivot.y / spriteSize.y);
 
-        // ÇöÀç RectTransformÀÇ Å©±â ÀúÀå
+        // í˜„ì¬ RectTransformì˜ í¬ê¸° ì €ì¥
         RectTransform rectTransform = image.rectTransform;
         Vector2 originalSize = rectTransform.rect.size;
 
-        // ÇÇ¹şÀ» »õ·Î ¼³Á¤ÇÏ±â ÀüÀÇ anchoredPosition °è»ê
+        // í”¼ë²—ì„ ìƒˆë¡œ ì„¤ì •í•˜ê¸° ì „ì˜ anchoredPosition ê³„ì‚°
         Vector2 oldPivotOffset = new Vector2(rectTransform.pivot.x * originalSize.x, rectTransform.pivot.y * originalSize.y);
         Vector2 newPivotOffset = new Vector2(normalizedPivot.x * originalSize.x, normalizedPivot.y * originalSize.y);
         Vector2 pivotDelta = newPivotOffset - oldPivotOffset;
 
-        // »õ·Î¿î ÇÇ¹ş ¼³Á¤
+        // ìƒˆë¡œìš´ í”¼ë²— ì„¤ì •
         rectTransform.pivot = normalizedPivot;
 
-        // Stretch ¸ğµåÀÎÁö È®ÀÎ (anchorMin°ú anchorMax°¡ °°Áö ¾ÊÀ¸¸é Stretch ¸ğµåÀÓ)
+        // Stretch ëª¨ë“œì¸ì§€ í™•ì¸ (anchorMinê³¼ anchorMaxê°€ ê°™ì§€ ì•Šìœ¼ë©´ Stretch ëª¨ë“œì„)
         bool isStretch = rectTransform.anchorMin != rectTransform.anchorMax;
 
-        // Stretch ¸ğµåÀÏ ¶§¸¸ anchoredPositionÀ» Á¶Á¤ÇÏ¿© ÇÇ¹ş º¯°æ¿¡ µû¸¥ À§Ä¡ º¯È­¸¦ »ó¼âÇÔ
+        // Stretch ëª¨ë“œì¼ ë•Œë§Œ anchoredPositionì„ ì¡°ì •í•˜ì—¬ í”¼ë²— ë³€ê²½ì— ë”°ë¥¸ ìœ„ì¹˜ ë³€í™”ë¥¼ ìƒì‡„í•¨
         if (isStretch)
             rectTransform.anchoredPosition -= pivotDelta;
     }
@@ -540,21 +540,21 @@ public static class Utility
 
 
     /// <summary>
-    /// ÃÊ ´ÜÀ§ ½Ã°£À» "00:00" Çü½ÄÀÇ ¹®ÀÚ¿­·Î º¯È¯ÇÕ´Ï´Ù.
+    /// ì´ˆ ë‹¨ìœ„ ì‹œê°„ì„ "00:00" í˜•ì‹ì˜ ë¬¸ìì—´ë¡œ ë³€í™˜í•©ë‹ˆë‹¤.
     /// </summary>
-    /// <param name="totalSeconds">º¯È¯ÇÒ ÃÊ ´ÜÀ§ ½Ã°£</param>
-    /// <returns>"00:00" Çü½ÄÀÇ ½Ã°£ ¹®ÀÚ¿­</returns>
+    /// <param name="totalSeconds">ë³€í™˜í•  ì´ˆ ë‹¨ìœ„ ì‹œê°„</param>
+    /// <returns>"00:00" í˜•ì‹ì˜ ì‹œê°„ ë¬¸ìì—´</returns>
     public static string SecondsToTimeString(int totalSeconds)
     {
-        // À½¼ö ½Ã°£ Ã³¸®
+        // ìŒìˆ˜ ì‹œê°„ ì²˜ë¦¬
         if (totalSeconds < 0)
             totalSeconds = 0;
 
-        // ºĞ°ú ÃÊ °è»ê
+        // ë¶„ê³¼ ì´ˆ ê³„ì‚°
         int minutes = totalSeconds / 60;
         int seconds = totalSeconds % 60;
 
-        // µÎ ÀÚ¸® ¼ıÀÚ Çü½ÄÀ¸·Î º¯È¯ (00:00)
+        // ë‘ ìë¦¬ ìˆ«ì í˜•ì‹ìœ¼ë¡œ ë³€í™˜ (00:00)
         return $"{minutes:D2}:{seconds:D2}";
     }
 

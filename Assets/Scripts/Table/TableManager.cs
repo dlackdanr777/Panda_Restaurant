@@ -219,7 +219,7 @@ public class TableManager : MonoBehaviour
         data.TotalTip += tip;
         data.CurrentFood = cookingData;
 
-        int totalPrice = (int)((cookingData.Price + GameManager.Instance.AddFoodPrice * data.CurrentCustomer.CurrentFoodPriceMul) * GameManager.Instance.GetFoodPriceMul(data.FloorType, foodData.FoodType) * GameManager.Instance.GetFoodTypePriceMul(foodData.FoodType));
+        int totalPrice = (int)(cookingData.Price * data.CurrentCustomer.CurrentFoodPriceMul * GameManager.Instance.GetFoodPriceMul(data.FloorType, foodData.FoodType));
         data.TotalPrice += totalPrice;
         data.ServingButton.SetData(foodData);
 

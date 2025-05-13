@@ -13,5 +13,4 @@ public class MiniGame1StageData
 
     [SerializeField] private int _successScore;
     public int SuccessScore => _successScore;
-
 }

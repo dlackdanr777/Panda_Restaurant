@@ -92,4 +92,6 @@ public enum UpgradeType
     UPGRADE30,
 
     Length,
+
+    None,
 }

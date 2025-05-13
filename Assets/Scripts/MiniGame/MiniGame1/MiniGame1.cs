@@ -367,7 +367,7 @@ public class MiniGame1 : MiniGameSystem
     private void SetRandIndexs()
     {
         int cardSize = _currentStageData.CardSize.x * _currentStageData.CardSize.y;
-        _randIndexs = GetRandomIndexArray(cardSize);
+        _randIndexs = GetRandomIndexArray(_itemList.Count);
     }
 
     private void SetButtonItemData()

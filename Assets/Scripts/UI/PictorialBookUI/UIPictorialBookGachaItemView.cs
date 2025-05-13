@@ -108,7 +108,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
             int requiredItemCount = UserInfo.GetUpgradeRequiredItemCount(_data);
             int giveItemCount = UserInfo.GetGiveItemCount(_data);
             int level = UserInfo.GetGachaItemLevel(_data);
-            _itemCountText.text = requiredItemCount == 0 ? "Max" : giveItemCount + "/" + requiredItemCount;
+            _itemCountText.text = requiredItemCount == 0 ? giveItemCount + "/Max" : giveItemCount + "/" + requiredItemCount;
             _giveItemFillAmount.SetFillAmount(requiredItemCount == 0 ? 1 : giveItemCount <= 0 ? 0 : (float)giveItemCount / requiredItemCount);
             _itemLevelText.text = level <= 0 ? "Lv.Max" : "Lv." + level;
             if (UserInfo.IsGachaItemUpgradeEnabled(_data))
