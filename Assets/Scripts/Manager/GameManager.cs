@@ -92,7 +92,7 @@ public class GameManager : MonoBehaviour
     private Dictionary<FoodType, float> _addGachaItemFoodPriceMulDic = new Dictionary<FoodType, float>(); //속성 음식 가격 증가 n% (UPGRADE11 ~ 17)
 
     [SerializeField] private float _addGachaItemStaffSkillTime; //전체 스탭 스킬 유지 시간 증가(+) (UPGRADE18)
-    [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSkillTimeDic = new Dictionary<StaffGroupType, float>(); //스탭 쿨타임 감소 n% (UPGRADE18 ~ 24)
+    [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSkillTimeDic = new Dictionary<StaffGroupType, float>(); //스탭 스킬 타임 증가 n% (UPGRADE18 ~ 24)
 
     [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSpeedMulDic = new Dictionary<StaffGroupType, float>(); //스탭 스피드 증가 n% (UPGRADE25 ~ 28)
 
