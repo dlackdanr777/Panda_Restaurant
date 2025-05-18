@@ -1545,7 +1545,7 @@ public static class UserInfo
             // return false;
         }
 
-        _giveGachaItemCountDic.Add(data.Id, 0);
+        _giveGachaItemCountDic.Add(data.Id, 1);
         _giveGachaItemLevelDic.Add(data.Id, 1);
         AddNotification(data.Id);
         OnGiveGachaItemHandler?.Invoke();
@@ -1579,7 +1579,7 @@ public static class UserInfo
                 // continue;
             }
 
-            _giveGachaItemCountDic.Add(dataList[i].Id, 0);
+            _giveGachaItemCountDic.Add(dataList[i].Id, 1);
             _giveGachaItemLevelDic.Add(dataList[i].Id, 1);
             AddNotification(dataList[i].Id);
         }
@@ -1611,7 +1611,7 @@ public static class UserInfo
             // return false;
         }
 
-        _giveGachaItemCountDic.Add(data.Id, 0);
+        _giveGachaItemCountDic.Add(data.Id, 1);
         _giveGachaItemLevelDic.Add(data.Id, 1);
         AddNotification(data.Id);
         OnGiveGachaItemHandler?.Invoke();

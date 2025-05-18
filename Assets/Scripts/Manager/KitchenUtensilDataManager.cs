@@ -86,15 +86,15 @@ public class KitchenUtensilDataManager : MonoBehaviour
         KitchenDataParse(basePath + "FridgeData", KitchenUtensilType.Fridge, EquipEffectType.AddTipPerMinute);
         KitchenDataParse(basePath + "CabinetData", KitchenUtensilType.Cabinet, EquipEffectType.AddTipPerMinute);
         KitchenDataParse(basePath + "WindowData", KitchenUtensilType.Window, EquipEffectType.AddTipPerMinute);
-        KitchenDataParse(basePath + "SinkData", KitchenUtensilType.Sink, EquipEffectType.AddTipPerMinute);
         KitchenDataParse(basePath + "CooktoolData", KitchenUtensilType.CookingTools, EquipEffectType.AddTipPerMinute);
         KitchenDataParse(basePath + "KitchenrackData", KitchenUtensilType.Kitchenrack, EquipEffectType.AddTipPerMinute);
+        SinkDataParse(basePath + "SinkData", EquipEffectType.AddTipPerMinute);
     }
 
 
     private static void LoadFurnitureSprites(string basePath)
     {
-        string[] setFolders = { "01", "02", "03", "04", "05" };
+        string[] setFolders = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"};
 
         foreach (string setFolder in setFolders)
         {
@@ -104,8 +104,11 @@ public class KitchenUtensilDataManager : MonoBehaviour
             foreach (var sprite in sprites)
             {
                 string spriteName = sprite.name;
-                bool isThumbnail = spriteName.Contains("썸네일"); // 썸네일 여부 확인
+                string afterUnderStr = Utility.GetStringAfterChar(spriteName, '_'); // 언더바 이후 문자열
+                bool isThumbnail = afterUnderStr.Contains("썸네일"); // 썸네일 여부 확인
                 string key = CutStringUpToChar(spriteName, '_'); // 기본 키 생성
+
+                DebugLog.Log(spriteName + "is thumbnail: " + isThumbnail);
                 if (isThumbnail)
                 {
                     _thumbnailSpriteDic.Add(key, sprite);
@@ -144,18 +147,17 @@ public class KitchenUtensilDataManager : MonoBehaviour
             string name = row[1].Trim();
             string attribute = row[2].Trim();
             FoodType foodType = Utility.GetFoodType(attribute);
-            string setId = (row[3].Trim());
+            string setId = row[3].Trim();
             int addScore = int.Parse(row[4].Trim());
             int effectValue = int.Parse(row[5].Trim());
             int unlockScore = int.Parse(row[6].Trim());
 
             MoneyType moneyType = row[7].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
             int price = int.Parse(row[8].Trim());
-            float size = float.Parse(row[9].Trim());
 
-            UnlockConditionType unlockType = row.Length < 11 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[10].Trim());
-            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[11].Trim();
-            if(unlockType == UnlockConditionType.None || !int.TryParse(row[12].Trim(), out int unlockCount))
+            UnlockConditionType unlockType = row.Length < 10 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[9].Trim());
+            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[10].Trim();
+            if(unlockType == UnlockConditionType.None || !int.TryParse(row[11].Trim(), out int unlockCount))
             {
                 unlockCount = 0;
             }
@@ -186,10 +188,89 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 addScore,
                 effectType,
                 effectValue,
-                size,
                 unlockType,
                 unlockId,
                 unlockCount
+            );
+
+
+            _kitchenUtensilDataDic.Add(id, kitchenData);
+            _kitchenUtensilDataListType[(int)kitchenData.Type].Add(kitchenData);
+        }
+    }
+
+
+    private static void SinkDataParse(string loadPath, EquipEffectType effectType)
+    {
+        TextAsset csvData = Resources.Load<TextAsset>(loadPath);
+        if (csvData == null)
+        {
+            Debug.LogError($"파일을 찾을 수 없습니다: {loadPath}");
+            return;
+        }
+
+        string[] data = csvData.text.Split('\n');
+
+        KitchenUtensilType type = KitchenUtensilType.Sink;
+        for (int i = 1; i < data.Length; i++)
+        {
+            string[] row = data[i].Split(',');
+            string id = row[0].Trim();
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                Debug.LogError("Id값이 이상합니다: " + id);
+                continue;
+            }
+
+            string name = row[1].Trim();
+            string attribute = row[2].Trim();
+            FoodType foodType = Utility.GetFoodType(attribute);
+            string setId = row[3].Trim();
+            int addScore = int.Parse(row[4].Trim());
+            int effectValue = int.Parse(row[5].Trim());
+            int unlockScore = int.Parse(row[6].Trim());
+
+            MoneyType moneyType = row[7].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
+            int price = int.Parse(row[8].Trim());
+            int maxSinkBowlCount = int.Parse(row[9].Trim());
+
+            UnlockConditionType unlockType = row.Length < 11 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[10].Trim());
+            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[11].Trim();
+            if (unlockType == UnlockConditionType.None || !int.TryParse(row[12].Trim(), out int unlockCount))
+            {
+                unlockCount = 0;
+            }
+
+
+            if (!_spriteDic.TryGetValue(id, out Sprite sprite))
+            {
+                Debug.LogError($"스프라이트가 없습니다: {id}");
+                continue;
+            }
+
+            if (!_thumbnailSpriteDic.TryGetValue(id, out Sprite thumbnailSprite))
+            {
+                thumbnailSprite = sprite;
+            }
+
+            KitchenUtensilSinkData kitchenData = new KitchenUtensilSinkData(
+                sprite,
+                thumbnailSprite,
+                id,
+                setId,
+                name,
+                moneyType,
+                unlockScore,
+                price,
+                type,
+                foodType,
+                addScore,
+                effectType,
+                effectValue,
+                unlockType,
+                unlockId,
+                unlockCount,
+                maxSinkBowlCount
             );
 
 
@@ -246,11 +327,9 @@ public class KitchenUtensilDataManager : MonoBehaviour
             int table5BuyPrice = int.Parse(row[19].Trim());
             int table5AddScore = int.Parse(row[20].Trim());
 
-            float size = float.Parse(row[21].Trim());
-
-            UnlockConditionType unlockType = row.Length < 23 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[22].Trim());
-            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[23].Trim();
-            if (unlockType == UnlockConditionType.None || !int.TryParse(row[24].Trim(), out int unlockCount))
+            UnlockConditionType unlockType = row.Length < 22 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[21].Trim());
+            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[22].Trim();
+            if (unlockType == UnlockConditionType.None || !int.TryParse(row[23].Trim(), out int unlockCount))
             {
                 unlockCount = 0;
             }
@@ -280,7 +359,6 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 table1AddScore,
                 effectType,
                 effectValue,
-                size,
                                 unlockType,
                 unlockId,
                 unlockCount
@@ -300,7 +378,6 @@ public class KitchenUtensilDataManager : MonoBehaviour
     table2AddScore,
     effectType,
     effectValue,
-    size,
                     unlockType,
                 unlockId,
                 unlockCount
@@ -320,7 +397,6 @@ public class KitchenUtensilDataManager : MonoBehaviour
     table3AddScore,
     effectType,
     effectValue,
-    size,
                     unlockType,
                 unlockId,
                 unlockCount
@@ -340,7 +416,6 @@ public class KitchenUtensilDataManager : MonoBehaviour
     table4AddScore,
     effectType,
     effectValue,
-    size,
                     unlockType,
                 unlockId,
                 unlockCount
@@ -360,7 +435,6 @@ public class KitchenUtensilDataManager : MonoBehaviour
     table5AddScore,
     effectType,
     effectValue,
-    size,
                     unlockType,
                 unlockId,
                 unlockCount

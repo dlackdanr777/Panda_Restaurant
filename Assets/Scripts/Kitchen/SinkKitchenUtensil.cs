@@ -116,6 +116,16 @@ public class SinkKitchenUtensil : KitchenUtensil
         _isTouchWashing = false;
     }
 
+    protected override void SetRendererScale(KitchenUtensilData data)
+    {
+        base.SetRendererScale(data);
+        if (_batchType == KitchenUtensilBatchType.Lower)
+        {
+            _spriteRenderer.transform.localPosition -= new Vector3(0, 0.7f, 0);
+        }
+
+    }
+
 
     private void OnDestroy()
     {

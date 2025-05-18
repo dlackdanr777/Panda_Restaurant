@@ -114,7 +114,7 @@ public class FurnitureDataManager : MonoBehaviour
                 string afterUnderStr = Utility.GetStringAfterChar(spriteName, '_'); // 언더바 이후 문자열
                 bool isThumbnail = spriteName.Contains("썸네일"); // 썸네일 여부 확인
                 bool isChair = afterUnderStr.Contains("의자") || afterUnderStr.Contains("체어");
-                DebugLog.Log(spriteName);
+                //DebugLog.Log(spriteName);
                 if (isThumbnail)
                 {
                     _thumbnailSpriteDic.Add(key, sprite);
@@ -122,17 +122,14 @@ public class FurnitureDataManager : MonoBehaviour
 
                 else if(isChair)
                 {
-                    DebugLog.Log(spriteName);
                     if (afterUnderStr.Contains("L") || spriteName.Contains("좌"))
                     {
                         if(afterUnderStr.Contains("팔걸이"))
                         {
-                            DebugLog.Log("11");
                             _leftChairArmrestSpriteDic.Add(key, sprite);
                         }
                         else
                         {
-                            DebugLog.Log("22");
                             _leftChairSpriteDic.Add(key, sprite);
                         }
                     }
@@ -141,12 +138,10 @@ public class FurnitureDataManager : MonoBehaviour
                     {
                         if (afterUnderStr.Contains("팔걸이"))
                         {
-                            DebugLog.Log("33");
                             _rightChairArmrestSpriteDic.Add(key, sprite);
                         }
                         else
                         {
-                            DebugLog.Log("44");
                             _rightChairSpriteDic.Add(key, sprite);
                         }
                     }

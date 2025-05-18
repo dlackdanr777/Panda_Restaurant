@@ -11,7 +11,7 @@ public class UIMiniGame1GridLayout : MonoBehaviour
     public void Init()
     {
         _cellSize = _gridLayoutGroup.cellSize;
-        DebugLog.Log(_cellSize);
+
     }
 
     public void SetConstraintCount(int count)
