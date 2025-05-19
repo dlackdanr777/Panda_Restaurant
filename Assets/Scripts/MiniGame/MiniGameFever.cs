@@ -39,6 +39,7 @@ public class MiniGameFever : MonoBehaviour
     [SerializeField] private MiniGameStartTimer _startTimer;
     [SerializeField] private GameObject _dontTouchArea;
     [SerializeField] private Button _screenTouchButton;
+    [SerializeField] private Transform _feverImageGroup;
 
     [SerializeField] private Animator _jarAnimator;
     [SerializeField] private Animator _panda3Animator;
@@ -95,6 +96,8 @@ public class MiniGameFever : MonoBehaviour
         _screenTouchButton.gameObject.SetActive(false);
         ResetState();
         StopEffects();
+
+
         StartCoroutine(Play());
     }
 
@@ -175,11 +178,17 @@ public class MiniGameFever : MonoBehaviour
     private IEnumerator Play()
     {
         _dontTouchArea.SetActive(true);
+        _feverImageGroup.gameObject.SetActive(true);
+        _feverImageGroup.localScale = Vector3.one * 0.1f;
+        _feverImageGroup.TweenScale(Vector3.one, 0.2f, Ease.OutBack);
+
         SoundManager.Instance.StopBackgroundAudio();
-        yield return YieldCache.WaitForSeconds(0.5f);
+        yield return YieldCache.WaitForSeconds(2f);
+        _feverImageGroup.gameObject.SetActive(false);
+
         SoundManager.Instance.PlayEffectAudio(EffectType.UI, _startSound);
         StopEffects();
-        yield return YieldCache.WaitForSeconds(2f);
+        yield return YieldCache.WaitForSeconds(1f);
         yield return StartCoroutine(_startTimer.StartTimer());
 
         SoundManager.Instance.PlayBackgroundAudio(_bgSound, 0.5f);

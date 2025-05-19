@@ -24,7 +24,11 @@ namespace Muks.Tween
 
         public static TweenWait Wait(float duration, Action onCompleted)
         {
+            // 최소 대기 시간 보장
+            duration = Mathf.Max(0.001f, duration);
+            
             TweenWait tween = null;
+            
             if (_tweenWaitQueue.Count == 0)
             {
                 GameObject obj = new GameObject("TweenWaitObj");
@@ -34,18 +38,13 @@ namespace Muks.Tween
             else
             {
                 tween = _tweenWaitQueue.Dequeue();
+                tween.Clear();
             }
 
+            tween.SetData(duration, onCompleted);
+            tween.gameObject.SetActive(true);
             tween.enabled = true;
-            tween.AddDataSequence(new TweenDataSequence(null, duration, Ease.Constant, null));
-            tween.OnComplete(() =>
-            {
-                onCompleted?.Invoke();
-                tween.enabled = false;
-                tween.Clear();
-                _tweenWaitQueue.Enqueue(tween);
-            });
-
+            Debug.Log($"Created Wait with duration {duration}s");
             return tween;
         }
 

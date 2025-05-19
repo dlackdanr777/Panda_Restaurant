@@ -11,6 +11,8 @@ public class MiniGameTimer : MonoBehaviour
     [SerializeField] private Image _footImage;
     [SerializeField] private RectTransform _gaugeBarRect;
     [SerializeField] private RectTransform _footRect;
+    [SerializeField] private RectTransform[] _footFollowObjs;
+
 
     [Space]
     [Header("Sprites")]
@@ -91,9 +93,15 @@ public class MiniGameTimer : MonoBehaviour
         float yPosition = fillAmount * gaugeHeight - (gaugeHeight / 2f);
 
         // 위치 설정 (x 위치는 유지, y 위치만 변경)
-        _footRect.anchoredPosition = new Vector2(
+        Vector2 targetPos = new Vector2(
             _footRect.anchoredPosition.x,
             yPosition
         );
+        _footRect.anchoredPosition = targetPos;
+        for(int i = 0; i < _footFollowObjs.Length; i++)
+        {
+            _footFollowObjs[i].anchoredPosition = targetPos;
+        }
+
     }
 }

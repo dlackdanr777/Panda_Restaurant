@@ -46,7 +46,7 @@ public class GatecrasherCustomer : Customer
     private Coroutine _enabledCoroutine;
     private Coroutine _speedRecoveryCoroutine;
     private Coroutine _subSatisfactionCoroutine;
-    private TweenData _tween;
+    private TweenWait _tween;
     private Action<Customer> _onCompleted;
     private Action _gatecrasher1OnChangeShape;
 

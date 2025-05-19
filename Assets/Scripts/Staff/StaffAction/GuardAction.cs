@@ -34,7 +34,6 @@ public class GuardAction : IStaffAction
 
         float speedMul = staff.SpeedMul;
         _actionTimer -= Time.deltaTime * speedMul;
-        DebugLog.Log(_actionTimer);
         if (0 < _actionTimer)
             return;
 
@@ -42,13 +41,11 @@ public class GuardAction : IStaffAction
 
         if(_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy)
         {
-            DebugLog.Log("111");
             if (_customerController.GatecrasherCustomer[(int)staff.EquipFloorType] == null)
                 return;
 
             if (_customerController.GatecrasherCustomer[(int)staff.EquipFloorType].CustomerData is GatecrasherCustomer1Data)
             {
-                DebugLog.Log("222");
                 _gatecrasherCustomer = _customerController.GatecrasherCustomer[(int)staff.EquipFloorType];
                 return;
             }

@@ -14,7 +14,7 @@ public class WaiterAction : IStaffAction
     private const float _duration = 2f;
 
     private TableManager _tableManager;
-    private TweenData _tweenData;
+    private TweenWait _tweenData;
 
 
     private bool _isUsed = false;

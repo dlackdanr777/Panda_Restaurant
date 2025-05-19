@@ -103,7 +103,7 @@ public class UITutorialDescriptionNPC : MobileUIView
             _cursorObjs[i].gameObject.SetActive(false);
 
         text.Text.text = string.Empty;
-        TweenData tween = Tween.Wait(0.2f, () => _screenButton.gameObject.SetActive(true));
+        TweenWait tween = Tween.Wait(0.2f, () => _screenButton.gameObject.SetActive(true));
         _isScreenClicked = false;
 
         yield return YieldCache.WaitForSeconds(duration);
@@ -119,7 +119,6 @@ public class UITutorialDescriptionNPC : MobileUIView
         text.Text.text = str;
         _screenButton.gameObject.SetActive(false);
         _isScreenClicked = false;
-        tween.Clear();
         yield return YieldCache.WaitForSeconds(0.2f);
         _screenButton.gameObject.SetActive(true);
         for (int i = 0, cnt = _cursorObjs.Length; i < cnt; ++i)

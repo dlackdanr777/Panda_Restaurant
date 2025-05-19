@@ -20,7 +20,7 @@ public class ChefAction : IStaffAction
     private float _time;
 
     private Vector3 _defaultPos;
-    private TweenData _tweenData;
+    private TweenWait _tweenData;
     private Staff _staff;
 
     private KitchenBurnerData _burnerData;

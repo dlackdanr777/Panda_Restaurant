@@ -12,7 +12,7 @@ public class CleanerAction : IStaffAction
     private bool _isNoAction;
     private float _time;
     private float _durationMul;
-    private TweenData _tweenData;
+    private TweenWait _tweenData;
     private Vector3 _cleanerPos;
     private StaffCleaner _cleaner;
 
