@@ -9,28 +9,48 @@ public class FirstLoadingScene : MonoBehaviour
     private void Start()
     {
         _uiFirstLoadingScene.Init();
-        Tween.Wait(1, StartLoadData);
+        Tween.Wait(0.5f, StartLoadData2);
     }
 
-    private void StartLoadData()
+    private void StartLoadDataAsync()
     {
         _uiFirstLoadingScene.ShowTitle(() =>
         {
-            BackendManager.Instance.GuestLoginAsync( (bro) =>
+            BackendManager.Instance.GuestLoginAsync((bro) =>
             {
-                BackendManager.Instance.GetMyDataAsync("GameData", (bro) =>{
+                Debug.Log("00");
+                BackendManager.Instance.GetMyDataAsync("GameData", (bro) =>
+                {
                     UserInfo.LoadGameData(bro);
-                    UserInfo.LoadStageData();
-                    Tween.Wait(0.5f, () =>
+                    UserInfo.LoadStageDataAsync();
+                    Tween.Wait(0.2f, () =>
                     {
-                    _uiFirstLoadingScene.HideTitle(() =>
-                    {
-                        Tween.Wait(1f, () => LoadingSceneManager.LoadScene("Stage1"));
+                        _uiFirstLoadingScene.HideTitle(() =>
+                        {
+                            Tween.Wait(0.5f, () => LoadingSceneManager.LoadScene("Stage1"));
+                        });
                     });
                 });
-            });         
-        });            
+            });
         });
     }
 
+    private void StartLoadData2()
+    {
+        _uiFirstLoadingScene.ShowTitle(() =>
+        {
+            BackendManager.Instance.GuestLoginAsync((bro) =>
+            {
+                UserInfo.LoadGameData(BackendManager.Instance.GetMyData("GameData"));
+                UserInfo.LoadStageData();
+                Tween.Wait(0.1f, () =>
+                {
+                    _uiFirstLoadingScene.HideTitle(() =>
+                    {
+                        Tween.Wait(0.2f, () => LoadingSceneManager.LoadScene("Stage1"));
+                    });
+                });
+            });
+        });
+    }
 }

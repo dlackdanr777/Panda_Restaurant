@@ -644,161 +644,100 @@ public class TableManager : MonoBehaviour
 
 
 
+public DropGarbageArea GetMinDistanceGarbageArea(ERestaurantFloorType floorType, Vector3 startPos)
+{
+    return GetMinDistanceObject(
+        RestaurantType.Hall,
+        startPos,
+        _furnitureSystem.GetDropGarbageAreaList(floorType),
+        area => area.transform.position,
+        area => area.Count > 0
+    );
+}
 
-    public DropGarbageArea GetMinDistanceGarbageArea(ERestaurantFloorType floorType, Vector3 startPos)
+public DropCoinArea GetMinDistanceCoinArea(ERestaurantFloorType floorType, Vector3 startPos)
+{
+    return GetMinDistanceObject(
+        RestaurantType.Hall,
+        startPos,
+        _furnitureSystem.GetDropCoinAreaList(floorType),
+        area => area.transform.position,
+        area => area.Count > 0
+    );
+}
+
+public TableData GetMinDistanceTable(ERestaurantFloorType floorType, Vector3 startPos, List<TableData> tableDataList)
+{
+    return GetMinDistanceObject(
+        RestaurantType.Hall,
+        startPos,
+        tableDataList,
+        table => table.transform.position,
+        null,
+        1f
+    );
+}
+
+public KitchenBurnerData GetMinDistanceBurner(ERestaurantFloorType floorType, Vector3 startPos, List<KitchenBurnerData> dataList)
+{
+    return GetMinDistanceObject(
+        RestaurantType.Kitchen,
+        startPos,
+        dataList,
+        data => data.KitchenUtensil.transform.position,
+        null,
+        1f
+    );
+}
+
+
+    // 제네릭 함수로 가장 가까운 객체를 찾는 메서드
+    private T GetMinDistanceObject<T>(
+        RestaurantType restaurantType,
+        Vector3 startPos,
+        IEnumerable<T> objects,
+        Func<T, Vector3> positionGetter,
+        Func<T, bool> validationCheck = null,
+        float doorThreshold = 0.5f) where T : class
     {
-        Vector3 targetDoorPos = GetDoorPos(RestaurantType.Hall, startPos);
-        DropGarbageArea minEqualArea = null;
-        DropGarbageArea minNotEqualArea = null;
+        Vector3 targetDoorPos = GetDoorPos(restaurantType, startPos);
+        T minEqualObject = null;
+        T minNotEqualObject = null;
 
         float minEqualDist = float.MaxValue;
         float minNotEqualDist = float.MaxValue;
 
-        foreach (var area in _furnitureSystem.GetDropGarbageAreaList(floorType))
+        foreach (var obj in objects)
         {
-            if (area.Count <= 0)
+            // 유효성 검사 함수가 있고 해당 객체가 유효하지 않으면 건너뜀
+            if (validationCheck != null && !validationCheck(obj))
                 continue;
 
-            Vector3 doorPos = GetDoorPos(RestaurantType.Hall, area.transform.position);
-            float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
-            float startDistance = Vector2.Distance(area.transform.position, startPos);
+            Vector3 objPosition = positionGetter(obj);
+            Vector3 doorPos = GetDoorPos(restaurantType, objPosition);
+            float doorDistance = Mathf.Abs(targetDoorPos.y - doorPos.y);
+            float startDistance = Vector3.Distance(objPosition, startPos);
 
-            if (doorDistance <= 0.5f)
+            if (doorDistance <= doorThreshold)
             {
                 if (startDistance < minEqualDist)
                 {
                     minEqualDist = startDistance;
-                    minEqualArea = area;
+                    minEqualObject = obj;
                 }
             }
             else
             {
-                float areaDoorDistance = Vector3.Distance(area.transform.position, doorPos);
-                if (startDistance < minNotEqualDist)
+                float objDoorDistance = Vector3.Distance(objPosition, doorPos);
+                if (objDoorDistance < minNotEqualDist)
                 {
-                    minNotEqualDist = areaDoorDistance;
-                    minNotEqualArea = area;
+                    minNotEqualDist = objDoorDistance;
+                    minNotEqualObject = obj;
                 }
             }
         }
 
-        return minEqualArea ?? minNotEqualArea;
-    }
-
-    public DropCoinArea GetMinDistanceCoinArea(ERestaurantFloorType floorType, Vector3 startPos)
-    {
-        Vector3 targetDoorPos = GetDoorPos(RestaurantType.Hall, startPos);
-        DropCoinArea minEqualArea = null;
-        DropCoinArea minNotEqualArea = null;
-
-        float minEqualDist = float.MaxValue;
-        float minNotEqualDist = float.MaxValue;
-
-        foreach (var area in _furnitureSystem.GetDropCoinAreaList(floorType))
-        {
-            if (area.Count <= 0)
-                continue;
-
-            Vector3 doorPos = GetDoorPos(RestaurantType.Hall, area.transform.position);
-            float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
-            float startDistance = Vector2.Distance(area.transform.position, startPos);
-
-            if (doorDistance <= 0.5f)
-            {
-                if (startDistance < minEqualDist)
-                {
-                    minEqualDist = startDistance;
-                    minEqualArea = area;
-                }
-            }
-            else
-            {
-                float areaDoorDistance = Vector3.Distance(area.transform.position, doorPos);
-                if (startDistance < minNotEqualDist)
-                {
-                    minNotEqualDist = areaDoorDistance;
-                    minNotEqualArea = area;
-                }
-            }
-        }
-
-        return minEqualArea ?? minNotEqualArea;
-    }
-
-
-    public TableData GetMinDistanceTable(ERestaurantFloorType floorType, Vector3 startPos, List<TableData> tableDataList)
-    {
-        Vector3 targetDoorPos = GetDoorPos(RestaurantType.Hall, startPos);
-        TableData minEqualTable = null;
-        TableData minNotEqualTable = null;
-
-        float minEqualDist = float.MaxValue;
-        float minNotEqualDist = float.MaxValue;
-
-        foreach (var table in tableDataList)
-        {
-            Vector3 doorPos = GetDoorPos(RestaurantType.Hall, table.transform.position);
-            float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
-            float startDistance = Vector2.Distance(table.transform.position, startPos);
-
-            if (doorDistance <= 1f)
-            {
-                if (startDistance < minEqualDist)
-                {
-                    minEqualDist = startDistance;
-                    minEqualTable = table;
-                }
-            }
-            else
-            {
-                float tableDoorDistance = Vector3.Distance(table.transform.position, doorPos);
-                if (tableDoorDistance < minNotEqualDist)
-                {
-                    minNotEqualDist = tableDoorDistance;
-                    minNotEqualTable = table;
-                }
-            }
-        }
-
-        return minEqualTable ?? minNotEqualTable;
-    }
-
-
-    public KitchenBurnerData GetMinDistanceBurner(ERestaurantFloorType floorType, Vector3 startPos, List<KitchenBurnerData> dataList)
-    {
-        Vector3 targetDoorPos = GetDoorPos(RestaurantType.Kitchen, startPos);
-        KitchenBurnerData minEqualData = null;
-        KitchenBurnerData minNotEqualData = null;
-
-        float minEqualDist = float.MaxValue;
-        float minNotEqualDist = float.MaxValue;
-
-        foreach (var data in dataList)
-        {
-            Vector3 doorPos = GetDoorPos(RestaurantType.Kitchen, data.KitchenUtensil.transform.position);
-            float doorDistance = Vector3.Distance(targetDoorPos, doorPos);
-            float startDistance = Vector2.Distance(data.KitchenUtensil.transform.position, startPos);
-
-            if (doorDistance <= 1f)
-            {
-                if (startDistance < minEqualDist)
-                {
-                    minEqualDist = startDistance;
-                    minEqualData = data;
-                }
-            }
-            else
-            {
-                float tableDoorDistance = Vector3.Distance(data.KitchenUtensil.transform.position, doorPos);
-                if (tableDoorDistance < minNotEqualDist)
-                {
-                    minNotEqualDist = tableDoorDistance;
-                    minNotEqualData = data;
-                }
-            }
-        }
-
-        return minEqualData ?? minNotEqualData;
+        return minEqualObject ?? minNotEqualObject;
     }
 
 

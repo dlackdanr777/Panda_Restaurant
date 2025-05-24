@@ -25,12 +25,12 @@ public class UIFirstLoadingScene : MonoBehaviour
     public void ShowTitle(Action onCompleted = null)
     {
         _title.color = new Color(_title.color.r, _title.color.g, _title.color.b, 0);
-        _title.TweenAlpha(1, 1f, Ease.Smoothstep).OnComplete(onCompleted);
+        _title.TweenAlpha(1, 0.7f, Ease.Smoothstep).OnComplete(onCompleted);
     }
 
     public void HideTitle(Action onCompleted = null)
     {
         _title.color = new Color(_title.color.r, _title.color.g, _title.color.b, 1);
-        _title.TweenAlpha(0, 1f, Ease.Smoothstep).OnComplete(onCompleted);
+        _title.TweenAlpha(0, 0.5f, Ease.Smoothstep).OnComplete(onCompleted);
     }
 }

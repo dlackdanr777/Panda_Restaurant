@@ -44,7 +44,6 @@ namespace Muks.Tween
             tween.SetData(duration, onCompleted);
             tween.gameObject.SetActive(true);
             tween.enabled = true;
-            Debug.Log($"Created Wait with duration {duration}s");
             return tween;
         }
 

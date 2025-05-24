@@ -25,7 +25,7 @@ MonoBehaviour:
     _cardSize: {x: 2, y: 3}
     _stageTime: 6
     _successScore: 140
-  - _cardCount: 3
+  - _cardCount: 4
     _cardSize: {x: 3, y: 3}
     _stageTime: 5.5
     _successScore: 160

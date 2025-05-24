@@ -111,7 +111,7 @@ public class DropCoinArea : MonoBehaviour
         _currentMoney = 0;
         _data.SetMoney(_currentMoney);
         _data.SetCoinCount(0);
-        SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.GoldSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
         {
@@ -142,7 +142,7 @@ public class DropCoinArea : MonoBehaviour
         _currentMoney = 0;
         _data.SetMoney(_currentMoney);
         _data.SetCoinCount(0);
-        SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.GoldSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
         {

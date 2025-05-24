@@ -89,7 +89,6 @@ public class MiniGameTimer : MonoBehaviour
         // 게이지바 아래쪽이 0, 위쪽이 gaugeHeight라고 가정
 
         // 그림의 중앙이 게이지바 채워진 부분 상단에 위치하도록 함
-        float footHeight = _footRect.rect.height;
         float yPosition = fillAmount * gaugeHeight - (gaugeHeight / 2f);
 
         // 위치 설정 (x 위치는 유지, y 위치만 변경)
