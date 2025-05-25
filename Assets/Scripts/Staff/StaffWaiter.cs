@@ -105,6 +105,14 @@ public class StaffWaiter : Staff
             _bowlAnimator.enabled = false;
             _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() =>
             {
+                _spriteRenderer.TweenStop();
+                _bottomBowl.TweenStop();
+                _topBowl.TweenStop();
+                _skillEffect.TweenStop();
+                _spriteRenderer.color = Color.white;
+                _bottomBowl.color = Color.white;
+                _topBowl.color = Color.white;
+                _skillEffect.color = Color.white;
                 AStar.Instance.RequestPath(_tableManager.GetDoorPos(RestaurantType.Hall, _targetPos), _targetPos, TargetMove);
                 _bowlAnimator.enabled = true;
             }));

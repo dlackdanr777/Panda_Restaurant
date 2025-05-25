@@ -15,8 +15,8 @@ public class Staff : MonoBehaviour
 
     [Space]
     [Header("Skill")]
-    [SerializeField] private SpriteRenderer _skillEffect;
-    [SerializeField] private AudioClip _skillActiveSound;
+    [SerializeField] protected SpriteRenderer _skillEffect;
+    [SerializeField] protected AudioClip _skillActiveSound;
 
     protected TableManager _tableManager;
     protected KitchenSystem _kitchenSystem;
