@@ -129,21 +129,29 @@ public class ChefAction : IStaffAction
     private void ResetStaffState(Staff staff)
     {
         _tweenData?.TweenStop();
+        _tweenData = null; // 중요: null로 설정
+        
         _isUsed = false;
         _notEqulsFloor = false;
         _time = 0;
 
-        if (_sink.UseStaff != null && _sink.UseStaff == _staff)
+        if (_sink != null && _sink.UseStaff == _staff)
         {
             _sink.SetUseStaff(null);
             _sink.EndStaffAction();
+        }
+
+        // 현재 버너 데이터 정리 - 별도 메서드 사용
+        if (_burnerData != null)
+        {
+            CleanupBurnerData(_burnerData);
         }
 
         if (_isNoAction)
             return;
 
         _isNoAction = true;
-        if (Vector2.Distance(staff.transform.position, _defaultPos) > 0.05f)
+        if (staff != null && _defaultPos != null && Vector2.Distance(staff.transform.position, _defaultPos) > 0.05f)
             staff.Move(_defaultPos, 1);
     }
 
@@ -247,61 +255,86 @@ public class ChefAction : IStaffAction
 
     private void UpdateBurnerAction(KitchenBurnerData data)
     {
-        if (data.UseStaff == null)
+        // 이미 null 체크
+        if (data == null || data.UseStaff == null || data.UseStaff != _staff)
         {
             ResetStaffState(_staff);
             return;
         }
 
-        if (data.UseStaff != null && data.UseStaff != _staff)
-        {
-            ResetStaffState(_staff);
-            return;
-        }
-
+        // 튜토리얼 확인
         if (UserInfo.IsTutorialStart)
         {
+            CleanupBurnerData(data);
             ResetStaffState(_staff);
-            if(data.UseStaff != null && data.UseStaff == _staff)
-            {
-                data.SetStaffUsable(false);
-                data.SetUseStaff(null);
-                data.SetAddCookSpeedMul(0);
-                _burnerData = null;
-            }
             return;
         }
 
+        // 요리 데이터 유효성 확인
         if (data.CookingData.IsDefault())
         {
+            CleanupBurnerData(data);
             ResetStaffState(_staff);
-            if (data.UseStaff != null && data.UseStaff == _staff)
-            {
-                data.SetStaffUsable(false);
-                data.SetUseStaff(null);
-                data.SetAddCookSpeedMul(0);
-                _burnerData = null;
-            }
-
             return;
         }
 
-        if(!_sink.IsStaffWashing && !UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _staff.EquipFloorType) && _sink.UseStaff == null)
+        // 싱크대 조건 확인 - 주의: !_sink.IsStaffWashing 조건은 싱크대로 전환해야 할 수 있음
+        if (!_sink.IsStaffWashing && !UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _staff.EquipFloorType) && _sink.UseStaff == null)
         {
-            ResetStaffState(_staff);
-            if (data.UseStaff != null && data.UseStaff == _staff)
-            {
-                data.SetStaffUsable(false);
-                data.SetUseStaff(null);
-                data.SetAddCookSpeedMul(0);
-                _burnerData = null;
+            // 여기서 싱크대로 이동해야 할 수 있음 - 단순히 리셋만 하지 말고 다음 행동 결정
+            bool shouldGoToSink = UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _staff.EquipFloorType) > 0;
+            
+            CleanupBurnerData(data);
+            
+            if (shouldGoToSink) {
+                // 싱크대로 전환 (재귀 호출 대신)
+                _tweenData?.TweenStop();
+                _isUsed = false;
+                _notEqulsFloor = false;
+                _time = 0;
+                
+                SinkAction(_staff, () => {
+                    int bowlCount = UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _staff.EquipFloorType);
+                    List<KitchenBurnerData> burnerDataList = _kitchenSystem.GetCookingBurnerDataList(_staff.EquipFloorType);
+                    return (0 < burnerDataList.Count) || (bowlCount <= 0);
+                });
+                return;
+            } else {
+                ResetStaffState(_staff);
+                return;
             }
         }
 
+        // 요리 속도 증가 적용
         data.SetAddCookSpeedMul(_staff.GetActionValue());
-        _tweenData = Tween.Wait(1f, () =>
-        {
-            UpdateBurnerAction(data);
+        
+        // 다음 업데이트까지 약간의 지연
+        _tweenData = Tween.Wait(0.5f, () => {
+            // 상태 변수 명시적 검사 추가
+            if (_isUsed && _staff != null && !_isNoAction) {
+                UpdateBurnerAction(data);
+            } else {
+                // 비정상 상태 감지 - 정리
+                CleanupBurnerData(data);
+                ResetStaffState(_staff);
+            }
         });
+    }
+
+    // 버너 데이터 정리를 위한 헬퍼 메서드 추가
+    private void CleanupBurnerData(KitchenBurnerData data)
+    {
+        if (data != null && data.UseStaff == _staff)
+        {
+            data.SetStaffUsable(false);
+            data.SetUseStaff(null);
+            data.SetAddCookSpeedMul(0);
+            
+            // _burnerData 초기화 추가
+            if (_burnerData == data)
+            {
+                _burnerData = null;
+            }
+        }
     }
 }

@@ -466,6 +466,9 @@ public class MiniGame1 : MiniGameSystem
 
     private IEnumerator ShowResult(FoodData foodData)
     {
+        _startTimer.ShowClearImage();
+        yield return YieldCache.WaitForSeconds(2f);
+        _startTimer.ResetTimer();
         _resultGroup.SetResult(foodData.ThumbnailSprite, foodData.Name);
         yield return YieldCache.WaitForSeconds(1f);
         _screenButton.gameObject.SetActive(true);

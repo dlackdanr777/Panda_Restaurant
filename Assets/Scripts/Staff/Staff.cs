@@ -133,6 +133,8 @@ public class Staff : MonoBehaviour
 
     public virtual void TweenAlpha(float alpha, float duration, Ease ease, Action onCompleted = null)
     {
+        _skillEffect.TweenStop();
+        _spriteRenderer.TweenStop();
         _skillEffect?.TweenAlpha(alpha, duration, ease);
         _spriteRenderer.TweenAlpha(alpha, duration, ease).OnComplete(onCompleted);
     }
@@ -372,6 +374,8 @@ public class Staff : MonoBehaviour
         yield return YieldCache.WaitForSeconds(1f);
         TweenAlpha(1, 0.4f, Ease.Constant);
         yield return YieldCache.WaitForSeconds(1f);
+         _skillEffect.color = Color.white;
+        _spriteRenderer.color = Color.white;
         onCompleted?.Invoke();
     }
 
