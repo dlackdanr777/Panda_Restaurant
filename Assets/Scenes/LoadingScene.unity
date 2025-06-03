@@ -427,7 +427,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _uiLoadingScene: {fileID: 7223916268198934924}
-  _changeSceneTime: 2
+  _changeSceneTime: 1
 --- !u!1 &1355923379
 GameObject:
   m_ObjectHideFlags: 0

@@ -36,7 +36,6 @@ public class TableManager : MonoBehaviour
     [Header("Tutorial Components")]
     [SerializeField] private GachaTutorial _miniGameTutorial;
 
-    private int _totalGarbageCount => ObjectPoolManager.Instance.GetEnabledGarbageCount();
 
 
     public Vector3 GetDoorPos(RestaurantType type, Vector3 pos)

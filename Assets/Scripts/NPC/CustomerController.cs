@@ -29,13 +29,14 @@ public class CustomerController : MonoBehaviour
 
 
     private List<NormalCustomer> _callCustomers = new List<NormalCustomer>();
-    private Queue<NormalCustomer> _waitCustomers = new Queue<NormalCustomer>();
+    private List<NormalCustomer> _waitCustomers = new List<NormalCustomer>();
     private GatecrasherCustomer[] _gatecrasherCustomers = new global::GatecrasherCustomer[(int)ERestaurantFloorType.Length];
     private Coroutine _sortCoroutine;
     private float _breakInCustomerTime => 1200;
     private float _breakInCustomerTimer;
     private bool _breakCustomerEnabled = true;
     public int Count => _callCustomers.Count;
+    public int WaitCount => _waitCustomers.Count;
 
     public Vector3 _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
     public GatecrasherCustomer[] GatecrasherCustomer => _gatecrasherCustomers;
@@ -72,7 +73,7 @@ public class CustomerController : MonoBehaviour
 
     public NormalCustomer GetFirstCustomer()
     {
-        return _waitCustomers.Peek();
+        return _waitCustomers.First();
     }
 
     public void RemoveCustomerFromLineQueue(NormalCustomer customer)
@@ -80,13 +81,24 @@ public class CustomerController : MonoBehaviour
         if (_waitCustomers.Count <= 0)
             return;
 
-        if (!_waitCustomers.Contains(customer))
+        bool waitCustomer = _waitCustomers.Contains(customer);
+        bool callCustomer = _callCustomers.Contains(customer);
+
+        if (waitCustomer)
         {
-            DebugLog.LogError("해당 고객이 대기열에 없습니다.");
+            _waitCustomers.Remove(customer);
+        }
+
+        if( callCustomer)
+        {
+            _callCustomers.Remove(customer);
+        }
+
+        if(!waitCustomer && !callCustomer)
+        {
             return;
         }
 
-        _waitCustomers = new Queue<NormalCustomer>(_waitCustomers.Where(c => c != customer));
         SortCustomerLine();
         OnChangeCustomerHandler?.Invoke();
     }
@@ -181,7 +193,7 @@ public class CustomerController : MonoBehaviour
 
                 customer.Move(_startLine.position + new Vector3(_lineSpacingGrid * gridSize * (Count - 1), 0), -1, () =>
                 {
-                    _waitCustomers.Enqueue(customer);
+                    _waitCustomers.Add(customer);
                     _tableManager.UpdateTable();
                 });
                 customer.SetLayer("WaitCustomer", orderLayer--);
@@ -198,7 +210,8 @@ public class CustomerController : MonoBehaviour
         if (_waitCustomers.Count <= 0)
             return false;
 
-        NormalCustomer customer = _waitCustomers.Dequeue();
+        NormalCustomer customer = _waitCustomers.First();
+        _waitCustomers.RemoveAt(0);
         _callCustomers.Remove(customer);
         customer.Move(targetPos, moveEndDir, onCompleted);
 
@@ -252,15 +265,6 @@ public class CustomerController : MonoBehaviour
 
     private void SortCustomerLine()
     {
-        if (_sortCoroutine != null)
-            StopCoroutine(_sortCoroutine);
-
-        _sortCoroutine = StartCoroutine(SortCustomerLineRoutine());
-    }
-
-    private IEnumerator SortCustomerLineRoutine()
-    {
-        yield return YieldCache.WaitForSeconds(0.5f);
         Vector2 startLinePos = _startLine.position;
         int orderLayer = _waitCustomers.Count;
         float gridSize = AStar.Instance.NodeSize;
@@ -270,10 +274,35 @@ public class CustomerController : MonoBehaviour
             c.Move(startLinePos, -1);
             c.SetLayer("WaitCustomer", orderLayer--);
             startLinePos.x += _lineSpacingGrid * gridSize;
-
-            yield return YieldCache.WaitForSeconds(0.05f);
         }
+
+        // if (_sortCoroutine != null)
+        //     StopCoroutine(_sortCoroutine);
+
+        // _sortCoroutine = StartCoroutine(SortCustomerLineRoutine());
     }
+
+    private IEnumerator SortCustomerLineRoutine()
+{
+    yield return YieldCache.WaitForSeconds(0.2f);
+    Vector2 startLinePos = _startLine.position;
+    int orderLayer = _waitCustomers.Count;
+    float gridSize = AStar.Instance.NodeSize;
+    
+    // 리스트 복사본 생성
+    List<Customer> customersCopy = new List<Customer>(_waitCustomers);
+    
+    foreach (Customer c in customersCopy)
+    {
+            if (!_waitCustomers.Contains(c))
+                continue;
+        c.Move(startLinePos, -1);
+        c.SetLayer("WaitCustomer", orderLayer--);
+        startLinePos.x += _lineSpacingGrid * gridSize;
+
+        yield return YieldCache.WaitForSeconds(0.05f);
+    }
+}
 
     private void OnCustomerEvent(Customer customer)
     {
@@ -328,7 +357,7 @@ public class CustomerController : MonoBehaviour
             NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
             customer.SetData(data, this, _tableManager);
             customer.StartWaiting();
-            _waitCustomers.Enqueue(customer);
+            _waitCustomers.Add(customer);
             
             SortCustomerLine();
             UserInfo.AddPromotionCount();

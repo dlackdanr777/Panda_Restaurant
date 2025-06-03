@@ -9,7 +9,7 @@ public class FirstLoadingScene : MonoBehaviour
     private void Start()
     {
         _uiFirstLoadingScene.Init();
-        Tween.Wait(0.5f, StartLoadData2);
+        Tween.Wait(0.2f, StartLoadDataAsync);
     }
 
     private void StartLoadDataAsync()
@@ -18,16 +18,15 @@ public class FirstLoadingScene : MonoBehaviour
         {
             BackendManager.Instance.GuestLoginAsync((bro) =>
             {
-                Debug.Log("00");
                 BackendManager.Instance.GetMyDataAsync("GameData", (bro) =>
                 {
                     UserInfo.LoadGameData(bro);
                     UserInfo.LoadStageDataAsync();
-                    Tween.Wait(0.2f, () =>
+                    Tween.Wait(0.7f, () =>
                     {
                         _uiFirstLoadingScene.HideTitle(() =>
                         {
-                            Tween.Wait(0.5f, () => LoadingSceneManager.LoadScene("Stage1"));
+                            Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
                         });
                     });
                 });
@@ -35,7 +34,7 @@ public class FirstLoadingScene : MonoBehaviour
         });
     }
 
-    private void StartLoadData2()
+    private void StartLoadData()
     {
         _uiFirstLoadingScene.ShowTitle(() =>
         {
@@ -47,7 +46,7 @@ public class FirstLoadingScene : MonoBehaviour
                 {
                     _uiFirstLoadingScene.HideTitle(() =>
                     {
-                        Tween.Wait(0.2f, () => LoadingSceneManager.LoadScene("Stage1"));
+                        Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
                     });
                 });
             });

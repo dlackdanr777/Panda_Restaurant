@@ -267,6 +267,7 @@ public class NormalCustomer : Customer
     private void LeaveTableAndRestaurant()
     {
         DebugLog.Log("테이블에서 나감");
+        _customerController.RemoveCustomerFromLineQueue(this);
         _tableManager.AngerExitCustomer(_sitTableData);
     }
 

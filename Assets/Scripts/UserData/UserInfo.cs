@@ -1771,7 +1771,7 @@ public static class UserInfo
         if (data.MaxLevel <= itemLevel)
             return 0;
 
-        return itemLevel * ConstValue.ADD_ITEM_UPGRADE_COUNT;
+        return Math.Max(1, itemLevel) * ConstValue.ADD_ITEM_UPGRADE_COUNT;
     }
 
     public static bool IsGachaItemUpgradeEnabled(GachaItemData data)
