@@ -5,6 +5,7 @@ public static class ConstValue
     public const int ADD_ITEM_UPGRADE_COUNT = 2;
     public const int DEFAULT_MINIGAME_FEVER_TIME = 6;
     public const int DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT = 10;
+    public const int DEFAULT_CUSTOMER_BREAK_TIME = 1200;
 
     //피버 관련 변수
     public const int MAX_PEVER_GAUGE = 1000;

@@ -28,11 +28,11 @@ public class TimeManager : MonoBehaviour
     private List<string> _removeList = new List<string>();
 
 
-    public void AddTime(string key, int time)
+    public void SetTime(string key, int time)
     {
         DebugLog.Log($"AddTime: {key}, Time: {time}");
         if (_timeDic.ContainsKey(key))
-            _timeDic[key] += time;
+            _timeDic[key] = time;
         else
             _timeDic.Add(key, time);
 

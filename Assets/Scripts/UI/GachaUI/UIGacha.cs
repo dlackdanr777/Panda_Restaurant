@@ -327,8 +327,8 @@ public class UIGacha : MobileUIView
             case 4:
                 _currentStep = 4;
 
+                _skipButton.gameObject.SetActive(true);
                 _gachaItemName.gameObject.SetActive(false);
-                _skipButton.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();

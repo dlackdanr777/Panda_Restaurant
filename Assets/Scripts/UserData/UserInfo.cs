@@ -573,7 +573,7 @@ public static class UserInfo
             // 남은 시간이 0보다 큰 경우에만 타이머 추가
             if (remainingTime > 0)
             {
-                TimeManager.Instance.AddTime(data.Key, remainingTime);
+                TimeManager.Instance.SetTime(data.Key, remainingTime);
                 DebugLog.Log($"타이머 {data.Key}: {data.Value.Time}초 -> {remainingTime}초으로 조정됨");
             }
             else

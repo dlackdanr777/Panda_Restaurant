@@ -204,7 +204,7 @@ public class MiniGame1 : MiniGameSystem
             if (IsGameOver())
             {
                 DebugLog.Log("미니게임 실패");
-                TimeManager.Instance.AddTime(_currentFoodData.Id + "_MiniGame", 900);
+                TimeManager.Instance.SetTime(_currentFoodData.Id + "_MiniGame", 900);
                 _uiMiniGameController.HideUI();
                 yield break;
             }
@@ -232,7 +232,7 @@ public class MiniGame1 : MiniGameSystem
             {
                 DebugLog.Log("게임 종료");
                 _uiMiniGameController.HideUI();
-                TimeManager.Instance.AddTime(_currentFoodData.Id + "_MiniGame", 900);
+                TimeManager.Instance.SetTime(_currentFoodData.Id + "_MiniGame", 900);
                 yield break;
             }
         }

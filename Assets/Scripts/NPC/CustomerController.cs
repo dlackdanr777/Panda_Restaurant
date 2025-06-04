@@ -9,6 +9,9 @@ using UnityEngine.UI;
 
 public class CustomerController : MonoBehaviour
 {
+    private const string TIME_TAG = "customerBreakTime";
+
+
     public event Action OnChangeCustomerHandler;
     public event Action OnGuideCustomerHandler;
 
@@ -31,8 +34,6 @@ public class CustomerController : MonoBehaviour
     private List<NormalCustomer> _callCustomers = new List<NormalCustomer>();
     private List<NormalCustomer> _waitCustomers = new List<NormalCustomer>();
     private GatecrasherCustomer[] _gatecrasherCustomers = new global::GatecrasherCustomer[(int)ERestaurantFloorType.Length];
-    private Coroutine _sortCoroutine;
-    private float _breakInCustomerTime => 1200;
     private float _breakInCustomerTimer;
     private bool _breakCustomerEnabled = true;
     public int Count => _callCustomers.Count;
@@ -127,7 +128,8 @@ public class CustomerController : MonoBehaviour
                 break;
 
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);
-            if (!UserInfo.IsTutorialStart && _breakCustomerEnabled && _breakInCustomerTimer <= 0 && randSpawnProbability < ConstValue.DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT)
+            float timer = TimeManager.Instance.GetTime(TIME_TAG);
+            if (!UserInfo.IsTutorialStart && _breakCustomerEnabled && timer <= 0 && randSpawnProbability < ConstValue.DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT)
             {
                 WeightedRandom<CustomerData> randomDataList = new WeightedRandom<CustomerData>();
                 for (int j = 0, cntJ = specialCustomerDataList.Count; j < cntJ; ++j)
@@ -146,7 +148,7 @@ public class CustomerController : MonoBehaviour
                 ERestaurantFloorType visitFloor = (ERestaurantFloorType)UnityEngine.Random.Range(0, (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage) + 1);
                 if (getData is SpecialCustomerData)
                 {
-                    _breakInCustomerTimer = _breakInCustomerTime;
+                    TimeManager.Instance.SetTime(TIME_TAG, ConstValue.DEFAULT_CUSTOMER_BREAK_TIME);
                     _breakCustomerEnabled = false;
                     SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                     specialCustomer.SetData(getData, this, _tableManager);
@@ -158,7 +160,7 @@ public class CustomerController : MonoBehaviour
                 }
                 else if (getData is GatecrasherCustomerData)
                 {
-                    _breakInCustomerTimer = _breakInCustomerTime;
+                    TimeManager.Instance.SetTime(TIME_TAG, ConstValue.DEFAULT_CUSTOMER_BREAK_TIME);
                     _breakCustomerEnabled = false;
 
                     int floorIndex = (int)visitFloor;
@@ -195,8 +197,9 @@ public class CustomerController : MonoBehaviour
                 {
                     _waitCustomers.Add(customer);
                     _tableManager.UpdateTable();
+                    SortCustomerLine();
                 });
-                customer.SetLayer("WaitCustomer", orderLayer--);
+                SortCustomerLine();
                 startLinePos.x += _lineSpacingGrid * gridSize;
             }
 
@@ -224,25 +227,13 @@ public class CustomerController : MonoBehaviour
 
     private void Awake()
     {
-        _breakInCustomerTimer = _breakInCustomerTime;
         _breakCustomerEnabled = true;
     }
 
 
     private void Update()
     {
-        UpdateBreakTimer();
         CheckGatecrasherCustomer();
-    }
-
-
-    private void UpdateBreakTimer()
-    {
-        if (!_breakCustomerEnabled)
-            return;
-
-        if (0 < _breakInCustomerTimer)
-            _breakInCustomerTimer -= Time.deltaTime;
     }
 
 
@@ -266,12 +257,18 @@ public class CustomerController : MonoBehaviour
     private void SortCustomerLine()
     {
         Vector2 startLinePos = _startLine.position;
-        int orderLayer = _waitCustomers.Count;
+        int orderLayer = _callCustomers.Count;
         float gridSize = AStar.Instance.NodeSize;
 
-        foreach (Customer c in _waitCustomers)
+        foreach (NormalCustomer c in _callCustomers)
         {
-            c.Move(startLinePos, -1);
+            c.Move(startLinePos, -1, () =>
+            {
+                if (!_waitCustomers.Contains(c))
+                    _waitCustomers.Add(c);
+
+                _tableManager.UpdateTable();         
+            });
             c.SetLayer("WaitCustomer", orderLayer--);
             startLinePos.x += _lineSpacingGrid * gridSize;
         }
@@ -306,7 +303,6 @@ public class CustomerController : MonoBehaviour
 
     private void OnCustomerEvent(Customer customer)
     {
-        _breakInCustomerTimer = _breakInCustomerTime;
         _breakCustomerEnabled = true;
 
         for(int i = 0, cnt = _gatecrasherCustomers.Length; i < cnt; ++i)

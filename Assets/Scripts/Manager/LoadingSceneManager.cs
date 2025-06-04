@@ -61,13 +61,14 @@ public class LoadingSceneManager : MonoBehaviour
 
                 if (_changeSceneTime < timer)
                 {
+  
                     _uiLoadingScene.SetLoadingBarFillAmount(1);
                     FadeManager.Instance.FadeSetActive(false);
-                    Tween.Wait(1f, () => FadeManager.Instance.FadeIn(onComplete: () => 
+                    Tween.Wait(0.5f, () => FadeManager.Instance.FadeIn(onComplete: () => 
                     {
                         op.allowSceneActivation = true;
                         FadeManager.Instance.FadeSetActive(true);
-                        Tween.Wait(0.5f, () =>
+                        Tween.Wait(0.1f, () =>
                         {
                             FadeManager.Instance.FadeSetActive(true);
                             FadeManager.Instance.FadeOut();

@@ -73,6 +73,7 @@ namespace Muks.MobileUI
                     uiView.gameObject.SetActive(true);
                 }
                 uiView.transform.SetAsLastSibling();
+                SortCanvasOrderLayer();
                 OnFocusHandler?.Invoke();
                 OnShowUIHandler?.Invoke();
                 return;
@@ -93,6 +94,7 @@ namespace Muks.MobileUI
                 uiView.transform.SetAsLastSibling();
                 uiView.gameObject.SetActive(true);
                 uiView.VisibleState = VisibleState.Appeared;
+                SortCanvasOrderLayer();
                 OnFocusHandler?.Invoke();
                 OnShowUIHandler?.Invoke();
             }
@@ -115,7 +117,7 @@ namespace Muks.MobileUI
 
             MobileUIView selectView = _activeViewList[Count - 1];
 
-            if(!selectView.PopEnabled)
+            if (!selectView.PopEnabled)
             {
                 Debug.Log("해당 UI가 Pop이 가능한 상태가 아닙니다: " + selectView.name);
                 return;
@@ -123,6 +125,7 @@ namespace Muks.MobileUI
 
             selectView.Hide();
             _activeViewList.RemoveAt(Count - 1);
+            SortCanvasOrderLayer();
             OnFocusHandler?.Invoke();
             OnHideUIHandler?.Invoke();
 
@@ -158,6 +161,7 @@ namespace Muks.MobileUI
 
             view.Hide();
             _activeViewList.Remove(view);
+            SortCanvasOrderLayer();
             OnFocusHandler?.Invoke();
             OnHideUIHandler?.Invoke();
         }
@@ -187,6 +191,7 @@ namespace Muks.MobileUI
                 _activeViewList.Remove(uiView);
                 uiView.gameObject.SetActive(false);
                 uiView.VisibleState = VisibleState.Disappeared;
+                SortCanvasOrderLayer();
                 OnFocusHandler?.Invoke();
                 OnHideUIHandler?.Invoke();
             }
@@ -205,6 +210,7 @@ namespace Muks.MobileUI
             }
 
             _isViewsInactive = false;
+            SortCanvasOrderLayer();
             OnFocusHandler?.Invoke();
             OnShowUIHandler?.Invoke();
         }
@@ -273,7 +279,19 @@ namespace Muks.MobileUI
         }
 
 
+        private void SortCanvasOrderLayer()
+        {
+            if (_activeViewList.Count <= 0)
+                return;
 
+            for (int i = 0, count = _activeViewList.Count; i < count; i++)
+            {
+                if(_activeViewList[i].Canvas == null)
+                    continue;
+
+                _activeViewList[i].Canvas.sortingOrder = i + 1;
+            }
+        }
     }
 
 }

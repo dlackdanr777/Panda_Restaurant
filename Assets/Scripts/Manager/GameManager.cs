@@ -421,7 +421,7 @@ public class GameManager : MonoBehaviour
 
         if(Input.GetKeyDown(KeyCode.A))
         {
-            TimeManager.Instance.AddTime("Test", 100);
+            TimeManager.Instance.SetTime("Test", 100);
         }
 #endif
     }
