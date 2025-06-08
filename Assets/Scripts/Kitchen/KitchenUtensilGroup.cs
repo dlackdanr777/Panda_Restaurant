@@ -30,6 +30,7 @@ public class KitchenUtensilGroup: MonoBehaviour
     private UIBurnerTimer[] _burnerTimers;
     private KitchenBurnerData[] _burnerDatas;
     private Dictionary<KitchenUtensilType, List<KitchenUtensil>> _kitchenUtensilDic = new Dictionary<KitchenUtensilType, List<KitchenUtensil>>();
+    private List<BurnerKitchenUtensil> _burnerKitchenUtensils = new List<BurnerKitchenUtensil>();
     private Queue<CookingData> _cookingQueue = new Queue<CookingData>();
     private SinkKitchenUtensil _sinkKitchenUtensil;
 
@@ -99,6 +100,15 @@ public class KitchenUtensilGroup: MonoBehaviour
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
         {
             _kitchenUtensilDic.Add((KitchenUtensilType)i, new List<KitchenUtensil>());
+
+            if((KitchenUtensilType)i >= KitchenUtensilType.Burner1 && (KitchenUtensilType)i <= KitchenUtensilType.Burner5)
+            {
+                BurnerKitchenUtensil burner = (BurnerKitchenUtensil)_kitchenUtensils[i];
+                if (burner != null)
+                {
+                    _burnerKitchenUtensils.Add(burner);
+                }
+            }
         }
 
         for (int i = 0, cnt = _kitchenUtensils.Length; i < cnt; ++i)
@@ -106,6 +116,7 @@ public class KitchenUtensilGroup: MonoBehaviour
             _kitchenUtensils[i].Init(_floorType);
             _kitchenUtensilDic[_kitchenUtensils[i].Type].Add(_kitchenUtensils[i]);
         }
+
         _burnerDatas[0].IsUsable = true;
         _sinkKitchenUtensil = (SinkKitchenUtensil)_kitchenUtensilDic[KitchenUtensilType.Sink][0];
         UpdateKitchen();
@@ -115,7 +126,11 @@ public class KitchenUtensilGroup: MonoBehaviour
 
     void Update()
     {
-        for(int i = 0, cnt = _burnerDatas.Length; i < cnt; ++i)
+        if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, _floorType))
+            return;
+
+
+        for (int i = 0, cnt = _burnerDatas.Length; i < cnt; ++i)
         {
             if (!_burnerDatas[i].IsUsable)
                 continue;
@@ -133,7 +148,15 @@ public class KitchenUtensilGroup: MonoBehaviour
                     return;
                 }
 
-                _burnerDatas[i].Time -= Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, _burnerDatas[i].CookingData.FoodData.FoodType) * (1 + _burnerDatas[i].AddCookSpeedMul * 0.01f * (_burnerDatas[i].UseStaff != null ? _burnerDatas[i].UseStaff.SpeedMul : 1));
+                float subTime = Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, _burnerDatas[i].CookingData.FoodData.FoodType) * (1 + _burnerDatas[i].AddCookSpeedMul * 0.01f * (_burnerDatas[i].UseStaff != null ? _burnerDatas[i].UseStaff.SpeedMul : 1));
+                subTime *= _burnerKitchenUtensils[i].CookSpeedMul;
+                DebugLog.Log(_burnerKitchenUtensils[i].CookSpeedMul);
+                if (_burnerDatas[i].FoodType == _burnerDatas[i].CookingData.FoodData.FoodType)
+                {
+                    subTime *= 1.1f; // 같은 음식 타입일 때는 10% 더 빠르게 요리
+                    //DebugLog.Log("같은 음식 타입: " + _burnerDatas[i].FoodType + " - " + _burnerDatas[i].CookingData.FoodData.FoodType);
+                }
+                _burnerDatas[i].Time -= subTime;
                 _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookTime));
             }
         }
@@ -182,9 +205,14 @@ public class KitchenUtensilGroup: MonoBehaviour
                 data.SetData(equipData);
             }
 
-            if ((type >= KitchenUtensilType.Burner2 && type <= KitchenUtensilType.Burner5))
+            if (type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5)
             {
-                if(equipData != null)
+                _burnerDatas[i].SetFoodType(equipData != null ? equipData.FoodType : FoodType.None);
+            }
+
+            if (type >= KitchenUtensilType.Burner2 && type <= KitchenUtensilType.Burner5)
+            {
+                if (equipData != null)
                 {
                     _burnerDatas[i].IsUsable = true;
                 }
@@ -193,9 +221,9 @@ public class KitchenUtensilGroup: MonoBehaviour
                     _burnerDatas[i].IsUsable = false;
                     SetDefalutBurnerData(i);
                 }
-
             }
         }
+        CheckSink();
     }
 
 
@@ -209,19 +237,28 @@ public class KitchenUtensilGroup: MonoBehaviour
         {
             data.SetData(equipData);
         }
+        int index = (int)type;
 
-        if(type >= KitchenUtensilType.Burner2 && type <= KitchenUtensilType.Burner5)
+        if (type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5)
         {
-            if(equipData == null)
+            _burnerDatas[index].SetFoodType(equipData != null ? equipData.FoodType : FoodType.None);
+        }
+
+        if (type >= KitchenUtensilType.Burner2 && type <= KitchenUtensilType.Burner5)
+        {
+
+            if (equipData == null)
             {
-                _burnerDatas[(int)type].IsUsable = false;
-                SetDefalutBurnerData((int)type);
+                _burnerDatas[index].IsUsable = false;
+                SetDefalutBurnerData(index);
             }
             else
             {
-                _burnerDatas[(int)type].IsUsable = true;
+                _burnerDatas[index].IsUsable = true;
             }
         }
+        
+        CheckSink();
     }
 
     private void ResetBurnerData(int index)
@@ -240,6 +277,21 @@ public class KitchenUtensilGroup: MonoBehaviour
             _cookingQueue.Enqueue(_burnerDatas[index].CookingData);
         }
         ResetBurnerData(index);
+    }
+
+    
+    private void CheckSink()
+    {
+        KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, _floorType, KitchenUtensilType.Sink);
+        if (data == null)
+        {
+            UserInfo.SetMaxSinkBowlCount(UserInfo.CurrentStage, _floorType, ConstValue.DEFAULT_MAX_BOLW_COUNT);
+            DebugLog.Log(_floorType + " 싱크대 없음: " + ConstValue.DEFAULT_MAX_BOLW_COUNT);
+            return;
+        }
+        KitchenUtensilSinkData sinkData = (KitchenUtensilSinkData)data;
+        UserInfo.SetMaxSinkBowlCount(UserInfo.CurrentStage, _floorType, sinkData.MaxSinkBowlCount);
+        DebugLog.Log(_floorType +" 싱크 최대 볼 수: " + sinkData.MaxSinkBowlCount);
     }
 
 

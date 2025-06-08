@@ -204,7 +204,7 @@ public class FurnitureGroup : MonoBehaviour
             _tableDataList.Add(data);
             _dropGarbageAreaList.Add(data.DropGarbageArea);
 
-            for(int i = 0, cnt = data.DropCoinAreas.Length; i < cnt; ++i)
+            for (int i = 0, cnt = data.DropCoinAreas.Length; i < cnt; ++i)
             {
                 _dropCoinAreaList.Add(data.DropCoinAreas[i]);
             }
@@ -387,6 +387,7 @@ public class FurnitureGroup : MonoBehaviour
 
         _foodType = foodType;
     }
+
 
 
     private void OnDestroy()

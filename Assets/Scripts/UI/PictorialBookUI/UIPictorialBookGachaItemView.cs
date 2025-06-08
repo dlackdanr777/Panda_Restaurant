@@ -111,7 +111,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
             int giveItemCount = UserInfo.GetGiveItemCount(_data);
             int level = UserInfo.GetGachaItemLevel(_data);
             _giveCountGroup.SetText1(giveItemCount.ToString());
-            _itemCountText.text = requiredItemCount == 0 ? "최대 업그레이드" : giveItemCount + "/" + requiredItemCount;
+            _itemCountText.text = requiredItemCount == 0 ? "최대 업그레이드" : requiredItemCount <= giveItemCount ? "업그레이드" : giveItemCount + "/" + requiredItemCount;
             _giveItemFillAmount.SetFillAmount(requiredItemCount == 0 ? 1 : giveItemCount <= 0 ? 0 : (float)giveItemCount / requiredItemCount);
             if (UserInfo.IsGachaItemUpgradeEnabled(_data))
             {

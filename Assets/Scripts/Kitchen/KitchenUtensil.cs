@@ -50,7 +50,6 @@ public class KitchenUtensil : MonoBehaviour
             }
             return;
         }
-
         _spriteRenderer.gameObject.SetActive(true);
         _spriteRenderer.sprite = data.Sprite;
         SetRendererScale(data);

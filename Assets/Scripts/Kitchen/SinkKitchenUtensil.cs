@@ -32,16 +32,23 @@ public class SinkKitchenUtensil : KitchenUtensil
         UpdateSink();
 
         UserInfo.OnChangeSinkBowlHandler += UpdateSink;
+        UserInfo.OnChangeMaxSinkBowlHandler += OnChangeMaxBowlCount;
+    }
+
+    private void OnChangeMaxBowlCount()
+    { 
+        _sinkGaugeBar.OnChangeMaxBowlCount();
+        UpdateSink();
     }
 
 
-    public void UpdateSink()
+    private void UpdateSink()
     {
         int cntBowlCount = UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _floorType);
         int maxBowlCount = UserInfo.GetMaxSinkBowlCount(UserInfo.CurrentStage, _floorType);
 
         float oneBowlGauge = 1f / maxBowlCount;
-        float gauge = Mathf.Clamp((float)cntBowlCount / maxBowlCount, 0, 1);
+        float gauge = (float)cntBowlCount / maxBowlCount;
         gauge = Mathf.Clamp(gauge - (oneBowlGauge * _washGauge), 0, 1);
         _sinkGaugeBar.SetGauge(cntBowlCount, maxBowlCount, gauge);
     }

@@ -63,6 +63,7 @@ public class TableManager : MonoBehaviour
         _customerController.OnChangeCustomerHandler += UpdateTable;
         _customerController.OnGuideCustomerHandler += UpdateTable;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
+        UserInfo.OnChangeFurnitureHandler += OnChangeTableEvent;
     }
 
 
@@ -137,10 +138,9 @@ public class TableManager : MonoBehaviour
         {
             Tween.Wait(0.1f, () =>
             {
-                DebugLog.Log(data.name + " Sit " + "11");
                 if (data.CurrentCustomer == null)
                     return;
-                DebugLog.Log(data.name + " Sit " + "22");
+
                 customer.transform.position = data.ChairTrs[data.SitIndex].position;
                 customer.SetSitTableData(data);
                 data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
@@ -149,14 +149,13 @@ public class TableManager : MonoBehaviour
                 customer.SetSpriteDir(-data.SitDir);
                 customer.SetLayer("SitCustomer", 0);
                 customer.ChangeState(CustomerState.Sit);
+                customer.FixSpritePosition(false);
 
                 Tween.Wait(1f, () =>
                 {
-                    DebugLog.Log(data.name + " Sit " + "33");
                     if (data.CurrentCustomer == null)
                         return;
 
-                    DebugLog.Log(data.name + " Sit " + "44");
                     if (!_satisfactionSystem.CheckCustomerTendency(customer.NormalCustomerData.TendencyType))
                     {
                         AngerExitCustomer(data);
@@ -190,6 +189,7 @@ public class TableManager : MonoBehaviour
 
         data.CurrentCustomer.ChangeState(CustomerState.Idle);
         data.CurrentCustomer.HideFood();
+        data.CurrentCustomer.FixSpritePosition(false);
 
         FoodData foodData = data.CurrentCustomer.NormalCustomerData.GetRandomOrderFood();
 
@@ -220,7 +220,7 @@ public class TableManager : MonoBehaviour
 
         int totalPrice = (int)(cookingData.Price * data.CurrentCustomer.CurrentFoodPriceMul * GameManager.Instance.GetFoodPriceMul(data.FloorType, foodData.FoodType));
         data.TotalPrice += totalPrice;
-        data.ServingButton.SetData(foodData);
+        data.OrderButton.SetData(foodData);
 
         data.TableState = ETableState.Seating;
         data.OrdersCount -= 1;
@@ -371,6 +371,7 @@ public class TableManager : MonoBehaviour
         exitCustomer.transform.position = customerPos;
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
+        exitCustomer.FixSpritePosition(true);
         UserInfo.AddSatisfaction(UserInfo.CurrentStage, data.Satisfaction);
         data.CurrentCustomer = null;
         data.TotalTip = 0;
@@ -405,6 +406,7 @@ public class TableManager : MonoBehaviour
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
         exitCustomer.StartAnger();
+        exitCustomer.FixSpritePosition(true);
         data.CurrentCustomer = null;
         data.TotalTip = 0;
         data.TotalPrice = 0;
@@ -448,7 +450,7 @@ public class TableManager : MonoBehaviour
         data.CurrentCustomer = null;
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
-
+        exitCustomer.FixSpritePosition(true);
         data.TableState = ETableState.DontUse;
         UpdateTable();
 
@@ -772,6 +774,36 @@ public KitchenBurnerData GetMinDistanceBurner(ERestaurantFloorType floorType, Ve
         List<ERestaurantFloorType> availableFloors = floorDataDic[choiceFoodType];
         ERestaurantFloorType choiceFloor = availableFloors[UnityEngine.Random.Range(0, availableFloors.Count)];
         return choiceFloor;
+    }
+
+
+    private void OnChangeTableEvent(ERestaurantFloorType floorType, FurnitureType type)
+    {
+        if (type < FurnitureType.Table1 || FurnitureType.Table5 < type)
+            return;
+
+        List<TableData> tableDataList = _furnitureSystem.GetTableDataList(floorType);
+        if (tableDataList == null || tableDataList.Count <= 0)
+            return;
+
+        Tween.Wait(0.01f, () =>
+        {
+            for (int i = 0, cnt = tableDataList.Count; i < cnt; ++i)
+            {
+                TableData data = tableDataList[i];
+                if (data == null)
+                    continue;
+
+                if (data.TableState == ETableState.DontUse)
+                    continue;
+
+                if (data.CurrentCustomer == null || data.TableState == ETableState.Move || data.TableState == ETableState.UseStaff)
+                    continue;
+
+                data.CurrentCustomer.transform.position = data.ChairTrs[data.SitIndex].position;
+            }
+        });
+
     }
 
     private void OnDestroy()

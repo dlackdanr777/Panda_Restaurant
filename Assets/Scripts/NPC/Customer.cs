@@ -70,6 +70,21 @@ public class Customer : MonoBehaviour
         _spriteRenderer.color = Color.white;
     }
 
+
+    public void FixSpritePosition(bool isFloor)
+    {
+        if (isFloor)
+        {
+            _spriteParent.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
+            _spriteRenderer.transform.localPosition = Vector3.zero;
+        }
+        else
+        {
+            _spriteParent.localPosition = new Vector3(0, -0.2f, 0);
+            _spriteRenderer.transform.localPosition = Vector3.zero;
+        }
+    }
+
     public void SetVisitFloor(ERestaurantFloorType floor)
     {
         _visitFloor = floor;

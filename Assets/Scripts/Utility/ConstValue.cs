@@ -13,9 +13,13 @@ public static class ConstValue
     public const int ADD_PEVER_GAUGE = 5;
 
 
-   //스테이지 관련 변수
+    //스테이지 관련 변수
     public const int MAX_SATISFACTION = 50;
     public const int MIN_SATISFACTION = -50;
+
+
+    //주방 관련 변수
+    public const int DEFAULT_MAX_BOLW_COUNT = 6;
 
 
 }

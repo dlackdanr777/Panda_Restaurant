@@ -1522,69 +1522,31 @@ public static class UserInfo
 
     public static bool GiveGachaItem(GachaItemData data)
     {
-        if (!ItemManager.Instance.IsGachaItem(data.Id))
+        if(data == null)
         {
-            DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + data.Id);
+            DebugLog.LogError("가챠 아이템 데이터가 null입니다.");
             return false;
         }
+
+        if (!ItemManager.Instance.IsGachaItem(data.Id))
+            {
+                DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + data.Id);
+                return false;
+            }
 
         if (_giveGachaItemCountDic.ContainsKey(data.Id))
         {
             _giveGachaItemCountDic[data.Id]++;
             OnGiveGachaItemHandler?.Invoke();
             return true;
-
-            // if (CanAddMoreItems(data))
-            // {
-            //     _giveGachaItemCountDic[data.Id]++;
-            //     OnGiveGachaItemHandler?.Invoke();
-            //     return true;
-            // }
-
-            // DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
-            // return false;
         }
 
         _giveGachaItemCountDic.Add(data.Id, 1);
         _giveGachaItemLevelDic.Add(data.Id, 1);
         AddNotification(data.Id);
         OnGiveGachaItemHandler?.Invoke();
+        DebugLog.Log("가챠 아이템 추가: " + data.Id + "  획득 갯수: " + _giveGachaItemCountDic[data.Id]);
         return true;
-    }
-
-
-    public static void GiveGachaItem(List<GachaItemData> dataList)
-    {
-        for(int i = 0, cnt =  dataList.Count; i < cnt; ++i)
-        {
-            if (!ItemManager.Instance.IsGachaItem(dataList[i].Id))
-            {
-                DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + dataList[i].Id);
-                continue;
-            }
-
-            if (_giveGachaItemCountDic.ContainsKey(dataList[i].Id))
-            {
-                _giveGachaItemCountDic[dataList[i].Id]++;
-                AddNotification(dataList[i].Id);
-                continue;
-                // if (CanAddMoreItems(dataList[i]))
-                // {
-                //     _giveGachaItemCountDic[dataList[i].Id]++;
-                //     AddNotification(dataList[i].Id);
-                //     continue;
-                // }
-
-                // DebugLog.LogError("더이상 획득할 수 없습니다: " + dataList[i].Id);
-                // continue;
-            }
-
-            _giveGachaItemCountDic.Add(dataList[i].Id, 1);
-            _giveGachaItemLevelDic.Add(dataList[i].Id, 1);
-            AddNotification(dataList[i].Id);
-        }
-       
-        OnGiveGachaItemHandler?.Invoke();
     }
 
     public static bool GiveGachaItem(string id)
@@ -1596,26 +1558,40 @@ public static class UserInfo
             return false;
         }
 
-        if (_giveGachaItemCountDic.ContainsKey(data.Id))
+        return GiveGachaItem(data);
+    }
+
+
+    public static void GiveGachaItem(List<GachaItemData> dataList)
+    {
+        for (int i = 0, cnt = dataList.Count; i < cnt; ++i)
         {
-            _giveGachaItemCountDic[data.Id]++;
-            OnGiveGachaItemHandler?.Invoke();
-            return true;
-            // if (CanAddMoreItems(data))
-            // {
-            //     _giveGachaItemCountDic[data.Id]++;
-            //     OnGiveGachaItemHandler?.Invoke();
-            //     return true;
-            // }
-            // DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
-            // return false;
+            if (dataList[i] == null)
+            {
+                DebugLog.LogError("가챠 아이템 데이터가 null입니다.");
+                continue;
+            }
+
+            if (!ItemManager.Instance.IsGachaItem(dataList[i].Id))
+            {
+                DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + dataList[i].Id);
+                continue;
+            }
+
+            if (_giveGachaItemCountDic.ContainsKey(dataList[i].Id))
+            {
+                _giveGachaItemCountDic[dataList[i].Id]++;
+                AddNotification(dataList[i].Id);
+                continue;
+            }
+
+            _giveGachaItemCountDic.Add(dataList[i].Id, 1);
+            _giveGachaItemLevelDic.Add(dataList[i].Id, 1);
+            AddNotification(dataList[i].Id);
+            DebugLog.Log("가챠 아이템 추가: " + dataList[i].Id + "  획득 갯수: " + _giveGachaItemCountDic[dataList[i].Id]);
         }
 
-        _giveGachaItemCountDic.Add(data.Id, 1);
-        _giveGachaItemLevelDic.Add(data.Id, 1);
-        AddNotification(data.Id);
         OnGiveGachaItemHandler?.Invoke();
-        return true;
     }
 
 
@@ -1824,6 +1800,12 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].GetSinkBowlCount(floor);
+    }
+
+    public static void SetMaxSinkBowlCount(EStage stage, ERestaurantFloorType floor, int maxBowlCount)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SetMaxSinkBowlCount(floor, maxBowlCount);
     }
 
     public static int GetMaxSinkBowlCount(EStage stage, ERestaurantFloorType floor)
