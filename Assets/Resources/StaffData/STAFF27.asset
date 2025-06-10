@@ -23,6 +23,9 @@ MonoBehaviour:
   _buyPrice: 250
   _skill: {fileID: 11400000, guid: 4803555ba0e7f7f46af709248b6ac2be, type: 2}
   _speed: 6
+  _backSprite: {fileID: 21300000, guid: a6c185deb51fcd545813d02a3dc81482, type: 3}
+  _handSprite: {fileID: 21300000, guid: 5c9b1957a22812a4cada9667e673ed5d, type: 3}
+  _handOffset: {x: 0, y: 1.228}
   _chefLevelData:
   - _upgradeMinScore: 16500
     _upgradeMoneyData:
