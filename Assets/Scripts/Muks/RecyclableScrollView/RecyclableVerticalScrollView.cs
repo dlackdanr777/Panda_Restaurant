@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace Muks.RecyclableScrollView
 {
@@ -45,6 +46,23 @@ namespace Muks.RecyclableScrollView
                 UpdateSlot(item, index++);
             }
             _scrollRect.onValueChanged.AddListener(OnScroll);
+
+            // 그리드 레이아웃 그룹 설정 확인 및 수정
+            GridLayoutGroup gridLayout = _contentRect.GetComponent<GridLayoutGroup>();
+            if (gridLayout != null)
+            {
+                // 컬럼 수를 원하는 값으로 설정 (예: 화면에 맞게 4개)
+                gridLayout.constraintCount = 4;
+                
+                // 셀 크기 적절히 조정
+                gridLayout.cellSize = new Vector2(100f, 100f);
+                
+                // 간격 확인
+                gridLayout.spacing = new Vector2(10f, 10f);
+            }
+
+            // 스크롤 뷰 초기화
+            InitializeScrollView();
         }
 
 
@@ -137,6 +155,34 @@ namespace Muks.RecyclableScrollView
                 item.UpdateSlot(_dataList[index]);
                 item.gameObject.SetActive(true);
             }
+        }
+
+        // 스크롤 뷰 초기화 함수
+        private void InitializeScrollView()
+        {
+            // 콘텐츠 위치 초기화
+            ScrollRect scrollRect = GetComponent<ScrollRect>();
+            if (scrollRect != null)
+            {
+                // 스크롤 위치를 상단으로 재설정
+                scrollRect.normalizedPosition = new Vector2(0, 1);
+                
+                // 콘텐츠 사이즈 업데이트 강제
+                LayoutRebuilder.ForceRebuildLayoutImmediate(scrollRect.content);
+            }
+        }
+
+        // 아이템 추가 후 호출할 함수
+        private void RefreshLayout()
+        {
+            // 캔버스 강제 업데이트
+            Canvas.ForceUpdateCanvases();
+            
+            // 레이아웃 그룹 업데이트
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_contentRect);
+            
+            // 스크롤 위치 재설정 (필요시)
+            _scrollRect.normalizedPosition = new Vector2(0, 1);
         }
     }
 }

@@ -13,7 +13,7 @@ public class ObjectPoolManager : MonoBehaviour
     {
         get
         {
-            if(_instance == null)
+            if (_instance == null)
             {
                 GameObject obj = new GameObject("ObjectPoolManager");
                 _instance = obj.AddComponent<ObjectPoolManager>();
@@ -81,6 +81,12 @@ public class ObjectPoolManager : MonoBehaviour
     private static Queue<UIParticleEffect>[] _uiEffectPool;
 
 
+    private static int _touchEffectCount = 10;
+    private static GameObject _touchEffectParent;
+    private static TouchEffect _touchEffectPrefab;
+    private static Queue<TouchEffect> _touchEffectPool = new Queue<TouchEffect>();
+
+
     private static Sprite[] _garbageImages;
     private static Canvas _uiCanvas;
 
@@ -113,6 +119,7 @@ public class ObjectPoolManager : MonoBehaviour
         TmpPooling();
         UIEffectPooling();
         SmokeParticlePooling();
+        TouchEffectPooling();
     }
 
 
@@ -160,10 +167,10 @@ public class ObjectPoolManager : MonoBehaviour
         _customerParent = new GameObject("CustomerParent");
         _customerParent.transform.parent = _instance.transform;
 
-        if(_normalCustomerPrefab == null)
+        if (_normalCustomerPrefab == null)
             _normalCustomerPrefab = Resources.Load<NormalCustomer>("ObjectPool/NormalCustomer");
 
-        if(_specialCustomerPrefab == null)
+        if (_specialCustomerPrefab == null)
             _specialCustomerPrefab = Resources.Load<SpecialCustomer>("ObjectPool/SpecialCustomer");
 
         if (_gatecrasherCustomerPrefab == null)
@@ -177,7 +184,7 @@ public class ObjectPoolManager : MonoBehaviour
             normalCustomer.gameObject.SetActive(false);
         }
 
-        for(int i = 0; i < _specialCustomerCount; ++i)
+        for (int i = 0; i < _specialCustomerCount; ++i)
         {
             SpecialCustomer specialCustomer = Instantiate(_specialCustomerPrefab, _customerParent.transform);
             specialCustomer.Init();
@@ -200,7 +207,7 @@ public class ObjectPoolManager : MonoBehaviour
         _coinParent = new GameObject("CoinParent");
         _coinParent.transform.parent = _instance.transform;
 
-        if(_coinPrefab == null)
+        if (_coinPrefab == null)
             _coinPrefab = Resources.Load<PointerDownSpriteRenderer>("ObjectPool/Coin");
 
         for (int i = 0, count = _coinCount; i < count; i++)
@@ -353,7 +360,7 @@ public class ObjectPoolManager : MonoBehaviour
     {
         NormalCustomer customer;
 
-        if (_normalCustomerPool.Count == 0 )
+        if (_normalCustomerPool.Count == 0)
         {
             customer = Instantiate(_normalCustomerPrefab, pos, rot, _customerParent.transform);
             return customer;
@@ -658,5 +665,54 @@ public class ObjectPoolManager : MonoBehaviour
         smokeParticle.Stop();
         smokeParticle.gameObject.SetActive(false);
         _smokeParitclePool.Enqueue(smokeParticle);
+    }
+
+
+    private static void TouchEffectPooling()
+    {
+        _touchEffectParent = new GameObject("TouchEffectParent");
+        _touchEffectParent.transform.parent = _instance.transform;
+
+        if (_touchEffectPrefab == null)
+            _touchEffectPrefab = Resources.Load<TouchEffect>("ObjectPool/TouchEffect");
+
+        for (int i = 0, count = _touchEffectCount; i < count; i++)
+        {
+            TouchEffect touchEffect = Instantiate(_touchEffectPrefab, _touchEffectParent.transform);
+            touchEffect.Init(DespawnTouchEffect);
+            _touchEffectPool.Enqueue(touchEffect);
+            touchEffect.gameObject.SetActive(false);
+        }
+    }
+
+
+    public static TouchEffect SpawnTouchEffect(Transform parent, Vector2 pos)
+    {
+        TouchEffect touchEffect;
+
+        if (_touchEffectPool.Count == 0)
+        {
+            touchEffect = Instantiate(_touchEffectPrefab, parent);
+            touchEffect.Init(DespawnTouchEffect);
+            touchEffect.StartEffect(pos);
+            return touchEffect;
+        }
+
+        touchEffect = _touchEffectPool.Dequeue();
+        touchEffect.gameObject.SetActive(false);
+        touchEffect.gameObject.SetActive(true);
+        touchEffect.transform.SetParent(parent);
+        touchEffect.StartEffect(pos);
+        return touchEffect;
+    }
+
+    public static void DespawnTouchEffect(TouchEffect touchEffect)
+    {
+        if (touchEffect == null || _touchEffectPool.Contains(touchEffect))
+            return;
+
+        _touchEffectPool.Enqueue(touchEffect);
+        touchEffect.gameObject.SetActive(false);
+        touchEffect.transform.SetParent(_touchEffectParent.transform);
     }
 }

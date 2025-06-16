@@ -111,6 +111,7 @@ public class GatecrasherCustomer : Customer
     public void StartGatecreasherCustomer2Event(Vector3 targetPos, TableManager tableManager, Action<Customer> onCompleted)
     {
         _touchEnabled = false;
+        _isInDisguise = true;
         _onCompleted = onCompleted;
         _spriteRenderer.sprite = _customerData.Sprite;
         Move(targetPos, -1, () =>
@@ -120,6 +121,7 @@ public class GatecrasherCustomer : Customer
             {
                 _spritePressEffect.Interactable = true;
                 _touchEnabled = true;
+                _isInDisguise = false;
                 ChangeState(CustomerState.Action);
                 _soundParticle.Play();
                 _guitarSource.Play();

@@ -44,11 +44,7 @@ public class GuardAction : IStaffAction
             if (_customerController.GatecrasherCustomer[(int)staff.EquipFloorType] == null)
                 return;
 
-            if (_customerController.GatecrasherCustomer[(int)staff.EquipFloorType].CustomerData is GatecrasherCustomer1Data)
-            {
                 _gatecrasherCustomer = _customerController.GatecrasherCustomer[(int)staff.EquipFloorType];
-                return;
-            }
         }
 
         else

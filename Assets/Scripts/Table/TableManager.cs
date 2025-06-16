@@ -372,6 +372,7 @@ public class TableManager : MonoBehaviour
         exitCustomer.SetLayer("Customer", 0);
         exitCustomer.HideFood();
         exitCustomer.FixSpritePosition(true);
+        exitCustomer.StartHappy();
         UserInfo.AddSatisfaction(UserInfo.CurrentStage, data.Satisfaction);
         data.CurrentCustomer = null;
         data.TotalTip = 0;
@@ -382,6 +383,7 @@ public class TableManager : MonoBehaviour
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
             ObjectPoolManager.Instance.DespawnNormalCustomer(exitCustomer);
+            exitCustomer.StopHappy();
             exitCustomer = null;
             UpdateTable();
         });

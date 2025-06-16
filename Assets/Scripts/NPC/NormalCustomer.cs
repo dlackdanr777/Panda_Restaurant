@@ -11,6 +11,7 @@ public class NormalCustomer : Customer
     [Space]
     [Header("NormalCustomer Components")]
     [SerializeField] private Customer_Anger _anger;
+    [SerializeField] private Customer_Happy _happy;
     [SerializeField] private GameObject _eatAnimation;
     [SerializeField] private SpriteRenderer _foodRenderer;
 
@@ -63,6 +64,7 @@ public class NormalCustomer : Customer
         _currentFoodPriceMul = 1;
         _orderCount = 1;
         _anger.Init();
+        _happy.Init();
         ChangeState(CustomerState.Idle);
 
         if (_eatAnimation != null)
@@ -142,6 +144,7 @@ public class NormalCustomer : Customer
     public void StartAnger()
     {
         _anger.StartAnime();
+        _happy.StopAnime();
     }
 
 
@@ -150,40 +153,51 @@ public class NormalCustomer : Customer
         _anger.StopAnime();
     }
 
+    public void StartHappy()
+    {
+        _happy.StartAnime();
+        _anger.StopAnime();
+    }
+
+    public void StopHappy()
+    {
+        _happy.StopAnime();
+    }
+
 
     public void ShowFood(Sprite sprite)
     {
         _foodRenderer.sprite = sprite;
 
-     /*   // 새 스프라이트의 크기
-        float newSpriteHeight = sprite.texture.height;
-        float newSpriteWidth = sprite.texture.width;
+        /*   // 새 스프라이트의 크기
+           float newSpriteHeight = sprite.texture.height;
+           float newSpriteWidth = sprite.texture.width;
 
-        // 이전 스프라이트의 크기
-        float originalHeight = _tmpFoodSpriteHeight;
-        float originalWidth = _foodRenderer.sprite.texture.width;
+           // 이전 스프라이트의 크기
+           float originalHeight = _tmpFoodSpriteHeight;
+           float originalWidth = _foodRenderer.sprite.texture.width;
 
-        // 높이와 너비의 비율 계산
-        float heightScaleFactor = newSpriteHeight / originalHeight;
-        float widthScaleFactor = newSpriteWidth / originalWidth;
+           // 높이와 너비의 비율 계산
+           float heightScaleFactor = newSpriteHeight / originalHeight;
+           float widthScaleFactor = newSpriteWidth / originalWidth;
 
-        float scaleFactor;
+           float scaleFactor;
 
-        if (newSpriteHeight > originalHeight || newSpriteWidth > originalWidth)
-        {
-            // 높이나 너비 중 더 큰 값을 기준으로 크기 조정
-            scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
-        }
-        else
-        {
-            // 둘 다 작거나 크기 동일: 가장 큰 값을 기준으로 크기 조정
-            scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
-        }
+           if (newSpriteHeight > originalHeight || newSpriteWidth > originalWidth)
+           {
+               // 높이나 너비 중 더 큰 값을 기준으로 크기 조정
+               scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
+           }
+           else
+           {
+               // 둘 다 작거나 크기 동일: 가장 큰 값을 기준으로 크기 조정
+               scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
+           }
 
-        // 스프라이트 크기 조정
-        _foodRenderer.transform.localScale = _tmpFoodSize / scaleFactor;
-        DebugLog.Log(scaleFactor);
-        // 스프라이트 활성화*/
+           // 스프라이트 크기 조정
+           _foodRenderer.transform.localScale = _tmpFoodSize / scaleFactor;
+           DebugLog.Log(scaleFactor);
+           // 스프라이트 활성화*/
         _foodRenderer.gameObject.SetActive(true);
     }
 

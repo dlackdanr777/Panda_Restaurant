@@ -3,10 +3,11 @@ using UnityEngine;
 public class BurnerKitchenUtensil : KitchenUtensil
 {
     [SerializeField] private SpriteTouchEvent _touchEvent;
+    [SerializeField] private AudioClip _touchSound;
 
     bool _isTouch = false;
 
-    public float CookSpeedMul => _isTouch ? 1.1f : 1f;
+    public float CookSpeedMul => _isTouch ? 2f : 1f;
 
     public override void Init(ERestaurantFloorType floor)
     {
@@ -18,6 +19,10 @@ public class BurnerKitchenUtensil : KitchenUtensil
     private void TouchDownEvent()
     {
         _isTouch = true;
+        if (_touchSound != null)
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.Kitchen, _touchSound);
+        }
         DebugLog.Log("Touch Down on Burner");
     }
 
