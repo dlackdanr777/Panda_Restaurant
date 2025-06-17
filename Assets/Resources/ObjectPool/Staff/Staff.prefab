@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1784219438573801710}
   - component: {fileID: 3852222420714286849}
+  - component: {fileID: 1899443401270458385}
   m_Layer: 0
   m_Name: Staff
   m_TagString: Untagged
@@ -50,6 +51,28 @@ MonoBehaviour:
   _spriteRenderer: {fileID: 2087016000098406413}
   _skillEffect: {fileID: 1503593854496167922}
   _skillActiveSound: {fileID: 8300000, guid: 22f6133c384fdca4bbab3e89e864174c, type: 3}
+--- !u!95 &1899443401270458385
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1019491737176982585}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: e52117e215d4c6c419a04daa949c4525, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &2472885395668021863
 GameObject:
   m_ObjectHideFlags: 0

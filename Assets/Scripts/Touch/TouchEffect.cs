@@ -22,7 +22,7 @@ public class TouchEffect : MonoBehaviour
             return;
         }
         _effectTransform.SetAsFirstSibling();
-        _effectTransform.anchoredPosition = pos;
+        _effectTransform.transform.position = pos;
     }
 
     public void EndEffect()

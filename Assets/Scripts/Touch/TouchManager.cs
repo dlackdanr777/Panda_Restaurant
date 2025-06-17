@@ -86,8 +86,9 @@ public class TouchManager : MonoBehaviour
             }
             else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
             {
+                Debug.Log("Touch Ended or Canceled");
                 _touchImage.SetTouch(false);
-                ObjectPoolManager.SpawnTouchEffect(_touchImage.transform, Vector2.zero);
+                ObjectPoolManager.SpawnTouchEffect(_touchCanvas.transform, GetTouchPosition(Input.mousePosition));
                 _isTouching = false;
             }
         }
@@ -97,19 +98,24 @@ public class TouchManager : MonoBehaviour
             // 마우스 상태에 따라 처리 (UI 체크 제거)
             if (Input.GetMouseButtonDown(0))
             {
+
                 StartTouch(Input.mousePosition);
             }
-            else if (Input.GetMouseButton(0) && _isTouching)
+
+            else if (Input.GetMouseButtonUp(0))
+            {
+                _touchImage.SetTouch(false);
+                ObjectPoolManager.SpawnTouchEffect(_touchCanvas.transform, GetTouchPosition(Input.mousePosition));
+                _isTouching = false;
+            }
+
+
+            if (Input.GetMouseButton(0))
             {
                 UpdateTouchPosition(Input.mousePosition);
                 _touchImage.SetTouch(true);
             }
-            else if (Input.GetMouseButtonUp(0) && _isTouching)
-            {
-                _touchImage.SetTouch(false);
-                ObjectPoolManager.SpawnTouchEffect(_touchImage.transform, Vector2.zero);
-                _isTouching = false;
-            }
+
         }
     }
 
@@ -117,6 +123,7 @@ public class TouchManager : MonoBehaviour
     {
         _isTouching = true;
         UpdateTouchPosition(screenPosition);
+        _touchImage.SetTouch(true);
         _touchImage.StartTouch();
     }
 
@@ -147,6 +154,38 @@ public class TouchManager : MonoBehaviour
                 _touchImage.transform.position = hit.point;
             }
         }
+    }
+
+
+    private Vector2 GetTouchPosition(Vector2 screenPosition)
+    {
+        if (_touchCanvas.renderMode == RenderMode.ScreenSpaceOverlay)
+        {
+            return screenPosition;
+        }
+        else if (_touchCanvas.renderMode == RenderMode.ScreenSpaceCamera)
+        {
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                _touchCanvas.transform as RectTransform,
+                screenPosition,
+                _touchCanvas.worldCamera,
+                out Vector2 localPoint);
+
+            return _touchCanvas.transform.TransformPoint(localPoint);
+        }
+        else if (_touchCanvas.renderMode == RenderMode.WorldSpace)
+        {
+            // 월드 스페이스일 경우의 처리
+            Ray ray = _mainCamera.ScreenPointToRay(screenPosition);
+            RaycastHit hit;
+
+            if (Physics.Raycast(ray, out hit))
+            {
+                return hit.point;
+            }
+        }
+
+        return Vector2.zero; // 기본값
     }
 
     // 터치 이미지 숨기기 메서드 (Invoke에서 사용)

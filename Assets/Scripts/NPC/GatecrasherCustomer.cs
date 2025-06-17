@@ -384,7 +384,7 @@ public class GatecrasherCustomer : Customer
                 if (tableDataList[i].CurrentCustomer != null)
                 {
                     tableDataList[i].CurrentCustomer.StartAnger();
-                    tableManager.ExitCustomer(tableDataList[i]);
+                    tableManager.AngerExitCustomer(tableDataList[i]);
                     continue;
                 }
             }
@@ -402,7 +402,7 @@ public class GatecrasherCustomer : Customer
                 if (tableDataList[i].CurrentCustomer != null)
                 {
                     tableDataList[i].CurrentCustomer.StartAnger();
-                    tableManager.ExitCustomer(tableDataList[i]);
+                    tableManager.AngerExitCustomer(tableDataList[i]);
                     continue;
                 }
             }

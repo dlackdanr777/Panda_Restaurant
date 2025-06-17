@@ -175,7 +175,8 @@ public class SoundManager : MonoBehaviour
         SetVolume(1, AudioType.Master);
         SetVolume(backgroundVolume, AudioType.BackgroundAudio);
         SetVolume(soundEffectVolume, AudioType.EffectAudio);
-        _isVibration = isVibration;
+        //_isVibration = isVibration;
+        _isVibration = false;
     }
 
     public float GetVolume(AudioType audioType)
@@ -206,8 +207,9 @@ public class SoundManager : MonoBehaviour
 
     public void SetVibration(bool value)
     {
-        _isVibration = value;
-        PlayerPrefs.SetInt("IsVibration", value ? 1 : 0);
+        _isVibration = false;
+        //_isVibration = value;
+        PlayerPrefs.SetInt("IsVibration", _isVibration ? 1 : 0);
     }
 
     public void PlayBackgroundAudio(AudioClip clip, float duration = 0, bool isLoop = true)

@@ -689,7 +689,7 @@ public class ObjectPoolManager : MonoBehaviour
     public static TouchEffect SpawnTouchEffect(Transform parent, Vector2 pos)
     {
         TouchEffect touchEffect;
-
+        DebugLog.Log("SpawnTouchEffect: " + pos);
         if (_touchEffectPool.Count == 0)
         {
             touchEffect = Instantiate(_touchEffectPrefab, parent);
