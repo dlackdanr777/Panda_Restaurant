@@ -151,7 +151,6 @@ public class KitchenUtensilGroup: MonoBehaviour
 
                 float subTime = Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, _burnerDatas[i].CookingData.FoodData.FoodType) * (1 + _burnerDatas[i].AddCookSpeedMul * 0.01f * (_burnerDatas[i].UseStaff != null ? _burnerDatas[i].UseStaff.SpeedMul : 1));
                 subTime *= _burnerKitchenUtensils[i].CookSpeedMul;
-                DebugLog.Log(_burnerKitchenUtensils[i].CookSpeedMul);
                 if (_burnerDatas[i].FoodType == _burnerDatas[i].CookingData.FoodData.FoodType)
                 {
                     subTime *= 1.1f; // 같은 음식 타입일 때는 10% 더 빠르게 요리

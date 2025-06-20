@@ -7,7 +7,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
     [SerializeField] private AudioSource _audioSource;
 
 
-    private KitchenBurnerData _data;
+    private KitchenBurnerData _burnerData;
 
     bool _isTouch = false;
 
@@ -18,24 +18,18 @@ public class BurnerKitchenUtensil : KitchenUtensil
         base.Init(floor);
         _touchEvent.AddDownEvent(TouchDownEvent);
         _touchEvent.AddUpEvent(TouchUpEvent);
+        _audioSource.clip = _touchSound;
     }
 
     public void SetData(KitchenBurnerData data)
     {
-        _data = data;
+        _burnerData = data;
+
     }
 
     private void TouchDownEvent()
     {
-        if (_data.CookingData.IsDefault())
-            return;
-
         _isTouch = true;
-        if (_touchSound != null)
-        {
-            _audioSource.clip = _touchSound;
-            _audioSource.Play();
-        }
         DebugLog.Log("Touch Down on Burner");
     }
 
@@ -45,5 +39,27 @@ public class BurnerKitchenUtensil : KitchenUtensil
         _isTouch = false;
         _audioSource.Stop();
         DebugLog.Log("Touch Up on Burner");
+    }
+
+    private void FixedUpdate()
+    {
+        if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, _floorType))
+            return;
+            
+        if (_data == null && Type != KitchenUtensilType.Burner1)
+                return;
+
+        DebugLog.Log($"Is Touch: {_isTouch}" +
+                     $" | Is Default: {_burnerData.CookingData.IsDefault()}" +
+                     $" | Audio Playing: {_audioSource.isPlaying}");
+        if (!_burnerData.CookingData.IsDefault() && _isTouch && !_audioSource.isPlaying)
+        {
+            _audioSource.Play();
+        }
+
+        else if ((_burnerData.CookingData.IsDefault() && _audioSource.isPlaying) || (!_isTouch && _audioSource.isPlaying))
+        {
+            _audioSource.Stop();
+        }
     }
 }

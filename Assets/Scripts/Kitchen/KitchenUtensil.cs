@@ -21,7 +21,7 @@ public class KitchenUtensil : MonoBehaviour
     protected float _initialSpriteHeight; // 초기 스프라이트 높이 저장용
 
     protected ERestaurantFloorType _floorType;
-
+    protected KitchenUtensilData _data;
     public virtual void Init(ERestaurantFloorType floor)
     {
         _floorType = floor;
@@ -39,6 +39,7 @@ public class KitchenUtensil : MonoBehaviour
     {
         if (data == null)
         {
+            _data = null;
             if (_defalutSprite == null)
             {
                 _spriteRenderer.gameObject.SetActive(false);
@@ -50,6 +51,7 @@ public class KitchenUtensil : MonoBehaviour
             }
             return;
         }
+        _data = data;
         _spriteRenderer.gameObject.SetActive(true);
         _spriteRenderer.sprite = data.Sprite;
         SetRendererScale(data);
