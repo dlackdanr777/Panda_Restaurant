@@ -107,6 +107,7 @@ public class KitchenUtensilGroup: MonoBehaviour
                 if (burner != null)
                 {
                     _burnerKitchenUtensils.Add(burner);
+                    burner.SetData(_burnerDatas[i]);
                 }
             }
         }

@@ -6,6 +6,16 @@ using UnityEngine;
 
 public class MainScene : MonoBehaviour
 {
+    [Serializable]
+    private struct BackgroundData
+    {
+        [SerializeField] private AudioClip _backgroundMusic;
+        public AudioClip BackgroundMusic => _backgroundMusic;
+
+        [SerializeField] private GameObject _background;
+        public GameObject Background => _background;
+    }
+
     [Header("Option")]
     [SerializeField] private EStage _stage;
 
@@ -16,6 +26,7 @@ public class MainScene : MonoBehaviour
     [SerializeField] private FeverSystem _feverSystem;
     [SerializeField] private AudioClip _mainSceneMusic;
     [SerializeField] private AudioClip _feverMusic;
+    [SerializeField] private BackgroundData[] _backgroundDatas;
 
     private ERestaurantFloorType _currentFloor;
     public ERestaurantFloorType CurrentFloor => _currentFloor;
@@ -24,11 +35,13 @@ public class MainScene : MonoBehaviour
     public RestaurantType CurrentRestaurantType => _restaurantType;
 
     private float _updateTimer;
+    
+
 
 
     public void PlayMainMusic()
     {
-        if(!_feverSystem.IsFeverStart)
+        if (!_feverSystem.IsFeverStart)
             SoundManager.Instance.PlayBackgroundAudio(_mainSceneMusic, 0.5f);
 
         else
@@ -54,6 +67,7 @@ public class MainScene : MonoBehaviour
     {
         UserInfo.ChangeStage(_stage);
         SoundManager.Instance.ChangePlayEffectType(EffectType.Hall);
+        SetBackground();
         _uiNavCoordinator.OnShowUIHandler += OnUIEvent;
         _uiNavCoordinator.OnHideUIHandler += OnUIEvent;
     }
@@ -111,6 +125,25 @@ public class MainScene : MonoBehaviour
 #endif
 
         GameManager.Instance.ChanceScene();
+    }
+
+
+    private void SetBackground()
+    {
+        int randInt = UnityEngine.Random.Range(0, _backgroundDatas.Length);
+        _mainSceneMusic = _backgroundDatas[randInt].BackgroundMusic;
+
+        for(int i = 0; i < _backgroundDatas.Length; i++)
+        {
+            if (i == randInt)
+            {
+                _backgroundDatas[i].Background.SetActive(true);
+            }
+            else
+            {
+                _backgroundDatas[i].Background.SetActive(false);
+            }
+        }
     }
 
 

@@ -183,6 +183,7 @@ public class CustomerController : MonoBehaviour
             {
                 NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
+                DebugLog.Log($"RandInt: {randInt}, Count: {normalCustomerDataList.Count}");
                 CustomerData customerData = normalCustomerDataList[randInt];
                 customer.SetData(customerData, this, _tableManager);
                 customer.StartWaiting();
