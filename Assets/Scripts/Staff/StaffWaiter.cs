@@ -7,7 +7,6 @@ using Muks.PathFinding.AStar;
 public class StaffWaiter : Staff
 {
     [Header("Waiter Components")]
-    [SerializeField] private Animator _animator;
     [SerializeField] private Animator _bowlAnimator;
     [SerializeField] private SpriteRenderer _topBowl;
     [SerializeField] private SpriteRenderer _bottomBowl;

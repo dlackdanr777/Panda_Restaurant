@@ -3,7 +3,6 @@ using UnityEngine;
 public class StaffChef : Staff
 {
     [Header("Chef Components")]
-    [SerializeField] private Animator _animator;
     [SerializeField] private GameObject _handParent;
     [SerializeField] private SpriteRenderer _handSprite;
 

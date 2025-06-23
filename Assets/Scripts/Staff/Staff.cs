@@ -8,6 +8,7 @@ using Muks.Tween;
 public class Staff : MonoBehaviour
 {
     public event Action OnLevelUpEventHandler;
+    [SerializeField] protected Animator _animator;
     [SerializeField] protected GameObject _moveObj;
     [SerializeField] protected GameObject _spriteParent;
     [SerializeField] protected SpriteRenderer _spriteRenderer;
@@ -44,6 +45,7 @@ public class Staff : MonoBehaviour
     public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(StaffDataManager.Instance.GetStaffGroupType(_staffType))), 0.5f, 3f);
 
     protected Coroutine _useSkillRoutine;
+    protected RuntimeAnimatorController _defaultAnimatorController;
 
 
     public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController, FeverSystem feverSystem)
@@ -60,6 +62,12 @@ public class Staff : MonoBehaviour
         UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
         _feverSystem.OnStartFeverHandler += OnStartFeverEvent;
         _feverSystem.OnEndFeverHandler += OnEndFeverEvent;
+
+        if (_animator != null)
+        {
+            _defaultAnimatorController = _animator.runtimeAnimatorController;
+        }
+
         gameObject.SetActive(false);
     }
 
@@ -110,6 +118,12 @@ public class Staff : MonoBehaviour
         _staffData = staffData;
         _equipFloorType = equipFloorType;
         _staffData.AddSlot(this, _tableManager, _kitchenSystem, _customerController);
+
+        if (_animator != null)
+        {
+            _animator.runtimeAnimatorController = _staffData.AnimatorController ?? _defaultAnimatorController;  
+        }
+
         _moveSpeed = staffData.GetSpeed(Level);
         _speedMul = 0;
         _usingSkill = false;

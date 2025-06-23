@@ -41,6 +41,12 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Environment
+    uniqueID: 1275014123
+    locked: 0
+  - name: BackgroundEffect
+    uniqueID: 3985426555
+    locked: 0
   - name: Background
     uniqueID: 1735462077
     locked: 0
