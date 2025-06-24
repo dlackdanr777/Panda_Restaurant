@@ -103,19 +103,26 @@ public class FeverSystem : MonoBehaviour
     {
         float time = ConstValue.PEVER_TIME + GameManager.Instance.AddFerverTime;
         float timer = 0;
+        float addTabTimer = 0f;
         OnStartFeverHandler?.Invoke();
         _mainScene.PlayMainMusic();
         GameManager.Instance.SetGameSpeed(1f);
         while (timer < time)
         {
-            yield return YieldCache.WaitForSeconds(0.5f);
+            yield return YieldCache.WaitForSeconds(0.02f);
 
-            if(!_customerController.IsMaxCount)
+            addTabTimer += 0.02f;
+            if (addTabTimer >= 0.5f)
             {
-                _customerController.AddTabCount();
+                if (!_customerController.IsMaxCount)
+                {
+                    _customerController.AddTabCount();
+                }
+                addTabTimer = 0f; // 타이머 리셋
             }
 
-            timer += 0.5f;
+            _uiFever.OnChangeGaugeNoAnime(Mathf.Lerp(1, 0, timer / time));
+            timer += 0.02f;
         }
 
         _isFeverStart = false;
