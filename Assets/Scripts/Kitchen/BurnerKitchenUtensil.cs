@@ -48,10 +48,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
             
         if (_data == null && Type != KitchenUtensilType.Burner1)
                 return;
-
-        DebugLog.Log($"Is Touch: {_isTouch}" +
-                     $" | Is Default: {_burnerData.CookingData.IsDefault()}" +
-                     $" | Audio Playing: {_audioSource.isPlaying}");
+                
         if (!_burnerData.CookingData.IsDefault() && _isTouch && !_audioSource.isPlaying)
         {
             _audioSource.Play();

@@ -1,3 +1,4 @@
+using Muks.DataBind;
 using Muks.UI;
 using System;
 using System.Collections.Generic;
@@ -70,6 +71,15 @@ public class MainScene : MonoBehaviour
         SetBackground();
         _uiNavCoordinator.OnShowUIHandler += OnUIEvent;
         _uiNavCoordinator.OnHideUIHandler += OnUIEvent;
+
+        DataBind.SetUnityActionValue("ChangeBackground", () =>
+        {
+            SetBackground();
+            PlayMainMusic();
+        });
+
+        DataBind.SetUnityActionValue("ShowMeTheMoney", () => UserInfo.AddMoney(1000000));
+        DataBind.SetUnityActionValue("ShowMeTheDia", () => UserInfo.AddDia(1000));
     }
 
 

@@ -7,6 +7,8 @@ using UnityEngine.UI;
 public class UIManagement : MobileUIView
 {
     [Header("Components")]
+    [SerializeField] private UIManagementLayout _managementLayout;
+    [SerializeField] private MainScene _mainScene;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private Camera _kitchenCamera;
     [SerializeField] private Camera _restaurantCamera;
@@ -33,10 +35,13 @@ public class UIManagement : MobileUIView
     [SerializeField] private Ease _hideTweenMode;
 
 
+    private ERestaurantFloorType _currentFloor;
+
+
     public override void Init()
     {
         _setEffectGroup.Init();
-
+        _managementLayout.Init();
 
         OnChangeTipPerMinuteEvent();
         OnAddCustomerEvent();
@@ -60,11 +65,14 @@ public class UIManagement : MobileUIView
         _kitchenCamera.gameObject.SetActive(true);
         _restaurantCamera.gameObject.SetActive(true);
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        _currentFloor = _mainScene.CurrentFloor;
 
+        
         OnChangeTipPerMinuteEvent();
         OnChangeMoneyEvent();
         OnAddCustomerEvent();
         OnChangeMoneyEvent();
+        _managementLayout.ResetLayout(_currentFloor);
 
         _setEffectGroup.UpdateUI();
 

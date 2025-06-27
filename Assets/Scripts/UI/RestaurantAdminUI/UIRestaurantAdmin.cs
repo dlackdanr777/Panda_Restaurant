@@ -23,6 +23,7 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
     [SerializeField] private RectTransform _dontTouchArea;
+    [SerializeField] private Canvas _canvas;
 
     [Header("BackgroundImage")]
     [SerializeField] private ScrollingImage[] _scrollImages;
@@ -189,7 +190,7 @@ public class UIRestaurantAdmin : MobileUIView
         _furnitureTab.SetNotAttention();
 
         _floorButtonGroup.SetActive(true);
-
+        
         SetBackgroundImage(BackgroundType.Staff);
     }
 
@@ -254,16 +255,19 @@ public class UIRestaurantAdmin : MobileUIView
     public void ShowUIFurniture(FurnitureType type)
     {
         _furnitureTab.ShowUIFurniture(type);
+        _canvas.sortingOrder -= 2;
     }
 
     public void ShowUIStaff(EquipStaffType type)
     {
         _staffTab.ShowUIStaff(type);
+        _canvas.sortingOrder -= 2;
     }
 
     public void ShowUIKitchen(KitchenUtensilType type)
     {
         _kitchenTab.ShowUIKitchen(type);
+        _canvas.sortingOrder -= 2;
     }
 
     private void SetBackgroundImage(BackgroundType type)
