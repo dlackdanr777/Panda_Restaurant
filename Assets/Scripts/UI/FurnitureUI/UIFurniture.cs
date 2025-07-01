@@ -82,8 +82,6 @@ public class UIFurniture : MobileUIView
         gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-        _uiRestaurantAdmin.ShowFurnitureTab();
-        _uiRestaurantAdmin.MainUISetActive(false);
         transform.SetAsLastSibling();
         SetFurniturePreview();
 
@@ -200,6 +198,8 @@ public class UIFurniture : MobileUIView
 
     public void ShowUIFurniture(ERestaurantFloorType floorType, FurnitureType type)
     {
+        _uiRestaurantAdmin.MainUISetActive(false);
+        _uiRestaurantAdmin.ShowFurnitureTab();
         _uiNav.Push("UIFurniture");
         _currentFloorType = floorType;
         SetFurnitureData(type);

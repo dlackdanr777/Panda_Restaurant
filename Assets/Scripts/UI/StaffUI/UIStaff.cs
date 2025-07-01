@@ -17,6 +17,7 @@ public class UIStaff : MobileUIView
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private TextMeshProUGUI _typeText;
 
+
     [Space]
     [Header("Animations")]
     [SerializeField] private GameObject _animeUI;
@@ -85,8 +86,6 @@ public class UIStaff : MobileUIView
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         SetStaffData(EquipStaffType.Manager);
         SetStaffPreview();
-        _uiRestaurantAdmin.ShowStaffTab();
-        _uiRestaurantAdmin.MainUISetActive(false);
         transform.SetAsLastSibling();
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
@@ -118,6 +117,8 @@ public class UIStaff : MobileUIView
 
     public void ShowUIStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
+        _uiRestaurantAdmin.MainUISetActive(false);
+        _uiRestaurantAdmin.ShowStaffTab();
         _uiNav.Push("UIStaff");
         _currentFloorType = floorType;
         SetStaffData(type);

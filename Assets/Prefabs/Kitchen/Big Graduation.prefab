@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1798988090443914006}
   - component: {fileID: 6055309682807957969}
-  m_Layer: 15
+  m_Layer: 0
   m_Name: Big Graduation
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -74,7 +74,7 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: -1794468961
-  m_SortingLayer: 18
+  m_SortingLayer: 20
   m_SortingOrder: 2
   m_Sprite: {fileID: 21300000, guid: 8a5830a1d0de660479160aa23038d4aa, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -96,7 +96,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2832419517742637761}
-  m_Layer: 15
+  m_Layer: 0
   m_Name: Big Graduation
   m_TagString: Untagged
   m_Icon: {fileID: 0}

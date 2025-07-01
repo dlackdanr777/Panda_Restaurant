@@ -32,6 +32,12 @@ public class UIManagementLayout : MonoBehaviour
         SelectLayout();
     }
 
+    public void UpdateLayout(ERestaurantFloorType floor)
+    {
+        _currentFloor = floor;
+        SelectLayout();
+    }
+
 
     private void OnButtonClicked(int dir)
     {

@@ -659,7 +659,7 @@ public class StageInfo
     }
 
 
-    private void CheckKitchenUtensilFoodType()
+    public void CheckKitchenUtensilFoodType()
     {
         for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
@@ -668,7 +668,7 @@ public class StageInfo
         }
     }
 
-    private void CheckFurnitureFoodType()
+    public void CheckFurnitureFoodType()
     {
         for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
@@ -687,6 +687,12 @@ public class StageInfo
             return;
         }
         FoodType foodType = _equipFurnitureDatas[floorIndex, 0].FoodType;
+        
+        if(foodType == FoodType.None)
+        {
+            _furnitureEnabledFoodType[floorIndex] = FoodType.None;
+            return;
+        }
 
         for (int i = 1, cnt = (int)FurnitureType.Length; i < cnt; ++i)
         {
@@ -697,7 +703,7 @@ public class StageInfo
                 return;
             }
 
-            if(foodType != data.FoodType)
+            if (foodType != data.FoodType)
             {
                 _furnitureEnabledFoodType[floorIndex] = FoodType.None;
                 return;
@@ -718,6 +724,12 @@ public class StageInfo
             return;
         }
         FoodType foodType = _equipKitchenUtensilDatas[floorIndex, 0].FoodType;
+
+        if (foodType == FoodType.None)
+        {
+            _kitchenuntensilEnabledFoodType[floorIndex] = FoodType.None;
+            return;
+        }
 
         for (int i = 1, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
         {
@@ -929,7 +941,8 @@ public class StageInfo
         if (loadData == null)
             return false;
 
-        _unlockFloor = loadData.UnlockFloor;
+        //_unlockFloor = loadData.UnlockFloor;
+        _unlockFloor = ERestaurantFloorType.Floor3;
         _score = loadData.Score;
         _tip = loadData.Tip;
         _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);

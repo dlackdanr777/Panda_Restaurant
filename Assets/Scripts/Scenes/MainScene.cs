@@ -80,6 +80,9 @@ public class MainScene : MonoBehaviour
 
         DataBind.SetUnityActionValue("ShowMeTheMoney", () => UserInfo.AddMoney(1000000));
         DataBind.SetUnityActionValue("ShowMeTheDia", () => UserInfo.AddDia(1000));
+
+        UserInfo.CheckFurnitureFoodType(UserInfo.CurrentStage);
+        UserInfo.CheckKitchenUtensilFoodType(UserInfo.CurrentStage);
     }
 
 

@@ -13,16 +13,14 @@ public class UIManagement : MobileUIView
     [SerializeField] private Camera _kitchenCamera;
     [SerializeField] private Camera _restaurantCamera;
 
+    [SerializeField] private TextMeshProUGUI _floorText;
+    [SerializeField] private Button _leftFloorButton;
+    [SerializeField] private Button _rightFloorButton;
+
     [Space]
     [Header("Set Effect Components")]
     [SerializeField] private UIManagementSetEffect _setEffectGroup;
 
-
-    [Space]
-    [Header("Management Components")]
-    [SerializeField] private TextMeshProUGUI _tipPerMinuteValue;
-    [SerializeField] private TextMeshProUGUI _totalCustomerValue;
-    [SerializeField] private TextMeshProUGUI _totalMoneyValue;
 
     [Space]
     [Header("Animations")]
@@ -43,13 +41,8 @@ public class UIManagement : MobileUIView
         _setEffectGroup.Init();
         _managementLayout.Init();
 
-        OnChangeTipPerMinuteEvent();
-        OnAddCustomerEvent();
-        OnChangeMoneyEvent();
-
-        GameManager.Instance.OnChangeTipPerMinuteHandler += OnChangeTipPerMinuteEvent;
-        UserInfo.OnAddCustomerCountHandler += OnAddCustomerEvent;
-        UserInfo.OnChangeMoneyHandler += OnChangeMoneyEvent;
+        _leftFloorButton.onClick.AddListener(() => OnChangeFloorType(-1));
+        _rightFloorButton.onClick.AddListener(() => OnChangeFloorType(1));
 
         _kitchenCamera.gameObject.SetActive(false);
         _restaurantCamera.gameObject.SetActive(false);
@@ -67,14 +60,7 @@ public class UIManagement : MobileUIView
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         _currentFloor = _mainScene.CurrentFloor;
 
-        
-        OnChangeTipPerMinuteEvent();
-        OnChangeMoneyEvent();
-        OnAddCustomerEvent();
-        OnChangeMoneyEvent();
-        _managementLayout.ResetLayout(_currentFloor);
-
-        _setEffectGroup.UpdateUI();
+        OnChangeFloorType(_currentFloor);
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
@@ -102,31 +88,23 @@ public class UIManagement : MobileUIView
         });
     }
 
-    private void OnChangeTipPerMinuteEvent()
+
+    private void OnChangeFloorType(ERestaurantFloorType floorType)
     {
-        if (!gameObject.activeSelf)
-            return;
+        _currentFloor = floorType;
+        _managementLayout.UpdateLayout(floorType);
+        _setEffectGroup.UpdateUI(floorType);
 
-        _tipPerMinuteValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(GameManager.Instance.TipPerMinute), 9);
+        _floorText.SetText(Utility.GetFloorStrByType(_currentFloor));
     }
+    
 
-
-    private void OnAddCustomerEvent()
+    private void OnChangeFloorType(int dir)
     {
-        if (!gameObject.activeSelf)
-            return;
-
-        _totalCustomerValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(UserInfo.TotalCumulativeCustomerCount), 9);
+        ERestaurantFloorType totalFloor = UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
+        int totalFloorCount = (int)totalFloor + 1;
+        _currentFloor = (ERestaurantFloorType)(((int)_currentFloor + dir + totalFloorCount) % totalFloorCount);
+        OnChangeFloorType(_currentFloor);
     }
-
-
-    private void OnChangeMoneyEvent()
-    {
-        if (!gameObject.activeSelf)
-            return;
-
-        _totalMoneyValue.text = Utility.StringAddHyphen(Utility.ConvertToMoney(UserInfo.TotalAddMoney), 9);
-    }
-
 
 }

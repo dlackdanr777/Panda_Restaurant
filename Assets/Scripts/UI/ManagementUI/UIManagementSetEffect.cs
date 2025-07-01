@@ -14,9 +14,16 @@ public enum SetEffectType
 public class UIManagementSetEffect : MonoBehaviour
 {
     [Header("Set Camera Components")]
-    [SerializeField] private RectTransform _setCameraGroup;
+    [SerializeField] private RectTransform _furnitureRenderGroup;
+    [SerializeField] private RectTransform _kitchenUtensilRenderGroup;
+
+    [SerializeField] private Camera _furnitureCamera;
+    [SerializeField] private Camera _kitchenUtensilCamera;
+
     [SerializeField] private Button _leftArrowButton;
     [SerializeField] private Button _rightArrowButton;
+
+    [SerializeField] private GameobjectsSetActive _pageSetActiveGroup;
 
     [Header("SetDescroption Components")]
     [SerializeField] private UIHorizontalScrollSwipe _scrollSwipe;
@@ -24,173 +31,205 @@ public class UIManagementSetEffect : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _setDescriptionText;
 
     [Header("Slot Option")]
-    [SerializeField] private RectTransform _slotParent;
-    [SerializeField] private UIManagementSetCount _setCountPrefab;
+    [SerializeField] private RectTransform _slotParent1;
+    [SerializeField] private RectTransform _slotParent2;
+    [SerializeField] private UIManagementEquipSlot _equipSlotPrefab;
+
+
+    [Space]
+    [Header("Options")]
+    [SerializeField] private float[] _floorHeights = new float[(int)ERestaurantFloorType.Length];
+
 
     private SetEffectType _currentSetEffectType;
     private ERestaurantFloorType _currentFloorType;
-    private List<UIManagementSetCount> _setCountList = new List<UIManagementSetCount>();
-
+    private List<UIManagementEquipSlot> _eqipCountList1 = new List<UIManagementEquipSlot>();
+    private List<UIManagementEquipSlot> _eqipCountList2 = new List<UIManagementEquipSlot>();
 
     public void Init()
     {
-        for(int i = 0; i < 4; ++i)
+        for (int i = 0; i < 8; ++i)
         {
-            UIManagementSetCount setCount = Instantiate(_setCountPrefab, _slotParent);
-            _setCountList.Add(setCount);
+            UIManagementEquipSlot setCount = Instantiate(_equipSlotPrefab, _slotParent1);
+            _eqipCountList1.Add(setCount);
+            setCount.gameObject.SetActive(false);
+
+            setCount = Instantiate(_equipSlotPrefab, _slotParent2);
+            _eqipCountList2.Add(setCount);
             setCount.gameObject.SetActive(false);
         }
 
-        _leftArrowButton.onClick.AddListener(() => OnChagneSetEffectType(SetEffectType.Furniture));
-        _rightArrowButton.onClick.AddListener(() => OnChagneSetEffectType(SetEffectType.KitchenUntensils));
 
-        OnChagneSetEffectType(_currentSetEffectType);
+        _leftArrowButton.onClick.AddListener(() => OnChangeSetEffectType(-1));
+        _rightArrowButton.onClick.AddListener(() => OnChangeSetEffectType(1));
+
+        OnChangeSetEffectType(SetEffectType.Furniture);
         OnChangeSetEffect(0);
-        //OnChangeSlotData();
         _scrollSwipe.OnChangePageHandler += OnChangeSetEffect;
     }
 
-    public void UpdateUI()
+    public void UpdateUI(ERestaurantFloorType floorType)
     {
-        OnChangeSetEffect(_scrollSwipe.CurrentPage);
-        //OnChangeSlotData();
+        _currentFloorType = floorType;
+        OnChangeSetEffectType(SetEffectType.Furniture);
+        OnChangeFloorType(floorType);
+        OnChangeSetEffect(0);
     }
 
 
-/*    private void OnChangeSlotData()
+    private void UpdateSlot()
     {
-        for (int i = 0, cnt = _setCountList.Count; i < cnt; ++i)
+        for (int i = 0, cnt = _eqipCountList1.Count; i < cnt; ++i)
         {
-            _setCountList[i].gameObject.SetActive(false);
+            _eqipCountList1[i].gameObject.SetActive(false);
+        }
+        for (int i = 0, cnt = _eqipCountList2.Count; i < cnt; ++i)
+        {
+            _eqipCountList2[i].gameObject.SetActive(false);
         }
 
-        Dictionary<string, int> equipSetDataCountDic = new Dictionary<string, int>();
-        List<KeyValuePair<string, int>> sortList = new List<KeyValuePair<string, int>>();
 
-        switch (_currentSetEffectType)
+        if (_currentSetEffectType == SetEffectType.Furniture)
         {
-            case SetEffectType.Furniture:
-                FurnitureData furniutreData;
-                for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
-                {
-                    furniutreData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _currentFloorType, (FurnitureType)i);
-                    if (furniutreData == null)
-                        continue;
+            for (int i = 0, cnt = ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT; i < cnt; ++i)
+            {
+                FurnitureData furnitureData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _currentFloorType, (FurnitureType)i);
+                if (furnitureData == null)
+                    continue;
 
-                    if (equipSetDataCountDic.ContainsKey(furniutreData.SetId))
+                bool isEnd = false;
+                for (int j = 0, cntJ = _eqipCountList1.Count; j < cntJ; ++j)
+                {
+                    if (!_eqipCountList1[j].gameObject.activeSelf)
                     {
-                        equipSetDataCountDic[furniutreData.SetId] += 1;
-                        continue;
-                    }
-                    equipSetDataCountDic.Add(furniutreData.SetId, 1);
-                }
-
-                foreach (var setData in equipSetDataCountDic)
-                {
-                    sortList.Add(new KeyValuePair<string, int>(setData.Key, setData.Value));
-                }
-                sortList.Sort((x, y) => y.Value.CompareTo(x.Value));
-
-                for(int i = 0, cnt = _setCountList.Count; i < cnt; ++i)
-                {
-                    if (sortList.Count <= i)
+                        _eqipCountList1[j].SetData(furnitureData.Name, furnitureData.FoodType);
+                        _eqipCountList1[j].gameObject.SetActive(true);
+                        isEnd = true;
                         break;
-
-                    _setCountList[i].gameObject.SetActive(true);
-                    _setCountList[i].SetData(SetDataManager.Instance.GetSetData(sortList[i].Key), sortList[i].Value, ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT);
+                    }
                 }
-                return;
 
+                if (isEnd)
+                    continue;
 
-            case SetEffectType.KitchenUntensils:
-                KitchenUtensilData kitchenData;
-                for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
+                for (int j = 0, cntJ = _eqipCountList2.Count; j < cntJ; ++j)
                 {
-                    kitchenData = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, _currentFloorType, (KitchenUtensilType)i);
-                    if (kitchenData == null)
-                        continue;
-
-                    if (equipSetDataCountDic.ContainsKey(kitchenData.SetId))
+                    if (!_eqipCountList2[j].gameObject.activeSelf)
                     {
-                        equipSetDataCountDic[kitchenData.SetId] += 1;
-                        continue;
-                    }
-                    equipSetDataCountDic.Add(kitchenData.SetId, 1);
-                }
-
-                foreach (var setData in equipSetDataCountDic)
-                {
-                    sortList.Add(new KeyValuePair<string, int>(setData.Key, setData.Value));
-                }
-                sortList.Sort((x, y) => y.Value.CompareTo(x.Value));
-
-                for (int i = 0, cnt = _setCountList.Count; i < cnt; ++i)
-                {
-                    if (sortList.Count <= i)
+                        _eqipCountList2[j].SetData(furnitureData.Name, furnitureData.FoodType);
+                        _eqipCountList2[j].gameObject.SetActive(true);
                         break;
-
-                    _setCountList[i].gameObject.SetActive(true);
-                    _setCountList[i].SetData(SetDataManager.Instance.GetSetData(sortList[i].Key), sortList[i].Value, ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT);
+                    }
                 }
-                return;
+            }
         }
-    }*/
+        else if (_currentSetEffectType == SetEffectType.KitchenUntensils)
+        {
+
+            for (int i = 0, cnt = ConstValue.SET_EFFECT_ENABLE_KITCHEN_UTENSIL_COUNT; i < cnt; ++i)
+            {
+                KitchenUtensilData data = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, _currentFloorType, (KitchenUtensilType)i);
+                if (data == null)
+                    continue;
+
+                bool isEnd = false;
+                for (int j = 0, cntJ = _eqipCountList1.Count; j < cntJ; ++j)
+                {
+                    if (!_eqipCountList1[j].gameObject.activeSelf)
+                    {
+                        _eqipCountList1[j].SetData(data.Name, data.FoodType);
+                        _eqipCountList1[j].gameObject.SetActive(true);
+                        isEnd = true;
+                        break;
+                    }
+                }
+
+                if (isEnd)
+                    continue;
+
+                for (int j = 0, cntJ = _eqipCountList2.Count; j < cntJ; ++j)
+                {
+                    if (!_eqipCountList2[j].gameObject.activeSelf)
+                    {
+                        _eqipCountList2[j].SetData(data.Name, data.FoodType);
+                        _eqipCountList2[j].gameObject.SetActive(true);
+                        break;
+                    }
+                }
+            }
+        }
+        _pageSetActiveGroup.SetActiveAll(_eqipCountList2.Find(x => x.gameObject.activeSelf) != null);
+        _scrollSwipe.RefreshPages();       
+    }
 
 
     private void OnChangeSetEffect(int page)
     {
-        if(page == 1)
+        bool isSlot2Active = _eqipCountList2.Find(x => x.gameObject.activeSelf) != null;
+
+        if (page == 0 || (isSlot2Active && page == 1))
         {
             _setTitleText.text = _currentSetEffectType == SetEffectType.Furniture ? "적용 가구 목록" : "적용 기구 목록";
             return;
         }
 
-        else if(page == 0)
+        else if ((!isSlot2Active && page == 1) || (isSlot2Active && page == 2))
         {
             FoodType foodType = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureFoodType(UserInfo.CurrentStage, _currentFloorType) : UserInfo.GetEquipKitchenUtensilFoodType(UserInfo.CurrentStage, _currentFloorType);
-
+            Debug.Log(foodType);
             bool setEnabled = foodType != FoodType.None;
-            _setTitleText.text = setEnabled ? Utility.FoodTypeStringConverter(foodType) + " 세트" : "비활성화";
+            _setTitleText.text = setEnabled ? Utility.FoodTypeStringConverter(foodType) + " 적용중" : "비활성화";
             _setDescriptionText.text = !setEnabled ? "적용중인 효과 없음" : _currentSetEffectType == SetEffectType.Furniture ? Utility.GetFurnitureFoodTypeSetEffectDescription(foodType) : Utility.GetKitchenFoodTypeSetEffectDescription(foodType);
         }
-
     }
 
 
-    private void OnChagneSetEffectType(SetEffectType type)
+    private void OnChangeSetEffectType(SetEffectType setEffectType)
     {
-        if (type == SetEffectType.Furniture)
+        _currentSetEffectType = setEffectType;
+
+        if (_currentSetEffectType == SetEffectType.Furniture)
         {
-            _rightArrowButton.gameObject.SetActive(true);
-            _leftArrowButton.gameObject.SetActive(false);
+            _furnitureRenderGroup.gameObject.SetActive(true);
+            _kitchenUtensilRenderGroup.gameObject.SetActive(false);
+
         }
-        else
+        else if (_currentSetEffectType == SetEffectType.KitchenUntensils)
         {
-            _leftArrowButton.gameObject.SetActive(true);
-            _rightArrowButton.gameObject.SetActive(false);
+            _furnitureRenderGroup.gameObject.SetActive(false);
+            _kitchenUtensilRenderGroup.gameObject.SetActive(true);
+        }
+        
+        _scrollSwipe.ChangeIndex(0);
+        OnChangeSetEffect(0);
+        UpdateSlot();
+    }
+
+
+    private void OnChangeSetEffectType(int dir)
+    {
+        int currentIndex = (int)_currentSetEffectType;
+        int maxIndex = (int)SetEffectType.Length;
+        int newIndex = ((currentIndex + dir) % maxIndex + maxIndex) % maxIndex;
+
+        _currentSetEffectType = (SetEffectType)newIndex;
+        OnChangeSetEffectType(_currentSetEffectType);
+    }
+    
+
+    private void OnChangeFloorType(ERestaurantFloorType floorType)
+    {
+        _currentFloorType = floorType;
+
+        // Set the camera height based on the current floor type
+        if (_furnitureCamera != null)
+        {
+            _furnitureCamera.transform.position = new Vector3(_furnitureCamera.transform.position.x, _floorHeights[(int)_currentFloorType], _furnitureCamera.transform.position.z);
         }
 
-        if (_currentSetEffectType == type)
-            return;
-
-        _currentSetEffectType = type;
-        _setCameraGroup.TweenStop();
-        if (type == SetEffectType.Furniture)
+        if (_kitchenUtensilCamera != null)
         {
-            _setCameraGroup.TweenAnchoredPosition(new Vector2(0, -6), 0.3f, Ease.Smoothstep);
-            _scrollSwipe.ChagneIndex(0);
-            OnChangeSetEffect(0);
-            //OnChangeSlotData();
-            return;
-        }
-
-        if (type == SetEffectType.KitchenUntensils)
-        {
-            _setCameraGroup.TweenAnchoredPosition(new Vector2(-546, -6), 0.3f, Ease.Smoothstep);
-            _scrollSwipe.ChagneIndex(0);
-            OnChangeSetEffect(0);
-            //OnChangeSlotData();
-            return;
+            _kitchenUtensilCamera.transform.position = new Vector3(_kitchenUtensilCamera.transform.position.x, _floorHeights[(int)_currentFloorType], _kitchenUtensilCamera.transform.position.z);
         }
     }
 }

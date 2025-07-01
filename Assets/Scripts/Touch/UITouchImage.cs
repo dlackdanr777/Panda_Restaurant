@@ -48,9 +48,6 @@ public class UITouchImage : MonoBehaviour
         if (_animator != null)
         {
             _animator.SetBool("Touch", value);
-            
-            // 값이 즉시 반영되도록 함
-            _animator.Update(0f);
         }
     }
 

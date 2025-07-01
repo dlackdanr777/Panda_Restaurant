@@ -1295,6 +1295,18 @@ public static class UserInfo
         return _stageInfos[stageIndex].GetCollectFurnitureSetDataList();
     }
 
+    public static void CheckFurnitureFoodType(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].CheckKitchenUtensilFoodType();
+    }
+
+    public static void CheckKitchenUtensilFoodType(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].CheckFurnitureFoodType();
+    }
+
     #endregion
 
     #region TableData

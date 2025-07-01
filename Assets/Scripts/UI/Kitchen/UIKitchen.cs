@@ -79,8 +79,6 @@ public class UIKitchen : MobileUIView
         gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-        _uiRestaurantAdmin.ShowKitchenTab();
-        _uiRestaurantAdmin.MainUISetActive(false);
         transform.SetAsLastSibling();
         SetKitchenUtensilDataData(KitchenUtensilType.Burner1);
         SetKitchenPreview();
@@ -115,6 +113,8 @@ public class UIKitchen : MobileUIView
 
     public void ShowUIKitchen(ERestaurantFloorType floorType, KitchenUtensilType type)
     {
+        _uiRestaurantAdmin.MainUISetActive(false);
+        _uiRestaurantAdmin.ShowKitchenTab();
         _uiNav.Push("UIKitchen");
         _currentFloorType = floorType;
         SetKitchenUtensilDataData(type);
