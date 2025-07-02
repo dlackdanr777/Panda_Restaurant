@@ -669,7 +669,7 @@ public DropCoinArea GetMinDistanceCoinArea(ERestaurantFloorType floorType, Vecto
     );
 }
 
-public TableData GetMinDistanceTable(ERestaurantFloorType floorType, Vector3 startPos, List<TableData> tableDataList)
+public TableData GetMinDistanceTable( Vector3 startPos, List<TableData> tableDataList)
 {
     return GetMinDistanceObject(
         RestaurantType.Hall,
@@ -681,7 +681,7 @@ public TableData GetMinDistanceTable(ERestaurantFloorType floorType, Vector3 sta
     );
 }
 
-public KitchenBurnerData GetMinDistanceBurner(ERestaurantFloorType floorType, Vector3 startPos, List<KitchenBurnerData> dataList)
+public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurnerData> dataList)
 {
     return GetMinDistanceObject(
         RestaurantType.Kitchen,

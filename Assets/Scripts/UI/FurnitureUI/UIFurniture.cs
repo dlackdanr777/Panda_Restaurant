@@ -241,15 +241,9 @@ public class UIFurniture : MobileUIView
                 switch (floorType)
                 {
                     case ERestaurantFloorType.Floor1:
-                        slot.SetUse(data.ThumbnailSprite, data.Name, "1층 배치중");
-                        break;
-
                     case ERestaurantFloorType.Floor2:
-                        slot.SetUse(data.ThumbnailSprite, data.Name, "2층 배치중");
-                        break;
-
                     case ERestaurantFloorType.Floor3:
-                        slot.SetUse(data.ThumbnailSprite, data.Name, "3층 배치중");
+                        slot.SetUse(data.ThumbnailSprite, data.Name, "배치중", floorType);
                         break;
 
                     case ERestaurantFloorType.Length:

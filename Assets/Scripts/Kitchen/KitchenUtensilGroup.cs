@@ -77,7 +77,6 @@ public class KitchenUtensilGroup: MonoBehaviour
         else if (Mathf.Abs(_door2.position.y - pos.y) < 2)
             return _door2.position;
 
-        DebugLog.LogError("위치 값이 이상합니다. door1: " + _door1.position + " door2: " + _door2.position + " tablePos: " + pos);
         return Vector3.zero;
     }
 

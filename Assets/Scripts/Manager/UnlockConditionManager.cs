@@ -40,7 +40,7 @@ public static class UnlockConditionManager
 
             case UnlockConditionType.UnlockTargetFloor:
                 ERestaurantFloorType floor = Utility.GetFloorTypeByStr(data.UnlockId);
-                return Utility.GetFloorStrByType(floor) + " 해제";
+                return Utility.GetFloorStrKrByType(floor) + " 해제";
 
             case UnlockConditionType.NeedItem:
                 GachaItemData itemData = ItemManager.Instance.GetGachaItemData(data.UnlockId);

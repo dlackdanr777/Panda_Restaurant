@@ -160,7 +160,7 @@ public class FurnitureGroup : MonoBehaviour
                 return _hallFoodPos[i].position;
             }
 
-            throw new Exception("홀의 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요.");
+            throw new Exception("홀의 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요: " + pos);
         }
         else if(type == RestaurantType.Kitchen)
         {
@@ -172,7 +172,7 @@ public class FurnitureGroup : MonoBehaviour
                 return _kitchenFoodPos[i].position;
             }
 
-            throw new Exception("주방 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요.");
+            throw new Exception("주방 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요: " + pos);
         }
 
         throw new Exception("타입이 이상합니다: " + type);

@@ -159,7 +159,8 @@ public class UIManagementSetEffect : MonoBehaviour
             }
         }
         _pageSetActiveGroup.SetActiveAll(_eqipCountList2.Find(x => x.gameObject.activeSelf) != null);
-        _scrollSwipe.RefreshPages();       
+        _scrollSwipe.RefreshPages();
+        UpdateSetEffect();
     }
 
 
@@ -199,7 +200,7 @@ public class UIManagementSetEffect : MonoBehaviour
             _furnitureRenderGroup.gameObject.SetActive(false);
             _kitchenUtensilRenderGroup.gameObject.SetActive(true);
         }
-        
+
         _scrollSwipe.ChangeIndex(0);
         OnChangeSetEffect(0);
         UpdateSlot();
@@ -215,7 +216,7 @@ public class UIManagementSetEffect : MonoBehaviour
         _currentSetEffectType = (SetEffectType)newIndex;
         OnChangeSetEffectType(_currentSetEffectType);
     }
-    
+
 
     private void OnChangeFloorType(ERestaurantFloorType floorType)
     {
@@ -231,5 +232,13 @@ public class UIManagementSetEffect : MonoBehaviour
         {
             _kitchenUtensilCamera.transform.position = new Vector3(_kitchenUtensilCamera.transform.position.x, _floorHeights[(int)_currentFloorType], _kitchenUtensilCamera.transform.position.z);
         }
+    }
+
+
+    private void UpdateSetEffect()
+    {
+        FoodType foodType = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureFoodType(UserInfo.CurrentStage, _currentFloorType) : UserInfo.GetEquipKitchenUtensilFoodType(UserInfo.CurrentStage, _currentFloorType);
+        bool setEnabled = foodType != FoodType.None;
+        _setDescriptionText.text = !setEnabled ? "적용중인 효과 없음" : _currentSetEffectType == SetEffectType.Furniture ? Utility.GetFurnitureFoodTypeSetEffectDescription(foodType) : Utility.GetKitchenFoodTypeSetEffectDescription(foodType);
     }
 }

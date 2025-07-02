@@ -65,6 +65,7 @@ public class Staff : MonoBehaviour
 
         if (_animator != null)
         {
+            DebugLog.Log("스탭 애니메이터 컨트롤러 초기화: " + name + " - " + _animator.runtimeAnimatorController);
             _defaultAnimatorController = _animator.runtimeAnimatorController;
         }
 
@@ -121,7 +122,8 @@ public class Staff : MonoBehaviour
 
         if (_animator != null)
         {
-            _animator.runtimeAnimatorController = _staffData.AnimatorController ?? _defaultAnimatorController;  
+            DebugLog.Log("스탭 애니메이터 컨트롤러 설정: " + name + " - " + _staffData.AnimatorController);
+            _animator.runtimeAnimatorController = _staffData.AnimatorController == null ? _defaultAnimatorController : _staffData.AnimatorController;  
         }
 
         _moveSpeed = staffData.GetSpeed(Level);

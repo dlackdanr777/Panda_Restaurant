@@ -102,7 +102,6 @@ public class ChefAction : IStaffAction
             return;
         }
 
-        DebugLog.Log(burnerDataList.Count);
         if (0 < burnerDataList.Count)
         {
             BurnerAction(burnerDataList);
@@ -158,7 +157,8 @@ public class ChefAction : IStaffAction
 
     private void BurnerAction(List<KitchenBurnerData> dataList)
     {
-        KitchenBurnerData data = _tableManager.GetMinDistanceBurner(_staff.EquipFloorType, _staff.transform.position, dataList);
+        KitchenBurnerData data = _tableManager.GetMinDistanceBurner( _staff.transform.position, dataList);
+        Debug.Log(data.KitchenUtensil.transform.position);
         DebugLog.Log(data);
         if (data == null)
         {

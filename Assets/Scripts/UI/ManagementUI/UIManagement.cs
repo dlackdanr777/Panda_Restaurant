@@ -95,7 +95,7 @@ public class UIManagement : MobileUIView
         _managementLayout.UpdateLayout(floorType);
         _setEffectGroup.UpdateUI(floorType);
 
-        _floorText.SetText(Utility.GetFloorStrByType(_currentFloor));
+        _floorText.SetText(Utility.GetFloorStrKrByType(_currentFloor));
     }
     
 
