@@ -88,9 +88,11 @@ public class TableManager : MonoBehaviour
         }
 
         ERestaurantFloorType choiceFloor = GetWeightRandomChoiceFloor(customer);
+        //TODO: 나중에 삭제 후 위에꺼 쓰기(임시로 1층만 사용)
+        //ERestaurantFloorType choiceFloor = ERestaurantFloorType.Floor1;
         data = GetTableType(choiceFloor, ETableState.Empty);
 
-        if (data.TableState == ETableState.DontUse)
+        if (data == null || data.TableState == ETableState.DontUse)
         {
             NotFurnitureTable(data);
             return false;
@@ -551,7 +553,10 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        for (int i = 0, cnt = (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage); i <= cnt; ++i)
+        int unlockFloorCount = (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
+        //TODO: 나중에 삭제 후 위에꺼 쓰기(임시로 1층만 사용)
+        //int unlockFloorCount = (int)ERestaurantFloorType.Floor1;
+        for (int i = 0; i <= unlockFloorCount; ++i)
         {
             TableData data = GetTableType((ERestaurantFloorType)i, ETableState.Empty);
             if (data == null)

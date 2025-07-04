@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Muks.Tween
@@ -7,6 +8,7 @@ namespace Muks.Tween
         private float _startAlpha;
         private float _targetAlpha;
         private CanvasGroup _canvasGroup;
+        private Func<float, float, float> _cachedPercentHandler;
 
 
         protected override void SetData(TweenDataSequence dataSequence)
@@ -18,6 +20,8 @@ namespace Muks.Tween
 
             _targetAlpha = (float)dataSequence.TargetValue;
             _startAlpha = _canvasGroup.alpha;
+
+            _cachedPercentHandler = _percentHandler[_tweenMode];
         }
 
 
@@ -25,7 +29,7 @@ namespace Muks.Tween
         {
             base.Update();
 
-            float percent = _percentHandler[_tweenMode](ElapsedDuration, TotalDuration);
+            float percent = _cachedPercentHandler(ElapsedDuration, TotalDuration);
             
             _canvasGroup.alpha = Mathf.LerpUnclamped(_startAlpha, _targetAlpha, percent);
         }

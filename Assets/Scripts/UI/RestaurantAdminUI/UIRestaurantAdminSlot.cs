@@ -12,6 +12,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
     [SerializeField] private GameObject _alarmImage;
     [SerializeField] private GameObject _lockImgae;
     [SerializeField] private UITextAndText _useImage;
+    [SerializeField] private Image _useImageSprite;
     [SerializeField] private UIImageAndText _operateImage;
     [SerializeField] private UIImageAndText _priceImage;
     [SerializeField] private UIImageAndText _notEnoughPriceImage;
@@ -51,6 +52,8 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _nameText.text = name;
         _useImage?.SetText1(text);
         _useImage?.SetText2(Utility.GetFloorStrEngByType(floor));
+
+        _useImageSprite.color = Utility.GetFloorColor(floor);
     }
 
 

@@ -11,7 +11,6 @@ public enum BackgroundType
     Kitchen,
 }
 
-
 public class UIRestaurantAdmin : MobileUIView
 {
     [Header("Components")]
@@ -24,11 +23,9 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
     [SerializeField] private RectTransform _dontTouchArea;
 
-
     [Header("BackgroundImage")]
     [SerializeField] private ScrollingImage[] _scrollImages;
     private ScrollingImage _currentScrollImage;
-
 
     [Space]
     [Header("Tabs")]
@@ -53,36 +50,68 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private float _hideDuration;
     [SerializeField] private Ease _hideTweenMode;
 
-
     [Space]
     [Header("Audios")]
     [SerializeField] private AudioClip _shopMusic;
 
-
     private ERestaurantFloorType _floorType;
+    private BackgroundType _currentBackgroundType = BackgroundType.Furniture;
+    private bool _isInitialized = false;
+
+    // 캐시된 참조들
+    private UIRestaurantAdminTabButton[] _tabButtons;
+    private UIRestaurantAdminTab[] _tabs;
 
     public override void Init()
     {
+        if (_isInitialized) return;
+
+        // 배열 캐싱으로 반복 접근 최적화
+        _tabButtons = new UIRestaurantAdminTabButton[] 
+        { 
+            _furnitureButton, _staffButton, _recipeButton, _kitchenButton 
+        };
+        
+        _tabs = new UIRestaurantAdminTab[] 
+        { 
+            _furnitureTab, _staffTab, _recipeTab, _kitchenTab 
+        };
+
+        // 이벤트 등록
         _staffButton.OnClickEvent(ShowStaffTab);
         _furnitureButton.OnClickEvent(ShowFurnitureTab);
         _recipeButton.OnClickEvent(ShowRecipeTab);
         _kitchenButton.OnClickEvent(ShowKitchenTab);
+
+        // 탭 초기화
         _staffTab.Init();
         _recipeTab.Init();
         _furnitureTab.Init();
         _kitchenTab.Init();
-        _floorButtonGroup.Init(() => ChangeFloorType(ERestaurantFloorType.Floor1), () => ChangeFloorType(ERestaurantFloorType.Floor2), () => ChangeFloorType(ERestaurantFloorType.Floor3));
 
-        for (int i = 0, cnt = _scrollImages.Length; i < cnt; i++)
+        _floorButtonGroup.Init(
+            () => ChangeFloorType(ERestaurantFloorType.Floor1), 
+            () => ChangeFloorType(ERestaurantFloorType.Floor2), 
+            () => ChangeFloorType(ERestaurantFloorType.Floor3)
+        );
+
+        // 스크롤 이미지 초기화 최적화
+        InitializeScrollImages();
+
+        SetBackgroundImageOptimized(BackgroundType.Furniture);
+
+        _isInitialized = true;
+        gameObject.SetActive(false);
+    }
+
+    private void InitializeScrollImages()
+    {
+        int length = _scrollImages.Length;
+        for (int i = 0; i < length; i++)
         {
             _scrollImages[i].Init();
+            _scrollImages[i].gameObject.SetActive(false); // 미리 비활성화
         }
-
-        SetBackgroundImage(BackgroundType.Furniture);
-
-
-
-        gameObject.SetActive(false);
     }
 
     public override void Show()
@@ -91,12 +120,15 @@ public class UIRestaurantAdmin : MobileUIView
         SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
         gameObject.SetActive(true);
         _mainUI.SetActive(false);
-        SetBackgroundImage(BackgroundType.Furniture);
-        ShowFurnitureTab();
+        
+        // 최적화된 배경 및 탭 설정
+        SetBackgroundImageOptimized(BackgroundType.Furniture);
+        ShowFurnitureTabOptimized();
+        
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
         _dontTouchArea.gameObject.SetActive(true);
-        ChangeFloorType(_mainScene.CurrentFloor);
+        ChangeFloorTypeOptimized(_mainScene.CurrentFloor);
 
         _recipeTab.UpdateUI();
 
@@ -129,7 +161,7 @@ public class UIRestaurantAdmin : MobileUIView
             tween.OnComplete(() =>
             {
                 _mainUI.SetActive(false);
-                ResetBackgroundImageOffset();
+                ResetBackgroundImageOffsetOptimized();
                 TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
                 tween2.OnComplete(() => 
                 {
@@ -139,19 +171,13 @@ public class UIRestaurantAdmin : MobileUIView
                 VisibleState = VisibleState.Disappeared;
             });
         }
-
         else
         {
             _mainScene.PlayMainMusic();
-             VisibleState = VisibleState.Disappeared;
-            if (_uiNav.CheckActiveView("UIStaff"))
-                _uiNav.Pop("UIStaff");
-
-            if (_uiNav.CheckActiveView("UIFurniture"))
-                _uiNav.Pop("UIFurniture");
-
-            if (_uiNav.CheckActiveView("UIKitchen"))
-                _uiNav.Pop("UIKitchen");
+            VisibleState = VisibleState.Disappeared;
+            
+            // 최적화된 UI 팝 처리
+            PopActiveUIViews();
 
             _mainUI.SetActive(false);
             Tween.Wait(_hideDuration, () =>
@@ -163,6 +189,17 @@ public class UIRestaurantAdmin : MobileUIView
         }
     }
 
+    private void PopActiveUIViews()
+    {
+        // 문자열 배열을 미리 캐시하여 반복 생성 방지
+        string[] uiViewNames = { "UIStaff", "UIFurniture", "UIKitchen" };
+        
+        for (int i = 0; i < uiViewNames.Length; i++)
+        {
+            if (_uiNav.CheckActiveView(uiViewNames[i]))
+                _uiNav.Pop(uiViewNames[i]);
+        }
+    }
 
     public void MainUISetActive(bool active)
     {
@@ -172,86 +209,75 @@ public class UIRestaurantAdmin : MobileUIView
         _canvasGroup.blocksRaycasts = true;
         _canvasGroup.alpha = 1;
         _dontTouchArea.gameObject.SetActive(false);
-        _mainUI.transform.localScale = new Vector3(1, 1, 1);
+        _mainUI.transform.localScale = Vector3.one;
         _mainUI.SetActive(active);
     }
 
-
+    // 최적화된 탭 표시 메서드들
     public void ShowStaffTab()
     {
-        _staffTab.transform.SetAsLastSibling();
-        _staffButton.SelectButton();
-        _furnitureButton.UnselectedButton();
-        _recipeButton.UnselectedButton();
-        _kitchenButton.UnselectedButton();
-
-        _staffTab.SetAttention();
-        _kitchenTab.SetNotAttention();
-        _recipeTab.SetNotAttention();
-        _furnitureTab.SetNotAttention();
-
-        _floorButtonGroup.SetActive(true);
-        
-        SetBackgroundImage(BackgroundType.Staff);
+        ShowStaffTabOptimized();
     }
 
+    private void ShowStaffTabOptimized()
+    {
+        SetTabActive(1); // Staff = 1
+        _floorButtonGroup.SetActive(true);
+        SetBackgroundImageOptimized(BackgroundType.Staff);
+    }
 
     public void ShowFurnitureTab()
     {
-        _furnitureTab.transform.SetAsLastSibling();
-        _furnitureButton.SelectButton();
-        _staffButton.UnselectedButton();
-        _recipeButton.UnselectedButton();
-        _kitchenButton.UnselectedButton();
-
-        _staffTab.SetNotAttention();
-        _kitchenTab.SetNotAttention();
-        _recipeTab.SetNotAttention();
-        _furnitureTab.SetAttention();
-
-        _floorButtonGroup.SetActive(true);
-
-        SetBackgroundImage(BackgroundType.Furniture);
+        ShowFurnitureTabOptimized();
     }
 
+    private void ShowFurnitureTabOptimized()
+    {
+        SetTabActive(0); // Furniture = 0
+        _floorButtonGroup.SetActive(true);
+        SetBackgroundImageOptimized(BackgroundType.Furniture);
+    }
 
     public void ShowRecipeTab()
     {
-        _recipeTab.transform.SetAsLastSibling();
-        _recipeButton.SelectButton();
-        _furnitureButton.UnselectedButton();
-        _staffButton.UnselectedButton();
-        _kitchenButton.UnselectedButton();
-
-        _staffTab.SetNotAttention();
-        _kitchenTab.SetNotAttention();
-        _recipeTab.SetAttention();
-        _furnitureTab.SetNotAttention();
-
+        SetTabActive(2); // Recipe = 2
         _floorButtonGroup.SetActive(false);
-
-        SetBackgroundImage(BackgroundType.Recipe);
+        SetBackgroundImageOptimized(BackgroundType.Recipe);
     }
-
 
     public void ShowKitchenTab()
     {
-        _kitchenTab.transform.SetAsLastSibling();
-        _kitchenButton.SelectButton();
-        _furnitureButton.UnselectedButton();
-        _staffButton.UnselectedButton();
-        _recipeButton.UnselectedButton();
-
-        _staffTab.SetNotAttention();
-        _kitchenTab.SetAttention();
-        _recipeTab.SetNotAttention();
-        _furnitureTab.SetNotAttention();
-
+        SetTabActive(3); // Kitchen = 3
         _floorButtonGroup.SetActive(true);
-
-        SetBackgroundImage(BackgroundType.Kitchen);
+        SetBackgroundImageOptimized(BackgroundType.Kitchen);
     }
 
+    // 탭 활성화 로직 통합 및 최적화
+    private void SetTabActive(int activeIndex)
+    {
+        // 탭 버튼 상태 설정
+        for (int i = 0; i < _tabButtons.Length; i++)
+        {
+            if (i == activeIndex)
+                _tabButtons[i].SelectButton();
+            else
+                _tabButtons[i].UnselectedButton();
+        }
+
+        // 탭 Attention 상태 설정
+        for (int i = 0; i < _tabs.Length; i++)
+        {
+            if (i == activeIndex)
+            {
+                _tabs[i].SetAttention();
+                _tabs[i].transform.SetAsLastSibling();
+            }
+            else
+            {
+                _tabs[i].SetNotAttention();
+            }
+        }
+    }
 
     public void ShowUIFurniture(FurnitureType type)
     {
@@ -268,23 +294,31 @@ public class UIRestaurantAdmin : MobileUIView
         _kitchenTab.ShowUIKitchen(type);
     }
 
-    private void SetBackgroundImage(BackgroundType type)
+    // 최적화된 배경 이미지 설정
+    private void SetBackgroundImageOptimized(BackgroundType type)
     {
-        for(int i = 0, cnt = _scrollImages.Length; i < cnt; i++)
-        {
-            _scrollImages[i].gameObject.SetActive(false);
-        }
+        // 동일한 타입이면 처리하지 않음
+        if (_currentBackgroundType == type && _currentScrollImage != null)
+            return;
 
-        if(_currentScrollImage != null)
-            _scrollImages[(int)type].SetOffset(_currentScrollImage.Offset);
+        // 이전 배경 비활성화
+        if (_currentScrollImage != null)
+            _currentScrollImage.gameObject.SetActive(false);
 
-        _scrollImages[(int)type].gameObject.SetActive(true);
-        _currentScrollImage = _scrollImages[(int)type];
+        // 오프셋 설정 및 새 배경 활성화
+        ScrollingImage newScrollImage = _scrollImages[(int)type];
+        if (_currentScrollImage != null)
+            newScrollImage.SetOffset(_currentScrollImage.Offset);
+
+        newScrollImage.gameObject.SetActive(true);
+        _currentScrollImage = newScrollImage;
+        _currentBackgroundType = type;
     }
 
-    private void ResetBackgroundImageOffset()
+    private void ResetBackgroundImageOffsetOptimized()
     {
-        for (int i = 0, cnt = _scrollImages.Length; i < cnt; i++)
+        int length = _scrollImages.Length;
+        for (int i = 0; i < length; i++)
         {
             _scrollImages[i].SetOffset(Vector2.zero);
         }
@@ -292,13 +326,24 @@ public class UIRestaurantAdmin : MobileUIView
 
     private void ChangeFloorType(ERestaurantFloorType floorType)
     {
+        ChangeFloorTypeOptimized(floorType);
+    }
+
+    private void ChangeFloorTypeOptimized(ERestaurantFloorType floorType)
+    {
         if (_floorType == floorType)
             return;
 
         _floorType = floorType;
+        // 한 번에 모든 탭 업데이트
         _kitchenTab.ChangeFloorType(_floorType);
         _furnitureTab.ChangeFloorType(_floorType);
         _staffTab.ChangeFloorType(_floorType);
         _floorButtonGroup.SetFloorText(_floorType);
     }
+
+    // 호환성을 위한 기존 메서드들
+    private void SetBackgroundImage(BackgroundType type) => SetBackgroundImageOptimized(type);
+    private void ResetBackgroundImageOffset() => ResetBackgroundImageOffsetOptimized();
 }
+

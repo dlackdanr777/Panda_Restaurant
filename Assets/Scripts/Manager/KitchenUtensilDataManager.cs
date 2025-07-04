@@ -140,7 +140,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
             string id = row[0].Trim();
             if (string.IsNullOrWhiteSpace(id))
             {
-                Debug.LogError("Id값이 이상합니다: " + id);
+                DebugLog.LogError("Id값이 이상합니다: " + id);
                 continue;
             }
 

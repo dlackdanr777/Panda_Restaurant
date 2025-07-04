@@ -209,6 +209,18 @@ public static class Utility
         };
     }
 
+
+    public static Color GetFloorColor(ERestaurantFloorType floor)
+    {
+         return floor switch
+        {
+            ERestaurantFloorType.Floor1 => new Color(0.718f,0.820f, 0.588f),
+            ERestaurantFloorType.Floor2 => new Color(0.173f,0.847f, 0.851f),
+            ERestaurantFloorType.Floor3 => new Color(1,0.827f, 0),
+            _ => throw new System.Exception("해당 층 수 타입이 이상합니다: " + floor)
+        };
+    }
+
     public static string GetGachaItemEffectDescription(GachaItemData data)
     {
         if (data == null)

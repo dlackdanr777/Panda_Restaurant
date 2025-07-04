@@ -20,6 +20,7 @@ public class UIKitchenPreview : MonoBehaviour
     [Space]
     [Header("Buttons")]
     [SerializeField] private UIButtonAndTwoText _usingButton;
+    [SerializeField] private Image _usingButtonImage;
     [SerializeField] private UIButtonAndText _buyButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
@@ -165,6 +166,7 @@ public class UIKitchenPreview : MonoBehaviour
                     _usingButton.SetText1("배치중");
                     _usingButton.SetText2("1f");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                    _usingButtonImage.color = Utility.GetFloorColor(ERestaurantFloorType.Floor1);
                     break;
 
                 case ERestaurantFloorType.Floor2:
@@ -172,6 +174,7 @@ public class UIKitchenPreview : MonoBehaviour
                     _usingButton.SetText1("배치중");
                     _usingButton.SetText2("2f");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                    _usingButtonImage.color = Utility.GetFloorColor(ERestaurantFloorType.Floor2);
                     break;
 
                 case ERestaurantFloorType.Floor3:
@@ -179,6 +182,7 @@ public class UIKitchenPreview : MonoBehaviour
                     _usingButton.SetText1("배치중");
                     _usingButton.SetText2("3f");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+                    _usingButtonImage.color = Utility.GetFloorColor(ERestaurantFloorType.Floor3);
                     break;
 
                 case ERestaurantFloorType.Length:

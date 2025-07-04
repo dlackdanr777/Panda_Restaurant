@@ -9,7 +9,6 @@ public class UIRecipeTab : UIRestaurantAdminTab
     [SerializeField] private UIRecipeUpgrade _uiUpgrade;
     [SerializeField] private UIRecipePreview _uiRecipePreview;
 
-
     [Space]
     [Header("Slot Option")]
     [SerializeField] private Transform _slotParnet;
@@ -17,108 +16,171 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
     private UIRestaurantAdminFoodTypeSlot[] _slots;
     private List<FoodData> _foodDataList;
+    private bool _isInitialized = false;
+
+    // 성능 최적화를 위한 캐시 변수들
+    private readonly List<int> _giveSlotIndices = new List<int>(32);
+    private readonly List<int> _buyableSlotIndices = new List<int>(32);
 
     public override void Init()
     {
+        if (_isInitialized) return;
+
         _foodDataList = FoodDataManager.Instance.GetSortFoodDataList();
         _uiRecipePreview.Init(OnBuyButtonClicked, OnUpgradeButtonClicked);
-        _uiRecipePreview.SetData(_foodDataList[0]);
-        _uiUpgrade.SetData(_foodDataList[0]);
+        
+        if (_foodDataList.Count > 0)
+        {
+            _uiRecipePreview.SetData(_foodDataList[0]);
+            _uiUpgrade.SetData(_foodDataList[0]);
+        }
 
+        InitializeSlots();
+        SubscribeEvents();
+        UpdateUIOptimized();
+
+        _isInitialized = true;
+    }
+
+    private void InitializeSlots()
+    {
         int foodCount = _foodDataList.Count;
-
         _slots = new UIRestaurantAdminFoodTypeSlot[foodCount];
 
         for (int i = 0; i < foodCount; ++i)
         {
             UIRestaurantAdminFoodTypeSlot slot = Instantiate(_slotPrefab, _slotParnet);
-
             int index = i;
             FoodData data = _foodDataList[index];
             slot.Init(() => OnSlotClicked(data));
             _slots[i] = slot;
         }
-
-        UpdateUI();
-
-        UserInfo.OnUpgradeRecipeHandler += UpdateUI;
-        UserInfo.OnGiveRecipeHandler += UpdateUI;
-        UserInfo.OnChangeMoneyHandler += UpdateUI;
-        UserInfo.OnChangeScoreHandler += UpdateUI;
-        GameManager.Instance.OnChangeScoreHandler += UpdateUI;
     }
 
+    private void SubscribeEvents()
+    {
+        UserInfo.OnUpgradeRecipeHandler += UpdateUIOptimized;
+        UserInfo.OnGiveRecipeHandler += UpdateUIOptimized;
+        UserInfo.OnChangeMoneyHandler += UpdateUIOptimized;
+        UserInfo.OnChangeScoreHandler += UpdateUIOptimized;
+        GameManager.Instance.OnChangeScoreHandler += UpdateUIOptimized;
+    }
 
     public void SetView(FoodData data)
     {
         _uiRecipePreview.SetData(data);
     }
 
-
     public override void UpdateUI()
     {
-        if (!gameObject.activeSelf)
-            return;
+        UpdateUIOptimized();
+    }
 
-        if (_foodDataList == null || _foodDataList.Count == 0)
+    // 대폭 최적화된 UpdateUI
+    private void UpdateUIOptimized()
+    {
+        if (!gameObject.activeSelf || _foodDataList == null || _foodDataList.Count == 0)
             return;
 
         _uiRecipePreview.UpdateUI();
 
-        FoodData data;
-        for(int i = 0, cnt = _foodDataList.Count; i < cnt; i++)
+        int dataCount = _foodDataList.Count;
+        
+        // 캐시 리스트 초기화
+        _giveSlotIndices.Clear();
+        _buyableSlotIndices.Clear();
+
+        // 메인 루프 - 슬롯 분류
+        for (int i = 0; i < dataCount; i++)
         {
-            data = _foodDataList[i];
-            _slots[i].SetFoodType(data.FoodType);
-            if(UserInfo.IsGiveRecipe(data.Id))
+            var data = _foodDataList[i];
+            var slot = _slots[i];
+            
+            slot.SetFoodType(data.FoodType);
+
+            if (UserInfo.IsGiveRecipe(data.Id))
             {
-                _slots[i].SetNone(data.ThumbnailSprite, data.Name);
-                continue;
+                _giveSlotIndices.Add(i);
+                slot.SetNone(data.ThumbnailSprite, data.Name);
             }
-
-            if (!UserInfo.IsScoreValid(data))
+            else
             {
-                _slots[i].SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
-                continue;
+                _buyableSlotIndices.Add(i);
+                ProcessBuyableSlot(data, slot);
             }
+        }
 
-            if(!string.IsNullOrWhiteSpace(data.NeedItem))
+        // 슬롯 순서 최적화 (구매 가능한 것들을 앞으로)
+        OptimizeSlotOrder();
+    }
+
+    private void ProcessBuyableSlot(FoodData data, UIRestaurantAdminFoodTypeSlot slot)
+    {
+        // 평판 체크
+        if (!UserInfo.IsScoreValid(data))
+        {
+            slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
+            return;
+        }
+
+        // 필요 아이템 체크
+        if (!string.IsNullOrWhiteSpace(data.NeedItem))
+        {
+            if (!UserInfo.IsGiveGachaItem(data.NeedItem))
             {
-                if(!UserInfo.IsGiveGachaItem(data.NeedItem))
-                {
-                    _slots[i].SetNeedItem(data.ThumbnailSprite, data.Name, data.NeedItem);
-                    continue;
-                }
-
-                _slots[i].SetMiniGame(data.ThumbnailSprite, data.Name, data.NeedItem);
-                continue;
+                slot.SetNeedItem(data.ThumbnailSprite, data.Name, data.NeedItem);
             }
-
-            if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
+            else
             {
-                _slots[i].SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
-                continue;
+                slot.SetMiniGame(data.ThumbnailSprite, data.Name, data.NeedItem);
             }
+            return;
+        }
 
-            else if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
-            {
-                _slots[i].SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice));
-                continue;
-            }
+        // 가격 체크 및 슬롯 설정
+        string priceText = data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice);
 
-            _slots[i].SetEnoughPrice(data.ThumbnailSprite, data.Name, data.BuyPrice <= 0 ? "무료" : Utility.ConvertToMoney(data.BuyPrice), data.MoneyType);
-            continue;
+        switch (data.MoneyType)
+        {
+            case MoneyType.Gold when !UserInfo.IsMoneyValid(data):
+                slot.SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, priceText);
+                break;
+            
+            case MoneyType.Dia when !UserInfo.IsDiaValid(data):
+                slot.SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, priceText);
+                break;
+            
+            default:
+                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, priceText, data.MoneyType);
+                break;
+        }
+    }
+
+    private void OptimizeSlotOrder()
+    {
+        // 구매 가능한 슬롯들을 앞으로 이동
+        for (int i = 0; i < _buyableSlotIndices.Count; i++)
+        {
+            _slots[_buyableSlotIndices[i]].transform.SetSiblingIndex(i);
+        }
+
+        // 이미 구매한 슬롯들을 뒤로 이동
+        int buyableCount = _buyableSlotIndices.Count;
+        for (int i = 0; i < _giveSlotIndices.Count; i++)
+        {
+            _slots[_giveSlotIndices[i]].transform.SetSiblingIndex(buyableCount + i);
         }
     }
 
     public override void SetAttention()
     {
+        UpdateUI();
     }
 
     public override void SetNotAttention()
     {
+        // 필요시 구현
     }
-
 
     private void OnBuyButtonClicked(FoodData data)
     {
@@ -148,7 +210,6 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
         if (data.MoneyType == MoneyType.Gold)
             UserInfo.AddMoney(-data.BuyPrice);
-
         else if (data.MoneyType == MoneyType.Dia)
             UserInfo.AddDia(-data.BuyPrice);
 
@@ -156,16 +217,23 @@ public class UIRecipeTab : UIRestaurantAdminTab
         PopupManager.Instance.ShowDisplayText("새로운 레시피를 배웠어요!");
     }
 
-
     private void OnUpgradeButtonClicked(FoodData data)
     {
         _uiNav.Push("UIRecipeUpgrade");
     }
 
-
     private void OnSlotClicked(FoodData data)
     {
         _uiUpgrade.SetData(data);
         _uiRecipePreview.SetData(data);
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnUpgradeRecipeHandler -= UpdateUIOptimized;
+        UserInfo.OnGiveRecipeHandler -= UpdateUIOptimized;
+        UserInfo.OnChangeMoneyHandler -= UpdateUIOptimized;
+        UserInfo.OnChangeScoreHandler -= UpdateUIOptimized;
+        GameManager.Instance.OnChangeScoreHandler -= UpdateUIOptimized;
     }
 }

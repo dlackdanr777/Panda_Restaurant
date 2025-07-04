@@ -144,8 +144,11 @@ public class CustomerController : MonoBehaviour
                     continue;
                 }
 
+                
                 CustomerData getData = randomDataList.GetRamdomItem();
                 ERestaurantFloorType visitFloor = (ERestaurantFloorType)UnityEngine.Random.Range(0, (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage) + 1);
+                //TODO: 나중에 삭제 후 위에꺼 쓰기(임시로 1층만 사용)
+                //ERestaurantFloorType visitFloor = ERestaurantFloorType.Floor1;
                 if (getData is SpecialCustomerData)
                 {
                     TimeManager.Instance.SetTime(TIME_TAG, ConstValue.DEFAULT_CUSTOMER_BREAK_TIME);
@@ -324,6 +327,8 @@ public class CustomerController : MonoBehaviour
         _uiCustomerTutorial.ShowTutorial(data);
 
         ERestaurantFloorType visitFloor = (ERestaurantFloorType)UnityEngine.Random.Range(0, (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage) + 1);
+        //TODO: 나중에 삭제 후 위에꺼 쓰기(임시로 1층만 사용)
+        //ERestaurantFloorType visitFloor = ERestaurantFloorType.Floor1;
         int floorIndex = (int)visitFloor;
         if (data is GatecrasherCustomer1Data)
         {
