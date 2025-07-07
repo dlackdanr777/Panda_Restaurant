@@ -100,41 +100,41 @@ public class MainScene : MonoBehaviour
         UserInfo.AddDia(1000);
         UserInfo.AddMoney(10000000);
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_01");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_01");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_01");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_01");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_02");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_02");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_02");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_02");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_03");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_03");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_03");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_03");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_04");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_04");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_04");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_04");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_05");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_05");
+        UserInfo.GiveFurniture(EStage.Stage1, "TABLE08_05");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "TABLE08_05");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "FLOWER08");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "FLOWER08");
+        UserInfo.GiveFurniture(EStage.Stage1, "FLOWER08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "FLOWER08");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "RACK08");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "RACK08");
+        UserInfo.GiveFurniture(EStage.Stage1, "RACK08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "RACK08");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "WALLPAPER08");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "WALLPAPER08");
+        UserInfo.GiveFurniture(EStage.Stage1, "WALLPAPER08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "WALLPAPER08");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "ACC08");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "ACC08");
+        UserInfo.GiveFurniture(EStage.Stage1, "ACC08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "ACC08");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "FRAME08");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "FRAME08");
+        UserInfo.GiveFurniture(EStage.Stage1, "FRAME08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "FRAME08");
 
-        // UserInfo.GiveFurniture(EStage.Stage1, "COUNTER08");
-        // UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "COUNTER08");
+        UserInfo.GiveFurniture(EStage.Stage1, "COUNTER08");
+        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "COUNTER08");
 
-        // UserInfo.GiveKitchenUtensil(EStage.Stage1, "COOKER01_01");
-        // UserInfo.SetEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, "COOKER01_01");
+        UserInfo.GiveKitchenUtensil(EStage.Stage1, "COOKER01_01");
+        UserInfo.SetEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, "COOKER01_01");
 #endif
 
         GameManager.Instance.ChanceScene();

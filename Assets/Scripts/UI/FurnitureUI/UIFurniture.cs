@@ -42,10 +42,6 @@ public class UIFurniture : MobileUIView
     private List<UIRestaurantAdminFoodTypeSlot>[] _slots = new List<UIRestaurantAdminFoodTypeSlot>[(int)FurnitureType.Length];
     private List<FurnitureData> _currentTypeDataList;
 
-    // 성능 최적화를 위한 캐시 변수들
-    private readonly (ERestaurantFloorType, UIRestaurantAdminFoodTypeSlot)[] _equipSlotCache = 
-        new (ERestaurantFloorType, UIRestaurantAdminFoodTypeSlot)[(int)ERestaurantFloorType.Length];
-    private readonly List<int> _siblingIndexCache = new List<int>(32);
     private bool _isInitialized = false;
 
     public override void Init()
@@ -75,7 +71,7 @@ public class UIFurniture : MobileUIView
         {
             List<FurnitureData> typeDataList = FurnitureDataManager.Instance.GetSortFurnitureDataList((FurnitureType)i);
             _slots[i] = new List<UIRestaurantAdminFoodTypeSlot>(typeDataList.Count);
-            
+
             for (int j = 0; j < typeDataList.Count; j++)
             {
                 int dataIndex = j;
@@ -108,10 +104,10 @@ public class UIFurniture : MobileUIView
         SetFurnitureDataOptimized(FurnitureType.Table1);
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
-        tween.OnComplete(() => 
+        tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Appeared;
-            _canvasGroup.blocksRaycasts = true; 
+            _canvasGroup.blocksRaycasts = true;
         });
     }
 
@@ -170,7 +166,7 @@ public class UIFurniture : MobileUIView
         _uiFurniturePreview.SetData(_currentFloorType, previewData);
     }
 
-    // 대폭 최적화된 UpdateUI
+    // 대폭 최적화된 UpdateUI (UIStaff와 동일한 패턴)
     private void UpdateUIOptimized()
     {
         if (!gameObject.activeInHierarchy || _currentTypeDataList == null || _currentTypeDataList.Count == 0)
@@ -181,45 +177,91 @@ public class UIFurniture : MobileUIView
         int slotsIndex = (int)_currentType;
         var currentSlots = _slots[slotsIndex];
         int dataCount = _currentTypeDataList.Count;
-        int equipSlotCount = 0;
 
-        // SiblingIndex 업데이트 최소화를 위한 캐시
-        _siblingIndexCache.Clear();
+        // 가구 데이터를 우선순위에 따라 정렬
+        var prioritizedIndices = GetPrioritizedFurnitureIndices(dataCount);
 
-        // 메인 루프 최적화
-        for (int i = 0; i < dataCount; i++)
+        // 정렬된 순서대로 슬롯 처리
+        for (int displayIndex = 0; displayIndex < prioritizedIndices.Count; displayIndex++)
         {
-            var data = _currentTypeDataList[i];
-            var slot = currentSlots[i];
-            
+            int dataIndex = prioritizedIndices[displayIndex];
+            var data = _currentTypeDataList[dataIndex];
+            var slot = currentSlots[dataIndex];
+
             slot.gameObject.SetActive(true);
             slot.SetFoodType(data.FoodType);
+            slot.transform.SetSiblingIndex(displayIndex);
 
             bool isGiven = UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data);
-            
+
             if (isGiven)
             {
-                ProcessEquippedSlot(data, slot, ref equipSlotCount, i);
+                ProcessEquippedSlot(data, slot);
             }
             else
             {
                 ProcessUnequippedSlot(data, slot);
-                _siblingIndexCache.Add(i);
+            }
+        }
+    }
+
+    private List<int> GetPrioritizedFurnitureIndices(int dataCount)
+    {
+        var equippedFurniture = new List<int>();
+        var ownedUnequippedFurniture = new List<int>();
+        var unownedFurniture = new List<int>();
+
+        // 가구들을 우선순위별로 분류 (기존 순서 유지)
+        for (int i = 0; i < dataCount; i++)
+        {
+            var data = _currentTypeDataList[i];
+            bool isGiven = UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data);
+            bool isEquipped = isGiven && UserInfo.IsEquipFurniture(UserInfo.CurrentStage, data);
+
+            if (isEquipped)
+            {
+                equippedFurniture.Add(i);
+            }
+            else if (isGiven)
+            {
+                ownedUnequippedFurniture.Add(i);
+            }
+            else
+            {
+                unownedFurniture.Add(i);
             }
         }
 
-        // 배치된 슬롯들 정렬 및 SiblingIndex 일괄 업데이트
-        OptimizeSiblingIndexes(equipSlotCount);
+        // 장착된 가구들을 플로어 순서로 정렬 (같은 플로어 내에서는 기존 순서 유지)
+        equippedFurniture.Sort((a, b) =>
+        {
+            var dataA = _currentTypeDataList[a];
+            var dataB = _currentTypeDataList[b];
+            var floorA = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, dataA);
+            var floorB = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, dataB);
+
+            // 플로어가 다르면 플로어 순서로 정렬
+            if (floorA != floorB)
+                return floorA.CompareTo(floorB);
+
+            // 같은 플로어면 기존 리스트 순서 유지 (인덱스 순서)
+            return a.CompareTo(b);
+        });
+
+        // 최종 우선순위: 장착됨 → 소유하지만 미장착 → 미소유
+        // 각 그룹 내에서는 기존 순서 유지
+        var result = new List<int>();
+        result.AddRange(equippedFurniture);                // 플로어 순서 + 기존 순서
+        result.AddRange(ownedUnequippedFurniture);         // 기존 순서 유지
+        result.AddRange(unownedFurniture);                 // 기존 순서 유지
+
+        return result;
     }
 
-    private void ProcessEquippedSlot(FurnitureData data, UIRestaurantAdminFoodTypeSlot slot, ref int equipSlotCount, int originalIndex)
+    // 간소화된 ProcessEquippedSlot (SiblingIndex 처리 제거)
+    private void ProcessEquippedSlot(FurnitureData data, UIRestaurantAdminFoodTypeSlot slot)
     {
         ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, data);
-        
-        if (floorType < ERestaurantFloorType.Length)
-        {
-            _equipSlotCache[equipSlotCount++] = (floorType, slot);
-        }
 
         string statusText = floorType switch
         {
@@ -273,34 +315,12 @@ public class UIFurniture : MobileUIView
         }
     }
 
-    private void OptimizeSiblingIndexes(int equipSlotCount)
-    {
-        if (equipSlotCount > 0)
-        {
-            // 장착된 슬롯들만 정렬
-            Array.Sort(_equipSlotCache, 0, equipSlotCount, 
-                Comparer<(ERestaurantFloorType, UIRestaurantAdminFoodTypeSlot)>.Create((a, b) => a.Item1.CompareTo(b.Item1)));
-
-            // SiblingIndex 일괄 업데이트
-            for (int i = 0; i < equipSlotCount; i++)
-            {
-                _equipSlotCache[i].Item2.transform.SetSiblingIndex(i);
-            }
-        }
-
-        // 나머지 슬롯들의 SiblingIndex 업데이트 (필요한 경우만)
-        for (int i = 0; i < _siblingIndexCache.Count; i++)
-        {
-            _slots[(int)_currentType][_siblingIndexCache[i]].transform.SetSiblingIndex(equipSlotCount + i);
-        }
-    }
-
     private void ChangeFurnitureData(int dir)
     {
         int currentIndex = (int)_currentType;
         int maxIndex = (int)FurnitureType.Length;
         int newIndex = ((currentIndex + dir) % maxIndex + maxIndex) % maxIndex;
-        
+
         SetFurnitureDataOptimized((FurnitureType)newIndex);
     }
 
@@ -316,7 +336,7 @@ public class UIFurniture : MobileUIView
             SoundManager.Instance.PlayEffectAudio(EffectType.UI, _equipSound);
             UserInfo.SetEquipFurniture(UserInfo.CurrentStage, type, data);
         }
-        
+
         // 전체 재설정 대신 업데이트만
         UpdateUIOptimized();
     }
@@ -369,10 +389,6 @@ public class UIFurniture : MobileUIView
         _uiFurniturePreview.SetData(_currentFloorType, data);
     }
 
-    // 호환성을 위한 기존 메서드들
-    private void SetFurnitureData(FurnitureType type) => SetFurnitureDataOptimized(type);
-    private void SetFurniturePreview() => SetFurniturePreviewOptimized();
-    private void UpdateUI() => UpdateUIOptimized();
 
     private void OnDestroy()
     {

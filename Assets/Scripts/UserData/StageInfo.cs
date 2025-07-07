@@ -441,6 +441,22 @@ public class StageInfo
         return _equipFurnitureDatas[floorIndex, typeIndex] != null;
     }
 
+    public bool IsEquipFurniture(FurnitureData data)
+    {
+
+        int typeIndex = (int)data.Type;
+        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            if (_equipFurnitureDatas[i, typeIndex] == null)
+                continue;
+
+            if (_equipFurnitureDatas[i, typeIndex].Id == data.Id)
+                return true;
+        }
+
+        return false;
+    }
+
 
     public ERestaurantFloorType GetEquipFurnitureFloorType(FurnitureData data)
     {
@@ -562,6 +578,23 @@ public class StageInfo
         KitchenUtensilData equipData = _equipKitchenUtensilDatas[floorIndex, typeIndex];
         return equipData != null && equipData.Id == data.Id;
     }
+
+    public bool IsEquipKitchenUtensil(KitchenUtensilData data)
+    {
+
+        int typeIndex = (int)data.Type;
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            if (_equipKitchenUtensilDatas[i, typeIndex] == null)
+                continue;
+
+            if (_equipKitchenUtensilDatas[i, typeIndex].Id == data.Id)
+                return true;
+        }
+
+        return false;
+    }
+
 
 
     public ERestaurantFloorType GetEquipKitchenUtensilFloorType(KitchenUtensilData data)

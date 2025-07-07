@@ -48,9 +48,9 @@ public class CustomerDataManager : MonoBehaviour
     }
 
 
-    public List<CustomerData> GetAppearNormalCustomerList()
+    public List<NormalCustomerData> GetAppearNormalCustomerList()
     {
-        List<CustomerData> returnList = new List<CustomerData>();
+        List<NormalCustomerData> returnList = new List<NormalCustomerData>();
         for(int i = 0, cnt = _normalCustomerDataList.Count; i < cnt; ++i)
         {
             if (!UserInfo.GetCustomerEnableState(_customerDataList[i].Id))

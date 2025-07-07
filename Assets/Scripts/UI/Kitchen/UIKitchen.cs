@@ -40,10 +40,6 @@ public class UIKitchen : MobileUIView
     private List<UIRestaurantAdminFoodTypeSlot>[] _slots = new List<UIRestaurantAdminFoodTypeSlot>[(int)KitchenUtensilType.Length];
     private List<KitchenUtensilData> _currentTypeDataList;
 
-    // 성능 최적화를 위한 캐시 변수들
-    private readonly (ERestaurantFloorType, UIRestaurantAdminFoodTypeSlot)[] _equipSlotCache = 
-        new (ERestaurantFloorType, UIRestaurantAdminFoodTypeSlot)[(int)ERestaurantFloorType.Length];
-    private readonly List<int> _siblingIndexCache = new List<int>(32);
     private bool _isInitialized = false;
 
     public override void Init()
@@ -148,7 +144,7 @@ public class UIKitchen : MobileUIView
         _uikitchenPreview.SetData(_currentFloorType, previewData);
     }
 
-    // 대폭 최적화된 UpdateUI
+    // 대폭 최적화된 UpdateUI (UIFurniture와 동일한 패턴)
     private void UpdateUIOptimized()
     {
         if (!gameObject.activeInHierarchy || _currentTypeDataList == null || _currentTypeDataList.Count == 0)
@@ -159,45 +155,91 @@ public class UIKitchen : MobileUIView
         int slotsIndex = (int)_currentType;
         var currentSlots = _slots[slotsIndex];
         int dataCount = _currentTypeDataList.Count;
-        int equipSlotCount = 0;
-
-        // SiblingIndex 업데이트 최소화를 위한 캐시
-        _siblingIndexCache.Clear();
-
-        // 메인 루프 최적화
-        for (int i = 0; i < dataCount; i++)
+        
+        // 주방기구 데이터를 우선순위에 따라 정렬
+        var prioritizedIndices = GetPrioritizedKitchenIndices(dataCount);
+        
+        // 정렬된 순서대로 슬롯 처리
+        for (int displayIndex = 0; displayIndex < prioritizedIndices.Count; displayIndex++)
         {
-            var data = _currentTypeDataList[i];
-            var slot = currentSlots[i];
+            int dataIndex = prioritizedIndices[displayIndex];
+            var data = _currentTypeDataList[dataIndex];
+            var slot = currentSlots[dataIndex];
             
             slot.gameObject.SetActive(true);
             slot.SetFoodType(data.FoodType);
+            slot.transform.SetSiblingIndex(displayIndex);
 
             bool isGiven = UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data);
             
             if (isGiven)
             {
-                ProcessEquippedSlot(data, slot, ref equipSlotCount, i);
+                ProcessEquippedSlot(data, slot);
             }
             else
             {
                 ProcessUnequippedSlot(data, slot);
-                _siblingIndexCache.Add(i);
+            }
+        }
+    }
+
+    private List<int> GetPrioritizedKitchenIndices(int dataCount)
+    {
+        var equippedKitchen = new List<int>();
+        var ownedUnequippedKitchen = new List<int>();
+        var unownedKitchen = new List<int>();
+
+        // 주방기구들을 우선순위별로 분류 (기존 순서 유지)
+        for (int i = 0; i < dataCount; i++)
+        {
+            var data = _currentTypeDataList[i];
+            bool isGiven = UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data);
+            bool isEquipped = isGiven && UserInfo.IsEquipKitchenUtensil(UserInfo.CurrentStage, data);
+
+            if (isEquipped)
+            {
+                equippedKitchen.Add(i);
+            }
+            else if (isGiven)
+            {
+                ownedUnequippedKitchen.Add(i);
+            }
+            else
+            {
+                unownedKitchen.Add(i);
             }
         }
 
-        // 배치된 슬롯들 정렬 및 SiblingIndex 일괄 업데이트
-        OptimizeSiblingIndexes(equipSlotCount);
+        // 장착된 주방기구들을 플로어 순서로 정렬 (같은 플로어 내에서는 기존 순서 유지)
+        equippedKitchen.Sort((a, b) =>
+        {
+            var dataA = _currentTypeDataList[a];
+            var dataB = _currentTypeDataList[b];
+            var floorA = UserInfo.GetEquipKitchenUtensilFloorType(UserInfo.CurrentStage, dataA);
+            var floorB = UserInfo.GetEquipKitchenUtensilFloorType(UserInfo.CurrentStage, dataB);
+            
+            // 플로어가 다르면 플로어 순서로 정렬
+            if (floorA != floorB)
+                return floorA.CompareTo(floorB);
+            
+            // 같은 플로어면 기존 리스트 순서 유지 (인덱스 순서)
+            return a.CompareTo(b);
+        });
+
+        // 최종 우선순위: 장착됨 → 소유하지만 미장착 → 미소유
+        // 각 그룹 내에서는 기존 순서 유지
+        var result = new List<int>();
+        result.AddRange(equippedKitchen);                // 플로어 순서 + 기존 순서
+        result.AddRange(ownedUnequippedKitchen);         // 기존 순서 유지
+        result.AddRange(unownedKitchen);                 // 기존 순서 유지
+        
+        return result;
     }
 
-    private void ProcessEquippedSlot(KitchenUtensilData data, UIRestaurantAdminFoodTypeSlot slot, ref int equipSlotCount, int originalIndex)
+    // 간소화된 ProcessEquippedSlot (SiblingIndex 처리 제거)
+    private void ProcessEquippedSlot(KitchenUtensilData data, UIRestaurantAdminFoodTypeSlot slot)
     {
         ERestaurantFloorType floorType = UserInfo.GetEquipKitchenUtensilFloorType(UserInfo.CurrentStage, data);
-        
-        if (floorType < ERestaurantFloorType.Length)
-        {
-            _equipSlotCache[equipSlotCount++] = (floorType, slot);
-        }
 
         string statusText = floorType switch
         {
@@ -215,6 +257,7 @@ public class UIKitchen : MobileUIView
         }
     }
 
+    // ProcessUnequippedSlot은 그대로 유지
     private void ProcessUnequippedSlot(KitchenUtensilData data, UIRestaurantAdminFoodTypeSlot slot)
     {
         if (!UnlockConditionManager.GetConditionEnabled(data.UnlockData))
@@ -248,28 +291,6 @@ public class UIKitchen : MobileUIView
         else
         {
             slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, priceText, data.MoneyType);
-        }
-    }
-
-    private void OptimizeSiblingIndexes(int equipSlotCount)
-    {
-        if (equipSlotCount > 0)
-        {
-            // 장착된 슬롯들만 정렬 (Array.Sort 대신 간단한 정렬 사용)
-            Array.Sort(_equipSlotCache, 0, equipSlotCount, 
-                Comparer<(ERestaurantFloorType, UIRestaurantAdminFoodTypeSlot)>.Create((a, b) => a.Item1.CompareTo(b.Item1)));
-
-            // SiblingIndex 일괄 업데이트
-            for (int i = 0; i < equipSlotCount; i++)
-            {
-                _equipSlotCache[i].Item2.transform.SetSiblingIndex(i);
-            }
-        }
-
-        // 나머지 슬롯들의 SiblingIndex 업데이트 (필요한 경우만)
-        for (int i = 0; i < _siblingIndexCache.Count; i++)
-        {
-            _slots[(int)_currentType][_siblingIndexCache[i]].transform.SetSiblingIndex(equipSlotCount + i);
         }
     }
 
@@ -335,9 +356,6 @@ public class UIKitchen : MobileUIView
         PopupManager.Instance.ShowDisplayText("새로운 주방 기구를 구매했어요!");
     }
 
-    // 호환성을 위한 기존 메서드들
-    private void SetKitchenUtensilDataData(KitchenUtensilType type) => SetKitchenUtensilDataDataOptimized(type);
-    private void SetKitchenPreview() => SetKitchenPreviewOptimized();
     private void UpdateUI() => UpdateUIOptimized();
 
     private void OnSlotClicked(KitchenUtensilData data)

@@ -117,7 +117,7 @@ public class CustomerController : MonoBehaviour
         if (IsMaxCount)
             return;
 
-        List<CustomerData> normalCustomerDataList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
+        List<NormalCustomerData> normalCustomerDataList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
         List<SpecialCustomerData> specialCustomerDataList = CustomerDataManager.Instance.GetAppearSpecialCustomerDataList();
         List<GatecrasherCustomerData> gatecrasherCustomerDataList = CustomerDataManager.Instance.GetAppearGatecrasherCustomerDataList();
         int randInt = 0;
@@ -184,6 +184,17 @@ public class CustomerController : MonoBehaviour
 
             else
             {
+                //만족도가 일정 이하일 때 민감한 손님들 제외
+                if (UserInfo.GetSatisfaction(UserInfo.CurrentStage) <= ConstValue.MIN_SATISFACTION)
+                {
+                    List<NormalCustomerData> normalCustomerDataListCopy = new List<NormalCustomerData>(normalCustomerDataList);
+                    normalCustomerDataListCopy.RemoveAll(data => data.TendencyType == CustomerTendencyType.Sensitive || data.TendencyType == CustomerTendencyType.HighlySensitive);
+                    if (0 < normalCustomerDataListCopy.Count)
+                    {
+                        normalCustomerDataList = normalCustomerDataListCopy;
+                    }
+                }
+
                 NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
                 DebugLog.Log($"RandInt: {randInt}, Count: {normalCustomerDataList.Count}");

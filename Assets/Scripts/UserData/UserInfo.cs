@@ -1130,13 +1130,19 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].IsEquipFurniture(floor, data);
-
     }
 
     public static bool IsEquipFurniture(EStage stage, ERestaurantFloorType floor, FurnitureType type)
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].IsEquipFurniture(floor, type);
+    }
+
+        public static bool IsEquipFurniture(EStage stage, FurnitureData data)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].IsEquipFurniture(data);
+
     }
 
 
@@ -1221,6 +1227,13 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].IsEquipKitchenUtensil(floor, data);
+    }
+
+    
+    public static bool IsEquipKitchenUtensil(EStage stage, KitchenUtensilData data)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].IsEquipKitchenUtensil(data);
     }
 
     public static KitchenUtensilData GetEquipKitchenUtensil(EStage stage, ERestaurantFloorType floor, KitchenUtensilType type)

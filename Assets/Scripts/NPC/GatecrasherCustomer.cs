@@ -151,7 +151,7 @@ public class GatecrasherCustomer : Customer
         _onCompleted = onCompleted;
         _gatecrasher1OnChangeShape = onChangeShape;
 
-        List<CustomerData> customerList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
+        List<NormalCustomerData> customerList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
         _gatecrasher1DisquiseSprite = customerList[UnityEngine.Random.Range(0, customerList.Count)].Sprite;
         _spriteRenderer.sprite = _gatecrasher1DisquiseSprite;
         _animator.runtimeAnimatorController = ((GatecrasherCustomer1Data)_customerData).Controller;

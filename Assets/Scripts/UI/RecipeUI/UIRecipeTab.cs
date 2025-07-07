@@ -18,9 +18,6 @@ public class UIRecipeTab : UIRestaurantAdminTab
     private List<FoodData> _foodDataList;
     private bool _isInitialized = false;
 
-    // 성능 최적화를 위한 캐시 변수들
-    private readonly List<int> _giveSlotIndices = new List<int>(32);
-    private readonly List<int> _buyableSlotIndices = new List<int>(32);
 
     public override void Init()
     {
@@ -86,32 +83,58 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
         int dataCount = _foodDataList.Count;
         
-        // 캐시 리스트 초기화
-        _giveSlotIndices.Clear();
-        _buyableSlotIndices.Clear();
-
-        // 메인 루프 - 슬롯 분류
-        for (int i = 0; i < dataCount; i++)
+        // 레시피 데이터를 우선순위에 따라 정렬
+        var prioritizedIndices = GetPrioritizedRecipeIndices(dataCount);
+        
+        // 정렬된 순서대로 슬롯 처리
+        for (int displayIndex = 0; displayIndex < prioritizedIndices.Count; displayIndex++)
         {
-            var data = _foodDataList[i];
-            var slot = _slots[i];
+            int dataIndex = prioritizedIndices[displayIndex];
+            var data = _foodDataList[dataIndex];
+            var slot = _slots[dataIndex];
             
             slot.SetFoodType(data.FoodType);
+            slot.transform.SetSiblingIndex(displayIndex);
 
             if (UserInfo.IsGiveRecipe(data.Id))
             {
-                _giveSlotIndices.Add(i);
                 slot.SetNone(data.ThumbnailSprite, data.Name);
             }
             else
             {
-                _buyableSlotIndices.Add(i);
                 ProcessBuyableSlot(data, slot);
             }
         }
+    }
 
-        // 슬롯 순서 최적화 (구매 가능한 것들을 앞으로)
-        OptimizeSlotOrder();
+    private List<int> GetPrioritizedRecipeIndices(int dataCount)
+    {
+        var ownedRecipes = new List<int>();
+        var unownedRecipes = new List<int>();
+
+        // 레시피들을 우선순위별로 분류 (기존 순서 유지)
+        for (int i = 0; i < dataCount; i++)
+        {
+            var data = _foodDataList[i];
+            bool isGiven = UserInfo.IsGiveRecipe(data.Id);
+
+            if (isGiven)
+            {
+                ownedRecipes.Add(i);
+            }
+            else
+            {
+                unownedRecipes.Add(i);
+            }
+        }
+
+        // 최종 우선순위: 보유 레시피 → 미보유 레시피
+        // 각 그룹 내에서는 기존 순서 유지
+        var result = new List<int>();
+        result.AddRange(ownedRecipes);     // 기존 순서 유지
+        result.AddRange(unownedRecipes);   // 기존 순서 유지
+        
+        return result;
     }
 
     private void ProcessBuyableSlot(FoodData data, UIRestaurantAdminFoodTypeSlot slot)
@@ -153,22 +176,6 @@ public class UIRecipeTab : UIRestaurantAdminTab
             default:
                 slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, priceText, data.MoneyType);
                 break;
-        }
-    }
-
-    private void OptimizeSlotOrder()
-    {
-        // 구매 가능한 슬롯들을 앞으로 이동
-        for (int i = 0; i < _buyableSlotIndices.Count; i++)
-        {
-            _slots[_buyableSlotIndices[i]].transform.SetSiblingIndex(i);
-        }
-
-        // 이미 구매한 슬롯들을 뒤로 이동
-        int buyableCount = _buyableSlotIndices.Count;
-        for (int i = 0; i < _giveSlotIndices.Count; i++)
-        {
-            _slots[_giveSlotIndices[i]].transform.SetSiblingIndex(buyableCount + i);
         }
     }
 
