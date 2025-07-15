@@ -285,12 +285,10 @@ public class KitchenUtensilGroup: MonoBehaviour
         if (data == null)
         {
             UserInfo.SetMaxSinkBowlCount(UserInfo.CurrentStage, _floorType, ConstValue.DEFAULT_MAX_BOLW_COUNT);
-            DebugLog.Log(_floorType + " 싱크대 없음: " + ConstValue.DEFAULT_MAX_BOLW_COUNT);
             return;
         }
         KitchenUtensilSinkData sinkData = (KitchenUtensilSinkData)data;
         UserInfo.SetMaxSinkBowlCount(UserInfo.CurrentStage, _floorType, sinkData.MaxSinkBowlCount);
-        DebugLog.Log(_floorType +" 싱크 최대 볼 수: " + sinkData.MaxSinkBowlCount);
     }
 
 

@@ -27,11 +27,14 @@ public class DropCoinArea : MonoBehaviour
 
     public int Count => _coinList.Count;
 
+    private ERestaurantFloorType _floor;
 
-    public void Init(CoinAreaData data)
+
+    public void Init(CoinAreaData data, ERestaurantFloorType floor)
     {
         _data = data;
         _currentMoney = 0;
+        _floor = floor;
         for (int i = 0; i < _coinList.Count; i++)
         {
             ObjectPoolManager.Instance.DespawnCoin(_coinList[i]);
@@ -74,7 +77,8 @@ public class DropCoinArea : MonoBehaviour
         _data.SetMoney(_currentMoney);
         PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
         coin.AddEvent(GiveCoin);
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _dropCoinSound, 0.05f);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+        SoundManager.Instance.PlayEffectAudio(effectType, _dropCoinSound, 0.05f);
         Vector3 targetPos = _dropArea.position;
         targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * Count), 0, 0);
 
@@ -111,7 +115,8 @@ public class DropCoinArea : MonoBehaviour
         _currentMoney = 0;
         _data.SetMoney(_currentMoney);
         _data.SetCoinCount(0);
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, SoundEffectType.GoldSound);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+        SoundManager.Instance.PlayEffectAudio(effectType, SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
         {
@@ -142,7 +147,8 @@ public class DropCoinArea : MonoBehaviour
         _currentMoney = 0;
         _data.SetMoney(_currentMoney);
         _data.SetCoinCount(0);
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, SoundEffectType.GoldSound);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+        SoundManager.Instance.PlayEffectAudio(effectType, SoundEffectType.GoldSound);
 
         for (int i = 0; i < _coinList.Count; i++)
         {

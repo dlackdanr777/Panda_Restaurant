@@ -192,7 +192,8 @@ public class TableFurniture : Furniture
 
         _tableData.TableState = ETableState.Empty;
         UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, _floor);
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _cleanSound);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+        SoundManager.Instance.PlayEffectAudio(effectType, _cleanSound);
         _tableManager.UpdateTable();
     }
 
@@ -213,7 +214,8 @@ public class TableFurniture : Furniture
 
         _tableData.TableState = ETableState.Empty;
         UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, _floor);
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _cleanSound);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+        SoundManager.Instance.PlayEffectAudio(effectType, _cleanSound);
         _tableManager.UpdateTable();
     }
 

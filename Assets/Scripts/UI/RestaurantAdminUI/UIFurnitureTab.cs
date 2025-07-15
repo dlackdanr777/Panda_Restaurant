@@ -48,9 +48,6 @@ public class UIFurnitureTab : UIRestaurantAdminTab
 
     public override void UpdateUI()
     {
-        if(gameObject.activeInHierarchy == false)
-            return;
-
         UpdateUIOptimized(ERestaurantFloorType.Floor1, FurnitureType.Table1);
     }
 
@@ -70,20 +67,6 @@ public class UIFurnitureTab : UIRestaurantAdminTab
         }
     }
 
-// null을 포함한 완전한 데이터 변경 감지 메서드
-private bool HasDataChanged(BasicData oldData, BasicData newData)
-{
-    // 둘 다 null인 경우 - 변경 없음
-    if (oldData == null && newData == null)
-        return false;
-    
-    // 하나만 null인 경우 - 변경됨
-    if (oldData == null || newData == null)
-        return true;
-    
-    // 둘 다 null이 아닌 경우 - 참조나 ID 비교
-    return !ReferenceEquals(oldData, newData) || oldData.Id != newData.Id;
-}
 
     public override void SetAttention()
     {

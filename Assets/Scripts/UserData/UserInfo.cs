@@ -977,6 +977,12 @@ public static class UserInfo
         return _stageInfos[stageIndex].IsEquipStaff(floor, data);
     }
 
+        public static bool IsEquipStaff(EStage stage, ERestaurantFloorType floor, EquipStaffType type)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].IsEquipStaff(floor, type);
+    }
+
 
     public static bool IsEquipStaff(EStage stage, StaffData data)
     {
@@ -1227,6 +1233,12 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].IsEquipKitchenUtensil(floor, data);
+    }
+
+        public static bool IsEquipKitchenUtensil(EStage stage, ERestaurantFloorType floor, KitchenUtensilType type)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].IsEquipKitchenUtensil(floor, type);
     }
 
     

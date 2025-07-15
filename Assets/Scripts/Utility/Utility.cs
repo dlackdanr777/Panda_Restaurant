@@ -212,11 +212,22 @@ public static class Utility
 
     public static Color GetFloorColor(ERestaurantFloorType floor)
     {
-         return floor switch
+        return floor switch
         {
-            ERestaurantFloorType.Floor1 => new Color(0.718f,0.820f, 0.588f),
-            ERestaurantFloorType.Floor2 => new Color(0.173f,0.847f, 0.851f),
-            ERestaurantFloorType.Floor3 => new Color(1,0.827f, 0),
+            ERestaurantFloorType.Floor1 => HexToColor(new Vector3Int(183, 209, 150)),
+            ERestaurantFloorType.Floor2 => HexToColor(new Vector3Int(150, 215, 237)),
+            ERestaurantFloorType.Floor3 => HexToColor(new Vector3Int(255, 212, 144)),
+            _ => throw new System.Exception("해당 층 수 타입이 이상합니다: " + floor)
+        };
+    }
+
+    public static Color GetFloorBoldColor(ERestaurantFloorType floor)
+    {
+        return floor switch
+        {
+            ERestaurantFloorType.Floor1 => HexToColor(new Vector3Int(148, 213, 23)),
+            ERestaurantFloorType.Floor2 => HexToColor(new Vector3Int(40, 193, 237)),
+            ERestaurantFloorType.Floor3 => HexToColor(new Vector3Int(254, 191, 75)),
             _ => throw new System.Exception("해당 층 수 타입이 이상합니다: " + floor)
         };
     }
@@ -530,6 +541,15 @@ public static class Utility
             ColorType.AddValue => new Color(0.141f, 0.569f, 0.247f),
             _ => Color.black
         } ;
+    }
+
+    public static Color HexToColor(Vector3Int hex)
+    {
+        return new Color(
+            Mathf.Clamp01(hex.x / 255f),
+            Mathf.Clamp01(hex.y / 255f),
+            Mathf.Clamp01(hex.z / 255f)
+        );
     }
 
     public static string ColorToHex(Color color)

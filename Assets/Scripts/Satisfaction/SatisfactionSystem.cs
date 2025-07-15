@@ -50,25 +50,40 @@ public class SatisfactionSystem : MonoBehaviour
 
         return true;
     }
+    
+    public int GetTendencyValue(CustomerTendencyType tendencyType)
+    {
+        switch (tendencyType)
+        {
+            case CustomerTendencyType.Normal:
+                return ConstValue.MAX_SATISFACTION;
+            case CustomerTendencyType.Sensitive:
+                return -26;
+            case CustomerTendencyType.HighlySensitive:
+                return 0;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(tendencyType), tendencyType, null);
+        }
+    }
 
 
     /// <summary>손님의 성향과 만족도로 얼마나 더 팁을 추가로 줄지 반환하는 함수</summary>
     public float AddCustomerTipMul(CustomerTendencyType tendencyType)
     {
         //매우 불만족 상태 일경우 팁 및 추가 보상 X
-        if(_satisfaction <= -26)
+        if (_satisfaction <= -26)
             return 0;
 
         //무난한 손님의 경우 10점이상 30점 미만일때 3% 증가
-        if(tendencyType == CustomerTendencyType.Normal && 10 <= _satisfaction && _satisfaction < 30)
+        if (tendencyType == CustomerTendencyType.Normal && 10 <= _satisfaction && _satisfaction < 30)
             return 1.03f;
 
         //무난한 손님이면서 30점 이상일 경우 5% 증가
-        if(tendencyType == CustomerTendencyType.Normal && 30 <= _satisfaction)
+        if (tendencyType == CustomerTendencyType.Normal && 30 <= _satisfaction)
             return 1.05f;
 
         //예민한 손님이면서 30점 이상일 경우 5% 증가 
-        if(tendencyType == CustomerTendencyType.Sensitive && 30 <= _satisfaction)
+        if (tendencyType == CustomerTendencyType.Sensitive && 30 <= _satisfaction)
             return 1.05f;
 
         //초 예민한 손님이면서 40점 이상일 경우 5% 증가 

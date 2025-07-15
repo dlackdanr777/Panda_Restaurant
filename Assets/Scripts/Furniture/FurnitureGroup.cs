@@ -254,13 +254,13 @@ public class FurnitureGroup : MonoBehaviour
 
             SaveTableData saveTableData = UserInfo.GetTableData(UserInfo.CurrentStage, _floorType, type);
             GarbageAreaData garbageData = saveTableData.GarbageAreaData;
-            data.DropGarbageArea.Init(garbageData);
+            data.DropGarbageArea.Init(garbageData, _floorType);
             data.TableState = saveTableData.NeedCleaning ? ETableState.NeedCleaning : data.TableState;
 
             for (int j = 0, cntJ = data.DropCoinAreas.Length; j < cntJ; ++j)
             {
                 CoinAreaData coinData = saveTableData.CoinAreaDatas[j];
-                data.DropCoinAreas[j].Init(coinData);
+                data.DropCoinAreas[j].Init(coinData, _floorType);
             }
 
             TableFurniture tableFurniture = (TableFurniture)_furniture[i];

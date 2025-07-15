@@ -26,9 +26,14 @@ public enum SoundEffectType
 public enum EffectType
 {
     None,
-    Hall,
-    Kitchen,
+    Hall1,
+    Hall2,
+    Hall3,
+    Kitchen1,
+    Kitchen2,
+    Kitchen3,
     Restaurant,
+    
     UI
 }
 
@@ -81,8 +86,24 @@ public class SoundManager : MonoBehaviour
     private Coroutine _stopEffectAudioRoutine;
     private Coroutine _changeEffectTypeRoutine;
 
-    private EffectType _effectType = EffectType.Hall;
+    private EffectType _effectType = EffectType.Hall1;
     public EffectType EffectType => _effectType;
+
+    // Helper methods for new EffectType categories
+    private bool IsKitchenType(EffectType type)
+    {
+        return type == EffectType.Kitchen1 || type == EffectType.Kitchen2 || type == EffectType.Kitchen3;
+    }
+
+    private bool IsHallType(EffectType type)
+    {
+        return type == EffectType.Hall1 || type == EffectType.Hall2 || type == EffectType.Hall3;
+    }
+
+    private bool IsRestaurantAreaType(EffectType type)
+    {
+        return IsHallType(type) || IsKitchenType(type) || type == EffectType.Restaurant;
+    }
 
     private void Awake()
     {
@@ -159,6 +180,24 @@ public class SoundManager : MonoBehaviour
 
                 _effectAudioDic[effectType].Add(audioSource);
             }        
+        }
+    }
+
+
+    public EffectType GetHallEffectType(ERestaurantFloorType floor, RestaurantType type)
+    {
+        int floorNumber = (int)floor; // Floor1=0 -> 1, Floor2=1 -> 2, Floor3=2 -> 3
+        
+        switch (type)
+        {
+            case RestaurantType.Hall:
+                return (EffectType)((int)EffectType.Hall1 + floorNumber);
+                
+            case RestaurantType.Kitchen:
+                return (EffectType)((int)EffectType.Kitchen1 + floorNumber);
+                
+            default:
+                throw new ArgumentException("Invalid RestaurantType: " + type);
         }
     }
 
@@ -244,7 +283,7 @@ public class SoundManager : MonoBehaviour
         _effectType = type;
 
         // Restaurant 그룹 볼륨 설정 (UI 또는 기타일 경우 0, Hall/Kitchen/Restaurant일 경우 1)
-        bool isRestaurantArea = (type == EffectType.Hall || type == EffectType.Kitchen || type == EffectType.Restaurant);
+        bool isRestaurantArea = IsRestaurantAreaType(type);
         _audioMixer.SetFloat("Restaurant", isRestaurantArea ? 0f : -80f);
 
         // UI 그룹 볼륨 설정 (UI일 경우 1, 그 외 0)
@@ -254,14 +293,24 @@ public class SoundManager : MonoBehaviour
         if (type == EffectType.Restaurant)
         {
             // Restaurant 타입이면 모든 하위 그룹 활성화
-            _audioMixer.SetFloat("Hall", 0f);
-            _audioMixer.SetFloat("Kitchen", 0f);
+            _audioMixer.SetFloat("Hall1", 0f);
+            _audioMixer.SetFloat("Hall2", 0f);
+            _audioMixer.SetFloat("Hall3", 0f);
+            _audioMixer.SetFloat("Kitchen1", 0f);
+            _audioMixer.SetFloat("Kitchen2", 0f);
+            _audioMixer.SetFloat("Kitchen3", 0f);
+            _audioMixer.SetFloat("Restaurant", 0f);
         }
-        else if (type == EffectType.Hall || type == EffectType.Kitchen)
+        else if (IsHallType(type) || IsKitchenType(type) || type == EffectType.Restaurant)
         {
             // 특정 구역만 활성화, 다른 구역은 음소거
-            _audioMixer.SetFloat("Hall", type == EffectType.Hall ? 0f : -80f);
-            _audioMixer.SetFloat("Kitchen", type == EffectType.Kitchen ? 0f : -80f);
+            _audioMixer.SetFloat("Hall1", type == EffectType.Hall1 ? 0f : -80f);
+            _audioMixer.SetFloat("Hall2", type == EffectType.Hall2 ? 0f : -80f);
+            _audioMixer.SetFloat("Hall3", type == EffectType.Hall3 ? 0f : -80f);
+            _audioMixer.SetFloat("Kitchen1", type == EffectType.Kitchen1 ? 0f : -80f);
+            _audioMixer.SetFloat("Kitchen2", type == EffectType.Kitchen2 ? 0f : -80f);
+            _audioMixer.SetFloat("Kitchen3", type == EffectType.Kitchen3 ? 0f : -80f);
+            _audioMixer.SetFloat("Restaurant", type == EffectType.Restaurant ? 0f : -80f);
         }
     }
 
@@ -292,8 +341,8 @@ public class SoundManager : MonoBehaviour
 
         if (waitTime == 0)
         {
-            bool isRestaurantRelated = (type == EffectType.Restaurant || type == EffectType.Hall || type == EffectType.Kitchen);
-            bool isCurrentRestaurantRelated = (_effectType == EffectType.Restaurant || _effectType == EffectType.Hall || _effectType == EffectType.Kitchen);
+            bool isRestaurantRelated = IsRestaurantAreaType(type);
+            bool isCurrentRestaurantRelated = IsRestaurantAreaType(_effectType);
 
             // 다음 조건 중 하나만 충족하면 재생 가능:
             // 1. type이 None (모든 곳에서 재생 가능한 기본 효과음)
@@ -467,8 +516,8 @@ public class SoundManager : MonoBehaviour
     {
         yield return YieldCache.WaitForSeconds(waitTime);
 
-        bool isRestaurantRelated = (type == EffectType.Restaurant || type == EffectType.Hall || type == EffectType.Kitchen);
-        bool isCurrentRestaurantRelated = (_effectType == EffectType.Restaurant || _effectType == EffectType.Hall || _effectType == EffectType.Kitchen);
+        bool isRestaurantRelated = IsRestaurantAreaType(type);
+        bool isCurrentRestaurantRelated = IsRestaurantAreaType(_effectType);
 
         // 다음 조건 중 하나만 충족하면 재생 가능:
         // 1. type이 None (모든 곳에서 재생 가능한 기본 효과음)
@@ -496,16 +545,14 @@ public class SoundManager : MonoBehaviour
         float timer = 0;
 
         // Restaurant 카테고리가 활성화될지 여부
-        bool willRestaurantBeActive = (type == EffectType.Hall || type == EffectType.Kitchen || type == EffectType.Restaurant);
+        bool willRestaurantBeActive = IsRestaurantAreaType(type);
         bool willUIBeActive = (type == EffectType.UI);
 
         // 현재 타입이 레스토랑 관련 타입인지 확인
-        bool isCurrentRestaurantRelated = (_effectType == EffectType.Hall || _effectType == EffectType.Kitchen || _effectType == EffectType.Restaurant);
+        bool isCurrentRestaurantRelated = IsRestaurantAreaType(_effectType);
 
-        // Hall <-> Kitchen 전환인지 확인 (둘 다 레스토랑 관련 타입)
-        bool isHallKitchenTransition = isCurrentRestaurantRelated && willRestaurantBeActive &&
-                                      (_effectType != type) &&
-                                      (_effectType != EffectType.Restaurant && type != EffectType.Restaurant);
+        // 레스토랑 관련 타입 간 전환인지 확인
+        bool isRestaurantAreaTransition = isCurrentRestaurantRelated && willRestaurantBeActive && (_effectType != type);
 
         // 이전 믹서 그룹 페이드 아웃
         while (timer < changeDuration)
@@ -521,28 +568,46 @@ public class SoundManager : MonoBehaviour
                 {
                     float dbValue = Mathf.Lerp(0, -80, t);
                     _audioMixer.SetFloat("Restaurant", dbValue);
-                    _audioMixer.SetFloat("Hall", dbValue);
-                    _audioMixer.SetFloat("Kitchen", dbValue);
+                    _audioMixer.SetFloat("Hall1", dbValue);
+                    _audioMixer.SetFloat("Hall2", dbValue);
+                    _audioMixer.SetFloat("Hall3", dbValue);
+                    _audioMixer.SetFloat("Kitchen1", dbValue);
+                    _audioMixer.SetFloat("Kitchen2", dbValue);
+                    _audioMixer.SetFloat("Kitchen3", dbValue);
                 }
             }
-            else if (_effectType == EffectType.Hall || _effectType == EffectType.Kitchen)
+            else if (IsHallType(_effectType) || IsKitchenType(_effectType) || _effectType == EffectType.Restaurant)
             {
-                if (isHallKitchenTransition)
+                if (isRestaurantAreaTransition)
                 {
-                    // 홀-주방 간 이동 시 Restaurant 그룹은 유지, 개별 그룹만 변경
+                    // 레스토랑 관련 타입 간 이동 시 Restaurant 그룹은 유지, 개별 그룹만 변경
                     float dbValue = Mathf.Lerp(0, -80, t);
-                    if (_effectType == EffectType.Hall)
-                        _audioMixer.SetFloat("Hall", dbValue);
-                    else
-                        _audioMixer.SetFloat("Kitchen", dbValue);
+                    if (_effectType == EffectType.Hall1)
+                        _audioMixer.SetFloat("Hall1", dbValue);
+                    else if (_effectType == EffectType.Hall2)
+                        _audioMixer.SetFloat("Hall2", dbValue);
+                    else if (_effectType == EffectType.Hall3)
+                        _audioMixer.SetFloat("Hall3", dbValue);
+                    else if (_effectType == EffectType.Kitchen1)
+                        _audioMixer.SetFloat("Kitchen1", dbValue);
+                    else if (_effectType == EffectType.Kitchen2)
+                        _audioMixer.SetFloat("Kitchen2", dbValue);
+                    else if (_effectType == EffectType.Kitchen3)
+                        _audioMixer.SetFloat("Kitchen3", dbValue);
+                    else if (_effectType == EffectType.Restaurant)
+                        _audioMixer.SetFloat("Restaurant", dbValue);
                 }
                 else if (!willRestaurantBeActive)
                 {
                     // 레스토랑 관련 타입에서 벗어날 경우 모든 레스토랑 그룹 페이드 아웃
                     float dbValue = Mathf.Lerp(0, -80, t);
                     _audioMixer.SetFloat("Restaurant", dbValue);
-                    _audioMixer.SetFloat("Hall", dbValue);
-                    _audioMixer.SetFloat("Kitchen", dbValue);
+                    _audioMixer.SetFloat("Hall1", dbValue);
+                    _audioMixer.SetFloat("Hall2", dbValue);
+                    _audioMixer.SetFloat("Hall3", dbValue);
+                    _audioMixer.SetFloat("Kitchen1", dbValue);
+                    _audioMixer.SetFloat("Kitchen2", dbValue);
+                    _audioMixer.SetFloat("Kitchen3", dbValue);
                 }
             }
             else if (_effectType == EffectType.UI && !willUIBeActive)
@@ -555,13 +620,17 @@ public class SoundManager : MonoBehaviour
         }
 
         // 페이드 아웃 후 모든 그룹 초기화 (다음 페이드인 준비)
-        // 단, 홀-주방 전환 시 Restaurant는 유지
-        if (!isHallKitchenTransition)
+        // 단, 레스토랑 관련 타입 간 전환 시 Restaurant는 유지
+        if (!isRestaurantAreaTransition)
         {
             _audioMixer.SetFloat("Restaurant", -80f);
         }
-        _audioMixer.SetFloat("Hall", -80f);
-        _audioMixer.SetFloat("Kitchen", -80f);
+        _audioMixer.SetFloat("Hall1", -80f);
+        _audioMixer.SetFloat("Hall2", -80f);
+        _audioMixer.SetFloat("Hall3", -80f);
+        _audioMixer.SetFloat("Kitchen1", -80f);
+        _audioMixer.SetFloat("Kitchen2", -80f);
+        _audioMixer.SetFloat("Kitchen3", -80f);
         _audioMixer.SetFloat("UI", -80f);
 
         // 새 타입 페이드 인 부분 수정
@@ -573,33 +642,47 @@ public class SoundManager : MonoBehaviour
             float dbValue = Mathf.Lerp(-80, 0, t);
 
             // 새 타입에 따른 믹서 그룹 페이드 인
-            if (type == EffectType.Restaurant || type == EffectType.Hall || type == EffectType.Kitchen)
+            if (IsRestaurantAreaType(type))
             {
-                // Restaurant 그룹 페이드 인 (홀-주방 전환이 아닐 경우에만)
-                if (!isHallKitchenTransition)
+                // Restaurant 그룹 페이드 인 (레스토랑 관련 타입 간 전환이 아닐 경우에만)
+                if (!isRestaurantAreaTransition)
                 {
                     _audioMixer.SetFloat("Restaurant", dbValue);
                 }
                 else
                 {
-                    // 홀-주방 전환 시에도 레스토랑 볼륨을 유지하도록 설정
+                    // 레스토랑 관련 타입 간 전환 시에도 레스토랑 볼륨을 유지하도록 설정
                     _audioMixer.SetFloat("Restaurant", 0f);
                 }
 
                 // 세부 타입별 설정
-                if (type == EffectType.Restaurant)
+                if (type == EffectType.Hall1)
                 {
-                    _audioMixer.SetFloat("Hall", dbValue);
-                    _audioMixer.SetFloat("Kitchen", dbValue);
+                    _audioMixer.SetFloat("Hall1", dbValue);
                 }
-                else if (type == EffectType.Hall || type == EffectType.Kitchen)
+                else if (type == EffectType.Hall2)
                 {
-                    if (type == EffectType.Hall)
-                        _audioMixer.SetFloat("Hall", dbValue);
-                    else
-                        _audioMixer.SetFloat("Kitchen", dbValue);
-
-                    // 디버그 로그 추가하여 현재 볼륨 값이 어떻게 변하는지 확인
+                    _audioMixer.SetFloat("Hall2", dbValue);
+                }
+                else if (type == EffectType.Hall3)
+                {
+                    _audioMixer.SetFloat("Hall3", dbValue);
+                }
+                else if (type == EffectType.Kitchen1)
+                {
+                    _audioMixer.SetFloat("Kitchen1", dbValue);
+                }
+                else if (type == EffectType.Kitchen2)
+                {
+                    _audioMixer.SetFloat("Kitchen2", dbValue);
+                }
+                else if (type == EffectType.Kitchen3)
+                {
+                    _audioMixer.SetFloat("Kitchen3", dbValue);
+                }
+                else if (type == EffectType.Restaurant)
+                {
+                    _audioMixer.SetFloat("Restaurant", dbValue);
                 }
             }
             else if (type == EffectType.UI)
@@ -611,30 +694,29 @@ public class SoundManager : MonoBehaviour
         }
 
         // 최종 믹서 그룹 설정
-        if (type == EffectType.Restaurant || type == EffectType.Hall || type == EffectType.Kitchen)
+        if (IsRestaurantAreaType(type))
         {
             // Restaurant 믹서는 항상 활성화 (레스토랑 관련 타입일 때)
             _audioMixer.SetFloat("Restaurant", 0f);
 
-            if (type == EffectType.Restaurant)
-            {
-                // Restaurant 타입이면 모든 하위 그룹 활성화
-                _audioMixer.SetFloat("Hall", 0f);
-                _audioMixer.SetFloat("Kitchen", 0f);
-            }
-            else if (type == EffectType.Hall || type == EffectType.Kitchen)
-            {
-                _audioMixer.SetFloat("Hall", type == EffectType.Hall ? 0f : -80f);
-                _audioMixer.SetFloat("Kitchen", type == EffectType.Kitchen ? 0f : -80f);
-            }
+            _audioMixer.SetFloat("Hall1", type == EffectType.Hall1 ? 0f : -80f);
+            _audioMixer.SetFloat("Hall2", type == EffectType.Hall2 ? 0f : -80f);
+            _audioMixer.SetFloat("Hall3", type == EffectType.Hall3 ? 0f : -80f);
+            _audioMixer.SetFloat("Kitchen1", type == EffectType.Kitchen1 ? 0f : -80f);
+            _audioMixer.SetFloat("Kitchen2", type == EffectType.Kitchen2 ? 0f : -80f);
+            _audioMixer.SetFloat("Kitchen3", type == EffectType.Kitchen3 ? 0f : -80f);
 
             _audioMixer.SetFloat("UI", -80f);
         }
         else if (type == EffectType.UI)
         {
             _audioMixer.SetFloat("Restaurant", -80f);
-            _audioMixer.SetFloat("Hall", -80f);
-            _audioMixer.SetFloat("Kitchen", -80f);
+            _audioMixer.SetFloat("Hall1", -80f);
+            _audioMixer.SetFloat("Hall2", -80f);
+            _audioMixer.SetFloat("Hall3", -80f);
+            _audioMixer.SetFloat("Kitchen1", -80f);
+            _audioMixer.SetFloat("Kitchen2", -80f);
+            _audioMixer.SetFloat("Kitchen3", -80f);
             _audioMixer.SetFloat("UI", 0);
         }
     }

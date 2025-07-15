@@ -52,6 +52,9 @@ public class MainScene : MonoBehaviour
     public void SetFloor(ERestaurantFloorType floor)
     {
         _currentFloor = floor;
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_currentFloor, _restaurantType);
+        if (SoundManager.Instance.EffectType != EffectType.UI)
+            SoundManager.Instance.ChangePlayEffectType(effectType, 0.1f);
     }
 
     public void SetRestaurantType(RestaurantType type)
@@ -60,14 +63,15 @@ public class MainScene : MonoBehaviour
             return;
 
         _restaurantType = type;
-        if(SoundManager.Instance.EffectType != EffectType.UI)
-            SoundManager.Instance.ChangePlayEffectType(_restaurantType == RestaurantType.Hall ? EffectType.Hall : EffectType.Kitchen, 0.1f);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_currentFloor, _restaurantType);
+        if (SoundManager.Instance.EffectType != EffectType.UI)
+            SoundManager.Instance.ChangePlayEffectType(effectType, 0.1f);
     }
 
     private void Awake()
     {
         UserInfo.ChangeStage(_stage);
-        SoundManager.Instance.ChangePlayEffectType(EffectType.Hall);
+        SoundManager.Instance.ChangePlayEffectType(EffectType.Restaurant);
         SetBackground();
         _uiNavCoordinator.OnShowUIHandler += OnUIEvent;
         _uiNavCoordinator.OnHideUIHandler += OnUIEvent;
@@ -203,7 +207,8 @@ public class MainScene : MonoBehaviour
     {
         if(_uiNavCoordinator.GetOpenViewCount() <= 0)
         {
-            SoundManager.Instance.ChangePlayEffectType(_restaurantType == RestaurantType.Hall ? EffectType.Hall : EffectType.Kitchen, 0.1f);
+            EffectType effectType = SoundManager.Instance.GetHallEffectType(_currentFloor, _restaurantType);
+            SoundManager.Instance.ChangePlayEffectType(effectType, 0.1f);
         }
         else
         {

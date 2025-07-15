@@ -26,9 +26,11 @@ public class DropGarbageArea : MonoBehaviour
     public int Count => _garbageList.Count;
     private Vector3[] _rotate = new Vector3[7];
 
+    private ERestaurantFloorType _floor;
 
-    public void Init(GarbageAreaData data)
+    public void Init(GarbageAreaData data, ERestaurantFloorType floor)
     {
+        _floor = floor;
         _rotate[0] = new Vector3(0, 0, 0);
         _rotate[1] = new Vector3(0, 0, 90);
         _rotate[2] = new Vector3(0, 0, 180);
@@ -113,7 +115,8 @@ public class DropGarbageArea : MonoBehaviour
             return;
 
         UserInfo.AddCleanCount();
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _cleanSound);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+        SoundManager.Instance.PlayEffectAudio(effectType, _cleanSound);
 
         for (int i = 0; i < _garbageList.Count; i++)
         {

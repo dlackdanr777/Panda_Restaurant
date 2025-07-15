@@ -219,11 +219,13 @@ public class Customer : MonoBehaviour
     private IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
         yield return YieldCache.WaitForSeconds(0.6f);
+        _spriteRenderer.color = Color.white;
         _spriteRenderer.TweenAlpha(0, 0.4f, Ease.Constant).OnComplete(() => _moveObj.transform.position = _tableManager.GetDoorPos(RestaurantType.Hall, _targetPos));
         //SetSpriteDir(-1);
         yield return YieldCache.WaitForSeconds(1f);
         _spriteRenderer.TweenAlpha(1, 0.4f, Ease.Constant);
         yield return YieldCache.WaitForSeconds(1f);
+        _spriteRenderer.color = Color.white;
         onCompleted?.Invoke();
     }
 

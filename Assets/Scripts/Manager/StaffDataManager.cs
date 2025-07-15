@@ -144,6 +144,17 @@ public class StaffDataManager : MonoBehaviour
         return typeList;
     }
 
+    public RestaurantType GetStaffRestaurantType(StaffData data)
+    {
+        if (data is ManagerData || data is WaiterData || data is CleanerData || data is MarketerData || data is GuardData)
+            return RestaurantType.Hall;
+
+        else if (data is ChefData)
+            return RestaurantType.Kitchen;
+
+        throw new System.Exception("해당 타입이 이상합니다: " + data.Id);
+    }
+
 
     private void Awake()
     {

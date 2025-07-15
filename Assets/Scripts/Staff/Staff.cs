@@ -33,6 +33,9 @@ public class Staff : MonoBehaviour
     protected EStaffState _state;
     protected ERestaurantFloorType _equipFloorType;
     public ERestaurantFloorType EquipFloorType => _equipFloorType;
+    protected RestaurantType _restaurantType;
+    public RestaurantType RestaurantType => _restaurantType;
+
 
     protected bool _usingSkill;
     protected float _skillTimer;
@@ -118,6 +121,7 @@ public class Staff : MonoBehaviour
         gameObject.SetActive(true);
         _staffData = staffData;
         _equipFloorType = equipFloorType;
+        _restaurantType = StaffDataManager.Instance.GetStaffRestaurantType(staffData);
         _staffData.AddSlot(this, _tableManager, _kitchenSystem, _customerController);
 
         if (_animator != null)
@@ -251,8 +255,8 @@ public class Staff : MonoBehaviour
         _usingSkill = true;
         Vibration.Vibrate(500);
         SkillEffectSetActive(true);
-        DebugLog.Log("스킬 사용: " + name);
-        SoundManager.Instance.PlayEffectAudio(EffectType.Restaurant, _skillActiveSound);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_equipFloorType, _restaurantType);
+        SoundManager.Instance.PlayEffectAudio(effectType, _skillActiveSound);
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 
         float multiplier = 1f + GameManager.Instance.GetStaffSkillTimeMul(StaffDataManager.Instance.GetStaffGroupType(_staffType));

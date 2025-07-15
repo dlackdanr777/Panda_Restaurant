@@ -38,6 +38,8 @@ public class KitchenUtensilData : ShopData
 
     public KitchenUtensilData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, KitchenUtensilType kitchenType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount)
     {
+        _salesLocationType = SalesLocationType.Shop;
+
         _sprite = sprite;
         _thumbnailSPrite = thumbnailSprite;
         _name = name;

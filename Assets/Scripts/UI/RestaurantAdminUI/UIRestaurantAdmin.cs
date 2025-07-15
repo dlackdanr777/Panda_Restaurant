@@ -3,13 +3,6 @@ using Muks.MobileUI;
 using Muks.Tween;
 using UnityEngine;
 
-public enum BackgroundType
-{
-    Furniture,
-    Staff,
-    Recipe,
-    Kitchen,
-}
 
 public class UIRestaurantAdmin : MobileUIView
 {
@@ -55,7 +48,6 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private AudioClip _shopMusic;
 
     private ERestaurantFloorType _floorType;
-    private BackgroundType _currentBackgroundType = BackgroundType.Furniture;
     private bool _isInitialized = false;
 
     // 캐시된 참조들
@@ -98,7 +90,7 @@ public class UIRestaurantAdmin : MobileUIView
         // 스크롤 이미지 초기화 최적화
         InitializeScrollImages();
 
-        SetBackgroundImageOptimized(BackgroundType.Furniture);
+        SetBackgroundImageOptimized(_floorType);
 
         _isInitialized = true;
         gameObject.SetActive(false);
@@ -121,8 +113,6 @@ public class UIRestaurantAdmin : MobileUIView
         gameObject.SetActive(true);
         _mainUI.SetActive(false);
         
-        // 최적화된 배경 및 탭 설정
-        SetBackgroundImageOptimized(BackgroundType.Furniture);
         ShowFurnitureTabOptimized();
         
         _canvasGroup.blocksRaycasts = false;
@@ -223,7 +213,6 @@ public class UIRestaurantAdmin : MobileUIView
     {
         SetTabActive(1); // Staff = 1
         _floorButtonGroup.SetActive(true);
-        SetBackgroundImageOptimized(BackgroundType.Staff);
     }
 
     public void ShowFurnitureTab()
@@ -235,21 +224,18 @@ public class UIRestaurantAdmin : MobileUIView
     {
         SetTabActive(0); // Furniture = 0
         _floorButtonGroup.SetActive(true);
-        SetBackgroundImageOptimized(BackgroundType.Furniture);
     }
 
     public void ShowRecipeTab()
     {
         SetTabActive(2); // Recipe = 2
         _floorButtonGroup.SetActive(false);
-        SetBackgroundImageOptimized(BackgroundType.Recipe);
     }
 
     public void ShowKitchenTab()
     {
         SetTabActive(3); // Kitchen = 3
         _floorButtonGroup.SetActive(true);
-        SetBackgroundImageOptimized(BackgroundType.Kitchen);
     }
 
     // 탭 활성화 로직 통합 및 최적화
@@ -295,24 +281,20 @@ public class UIRestaurantAdmin : MobileUIView
     }
 
     // 최적화된 배경 이미지 설정
-    private void SetBackgroundImageOptimized(BackgroundType type)
+    private void SetBackgroundImageOptimized(ERestaurantFloorType floor)
     {
-        // 동일한 타입이면 처리하지 않음
-        if (_currentBackgroundType == type && _currentScrollImage != null)
-            return;
 
         // 이전 배경 비활성화
         if (_currentScrollImage != null)
             _currentScrollImage.gameObject.SetActive(false);
 
         // 오프셋 설정 및 새 배경 활성화
-        ScrollingImage newScrollImage = _scrollImages[(int)type];
+        ScrollingImage newScrollImage = _scrollImages[(int)floor];
         if (_currentScrollImage != null)
             newScrollImage.SetOffset(_currentScrollImage.Offset);
 
         newScrollImage.gameObject.SetActive(true);
         _currentScrollImage = newScrollImage;
-        _currentBackgroundType = type;
     }
 
     private void ResetBackgroundImageOffsetOptimized()
@@ -340,10 +322,8 @@ public class UIRestaurantAdmin : MobileUIView
         _furnitureTab.ChangeFloorType(_floorType);
         _staffTab.ChangeFloorType(_floorType);
         _floorButtonGroup.SetFloorText(_floorType);
-    }
 
-    // 호환성을 위한 기존 메서드들
-    private void SetBackgroundImage(BackgroundType type) => SetBackgroundImageOptimized(type);
-    private void ResetBackgroundImageOffset() => ResetBackgroundImageOffsetOptimized();
+        SetBackgroundImageOptimized(_floorType);
+    }
 }
 

@@ -67,8 +67,11 @@ public class CameraController : MonoBehaviour
         _mainScene.SetFloor(floor);
         _mainScene.SetRestaurantType(moveType);
         _cam.TweenStop();
+        float dis = Vector3.Distance(_cam.transform.position, _targetPosDic[CurrentFloor][CurrentRestaurant]);
+        float duration = Mathf.Clamp((dis / 25) * _duration, 0.15f, _duration);
+
         TweenData tween;
-        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], _duration, _ease);
+        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], duration, _ease);
         tween.OnComplete(() =>
         {
             _isMoveAction = false;
@@ -83,8 +86,10 @@ public class CameraController : MonoBehaviour
         _mainScene.SetFloor(floor);
 
         _cam.TweenStop();
+        float dis = Vector3.Distance(_cam.transform.position, _targetPosDic[CurrentFloor][CurrentRestaurant]);
+        float duration = Mathf.Clamp((dis / 25) * _duration, 0.15f, _duration);
         TweenData tween;
-        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], _duration, _ease);
+        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], duration, _ease);
         tween.OnComplete(() =>
         {
             _isMoveAction = false;
@@ -98,8 +103,11 @@ public class CameraController : MonoBehaviour
         _isMoveAction = true;
         _mainScene.SetRestaurantType(moveType);
         _cam.TweenStop();
+
+        float dis = Vector3.Distance(_cam.transform.position, _targetPosDic[CurrentFloor][CurrentRestaurant]);
+        float duration = Mathf.Clamp((dis / 25) * _duration, 0.15f, _duration);
         TweenData tween;
-        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], _duration, _ease);
+        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], duration, _ease);
         tween.OnComplete(() =>
         {
             _isMoveAction = false;

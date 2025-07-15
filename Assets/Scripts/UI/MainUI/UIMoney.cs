@@ -20,6 +20,10 @@ public class UIMoney : MonoBehaviour
     [SerializeField] private Ease _moveEase;
     [SerializeField] private Color _startColor;
 
+    [Space]
+    [Header("Options")]
+    [SerializeField] private bool _textAnimeEnable = true;
+
     private long _currentMoney;
     private Vector3 _tmpScale;
     private Coroutine _moneyAnimeRoutine;
@@ -77,6 +81,10 @@ public class UIMoney : MonoBehaviour
 
         StartAnime();
 
+
+        if (!_textAnimeEnable)
+            return;
+            
         string sign = addMoney < 0 ? "-" : "+";
         Vector3 spawnPos = _animeParent.transform.position;
         TextMeshProUGUI tmp = ObjectPoolManager.Instance.SpawnTMP(spawnPos, Quaternion.identity, _animeParent);
@@ -109,5 +117,12 @@ public class UIMoney : MonoBehaviour
         _moneyText.SetText(Utility.ConvertToMoney(UserInfo.Money));
     }
 
-    
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeMoneyHandler -= OnChangeMoneyEvent;
+        if (_moneyAnimeRoutine != null)
+            StopCoroutine(_moneyAnimeRoutine);
+        
+        _moneyAnimeRoutine = null;        
+    }
 }

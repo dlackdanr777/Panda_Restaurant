@@ -42,6 +42,8 @@ public class NormalCustomer : Customer
     {
         _tmpFoodPosX = _foodRenderer.transform.localPosition.x;
         _tmpEatAnimePosX = _eatAnimation.transform.localPosition.x;
+        _anger.Init();
+        _happy.Init();
         HideFood();
     }
 
@@ -63,8 +65,8 @@ public class NormalCustomer : Customer
         _doublePricePercent = 0;
         _currentFoodPriceMul = 1;
         _orderCount = 1;
-        _anger.Init();
-        _happy.Init();
+        _anger.SetCustomer(this);
+        _happy.SetCustomer(this);
         ChangeState(CustomerState.Idle);
 
         if (_eatAnimation != null)

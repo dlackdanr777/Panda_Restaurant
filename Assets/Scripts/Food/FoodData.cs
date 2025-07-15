@@ -23,6 +23,8 @@ public class FoodData : ShopData
 
     public FoodData(Sprite sprite, Sprite thumbnailSprite, string name, string id, string description, FoodType foodType, MoneyType moneyType, int buyScore, int buyPrice, string needItem, List<FoodLevelData> foodLevelDataList, FoodMiniGameData foodMiniGameData)
     {
+        _salesLocationType = SalesLocationType.Shop;
+
         _sprite = sprite;
         _thumbnailSPrite = thumbnailSprite;
         _name = name;

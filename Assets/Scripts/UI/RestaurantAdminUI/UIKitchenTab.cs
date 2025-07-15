@@ -62,10 +62,6 @@ public class UIKitchenTab : UIRestaurantAdminTab
 
     public override void UpdateUI()
     {
-        if(gameObject.activeInHierarchy == false)
-            return;
-
-
         UpdateUIOptimized(ERestaurantFloorType.Floor1, KitchenUtensilType.Burner1);
     }
 

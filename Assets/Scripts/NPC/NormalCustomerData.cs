@@ -43,7 +43,6 @@ public class NormalCustomerData : CustomerData
 
     public NormalCustomerData(Sprite sprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, string visitCount100Food, string visitCount200Food, string visitCount300Food, string visitCount400Food, string visitCount500Food, CustomerTendencyType tendencyType, int orderFoodTime, int waitTime, CustomerSkill skill) : base(sprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
     {
-
         _visitCount100Food = visitCount100Food;
         _visitCount200Food = visitCount200Food;
         _visitCount300Food = visitCount300Food;

@@ -18,10 +18,12 @@ MonoBehaviour:
   _id: STAFF07
   _description: "\uC628\uD654\uD55C \uBBF8\uC18C\uB85C \uC190\uB2D8\uC744 \uB9DE\uC73C\uBA70\n\uB9E4\uB044\uB7EC\uC6B4
     \uC2DD\uB2F9 \uC6B4\uC601\uC744 \uCC45\uC784\uC9C0\uB294 \uD3EC\uC57C\r"
+  _salesLocationType: 1
   _moneyType: 0
   _buyScore: 200
   _buyPrice: 80000
   _skill: {fileID: 11400000, guid: 18348c8c96719374da1f6ba1bcd2987d, type: 2}
+  _animatorController: {fileID: 0}
   _speed: 6
   _managerLevelData:
   - _upgradeMinScore: 300

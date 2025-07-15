@@ -20,11 +20,12 @@ public class CustomerController : MonoBehaviour
     [SerializeField] private FeverSystem _feverSystem;
     [SerializeField] private UIAddCutomerController _uiController;
     public Image MarketerSkillEffect => _uiController.MarketerSkillEffect;
+    [SerializeField] private SatisfactionSystem _satisfactionSystem;
     [SerializeField] private UICustomerTutorial _uiCustomerTutorial;
 
     [Space]
     [Header("Option")]
-    [Range(1, 10)] [SerializeField] private int _lineSpacingGrid;
+    [Range(1, 10)][SerializeField] private int _lineSpacingGrid;
     [SerializeField] private Transform _startLine;
     [SerializeField] private List<Vector3> _specialCustomerTargetPosList;
     [SerializeField] private Vector3 _gatecrasherCustomer2TargetPos;
@@ -47,7 +48,7 @@ public class CustomerController : MonoBehaviour
     //// UI관련 변수
     public event Action OnAddCustomerHandler;
     public event Action OnAddTabCountHandler;
-    public event Action OnMaxCustomerHandler; 
+    public event Action OnMaxCustomerHandler;
 
     private int _tabCount = 0;
     public int TabCount => _tabCount;
@@ -90,12 +91,12 @@ public class CustomerController : MonoBehaviour
             _waitCustomers.Remove(customer);
         }
 
-        if( callCustomer)
+        if (callCustomer)
         {
             _callCustomers.Remove(customer);
         }
 
-        if(!waitCustomer && !callCustomer)
+        if (!waitCustomer && !callCustomer)
         {
             return;
         }
@@ -118,6 +119,21 @@ public class CustomerController : MonoBehaviour
             return;
 
         List<NormalCustomerData> normalCustomerDataList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
+        List<NormalCustomerData> normalCustomerDataListCopy = new List<NormalCustomerData>(normalCustomerDataList);
+        if (!_satisfactionSystem.CheckCustomerTendency(CustomerTendencyType.Sensitive))
+        {
+            normalCustomerDataListCopy.RemoveAll(data => data.TendencyType == CustomerTendencyType.Sensitive);
+        }
+
+        if (!_satisfactionSystem.CheckCustomerTendency(CustomerTendencyType.HighlySensitive))
+        {
+            normalCustomerDataListCopy.RemoveAll(data => data.TendencyType == CustomerTendencyType.HighlySensitive);
+        }
+        if (0 < normalCustomerDataListCopy.Count)
+        {
+            normalCustomerDataList = normalCustomerDataListCopy;
+        }
+
         List<SpecialCustomerData> specialCustomerDataList = CustomerDataManager.Instance.GetAppearSpecialCustomerDataList();
         List<GatecrasherCustomerData> gatecrasherCustomerDataList = CustomerDataManager.Instance.GetAppearGatecrasherCustomerDataList();
         int randInt = 0;
@@ -144,7 +160,7 @@ public class CustomerController : MonoBehaviour
                     continue;
                 }
 
-                
+
                 CustomerData getData = randomDataList.GetRamdomItem();
                 ERestaurantFloorType visitFloor = (ERestaurantFloorType)UnityEngine.Random.Range(0, (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage) + 1);
                 //TODO: 나중에 삭제 후 위에꺼 쓰기(임시로 1층만 사용)
@@ -184,17 +200,6 @@ public class CustomerController : MonoBehaviour
 
             else
             {
-                //만족도가 일정 이하일 때 민감한 손님들 제외
-                if (UserInfo.GetSatisfaction(UserInfo.CurrentStage) <= ConstValue.MIN_SATISFACTION)
-                {
-                    List<NormalCustomerData> normalCustomerDataListCopy = new List<NormalCustomerData>(normalCustomerDataList);
-                    normalCustomerDataListCopy.RemoveAll(data => data.TendencyType == CustomerTendencyType.Sensitive || data.TendencyType == CustomerTendencyType.HighlySensitive);
-                    if (0 < normalCustomerDataListCopy.Count)
-                    {
-                        normalCustomerDataList = normalCustomerDataListCopy;
-                    }
-                }
-
                 NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
                 DebugLog.Log($"RandInt: {randInt}, Count: {normalCustomerDataList.Count}");
@@ -221,6 +226,7 @@ public class CustomerController : MonoBehaviour
             OnChangeCustomerHandler?.Invoke();
         }
     }
+
 
 
     public bool GuideCustomer(Vector3 targetPos, int moveEndDir = 0, Action onCompleted = null)
@@ -282,7 +288,7 @@ public class CustomerController : MonoBehaviour
                 if (!_waitCustomers.Contains(c))
                     _waitCustomers.Add(c);
 
-                _tableManager.UpdateTable();         
+                _tableManager.UpdateTable();
             });
             c.SetLayer("WaitCustomer", orderLayer--);
             startLinePos.x += _lineSpacingGrid * gridSize;
@@ -295,32 +301,32 @@ public class CustomerController : MonoBehaviour
     }
 
     private IEnumerator SortCustomerLineRoutine()
-{
-    yield return YieldCache.WaitForSeconds(0.2f);
-    Vector2 startLinePos = _startLine.position;
-    int orderLayer = _waitCustomers.Count;
-    float gridSize = AStar.Instance.NodeSize;
-    
-    // 리스트 복사본 생성
-    List<Customer> customersCopy = new List<Customer>(_waitCustomers);
-    
-    foreach (Customer c in customersCopy)
     {
+        yield return YieldCache.WaitForSeconds(0.2f);
+        Vector2 startLinePos = _startLine.position;
+        int orderLayer = _waitCustomers.Count;
+        float gridSize = AStar.Instance.NodeSize;
+
+        // 리스트 복사본 생성
+        List<Customer> customersCopy = new List<Customer>(_waitCustomers);
+
+        foreach (Customer c in customersCopy)
+        {
             if (!_waitCustomers.Contains(c))
                 continue;
-        c.Move(startLinePos, -1);
-        c.SetLayer("WaitCustomer", orderLayer--);
-        startLinePos.x += _lineSpacingGrid * gridSize;
+            c.Move(startLinePos, -1);
+            c.SetLayer("WaitCustomer", orderLayer--);
+            startLinePos.x += _lineSpacingGrid * gridSize;
 
-        yield return YieldCache.WaitForSeconds(0.05f);
+            yield return YieldCache.WaitForSeconds(0.05f);
+        }
     }
-}
 
     private void OnCustomerEvent(Customer customer)
     {
         _breakCustomerEnabled = true;
 
-        for(int i = 0, cnt = _gatecrasherCustomers.Length; i < cnt; ++i)
+        for (int i = 0, cnt = _gatecrasherCustomers.Length; i < cnt; ++i)
         {
             if (_gatecrasherCustomers[i] != customer)
                 continue;
@@ -356,7 +362,7 @@ public class CustomerController : MonoBehaviour
             _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
         }
 
-        else if(data is SpecialCustomerData)
+        else if (data is SpecialCustomerData)
         {
             SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
             specialCustomer.SetData(data, this, _tableManager);
@@ -371,7 +377,7 @@ public class CustomerController : MonoBehaviour
             customer.SetData(data, this, _tableManager);
             customer.StartWaiting();
             _waitCustomers.Add(customer);
-            
+
             SortCustomerLine();
             UserInfo.AddPromotionCount();
         }

@@ -197,6 +197,14 @@ public class StageInfo
         return false;
     }
 
+    public bool IsEquipStaff(ERestaurantFloorType floor, EquipStaffType type)
+    {
+        int floorIndex = (int)floor;
+        int typeIndex = (int)type;
+
+        return _equipStaffDatas[floorIndex, typeIndex] != null;
+    }
+
     public bool IsEquipStaff(StaffData data)
     {
         for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
@@ -577,6 +585,13 @@ public class StageInfo
         int typeIndex = (int)data.Type;
         KitchenUtensilData equipData = _equipKitchenUtensilDatas[floorIndex, typeIndex];
         return equipData != null && equipData.Id == data.Id;
+    }
+
+        public bool IsEquipKitchenUtensil(ERestaurantFloorType floor, KitchenUtensilType type)
+    {
+        int floorIndex = (int)floor;
+        int typeIndex = (int)type;
+        return _equipKitchenUtensilDatas[floorIndex, typeIndex] != null;
     }
 
     public bool IsEquipKitchenUtensil(KitchenUtensilData data)
