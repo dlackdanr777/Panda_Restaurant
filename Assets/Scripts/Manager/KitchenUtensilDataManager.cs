@@ -21,6 +21,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
     private static KitchenUtensilDataManager _instance;
 
     private static List<KitchenUtensilData>[] _kitchenUtensilDataListType = new List<KitchenUtensilData>[(int)KitchenUtensilType.Length];
+    private static List<KitchenUtensilData> _kitchenUtensilDataList = new List<KitchenUtensilData>();
     private static Dictionary<string, KitchenUtensilData> _kitchenUtensilDataDic = new Dictionary<string, KitchenUtensilData>();
 
     private static Dictionary<string, Sprite> _spriteDic = new Dictionary<string, Sprite>();
@@ -34,6 +35,11 @@ public class KitchenUtensilDataManager : MonoBehaviour
             throw new System.Exception("해당 id값이 존재하지 않습니다: " + id);
 
         return data;
+    }
+
+    public List<KitchenUtensilData> GetKitchenUtensilDataList()
+    {
+        return _kitchenUtensilDataList;
     }
 
 
@@ -71,6 +77,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
     {
 
         _kitchenUtensilDataDic.Clear();
+        _kitchenUtensilDataList.Clear();
         _spriteDic.Clear();
         _thumbnailSpriteDic.Clear();
 
@@ -195,6 +202,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
 
 
             _kitchenUtensilDataDic.Add(id, kitchenData);
+            _kitchenUtensilDataList.Add(kitchenData);
             _kitchenUtensilDataListType[(int)kitchenData.Type].Add(kitchenData);
         }
     }
@@ -275,6 +283,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
 
 
             _kitchenUtensilDataDic.Add(id, kitchenData);
+            _kitchenUtensilDataList.Add(kitchenData);
             _kitchenUtensilDataListType[(int)kitchenData.Type].Add(kitchenData);
         }
     }
@@ -446,6 +455,11 @@ public class KitchenUtensilDataManager : MonoBehaviour
             _kitchenUtensilDataDic.Add(id + "_03", cooker03Data);
             _kitchenUtensilDataDic.Add(id + "_04", cooker04Data);
             _kitchenUtensilDataDic.Add(id + "_05", cooker05Data);
+            _kitchenUtensilDataList.Add(cooker01Data);
+            _kitchenUtensilDataList.Add(cooker02Data);
+            _kitchenUtensilDataList.Add(cooker03Data);
+            _kitchenUtensilDataList.Add(cooker04Data);
+            _kitchenUtensilDataList.Add(cooker05Data);
             _kitchenUtensilDataListType[(int)cooker01Data.Type].Add(cooker01Data);
             _kitchenUtensilDataListType[(int)cooker02Data.Type].Add(cooker02Data);
             _kitchenUtensilDataListType[(int)cooker03Data.Type].Add(cooker03Data);

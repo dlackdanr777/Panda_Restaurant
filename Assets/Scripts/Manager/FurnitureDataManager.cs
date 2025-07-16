@@ -21,6 +21,7 @@ public class FurnitureDataManager : MonoBehaviour
     }
     private static FurnitureDataManager _instance;
 
+    private static List<FurnitureData> _furnitureDataList = new List<FurnitureData>();
     private static List<FurnitureData>[] _furnitureDataListType = new List<FurnitureData>[(int)FurnitureType.Length];
     private static Dictionary<string, FurnitureData> _furnitureDataDic = new Dictionary<string, FurnitureData>();
 
@@ -42,6 +43,10 @@ public class FurnitureDataManager : MonoBehaviour
         return data;
     }
 
+    public List<FurnitureData> GetFurnitureDataList()
+    {
+        return _furnitureDataList;
+    }
 
     public List<FurnitureData> GetFurnitureDataList(FurnitureType type)
     {
@@ -75,6 +80,7 @@ public class FurnitureDataManager : MonoBehaviour
     private static void InitData()
     {
         _furnitureDataDic.Clear();
+        _furnitureDataList.Clear();
         _spriteDic.Clear();
         _thumbnailSpriteDic.Clear();
         _leftChairSpriteDic.Clear();
@@ -234,6 +240,7 @@ public class FurnitureDataManager : MonoBehaviour
 
             // 🔹 리스트 및 딕셔너리에 추가
             _furnitureDataDic.Add(id, furnitureData);
+            _furnitureDataList.Add(furnitureData);
             _furnitureDataListType[(int)furnitureData.Type].Add(furnitureData);
         }
     }
@@ -453,6 +460,11 @@ isChairForward
             _furnitureDataDic.Add(id + "_03", table3Data);
             _furnitureDataDic.Add(id + "_04", table4Data);
             _furnitureDataDic.Add(id + "_05", table5Data);
+            _furnitureDataList.Add(table1Data);
+            _furnitureDataList.Add(table2Data);
+            _furnitureDataList.Add(table3Data);
+            _furnitureDataList.Add(table4Data);
+            _furnitureDataList.Add(table5Data);
             _furnitureDataListType[(int)table1Data.Type].Add(table1Data);
             _furnitureDataListType[(int)table2Data.Type].Add(table2Data);
             _furnitureDataListType[(int)table3Data.Type].Add(table3Data);
