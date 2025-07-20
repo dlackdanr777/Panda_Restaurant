@@ -1055,6 +1055,12 @@ public static class UserInfo
         return null;
     }
 
+    public static List<StaffData> GetGiveStaffDataList(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetGiveStaffDataList();
+    }
+
 
     public static int GetStaffLevel(EStage stage, StaffData data)
     {
@@ -1116,6 +1122,12 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].GetGiveFurnitureCount();
+    }
+
+    public static List<FurnitureData> GetGiveFurnitureDataList(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetGiveFurnitureDataList();
     }
 
 
@@ -1212,6 +1224,12 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].GetGiveKitchenUtensilCount();
+    }
+
+    public static List<KitchenUtensilData> GetGiveKitchenUtensilDataList(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetGiveKitchenUtensilDataList();
     }
 
 

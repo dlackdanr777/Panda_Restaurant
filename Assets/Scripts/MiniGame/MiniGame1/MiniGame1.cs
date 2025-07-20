@@ -203,14 +203,14 @@ public class MiniGame1 : MiniGameSystem
             // 게임 종료 조건 체크
             if (IsGameOver())
             {
-                DebugLog.Log("미니게임 실패");
-                TimeManager.Instance.SetTime(_currentFoodData.Id + "_MiniGame", 900);
                 _uiMiniGameController.HideUI();
+                TimeManager.Instance.SetTime(_currentFoodData.Id + "_MiniGame", 900);
                 yield break;
             }
 
             else if (IsGameClear())
             {
+                TimeManager.Instance.RemoveTime(_currentFoodData.Id + "_MiniGame");
                 if (UserInfo.IsGiveRecipe(_currentFoodData.Id))
                 {
                     DebugLog.Log("레시피 업그레이드");

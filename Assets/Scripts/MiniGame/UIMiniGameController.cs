@@ -91,5 +91,6 @@ public class UIMiniGameController : MobileUIView
         _uiNav.Push("UIMiniGame");
         _miniGame1.Show(foodData, onComplete);
         _miniGameFever.Hide();
+        TimeManager.Instance.SetTime(foodData.Id + "_MiniGame", 900);
     }
 }

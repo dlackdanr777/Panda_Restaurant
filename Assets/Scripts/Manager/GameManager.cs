@@ -101,11 +101,6 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int _addGachaItemWaitCustomerMaxCount; //최대 줄서기 손님 증가 + (UPGRADE30)
 
 
-
-    ////// 가구, 주방 리스트
-    List<FurnitureData> _furnitureDataList = new List<FurnitureData>();
-    List<KitchenUtensilData> _kitchenUtensilDataList = new List<KitchenUtensilData>();
-
     public float GetStaffSpeedMul(StaffGroupType type)
     {
         if (_addGachaItemStaffSpeedMulDic.TryGetValue(type, out float value))
@@ -420,9 +415,6 @@ public class GameManager : MonoBehaviour
             ERestaurantFloorType floor = (ERestaurantFloorType)i;
             CheckSetDataEffect(floor);
         }
-
-        _furnitureDataList = FurnitureDataManager.Instance.GetFurnitureDataList();
-        _kitchenUtensilDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList();
     }
 
 
@@ -447,23 +439,16 @@ public class GameManager : MonoBehaviour
     {
         _addFurnitureScore = 0;
         int addScore = 0;
-        if (_furnitureDataList == null || _furnitureDataList.Count == 0)
-        {
-            _furnitureDataList = FurnitureDataManager.Instance.GetFurnitureDataList();
-        }
-
-        for(int i = 0, cnt = _furnitureDataList.Count; i < cnt; ++i)
+        List<FurnitureData> _furnitureDataList = UserInfo.GetGiveFurnitureDataList(UserInfo.CurrentStage);
+        for (int i = 0, cnt = _furnitureDataList.Count; i < cnt; ++i)
         {
             FurnitureData data = _furnitureDataList[i];
             if (data == null)
                 continue;
 
-            if (!UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data.Id))
-                continue;
-
             addScore += data.AddScore;
         }
-        DebugLog.Log("가구 점수: " + addScore);
+
         _addFurnitureScore = addScore;
         OnChangeScoreHandler?.Invoke();
     }
@@ -472,24 +457,17 @@ public class GameManager : MonoBehaviour
     {
         _addKitchenUtensilScore = 0;
         int addScore = 0;
-        if (_kitchenUtensilDataList == null || _kitchenUtensilDataList.Count == 0)
-        {
-            _kitchenUtensilDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList();
-        }
+        List<KitchenUtensilData> kitchenUtensilDataList = UserInfo.GetGiveKitchenUtensilDataList(UserInfo.CurrentStage);
 
-        for (int i = 0, cnt = _kitchenUtensilDataList.Count; i < cnt; ++i)
+        for (int i = 0, cnt = kitchenUtensilDataList.Count; i < cnt; ++i)
         {
-            KitchenUtensilData data = _kitchenUtensilDataList[i];
+            KitchenUtensilData data = kitchenUtensilDataList[i];
             if (data == null)
-                continue;
-
-            if (!UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data.Id))
                 continue;
 
             addScore += data.AddScore;
         }
 
-        DebugLog.Log("주방 점수: " + addScore);
         _addKitchenUtensilScore = addScore;
         OnChangeScoreHandler?.Invoke();
     }

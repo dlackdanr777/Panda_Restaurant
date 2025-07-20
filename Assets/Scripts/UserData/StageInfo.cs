@@ -62,10 +62,14 @@ public class StageInfo
     //서버에 저장 X
     private List<string> _collectFurnitureSetDataList = new List<string>();
     private List<string> _collectKitchenUtensilSetDataList = new List<string>();
+    private List<FurnitureData> _giveFurnitureDataList = new List<FurnitureData>();
+    private List<KitchenUtensilData> _giveKitchenUtensilDataList = new List<KitchenUtensilData>();
+    private List<StaffData> _giveStaffDataList = new List<StaffData>();
+
 
     public StageInfo()
     {
-        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
             ERestaurantFloorType floor = (ERestaurantFloorType)i;
             for (int j = 0, cntJ = (int)TableType.Length; j < cntJ; ++j)
@@ -75,7 +79,7 @@ public class StageInfo
             }
         }
 
-        for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
             _saveKitchenDatas[i] = new SaveKitchenData();
             _saveKitchenDatas[i].SetFloorType((ERestaurantFloorType)i);
@@ -147,6 +151,7 @@ public class StageInfo
 
         SaveStaffData saveData = new SaveStaffData(data.Id, 1);
         _giveStaffDic.Add(data.Id, saveData);
+        _giveStaffDataList.Add(data);
         OnGiveStaffHandler?.Invoke();
     }
 
@@ -253,6 +258,11 @@ public class StageInfo
 
         return ERestaurantFloorType.Error;
     }
+    
+    public List<StaffData> GetGiveStaffDataList()
+    {
+        return _giveStaffDataList;
+    }
 
 
     public void SetEquipStaff(ERestaurantFloorType floorType, EquipStaffType equipType, StaffData data)
@@ -264,7 +274,7 @@ public class StageInfo
         }
 
         List<EquipStaffType> equipStaffTypeList = StaffDataManager.Instance.GetEquipStaffTypeList(data);
-        if(!equipStaffTypeList.Contains(equipType))
+        if (!equipStaffTypeList.Contains(equipType))
         {
             DebugLog.LogError("해당 스탭과 관련 없는 장착 슬롯입니다: (스탭 타입 " + StaffDataManager.Instance.GetStaffGroupType(data) + ")(장착 슬롯" + equipType + ")");
             return;
@@ -392,6 +402,7 @@ public class StageInfo
         }
 
         _giveFurnitureList.Add(data.Id);
+        _giveFurnitureDataList.Add(data);
         CheckCollectFurnitureSetData();
         OnGiveFurnitureHandler?.Invoke();
     }
@@ -418,6 +429,11 @@ public class StageInfo
     public int GetGiveFurnitureCount()
     {
         return _giveFurnitureList.Count;
+    }
+
+    public List<FurnitureData> GetGiveFurnitureDataList()
+    {
+        return _giveFurnitureDataList;
     }
 
 
@@ -546,6 +562,7 @@ public class StageInfo
         }
 
         _giveKitchenUtensilList.Add(data.Id);
+        _giveKitchenUtensilDataList.Add(data);
         CheckCollectKitchenUtensilSetData();
         OnGiveKitchenUtensilHandler?.Invoke();
     }
@@ -565,6 +582,11 @@ public class StageInfo
     public int GetGiveKitchenUtensilCount()
     {
         return _giveKitchenUtensilList.Count;
+    }
+
+    public List<KitchenUtensilData> GetGiveKitchenUtensilDataList()
+    {
+        return _giveKitchenUtensilDataList;
     }
 
 

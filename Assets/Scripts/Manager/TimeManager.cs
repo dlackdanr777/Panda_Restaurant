@@ -39,6 +39,8 @@ public class TimeManager : MonoBehaviour
         OnAddTimeHandler?.Invoke(key);
     }
 
+    
+
     public void RemoveTime(string key, int time)
     {
         if (_timeDic.ContainsKey(key))
