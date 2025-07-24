@@ -83,8 +83,8 @@ public class ItemManager : MonoBehaviour
         }
 
         // 랭크별로 아이템 분류 (존재하는 랭크만 저장)
-        Dictionary<GachaItemRank, List<GachaItemData>> rankItemDict = new Dictionary<GachaItemRank, List<GachaItemData>>();
-        List<GachaItemRank> availableRanks = new List<GachaItemRank>();
+        Dictionary<Rank, List<GachaItemData>> rankItemDict = new Dictionary<Rank, List<GachaItemData>>();
+        List<Rank> availableRanks = new List<Rank>();
 
         foreach (var item in gachaItemDataList)
         {
@@ -102,15 +102,15 @@ public class ItemManager : MonoBehaviour
         {
             float randF = UnityEngine.Random.Range(0f, 1f);
             float tmp = 0;
-            GachaItemRank currentRank = GachaItemRank.Normal1;
+            Rank currentRank = Rank.Normal1;
 
             // 랭크 선택
-            for (int i = 0, cnt = (int)GachaItemRank.Length; i < cnt; ++i)
+            for (int i = 0, cnt = (int)Rank.Length; i < cnt; ++i)
             {
-                tmp += Utility.GetGachaItemRankRange((GachaItemRank)i);
+                tmp += Utility.GetGachaItemRankRange((Rank)i);
                 if (randF < tmp)
                 {
-                    currentRank = (GachaItemRank)i;
+                    currentRank = (Rank)i;
                     break;
                 }
             }
@@ -130,7 +130,7 @@ public class ItemManager : MonoBehaviour
         // 여러 번 시도 후에도 실패했다면 사용 가능한 랭크에서 무작위로 선택
         if (availableRanks.Count > 0)
         {
-            GachaItemRank fallbackRank = availableRanks[UnityEngine.Random.Range(0, availableRanks.Count)];
+            Rank fallbackRank = availableRanks[UnityEngine.Random.Range(0, availableRanks.Count)];
             DebugLog.Log($"랭크 선택 실패, 대체 랭크 {fallbackRank} 사용");
             List<GachaItemData> fallbackItems = rankItemDict[fallbackRank];
             return fallbackItems[UnityEngine.Random.Range(0, fallbackItems.Count)];

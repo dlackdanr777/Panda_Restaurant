@@ -35,7 +35,7 @@ public static class Utility
         StringBuilder strBuilder = new StringBuilder();
         int cnt = strLength - str.Length;
 
-        for(int i = 0; i < cnt; ++i)
+        for (int i = 0; i < cnt; ++i)
             strBuilder.Append("-");
 
         strBuilder.Append(str);
@@ -88,7 +88,7 @@ public static class Utility
 
     public static bool EqualStaffType(this EquipStaffType type1, EquipStaffType type2)
     {
-        if(type1 == type2)
+        if (type1 == type2)
             return true;
 
         if ((type1 == EquipStaffType.Waiter1 || type1 == EquipStaffType.Waiter2) && (type2 == EquipStaffType.Waiter1 || type2 == EquipStaffType.Waiter2))
@@ -163,15 +163,15 @@ public static class Utility
     }
 
 
-    public static string GachaItemRankStringConverter(GachaItemRank rank)
+    public static string GachaItemRankStringConverter(Rank rank)
     {
         return rank switch
         {
-            GachaItemRank.Normal1 => "노말",
-            GachaItemRank.Normal2 => "노말",
-            GachaItemRank.Rare => "레어",
-            GachaItemRank.Unique => "유니크",
-            GachaItemRank.Special => "스페셜",
+            Rank.Normal1 => "노말",
+            Rank.Normal2 => "노말",
+            Rank.Rare => "레어",
+            Rank.Unique => "유니크",
+            Rank.Special => "스페셜",
             _ => string.Empty
         };
     }
@@ -284,29 +284,29 @@ public static class Utility
 
 
 
-    public static float GetGachaItemRankRange(GachaItemRank rank)
+    public static float GetGachaItemRankRange(Rank rank)
     {
         switch (rank)
         {
-            case GachaItemRank.Normal1:
+            case Rank.Normal1:
                 return 0.375f;
-            case GachaItemRank.Normal2:
+            case Rank.Normal2:
                 return 0.375f;
-            case GachaItemRank.Rare:
+            case Rank.Rare:
                 return 0.125f;
-            case GachaItemRank.Unique:
+            case Rank.Unique:
                 return 0.0938f;
-            case GachaItemRank.Special:
+            case Rank.Special:
                 return 0.0313f;
         }
         return 0;
     }
 
 
-    public static string GetFurnitureFoodTypeSetEffectDescription( FoodType type)
+    public static string GetFurnitureFoodTypeSetEffectDescription(FoodType type)
     {
 
-        string description = FoodTypeStringConverter(type) + $" 속성 음식 수익 증가(<color={ColorToHex(GetColor(ColorType.Positive))}>+10%</color>)";;
+        string description = FoodTypeStringConverter(type) + $" 속성 음식 수익 증가(<color={ColorToHex(GetColor(ColorType.Positive))}>+10%</color>)"; ;
         return description;
     }
 
@@ -399,7 +399,7 @@ public static class Utility
         int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
         return data.Skill switch
         {
-            SpeedUpSkill => $"기본 능력 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> UP! (<color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.Duration}</color>초)" ,
+            SpeedUpSkill => $"기본 능력 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> UP! (<color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.Duration}</color>초)",
             FoodPriceUpSkill => $"주문 당 음식 가격 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.Skill.FirstValue}%</color> 증가",
             AutoCustomerGuideSkill => $"손님 자동 안내 ({data.Skill.Duration}s)",
             AddPromotionCustomerSkill => $"홍보당 손님 호출 인원 <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)data.Skill.FirstValue}</color>명 증가",
@@ -419,26 +419,15 @@ public static class Utility
             description = $"{specialCustomerData.ActiveDuration}초 동안 돌아다니며 \n터치시 <color={ColorToHex(GetColor(ColorType.Positive))}>{specialCustomerData.TouchAddMoney}</color>골드를 획득한다";
         }
 
-        else if(data is GatecrasherCustomerData)
+        else if (data is GatecrasherCustomerData)
         {
             GatecrasherCustomerData gatecrasherCustomerData = (GatecrasherCustomerData)data;
             description = data is GatecrasherCustomer1Data ? $"{gatecrasherCustomerData.ActiveDuration}초 동안 돌아다니며 동전을 훔친다" : $"{gatecrasherCustomerData.ActiveDuration}초 동안 고성방가로 손님들을 쫒아낸다";
         }
 
-        else if(data is NormalCustomerData)
+        else if (data is NormalCustomerData)
         {
-            NormalCustomerData normalCustomerData = (NormalCustomerData)data;
-
-            if (normalCustomerData.Skill == null)
-                description = "없음";
-
-            else
-            {
-                if(normalCustomerData.Skill is CustomerFoodPriceUpSkill)
-                    description = $"{normalCustomerData.Skill.SkillActivatePercent}%확률로 음식 가격의 <color={ColorToHex(GetColor(ColorType.Positive))}>{normalCustomerData.Skill.FirstValue}</color>배 지불한다";
-                else if(normalCustomerData.Skill is CustomerOrderCountUpSkill)
-                    description = $"{normalCustomerData.Skill.SkillActivatePercent}%확률로 음식을 <color={ColorToHex(GetColor(ColorType.Positive))}>{normalCustomerData.Skill.FirstValue}</color>개 주문한다";
-            }      
+            
         }
 
         return description;
@@ -540,7 +529,7 @@ public static class Utility
             ColorType.Positive => new Color(0.16f, 0.41f, 0.72f),
             ColorType.AddValue => new Color(0.141f, 0.569f, 0.247f),
             _ => Color.black
-        } ;
+        };
     }
 
     public static Color HexToColor(Vector3Int hex)
@@ -574,7 +563,7 @@ public static class Utility
     public static string GetStringAfterChar(string str, char delimiter)
     {
         int index = str.IndexOf(delimiter);
-    
+
         if (index >= 0 && index < str.Length - 1)
             return str.Substring(index + 1);
         else
@@ -599,6 +588,31 @@ public static class Utility
 
         // 두 자리 숫자 형식으로 변환 (00:00)
         return $"{minutes:D2}:{seconds:D2}";
+    }
+
+
+    public static int StrToInt(string str)
+    {
+        if(string.IsNullOrWhiteSpace(str))
+            return 0;
+
+        DebugLog.Log("StrToInt: " + str);
+        str = str.Trim();
+        if (int.TryParse(str, out int result))
+            return result;
+        else
+            return 0;
+    }
+    
+    public static float StrToFloat(string str)
+    {
+        if (string.IsNullOrWhiteSpace(str))
+            return 0f;
+        str = str.Trim();
+        if (float.TryParse(str, out float result))
+            return result;
+        else
+            return 0f;
     }
 
 }

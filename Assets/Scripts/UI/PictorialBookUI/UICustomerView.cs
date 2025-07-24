@@ -11,6 +11,7 @@ public class UICustomerView : MonoBehaviour
     {
         OrderFood1,
         OrderFood2,
+        OrderFood3,
         Effect,
         Length,
     }
@@ -18,7 +19,7 @@ public class UICustomerView : MonoBehaviour
     [Header("Components")]
     [SerializeField] private UICustomerBlackImage _blackImage;
     [SerializeField] private Image _specialFrameImage;
-    [SerializeField] private UIImageAndText _gatecrasherFrameImage;
+    [SerializeField] private Image _gatecrasherFrameImage;
     [SerializeField] private Image _normalFrameImage;
     [SerializeField] private Image _npcImage;
     [SerializeField] private UITextAndText _visitCountGroup;
@@ -35,6 +36,7 @@ public class UICustomerView : MonoBehaviour
     [Header("OrderFood Slot Options")]
     [SerializeField] private RectTransform _orderFoodParent1;
     [SerializeField] private RectTransform _orderFoodParent2;
+    [SerializeField] private RectTransform _orderFoodParent3;
     [SerializeField] private UIOrderFoodSlot _orderFoodSlotPrefab;
 
     private CustomerData _data;
@@ -53,7 +55,7 @@ public class UICustomerView : MonoBehaviour
         _blackImage.gameObject.SetActive(false);
         CreateFoodSlot(3, _orderFoodParent1);
         CreateFoodSlot(3, _orderFoodParent2);
-
+        CreateFoodSlot(3, _orderFoodParent3);
 
         _effectLeftArrowButton.AddListener(() => OnArrowButtonClicked(-1));
         _effectRightArrowButton.AddListener(() => OnArrowButtonClicked(1));
@@ -98,6 +100,7 @@ public class UICustomerView : MonoBehaviour
         _data = data;
 
         _npcImage.gameObject.SetActive(true);
+        _effectTitle.gameObject.SetActive(true);
         _tendencyTypeText.gameObject.SetActive(false);
         _npcImage.sprite = data.Sprite;
 
@@ -106,7 +109,6 @@ public class UICustomerView : MonoBehaviour
             _normalFrameImage.gameObject.SetActive(false);
             _gatecrasherFrameImage.gameObject.SetActive(false);
             _specialFrameImage.gameObject.SetActive(true);
-            _effectTitle.gameObject.SetActive(true);
             SetScaleImage(1);
 
         }
@@ -115,7 +117,6 @@ public class UICustomerView : MonoBehaviour
             _normalFrameImage.gameObject.SetActive(false);
             _gatecrasherFrameImage.gameObject.SetActive(true);
             _specialFrameImage.gameObject.SetActive(false);
-            _effectTitle.gameObject.SetActive(false);
             SetScaleImage(1);
         }
         else
@@ -123,7 +124,6 @@ public class UICustomerView : MonoBehaviour
             _normalFrameImage.gameObject.SetActive(true);
             _gatecrasherFrameImage.gameObject.SetActive(false);
             _specialFrameImage.gameObject.SetActive(false);
-            _effectTitle.gameObject.SetActive(true);
             _tendencyTypeText.gameObject.SetActive(true);
             SetScaleImage(1.3f, 13);
         }
@@ -140,19 +140,13 @@ public class UICustomerView : MonoBehaviour
             _descriptionText.text = "???";
 
             imageColor = Utility.GetColor(ColorType.NoGive);
+            _effectDescription.text = "???";
 
-            if (data is GatecrasherCustomerData)
-            {
-                _effectDescription.text = string.Empty;
-                _gatecrasherFrameImage.SetText("???");
-            }
-            else
-                _effectDescription.text = "???";
         }
         else
         {
             int visitCount = UserInfo.GetVisitedCustomerCount(data);
-            
+
             if (visitCount <= 0)
             {
                 _visitCountGroup.gameObject.SetActive(true);
@@ -185,17 +179,9 @@ public class UICustomerView : MonoBehaviour
                     _tendencyTypeText.text = string.Empty;
                 }
 
+                _effectDescription.text = Utility.GetCustomerEffectDescription(data);
 
-                if (data is GatecrasherCustomerData)
-                {
-                    _effectDescription.text = string.Empty;
-                    _gatecrasherFrameImage.SetText(Utility.GetCustomerEffectDescription(data));
-                }
-                else
-                    _effectDescription.text = Utility.GetCustomerEffectDescription(data);
             }
-
-           
         }
 
 
@@ -265,11 +251,11 @@ public class UICustomerView : MonoBehaviour
         int visitCount = UserInfo.GetVisitedCustomerCount(data);
 
         SetOrderFoodSlot(normalData.RequiredDish, true, string.Empty);
-        SetOrderFoodSlot(normalData.VisitCount100Food, 100 <= visitCount, "방문 " + Utility.SetStringColor(100.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(normalData.VisitCount200Food, 200 <= visitCount, "방문 " + Utility.SetStringColor(200.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(normalData.VisitCount300Food, 300 <= visitCount, "방문 " + Utility.SetStringColor(300.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(normalData.VisitCount400Food, 400 <= visitCount, "방문 " + Utility.SetStringColor(400.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(normalData.VisitCount500Food, 500 <= visitCount, "방문 " + Utility.SetStringColor(500.ToString(), ColorType.Negative) + "회");
+        Dictionary<int, string> visitCountFoodDic = normalData.GetVisitCountFoodDic();
+        foreach (var food in visitCountFoodDic)
+        {
+            SetOrderFoodSlot(food.Value, food.Key <= visitCount, "방문 " + Utility.SetStringColor(food.Key.ToString(), ColorType.Negative) + "회");
+        }
     }
 
 
@@ -322,6 +308,7 @@ public class UICustomerView : MonoBehaviour
             _effectDescription.gameObject.SetActive(false);
             _orderFoodParent1.gameObject.SetActive(false);
             _orderFoodParent2.gameObject.SetActive(false);
+            _orderFoodParent3.gameObject.SetActive(false);
             _effectLeftArrowButton.gameObject.SetActive(false);
             _effectRightArrowButton.gameObject.SetActive(false);
             return;
@@ -340,20 +327,21 @@ public class UICustomerView : MonoBehaviour
         //     return;
         // }
 
+        _effectTitle.gameObject.SetActive(true);
         if (data is GatecrasherCustomerData)
         {
-            _effectTitle.gameObject.SetActive(false);
             _effectDescription.gameObject.SetActive(false);
             _orderFoodParent1.gameObject.SetActive(false);
             _orderFoodParent2.gameObject.SetActive(false);
+            _orderFoodParent3.gameObject.SetActive(false);
             _effectLeftArrowButton.gameObject.SetActive(false);
             _effectRightArrowButton.gameObject.SetActive(false);
+            ChangeEffectGroup(CustomerEffectType.Effect);
             return;
         }
 
         else if (data is SpecialCustomerData)
         {
-            _effectTitle.gameObject.SetActive(true);
             _effectLeftArrowButton.gameObject.SetActive(false);
             _effectRightArrowButton.gameObject.SetActive(false);
             ChangeEffectGroup(CustomerEffectType.Effect);
@@ -362,8 +350,6 @@ public class UICustomerView : MonoBehaviour
 
         else if(data is NormalCustomerData)
         {
-            _effectType = CustomerEffectType.OrderFood1;
-            _effectTitle.gameObject.SetActive(true);
             _effectLeftArrowButton.gameObject.SetActive(true);
             _effectRightArrowButton.gameObject.SetActive(true);
             ChangeEffectGroup(CustomerEffectType.OrderFood1);
@@ -377,9 +363,9 @@ public class UICustomerView : MonoBehaviour
             return;
 
         int typeIndex = (int)_effectType + dir;
-        typeIndex %= (int)CustomerEffectType.Length;
+        typeIndex %= (int)CustomerEffectType.Effect;
         if (typeIndex < 0)
-            typeIndex = (int)CustomerEffectType.Length - 1;
+            typeIndex = (int)CustomerEffectType.Effect - 1;
 
         if((int)CustomerEffectType.OrderFood2 == typeIndex)
         {
@@ -389,13 +375,14 @@ public class UICustomerView : MonoBehaviour
                 if (child.gameObject.activeSelf)
                     childActiveCount++;
             }
-            if(dir <= -1 && childActiveCount == 0)
+            if (dir <= -1 && childActiveCount == 0)
             {
                 typeIndex = (int)CustomerEffectType.OrderFood1;
             }
-            else if(1 <= dir && childActiveCount == 0)
+            else if (1 <= dir && childActiveCount == 0)
             {
-                typeIndex = (int)CustomerEffectType.Effect;
+                typeIndex = (int)CustomerEffectType.OrderFood3;
+                //typeIndex = (int)CustomerEffectType.Effect; 스킬 효과 삭제
             }
         }
         
@@ -410,19 +397,31 @@ public class UICustomerView : MonoBehaviour
             case CustomerEffectType.OrderFood1:
                 _orderFoodParent1.gameObject.SetActive(true);
                 _orderFoodParent2.gameObject.SetActive(false);
+                _orderFoodParent3.gameObject.SetActive(false);
                 _effectDescription.gameObject.SetActive(false);
                 _effectTitle.text = "주문 요리1";
                 break;
             case CustomerEffectType.OrderFood2:
                 _orderFoodParent2.gameObject.SetActive(true);
                 _orderFoodParent1.gameObject.SetActive(false);
+                _orderFoodParent3.gameObject.SetActive(false);
                 _effectDescription.gameObject.SetActive(false);
                 _effectTitle.text = "주문 요리2";
                 break;
+
+            case CustomerEffectType.OrderFood3:
+                _orderFoodParent3.gameObject.SetActive(true);
+                _orderFoodParent1.gameObject.SetActive(false);
+                _orderFoodParent2.gameObject.SetActive(false);
+                _effectDescription.gameObject.SetActive(false);
+                _effectTitle.text = "주문 요리3";
+                break;
+
             case CustomerEffectType.Effect:
                 _effectDescription.gameObject.SetActive(true);
                 _orderFoodParent1.gameObject.SetActive(false);
                 _orderFoodParent2.gameObject.SetActive(false);
+                _orderFoodParent3.gameObject.SetActive(false);
                 _effectTitle.text = "특수 효과";
                 _effectDescription.text = Utility.GetCustomerEffectDescription(_data);
                 break;

@@ -309,24 +309,25 @@ public class CustomerDataManager : MonoBehaviour
             int orderWaitTime = int.TryParse(row[6].Trim(), out int orderWait) ? orderWait : throw new System.Exception("음식 대기 시간이 이상합니다:" + row[6].Trim());
             CustomerTendencyType tendencyType = GetTendencyType(row[7].Trim());
             string requiredFood = row[8].Trim();
-            string visitCount100Food = row[9].Trim();
-            string visitCount200Food = row[10].Trim();
-            string visitCount300Food = row[11].Trim();
-            string visitCount400Food = row[12].Trim();
-            string visitCount500Food = row[13].Trim();
+            string visitCount25Food = row[9].Trim();
+            string visitCount50Food = row[10].Trim();
+            string visitCount100Food = row[11].Trim();
+            string visitCount200Food = row[12].Trim();
+            string visitCount300Food = row[13].Trim();
+            string visitCount400Food = row[14].Trim();
+            string visitCount500Food = row[15].Trim();
 
 
-            int visitMinScore = int.TryParse(row[14].Trim(), out int minScore) ? minScore : 0;
-            string visitGiveFurnitureId = row[15].Trim(); //사용하지 않음
-            string requiredItem = row[16].Trim();
-            CustomerSkill skill = GetCustomerSkill(row[17].Trim().ToUpper());
+            string visitGiveFurnitureId = row[16].Trim(); //사용하지 않음
+            string requiredItem = row[17].Trim();
+            int visitMinScore = 0;
             if (!_customerSpriteDic.TryGetValue(id, out Sprite sprite))
             {
                 Debug.LogError($"스프라이트가 없습니다: {id}");
                 continue;
             }
 
-            NormalCustomerData customerData = new NormalCustomerData(sprite, id, name, description, moveSpeed, visitMinScore, requiredFood, requiredItem, visitCount100Food, visitCount200Food, visitCount300Food, visitCount400Food, visitCount500Food, tendencyType, orderWaitTime, waitTime, skill);
+            NormalCustomerData customerData = new NormalCustomerData(sprite, id, name, description, moveSpeed, visitMinScore, requiredFood, requiredItem, visitCount25Food, visitCount50Food, visitCount100Food, visitCount200Food, visitCount300Food, visitCount400Food, visitCount500Food, tendencyType, orderWaitTime, waitTime);
 
             _customerDataDic.Add(id, customerData);
             _customerDataList.Add(customerData);
@@ -475,18 +476,6 @@ public class CustomerDataManager : MonoBehaviour
             _ => throw new System.Exception("잘못된 타입입니다." + type)
         };
     }
-
-
-    private static CustomerSkill GetCustomerSkill(string skillType)
-    {
-        if(_customerSkillDic.TryGetValue(skillType, out CustomerSkill skill))
-        {
-            return skill;
-        }
-        Debug.Log(skillType + " 스킬이 없습니다.");
-        return null;
-    }
-
 
     private void OnDestroy()
     {

@@ -17,7 +17,6 @@ public class NormalCustomer : Customer
 
     private NormalCustomerData _normalCustomerData;
     public NormalCustomerData NormalCustomerData => _normalCustomerData;
-    private CustomerSkill _skill;
 
     private TableData _sitTableData;
 
@@ -71,15 +70,6 @@ public class NormalCustomer : Customer
 
         if (_eatAnimation != null)
             _eatAnimation.SetActive(false);
-
-        if (_skill != null)
-            _skill.Deactivate(this);
-
-        if(_normalCustomerData.Skill != null)
-        {
-            _skill = _normalCustomerData.Skill;
-            _normalCustomerData.Skill.Activate(this);
-        }
 
         if (UnityEngine.Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent, 0, 100))
         {

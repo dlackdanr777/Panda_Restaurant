@@ -351,7 +351,7 @@ public class UIGacha : MobileUIView
                 _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 Utility.ChangeImagePivot(_getItemImage);
-                _getItemSound = _getItemList[_getItemIndex].GachaItemRank == GachaItemRank.Unique || _getItemList[_getItemIndex].GachaItemRank == GachaItemRank.Special ? _getSpecialItemSound : _getNormalItemSound;
+                _getItemSound = _getItemList[_getItemIndex].GachaItemRank == Rank.Unique || _getItemList[_getItemIndex].GachaItemRank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
                 PlayGetItemSound();
                 _gachaItemName.SetText(string.Empty);
                 _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.08f, Ease.Constant).OnComplete(() => _isPlayTextAnime = false);

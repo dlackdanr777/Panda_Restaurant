@@ -8,6 +8,12 @@ public class NormalCustomerData : CustomerData
     [Space]
     [Header("주문 음식")]
 
+    [SerializeField] private string _visitCount25Food;
+    public string VisitCount25Food => _visitCount25Food;
+
+    [SerializeField] private string _visitCount50Food;
+    public string VisitCount50Food => _visitCount50Food;
+
     [SerializeField] private string _visitCount100Food;
     public string VisitCount100Food => _visitCount100Food;
 
@@ -36,13 +42,14 @@ public class NormalCustomerData : CustomerData
     [SerializeField] private int _wiatTime;
     public int WaitTime => _wiatTime;
 
-    [Space]
-    [SerializeField] private CustomerSkill _skill;
-    public CustomerSkill Skill => _skill;
+    private Dictionary<int, string> _visitCountFoodDic = new Dictionary<int, string>();
 
 
-    public NormalCustomerData(Sprite sprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, string visitCount100Food, string visitCount200Food, string visitCount300Food, string visitCount400Food, string visitCount500Food, CustomerTendencyType tendencyType, int orderFoodTime, int waitTime, CustomerSkill skill) : base(sprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
+
+    public NormalCustomerData(Sprite sprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, string visitCount25Food, string visitCount50Food, string visitCount100Food, string visitCount200Food, string visitCount300Food, string visitCount400Food, string visitCount500Food, CustomerTendencyType tendencyType, int orderFoodTime, int waitTime) : base(sprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
     {
+        _visitCount25Food = visitCount25Food;
+        _visitCount50Food = visitCount50Food;
         _visitCount100Food = visitCount100Food;
         _visitCount200Food = visitCount200Food;
         _visitCount300Food = visitCount300Food;
@@ -52,7 +59,19 @@ public class NormalCustomerData : CustomerData
         _tendencyType = tendencyType;
         _orderFoodTime = orderFoodTime;
         _wiatTime = waitTime;
-        _skill = skill;
+
+        _visitCountFoodDic.Add(25, visitCount25Food);
+        _visitCountFoodDic.Add(50, visitCount50Food);
+        _visitCountFoodDic.Add(100, visitCount100Food);
+        _visitCountFoodDic.Add(200, visitCount200Food);
+        _visitCountFoodDic.Add(300, visitCount300Food);
+        _visitCountFoodDic.Add(400, visitCount400Food);
+        _visitCountFoodDic.Add(500, visitCount500Food);
+    }
+    
+    public Dictionary<int, string> GetVisitCountFoodDic()
+    {
+        return _visitCountFoodDic;
     }
 
 
@@ -62,7 +81,7 @@ public class NormalCustomerData : CustomerData
         var giveFoodList = new List<FoodData>();
         var noGiveFoodList = new List<FoodData>();
         int visitCount = UserInfo.GetVisitedCustomerCount(_id);
-        
+
         void AddFood(string dish)
         {
             if (string.IsNullOrWhiteSpace(dish)) return;
@@ -76,12 +95,15 @@ public class NormalCustomerData : CustomerData
                 noGiveFoodList.Add(foodData);
         }
 
-        AddFood(_requiredDish);  
-        if (visitCount >= 100) AddFood(_visitCount100Food);
-        if (visitCount >= 200) AddFood(_visitCount200Food);
-        if (visitCount >= 300) AddFood(_visitCount300Food);
-        if (visitCount >= 400) AddFood(_visitCount400Food);
-        if (visitCount >= 500) AddFood(_visitCount500Food);
+        AddFood(_requiredDish);
+
+        foreach (var food in _visitCountFoodDic)
+        {
+            if(food.Key <= visitCount)
+            {
+                AddFood(food.Value);
+            }
+        }
 
         // 90% 확률로 '가지고 있는 음식 리스트' (giveFoodList) 선택,
         // 단, noGiveFoodList가 존재할 때만 10% 확률로 선택.
@@ -116,13 +138,15 @@ public class NormalCustomerData : CustomerData
 
         // 기본 음식과 _orderFoods 배열의 음식 추가
         AddFoodIfValid(_requiredDish);
-    
-        // 방문 횟수에 따른 추가 음식 목록 추가
-        if (visitCount >= 100) AddFoodIfValid(_visitCount100Food);
-        if (visitCount >= 200) AddFoodIfValid(_visitCount200Food);
-        if (visitCount >= 300) AddFoodIfValid(_visitCount300Food);
-        if (visitCount >= 400) AddFoodIfValid(_visitCount400Food);
-        if (visitCount >= 500) AddFoodIfValid(_visitCount500Food);
+
+
+        foreach (var food in _visitCountFoodDic)
+        {
+            if(food.Key <= visitCount)
+            {
+                AddFoodIfValid(food.Value);
+            }
+        }
 
         if (orderFoodList.Count == 0)
         {

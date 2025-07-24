@@ -41,7 +41,7 @@ public class KitchenUtensilData : ShopData
         _salesLocationType = SalesLocationType.Shop;
 
         _sprite = sprite;
-        _thumbnailSPrite = thumbnailSprite;
+        _thumbnailSprite = thumbnailSprite;
         _name = name;
         _id = id;
         _setId = setId;
