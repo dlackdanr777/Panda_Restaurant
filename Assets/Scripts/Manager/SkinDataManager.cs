@@ -38,6 +38,17 @@ public class SkinDataManager : MonoBehaviour
     };
 
 
+    public List<CustomerSkinData> GetCustomerSkinDataList(string id)
+    {
+        if (!_customerSkinDataByLocationDic.TryGetValue(id, out List<CustomerSkinData> skinDataList))
+        {
+            throw new Exception($"고객 스킨 데이터를 찾을 수 없습니다: {id}");
+        }
+
+        return skinDataList;
+    }
+
+
     private void Awake()
     {
         if (_instance != null)
@@ -120,13 +131,13 @@ public class SkinDataManager : MonoBehaviour
             _customerSkinDataList.Add(skinData);
             _customerSkinDataDic.Add(id, skinData);
             
-            if(_customerSkinDataByLocationDic.TryGetValue(salesLocationType.ToString(), out List<CustomerSkinData> skinList))
+            if(_customerSkinDataByLocationDic.TryGetValue(equipTargetId, out List<CustomerSkinData> skinList))
             {
                 skinList.Add(skinData);
             }
             else
             {
-                _customerSkinDataByLocationDic[salesLocationType.ToString()] = new List<CustomerSkinData> { skinData };
+                _customerSkinDataByLocationDic[equipTargetId] = new List<CustomerSkinData> { skinData };
             }
         }
     }

@@ -382,6 +382,7 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 60;
+        Screen.sleepTimeout = SleepTimeout.NeverSleep;
         UserInfo.DataBindTip(UserInfo.CurrentStage);
         UserInfo.DataBindMoney();
 

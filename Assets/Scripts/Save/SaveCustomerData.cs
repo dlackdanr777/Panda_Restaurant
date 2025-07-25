@@ -18,4 +18,9 @@ public class SaveCustomerData
     {
         _visitCount += 1;
     }
+
+        public void AddVisitCount(int count)
+    {
+        _visitCount += count;
+    }
 }

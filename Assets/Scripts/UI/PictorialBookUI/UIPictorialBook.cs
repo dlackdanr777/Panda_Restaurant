@@ -71,7 +71,7 @@ public class UIPictorialBook : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.anchoredPosition = _hideTargetPos.anchoredPosition;
         OnGachaItemButtonClicked();
-
+        _uiCustomer.HideSkinView();
         TweenData tween = _animeUI.TweenAnchoredPosition(_showTargetPos.anchoredPosition, _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
@@ -117,6 +117,7 @@ public class UIPictorialBook : MobileUIView
         _customerButtonTr.anchoredPosition = _customerButtonClickPos.anchoredPosition;
         _gachaItemButtonTr.anchoredPosition = _tmpGachaItemButtonPos;
 
+        _uiCustomer.HideSkinView();
         _uiCustomer.gameObject.SetActive(true);
         _uiGachaItem.gameObject.SetActive(false);
 

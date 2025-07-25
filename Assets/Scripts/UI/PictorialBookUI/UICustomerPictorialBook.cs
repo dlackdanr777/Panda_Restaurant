@@ -6,7 +6,10 @@ public class UICustomerPictorialBook : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private UICustomerView _view;
+    [SerializeField] private RectTransform _customerScrollView;
+    [SerializeField] private UIPictorialBookCustomerSkin _skinView;
     [SerializeField] private GameObject _alarm;
+
 
     [Space]
     [Header("Slot Options")]
@@ -14,12 +17,14 @@ public class UICustomerPictorialBook : MonoBehaviour
     [SerializeField] private UICustomerSlot _slotPrefab;
 
 
+
     private List<CustomerData> _customerList;
     private List<UICustomerSlot> _slotList = new List<UICustomerSlot>();
 
     public void Init()
     {
-        _view.Init();
+        _view.Init(this);
+        _skinView.Init(this);
         _customerList = CustomerDataManager.Instance.GetSortCustomerList();
         
         for(int i = 0, cnt = _customerList.Count; i < cnt; ++i) 
@@ -81,6 +86,19 @@ public class UICustomerPictorialBook : MonoBehaviour
             slot.SetButtonEvent(OnSlotClicked);
             slot.SetData(_customerList[i]);
         }
+    }
+
+
+    public void ShowSkinView(NormalCustomerData customerData)
+    {
+        _customerScrollView.gameObject.SetActive(false);
+        _skinView.Show(customerData);
+    }
+
+    public void HideSkinView()
+    {
+        _customerScrollView.gameObject.SetActive(true);
+        _skinView.Hide();
     }
 
     private void OnSlotClicked(CustomerData data)

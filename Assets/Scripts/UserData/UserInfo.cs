@@ -1940,6 +1940,21 @@ public static class UserInfo
         OnVisitedCustomerHandler?.Invoke();
     }
 
+    public static void CustomerVisits(CustomerData customer, int visitCount)
+    {
+        if (visitCount <= 0)
+        {
+            DebugLog.LogError("방문 횟수는 0보다 커야 합니다: " + visitCount);
+            return;
+        }
+
+        if (!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData data))
+            return;
+
+        _enabledCustomerDic[customer.Id].AddVisitCount(visitCount);
+        OnVisitedCustomerHandler?.Invoke();
+    }
+
     public static int GetVisitedCustomerCount(string id)
     {
         if (_enabledCustomerDic.TryGetValue(id, out SaveCustomerData data))
