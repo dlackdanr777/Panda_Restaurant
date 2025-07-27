@@ -198,7 +198,6 @@ public class UIStaff : MobileUIView
             slot.transform.SetSiblingIndex(displayIndex);
 
             bool isGiven = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data);
-            
             if (isGiven)
             {
                 ProcessEquippedSlot(data, slot);
@@ -267,7 +266,7 @@ public class UIStaff : MobileUIView
     private void ProcessEquippedSlot(StaffData data, UIRestaurantAdminStaffSlot slot)
     {
         ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
-
+        Sprite thumbnailSprite = data.ThumbnailSprite == null ?  data.Sprite : data.ThumbnailSprite;
         // 장착 상태 처리
         if (UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
         {
@@ -285,19 +284,20 @@ public class UIStaff : MobileUIView
 
         if (floorType <= ERestaurantFloorType.Floor3)
         {
-            slot.SetUse(data.ThumbnailSprite, data.Name, statusText, floorType);
+            slot.SetUse(thumbnailSprite, data.Name, statusText, floorType);
         }
         else
         {
-            slot.SetOperate(data.ThumbnailSprite, data.Name, statusText);
+            slot.SetOperate(thumbnailSprite, data.Name, statusText);
         }
     }
 
     private void ProcessUnequippedSlot(StaffData data, UIRestaurantAdminStaffSlot slot)
     {
+        Sprite thumbnailSprite = data.ThumbnailSprite == null ?  data.Sprite : data.ThumbnailSprite;
         if (!UserInfo.IsScoreValid(data))
         {
-            slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
+            slot.SetLowReputation(thumbnailSprite, data.Name, data.BuyScore.ToString());
             return;
         }
 
@@ -306,20 +306,20 @@ public class UIStaff : MobileUIView
         if (data.MoneyType == MoneyType.Gold)
         {
             if (UserInfo.IsMoneyValid(data))
-                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, priceText, data.MoneyType);
+                slot.SetEnoughPrice(thumbnailSprite, data.Name, priceText, data.MoneyType);
             else
-                slot.SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, priceText);
+                slot.SetNotEnoughMoneyPrice(thumbnailSprite, data.Name, priceText);
         }
         else if (data.MoneyType == MoneyType.Dia)
         {
             if (UserInfo.IsDiaValid(data))
-                slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, priceText, data.MoneyType);
+                slot.SetEnoughPrice(thumbnailSprite, data.Name, priceText, data.MoneyType);
             else
-                slot.SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, priceText);
+                slot.SetNotEnoughDiaPrice(thumbnailSprite, data.Name, priceText);
         }
         else
         {
-            slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, priceText, data.MoneyType);
+            slot.SetEnoughPrice(thumbnailSprite, data.Name, priceText, data.MoneyType);
         }
     }
 

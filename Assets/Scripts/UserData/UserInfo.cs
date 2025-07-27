@@ -49,6 +49,8 @@ public static class UserInfo
     public static event Action OnVisitedCustomerHandler;
     public static event Action OnVisitSpecialCustomerHandler;
     public static event Action OnExterminationGatecrasherCustomerHandler;
+    public static event Action OnGiveCustomerSkinHandler;
+    public static event Action OnChangeCustomerSkinHandler;
 
     public static event Action<string> OnAddNotificationHandler;
     public static event Action<string> OnRemoveNotificationHandler;
@@ -147,14 +149,15 @@ public static class UserInfo
     private static Dictionary<string, int> _giveGachaItemCountDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _giveGachaItemLevelDic = new Dictionary<string, int>();
 
+    private static Dictionary<string, SaveCustomerData> _enabledCustomerDic = new Dictionary<string, SaveCustomerData>();
+    private static HashSet<string> _giveCustomerSkinSet = new HashSet<string>();
+
     private static HashSet<string> _doneMainChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearMainChallengeSet = new HashSet<string>();
     private static HashSet<string> _doneAllTimeChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearAllTimeChallengeSet = new HashSet<string>();
     private static HashSet<string> _doneDailyChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearDailyChallengeSet = new HashSet<string>();
-
-    private static Dictionary<string, SaveCustomerData> _enabledCustomerDic = new Dictionary<string, SaveCustomerData>();
 
     private static HashSet<string> _notificationMessageSet = new HashSet<string>(); //알림이 필요한 Id값을 모아두는 해쉬셋
 
@@ -355,6 +358,7 @@ public static class UserInfo
 
         List<SaveCustomerData> _saveCustomerDataList = _enabledCustomerDic.Values.ToList();
         param.Add("EnabledCustomerDataList", _saveCustomerDataList);
+        param.Add("GiveCustomerSkinList", _giveCustomerSkinSet.ToList());
 
         param.Add("DoneMainChallengeList", _doneMainChallengeSet.ToList());
         param.Add("ClearMainChallengeList", _clearMainChallengeSet.ToList());
@@ -540,6 +544,7 @@ public static class UserInfo
         _clearDailyChallengeSet = loadData.ClearDailyChallengeSet;
 
         _enabledCustomerDic = loadData.EnabledCustomerDataDic;
+        _giveCustomerSkinSet = loadData.GiveCustomerSkinSet;
 
         _notificationMessageSet = loadData.NotificationMessageSet;
         if (CheckNoAttendance())
@@ -765,6 +770,15 @@ public static class UserInfo
     {
         _totalCumulativeCustomerCount += 1;
         _dailyCumulativeCustomerCount += 1;
+        OnAddCustomerCountHandler?.Invoke();
+    }
+
+     public static void AddCustomerCount(int count)
+    {
+        if (count <= 0) return;
+
+        _totalCumulativeCustomerCount += count;
+        _dailyCumulativeCustomerCount += count;
         OnAddCustomerCountHandler?.Invoke();
     }
 
@@ -1908,7 +1922,7 @@ public static class UserInfo
         if (_enabledCustomerDic.ContainsKey(data.Id))
             return;
 
-        _enabledCustomerDic.Add(data.Id, new SaveCustomerData(data.Id, 0));
+        _enabledCustomerDic.Add(data.Id, new SaveCustomerData(data.Id, string.Empty, 0));
         OnEnabledCustomerHandler?.Invoke();
     }
 
@@ -1928,6 +1942,134 @@ public static class UserInfo
         }
 
         return GetCustomerEnableState(data);
+    }
+
+
+    public static void GiveCustomerSkin(CustomerSkinData data)
+    {
+        if (data == null)
+        {
+            DebugLog.LogError("고객 스킨 데이터가 null입니다.");
+            return;
+        }
+
+        if (_giveCustomerSkinSet.Contains(data.Id))
+        {
+            DebugLog.Log("이미 가지고 있습니다: " + data.Id);
+            return;
+        }
+
+        _giveCustomerSkinSet.Add(data.Id);
+        OnGiveCustomerSkinHandler?.Invoke();
+    }
+
+    public static void GiveCustomerSkin(string skinId)
+    {
+        CustomerSkinData skinData = SkinDataManager.Instance.GetCustomerSkinData(skinId);
+        if (skinData == null)
+        {
+            DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
+            return;
+        }
+
+        GiveCustomerSkin(skinData);
+    }
+    
+    public static void SetCustomerSkin(CustomerData customer, CustomerSkinData skinData)
+    {
+        if (customer == null)
+        {
+            DebugLog.LogError("고객 데이터가 null입니다.");
+            return;
+        }
+
+
+        // if (!_giveCustomerSkinSet.Contains(skinData.Id))
+        // {
+        //     DebugLog.LogError("해당 스킨을 가지고 있지 않습니다: " + skinData.Id);
+        //     return;
+        // }
+
+        if(!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData saveData))
+        {
+            DebugLog.LogError("해당 고객이 활성화되지 않았습니다: " + customer.Id);
+            return;
+        }
+
+        saveData.SetSkinId(skinData == null ? string.Empty : skinData.Id);
+        OnChangeCustomerSkinHandler?.Invoke();
+    }
+
+
+    public static void SetCustomerSkin(CustomerData customer, string skinId)
+    {
+        if (customer == null)
+        {
+            DebugLog.LogError("고객 데이터가 null입니다.");
+            return;
+        }
+
+        CustomerSkinData skinData = SkinDataManager.Instance.GetCustomerSkinData(skinId);
+        if (skinData == null)
+        {
+            DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
+            return;
+        }
+        SetCustomerSkin(customer, skinData);
+    }
+
+    public static CustomerSkinData GetEquipCustomerSkin(CustomerData customer)
+    {
+        if (customer == null)
+        {
+            DebugLog.LogError("고객 데이터가 null입니다.");
+            return null;
+        }
+
+        if (!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData saveData))
+        {
+            DebugLog.LogError("해당 고객이 활성화되지 않았습니다: " + customer.Id);
+            return null;
+        }
+
+        string skinId = saveData.SkinId;
+        if (string.IsNullOrEmpty(skinId))
+        {
+            DebugLog.Log("고객 스킨이 설정되어 있지 않습니다: " + customer.Id);
+            return null;
+        }
+
+        CustomerSkinData skinData = SkinDataManager.Instance.GetCustomerSkinData(skinId);
+        if (skinData == null)
+        {
+            DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
+            return null;
+        }
+
+        return skinData;
+    }
+
+    public static CustomerSkinData GetEquipCustomerSkin(string customerId)
+    {
+        if (string.IsNullOrWhiteSpace(customerId))
+        {
+            DebugLog.LogError("고객 ID가 비어있습니다.");
+            return null;
+        }
+
+        CustomerData customer = CustomerDataManager.Instance.GetCustomerData(customerId);
+        if (customer == null)
+        {
+            DebugLog.LogError("해당 Id값에 일치하는 손님 정보가 없습니다: " + customerId);
+            return null;
+        }
+
+        return GetEquipCustomerSkin(customer);
+    }
+
+    public static bool IsGiveCustomerSkin(string skinId)
+    {
+        return _giveCustomerSkinSet.Contains(skinId);
     }
 
 

@@ -26,8 +26,8 @@ public class UICustomerPictorialBook : MonoBehaviour
         _view.Init(this);
         _skinView.Init(this);
         _customerList = CustomerDataManager.Instance.GetSortCustomerList();
-        
-        for(int i = 0, cnt = _customerList.Count; i < cnt; ++i) 
+
+        for (int i = 0, cnt = _customerList.Count; i < cnt; ++i)
         {
             UICustomerSlot slot = Instantiate(_slotPrefab, _slotParent);
             slot.Init();
@@ -41,6 +41,7 @@ public class UICustomerPictorialBook : MonoBehaviour
         UserInfo.OnChangeCustomerSortTypeHandler += OnChangeCustomerSortTypeEvent;
         UserInfo.OnAddNotificationHandler += CheckCustomerNotification;
         UserInfo.OnRemoveNotificationHandler += CheckCustomerNotification;
+        UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
     }
     
 

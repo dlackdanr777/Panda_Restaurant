@@ -13,15 +13,17 @@ MonoBehaviour:
   m_Name: STAFF03
   m_EditorClassIdentifier: 
   _sprite: {fileID: 21300000, guid: 31b968ff7ca212545a6b124fe635ac8b, type: 3}
-  _thumbnailSPrite: {fileID: 21300000, guid: 31b968ff7ca212545a6b124fe635ac8b, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 31b968ff7ca212545a6b124fe635ac8b, type: 3}
   _name: "\uD584\uBC84\uAC70 \uC9C0\uC9C0"
   _id: STAFF03
   _description: "\uD584\uBC84\uAC70 \uBAA8\uC790\uC640 \uC720\uCF8C\uD55C \uBCF5\uC7A5\uC73C\uB85C\n\uC6C3\uC74C\uC744
     \uC804\uD558\uB294 \uC9C0\uC9C0\r"
+  _salesLocationType: 0
   _moneyType: 0
   _buyScore: 350
   _buyPrice: 120000
   _skill: {fileID: 11400000, guid: 01a240b70f7efbc4d803ab7f1d4259e1, type: 2}
+  _animatorController: {fileID: 0}
   _speed: 8
   _waiterLevelData:
   - _upgradeMinScore: 525

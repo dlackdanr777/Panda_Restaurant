@@ -48,6 +48,15 @@ public class SkinDataManager : MonoBehaviour
         return skinDataList;
     }
 
+    public CustomerSkinData GetCustomerSkinData(string id)
+    {
+        if (!_customerSkinDataDic.TryGetValue(id, out CustomerSkinData skinData))
+        {
+            throw new Exception($"고객 스킨 데이터를 찾을 수 없습니다: {id}");
+        }
+
+        return skinData;
+    }
 
     private void Awake()
     {

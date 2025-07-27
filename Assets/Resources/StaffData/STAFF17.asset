@@ -13,15 +13,17 @@ MonoBehaviour:
   m_Name: STAFF17
   m_EditorClassIdentifier: 
   _sprite: {fileID: 21300000, guid: eab0f1405852abf4998a424246c087ca, type: 3}
-  _thumbnailSPrite: {fileID: 21300000, guid: eab0f1405852abf4998a424246c087ca, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: eab0f1405852abf4998a424246c087ca, type: 3}
   _name: "\uD799\uC2A4\uD130 \uB3C4\uCE58"
   _id: STAFF17
   _description: "\uC790\uC874\uC2EC\uC774 \uAC15\uD55C \uD799\uC2A4\uD130\n\uC624\uB298\uB3C4
     \uB808\uC2DC\uD53C \uC5F0\uAD6C\uC5D0 \uC74C\uC545\uC740 \uD544\uC218!\r"
+  _salesLocationType: 0
   _moneyType: 0
   _buyScore: 100
   _buyPrice: 40000
   _skill: {fileID: 11400000, guid: c1305190b57c1d54482ece9b2e58be3d, type: 2}
+  _animatorController: {fileID: 0}
   _speed: 6
   _backSprite: {fileID: 21300000, guid: c26643aa2dd5de846a3f168f21d4b68c, type: 3}
   _handSprite: {fileID: 21300000, guid: 4ebefb056d6d2b1408761a5b5ae02f79, type: 3}

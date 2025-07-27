@@ -53,6 +53,7 @@ public class LoadUserData
     public HashSet<string> ClearDailyChallengeSet = new HashSet<string>();
 
     public Dictionary<string, SaveCustomerData> EnabledCustomerDataDic = new Dictionary<string, SaveCustomerData>();
+    public HashSet<string> GiveCustomerSkinSet = new HashSet<string>();
 
     public HashSet<string> NotificationMessageSet = new HashSet<string>();
 
@@ -112,6 +113,8 @@ public class LoadUserData
             LoadDictionaryData(data, "TimeDataList", TimeDataDic, "Id", "Time");
 
             LoadCustomerDataList(data);
+            LoadStringSet(data, "GiveCustomerSkinList", GiveCustomerSkinSet);
+
             LoadTimeData(data);
             foreach (var item in TimeDataDic)
             {
@@ -191,9 +194,10 @@ public class LoadUserData
                     if (item.ContainsKey("Id") && item.ContainsKey("VisitCount"))
                     {
                         string id = item["Id"].ToString();
+                        string skinId = item.ContainsKey("SkinId") ? item["SkinId"].ToString() : string.Empty;
                         int visitCount;
                         if (int.TryParse(item["VisitCount"].ToString(), out visitCount))
-                            EnabledCustomerDataDic.Add(id, new SaveCustomerData(id, visitCount));
+                            EnabledCustomerDataDic.Add(id, new SaveCustomerData(id, skinId, visitCount));
                     }
                 }
                 catch (Exception) { /* 오류 항목 스킵 */ }

@@ -82,6 +82,7 @@ public class UICustomerView : MonoBehaviour
         _testButton.onClick.AddListener(AddVisitCount);
 
         UserInfo.OnVisitedCustomerHandler += OnAddVisitEvent;
+        UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
     }
 
     public void UpdateUI()
@@ -115,7 +116,25 @@ public class UICustomerView : MonoBehaviour
         _npcImage.gameObject.SetActive(true);
         _effectTitle.gameObject.SetActive(true);
         _tendencyTypeText.gameObject.SetActive(false);
-        _npcImage.sprite = data.Sprite;
+
+        CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(data.Id);
+        Sprite customerSprite = null;
+        string nameText = string.Empty;
+        string description = string.Empty;
+        if (skinData == null)
+        {
+            customerSprite = data.Sprite;
+            nameText = data.Name;
+            description = data.Description;
+        }
+        else
+        {
+            customerSprite = skinData.Sprite;
+            nameText = skinData.Name;
+            description = skinData.Description;
+        }
+        _npcImage.sprite = customerSprite;
+
 
         if (data is SpecialCustomerData)
         {
@@ -169,7 +188,7 @@ public class UICustomerView : MonoBehaviour
                 SetOrderFood(data);
                 _npcNameText.text = "???";
                 _tendencyTypeText.text = "???";
-                _descriptionText.text = data.Description;
+                _descriptionText.text = description;
             }
 
             else
@@ -179,8 +198,8 @@ public class UICustomerView : MonoBehaviour
                 SetOrderFood(data);
 
                 imageColor = Utility.GetColor(ColorType.Give);
-                _npcNameText.text = data.Name;
-                _descriptionText.text = data.Description;
+                _npcNameText.text = nameText;
+                _descriptionText.text = description;
 
                 if (data is NormalCustomerData)
                 {
@@ -251,11 +270,6 @@ public class UICustomerView : MonoBehaviour
         if (_data is NormalCustomerData normalData)
         {
             _uiCustomerPictorialBook.ShowSkinView(normalData);
-        }
-        else
-        {
-            DebugLog.LogError("스킨 뷰를 열 수 없습니다. 일반 고객 데이터가 아닙니다.");
-            PopupManager.Instance.ShowPopup("오류 발생", "스킨 뷰를 열 수 없습니다. 일반 고객 데이터가 아닙니다.");
         }
     }
 
@@ -489,10 +503,12 @@ public class UICustomerView : MonoBehaviour
         }
 
         UserInfo.CustomerVisits(_data, 10);
+        UserInfo.AddCustomerCount(10);
     }
 
     private void OnDestroy()
     {
         UserInfo.OnVisitedCustomerHandler -= OnAddVisitEvent;
+        UserInfo.OnChangeCustomerSkinHandler -= UpdateUI;
     }
 }

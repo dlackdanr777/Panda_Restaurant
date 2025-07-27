@@ -12,6 +12,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private Image _skinImage;
     [SerializeField] private Button _hideButton;
+    [SerializeField] private Button _equipButton;
 
     [Header("Slot Options")]
     [SerializeField] private RectTransform _skinSrollView;
@@ -22,6 +23,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
     private List<UIPictorialBookCustomerSkinSlot> _slotList = new List<UIPictorialBookCustomerSkinSlot>();
 
     private NormalCustomerData _customerData;
+    private CustomerSkinData _currentSkinData;
 
 
     public void Init(UICustomerPictorialBook customerView)
@@ -41,6 +43,8 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
 
         _hideButton.onClick.AddListener(OnHideButtonClicked);
         Hide();
+
+        UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
     }
 
     public void SetViewData(string name, string description, Sprite skinSprite)
@@ -84,6 +88,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         _skinSrollView.gameObject.SetActive(true);
         gameObject.SetActive(true);
         SetSkinList(customerData);
+        UpdateUI();
     }
 
 
@@ -93,32 +98,71 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         gameObject.SetActive(false);
     }
 
+    public void UpdateUI()
+    {
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        SetSkinList(_customerData);
+        OnSlotClicked(_customerData, _currentSkinData);
+    }
+
 
     private void OnSlotClicked(NormalCustomerData customerData, CustomerSkinData skinData)
     {
-        if(customerData == null)
+        if (customerData == null)
         {
+            _customerData = null;
+            _currentSkinData = null;
             Debug.LogError("고객 데이터가 없습니다.");
             return;
         }
 
+        CustomerSkinData equipSkinData = UserInfo.GetEquipCustomerSkin(customerData);
         if (skinData == null)
         {
+            _currentSkinData = null;
             _skinImage.sprite = customerData.Sprite;
             _nameText.text = customerData.Name;
             _descriptionText.text = customerData.Description;
+
+            _equipButton.gameObject.SetActive(equipSkinData != null);
             return;
         }
 
+        _customerData = customerData;
+        _currentSkinData = skinData;
         _skinImage.sprite = skinData.Sprite;
         _nameText.text = skinData.Name;
         _descriptionText.text = skinData.Description;
+
+        if( equipSkinData != null && equipSkinData.Id == skinData.Id)
+        {
+            _equipButton.gameObject.SetActive(false);
+        }
+        else
+        {
+            _equipButton.gameObject.SetActive(true);
+            _equipButton.onClick.RemoveAllListeners();
+            _equipButton.onClick.AddListener(OnChangeCustomerSkin);
+        }
     }
 
 
     private void OnHideButtonClicked()
     {
         _customerView.HideSkinView();
+    }
+
+    public void OnChangeCustomerSkin()
+    {
+        if (_customerData == null)
+        {
+            Debug.LogError("고객 데이터 또는 스킨 데이터가 없습니다.");
+            return;
+        }
+
+        UserInfo.SetCustomerSkin(_customerData, _currentSkinData);
     }
 
 

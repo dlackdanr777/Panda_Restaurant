@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 
 public class NormalCustomer : Customer
@@ -37,13 +38,15 @@ public class NormalCustomer : Customer
     private float _tmpFoodPosX;
     private float _tmpEatAnimePosX;
 
-    public override void Init() 
+    public override void Init()
     {
         _tmpFoodPosX = _foodRenderer.transform.localPosition.x;
         _tmpEatAnimePosX = _eatAnimation.transform.localPosition.x;
         _anger.Init();
         _happy.Init();
         HideFood();
+
+        UserInfo.OnChangeCustomerSkinHandler += OnChangeSkin;
     }
 
 
@@ -57,6 +60,8 @@ public class NormalCustomer : Customer
         _normalCustomerData = (NormalCustomerData)data;
         base.SetData(data, customerController, tableManager);
 
+        CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(data.Id);
+        _spriteRenderer.sprite = skinData == null ? data.Sprite : skinData.Sprite;
 
         StopCoroutines();
         HideFood();
@@ -211,7 +216,7 @@ public class NormalCustomer : Customer
     {
         StopCoroutines();
     }
-    
+
 
     // 테이블에 앉고 음식 주문 시 호출
     public void StartWaitingForFood()
@@ -219,45 +224,45 @@ public class NormalCustomer : Customer
         _orderFoodCoroutine = StartCoroutine(WaitingForFoodCoroutine());
     }
 
-    
+
     // 음식 서빙 시 호출
     public void StopWaitingForFood()
     {
         StopCoroutines();
     }
-    
+
 
     private IEnumerator WaitingInLineCoroutine()
     {
         float elapsedTime = 0f;
         float maxWaitTime = _normalCustomerData.WaitTime;
-        
+
         while (elapsedTime < maxWaitTime)
         {
             elapsedTime += 0.02f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        
+
         StartAnger();
         LeaveRestaurant();
     }
-    
+
 
     private IEnumerator WaitingForFoodCoroutine()
     {
         float elapsedTime = 0f;
         float maxWaitTime = _normalCustomerData.OrderFoodTime;
-        
+
         while (elapsedTime < maxWaitTime)
         {
             elapsedTime += 0.02f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        
+
         StartAnger();
         LeaveTableAndRestaurant();
     }
-    
+
     // 화가 나서 떠날 때 호출 (대기열에서)
     private void LeaveRestaurant()
     {
@@ -268,7 +273,7 @@ public class NormalCustomer : Customer
             ObjectPoolManager.Instance.DespawnNormalCustomer(this);
         });
     }
-    
+
     // 테이블에서 화가 나서 떠날 때
     private void LeaveTableAndRestaurant()
     {
@@ -317,7 +322,7 @@ public class NormalCustomer : Customer
             StopCoroutine(_waitingCoroutine);
             _waitingCoroutine = null;
         }
-        
+
         if (_orderFoodCoroutine != null)
         {
             StopCoroutine(_orderFoodCoroutine);
@@ -325,8 +330,22 @@ public class NormalCustomer : Customer
         }
     }
 
+    private void OnChangeSkin()
+    {
+        if (_customerData == null || !gameObject.activeInHierarchy)
+            return;
+
+        CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(_customerData.Id);
+        _spriteRenderer.sprite = skinData == null ? _customerData.Sprite : skinData.Sprite;
+    }
+
     private void OnDisable()
     {
         StopCoroutines();
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeCustomerSkinHandler -= OnChangeSkin;
     }
 }
