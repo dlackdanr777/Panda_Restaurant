@@ -3,7 +3,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.AI;
 
 
 public class NormalCustomer : Customer
@@ -46,7 +45,7 @@ public class NormalCustomer : Customer
         _happy.Init();
         HideFood();
 
-        UserInfo.OnChangeCustomerSkinHandler += OnChangeSkin;
+        //UserInfo.OnChangeCustomerSkinHandler += OnChangeSkin;
     }
 
 
@@ -330,22 +329,24 @@ public class NormalCustomer : Customer
         }
     }
 
-    private void OnChangeSkin()
-    {
-        if (_customerData == null || !gameObject.activeInHierarchy)
-            return;
 
-        CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(_customerData.Id);
-        _spriteRenderer.sprite = skinData == null ? _customerData.Sprite : skinData.Sprite;
-    }
+    //배치중인 손님들도 스킨을 바꾸는 함수
+    // private void OnChangeSkin()
+    // {
+    //     if (_customerData == null || !gameObject.activeInHierarchy)
+    //         return;
+
+    //     CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(_customerData.Id);
+    //     _spriteRenderer.sprite = skinData == null ? _customerData.Sprite : skinData.Sprite;
+    // }
 
     private void OnDisable()
     {
         StopCoroutines();
     }
 
-    private void OnDestroy()
-    {
-        UserInfo.OnChangeCustomerSkinHandler -= OnChangeSkin;
-    }
+    // private void OnDestroy()
+    // {
+    //     UserInfo.OnChangeCustomerSkinHandler -= OnChangeSkin;
+    // }
 }

@@ -42,6 +42,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         }
 
         _hideButton.onClick.AddListener(OnHideButtonClicked);
+        _equipButton.onClick.AddListener(OnChangeCustomerSkin);
         Hide();
 
         UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
@@ -87,6 +88,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
     {
         _skinSrollView.gameObject.SetActive(true);
         gameObject.SetActive(true);
+        _currentSkinData = UserInfo.GetEquipCustomerSkin(customerData);
         SetSkinList(customerData);
         UpdateUI();
     }
@@ -143,8 +145,6 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         else
         {
             _equipButton.gameObject.SetActive(true);
-            _equipButton.onClick.RemoveAllListeners();
-            _equipButton.onClick.AddListener(OnChangeCustomerSkin);
         }
     }
 
