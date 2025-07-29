@@ -221,11 +221,6 @@ public class FurnitureGroup : MonoBehaviour
             _furniture[i].Init(tableManager, _floorType);
         }
 
-        for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
-        {
-            OnChangeFurnitureEvent(_floorType, (FurnitureType)i);
-        }
-
         GameObject obj = new GameObject(_floorType.ToString() + " Table");
         obj.transform.parent = buttonParent.transform;
 

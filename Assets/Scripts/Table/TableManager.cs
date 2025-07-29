@@ -375,7 +375,8 @@ public class TableManager : MonoBehaviour
         exitCustomer.HideFood();
         exitCustomer.FixSpritePosition(true);
         exitCustomer.StartHappy();
-        UserInfo.AddSatisfaction(UserInfo.CurrentStage, data.Satisfaction);
+        UserInfo.AddSatisfaction(UserInfo.CurrentStage, data.Satisfaction * exitCustomer.AddSatisfactionMul);
+        _feverSystem.AddFeverGauge(exitCustomer.AddFeverGaugeMul);
         data.CurrentCustomer = null;
         data.TotalTip = 0;
         data.TotalPrice = 0;

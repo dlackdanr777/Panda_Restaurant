@@ -14,9 +14,9 @@ public class FeverSystem : MonoBehaviour
     private bool _isFeverStart = false;
     public bool IsFeverStart => _isFeverStart;
 
-    private int _feverGauge = 0;
-    public int FeverGauge => _feverGauge;
-    public void SetFeverGauge(int value) => _feverGauge = value;
+    private float _feverGauge = 0;
+    public float FeverGauge => _feverGauge;
+    public void SetFeverGauge(float value) => _feverGauge = value;
 
     private int _currentMaxFeverGauge = 500;
     public int CurrentMaxFeverGauge => _currentMaxFeverGauge;
@@ -24,12 +24,12 @@ public class FeverSystem : MonoBehaviour
 
     private Coroutine _feverRoutine = null;
 
-    public void AddFeverGauge()
+    public void AddFeverGauge(float addMul = 1)
     {
         if (_isFeverStart || UserInfo.IsTutorialStart)
             return;
 
-        _feverGauge = Mathf.Clamp(_feverGauge + ConstValue.ADD_PEVER_GAUGE, 0, _currentMaxFeverGauge);
+        _feverGauge = Mathf.Clamp(_feverGauge + ConstValue.ADD_PEVER_GAUGE * addMul, 0, _currentMaxFeverGauge);
         DebugLog.Log($"Fever Gauge : {_feverGauge} / {_currentMaxFeverGauge}");
         _uiFever.OnChangeGauge();
     }
@@ -57,7 +57,6 @@ public class FeverSystem : MonoBehaviour
         _uiFever.Init(this);
         _feverGauge = 0;
         _isFeverStart = false;
-        UserInfo.OnAddCustomerCountHandler += AddFeverGauge;
         UserInfo.OnChangeFurnitureHandler += OnEquipFurnitureEvent;
     }
 
@@ -74,7 +73,6 @@ public class FeverSystem : MonoBehaviour
 
     private void OnDestroy()
     {
-        UserInfo.OnAddCustomerCountHandler -= AddFeverGauge;
         UserInfo.OnChangeFurnitureHandler -= OnEquipFurnitureEvent;
     }
 

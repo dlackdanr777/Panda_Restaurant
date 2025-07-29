@@ -34,6 +34,12 @@ public class NormalCustomer : Customer
     private float _doublePricePercent;
     public float DoublePricePercent => _doublePricePercent;
 
+    private float _addFeverGaugeMul = 1;
+    public float AddFeverGaugeMul => _addFeverGaugeMul;
+
+    private float _addSatisfactionMul = 1;
+    public float AddSatisfactionMul => _addSatisfactionMul;
+
     private float _tmpFoodPosX;
     private float _tmpEatAnimePosX;
 
@@ -61,13 +67,14 @@ public class NormalCustomer : Customer
 
         CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(data.Id);
         _spriteRenderer.sprite = skinData == null ? data.Sprite : skinData.Sprite;
-
         StopCoroutines();
         HideFood();
 
         _doublePricePercent = 0;
         _currentFoodPriceMul = 1;
         _orderCount = 1;
+        _addFeverGaugeMul = 1;
+        _addSatisfactionMul = 1;
         _anger.SetCustomer(this);
         _happy.SetCustomer(this);
         ChangeState(CustomerState.Idle);
@@ -75,10 +82,12 @@ public class NormalCustomer : Customer
         if (_eatAnimation != null)
             _eatAnimation.SetActive(false);
 
-        if (UnityEngine.Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent, 0, 100))
-        {
-            _currentFoodPriceMul = _currentFoodPriceMul * _foodPriceMul;
-        }
+        // if (UnityEngine.Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent, 0, 100))
+        // {
+        //     _currentFoodPriceMul = _currentFoodPriceMul * _foodPriceMul;
+        // }
+
+        ApplySkinEffect(skinData);
     }
 
     public void SetSitTableData(TableData tableData)
@@ -326,6 +335,33 @@ public class NormalCustomer : Customer
         {
             StopCoroutine(_orderFoodCoroutine);
             _orderFoodCoroutine = null;
+        }
+    }
+
+
+    private void ApplySkinEffect(CustomerSkinData skinData)
+    {
+        if (skinData == null)
+            return;
+
+        switch (skinData.UpgradeType)
+        {
+            case SkinCustomerUpgradeType.Type1:
+                _moveSpeed *= 1 + skinData.UpgradeValue / 100f;
+                break;
+            case SkinCustomerUpgradeType.Type2:
+                _currentFoodPriceMul *= 1 + skinData.UpgradeValue / 100f;
+                break;
+            case SkinCustomerUpgradeType.Type3:
+                _orderCount += (int)skinData.UpgradeValue;
+                break;
+            case SkinCustomerUpgradeType.Type4:
+                _addSatisfactionMul *= 1 + skinData.UpgradeValue / 100f;
+                break;
+
+            case SkinCustomerUpgradeType.Type5:
+                _addFeverGaugeMul *=  1 + skinData.UpgradeValue / 100f;
+                break;
         }
     }
 

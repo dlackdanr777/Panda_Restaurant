@@ -10,6 +10,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
     [SerializeField] private UICustomerPictorialBook _customerView;
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
+    [SerializeField] private TextMeshProUGUI _effectText;
     [SerializeField] private Image _skinImage;
     [SerializeField] private Button _hideButton;
     [SerializeField] private Button _equipButton;
@@ -48,10 +49,11 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
     }
 
-    public void SetViewData(string name, string description, Sprite skinSprite)
+    public void SetViewData(string name, string description, string effectText, Sprite skinSprite)
     {
         _nameText.text = name;
         _descriptionText.text = description;
+        _effectText.text = effectText;
         _skinImage.sprite = skinSprite;
     }
 
@@ -63,7 +65,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             Debug.LogError("고객 데이터가 없습니다.");
             return;
         }
-        SetViewData(customerData.Name, customerData.Description, customerData.Sprite);
+        SetViewData(customerData.Name, customerData.Description, Utility.GetCustomerSkinEffectDescription(null), customerData.Sprite);
 
         List<CustomerSkinData> skinList = SkinDataManager.Instance.GetCustomerSkinDataList(customerData.Id);
 
@@ -127,7 +129,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             _skinImage.sprite = customerData.Sprite;
             _nameText.text = customerData.Name;
             _descriptionText.text = customerData.Description;
-
+            _effectText.text = Utility.GetCustomerSkinEffectDescription(null);
             _equipButton.gameObject.SetActive(equipSkinData != null);
             return;
         }
@@ -137,6 +139,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         _skinImage.sprite = skinData.Sprite;
         _nameText.text = skinData.Name;
         _descriptionText.text = skinData.Description;
+        _effectText.text = Utility.GetCustomerSkinEffectDescription(skinData);
 
         if( equipSkinData != null && equipSkinData.Id == skinData.Id)
         {

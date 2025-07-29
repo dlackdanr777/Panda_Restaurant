@@ -24,7 +24,7 @@ public class UIFever : MonoBehaviour
     private Vector3 _tmpButtonScale;
     private FeverSystem _ferverSystem;
 
-    private int _tmpFeverGauge = 0;
+    private float _tmpFeverGauge = 0;
     public void Init(FeverSystem ferverSystem)
     {
         _ferverSystem = ferverSystem;

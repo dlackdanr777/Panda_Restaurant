@@ -459,7 +459,6 @@ public class GameManager : MonoBehaviour
         _addKitchenUtensilScore = 0;
         int addScore = 0;
         List<KitchenUtensilData> kitchenUtensilDataList = UserInfo.GetGiveKitchenUtensilDataList(UserInfo.CurrentStage);
-
         for (int i = 0, cnt = kitchenUtensilDataList.Count; i < cnt; ++i)
         {
             KitchenUtensilData data = kitchenUtensilDataList[i];

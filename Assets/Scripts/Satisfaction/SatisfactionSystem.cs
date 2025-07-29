@@ -114,7 +114,7 @@ public class SatisfactionSystem : MonoBehaviour
 
     private void OnChangeSatisfactionEvent()
     {
-        int satisfaction = UserInfo.GetSatisfaction(UserInfo.CurrentStage);
+        float satisfaction = UserInfo.GetSatisfaction(UserInfo.CurrentStage);
         
         // 모든 쓰레기 영역의 쓰레기 수 합계 계산
         int totalGarbageCount = 0;

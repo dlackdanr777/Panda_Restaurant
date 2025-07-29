@@ -218,6 +218,16 @@ public class ChallengeManager : MonoBehaviour
                 case "TYPE01":
                     challengeType = ChallengeType.TYPE01;
                     string[] needFurnitureIds = needItemId.Split(new char[] { '.' });
+                    for (int j = 0, cntJ = needFurnitureIds.Length; j < cntJ; j++)
+                    {
+                        FurnitureData furnitureData = FurnitureDataManager.Instance.GetFurnitureData(needFurnitureIds[j]);
+                        if (furnitureData == null)
+                        {
+                            Debug.LogError($"Furniture ID not found: {needFurnitureIds[j]}");
+                            continue;
+                        }
+                        needFurnitureIds[j] = needFurnitureIds[j].Trim();
+                    }
                     Type01ChallengeData challengeData01 = new Type01ChallengeData(challenges, challengeType, id, description, needFurnitureIds, moneyType, rewardMoney, shortcutAction);
                     _type01ChallengeDataDic.Add(id, challengeData01);
                     dic.Add(id, challengeData01);
@@ -226,6 +236,16 @@ public class ChallengeManager : MonoBehaviour
                 case "TYPE02":
                     challengeType = ChallengeType.TYPE02;
                     string[] needKitchenUtensilIds = needItemId.Split(new char[] { '.' });
+                    for (int j = 0, cntJ = needKitchenUtensilIds.Length; j < cntJ; j++)
+                    {
+                        KitchenUtensilData kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(needKitchenUtensilIds[j]);
+                        if (kitchenData == null)
+                        {
+                            Debug.LogError($"Kitchen Utensil ID not found: {needKitchenUtensilIds[j]}");
+                            continue;
+                        }
+                        needKitchenUtensilIds[j] = needKitchenUtensilIds[j].Trim();
+                    }
                     Type02ChallengeData challengeData02 = new Type02ChallengeData(challenges, challengeType, id, description, needKitchenUtensilIds, moneyType, rewardMoney, shortcutAction);
                     _type02ChallengeDataDic.Add(id, challengeData02); 
                     dic.Add(id, challengeData02);
@@ -233,12 +253,22 @@ public class ChallengeManager : MonoBehaviour
 
                 case "TYPE03":
                     challengeType = ChallengeType.TYPE03;
+                    if (FoodDataManager.Instance.GetFoodData(needItemId) == null)
+                    {
+                        Debug.LogError($"Recipe ID not found: {needItemId}");
+                        continue;
+                    }
                     Type03ChallengeData challengeData03 = new Type03ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type03ChallengeDataDic.Add(id, challengeData03);
                     dic.Add(id, challengeData03);
                     break;
 
                 case "TYPE04":
+                    if (FoodDataManager.Instance.GetFoodData(needItemId) == null)
+                    {
+                        Debug.LogError($"Recipe ID not found: {needItemId}");
+                        continue;
+                    }
                     challengeType = ChallengeType.TYPE04;
                     Type04ChallengeData challengeData04 = new Type04ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type04ChallengeDataDic.Add(id, challengeData04);
@@ -247,6 +277,11 @@ public class ChallengeManager : MonoBehaviour
 
                 case "TYPE05":
                     challengeType = ChallengeType.TYPE05;
+                    if (StaffDataManager.Instance.GetStaffData(needItemId) == null)
+                    {
+                        Debug.LogError($"Staff ID not found: {needItemId}");
+                        continue;
+                    }
                     Type05ChallengeData challengeData05 = new Type05ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
                     _type05ChallengeDataDic.Add(id, challengeData05);
                     dic.Add(id, challengeData05);
@@ -261,6 +296,11 @@ public class ChallengeManager : MonoBehaviour
 
                 case "TYPE07":
                     challengeType = ChallengeType.TYPE07;
+                    if (FoodDataManager.Instance.GetFoodData(needItemId) == null)
+                    {
+                        Debug.LogError($"Recipe ID not found: {needItemId}");
+                        continue;
+                    }
                     Type07ChallengeData challengeData07 = new Type07ChallengeData(challenges, challengeType, id, description, needItemId, count, moneyType, rewardMoney, shortcutAction);
                     _type07ChallengeDataDic.Add(id, challengeData07);
                     dic.Add(id, challengeData07);
@@ -688,7 +728,6 @@ public class ChallengeManager : MonoBehaviour
 
     public string GetChallengeCountStr(ChallengeData data)
     {
-        float percent = 0;
         int clearCount = 0;
         switch (data.Type)
         {
@@ -1076,6 +1115,7 @@ public class ChallengeManager : MonoBehaviour
         bool mainUpdateEnabled = false;
         foreach (Type01ChallengeData data in _type01ChallengeDataDic.Values)
         {
+            //DebugLog.Log($"Type01ChallengeCheck : {data.Id}");
             if (UserInfo.GetIsDoneChallenge(data.Id))
                 continue;
 
@@ -1085,15 +1125,19 @@ public class ChallengeManager : MonoBehaviour
             bool _isGives = true;
             for (int i = 0, cnt = data.NeedFurnitureIds.Length; i < cnt; i++)
             {
+                //DebugLog.Log($"NeedFurnitureId : {data.NeedFurnitureIds[i]}");
                 if (!UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data.NeedFurnitureIds[i]))
                 {
+                    //DebugLog.Log($"Not Give Furniture : {data.NeedFurnitureIds[i]}");
                     _isGives = false;
                     break;
                 }
+                
             }
 
             if (!_isGives) continue;
 
+            //DebugLog.Log($"Challenge Done : {data.Id}");
             switch (data.Challenges)
             {
                 case Challenges.Daily:

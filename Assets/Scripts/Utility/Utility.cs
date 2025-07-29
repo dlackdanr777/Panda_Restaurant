@@ -302,6 +302,25 @@ public static class Utility
         return 0;
     }
 
+    public static string GetCustomerSkinEffectDescription(CustomerSkinData data)
+    {
+        if (data == null)
+            return "효과 없음";
+
+        SkinCustomerUpgradeType upgradeType = data.UpgradeType;
+        string description = upgradeType switch
+        {
+            SkinCustomerUpgradeType.None => "효과 없음",
+            SkinCustomerUpgradeType.Type1 => $"스킨 적용 시 이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
+            SkinCustomerUpgradeType.Type2 => $"스킨 적용 시 지불 금액 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
+            SkinCustomerUpgradeType.Type3 => $"스킨 적용시 주문 횟수 <color={ColorToHex(GetColor(ColorType.Positive))}>+{(int)data.UpgradeValue}</color> 증가",
+            SkinCustomerUpgradeType.Type4 => $"스킨 적용 시 가게 만족도 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
+            SkinCustomerUpgradeType.Type5 => $"스킨 적용 시 피버 게이지 <color={ColorToHex(GetColor(ColorType.Positive))}>+{(int)data.UpgradeValue}</color> 증가",
+            _ => "알 수 없는 업그레이드 타입"
+        };
+        return description;
+    }
+
 
     public static string GetFurnitureFoodTypeSetEffectDescription(FoodType type)
     {
@@ -596,8 +615,8 @@ public static class Utility
         if(string.IsNullOrWhiteSpace(str))
             return 0;
 
-        DebugLog.Log("StrToInt: " + str);
         str = str.Trim();
+        str = str.Replace("%", "");
         if (int.TryParse(str, out int result))
             return result;
         else
@@ -608,7 +627,9 @@ public static class Utility
     {
         if (string.IsNullOrWhiteSpace(str))
             return 0f;
+            
         str = str.Trim();
+        str = str.Replace("%", "");
         if (float.TryParse(str, out float result))
             return result;
         else

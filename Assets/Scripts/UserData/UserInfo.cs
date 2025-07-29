@@ -691,13 +691,13 @@ public static class UserInfo
         _currentStage = stage;
     }
 
-    public static int GetSatisfaction(EStage stage)
+    public static float GetSatisfaction(EStage stage)
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].Satisfaction;
     }
 
-    public static void AddSatisfaction(EStage stage, int value)
+    public static void AddSatisfaction(EStage stage, float value)
     {
         int stageIndex = (int)stage;
         _stageInfos[stageIndex].AddSatisfaction(value);

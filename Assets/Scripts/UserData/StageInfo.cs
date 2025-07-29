@@ -36,8 +36,8 @@ public class StageInfo
     private int _tip;
     public int Tip => _tip;
 
-    private int _satisfaction;
-    public int Satisfaction => _satisfaction;
+    private float _satisfaction;
+    public float Satisfaction => _satisfaction;
 
 
     private StaffData[,] _equipStaffDatas = new StaffData[(int)ERestaurantFloorType.Length, (int)EquipStaffType.Length];
@@ -87,10 +87,11 @@ public class StageInfo
     }
 
     #region StageData
-    public void AddSatisfaction(int value)
+    public void AddSatisfaction(float value)
     {
         if(value == 0)
             return;
+
         _satisfaction = Mathf.Clamp(_satisfaction + value, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
         OnChangeSatisfactionHandler?.Invoke();
     }
@@ -1041,6 +1042,18 @@ public class StageInfo
         }
 
         _giveFurnitureList = loadData.GiveFurnitureList;
+        _giveFurnitureDataList.Clear();
+        for (int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
+        {
+            FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]);
+            if (data == null)
+            {
+                DebugLog.LogError("존재하지 않는 가구 ID입니다: " + _giveFurnitureList[i]);
+                continue;
+            }
+            _giveFurnitureDataList.Add(data);
+        }
+
         for (int i = 0, cnt = loadData.EquipFurnitureList.Count; i < cnt; ++i)
         {
             for (int j = 0, cntJ = loadData.EquipFurnitureList[i].Count; j < cntJ; ++j)
@@ -1055,6 +1068,19 @@ public class StageInfo
         }
 
         _giveKitchenUtensilList = loadData.GiveKitchenUtensilList;
+        _giveKitchenUtensilDataList.Clear();
+        for (int i = 0, cnt = _giveKitchenUtensilList.Count; i < cnt; ++i)
+        {
+            KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]);
+            if (data == null)
+            {
+                DebugLog.LogError("존재하지 않는 주방 기구 ID입니다: " + _giveKitchenUtensilList[i]);
+                continue;
+            }
+            _giveKitchenUtensilDataList.Add(data);
+        }
+
+
         for (int i = 0, cnt = loadData.EquipKitchenUtensilList.Count; i < cnt; ++i)
         {
             for (int j = 0, cntJ = loadData.EquipKitchenUtensilList[i].Count; j < cntJ; ++j)

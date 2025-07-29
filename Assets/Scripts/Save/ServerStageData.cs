@@ -10,7 +10,7 @@ public class ServerStageData
     public int Score;
     public int Tip;
 
-    public int Satisfaction;
+    public float Satisfaction;
 
     public List<List<string>> EquipStaffDataList = new List<List<string>>();
     public List<SaveStaffData> GiveStaffList = new List<SaveStaffData>();
@@ -61,6 +61,7 @@ public class ServerStageData
         // 안전한 데이터 가져오기 메서드
         bool GetBool(string key) => data.ContainsKey(key) && data[key].ToString().ToLower() == "true";
         int GetInt(string key) => data.ContainsKey(key) && int.TryParse(data[key].ToString(), out int value) ? value : 0;
+        float GetFloat(string key) => data.ContainsKey(key) && float.TryParse(data[key].ToString(), out float value) ? value : 0f;
         long GetLong(string key) => data.ContainsKey(key) && long.TryParse(data[key].ToString(), out long value) ? value : 0;
         string GetString(string key) => data.ContainsKey(key) ? data[key].ToString() : string.Empty;
 
@@ -68,7 +69,7 @@ public class ServerStageData
         UnlockFloor = (ERestaurantFloorType)GetInt("UnlockFloor");
         Score = GetInt("Score");
         Tip = GetInt("Tip");
-        Satisfaction = GetInt("Satisfaction");
+        Satisfaction = GetFloat("Satisfaction");
 
 
         if (data.ContainsKey("GiveStaffList"))
