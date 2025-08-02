@@ -12,8 +12,10 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private TextMeshProUGUI _effectText;
     [SerializeField] private Image _skinImage;
-    [SerializeField] private Button _hideButton;
-    [SerializeField] private Button _equipButton;
+    [SerializeField] private TextMeshProUGUI _tendencyTypeText;
+    [SerializeField] private ButtonPressEffect _hideButton;
+    [SerializeField] private ButtonPressEffect _equipButton;
+    [SerializeField] private Image _usingButton;
 
     [Header("Slot Options")]
     [SerializeField] private RectTransform _skinSrollView;
@@ -26,9 +28,15 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
     private NormalCustomerData _customerData;
     private CustomerSkinData _currentSkinData;
 
+    private Vector2 _originalSize;
+    private Vector3 _originalPosition;
+
 
     public void Init(UICustomerPictorialBook customerView)
     {
+        _originalSize = _skinImage.rectTransform.sizeDelta;
+        _originalPosition = _skinImage.rectTransform.anchoredPosition;
+
         _customerView = customerView;
         _nameText.text = string.Empty;
         _descriptionText.text = string.Empty;
@@ -42,19 +50,21 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             _slotList.Add(slot);
         }
 
-        _hideButton.onClick.AddListener(OnHideButtonClicked);
-        _equipButton.onClick.AddListener(OnChangeCustomerSkin);
+        _hideButton.AddListener(OnHideButtonClicked);
+        _equipButton.AddListener(OnChangeCustomerSkin);
         Hide();
 
         UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
     }
 
-    public void SetViewData(string name, string description, string effectText, Sprite skinSprite)
+    public void SetViewData(string name, string description, string effectText, CustomerTendencyType tendencyType, Sprite skinSprite)
     {
         _nameText.text = name;
         _descriptionText.text = description;
         _effectText.text = effectText;
         _skinImage.sprite = skinSprite;
+        _tendencyTypeText.text = Utility.GetTendencyTypeToStr(tendencyType);
+        SetScaleImage(1.3f, 13);
     }
 
     public void SetSkinList(NormalCustomerData customerData)
@@ -65,14 +75,15 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             Debug.LogError("고객 데이터가 없습니다.");
             return;
         }
-        SetViewData(customerData.Name, customerData.Description, Utility.GetCustomerSkinEffectDescription(null), customerData.Sprite);
+        CustomerTendencyType tendencyType = _customerData.TendencyType;
+        SetViewData(customerData.Name, customerData.Description, Utility.GetCustomerSkinEffectDescription(null), tendencyType, customerData.Sprite);
 
         List<CustomerSkinData> skinList = SkinDataManager.Instance.GetCustomerSkinDataList(customerData.Id);
 
         HideAllSlots();
         _slotList[0].gameObject.SetActive(true);
         _slotList[0].SetData(customerData, null);
-        for (int i = 0; i < skinList.Count ; ++i)
+        for (int i = 0; i < skinList.Count; ++i)
         {
             int slotIndex = i + 1;
             if (slotIndex >= MAX_SLOT_COUNT)
@@ -131,6 +142,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             _descriptionText.text = customerData.Description;
             _effectText.text = Utility.GetCustomerSkinEffectDescription(null);
             _equipButton.gameObject.SetActive(equipSkinData != null);
+            _usingButton.gameObject.SetActive(equipSkinData == null);
             return;
         }
 
@@ -141,13 +153,15 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         _descriptionText.text = skinData.Description;
         _effectText.text = Utility.GetCustomerSkinEffectDescription(skinData);
 
-        if( equipSkinData != null && equipSkinData.Id == skinData.Id)
+        if (equipSkinData != null && equipSkinData.Id == skinData.Id)
         {
             _equipButton.gameObject.SetActive(false);
+            _usingButton.gameObject.SetActive(true);
         }
         else
         {
             _equipButton.gameObject.SetActive(true);
+            _usingButton.gameObject.SetActive(false);
         }
     }
 
@@ -175,5 +189,20 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         {
             slot.gameObject.SetActive(false);
         }
+    }
+    
+    public void SetScaleImage(float scale, float offset = 0)
+    {
+        Vector2 newSize = _originalSize * scale;
+        float heightDifference = (newSize.y - _originalSize.y) / 2;
+
+        Vector3 newPosition = new Vector3(
+            _originalPosition.x,
+            _originalPosition.y + heightDifference - offset,
+            _originalPosition.z
+        );
+
+        _skinImage.rectTransform.sizeDelta = newSize;
+        _skinImage.rectTransform.anchoredPosition = newPosition;
     }
 }

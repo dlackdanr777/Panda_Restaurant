@@ -12,7 +12,7 @@ public class ServerStageData
 
     public float Satisfaction;
 
-    public List<List<string>> EquipStaffDataList = new List<List<string>>();
+    public Dictionary<string, Dictionary<string, string>> EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
     public List<SaveStaffData> GiveStaffList = new List<SaveStaffData>();
 
     public List<string> GiveFurnitureList = new List<string>();
@@ -38,7 +38,7 @@ public class ServerStageData
         param.Add("Satisfaction", Satisfaction);
 
         param.Add("GiveStaffList", GiveStaffList);
-        param.Add("EquipStaffDataList", EquipStaffDataList);
+        param.Add("EquipStaffDataDic", EquipStaffDataDic);
         param.Add("GiveFurnitureList", GiveFurnitureList.ToList());
         param.Add("EquipFurnitureList", EquipFurnitureList);
         param.Add("GiveKitchenUtensilList", GiveKitchenUtensilList.ToList());
@@ -86,7 +86,23 @@ public class ServerStageData
         }
 
         // List<List<string>> 데이터 변환
-        EquipStaffDataList = ConvertJsonTo2DList(data, "EquipStaffDataList");
+        if (data.ContainsKey("EquipStaffDataDic"))
+        {
+            // 새로운 딕셔너리 형태로 저장된 데이터 로드
+            EquipStaffDataDic = ConvertJsonToStaffDictionary(data["EquipStaffDataDic"]);
+        }
+        else if (data.ContainsKey("EquipStaffDataList"))
+        {
+            // 기존 리스트 형태에서 딕셔너리로 변환 (하위 호환성)
+            List<List<string>> tempList = ConvertJsonTo2DList(data, "EquipStaffDataList");
+            EquipStaffDataDic = ConvertListToDictionary(tempList);
+        }
+        else
+        {
+            // 기본값으로 빈 딕셔너리 설정
+            EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
+        }
+
         EquipFurnitureList = ConvertJsonTo2DList(data, "EquipFurnitureList");
         EquipKitchenUtensilList = ConvertJsonTo2DList(data, "EquipKitchenUtensilList");
 
@@ -100,7 +116,7 @@ public class ServerStageData
         if (data.ContainsKey("DropGarbageAreaDataList"))
             GarbageAreaDataList = ConvertJsonToGarbageAreaList(data["DropGarbageAreaDataList"]);
 
-        if(data.ContainsKey("SaveTableDataList"))
+        if (data.ContainsKey("SaveTableDataList"))
             SaveTableDataList = ConvertJsonToSaveTableList(data["SaveTableDataList"]);
 
         if (data.ContainsKey("SaveKitchenDataList"))
@@ -277,5 +293,63 @@ public class ServerStageData
         }
 
         return list;
+    }
+    
+
+     // ✅ JSON에서 딕셔너리로 직접 변환
+    private Dictionary<string, Dictionary<string, string>> ConvertJsonToStaffDictionary(JsonData jsonData)
+    {
+        Dictionary<string, Dictionary<string, string>> result = new Dictionary<string, Dictionary<string, string>>();
+
+        if (jsonData != null)
+        {
+            foreach (string floorKey in jsonData.Keys)
+            {
+                Dictionary<string, string> equipTypes = new Dictionary<string, string>();
+                JsonData floorData = jsonData[floorKey];
+                
+                foreach (string equipKey in floorData.Keys)
+                {
+                    equipTypes[equipKey] = floorData[equipKey].ToString();
+                }
+                
+                result[floorKey] = equipTypes;
+            }
+        }
+
+        return result;
+    }
+
+    // ✅ 기존 리스트를 딕셔너리로 변환 (하위 호환성)
+    private Dictionary<string, Dictionary<string, string>> ConvertListToDictionary(List<List<string>> staffList)
+    {
+        Dictionary<string, Dictionary<string, string>> result = new Dictionary<string, Dictionary<string, string>>();
+
+        for (int floorIndex = 0; floorIndex < staffList.Count; floorIndex++)
+        {
+            if (floorIndex >= (int)ERestaurantFloorType.Length)
+                break;
+
+            ERestaurantFloorType floor = (ERestaurantFloorType)floorIndex;
+            string floorKey = floor.ToString();
+            
+            Dictionary<string, string> equipTypes = new Dictionary<string, string>();
+            
+            for (int equipIndex = 0; equipIndex < staffList[floorIndex].Count; equipIndex++)
+            {
+                if (equipIndex >= (int)EquipStaffType.Length)
+                    break;
+
+                EquipStaffType equipType = (EquipStaffType)equipIndex;
+                string equipKey = equipType.ToString();
+                string staffId = staffList[floorIndex][equipIndex];
+                
+                equipTypes[equipKey] = staffId ?? "";
+            }
+            
+            result[floorKey] = equipTypes;
+        }
+
+        return result;
     }
 }

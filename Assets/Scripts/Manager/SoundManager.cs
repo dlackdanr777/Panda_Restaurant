@@ -203,18 +203,20 @@ public class SoundManager : MonoBehaviour
 
     public void LoadSoundData()
     {
+        float masterVolume = PlayerPrefs.HasKey("MasterVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("MasterVolume"), 0, 1) : 1;
         float backgroundVolume = PlayerPrefs.HasKey("BackgroundVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("BackgroundVolume"), 0, 1) : 1;
         float soundEffectVolume = PlayerPrefs.HasKey("SoundEffectVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("SoundEffectVolume"), 0, 1) : 1;
         bool isVibration = PlayerPrefs.GetInt("IsVibration", 0) == 1;
 
-        _audioMixer.SetFloat("Master", 1);
-        _audioMixer.SetFloat("Background", backgroundVolume);
-        _audioMixer.SetFloat("SoundEffect", soundEffectVolume);
+        // ? dB 변환 후 AudioMixer에 적용
+        float masterDB = masterVolume != 0 ? Mathf.Log10(masterVolume) * 20 : -80;
+        float backgroundDB = backgroundVolume != 0 ? Mathf.Log10(backgroundVolume) * 20 : -80;
+        float soundEffectDB = soundEffectVolume != 0 ? Mathf.Log10(soundEffectVolume) * 20 : -80;
 
-        SetVolume(1, AudioType.Master);
-        SetVolume(backgroundVolume, AudioType.BackgroundAudio);
-        SetVolume(soundEffectVolume, AudioType.EffectAudio);
-        //_isVibration = isVibration;
+        _audioMixer.SetFloat("Master", masterDB);
+        _audioMixer.SetFloat("Background", backgroundDB);
+        _audioMixer.SetFloat("SoundEffect", soundEffectDB);
+
         _isVibration = false;
     }
 

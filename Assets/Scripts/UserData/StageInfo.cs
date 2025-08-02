@@ -39,8 +39,7 @@ public class StageInfo
     private float _satisfaction;
     public float Satisfaction => _satisfaction;
 
-
-    private StaffData[,] _equipStaffDatas = new StaffData[(int)ERestaurantFloorType.Length, (int)EquipStaffType.Length];
+    private Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>> _equipStaffTypeDic = new Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>>();
     private Dictionary<string, SaveStaffData> _giveStaffDic = new Dictionary<string, SaveStaffData>();
 
     private List<string> _giveFurnitureList = new List<string>();
@@ -69,6 +68,18 @@ public class StageInfo
 
     public StageInfo()
     {
+        _equipStaffTypeDic = new Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>>();
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            _equipStaffTypeDic.Add(floor, new Dictionary<EquipStaffType, StaffData>());
+            for (int j = 0, cntJ = (int)EquipStaffType.Length; j < cntJ; ++j)
+            {
+                EquipStaffType type = (EquipStaffType)j;
+                _equipStaffTypeDic[floor].Add(type, null);
+            }
+        }
+        
         for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
         {
             ERestaurantFloorType floor = (ERestaurantFloorType)i;
@@ -189,12 +200,9 @@ public class StageInfo
 
     public bool IsEquipStaff(ERestaurantFloorType floor, StaffData data)
     {
-        int floorIndex = (int)floor;
-        for(int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
+        foreach (var kvp in _equipStaffTypeDic[floor])
         {
-            EquipStaffType type = (EquipStaffType)i;
-            StaffData equipData = _equipStaffDatas[floorIndex, i];
-            if (equipData == null || equipData.Id != data.Id)
+            if (kvp.Value == null || kvp.Value.Id != data.Id)
                 continue;
 
             return true;
@@ -205,18 +213,14 @@ public class StageInfo
 
     public bool IsEquipStaff(ERestaurantFloorType floor, EquipStaffType type)
     {
-        int floorIndex = (int)floor;
-        int typeIndex = (int)type;
-
-        return _equipStaffDatas[floorIndex, typeIndex] != null;
+        return _equipStaffTypeDic[floor][type] != null;
     }
 
     public bool IsEquipStaff(StaffData data)
     {
-        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        foreach (var floorKvp in _equipStaffTypeDic)
         {
-            ERestaurantFloorType floor = (ERestaurantFloorType)i;
-            if (IsEquipStaff(floor, data))
+            if (IsEquipStaff(floorKvp.Key, data))
                 return true;
         }
 
@@ -225,15 +229,14 @@ public class StageInfo
 
     public EquipStaffType GetEquipStaffType(StaffData data)
     {
-        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        foreach (var floorKvp in _equipStaffTypeDic)
         {
-            for (int j = 0, cntJ = (int)EquipStaffType.Length; j < cntJ; ++j)
+            foreach (var typeKvp in floorKvp.Value)
             {
-                StaffData equipData = _equipStaffDatas[i, j];
-                if (equipData == null || equipData.Id != data.Id)
+                if (typeKvp.Value == null || typeKvp.Value.Id != data.Id)
                     continue;
 
-                return (EquipStaffType)j;
+                return typeKvp.Key;
             }
         }
 
@@ -241,19 +244,16 @@ public class StageInfo
         return EquipStaffType.Length;
     }
 
-
     public ERestaurantFloorType GetEquipStaffFloorType(StaffData data)
     {
-        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        foreach (var floorKvp in _equipStaffTypeDic)
         {
-            ERestaurantFloorType floor = (ERestaurantFloorType)i;
-            for (int j = 0, cntJ = (int)EquipStaffType.Length; j < cntJ; ++j)
+            foreach (var typeKvp in floorKvp.Value)
             {
-                StaffData equipData = _equipStaffDatas[i, j];
-                if (equipData == null || equipData.Id != data.Id)
+                if (typeKvp.Value == null || typeKvp.Value.Id != data.Id)
                     continue;
 
-                return floor;
+                return floorKvp.Key;
             }
         }
 
@@ -280,7 +280,8 @@ public class StageInfo
             DebugLog.LogError("해당 스탭과 관련 없는 장착 슬롯입니다: (스탭 타입 " + StaffDataManager.Instance.GetStaffGroupType(data) + ")(장착 슬롯" + equipType + ")");
             return;
         }
-        _equipStaffDatas[(int)floorType, (int)equipType] = data;
+        
+        _equipStaffTypeDic[floorType][equipType] = data;
         OnChangeStaffHandler?.Invoke(floorType, equipType);
     }
 
@@ -296,7 +297,7 @@ public class StageInfo
 
     public void SetNullEquipStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
-        _equipStaffDatas[(int)floorType, (int)type] = null;
+        _equipStaffTypeDic[floorType][type] = null;
         OnChangeStaffHandler?.Invoke(floorType, type);
     }
 
@@ -308,17 +309,16 @@ public class StageInfo
             return;
         }
 
-        for(int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
+        foreach (var typeKvp in _equipStaffTypeDic[floorType])
         {
-            if (_equipStaffDatas[(int)floorType, i] == null)
+            if (typeKvp.Value == null)
                 continue;
 
-            if (_equipStaffDatas[(int)floorType, i].Id != data.Id)
+            if (typeKvp.Value.Id != data.Id)
                 continue;
 
-            EquipStaffType type = (EquipStaffType)i;
-            _equipStaffDatas[(int)floorType, i] = null;
-            OnChangeStaffHandler?.Invoke(floorType, type);
+            _equipStaffTypeDic[floorType][typeKvp.Key] = null;
+            OnChangeStaffHandler?.Invoke(floorType, typeKvp.Key);
             return;
         }
 
@@ -328,7 +328,7 @@ public class StageInfo
 
     public StaffData GetEquipStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
-        return _equipStaffDatas[(int)floorType, (int)type];
+        return _equipStaffTypeDic[floorType][type];
     }
 
 
@@ -959,25 +959,28 @@ public class StageInfo
         data.CoinAreaDataList = ConvertCoinAreaDataToList();
         data.GarbageAreaDataList = ConvertGarbageAreaDataToList();
 
-        // 1. 직원 장착 데이터 변환 (StaffData[,] → List<List<string>>)
-        data.EquipStaffDataList = new List<List<string>>();
-        for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
+        // ✅ 딕셔너리 형태로 저장
+        data.EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
+        foreach (var floorKvp in _equipStaffTypeDic)
         {
-            List<string> staffList = new List<string>();
-            for (int j = 0; j < (int)EquipStaffType.Length; j++)
+            string floorKey = floorKvp.Key.ToString();
+            data.EquipStaffDataDic[floorKey] = new Dictionary<string, string>();
+
+            foreach (var typeKvp in floorKvp.Value)
             {
-                staffList.Add(_equipStaffDatas[i, j] != null ? _equipStaffDatas[i, j].Id : ""); // StaffData에서 ID 추출
+                string equipKey = typeKvp.Key.ToString();
+                string staffId = typeKvp.Value?.Id ?? "";
+                data.EquipStaffDataDic[floorKey][equipKey] = staffId;
             }
-            data.EquipStaffDataList.Add(staffList);
         }
 
-        // 2. 직원 정보 복사
+        // 직원 정보 복사
         data.GiveStaffList = _giveStaffDic.Values.ToList();
 
-        // 3. 획득한 가구 정보 (List 그대로 할당)
+        // 획득한 가구 정보 (List 그대로 할당)
         data.GiveFurnitureList = new List<string>(_giveFurnitureList);
 
-        // 4. 장착된 가구 데이터 변환 (FurnitureData[,] → List<List<string>>)
+        // 장착된 가구 데이터 변환 (FurnitureData[,] → List<List<string>>)
         data.EquipFurnitureList = new List<List<string>>();
         for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
         {
@@ -989,10 +992,10 @@ public class StageInfo
             data.EquipFurnitureList.Add(furnitureList);
         }
 
-        // 5. 획득한 주방 기구 정보 (List 그대로 할당)
+        // 획득한 주방 기구 정보 (List 그대로 할당)
         data.GiveKitchenUtensilList = new List<string>(_giveKitchenUtensilList);
 
-        // 6. 장착된 주방 기구 데이터 변환 (KitchenUtensilData[,] → List<List<string>>)
+        // 장착된 주방 기구 데이터 변환 (KitchenUtensilData[,] → List<List<string>>)
         data.EquipKitchenUtensilList = new List<List<string>>();
         for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
         {
@@ -1007,135 +1010,214 @@ public class StageInfo
         return data;
     }
 
-    public bool LoadData(ServerStageData loadData)
+public bool LoadData(ServerStageData loadData)
+{
+    if (loadData == null)
+        return false;
+
+    //_unlockFloor = loadData.UnlockFloor;
+    _unlockFloor = ERestaurantFloorType.Floor3;
+    _score = loadData.Score;
+    _tip = loadData.Tip;
+    _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
+
+    _giveStaffDic.Clear();
+    for (int i = 0, cnt = loadData.GiveStaffList.Count; i < cnt; ++i)
     {
-        if (loadData == null)
-            return false;
+        if (string.IsNullOrWhiteSpace(loadData.GiveStaffList[i].Id))
+            throw new Exception("아이디 값이 이상합니다: " + loadData.GiveStaffList[i].Id);
 
-        //_unlockFloor = loadData.UnlockFloor;
-        _unlockFloor = ERestaurantFloorType.Floor3;
-        _score = loadData.Score;
-        _tip = loadData.Tip;
-        _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
+        _giveStaffDic.Add(loadData.GiveStaffList[i].Id, loadData.GiveStaffList[i]);
+    }
 
-        _giveStaffDic.Clear();
-        for (int i = 0, cnt = loadData.GiveStaffList.Count; i < cnt; ++i)
+    // ✅ 딕셔너리에서 로드 (하위 호환성 포함)
+    if (loadData.EquipStaffDataDic != null && loadData.EquipStaffDataDic.Count > 0)
+    {
+        // 새로운 딕셔너리 형태로 저장된 데이터 로드
+        foreach (var floorKvp in loadData.EquipStaffDataDic)
         {
-            if (string.IsNullOrWhiteSpace(loadData.GiveStaffList[i].Id))
-                throw new Exception("아이디 값이 이상합니다: " + loadData.GiveStaffList[i].Id);
-
-            _giveStaffDic.Add(loadData.GiveStaffList[i].Id, loadData.GiveStaffList[i]);
-        }
-
-
-        for (int i = 0, cnt = loadData.EquipStaffDataList.Count; i < cnt; ++i)
-        {
-            for (int j = 0, cntJ = loadData.EquipStaffDataList[i].Count; j < cntJ; ++j)
+            // ✅ Floor enum 파싱 실패 시 스킵
+            if (!System.Enum.TryParse<ERestaurantFloorType>(floorKvp.Key, out ERestaurantFloorType floor))
             {
-                string staffId = loadData.EquipStaffDataList[i][j];
-                if (string.IsNullOrWhiteSpace(staffId))
-                    continue;
-
-                StaffData data = StaffDataManager.Instance.GetStaffData(staffId);
-                SetEquipStaff((ERestaurantFloorType)i, (EquipStaffType)j, data);
-            }
-        }
-
-        _giveFurnitureList = loadData.GiveFurnitureList;
-        _giveFurnitureDataList.Clear();
-        for (int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
-        {
-            FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]);
-            if (data == null)
-            {
-                DebugLog.LogError("존재하지 않는 가구 ID입니다: " + _giveFurnitureList[i]);
+                DebugLog.LogError($"알 수 없는 Floor 타입입니다. 스킵합니다: {floorKvp.Key}");
                 continue;
             }
-            _giveFurnitureDataList.Add(data);
-        }
 
-        for (int i = 0, cnt = loadData.EquipFurnitureList.Count; i < cnt; ++i)
-        {
-            for (int j = 0, cntJ = loadData.EquipFurnitureList[i].Count; j < cntJ; ++j)
+            // 딕셔너리에 해당 floor가 없으면 초기화
+            if (!_equipStaffTypeDic.ContainsKey(floor))
             {
-                string furnitureId = loadData.EquipFurnitureList[i][j];
-                if (string.IsNullOrWhiteSpace(furnitureId))
-                    continue;
-
-                FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(furnitureId);
-                SetEquipFurniture((ERestaurantFloorType)i, data);
-            }
-        }
-
-        _giveKitchenUtensilList = loadData.GiveKitchenUtensilList;
-        _giveKitchenUtensilDataList.Clear();
-        for (int i = 0, cnt = _giveKitchenUtensilList.Count; i < cnt; ++i)
-        {
-            KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]);
-            if (data == null)
-            {
-                DebugLog.LogError("존재하지 않는 주방 기구 ID입니다: " + _giveKitchenUtensilList[i]);
-                continue;
-            }
-            _giveKitchenUtensilDataList.Add(data);
-        }
-
-
-        for (int i = 0, cnt = loadData.EquipKitchenUtensilList.Count; i < cnt; ++i)
-        {
-            for (int j = 0, cntJ = loadData.EquipKitchenUtensilList[i].Count; j < cntJ; ++j)
-            {
-                string kitchenUtensilId = loadData.EquipKitchenUtensilList[i][j];
-                if (string.IsNullOrWhiteSpace(kitchenUtensilId))
-                    continue;
-
-                KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(kitchenUtensilId);
-                SetEquipKitchenUtensil((ERestaurantFloorType)i, data);
-            }
-        }
-
-        for(int i = 0; i < loadData.SaveKitchenDataList.Count; ++i)
-        {
-            SaveKitchenData kitchenData = loadData.SaveKitchenDataList[i];
-
-            int floorIndex = (int)kitchenData.FloorType;
-            _saveKitchenDatas[floorIndex] = kitchenData;
-        }
-
-        for (int i = 0; i < loadData.SaveTableDataList.Count; i++)
-        {
-            var floorList = loadData.SaveTableDataList[i];
-            for (int j = 0; j < floorList.Count; j++)
-            {
-                SaveTableData tableData = floorList[j];
-
-                // enum 인덱스 변환
-                int floorIndex = (int)tableData.FloorType;
-                int tableIndex = (int)tableData.TableType;
-
-                // 배열 범위 체크
-                if (floorIndex >= 0 && floorIndex < (int)ERestaurantFloorType.Length &&
-                    tableIndex >= 0 && tableIndex < (int)TableType.Length)
+                _equipStaffTypeDic[floor] = new Dictionary<EquipStaffType, StaffData>();
+                for (int j = 0, cntJ = (int)EquipStaffType.Length; j < cntJ; ++j)
                 {
-                    _saveTableDatas[floorIndex, tableIndex] = tableData;
+                    _equipStaffTypeDic[floor][(EquipStaffType)j] = null;
+                }
+            }
+
+            foreach (var typeKvp in floorKvp.Value)
+            {
+                // ✅ EquipStaff enum 파싱 실패 시 스킵
+                if (!System.Enum.TryParse<EquipStaffType>(typeKvp.Key, out EquipStaffType equipType))
+                {
+                    DebugLog.LogError($"알 수 없는 EquipStaff 타입입니다. 스킵합니다: {typeKvp.Key}");
+                    continue;
+                }
+
+                // 딕셔너리에 해당 equipType이 없으면 추가
+                if (!_equipStaffTypeDic[floor].ContainsKey(equipType))
+                {
+                    _equipStaffTypeDic[floor][equipType] = null;
+                }
+
+                string staffId = typeKvp.Value;
+                if (string.IsNullOrWhiteSpace(staffId))
+                {
+                    _equipStaffTypeDic[floor][equipType] = null;
                 }
                 else
                 {
-                    DebugLog.LogError($"[LoadData] 잘못된 테이블 인덱스 floor:{floorIndex}, table:{tableIndex}");
+                    StaffData staffData = StaffDataManager.Instance.GetStaffData(staffId);
+                    _equipStaffTypeDic[floor][equipType] = staffData;
                 }
             }
         }
-
-        ConvertListToCoinAreaDataArray(loadData.CoinAreaDataList);
-        ConvertListToGarbageAreaDataArray(loadData.GarbageAreaDataList);
-
-        CheckKitchenUtensilFoodType();
-        CheckFurnitureFoodType();
-
-        CheckCollectKitchenUtensilSetData();
-        CheckCollectFurnitureSetData();
-        return true;
     }
+    else
+    {
+        DebugLog.LogError("EquipStaffDataDic가 비어있거나 null입니다. 기본값으로 초기화합니다.");
+        // 기본값으로 초기화
+        for (int i = 0; i < (int)ERestaurantFloorType.Length; i++)
+        {
+            ERestaurantFloorType floor = (ERestaurantFloorType)i;
+            if (!_equipStaffTypeDic.ContainsKey(floor))
+            {
+                _equipStaffTypeDic[floor] = new Dictionary<EquipStaffType, StaffData>();
+            }
+            
+            for (int j = 0; j < (int)EquipStaffType.Length; j++)
+            {
+                EquipStaffType equipType = (EquipStaffType)j;
+                if (!_equipStaffTypeDic[floor].ContainsKey(equipType))
+                {
+                    _equipStaffTypeDic[floor][equipType] = null;
+                }
+            }
+        }
+    }
+
+    // ✅ 가구 정보 로드
+    _giveFurnitureList = loadData.GiveFurnitureList;
+    _giveFurnitureDataList.Clear();
+    for (int i = 0, cnt = _giveFurnitureList.Count; i < cnt; ++i)
+    {
+        FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(_giveFurnitureList[i]);
+        if (data == null)
+        {
+            DebugLog.LogError("존재하지 않는 가구 ID입니다: " + _giveFurnitureList[i]);
+            continue;
+        }
+        _giveFurnitureDataList.Add(data);
+    }
+
+    // ✅ 장착된 가구 데이터 로드
+    for (int i = 0, cnt = loadData.EquipFurnitureList.Count; i < cnt; ++i)
+    {
+        for (int j = 0, cntJ = loadData.EquipFurnitureList[i].Count; j < cntJ; ++j)
+        {
+            string furnitureId = loadData.EquipFurnitureList[i][j];
+            if (string.IsNullOrWhiteSpace(furnitureId))
+                continue;
+
+            FurnitureData data = FurnitureDataManager.Instance.GetFurnitureData(furnitureId);
+            SetEquipFurniture((ERestaurantFloorType)i, data);
+        }
+    }
+
+    // ✅ 주방 기구 정보 로드
+    _giveKitchenUtensilList = loadData.GiveKitchenUtensilList;
+    _giveKitchenUtensilDataList.Clear();
+    for (int i = 0, cnt = _giveKitchenUtensilList.Count; i < cnt; ++i)
+    {
+        KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(_giveKitchenUtensilList[i]);
+        if (data == null)
+        {
+            DebugLog.LogError("존재하지 않는 주방 기구 ID입니다: " + _giveKitchenUtensilList[i]);
+            continue;
+        }
+        _giveKitchenUtensilDataList.Add(data);
+    }
+
+    // ✅ 장착된 주방 기구 데이터 로드
+    for (int i = 0, cnt = loadData.EquipKitchenUtensilList.Count; i < cnt; ++i)
+    {
+        for (int j = 0, cntJ = loadData.EquipKitchenUtensilList[i].Count; j < cntJ; ++j)
+        {
+            string kitchenUtensilId = loadData.EquipKitchenUtensilList[i][j];
+            if (string.IsNullOrWhiteSpace(kitchenUtensilId))
+                continue;
+
+            KitchenUtensilData data = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(kitchenUtensilId);
+            SetEquipKitchenUtensil((ERestaurantFloorType)i, data);
+        }
+    }
+
+    // ✅ 주방 데이터 로드
+    for(int i = 0; i < loadData.SaveKitchenDataList.Count; ++i)
+    {
+        SaveKitchenData kitchenData = loadData.SaveKitchenDataList[i];
+
+        int floorIndex = (int)kitchenData.FloorType;
+        _saveKitchenDatas[floorIndex] = kitchenData;
+    }
+
+    // ✅ 테이블 데이터 로드
+    for (int i = 0; i < loadData.SaveTableDataList.Count; i++)
+    {
+        var floorList = loadData.SaveTableDataList[i];
+        for (int j = 0; j < floorList.Count; j++)
+        {
+            SaveTableData tableData = floorList[j];
+
+            // enum 인덱스 변환
+            int floorIndex = (int)tableData.FloorType;
+            int tableIndex = (int)tableData.TableType;
+
+            // 배열 범위 체크
+            if (floorIndex >= 0 && floorIndex < (int)ERestaurantFloorType.Length &&
+                tableIndex >= 0 && tableIndex < (int)TableType.Length)
+            {
+                _saveTableDatas[floorIndex, tableIndex] = tableData;
+            }
+            else
+            {
+                DebugLog.LogError($"[LoadData] 잘못된 테이블 인덱스 floor:{floorIndex}, table:{tableIndex}");
+            }
+        }
+    }
+
+    // ✅ 코인 및 가비지 영역 데이터 로드
+    ConvertListToCoinAreaDataArray(loadData.CoinAreaDataList);
+    ConvertListToGarbageAreaDataArray(loadData.GarbageAreaDataList);
+
+    // ✅ 직원 데이터 리스트 재구성
+    _giveStaffDataList.Clear();
+    foreach (var staffSaveData in _giveStaffDic.Values)
+    {
+        StaffData staffData = StaffDataManager.Instance.GetStaffData(staffSaveData.Id);
+        if (staffData != null)
+        {
+            _giveStaffDataList.Add(staffData);
+        }
+    }
+
+    // ✅ 음식 타입 및 세트 효과 체크
+    CheckKitchenUtensilFoodType();
+    CheckFurnitureFoodType();
+
+    CheckCollectKitchenUtensilSetData();
+    CheckCollectFurnitureSetData();
+
+    return true;
+}
 
 
     private List<List<CoinAreaData>> ConvertCoinAreaDataToList()

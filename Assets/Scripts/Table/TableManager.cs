@@ -104,10 +104,51 @@ public class TableManager : MonoBehaviour
         return true;
     }
 
+
+    public bool OnCustomerGuideEvent(ERestaurantFloorType choiceFloor, int sitPos = -1)
+    {
+        if (_customerController.IsEmpty())
+            return false;
+
+        NormalCustomer customer = _customerController.GetFirstCustomer();
+        if (customer == null)
+        {
+            DebugLog.LogError("손님 정보가 없습니다.");
+            return false;
+        }
+
+        TableData data = GetTableType(choiceFloor, ETableState.Empty);
+        if (data == null)
+        {
+            DebugLog.Log("남는 테이블이 없습니다.");
+            UpdateTable();
+            return false;
+        }
+
+        if (data.TableState == ETableState.DontUse)
+        {
+            NotFurnitureTable(data);
+            return false;
+        }
+
+        sitPos = Mathf.Clamp(sitPos, -1, 1);
+        customer.SetVisitFloor(choiceFloor);
+        OnCustomerGuide(customer, data, sitPos);
+        return true;
+    }
+
+
     public void OnCustomerGuideEventPlaySound(int sitPos = -1)
     {
-        if(OnCustomerGuideEvent(sitPos))
+        if (OnCustomerGuideEvent(sitPos))
             SoundManager.Instance.PlayEffectAudio(EffectType.Hall1, _callSound);
+    }
+
+    public void OnCustomerGuideEventPlaySound(ERestaurantFloorType floor, int sitPos = -1)
+    {
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(floor, RestaurantType.Hall);
+        if (OnCustomerGuideEvent(floor, sitPos))
+            SoundManager.Instance.PlayEffectAudio(effectType, _callSound);
     }
 
 

@@ -80,7 +80,7 @@ public static class Utility
             KitchenUtensilType.Cabinet => "장식장",
             KitchenUtensilType.Window => "창문",
             KitchenUtensilType.Sink => "싱크대",
-            KitchenUtensilType.CookingTools => "도구 선반",
+            KitchenUtensilType.CookingTools => "조리 기구",
             KitchenUtensilType.Kitchenrack => "주방 선반",
             _ => string.Empty
         };

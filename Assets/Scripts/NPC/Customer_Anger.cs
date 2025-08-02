@@ -7,14 +7,19 @@ public class Customer_Anger : MonoBehaviour
     [SerializeField] private AudioClip _sound;
 
     private Vector3 _tmpScale;
-    private Color _tmpColor;
+    private Color _tmpColor = Color.white;
 
     private Customer _customer;
-    public void Init()
+
+    private void Awake()
     {
         _tmpColor = _sprite.color;
         _sprite.color = new Color(_tmpColor.r, _tmpColor.g, _tmpColor.b, 0);
         _tmpScale = _sprite.transform.localScale;
+    }
+    public void Init()
+    {
+        _sprite.color = new Color(_tmpColor.r, _tmpColor.g, _tmpColor.b, 0);
         gameObject.SetActive(false);
     }
 
@@ -44,8 +49,8 @@ public class Customer_Anger : MonoBehaviour
                 .OnComplete(StopAnime);
             });
         });
-    }   
-    
+    }
+
 
     public void StopAnime()
     {
@@ -53,6 +58,13 @@ public class Customer_Anger : MonoBehaviour
         _sprite.color = new Color(_tmpColor.r, _tmpColor.g, _tmpColor.b, 0);
         _sprite.transform.localScale = _tmpScale;
         gameObject.SetActive(false);
+    }
+
+    private void OnDisable()
+    {
+        _sprite.TweenStop();
+        _sprite.color = new Color(_tmpColor.r, _tmpColor.g, _tmpColor.b, 0);
+        _sprite.transform.localScale = _tmpScale;
     }
 
 

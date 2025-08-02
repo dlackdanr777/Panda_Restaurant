@@ -30,7 +30,7 @@ public class UICustomerView : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _effectDescription;
     [SerializeField] private ButtonPressEffect _effectLeftArrowButton;
     [SerializeField] private ButtonPressEffect _effectRightArrowButton;
-    [SerializeField] private Button _skinButton;
+    [SerializeField] private ButtonPressEffect _skinButton;
     [SerializeField] private Material _grayMat;
 
     [Space]
@@ -78,7 +78,7 @@ public class UICustomerView : MonoBehaviour
             }
         }
 
-        _skinButton.onClick.AddListener(ShowSkinView);
+        _skinButton.AddListener(ShowSkinView);
         _testButton.onClick.AddListener(AddVisitCount);
 
         UserInfo.OnVisitedCustomerHandler += OnAddVisitEvent;
