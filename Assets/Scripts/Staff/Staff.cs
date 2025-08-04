@@ -293,7 +293,7 @@ public class Staff : MonoBehaviour
 
         _moveCompleted = onCompleted;
         RestaurantType type = RestaurantType.Hall;
-        if (_staffType == EquipStaffType.Chef1 || _staffType == EquipStaffType.Chef2)
+        if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
             type = RestaurantType.Kitchen;
 
         Vector3 customerDoorPos = _tableManager.GetDoorPos(type, transform.position);
@@ -343,7 +343,7 @@ public class Staff : MonoBehaviour
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
             RestaurantType type = RestaurantType.Hall;
-            if (_staffType == EquipStaffType.Chef1 || _staffType == EquipStaffType.Chef2)
+            if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
                 type = RestaurantType.Kitchen;
 
             _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(_tableManager.GetDoorPos(type, _targetPos), _targetPos, TargetMove)));
@@ -388,7 +388,7 @@ public class Staff : MonoBehaviour
     {
         yield return YieldCache.WaitForSeconds(0.6f);
         RestaurantType type = RestaurantType.Hall;
-        if (_staffType == EquipStaffType.Chef1 || _staffType == EquipStaffType.Chef2)
+        if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
             type = RestaurantType.Kitchen;
         TweenAlpha(0, 0.4f, Ease.Constant, () => _moveObj.transform.position = _tableManager.GetDoorPos(type, _targetPos));
         yield return YieldCache.WaitForSeconds(1f);

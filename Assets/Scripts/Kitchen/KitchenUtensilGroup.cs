@@ -59,10 +59,10 @@ public class KitchenUtensilGroup: MonoBehaviour
     {
         switch (type)
         {
-            case EquipStaffType.Chef1:
+            case EquipStaffType.Chef:
                 return _defaultChef1Pos.position;
-            case EquipStaffType.Chef2:
-                return _defaultChef2Pos.position;
+            //case EquipStaffType.Chef2:
+                //return _defaultChef2Pos.position;
         }
 
         Debug.LogError("직원 종류 값이 잘못 입력되었습니다:" + type);

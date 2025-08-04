@@ -91,10 +91,10 @@ public static class Utility
         if (type1 == type2)
             return true;
 
-        if ((type1 == EquipStaffType.Waiter1 || type1 == EquipStaffType.Waiter2) && (type2 == EquipStaffType.Waiter1 || type2 == EquipStaffType.Waiter2))
+        if ((type1 == EquipStaffType.Waiter /*|| type1 == EquipStaffType.Waiter2*/) && (type2 == EquipStaffType.Waiter /*|| type2 == EquipStaffType.Waiter2*/))
             return true;
 
-        if ((type1 == EquipStaffType.Chef1 || type1 == EquipStaffType.Chef2) && (type2 == EquipStaffType.Chef1 || type2 == EquipStaffType.Chef2))
+        if ((type1 == EquipStaffType.Chef /*|| type1 == EquipStaffType.Chef2*/) && (type2 == EquipStaffType.Chef /*|| type2 == EquipStaffType.Chef2*/))
             return true;
 
 
@@ -107,12 +107,12 @@ public static class Utility
         {
             EquipStaffType.Manager => "매니저",
             EquipStaffType.Marketer => "치어리더",
-            EquipStaffType.Waiter1 => "웨이터1",
-            EquipStaffType.Waiter2 => "웨이터2",
+            EquipStaffType.Waiter => "웨이터",
+            //EquipStaffType.Waiter2 => "웨이터2",
             EquipStaffType.Cleaner => "청소부",
             EquipStaffType.Guard => "경호원",
-            EquipStaffType.Chef1 => "주방장",
-            EquipStaffType.Chef2 => "부주방장",
+            EquipStaffType.Chef => "주방장",
+            //EquipStaffType.Chef2 => "부주방장",
             _ => string.Empty
         };
     }

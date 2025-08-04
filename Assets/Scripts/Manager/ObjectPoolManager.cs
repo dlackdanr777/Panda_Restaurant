@@ -143,10 +143,10 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         _staffPrefabs[(int)EquipStaffType.Cleaner] = Resources.Load<StaffCleaner>("ObjectPool/Staff/Cleaner");
-        _staffPrefabs[(int)EquipStaffType.Waiter1] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
-        _staffPrefabs[(int)EquipStaffType.Waiter2] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
-        _staffPrefabs[(int)EquipStaffType.Chef1] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
-        _staffPrefabs[(int)EquipStaffType.Chef2] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
+        _staffPrefabs[(int)EquipStaffType.Waiter] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
+        //_staffPrefabs[(int)EquipStaffType.Waiter2] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
+        _staffPrefabs[(int)EquipStaffType.Chef] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
+        //_staffPrefabs[(int)EquipStaffType.Chef2] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
         _staffPrefabs[(int)EquipStaffType.Marketer] = Resources.Load<StaffMarketer>("ObjectPool/Staff/Marketer");
         _staffCount = (int)ERestaurantFloorType.Length;
         for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)

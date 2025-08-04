@@ -55,10 +55,10 @@ public class FurnitureGroup : MonoBehaviour
     {
         switch (type)
         {
-            case EquipStaffType.Waiter1:
+            case EquipStaffType.Waiter:
                 return _defaultWaiter1Pos.position;
-            case EquipStaffType.Waiter2:
-                return _defaultWaiter2Pos.position;
+            //case EquipStaffType.Waiter2:
+                //return _defaultWaiter2Pos.position;
             case EquipStaffType.Cleaner:
                 return _cleanerWaitTr.position;
             case EquipStaffType.Manager:

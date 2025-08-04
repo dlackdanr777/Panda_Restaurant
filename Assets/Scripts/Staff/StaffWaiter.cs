@@ -30,7 +30,7 @@ public class StaffWaiter : Staff
 
         _bowlAnimator.enabled = true;
 
-        int order = (int)_staffType - (int)EquipStaffType.Waiter1;
+        int order = (int)_staffType - (int)EquipStaffType.Waiter;
         _spriteRenderer.sortingOrder = order * 3;
         _foodRenderer.sortingOrder = (order * 3) + 1;
         _bottomBowl.sortingOrder = (order * 3) + 1;

@@ -64,6 +64,7 @@ public class TableManager : MonoBehaviour
         _customerController.OnGuideCustomerHandler += UpdateTable;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
         UserInfo.OnChangeFurnitureHandler += OnChangeTableEvent;
+        UserInfo.OnChangeFloorHandler += UpdateTable;
     }
 
 
@@ -616,12 +617,12 @@ public class TableManager : MonoBehaviour
     /// <summary> 직원 위치를 반환하는 함수</summary>
     public Vector2 GetStaffPos(ERestaurantFloorType floorType, EquipStaffType type)
     {
-        if (type == EquipStaffType.Chef1 || type == EquipStaffType.Chef2)
+        if (type == EquipStaffType.Chef /*|| type == EquipStaffType.Chef2*/)
         {
             return _kitchenSystem.GetStaffPos(floorType, type);
         }
         else
-        {
+        {                    
             return _furnitureSystem.GetStaffPos(floorType, type);
         }
     }
@@ -860,5 +861,6 @@ public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurn
         _customerController.OnChangeCustomerHandler -= UpdateTable;
         _customerController.OnGuideCustomerHandler -= UpdateTable;
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEvent;
+        UserInfo.OnChangeFloorHandler -= UpdateTable;
     }
 }

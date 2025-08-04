@@ -115,10 +115,10 @@ public class UIMainCanvas : MonoBehaviour
 
         DataBind.SetUnityActionValue("ShowStaffManager", () => _uiAdmin.ShowUIStaff(EquipStaffType.Manager));
         DataBind.SetUnityActionValue("ShowStaffMarketer", () => _uiAdmin.ShowUIStaff(EquipStaffType.Marketer));
-        DataBind.SetUnityActionValue("ShowStaffWaiter", () => _uiAdmin.ShowUIStaff(EquipStaffType.Waiter1));
+        DataBind.SetUnityActionValue("ShowStaffWaiter", () => _uiAdmin.ShowUIStaff(EquipStaffType.Waiter));
         DataBind.SetUnityActionValue("ShowStaffCleaner", () => _uiAdmin.ShowUIStaff(EquipStaffType.Cleaner));
         DataBind.SetUnityActionValue("ShowStaffGuard", () => _uiAdmin.ShowUIStaff(EquipStaffType.Guard));
-        DataBind.SetUnityActionValue("ShowStaffChef", () => _uiAdmin.ShowUIStaff(EquipStaffType.Chef1));
+        DataBind.SetUnityActionValue("ShowStaffChef", () => _uiAdmin.ShowUIStaff(EquipStaffType.Chef));
     }
 
 

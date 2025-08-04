@@ -90,7 +90,7 @@ public class StaffDataManager : MonoBehaviour
         if (type == EquipStaffType.Manager)
             return StaffGroupType.Manager;
 
-        else if (type == EquipStaffType.Waiter1 || type == EquipStaffType.Waiter2)
+    else if (type == EquipStaffType.Waiter /*|| type == EquipStaffType.Waiter2*/)
             return StaffGroupType.Waiter;
 
         else if (type == EquipStaffType.Cleaner)
@@ -102,7 +102,7 @@ public class StaffDataManager : MonoBehaviour
         else if (type == EquipStaffType.Guard)
             return StaffGroupType.Guard;
 
-        else if (type == EquipStaffType.Chef1 || type == EquipStaffType.Chef2)
+        else if (type == EquipStaffType.Chef /*|| type == EquipStaffType.Chef2*/)
             return StaffGroupType.Chef;
 
         throw new System.Exception("해당 타입이 이상합니다: " + type);
@@ -121,10 +121,10 @@ public class StaffDataManager : MonoBehaviour
             typeList.Add(EquipStaffType.Manager);
 
         if (type == StaffGroupType.Waiter)
-            typeList.Add(EquipStaffType.Waiter1);
+            typeList.Add(EquipStaffType.Waiter);
 
-        if (type == StaffGroupType.Waiter)
-            typeList.Add(EquipStaffType.Waiter2);
+        //if (type == StaffGroupType.Waiter)
+            //typeList.Add(EquipStaffType.Waiter2);
 
         if (type == StaffGroupType.Cleaner)
             typeList.Add(EquipStaffType.Cleaner);
@@ -136,10 +136,10 @@ public class StaffDataManager : MonoBehaviour
             typeList.Add(EquipStaffType.Guard);
 
         if (type == StaffGroupType.Chef)
-            typeList.Add(EquipStaffType.Chef1);
+            typeList.Add(EquipStaffType.Chef);
 
-        if (type == StaffGroupType.Chef)
-            typeList.Add(EquipStaffType.Chef2);
+        //if (type == StaffGroupType.Chef)
+            //typeList.Add(EquipStaffType.Chef2);
 
         return typeList;
     }

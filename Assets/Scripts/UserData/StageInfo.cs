@@ -109,8 +109,9 @@ public class StageInfo
 
     public void ChangeUnlockFloor(ERestaurantFloorType floor)
     {
-        if (floor <= _unlockFloor)
-            return;
+        //TODO: 테스트로 인한 임시 비활성화
+        // if (floor <= _unlockFloor)
+        //     return;
 
         _unlockFloor = floor;
         OnChangeFloorHandler?.Invoke();

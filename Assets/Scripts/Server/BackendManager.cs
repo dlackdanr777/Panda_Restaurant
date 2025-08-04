@@ -440,7 +440,7 @@ namespace Muks.BackEnd
                     {
                         Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
                         Backend.BMember.DeleteGuestInfo();
-                        Backend.BMember.GuestLogin();
+                        GuestLoginAsync(callback, onFail);
                         return;
                     }
                     
