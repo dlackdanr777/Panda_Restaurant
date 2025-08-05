@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -7,7 +8,10 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
 {
     private const int MAX_SLOT_COUNT = 10;
 
-    [SerializeField] private UICustomerPictorialBook _customerView;
+    [SerializeField] private Image _normalSkinFrame;
+    [SerializeField] private Image _rareSkinFrame;
+    [SerializeField] private Image _uniqueSkinFrame;
+    [SerializeField] private Image _specialSkinFrame;
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private TextMeshProUGUI _effectText;
@@ -25,6 +29,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
 
     private List<UIPictorialBookCustomerSkinSlot> _slotList = new List<UIPictorialBookCustomerSkinSlot>();
 
+    private UICustomerPictorialBook _customerView;
     private NormalCustomerData _customerData;
     private CustomerSkinData _currentSkinData;
 
@@ -76,8 +81,16 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             return;
         }
         CustomerTendencyType tendencyType = _customerData.TendencyType;
-        SetViewData(customerData.Name, customerData.Description, Utility.GetCustomerSkinEffectDescription(null), tendencyType, customerData.Sprite);
+        if (_currentSkinData == null)
+        {
+            SetViewData(customerData.Name, customerData.Description, Utility.GetCustomerSkinEffectDescription(null), tendencyType, customerData.Sprite);
+        }
+        else
+        {
+            SetViewData(_currentSkinData.Name, _currentSkinData.Description, Utility.GetCustomerSkinEffectDescription(_currentSkinData), tendencyType, _currentSkinData.Sprite);
+        }
 
+        UpdateFrame(customerData, _currentSkinData);
         List<CustomerSkinData> skinList = SkinDataManager.Instance.GetCustomerSkinDataList(customerData.Id);
 
         HideAllSlots();
@@ -148,10 +161,15 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
 
         _customerData = customerData;
         _currentSkinData = skinData;
-        _skinImage.sprite = skinData.Sprite;
-        _nameText.text = skinData.Name;
-        _descriptionText.text = skinData.Description;
-        _effectText.text = Utility.GetCustomerSkinEffectDescription(skinData);
+        CustomerTendencyType tendencyType = _customerData.TendencyType;
+        if (_currentSkinData == null)
+        {
+            SetViewData(customerData.Name, customerData.Description, Utility.GetCustomerSkinEffectDescription(null), tendencyType, customerData.Sprite);
+        }
+        else
+        {
+            SetViewData(_currentSkinData.Name, _currentSkinData.Description, Utility.GetCustomerSkinEffectDescription(_currentSkinData), tendencyType, _currentSkinData.Sprite);
+        }
 
         if (equipSkinData != null && equipSkinData.Id == skinData.Id)
         {
@@ -163,6 +181,8 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             _equipButton.gameObject.SetActive(true);
             _usingButton.gameObject.SetActive(false);
         }
+
+        UpdateFrame(customerData, skinData);
     }
 
 
@@ -190,7 +210,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             slot.gameObject.SetActive(false);
         }
     }
-    
+
     public void SetScaleImage(float scale, float offset = 0)
     {
         Vector2 newSize = _originalSize * scale;
@@ -204,5 +224,40 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
 
         _skinImage.rectTransform.sizeDelta = newSize;
         _skinImage.rectTransform.anchoredPosition = newPosition;
+    }
+
+    private void UpdateFrame(CustomerData data, SkinData skinData)
+    {
+        _normalSkinFrame.gameObject.SetActive(false);
+        _rareSkinFrame.gameObject.SetActive(false);
+        _uniqueSkinFrame.gameObject.SetActive(false);
+        _specialSkinFrame.gameObject.SetActive(false);
+
+        if (skinData == null)
+        {
+            _normalSkinFrame.gameObject.SetActive(true);
+        }
+        else
+        {
+            switch (skinData.Rank)
+            {
+                case Rank.Normal1:
+                case Rank.Normal2:
+                    _normalSkinFrame.gameObject.SetActive(true);
+                    break;
+
+                case Rank.Rare:
+                    _rareSkinFrame.gameObject.SetActive(true);
+                    break;
+                case Rank.Unique:
+                    _uniqueSkinFrame.gameObject.SetActive(true);
+                    break;
+                case Rank.Special:
+                    _specialSkinFrame.gameObject.SetActive(true);
+                    break;
+            }
+        }
+        SetScaleImage(1.3f, 12);
+
     }
 }

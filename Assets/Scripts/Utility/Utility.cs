@@ -311,11 +311,11 @@ public static class Utility
         string description = upgradeType switch
         {
             SkinCustomerUpgradeType.None => "효과 없음",
-            SkinCustomerUpgradeType.Type1 => $"스킨 적용 시 이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
-            SkinCustomerUpgradeType.Type2 => $"스킨 적용 시 지불 금액 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
-            SkinCustomerUpgradeType.Type3 => $"스킨 적용시 주문 횟수 <color={ColorToHex(GetColor(ColorType.Positive))}>+{(int)data.UpgradeValue}</color> 증가",
-            SkinCustomerUpgradeType.Type4 => $"스킨 적용 시 가게 만족도 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
-            SkinCustomerUpgradeType.Type5 => $"스킨 적용 시 피버 게이지 <color={ColorToHex(GetColor(ColorType.Positive))}>+{(int)data.UpgradeValue}</color> 증가",
+            SkinCustomerUpgradeType.Type1 => $"이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
+            SkinCustomerUpgradeType.Type2 => $"지불 금액 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
+            SkinCustomerUpgradeType.Type3 => $"주문 횟수 <color={ColorToHex(GetColor(ColorType.Positive))}>+{(int)data.UpgradeValue}</color> 증가",
+            SkinCustomerUpgradeType.Type4 => $"가게 만족도 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
+            SkinCustomerUpgradeType.Type5 => $"피버 게이지 <color={ColorToHex(GetColor(ColorType.Positive))}>+{(int)data.UpgradeValue}</color> 증가",
             _ => "알 수 없는 업그레이드 타입"
         };
         return description;

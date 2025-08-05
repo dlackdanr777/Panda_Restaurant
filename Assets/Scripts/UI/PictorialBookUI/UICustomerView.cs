@@ -20,7 +20,12 @@ public class UICustomerView : MonoBehaviour
     [SerializeField] private UICustomerBlackImage _blackImage;
     [SerializeField] private Image _specialFrameImage;
     [SerializeField] private Image _gatecrasherFrameImage;
-    [SerializeField] private Image _normalFrameImage;
+    [SerializeField] private Image _normalSkinFrameImage;
+    [SerializeField] private Image _rareSkinFrameImage;
+    [SerializeField] private Image _uniqueSkinFrameImage;
+    [SerializeField] private Image _specialSkinFrameImage;
+
+
     [SerializeField] private Image _npcImage;
     [SerializeField] private UITextAndText _visitCountGroup;
     [SerializeField] private TextMeshProUGUI _npcNameText;
@@ -100,7 +105,7 @@ public class UICustomerView : MonoBehaviour
             _effectTitle.gameObject.SetActive(false);
             _visitCountGroup.gameObject.SetActive(false);
             _tendencyTypeText.gameObject.SetActive(false);
-            _normalFrameImage.gameObject.SetActive(true);
+            _normalSkinFrameImage.gameObject.SetActive(true);
             _effectLeftArrowButton.gameObject.SetActive(false);
             _effectRightArrowButton.gameObject.SetActive(false);
             _npcNameText.text = string.Empty;
@@ -135,30 +140,32 @@ public class UICustomerView : MonoBehaviour
         }
         _npcImage.sprite = customerSprite;
 
+        UpdateFrame(_data, skinData);
 
-        if (data is SpecialCustomerData)
-        {
-            _normalFrameImage.gameObject.SetActive(false);
-            _gatecrasherFrameImage.gameObject.SetActive(false);
-            _specialFrameImage.gameObject.SetActive(true);
-            SetScaleImage(1);
 
-        }
-        else if (data is GatecrasherCustomerData)
-        {
-            _normalFrameImage.gameObject.SetActive(false);
-            _gatecrasherFrameImage.gameObject.SetActive(true);
-            _specialFrameImage.gameObject.SetActive(false);
-            SetScaleImage(1);
-        }
-        else
-        {
-            _normalFrameImage.gameObject.SetActive(true);
-            _gatecrasherFrameImage.gameObject.SetActive(false);
-            _specialFrameImage.gameObject.SetActive(false);
-            _tendencyTypeText.gameObject.SetActive(true);
-            SetScaleImage(1.3f, 13);
-        }
+        // if (data is SpecialCustomerData)
+        // {
+        //     _normalSkinFrameImage.gameObject.SetActive(false);
+        //     _gatecrasherFrameImage.gameObject.SetActive(false);
+        //     _specialFrameImage.gameObject.SetActive(true);
+        //     SetScaleImage(1);
+
+        // }
+        // else if (data is GatecrasherCustomerData)
+        // {
+        //     _normalSkinFrameImage.gameObject.SetActive(false);
+        //     _gatecrasherFrameImage.gameObject.SetActive(true);
+        //     _specialFrameImage.gameObject.SetActive(false);
+        //     SetScaleImage(1);
+        // }
+        // else
+        // {
+        //     _normalSkinFrameImage.gameObject.SetActive(true);
+        //     _gatecrasherFrameImage.gameObject.SetActive(false);
+        //     _specialFrameImage.gameObject.SetActive(false);
+        //     _tendencyTypeText.gameObject.SetActive(true);
+        //     SetScaleImage(1.3f, 13);
+        // }
 
         Color imageColor = Color.white;
         if (!UserInfo.GetCustomerEnableState(data))
@@ -504,6 +511,59 @@ public class UICustomerView : MonoBehaviour
 
         UserInfo.CustomerVisits(_data, 10);
         UserInfo.AddCustomerCount(10);
+    }
+
+
+     private void UpdateFrame(CustomerData data, SkinData skinData)
+    {
+        _normalSkinFrameImage.gameObject.SetActive(false);
+        _rareSkinFrameImage.gameObject.SetActive(false);
+        _uniqueSkinFrameImage.gameObject.SetActive(false);
+        _specialSkinFrameImage.gameObject.SetActive(false);
+        _specialFrameImage.gameObject.SetActive(false);
+        _gatecrasherFrameImage.gameObject.SetActive(false);
+
+
+        if (data is SpecialCustomerData)
+        {
+            _specialFrameImage.gameObject.SetActive(true);
+            SetScaleImage(1);
+        }
+
+        else if (data is GatecrasherCustomerData)
+        {
+            _gatecrasherFrameImage.gameObject.SetActive(true);
+            SetScaleImage(1);
+        }
+
+        else
+        {
+            if (skinData == null)
+            {
+                _normalSkinFrameImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                switch (skinData.Rank)
+                {
+                    case Rank.Normal1:
+                    case Rank.Normal2:
+                        _normalSkinFrameImage.gameObject.SetActive(true);
+                        break;
+
+                    case Rank.Rare:
+                        _rareSkinFrameImage.gameObject.SetActive(true);
+                        break;
+                    case Rank.Unique:
+                        _uniqueSkinFrameImage.gameObject.SetActive(true);
+                        break;
+                    case Rank.Special:
+                        _specialSkinFrameImage.gameObject.SetActive(true);
+                        break;
+                }
+            }
+            SetScaleImage(1.3f, 12);
+        }
     }
 
     private void OnDestroy()
