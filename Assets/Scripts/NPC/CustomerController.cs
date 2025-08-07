@@ -170,6 +170,7 @@ public class CustomerController : MonoBehaviour
                     TimeManager.Instance.SetTime(TIME_TAG, ConstValue.DEFAULT_CUSTOMER_BREAK_TIME);
                     _breakCustomerEnabled = false;
                     SpecialCustomer specialCustomer = ObjectPoolManager.Instance.SpawnSpecialCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+                    specialCustomer.transform.position = GameManager.Instance.OutDoorPos;
                     specialCustomer.SetData(getData, this, _tableManager);
                     specialCustomer.SetVisitFloor(visitFloor);
                     specialCustomer.SetFeverSystem(_feverSystem);
@@ -184,6 +185,7 @@ public class CustomerController : MonoBehaviour
 
                     int floorIndex = (int)visitFloor;
                     _gatecrasherCustomers[floorIndex] = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+                    _gatecrasherCustomers[floorIndex].transform.position = GameManager.Instance.OutDoorPos;
                     _gatecrasherCustomers[floorIndex].SetData(getData, this, _tableManager);
                     _gatecrasherCustomers[floorIndex].SetVisitFloor(visitFloor);
                     if (getData is GatecrasherCustomer1Data)
@@ -201,6 +203,7 @@ public class CustomerController : MonoBehaviour
             else
             {
                 NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+                customer.transform.position = GameManager.Instance.OutDoorPos;
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
                 DebugLog.Log($"RandInt: {randInt}, Count: {normalCustomerDataList.Count}");
                 CustomerData customerData = normalCustomerDataList[randInt];
