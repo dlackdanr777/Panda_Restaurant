@@ -41,7 +41,7 @@ public class UIFoodType : MonoBehaviour
                 _foodTypeImage.SetSprite(_traditionalSprite); break;
 
             default:
-                throw new Exception("Å¸ÀÔÀÌ ¿À·ùÀÔ´Ï´Ù: " + _foodType);
+                throw new Exception("íƒ€ì…ì´ ì˜¤ë¥˜ì…ë‹ˆë‹¤: " + _foodType);
 
         }
     }

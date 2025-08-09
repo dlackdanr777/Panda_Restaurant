@@ -170,7 +170,7 @@ public class UIManagementSetEffect : MonoBehaviour
 
         if (page == 0 || (isSlot2Active && page == 1))
         {
-            _setTitleText.text = _currentSetEffectType == SetEffectType.Furniture ? "Àû¿ë °¡±¸ ¸ñ·Ï" : "Àû¿ë ±â±¸ ¸ñ·Ï";
+            _setTitleText.text = _currentSetEffectType == SetEffectType.Furniture ? "ì ìš© ê°€êµ¬ ëª©ë¡" : "ì ìš© ê¸°êµ¬ ëª©ë¡";
             return;
         }
 
@@ -179,8 +179,8 @@ public class UIManagementSetEffect : MonoBehaviour
             FoodType foodType = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureFoodType(UserInfo.CurrentStage, _currentFloorType) : UserInfo.GetEquipKitchenUtensilFoodType(UserInfo.CurrentStage, _currentFloorType);
             Debug.Log(foodType);
             bool setEnabled = foodType != FoodType.None;
-            _setTitleText.text = setEnabled ? Utility.FoodTypeStringConverter(foodType) + " Àû¿ëÁß" : "ºñÈ°¼ºÈ­";
-            _setDescriptionText.text = !setEnabled ? "Àû¿ëÁßÀÎ È¿°ú ¾øÀ½" : _currentSetEffectType == SetEffectType.Furniture ? Utility.GetFurnitureFoodTypeSetEffectDescription(foodType) : Utility.GetKitchenFoodTypeSetEffectDescription(foodType);
+            _setTitleText.text = setEnabled ? Utility.FoodTypeStringConverter(foodType) + " ì ìš©ì¤‘" : "ë¹„í™œì„±í™”";
+            _setDescriptionText.text = !setEnabled ? "ì ìš©ì¤‘ì¸ íš¨ê³¼ ì—†ìŒ" : _currentSetEffectType == SetEffectType.Furniture ? Utility.GetFurnitureFoodTypeSetEffectDescription(foodType) : Utility.GetKitchenFoodTypeSetEffectDescription(foodType);
         }
     }
 
@@ -239,6 +239,6 @@ public class UIManagementSetEffect : MonoBehaviour
     {
         FoodType foodType = _currentSetEffectType == SetEffectType.Furniture ? UserInfo.GetEquipFurnitureFoodType(UserInfo.CurrentStage, _currentFloorType) : UserInfo.GetEquipKitchenUtensilFoodType(UserInfo.CurrentStage, _currentFloorType);
         bool setEnabled = foodType != FoodType.None;
-        _setDescriptionText.text = !setEnabled ? "Àû¿ëÁßÀÎ È¿°ú ¾øÀ½" : _currentSetEffectType == SetEffectType.Furniture ? Utility.GetFurnitureFoodTypeSetEffectDescription(foodType) : Utility.GetKitchenFoodTypeSetEffectDescription(foodType);
+        _setDescriptionText.text = !setEnabled ? "ì ìš©ì¤‘ì¸ íš¨ê³¼ ì—†ìŒ" : _currentSetEffectType == SetEffectType.Furniture ? Utility.GetFurnitureFoodTypeSetEffectDescription(foodType) : Utility.GetKitchenFoodTypeSetEffectDescription(foodType);
     }
 }

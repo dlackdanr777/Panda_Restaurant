@@ -27,7 +27,7 @@ public class UIAttendanceSlot : MonoBehaviour
     {
         if (data == null)
         {
-            DebugLog.LogError("ÇöÀç µ¥ÀÌÅÍ´Â NullÀÔ´Ï´Ù.");
+            DebugLog.LogError("í˜„ì¬ ë°ì´í„°ëŠ” Nullì…ë‹ˆë‹¤.");
             return;
         }
 
@@ -35,7 +35,7 @@ public class UIAttendanceSlot : MonoBehaviour
             return;
 
         _data = data;
-        _dayText.text = day + "ÀÏ";
+        _dayText.text = day + "ì¼";
         _normalImages.gameObject.SetActive(true);
         _specialImages.gameObject.SetActive(false);
         _giftImage.sprite = data.MoneyType == MoneyType.Gold ? _coinSprite : _diaSprite;
@@ -51,7 +51,7 @@ public class UIAttendanceSlot : MonoBehaviour
     {
         if (data == null)
         {
-            DebugLog.LogError("ÇöÀç µ¥ÀÌÅÍ´Â NullÀÔ´Ï´Ù.");
+            DebugLog.LogError("í˜„ì¬ ë°ì´í„°ëŠ” Nullì…ë‹ˆë‹¤.");
             return;
         }
 
@@ -60,7 +60,7 @@ public class UIAttendanceSlot : MonoBehaviour
 
 
         _data = data;
-        _dayText.text = "°³±Ù»ó";
+        _dayText.text = "ê°œê·¼ìƒ";
         _normalImages.gameObject.SetActive(false);
         _specialImages.gameObject.SetActive(true);
         _giftImage.sprite = data.MoneyType == MoneyType.Gold ? _coinSprite : _diaSprite;
@@ -117,7 +117,7 @@ public class UIAttendanceSlot : MonoBehaviour
     {
         if(_data == null)
         {
-            throw new System.Exception("ÇöÀç Ãâ¼® º¸»ó µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.");
+            throw new System.Exception("í˜„ì¬ ì¶œì„ ë³´ìƒ ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤.");
         }
 
         switch (_data.MoneyType)

@@ -66,10 +66,10 @@ public class UIStaffUpgrade : MobileUIView
     private void UpdateData()
     {
         if (_currentData == null)
-            throw new System.Exception("½ºÅÇ µ¥ÀÌÅÍ°¡ NULLÀÔ´Ï´Ù.");
+            throw new System.Exception("ìŠ¤íƒ­ ë°ì´í„°ê°€ NULLì…ë‹ˆë‹¤.");
 
         if(!UserInfo.IsGiveStaff(UserInfo.CurrentStage, _currentData))
-            throw new System.Exception("ÇØ´ç ½ºÅÇÀ» °í¿ëÇÏÁö ¾Ê¾Ò½À´Ï´Ù.");
+            throw new System.Exception("í•´ë‹¹ ìŠ¤íƒ­ì„ ê³ ìš©í•˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
 
         _upgradeButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
@@ -138,10 +138,10 @@ public class UIStaffUpgrade : MobileUIView
     private void OnUpgradeButtonClicked()
     {
         if (_currentData == null)
-            throw new System.Exception("½ºÅÂÇÁ µ¥ÀÌÅÍ°¡ NULLÀÔ´Ï´Ù.");
+            throw new System.Exception("ìŠ¤íƒœí”„ ë°ì´í„°ê°€ NULLì…ë‹ˆë‹¤.");
 
         if (!UserInfo.IsGiveStaff(UserInfo.CurrentStage, _currentData))
-            throw new System.Exception("ÇØ´ç ½ºÅÇÀ» °í¿ëÇÏÁö ¾Ê¾Ò½À´Ï´Ù.");
+            throw new System.Exception("í•´ë‹¹ ìŠ¤íƒ­ì„ ê³ ìš©í•˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
 
         int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, _currentData);
         if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
@@ -167,7 +167,7 @@ public class UIStaffUpgrade : MobileUIView
                 UserInfo.AddDia(-upgradeMoneyData.Price);
 
             UserInfo.UpgradeStaff(UserInfo.CurrentStage, _currentData);
-            PopupManager.Instance.ShowDisplayText("Á÷¿ø ¾÷±×·¹ÀÌµå¸¦ ¿Ï·áÇß¾î¿ä!");
+            PopupManager.Instance.ShowDisplayText("ì§ì› ì—…ê·¸ë ˆì´ë“œë¥¼ ì™„ë£Œí–ˆì–´ìš”!");
             SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
             _flashEffect.Emit(1);
             UpdateData();

@@ -49,8 +49,8 @@ public class GachaTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(1f);
         _uiTutorial.PunchHoleSetActive(true);
         _uiTutorial.CustomHoleSetActive(true, 250, "none", holePos);
-        yield return _descriptionNPC.ShowDescription2Text("»õ·Ó°Ô µîÀåÇÑ ¼Õ´ÔÀÌ »õ·Î¿î ¸Ş´º¸¦ ¿øÇÏ³×¿ä!");
-        yield return _descriptionNPC.ShowDescription2Text("Á¦Á¶¹ıÀÌ ÇÊ¿äÇÑ ¸Ş´º¸¦ ¹è¿öº¾½Ã´Ù!");
+        yield return _descriptionNPC.ShowDescription2Text("ìƒˆë¡­ê²Œ ë“±ì¥í•œ ì†ë‹˜ì´ ìƒˆë¡œìš´ ë©”ë‰´ë¥¼ ì›í•˜ë„¤ìš”!");
+        yield return _descriptionNPC.ShowDescription2Text("ì œì¡°ë²•ì´ í•„ìš”í•œ ë©”ë‰´ë¥¼ ë°°ì›Œë´…ì‹œë‹¤!");
         _uiTutorial.CustomHoleSetActive(false, 250, "none", holePos);
         yield return YieldCache.WaitForSeconds(1);
         _uiTutorial.CustomHoleSetActive(true, 170, _shopButton.name, _shopButton.transform, false);
@@ -70,8 +70,8 @@ public class GachaTutorial : MonoBehaviour
         _uiTutorial.SetBuyHoleTargetObjectName("none");
         yield return YieldCache.WaitForSeconds(2);
         _tutorialNav.Push("UITutorialDescription");
-        yield return _descriptionNPC.ShowDescription2Text("Á¦Á¶¹ıÀ» ¸ğ¸£´Â ¸Ş´º´Â ¹è¿ï ¼ö°¡ ¾ø¾î¿ä.");
-        yield return _descriptionNPC.ShowDescription2Text("µû¶ó¼­ Ä¸½¶ ¸Ó½ÅÀ» ÅëÇØ À½½ÄÀ» À§ÇÑ ·¹½ÃÇÇ¸¦ ±¸ÇØ¾ß ÇÑ´ä´Ï´Ù.");
+        yield return _descriptionNPC.ShowDescription2Text("ì œì¡°ë²•ì„ ëª¨ë¥´ëŠ” ë©”ë‰´ëŠ” ë°°ìš¸ ìˆ˜ê°€ ì—†ì–´ìš”.");
+        yield return _descriptionNPC.ShowDescription2Text("ë”°ë¼ì„œ ìº¡ìŠ ë¨¸ì‹ ì„ í†µí•´ ìŒì‹ì„ ìœ„í•œ ë ˆì‹œí”¼ë¥¼ êµ¬í•´ì•¼ í•œë‹µë‹ˆë‹¤.");
         _uiTutorial.BuyHoleSetActive(false);
         yield return YieldCache.WaitForSeconds(1);
         _uiTutorial.ExitHoleSetActive(true);
@@ -92,10 +92,10 @@ public class GachaTutorial : MonoBehaviour
         GachaItemData needItemData = ItemManager.Instance.GetGachaItemData(_foodData.NeedItem);
         _uiTutorial.SetGacha1ButtonClickEvent(() => _uiGacha.GetItem(needItemData));
         yield return YieldCache.WaitForSeconds(2f);
-        yield return _descriptionNPC.ShowDescription2Text("ÀÌ°÷Àº ¾ÆÀÌÅÛÀ» »ÌÀ» ¼ö ÀÖ´Â °÷ÀÔ´Ï´Ù.");
-        yield return _descriptionNPC.ShowDescription2Text("Ä¸½¶ ¸Ó½Å¿¡´Â ´Ù¾çÇÑ ¾ÆÀÌÅÛµéÀÌ ³ª¿Â´ä´Ï´Ù!");
-        yield return _descriptionNPC.ShowDescription2Text("¾ÆÀÌÅÛÀ» ÀÌ¿ëÇØ »õ ·¹½ÃÇÇ¸¦ ¹è¿ì°Å³ª, \n´É·ÂÀ» °­È­ÇÒ ¼ö ÀÖ½À´Ï´Ù.");
-        yield return _descriptionNPC.ShowDescription2Text("±×·³ Ä¸½¶À» »Ì¾Æº¾½Ã´Ù! \nÃ¹ È¸´Â Á¦°¡ »ì°Ô¿ä!");
+        yield return _descriptionNPC.ShowDescription2Text("ì´ê³³ì€ ì•„ì´í…œì„ ë½‘ì„ ìˆ˜ ìˆëŠ” ê³³ì…ë‹ˆë‹¤.");
+        yield return _descriptionNPC.ShowDescription2Text("ìº¡ìŠ ë¨¸ì‹ ì—ëŠ” ë‹¤ì–‘í•œ ì•„ì´í…œë“¤ì´ ë‚˜ì˜¨ë‹µë‹ˆë‹¤!");
+        yield return _descriptionNPC.ShowDescription2Text("ì•„ì´í…œì„ ì´ìš©í•´ ìƒˆ ë ˆì‹œí”¼ë¥¼ ë°°ìš°ê±°ë‚˜, \nëŠ¥ë ¥ì„ ê°•í™”í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.");
+        yield return _descriptionNPC.ShowDescription2Text("ê·¸ëŸ¼ ìº¡ìŠì„ ë½‘ì•„ë´…ì‹œë‹¤! \nì²« íšŒëŠ” ì œê°€ ì‚´ê²Œìš”!");
         yield return YieldCache.WaitForSeconds(1);
         _uiTutorial.CustomHoleSetActive(true, 350, "Tutorial Gacha1 Button", _uiTutorial.Gacha1Button.transform);
         _tutorialNav.Push("UITutorial");
@@ -122,8 +122,8 @@ public class GachaTutorial : MonoBehaviour
         _tutorialNav.Push("UITutorialDescription");
         _uiTutorial.ScreenButtonSetActive(true);
         yield return YieldCache.WaitForSeconds(1);
-        yield return _descriptionNPC.ShowDescription2Text("ÀÌÁ¦ ·¹½ÃÇÇ¸¦ ÅëÇØ¼­ »õ·Î¿î ¸Ş´º¸¦ Á¦ÀÛÇÒ ¼ö ÀÖ¾î¿ä.");
-        yield return _descriptionNPC.ShowDescription2Text("»õ ¼Õ´ÔÀ» À§ÇØ ¹Ù·Î À½½ÄÀ» ¸¸µé·¯ °¡ºÁ¿ä!");
+        yield return _descriptionNPC.ShowDescription2Text("ì´ì œ ë ˆì‹œí”¼ë¥¼ í†µí•´ì„œ ìƒˆë¡œìš´ ë©”ë‰´ë¥¼ ì œì‘í•  ìˆ˜ ìˆì–´ìš”.");
+        yield return _descriptionNPC.ShowDescription2Text("ìƒˆ ì†ë‹˜ì„ ìœ„í•´ ë°”ë¡œ ìŒì‹ì„ ë§Œë“¤ëŸ¬ ê°€ë´ìš”!");
 
         _descriptionNPC.PopEnabled = true;
         _uiTutorial.PopEnabled = true;

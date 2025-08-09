@@ -12,13 +12,13 @@ public class FoodPriceUpSkill : SkillBase
     public override void Activate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         GameManager.Instance.AddFoodPriceMul(_foodPriceUpPercent);
-        Debug.Log(staff.gameObject.name + "±İ¾× Áõ°¡");
+        Debug.Log(staff.gameObject.name + "ê¸ˆì•¡ ì¦ê°€");
     }
 
     public override void Deactivate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         GameManager.Instance.AddFoodPriceMul(-_foodPriceUpPercent);
-        Debug.Log(staff.gameObject.name + "±İ¾× °¨¼Ò");
+        Debug.Log(staff.gameObject.name + "ê¸ˆì•¡ ê°ì†Œ");
     }
 
     public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)

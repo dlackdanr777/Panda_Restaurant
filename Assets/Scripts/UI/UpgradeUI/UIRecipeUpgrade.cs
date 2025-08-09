@@ -61,10 +61,10 @@ public class UIRecipeUpgrade : MobileUIView
     private void UpdateData()
     {
         if (_currentData == null)
-            throw new System.Exception("·¹½ÃÇÇ µ¥ÀÌÅÍ°¡ NULLÀÔ´Ï´Ù.");
+            throw new System.Exception("ë ˆì‹œí”¼ ë°ì´í„°ê°€ NULLì…ë‹ˆë‹¤.");
 
         if(!UserInfo.IsGiveRecipe(_currentData))
-            throw new System.Exception("ÇØ´ç ·¹½ÃÇÇ¸¦ ±¸¸ÅÇÏÁö ¾Ê¾Ò½À´Ï´Ù.");
+            throw new System.Exception("í•´ë‹¹ ë ˆì‹œí”¼ë¥¼ êµ¬ë§¤í•˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
 
         _upgradeButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
@@ -118,10 +118,10 @@ public class UIRecipeUpgrade : MobileUIView
     private void OnUpgradeButtonClicked()
     {
         if (_currentData == null)
-            throw new System.Exception("·¹½ÃÇÇ µ¥ÀÌÅÍ°¡ NULLÀÔ´Ï´Ù.");
+            throw new System.Exception("ë ˆì‹œí”¼ ë°ì´í„°ê°€ NULLì…ë‹ˆë‹¤.");
 
         if (!UserInfo.IsGiveRecipe(_currentData))
-            throw new System.Exception("ÇØ´ç ·¹½ÃÇÇ¸¦ ±¸¸ÅÇÏÁö ¾Ê¾Ò½À´Ï´Ù.");
+            throw new System.Exception("í•´ë‹¹ ë ˆì‹œí”¼ë¥¼ êµ¬ë§¤í•˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
 
 
         int level = UserInfo.GetRecipeLevel(_currentData);
@@ -133,7 +133,7 @@ public class UIRecipeUpgrade : MobileUIView
                 UserInfo.AddMoney(-price);
                 _miniGameController.StartMiniGame1(_currentData, () =>
                 {
-                    PopupManager.Instance.ShowDisplayText("·¹½ÃÇÇ ¾÷±×·¹ÀÌµå¸¦ ¿Ï·áÇß¾î¿ä!");
+                    PopupManager.Instance.ShowDisplayText("ë ˆì‹œí”¼ ì—…ê·¸ë ˆì´ë“œë¥¼ ì™„ë£Œí–ˆì–´ìš”!");
                     SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
                     _flashEffect.Emit(1);
                     UpdateData();

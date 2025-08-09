@@ -18,7 +18,7 @@ public class TableData : MonoBehaviour
     public void SetLeftChairTrPos(Vector3 pos) => _chairTrs[0].position = pos;
     public void SetRightChairTrPos(Vector3 pos) => _chairTrs[1].position = pos;
 
-    /// <summary>ChairTrs[]¿Í Index ¿¬µ¿À» ÅëÇØ ÇØ´ç ÀÇÀÚÀ§Ä¡¿¡¼­ ¹ö¸®´Â ÄÚÀÎÀÇ À§Ä¡ Å¬·¡½º¸¦ ´ã´Â´Ù.</summary>
+    /// <summary>ChairTrs[]ì™€ Index ì—°ë™ì„ í†µí•´ í•´ë‹¹ ì˜ìžìœ„ì¹˜ì—ì„œ ë²„ë¦¬ëŠ” ì½”ì¸ì˜ ìœ„ì¹˜ í´ëž˜ìŠ¤ë¥¼ ë‹´ëŠ”ë‹¤.</summary>
     [SerializeField] private DropCoinArea[] _dropCoinAreas;
     public DropCoinArea[] DropCoinAreas => _dropCoinAreas;
 

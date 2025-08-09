@@ -12,14 +12,14 @@ public class WaiterData : StaffData
     {
         level -= 1;
         if (_waiterLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _speed + _waiterLevelData[level].AddSpeed;
     }
 
     public override float GetActionValue(int level)
     {
-        DebugLog.Log("»ç¿ëÇÏÁö ¾ÊÀ½");
+        DebugLog.Log("ì‚¬ìš©í•˜ì§€ ì•ŠìŒ");
         return 0;
     }
 
@@ -48,7 +48,7 @@ public class WaiterData : StaffData
     {
         level -= 1;
         if (_waiterLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _waiterLevelData[level].UpgradeMinScore;
     }
@@ -57,7 +57,7 @@ public class WaiterData : StaffData
     {
         level -= 1;
         if (_waiterLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _waiterLevelData[level].UpgradeMoneyData;
     }

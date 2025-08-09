@@ -100,7 +100,7 @@ public class UITip : MobileUIView
     {
         if (UserInfo.GetTip(UserInfo.CurrentStage) <= 0)
         {
-            PopupManager.Instance.ShowDisplayText("È¹µæ °¡´ÉÇÑ ÆÁÀÌ ¾ø½À´Ï´Ù.");
+            PopupManager.Instance.ShowDisplayText("íšë“ ê°€ëŠ¥í•œ íŒì´ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -111,7 +111,7 @@ public class UITip : MobileUIView
     {
         if (UserInfo.GetTip(UserInfo.CurrentStage) <= 0)
         {
-            PopupManager.Instance.ShowDisplayText("È¹µæ °¡´ÉÇÑ ÆÁÀÌ ¾ø½À´Ï´Ù.");
+            PopupManager.Instance.ShowDisplayText("íšë“ ê°€ëŠ¥í•œ íŒì´ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 

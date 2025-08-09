@@ -175,7 +175,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _nameText.text = name;
 
         GachaItemData data = ItemManager.Instance.GetGachaItemData(needItemId);
-        _needItemImage?.SetText("¾ÆÀÌÅÛ ÇÊ¿ä");
+        _needItemImage?.SetText("ì•„ì´í…œ í•„ìš”");
         _needItemImage.SetSprite(data.Sprite);
     }
 
@@ -197,7 +197,7 @@ public class UIRestaurantAdminSlot : MonoBehaviour
         _nameText.text = name;
 
         GachaItemData data = ItemManager.Instance.GetGachaItemData(needItemId);
-        _needItemImage?.SetText("¾ÆÀÌÅÛ º¸À¯");
+        _needItemImage?.SetText("ì•„ì´í…œ ë³´ìœ ");
         _needItemImage.SetSprite(data.Sprite);
     }
 

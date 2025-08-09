@@ -20,7 +20,7 @@ public class StaffController : MonoBehaviour
             StaffGroup group = _staffGroups[i];
             if (_staffGroupDic.ContainsKey(group.FloorType))
             {
-                DebugLog.LogError("ÇØ´ç Å¸ÀÔÀÌ ÀÌ¹Ì µî·ÏµÇ¾î ÀÖ½À´Ï´Ù: " + group.name + "(" + group.FloorType + ")");
+                DebugLog.LogError("í•´ë‹¹ íƒ€ì…ì´ ì´ë¯¸ ë“±ë¡ë˜ì–´ ìˆìŠµë‹ˆë‹¤: " + group.name + "(" + group.FloorType + ")");
                 continue;
             }
 

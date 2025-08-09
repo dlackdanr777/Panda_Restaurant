@@ -43,7 +43,7 @@ public class UIStaff : MobileUIView
     private List<UIRestaurantAdminStaffSlot>[] _slots = new List<UIRestaurantAdminStaffSlot>[(int)EquipStaffType.Length];
     private List<StaffData> _currentTypeDataList;
 
-    // ¼º´É ÃÖÀûÈ­¸¦ À§ÇÑ Ä³½Ã º¯¼öµé
+    // ì„±ëŠ¥ ìµœì í™”ë¥¼ ìœ„í•œ ìºì‹œ ë³€ìˆ˜ë“¤
     private readonly (ERestaurantFloorType, UIRestaurantAdminStaffSlot)[] _equipSlotCache = 
         new (ERestaurantFloorType, UIRestaurantAdminStaffSlot)[(int)ERestaurantFloorType.Length];
     private readonly List<int> _siblingIndexCache = new List<int>(32);
@@ -57,13 +57,13 @@ public class UIStaff : MobileUIView
         _rightArrowButton.AddListener(() => ChangeStaffData(1));
         _uiStaffPreview.Init(OnEquipButtonClicked, OnUsingButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
 
-        // ½½·Ô ¹Ì¸® »ı¼º ÃÖÀûÈ­
+        // ìŠ¬ë¡¯ ë¯¸ë¦¬ ìƒì„± ìµœì í™”
         InitializeSlots();
 
-        // ÀÌº¥Æ® ±¸µ¶
+        // ì´ë²¤íŠ¸ êµ¬ë…
         SubscribeEvents();
 
-        // ÃÊ±â ¼³Á¤
+        // ì´ˆê¸° ì„¤ì •
         SetStaffDataOptimized(EquipStaffType.Manager);
 
         _isInitialized = true;
@@ -105,7 +105,7 @@ public class UIStaff : MobileUIView
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
 
-        // µ¥ÀÌÅÍ ¼³Á¤°ú UI ¾÷µ¥ÀÌÆ®¸¦ ÇÑ ¹ø¿¡ Ã³¸®
+        // ë°ì´í„° ì„¤ì •ê³¼ UI ì—…ë°ì´íŠ¸ë¥¼ í•œ ë²ˆì— ì²˜ë¦¬
         SetStaffDataOptimized(EquipStaffType.Manager);
 
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
@@ -142,10 +142,10 @@ public class UIStaff : MobileUIView
         SetStaffDataOptimized(type);
     }
 
-    // ÃÖÀûÈ­µÈ µ¥ÀÌÅÍ ¼³Á¤ ¸Ş¼­µå
+    // ìµœì í™”ëœ ë°ì´í„° ì„¤ì • ë©”ì„œë“œ
     private void SetStaffDataOptimized(EquipStaffType type)
     {
-        // ÀÌÀü Å¸ÀÔÀÇ ½½·Ôµé ºñÈ°¼ºÈ­ (¹èÄ¡ ÃÖÀûÈ­)
+        // ì´ì „ íƒ€ì…ì˜ ìŠ¬ë¡¯ë“¤ ë¹„í™œì„±í™” (ë°°ì¹˜ ìµœì í™”)
         if (_currentType != type && _slots[(int)_currentType] != null)
         {
             var currentSlots = _slots[(int)_currentType];
@@ -159,7 +159,7 @@ public class UIStaff : MobileUIView
         _currentTypeDataList = StaffDataManager.Instance.GetSortStaffDataList(type);
         _typeText.text = Utility.StaffTypeStringConverter(type);
 
-        // ÇÁ¸®ºä¿Í UI ¾÷µ¥ÀÌÆ®¸¦ ÇÔ²² Ã³¸®
+        // í”„ë¦¬ë·°ì™€ UI ì—…ë°ì´íŠ¸ë¥¼ í•¨ê»˜ ì²˜ë¦¬
         SetStaffPreviewOptimized();
         UpdateUIOptimized();
     }
@@ -171,7 +171,7 @@ public class UIStaff : MobileUIView
         _uiStaffPreview.SetData(_currentFloorType, _currentType, previewData);
     }
 
-    // ´ëÆø ÃÖÀûÈ­µÈ UpdateUI (°£´ÜÇÑ ¹öÀü)
+    // ëŒ€í­ ìµœì í™”ëœ UpdateUI (ê°„ë‹¨í•œ ë²„ì „)
     private void UpdateUIOptimized()
     {
         if (!gameObject.activeInHierarchy || _currentTypeDataList == null || _currentTypeDataList.Count == 0)
@@ -183,10 +183,10 @@ public class UIStaff : MobileUIView
         var currentSlots = _slots[slotsIndex];
         int dataCount = _currentTypeDataList.Count;
         
-        // Á÷¿ø µ¥ÀÌÅÍ¸¦ ¿ì¼±¼øÀ§¿¡ µû¶ó Á¤·Ä
+        // ì§ì› ë°ì´í„°ë¥¼ ìš°ì„ ìˆœìœ„ì— ë”°ë¼ ì •ë ¬
         var prioritizedIndices = GetPrioritizedStaffIndices(dataCount);
         
-        // Á¤·ÄµÈ ¼ø¼­´ë·Î ½½·Ô Ã³¸®
+        // ì •ë ¬ëœ ìˆœì„œëŒ€ë¡œ ìŠ¬ë¡¯ ì²˜ë¦¬
         for (int displayIndex = 0; displayIndex < prioritizedIndices.Count; displayIndex++)
         {
             int dataIndex = prioritizedIndices[displayIndex];
@@ -215,7 +215,7 @@ public class UIStaff : MobileUIView
         var ownedUnequippedStaff = new List<int>();
         var unownedStaff = new List<int>();
 
-        // Á÷¿øµéÀ» ¿ì¼±¼øÀ§º°·Î ºĞ·ù (±âÁ¸ ¼ø¼­ À¯Áö)
+        // ì§ì›ë“¤ì„ ìš°ì„ ìˆœìœ„ë³„ë¡œ ë¶„ë¥˜ (ê¸°ì¡´ ìˆœì„œ ìœ ì§€)
         for (int i = 0; i < dataCount; i++)
         {
             var data = _currentTypeDataList[i];
@@ -236,7 +236,7 @@ public class UIStaff : MobileUIView
             }
         }
 
-        // ÀåÂøµÈ Á÷¿øµé¸¸ ÇÃ·Î¾î ¼ø¼­·Î Á¤·Ä (°°Àº ÇÃ·Î¾î ³»¿¡¼­´Â ±âÁ¸ ¼ø¼­ À¯Áö)
+        // ì¥ì°©ëœ ì§ì›ë“¤ë§Œ í”Œë¡œì–´ ìˆœì„œë¡œ ì •ë ¬ (ê°™ì€ í”Œë¡œì–´ ë‚´ì—ì„œëŠ” ê¸°ì¡´ ìˆœì„œ ìœ ì§€)
         equippedStaff.Sort((a, b) =>
         {
             var dataA = _currentTypeDataList[a];
@@ -244,30 +244,30 @@ public class UIStaff : MobileUIView
             var floorA = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, dataA);
             var floorB = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, dataB);
             
-            // ÇÃ·Î¾î°¡ ´Ù¸£¸é ÇÃ·Î¾î ¼ø¼­·Î Á¤·Ä
+            // í”Œë¡œì–´ê°€ ë‹¤ë¥´ë©´ í”Œë¡œì–´ ìˆœì„œë¡œ ì •ë ¬
             if (floorA != floorB)
                 return floorA.CompareTo(floorB);
             
-            // °°Àº ÇÃ·Î¾î¸é ±âÁ¸ ¸®½ºÆ® ¼ø¼­ À¯Áö (ÀÎµ¦½º ¼ø¼­)
+            // ê°™ì€ í”Œë¡œì–´ë©´ ê¸°ì¡´ ë¦¬ìŠ¤íŠ¸ ìˆœì„œ ìœ ì§€ (ì¸ë±ìŠ¤ ìˆœì„œ)
             return a.CompareTo(b);
         });
 
-        // ÃÖÁ¾ ¿ì¼±¼øÀ§: ÀåÂøµÊ ¡æ ¼ÒÀ¯ÇÏÁö¸¸ ¹ÌÀåÂø ¡æ ¹Ì¼ÒÀ¯
-        // °¢ ±×·ì ³»¿¡¼­´Â ±âÁ¸ ¼ø¼­ À¯Áö
+        // ìµœì¢… ìš°ì„ ìˆœìœ„: ì¥ì°©ë¨ â†’ ì†Œìœ í•˜ì§€ë§Œ ë¯¸ì¥ì°© â†’ ë¯¸ì†Œìœ 
+        // ê° ê·¸ë£¹ ë‚´ì—ì„œëŠ” ê¸°ì¡´ ìˆœì„œ ìœ ì§€
         var result = new List<int>();
-        result.AddRange(equippedStaff);                // ÇÃ·Î¾î ¼ø¼­ + ±âÁ¸ ¼ø¼­
-        result.AddRange(ownedUnequippedStaff);         // ±âÁ¸ ¼ø¼­ À¯Áö
-        result.AddRange(unownedStaff);                 // ±âÁ¸ ¼ø¼­ À¯Áö
+        result.AddRange(equippedStaff);                // í”Œë¡œì–´ ìˆœì„œ + ê¸°ì¡´ ìˆœì„œ
+        result.AddRange(ownedUnequippedStaff);         // ê¸°ì¡´ ìˆœì„œ ìœ ì§€
+        result.AddRange(unownedStaff);                 // ê¸°ì¡´ ìˆœì„œ ìœ ì§€
         
         return result;
     }
 
-    // °£¼ÒÈ­µÈ ProcessEquippedSlot (SiblingIndex Ã³¸® Á¦°Å)
+    // ê°„ì†Œí™”ëœ ProcessEquippedSlot (SiblingIndex ì²˜ë¦¬ ì œê±°)
     private void ProcessEquippedSlot(StaffData data, UIRestaurantAdminStaffSlot slot)
     {
         ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
         Sprite thumbnailSprite = data.ThumbnailSprite == null ?  data.Sprite : data.ThumbnailSprite;
-        // ÀåÂø »óÅÂ Ã³¸®
+        // ì¥ì°© ìƒíƒœ ì²˜ë¦¬
         if (UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
         {
             slot.EquipGroupSetActive(true);
@@ -275,11 +275,11 @@ public class UIStaff : MobileUIView
             slot.SetEquipText(Utility.StaffTypeStringConverter(equipType));
         }
 
-        // ¹èÄ¡ »óÅÂ¿¡ µû¸¥ UI ¼³Á¤
+        // ë°°ì¹˜ ìƒíƒœì— ë”°ë¥¸ UI ì„¤ì •
         string statusText = floorType switch
         {
-            ERestaurantFloorType.Floor1 or ERestaurantFloorType.Floor2 or ERestaurantFloorType.Floor3 => "¹èÄ¡Áß",
-            _ => "¹èÄ¡ÇÏ±â"
+            ERestaurantFloorType.Floor1 or ERestaurantFloorType.Floor2 or ERestaurantFloorType.Floor3 => "ë°°ì¹˜ì¤‘",
+            _ => "ë°°ì¹˜í•˜ê¸°"
         };
 
         if (floorType <= ERestaurantFloorType.Floor3)
@@ -301,7 +301,7 @@ public class UIStaff : MobileUIView
             return;
         }
 
-        string priceText = data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice);
+        string priceText = data.BuyPrice <= 0 ? "ë¬´ë£Œ" : Utility.ConvertToMoney(data.BuyPrice);
 
         if (data.MoneyType == MoneyType.Gold)
         {
@@ -337,7 +337,7 @@ public class UIStaff : MobileUIView
         SoundManager.Instance.PlayEffectAudio(EffectType.UI, _equipSound);
         UserInfo.SetEquipStaff(UserInfo.CurrentStage, floorType, type, data);
         
-        // ÀüÃ¼ Àç¼³Á¤ ´ë½Å ¾÷µ¥ÀÌÆ®¸¸
+        // ì „ì²´ ì¬ì„¤ì • ëŒ€ì‹  ì—…ë°ì´íŠ¸ë§Œ
         UpdateUIOptimized();
     }
 
@@ -346,7 +346,7 @@ public class UIStaff : MobileUIView
         SoundManager.Instance.PlayEffectAudio(EffectType.UI, _dequipSound);
         UserInfo.SetNullEquipStaff(UserInfo.CurrentStage, floorType, data);
         
-        // ÀüÃ¼ Àç¼³Á¤ ´ë½Å ¾÷µ¥ÀÌÆ®¸¸
+        // ì „ì²´ ì¬ì„¤ì • ëŒ€ì‹  ì—…ë°ì´íŠ¸ë§Œ
         UpdateUIOptimized();
     }
 
@@ -382,7 +382,7 @@ public class UIStaff : MobileUIView
             UserInfo.AddDia(-data.BuyPrice);
 
         UserInfo.GiveStaff(UserInfo.CurrentStage, data);
-        PopupManager.Instance.ShowDisplayText("»õ·Î¿î Á÷¿øÀ» Ã¤¿ëÇß¾î¿ä!");
+        PopupManager.Instance.ShowDisplayText("ìƒˆë¡œìš´ ì§ì›ì„ ì±„ìš©í–ˆì–´ìš”!");
     }
 
     private void OnUpgradeButtonClicked(StaffData data)
@@ -404,7 +404,7 @@ public class UIStaff : MobileUIView
         _uiStaffPreview.SetData(_currentFloorType, _currentType, data);
     }
 
-    // È£È¯¼ºÀ» À§ÇÑ ±âÁ¸ ¸Ş¼­µåµé
+    // í˜¸í™˜ì„±ì„ ìœ„í•œ ê¸°ì¡´ ë©”ì„œë“œë“¤
     private void SetStaffData(EquipStaffType type) => SetStaffDataOptimized(type);
     private void SetStaffPreview() => SetStaffPreviewOptimized();
     private void UpdateUI() => UpdateUIOptimized();

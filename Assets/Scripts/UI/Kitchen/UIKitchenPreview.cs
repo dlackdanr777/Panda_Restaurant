@@ -94,7 +94,7 @@ public class UIKitchenPreview : MonoBehaviour
         _uiFoodType.SetFoodType(data.FoodType);
         _selectGroup.SetSprite(data.ThumbnailSprite);
         _selectGroup.SetText(data.Name);
-        _scoreGroup.SetText("<color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.AddScore.ToString() + "</color> ¡° ¡ı∞°");
+        _scoreGroup.SetText("<color=" + Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) + ">" + data.AddScore.ToString() + "</color> Ï†ê Ï¶ùÍ∞Ä");
 
         _setGroup.SetText1(Utility.FoodTypeStringConverter(data.FoodType));
         _setGroup.SetText2(Utility.GetKitchenFoodTypeSetEffectDescription(data.FoodType));
@@ -163,7 +163,7 @@ public class UIKitchenPreview : MonoBehaviour
             {
                 case ERestaurantFloorType.Floor1:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetCenterText("πËƒ°¡ﬂ");
+                    _usingButton.SetCenterText("Î∞∞ÏπòÏ§ë");
                     _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor1));
                     _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor1));
                     _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor1));
@@ -173,7 +173,7 @@ public class UIKitchenPreview : MonoBehaviour
 
                 case ERestaurantFloorType.Floor2:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetCenterText("πËƒ°¡ﬂ");
+                    _usingButton.SetCenterText("Î∞∞ÏπòÏ§ë");
                     _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor2));
                     _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor2));
                     _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor2));
@@ -182,7 +182,7 @@ public class UIKitchenPreview : MonoBehaviour
 
                 case ERestaurantFloorType.Floor3:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetCenterText("πËƒ°¡ﬂ");
+                    _usingButton.SetCenterText("Î∞∞ÏπòÏ§ë");
                     _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor3));
                     _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor3));
                     _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor3));
@@ -191,13 +191,13 @@ public class UIKitchenPreview : MonoBehaviour
 
                 case ERestaurantFloorType.Length:
                     _equipButton.gameObject.SetActive(true);
-                    _equipButton.SetText("πËƒ°«œ±‚");
+                    _equipButton.SetText("Î∞∞ÏπòÌïòÍ∏∞");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
 
                 case ERestaurantFloorType.Error:
                     _equipButton.gameObject.SetActive(true);
-                    _equipButton.SetText("πËƒ°«œ±‚");
+                    _equipButton.SetText("Î∞∞ÏπòÌïòÍ∏∞");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
             }
@@ -231,7 +231,7 @@ public class UIKitchenPreview : MonoBehaviour
                 {
                     _notEnoughMoneyButton.gameObject.SetActive(true);
                     _notEnoughImage.sprite = _notEnoughMoneySprite;
-                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "π´∑·" : Utility.ConvertToMoney(data.BuyPrice));
+                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "Î¨¥Î£å" : Utility.ConvertToMoney(data.BuyPrice));
                     return;
                 }
 
@@ -239,13 +239,13 @@ public class UIKitchenPreview : MonoBehaviour
                 {
                     _notEnoughMoneyButton.gameObject.SetActive(true);
                     _notEnoughImage.sprite = _notEnoughDiaSprite;
-                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "π´∑·" : Utility.ConvertToMoney(data.BuyPrice));
+                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "Î¨¥Î£å" : Utility.ConvertToMoney(data.BuyPrice));
                     return;
                 }
 
 
                 _buyButton.gameObject.SetActive(true);
-                _buyButton.SetText(data.BuyPrice <= 0 ? "π´∑·" : Utility.ConvertToMoney(data.BuyPrice));
+                _buyButton.SetText(data.BuyPrice <= 0 ? "Î¨¥Î£å" : Utility.ConvertToMoney(data.BuyPrice));
                 _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
             }
 
@@ -278,7 +278,7 @@ public class UIKitchenPreview : MonoBehaviour
     {
         if(_currentData == null)
         {
-            DebugLog.Log("«ˆ¿Á µ•¿Ã≈Õ∞° ¡∏¿Á«œ¡ˆ æ Ω¿¥œ¥Ÿ.");
+            DebugLog.Log("ÌòÑÏû¨ Îç∞Ïù¥ÌÑ∞Í∞Ä Ï°¥Ïû¨ÌïòÏßÄ ÏïäÏäµÎãàÎã§.");
             return;
         }
 
@@ -289,7 +289,7 @@ public class UIKitchenPreview : MonoBehaviour
     {
         if (_currentData == null)
         {
-            DebugLog.Log("«ˆ¿Á µ•¿Ã≈Õ∞° ¡∏¿Á«œ¡ˆ æ Ω¿¥œ¥Ÿ.");
+            DebugLog.Log("ÌòÑÏû¨ Îç∞Ïù¥ÌÑ∞Í∞Ä Ï°¥Ïû¨ÌïòÏßÄ ÏïäÏäµÎãàÎã§.");
             return;
         }
 
@@ -335,7 +335,7 @@ public class UIKitchenPreview : MonoBehaviour
     {
         if (_currentData == null)
         {
-            DebugLog.Log("«ˆ¿Á µ•¿Ã≈Õ∞° ¡∏¿Á«œ¡ˆ æ Ω¿¥œ¥Ÿ.");
+            DebugLog.Log("ÌòÑÏû¨ Îç∞Ïù¥ÌÑ∞Í∞Ä Ï°¥Ïû¨ÌïòÏßÄ ÏïäÏäµÎãàÎã§.");
             return;
         }
 

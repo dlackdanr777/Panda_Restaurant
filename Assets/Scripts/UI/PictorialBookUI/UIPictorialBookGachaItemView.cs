@@ -111,7 +111,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
             int giveItemCount = UserInfo.GetGiveItemCount(_data);
             int level = UserInfo.GetGachaItemLevel(_data);
             _giveCountGroup.SetText1(giveItemCount.ToString());
-            _itemCountText.text = requiredItemCount == 0 ? "ÃÖ´ë ¾÷±×·¹ÀÌµå" : requiredItemCount <= giveItemCount ? "¾÷±×·¹ÀÌµå" : giveItemCount + "/" + requiredItemCount;
+            _itemCountText.text = requiredItemCount == 0 ? "ìµœëŒ€ ì—…ê·¸ë ˆì´ë“œ" : requiredItemCount <= giveItemCount ? "ì—…ê·¸ë ˆì´ë“œ" : giveItemCount + "/" + requiredItemCount;
             _giveItemFillAmount.SetFillAmount(requiredItemCount == 0 ? 1 : giveItemCount <= 0 ? 0 : (float)giveItemCount / requiredItemCount);
             if (UserInfo.IsGachaItemUpgradeEnabled(_data))
             {
@@ -200,7 +200,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
     private void OnUpgradeButtonClicked()
     {
         if (_data == null)
-            throw new System.Exception("¾ÆÀÌÅÛÀÌ nullÀÎ »óÅÂ·Î °­È­ ¹öÆ°À» Å¬¸¯Çß½À´Ï´Ù.");
+            throw new System.Exception("ì•„ì´í…œì´ nullì¸ ìƒíƒœë¡œ ê°•í™” ë²„íŠ¼ì„ í´ë¦­í–ˆìŠµë‹ˆë‹¤.");
 
         if(UserInfo.UpgradeGachaItem(_data))
         {
@@ -210,7 +210,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
         }
         else
         {
-            PopupManager.Instance.ShowDisplayText("¾Ë ¼ö ¾ø´Â ¿À·ù ¹ß»ý");
+            PopupManager.Instance.ShowDisplayText("ì•Œ ìˆ˜ ì—†ëŠ” ì˜¤ë¥˜ ë°œìƒ");
         }
     }
 }

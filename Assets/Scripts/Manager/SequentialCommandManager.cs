@@ -27,7 +27,7 @@ public class SequentialCommandManager : MonoBehaviour
     private Canvas _dontTouchCanvas;
     private SortedSet<Command> _commandQueue;
     private bool _isExecuting = false;
-    private int _commandCounter = 0; // µ¿ÀÏ ¿ì¼±¼øÀ§ Ã³¸®¿ë
+    private int _commandCounter = 0; // ë™ì¼ ìš°ì„ ìˆœìœ„ ì²˜ë¦¬ìš©
 
     private void Awake()
     {
@@ -41,7 +41,7 @@ public class SequentialCommandManager : MonoBehaviour
         _dontTouchCanvas = Instantiate(_dontTouchCanvasPrefab, transform);
         _dontTouchCanvas.gameObject.SetActive(false);
 
-        // ¿ì¼±¼øÀ§ Å¥¸¦ »ı¼º (¿ì¼±¼øÀ§ ³·Àº °ªÀÌ ¸ÕÀú ½ÇÇàµÇµµ·Ï ¼³Á¤)
+        // ìš°ì„ ìˆœìœ„ íë¥¼ ìƒì„± (ìš°ì„ ìˆœìœ„ ë‚®ì€ ê°’ì´ ë¨¼ì € ì‹¤í–‰ë˜ë„ë¡ ì„¤ì •)
         _commandQueue = new SortedSet<Command>(new CommandComparer());
         LoadingSceneManager.OnLoadSceneHandler += ResetCommand;
     }
@@ -51,9 +51,9 @@ public class SequentialCommandManager : MonoBehaviour
     public void EnqueueCommand(Action execute, Func<bool> canExecute, Func<bool> isFinished, int priority, float interval = 1)
     {
         interval = Mathf.Clamp(interval, 0f, interval);
-        _commandQueue.Add(new Command(execute, canExecute, isFinished, priority, interval, _commandCounter++)); // µ¿ÀÏ ¿ì¼±¼øÀ§ ´ëºñ ¼ø¼­ À¯Áö
+        _commandQueue.Add(new Command(execute, canExecute, isFinished, priority, interval, _commandCounter++)); // ë™ì¼ ìš°ì„ ìˆœìœ„ ëŒ€ë¹„ ìˆœì„œ ìœ ì§€
 
-        // »õ·Î¿î ¸í·ÉÀÌ Ãß°¡µÇ¸é ÅÍÄ¡ ¹æÁö ½ºÅ©¸° È°¼ºÈ­
+        // ìƒˆë¡œìš´ ëª…ë ¹ì´ ì¶”ê°€ë˜ë©´ í„°ì¹˜ ë°©ì§€ ìŠ¤í¬ë¦° í™œì„±í™”
         _dontTouchCanvas.gameObject.SetActive(true);
 
         TryExecuteNext();
@@ -73,7 +73,7 @@ public class SequentialCommandManager : MonoBehaviour
         _isExecuting = true;
         yield return YieldCache.WaitForSeconds(command.Interval);
 
-        // ½ÇÇà Áß¿¡´Â ÅÍÄ¡ ¹æÁö ½ºÅ©¸° ºñÈ°¼ºÈ­
+        // ì‹¤í–‰ ì¤‘ì—ëŠ” í„°ì¹˜ ë°©ì§€ ìŠ¤í¬ë¦° ë¹„í™œì„±í™”
         _dontTouchCanvas.gameObject.SetActive(false);
 
         yield return new WaitUntil(command.CanExecute);

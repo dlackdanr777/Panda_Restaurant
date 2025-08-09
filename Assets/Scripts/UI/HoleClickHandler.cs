@@ -64,7 +64,7 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
             if (button == null && effect == null)
                 continue;
 
-            DebugLog.Log(name + ": ´Ù¿î");
+            DebugLog.Log(name + ": ë‹¤ìš´");
             DebugLog.Log(button);
             DebugLog.Log(effect);
             button?.OnPointerDown(eventData);

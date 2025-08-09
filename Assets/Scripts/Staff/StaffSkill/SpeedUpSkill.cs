@@ -11,7 +11,7 @@ public class SpeedUpSkill : SkillBase
 
     public override void Activate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        DebugLog.Log("½ºÇÇµå¾÷ ½ÇÇàÁß");
+        DebugLog.Log("ìŠ¤í”¼ë“œì—… ì‹¤í–‰ì¤‘");
         staff.AddSpeedMul(_speedUpMul);
     }
 

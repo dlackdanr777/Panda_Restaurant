@@ -126,7 +126,7 @@ public class UIStaffPreview : MonoBehaviour
             {
                 case ERestaurantFloorType.Floor1:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetCenterText("¹èÄ¡Áß");
+                    _usingButton.SetCenterText("ë°°ì¹˜ì¤‘");
                     _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor1));
                     _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor1));
                     _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor1));
@@ -135,7 +135,7 @@ public class UIStaffPreview : MonoBehaviour
 
                 case ERestaurantFloorType.Floor2:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetCenterText("¹èÄ¡Áß");
+                    _usingButton.SetCenterText("ë°°ì¹˜ì¤‘");
                     _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor2));
                     _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor2));
                     _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor2));
@@ -144,7 +144,7 @@ public class UIStaffPreview : MonoBehaviour
 
                 case ERestaurantFloorType.Floor3:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetCenterText("¹èÄ¡Áß");
+                    _usingButton.SetCenterText("ë°°ì¹˜ì¤‘");
                     _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor3));
                     _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor3));
                     _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor3));
@@ -153,14 +153,14 @@ public class UIStaffPreview : MonoBehaviour
 
                 case ERestaurantFloorType.Length:
                     _equipButton.gameObject.SetActive(true);
-                    _equipButton.SetText("¹èÄ¡ÇÏ±â");
+                    _equipButton.SetText("ë°°ì¹˜í•˜ê¸°");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
 
                     break;
 
                 case ERestaurantFloorType.Error:
                     _equipButton.gameObject.SetActive(true);
-                    _equipButton.SetText("¹èÄ¡ÇÏ±â");
+                    _equipButton.SetText("ë°°ì¹˜í•˜ê¸°");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
             }
@@ -188,7 +188,7 @@ public class UIStaffPreview : MonoBehaviour
             {
                 _notEnoughMoneyButton.gameObject.SetActive(true);
                 _notEnoughImage.sprite = _notEnoughMoneySprite;
-                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice));
+                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "ë¬´ë£Œ" : Utility.ConvertToMoney(data.BuyPrice));
                 return;
             }
 
@@ -196,13 +196,13 @@ public class UIStaffPreview : MonoBehaviour
             {
                 _notEnoughMoneyButton.gameObject.SetActive(true);
                 _notEnoughImage.sprite = _notEnoughDiaSprite;
-                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice));
+                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "ë¬´ë£Œ" : Utility.ConvertToMoney(data.BuyPrice));
                 return;
             }
 
 
             _buyButton.gameObject.SetActive(true);
-            _buyButton.SetText(data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice));
+            _buyButton.SetText(data.BuyPrice <= 0 ? "ë¬´ë£Œ" : Utility.ConvertToMoney(data.BuyPrice));
             _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
         }
     }
@@ -217,7 +217,7 @@ public class UIStaffPreview : MonoBehaviour
     {
         if (_currentData == null)
         {
-            DebugLog.Log("ÇöÀç µ¥ÀÌÅÍ°¡ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù.");
+            DebugLog.Log("í˜„ìž¬ ë°ì´í„°ê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -229,7 +229,7 @@ public class UIStaffPreview : MonoBehaviour
     {
         if (_currentData == null)
         {
-            DebugLog.Log("ÇöÀç µ¥ÀÌÅÍ°¡ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù.");
+            DebugLog.Log("í˜„ìž¬ ë°ì´í„°ê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -285,7 +285,7 @@ public class UIStaffPreview : MonoBehaviour
     {
         if (_currentData == null)
         {
-            DebugLog.Log("ÇöÀç µ¥ÀÌÅÍ°¡ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù.");
+            DebugLog.Log("í˜„ìž¬ ë°ì´í„°ê°€ ì¡´ìž¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.");
             return;
         }
 

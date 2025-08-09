@@ -104,7 +104,7 @@ public class UIRecipePreview : MonoBehaviour
         _selectGroup.SetText(data.Name);
         _priceGroup.SetText(Utility.ConvertToMoney(data.GetSellPrice(level)));
         _cookSpeedGroup.SetText(data.GetCookingTime(level) + "s");
-        _descriptionGroup.SetText1("¼³¸í");
+        _descriptionGroup.SetText1("ì„¤ëª…");
         _descriptionGroup.SetText2(data.Description);
 
         if (UserInfo.IsGiveRecipe(data))
@@ -133,7 +133,7 @@ public class UIRecipePreview : MonoBehaviour
             {
                 GachaItemData gachaItemData = ItemManager.Instance.GetGachaItemData(data.NeedItem);
                 if (gachaItemData == null)
-                    throw new Exception("ÇÊ¿ä ¾ÆÀÌÅÛÀÌ Á¸ÀçÇÏ³ª µ¥ÀÌÅÍº£ÀÌ½º »ó¿¡ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù: " + data.NeedItem);
+                    throw new Exception("í•„ìš” ì•„ì´í…œì´ ì¡´ì¬í•˜ë‚˜ ë°ì´í„°ë² ì´ìŠ¤ ìƒì— ì¡´ì¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤: " + data.NeedItem);
 
                 if (!UserInfo.IsGiveGachaItem(gachaItemData))
                 {
@@ -152,7 +152,7 @@ public class UIRecipePreview : MonoBehaviour
                 }
                 else
                 {
-                    _minigameButton.SetText("Á¶¸® ½ÃÀÛ");
+                    _minigameButton.SetText("ì¡°ë¦¬ ì‹œì‘");
                 }
 
                 return;
@@ -168,7 +168,7 @@ public class UIRecipePreview : MonoBehaviour
                 {
                     _notEnoughMoneyButton.gameObject.SetActive(true);
                     _notEnoughImage.sprite = _notEnoughMoneySprite;
-                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice));
+                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "ë¬´ë£Œ" : Utility.ConvertToMoney(data.BuyPrice));
                     return;
                 }
 
@@ -176,13 +176,13 @@ public class UIRecipePreview : MonoBehaviour
                 {
                     _notEnoughMoneyButton.gameObject.SetActive(true);
                     _notEnoughImage.sprite = _notEnoughDiaSprite;
-                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice));
+                    _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "ë¬´ë£Œ" : Utility.ConvertToMoney(data.BuyPrice));
                     return;
                 }
 
 
                 _buyButton.gameObject.SetActive(true);
-                _buyButton.SetText(data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice));
+                _buyButton.SetText(data.BuyPrice <= 0 ? "ë¬´ë£Œ" : Utility.ConvertToMoney(data.BuyPrice));
                 _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
             }
         }
@@ -201,7 +201,7 @@ public class UIRecipePreview : MonoBehaviour
     {
         if (_currentData == null)
         {
-            DebugLog.LogError("ÇöÀç À½½Ä µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.");
+            DebugLog.LogError("í˜„ì¬ ìŒì‹ ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -211,10 +211,10 @@ public class UIRecipePreview : MonoBehaviour
 
     private void OnMiniGameButtonClicked()
     {
-        DebugLog.Log("¹Ì´Ï°ÔÀÓ ¹öÆ° Å¬¸¯");
+        DebugLog.Log("ë¯¸ë‹ˆê²Œì„ ë²„íŠ¼ í´ë¦­");
         if(_currentData == null)
         {
-            DebugLog.LogError("ÇöÀç À½½Ä µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.");
+            DebugLog.LogError("í˜„ì¬ ìŒì‹ ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -234,18 +234,18 @@ public class UIRecipePreview : MonoBehaviour
     {
         if(_currentData == null)
         {
-            DebugLog.LogError("ÇöÀç À½½Ä µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.");
+            DebugLog.LogError("í˜„ì¬ ìŒì‹ ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
         GachaItemData itemData = ItemManager.Instance.GetGachaItemData(_currentData.NeedItem);
         if(itemData == null)
         {
-            DebugLog.LogError("ÀÌ À½½ÄÀº ¿ä±¸ ¾ÆÀÌÅÛÀÌ ¾ø½À´Ï´Ù.");
+            DebugLog.LogError("ì´ ìŒì‹ì€ ìš”êµ¬ ì•„ì´í…œì´ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
-        PopupManager.Instance.ShowDisplayText("Ä¸½¶ »Ì±â¸¦ ÅëÇØ\n" + Utility.SetStringColor(itemData.Name, ColorType.Positive) + " ¾ÆÀÌÅÛÀÌ ÇÊ¿äÇÕ´Ï´Ù.");
+        PopupManager.Instance.ShowDisplayText("ìº¡ìŠ ë½‘ê¸°ë¥¼ í†µí•´\n" + Utility.SetStringColor(itemData.Name, ColorType.Positive) + " ì•„ì´í…œì´ í•„ìš”í•©ë‹ˆë‹¤.");
     }
 
     private void TimeManagerUpdateEvent()
@@ -258,13 +258,13 @@ public class UIRecipePreview : MonoBehaviour
 
         if (_currentData == null)
         {
-            DebugLog.LogError("ÇöÀç À½½Ä µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.");
+            DebugLog.LogError("í˜„ì¬ ìŒì‹ ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
         if(string.IsNullOrWhiteSpace(_currentData.NeedItem))
         {
-            DebugLog.LogError("ÀÌ À½½ÄÀº ¿ä±¸ ¾ÆÀÌÅÛÀÌ ¾ø½À´Ï´Ù.");
+            DebugLog.LogError("ì´ ìŒì‹ì€ ìš”êµ¬ ì•„ì´í…œì´ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -275,7 +275,7 @@ public class UIRecipePreview : MonoBehaviour
         }
         else
         {
-            _minigameButton.SetText("Á¶¸® ½ÃÀÛ");
+            _minigameButton.SetText("ì¡°ë¦¬ ì‹œì‘");
         }
     }
 
@@ -283,25 +283,25 @@ public class UIRecipePreview : MonoBehaviour
     {
         if (!_minigameButton.gameObject.activeInHierarchy)
         {
-            DebugLog.LogError("¹Ì´Ï°ÔÀÓ ¹öÆ°ÀÌ È°¼ºÈ­ µÇ¾î ÀÖÁö ¾Ê½À´Ï´Ù.");
+            DebugLog.LogError("ë¯¸ë‹ˆê²Œì„ ë²„íŠ¼ì´ í™œì„±í™” ë˜ì–´ ìˆì§€ ì•ŠìŠµë‹ˆë‹¤.");
             return;
         }
 
         if (_currentData == null)
         {
-            DebugLog.LogError("ÇöÀç À½½Ä µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.");
+            DebugLog.LogError("í˜„ì¬ ìŒì‹ ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
         if (string.IsNullOrWhiteSpace(_currentData.NeedItem))
         {
-            DebugLog.LogError("ÀÌ À½½ÄÀº ¿ä±¸ ¾ÆÀÌÅÛÀÌ ¾ø½À´Ï´Ù.");
+            DebugLog.LogError("ì´ ìŒì‹ì€ ìš”êµ¬ ì•„ì´í…œì´ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 
         if(!id.Equals(_currentData.Id + "_MiniGame"))
         {
-            DebugLog.LogError("¹Ì´Ï°ÔÀÓ ¾ÆÀÌµğ°¡ ´Ù¸¨´Ï´Ù.");
+            DebugLog.LogError("ë¯¸ë‹ˆê²Œì„ ì•„ì´ë””ê°€ ë‹¤ë¦…ë‹ˆë‹¤.");
             return;
         }
 
@@ -312,7 +312,7 @@ public class UIRecipePreview : MonoBehaviour
         }
         else
         {
-            _minigameButton.SetText("Á¶¸® ½ÃÀÛ");
+            _minigameButton.SetText("ì¡°ë¦¬ ì‹œì‘");
         }
     }
 

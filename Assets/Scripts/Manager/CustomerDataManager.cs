@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+ï»¿using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
 
@@ -37,7 +37,7 @@ public class CustomerDataManager : MonoBehaviour
     public CustomerData GetCustomerData(string id)
     {
         if (!_customerDataDic.TryGetValue(id, out CustomerData data))
-            throw new System.Exception("ÇØ´ç id°ªÀÌ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù.");
+            throw new System.Exception("í•´ë‹¹ idê°’ì´ ì¡´ì¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.");
 
         return data;
     }
@@ -120,7 +120,7 @@ public class CustomerDataManager : MonoBehaviour
             if (!state.IsScoreValid || !state.IsGiveRecipe || !state.IsGiveItem)
                 continue;
 
-            DebugLog.Log(_customerDataList[i].Name + " È°¼ºÈ­");
+            DebugLog.Log(_customerDataList[i].Name + " í™œì„±í™”");
             UserInfo.CustomerEnabled(_customerDataList[i]);
             UserInfo.AddNotification(_customerDataList[i].Id);
         }
@@ -163,16 +163,16 @@ public class CustomerDataManager : MonoBehaviour
 
     private static void LoadNormalCustomerSprites()
     {
-        // ½ºÇÁ¶óÀÌÆ® ¸®¼Ò½º ·Îµå
+        // ìŠ¤í”„ë¼ì´íŠ¸ ë¦¬ì†ŒìŠ¤ ë¡œë“œ
         Sprite[] sprites = Resources.LoadAll<Sprite>("CustomerData/Sprites/NormalCustomer");
 
         foreach (var sprite in sprites)
         {
             string key = Utility.CutStringUpToChar(sprite.name, '_').ToUpper();
-            // Áßº¹ Ã¼Å©
+            // ì¤‘ë³µ ì²´í¬
             if (_customerSpriteDic.ContainsKey(key))
             {
-                Debug.LogWarning($"Áßº¹µÈ ½ºÇÁ¶óÀÌÆ® Å°°¡ ÀÖ½À´Ï´Ù: {key}");
+                Debug.LogWarning($"ì¤‘ë³µëœ ìŠ¤í”„ë¼ì´íŠ¸ í‚¤ê°€ ìˆìŠµë‹ˆë‹¤: {key}");
                 continue;
             }
             _customerSpriteDic.Add(key, sprite);
@@ -182,20 +182,20 @@ public class CustomerDataManager : MonoBehaviour
 
     private static void LoadSpecialCustomerSprites()
     {
-        // ½ºÇÁ¶óÀÌÆ® ¸®¼Ò½º ·Îµå
+        // ìŠ¤í”„ë¼ì´íŠ¸ ë¦¬ì†ŒìŠ¤ ë¡œë“œ
         Sprite[] sprites = Resources.LoadAll<Sprite>("CustomerData/Sprites/SpecialCustomer");
 
         foreach (var sprite in sprites)
         {
             string key = Utility.CutStringUpToChar(sprite.name, '_').ToUpper();
-            string afterUnderStr = Utility.GetStringAfterChar(sprite.name, '_'); // ¾ğ´õ¹Ù ÀÌÈÄ ¹®ÀÚ¿­
-            bool isTouch = afterUnderStr.Contains("ÅÍÄ¡") || afterUnderStr.Contains("¹İÀÀ");
+            string afterUnderStr = Utility.GetStringAfterChar(sprite.name, '_'); // ì–¸ë”ë°” ì´í›„ ë¬¸ìì—´
+            bool isTouch = afterUnderStr.Contains("í„°ì¹˜") || afterUnderStr.Contains("ë°˜ì‘");
 
             if(isTouch)
             {
                 if(_specialCustomerTouchSpriteDic.ContainsKey(key))
                 {
-                    Debug.LogWarning($"Áßº¹µÈ ½ºÇÁ¶óÀÌÆ® Å°°¡ ÀÖ½À´Ï´Ù: {key}");
+                    Debug.LogWarning($"ì¤‘ë³µëœ ìŠ¤í”„ë¼ì´íŠ¸ í‚¤ê°€ ìˆìŠµë‹ˆë‹¤: {key}");
                     continue;
                 }
                 _specialCustomerTouchSpriteDic.Add(key, sprite);
@@ -204,7 +204,7 @@ public class CustomerDataManager : MonoBehaviour
             {
                 if (_customerSpriteDic.ContainsKey(key))
                 {
-                    Debug.LogWarning($"Áßº¹µÈ ½ºÇÁ¶óÀÌÆ® Å°°¡ ÀÖ½À´Ï´Ù: {key}");
+                    Debug.LogWarning($"ì¤‘ë³µëœ ìŠ¤í”„ë¼ì´íŠ¸ í‚¤ê°€ ìˆìŠµë‹ˆë‹¤: {key}");
                     continue;
                 }
                 _customerSpriteDic.Add(key, sprite);
@@ -217,7 +217,7 @@ public class CustomerDataManager : MonoBehaviour
 
     private static void LoadGatecrasherCustomerSprites()
     {
-        // ½ºÇÁ¶óÀÌÆ® ¸®¼Ò½º ·Îµå
+        // ìŠ¤í”„ë¼ì´íŠ¸ ë¦¬ì†ŒìŠ¤ ë¡œë“œ
         Sprite[] sprites = Resources.LoadAll<Sprite>("CustomerData/Sprites/GatecrasherCustomer");
 
         foreach (var sprite in sprites)
@@ -226,7 +226,7 @@ public class CustomerDataManager : MonoBehaviour
 
                 if (_customerSpriteDic.ContainsKey(key))
                 {
-                    Debug.LogWarning($"Áßº¹µÈ ½ºÇÁ¶óÀÌÆ® Å°°¡ ÀÖ½À´Ï´Ù: {key}");
+                    Debug.LogWarning($"ì¤‘ë³µëœ ìŠ¤í”„ë¼ì´íŠ¸ í‚¤ê°€ ìˆìŠµë‹ˆë‹¤: {key}");
                     continue;
                 }
                 _customerSpriteDic.Add(key, sprite);
@@ -238,7 +238,7 @@ public class CustomerDataManager : MonoBehaviour
 
     private static void LoadGatecrasherCustomerAnimator()
     {
-        // ½ºÇÁ¶óÀÌÆ® ¸®¼Ò½º ·Îµå
+        // ìŠ¤í”„ë¼ì´íŠ¸ ë¦¬ì†ŒìŠ¤ ë¡œë“œ
         RuntimeAnimatorController[] animators = Resources.LoadAll<RuntimeAnimatorController>("CustomerData/Animator/GatecrasherCustomer");
 
         foreach (var animator in animators)
@@ -252,7 +252,7 @@ public class CustomerDataManager : MonoBehaviour
             {
                 if (_gatecrasherCustomerAnimatorDic.ContainsKey(key))
                 {
-                    Debug.LogWarning($"Áßº¹µÈ ½ºÇÁ¶óÀÌÆ® Å°°¡ ÀÖ½À´Ï´Ù: {key}");
+                    Debug.LogWarning($"ì¤‘ë³µëœ ìŠ¤í”„ë¼ì´íŠ¸ í‚¤ê°€ ìˆìŠµë‹ˆë‹¤: {key}");
                     continue;
                 }
                 _gatecrasherCustomerAnimatorDic.Add(key, animator);
@@ -270,7 +270,7 @@ public class CustomerDataManager : MonoBehaviour
             string key = Utility.CutStringUpToChar(skill.name, '_').ToUpper();
             if (_customerSkillDic.ContainsKey(key))
             {
-                Debug.LogWarning($"Áßº¹µÈ ½ºÇÁ¶óÀÌÆ® Å°°¡ ÀÖ½À´Ï´Ù: {key}");
+                Debug.LogWarning($"ì¤‘ë³µëœ ìŠ¤í”„ë¼ì´íŠ¸ í‚¤ê°€ ìˆìŠµë‹ˆë‹¤: {key}");
                 continue;
             }
             _customerSkillDic.Add(key, skill);
@@ -280,33 +280,33 @@ public class CustomerDataManager : MonoBehaviour
 
     private static void NormalCustomerDataParse(string loadPath)
     {
-        // ? Resources Æú´õ¿¡¼­ CSV µ¥ÀÌÅÍ ºÒ·¯¿À±â
+        // ? Resources í´ë”ì—ì„œ CSV ë°ì´í„° ë¶ˆëŸ¬ì˜¤ê¸°
         TextAsset csvData = Resources.Load<TextAsset>(loadPath);
         if (csvData == null)
         {
-            Debug.LogError($"ÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù: {loadPath}");
+            Debug.LogError($"íŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤: {loadPath}");
             return;
         }
 
         string[] data = csvData.text.Split('\n');
 
-        for (int i = 1; i < data.Length; i++) // Ã¹ ¹øÂ° ÁÙÀº Çì´õ¶ó¼­ °Ç³Ê¶Ü
+        for (int i = 1; i < data.Length; i++) // ì²« ë²ˆì§¸ ì¤„ì€ í—¤ë”ë¼ì„œ ê±´ë„ˆëœ€
         {
             string[] row = data[i].Split(',');
             string id = row[0].Trim();
             if (string.IsNullOrWhiteSpace(id))
             {
-                Debug.LogError("Id°ªÀÌ ÀÌ»óÇÕ´Ï´Ù: " + id);
+                Debug.LogError("Idê°’ì´ ì´ìƒí•©ë‹ˆë‹¤: " + id);
                 break;
             }
-            DebugLog.Log("CSV µ¥ÀÌÅÍ:" + id);
+            DebugLog.Log("CSV ë°ì´í„°:" + id);
             string name = row[1].Trim();
-            string attribute = row[2].Trim(); //»ç¿ëÇÏÁö ¾ÊÀ½
+            string attribute = row[2].Trim(); //ì‚¬ìš©í•˜ì§€ ì•ŠìŒ
 
             string description = row[3].Trim();
             float moveSpeed = float.TryParse(row[4].Trim(), out float speed) ? speed : 6f;
-            int waitTime = int.TryParse(row[5].Trim(), out int wait) ? wait : throw new System.Exception("´ë±â ½Ã°£ÀÌ ÀÌ»óÇÕ´Ï´Ù:" + row[5].Trim());
-            int orderWaitTime = int.TryParse(row[6].Trim(), out int orderWait) ? orderWait : throw new System.Exception("À½½Ä ´ë±â ½Ã°£ÀÌ ÀÌ»óÇÕ´Ï´Ù:" + row[6].Trim());
+            int waitTime = int.TryParse(row[5].Trim(), out int wait) ? wait : throw new System.Exception("ëŒ€ê¸° ì‹œê°„ì´ ì´ìƒí•©ë‹ˆë‹¤:" + row[5].Trim());
+            int orderWaitTime = int.TryParse(row[6].Trim(), out int orderWait) ? orderWait : throw new System.Exception("ìŒì‹ ëŒ€ê¸° ì‹œê°„ì´ ì´ìƒí•©ë‹ˆë‹¤:" + row[6].Trim());
             CustomerTendencyType tendencyType = GetTendencyType(row[7].Trim());
             string requiredFood = row[8].Trim();
             string visitCount25Food = row[9].Trim();
@@ -318,12 +318,12 @@ public class CustomerDataManager : MonoBehaviour
             string visitCount500Food = row[15].Trim();
 
 
-            string visitGiveFurnitureId = row[16].Trim(); //»ç¿ëÇÏÁö ¾ÊÀ½
+            string visitGiveFurnitureId = row[16].Trim(); //ì‚¬ìš©í•˜ì§€ ì•ŠìŒ
             string requiredItem = row[17].Trim();
             int visitMinScore = 0;
             if (!_customerSpriteDic.TryGetValue(id, out Sprite sprite))
             {
-                Debug.LogError($"½ºÇÁ¶óÀÌÆ®°¡ ¾ø½À´Ï´Ù: {id}");
+                Debug.LogError($"ìŠ¤í”„ë¼ì´íŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤: {id}");
                 continue;
             }
 
@@ -338,34 +338,34 @@ public class CustomerDataManager : MonoBehaviour
 
     private static void SpecialCustomerDataParse(string loadPath)
     {
-        // ? Resources Æú´õ¿¡¼­ CSV µ¥ÀÌÅÍ ºÒ·¯¿À±â
+        // ? Resources í´ë”ì—ì„œ CSV ë°ì´í„° ë¶ˆëŸ¬ì˜¤ê¸°
         TextAsset csvData = Resources.Load<TextAsset>(loadPath);
         if (csvData == null)
         {
-            Debug.LogError($"ÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù: {loadPath}");
+            Debug.LogError($"íŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤: {loadPath}");
             return;
         }
 
         string[] data = csvData.text.Split('\n');
 
-        for (int i = 1; i < data.Length; i++) // Ã¹ ¹øÂ° ÁÙÀº Çì´õ¶ó¼­ °Ç³Ê¶Ü
+        for (int i = 1; i < data.Length; i++) // ì²« ë²ˆì§¸ ì¤„ì€ í—¤ë”ë¼ì„œ ê±´ë„ˆëœ€
         {
             string[] row = data[i].Split(',');
             string id = row[0].Trim();
             if (string.IsNullOrWhiteSpace(id))
             {
-                Debug.LogError("Id°ªÀÌ ÀÌ»óÇÕ´Ï´Ù: " + id);
+                Debug.LogError("Idê°’ì´ ì´ìƒí•©ë‹ˆë‹¤: " + id);
                 break;
             }
-            DebugLog.Log("CSV µ¥ÀÌÅÍ:" + id);
+            DebugLog.Log("CSV ë°ì´í„°:" + id);
             string name = row[1].Trim();
-            string attribute = row[2].Trim(); //»ç¿ëÇÏÁö ¾ÊÀ½
+            string attribute = row[2].Trim(); //ì‚¬ìš©í•˜ì§€ ì•ŠìŒ
 
             string description = row[3].Trim();
             float moveSpeed = float.TryParse(row[4].Trim(), out float speed) ? speed : 6f;
             string requiredDish = row[5].Trim();
             int visitMinScore = int.TryParse(row[6].Trim(), out int minScore) ? minScore : 0;
-            string visitGiveFurnitureId = row[7].Trim(); //»ç¿ëÇÏÁö ¾ÊÀ½
+            string visitGiveFurnitureId = row[7].Trim(); //ì‚¬ìš©í•˜ì§€ ì•ŠìŒ
             string requiredItem = row[8].Trim();
             float spawnChance = float.Parse(row[9].Trim());
             int activeDuration = int.Parse(row[10].Trim());
@@ -374,13 +374,13 @@ public class CustomerDataManager : MonoBehaviour
 
             if (!_customerSpriteDic.TryGetValue(id, out Sprite sprite))
             {
-                Debug.LogError($"½ºÇÁ¶óÀÌÆ®°¡ ¾ø½À´Ï´Ù: {id}");
+                Debug.LogError($"ìŠ¤í”„ë¼ì´íŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤: {id}");
                 continue;
             }
 
             if(!_specialCustomerTouchSpriteDic.TryGetValue(id, out Sprite touchSprite))
             {
-                Debug.LogError($"ÅÍÄ¡ ½ºÇÁ¶óÀÌÆ®°¡ ¾ø½À´Ï´Ù: {id}");
+                Debug.LogError($"í„°ì¹˜ ìŠ¤í”„ë¼ì´íŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤: {id}");
                 touchSprite = sprite;
             }
 
@@ -395,26 +395,26 @@ public class CustomerDataManager : MonoBehaviour
 
     private static void GatecrasherCustomerDataParse(string loadPath)
     {
-        // ? Resources Æú´õ¿¡¼­ CSV µ¥ÀÌÅÍ ºÒ·¯¿À±â
+        // ? Resources í´ë”ì—ì„œ CSV ë°ì´í„° ë¶ˆëŸ¬ì˜¤ê¸°
         TextAsset csvData = Resources.Load<TextAsset>(loadPath);
         if (csvData == null)
         {
-            Debug.LogError($"ÆÄÀÏÀ» Ã£À» ¼ö ¾ø½À´Ï´Ù: {loadPath}");
+            Debug.LogError($"íŒŒì¼ì„ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤: {loadPath}");
             return;
         }
 
         string[] data = csvData.text.Split('\n');
 
-        for (int i = 1; i < data.Length; i++) // Ã¹ ¹øÂ° ÁÙÀº Çì´õ¶ó¼­ °Ç³Ê¶Ü
+        for (int i = 1; i < data.Length; i++) // ì²« ë²ˆì§¸ ì¤„ì€ í—¤ë”ë¼ì„œ ê±´ë„ˆëœ€
         {
             string[] row = data[i].Split(',');
             string id = row[0].Trim();
             if (string.IsNullOrWhiteSpace(id))
             {
-                Debug.LogError("Id°ªÀÌ ÀÌ»óÇÕ´Ï´Ù: " + id);
+                Debug.LogError("Idê°’ì´ ì´ìƒí•©ë‹ˆë‹¤: " + id);
                 break;
             }
-            DebugLog.Log("CSV µ¥ÀÌÅÍ:" + id);
+            DebugLog.Log("CSV ë°ì´í„°:" + id);
             string name = row[1].Trim();
             string attribute = row[2].Trim();
 
@@ -422,7 +422,7 @@ public class CustomerDataManager : MonoBehaviour
             float moveSpeed = float.TryParse(row[4].Trim(), out float speed) ? speed : 6f;
             string requiredDish = row[5].Trim();
             int visitMinScore = int.TryParse(row[6].Trim(), out int minScore) ? minScore : 0;
-            string visitGiveFurnitureId = row[7].Trim(); //»ç¿ëÇÏÁö ¾ÊÀ½
+            string visitGiveFurnitureId = row[7].Trim(); //ì‚¬ìš©í•˜ì§€ ì•ŠìŒ
             string requiredItem = row[8].Trim();
             float spawnChance = float.Parse(row[9].Trim());
             int activeDuration = int.Parse(row[10].Trim());
@@ -430,24 +430,24 @@ public class CustomerDataManager : MonoBehaviour
 
             if (!_customerSpriteDic.TryGetValue(id, out Sprite sprite))
             {
-                Debug.LogError($"½ºÇÁ¶óÀÌÆ®°¡ ¾ø½À´Ï´Ù: {id}");
+                Debug.LogError($"ìŠ¤í”„ë¼ì´íŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤: {id}");
                 continue;
             }
 
             if (!_gatecrasherCustomerAnimatorDic.TryGetValue(id, out RuntimeAnimatorController animator))
             {
-                Debug.LogError($"¾Ö´Ï¸ŞÀÌ¼ÇÀÌ ¾ø½À´Ï´Ù: {id}");
+                Debug.LogError($"ì• ë‹ˆë©”ì´ì…˜ì´ ì—†ìŠµë‹ˆë‹¤: {id}");
                 continue;
             }
 
 
             GatecrasherCustomerData customerData = null;
-            if(attribute.Contains("Áø»ó1"))
+            if(attribute.Contains("ì§„ìƒ1"))
             {
                 GatecrasherCustomer1Data gatecrasherCustomer1Data = new GatecrasherCustomer1Data(sprite, id, name, description, moveSpeed, visitMinScore, requiredDish, requiredItem, activeDuration, touchCount, spawnChance, _normalCustomerAnimator, animator);
                 customerData = gatecrasherCustomer1Data;
             }
-            else if(attribute.Contains("Áø»ó2"))
+            else if(attribute.Contains("ì§„ìƒ2"))
             {
                 GatecrasherCustomer2Data gatecrasherCustomer2Data = new GatecrasherCustomer2Data(sprite, id, name, description, moveSpeed, visitMinScore, requiredDish, requiredItem, activeDuration, touchCount, spawnChance, animator);
                 customerData = gatecrasherCustomer2Data;
@@ -455,7 +455,7 @@ public class CustomerDataManager : MonoBehaviour
             
             if(customerData == null)
             {
-                Debug.LogError($"¼Ó¼º Å¸ÀÔÀÌ ÀÌ»óÇÕ´Ï´Ù: (Id: {id}, ¼Ó¼º: {attribute})");
+                Debug.LogError($"ì†ì„± íƒ€ì…ì´ ì´ìƒí•©ë‹ˆë‹¤: (Id: {id}, ì†ì„±: {attribute})");
                 continue;
             }
 
@@ -470,10 +470,10 @@ public class CustomerDataManager : MonoBehaviour
     {
         return type.Trim() switch
         {
-            "¹«³­ÇÑ ¼Õ´Ô" => CustomerTendencyType.Normal,
-            "¿¹¹ÎÇÑ ¼Õ´Ô" => CustomerTendencyType.Sensitive,
-            "ÃÊ¿¹¹Î ¼Õ´Ô" => CustomerTendencyType.HighlySensitive,
-            _ => throw new System.Exception("Àß¸øµÈ Å¸ÀÔÀÔ´Ï´Ù." + type)
+            "ë¬´ë‚œí•œ ì†ë‹˜" => CustomerTendencyType.Normal,
+            "ì˜ˆë¯¼í•œ ì†ë‹˜" => CustomerTendencyType.Sensitive,
+            "ì´ˆì˜ˆë¯¼ ì†ë‹˜" => CustomerTendencyType.HighlySensitive,
+            _ => throw new System.Exception("ì˜ëª»ëœ íƒ€ì…ì…ë‹ˆë‹¤." + type)
         };
     }
 

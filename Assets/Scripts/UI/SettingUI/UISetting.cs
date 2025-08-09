@@ -36,7 +36,7 @@ public class UIsetting : MobileUIView
         _userId.Init(UserInfo.UserId);
         _homePageButton.onClick.AddListener(OnHomepageButtonClicked);
         _customerServiceButton.onClick.AddListener(OnCustomerServiceButtonClicked);
-        _privacyButton.onClick.AddListener(() => PopupManager.Instance.ShowDisplayText("ÇöÀç Áö¿øÇÏÁö ¾Ê´Â ¹öÆ°ÀÔ´Ï´Ù."));
+        _privacyButton.onClick.AddListener(() => PopupManager.Instance.ShowDisplayText("í˜„ì¬ ì§€ì›í•˜ì§€ ì•ŠëŠ” ë²„íŠ¼ì…ë‹ˆë‹¤."));
         gameObject.SetActive(false);
     }
 

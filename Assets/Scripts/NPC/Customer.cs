@@ -193,14 +193,14 @@ public class Customer : MonoBehaviour
         _spriteRenderer.color = Color.white;
         foreach (Vector2 vec in nodeList)
         {
-            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f) // Á¦°ö °Å¸® ºñ±³
+            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f) // ì œê³± ê±°ë¦¬ ë¹„êµ
             {
                 Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
                 SetSpriteDir(dir.x);
-                float step = Time.deltaTime * _moveSpeed * 0.7f; // ÇÁ·¹ÀÓ µ¶¸³Àû ÀÌµ¿ ¼Óµµ
+                float step = Time.deltaTime * _moveSpeed * 0.7f; // í”„ë ˆìž„ ë…ë¦½ì  ì´ë™ ì†ë„
                 _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
                 ChangeState(CustomerState.Run);
-                yield return null; // ÇÁ·¹ÀÓ¸¶´Ù ½ÇÇà
+                yield return null; // í”„ë ˆìž„ë§ˆë‹¤ ì‹¤í–‰
             }
         }
 
@@ -234,7 +234,7 @@ public class Customer : MonoBehaviour
         if (!_drawPath)
             return;
 
-        // °æ·Î¸¦ ±×¸®´Â ÄÚµå
+        // ê²½ë¡œë¥¼ ê·¸ë¦¬ëŠ” ì½”ë“œ
         if (_path != null && _path.Count > 0)
         {
             Gizmos.color = Color.blue;

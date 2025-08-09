@@ -19,7 +19,7 @@ public class GuardData : StaffData
     {
         level -= 1;
         if (_guardLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("¿þÀÌÅÍ ·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ì›¨ì´í„° ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _guardLevelData[level].ActionTime;
     }
@@ -53,7 +53,7 @@ public class GuardData : StaffData
     {
         level -= 1;
         if (_guardLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("¿þÀÌÅÍ ·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ì›¨ì´í„° ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
         return _guardLevelData[level].UpgradeMinScore;
     }
 
@@ -62,7 +62,7 @@ public class GuardData : StaffData
     {
         level -= 1;
         if (_guardLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("¿þÀÌÅÍ ·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ì›¨ì´í„° ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _guardLevelData[level].UpgradeMoneyData;
     }

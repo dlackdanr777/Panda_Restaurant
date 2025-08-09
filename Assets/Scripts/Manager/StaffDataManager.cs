@@ -30,7 +30,7 @@ public class StaffDataManager : MonoBehaviour
     public StaffData GetStaffData(string id)
     {
         if (!_staffDataDic.TryGetValue(id, out StaffData data))
-            throw new System.Exception("ÇØ´ç id°ªÀÌ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù:" + id);
+            throw new System.Exception("í•´ë‹¹ idê°’ì´ ì¡´ì¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤:" + id);
 
         return data;
     }
@@ -82,7 +82,7 @@ public class StaffDataManager : MonoBehaviour
         else if (data is ChefData)
             return StaffGroupType.Chef;
 
-        throw new System.Exception("ÇØ´ç Å¸ÀÔÀÌ ÀÌ»óÇÕ´Ï´Ù: " + data.Id);
+        throw new System.Exception("í•´ë‹¹ íƒ€ì…ì´ ì´ìƒí•©ë‹ˆë‹¤: " + data.Id);
     }
 
     public StaffGroupType GetStaffGroupType(EquipStaffType type)
@@ -105,7 +105,7 @@ public class StaffDataManager : MonoBehaviour
         else if (type == EquipStaffType.Chef /*|| type == EquipStaffType.Chef2*/)
             return StaffGroupType.Chef;
 
-        throw new System.Exception("ÇØ´ç Å¸ÀÔÀÌ ÀÌ»óÇÕ´Ï´Ù: " + type);
+        throw new System.Exception("í•´ë‹¹ íƒ€ì…ì´ ì´ìƒí•©ë‹ˆë‹¤: " + type);
     }
 
     public List<EquipStaffType> GetEquipStaffTypeList(StaffData data)
@@ -152,7 +152,7 @@ public class StaffDataManager : MonoBehaviour
         else if (data is ChefData)
             return RestaurantType.Kitchen;
 
-        throw new System.Exception("ÇØ´ç Å¸ÀÔÀÌ ÀÌ»óÇÕ´Ï´Ù: " + data.Id);
+        throw new System.Exception("í•´ë‹¹ íƒ€ì…ì´ ì´ìƒí•©ë‹ˆë‹¤: " + data.Id);
     }
 
 

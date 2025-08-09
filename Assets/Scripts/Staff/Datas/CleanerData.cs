@@ -12,7 +12,7 @@ public class CleanerData : StaffData
     {
         level -= 1;
         if (_cleanerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("¿þÀÌÅÍ ·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ì›¨ì´í„° ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _speed + _cleanerLevelData[level].AddSpeed;
     }
@@ -21,7 +21,7 @@ public class CleanerData : StaffData
     {
         level -= 1;
         if (_cleanerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("¿þÀÌÅÍ ·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ì›¨ì´í„° ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _cleanerLevelData[level].CleaningTime;
     }
@@ -51,7 +51,7 @@ public class CleanerData : StaffData
     {
         level -= 1;
         if (_cleanerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("¿þÀÌÅÍ ·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ì›¨ì´í„° ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _cleanerLevelData[level].UpgradeMinScore;
     }
@@ -61,7 +61,7 @@ public class CleanerData : StaffData
     {
         level -= 1;
         if (_cleanerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("¿þÀÌÅÍ ·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ì›¨ì´í„° ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _cleanerLevelData[level].UpgradeMoneyData;
     }

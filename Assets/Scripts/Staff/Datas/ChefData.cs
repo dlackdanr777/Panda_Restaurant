@@ -4,7 +4,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "ChefData", menuName = "Scriptable Object/Staff/Chef")]
 public class ChefData : StaffData
 {
-    [Header("¼ÎÇÁ µ¥ÀÌÅÍ")]
+    [Header("ì…°í”„ ë°ì´í„°")]
     [SerializeField] private Sprite _backSprite;
     public Sprite BackSprite => _backSprite;
 
@@ -23,7 +23,7 @@ public class ChefData : StaffData
     public override float GetActionValue(int level)
     {
         if (_chefLevelData.Length < level - 1 || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _chefLevelData[level - 1].FoodSpeedAddPercent;
     }

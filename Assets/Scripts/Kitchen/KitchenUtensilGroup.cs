@@ -65,7 +65,7 @@ public class KitchenUtensilGroup: MonoBehaviour
                 //return _defaultChef2Pos.position;
         }
 
-        Debug.LogError("Á÷¿ø Á¾·ù °ªÀÌ Àß¸ø ÀÔ·ÂµÇ¾ú½À´Ï´Ù:" + type);
+        Debug.LogError("ì§ì› ì¢…ë¥˜ ê°’ì´ ì˜ëª» ì…ë ¥ë˜ì—ˆìŠµë‹ˆë‹¤:" + type);
         return new Vector2(0, 0);
     }
 
@@ -152,8 +152,8 @@ public class KitchenUtensilGroup: MonoBehaviour
                 subTime *= _burnerKitchenUtensils[i].CookSpeedMul;
                 if (_burnerDatas[i].FoodType == _burnerDatas[i].CookingData.FoodData.FoodType)
                 {
-                    subTime *= 1.1f; // °°Àº À½½Ä Å¸ÀÔÀÏ ¶§´Â 10% ´õ ºü¸£°Ô ¿ä¸®
-                    //DebugLog.Log("°°Àº À½½Ä Å¸ÀÔ: " + _burnerDatas[i].FoodType + " - " + _burnerDatas[i].CookingData.FoodData.FoodType);
+                    subTime *= 1.1f; // ê°™ì€ ìŒì‹ íƒ€ì…ì¼ ë•ŒëŠ” 10% ë” ë¹ ë¥´ê²Œ ìš”ë¦¬
+                    //DebugLog.Log("ê°™ì€ ìŒì‹ íƒ€ì…: " + _burnerDatas[i].FoodType + " - " + _burnerDatas[i].CookingData.FoodData.FoodType);
                 }
                 _burnerDatas[i].Time -= subTime;
                 _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookTime));

@@ -40,7 +40,7 @@ public class MarketerData : StaffData
     {
         level -= 1;
         if (_marketerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _marketerLevelData[level].MarketingTime;
     }
@@ -69,7 +69,7 @@ public class MarketerData : StaffData
     {
         level -= 1;
         if (_marketerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
         return _marketerLevelData[level].UpgradeMinScore;
     }
 
@@ -78,7 +78,7 @@ public class MarketerData : StaffData
     {
         level -= 1;
         if (_marketerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
         return _marketerLevelData[level].UpgradeMoneyData;
     }
 }

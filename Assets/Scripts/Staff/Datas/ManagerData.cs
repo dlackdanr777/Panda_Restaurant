@@ -20,7 +20,7 @@ public class ManagerData : StaffData
     {
         level -= 1;
         if (_managerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _managerLevelData[level].CustomerGuideTime;
     }
@@ -79,7 +79,7 @@ public class ManagerData : StaffData
     {
         level -= 1;
         if (_managerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _managerLevelData[level].UpgradeMinScore;
     }
@@ -89,7 +89,7 @@ public class ManagerData : StaffData
     {
         level -= 1;
         if (_managerLevelData.Length <= level || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _managerLevelData[level].UpgradeMoneyData;
     }

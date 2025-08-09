@@ -73,7 +73,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
         UpdateUIOptimized();
     }
 
-    // ´ëÆø ÃÖÀûÈ­µÈ UpdateUI
+    // ëŒ€í­ ìµœì í™”ëœ UpdateUI
     private void UpdateUIOptimized()
     {
         if (!gameObject.activeSelf || _foodDataList == null || _foodDataList.Count == 0)
@@ -83,10 +83,10 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
         int dataCount = _foodDataList.Count;
         
-        // ·¹½ÃÇÇ µ¥ÀÌÅÍ¸¦ ¿ì¼±¼øÀ§¿¡ µû¶ó Á¤·Ä
+        // ë ˆì‹œí”¼ ë°ì´í„°ë¥¼ ìš°ì„ ìˆœìœ„ì— ë”°ë¼ ì •ë ¬
         var prioritizedIndices = GetPrioritizedRecipeIndices(dataCount);
         
-        // Á¤·ÄµÈ ¼ø¼­´ë·Î ½½·Ô Ã³¸®
+        // ì •ë ¬ëœ ìˆœì„œëŒ€ë¡œ ìŠ¬ë¡¯ ì²˜ë¦¬
         for (int displayIndex = 0; displayIndex < prioritizedIndices.Count; displayIndex++)
         {
             int dataIndex = prioritizedIndices[displayIndex];
@@ -112,7 +112,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
         var ownedRecipes = new List<int>();
         var unownedRecipes = new List<int>();
 
-        // ·¹½ÃÇÇµéÀ» ¿ì¼±¼øÀ§º°·Î ºĞ·ù (±âÁ¸ ¼ø¼­ À¯Áö)
+        // ë ˆì‹œí”¼ë“¤ì„ ìš°ì„ ìˆœìœ„ë³„ë¡œ ë¶„ë¥˜ (ê¸°ì¡´ ìˆœì„œ ìœ ì§€)
         for (int i = 0; i < dataCount; i++)
         {
             var data = _foodDataList[i];
@@ -128,25 +128,25 @@ public class UIRecipeTab : UIRestaurantAdminTab
             }
         }
 
-        // ÃÖÁ¾ ¿ì¼±¼øÀ§: º¸À¯ ·¹½ÃÇÇ ¡æ ¹Ìº¸À¯ ·¹½ÃÇÇ
-        // °¢ ±×·ì ³»¿¡¼­´Â ±âÁ¸ ¼ø¼­ À¯Áö
+        // ìµœì¢… ìš°ì„ ìˆœìœ„: ë³´ìœ  ë ˆì‹œí”¼ â†’ ë¯¸ë³´ìœ  ë ˆì‹œí”¼
+        // ê° ê·¸ë£¹ ë‚´ì—ì„œëŠ” ê¸°ì¡´ ìˆœì„œ ìœ ì§€
         var result = new List<int>();
-        result.AddRange(ownedRecipes);     // ±âÁ¸ ¼ø¼­ À¯Áö
-        result.AddRange(unownedRecipes);   // ±âÁ¸ ¼ø¼­ À¯Áö
+        result.AddRange(ownedRecipes);     // ê¸°ì¡´ ìˆœì„œ ìœ ì§€
+        result.AddRange(unownedRecipes);   // ê¸°ì¡´ ìˆœì„œ ìœ ì§€
         
         return result;
     }
 
     private void ProcessBuyableSlot(FoodData data, UIRestaurantAdminFoodTypeSlot slot)
     {
-        // ÆòÆÇ Ã¼Å©
+        // í‰íŒ ì²´í¬
         if (!UserInfo.IsScoreValid(data))
         {
             slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
             return;
         }
 
-        // ÇÊ¿ä ¾ÆÀÌÅÛ Ã¼Å©
+        // í•„ìš” ì•„ì´í…œ ì²´í¬
         if (!string.IsNullOrWhiteSpace(data.NeedItem))
         {
             if (!UserInfo.IsGiveGachaItem(data.NeedItem))
@@ -160,8 +160,8 @@ public class UIRecipeTab : UIRestaurantAdminTab
             return;
         }
 
-        // °¡°İ Ã¼Å© ¹× ½½·Ô ¼³Á¤
-        string priceText = data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice);
+        // ê°€ê²© ì²´í¬ ë° ìŠ¬ë¡¯ ì„¤ì •
+        string priceText = data.BuyPrice <= 0 ? "ë¬´ë£Œ" : Utility.ConvertToMoney(data.BuyPrice);
 
         switch (data.MoneyType)
         {
@@ -186,7 +186,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
     public override void SetNotAttention()
     {
-        // ÇÊ¿ä½Ã ±¸Çö
+        // í•„ìš”ì‹œ êµ¬í˜„
     }
 
     private void OnBuyButtonClicked(FoodData data)
@@ -221,7 +221,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
             UserInfo.AddDia(-data.BuyPrice);
 
         UserInfo.GiveRecipe(data);
-        PopupManager.Instance.ShowDisplayText("»õ·Î¿î ·¹½ÃÇÇ¸¦ ¹è¿ü¾î¿ä!");
+        PopupManager.Instance.ShowDisplayText("ìƒˆë¡œìš´ ë ˆì‹œí”¼ë¥¼ ë°°ì› ì–´ìš”!");
     }
 
     private void OnUpgradeButtonClicked(FoodData data)

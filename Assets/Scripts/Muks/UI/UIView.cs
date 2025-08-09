@@ -5,7 +5,7 @@ namespace Muks.UI
 {
     public abstract class UIView : MonoBehaviour
     {
-        ///  <summary> Appeared, DisappearedÀÏ¶§ Show(), Hide()½ÇÇà °¡´É</summary>
+        ///  <summary> Appeared, Disappearedì¼ë•Œ Show(), Hide()ì‹¤í–‰ ê°€ëŠ¥</summary>
         public VisibleState VisibleState;
         protected UINavigation _uiNav;
         protected RectTransform _rectTransform;
@@ -31,15 +31,15 @@ namespace Muks.UI
             Init();
         }
 
-        /// <summary> UI View ÃÊ±â ¼³Á¤ ÇÔ¼ö </summary> 
+        /// <summary> UI View ì´ˆê¸° ì„¤ì • í•¨ìˆ˜ </summary> 
         public abstract void Init();
 
 
-        /// <summary> UI¸¦ ºÒ·¯³¾¶§ ½ÇÇàµÇ´Â ÇÔ¼ö </summary>
+        /// <summary> UIë¥¼ ë¶ˆëŸ¬ë‚¼ë•Œ ì‹¤í–‰ë˜ëŠ” í•¨ìˆ˜ </summary>
         public abstract void Show();
 
 
-        /// <summary>UI¸¦ ²ø¶§ ½ÇÇàµÇ´Â ÇÔ¼ö</summary>
+        /// <summary>UIë¥¼ ëŒë•Œ ì‹¤í–‰ë˜ëŠ” í•¨ìˆ˜</summary>
         public abstract void Hide();
     }
 }

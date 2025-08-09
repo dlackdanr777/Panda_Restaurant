@@ -31,7 +31,7 @@ public class FoodDataManager : MonoBehaviour
     public FoodData GetFoodData(string id)
     {
         if (!_foodDataDic.TryGetValue(id, out FoodData data))
-            throw new System.Exception("ÇØ´ç id°ªÀÌ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù: " + id);
+            throw new System.Exception("í•´ë‹¹ idê°’ì´ ì¡´ì¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤: " + id);
 
         return data;
     }
@@ -143,13 +143,13 @@ public class FoodDataManager : MonoBehaviour
 
             if (!spriteDic.TryGetValue(id, out Sprite sprite))
             {
-                DebugLog.LogError("½ºÇÁ¶óÀÌÆ®°¡ ¾ø½À´Ï´Ù: " + id);
+                DebugLog.LogError("ìŠ¤í”„ë¼ì´íŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤: " + id);
                 continue;
             }
 
             if (!thumbnailSpriteDic.TryGetValue(id, out Sprite thumbnailSprite))
             {
-                DebugLog.LogError("½ºÇÁ¶óÀÌÆ®°¡ ¾ø½À´Ï´Ù: " + id);
+                DebugLog.LogError("ìŠ¤í”„ë¼ì´íŠ¸ê°€ ì—†ìŠµë‹ˆë‹¤: " + id);
                 continue;
             }
 

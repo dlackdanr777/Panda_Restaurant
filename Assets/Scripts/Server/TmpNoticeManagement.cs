@@ -17,30 +17,30 @@ public class TmpNoticeManagement : IDisposable
     }
 
 
-    // /// <summary>µÚ³¡ ÀÓ½Ã °øÁö È®ÀÎ ÇÔ¼ö</summary>
+    // /// <summary>ë’¤ë ì„ì‹œ ê³µì§€ í™•ì¸ í•¨ìˆ˜</summary>
     // public bool TmpNoticeCheck(Action onButtonClicked = null)
     // {
     //     if (_maxRepeatCount <= 0)
     //     {
-    //         string errorName = "³×Æ®¿öÅ© ¿¡·¯";
-    //         string errorDescription = "¼­¹ö¿¡ Á¢¼ÓÇÏÁö ¸øÇß½À´Ï´Ù. \nÀç Á¢¼Ó ÇØÁÖ¼¼¿ä.";
+    //         string errorName = "ë„¤íŠ¸ì›Œí¬ ì—ëŸ¬";
+    //         string errorDescription = "ì„œë²„ì— ì ‘ì†í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤. \nì¬ ì ‘ì† í•´ì£¼ì„¸ìš”.";
     //         BackendManager.Instance.ShowPopup(errorName, errorDescription, () => Application.Quit());
     //         return false;
     //     }
 
     //     string tmpNotice = Backend.Notice.GetTempNotice();
 
-    //     //°øÁö°¡ ¾øÀ¸¸é
+    //     //ê³µì§€ê°€ ì—†ìœ¼ë©´
     //     if (string.IsNullOrEmpty(tmpNotice))
     //         return false;
 
-    //     //ÀÖÀ¸¸é
+    //     //ìˆìœ¼ë©´
     //     JsonData data = JsonMapper.ToObject(tmpNotice);
     //     bool isUse = bool.Parse(data["isUse"].ToString());
 
     //     if (isUse)
     //     {
-    //         string title = "°øÁö»çÇ×";
+    //         string title = "ê³µì§€ì‚¬í•­";
     //         string description = data["contents"].ToString();
     //         BackendManager.Instance.ShowPopup(title, description, onButtonClicked);
     //         return true;

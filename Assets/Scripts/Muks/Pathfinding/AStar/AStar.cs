@@ -8,7 +8,7 @@ namespace Muks.PathFinding.AStar
     {
         public static AStar Instance { get; private set; }
 
-        [Header("¸Ê ¼³Á¤")]
+        [Header("ë§µ ì„¤ì •")]
         [SerializeField] private bool _drawGizmos;
         [Range(0.01f, 100000f)] [SerializeField] private float _nodeSize = 1f;
         public float NodeSize => _nodeSize;
@@ -65,7 +65,7 @@ namespace Muks.PathFinding.AStar
         }
 
 
-        /// <summary>¸Ê Å° ¾øÀÌ ÀÚµ¿À¸·Î Æ÷ÇÔµÈ ¸Ê¿¡¼­ ±æÃ£±â</summary>
+        /// <summary>ë§µ í‚¤ ì—†ì´ ìë™ìœ¼ë¡œ í¬í•¨ëœ ë§µì—ì„œ ê¸¸ì°¾ê¸°</summary>
         public void RequestPath(Vector2 start, Vector2 end, Action<List<Vector2>> callback)
         {
             var map = FindBestMatchingMap(start);
@@ -84,7 +84,7 @@ namespace Muks.PathFinding.AStar
             });
         }
 
-        /// <summary>À§Ä¡°¡ Æ÷ÇÔµÈ ¸Êµé Áß, Áß½É¿¡ °¡Àå °¡±î¿î ¸Ê ¹İÈ¯</summary>
+        /// <summary>ìœ„ì¹˜ê°€ í¬í•¨ëœ ë§µë“¤ ì¤‘, ì¤‘ì‹¬ì— ê°€ì¥ ê°€ê¹Œìš´ ë§µ ë°˜í™˜</summary>
         private MapData FindBestMatchingMap(Vector2 pos)
         {
             MapData bestMap = null;
@@ -96,7 +96,7 @@ namespace Muks.PathFinding.AStar
                 if (rect.Contains(pos))
                 {
                     Vector2 center = map.MapBottomLeft + new Vector2(map.MapSize.x, map.MapSize.y) * 0.5f;
-                    float dist = Vector2.SqrMagnitude(pos - center); // °Å¸®ÀÇ Á¦°ö
+                    float dist = Vector2.SqrMagnitude(pos - center); // ê±°ë¦¬ì˜ ì œê³±
                     if (dist < bestDistance)
                     {
                         bestDistance = dist;
@@ -185,7 +185,7 @@ namespace Muks.PathFinding.AStar
 
             foreach (var info in _mapInfos)
             {
-                // ¸Ê ¿Ü°û ¹Ú½º Ç¥½Ã
+                // ë§µ ì™¸ê³½ ë°•ìŠ¤ í‘œì‹œ
                 Vector2 mapCenter = info.MapBottomLeft + new Vector2(info.MapSize.x, info.MapSize.y) * 0.5f;
                 Gizmos.color = Color.white;
                 Gizmos.DrawWireCube(mapCenter, info.MapSize);
@@ -204,7 +204,7 @@ namespace Muks.PathFinding.AStar
 
                         Color color = Color.white;
 
-                        // °ÔÀÓ ½ÇÇà ÁßÀÌ°í ³ëµå°¡ ÃÊ±âÈ­µÇ¾î ÀÖÀ¸¸é »ö»ó ±¸ºĞ
+                        // ê²Œì„ ì‹¤í–‰ ì¤‘ì´ê³  ë…¸ë“œê°€ ì´ˆê¸°í™”ë˜ì–´ ìˆìœ¼ë©´ ìƒ‰ìƒ êµ¬ë¶„
                         if (_maps.TryGetValue(info.MapKey, out var map) && map.Nodes != null &&
                             i < map.SizeX && j < map.SizeY)
                         {

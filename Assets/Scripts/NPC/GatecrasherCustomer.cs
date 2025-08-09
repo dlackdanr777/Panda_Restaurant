@@ -67,7 +67,7 @@ public class GatecrasherCustomer : Customer
     {
         if (!(data is GatecrasherCustomerData))
         {
-            DebugLog.LogError("ÇØ´ç ¿ÀºêÁ§Æ®´Â GatecrasherCustomerData¸¸ ¹ŞÀ» ¼ö ÀÖ½À´Ï´Ù.");
+            DebugLog.LogError("í•´ë‹¹ ì˜¤ë¸Œì íŠ¸ëŠ” GatecrasherCustomerDataë§Œ ë°›ì„ ìˆ˜ ìˆìŠµë‹ˆë‹¤.");
             return;
         }
         GatecrasherCustomerData gatecrasherData = (GatecrasherCustomerData)data;

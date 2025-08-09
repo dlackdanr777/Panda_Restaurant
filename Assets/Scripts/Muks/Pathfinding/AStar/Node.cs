@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Muks.PathFinding.AStar
 {
-    /// <summary>AStar¿¡¼­ »ç¿ëÇÏ´Â Node Class</summary>
+    /// <summary>AStarì—ì„œ ì‚¬ìš©í•˜ëŠ” Node Class</summary>
     public class Node
     {
         public int F => G + H;
@@ -23,7 +23,7 @@ namespace Muks.PathFinding.AStar
         }
 
 
-        /// <summary> ³ëµå ÁÂÇ¥¸¦ Vector2 Çü½ÄÀ¸·Î ¹İÈ¯</summary>
+        /// <summary> ë…¸ë“œ ì¢Œí‘œë¥¼ Vector2 í˜•ì‹ìœ¼ë¡œ ë°˜í™˜</summary>
         public Vector2 toVector2()
         {
             return new Vector2(X, Y);

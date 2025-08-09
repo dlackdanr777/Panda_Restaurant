@@ -217,7 +217,7 @@ public class UIGacha : MobileUIView
     {
         if (0 < _screenTouchWaitTime)
         {
-            DebugLog.Log("¾ÆÁ÷ ÅÍÄ¡ÇÒ ¼ö ¾ø½À´Ï´Ù.");
+            DebugLog.Log("ì•„ì§ í„°ì¹˜í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤.");
             return;
         }
 

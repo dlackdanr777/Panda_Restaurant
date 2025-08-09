@@ -53,9 +53,9 @@ public class UIFloorButtonGroup : MonoBehaviour
     {
         string text = floor switch
         {
-            ERestaurantFloorType.Floor1 => "1Ãþ",
-            ERestaurantFloorType.Floor2 => "2Ãþ",
-            ERestaurantFloorType.Floor3 => "3Ãþ",
+            ERestaurantFloorType.Floor1 => "1ì¸µ",
+            ERestaurantFloorType.Floor2 => "2ì¸µ",
+            ERestaurantFloorType.Floor3 => "3ì¸µ",
             _ => "Error"
         };
 

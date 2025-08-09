@@ -18,7 +18,7 @@ public class KitchenUtensil : MonoBehaviour
     [SerializeField] protected SpriteRenderer _spriteRenderer;
     [SerializeField] protected Sprite _defalutSprite;
 
-    protected float _initialSpriteHeight; // ÃÊ±â ½ºÇÁ¶óÀÌÆ® ³ôÀÌ ÀúÀå¿ë
+    protected float _initialSpriteHeight; // ì´ˆê¸° ìŠ¤í”„ë¼ì´íŠ¸ ë†’ì´ ì €ì¥ìš©
 
     protected ERestaurantFloorType _floorType;
     protected KitchenUtensilData _data;
@@ -31,7 +31,7 @@ public class KitchenUtensil : MonoBehaviour
         }
         else
         {
-            _initialSpriteHeight = 1f; // ±âº»°ª ¼³Á¤
+            _initialSpriteHeight = 1f; // ê¸°ë³¸ê°’ ì„¤ì •
         }
     }
 
@@ -63,17 +63,17 @@ public class KitchenUtensil : MonoBehaviour
         float sizeMul = 1;
         if (_initialSpriteHeight > 0 && newSpriteHeight > 0)
         {
-            // ³ôÀÌ¸¦ ±âÁØÀ¸·Î ½ºÄÉÀÏ ºñÀ² °è»ê
+            // ë†’ì´ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ìŠ¤ì¼€ì¼ ë¹„ìœ¨ ê³„ì‚°
             float heightRatio = _initialSpriteHeight / newSpriteHeight;
 
-            // »õ·Î¿î ½ºÄÉÀÏ ¼³Á¤ (SizeMul Àû¿ë)
+            // ìƒˆë¡œìš´ ìŠ¤ì¼€ì¼ ì„¤ì • (SizeMul ì ìš©)
             Vector3 newScale = _spriteRenderer.transform.localScale;
             newScale.x = heightRatio * sizeMul;
             newScale.y = heightRatio * sizeMul;
             _spriteRenderer.transform.localScale = newScale;
         }
 
-        // ¹èÄ¡ Å¸ÀÔ¿¡ µû¸¥ À§Ä¡ ¼³Á¤
+        // ë°°ì¹˜ íƒ€ì…ì— ë”°ë¥¸ ìœ„ì¹˜ ì„¤ì •
         float heightAdjustment = (_spriteRenderer.sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;
         if (_batchType == KitchenUtensilBatchType.Lower)
         {

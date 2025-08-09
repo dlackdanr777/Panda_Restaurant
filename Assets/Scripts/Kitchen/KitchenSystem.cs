@@ -19,7 +19,7 @@ public class KitchenSystem : MonoBehaviour
 
             if(_kitchenUtensilGroupDic.ContainsKey(group.FloorType))
             {
-                DebugLog.LogError("ÇØ´ç Å¸ÀÔÀÌ ÀÌ¹Ì µî·ÏµÇ¾î ÀÖ½À´Ï´Ù: " + group.name + "("+ group.FloorType + ")");
+                DebugLog.LogError("í•´ë‹¹ íƒ€ì…ì´ ì´ë¯¸ ë“±ë¡ë˜ì–´ ìˆìŠµë‹ˆë‹¤: " + group.name + "("+ group.FloorType + ")");
                 continue;
             }
 
@@ -33,7 +33,7 @@ public class KitchenSystem : MonoBehaviour
     {
         if (!_kitchenUtensilGroupDic.TryGetValue(floorType, out KitchenUtensilGroup group))
         {
-            DebugLog.LogError("ÇØ´ç Å¸ÀÔÀº ¾ø´Â Å¸ÀÔÀÔ´Ï´Ù: " + floorType);
+            DebugLog.LogError("í•´ë‹¹ íƒ€ì…ì€ ì—†ëŠ” íƒ€ì…ì…ë‹ˆë‹¤: " + floorType);
             return;
         }
 
@@ -66,7 +66,7 @@ public class KitchenSystem : MonoBehaviour
             return doorPos;
         }
 
-        DebugLog.LogError("ÇØ´ç À§Ä¡°ª¿¡ ¸Â´Â ¹® À§Ä¡°ªÀÌ ¾ø½À´Ï´Ù: " + pos);
+        DebugLog.LogError("í•´ë‹¹ ìœ„ì¹˜ê°’ì— ë§ëŠ” ë¬¸ ìœ„ì¹˜ê°’ì´ ì—†ìŠµë‹ˆë‹¤: " + pos);
         return Vector3.zero;
     }
 }

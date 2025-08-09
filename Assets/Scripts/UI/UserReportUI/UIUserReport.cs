@@ -73,12 +73,12 @@ public class UIUserReport : MobileUIView
     {
         if(string.IsNullOrWhiteSpace(_descriptionField.text))
         {
-            PopupManager.Instance.ShowDisplayText("½Å°í ³»¿ëÀ» Àû¾îÁÖ¼¼¿ä.");
+            PopupManager.Instance.ShowDisplayText("ì‹ ê³  ë‚´ìš©ì„ ì ì–´ì£¼ì„¸ìš”.");
             return;
         }
 
         BackendManager.Instance.BugReportUpload(UserInfo.UserId, _emailField.text, _descriptionField.text);
-        PopupManager.Instance.ShowDisplayText("½Å°í°¡ Á¢¼öµÇ¾ú½À´Ï´Ù.");
+        PopupManager.Instance.ShowDisplayText("ì‹ ê³ ê°€ ì ‘ìˆ˜ë˜ì—ˆìŠµë‹ˆë‹¤.");
         _uiNav.Pop("UIUserReport");
     }
 }

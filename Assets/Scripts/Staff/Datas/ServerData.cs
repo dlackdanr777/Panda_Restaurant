@@ -12,7 +12,7 @@ public class ServerData : StaffData
     public override float GetActionValue(int level)
     {
         if (_serverLevelData.Length < level - 1 || level < 0)
-            throw new ArgumentOutOfRangeException("·¹º§ÀÇ ¹üÀ§¸¦ ³Ñ¾î¼¹½À´Ï´Ù.");
+            throw new ArgumentOutOfRangeException("ë ˆë²¨ì˜ ë²”ìœ„ë¥¼ ë„˜ì–´ì„°ìŠµë‹ˆë‹¤.");
 
         return _serverLevelData[level - 1].ServingTime;
     }

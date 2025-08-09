@@ -7,18 +7,18 @@ public static class ConstValue
     public const int DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT = 10;
     public const int DEFAULT_CUSTOMER_BREAK_TIME = 1200;
 
-    //ÇÇ¹ö °ü·Ã º¯¼ö
+    //í”¼ë²„ ê´€ë ¨ ë³€ìˆ˜
     public const int MAX_PEVER_GAUGE = 1000;
     public const float PEVER_TIME = 10f;
     public const int ADD_PEVER_GAUGE = 5;
 
 
-    //½ºÅ×ÀÌÁö °ü·Ã º¯¼ö
+    //ìŠ¤í…Œì´ì§€ ê´€ë ¨ ë³€ìˆ˜
     public const int MAX_SATISFACTION = 50;
     public const int MIN_SATISFACTION = -50;
 
 
-    //ÁÖ¹æ °ü·Ã º¯¼ö
+    //ì£¼ë°© ê´€ë ¨ ë³€ìˆ˜
     public const int DEFAULT_MAX_BOLW_COUNT = 6;
 
 

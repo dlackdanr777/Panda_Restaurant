@@ -1,7 +1,7 @@
 public enum VisibleState
 {
-    Disappeared, // »ç¶óÁü
-    Disappearing, //»ç¶óÁö´Â Áß
-    Appeared, //³ªÅ¸³²
-    Appearing, //³ªÅ¸³ª´ÂÁß
+    Disappeared, // ì‚¬ë¼ì§
+    Disappearing, //ì‚¬ë¼ì§€ëŠ” ì¤‘
+    Appeared, //ë‚˜íƒ€ë‚¨
+    Appearing, //ë‚˜íƒ€ë‚˜ëŠ”ì¤‘
 }

@@ -68,7 +68,7 @@ public class Staff : MonoBehaviour
 
         if (_animator != null)
         {
-            DebugLog.Log("½ºÅÇ ¾Ö´Ï¸ŞÀÌÅÍ ÄÁÆ®·Ñ·¯ ÃÊ±âÈ­: " + name + " - " + _animator.runtimeAnimatorController);
+            DebugLog.Log("ìŠ¤íƒ­ ì• ë‹ˆë©”ì´í„° ì»¨íŠ¸ë¡¤ëŸ¬ ì´ˆê¸°í™”: " + name + " - " + _animator.runtimeAnimatorController);
             _defaultAnimatorController = _animator.runtimeAnimatorController;
         }
 
@@ -79,13 +79,13 @@ public class Staff : MonoBehaviour
     {
         if(_staffData == null)
         {
-            throw new Exception("ÇöÀç ½ºÅÇ µ¥ÀÌÅÍ°¡ nullÀÔ´Ï´Ù.");
+            throw new Exception("í˜„ì¬ ìŠ¤íƒ­ ë°ì´í„°ê°€ nullì…ë‹ˆë‹¤.");
         }
 
         int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, _staffData);
         if(level <= 0)
         {
-            throw new Exception("ÇöÀç ½ºÅÇ µ¥ÀÌÅÍ¸¦ º¸À¯ÇÏ°í ÀÖÁö ¾Ê½À´Ï´Ù: " + _staffData.Id);
+            throw new Exception("í˜„ì¬ ìŠ¤íƒ­ ë°ì´í„°ë¥¼ ë³´ìœ í•˜ê³  ìˆì§€ ì•ŠìŠµë‹ˆë‹¤: " + _staffData.Id);
         }
 
         return _staffData.GetActionValue(level);
@@ -126,7 +126,7 @@ public class Staff : MonoBehaviour
 
         if (_animator != null)
         {
-            DebugLog.Log("½ºÅÇ ¾Ö´Ï¸ŞÀÌÅÍ ÄÁÆ®·Ñ·¯ ¼³Á¤: " + name + " - " + _staffData.AnimatorController);
+            DebugLog.Log("ìŠ¤íƒ­ ì• ë‹ˆë©”ì´í„° ì»¨íŠ¸ë¡¤ëŸ¬ ì„¤ì •: " + name + " - " + _staffData.AnimatorController);
             _animator.runtimeAnimatorController = _staffData.AnimatorController == null ? _defaultAnimatorController : _staffData.AnimatorController;  
         }
 
@@ -219,7 +219,7 @@ public class Staff : MonoBehaviour
 
         if (_usingSkill)
         {
-            Debug.Log("½ºÅ³ÀÌ ÀÌ¹Ì »ç¿ëÁß ÀÔ´Ï´Ù.");
+            Debug.Log("ìŠ¤í‚¬ì´ ì´ë¯¸ ì‚¬ìš©ì¤‘ ì…ë‹ˆë‹¤.");
             return;
         }
 
