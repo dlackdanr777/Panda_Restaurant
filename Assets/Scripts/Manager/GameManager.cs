@@ -71,8 +71,8 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int _addEquipKitchenUtensilTipPerMinute;
     [SerializeField] private int _addEquipKitchenUtensilTipVolume;
 
-    private float[,] _addSetFoodPriceMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //À½½Ä °¡°İ Áõ°¡ ºñÀ²
-    private float[,] _addSetCookSpeedMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //À½½Ä Á¶¸® ¼Óµµ
+    private float[,] _addSetFoodPriceMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //ìŒì‹ ê°€ê²© ì¦ê°€ ë¹„ìœ¨
+    private float[,] _addSetCookSpeedMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //ìŒì‹ ì¡°ë¦¬ ì†ë„
 
 
 
@@ -83,22 +83,22 @@ public class GameManager : MonoBehaviour
     [SerializeField] private int _addGiveRecipeMiniGameTime;
 
 
-    [SerializeField] private float _addGachaItemCustomerSpeedPercent; //¼Õ´Ô ½ºÇÇµå »ó½Â n% (UPGRADE01)
+    [SerializeField] private float _addGachaItemCustomerSpeedPercent; //ì†ë‹˜ ìŠ¤í”¼ë“œ ìƒìŠ¹ n% (UPGRADE01)
 
-    [SerializeField] private float _addGachaItemAllCookingTimeMul; //ÀüÃ¼ ¿ä¸® ½Ã°£ n% ´ÜÃà (UPGRADE02)
-    [SerializeField] private Dictionary<FoodType, float> _addGachaItemFoodCookingTimeMulDic = new Dictionary<FoodType, float>(); //¼Ó¼º ¿ä¸® ½Ã°£ n%ÃÊ ´ÜÃà (UPGRADE03 ~ 09)
+    [SerializeField] private float _addGachaItemAllCookingTimeMul; //ì „ì²´ ìš”ë¦¬ ì‹œê°„ n% ë‹¨ì¶• (UPGRADE02)
+    [SerializeField] private Dictionary<FoodType, float> _addGachaItemFoodCookingTimeMulDic = new Dictionary<FoodType, float>(); //ì†ì„± ìš”ë¦¬ ì‹œê°„ n%ì´ˆ ë‹¨ì¶• (UPGRADE03 ~ 09)
 
-    [SerializeField] private float _addGachaItemAllFoodPriceMul; //ÀüÃ¼ À½½Ä °¡°İ Áõ°¡ n% (UPGRADE10)
-    private Dictionary<FoodType, float> _addGachaItemFoodPriceMulDic = new Dictionary<FoodType, float>(); //¼Ó¼º À½½Ä °¡°İ Áõ°¡ n% (UPGRADE11 ~ 17)
+    [SerializeField] private float _addGachaItemAllFoodPriceMul; //ì „ì²´ ìŒì‹ ê°€ê²© ì¦ê°€ n% (UPGRADE10)
+    private Dictionary<FoodType, float> _addGachaItemFoodPriceMulDic = new Dictionary<FoodType, float>(); //ì†ì„± ìŒì‹ ê°€ê²© ì¦ê°€ n% (UPGRADE11 ~ 17)
 
-    [SerializeField] private float _addGachaItemStaffSkillTime; //ÀüÃ¼ ½ºÅÇ ½ºÅ³ À¯Áö ½Ã°£ Áõ°¡(+) (UPGRADE18)
-    [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSkillTimeDic = new Dictionary<StaffGroupType, float>(); //½ºÅÇ ½ºÅ³ Å¸ÀÓ Áõ°¡ n% (UPGRADE18 ~ 24)
+    [SerializeField] private float _addGachaItemStaffSkillTime; //ì „ì²´ ìŠ¤íƒ­ ìŠ¤í‚¬ ìœ ì§€ ì‹œê°„ ì¦ê°€(+) (UPGRADE18)
+    [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSkillTimeDic = new Dictionary<StaffGroupType, float>(); //ìŠ¤íƒ­ ìŠ¤í‚¬ íƒ€ì„ ì¦ê°€ n% (UPGRADE18 ~ 24)
 
-    [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSpeedMulDic = new Dictionary<StaffGroupType, float>(); //½ºÅÇ ½ºÇÇµå Áõ°¡ n% (UPGRADE25 ~ 28)
+    [SerializeField] private Dictionary<StaffGroupType, float> _addGachaItemStaffSpeedMulDic = new Dictionary<StaffGroupType, float>(); //ìŠ¤íƒ­ ìŠ¤í”¼ë“œ ì¦ê°€ n% (UPGRADE25 ~ 28)
 
-    [SerializeField] private float _addGachaItemFeverTime; //ÇÇ¹ö Å¸ÀÓ ½Ã°£ Áõ°¡ + (UPGRADE29)
+    [SerializeField] private float _addGachaItemFeverTime; //í”¼ë²„ íƒ€ì„ ì‹œê°„ ì¦ê°€ + (UPGRADE29)
 
-    [SerializeField] private int _addGachaItemWaitCustomerMaxCount; //ÃÖ´ë ÁÙ¼­±â ¼Õ´Ô Áõ°¡ + (UPGRADE30)
+    [SerializeField] private int _addGachaItemWaitCustomerMaxCount; //ìµœëŒ€ ì¤„ì„œê¸° ì†ë‹˜ ì¦ê°€ + (UPGRADE30)
 
 
     public float GetStaffSpeedMul(StaffGroupType type)
@@ -106,7 +106,7 @@ public class GameManager : MonoBehaviour
         if (_addGachaItemStaffSpeedMulDic.TryGetValue(type, out float value))
             return _totalAddSpeedMul + (value * 0.01f);
 
-        DebugLog.LogError("½ºÅÇ ½ºÇÇµå Áõ°¡ È¿°ú¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù: " + type);
+        DebugLog.LogError("ìŠ¤íƒ­ ìŠ¤í”¼ë“œ ì¦ê°€ íš¨ê³¼ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤: " + type);
         return _totalAddSpeedMul;
     }
 
@@ -115,7 +115,7 @@ public class GameManager : MonoBehaviour
         if (_addGachaItemStaffSkillTimeDic.TryGetValue(type, out float value))
             return (_addGachaItemStaffSkillTime * 0.01f) + (value * 0.01f);
 
-        DebugLog.LogError("½ºÅÇ ½ºÅ³ ½Ã°£ Áõ°¡ È¿°ú¸¦ Ã£À» ¼ö ¾ø½À´Ï´Ù: " + type);
+        DebugLog.LogError("ìŠ¤íƒ­ ìŠ¤í‚¬ ì‹œê°„ ì¦ê°€ íš¨ê³¼ë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŠµë‹ˆë‹¤: " + type);
         return 0;
     }
 
@@ -149,13 +149,13 @@ public class GameManager : MonoBehaviour
             int itemLevel = data.Value;
             if (gachaItemData == null)
             {
-                DebugLog.LogError("¾ÆÀÌÅÛ Á¤º¸°¡ µ¥ÀÌÅÍº£ÀÌ½º¿¡ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù: " + data.Key);
+                DebugLog.LogError("ì•„ì´í…œ ì •ë³´ê°€ ë°ì´í„°ë² ì´ìŠ¤ì— ì¡´ì¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤: " + data.Key);
                 continue;
             }
 
             if (!UserInfo.IsGiveGachaItem(gachaItemData))
             {
-                DebugLog.LogError("ÇØ´ç ¾ÆÀÌÅÛÀÇ ·¹º§Àº Á¸ÀçÇÏ³ª º¸À¯ÁßÀÌÁö ¾Ê½À´Ï´Ù: " + data.Key);
+                DebugLog.LogError("í•´ë‹¹ ì•„ì´í…œì˜ ë ˆë²¨ì€ ì¡´ì¬í•˜ë‚˜ ë³´ìœ ì¤‘ì´ì§€ ì•ŠìŠµë‹ˆë‹¤: " + data.Key);
                 continue;
             }
 
@@ -304,7 +304,7 @@ public class GameManager : MonoBehaviour
     {
         float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
         cookSpeedMul += (_addGachaItemAllCookingTimeMul * 0.01f) + _addGachaItemFoodCookingTimeMulDic[type] * 0.01f;
-        DebugLog.Log("À½½Ä ¼Óµµ: "+ cookSpeedMul);
+        DebugLog.Log("ìŒì‹ ì†ë„: "+ cookSpeedMul);
         return cookSpeedMul;
     }
 
@@ -313,7 +313,7 @@ public class GameManager : MonoBehaviour
         float foodPriceMul = 1 + _foodPriceMul + (_addSetFoodPriceMul[(int)floor, (int)type] * 0.01f);
         foodPriceMul += (_addGachaItemAllFoodPriceMul * 0.01f) + _addGachaItemFoodPriceMulDic[type] * 0.01f;
         foodPriceMul += _foodTypePriceMul[(int)type] * 0.01f;
-        DebugLog.Log("À½½Ä °ª: "+ foodPriceMul);
+        DebugLog.Log("ìŒì‹ ê°’: "+ foodPriceMul);
         return foodPriceMul;
     }
 
@@ -337,7 +337,7 @@ public class GameManager : MonoBehaviour
         Param param = UserInfo.GetSaveUserData();
         BackendManager.Instance.SaveGameData("GameData", param);
         UserInfo.SaveStageData();
-        DebugLog.Log("ÀúÀå");
+        DebugLog.Log("ì €ì¥");
     }
 
     public void AsyncSaveGameData()
@@ -348,7 +348,7 @@ public class GameManager : MonoBehaviour
         Param param = UserInfo.GetSaveUserData();
         BackendManager.Instance.SaveGameDataAsync("GameData", param, (bro) =>{
             UserInfo.SaveStageDataAsync();
-            DebugLog.Log("ºñµ¿±â ÀúÀå");
+            DebugLog.Log("ë¹„ë™ê¸° ì €ì¥");
         });
     }
 
@@ -552,7 +552,7 @@ public class GameManager : MonoBehaviour
             foodData = FoodDataManager.Instance.GetFoodData(giveRecipeList[i]);
 
             if(foodData == null)
-                throw new Exception("º¸À¯ÁßÀÎ ·¹½ÃÇÇÀÌÁö¸¸ µ¥ÀÌÅÍº£ÀÌ½º¿¡ µî·ÏµÇ¾îÀÖÁö ¾Ê½À´Ï´Ù: " + giveRecipeList[i]);
+                throw new Exception("ë³´ìœ ì¤‘ì¸ ë ˆì‹œí”¼ì´ì§€ë§Œ ë°ì´í„°ë² ì´ìŠ¤ì— ë“±ë¡ë˜ì–´ìˆì§€ ì•ŠìŠµë‹ˆë‹¤: " + giveRecipeList[i]);
 
             if(!FoodDataManager.Instance.IsNeedMiniGame(giveRecipeList[i]))
                 continue;
