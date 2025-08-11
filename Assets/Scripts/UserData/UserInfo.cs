@@ -160,6 +160,7 @@ public static class UserInfo
     private static HashSet<string> _clearDailyChallengeSet = new HashSet<string>();
 
     private static HashSet<string> _notificationMessageSet = new HashSet<string>(); //알림이 필요한 Id값을 모아두는 해쉬셋
+    private static HashSet<string> _clearNotificationMessageSet = new HashSet<string>(); //알림이 완료된 Id값을 모아두는 해쉬셋
 
 
     //################################환경 설정 관련 변수################################
@@ -367,6 +368,7 @@ public static class UserInfo
         param.Add("DoneDailyChallengeList", _doneDailyChallengeSet.ToList());
         param.Add("ClearDailyChallengeList", _clearDailyChallengeSet.ToList());
         param.Add("NotificationMessageList", _notificationMessageSet.ToList());
+        param.Add("ClearNotificationMessageList", _clearNotificationMessageSet.ToList());
 
         Dictionary<string, int> timeDic = TimeManager.Instance.GetTimeDic();
         List<SaveTimeData> timeDataList = new List<SaveTimeData>();
@@ -547,6 +549,8 @@ public static class UserInfo
         _giveCustomerSkinSet = loadData.GiveCustomerSkinSet;
 
         _notificationMessageSet = loadData.NotificationMessageSet;
+        _clearNotificationMessageSet = loadData.ClearNotificationMessageSet;
+
         if (CheckNoAttendance())
         {
             UpdateLastAccessTime();
@@ -2416,6 +2420,9 @@ public static class UserInfo
         if (!_notificationMessageSet.Contains(id))
             return;
 
+        if(!_clearNotificationMessageSet.Contains(id))
+            _clearNotificationMessageSet.Add(id);    
+
         _notificationMessageSet.Remove(id);
         OnRemoveNotificationHandler?.Invoke(id);
     }
@@ -2429,6 +2436,17 @@ public static class UserInfo
         }
 
         return _notificationMessageSet.Contains(id);
+    }
+
+    public static bool IsClearNotification(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            DebugLog.LogError("현재 알림을 확인하려한 ID값이 잘못됬습니다: " + id);
+            return false;
+        }
+
+        return _clearNotificationMessageSet.Contains(id);
     }
 
     #endregion

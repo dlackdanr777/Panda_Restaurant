@@ -56,6 +56,7 @@ public class LoadUserData
     public HashSet<string> GiveCustomerSkinSet = new HashSet<string>();
 
     public HashSet<string> NotificationMessageSet = new HashSet<string>();
+    public HashSet<string> ClearNotificationMessageSet = new HashSet<string>();
 
     public Dictionary<string, SaveTimeData> TimeDataDic = new Dictionary<string, SaveTimeData>();
 
@@ -129,6 +130,7 @@ public class LoadUserData
             LoadStringSet(data, "DoneDailyChallengeList", DoneDailyChallengeSet);
             LoadStringSet(data, "ClearDailyChallengeList", ClearDailyChallengeSet);
             LoadStringSet(data, "NotificationMessageList", NotificationMessageSet);
+            LoadStringSet(data, "ClearNotificationMessageList", ClearNotificationMessageSet);
         }
         catch (Exception e)
         {

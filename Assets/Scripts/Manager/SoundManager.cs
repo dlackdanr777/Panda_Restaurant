@@ -121,6 +121,7 @@ public class SoundManager : MonoBehaviour
         _effectAudioDic.Clear();
         _audioMixer = Resources.Load<AudioMixer>("Audio/AudioMixer");
         _clips = new AudioClip[(int)SoundEffectType.Length];
+        
         for (int i = 0, cnt = (int)SoundEffectType.Length; i < cnt; ++i)
         {
             int index = i;
@@ -145,7 +146,7 @@ public class SoundManager : MonoBehaviour
         _audios[(int)AudioType.BackgroundAudio].volume = _backgroundVolume;
         _audios[(int)AudioType.BackgroundAudio].dopplerLevel = 0;
         _audios[(int)AudioType.BackgroundAudio].reverbZoneMix = 0;
-        _audios[(int)AudioType.BackgroundAudio].outputAudioMixerGroup = _audioMixer.FindMatchingGroups("Master")[1];
+        _audios[(int)AudioType.BackgroundAudio].outputAudioMixerGroup = _audioMixer.FindMatchingGroups("Background")[0];
 
         for (int i = (int)EffectType.None, cnt = (int)EffectType.UI + 1; i < cnt; ++i)
         {
@@ -154,6 +155,7 @@ public class SoundManager : MonoBehaviour
             GameObject parent = new GameObject(effectTypeName + "Parent");
             parent.transform.SetParent(transform);
             _effectAudioDic.Add(effectType, new List<AudioSource>());
+            
             for(int j = 0; j < _poolSize; ++j)
             {
                 GameObject obj = new GameObject(effectTypeName);
@@ -167,16 +169,9 @@ public class SoundManager : MonoBehaviour
                 audioSource.dopplerLevel = 0;
                 audioSource.reverbZoneMix = 0;
 
-                AudioMixerGroup[] groups = _audioMixer.FindMatchingGroups("SoundEffect/" + effectTypeName);
-
-                if (groups != null && groups.Length > 0)
-                {
-                    audioSource.outputAudioMixerGroup = groups[0];
-                }
-                else
-                {
-                    audioSource.outputAudioMixerGroup = _audioMixer.FindMatchingGroups("SoundEffect")[0];
-                }
+                // ? AudioMixer 그룹 설정 수정
+                AudioMixerGroup targetGroup = GetAudioMixerGroup(effectType);
+                audioSource.outputAudioMixerGroup = targetGroup;
 
                 _effectAudioDic[effectType].Add(audioSource);
             }        
@@ -367,6 +362,16 @@ public class SoundManager : MonoBehaviour
         }
         else
         {
+            // ? 지연 재생 시에도 동일한 검증 로직 적용
+            bool isRestaurantRelated = IsRestaurantAreaType(type);
+            bool isCurrentRestaurantRelated = IsRestaurantAreaType(_effectType);
+
+            if (type != EffectType.None && type != _effectType && !(isRestaurantRelated && isCurrentRestaurantRelated))
+            {
+                DebugLog.Log("현재 재생 가능한 타입이 아닙니다: (현재 타입: " + _effectType + ", 요청 타입: " + type + ")");
+                return;
+            }
+
             StartCoroutine(IEDelayPlayEffectAudio(type, clip, waitTime));
         }
     }
@@ -379,7 +384,7 @@ public class SoundManager : MonoBehaviour
             return null;
         }
 
-        // 해당 타입의 오디오 소스 풀에서 현재 재생 중이지 않은 소스 찾기
+        // 해당 타입의 오디오 소스 풀에서 현재 재생 중이지 않은 소스 찾기   
         foreach (AudioSource source in _effectAudioDic[type])
         {
             if (!source.isPlaying)
@@ -392,7 +397,11 @@ public class SoundManager : MonoBehaviour
 
     public void PlayEffectAudio(EffectType type, SoundEffectType soundEffectType)
     {
-        if (type != EffectType.None && type != _effectType)
+        // ? 레스토랑 관련 타입 간 재생 허용 로직 추가
+        bool isRestaurantRelated = IsRestaurantAreaType(type);
+        bool isCurrentRestaurantRelated = IsRestaurantAreaType(_effectType);
+
+        if (type != EffectType.None && type != _effectType && !(isRestaurantRelated && isCurrentRestaurantRelated))
         {
             DebugLog.Log("현재 재생 가능한 타입이 아닙니다: (현재 타입: " + _effectType + ", 요청 타입: " + type + ")");
             return;
@@ -518,6 +527,7 @@ public class SoundManager : MonoBehaviour
     {
         yield return YieldCache.WaitForSeconds(waitTime);
 
+        // ? 지연 후 다시 한 번 타입 검증 (지연 중 타입이 변경될 수 있음)
         bool isRestaurantRelated = IsRestaurantAreaType(type);
         bool isCurrentRestaurantRelated = IsRestaurantAreaType(_effectType);
 
@@ -527,7 +537,7 @@ public class SoundManager : MonoBehaviour
         // 3. type과 현재 타입 모두 레스토랑 관련 타입(Restaurant, Hall, Kitchen)
         if (type != EffectType.None && type != _effectType && !(isRestaurantRelated && isCurrentRestaurantRelated))
         {
-            DebugLog.Log("현재 재생 가능한 타입이 아닙니다: (현재 타입: " + _effectType + ", 요청 타입: " + type + ")");
+            DebugLog.Log("지연 재생 중 타입이 변경되어 재생할 수 없습니다: (현재 타입: " + _effectType + ", 요청 타입: " + type + ")");
             yield break;
         }
 
@@ -738,6 +748,69 @@ public class SoundManager : MonoBehaviour
         }
 
         _audios[(int)AudioType.BackgroundAudio].Stop();
+    }
+
+    // ? 각 EffectType에 맞는 AudioMixerGroup 반환
+    private AudioMixerGroup GetAudioMixerGroup(EffectType effectType)
+    {
+        string groupName = "";
+        
+        switch (effectType)
+        {
+            case EffectType.None:
+                groupName = "SoundEffect";
+                break;
+                
+            case EffectType.Hall1:
+                groupName = "Hall1";
+                break;
+                
+            case EffectType.Hall2:
+                groupName = "Hall2";
+                break;
+                
+            case EffectType.Hall3:
+                groupName = "Hall3";
+                break;
+                
+            case EffectType.Kitchen1:
+                groupName = "Kitchen1";
+                break;
+                
+            case EffectType.Kitchen2:
+                groupName = "Kitchen2";
+                break;
+                
+            case EffectType.Kitchen3:
+                groupName = "Kitchen3";
+                break;
+                
+            case EffectType.Restaurant:
+                groupName = "Restaurant";
+                break;
+                
+            case EffectType.UI:
+                groupName = "UI";
+                break;
+                
+            default:
+                groupName = "SoundEffect";
+                break;
+        }
+
+        // ? FindMatchingGroups는 그룹 이름만으로 검색 가능
+        AudioMixerGroup[] groups = _audioMixer.FindMatchingGroups(groupName);
+        
+        if (groups != null && groups.Length > 0)
+        {
+            DebugLog.Log($"AudioMixer 그룹 찾음: {effectType} -> {groupName}");
+            return groups[0];
+        }
+        else
+        {
+            DebugLog.LogError($"AudioMixer 그룹을 찾을 수 없습니다: {effectType} -> {groupName}, 기본 SoundEffect 사용");
+            return _audioMixer.FindMatchingGroups("SoundEffect")[0];
+        }
     }
 }
 

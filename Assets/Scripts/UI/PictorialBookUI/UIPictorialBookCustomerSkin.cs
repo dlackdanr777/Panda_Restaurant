@@ -17,8 +17,8 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _effectText;
     [SerializeField] private Image _skinImage;
     [SerializeField] private TextMeshProUGUI _tendencyTypeText;
-    [SerializeField] private ButtonPressEffect _hideButton;
-    [SerializeField] private ButtonPressEffect _equipButton;
+    [SerializeField] private Button _hideButton;
+    [SerializeField] private Button _equipButton;
     [SerializeField] private Image _usingButton;
 
     [Header("Slot Options")]
@@ -55,8 +55,8 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             _slotList.Add(slot);
         }
 
-        _hideButton.AddListener(OnHideButtonClicked);
-        _equipButton.AddListener(OnChangeCustomerSkin);
+        _hideButton.onClick.AddListener(OnHideButtonClicked);
+        _equipButton.onClick.AddListener(OnChangeCustomerSkin);
         Hide();
 
         UserInfo.OnChangeCustomerSkinHandler += UpdateUI;

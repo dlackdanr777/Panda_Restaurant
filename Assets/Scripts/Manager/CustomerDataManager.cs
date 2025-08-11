@@ -122,6 +122,22 @@ public class CustomerDataManager : MonoBehaviour
 
             DebugLog.Log(_customerDataList[i].Name + " 활성화");
             UserInfo.CustomerEnabled(_customerDataList[i]);
+        }
+    }
+
+    private static void CheckCustomerNotification()
+    {
+        for (int i = 0, cnt = _customerDataList.Count; i < cnt; ++i)
+        {
+            if (_customerDataList[i] == null || string.IsNullOrWhiteSpace(_customerDataList[i].Id))
+                continue;
+
+            if (UserInfo.IsClearNotification(_customerDataList[i].Id))
+                continue;
+
+            if (UserInfo.GetVisitedCustomerCount(_customerDataList[i].Id) <= 0)
+                continue;
+
             UserInfo.AddNotification(_customerDataList[i].Id);
         }
     }
@@ -159,6 +175,10 @@ public class CustomerDataManager : MonoBehaviour
         UserInfo.OnGiveGachaItemHandler += CheckEnableCustomer;
         UserInfo.OnGiveRecipeHandler += CheckEnableCustomer;
         GameManager.Instance.OnChangeScoreHandler += CheckEnableCustomer;
+
+        UserInfo.OnVisitedCustomerHandler += CheckCustomerNotification;
+        CheckCustomerNotification();
+        CheckEnableCustomer();
     }
 
     private static void LoadNormalCustomerSprites()

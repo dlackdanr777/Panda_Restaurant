@@ -39,7 +39,7 @@ public class UICustomerSlot : MonoBehaviour
         _data = data;
         CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(data.Id);
         _itemImage.sprite = skinData == null ? data.Sprite : skinData.Sprite;
-        _itemImage.color = UserInfo.GetCustomerEnableState(data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        _itemImage.color = UserInfo.GetCustomerEnableState(data) && 0 < UserInfo.GetVisitedCustomerCount(data.Id) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
         _alarm.ChangeAlarmId(data.Id);
 
         UpdateFrame(data, skinData);
@@ -63,7 +63,7 @@ public class UICustomerSlot : MonoBehaviour
     {
         CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(_data.Id);
         _itemImage.sprite = skinData == null ? _data.Sprite : skinData.Sprite;
-        _itemImage.color = UserInfo.GetCustomerEnableState(_data) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        _itemImage.color = UserInfo.GetCustomerEnableState(_data) && 0 < UserInfo.GetVisitedCustomerCount(_data.Id) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
         UpdateFrame(_data, skinData);
     }
 

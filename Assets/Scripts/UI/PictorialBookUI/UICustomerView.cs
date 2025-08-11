@@ -120,7 +120,7 @@ public class UICustomerView : MonoBehaviour
 
         _npcImage.gameObject.SetActive(true);
         _effectTitle.gameObject.SetActive(true);
-        _tendencyTypeText.gameObject.SetActive(false);
+        _tendencyTypeText.gameObject.SetActive(!(data is GatecrasherCustomerData));
 
         CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(data.Id);
         Sprite customerSprite = null;
@@ -141,31 +141,6 @@ public class UICustomerView : MonoBehaviour
         _npcImage.sprite = customerSprite;
 
         UpdateFrame(_data, skinData);
-
-
-        // if (data is SpecialCustomerData)
-        // {
-        //     _normalSkinFrameImage.gameObject.SetActive(false);
-        //     _gatecrasherFrameImage.gameObject.SetActive(false);
-        //     _specialFrameImage.gameObject.SetActive(true);
-        //     SetScaleImage(1);
-
-        // }
-        // else if (data is GatecrasherCustomerData)
-        // {
-        //     _normalSkinFrameImage.gameObject.SetActive(false);
-        //     _gatecrasherFrameImage.gameObject.SetActive(true);
-        //     _specialFrameImage.gameObject.SetActive(false);
-        //     SetScaleImage(1);
-        // }
-        // else
-        // {
-        //     _normalSkinFrameImage.gameObject.SetActive(true);
-        //     _gatecrasherFrameImage.gameObject.SetActive(false);
-        //     _specialFrameImage.gameObject.SetActive(false);
-        //     _tendencyTypeText.gameObject.SetActive(true);
-        //     SetScaleImage(1.3f, 13);
-        // }
 
         Color imageColor = Color.white;
         if (!UserInfo.GetCustomerEnableState(data))

@@ -42,6 +42,7 @@ public class UICustomerPictorialBook : MonoBehaviour
         UserInfo.OnAddNotificationHandler += CheckCustomerNotification;
         UserInfo.OnRemoveNotificationHandler += CheckCustomerNotification;
         UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
+        UserInfo.OnVisitedCustomerHandler += UpdateUI;
     }
     
 
