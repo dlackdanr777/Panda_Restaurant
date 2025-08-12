@@ -73,7 +73,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
         UpdateUIOptimized();
     }
 
-    // 대폭 최적화된 UpdateUI
+    // 대폭 최적화된 UpdateUI (정렬 없이 기존 순서대로)
     private void UpdateUIOptimized()
     {
         if (!gameObject.activeSelf || _foodDataList == null || _foodDataList.Count == 0)
@@ -83,18 +83,14 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
         int dataCount = _foodDataList.Count;
         
-        // 레시피 데이터를 우선순위에 따라 정렬
-        var prioritizedIndices = GetPrioritizedRecipeIndices(dataCount);
-        
-        // 정렬된 순서대로 슬롯 처리
-        for (int displayIndex = 0; displayIndex < prioritizedIndices.Count; displayIndex++)
+        // 기존 리스트 순서대로 슬롯 처리
+        for (int i = 0; i < dataCount; i++)
         {
-            int dataIndex = prioritizedIndices[displayIndex];
-            var data = _foodDataList[dataIndex];
-            var slot = _slots[dataIndex];
+            var data = _foodDataList[i];
+            var slot = _slots[i];
             
             slot.SetFoodType(data.FoodType);
-            slot.transform.SetSiblingIndex(displayIndex);
+            slot.transform.SetSiblingIndex(i);
 
             if (UserInfo.IsGiveRecipe(data.Id))
             {
@@ -105,36 +101,6 @@ public class UIRecipeTab : UIRestaurantAdminTab
                 ProcessBuyableSlot(data, slot);
             }
         }
-    }
-
-    private List<int> GetPrioritizedRecipeIndices(int dataCount)
-    {
-        var ownedRecipes = new List<int>();
-        var unownedRecipes = new List<int>();
-
-        // 레시피들을 우선순위별로 분류 (기존 순서 유지)
-        for (int i = 0; i < dataCount; i++)
-        {
-            var data = _foodDataList[i];
-            bool isGiven = UserInfo.IsGiveRecipe(data.Id);
-
-            if (isGiven)
-            {
-                ownedRecipes.Add(i);
-            }
-            else
-            {
-                unownedRecipes.Add(i);
-            }
-        }
-
-        // 최종 우선순위: 보유 레시피 → 미보유 레시피
-        // 각 그룹 내에서는 기존 순서 유지
-        var result = new List<int>();
-        result.AddRange(ownedRecipes);     // 기존 순서 유지
-        result.AddRange(unownedRecipes);   // 기존 순서 유지
-        
-        return result;
     }
 
     private void ProcessBuyableSlot(FoodData data, UIRestaurantAdminFoodTypeSlot slot)

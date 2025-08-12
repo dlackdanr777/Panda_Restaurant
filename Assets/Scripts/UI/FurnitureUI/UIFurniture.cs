@@ -166,7 +166,7 @@ public class UIFurniture : MobileUIView
         _uiFurniturePreview.SetData(_currentFloorType, previewData);
     }
 
-    // 대폭 최적화된 UpdateUI (UIStaff와 동일한 패턴)
+    // 대폭 최적화된 UpdateUI (정렬 없이 기존 순서대로)
     private void UpdateUIOptimized()
     {
         if (!gameObject.activeInHierarchy || _currentTypeDataList == null || _currentTypeDataList.Count == 0)
@@ -178,19 +178,15 @@ public class UIFurniture : MobileUIView
         var currentSlots = _slots[slotsIndex];
         int dataCount = _currentTypeDataList.Count;
 
-        // 가구 데이터를 우선순위에 따라 정렬
-        var prioritizedIndices = GetPrioritizedFurnitureIndices(dataCount);
-
-        // 정렬된 순서대로 슬롯 처리
-        for (int displayIndex = 0; displayIndex < prioritizedIndices.Count; displayIndex++)
+        // 기존 리스트 순서대로 슬롯 처리
+        for (int i = 0; i < dataCount; i++)
         {
-            int dataIndex = prioritizedIndices[displayIndex];
-            var data = _currentTypeDataList[dataIndex];
-            var slot = currentSlots[dataIndex];
+            var data = _currentTypeDataList[i];
+            var slot = currentSlots[i];
 
             slot.gameObject.SetActive(true);
             slot.SetFoodType(data.FoodType);
-            slot.transform.SetSiblingIndex(displayIndex);
+            slot.transform.SetSiblingIndex(i);
 
             bool isGiven = UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data);
 
@@ -205,60 +201,7 @@ public class UIFurniture : MobileUIView
         }
     }
 
-    private List<int> GetPrioritizedFurnitureIndices(int dataCount)
-    {
-        var equippedFurniture = new List<int>();
-        var ownedUnequippedFurniture = new List<int>();
-        var unownedFurniture = new List<int>();
-
-        // 가구들을 우선순위별로 분류 (기존 순서 유지)
-        for (int i = 0; i < dataCount; i++)
-        {
-            var data = _currentTypeDataList[i];
-            bool isGiven = UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data);
-            bool isEquipped = isGiven && UserInfo.IsEquipFurniture(UserInfo.CurrentStage, data);
-
-            if (isEquipped)
-            {
-                equippedFurniture.Add(i);
-            }
-            else if (isGiven)
-            {
-                ownedUnequippedFurniture.Add(i);
-            }
-            else
-            {
-                unownedFurniture.Add(i);
-            }
-        }
-
-        // 장착된 가구들을 플로어 순서로 정렬 (같은 플로어 내에서는 기존 순서 유지)
-        equippedFurniture.Sort((a, b) =>
-        {
-            var dataA = _currentTypeDataList[a];
-            var dataB = _currentTypeDataList[b];
-            var floorA = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, dataA);
-            var floorB = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, dataB);
-
-            // 플로어가 다르면 플로어 순서로 정렬
-            if (floorA != floorB)
-                return floorA.CompareTo(floorB);
-
-            // 같은 플로어면 기존 리스트 순서 유지 (인덱스 순서)
-            return a.CompareTo(b);
-        });
-
-        // 최종 우선순위: 장착됨 → 소유하지만 미장착 → 미소유
-        // 각 그룹 내에서는 기존 순서 유지
-        var result = new List<int>();
-        result.AddRange(equippedFurniture);                // 플로어 순서 + 기존 순서
-        result.AddRange(ownedUnequippedFurniture);         // 기존 순서 유지
-        result.AddRange(unownedFurniture);                 // 기존 순서 유지
-
-        return result;
-    }
-
-    // 간소화된 ProcessEquippedSlot (SiblingIndex 처리 제거)
+    // 간소화된 ProcessEquippedSlot
     private void ProcessEquippedSlot(FurnitureData data, UIRestaurantAdminFoodTypeSlot slot)
     {
         ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, data);

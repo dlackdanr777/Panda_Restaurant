@@ -171,7 +171,7 @@ public class UIStaff : MobileUIView
         _uiStaffPreview.SetData(_currentFloorType, _currentType, previewData);
     }
 
-    // 대폭 최적화된 UpdateUI (간단한 버전)
+    // 대폭 최적화된 UpdateUI (정렬 없이 기존 순서대로)
     private void UpdateUIOptimized()
     {
         if (!gameObject.activeInHierarchy || _currentTypeDataList == null || _currentTypeDataList.Count == 0)
@@ -183,19 +183,15 @@ public class UIStaff : MobileUIView
         var currentSlots = _slots[slotsIndex];
         int dataCount = _currentTypeDataList.Count;
         
-        // 직원 데이터를 우선순위에 따라 정렬
-        var prioritizedIndices = GetPrioritizedStaffIndices(dataCount);
-        
-        // 정렬된 순서대로 슬롯 처리
-        for (int displayIndex = 0; displayIndex < prioritizedIndices.Count; displayIndex++)
+        // 기존 리스트 순서대로 슬롯 처리
+        for (int i = 0; i < dataCount; i++)
         {
-            int dataIndex = prioritizedIndices[displayIndex];
-            var data = _currentTypeDataList[dataIndex];
-            var slot = currentSlots[dataIndex];
+            var data = _currentTypeDataList[i];
+            var slot = currentSlots[i];
             
             slot.gameObject.SetActive(true);
             slot.EquipGroupSetActive(false);
-            slot.transform.SetSiblingIndex(displayIndex);
+            slot.transform.SetSiblingIndex(i);
 
             bool isGiven = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data);
             if (isGiven)
@@ -209,64 +205,12 @@ public class UIStaff : MobileUIView
         }
     }
 
-    private List<int> GetPrioritizedStaffIndices(int dataCount)
-    {
-        var equippedStaff = new List<int>();
-        var ownedUnequippedStaff = new List<int>();
-        var unownedStaff = new List<int>();
-
-        // 직원들을 우선순위별로 분류 (기존 순서 유지)
-        for (int i = 0; i < dataCount; i++)
-        {
-            var data = _currentTypeDataList[i];
-            bool isGiven = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data);
-            bool isEquipped = isGiven && UserInfo.IsEquipStaff(UserInfo.CurrentStage, data);
-
-            if (isEquipped)
-            {
-                equippedStaff.Add(i);
-            }
-            else if (isGiven)
-            {
-                ownedUnequippedStaff.Add(i);
-            }
-            else
-            {
-                unownedStaff.Add(i);
-            }
-        }
-
-        // 장착된 직원들만 플로어 순서로 정렬 (같은 플로어 내에서는 기존 순서 유지)
-        equippedStaff.Sort((a, b) =>
-        {
-            var dataA = _currentTypeDataList[a];
-            var dataB = _currentTypeDataList[b];
-            var floorA = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, dataA);
-            var floorB = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, dataB);
-            
-            // 플로어가 다르면 플로어 순서로 정렬
-            if (floorA != floorB)
-                return floorA.CompareTo(floorB);
-            
-            // 같은 플로어면 기존 리스트 순서 유지 (인덱스 순서)
-            return a.CompareTo(b);
-        });
-
-        // 최종 우선순위: 장착됨 → 소유하지만 미장착 → 미소유
-        // 각 그룹 내에서는 기존 순서 유지
-        var result = new List<int>();
-        result.AddRange(equippedStaff);                // 플로어 순서 + 기존 순서
-        result.AddRange(ownedUnequippedStaff);         // 기존 순서 유지
-        result.AddRange(unownedStaff);                 // 기존 순서 유지
-        
-        return result;
-    }
-
-    // 간소화된 ProcessEquippedSlot (SiblingIndex 처리 제거)
+    // 간소화된 ProcessEquippedSlot
     private void ProcessEquippedSlot(StaffData data, UIRestaurantAdminStaffSlot slot)
     {
         ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
-        Sprite thumbnailSprite = data.ThumbnailSprite == null ?  data.Sprite : data.ThumbnailSprite;
+        Sprite thumbnailSprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
+        
         // 장착 상태 처리
         if (UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
         {
