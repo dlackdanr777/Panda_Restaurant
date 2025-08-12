@@ -22,7 +22,6 @@ public class FirstLoadingScene : MonoBehaviour
                 if (callback.IsSuccess())
                 {
                     int serverStatus = (int)callback.GetReturnValuetoJSON()["serverStatus"];
-                    Debug.Log("서버 상태: " + serverStatus);
                     if (serverStatus == 0)
                     {
                         Debug.Log("서버 상태가 정상입니다. 데이터 로드를 시작합니다.");

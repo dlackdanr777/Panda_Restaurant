@@ -450,17 +450,17 @@ namespace Muks.BackEnd
                     if (bro == null || !bro.IsSuccess())
                     {
                         Debug.LogError("[BackendManager] 게스트 로그인 실패: " + bro?.GetMessage());
+                        if (bro.GetStatusCode() == "401")
+                        {
+                            Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
+                            Backend.BMember.DeleteGuestInfo();
+                        }
+
                         onFail?.Invoke(BackendState.Failure);
                         return;
                     }
 
-                    if (bro.GetStatusCode() == "401")
-                    {
-                        Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
-                        Backend.BMember.DeleteGuestInfo();
-                        GuestLoginAsync(callback, onFail);
-                        return;
-                    }
+
                     
                     callback(bro);
                 });
