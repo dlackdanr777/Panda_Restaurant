@@ -1,12 +1,16 @@
 using System;
+using System.Collections;
 using UnityEngine;
 
 public class TouchEffect : MonoBehaviour
 {
+    private const float HIDE_TIME = 1f;
+
     [SerializeField] private Animator _animator;
     [SerializeField] private RectTransform _effectTransform;
 
     private Action<TouchEffect> _onEndHandler;
+    private Coroutine _hideCoroutine;
 
     public void Init(Action<TouchEffect> onHideHandler)
     {
@@ -23,6 +27,13 @@ public class TouchEffect : MonoBehaviour
         }
         _effectTransform.SetAsFirstSibling();
         _effectTransform.transform.position = pos;
+
+        if (_hideCoroutine != null)
+        {
+            StopCoroutine(_hideCoroutine);
+            _hideCoroutine = null;
+        }
+        _hideCoroutine = StartCoroutine(HideRoutine());
     }
 
     public void EndEffect()
@@ -35,5 +46,21 @@ public class TouchEffect : MonoBehaviour
     private void OnLoadingScene()
     {
         _onEndHandler?.Invoke(this);
+    }
+
+    private void OnDisable()
+    {
+        if(_hideCoroutine != null)
+        {
+            StopCoroutine(_hideCoroutine);
+            _hideCoroutine = null;
+        }
+    }
+
+    private IEnumerator HideRoutine()
+    {
+        yield return new WaitForSeconds(HIDE_TIME);
+        EndEffect();
+        _hideCoroutine = null;
     }
 }

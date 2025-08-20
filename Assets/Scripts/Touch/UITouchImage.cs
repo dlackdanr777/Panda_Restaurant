@@ -12,7 +12,6 @@ public class UITouchImage : MonoBehaviour
         if (_animator != null)
         {
             _animator.Rebind();
-            _animator.Update(0f);
         }
     }
 

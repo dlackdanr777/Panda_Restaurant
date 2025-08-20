@@ -1583,6 +1583,41 @@ public static class UserInfo
         return 0;
     }
 
+    public static List<GachaItemData> GetGiveGachaItemDataList(UpgradeType upgradeType)
+    {
+        List<GachaItemData> dataList = new List<GachaItemData>();
+        foreach (var item in _giveGachaItemCountDic)
+        {
+            GachaItemData data = ItemManager.Instance.GetGachaItemData(item.Key);
+            if (data != null && data.UpgradeType == upgradeType)
+                dataList.Add(data);
+        }
+        return dataList;
+    }
+
+    public static float GetGiveGachaItemValue(GachaItemData data)
+    {
+        if (_giveGachaItemCountDic.TryGetValue(data.Id, out int count))
+        {
+            float addValue = data.DefaultValue + ((count - 1) * data.UpgradeValue);
+            return addValue;
+        }
+
+        return 0f;
+    }
+
+    public static float GetGiveGachaItemValue(string id)
+    {
+        GachaItemData data = ItemManager.Instance.GetGachaItemData(id);
+        if (data == null)
+        {
+            DebugLog.LogError("해당 아이템이 존재하지 않습니다: " + id);
+            return 0f;
+        }
+
+        return GetGiveGachaItemValue(data);
+    }
+
 
     public static int GetGachaItemLevel(string id)
     {

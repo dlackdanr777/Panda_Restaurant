@@ -25,7 +25,7 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
             _data = null;
             _itemImage.gameObject.SetActive(false);
             SetStar(Rank.Length);
-            _alarm.ChangeAlarmId(string.Empty);
+            _alarm?.ChangeAlarmId(string.Empty);
             return;
         }
 
@@ -38,7 +38,7 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
         _itemImage.sprite = data.Sprite;
         Utility.ChangeImagePivot(_itemImage);
         SetStar(data.GachaItemRank);
-        _alarm.ChangeAlarmId(data.Id);
+        _alarm?.ChangeAlarmId(data.Id);
     }
 
 

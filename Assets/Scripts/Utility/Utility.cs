@@ -176,6 +176,44 @@ public static class Utility
         };
     }
 
+    public static string GetGachaItemUpgradeTypeName(UpgradeType type)
+    {
+        switch (type)
+        {
+            case UpgradeType.UPGRADE01: return "전체 손님 기본 속도";
+            case UpgradeType.UPGRADE02: return "모든 메뉴 제작 시간";
+            case UpgradeType.UPGRADE03: return "내추럴 메뉴 제작 시간";
+            case UpgradeType.UPGRADE04: return "모던 메뉴 제작 시간";
+            case UpgradeType.UPGRADE05: return "빈티지 메뉴 제작 시간";
+            case UpgradeType.UPGRADE06: return "전통적 메뉴 제작 시간";
+            case UpgradeType.UPGRADE07: return "트로피컬 메뉴 제작 시간";
+            case UpgradeType.UPGRADE08: return "럭셔리 메뉴 제작 시간";
+            case UpgradeType.UPGRADE09: return "코지 메뉴 제작 시간";
+            case UpgradeType.UPGRADE10: return "모든 메뉴 판매 가격";
+            case UpgradeType.UPGRADE11: return "내추럴 메뉴 수익";
+            case UpgradeType.UPGRADE12: return "모던 메뉴 수익";
+            case UpgradeType.UPGRADE13: return "빈티지 메뉴 수익";
+            case UpgradeType.UPGRADE14: return "전통적 메뉴 수익";
+            case UpgradeType.UPGRADE15: return "트로피컬 메뉴 수익";
+            case UpgradeType.UPGRADE16: return "럭셔리 메뉴 수익";
+            case UpgradeType.UPGRADE17: return "코지 메뉴 수익";
+            case UpgradeType.UPGRADE18: return "전체 스텝 스킬 시간";
+            case UpgradeType.UPGRADE19: return "매니저 스텝 스킬 시간";
+            case UpgradeType.UPGRADE20: return "웨이터 스텝 스킬 시간";
+            case UpgradeType.UPGRADE21: return "주방장 스텝 스킬 시간";
+            case UpgradeType.UPGRADE22: return "치어리더 스텝 스킬 시간";
+            case UpgradeType.UPGRADE23: return "청소부 스텝 스킬 시간";
+            case UpgradeType.UPGRADE24: return "가드 스텝 스킬 시간";
+            case UpgradeType.UPGRADE25: return "웨이터 스텝 이동 속도";
+            case UpgradeType.UPGRADE26: return "주방장 스텝 이동 속도";
+            case UpgradeType.UPGRADE27: return "청소부 스텝 이동 속도";
+            case UpgradeType.UPGRADE28: return "가드 스텝 이동 속도";
+            case UpgradeType.UPGRADE29: return "피버 타임 시간";
+            case UpgradeType.UPGRADE30: return "최대 줄서기 손님";
+            default: throw new System.Exception("알 수 없는 업그레이드 타입입니다.");
+        }
+    }
+
     public static ERestaurantFloorType GetFloorTypeByStr(string str)
     {
         return str switch

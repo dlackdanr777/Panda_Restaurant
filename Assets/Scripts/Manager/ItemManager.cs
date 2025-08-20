@@ -24,6 +24,9 @@ public class ItemManager : MonoBehaviour
 
     private static List<GachaItemData> _gachaItemDataList = new List<GachaItemData>();
     private static Dictionary<string, GachaItemData> _gachaItemDataDic = new Dictionary<string, GachaItemData>();
+    private static Dictionary<UpgradeType, List<GachaItemData>> _upgradeTypeGachaItemDataDic = new Dictionary<UpgradeType, List<GachaItemData>>();
+
+    private static Dictionary<UpgradeType, Sprite> _upgradeTypeSpriteDic = new Dictionary<UpgradeType, Sprite>();
 
     private void Awake()
     {
@@ -32,7 +35,8 @@ public class ItemManager : MonoBehaviour
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
-        Init();
+        InitCsv();
+        InitGachaItemUpgradeSprite();
     }
 
 
@@ -147,15 +151,24 @@ public class ItemManager : MonoBehaviour
         return _gachaItemDataDic.ContainsKey(id);
     }
 
+    public Sprite GetUpgradeIcon(UpgradeType upgradeType)
+    {
+        if (_upgradeTypeSpriteDic.TryGetValue(upgradeType, out Sprite sprite))
+            return sprite;
 
-    private void Init()
+        DebugLog.LogError($"업그레이드 타입에 해당하는 스프라이트를 찾을 수 없습니다: {upgradeType}");
+        return null;
+    }
+
+
+    private void InitCsv()
     {
         _gachaItemDataList.Clear();
         _gachaItemDataDic.Clear();
         Dictionary<string, Sprite> spriteDic = new Dictionary<string, Sprite>();
         Sprite[] sprites = Resources.LoadAll<Sprite>("ItemData/GachaItemData/Sprites");
 
-        for(int i = 0, cnt = sprites.Length; i < cnt; ++i)
+        for (int i = 0, cnt = sprites.Length; i < cnt; ++i)
             spriteDic.Add(CutStringUpToChar(sprites[i].name, '_'), sprites[i]);
 
         TextAsset csvData = Resources.Load<TextAsset>("ItemData/GachaItemData/GachaItemList");
@@ -183,11 +196,35 @@ public class ItemManager : MonoBehaviour
             GachaItemData gachaItemData = new GachaItemData(id, name, description, addScore, minutePerTip, rank, upgradeType, defaultValue, upgradeValue, maxLevel, spriteDic[id]);
             _gachaItemDataList.Add(gachaItemData);
             _gachaItemDataDic.Add(id, gachaItemData);
+            AddUpgradeGachaItemDic(gachaItemData);
 
             float ReplaceFloatValue(string str) => float.TryParse(str.Replace(" ", ""), out float value) ? value : 0f;
             int ReplaceIntValue(string str) => int.TryParse(str.Replace(" ", ""), out int value) ? value : 0;
+
+            void AddUpgradeGachaItemDic(GachaItemData gachaItemData)
+            {
+                if (!_upgradeTypeGachaItemDataDic.ContainsKey(gachaItemData.UpgradeType))
+                    _upgradeTypeGachaItemDataDic[gachaItemData.UpgradeType] = new List<GachaItemData>();
+
+                _upgradeTypeGachaItemDataDic[gachaItemData.UpgradeType].Add(gachaItemData);
+            }
         }
     }
+
+    private void InitGachaItemUpgradeSprite()
+    {
+        for(int i = 0, cnt = (int)UpgradeType.Length; i < cnt; ++i)
+        {
+            UpgradeType upgradeType = (UpgradeType)i;
+            Sprite sprite = Resources.Load<Sprite>($"ItemData/GachaItemData/Sprites/UpgradeSprites/{upgradeType}");
+            if (sprite != null)
+                _upgradeTypeSpriteDic[upgradeType] = sprite;
+            else
+                DebugLog.LogError($"업그레이드 타입에 해당하는 스프라이트를 찾을 수 없습니다: {upgradeType}");
+        }
+    }
+
+
 
 
     private string CutStringUpToChar(string str, char delimiter)

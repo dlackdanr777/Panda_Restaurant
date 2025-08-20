@@ -2,6 +2,7 @@ using BackEnd;
 using Muks.BackEnd;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -100,6 +101,41 @@ public class GameManager : MonoBehaviour
 
     [SerializeField] private int _addGachaItemWaitCustomerMaxCount; //최대 줄서기 손님 증가 + (UPGRADE30)
 
+    private Dictionary<UpgradeType, float> _upgradeTypeValueDic = new Dictionary<UpgradeType, float>()
+    {
+        { UpgradeType.UPGRADE01, 0 },
+        { UpgradeType.UPGRADE02, 0 },
+        { UpgradeType.UPGRADE03, 0 },
+        { UpgradeType.UPGRADE04, 0 },
+        { UpgradeType.UPGRADE05, 0 },
+        { UpgradeType.UPGRADE06, 0 },
+        { UpgradeType.UPGRADE07, 0 },
+        { UpgradeType.UPGRADE08, 0 },
+        { UpgradeType.UPGRADE09, 0 },
+        { UpgradeType.UPGRADE10, 0 },
+        { UpgradeType.UPGRADE11, 0 },
+        { UpgradeType.UPGRADE12, 0 },
+        { UpgradeType.UPGRADE13, 0 },
+        { UpgradeType.UPGRADE14, 0 },
+        { UpgradeType.UPGRADE15, 0 },
+        { UpgradeType.UPGRADE16, 0 },
+        { UpgradeType.UPGRADE17, 0 },
+        { UpgradeType.UPGRADE18, 0 },
+        { UpgradeType.UPGRADE19, 0 },
+        { UpgradeType.UPGRADE20, 0 },
+        { UpgradeType.UPGRADE21, 0 },
+        { UpgradeType.UPGRADE22, 0 },
+        { UpgradeType.UPGRADE23, 0 },
+        { UpgradeType.UPGRADE24, 0 },
+        { UpgradeType.UPGRADE25, 0 },
+        { UpgradeType.UPGRADE26, 0 },
+        { UpgradeType.UPGRADE27, 0 },
+        { UpgradeType.UPGRADE28, 0 },
+        { UpgradeType.UPGRADE29, 0 },
+        { UpgradeType.UPGRADE30, 0 },
+        {UpgradeType.None, 0}
+    };
+
 
     public float GetStaffSpeedMul(StaffGroupType type)
     {
@@ -118,6 +154,15 @@ public class GameManager : MonoBehaviour
         DebugLog.LogError("스탭 스킬 시간 증가 효과를 찾을 수 없습니다: " + type);
         return 0;
     }
+    
+    public float GetGachaItemUpgradeValue(UpgradeType type)
+    {
+        if (_upgradeTypeValueDic.TryGetValue(type, out float value))
+            return value;
+
+        DebugLog.LogError("업그레이드 타입을 찾을 수 없습니다: " + type);
+        return 0;
+    }
 
     private void OnUpgradeGachaItemCheck()
     {
@@ -128,13 +173,24 @@ public class GameManager : MonoBehaviour
         _addGachaItemFeverTime = 0;
         _addGachaItemWaitCustomerMaxCount = 0;
 
-        for(int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
+
+        foreach (var key in _upgradeTypeValueDic.Keys.ToList())
+        {
+            if (_upgradeTypeValueDic.ContainsKey(key))
+                _upgradeTypeValueDic[key] = 0;
+
+            else
+                _upgradeTypeValueDic.Add(key, 0);
+                
+        }
+
+        for (int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
         {
             _addGachaItemFoodCookingTimeMulDic[(FoodType)i] = 0;
             _addGachaItemFoodPriceMulDic[(FoodType)i] = 0;
         }
 
-        for(int i = 0, cnt = (int)StaffGroupType.Length; i < cnt; ++i)
+        for (int i = 0, cnt = (int)StaffGroupType.Length; i < cnt; ++i)
         {
             _addGachaItemStaffSkillTimeDic[(StaffGroupType)i] = 0;
             _addGachaItemStaffSpeedMulDic[(StaffGroupType)i] = 0;
@@ -159,8 +215,8 @@ public class GameManager : MonoBehaviour
                 continue;
             }
 
-            float addValue = gachaItemData.DefaultValue + ((itemLevel - 1) * gachaItemData.UpgradeValue);
-
+            float addValue = UserInfo.GetGiveGachaItemValue(gachaItemData);
+            _upgradeTypeValueDic[gachaItemData.UpgradeType] += addValue;
             switch (gachaItemData.UpgradeType)
             {
                 case UpgradeType.UPGRADE01:
@@ -285,7 +341,7 @@ public class GameManager : MonoBehaviour
 
             }
         }
-        
+
         OnChangeScoreHandler?.Invoke();
         OnChangeStaffSkillValueHandler?.Invoke();
         OnChangeMaxWaitCustomerCountHandler?.Invoke();
