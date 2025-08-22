@@ -193,6 +193,7 @@ public class ItemManager : MonoBehaviour
             float upgradeValue = ReplaceFloatValue(row[10]);
             int maxLevel = ReplaceIntValue(row[11]) == 0 ? 1 : ReplaceIntValue(row[11]);
 
+            DebugLog.Log($"아이템 생성: {id}, {name}, {description}, {addScore}, {minutePerTip}, {rank}, {upgradeType}, {defaultValue}, {upgradeValue}, {maxLevel}");
             GachaItemData gachaItemData = new GachaItemData(id, name, description, addScore, minutePerTip, rank, upgradeType, defaultValue, upgradeValue, maxLevel, spriteDic[id]);
             _gachaItemDataList.Add(gachaItemData);
             _gachaItemDataDic.Add(id, gachaItemData);
