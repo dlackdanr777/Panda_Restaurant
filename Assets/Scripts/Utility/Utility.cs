@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
@@ -484,7 +485,7 @@ public static class Utility
 
         else if (data is NormalCustomerData)
         {
-            
+
         }
 
         return description;
@@ -650,7 +651,7 @@ public static class Utility
 
     public static int StrToInt(string str)
     {
-        if(string.IsNullOrWhiteSpace(str))
+        if (string.IsNullOrWhiteSpace(str))
             return 0;
 
         str = str.Trim();
@@ -660,18 +661,49 @@ public static class Utility
         else
             return 0;
     }
-    
+
     public static float StrToFloat(string str)
     {
         if (string.IsNullOrWhiteSpace(str))
             return 0f;
-            
+
         str = str.Trim();
         str = str.Replace("%", "");
         if (float.TryParse(str, out float result))
             return result;
         else
             return 0f;
+    }
+
+    public static string[] SplitCsvLine(string line)
+    {
+        var result = new List<string>();
+        bool insideQuotes = false;
+        var current = new StringBuilder();
+
+        foreach (char c in line)
+        {
+            if (c == '\"')
+            {
+                // 따옴표는 내용에 추가하지 않고 상태만 변경
+                insideQuotes = !insideQuotes;
+            }
+            else if (c == ',' && !insideQuotes)
+            {
+                // 따옴표 밖의 콤마 → 분리
+                result.Add(current.ToString());
+                current.Clear();
+            }
+            else
+            {
+                current.Append(c);
+            }
+        }
+
+        // 마지막 값 추가
+        result.Add(current.ToString());
+
+        return result.ToArray();
     }
 
 }

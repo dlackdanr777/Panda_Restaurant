@@ -198,7 +198,7 @@ public class ChallengeManager : MonoBehaviour
 
         for (int i = 1, cnt = data.Length - 1; i < cnt; ++i)
         {
-            row = data[i].Split(new char[] { ',' });
+            row = Utility.SplitCsvLine(data[i]);
             string id = string.Concat(row[0].Where(c => !Char.IsWhiteSpace(c)));
 
             if (string.IsNullOrWhiteSpace(id))

@@ -143,7 +143,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
 
         for (int i = 1; i < data.Length; i++)
         {
-            string[] row = data[i].Split(',');
+            string[] row = Utility.SplitCsvLine(data[i]);
             string id = row[0].Trim();
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -315,35 +315,18 @@ public class KitchenUtensilDataManager : MonoBehaviour
             string setId = (row[3].Trim());
             int table1AddScore = int.Parse(row[4].Trim());
             int effectValue = int.Parse(row[5].Trim());
-            MoneyType moneyType = row[6].Trim() == "게임 머니" || row[6].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
-
-            int table1BuyScore = int.Parse(row[7].Trim());
+            int table1BuyScore = int.Parse(row[6].Trim());
+            MoneyType moneyType = row[7].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
             int table1BuyPrice = int.Parse(row[8].Trim());
 
-            int table2BuyScore = int.Parse(row[9].Trim());
-            int table2BuyPrice = int.Parse(row[10].Trim());
-            int table2AddScore = int.Parse(row[11].Trim());
-
-            int table3BuyScore = int.Parse(row[12].Trim());
-            int table3BuyPrice = int.Parse(row[13].Trim());
-            int table3AddScore = int.Parse(row[14].Trim());
-
-            int table4BuyScore = int.Parse(row[15].Trim());
-            int table4BuyPrice = int.Parse(row[16].Trim());
-            int table4AddScore = int.Parse(row[17].Trim());
-
-            int table5BuyScore = int.Parse(row[18].Trim());
-            int table5BuyPrice = int.Parse(row[19].Trim());
-            int table5AddScore = int.Parse(row[20].Trim());
-
-            UnlockConditionType unlockType = row.Length < 22 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[21].Trim());
-            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[22].Trim();
-            if (unlockType == UnlockConditionType.None || !int.TryParse(row[23].Trim(), out int unlockCount))
-            {
-                unlockCount = 0;
-            }
-
-            if (!_spriteDic.TryGetValue(id, out Sprite sprite))
+            // UnlockConditionType unlockType = row.Length < 10 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[9].Trim());
+            // string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[10].Trim();
+            // if (unlockType == UnlockConditionType.None || !int.TryParse(row[11].Trim(), out int unlockCount))
+            // {
+            //     unlockCount = 0;
+            // }
+            KitchenUtensilType type = GetKitchenUtensilTypeFromId(id);
+            if (!_spriteDic.TryGetValue(CutStringUpToChar(id, '_'), out Sprite sprite))
             {
                 Debug.LogError($"스프라이트가 없습니다: {id}");
                 continue;
@@ -354,119 +337,73 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 thumbnailSprite = sprite;
             }
 
-            KitchenUtensilData cooker01Data = new KitchenUtensilData(
+            KitchenUtensilData cookerData = new KitchenUtensilData(
                 sprite,
                 thumbnailSprite,
-                id + "_01",
+                id,
                 setId,
                 name,
                 moneyType,
                 table1BuyScore,
                 table1BuyPrice,
-                KitchenUtensilType.Burner1,
+                type,
                 foodType,
                 table1AddScore,
                 effectType,
                 effectValue,
-                                unlockType,
-                unlockId,
-                unlockCount
+                UnlockConditionType.None,
+                string.Empty,
+                0
             );
 
-            KitchenUtensilData cooker02Data = new KitchenUtensilData(
-    sprite,
-    thumbnailSprite,
-    id + "_02",
-    setId,
-    name,
-    moneyType,
-    table2BuyScore,
-    table2BuyPrice,
-    KitchenUtensilType.Burner2,
-    foodType,
-    table2AddScore,
-    effectType,
-    effectValue,
-                    unlockType,
-                unlockId,
-                unlockCount
-);
-
-            KitchenUtensilData cooker03Data = new KitchenUtensilData(
-    sprite,
-    thumbnailSprite,
-    id + "_03",
-    setId,
-    name,
-    moneyType,
-    table3BuyScore,
-    table3BuyPrice,
-    KitchenUtensilType.Burner3,
-    foodType,
-    table3AddScore,
-    effectType,
-    effectValue,
-                    unlockType,
-                unlockId,
-                unlockCount
-);
-
-            KitchenUtensilData cooker04Data = new KitchenUtensilData(
-    sprite,
-    thumbnailSprite,
-    id + "_04",
-    setId,
-    name,
-    moneyType,
-    table4BuyScore,
-    table4BuyPrice,
-    KitchenUtensilType.Burner4,
-    foodType,
-    table4AddScore,
-    effectType,
-    effectValue,
-                    unlockType,
-                unlockId,
-                unlockCount
-);
-
-            KitchenUtensilData cooker05Data = new KitchenUtensilData(
-    sprite,
-    thumbnailSprite,
-    id + "_05",
-    setId,
-    name,
-    moneyType,
-    table5BuyScore,
-    table5BuyPrice,
-    KitchenUtensilType.Burner5,
-    foodType,
-    table5AddScore,
-    effectType,
-    effectValue,
-                    unlockType,
-                unlockId,
-                unlockCount
-);
-
-
-            _kitchenUtensilDataDic.Add(id + "_01", cooker01Data);
-            _kitchenUtensilDataDic.Add(id + "_02", cooker02Data);
-            _kitchenUtensilDataDic.Add(id + "_03", cooker03Data);
-            _kitchenUtensilDataDic.Add(id + "_04", cooker04Data);
-            _kitchenUtensilDataDic.Add(id + "_05", cooker05Data);
-            _kitchenUtensilDataList.Add(cooker01Data);
-            _kitchenUtensilDataList.Add(cooker02Data);
-            _kitchenUtensilDataList.Add(cooker03Data);
-            _kitchenUtensilDataList.Add(cooker04Data);
-            _kitchenUtensilDataList.Add(cooker05Data);
-            _kitchenUtensilDataListType[(int)cooker01Data.Type].Add(cooker01Data);
-            _kitchenUtensilDataListType[(int)cooker02Data.Type].Add(cooker02Data);
-            _kitchenUtensilDataListType[(int)cooker03Data.Type].Add(cooker03Data);
-            _kitchenUtensilDataListType[(int)cooker04Data.Type].Add(cooker04Data);
-            _kitchenUtensilDataListType[(int)cooker05Data.Type].Add(cooker05Data);
+            _kitchenUtensilDataDic.Add(id, cookerData);
+            _kitchenUtensilDataList.Add(cookerData);
+            _kitchenUtensilDataListType[(int)type].Add(cookerData);
         }
     }
+
+    private static KitchenUtensilType GetKitchenUtensilTypeFromId(string id)
+{
+    try
+    {
+        // 언더바 다음 문자열 추출
+        string afterUnderscore = Utility.GetStringAfterChar(id, '_');
+        
+        // 숫자 부분만 추출 (예: "01썸네일" -> "01")
+        string numberPart = "";
+        for (int i = 0; i < afterUnderscore.Length; i++)
+        {
+            if (char.IsDigit(afterUnderscore[i]))
+            {
+                numberPart += afterUnderscore[i];
+            }
+            else
+            {
+                break; // 숫자가 아닌 문자를 만나면 중단
+            }
+        }
+        
+        if (int.TryParse(numberPart, out int burnerNumber))
+        {
+            // 01 -> 0번째 (Burner1), 02 -> 1번째 (Burner2), 03 -> 2번째 (Burner3)
+            int typeIndex = burnerNumber - 1;
+            
+            // Burner1(0), Burner2(1), Burner3(2) 범위 확인
+            if (typeIndex >= 0 && typeIndex <= 4)
+            {
+                return (KitchenUtensilType)typeIndex; // Burner1, Burner2, Burner3
+            }
+        }
+        
+        DebugLog.LogError($"id에서 버너 타입을 파싱할 수 없습니다: {id}, 기본값 Burner1 사용");
+        return KitchenUtensilType.Burner1; // 기본값
+    }
+    catch (System.Exception e)
+    {
+        DebugLog.LogError($"id 파싱 중 오류 발생: {id}, 오류: {e.Message}");
+        return KitchenUtensilType.Burner1; // 기본값
+    }
+}
 
 
     private static string CutStringUpToChar(string str, char delimiter)
