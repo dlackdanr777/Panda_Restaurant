@@ -86,9 +86,10 @@ public class TouchManager : MonoBehaviour
             }
             else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
             {
-                Debug.Log("Touch Ended or Canceled");
                 _touchImage.SetTouch(false);
-                ObjectPoolManager.SpawnTouchEffect(_touchCanvas.transform, GetTouchPosition(Input.mousePosition));
+                Vector3 endPos = GetTouchPosition(Input.mousePosition);
+                ObjectPoolManager.SpawnTouchEffect(_touchCanvas.transform, endPos);
+                _touchImage.transform.position = endPos;
                 _isTouching = false;
             }
         }
@@ -98,14 +99,15 @@ public class TouchManager : MonoBehaviour
             // 마우스 상태에 따라 처리 (UI 체크 제거)
             if (Input.GetMouseButtonDown(0))
             {
-
                 StartTouch(Input.mousePosition);
             }
 
             else if (Input.GetMouseButtonUp(0))
             {
                 _touchImage.SetTouch(false);
-                ObjectPoolManager.SpawnTouchEffect(_touchCanvas.transform, GetTouchPosition(Input.mousePosition));
+                Vector3 endPos = GetTouchPosition(Input.mousePosition);
+                ObjectPoolManager.SpawnTouchEffect(_touchCanvas.transform, endPos);
+                _touchImage.transform.position = endPos;
                 _isTouching = false;
             }
 

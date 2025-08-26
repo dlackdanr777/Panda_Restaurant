@@ -361,6 +361,25 @@ public static class Utility
     }
 
 
+        public static string GetStaffSkinEffectDescription(StaffSkinData data)
+    {
+        if (data == null)
+            return "효과 없음";
+
+        StaffSkinUpgradeType upgradeType = data.UpgradeType;
+        string description = upgradeType switch
+        {
+            StaffSkinUpgradeType.None => "효과 없음",
+            StaffSkinUpgradeType.Type1 => $"이동 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
+            StaffSkinUpgradeType.Type2 => $"전체 손님 지불 금액 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 증가",
+            StaffSkinUpgradeType.Type3 => $"스킬 지속 시간 <color={ColorToHex(GetColor(ColorType.Positive))}>+{(int)data.UpgradeValue}%</color> 증가",
+            StaffSkinUpgradeType.Type4 => $"스킬 쿨타임 <color={ColorToHex(GetColor(ColorType.Positive))}>+{data.UpgradeValue}%</color> 감소",
+            _ => "알 수 없는 업그레이드 타입"
+        };
+        return description;
+    }
+
+
     public static string GetFurnitureFoodTypeSetEffectDescription(FoodType type)
     {
 
@@ -583,8 +602,8 @@ public static class Utility
             ColorType.None => Color.white,
             ColorType.NoGive => new Color(0.2f, 0.2f, 0.2f),
             ColorType.Give => Color.white,
-            ColorType.Negative => new Color(0.83f, 0.28f, 0.25f),
-            ColorType.Positive => new Color(0.16f, 0.41f, 0.72f),
+            ColorType.Negative => new Color(0.16f, 0.41f, 0.72f),
+            ColorType.Positive => new Color(0.83f, 0.28f, 0.25f),
             ColorType.AddValue => new Color(0.141f, 0.569f, 0.247f),
             _ => Color.black
         };

@@ -99,6 +99,7 @@ public class MainScene : MonoBehaviour
             SequentialCommandManager.Instance.EnqueueCommand(() =>  _uiMainNav.Push("UIAttendance"), () => _uiMainNav.ViewsVisibleStateCheck(), () => !_uiMainNav.CheckActiveView("UIAttendance"), 1, 0.5f);
         }
         SoundManager.Instance.LoadSoundData();
+        ChallengeManager.Instance.UpdateChallenge();
 
 #if UNITY_EDITOR
         UserInfo.AddDia(1000);

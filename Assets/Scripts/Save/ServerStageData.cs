@@ -14,6 +14,7 @@ public class ServerStageData
 
     public Dictionary<string, Dictionary<string, string>> EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
     public List<SaveStaffData> GiveStaffList = new List<SaveStaffData>();
+    public List<string> GiveStaffSkinList = new List<string>();
 
     public List<string> GiveFurnitureList = new List<string>();
     public List<List<string>> EquipFurnitureList = new List<List<string>>();
@@ -39,9 +40,10 @@ public class ServerStageData
 
         param.Add("GiveStaffList", GiveStaffList);
         param.Add("EquipStaffDataDic", EquipStaffDataDic);
-        param.Add("GiveFurnitureList", GiveFurnitureList.ToList());
+        param.Add("GiveStaffSkinList", GiveStaffSkinList);
+        param.Add("GiveFurnitureList", GiveFurnitureList);
         param.Add("EquipFurnitureList", EquipFurnitureList);
-        param.Add("GiveKitchenUtensilList", GiveKitchenUtensilList.ToList());
+        param.Add("GiveKitchenUtensilList", GiveKitchenUtensilList);
         param.Add("EquipKitchenUtensilList", EquipKitchenUtensilList);
         param.Add("DropCoinAreaDataList", CoinAreaDataList);
         param.Add("DropGarbageAreaDataList", GarbageAreaDataList);
@@ -81,7 +83,10 @@ public class ServerStageData
             {
                 string id = staffData["Id"].ToString();
                 int level = int.TryParse(staffData["Level"].ToString(), out int parsedLevel) ? parsedLevel : 1;
-                GiveStaffList.Add(new SaveStaffData(id, level));
+                string skinId = staffData.ContainsKey("SkinId") ? staffData["SkinId"].ToString() : string.Empty;
+                SaveStaffData staff = new SaveStaffData(id, level);
+                staff.SetSkinId(skinId);
+                GiveStaffList.Add(staff);
             }
         }
 
@@ -102,6 +107,8 @@ public class ServerStageData
             // 기본값으로 빈 딕셔너리 설정
             EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
         }
+
+        GiveStaffSkinList = ConvertJsonToList(data, "GiveStaffSkinList");
 
         EquipFurnitureList = ConvertJsonTo2DList(data, "EquipFurnitureList");
         EquipKitchenUtensilList = ConvertJsonTo2DList(data, "EquipKitchenUtensilList");

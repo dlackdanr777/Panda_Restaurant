@@ -23,6 +23,4 @@ public class CustomerSkinData : SkinData
         _upgradeType = upgradeType;
         _equipId = equipId;
     }
-
-
 }

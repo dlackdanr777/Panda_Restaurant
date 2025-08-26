@@ -59,19 +59,19 @@ public class KitchenUtensil : MonoBehaviour
 
     protected virtual void SetRendererScale(KitchenUtensilData data)
     {
-        float newSpriteHeight = _spriteRenderer.sprite.bounds.size.y;
-        float sizeMul = 1;
-        if (_initialSpriteHeight > 0 && newSpriteHeight > 0)
-        {
-            // 높이를 기준으로 스케일 비율 계산
-            float heightRatio = _initialSpriteHeight / newSpriteHeight;
+        // float newSpriteHeight = _spriteRenderer.sprite.bounds.size.y;
+        // float sizeMul = 1;
+        // if (_initialSpriteHeight > 0 && newSpriteHeight > 0)
+        // {
+        //     // 높이를 기준으로 스케일 비율 계산
+        //     float heightRatio = _initialSpriteHeight / newSpriteHeight;
 
-            // 새로운 스케일 설정 (SizeMul 적용)
-            Vector3 newScale = _spriteRenderer.transform.localScale;
-            newScale.x = heightRatio * sizeMul;
-            newScale.y = heightRatio * sizeMul;
-            _spriteRenderer.transform.localScale = newScale;
-        }
+        //     // 새로운 스케일 설정 (SizeMul 적용)
+        //     Vector3 newScale = _spriteRenderer.transform.localScale;
+        //     newScale.x = heightRatio * sizeMul;
+        //     newScale.y = heightRatio * sizeMul;
+        //     _spriteRenderer.transform.localScale = newScale;
+        // }
 
         // 배치 타입에 따른 위치 설정
         float heightAdjustment = (_spriteRenderer.sprite.bounds.size.y * 0.5f) * _spriteRenderer.transform.lossyScale.y;

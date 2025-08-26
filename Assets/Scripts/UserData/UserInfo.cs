@@ -1107,6 +1107,50 @@ public static class UserInfo
         return _stageInfos[stageIndex].UpgradeStaff(id);
     }
 
+    
+    public static void GiveStaffSkin(EStage stage, StaffSkinData data)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].GiveStaffSkin(data);
+    }
+
+    public static void GiveStaffSkin(EStage stage, string skinId)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].GiveStaffSkin(skinId);
+    }
+
+    public static void SetStaffSkin(EStage stage, StaffData staff, StaffSkinData skinData)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SetStaffSkin(staff, skinData);
+    }
+
+
+    public static void SetStaffSkin(EStage stage, StaffData staff, string skinId)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SetStaffSkin(staff, skinId);
+    }
+
+    public static StaffSkinData GetEquipStaffSkin(EStage stage, StaffData staff)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetEquipStaffSkin(staff);
+    }
+
+    public static StaffSkinData GetEquipStaffSkin(EStage stage, string staffId)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetEquipStaffSkin(staffId);
+    }
+
+    public static bool IsGiveStaffSkin(EStage stage, string skinId)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].IsGiveStaffSkin(skinId);
+    }
+
 
     #endregion
 
@@ -2021,13 +2065,6 @@ public static class UserInfo
             DebugLog.LogError("고객 데이터가 null입니다.");
             return;
         }
-
-
-        // if (!_giveCustomerSkinSet.Contains(skinData.Id))
-        // {
-        //     DebugLog.LogError("해당 스킨을 가지고 있지 않습니다: " + skinData.Id);
-        //     return;
-        // }
 
         if(!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData saveData))
         {

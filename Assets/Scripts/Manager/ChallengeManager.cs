@@ -84,6 +84,45 @@ public class ChallengeManager : MonoBehaviour
         throw new Exception("도전과제 ID가 존재하지 않습니다: " + id);
     }
 
+    public void UpdateChallenge()
+    {
+        Type01ChallengeCheck();
+        Type02ChallengeCheck();
+        Type03ChallengeCheck();
+        Type04ChallengeCheck();
+        Type05ChallengeCheck();
+        Type06ChallengeCheck();
+        Type07ChallengeCheck();
+        Type08ChallengeCheck();
+        Type09ChallengeCheck();
+        Type10ChallengeCheck();
+        Type11ChallengeCheck();
+        Type12ChallengeCheck();
+        Type13ChallengeCheck();
+        Type14ChallengeCheck();
+        Type15ChallengeCheck();
+        Type16ChallengeCheck();
+        Type17ChallengeCheck();
+        Type18ChallengeCheck();
+        Type19ChallengeCheck();
+
+        Type21ChallengeCheck();
+        Type22ChallengeCheck();
+        Type23ChallengeCheck();
+        Type24ChallengeCheck();
+        Type25ChallengeCheck();
+        Type26ChallengeCheck();
+
+        Type28ChallengeCheck();
+
+        Type30ChallengeCheck();
+        Type31ChallengeCheck();
+        Type32ChallengeCheck();
+        Type33ChallengeCheck();
+        Type34ChallengeCheck();
+        Type35ChallengeCheck();
+    }
+
     private void Awake()
     {
         if (_instance != null)
@@ -159,6 +198,9 @@ public class ChallengeManager : MonoBehaviour
         Type21ChallengeCheck();
         Type22ChallengeCheck();
         Type23ChallengeCheck();
+        Type24ChallengeCheck();
+        Type25ChallengeCheck();
+        Type26ChallengeCheck();
 
         Type28ChallengeCheck();
 

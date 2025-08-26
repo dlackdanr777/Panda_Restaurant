@@ -1,46 +1,28 @@
+using System.Collections;
 using UnityEngine;
 
 public class UITouchImage : MonoBehaviour
 {
     [SerializeField] private Animator _animator;
-    
-    private Coroutine _setAnimationParamsCoroutine;
 
     private void OnEnable()
     {
-        // 활성화될 때 애니메이터 초기화
-        if (_animator != null)
-        {
-            _animator.Rebind();
-        }
+        StopAllCoroutines();
+    }
+
+    private void OnDisable()
+    {
+        StopAllCoroutines();
     }
 
     public void StartTouch()
     {
+        gameObject.SetActive(false);
         gameObject.SetActive(true);
 
-        // 한 프레임 지연 후 파라미터 설정
-        if(_setAnimationParamsCoroutine != null)
-        {
-            StopCoroutine(_setAnimationParamsCoroutine);
-        }
-
-        _setAnimationParamsCoroutine = StartCoroutine(SetAnimationParams());
-    }
-    
-    private System.Collections.IEnumerator SetAnimationParams()
-    {
-        // 한 프레임 기다림
-        yield return null;
-        
-        // 먼저 bool 설정
         _animator.SetBool("Touch", true);
-        
-        // 약간의 지연 후 트리거 설정
-        yield return new WaitForSeconds(0.01f);
-        _animator.SetTrigger("Start");
-        _setAnimationParamsCoroutine = null;
     }
+
 
     public void SetTouch(bool value)
     {
@@ -56,9 +38,21 @@ public class UITouchImage : MonoBehaviour
         {
             // 숨기기 전에 상태 초기화
             _animator.SetBool("Touch", false);
-            _animator.ResetTrigger("Start");
         }
-        
+
         gameObject.SetActive(false);
+    }
+
+
+    public void EndTouch()
+    {
+        StartCoroutine(EndTouchRoutine());
+    }
+
+
+    private IEnumerator EndTouchRoutine()
+    {
+        yield return new WaitForSeconds(0.33f);
+        Hide();
     }
 }
