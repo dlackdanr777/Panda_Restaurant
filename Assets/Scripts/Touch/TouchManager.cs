@@ -67,27 +67,32 @@ public class TouchManager : MonoBehaviour
 
     private void HandleTouchInput()
     {
-        // 터치 입력 처리 (모바일)
+        // 모바일 터치 처리 (멀티터치 지원)
         if (Input.touchCount > 0)
         {
-            Touch touch = Input.GetTouch(0);
-            Vector2 touchPosition = touch.position;
+            // 가장 마지막 터치(가장 큰 fingerId) 찾기
+            Touch lastTouch = Input.touches[0];
+            for (int i = 1; i < Input.touchCount; i++)
+            {
+                if (Input.touches[i].fingerId > lastTouch.fingerId)
+                    lastTouch = Input.touches[i];
+            }
+            Vector2 touchPosition = lastTouch.position;
 
-            // 터치 상태에 따라 처리 (UI 체크 제거)
-            if (touch.phase == TouchPhase.Began)
+            if (lastTouch.phase == TouchPhase.Began)
             {
                 _touchImage.SetTouch(true);
                 StartTouch(touchPosition);
             }
-            else if (touch.phase == TouchPhase.Moved || touch.phase == TouchPhase.Stationary)
+            else if (lastTouch.phase == TouchPhase.Moved || lastTouch.phase == TouchPhase.Stationary)
             {
                 UpdateTouchPosition(touchPosition);
                 _touchImage.SetTouch(true);
             }
-            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+            else if (lastTouch.phase == TouchPhase.Ended || lastTouch.phase == TouchPhase.Canceled)
             {
                 _touchImage.SetTouch(false);
-                Vector3 endPos = GetTouchPosition(Input.mousePosition);
+                Vector3 endPos = GetTouchPosition(touchPosition);
                 ObjectPoolManager.SpawnTouchEffect(_touchCanvas.transform, endPos);
                 _touchImage.transform.position = endPos;
                 _isTouching = false;
@@ -118,6 +123,12 @@ public class TouchManager : MonoBehaviour
                 _touchImage.SetTouch(true);
             }
 
+        }
+
+        if (Input.touchCount == 0 && _isTouching)
+        {
+            _touchImage.SetTouch(false);
+            _isTouching = false;
         }
     }
 

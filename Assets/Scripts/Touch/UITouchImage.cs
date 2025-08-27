@@ -26,6 +26,11 @@ public class UITouchImage : MonoBehaviour
 
     public void SetTouch(bool value)
     {
+        if(!gameObject.activeSelf)
+        {
+            return;
+        }
+
         if (_animator != null)
         {
             _animator.SetBool("Touch", value);

@@ -5,27 +5,25 @@ using UnityEngine.UI;
 
 public static class Utility
 {
-    private static readonly string BillionFormat = "#,##0.0B";
-    private static readonly string MillionFormat = "#,##0.0A";
-    private static readonly string NumberFormat = "N0";
-
     public static string ConvertToMoney(long value)
     {
-        if (value >= 1_000_000_000) // 10억 이상
+        if (value < 100_000)
+            return value.ToString("N0");
+
+        string[] suffix = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" };
+        int index = 0;
+        double displayValue = value;
+
+        // 10만(a) 이후 0이 6개씩 늘어날 때마다 b, c, d...
+        displayValue = value / 100_000d;
+        while (displayValue >= 1000000 && index < suffix.Length - 1)
         {
-            return (value / 1_000_000_000f).ToString(BillionFormat);
+            displayValue /= 1000000d;
+            index++;
         }
-        else if (value >= 1_000_000) // 100만 이상
-        {
-            return (value / 1_000_000f).ToString(MillionFormat);
-        }
-        else // 1천 미만
-        {
-            return value.ToString(NumberFormat);
-        }
+
+        return $"{displayValue:0.#}{suffix[index]}";
     }
-
-
 
     /// <summary>총문자열 갯수와 문자열을 받아 문자열 앞쪽에 -를 넣어주는 함수</summary>
     public static string StringAddHyphen(string str, int strLength)

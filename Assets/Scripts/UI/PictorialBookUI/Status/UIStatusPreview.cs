@@ -9,6 +9,7 @@ public class UIStatusPreview : MonoBehaviour
     [SerializeField] private Image _iconImage;
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
+    [SerializeField] private UIFoodType _uiFoodType;
 
     [Space]
     [Header("Slots")]
@@ -40,7 +41,7 @@ public class UIStatusPreview : MonoBehaviour
             descriptionStr.Append(Utility.SetStringColor(((int)GameManager.Instance.GetGachaItemUpgradeValue(_upgradeType)).ToString(), ColorType.Positive));
             descriptionStr.Append("명 ");
         }
-        else if(_upgradeType == UpgradeType.UPGRADE29)
+        else if (_upgradeType == UpgradeType.UPGRADE29)
         {
             descriptionStr.Append(Utility.SetStringColor(GameManager.Instance.GetGachaItemUpgradeValue(_upgradeType).ToString("F3"), ColorType.Positive));
             descriptionStr.Append("초 ");
@@ -70,7 +71,7 @@ public class UIStatusPreview : MonoBehaviour
             descriptionStr.Append(Utility.SetStringColor(((int)GameManager.Instance.GetGachaItemUpgradeValue(upgradeType)).ToString(), ColorType.Positive));
             descriptionStr.Append("명 ");
         }
-        else if(upgradeType == UpgradeType.UPGRADE29)
+        else if (upgradeType == UpgradeType.UPGRADE29)
         {
             descriptionStr.Append(Utility.SetStringColor(GameManager.Instance.GetGachaItemUpgradeValue(upgradeType).ToString("F3"), ColorType.Positive));
             descriptionStr.Append("초 ");
@@ -82,7 +83,7 @@ public class UIStatusPreview : MonoBehaviour
         }
         descriptionStr.Append(descriptionEndStr);
         _descriptionText.SetText(descriptionStr.ToString());
-
+        UpdateFoodType(upgradeType);
         SlotUpdate();
     }
 
@@ -111,6 +112,77 @@ public class UIStatusPreview : MonoBehaviour
                 _slots.Add(slot);
             }
         }
+    }
+
+
+    private void UpdateFoodType(UpgradeType type)
+    {
+        FoodType foodType = FoodType.None;
+        switch (type)
+        {
+            case UpgradeType.UPGRADE03:
+                foodType = FoodType.Natural;
+                break;
+
+            case UpgradeType.UPGRADE04:
+                foodType = FoodType.Modern;
+                break;
+
+            case UpgradeType.UPGRADE05:
+                foodType = FoodType.Vintage;
+                break;
+
+            case UpgradeType.UPGRADE06:
+                foodType = FoodType.Traditional;
+                break;
+
+            case UpgradeType.UPGRADE07:
+                foodType = FoodType.Tropical;
+                break;
+
+            case UpgradeType.UPGRADE08:
+                foodType = FoodType.Luxury;
+                break;
+
+            case UpgradeType.UPGRADE09:
+                foodType = FoodType.Cozy;
+                break;
+
+            case UpgradeType.UPGRADE11:
+                foodType = FoodType.Natural;
+                break;
+
+            case UpgradeType.UPGRADE12:
+                foodType = FoodType.Modern;
+                break;
+
+            case UpgradeType.UPGRADE13:
+                foodType = FoodType.Vintage;
+                break;
+
+            case UpgradeType.UPGRADE14:
+                foodType = FoodType.Traditional;
+                break;
+
+            case UpgradeType.UPGRADE15:
+                foodType = FoodType.Tropical;
+                break;
+
+            case UpgradeType.UPGRADE16:
+                foodType = FoodType.Luxury;
+                break;
+
+            case UpgradeType.UPGRADE17:
+                foodType = FoodType.Cozy;
+                break;
+
+            default:
+                _uiFoodType.gameObject.SetActive(false);
+                return;
+        }
+
+        _uiFoodType.gameObject.SetActive(true);
+        _uiFoodType.SetFoodType(foodType);
     }
 
 }
