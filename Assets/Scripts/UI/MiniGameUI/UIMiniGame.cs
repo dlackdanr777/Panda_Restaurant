@@ -122,6 +122,7 @@ public class UIMiniGame : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
+        GameManager.Instance.SetMiniGameStart(true);
         SoundManager.Instance.PlayBackgroundAudio(_toturialAudio, 0.5f);
         _timerAudio.Stop();
         StopAllCoroutines();
@@ -162,6 +163,7 @@ public class UIMiniGame : MobileUIView
         {
             VisibleState = VisibleState.Disappeared;
             _canvasGroup.blocksRaycasts = true;
+            GameManager.Instance.SetMiniGameStart(false);
             gameObject.SetActive(false);
         });
     }

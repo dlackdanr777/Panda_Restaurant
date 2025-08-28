@@ -252,7 +252,7 @@ public class ChallengeManager : MonoBehaviour
             string description = row[3];
             string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
             int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
-            MoneyType moneyType = row[6] == "코인" ? MoneyType.Gold : MoneyType.Dia;
+            MoneyType moneyType = row[6].Contains("코인") || row[6].Contains("게임머니") ? MoneyType.Gold : MoneyType.Dia;
             int rewardMoney = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
             ChallengeType challengeType;
             switch (type)

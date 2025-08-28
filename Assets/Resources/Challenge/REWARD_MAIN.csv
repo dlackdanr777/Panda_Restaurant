@@ -2,8 +2,8 @@
 MainReward01,TYPE05,ShortCut05,초보 매니저 포야 고용하기,STAFF06,1,코인,100
 MainReward02,TYPE05,ShortCut05,토루루 고용하기,STAFF11,1,코인,100
 MainReward03,TYPE03,ShortCut06,판다 주먹밥 레시피 배우기,FOOD01,1,코인,100
-MainReward04,TYPE01,ShortCut14,우든 클래식 테이블 1 구매,TABLE01_01,1,코인 ,100
-MainReward05,TYPE02,ShortCut25,드럼통 화로 1 구매,COOKER01_01,0,코인,100
+MainReward04,TYPE01,ShortCut14,우든 클래식 테이블 1 구매,TABLE01_01,1,코인,100
+MainReward05,TYPE02,ShortCut25,드럼통 화로 1 구매,COOKER01_01,1,코인,100
 MainReward06,TYPE09,ShortCut01,누적 방문 손님 50명 달성,,50,코인,1000
 MainReward07,TYPE11,ShortCut01,누적 매출 5.000 코인 달성,코인,5000,코인,500
 MainReward08,TYPE03,ShortCut06,곶감과 우유 레시피 배우기,FOOD02,1,코인,50
@@ -194,7 +194,7 @@ MainReward61,TYPE02,ShortCut27,무난한 스토브 3 구매,COOKER02_03,1,코인
 ,TYPE02,ShortCut25,전통적인 아궁이 1 구매,COOKER07_01,1,코인,135000
 ,TYPE01,ShortCut20,그린 가든 선반 구매,RACK07,1,코인,58500
 ,TYPE01,ShortCut18,싱그러운 그린 테이블 2 구매,TABLE07_02,1,코인,135000
-,TYPE03,ShortCut06,판다 쿠키 레시피 배우기,FOOD34,,코인,6000
+,TYPE03,ShortCut06,판다 쿠키 레시피 배우기,FOOD34,1,코인,6000
 ,TYPE02,ShortCut26,전통적인 아궁이 2 구매,COOKER07_02,1,코인,202500
 ,TYPE01,ShortCut22,항아리 화분 구매,FLOWER07,1,코인,60000
 ,TYPE02,ShortCut34,고고한 선반 구매,KITCHENRACK07,1,코인,82500

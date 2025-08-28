@@ -100,6 +100,7 @@ public class MainScene : MonoBehaviour
         }
         SoundManager.Instance.LoadSoundData();
         ChallengeManager.Instance.UpdateChallenge();
+        GameManager.Instance.SetMiniGameStart(false);
 
 #if UNITY_EDITOR
         UserInfo.AddDia(1000);

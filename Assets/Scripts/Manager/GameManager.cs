@@ -22,13 +22,17 @@ public class GameManager : MonoBehaviour
         }
     }
     private static GameManager _instance;
-
     public event Action OnChangeTipPerMinuteHandler;
     public event Action OnChangeScoreHandler;
     public event Action OnChangeStaffSkillValueHandler;
     public event Action OnChangeMaxWaitCustomerCountHandler;
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
+
+    private bool _isMiniGameStart;
+    public bool IsMiniGameStart => _isMiniGameStart;
+    public bool SetMiniGameStart(bool value) => _isMiniGameStart = value;
+
 
     [SerializeField] private int _totalTabCount = 8;
     public int TotalTabCount => _totalTabCount;

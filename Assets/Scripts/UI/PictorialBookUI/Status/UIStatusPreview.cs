@@ -10,6 +10,7 @@ public class UIStatusPreview : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private UIFoodType _uiFoodType;
+    [SerializeField] private UIStatusItemPreview _itemPreview;
 
     [Space]
     [Header("Slots")]
@@ -24,10 +25,11 @@ public class UIStatusPreview : MonoBehaviour
         for (int i = 0; i < 20; ++i)
         {
             UIStatusPreviewSlot slot = Instantiate(_slotPrefab, _slotParent);
-            slot.Init();
+            slot.Init(OnSlotButtonClicked);
             slot.gameObject.SetActive(false);
             _slots.Add(slot);
         }
+        _itemPreview.Init();
     }
 
     public void UpdateUI()
@@ -106,7 +108,7 @@ public class UIStatusPreview : MonoBehaviour
             else
             {
                 UIStatusPreviewSlot slot = Instantiate(_slotPrefab, _slotParent);
-                slot.Init();
+                slot.Init(OnSlotButtonClicked);
                 slot.SetData(gachaItems[i]);
                 slot.gameObject.SetActive(true);
                 _slots.Add(slot);
@@ -183,6 +185,22 @@ public class UIStatusPreview : MonoBehaviour
 
         _uiFoodType.gameObject.SetActive(true);
         _uiFoodType.SetFoodType(foodType);
+    }
+
+    private void OnSlotButtonClicked(GachaItemData data)
+    {
+        _itemPreview.Show(data);
+    }
+
+
+    private void OnDisable()
+    {
+        _itemPreview.Hide();
+    }
+
+    private void OnEnable()
+    {
+        _itemPreview.Hide();
     }
 
 }

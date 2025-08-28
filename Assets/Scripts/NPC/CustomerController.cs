@@ -145,7 +145,7 @@ public class CustomerController : MonoBehaviour
 
             int randSpawnProbability = UnityEngine.Random.Range(0, 100);
             float timer = TimeManager.Instance.GetTime(TIME_TAG);
-            if (!UserInfo.IsTutorialStart && _breakCustomerEnabled && timer <= 0 && randSpawnProbability < ConstValue.DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT)
+            if (!UserInfo.IsTutorialStart && !GameManager.Instance.IsMiniGameStart && _breakCustomerEnabled && timer <= 0 && randSpawnProbability < ConstValue.DEFAULT_EXCEPTIONAL_CUSTOMER_SPAWN_PERCENT)
             {
                 WeightedRandom<CustomerData> randomDataList = new WeightedRandom<CustomerData>();
                 for (int j = 0, cntJ = specialCustomerDataList.Count; j < cntJ; ++j)

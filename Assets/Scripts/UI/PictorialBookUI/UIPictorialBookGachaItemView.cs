@@ -202,7 +202,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
         if (_data == null)
             throw new System.Exception("아이템이 null인 상태로 강화 버튼을 클릭했습니다.");
 
-        if(UserInfo.UpgradeGachaItem(_data))
+        if (UserInfo.UpgradeGachaItem(_data))
         {
             SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
             _flashEffect.Emit(1);
@@ -213,4 +213,6 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
             PopupManager.Instance.ShowDisplayText("알 수 없는 오류 발생");
         }
     }
+    
+
 }
