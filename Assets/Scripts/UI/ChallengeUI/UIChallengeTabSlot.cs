@@ -137,6 +137,8 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.DiaSound);
             _uiChallenge.StartDiaAnime(_data.RewardMoney, _diaImage.transform.position);
         }
+
+        UserInfo.AddScore(_data.RewardScore);
         UserInfo.ClearChallenge(_data);
     }
 

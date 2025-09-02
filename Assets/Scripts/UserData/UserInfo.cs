@@ -98,7 +98,7 @@ public static class UserInfo
     public static long DailyAddMoney => _dailyAddMoney;
 
     private static int _score;
-    public static int Score => GameManager.Instance.AddScore;
+    public static int Score => GameManager.Instance.AddScore + _score;
 
     private static int _totalCookCount;
     public static int TotalCookCount => _totalCookCount;
@@ -734,6 +734,14 @@ public static class UserInfo
         _dailyAddMoney += value;
         DataBindMoney();
         OnChangeMoneyHandler?.Invoke();
+    }
+
+    public static void AddScore(int score)
+    {
+        if(score <= 0) return;
+        _score += score;
+        GameManager.Instance.OnChangeScoreEvent();
+        OnChangeScoreHandler?.Invoke();
     }
 
 

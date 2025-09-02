@@ -33,6 +33,9 @@ public abstract class ChallengeData
     protected int _rewardMoney;
     public int RewardMoney => _rewardMoney;
 
+    protected int _rewardScore;
+    public int RewardScore => _rewardScore;
+
     protected BindData<UnityAction> _shortcutAction;
     public BindData<UnityAction> ShortcutAction => _shortcutAction;
 }
@@ -44,7 +47,7 @@ public class Type01ChallengeData : ChallengeData
     protected string[] _needFurnitureIds;
     public string[] NeedFurnitureIds => _needFurnitureIds;
 
-    public Type01ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string[] needFurnitureIds, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type01ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string[] needFurnitureIds, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -53,6 +56,7 @@ public class Type01ChallengeData : ChallengeData
         _needFurnitureIds = needFurnitureIds;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -65,7 +69,7 @@ public class Type02ChallengeData : ChallengeData
     protected string[] _needKitchenUtensilId;
     public string[] NeedKitchenUtensilId => _needKitchenUtensilId;
 
-    public Type02ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string[] needKitchenUtensilId, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type02ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string[] needKitchenUtensilId, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -74,6 +78,7 @@ public class Type02ChallengeData : ChallengeData
         _needKitchenUtensilId = needKitchenUtensilId;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -85,7 +90,7 @@ public class Type03ChallengeData : ChallengeData
     protected string _buyRecipeId;
     public string BuyRecipeId => _buyRecipeId;
 
-    public Type03ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string buyRecipeId, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type03ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string buyRecipeId, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -94,6 +99,7 @@ public class Type03ChallengeData : ChallengeData
         _buyRecipeId = buyRecipeId;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -105,7 +111,7 @@ public class Type04ChallengeData : ChallengeData
     protected string _needRecipeId;
     public string NeedRecipeId => _needRecipeId;
 
-    public Type04ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string needRecipeId, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type04ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string needRecipeId, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -114,6 +120,7 @@ public class Type04ChallengeData : ChallengeData
         _needRecipeId = needRecipeId;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -124,7 +131,7 @@ public class Type05ChallengeData : ChallengeData
     protected string _needStaffId;
     public string NeedStaffId => _needStaffId;
 
-    public Type05ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string needStaffId, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type05ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string needStaffId, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -133,6 +140,7 @@ public class Type05ChallengeData : ChallengeData
         _needStaffId = needStaffId;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -144,7 +152,7 @@ public class Type06ChallengeData : ChallengeData
     protected int _recipeCount;
     public int RecipeCount => _recipeCount;
 
-    public Type06ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int recipeCount, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type06ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int recipeCount, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -153,6 +161,7 @@ public class Type06ChallengeData : ChallengeData
         _recipeCount = recipeCount;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -166,7 +175,7 @@ public class Type07ChallengeData : ChallengeData
     protected int _cookCount;
     public int CookCount => _cookCount;
 
-    public Type07ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string recipeId, int cookCount, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type07ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string recipeId, int cookCount, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -176,6 +185,7 @@ public class Type07ChallengeData : ChallengeData
         _cookCount = cookCount;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -188,7 +198,7 @@ public class Type08ChallengeData : ChallengeData
     protected int _rank;
     public int Rank => _rank;
 
-    public Type08ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int rank, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type08ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int rank, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -197,6 +207,7 @@ public class Type08ChallengeData : ChallengeData
         _rank = rank;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -209,7 +220,7 @@ public class Type09ChallengeData : ChallengeData
     protected int _csutomerCount;
     public int CustomerCount => _csutomerCount;
 
-    public Type09ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int csutomerCount, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type09ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int csutomerCount, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -218,6 +229,7 @@ public class Type09ChallengeData : ChallengeData
         _csutomerCount = csutomerCount;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -230,7 +242,7 @@ public class Type10ChallengeData : ChallengeData
     protected int _csutomerCount;
     public int CustomerCount => _csutomerCount;
 
-    public Type10ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int csutomerCount, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type10ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int csutomerCount, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -239,6 +251,7 @@ public class Type10ChallengeData : ChallengeData
         _csutomerCount = csutomerCount;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -250,7 +263,7 @@ public class Type11ChallengeData : ChallengeData
     protected int _moneyCount;
     public int MoneyCount => _moneyCount;
 
-    public Type11ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int moneyCount, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type11ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int moneyCount, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -259,6 +272,7 @@ public class Type11ChallengeData : ChallengeData
         _moneyCount = moneyCount;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -270,7 +284,7 @@ public class Type12ChallengeData : ChallengeData
     protected int _promotionCount;
     public int PromotionCount => _promotionCount;
 
-    public Type12ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int promotionCount, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type12ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int promotionCount, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -279,6 +293,7 @@ public class Type12ChallengeData : ChallengeData
         _promotionCount = promotionCount;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -290,7 +305,7 @@ public class Type13ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type13ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type13ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -299,6 +314,7 @@ public class Type13ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -310,7 +326,7 @@ public class Type14ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type14ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type14ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -319,6 +335,7 @@ public class Type14ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -330,7 +347,7 @@ public class Type15ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type15ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type15ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -339,6 +356,7 @@ public class Type15ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -350,7 +368,7 @@ public class Type16ChallengeData : ChallengeData
     protected string _setId;
     public string SetId => _setId;
 
-    public Type16ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string setId, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type16ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string setId, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -359,6 +377,7 @@ public class Type16ChallengeData : ChallengeData
         _setId = setId;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -370,7 +389,7 @@ public class Type17ChallengeData : ChallengeData
     protected string _setId;
     public string SetId => _setId;
 
-    public Type17ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string setId, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type17ChallengeData(Challenges challenges, ChallengeType type, string id, string description, string setId, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -379,6 +398,7 @@ public class Type17ChallengeData : ChallengeData
         _setId = setId;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -390,7 +410,7 @@ public class Type18ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type18ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type18ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -399,6 +419,7 @@ public class Type18ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -410,7 +431,7 @@ public class Type19ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type19ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type19ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -419,6 +440,7 @@ public class Type19ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -431,7 +453,7 @@ public class Type21ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type21ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type21ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -440,6 +462,7 @@ public class Type21ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -451,7 +474,7 @@ public class Type22ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type22ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type22ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -460,6 +483,7 @@ public class Type22ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -471,7 +495,7 @@ public class Type23ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type23ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type23ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -480,6 +504,7 @@ public class Type23ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -491,7 +516,7 @@ public class Type24ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type24ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type24ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -500,6 +525,7 @@ public class Type24ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -510,7 +536,7 @@ public class Type25ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type25ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type25ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -519,6 +545,7 @@ public class Type25ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -529,7 +556,7 @@ public class Type26ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type26ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type26ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -538,6 +565,7 @@ public class Type26ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -551,7 +579,7 @@ public class Type28ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type28ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type28ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -560,6 +588,7 @@ public class Type28ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -568,7 +597,7 @@ public class Type28ChallengeData : ChallengeData
 public class Type30ChallengeData : ChallengeData
 {
 
-    public Type30ChallengeData(Challenges challenges, ChallengeType type, string id, string description, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type30ChallengeData(Challenges challenges, ChallengeType type, string id, string description, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -576,6 +605,7 @@ public class Type30ChallengeData : ChallengeData
         _description = description;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -588,7 +618,7 @@ public class Type31ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type31ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type31ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -597,6 +627,7 @@ public class Type31ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -608,7 +639,7 @@ public class Type32ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type32ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type32ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -617,6 +648,7 @@ public class Type32ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -628,7 +660,7 @@ public class Type33ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type33ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type33ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -637,6 +669,7 @@ public class Type33ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -648,7 +681,7 @@ public class Type34ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type34ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type34ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -657,6 +690,7 @@ public class Type34ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }
@@ -668,7 +702,7 @@ public class Type35ChallengeData : ChallengeData
     protected int _count;
     public int Count => _count;
 
-    public Type35ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, BindData<UnityAction> shortcutAction)
+    public Type35ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
     {
         _challenges = challenges;
         _type = type;
@@ -677,6 +711,7 @@ public class Type35ChallengeData : ChallengeData
         _count = count;
         _moneyType = moneyType;
         _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
 }

@@ -10,7 +10,7 @@ public static class Utility
         if (value < 100_000)
             return value.ToString("N0");
 
-        string[] suffix = { "a", "b", "c", "d", "e", "f", "g", "h", "i", "j" };
+        string[] suffix = { "A", "B", "C", "D", "E", "F", "G", "H", "I", "J" };
         int index = 0;
         double displayValue = value;
 

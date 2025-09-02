@@ -98,6 +98,12 @@ public class UIStatusPreview : MonoBehaviour
         }
 
         List<GachaItemData> gachaItems = UserInfo.GetGiveGachaItemDataList(_upgradeType);
+        gachaItems.Sort((a, b) =>
+        {
+            if (a.Rank != b.Rank)
+                return b.Rank.CompareTo(a.Rank); // Rank 높은 순
+            return a.Id.CompareTo(b.Id);         // Id 낮은 순
+        });
         for (int i = 0, cnt = gachaItems.Count; i < cnt; ++i)
         {
             if (i < _slots.Count)

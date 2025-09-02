@@ -141,6 +141,12 @@ public class GameManager : MonoBehaviour
     };
 
 
+    public void OnChangeScoreEvent()
+    {
+        OnChangeScoreHandler?.Invoke();
+    }
+
+
     public float GetStaffSpeedMul(StaffGroupType type)
     {
         if (_addGachaItemStaffSpeedMulDic.TryGetValue(type, out float value))
