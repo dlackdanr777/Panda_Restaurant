@@ -893,6 +893,15 @@ public class StageInfo
             return;
         }
 
+        // 각 음식 타입의 개수를 세기 위한 딕셔너리
+        Dictionary<FoodType, int> foodTypeCount = new Dictionary<FoodType, int>();
+        
+        // 첫 번째 가구의 음식 타입 추가
+        if (foodTypeCount.ContainsKey(foodType))
+            foodTypeCount[foodType]++;
+        else
+            foodTypeCount[foodType] = 1;
+
         for (int i = 1, cnt = (int)FurnitureType.Length; i < cnt; ++i)
         {
             FurnitureData data = _equipFurnitureDatas[floorIndex, i];
@@ -902,14 +911,39 @@ public class StageInfo
                 return;
             }
 
-            if (foodType != data.FoodType)
+            // 각 음식 타입의 개수 카운트
+            if (foodTypeCount.ContainsKey(data.FoodType))
+                foodTypeCount[data.FoodType]++;
+            else
+                foodTypeCount[data.FoodType] = 1;
+        }
+
+        // 가장 많은 개수를 가진 음식 타입 찾기
+        FoodType mostFrequentType = FoodType.None;
+        int maxCount = 0;
+
+        foreach (var kvp in foodTypeCount)
+        {
+            if (kvp.Key != FoodType.None && kvp.Value > maxCount)
             {
-                _furnitureEnabledFoodType[floorIndex] = FoodType.None;
-                return;
+                maxCount = kvp.Value;
+                mostFrequentType = kvp.Key;
             }
         }
 
-        _furnitureEnabledFoodType[floorIndex] = foodType;
+        // 전체 가구 개수 계산
+        int totalCount = (int)FurnitureType.Length;
+        // 가장 많은 타입이 아닌 나머지 개수 계산
+        int differentCount = totalCount - maxCount;
+        
+        // 다른 타입이 2개를 초과하면 None으로 설정
+        if (differentCount > 2)
+        {
+            _furnitureEnabledFoodType[floorIndex] = FoodType.None;
+            return;
+        }
+
+        _furnitureEnabledFoodType[floorIndex] = mostFrequentType;
     }
 
 
@@ -930,6 +964,15 @@ public class StageInfo
             return;
         }
 
+        // 각 음식 타입의 개수를 세기 위한 딕셔너리
+        Dictionary<FoodType, int> foodTypeCount = new Dictionary<FoodType, int>();
+        
+        // 첫 번째 주방기구의 음식 타입 추가
+        if (foodTypeCount.ContainsKey(foodType))
+            foodTypeCount[foodType]++;
+        else
+            foodTypeCount[foodType] = 1;
+
         for (int i = 1, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
         {
             data = _equipKitchenUtensilDatas[floorIndex, i];
@@ -939,14 +982,39 @@ public class StageInfo
                 return;
             }
 
-            if (foodType != data.FoodType)
+            // 각 음식 타입의 개수 카운트
+            if (foodTypeCount.ContainsKey(data.FoodType))
+                foodTypeCount[data.FoodType]++;
+            else
+                foodTypeCount[data.FoodType] = 1;
+        }
+
+        // 가장 많은 개수를 가진 음식 타입 찾기
+        FoodType mostFrequentType = FoodType.None;
+        int maxCount = 0;
+
+        foreach (var kvp in foodTypeCount)
+        {
+            if (kvp.Key != FoodType.None && kvp.Value > maxCount)
             {
-                _kitchenuntensilEnabledFoodType[floorIndex] = FoodType.None;
-                return;
+                maxCount = kvp.Value;
+                mostFrequentType = kvp.Key;
             }
         }
 
-        _kitchenuntensilEnabledFoodType[floorIndex] = foodType;
+        // 전체 주방기구 개수 계산
+        int totalCount = (int)KitchenUtensilType.Length;
+        // 가장 많은 타입이 아닌 나머지 개수 계산
+        int differentCount = totalCount - maxCount;
+        
+        // 다른 타입이 2개를 초과하면 None으로 설정
+        if (differentCount > 2)
+        {
+            _kitchenuntensilEnabledFoodType[floorIndex] = FoodType.None;
+            return;
+        }
+
+        _kitchenuntensilEnabledFoodType[floorIndex] = mostFrequentType;
     }
 
     private void CheckCollectFurnitureSetData()

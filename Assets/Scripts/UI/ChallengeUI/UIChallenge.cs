@@ -141,7 +141,7 @@ public class UIChallenge : MobileUIView
                         ObjectPoolManager.Instance.DespawnUICoin(coin);
                         _uiMoney.StartAnime();
                     });
-                    time += 0.05f;
+                    time += 0.03f;
                 });
             }
     }
@@ -168,7 +168,7 @@ public class UIChallenge : MobileUIView
                         ObjectPoolManager.Instance.DespawnUIDia(dia);
                         _uiDia.StartAnime();
                     });
-                    time += 0.05f;
+                    time += 0.03f;
                 });
             }
     }
