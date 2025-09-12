@@ -59,8 +59,21 @@ namespace Muks.RecyclableScrollView
         {
             _dataList = dataList;
 
-            //예비 슬롯들을 고려해 index 세팅 및 Update
-            int index = _tmpfirstVisibleIndex - _bufferCount * _itemsPerRow;
+            // 데이터 개수가 변경되었다면 컨텐츠 높이 재계산
+            int totalRows = Mathf.CeilToInt((float)_dataList.Count / _itemsPerRow);
+            float contentHeight = _itemHeight * totalRows + ((totalRows - 1) * _spacing) + _topOffset + _bottomOffset;
+            _contentRect.sizeDelta = new Vector2(_contentRect.sizeDelta.x, contentHeight);
+
+            // 현재 스크롤 위치에 따른 가시 영역 다시 계산
+            float contentY = _contentRect.anchoredPosition.y;
+            float adjustedContentY = Mathf.Max(0, contentY - _topOffset);
+            int firstVisibleRowIndex = Mathf.FloorToInt(adjustedContentY / (_itemHeight + _spacing));
+            int firstVisibleIndex = firstVisibleRowIndex * _itemsPerRow;
+            
+            _tmpfirstVisibleIndex = firstVisibleIndex;
+
+            // 기존 슬롯들을 현재 가시 영역 기준으로 업데이트
+            int index = firstVisibleIndex - _bufferCount * _itemsPerRow;
             foreach (RecyclableScrollSlot<T> item in _slotList)
             {
                 UpdateSlot(item, index);

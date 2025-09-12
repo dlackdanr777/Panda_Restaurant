@@ -35,8 +35,8 @@ public class UIChallenge : MobileUIView
 
     public override void Init()
     {
-        _uiDaily.Init(this);
-        _uiAllTime.Init(this);
+        _uiDaily.Init(this, ChallengeManager.Instance.GetDailyChallenge);
+        _uiAllTime.Init(this, ChallengeManager.Instance.GetAllTimeChallenge);
         _uiDaily.Init(ChallengeManager.Instance.GetDailyChallenge());
         _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge());
 

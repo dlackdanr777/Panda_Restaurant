@@ -4,14 +4,16 @@ using UnityEngine;
 public class UIChallengeNotification : UINotificationParent
 {
     private List<ChallengeData> _allTimeChallengeList;
-    private List<ChallengeData> _daliyChallengeList;
+    private List<ChallengeData> _dailyChallengeList;
 
     public override bool GetAlarmState()
     {
-        for (int i = 0, cnt = _daliyChallengeList.Count; i < cnt; ++i)
+        InitializeChallengeLists();
+        
+        for (int i = 0, cnt = _dailyChallengeList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.GetIsClearChallenge(_daliyChallengeList[i].Id) && UserInfo.GetIsDoneChallenge(_daliyChallengeList[i].Id))
-            { 
+            if (!UserInfo.GetIsClearChallenge(_dailyChallengeList[i].Id) && UserInfo.GetIsDoneChallenge(_dailyChallengeList[i].Id))
+            {
                 return true;
             }
         }
@@ -29,13 +31,24 @@ public class UIChallengeNotification : UINotificationParent
 
     protected override void Awake()
     {
-        _daliyChallengeList = ChallengeManager.Instance.GetDailyChallenge();
-        _allTimeChallengeList = ChallengeManager.Instance.GetAllTimeChallenge();
+        base.Awake();
+    }
 
+    private void InitializeChallengeLists()
+    {
+        if (_allTimeChallengeList == null || _dailyChallengeList == null)
+        {
+            _allTimeChallengeList = ChallengeManager.Instance.GetAllTimeChallenge();
+            _dailyChallengeList = ChallengeManager.Instance.GetDailyChallenge();
+        }
+    }
+
+    protected void Start()
+    {
         ChallengeManager.Instance.OnDailyChallengeUpdateHandler += RefreshNotificationMessage;
         UserInfo.OnClearChallengeHandler += RefreshNotificationMessage;
         UserInfo.OnDoneChallengeHandler += RefreshNotificationMessage;
-        base.Awake();
+        RefreshNotificationMessage();
     }
 
     protected override void OnDestroy()
@@ -49,10 +62,10 @@ public class UIChallengeNotification : UINotificationParent
     protected override void RefreshNotificationMessage()
     {
         bool active = false;
-
-        for(int i = 0, cnt = _daliyChallengeList.Count; i < cnt; ++i)
+        InitializeChallengeLists();
+        for(int i = 0, cnt = _dailyChallengeList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.GetIsClearChallenge(_daliyChallengeList[i].Id) && UserInfo.GetIsDoneChallenge(_daliyChallengeList[i].Id))
+            if (!UserInfo.GetIsClearChallenge(_dailyChallengeList[i].Id) && UserInfo.GetIsDoneChallenge(_dailyChallengeList[i].Id))
             {
                 active = true;
                 if (active != _alarmObj.activeSelf)

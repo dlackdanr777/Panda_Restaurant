@@ -20,6 +20,8 @@ public class ChallengeManager : MonoBehaviour
     public event Action OnAllTimeChallengeUpdateHandler;
     public event Action OnMainChallengeUpdateHandler;
 
+    public event Action OnAddChallengeHandler;
+
     public static ChallengeManager Instance
     {
         get
@@ -47,6 +49,11 @@ public class ChallengeManager : MonoBehaviour
     private static Dictionary<string, ChallengeData> _mainChallengeDataDic = new Dictionary<string, ChallengeData>();
     private static Dictionary<string, ChallengeData> _alltimeChallengeDataDic = new Dictionary<string, ChallengeData>();
     private static Dictionary<string, ChallengeData> _dailyChallengeDataDic = new Dictionary<string, ChallengeData>();
+
+    private static List<ChallengeData> _mainChallengeList = new List<ChallengeData>();
+    private static List<ChallengeData> _dailyChallengeList = new List<ChallengeData>();
+    private static List<ChallengeData> _allTimeChallengeList = new List<ChallengeData>();
+
 
     private static Dictionary<string, Type01ChallengeData> _type01ChallengeDataDic = new Dictionary<string, Type01ChallengeData>();
     private static Dictionary<string, Type02ChallengeData> _type02ChallengeDataDic = new Dictionary<string, Type02ChallengeData>();
@@ -89,7 +96,8 @@ public class ChallengeManager : MonoBehaviour
         if (_challengeDataDic.TryGetValue(id, out var challengeData))
             return challengeData;
 
-        throw new Exception("도전과제 ID가 존재하지 않습니다: " + id);
+        Debug.LogError("도전과제 ID가 존재하지 않습니다: " + id);
+        return null;
     }
 
     public void UpdateChallenge()
@@ -129,6 +137,12 @@ public class ChallengeManager : MonoBehaviour
         Type33ChallengeCheck();
         Type34ChallengeCheck();
         Type35ChallengeCheck();
+
+        OnCheckRepeatCoinChallengeEvent();
+        OnCheckRepeatVisitChallengeEvent();
+        OnCheckRepeatScoreChallengeEvent();
+        OnCheckRepeatGatchaChallengeEvent();
+
     }
 
     private void Awake()
@@ -183,6 +197,11 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnAddCleanCountHandler += Type34ChallengeCheck;
         UserInfo.OnAddAdvertisingViewCountHandler += Type35ChallengeCheck;
 
+        UserInfo.OnClearChallengeHandler += OnCheckRepeatCoinChallengeEvent;
+        UserInfo.OnClearChallengeHandler += OnCheckRepeatVisitChallengeEvent;
+        UserInfo.OnClearChallengeHandler += OnCheckRepeatScoreChallengeEvent;
+        UserInfo.OnClearChallengeHandler += OnCheckRepeatGatchaChallengeEvent;
+
         Type01ChallengeCheck();
         Type02ChallengeCheck();
         Type03ChallengeCheck();
@@ -225,12 +244,18 @@ public class ChallengeManager : MonoBehaviour
     {
         _mainChallengeDataDic.Clear();
         _mainChallengeDataDic = SetData(Challenges.Main, "REWARD_MAIN");
+        _mainChallengeList.Clear();
+        _mainChallengeList.AddRange(_mainChallengeDataDic.Values);
 
         _alltimeChallengeDataDic.Clear();
         _alltimeChallengeDataDic = SetAllTimeData("REWARD_ALLTIME");
+        _allTimeChallengeList.Clear();
+        _allTimeChallengeList.AddRange(_alltimeChallengeDataDic.Values);
 
         _dailyChallengeDataDic.Clear();
         _dailyChallengeDataDic = SetData(Challenges.Daily, "REWARD_DAILY");
+        _dailyChallengeList.Clear();
+        _dailyChallengeList.AddRange(_dailyChallengeDataDic.Values);
 
         _challengeDataDic.Clear();
         _challengeDataDic.AddRange(_mainChallengeDataDic);
@@ -554,25 +579,8 @@ public class ChallengeManager : MonoBehaviour
             if (string.IsNullOrWhiteSpace(id))
                 continue;
 
-            if (id.Contains("AllTimeRepeatCoin"))
+            if (id.Contains("Repeat"))
             {
-                dic.AddRange(GetRepeatCoinDic());
-                continue;
-            }
-            else if (id.Contains("AllTimeRepeatVisit"))
-            {
-                dic.AddRange(GetRepeatVisitDic());
-                continue;
-            }
-            else if (id.Contains("AllTimeRepeatScore"))
-            {
-                dic.AddRange(GetRepeatScoreDic());
-                continue;
-            }
-
-            else if (id.Contains("AllTimeRepeatGatcha"))
-            {
-                dic.AddRange(GetRepeatGatchaDic());
                 continue;
             }
 
@@ -877,12 +885,12 @@ public class ChallengeManager : MonoBehaviour
 
     public List<ChallengeData> GetAllTimeChallenge()
     {
-        return _alltimeChallengeDataDic.Values.ToList();
+        return _allTimeChallengeList;
     }
 
     public List<ChallengeData> GetDailyChallenge()
     {
-        return _dailyChallengeDataDic.Values.ToList();
+        return _dailyChallengeList;
     }
 
     public float GetChallengePercent(ChallengeData data)
@@ -3064,124 +3072,389 @@ public class ChallengeManager : MonoBehaviour
     }
 
 
-    private Dictionary<string, ChallengeData> GetRepeatCoinDic()
+    private Type11ChallengeData GetNextRepeatCoinChallenge()
     {
-        Dictionary<string, ChallengeData> dic = new Dictionary<string, ChallengeData>();
         int startReward = 1000000;
         int repeatStep = 100000;
-        // 예시: 100개 반복 업적 미리 생성
-        for (int i = 1; i <= 50; i++)
+        int nextLevel = 2; // 1번은 이미 직접 추가했으므로 2부터 시작
+
+        // 첫 번째 챌린지가 클리어되지 않았다면 첫 번째 챌린지 생성
+        if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatCoin1"))
         {
-            int goal = startReward + repeatStep * i;
-            int coinReward = (int)(goal * 0.1f);
-            int scoreReward = (int)(goal * 0.05f);
-            string id = $"AllTimeRepeatCoin{goal}";
-            // ChallengeData 생성 (필요한 생성자에 맞게 수정)
-            var repeatData = new Type11ChallengeData(
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatCoin1") || _type11ChallengeDataDic.ContainsKey("AllTimeRepeatCoin1"))
+            {
+                Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatCoin1");
+                return null;
+            }
+
+            int firstGoal = startReward + repeatStep * 1;
+            int firstCoinReward = (int)(firstGoal * 0.1f);
+            int firstScoreReward = (int)(firstGoal * 0.05f);
+
+            Type11ChallengeData firstData = new Type11ChallengeData(
                 Challenges.AllTime,
                 ChallengeType.TYPE11,
-                id,
-                $"누적 코인 수익 {Utility.ConvertToMoney(goal)} 달성",
-                goal,
+                "AllTimeRepeatCoin1",
+                $"누적 코인 수익 {Utility.ConvertToMoney(firstGoal)} 달성",
+                firstGoal,
                 MoneyType.Gold,
-                coinReward,
-                scoreReward,
+                firstCoinReward,
+                firstScoreReward,
                 GetShortCutAction("ShortCut01")
             );
-            dic.Add(id, repeatData);
+            return firstData;
         }
 
-        return dic;
+        // 완료된 반복 챌린지 중 가장 높은 레벨 찾기 (1번은 이미 직접 추가했으므로 2번부터 확인)
+        for (int i = 2; i <= 100; i++)
+        {
+            string id = $"AllTimeRepeatCoin{i}";
+
+            if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+            {
+                nextLevel = i + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // 최대 레벨 초과 시 null 반환
+        if (nextLevel > 100)
+            return null;
+
+        // 다음 레벨 챌린지 생성 전 중복 체크
+        string nextId = $"AllTimeRepeatCoin{nextLevel}";
+        if (_challengeDataDic.ContainsKey(nextId) || _type11ChallengeDataDic.ContainsKey(nextId))
+        {
+            Debug.LogError("이미 존재하는 챌린지 ID입니다. " + nextId);
+            return null;
+        }
+
+        int nextGoal = startReward + repeatStep * nextLevel;
+        int coinReward = (int)(nextGoal * 0.1f);
+        int scoreReward = (int)(nextGoal * 0.05f);
+
+        Type11ChallengeData newData = new Type11ChallengeData(
+            Challenges.AllTime,
+            ChallengeType.TYPE11,
+            nextId,
+            $"누적 코인 수익 {Utility.ConvertToMoney(nextGoal)} 달성",
+            nextGoal,
+            MoneyType.Gold,
+            coinReward,
+            scoreReward,
+            GetShortCutAction("ShortCut01")
+        );
+        return newData;
     }
 
 
-    private Dictionary<string, ChallengeData> GetRepeatVisitDic()
+    private Type09ChallengeData GetNextRepeatVisitChallenge()
     {
-        Dictionary<string, ChallengeData> dic = new Dictionary<string, ChallengeData>();
         int startReward = 100;
         int repeatStep = 100;
-        // 예시: 100개 반복 업적 미리 생성
-        for (int i = 1; i <= 50; i++)
+        int nextLevel = 2; // 1번은 이미 직접 추가했으므로 2부터 시작
+
+        // 첫 번째 챌린지가 클리어되지 않았다면 첫 번째 챌린지 생성
+        if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatVisit1"))
         {
-            int goal = startReward + repeatStep * i;
-            int coinReward = (int)(goal * 10f);
-            int scoreReward = (int)(goal * 0.1f);
-            string id = $"AllTimeRepeatVisit{goal}";
-            // ChallengeData 생성 (필요한 생성자에 맞게 수정)
-            var repeatData = new Type12ChallengeData(
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatVisit1"))
+            {
+                Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatVisit1");
+                return null;
+            }
+
+            int firstGoal = startReward + repeatStep * 1;
+            int firstCoinReward = (int)(firstGoal * 10f);
+            int firstScoreReward = (int)(firstGoal * 0.1f);
+            Debug.Log($"firstGoal: {firstGoal}, firstCoinReward: {firstCoinReward}, firstScoreReward: {firstScoreReward}");
+            Type09ChallengeData firstData = new Type09ChallengeData(
                 Challenges.AllTime,
-                ChallengeType.TYPE12,
-                id,
-                $"누적 방문 손님 {Utility.ConvertToMoney(goal)}명 달성",
-                goal,
+                ChallengeType.TYPE09,
+                "AllTimeRepeatVisit1",
+                $"누적 방문 손님 {Utility.ConvertToMoney(firstGoal)}명 달성",
+                firstGoal,
                 MoneyType.Gold,
-                coinReward,
-                scoreReward,
+                firstCoinReward,
+                firstScoreReward,
                 GetShortCutAction("ShortCut01")
             );
-            dic.Add(id, repeatData);
+            return firstData;
         }
 
-        return dic;
+        // 완료된 반복 챌린지 중 가장 높은 레벨 찾기 (1번은 이미 직접 추가했으므로 2번부터 확인)
+        for (int i = 2; i <= 100; i++)
+        {
+            string id = $"AllTimeRepeatVisit{i}";
+
+            if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+            {
+                nextLevel = i + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // 최대 레벨 초과 시 null 반환
+        if (nextLevel > 100)
+            return null;
+
+        // 다음 레벨 챌린지 생성 전 중복 체크
+        string nextId = $"AllTimeRepeatVisit{nextLevel}";
+        if (_challengeDataDic.ContainsKey(nextId) || _type12ChallengeDataDic.ContainsKey(nextId))
+        {
+            Debug.LogError("이미 존재하는 챌린지 ID입니다. " + nextId);
+            return null;
+        }
+
+        // 다음 레벨 챌린지 생성
+        int nextGoal = startReward + repeatStep * nextLevel;
+        int coinReward = (int)(nextGoal * 10f);
+        int scoreReward = (int)(nextGoal * 0.1f);
+
+        Type09ChallengeData data = new Type09ChallengeData(
+            Challenges.AllTime,
+            ChallengeType.TYPE09,
+            nextId,
+            $"누적 방문 손님 {Utility.ConvertToMoney(nextGoal)}명 달성",
+            nextGoal,
+            MoneyType.Gold,
+            coinReward,
+            scoreReward,
+            GetShortCutAction("ShortCut01")
+        );
+        return data;
     }
 
-    private Dictionary<string, ChallengeData> GetRepeatScoreDic()
+
+    private Type08ChallengeData GetNextRepeatScoreChallenge()
     {
-        Dictionary<string, ChallengeData> dic = new Dictionary<string, ChallengeData>();
         int startReward = 1000000;
         int repeatStep = 10000;
-        // 예시: 100개 반복 업적 미리 생성
-        for (int i = 1; i <= 50; i++)
+        int nextLevel = 2; // 1번은 이미 직접 추가했으므로 2부터 시작
+
+        // 첫 번째 챌린지가 클리어되지 않았다면 첫 번째 챌린지 생성
+        if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatScore1"))
         {
-            int goal = startReward + repeatStep * i;
-            int coinReward = (int)(goal * 10f);
-            int scoreReward = (int)(goal * 0.1f);
-            string id = $"AllTimeRepeatScore{goal}";
-            // ChallengeData 생성 (필요한 생성자에 맞게 수정)
-            var repeatData = new Type08ChallengeData(
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatScore1"))
+            {
+                Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatScore1");
+                return null;
+            }
+
+            int firstGoal = startReward + repeatStep * 1;
+            int firstCoinReward = (int)(firstGoal * 10f);
+            int firstScoreReward = (int)(firstGoal * 0.1f);
+
+            Type08ChallengeData firstData = new Type08ChallengeData(
                 Challenges.AllTime,
                 ChallengeType.TYPE08,
-                id,
-                $"누적 평점 {Utility.ConvertToMoney(goal)}명 달성",
-                goal,
+                "AllTimeRepeatScore1",
+                $"누적 평점 {Utility.ConvertToMoney(firstGoal)}명 달성",
+                firstGoal,
                 MoneyType.Gold,
-                coinReward,
-                scoreReward,
+                firstCoinReward,
+                firstScoreReward,
                 GetShortCutAction("ShortCut01")
             );
-            dic.Add(id, repeatData);
+            return firstData;
         }
 
-        return dic;
+        // 완료된 반복 챌린지 중 가장 높은 레벨 찾기 (1번은 이미 직접 추가했으므로 2번부터 확인)
+        for (int i = 2; i <= 100; i++)
+        {
+            string id = $"AllTimeRepeatScore{i}";
+
+            if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+            {
+                nextLevel = i + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // 최대 레벨 초과 시 null 반환
+        if (nextLevel > 100)
+            return null;
+
+        // 다음 레벨 챌린지 생성 전 중복 체크
+        string nextId = $"AllTimeRepeatScore{nextLevel}";
+        if (_challengeDataDic.ContainsKey(nextId) || _type08ChallengeDataDic.ContainsKey(nextId))
+        {
+            Debug.LogError("이미 존재하는 챌린지 ID입니다. " + nextId);
+            return null;
+        }
+
+        // 다음 레벨 챌린지 생성
+        int nextGoal = startReward + repeatStep * nextLevel;
+        int coinReward = (int)(nextGoal * 10f);
+        int scoreReward = (int)(nextGoal * 0.1f);
+
+        Type08ChallengeData data = new Type08ChallengeData(
+            Challenges.AllTime,
+            ChallengeType.TYPE08,
+            nextId,
+            $"누적 평점 {Utility.ConvertToMoney(nextGoal)}명 달성",
+            nextGoal,
+            MoneyType.Gold,
+            coinReward,
+            scoreReward,
+            GetShortCutAction("ShortCut01")
+        );
+        return data;
     }
 
-        private Dictionary<string, ChallengeData> GetRepeatGatchaDic()
+
+    private Type25ChallengeData GetNextRepeatGatchaChallenge()
     {
-        Dictionary<string, ChallengeData> dic = new Dictionary<string, ChallengeData>();
         int startReward = 100;
         int repeatStep = 100;
-        // 예시: 100개 반복 업적 미리 생성
-        for (int i = 1; i <= 50; i++)
+        int nextLevel = 2; // 1번은 이미 직접 추가했으므로 2부터 시작
+
+        // 첫 번째 챌린지가 클리어되지 않았다면 첫 번째 챌린지 생성
+        if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatGatcha1"))
         {
-            int goal = startReward + repeatStep * i;
-            int coinReward = 10;
-            int scoreReward = 0;
-            string id = $"AllTimeGatchaScore{goal}";
-            // ChallengeData 생성 (필요한 생성자에 맞게 수정)
-            var repeatData = new Type25ChallengeData(
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatGatcha1") || _type25ChallengeDataDic.ContainsKey("AllTimeRepeatGatcha1"))
+            {
+                Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatGatcha1");
+                return null;
+            }
+
+            int firstGoal = startReward + repeatStep * 1;
+            int firstCoinReward = 10;
+            int firstScoreReward = 0;
+
+            Type25ChallengeData firstData = new Type25ChallengeData(
                 Challenges.AllTime,
                 ChallengeType.TYPE25,
-                id,
-                $"누적 캡슐 머신 사용 {Utility.ConvertToMoney(goal)}회 달성",
-                goal,
+                "AllTimeRepeatGatcha1",
+                $"누적 캡슐 머신 사용 {Utility.ConvertToMoney(firstGoal)}회 달성",
+                firstGoal,
                 MoneyType.Dia,
-                coinReward,
-                scoreReward,
+                firstCoinReward,
+                firstScoreReward,
                 GetShortCutAction("ShortCut01")
             );
-            dic.Add(id, repeatData);
+            return firstData;
         }
 
-        return dic;
+        // 완료된 반복 챌린지 중 가장 높은 레벨 찾기 (1번은 이미 직접 추가했으므로 2번부터 확인)
+        for (int i = 2; i <= 100; i++)
+        {
+            string id = $"AllTimeRepeatGatcha{i}";
+
+            if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+            {
+                nextLevel = i + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // 최대 레벨 초과 시 null 반환
+        if (nextLevel > 100)
+            return null;
+
+        if (_challengeDataDic.ContainsKey($"AllTimeRepeatGatcha{nextLevel}") || _type25ChallengeDataDic.ContainsKey($"AllTimeRepeatGatcha{nextLevel}"))
+        {
+            Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatGatcha" + nextLevel);
+            return null;
+        }
+
+        // 다음 레벨 챌린지 생성
+        int nextGoal = startReward + repeatStep * nextLevel;
+        int coinReward = 10;
+        int scoreReward = 0;
+        string nextId = $"AllTimeRepeatGatcha{nextLevel}";
+        DebugLog.Log(nextId);
+        Type25ChallengeData data = new Type25ChallengeData(
+            Challenges.AllTime,
+            ChallengeType.TYPE25,
+            nextId,
+            $"누적 캡슐 머신 사용 {Utility.ConvertToMoney(nextGoal)}회 달성",
+            nextGoal,
+            MoneyType.Dia,
+            coinReward,
+            scoreReward,
+            GetShortCutAction("ShortCut01")
+        );
+        return data;
+    }
+
+    private void OnCheckRepeatCoinChallengeEvent()
+    {
+        ChallengeData challengeData = GetNextRepeatCoinChallenge();
+        if (challengeData == null)
+            return;
+
+        if (_alltimeChallengeDataDic.ContainsKey(challengeData.Id))
+            return;
+
+        _challengeDataDic.Add(challengeData.Id, challengeData);
+        _alltimeChallengeDataDic.Add(challengeData.Id, challengeData as Type11ChallengeData);
+        _type11ChallengeDataDic.Add(challengeData.Id, challengeData as Type11ChallengeData);
+        _allTimeChallengeList.Add(challengeData);
+        Type11ChallengeCheck();
+        OnAddChallengeHandler?.Invoke();
+    }
+
+    private void OnCheckRepeatVisitChallengeEvent()
+    {
+        ChallengeData challengeData = GetNextRepeatVisitChallenge();
+        if (challengeData == null)
+            return;
+
+        if (_alltimeChallengeDataDic.ContainsKey(challengeData.Id))
+            return;
+
+        _challengeDataDic.Add(challengeData.Id, challengeData);
+        _alltimeChallengeDataDic.Add(challengeData.Id, challengeData as Type09ChallengeData);
+        _type09ChallengeDataDic.Add(challengeData.Id, challengeData as Type09ChallengeData);
+        _allTimeChallengeList.Add(challengeData);
+        Type09ChallengeCheck();
+        OnAddChallengeHandler?.Invoke();
+    }
+
+    private void OnCheckRepeatScoreChallengeEvent()
+    {
+        ChallengeData challengeData = GetNextRepeatScoreChallenge();
+        if (challengeData == null)
+            return;
+
+        if (_alltimeChallengeDataDic.ContainsKey(challengeData.Id))
+            return;
+
+        _challengeDataDic.Add(challengeData.Id, challengeData);
+        _alltimeChallengeDataDic.Add(challengeData.Id, challengeData as Type08ChallengeData);
+        _type08ChallengeDataDic.Add(challengeData.Id, challengeData as Type08ChallengeData);
+        _allTimeChallengeList.Add(challengeData);
+        Type08ChallengeCheck();
+        OnAddChallengeHandler?.Invoke();
+    }
+
+    private void OnCheckRepeatGatchaChallengeEvent()
+    {
+        ChallengeData challengeData = GetNextRepeatGatchaChallenge();
+        if (challengeData == null)
+            return;
+
+        if (_alltimeChallengeDataDic.ContainsKey(challengeData.Id))
+            return;
+
+        _challengeDataDic.Add(challengeData.Id, challengeData);
+        _alltimeChallengeDataDic.Add(challengeData.Id, challengeData as Type25ChallengeData);
+        _type25ChallengeDataDic.Add(challengeData.Id, challengeData as Type25ChallengeData);
+        _allTimeChallengeList.Add(challengeData);
+        Type25ChallengeCheck();
+        DebugLog.Log(challengeData.Id);
+        OnAddChallengeHandler?.Invoke();
     }
 }

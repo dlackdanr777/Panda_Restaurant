@@ -415,7 +415,7 @@ public class UIGacha : MobileUIView
 
             _gachaMacineAnimator.SetTrigger("Start");
             UserInfo.AddDia(-10);
-            UserInfo.AddUserGachaMachineCount(11);
+            UserInfo.AddUserGachaMachineCount(1100);
             GameManager.Instance.SaveGameData();
         }
         else

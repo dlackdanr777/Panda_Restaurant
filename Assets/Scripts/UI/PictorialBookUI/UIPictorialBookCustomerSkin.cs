@@ -92,13 +92,13 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
 
         UpdateFrame(customerData, _currentSkinData);
         List<CustomerSkinData> skinList = SkinDataManager.Instance.GetCustomerSkinDataList(customerData.Id);
-
+        skinList.Sort((a, b) => b.Rank.CompareTo(a.Rank));
         HideAllSlots();
-        _slotList[0].gameObject.SetActive(true);
-        _slotList[0].SetData(customerData, null);
+        _slotList[skinList.Count].gameObject.SetActive(true);
+        _slotList[skinList.Count].SetData(customerData, null);
         for (int i = 0; i < skinList.Count; ++i)
         {
-            int slotIndex = i + 1;
+            int slotIndex = i;
             if (slotIndex >= MAX_SLOT_COUNT)
             {
                 UIPictorialBookCustomerSkinSlot slot = Instantiate(_slotPrefab, _slotParent);
@@ -156,6 +156,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             _effectText.text = Utility.GetCustomerSkinEffectDescription(null);
             _equipButton.gameObject.SetActive(equipSkinData != null);
             _usingButton.gameObject.SetActive(equipSkinData == null);
+            UpdateFrame(customerData, null);
             return;
         }
 

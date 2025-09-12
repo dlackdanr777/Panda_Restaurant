@@ -156,6 +156,7 @@ public static class UserInfo
     private static HashSet<string> _clearMainChallengeSet = new HashSet<string>();
     private static HashSet<string> _doneAllTimeChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearAllTimeChallengeSet = new HashSet<string>();
+    public static HashSet<string> ClearAllTimeChallengeSet => _clearAllTimeChallengeSet;
     private static HashSet<string> _doneDailyChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearDailyChallengeSet = new HashSet<string>();
 
@@ -2248,6 +2249,9 @@ public static class UserInfo
     {
         ChallengeData data = ChallengeManager.Instance.GetCallengeData(id);
 
+        if(data == null)
+            return false;
+
         switch (data.Challenges)
         {
             case Challenges.Main:
@@ -2284,7 +2288,9 @@ public static class UserInfo
     public static bool GetIsClearChallenge(string id)
     {
         ChallengeData data = ChallengeManager.Instance.GetCallengeData(id);
-
+        if(data == null)
+            return false;
+            
         switch (data.Challenges)
         {
             case Challenges.Main:
