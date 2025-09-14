@@ -11,9 +11,7 @@ public class StageInfo
     public event Action<ERestaurantFloorType, EquipStaffType> OnChangeStaffHandler;
     public event Action OnGiveStaffHandler;
     public event Action OnUpgradeStaffHandler;
-
-    public static event Action OnGiveStaffSkinHandler;
-    public static event Action OnChangeStaffSkinHandler;
+    public event Action OnChangeStaffSkinHandler;
 
 
     public event Action<ERestaurantFloorType, FurnitureType> OnChangeFurnitureHandler;
@@ -45,7 +43,7 @@ public class StageInfo
 
     private Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>> _equipStaffTypeDic = new Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>>();
     private Dictionary<string, SaveStaffData> _giveStaffDic = new Dictionary<string, SaveStaffData>();
-    private static HashSet<string> _giveStaffSkinSet = new HashSet<string>();
+
 
     private List<string> _giveFurnitureList = new List<string>();
     private FurnitureData[,] _equipFurnitureDatas = new FurnitureData[(int)ERestaurantFloorType.Length, (int)FurnitureType.Length];
@@ -386,36 +384,6 @@ public class StageInfo
         return UpgradeStaff(data);
     }
 
-
-    public void GiveStaffSkin(StaffSkinData data)
-    {
-        if (data == null)
-        {
-            DebugLog.LogError("고객 스킨 데이터가 null입니다.");
-            return;
-        }
-
-        if (_giveStaffSkinSet.Contains(data.Id))
-        {
-            DebugLog.Log("이미 가지고 있습니다: " + data.Id);
-            return;
-        }
-
-        _giveStaffSkinSet.Add(data.Id);
-        OnGiveStaffSkinHandler?.Invoke();
-    }
-
-    public void GiveStaffSkin(string skinId)
-    {
-        StaffSkinData skinData = SkinDataManager.Instance.GetStaffSkinData(skinId);
-        if (skinData == null)
-        {
-            DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
-            return;
-        }
-
-        GiveStaffSkin(skinData);
-    }
     
     public void SetStaffSkin(StaffData staff, StaffSkinData skinData)
     {
@@ -502,10 +470,7 @@ public class StageInfo
         return GetEquipStaffSkin(staff);
     }
 
-    public bool IsGiveStaffSkin(string skinId)
-    {
-        return _giveStaffSkinSet.Contains(skinId);
-    }
+
 
 
     #endregion
@@ -1217,9 +1182,8 @@ public bool LoadData(ServerStageData loadData)
     _tip = loadData.Tip;
     _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
 
-    _giveStaffSkinSet.Clear();
-    _giveStaffSkinSet.UnionWith(loadData.GiveStaffSkinList);
-    _giveStaffDic.Clear();
+
+        _giveStaffDic.Clear();
         for (int i = 0, cnt = loadData.GiveStaffList.Count; i < cnt; ++i)
         {
             if (string.IsNullOrWhiteSpace(loadData.GiveStaffList[i].Id))

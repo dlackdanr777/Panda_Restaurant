@@ -4,7 +4,7 @@ using UnityEngine.Events;
 
 public enum ChallengeType
 {
-    TYPE01, TYPE02, TYPE03, TYPE04, TYPE05, TYPE06, TYPE07, TYPE08, TYPE09, TYPE10, TYPE11, TYPE12, TYPE13, TYPE14, TYPE15, TYPE16, TYPE17, TYPE18, TYPE19, TYPE20, TYPE21, TYPE22, TYPE23, TYPE24, TYPE25, TYPE26, TYPE27, TYPE28, TYPE29, TYPE30, TYPE31, TYPE32, TYPE33, TYPE34, TYPE35, Length
+    TYPE01, TYPE02, TYPE03, TYPE04, TYPE05, TYPE06, TYPE07, TYPE08, TYPE09, TYPE10, TYPE11, TYPE12, TYPE13, TYPE14, TYPE15, TYPE16, TYPE17, TYPE18, TYPE19, TYPE20, TYPE21, TYPE22, TYPE23, TYPE24, TYPE25, TYPE26, TYPE27, TYPE28, TYPE29, TYPE30, TYPE31, TYPE32, TYPE33, TYPE34, TYPE35, TYPE36, TYPE37, TYPE38, TYPE39, TYPE40, TYPE41, Length
 }
 
 
@@ -714,4 +714,128 @@ public class Type35ChallengeData : ChallengeData
         _rewardScore = rewardScore;
         _shortcutAction = shortcutAction;
     }
+
+    /// <summary>(주간 도전과제) 손님 방문 횟수 달성 도전과제</summary>
+    public class Type36ChallengeData : ChallengeData
+    {
+        protected int _count;
+        public int Count => _count;
+
+        public Type36ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
+        {
+            _challenges = challenges;
+            _type = type;
+            _id = id;
+            _description = description;
+            _count = count;
+            _moneyType = moneyType;
+            _rewardMoney = rewardMoney;
+            _rewardScore = rewardScore;
+            _shortcutAction = shortcutAction;
+        }
+    }
+
+
+    /// <summary>(주간 도전과제) 코인 획득량 달성 도전과제</summary>
+    public class Type37ChallengeData : ChallengeData
+    {
+        protected int _count;
+        public int Count => _count;
+
+        public Type37ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
+        {
+            _challenges = challenges;
+            _type = type;
+            _id = id;
+            _description = description;
+            _count = count;
+            _moneyType = moneyType;
+            _rewardMoney = rewardMoney;
+            _rewardScore = rewardScore;
+            _shortcutAction = shortcutAction;
+        }
+    }
+
+
+    /// <summary>(주간 도전과제) 음식 제작 횟수 달성 도전과제</summary>
+    public class Type38ChallengeData : ChallengeData
+    {
+        protected int _count;
+        public int Count => _count;
+
+        public Type38ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
+        {
+            _challenges = challenges;
+            _type = type;
+            _id = id;
+            _description = description;
+            _count = count;
+            _moneyType = moneyType;
+            _rewardMoney = rewardMoney;
+            _rewardScore = rewardScore;
+            _shortcutAction = shortcutAction;
+        }
+    }
+
+
+    /// <summary>(주간 도전과제) 청소 횟수 달성 도전과제</summary>
+    public class Type39ChallengeData : ChallengeData
+    {
+        protected int _count;
+        public int Count => _count;
+
+        public Type39ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
+        {
+            _challenges = challenges;
+            _type = type;
+            _id = id;
+            _description = description;
+            _count = count;
+            _moneyType = moneyType;
+            _rewardMoney = rewardMoney;
+            _rewardScore = rewardScore;
+            _shortcutAction = shortcutAction;
+        }
+    }
+
+    /// <summary>(주간 도전과제) 진상 손님 퇴치 횟수 달성 도전과제</summary>
+    public class Type40ChallengeData : ChallengeData
+    {
+        protected int _count;
+        public int Count => _count;
+
+        public Type40ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
+        {
+            _challenges = challenges;
+            _type = type;
+            _id = id;
+            _description = description;
+            _count = count;
+            _moneyType = moneyType;
+            _rewardMoney = rewardMoney;
+            _rewardScore = rewardScore;
+            _shortcutAction = shortcutAction;
+        }
+    }
+
+/// <summary>(주간 도전과제) 전체 주간 도전과제 달성 도전과제</summary>
+public class Type41ChallengeData : ChallengeData
+{
+    protected int _count;
+    public int Count => _count;
+
+    public Type41ChallengeData(Challenges challenges, ChallengeType type, string id, string description, int count, MoneyType moneyType, int rewardMoney, int rewardScore, BindData<UnityAction> shortcutAction)
+    {
+        _challenges = challenges;
+        _type = type;
+        _id = id;
+        _description = description;
+        _count = count;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
+        _shortcutAction = shortcutAction;
+    }
+}
+
 }

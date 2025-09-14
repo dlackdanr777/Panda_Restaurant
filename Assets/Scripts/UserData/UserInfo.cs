@@ -22,6 +22,9 @@ public static class UserInfo
     public static event Action<ERestaurantFloorType, EquipStaffType> OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
     public static event Action OnUpgradeStaffHandler;
+    public static event Action OnGiveStaffSkinHandler;
+    public static event Action OnChangeStaffSkinHandler;
+
 
     public static event Action OnGiveRecipeHandler;
     public static event Action OnUpgradeRecipeHandler;
@@ -97,6 +100,9 @@ public static class UserInfo
     private static long _dailyAddMoney;
     public static long DailyAddMoney => _dailyAddMoney;
 
+    private static long _weeklyAddMoney;
+    public static long WeeklyAddMoney => _weeklyAddMoney;
+
     private static int _score;
     public static int Score => GameManager.Instance.AddScore + _score;
 
@@ -106,11 +112,16 @@ public static class UserInfo
     private static int _dailyCookCount;
     public static int DailyCookCount => _dailyCookCount;
 
+    private static int _weeklyCookCount;
+    public static int WeeklyCookCount => _weeklyCookCount;
+
     private static int _totalCumulativeCustomerCount;
     public static int TotalCumulativeCustomerCount => _totalCumulativeCustomerCount;
 
     private static int _dailyCumulativeCustomerCount;
     public static int DailyCumulativeCustomerCount => _dailyCumulativeCustomerCount;
+    private static int _weeklyCumulativeCustomerCount;
+    public static int WeeklyCumulativeCustomerCount => _weeklyCumulativeCustomerCount;
 
     private static int _promotionCount;
     public static int PromotionCount => _promotionCount;
@@ -127,6 +138,9 @@ public static class UserInfo
     private static int _dailyCleanCount;
     public static int DailyCleanCount => _dailyCleanCount;
 
+    private static int _weeklyCleanCount;
+    public static int WeeklyCleanCount => _weeklyCleanCount;
+
     private static int _totalAttendanceDays = 0;
     public static int TotalAttendanceDays => _totalAttendanceDays;
 
@@ -139,9 +153,14 @@ public static class UserInfo
     private static int _totalExterminationGatecrasherCustomer2Count;
     public static int TotalExterminationGatecrasherCustomer2Count => _totalExterminationGatecrasherCustomer2Count;
 
+    private static int _weeklyExterminationGatecrasherCustomerCount;
+    public static int WeeklyExterminationGatecrasherCustomerCount => _weeklyExterminationGatecrasherCustomerCount;
+
     private static int _totalUseGachaMachineCount;
     public static int TotalUseGachaMachineCount => _totalUseGachaMachineCount;
 
+
+    private static HashSet<string> _giveStaffSkinSet = new HashSet<string>();
 
     private static Dictionary<string, int> _giveRecipeLevelDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _recipeCookCountDic = new Dictionary<string, int>();
@@ -159,6 +178,8 @@ public static class UserInfo
     public static HashSet<string> ClearAllTimeChallengeSet => _clearAllTimeChallengeSet;
     private static HashSet<string> _doneDailyChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearDailyChallengeSet = new HashSet<string>();
+    private static HashSet<string> _doneWeeklyChallengeSet = new HashSet<string>();
+    private static HashSet<string> _clearWeeklyChallengeSet = new HashSet<string>();
 
     private static HashSet<string> _notificationMessageSet = new HashSet<string>(); //알림이 필요한 Id값을 모아두는 해쉬셋
     private static HashSet<string> _clearNotificationMessageSet = new HashSet<string>(); //알림이 완료된 Id값을 모아두는 해쉬셋
@@ -216,6 +237,8 @@ public static class UserInfo
             _stageInfos[i].OnChangeSinkBowlHandler += OnAddSinkBowlEvent;
             _stageInfos[i].OnChangeMaxSinkBowlHandler += OnChangeMaxBowlEvent;
             _stageInfos[i].OnChangeSatisfactionHandler += OnChangeSatisfactionEvent;
+
+            _stageInfos[i].OnChangeStaffSkinHandler += OnChangeStaffSkinEvent;
         }
     }
 
@@ -283,6 +306,11 @@ public static class UserInfo
     {
         OnChangeSatisfactionHandler?.Invoke();
     }
+    
+    private static void OnChangeStaffSkinEvent()
+    {
+        OnChangeStaffSkinHandler?.Invoke();
+    }
 
 
     #endregion
@@ -291,7 +319,7 @@ public static class UserInfo
     {
         Param param = new Param();
 
-        if(CheckLastAccessTime())
+        if (CheckLastAccessTime())
         {
             UpdateLastAccessTime();
             ResetDailyChallenges();
@@ -323,6 +351,13 @@ public static class UserInfo
         param.Add("TotalExterminationGatecrasherCustomer1Count", _totalExterminationGatecrasherCustomer1Count);
         param.Add("TotalExterminationGatecrasherCustomer2Count", _totalExterminationGatecrasherCustomer2Count);
         param.Add("TotalUseGachaMachineCount", _totalUseGachaMachineCount);
+
+        param.Add("WeeklyAddMoney", _weeklyAddMoney);
+        param.Add("WeeklyCookCount", _weeklyCookCount);
+        param.Add("WeeklyCumulativeCustomerCount", _weeklyCumulativeCustomerCount);
+        param.Add("WeeklyCleanCount", _weeklyCleanCount);
+        param.Add("WeeklyExterminationGatecrasherCustomerCount", _weeklyExterminationGatecrasherCustomerCount);
+
 
         param.Add("UserId", _userId);
         param.Add("FirstAccessTime", _firstAccessTime);
@@ -359,6 +394,8 @@ public static class UserInfo
         param.Add("GiveGachaItemLevelList", giveGachaItemLevelList);
 
         List<SaveCustomerData> _saveCustomerDataList = _enabledCustomerDic.Values.ToList();
+
+        param.Add("GiveStaffSkinList", _giveStaffSkinSet.ToList());
         param.Add("EnabledCustomerDataList", _saveCustomerDataList);
         param.Add("GiveCustomerSkinList", _giveCustomerSkinSet.ToList());
 
@@ -368,8 +405,13 @@ public static class UserInfo
         param.Add("ClearAllTimeChallengeList", _clearAllTimeChallengeSet.ToList());
         param.Add("DoneDailyChallengeList", _doneDailyChallengeSet.ToList());
         param.Add("ClearDailyChallengeList", _clearDailyChallengeSet.ToList());
+        param.Add("DoneWeeklyChallengeList", _doneWeeklyChallengeSet.ToList());
+        param.Add("ClearWeeklyChallengeList", _clearWeeklyChallengeSet.ToList());
+
+
         param.Add("NotificationMessageList", _notificationMessageSet.ToList());
         param.Add("ClearNotificationMessageList", _clearNotificationMessageSet.ToList());
+
 
         Dictionary<string, int> timeDic = TimeManager.Instance.GetTimeDic();
         List<SaveTimeData> timeDataList = new List<SaveTimeData>();
@@ -527,11 +569,20 @@ public static class UserInfo
         _totalExterminationGatecrasherCustomer1Count = loadData.TotalExterminationGatecrasherCustomer1Count;
         _totalExterminationGatecrasherCustomer2Count = loadData.TotalExterminationGatecrasherCustomer2Count;
 
+        _weeklyAddMoney = loadData.WeeklyAddMoney;
+        _weeklyCookCount = loadData.WeeklyCookCount;
+        _weeklyCumulativeCustomerCount = loadData.WeeklyCumulativeCustomerCount;
+        _weeklyCleanCount = loadData.WeeklyCleanCount;
+        _weeklyExterminationGatecrasherCustomerCount = loadData.WeeklyExterminationGatecrasherCustomerCount;
+
         _userId = string.IsNullOrWhiteSpace(loadData.UserId) || !loadData.UserId.StartsWith("User") ? "User" + UnityEngine.Random.Range(10000000, 20000000) : loadData.UserId;
         _firstAccessTime = loadData.FirstAccessTime;
         _lastAccessTime = loadData.LastAccessTime;
         _lastAttendanceTime = loadData.LastAttendanceTime;
         _totalAttendanceDays = loadData.TotalAttendanceDays;
+
+        _giveCustomerSkinSet = loadData.GiveCustomerSkinSet;
+        _giveStaffSkinSet = loadData.GiveStaffSkinSet;
  
         _giveRecipeLevelDic = loadData.GiveRecipeLevelDic;
         _recipeCookCountDic = loadData.RecipeCookCountDic;
@@ -545,9 +596,10 @@ public static class UserInfo
         _clearAllTimeChallengeSet = loadData.ClearAllTimeChallengeSet;
         _doneDailyChallengeSet = loadData.DoneDailyChallengeSet;
         _clearDailyChallengeSet = loadData.ClearDailyChallengeSet;
+        _doneWeeklyChallengeSet = loadData.DoneWeeklyChallengeSet;
+        _clearWeeklyChallengeSet = loadData.ClearWeeklyChallengeSet;
 
         _enabledCustomerDic = loadData.EnabledCustomerDataDic;
-        _giveCustomerSkinSet = loadData.GiveCustomerSkinSet;
 
         _notificationMessageSet = loadData.NotificationMessageSet;
         _clearNotificationMessageSet = loadData.ClearNotificationMessageSet;
@@ -658,9 +710,13 @@ public static class UserInfo
             // 저장된 마지막 접속 시간은 이미 한국 시간이므로 그대로 파싱
             if (DateTime.TryParse(_lastAccessTime, out DateTime lastAccessTime))
             {
-                // 날짜만 비교 (시간 무시)
-                bool isDifferentDay = currentKoreaTime.Date > lastAccessTime.Date;
-                DebugLog.Log($"현재 시간: {currentKoreaTime}, 마지막 접속 시간: {lastAccessTime}, 날짜 차이: {isDifferentDay}");
+                // 게임 내 하루 기준: 오후 12시(정오)를 기준으로 날짜 계산
+                DateTime currentGameDay = GetGameDay(currentKoreaTime);
+                DateTime lastGameDay = GetGameDay(lastAccessTime);
+                
+                bool isDifferentDay = currentGameDay > lastGameDay;
+                DebugLog.Log($"현재 시간: {currentKoreaTime}, 마지막 접속 시간: {lastAccessTime}");
+                DebugLog.Log($"현재 게임 날짜: {currentGameDay}, 마지막 게임 날짜: {lastGameDay}, 날짜 차이: {isDifferentDay}");
                 return isDifferentDay;
             }
             return true;
@@ -669,6 +725,21 @@ public static class UserInfo
         {
             DebugLog.LogError($"접속 시간 확인 중 오류 발생: {ex.Message}");
             return true;  // 오류 발생 시 기본값으로 true 반환
+        }
+    }
+
+    // 오후 12시를 기준으로 게임 내 날짜를 계산하는 메서드
+    private static DateTime GetGameDay(DateTime dateTime)
+    {
+        // 오후 12시(12:00) 이전이면 전날로 계산
+        if (dateTime.Hour < 12)
+        {
+            return dateTime.Date.AddDays(-1);
+        }
+        // 오후 12시 이후면 당일로 계산
+        else
+        {
+            return dateTime.Date;
         }
     }
 
@@ -733,6 +804,7 @@ public static class UserInfo
         if (value < 0) value = 0;
         _totalAddMoney += value;
         _dailyAddMoney += value;
+        _weeklyAddMoney += value;
         DataBindMoney();
         OnChangeMoneyHandler?.Invoke();
     }
@@ -813,6 +885,7 @@ public static class UserInfo
     {
         _totalCleanCount += 1;
         _dailyCleanCount += 1;
+        _weeklyCleanCount += 1;
         OnAddCleanCountHandler?.Invoke();
     }
 
@@ -824,6 +897,7 @@ public static class UserInfo
 
     public static void AddExterminationGatecrasherCustomerCount(CustomerData data)
     {
+
         if (data is GatecrasherCustomer1Data)
             _totalExterminationGatecrasherCustomer1Count += 1;
 
@@ -832,7 +906,7 @@ public static class UserInfo
 
         else
             return;
-
+        _weeklyExterminationGatecrasherCustomerCount += 1;
         OnExterminationGatecrasherCustomerHandler?.Invoke();
     }
 
@@ -1117,16 +1191,34 @@ public static class UserInfo
     }
 
     
-    public static void GiveStaffSkin(EStage stage, StaffSkinData data)
+    public static void GiveStaffSkin(StaffSkinData data)
     {
-        int stageIndex = (int)stage;
-        _stageInfos[stageIndex].GiveStaffSkin(data);
+        if (data == null)
+        {
+            DebugLog.LogError("고객 스킨 데이터가 null입니다.");
+            return;
+        }
+
+        if (_giveStaffSkinSet.Contains(data.Id))
+        {
+            DebugLog.Log("이미 가지고 있습니다: " + data.Id);
+            return;
+        }
+
+        _giveStaffSkinSet.Add(data.Id);
+        OnGiveStaffSkinHandler?.Invoke();
     }
 
-    public static void GiveStaffSkin(EStage stage, string skinId)
+    public static void GiveStaffSkin(string skinId)
     {
-        int stageIndex = (int)stage;
-        _stageInfos[stageIndex].GiveStaffSkin(skinId);
+        StaffSkinData skinData = SkinDataManager.Instance.GetStaffSkinData(skinId);
+        if (skinData == null)
+        {
+            DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
+            return;
+        }
+
+        GiveStaffSkin(skinData);
     }
 
     public static void SetStaffSkin(EStage stage, StaffData staff, StaffSkinData skinData)
@@ -1154,10 +1246,9 @@ public static class UserInfo
         return _stageInfos[stageIndex].GetEquipStaffSkin(staffId);
     }
 
-    public static bool IsGiveStaffSkin(EStage stage, string skinId)
+    public static bool IsGiveStaffSkin(string skinId)
     {
-        int stageIndex = (int)stage;
-        return _stageInfos[stageIndex].IsGiveStaffSkin(skinId);
+        return _giveStaffSkinSet.Contains(skinId);
     }
 
 
@@ -1520,6 +1611,7 @@ public static class UserInfo
             _recipeCookCountDic[id] += 1;
             _dailyCookCount += 1;
             _totalCookCount += 1;
+            _weeklyCookCount += 1;
             OnAddCookCountHandler?.Invoke();
         }
         else
@@ -1527,6 +1619,7 @@ public static class UserInfo
             _recipeCookCountDic.Add(id, 1);
             _dailyCookCount += 1;
             _totalCookCount += 1;
+            _weeklyCookCount += 1;
             OnAddCookCountHandler?.Invoke();
         }
     }
@@ -2299,6 +2392,9 @@ public static class UserInfo
             case Challenges.Daily:
                 return _clearDailyChallengeSet.Contains(id);
 
+            case Challenges.Weekly:
+                return _clearWeeklyChallengeSet.Contains(id);
+
             case Challenges.AllTime:
                 return _clearAllTimeChallengeSet.Contains(id);
         }
@@ -2316,6 +2412,9 @@ public static class UserInfo
 
             case Challenges.Daily:
                 return _clearDailyChallengeSet.Contains(data.Id);
+
+            case Challenges.Weekly:
+                return _clearWeeklyChallengeSet.Contains(data.Id);
 
             case Challenges.AllTime:
                 return _clearAllTimeChallengeSet.Contains(data.Id);
@@ -2351,6 +2450,10 @@ public static class UserInfo
                 _doneDailyChallengeSet.Add(id);
                 break;
 
+            case Challenges.Weekly:
+                _doneWeeklyChallengeSet.Add(id);
+                break;
+
             case Challenges.AllTime:
                 _doneAllTimeChallengeSet.Add(id);
                 break;
@@ -2382,6 +2485,10 @@ public static class UserInfo
 
             case Challenges.Daily:
                 _doneDailyChallengeSet.Add(data.Id);
+                break;
+
+            case Challenges.Weekly:
+                _doneWeeklyChallengeSet.Add(data.Id);
                 break;
 
             case Challenges.AllTime:
@@ -2419,6 +2526,10 @@ public static class UserInfo
                 _clearDailyChallengeSet.Add(id);
                 break;
 
+            case Challenges.Weekly:
+                _clearWeeklyChallengeSet.Add(id);
+                break;
+
             case Challenges.AllTime:
                 _clearAllTimeChallengeSet.Add(id);
                 break;
@@ -2452,6 +2563,10 @@ public static class UserInfo
                 _clearDailyChallengeSet.Add(data.Id);
                 break;
 
+            case Challenges.Weekly:
+                _clearWeeklyChallengeSet.Add(data.Id);
+                break;
+
             case Challenges.AllTime:
                 _clearAllTimeChallengeSet.Add(data.Id);
                 break;
@@ -2476,13 +2591,29 @@ public static class UserInfo
         OnClearChallengeHandler?.Invoke();
         OnDoneChallengeHandler?.Invoke();
     }
+    
+    public static void ResetWeeklyChallenges()
+    {
+        _weeklyAddMoney = 0;
+        _weeklyCookCount = 0;
+        _weeklyCumulativeCustomerCount = 0;
+        _weeklyCleanCount = 0;
+        _weeklyExterminationGatecrasherCustomerCount = 0;
+
+        _doneWeeklyChallengeSet.Clear();
+        _clearWeeklyChallengeSet.Clear();
+
+        ChallengeManager.Instance.UpdateChallengeByChallenges(Challenges.Weekly);
+        OnClearChallengeHandler?.Invoke();
+        OnDoneChallengeHandler?.Invoke();
+    }
 
     #endregion
 
     #region NotificationMessageData
     public static void AddNotification(string id)
     {
-        if(string.IsNullOrWhiteSpace(id))
+        if (string.IsNullOrWhiteSpace(id))
         {
             DebugLog.LogError("현재 알림을 등록하려한 ID값이 잘못됬습니다: " + id);
             return;

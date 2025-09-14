@@ -121,56 +121,58 @@ public class UIChallenge : MobileUIView
 
     public void StartCoinAnime(int money, Vector3 coinPos)
     {
-            float time = 0;
-            int coinCnt = money / 1000;
-            coinCnt = coinCnt <= 5 ? 5 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
-            ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, coinPos, Quaternion.identity);
-            for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+        float time = 0;
+        int coinCnt = 5;
+        //int coinCnt = money / 1000;
+        //coinCnt = coinCnt <= 5 ? 5 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
+        ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, coinPos, Quaternion.identity);
+        for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+        {
+            int index = i;
+            RectTransform coin = ObjectPoolManager.Instance.SpawnUICoin(coinPos, Quaternion.identity);
+            Vector2 targetCoinPos = UnityEngine.Random.insideUnitCircle * 100;
+            coin.TweenAnchoredPosition(coin.anchoredPosition + targetCoinPos, 0.3f, Ease.InQuad).OnComplete(() =>
             {
-                int index = i;
-                RectTransform coin = ObjectPoolManager.Instance.SpawnUICoin(coinPos, Quaternion.identity);
-                Vector2 targetCoinPos = UnityEngine.Random.insideUnitCircle * 100;
-                coin.TweenAnchoredPosition(coin.anchoredPosition + targetCoinPos, 0.3f, Ease.InQuad).OnComplete(() =>
-                {
-                    float height = 100;
-                    if (coin.anchoredPosition.y < 0)
-                        height *= -1;
+                float height = 100;
+                if (coin.anchoredPosition.y < 0)
+                    height *= -1;
 
-                    coin.TweenJump(_uiMoney.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
-                    {
-                        ObjectPoolManager.Instance.DespawnUICoin(coin);
-                        _uiMoney.StartAnime();
-                    });
-                    time += 0.03f;
+                coin.TweenJump(_uiMoney.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                {
+                    ObjectPoolManager.Instance.DespawnUICoin(coin);
+                    _uiMoney.StartAnime();
                 });
-            }
+                time += 0.03f;
+            });
+        }
     }
 
     public void StartDiaAnime(int money, Vector3 coinPos)
     {
-            float time = 0;
-            int coinCnt = money / 1000;
-            coinCnt = coinCnt <= 5 ? 5 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
-            ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, coinPos, Quaternion.identity);
-            for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+        float time = 0;
+        int coinCnt = 5;
+        //int coinCnt = money / 1000;
+        //coinCnt = coinCnt <= 5 ? 5 : _coinMaxCount < coinCnt ? _coinMaxCount : coinCnt;
+        ObjectPoolManager.Instance.SpawnUIEffect(UIEffectType.Type1, coinPos, Quaternion.identity);
+        for (int i = 0, cnt = coinCnt; i < cnt; ++i)
+        {
+            int index = i;
+            RectTransform dia = ObjectPoolManager.Instance.SpawnUIDia(coinPos, Quaternion.identity);
+            Vector2 targetCoinPos = UnityEngine.Random.insideUnitCircle * 100;
+            dia.TweenAnchoredPosition(dia.anchoredPosition + targetCoinPos, 0.3f, Ease.InQuad).OnComplete(() =>
             {
-                int index = i;
-                RectTransform dia = ObjectPoolManager.Instance.SpawnUIDia(coinPos, Quaternion.identity);
-                Vector2 targetCoinPos = UnityEngine.Random.insideUnitCircle * 100;
-                dia.TweenAnchoredPosition(dia.anchoredPosition + targetCoinPos, 0.3f, Ease.InQuad).OnComplete(() =>
-                {
-                    float height = 100;
-                    if (dia.anchoredPosition.y < 0)
-                        height *= -1;
+                float height = 100;
+                if (dia.anchoredPosition.y < 0)
+                    height *= -1;
 
-                    dia.TweenJump(_uiMoney.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
-                    {
-                        ObjectPoolManager.Instance.DespawnUIDia(dia);
-                        _uiDia.StartAnime();
-                    });
-                    time += 0.03f;
+                dia.TweenJump(_uiMoney.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                {
+                    ObjectPoolManager.Instance.DespawnUIDia(dia);
+                    _uiDia.StartAnime();
                 });
-            }
+                time += 0.03f;
+            });
+        }
     }
 
     private void OnDestroy()

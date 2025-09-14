@@ -25,6 +25,6 @@ public class UIScoreImage : MonoBehaviour
 
     private void OnScoreChangeEvent()
     {
-        _scoreText.text = UserInfo.Score.ToString();
+        _scoreText.text = Utility.ConvertToMoney(UserInfo.Score);
     }
 }

@@ -19,6 +19,7 @@ public class ChallengeManager : MonoBehaviour
     public event Action OnDailyChallengeUpdateHandler;
     public event Action OnAllTimeChallengeUpdateHandler;
     public event Action OnMainChallengeUpdateHandler;
+    public event Action OnWeeklyChallengeUpdateHandler;
 
     public event Action OnAddChallengeHandler;
 
@@ -1335,6 +1336,10 @@ public class ChallengeManager : MonoBehaviour
                 OnAllTimeChallengeUpdateHandler?.Invoke();
                 break;
 
+            case Challenges.Weekly:
+                OnWeeklyChallengeUpdateHandler?.Invoke();
+                break;
+
             case Challenges.Main:
                 OnMainChallengeUpdateHandler?.Invoke();
                 break;
@@ -1494,6 +1499,7 @@ public class ChallengeManager : MonoBehaviour
     private void Type01ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
         foreach (Type01ChallengeData data in _type01ChallengeDataDic.Values)
@@ -1527,6 +1533,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1547,12 +1557,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE01);
     }
 
     private void Type02ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
         foreach (Type02ChallengeData data in _type02ChallengeDataDic.Values)
@@ -1582,6 +1596,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1602,12 +1620,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE02);
     }
 
     private void Type03ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1628,6 +1650,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1646,14 +1672,11 @@ public class ChallengeManager : MonoBehaviour
             UpdateChallengeByChallenges(Challenges.AllTime);
 
         if (mainUpdateEnabled)
-            UpdateChallengeByChallenges(Challenges.Main); if (dailyUpdateEnabled)
-            UpdateChallengeByChallenges(Challenges.Daily);
-
-        if (alltimeUpdateEnabled)
-            UpdateChallengeByChallenges(Challenges.AllTime);
-
-        if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE03);
     }
 
@@ -1661,6 +1684,7 @@ public class ChallengeManager : MonoBehaviour
     private void Type04ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1681,6 +1705,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1700,6 +1728,10 @@ public class ChallengeManager : MonoBehaviour
 
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE04);
     }
 
@@ -1707,6 +1739,7 @@ public class ChallengeManager : MonoBehaviour
     private void Type05ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1727,6 +1760,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1747,12 +1784,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE05);
     }
 
     private void Type06ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1767,6 +1808,24 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetRecipeCount() < data.RecipeCount)
                 continue;
 
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
             UserInfo.DoneChallenge(data);
         }
 
@@ -1779,12 +1838,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE06);
     }
 
     private void Type07ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1805,6 +1868,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1825,12 +1892,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE07);
     }
 
     private void Type08ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1851,6 +1922,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1871,12 +1946,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE08);
     }
 
     private void Type09ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1897,6 +1976,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1917,6 +2000,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE09);
     }
 
@@ -1924,6 +2010,7 @@ public class ChallengeManager : MonoBehaviour
     private void Type10ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1944,6 +2031,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1964,12 +2055,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE10);
     }
 
     private void Type11ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1990,6 +2085,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2010,12 +2109,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE11);
     }
 
     private void Type12ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 

@@ -18,19 +18,24 @@ public class LoadUserData
     public long Money;
     public long TotalAddMoney;
     public long DailyAddMoney;
+    public long WeeklyAddMoney;
     public int Score;
     public int TotalCookCount;
     public int DailyCookCount;
+    public int WeeklyCookCount;
     public int TotalCumulativeCustomerCount;
     public int DailyCumulativeCustomerCount;
+    public int WeeklyCumulativeCustomerCount;
     public int PromotionCount;
     public int TotalAdvertisingViewCount;
     public int DailyAdvertisingViewCount;
     public int TotalCleanCount;
     public int DailyCleanCount;
+    public int WeeklyCleanCount;
     public int TotalVisitSpecialCustomerCount;
     public int TotalExterminationGatecrasherCustomer1Count;
     public int TotalExterminationGatecrasherCustomer2Count;
+    public int WeeklyExterminationGatecrasherCustomerCount;
     public int TotalUseGachaMachineCount;
 
     public string UserId;
@@ -39,18 +44,23 @@ public class LoadUserData
     public string LastAttendanceTime;
     public int TotalAttendanceDays;
 
+
+
     public Dictionary<string, int> GiveRecipeLevelDic = new Dictionary<string, int>();
     public Dictionary<string, int> RecipeCookCountDic = new Dictionary<string, int>();
 
     public Dictionary<string, int> GiveGachaItemCountDic = new Dictionary<string, int>();
     public Dictionary<string, int> GiveGachaItemLevelDic = new Dictionary<string, int>();
 
+    public HashSet<string> GiveStaffSkinSet = new HashSet<string>();
     public HashSet<string> DoneMainChallengeSet = new HashSet<string>();
     public HashSet<string> ClearMainChallengeSet = new HashSet<string>();
     public HashSet<string> DoneAllTimeChallengeSet = new HashSet<string>();
     public HashSet<string> ClearAllTimeChallengeSet = new HashSet<string>();
     public HashSet<string> DoneDailyChallengeSet = new HashSet<string>();
     public HashSet<string> ClearDailyChallengeSet = new HashSet<string>();
+    public HashSet<string> DoneWeeklyChallengeSet = new HashSet<string>();
+    public HashSet<string> ClearWeeklyChallengeSet = new HashSet<string>();
 
     public Dictionary<string, SaveCustomerData> EnabledCustomerDataDic = new Dictionary<string, SaveCustomerData>();
     public HashSet<string> GiveCustomerSkinSet = new HashSet<string>();
@@ -102,6 +112,12 @@ public class LoadUserData
             TotalUseGachaMachineCount = GetInt("TotalUseGachaMachineCount");
             TotalAttendanceDays = GetInt("TotalAttendanceDays");
 
+            WeeklyAddMoney = GetLong("WeeklyAddMoney");
+            WeeklyCookCount = GetInt("WeeklyCookCount");
+            WeeklyCumulativeCustomerCount = GetInt("WeeklyCumulativeCustomerCount");
+            WeeklyCleanCount = GetInt("WeeklyCleanCount");
+            WeeklyExterminationGatecrasherCustomerCount = GetInt("WeeklyExterminationGatecrasherCustomerCount");
+
             UserId = GetString("UserId");
             FirstAccessTime = GetString("FirstAccessTime");
             LastAccessTime = GetString("LastAccessTime");
@@ -122,13 +138,16 @@ public class LoadUserData
                 DebugLog.Log($"TimeDataDic: {item.Key} - {item.Value.Time}");
             }
 
-
+            LoadStringSet(data, "GiveStaffSkinList", GiveStaffSkinSet);
             LoadStringSet(data, "DoneMainChallengeList", DoneMainChallengeSet);
             LoadStringSet(data, "ClearMainChallengeList", ClearMainChallengeSet);
             LoadStringSet(data, "DoneAllTimeChallengeList", DoneAllTimeChallengeSet);
             LoadStringSet(data, "ClearAllTimeChallengeList", ClearAllTimeChallengeSet);
             LoadStringSet(data, "DoneDailyChallengeList", DoneDailyChallengeSet);
             LoadStringSet(data, "ClearDailyChallengeList", ClearDailyChallengeSet);
+            LoadStringSet(data, "DoneWeeklyChallengeList", DoneWeeklyChallengeSet);
+            LoadStringSet(data, "ClearWeeklyChallengeList", ClearWeeklyChallengeSet);
+
             LoadStringSet(data, "NotificationMessageList", NotificationMessageSet);
             LoadStringSet(data, "ClearNotificationMessageList", ClearNotificationMessageSet);
         }
