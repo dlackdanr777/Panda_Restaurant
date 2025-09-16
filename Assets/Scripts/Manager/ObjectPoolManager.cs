@@ -76,6 +76,10 @@ public class ObjectPoolManager : MonoBehaviour
     private static RectTransform _uiDiaPrefab;
     private static Queue<RectTransform> _uiDiaPool = new Queue<RectTransform>();
 
+    private static int _uiScoreCount = 50;
+    private static RectTransform _uiScorePrefab;
+    private static Queue<RectTransform> _uiScorePool = new Queue<RectTransform>();
+
     private static int _uiEffectCount = 10;
     private static UIParticleEffect[] _uiEffectPrefabs = new UIParticleEffect[(int)UIEffectType.Length];
     private static Queue<UIParticleEffect>[] _uiEffectPool;
@@ -115,6 +119,7 @@ public class ObjectPoolManager : MonoBehaviour
         CoinPooling();
         UICoinPooling();
         UIDiaPooling();
+        UIScorePooling();
         GarbagePooling();
         TmpPooling();
         UIEffectPooling();
@@ -243,6 +248,20 @@ public class ObjectPoolManager : MonoBehaviour
             dia.gameObject.SetActive(false);
         }
     }
+
+    private static void UIScorePooling()
+    {
+        if (_uiScorePrefab == null)
+            _uiScorePrefab = Resources.Load<RectTransform>("ObjectPool/UIScore");
+
+        for (int i = 0, count = _uiScoreCount; i < count; i++)
+        {
+            RectTransform score = Instantiate(_uiScorePrefab, _uiCanvas.transform);
+            _uiScorePool.Enqueue(score);
+            score.gameObject.SetActive(false);
+        }
+    }
+
 
 
     private static void GarbagePooling()
@@ -514,6 +533,33 @@ public class ObjectPoolManager : MonoBehaviour
         dia.SetParent(_uiCanvas.transform);
         dia.gameObject.SetActive(false);
         _uiDiaPool.Enqueue(dia);
+    }
+
+        public RectTransform SpawnUIScore(Vector3 pos, Quaternion rot)
+    {
+        RectTransform score;
+
+        if (_uiScorePool.Count == 0)
+        {
+            score = Instantiate(_uiScorePrefab, pos, rot, _uiCanvas.transform);
+            return score;
+        }
+
+        score = _uiScorePool.Dequeue();
+        score.gameObject.SetActive(false);
+        score.gameObject.SetActive(true);
+        score.transform.position = pos;
+        score.transform.rotation = rot;
+        return score;
+    }
+
+
+    public void DespawnUIScore(RectTransform score)
+    {
+        score.TweenStop();
+        score.SetParent(_uiCanvas.transform);
+        score.gameObject.SetActive(false);
+        _uiScorePool.Enqueue(score);
     }
 
 

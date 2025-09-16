@@ -855,6 +855,7 @@ public static class UserInfo
     {
         _totalCumulativeCustomerCount += 1;
         _dailyCumulativeCustomerCount += 1;
+        _weeklyCumulativeCustomerCount += 1;
         OnAddCustomerCountHandler?.Invoke();
     }
 
@@ -864,6 +865,7 @@ public static class UserInfo
 
         _totalCumulativeCustomerCount += count;
         _dailyCumulativeCustomerCount += count;
+        _weeklyCumulativeCustomerCount += count;
         OnAddCustomerCountHandler?.Invoke();
     }
 
@@ -2338,11 +2340,16 @@ public static class UserInfo
         return _clearDailyChallengeSet.Count;
     }
 
+    public static int GetClearWeeklyChallengeCount()
+    {
+        return _clearWeeklyChallengeSet.Count;
+    }
+
     public static bool GetIsDoneChallenge(string id)
     {
         ChallengeData data = ChallengeManager.Instance.GetCallengeData(id);
 
-        if(data == null)
+        if (data == null)
             return false;
 
         switch (data.Challenges)

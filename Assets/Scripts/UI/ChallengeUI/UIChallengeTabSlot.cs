@@ -16,6 +16,7 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
     [SerializeField] private Image _percentBar;
     [SerializeField] private Image _moneyImage;
     [SerializeField] private Image _diaImage;
+    [SerializeField] private Image _scoreImage;
     [SerializeField] private TextMeshProUGUI _rewardText;
     [SerializeField] private TextMeshProUGUI _countText;
     [SerializeField] private GameObject _andImage;
@@ -152,9 +153,10 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             _uiChallenge.StartDiaAnime(_data.RewardMoney, _diaImage.transform.position);
         }
 
-        if(0 < _data.RewardScore)
+        if (0 < _data.RewardScore)
         {
             UserInfo.AddScore(_data.RewardScore);
+            _uiChallenge.StartScoreAnime(_scoreImage.transform.position);
         }
         UserInfo.ClearChallenge(_data);
     }

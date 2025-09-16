@@ -477,6 +477,7 @@ MonoBehaviour:
   _percentBar: {fileID: 269615100729077767}
   _moneyImage: {fileID: 7931766282652271165}
   _diaImage: {fileID: 5821372764568596362}
+  _scoreImage: {fileID: 1101210629006995637}
   _rewardText: {fileID: 721816165198577417}
   _countText: {fileID: 4431943739870761067}
   _andImage: {fileID: 8517630402212001033}
