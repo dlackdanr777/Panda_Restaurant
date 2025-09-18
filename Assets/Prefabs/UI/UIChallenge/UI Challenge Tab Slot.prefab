@@ -482,6 +482,7 @@ MonoBehaviour:
   _countText: {fileID: 4431943739870761067}
   _andImage: {fileID: 8517630402212001033}
   _scoreTextGroup: {fileID: 3290088027299511967}
+  _progressColor: {r: 1, g: 0.95686275, b: 0, a: 1}
   _doneColor: {r: 0.43529412, g: 1, b: 0.69803923, a: 1}
 --- !u!1 &1481762563067611190
 GameObject:
@@ -2282,7 +2283,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0.9583559, b: 0, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1

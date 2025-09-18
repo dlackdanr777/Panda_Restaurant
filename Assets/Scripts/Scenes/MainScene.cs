@@ -201,6 +201,16 @@ public class MainScene : MonoBehaviour
                 GameManager.Instance.AsyncSaveGameData();
             }
 
+            if (UserInfo.CheckLastWeeklyAccessTime())
+            {
+                UserInfo.ResetWeeklyChallenges();
+
+                if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
+                    return;
+
+                GameManager.Instance.AsyncSaveGameData();
+            }
+
         }
     }
 

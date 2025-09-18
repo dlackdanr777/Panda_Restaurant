@@ -276,10 +276,10 @@ public class ChallengeManager : MonoBehaviour
         _mainChallengeList.Clear();
         _mainChallengeList.AddRange(_mainChallengeDataDic.Values);
 
-        _alltimeChallengeDataDic.Clear();
-        _alltimeChallengeDataDic = SetAllTimeData("REWARD_ALLTIME");
-        _allTimeChallengeList.Clear();
-        _allTimeChallengeList.AddRange(_alltimeChallengeDataDic.Values);
+        // _alltimeChallengeDataDic.Clear();
+        // _alltimeChallengeDataDic = SetAllTimeData("REWARD_ALLTIME");
+        // _allTimeChallengeList.Clear();
+        // _allTimeChallengeList.AddRange(_alltimeChallengeDataDic.Values);
 
         _dailyChallengeDataDic.Clear();
         _dailyChallengeDataDic = SetData(Challenges.Daily, "REWARD_DAILY");
@@ -323,6 +323,7 @@ public class ChallengeManager : MonoBehaviour
             MoneyType moneyType = row[6].Contains("코인") || row[6].Contains("게임머니") ? MoneyType.Gold : MoneyType.Dia;
             int rewardMoney = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
             ChallengeType challengeType;
+
             switch (type)
             {
                 case "TYPE01":
@@ -1234,6 +1235,7 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE37:
                 Type37ChallengeData data37 = (Type37ChallengeData)data;
                 int weeklyCustomerCount = UserInfo.WeeklyCumulativeCustomerCount;
+                DebugLog.Log(GetChallengeAchievementRate(weeklyCustomerCount, data37.Count));
                 return GetChallengeAchievementRate(weeklyCustomerCount, data37.Count);
 
             case ChallengeType.TYPE38:
@@ -3585,7 +3587,6 @@ public class ChallengeManager : MonoBehaviour
         bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
-
         foreach (Type37ChallengeData data in _type37ChallengeDataDic.Values)
         {
             if (UserInfo.GetIsDoneChallenge(data.Id))
@@ -3651,7 +3652,7 @@ public class ChallengeManager : MonoBehaviour
 
             if (GetChallengeAchievementRate(weeklyAddMoney, data.Count) < 1)
                 continue;
-
+            DebugLog.Log(data.Id);
             switch (data.Challenges)
             {
                 case Challenges.Daily:
@@ -3856,49 +3857,32 @@ public class ChallengeManager : MonoBehaviour
 
     private Type11ChallengeData GetNextRepeatCoinChallenge()
     {
-        int startReward = 1000000;
-        int repeatStep = 100000;
-        int nextLevel = 2; // 1번은 이미 직접 추가했으므로 2부터 시작
+        int nextLevel = 1;
 
-        // 첫 번째 챌린지가 클리어되지 않았다면 첫 번째 챌린지 생성
+        // 첫 번째 챌린지가 아직 클리어되지 않았다면 첫 번째 챌린지 생성
         if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatCoin1"))
         {
             if (_challengeDataDic.ContainsKey("AllTimeRepeatCoin1") || _type11ChallengeDataDic.ContainsKey("AllTimeRepeatCoin1"))
             {
-                Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatCoin1");
-                return null;
+                return null; // 이미 존재하면 생성하지 않음
             }
-
-            int firstGoal = startReward + repeatStep * 1;
-            int firstCoinReward = (int)(firstGoal * 0.1f);
-            int firstScoreReward = (int)(firstGoal * 0.05f);
-
-            Type11ChallengeData firstData = new Type11ChallengeData(
-                Challenges.AllTime,
-                ChallengeType.TYPE11,
-                "AllTimeRepeatCoin1",
-                $"누적 코인 수익 {Utility.ConvertToMoney(firstGoal)} 달성",
-                firstGoal,
-                MoneyType.Gold,
-                firstCoinReward,
-                firstScoreReward,
-                GetShortCutAction("ShortCut01")
-            );
-            return firstData;
+            nextLevel = 1;
         }
-
-        // 완료된 반복 챌린지 중 가장 높은 레벨 찾기 (1번은 이미 직접 추가했으므로 2번부터 확인)
-        for (int i = 2; i <= 100; i++)
+        else
         {
-            string id = $"AllTimeRepeatCoin{i}";
+            // 완료된 반복 챌린지 중 가장 높은 레벨 찾기
+            for (int i = 1; i <= 100; i++)
+            {
+                string id = $"AllTimeRepeatCoin{i}";
 
-            if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
-            {
-                nextLevel = i + 1;
-            }
-            else
-            {
-                break;
+                if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+                {
+                    nextLevel = i + 1;
+                }
+                else
+                {
+                    break; // 완료되지 않은 첫 번째 레벨에서 중단
+                }
             }
         }
 
@@ -3910,13 +3894,36 @@ public class ChallengeManager : MonoBehaviour
         string nextId = $"AllTimeRepeatCoin{nextLevel}";
         if (_challengeDataDic.ContainsKey(nextId) || _type11ChallengeDataDic.ContainsKey(nextId))
         {
-            Debug.LogError("이미 존재하는 챌린지 ID입니다. " + nextId);
-            return null;
+            return null; // 이미 존재하면 생성하지 않음
         }
 
-        int nextGoal = startReward + repeatStep * nextLevel;
-        int coinReward = (int)(nextGoal * 0.1f);
-        int scoreReward = (int)(nextGoal * 0.05f);
+        // CSV 규칙에 따른 목표 계산: 10,000 × 현재 단계(n)
+        int nextGoal = 10000 * nextLevel;
+        
+        // CSV 규칙에 따른 보상 계산
+        int scoreReward, coinReward;
+        
+        if (nextLevel <= 50)
+        {
+            // 1~50: 보상 평점 = 0.15 × 다음단계증가요구필요개수, 보상 코인 = 0.3 × 단계증가요구필요개수
+            int nextLevelGoal = 10000 * (nextLevel + 1);
+            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.15f) / 100) * 100;
+            coinReward = Mathf.RoundToInt((nextGoal * 0.3f) / 100) * 100;
+        }
+        else if (nextLevel <= 100)
+        {
+            // 51~100: 보상 평점 = 0.1 × 다음단계증가요구필요개수, 보상 코인 = 0.2 × 단계증가요구필요개수
+            int nextLevelGoal = 10000 * (nextLevel + 1);
+            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.1f) / 100) * 100;
+            coinReward = Mathf.RoundToInt((nextGoal * 0.2f) / 100) * 100;
+        }
+        else
+        {
+            // 100~: 보상 평점 = 0.05 × 다음단계증가요구필요개수, 보상 코인 = 0.1 × 다음단계증가요구필요개수
+            int nextLevelGoal = 10000 * (nextLevel + 1);
+            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.05f) / 100) * 100;
+            coinReward = Mathf.RoundToInt((nextGoal * 0.1f) / 100) * 100;
+        }
 
         Type11ChallengeData newData = new Type11ChallengeData(
             Challenges.AllTime,
@@ -3935,49 +3942,32 @@ public class ChallengeManager : MonoBehaviour
 
     private Type09ChallengeData GetNextRepeatVisitChallenge()
     {
-        int startReward = 100;
-        int repeatStep = 100;
-        int nextLevel = 2; // 1번은 이미 직접 추가했으므로 2부터 시작
+        int nextLevel = 1;
 
-        // 첫 번째 챌린지가 클리어되지 않았다면 첫 번째 챌린지 생성
+        // 첫 번째 챌린지가 아직 클리어되지 않았다면 첫 번째 챌린지 생성
         if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatVisit1"))
         {
-            if (_challengeDataDic.ContainsKey("AllTimeRepeatVisit1"))
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatVisit1") || _type09ChallengeDataDic.ContainsKey("AllTimeRepeatVisit1"))
             {
-                Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatVisit1");
-                return null;
+                return null; // 이미 존재하면 생성하지 않음
             }
-
-            int firstGoal = startReward + repeatStep * 1;
-            int firstCoinReward = (int)(firstGoal * 10f);
-            int firstScoreReward = (int)(firstGoal * 0.1f);
-            Debug.Log($"firstGoal: {firstGoal}, firstCoinReward: {firstCoinReward}, firstScoreReward: {firstScoreReward}");
-            Type09ChallengeData firstData = new Type09ChallengeData(
-                Challenges.AllTime,
-                ChallengeType.TYPE09,
-                "AllTimeRepeatVisit1",
-                $"누적 방문 손님 {Utility.ConvertToMoney(firstGoal)}명 달성",
-                firstGoal,
-                MoneyType.Gold,
-                firstCoinReward,
-                firstScoreReward,
-                GetShortCutAction("ShortCut01")
-            );
-            return firstData;
+            nextLevel = 1;
         }
-
-        // 완료된 반복 챌린지 중 가장 높은 레벨 찾기 (1번은 이미 직접 추가했으므로 2번부터 확인)
-        for (int i = 2; i <= 100; i++)
+        else
         {
-            string id = $"AllTimeRepeatVisit{i}";
+            // 완료된 반복 챌린지 중 가장 높은 레벨 찾기
+            for (int i = 1; i <= 100; i++)
+            {
+                string id = $"AllTimeRepeatVisit{i}";
 
-            if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
-            {
-                nextLevel = i + 1;
-            }
-            else
-            {
-                break;
+                if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+                {
+                    nextLevel = i + 1;
+                }
+                else
+                {
+                    break; // 완료되지 않은 첫 번째 레벨에서 중단
+                }
             }
         }
 
@@ -3987,16 +3977,18 @@ public class ChallengeManager : MonoBehaviour
 
         // 다음 레벨 챌린지 생성 전 중복 체크
         string nextId = $"AllTimeRepeatVisit{nextLevel}";
-        if (_challengeDataDic.ContainsKey(nextId) || _type12ChallengeDataDic.ContainsKey(nextId))
+        if (_challengeDataDic.ContainsKey(nextId) || _type09ChallengeDataDic.ContainsKey(nextId))
         {
-            Debug.LogError("이미 존재하는 챌린지 ID입니다. " + nextId);
-            return null;
+            return null; // 이미 존재하면 생성하지 않음
         }
 
-        // 다음 레벨 챌린지 생성
-        int nextGoal = startReward + repeatStep * nextLevel;
-        int coinReward = (int)(nextGoal * 10f);
-        int scoreReward = (int)(nextGoal * 0.1f);
+        // CSV 규칙에 따른 목표 계산: 현재 단계(n) × 100
+        int nextGoal = nextLevel * 100;
+        
+        // CSV 규칙에 따른 보상 계산
+        int nextLevelGoal = (nextLevel + 1) * 100;
+        int scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.15f) / 100) * 100;
+        int coinReward = Mathf.RoundToInt((nextGoal * 0.3f) / 100) * 100;
 
         Type09ChallengeData data = new Type09ChallengeData(
             Challenges.AllTime,
@@ -4015,53 +4007,36 @@ public class ChallengeManager : MonoBehaviour
 
     private Type08ChallengeData GetNextRepeatScoreChallenge()
     {
-        int startReward = 1000000;
-        int repeatStep = 10000;
-        int nextLevel = 2; // 1번은 이미 직접 추가했으므로 2부터 시작
+        int nextLevel = 1;
 
-        // 첫 번째 챌린지가 클리어되지 않았다면 첫 번째 챌린지 생성
+        // 첫 번째 챌린지가 아직 클리어되지 않았다면 첫 번째 챌린지 생성
         if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatScore1"))
         {
-            if (_challengeDataDic.ContainsKey("AllTimeRepeatScore1"))
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatScore1") || _type08ChallengeDataDic.ContainsKey("AllTimeRepeatScore1"))
             {
-                Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatScore1");
-                return null;
+                return null; // 이미 존재하면 생성하지 않음
             }
-
-            int firstGoal = startReward + repeatStep * 1;
-            int firstCoinReward = (int)(firstGoal * 10f);
-            int firstScoreReward = (int)(firstGoal * 0.1f);
-
-            Type08ChallengeData firstData = new Type08ChallengeData(
-                Challenges.AllTime,
-                ChallengeType.TYPE08,
-                "AllTimeRepeatScore1",
-                $"누적 평점 {Utility.ConvertToMoney(firstGoal)}명 달성",
-                firstGoal,
-                MoneyType.Gold,
-                firstCoinReward,
-                firstScoreReward,
-                GetShortCutAction("ShortCut01")
-            );
-            return firstData;
+            nextLevel = 1;
         }
-
-        // 완료된 반복 챌린지 중 가장 높은 레벨 찾기 (1번은 이미 직접 추가했으므로 2번부터 확인)
-        for (int i = 2; i <= 100; i++)
+        else
         {
-            string id = $"AllTimeRepeatScore{i}";
+            // 완료된 반복 챌린지 중 가장 높은 레벨 찾기
+            for (int i = 1; i <= 100; i++)
+            {
+                string id = $"AllTimeRepeatScore{i}";
 
-            if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
-            {
-                nextLevel = i + 1;
-            }
-            else
-            {
-                break;
+                if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+                {
+                    nextLevel = i + 1;
+                }
+                else
+                {
+                    break; // 완료되지 않은 첫 번째 레벨에서 중단
+                }
             }
         }
 
-        // 최대 레벨 초과 시 null 반환
+        // 최대 레벨 초과 시 null 반환  
         if (nextLevel > 100)
             return null;
 
@@ -4069,24 +4044,79 @@ public class ChallengeManager : MonoBehaviour
         string nextId = $"AllTimeRepeatScore{nextLevel}";
         if (_challengeDataDic.ContainsKey(nextId) || _type08ChallengeDataDic.ContainsKey(nextId))
         {
-            Debug.LogError("이미 존재하는 챌린지 ID입니다. " + nextId);
-            return null;
+            return null; // 이미 존재하면 생성하지 않음
         }
 
-        // 다음 레벨 챌린지 생성
-        int nextGoal = startReward + repeatStep * nextLevel;
-        int coinReward = (int)(nextGoal * 10f);
-        int scoreReward = (int)(nextGoal * 0.1f);
+        // CSV 규칙에 따른 목표 계산
+        int nextGoal;
+        if (nextLevel <= 8)
+        {
+            // 1~8: 50 × 단계(n)
+            nextGoal = 50 * nextLevel;
+        }
+        else if (nextLevel <= 13)
+        {
+            // 9~13: 50(n+1) + 50(n-9) = 50n + 50 + 50(n-9) = 100n + 50 - 450 = 100n - 400
+            nextGoal = 50 * (nextLevel + 1) + 50 * (nextLevel - 9);
+        }
+        else if (nextLevel <= 31)
+        {
+            // 14~31: 500n - 6000
+            nextGoal = 500 * nextLevel - 6000;
+        }
+        else if (nextLevel <= 41)
+        {
+            // 32~41: 10000(n-31)
+            nextGoal = 10000 * (nextLevel - 31);
+        }
+        else
+        {
+            // 42~: 100000(n-41)
+            nextGoal = 100000 * (nextLevel - 41);
+        }
+
+        // CSV 규칙에 따른 보상 계산 (평점 업적은 코인만 보상)
+        int coinReward;
+        if (nextLevel <= 8)
+        {
+            // 1~8: 0.8 × 다음단계증가요구필요개수
+            int nextLevelGoal = 50 * (nextLevel + 1);
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.8f) / 100) * 100;
+        }
+        else if (nextLevel <= 13)
+        {
+            // 9~13: 0.6 × 다음단계증가요구필요개수
+            int nextLevelGoal = 50 * (nextLevel + 2) + 50 * (nextLevel - 8);
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.6f) / 100) * 100;
+        }
+        else if (nextLevel <= 31)
+        {
+            // 14~31: 0.5 × 다음단계증가요구필요개수
+            int nextLevelGoal = 500 * (nextLevel + 1) - 6000;
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.5f) / 100) * 100;
+        }
+        else if (nextLevel <= 41)
+        {
+            // 32~41: 0.4 × 다음단계증가요구필요개수
+            int nextLevelGoal = 10000 * (nextLevel + 1 - 31);
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.4f) / 100) * 100;
+        }
+        else
+        {
+            // 42~: 0.3 × 다음단계증가요구필요개수
+            int nextLevelGoal = 100000 * (nextLevel + 1 - 41);
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.3f) / 100) * 100;
+        }
 
         Type08ChallengeData data = new Type08ChallengeData(
             Challenges.AllTime,
             ChallengeType.TYPE08,
             nextId,
-            $"누적 평점 {Utility.ConvertToMoney(nextGoal)}명 달성",
+            $"누적 평점 {Utility.ConvertToMoney(nextGoal)} 달성",
             nextGoal,
             MoneyType.Gold,
             coinReward,
-            scoreReward,
+            0, // 평점 업적은 평점 보상 없음
             GetShortCutAction("ShortCut01")
         );
         return data;

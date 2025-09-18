@@ -8,7 +8,8 @@ public class UIChallenge : MobileUIView
     [Header("Components")]
     [SerializeField] private UIMoney _uiMoney;
     [SerializeField] private UIDia _uiDia;
-    [SerializeField] private Image _uiScore;
+    [SerializeField] private UIScore _uiScore;
+    [SerializeField] private Image _scoreImage;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private RectTransform _dontTouchArea;
     [SerializeField] private UIChallengeTab _uiDaily;
@@ -66,8 +67,10 @@ public class UIChallenge : MobileUIView
         _dontTouchArea.gameObject.SetActive(false);
         _uiDailyAlarm.SetActive(_uiDaily.UpdateUI());
         _uiAllTimeAlarm.SetActive(_uiAllTime.UpdateUI());
+        _uiWeeklyAlarm.SetActive(_uiWeekly.UpdateUI());
         _uiDaily.ResetScrollviewY();
         _uiAllTime.ResetScrollviewY();
+        _uiWeekly.ResetScrollviewY();
         OnDailyButtonClicked();
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
@@ -214,9 +217,10 @@ public class UIChallenge : MobileUIView
                 if (score.anchoredPosition.y < 0)
                     height *= -1;
 
-                score.TweenJump(_uiScore.transform.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                score.TweenJump(_scoreImage.transform.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
                 {
                     ObjectPoolManager.Instance.DespawnUIScore(score);
+                    _uiScore.StartAnime();
                 });
                 time += 0.03f;
             });

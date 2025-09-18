@@ -325,6 +325,11 @@ public static class UserInfo
             ResetDailyChallenges();
         }
 
+        if (CheckLastWeeklyAccessTime())
+        {
+            ResetWeeklyChallenges();
+        }
+
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
         param.Add("IsMiniGameTutorialClear", IsMiniGameTutorialClear);
         param.Add("IsGatecrasher1TutorialClear", IsGatecrasher1TutorialClear);
@@ -610,6 +615,11 @@ public static class UserInfo
             ResetDailyChallenges();
         }
 
+        if (CheckLastWeeklyAccessTime())
+        {
+            ResetWeeklyChallenges();
+        }
+
         Dictionary<string, SaveTimeData> timeDic = loadData.TimeDataDic;
         TimeManager.Instance.ResetTime();
 
@@ -728,6 +738,37 @@ public static class UserInfo
         }
     }
 
+    public static bool CheckLastWeeklyAccessTime()
+    {
+        if (string.IsNullOrWhiteSpace(_lastAccessTime))
+            return true;
+
+        try
+        {
+            // 현재 한국 시간 가져오기
+            DateTime currentKoreaTime = GetKoreanTime();
+
+            // 저장된 마지막 접속 시간은 이미 한국 시간이므로 그대로 파싱
+            if (DateTime.TryParse(_lastAccessTime, out DateTime lastAccessTime))
+            {
+                // 게임 내 주간 기준: 매주 수요일 오후 12시를 기준으로 주차 계산
+                DateTime currentGameWeek = GetGameWeek(currentKoreaTime);
+                DateTime lastGameWeek = GetGameWeek(lastAccessTime);
+                
+                bool isDifferentWeek = currentGameWeek > lastGameWeek;
+                DebugLog.Log($"현재 시간: {currentKoreaTime}, 마지막 접속 시간: {lastAccessTime}");
+                DebugLog.Log($"현재 게임 주차: {currentGameWeek}, 마지막 게임 주차: {lastGameWeek}, 주차 차이: {isDifferentWeek}");
+                return isDifferentWeek;
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogError($"주간 접속 시간 확인 중 오류 발생: {ex.Message}");
+            return true;  // 오류 발생 시 기본값으로 true 반환
+        }
+    }
+
     // 오후 12시를 기준으로 게임 내 날짜를 계산하는 메서드
     private static DateTime GetGameDay(DateTime dateTime)
     {
@@ -741,6 +782,22 @@ public static class UserInfo
         {
             return dateTime.Date;
         }
+    }
+
+    // 매주 수요일 오후 12시를 기준으로 게임 내 주차를 계산하는 메서드
+    private static DateTime GetGameWeek(DateTime dateTime)
+    {
+        // 먼저 게임 날짜를 구함 (오후 12시 기준)
+        DateTime gameDay = GetGameDay(dateTime);
+        
+        // 수요일을 기준으로 주차 계산
+        // DayOfWeek.Wednesday = 3
+        int daysFromWednesday = ((int)gameDay.DayOfWeek - (int)DayOfWeek.Wednesday + 7) % 7;
+        
+        // 가장 최근 수요일 (또는 오늘이 수요일이면 오늘)을 구함
+        DateTime weekStart = gameDay.AddDays(-daysFromWednesday);
+        
+        return weekStart;
     }
 
     public static void UpdateAttendanceData()
@@ -2362,6 +2419,9 @@ public static class UserInfo
 
             case Challenges.AllTime:
                 return _doneAllTimeChallengeSet.Contains(id);
+
+            case Challenges.Weekly:
+                return _doneWeeklyChallengeSet.Contains(id);
         }
 
         return false;
@@ -2379,6 +2439,9 @@ public static class UserInfo
 
             case Challenges.AllTime:
                 return _doneAllTimeChallengeSet.Contains(data.Id);
+
+            case Challenges.Weekly:
+                return _doneWeeklyChallengeSet.Contains(data.Id);
         }
 
         return false;
@@ -2610,9 +2673,7 @@ public static class UserInfo
         _doneWeeklyChallengeSet.Clear();
         _clearWeeklyChallengeSet.Clear();
 
-        ChallengeManager.Instance.UpdateChallengeByChallenges(Challenges.Weekly);
-        OnClearChallengeHandler?.Invoke();
-        OnDoneChallengeHandler?.Invoke();
+        DebugLog.Log("주간 챌린지가 초기화되었습니다.");
     }
 
     #endregion

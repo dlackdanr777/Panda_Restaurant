@@ -24,6 +24,7 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
 
     [Space]
     [Header("Option")]
+    [SerializeField] private Color _progressColor;
     [SerializeField] private Color _doneColor;
 
     private ChallengeData _data;
@@ -110,7 +111,7 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
                 _doneButton.gameObject.SetActive(false);
                 _clearButton.gameObject.SetActive(false);
                 _layoutImage.color = Color.white;
-                _percentBar.color = Color.white;
+                _percentBar.color = _progressColor;
                 return;
             }
     }

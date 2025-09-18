@@ -486,22 +486,6 @@ public class GameManager : MonoBehaviour
 
 
 
-    private void Update()
-    {
-#if UNITY_EDITOR
-        if (Input.GetKeyDown(KeyCode.S))
-        {
-            UserInfo.LoadGameData(BackendManager.Instance.GetMyData("GameData"));
-        }
-
-        if(Input.GetKeyDown(KeyCode.A))
-        {
-            TimeManager.Instance.SetTime("Test", 100);
-        }
-#endif
-    }
-
-
     private void OnGiveFurnitureEffectCheck()
     {
         _addFurnitureScore = 0;
