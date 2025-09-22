@@ -21,6 +21,7 @@ public class FurnitureDataManager : MonoBehaviour
     }
     private static FurnitureDataManager _instance;
 
+    private static List<FurnitureData> _furnitureDataList = new List<FurnitureData>();
     private static List<FurnitureData>[] _furnitureDataListType = new List<FurnitureData>[(int)FurnitureType.Length];
     private static Dictionary<string, FurnitureData> _furnitureDataDic = new Dictionary<string, FurnitureData>();
 
@@ -42,6 +43,10 @@ public class FurnitureDataManager : MonoBehaviour
         return data;
     }
 
+    public List<FurnitureData> GetFurnitureDataList()
+    {
+        return _furnitureDataList;
+    }
 
     public List<FurnitureData> GetFurnitureDataList(FurnitureType type)
     {
@@ -75,10 +80,11 @@ public class FurnitureDataManager : MonoBehaviour
     private static void InitData()
     {
         _furnitureDataDic.Clear();
+        _furnitureDataList.Clear();
         _spriteDic.Clear();
         _thumbnailSpriteDic.Clear();
         _leftChairSpriteDic.Clear();
-        _rightChairSpriteDic.Clear();   
+        _rightChairSpriteDic.Clear();
 
         for (int i = 0; i < (int)FurnitureType.Length; i++)
         {
@@ -100,7 +106,7 @@ public class FurnitureDataManager : MonoBehaviour
 
     private static void LoadFurnitureSprites(string basePath)
     {
-        string[] setFolders = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15" };
+        string[] setFolders = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19" };
 
         foreach (string setFolder in setFolders)
         {
@@ -114,25 +120,22 @@ public class FurnitureDataManager : MonoBehaviour
                 string afterUnderStr = Utility.GetStringAfterChar(spriteName, '_'); // 언더바 이후 문자열
                 bool isThumbnail = spriteName.Contains("썸네일"); // 썸네일 여부 확인
                 bool isChair = afterUnderStr.Contains("의자") || afterUnderStr.Contains("체어");
-                DebugLog.Log(spriteName);
+                //DebugLog.Log(spriteName);
                 if (isThumbnail)
                 {
                     _thumbnailSpriteDic.Add(key, sprite);
                 }
 
-                else if(isChair)
+                else if (isChair)
                 {
-                    DebugLog.Log(spriteName);
                     if (afterUnderStr.Contains("L") || spriteName.Contains("좌"))
                     {
-                        if(afterUnderStr.Contains("팔걸이"))
+                        if (afterUnderStr.Contains("팔걸이"))
                         {
-                            DebugLog.Log("11");
                             _leftChairArmrestSpriteDic.Add(key, sprite);
                         }
                         else
                         {
-                            DebugLog.Log("22");
                             _leftChairSpriteDic.Add(key, sprite);
                         }
                     }
@@ -141,12 +144,10 @@ public class FurnitureDataManager : MonoBehaviour
                     {
                         if (afterUnderStr.Contains("팔걸이"))
                         {
-                            DebugLog.Log("33");
                             _rightChairArmrestSpriteDic.Add(key, sprite);
                         }
                         else
                         {
-                            DebugLog.Log("44");
                             _rightChairSpriteDic.Add(key, sprite);
                         }
                     }
@@ -205,14 +206,15 @@ public class FurnitureDataManager : MonoBehaviour
                 unlockCount = 0;
             }
 
+            string keyId = CutStringUpToChar(id, '_');
             // 🔹 스프라이트 가져오기 (딕셔너리에서 가져오므로 성능 향상)
-            if (!_spriteDic.TryGetValue(id, out Sprite sprite))
+            if (!_spriteDic.TryGetValue(keyId, out Sprite sprite))
             {
                 Debug.LogError($"스프라이트가 없습니다: {id}");
                 continue;
             }
 
-            if (!_thumbnailSpriteDic.TryGetValue(id, out Sprite thumbnailSprite))
+            if (!_thumbnailSpriteDic.TryGetValue(keyId, out Sprite thumbnailSprite))
             {
                 thumbnailSprite = sprite;
             }
@@ -239,6 +241,7 @@ public class FurnitureDataManager : MonoBehaviour
 
             // 🔹 리스트 및 딕셔너리에 추가
             _furnitureDataDic.Add(id, furnitureData);
+            _furnitureDataList.Add(furnitureData);
             _furnitureDataListType[(int)furnitureData.Type].Add(furnitureData);
         }
     }
@@ -272,77 +275,57 @@ public class FurnitureDataManager : MonoBehaviour
             int table1AddScore = int.Parse(row[4].Trim());
             int table1EffectValue = int.Parse(row[5].Trim());
 
-            MoneyType moneyType = row[6].Trim() == "게임 머니" || row[6].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
-            int table1BuyScore = int.Parse(row[7].Trim());
-            int table1BuyPrice = int.Parse(row[8].Trim());
-
-            int table2BuyScore = int.Parse(row[9].Trim());
-            int table2BuyPrice = int.Parse(row[10].Trim());
-            int table2AddScore = int.Parse(row[11].Trim());
-            int table2EffectValue = int.Parse(row[12].Trim());
-
-            int table3BuyScore = int.Parse(row[13].Trim());
-            int table3BuyPrice = int.Parse(row[14].Trim());
-            int table3AddScore = int.Parse(row[15].Trim());
-            int table3EffectValue = int.Parse(row[16].Trim());
-
-            int table4BuyScore = int.Parse(row[17].Trim());
-            int table4BuyPrice = int.Parse(row[18].Trim());
-            int table4AddScore = int.Parse(row[19].Trim());
-            int table4EffectValue = int.Parse(row[20].Trim());
-
-            int table5BuyScore = int.Parse(row[21].Trim());
-            int table5BuyPrice = int.Parse(row[22].Trim());
-            int table5AddScore = int.Parse(row[23].Trim());
-            int table5EffectValue = int.Parse(row[24].Trim());
-
-            UnlockConditionType unlockType = Utility.GetUnlockConditionType(row[25].Trim());
-            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[26].Trim();
-            if (unlockType == UnlockConditionType.None || !int.TryParse(row[27].Trim(), out int unlockCount))
+            MoneyType moneyType = row[7].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
+            int tableBuyScore = int.Parse(row[6].Trim());
+            int tableBuyPrice = int.Parse(row[8].Trim());
+            FurnitureType tableType = GetTableTypeFromId(id);   
+            UnlockConditionType unlockType = row.Length < 10 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[9].Trim());
+            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[10].Trim();
+            if (unlockType == UnlockConditionType.None || !int.TryParse(row[11].Trim(), out int unlockCount))
             {
                 unlockCount = 0;
             }
 
-            bool isChairForward = row[28].Contains("앞");
-
+            bool isChairForward = true;
+            string keyId = CutStringUpToChar(id, '_');
             // 🔹 스프라이트 가져오기 (딕셔너리에서 가져오므로 성능 향상)
-            if (!_spriteDic.TryGetValue(id, out Sprite sprite))
+            if (!_spriteDic.TryGetValue(keyId, out Sprite sprite))
             {
-                DebugLog.LogError($"스프라이트가 없습니다: {id}");
+                DebugLog.LogError($"스프라이트가 없습니다: {keyId}");
                 continue;
             }
 
-            if (!_thumbnailSpriteDic.TryGetValue(id, out Sprite thumbnailSprite))
+            if (!_thumbnailSpriteDic.TryGetValue(keyId, out Sprite thumbnailSprite))
             {
                 thumbnailSprite = sprite;
             }
 
-            if (!_leftChairSpriteDic.TryGetValue(id, out Sprite leftChairSprite))
+            if (!_leftChairSpriteDic.TryGetValue(keyId, out Sprite leftChairSprite))
             {
-                DebugLog.LogError($"좌측 의자 스프라이트가 없습니다: {id}");
+                DebugLog.LogError($"좌측 의자 스프라이트가 없습니다: {keyId}");
                 continue;
             }
 
-            if (!_rightChairSpriteDic.TryGetValue(id, out Sprite rightChairSprite))
+            if (!_rightChairSpriteDic.TryGetValue(keyId, out Sprite rightChairSprite))
             {
-                DebugLog.LogError($"우측 의자 스프라이트가 없습니다: {id}");
+                DebugLog.LogError($"우측 의자 스프라이트가 없습니다: {keyId}");
                 rightChairSprite = null;
             }
 
-            _leftChairArmrestSpriteDic.TryGetValue(id, out Sprite leftChairArmrestSprite);
-            _rightChairArmrestSpriteDic.TryGetValue(id, out Sprite rightChairArmrestSprite);
+            _leftChairArmrestSpriteDic.TryGetValue(keyId, out Sprite leftChairArmrestSprite);
+            _rightChairArmrestSpriteDic.TryGetValue(keyId, out Sprite rightChairArmrestSprite);
 
 
-            FurnitureData table1Data = new TableFurnitureData(
+            FurnitureData tableData = new TableFurnitureData(
                 sprite,
                 thumbnailSprite,
-                id + "_01",
+                id,
                 setId,
                 name,
                 moneyType,
-                table1BuyScore,
-                table1BuyPrice,
-                FurnitureType.Table1,
+                tableBuyScore,
+                tableBuyPrice,
+                tableType,
                 foodType,
                 table1AddScore,
                 effectType,
@@ -357,112 +340,64 @@ public class FurnitureDataManager : MonoBehaviour
                 isChairForward
             );
 
-            FurnitureData table2Data = new TableFurnitureData(
-    sprite,
-    thumbnailSprite,
-    id + "_02",
-    setId,
-    name,
-    moneyType,
-    table2BuyScore,
-    table2BuyPrice,
-    FurnitureType.Table2,
-    foodType,
-    table2AddScore,
-    effectType,
-    table2EffectValue,
-                    unlockType,
-                unlockId,
-                unlockCount,
-    leftChairSprite,
-    rightChairSprite,
-                    leftChairArmrestSprite,
-                rightChairArmrestSprite,
-    isChairForward
-);
+            _furnitureDataDic.Add(id, tableData);
+            _furnitureDataList.Add(tableData);
+            _furnitureDataListType[(int)tableData.Type].Add(tableData);
 
-            FurnitureData table3Data = new TableFurnitureData(
-sprite,
-thumbnailSprite,
-id + "_03",
-setId,
-name,
-moneyType,
-table3BuyScore,
-table3BuyPrice,
-FurnitureType.Table3,
-foodType,
-table3AddScore,
-effectType,
-table3EffectValue,
-                unlockType,
-                unlockId,
-                unlockCount,
-leftChairSprite,
-rightChairSprite,
-                leftChairArmrestSprite,
-                rightChairArmrestSprite,
-isChairForward
-);
-
-            FurnitureData table4Data = new TableFurnitureData(
-sprite,
-thumbnailSprite,
-id + "_04",
-setId,
-name,
-moneyType,
-table4BuyScore,
-table4BuyPrice,
-FurnitureType.Table4,
-foodType,
-table4AddScore,
-effectType,
-table4EffectValue,
-                unlockType,
-                unlockId,
-                unlockCount,
-leftChairSprite,
-rightChairSprite,
-                leftChairArmrestSprite,
-                rightChairArmrestSprite,
-isChairForward
-);
-
-            FurnitureData table5Data = new TableFurnitureData(
-sprite,
-thumbnailSprite,
-id + "_05",
-setId,
-name,
-moneyType,
-table5BuyScore,
-table5BuyPrice,
-FurnitureType.Table5,
-foodType,
-table5AddScore,
-effectType,
-table5EffectValue,
-                unlockType,
-                unlockId,
-                unlockCount,
-leftChairSprite,
-rightChairSprite,
-                leftChairArmrestSprite,
-                rightChairArmrestSprite,
-isChairForward
-);
-
-            _furnitureDataDic.Add(id + "_01", table1Data);
-            _furnitureDataDic.Add(id + "_02", table2Data);
-            _furnitureDataDic.Add(id + "_03", table3Data);
-            _furnitureDataDic.Add(id + "_04", table4Data);
-            _furnitureDataDic.Add(id + "_05", table5Data);
-            _furnitureDataListType[(int)table1Data.Type].Add(table1Data);
-            _furnitureDataListType[(int)table2Data.Type].Add(table2Data);
-            _furnitureDataListType[(int)table3Data.Type].Add(table3Data);
-            _furnitureDataListType[(int)table4Data.Type].Add(table4Data);
-            _furnitureDataListType[(int)table5Data.Type].Add(table5Data);
         }
+    }
+
+
+    private static FurnitureType GetTableTypeFromId(string id)
+    {
+        try
+        {
+            // 언더바 다음 문자열 추출
+            string afterUnderscore = Utility.GetStringAfterChar(id, '_');
+
+            // 숫자 부분만 추출 (예: "01썸네일" -> "01")
+            string numberPart = "";
+            for (int i = 0; i < afterUnderscore.Length; i++)
+            {
+                if (char.IsDigit(afterUnderscore[i]))
+                {
+                    numberPart += afterUnderscore[i];
+                }
+                else
+                {
+                    break; // 숫자가 아닌 문자를 만나면 중단
+                }
+            }
+
+            if (int.TryParse(numberPart, out int tableNumber))
+            {
+                int typeIndex = tableNumber - 1;
+
+                if (typeIndex >= 0 && typeIndex <= 4)
+                {
+                    return (FurnitureType)typeIndex;
+                }
+            }
+
+            DebugLog.LogError($"id에서 테이블 타입을 파싱할 수 없습니다: {id}, 기본값 Table1 사용");
+            return FurnitureType.Table1; // 기본값
+        }
+        catch (System.Exception e)
+        {
+            DebugLog.LogError($"id 파싱 중 오류 발생: {id}, 오류: {e.Message}");
+            return FurnitureType.Table1; // 기본값
+        }
+    }
+
+
+        private static string CutStringUpToChar(string str, char delimiter)
+    {
+        str = str.ToUpper();
+        int index = str.IndexOf(delimiter);
+
+        if (index >= 0)
+            return str.Substring(0, index);
+        else
+            return str;
     }
 }

@@ -8,15 +8,21 @@ public class UIMoney : MonoBehaviour
     [Header("Components")]
     [SerializeField] private RectTransform _uiMoney;
     [SerializeField] private TextMeshProUGUI _moneyText;
+    [SerializeField] private ParticleSystem _animeEffect;
 
     [Space]
     [Header("Animations")]
     [SerializeField] private RectTransform _effectSpawnPos;
+    public RectTransform EffectSpawnPos => _effectSpawnPos;
     [SerializeField] private RectTransform _animeParent;
     [SerializeField] private float _moveY;
     [SerializeField] private float _moveDuration;
     [SerializeField] private Ease _moveEase;
     [SerializeField] private Color _startColor;
+
+    [Space]
+    [Header("Options")]
+    [SerializeField] private bool _textAnimeEnable = true;
 
     private long _currentMoney;
     private Vector3 _tmpScale;
@@ -46,6 +52,7 @@ public class UIMoney : MonoBehaviour
 
     public void StartAnime()
     {
+        _animeEffect.Emit(Random.Range(5, 11));
         _uiMoney.TweenStop();
         _uiMoney.localScale = _tmpScale;
         _uiMoney.TweenScale(_tmpScale * 1.1f, 0.05f, Ease.Constant).OnComplete(() =>
@@ -74,6 +81,10 @@ public class UIMoney : MonoBehaviour
 
         StartAnime();
 
+
+        if (!_textAnimeEnable)
+            return;
+            
         string sign = addMoney < 0 ? "-" : "+";
         Vector3 spawnPos = _animeParent.transform.position;
         TextMeshProUGUI tmp = ObjectPoolManager.Instance.SpawnTMP(spawnPos, Quaternion.identity, _animeParent);
@@ -103,8 +114,15 @@ public class UIMoney : MonoBehaviour
             time += 0.02f * 2.5f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        _moneyText.SetText(Utility.ConvertToMoney(UserInfo.Money));  
+        _moneyText.SetText(Utility.ConvertToMoney(UserInfo.Money));
     }
 
-    
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeMoneyHandler -= OnChangeMoneyEvent;
+        if (_moneyAnimeRoutine != null)
+            StopCoroutine(_moneyAnimeRoutine);
+        
+        _moneyAnimeRoutine = null;        
+    }
 }

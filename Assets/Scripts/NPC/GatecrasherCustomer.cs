@@ -46,7 +46,7 @@ public class GatecrasherCustomer : Customer
     private Coroutine _enabledCoroutine;
     private Coroutine _speedRecoveryCoroutine;
     private Coroutine _subSatisfactionCoroutine;
-    private TweenData _tween;
+    private TweenWait _tween;
     private Action<Customer> _onCompleted;
     private Action _gatecrasher1OnChangeShape;
 
@@ -81,6 +81,7 @@ public class GatecrasherCustomer : Customer
         _spriteGroup.SetAlpha(0);
         _spritePressEffect.Interactable = false;
         _spritePressEffect.SetTmpScale(_spriteParent.transform.localScale);
+        _spriteRenderer.color = Color.white;
         _touchParticle.Stop();
         _soundParticle.Stop();
         _stealParticle.Stop();
@@ -89,7 +90,7 @@ public class GatecrasherCustomer : Customer
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
         _spriteFillAmount.SetFillAmount(0);
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _visitSound, 0.15f);
+        SoundManager.Instance.PlayEffectAudio(EffectType.None, _visitSound, 0.15f);
         UserInfo.CustomerVisits(data);
         UserInfo.AddSatisfaction(UserInfo.CurrentStage, -5);
         if (_enabledCoroutine != null)
@@ -111,15 +112,18 @@ public class GatecrasherCustomer : Customer
     public void StartGatecreasherCustomer2Event(Vector3 targetPos, TableManager tableManager, Action<Customer> onCompleted)
     {
         _touchEnabled = false;
+        _isInDisguise = true;
         _onCompleted = onCompleted;
         _spriteRenderer.sprite = _customerData.Sprite;
         Move(targetPos, -1, () =>
         {
+            _spriteRenderer.color = Color.white;
             _spriteRenderer.sprite = _customerData.Sprite;
             _tween = Tween.Wait(1f, () =>
             {
                 _spritePressEffect.Interactable = true;
                 _touchEnabled = true;
+                _isInDisguise = false;
                 ChangeState(CustomerState.Action);
                 _soundParticle.Play();
                 _guitarSource.Play();
@@ -149,7 +153,7 @@ public class GatecrasherCustomer : Customer
         _onCompleted = onCompleted;
         _gatecrasher1OnChangeShape = onChangeShape;
 
-        List<CustomerData> customerList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
+        List<NormalCustomerData> customerList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
         _gatecrasher1DisquiseSprite = customerList[UnityEngine.Random.Range(0, customerList.Count)].Sprite;
         _spriteRenderer.sprite = _gatecrasher1DisquiseSprite;
         _animator.runtimeAnimatorController = ((GatecrasherCustomer1Data)_customerData).Controller;
@@ -197,7 +201,7 @@ public class GatecrasherCustomer : Customer
         {
             Move(targetArea.transform.position, 0, () =>
             {
-
+                _spriteRenderer.color = Color.white;
                 _tween = Tween.Wait(1, () =>
                 {
                     if (targetArea.Count <= 0)
@@ -266,7 +270,7 @@ public class GatecrasherCustomer : Customer
         if (_customerData == null)
             return;
 
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _touchSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.None, _touchSound);
         _currentTouchCount += _touchDamage * GameManager.Instance.AddGatecrasherCustomerDamageMul;
         _touchParticle.Emit(UnityEngine.Random.Range(2, 4));
         _spriteGroup.SetAlpha(1);
@@ -382,7 +386,7 @@ public class GatecrasherCustomer : Customer
                 if (tableDataList[i].CurrentCustomer != null)
                 {
                     tableDataList[i].CurrentCustomer.StartAnger();
-                    tableManager.ExitCustomer(tableDataList[i]);
+                    tableManager.AngerExitCustomer(tableDataList[i]);
                     continue;
                 }
             }
@@ -400,7 +404,7 @@ public class GatecrasherCustomer : Customer
                 if (tableDataList[i].CurrentCustomer != null)
                 {
                     tableDataList[i].CurrentCustomer.StartAnger();
-                    tableManager.ExitCustomer(tableDataList[i]);
+                    tableManager.AngerExitCustomer(tableDataList[i]);
                     continue;
                 }
             }
@@ -444,7 +448,7 @@ public class GatecrasherCustomer : Customer
         _moveSpeed = 0.1f;
         float startSpeed = 0.1f;
         float targetSpeed = _customerData.MoveSpeed;
-        float targetTime = 0.1f + GameManager.Instance.AddGatecrasherCustomerSpeedDownTime;
+        float targetTime = 0.1f;
         float timer = 0;
 
         while(timer < targetTime)

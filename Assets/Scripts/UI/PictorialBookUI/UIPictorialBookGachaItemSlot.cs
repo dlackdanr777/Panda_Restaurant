@@ -24,8 +24,8 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
         {
             _data = null;
             _itemImage.gameObject.SetActive(false);
-            SetStar(GachaItemRank.Length);
-            _alarm.ChangeAlarmId(string.Empty);
+            SetStar(Rank.Length);
+            _alarm?.ChangeAlarmId(string.Empty);
             return;
         }
 
@@ -38,7 +38,7 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
         _itemImage.sprite = data.Sprite;
         Utility.ChangeImagePivot(_itemImage);
         SetStar(data.GachaItemRank);
-        _alarm.ChangeAlarmId(data.Id);
+        _alarm?.ChangeAlarmId(data.Id);
     }
 
 
@@ -64,40 +64,40 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
     }
 
 
-    private void SetStar(GachaItemRank rank)
+    private void SetStar(Rank rank)
     {
         _itemStar.SetStar(rank);
         switch (rank)
         {
-            case GachaItemRank.Normal1:
+            case Rank.Normal1:
                 _normalFrameImage.gameObject.SetActive(true);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);
                 _specialFrameImage.gameObject.SetActive(false);
                 break;
 
-                case GachaItemRank.Normal2:
+                case Rank.Normal2:
                 _normalFrameImage.gameObject.SetActive(true);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);
                 _specialFrameImage.gameObject.SetActive(false);
                 break;
 
-            case GachaItemRank.Rare:
+            case Rank.Rare:
                 _normalFrameImage.gameObject.SetActive(false);
                 _rareFrameImage.gameObject.SetActive(true);
                 _uniqueFrameImage.gameObject.SetActive(false);
                 _specialFrameImage.gameObject.SetActive(false);
                 break;
 
-            case GachaItemRank.Unique:
+            case Rank.Unique:
                 _normalFrameImage.gameObject.SetActive(false);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(true);
                 _specialFrameImage.gameObject.SetActive(false);
                 break;
 
-            case GachaItemRank.Special:
+            case Rank.Special:
                 _normalFrameImage.gameObject.SetActive(false);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);

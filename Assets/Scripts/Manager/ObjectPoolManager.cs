@@ -13,7 +13,7 @@ public class ObjectPoolManager : MonoBehaviour
     {
         get
         {
-            if(_instance == null)
+            if (_instance == null)
             {
                 GameObject obj = new GameObject("ObjectPoolManager");
                 _instance = obj.AddComponent<ObjectPoolManager>();
@@ -76,9 +76,19 @@ public class ObjectPoolManager : MonoBehaviour
     private static RectTransform _uiDiaPrefab;
     private static Queue<RectTransform> _uiDiaPool = new Queue<RectTransform>();
 
+    private static int _uiScoreCount = 50;
+    private static RectTransform _uiScorePrefab;
+    private static Queue<RectTransform> _uiScorePool = new Queue<RectTransform>();
+
     private static int _uiEffectCount = 10;
     private static UIParticleEffect[] _uiEffectPrefabs = new UIParticleEffect[(int)UIEffectType.Length];
     private static Queue<UIParticleEffect>[] _uiEffectPool;
+
+
+    private static int _touchEffectCount = 10;
+    private static GameObject _touchEffectParent;
+    private static TouchEffect _touchEffectPrefab;
+    private static Queue<TouchEffect> _touchEffectPool = new Queue<TouchEffect>();
 
 
     private static Sprite[] _garbageImages;
@@ -109,10 +119,12 @@ public class ObjectPoolManager : MonoBehaviour
         CoinPooling();
         UICoinPooling();
         UIDiaPooling();
+        UIScorePooling();
         GarbagePooling();
         TmpPooling();
         UIEffectPooling();
         SmokeParticlePooling();
+        TouchEffectPooling();
     }
 
 
@@ -136,10 +148,10 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         _staffPrefabs[(int)EquipStaffType.Cleaner] = Resources.Load<StaffCleaner>("ObjectPool/Staff/Cleaner");
-        _staffPrefabs[(int)EquipStaffType.Waiter1] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
-        _staffPrefabs[(int)EquipStaffType.Waiter2] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
-        _staffPrefabs[(int)EquipStaffType.Chef1] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
-        _staffPrefabs[(int)EquipStaffType.Chef2] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
+        _staffPrefabs[(int)EquipStaffType.Waiter] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
+        //_staffPrefabs[(int)EquipStaffType.Waiter2] = Resources.Load<StaffWaiter>("ObjectPool/Staff/Waiter");
+        _staffPrefabs[(int)EquipStaffType.Chef] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
+        //_staffPrefabs[(int)EquipStaffType.Chef2] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
         _staffPrefabs[(int)EquipStaffType.Marketer] = Resources.Load<StaffMarketer>("ObjectPool/Staff/Marketer");
         _staffCount = (int)ERestaurantFloorType.Length;
         for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
@@ -160,10 +172,10 @@ public class ObjectPoolManager : MonoBehaviour
         _customerParent = new GameObject("CustomerParent");
         _customerParent.transform.parent = _instance.transform;
 
-        if(_normalCustomerPrefab == null)
+        if (_normalCustomerPrefab == null)
             _normalCustomerPrefab = Resources.Load<NormalCustomer>("ObjectPool/NormalCustomer");
 
-        if(_specialCustomerPrefab == null)
+        if (_specialCustomerPrefab == null)
             _specialCustomerPrefab = Resources.Load<SpecialCustomer>("ObjectPool/SpecialCustomer");
 
         if (_gatecrasherCustomerPrefab == null)
@@ -177,7 +189,7 @@ public class ObjectPoolManager : MonoBehaviour
             normalCustomer.gameObject.SetActive(false);
         }
 
-        for(int i = 0; i < _specialCustomerCount; ++i)
+        for (int i = 0; i < _specialCustomerCount; ++i)
         {
             SpecialCustomer specialCustomer = Instantiate(_specialCustomerPrefab, _customerParent.transform);
             specialCustomer.Init();
@@ -200,7 +212,7 @@ public class ObjectPoolManager : MonoBehaviour
         _coinParent = new GameObject("CoinParent");
         _coinParent.transform.parent = _instance.transform;
 
-        if(_coinPrefab == null)
+        if (_coinPrefab == null)
             _coinPrefab = Resources.Load<PointerDownSpriteRenderer>("ObjectPool/Coin");
 
         for (int i = 0, count = _coinCount; i < count; i++)
@@ -236,6 +248,20 @@ public class ObjectPoolManager : MonoBehaviour
             dia.gameObject.SetActive(false);
         }
     }
+
+    private static void UIScorePooling()
+    {
+        if (_uiScorePrefab == null)
+            _uiScorePrefab = Resources.Load<RectTransform>("ObjectPool/UIScore");
+
+        for (int i = 0, count = _uiScoreCount; i < count; i++)
+        {
+            RectTransform score = Instantiate(_uiScorePrefab, _uiCanvas.transform);
+            _uiScorePool.Enqueue(score);
+            score.gameObject.SetActive(false);
+        }
+    }
+
 
 
     private static void GarbagePooling()
@@ -353,7 +379,7 @@ public class ObjectPoolManager : MonoBehaviour
     {
         NormalCustomer customer;
 
-        if (_normalCustomerPool.Count == 0 )
+        if (_normalCustomerPool.Count == 0)
         {
             customer = Instantiate(_normalCustomerPrefab, pos, rot, _customerParent.transform);
             return customer;
@@ -509,6 +535,33 @@ public class ObjectPoolManager : MonoBehaviour
         _uiDiaPool.Enqueue(dia);
     }
 
+        public RectTransform SpawnUIScore(Vector3 pos, Quaternion rot)
+    {
+        RectTransform score;
+
+        if (_uiScorePool.Count == 0)
+        {
+            score = Instantiate(_uiScorePrefab, pos, rot, _uiCanvas.transform);
+            return score;
+        }
+
+        score = _uiScorePool.Dequeue();
+        score.gameObject.SetActive(false);
+        score.gameObject.SetActive(true);
+        score.transform.position = pos;
+        score.transform.rotation = rot;
+        return score;
+    }
+
+
+    public void DespawnUIScore(RectTransform score)
+    {
+        score.TweenStop();
+        score.SetParent(_uiCanvas.transform);
+        score.gameObject.SetActive(false);
+        _uiScorePool.Enqueue(score);
+    }
+
 
     public PointerDownSpriteRenderer SpawnGarbage(Vector3 pos, Quaternion rot)
     {
@@ -658,5 +711,54 @@ public class ObjectPoolManager : MonoBehaviour
         smokeParticle.Stop();
         smokeParticle.gameObject.SetActive(false);
         _smokeParitclePool.Enqueue(smokeParticle);
+    }
+
+
+    private static void TouchEffectPooling()
+    {
+        _touchEffectParent = new GameObject("TouchEffectParent");
+        _touchEffectParent.transform.parent = _instance.transform;
+
+        if (_touchEffectPrefab == null)
+            _touchEffectPrefab = Resources.Load<TouchEffect>("ObjectPool/TouchEffect");
+
+        for (int i = 0, count = _touchEffectCount; i < count; i++)
+        {
+            TouchEffect touchEffect = Instantiate(_touchEffectPrefab, _touchEffectParent.transform);
+            touchEffect.Init(DespawnTouchEffect);
+            _touchEffectPool.Enqueue(touchEffect);
+            touchEffect.gameObject.SetActive(false);
+        }
+    }
+
+
+    public static TouchEffect SpawnTouchEffect(Transform parent, Vector2 pos)
+    {
+        TouchEffect touchEffect;
+
+        if (_touchEffectPool.Count == 0)
+        {
+            touchEffect = Instantiate(_touchEffectPrefab, parent);
+            touchEffect.Init(DespawnTouchEffect);
+            touchEffect.StartEffect(pos);
+            return touchEffect;
+        }
+
+        touchEffect = _touchEffectPool.Dequeue();
+        touchEffect.gameObject.SetActive(false);
+        touchEffect.gameObject.SetActive(true);
+        touchEffect.transform.SetParent(parent);
+        touchEffect.StartEffect(pos);
+        return touchEffect;
+    }
+
+    public static void DespawnTouchEffect(TouchEffect touchEffect)
+    {
+        if (touchEffect == null || _touchEffectPool.Contains(touchEffect))
+            return;
+
+        _touchEffectPool.Enqueue(touchEffect);
+        touchEffect.gameObject.SetActive(false);
+        touchEffect.transform.SetParent(_touchEffectParent.transform);
     }
 }

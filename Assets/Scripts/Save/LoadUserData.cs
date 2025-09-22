@@ -18,19 +18,24 @@ public class LoadUserData
     public long Money;
     public long TotalAddMoney;
     public long DailyAddMoney;
+    public long WeeklyAddMoney;
     public int Score;
     public int TotalCookCount;
     public int DailyCookCount;
+    public int WeeklyCookCount;
     public int TotalCumulativeCustomerCount;
     public int DailyCumulativeCustomerCount;
+    public int WeeklyCumulativeCustomerCount;
     public int PromotionCount;
     public int TotalAdvertisingViewCount;
     public int DailyAdvertisingViewCount;
     public int TotalCleanCount;
     public int DailyCleanCount;
+    public int WeeklyCleanCount;
     public int TotalVisitSpecialCustomerCount;
     public int TotalExterminationGatecrasherCustomer1Count;
     public int TotalExterminationGatecrasherCustomer2Count;
+    public int WeeklyExterminationGatecrasherCustomerCount;
     public int TotalUseGachaMachineCount;
 
     public string UserId;
@@ -39,22 +44,31 @@ public class LoadUserData
     public string LastAttendanceTime;
     public int TotalAttendanceDays;
 
+
+
     public Dictionary<string, int> GiveRecipeLevelDic = new Dictionary<string, int>();
     public Dictionary<string, int> RecipeCookCountDic = new Dictionary<string, int>();
 
     public Dictionary<string, int> GiveGachaItemCountDic = new Dictionary<string, int>();
     public Dictionary<string, int> GiveGachaItemLevelDic = new Dictionary<string, int>();
 
+    public HashSet<string> GiveStaffSkinSet = new HashSet<string>();
     public HashSet<string> DoneMainChallengeSet = new HashSet<string>();
     public HashSet<string> ClearMainChallengeSet = new HashSet<string>();
     public HashSet<string> DoneAllTimeChallengeSet = new HashSet<string>();
     public HashSet<string> ClearAllTimeChallengeSet = new HashSet<string>();
     public HashSet<string> DoneDailyChallengeSet = new HashSet<string>();
     public HashSet<string> ClearDailyChallengeSet = new HashSet<string>();
+    public HashSet<string> DoneWeeklyChallengeSet = new HashSet<string>();
+    public HashSet<string> ClearWeeklyChallengeSet = new HashSet<string>();
 
     public Dictionary<string, SaveCustomerData> EnabledCustomerDataDic = new Dictionary<string, SaveCustomerData>();
+    public HashSet<string> GiveCustomerSkinSet = new HashSet<string>();
 
     public HashSet<string> NotificationMessageSet = new HashSet<string>();
+    public HashSet<string> ClearNotificationMessageSet = new HashSet<string>();
+
+    public Dictionary<string, SaveTimeData> TimeDataDic = new Dictionary<string, SaveTimeData>();
 
     public LoadUserData(JsonData json)
     {
@@ -98,6 +112,12 @@ public class LoadUserData
             TotalUseGachaMachineCount = GetInt("TotalUseGachaMachineCount");
             TotalAttendanceDays = GetInt("TotalAttendanceDays");
 
+            WeeklyAddMoney = GetLong("WeeklyAddMoney");
+            WeeklyCookCount = GetInt("WeeklyCookCount");
+            WeeklyCumulativeCustomerCount = GetInt("WeeklyCumulativeCustomerCount");
+            WeeklyCleanCount = GetInt("WeeklyCleanCount");
+            WeeklyExterminationGatecrasherCustomerCount = GetInt("WeeklyExterminationGatecrasherCustomerCount");
+
             UserId = GetString("UserId");
             FirstAccessTime = GetString("FirstAccessTime");
             LastAccessTime = GetString("LastAccessTime");
@@ -107,16 +127,29 @@ public class LoadUserData
             LoadDictionaryData(data, "RecipeCookCountList", RecipeCookCountDic, "Id", "Count");
             LoadDictionaryData(data, "GiveGachaItemCountList", GiveGachaItemCountDic, "Id", "Count");
             LoadDictionaryData(data, "GiveGachaItemLevelList", GiveGachaItemLevelDic, "Id", "Level");
+            LoadDictionaryData(data, "TimeDataList", TimeDataDic, "Id", "Time");
 
             LoadCustomerDataList(data);
+            LoadStringSet(data, "GiveCustomerSkinList", GiveCustomerSkinSet);
 
+            LoadTimeData(data);
+            foreach (var item in TimeDataDic)
+            {
+                DebugLog.Log($"TimeDataDic: {item.Key} - {item.Value.Time}");
+            }
+
+            LoadStringSet(data, "GiveStaffSkinList", GiveStaffSkinSet);
             LoadStringSet(data, "DoneMainChallengeList", DoneMainChallengeSet);
             LoadStringSet(data, "ClearMainChallengeList", ClearMainChallengeSet);
             LoadStringSet(data, "DoneAllTimeChallengeList", DoneAllTimeChallengeSet);
             LoadStringSet(data, "ClearAllTimeChallengeList", ClearAllTimeChallengeSet);
             LoadStringSet(data, "DoneDailyChallengeList", DoneDailyChallengeSet);
             LoadStringSet(data, "ClearDailyChallengeList", ClearDailyChallengeSet);
+            LoadStringSet(data, "DoneWeeklyChallengeList", DoneWeeklyChallengeSet);
+            LoadStringSet(data, "ClearWeeklyChallengeList", ClearWeeklyChallengeSet);
+
             LoadStringSet(data, "NotificationMessageList", NotificationMessageSet);
+            LoadStringSet(data, "ClearNotificationMessageList", ClearNotificationMessageSet);
         }
         catch (Exception e)
         {
@@ -182,15 +215,51 @@ public class LoadUserData
                     if (item.ContainsKey("Id") && item.ContainsKey("VisitCount"))
                     {
                         string id = item["Id"].ToString();
+                        string skinId = item.ContainsKey("SkinId") ? item["SkinId"].ToString() : string.Empty;
                         int visitCount;
                         if (int.TryParse(item["VisitCount"].ToString(), out visitCount))
-                            EnabledCustomerDataDic.Add(id, new SaveCustomerData(id, visitCount));
+                            EnabledCustomerDataDic.Add(id, new SaveCustomerData(id, skinId, visitCount));
                     }
                 }
                 catch (Exception) { /* 오류 항목 스킵 */ }
             }
         }
     }
+
+    // 타이머 데이터 목록 로드 (특별한 구조를 가진 데이터)
+    private void LoadTimeData(JsonData data)
+    {
+        TimeDataDic.Clear();
+        if (data.ContainsKey("TimeDataList") && data["TimeDataList"].IsArray)
+        {
+            foreach (JsonData item in data["TimeDataList"])
+            {
+                try
+                {
+                    if (item.ContainsKey("Id") && item.ContainsKey("Time"))
+                    {
+                        string id = item["Id"].ToString();
+                        int time;
+                        if (int.TryParse(item["Time"].ToString(), out time))
+                        {
+                            TimeDataDic.Add(id, new SaveTimeData(id, time));
+                            DebugLog.Log($"타이머 데이터 로드: {id} - {time}초");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    DebugLog.LogError($"타이머 데이터 로드 오류: {ex.Message}");
+                }
+            }
+        }
+        else
+        {
+            DebugLog.Log("TimeDataList 없음 또는 배열 형식이 아님");
+        }
+    }
+
+
 }
 
 public class SaveLevelData

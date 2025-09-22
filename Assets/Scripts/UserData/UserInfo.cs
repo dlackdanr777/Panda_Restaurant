@@ -22,6 +22,9 @@ public static class UserInfo
     public static event Action<ERestaurantFloorType, EquipStaffType> OnChangeStaffHandler;
     public static event Action OnGiveStaffHandler;
     public static event Action OnUpgradeStaffHandler;
+    public static event Action OnGiveStaffSkinHandler;
+    public static event Action OnChangeStaffSkinHandler;
+
 
     public static event Action OnGiveRecipeHandler;
     public static event Action OnUpgradeRecipeHandler;
@@ -49,6 +52,8 @@ public static class UserInfo
     public static event Action OnVisitedCustomerHandler;
     public static event Action OnVisitSpecialCustomerHandler;
     public static event Action OnExterminationGatecrasherCustomerHandler;
+    public static event Action OnGiveCustomerSkinHandler;
+    public static event Action OnChangeCustomerSkinHandler;
 
     public static event Action<string> OnAddNotificationHandler;
     public static event Action<string> OnRemoveNotificationHandler;
@@ -95,8 +100,11 @@ public static class UserInfo
     private static long _dailyAddMoney;
     public static long DailyAddMoney => _dailyAddMoney;
 
+    private static long _weeklyAddMoney;
+    public static long WeeklyAddMoney => _weeklyAddMoney;
+
     private static int _score;
-    public static int Score => GameManager.Instance.AddSocre;
+    public static int Score => GameManager.Instance.AddScore + _score;
 
     private static int _totalCookCount;
     public static int TotalCookCount => _totalCookCount;
@@ -104,11 +112,16 @@ public static class UserInfo
     private static int _dailyCookCount;
     public static int DailyCookCount => _dailyCookCount;
 
+    private static int _weeklyCookCount;
+    public static int WeeklyCookCount => _weeklyCookCount;
+
     private static int _totalCumulativeCustomerCount;
     public static int TotalCumulativeCustomerCount => _totalCumulativeCustomerCount;
 
     private static int _dailyCumulativeCustomerCount;
     public static int DailyCumulativeCustomerCount => _dailyCumulativeCustomerCount;
+    private static int _weeklyCumulativeCustomerCount;
+    public static int WeeklyCumulativeCustomerCount => _weeklyCumulativeCustomerCount;
 
     private static int _promotionCount;
     public static int PromotionCount => _promotionCount;
@@ -125,6 +138,9 @@ public static class UserInfo
     private static int _dailyCleanCount;
     public static int DailyCleanCount => _dailyCleanCount;
 
+    private static int _weeklyCleanCount;
+    public static int WeeklyCleanCount => _weeklyCleanCount;
+
     private static int _totalAttendanceDays = 0;
     public static int TotalAttendanceDays => _totalAttendanceDays;
 
@@ -137,9 +153,14 @@ public static class UserInfo
     private static int _totalExterminationGatecrasherCustomer2Count;
     public static int TotalExterminationGatecrasherCustomer2Count => _totalExterminationGatecrasherCustomer2Count;
 
+    private static int _weeklyExterminationGatecrasherCustomerCount;
+    public static int WeeklyExterminationGatecrasherCustomerCount => _weeklyExterminationGatecrasherCustomerCount;
+
     private static int _totalUseGachaMachineCount;
     public static int TotalUseGachaMachineCount => _totalUseGachaMachineCount;
 
+
+    private static HashSet<string> _giveStaffSkinSet = new HashSet<string>();
 
     private static Dictionary<string, int> _giveRecipeLevelDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _recipeCookCountDic = new Dictionary<string, int>();
@@ -147,17 +168,21 @@ public static class UserInfo
     private static Dictionary<string, int> _giveGachaItemCountDic = new Dictionary<string, int>();
     private static Dictionary<string, int> _giveGachaItemLevelDic = new Dictionary<string, int>();
 
+    private static Dictionary<string, SaveCustomerData> _enabledCustomerDic = new Dictionary<string, SaveCustomerData>();
+    private static HashSet<string> _giveCustomerSkinSet = new HashSet<string>();
+
     private static HashSet<string> _doneMainChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearMainChallengeSet = new HashSet<string>();
     private static HashSet<string> _doneAllTimeChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearAllTimeChallengeSet = new HashSet<string>();
+    public static HashSet<string> ClearAllTimeChallengeSet => _clearAllTimeChallengeSet;
     private static HashSet<string> _doneDailyChallengeSet = new HashSet<string>();
     private static HashSet<string> _clearDailyChallengeSet = new HashSet<string>();
-
-    private static Dictionary<string, SaveCustomerData> _enabledCustomerDic = new Dictionary<string, SaveCustomerData>();
+    private static HashSet<string> _doneWeeklyChallengeSet = new HashSet<string>();
+    private static HashSet<string> _clearWeeklyChallengeSet = new HashSet<string>();
 
     private static HashSet<string> _notificationMessageSet = new HashSet<string>(); //알림이 필요한 Id값을 모아두는 해쉬셋
-
+    private static HashSet<string> _clearNotificationMessageSet = new HashSet<string>(); //알림이 완료된 Id값을 모아두는 해쉬셋
 
 
     //################################환경 설정 관련 변수################################
@@ -212,6 +237,8 @@ public static class UserInfo
             _stageInfos[i].OnChangeSinkBowlHandler += OnAddSinkBowlEvent;
             _stageInfos[i].OnChangeMaxSinkBowlHandler += OnChangeMaxBowlEvent;
             _stageInfos[i].OnChangeSatisfactionHandler += OnChangeSatisfactionEvent;
+
+            _stageInfos[i].OnChangeStaffSkinHandler += OnChangeStaffSkinEvent;
         }
     }
 
@@ -279,6 +306,11 @@ public static class UserInfo
     {
         OnChangeSatisfactionHandler?.Invoke();
     }
+    
+    private static void OnChangeStaffSkinEvent()
+    {
+        OnChangeStaffSkinHandler?.Invoke();
+    }
 
 
     #endregion
@@ -287,10 +319,15 @@ public static class UserInfo
     {
         Param param = new Param();
 
-        if(CheckLastAccessTime())
+        if (CheckLastAccessTime())
         {
             UpdateLastAccessTime();
             ResetDailyChallenges();
+        }
+
+        if (CheckLastWeeklyAccessTime())
+        {
+            ResetWeeklyChallenges();
         }
 
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
@@ -319,6 +356,13 @@ public static class UserInfo
         param.Add("TotalExterminationGatecrasherCustomer1Count", _totalExterminationGatecrasherCustomer1Count);
         param.Add("TotalExterminationGatecrasherCustomer2Count", _totalExterminationGatecrasherCustomer2Count);
         param.Add("TotalUseGachaMachineCount", _totalUseGachaMachineCount);
+
+        param.Add("WeeklyAddMoney", _weeklyAddMoney);
+        param.Add("WeeklyCookCount", _weeklyCookCount);
+        param.Add("WeeklyCumulativeCustomerCount", _weeklyCumulativeCustomerCount);
+        param.Add("WeeklyCleanCount", _weeklyCleanCount);
+        param.Add("WeeklyExterminationGatecrasherCustomerCount", _weeklyExterminationGatecrasherCustomerCount);
+
 
         param.Add("UserId", _userId);
         param.Add("FirstAccessTime", _firstAccessTime);
@@ -355,7 +399,10 @@ public static class UserInfo
         param.Add("GiveGachaItemLevelList", giveGachaItemLevelList);
 
         List<SaveCustomerData> _saveCustomerDataList = _enabledCustomerDic.Values.ToList();
+
+        param.Add("GiveStaffSkinList", _giveStaffSkinSet.ToList());
         param.Add("EnabledCustomerDataList", _saveCustomerDataList);
+        param.Add("GiveCustomerSkinList", _giveCustomerSkinSet.ToList());
 
         param.Add("DoneMainChallengeList", _doneMainChallengeSet.ToList());
         param.Add("ClearMainChallengeList", _clearMainChallengeSet.ToList());
@@ -363,7 +410,21 @@ public static class UserInfo
         param.Add("ClearAllTimeChallengeList", _clearAllTimeChallengeSet.ToList());
         param.Add("DoneDailyChallengeList", _doneDailyChallengeSet.ToList());
         param.Add("ClearDailyChallengeList", _clearDailyChallengeSet.ToList());
+        param.Add("DoneWeeklyChallengeList", _doneWeeklyChallengeSet.ToList());
+        param.Add("ClearWeeklyChallengeList", _clearWeeklyChallengeSet.ToList());
+
+
         param.Add("NotificationMessageList", _notificationMessageSet.ToList());
+        param.Add("ClearNotificationMessageList", _clearNotificationMessageSet.ToList());
+
+
+        Dictionary<string, int> timeDic = TimeManager.Instance.GetTimeDic();
+        List<SaveTimeData> timeDataList = new List<SaveTimeData>();
+        foreach (var data in timeDic)
+        {
+            timeDataList.Add(new SaveTimeData(data.Key, data.Value));
+        }
+        param.Add("TimeDataList", timeDataList);
 
         return param;
     }
@@ -470,21 +531,21 @@ public static class UserInfo
     {
         if(!bro.IsSuccess())
         {
-            Debug.LogError("로드 데이터를 파싱하는 과정에서 오류가 발생했습니다.");
+            Debug.LogError("bro Not Success");
             return;
         }
 
         JsonData json = bro.FlattenRows();
         if (json.Count <= 0)
         {
-            Debug.LogError("저장된 데이터가 없습니다.");
+            Debug.LogError("No Server Data");
             return;
         }
 
         LoadUserData loadData = new LoadUserData(json);
         if (loadData == null)
         {
-            Debug.LogError("로드 데이터를 파싱하는 과정에서 오류가 발생했습니다.");
+            Debug.LogError("Parsing Error");
             return;
         }
 
@@ -513,11 +574,20 @@ public static class UserInfo
         _totalExterminationGatecrasherCustomer1Count = loadData.TotalExterminationGatecrasherCustomer1Count;
         _totalExterminationGatecrasherCustomer2Count = loadData.TotalExterminationGatecrasherCustomer2Count;
 
+        _weeklyAddMoney = loadData.WeeklyAddMoney;
+        _weeklyCookCount = loadData.WeeklyCookCount;
+        _weeklyCumulativeCustomerCount = loadData.WeeklyCumulativeCustomerCount;
+        _weeklyCleanCount = loadData.WeeklyCleanCount;
+        _weeklyExterminationGatecrasherCustomerCount = loadData.WeeklyExterminationGatecrasherCustomerCount;
+
         _userId = string.IsNullOrWhiteSpace(loadData.UserId) || !loadData.UserId.StartsWith("User") ? "User" + UnityEngine.Random.Range(10000000, 20000000) : loadData.UserId;
         _firstAccessTime = loadData.FirstAccessTime;
         _lastAccessTime = loadData.LastAccessTime;
         _lastAttendanceTime = loadData.LastAttendanceTime;
         _totalAttendanceDays = loadData.TotalAttendanceDays;
+
+        _giveCustomerSkinSet = loadData.GiveCustomerSkinSet;
+        _giveStaffSkinSet = loadData.GiveStaffSkinSet;
  
         _giveRecipeLevelDic = loadData.GiveRecipeLevelDic;
         _recipeCookCountDic = loadData.RecipeCookCountDic;
@@ -531,15 +601,57 @@ public static class UserInfo
         _clearAllTimeChallengeSet = loadData.ClearAllTimeChallengeSet;
         _doneDailyChallengeSet = loadData.DoneDailyChallengeSet;
         _clearDailyChallengeSet = loadData.ClearDailyChallengeSet;
+        _doneWeeklyChallengeSet = loadData.DoneWeeklyChallengeSet;
+        _clearWeeklyChallengeSet = loadData.ClearWeeklyChallengeSet;
 
         _enabledCustomerDic = loadData.EnabledCustomerDataDic;
 
         _notificationMessageSet = loadData.NotificationMessageSet;
+        _clearNotificationMessageSet = loadData.ClearNotificationMessageSet;
 
         if (CheckNoAttendance())
         {
             UpdateLastAccessTime();
             ResetDailyChallenges();
+        }
+
+        if (CheckLastWeeklyAccessTime())
+        {
+            ResetWeeklyChallenges();
+        }
+
+        Dictionary<string, SaveTimeData> timeDic = loadData.TimeDataDic;
+        TimeManager.Instance.ResetTime();
+
+        // 마지막 접속 시간과 현재 서버 시간의 차이(분) 계산
+        int elapsedSeconds = 0;
+        DateTime currentServerTime = GetKoreanTime();
+
+        if (!string.IsNullOrEmpty(_lastAccessTime) && DateTime.TryParse(_lastAccessTime, out DateTime lastAccessTime))
+        {
+            // 시간 차이 계산 (분 단위)
+            TimeSpan timeDifference = currentServerTime - lastAccessTime;
+            elapsedSeconds = Mathf.Clamp((int)timeDifference.TotalSeconds, 0, int.MaxValue);
+
+            DebugLog.Log($"마지막 접속 후 {elapsedSeconds}초가 경과했습니다.");
+        }
+
+        // 타이머 데이터 처리
+        foreach (var data in timeDic)
+        {
+            // 경과 시간만큼 타이머 시간 감소
+            int remainingTime = data.Value.Time - elapsedSeconds;
+
+            // 남은 시간이 0보다 큰 경우에만 타이머 추가
+            if (remainingTime > 0)
+            {
+                TimeManager.Instance.SetTime(data.Key, remainingTime);
+                DebugLog.Log($"타이머 {data.Key}: {data.Value.Time}초 -> {remainingTime}초으로 조정됨");
+            }
+            else
+            {
+                DebugLog.Log($"타이머 {data.Key}: 시간 만료로 추가되지 않음");
+            }
         }
 
         OnChangeMoneyHandler?.Invoke();
@@ -575,11 +687,24 @@ public static class UserInfo
         if (string.IsNullOrWhiteSpace(_lastAttendanceTime))
             return true;
 
-        DateTime currentServerTime = BackendManager.Instance.ServerTime;
-        DateTime lastAttendanceTime = DateTime.Parse(_lastAttendanceTime);
-        TimeSpan timeDifference = currentServerTime - lastAttendanceTime;
-
-        return 1 <= timeDifference.TotalDays;
+        try
+        {
+            // 서버 시간을 한국 시간으로 변환
+            DateTime currentServerTime = GetKoreanTime();
+            
+            // 저장된 시간은 이미 한국 시간이므로 그대로 사용
+            if (DateTime.TryParse(_lastAttendanceTime, out DateTime lastAttendanceTime))
+            {
+                TimeSpan timeDifference = currentServerTime - lastAttendanceTime;
+                return 1 <= timeDifference.TotalDays;
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogError($"출석 체크 중 오류 발생: {ex.Message}");
+            return true;
+        }
     }
 
     public static bool CheckLastAccessTime()
@@ -587,32 +712,93 @@ public static class UserInfo
         if (string.IsNullOrWhiteSpace(_lastAccessTime))
             return true;
 
-        // 서버 시간을 가져옴 (UTC 시간일 가능성 높음)
-        DateTime currentServerTime = BackendManager.Instance.ServerTime;
-
-        // 한국 시간대 정보 생성 (UTC+9)
-        TimeZoneInfo koreaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Korea Standard Time");
-
-        // 서버 시간을 한국 시간으로 변환
-        DateTime currentKoreaTime = TimeZoneInfo.ConvertTimeFromUtc(currentServerTime.ToUniversalTime(), koreaTimeZone);
-
-        // 마지막 접속 시간도 한국 시간으로 변환
-        DateTime lastAccessTime;
-        if (DateTime.TryParse(_lastAccessTime, out lastAccessTime))
+        try
         {
-            DateTime lastAccessKoreaTime = TimeZoneInfo.ConvertTimeFromUtc(lastAccessTime.ToUniversalTime(), koreaTimeZone);
+            // 현재 한국 시간 가져오기
+            DateTime currentKoreaTime = GetKoreanTime();
 
-            // 날짜만 비교 (시간 무시)
-            bool isDifferentDay = currentKoreaTime.Date > lastAccessKoreaTime.Date;
-
-            DebugLog.Log($"현재 한국 시간: {currentKoreaTime}, 마지막 접속 한국 시간: {lastAccessKoreaTime}, 날짜 차이: {isDifferentDay}");
-
-            return isDifferentDay;
+            // 저장된 마지막 접속 시간은 이미 한국 시간이므로 그대로 파싱
+            if (DateTime.TryParse(_lastAccessTime, out DateTime lastAccessTime))
+            {
+                // 게임 내 하루 기준: 오후 12시(정오)를 기준으로 날짜 계산
+                DateTime currentGameDay = GetGameDay(currentKoreaTime);
+                DateTime lastGameDay = GetGameDay(lastAccessTime);
+                
+                bool isDifferentDay = currentGameDay > lastGameDay;
+                DebugLog.Log($"현재 시간: {currentKoreaTime}, 마지막 접속 시간: {lastAccessTime}");
+                DebugLog.Log($"현재 게임 날짜: {currentGameDay}, 마지막 게임 날짜: {lastGameDay}, 날짜 차이: {isDifferentDay}");
+                return isDifferentDay;
+            }
+            return true;
         }
-
-        return true;  // 파싱 실패 시 기본값
+        catch (Exception ex)
+        {
+            DebugLog.LogError($"접속 시간 확인 중 오류 발생: {ex.Message}");
+            return true;  // 오류 발생 시 기본값으로 true 반환
+        }
     }
 
+    public static bool CheckLastWeeklyAccessTime()
+    {
+        if (string.IsNullOrWhiteSpace(_lastAccessTime))
+            return true;
+
+        try
+        {
+            // 현재 한국 시간 가져오기
+            DateTime currentKoreaTime = GetKoreanTime();
+
+            // 저장된 마지막 접속 시간은 이미 한국 시간이므로 그대로 파싱
+            if (DateTime.TryParse(_lastAccessTime, out DateTime lastAccessTime))
+            {
+                // 게임 내 주간 기준: 매주 수요일 오후 12시를 기준으로 주차 계산
+                DateTime currentGameWeek = GetGameWeek(currentKoreaTime);
+                DateTime lastGameWeek = GetGameWeek(lastAccessTime);
+                
+                bool isDifferentWeek = currentGameWeek > lastGameWeek;
+                DebugLog.Log($"현재 시간: {currentKoreaTime}, 마지막 접속 시간: {lastAccessTime}");
+                DebugLog.Log($"현재 게임 주차: {currentGameWeek}, 마지막 게임 주차: {lastGameWeek}, 주차 차이: {isDifferentWeek}");
+                return isDifferentWeek;
+            }
+            return true;
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogError($"주간 접속 시간 확인 중 오류 발생: {ex.Message}");
+            return true;  // 오류 발생 시 기본값으로 true 반환
+        }
+    }
+
+    // 오후 12시를 기준으로 게임 내 날짜를 계산하는 메서드
+    private static DateTime GetGameDay(DateTime dateTime)
+    {
+        // 오후 12시(12:00) 이전이면 전날로 계산
+        if (dateTime.Hour < 12)
+        {
+            return dateTime.Date.AddDays(-1);
+        }
+        // 오후 12시 이후면 당일로 계산
+        else
+        {
+            return dateTime.Date;
+        }
+    }
+
+    // 매주 수요일 오후 12시를 기준으로 게임 내 주차를 계산하는 메서드
+    private static DateTime GetGameWeek(DateTime dateTime)
+    {
+        // 먼저 게임 날짜를 구함 (오후 12시 기준)
+        DateTime gameDay = GetGameDay(dateTime);
+        
+        // 수요일을 기준으로 주차 계산
+        // DayOfWeek.Wednesday = 3
+        int daysFromWednesday = ((int)gameDay.DayOfWeek - (int)DayOfWeek.Wednesday + 7) % 7;
+        
+        // 가장 최근 수요일 (또는 오늘이 수요일이면 오늘)을 구함
+        DateTime weekStart = gameDay.AddDays(-daysFromWednesday);
+        
+        return weekStart;
+    }
 
     public static void UpdateAttendanceData()
     {
@@ -638,13 +824,13 @@ public static class UserInfo
         _currentStage = stage;
     }
 
-    public static int GetSatisfaction(EStage stage)
+    public static float GetSatisfaction(EStage stage)
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].Satisfaction;
     }
 
-    public static void AddSatisfaction(EStage stage, int value)
+    public static void AddSatisfaction(EStage stage, float value)
     {
         int stageIndex = (int)stage;
         _stageInfos[stageIndex].AddSatisfaction(value);
@@ -675,8 +861,17 @@ public static class UserInfo
         if (value < 0) value = 0;
         _totalAddMoney += value;
         _dailyAddMoney += value;
+        _weeklyAddMoney += value;
         DataBindMoney();
         OnChangeMoneyHandler?.Invoke();
+    }
+
+    public static void AddScore(int score)
+    {
+        if(score <= 0) return;
+        _score += score;
+        GameManager.Instance.OnChangeScoreEvent();
+        OnChangeScoreHandler?.Invoke();
     }
 
 
@@ -717,6 +912,17 @@ public static class UserInfo
     {
         _totalCumulativeCustomerCount += 1;
         _dailyCumulativeCustomerCount += 1;
+        _weeklyCumulativeCustomerCount += 1;
+        OnAddCustomerCountHandler?.Invoke();
+    }
+
+     public static void AddCustomerCount(int count)
+    {
+        if (count <= 0) return;
+
+        _totalCumulativeCustomerCount += count;
+        _dailyCumulativeCustomerCount += count;
+        _weeklyCumulativeCustomerCount += count;
         OnAddCustomerCountHandler?.Invoke();
     }
 
@@ -738,6 +944,7 @@ public static class UserInfo
     {
         _totalCleanCount += 1;
         _dailyCleanCount += 1;
+        _weeklyCleanCount += 1;
         OnAddCleanCountHandler?.Invoke();
     }
 
@@ -749,6 +956,7 @@ public static class UserInfo
 
     public static void AddExterminationGatecrasherCustomerCount(CustomerData data)
     {
+
         if (data is GatecrasherCustomer1Data)
             _totalExterminationGatecrasherCustomer1Count += 1;
 
@@ -757,7 +965,7 @@ public static class UserInfo
 
         else
             return;
-
+        _weeklyExterminationGatecrasherCustomerCount += 1;
         OnExterminationGatecrasherCustomerHandler?.Invoke();
     }
 
@@ -792,16 +1000,47 @@ public static class UserInfo
 
     public static void UpdateLastAccessTime()
     {
-        DateTime serverTime = BackendManager.Instance.ServerTime;
+        try
+        {
+            // 현재 한국 시간 가져와서 저장
+            DateTime koreaTime = GetKoreanTime();
+            _lastAccessTime = koreaTime.ToString();
+            DebugLog.Log($"마지막 접속 시간 업데이트: {_lastAccessTime}");
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogError($"접속 시간 업데이트 중 오류 발생: {ex.Message}");
+        }
+    }
 
-        // 한국 시간대 정보 생성 (UTC+9)
-        TimeZoneInfo koreaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Korea Standard Time");
-
-        // 서버 시간을 한국 시간으로 변환
-        DateTime koreaTime = TimeZoneInfo.ConvertTimeFromUtc(serverTime.ToUniversalTime(), koreaTimeZone);
-
-        _lastAccessTime = koreaTime.ToString();
-        DebugLog.Log($"마지막 접속 시간 업데이트: {_lastAccessTime} (한국 시간)");
+    // 현재 한국 시간(UTC+9)을 반환하는 메서드
+    private static DateTime GetKoreanTime()
+    {
+        try
+        {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // 안드로이드에서는 서버 시간에 9시간을 더한 값 사용
+            return BackendManager.Instance.ServerTime.ToUniversalTime().AddHours(9);
+#else
+            try
+            {
+                // 다른 플랫폼에서는 시스템 타임존 사용 시도
+                TimeZoneInfo koreaTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Korea Standard Time");
+                return TimeZoneInfo.ConvertTimeFromUtc(BackendManager.Instance.ServerTime.ToUniversalTime(), koreaTimeZone);
+            }
+            catch
+            {
+                // 타임존 정보를 찾을 수 없는 경우 UTC+9 사용
+                return BackendManager.Instance.ServerTime.ToUniversalTime().AddHours(9);
+            }
+#endif
+        }
+        catch (Exception ex)
+        {
+            // 모든 방법 실패 시 로컬 시간 + 9시간 사용
+            DebugLog.LogError($"한국 시간 변환 오류: {ex.Message}, 로컬 시간으로 대체합니다.");
+            return DateTime.UtcNow.AddHours(9);
+        }
     }
 
     public static bool IsScoreValid(ShopData data)
@@ -898,6 +1137,12 @@ public static class UserInfo
         return _stageInfos[stageIndex].IsEquipStaff(floor, data);
     }
 
+        public static bool IsEquipStaff(EStage stage, ERestaurantFloorType floor, EquipStaffType type)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].IsEquipStaff(floor, type);
+    }
+
 
     public static bool IsEquipStaff(EStage stage, StaffData data)
     {
@@ -970,6 +1215,12 @@ public static class UserInfo
         return null;
     }
 
+    public static List<StaffData> GetGiveStaffDataList(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetGiveStaffDataList();
+    }
+
 
     public static int GetStaffLevel(EStage stage, StaffData data)
     {
@@ -996,6 +1247,67 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].UpgradeStaff(id);
+    }
+
+    
+    public static void GiveStaffSkin(StaffSkinData data)
+    {
+        if (data == null)
+        {
+            DebugLog.LogError("고객 스킨 데이터가 null입니다.");
+            return;
+        }
+
+        if (_giveStaffSkinSet.Contains(data.Id))
+        {
+            DebugLog.Log("이미 가지고 있습니다: " + data.Id);
+            return;
+        }
+
+        _giveStaffSkinSet.Add(data.Id);
+        OnGiveStaffSkinHandler?.Invoke();
+    }
+
+    public static void GiveStaffSkin(string skinId)
+    {
+        StaffSkinData skinData = SkinDataManager.Instance.GetStaffSkinData(skinId);
+        if (skinData == null)
+        {
+            DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
+            return;
+        }
+
+        GiveStaffSkin(skinData);
+    }
+
+    public static void SetStaffSkin(EStage stage, StaffData staff, StaffSkinData skinData)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SetStaffSkin(staff, skinData);
+    }
+
+
+    public static void SetStaffSkin(EStage stage, StaffData staff, string skinId)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SetStaffSkin(staff, skinId);
+    }
+
+    public static StaffSkinData GetEquipStaffSkin(EStage stage, StaffData staff)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetEquipStaffSkin(staff);
+    }
+
+    public static StaffSkinData GetEquipStaffSkin(EStage stage, string staffId)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetEquipStaffSkin(staffId);
+    }
+
+    public static bool IsGiveStaffSkin(string skinId)
+    {
+        return _giveStaffSkinSet.Contains(skinId);
     }
 
 
@@ -1033,6 +1345,12 @@ public static class UserInfo
         return _stageInfos[stageIndex].GetGiveFurnitureCount();
     }
 
+    public static List<FurnitureData> GetGiveFurnitureDataList(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetGiveFurnitureDataList();
+    }
+
 
     public static bool IsGiveFurniture(EStage stage, string id)
     {
@@ -1051,13 +1369,19 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].IsEquipFurniture(floor, data);
-
     }
 
     public static bool IsEquipFurniture(EStage stage, ERestaurantFloorType floor, FurnitureType type)
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].IsEquipFurniture(floor, type);
+    }
+
+        public static bool IsEquipFurniture(EStage stage, FurnitureData data)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].IsEquipFurniture(data);
+
     }
 
 
@@ -1123,6 +1447,12 @@ public static class UserInfo
         return _stageInfos[stageIndex].GetGiveKitchenUtensilCount();
     }
 
+    public static List<KitchenUtensilData> GetGiveKitchenUtensilDataList(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].GetGiveKitchenUtensilDataList();
+    }
+
 
     public static bool IsGiveKitchenUtensil(EStage stage, string id)
     {
@@ -1142,6 +1472,19 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].IsEquipKitchenUtensil(floor, data);
+    }
+
+        public static bool IsEquipKitchenUtensil(EStage stage, ERestaurantFloorType floor, KitchenUtensilType type)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].IsEquipKitchenUtensil(floor, type);
+    }
+
+    
+    public static bool IsEquipKitchenUtensil(EStage stage, KitchenUtensilData data)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].IsEquipKitchenUtensil(data);
     }
 
     public static KitchenUtensilData GetEquipKitchenUtensil(EStage stage, ERestaurantFloorType floor, KitchenUtensilType type)
@@ -1214,6 +1557,18 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].GetCollectFurnitureSetDataList();
+    }
+
+    public static void CheckFurnitureFoodType(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].CheckKitchenUtensilFoodType();
+    }
+
+    public static void CheckKitchenUtensilFoodType(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].CheckFurnitureFoodType();
     }
 
     #endregion
@@ -1315,6 +1670,7 @@ public static class UserInfo
             _recipeCookCountDic[id] += 1;
             _dailyCookCount += 1;
             _totalCookCount += 1;
+            _weeklyCookCount += 1;
             OnAddCookCountHandler?.Invoke();
         }
         else
@@ -1322,6 +1678,7 @@ public static class UserInfo
             _recipeCookCountDic.Add(id, 1);
             _dailyCookCount += 1;
             _totalCookCount += 1;
+            _weeklyCookCount += 1;
             OnAddCookCountHandler?.Invoke();
         }
     }
@@ -1431,6 +1788,41 @@ public static class UserInfo
         return 0;
     }
 
+    public static List<GachaItemData> GetGiveGachaItemDataList(UpgradeType upgradeType)
+    {
+        List<GachaItemData> dataList = new List<GachaItemData>();
+        foreach (var item in _giveGachaItemCountDic)
+        {
+            GachaItemData data = ItemManager.Instance.GetGachaItemData(item.Key);
+            if (data != null && data.UpgradeType == upgradeType)
+                dataList.Add(data);
+        }
+        return dataList;
+    }
+
+    public static float GetGiveGachaItemValue(GachaItemData data)
+    {
+        if (_giveGachaItemCountDic.TryGetValue(data.Id, out int count))
+        {
+            float addValue = data.DefaultValue + ((count - 1) * data.UpgradeValue);
+            return addValue;
+        }
+
+        return 0f;
+    }
+
+    public static float GetGiveGachaItemValue(string id)
+    {
+        GachaItemData data = ItemManager.Instance.GetGachaItemData(id);
+        if (data == null)
+        {
+            DebugLog.LogError("해당 아이템이 존재하지 않습니다: " + id);
+            return 0f;
+        }
+
+        return GetGiveGachaItemValue(data);
+    }
+
 
     public static int GetGachaItemLevel(string id)
     {
@@ -1443,62 +1835,31 @@ public static class UserInfo
 
     public static bool GiveGachaItem(GachaItemData data)
     {
-        if (!ItemManager.Instance.IsGachaItem(data.Id))
+        if(data == null)
         {
-            DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + data.Id);
+            DebugLog.LogError("가챠 아이템 데이터가 null입니다.");
             return false;
         }
+
+        if (!ItemManager.Instance.IsGachaItem(data.Id))
+            {
+                DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + data.Id);
+                return false;
+            }
 
         if (_giveGachaItemCountDic.ContainsKey(data.Id))
         {
-            if (CanAddMoreItems(data))
-            {
-                _giveGachaItemCountDic[data.Id]++;
-                OnGiveGachaItemHandler?.Invoke();
-                return true;
-            }
-
-            DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
-            return false;
+            _giveGachaItemCountDic[data.Id]++;
+            OnGiveGachaItemHandler?.Invoke();
+            return true;
         }
 
-        _giveGachaItemCountDic.Add(data.Id, 0);
+        _giveGachaItemCountDic.Add(data.Id, 1);
         _giveGachaItemLevelDic.Add(data.Id, 1);
         AddNotification(data.Id);
         OnGiveGachaItemHandler?.Invoke();
+        DebugLog.Log("가챠 아이템 추가: " + data.Id + "  획득 갯수: " + _giveGachaItemCountDic[data.Id]);
         return true;
-    }
-
-
-    public static void GiveGachaItem(List<GachaItemData> dataList)
-    {
-        for(int i = 0, cnt =  dataList.Count; i < cnt; ++i)
-        {
-            if (!ItemManager.Instance.IsGachaItem(dataList[i].Id))
-            {
-                DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + dataList[i].Id);
-                continue;
-            }
-
-            if (_giveGachaItemCountDic.ContainsKey(dataList[i].Id))
-            {
-                if (CanAddMoreItems(dataList[i]))
-                {
-                    _giveGachaItemCountDic[dataList[i].Id]++;
-                    AddNotification(dataList[i].Id);
-                    continue;
-                }
-
-                DebugLog.LogError("더이상 획득할 수 없습니다: " + dataList[i].Id);
-                continue;
-            }
-
-            _giveGachaItemCountDic.Add(dataList[i].Id, 0);
-            _giveGachaItemLevelDic.Add(dataList[i].Id, 1);
-            AddNotification(dataList[i].Id);
-        }
-       
-        OnGiveGachaItemHandler?.Invoke();
     }
 
     public static bool GiveGachaItem(string id)
@@ -1510,23 +1871,40 @@ public static class UserInfo
             return false;
         }
 
-        if (_giveGachaItemCountDic.ContainsKey(data.Id))
+        return GiveGachaItem(data);
+    }
+
+
+    public static void GiveGachaItem(List<GachaItemData> dataList)
+    {
+        for (int i = 0, cnt = dataList.Count; i < cnt; ++i)
         {
-            if (CanAddMoreItems(data))
+            if (dataList[i] == null)
             {
-                _giveGachaItemCountDic[data.Id]++;
-                OnGiveGachaItemHandler?.Invoke();
-                return true;
+                DebugLog.LogError("가챠 아이템 데이터가 null입니다.");
+                continue;
             }
-            DebugLog.LogError("더이상 획득할 수 없습니다: " + data.Id);
-            return false;
+
+            if (!ItemManager.Instance.IsGachaItem(dataList[i].Id))
+            {
+                DebugLog.Log("가챠 아이템 아이디가 아닙니다: " + dataList[i].Id);
+                continue;
+            }
+
+            if (_giveGachaItemCountDic.ContainsKey(dataList[i].Id))
+            {
+                _giveGachaItemCountDic[dataList[i].Id]++;
+                AddNotification(dataList[i].Id);
+                continue;
+            }
+
+            _giveGachaItemCountDic.Add(dataList[i].Id, 1);
+            _giveGachaItemLevelDic.Add(dataList[i].Id, 1);
+            AddNotification(dataList[i].Id);
+            DebugLog.Log("가챠 아이템 추가: " + dataList[i].Id + "  획득 갯수: " + _giveGachaItemCountDic[dataList[i].Id]);
         }
 
-        _giveGachaItemCountDic.Add(data.Id, 0);
-        _giveGachaItemLevelDic.Add(data.Id, 1);
-        AddNotification(data.Id);
         OnGiveGachaItemHandler?.Invoke();
-        return true;
     }
 
 
@@ -1627,33 +2005,33 @@ public static class UserInfo
     }
 
 
-    public static bool CanAddMoreItems(GachaItemData data)
-    {
-        if(_giveGachaItemCountDic.TryGetValue(data.Id, out int giveCount))
-        {
-            int itemLevel = _giveGachaItemLevelDic[data.Id];
-            int maxLevel = data.MaxLevel;
+    // public static bool CanAddMoreItems(GachaItemData data)
+    // {
+    //     if(_giveGachaItemCountDic.TryGetValue(data.Id, out int giveCount))
+    //     {
+    //         int itemLevel = _giveGachaItemLevelDic[data.Id];
+    //         int maxLevel = data.MaxLevel;
 
-            if(maxLevel <= itemLevel)
-            {
-                DebugLog.Log("아이템이 이미 최대 레벨입니다.: " + data.Id + "Lv." + itemLevel);
-                return false;
-            }
+    //         if(maxLevel <= itemLevel)
+    //         {
+    //             DebugLog.Log("아이템이 이미 최대 레벨입니다.: " + data.Id + "Lv." + itemLevel);
+    //             return false;
+    //         }
 
-            int requiredItems = 0;
-            for(int level = itemLevel; level < maxLevel; level++)
-            {
-                requiredItems += level * ConstValue.ADD_ITEM_UPGRADE_COUNT;
-            }
+    //         int requiredItems = 0;
+    //         for(int level = itemLevel; level < maxLevel; level++)
+    //         {
+    //             requiredItems += level * ConstValue.ADD_ITEM_UPGRADE_COUNT;
+    //         }
 
-            if (giveCount < requiredItems)
-                return true;
+    //         if (giveCount < requiredItems)
+    //             return true;
 
-            return false;
-        }
+    //         return false;
+    //     }
 
-        return true;
-    }
+    //     return true;
+    // }
 
     public static int GetMaxUpgradeRequiredItemCount(GachaItemData data)
     {
@@ -1682,7 +2060,7 @@ public static class UserInfo
         if (data.MaxLevel <= itemLevel)
             return 0;
 
-        return itemLevel * ConstValue.ADD_ITEM_UPGRADE_COUNT;
+        return Math.Max(1, itemLevel) * ConstValue.ADD_ITEM_UPGRADE_COUNT;
     }
 
     public static bool IsGachaItemUpgradeEnabled(GachaItemData data)
@@ -1737,6 +2115,12 @@ public static class UserInfo
         return _stageInfos[stageIndex].GetSinkBowlCount(floor);
     }
 
+    public static void SetMaxSinkBowlCount(EStage stage, ERestaurantFloorType floor, int maxBowlCount)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SetMaxSinkBowlCount(floor, maxBowlCount);
+    }
+
     public static int GetMaxSinkBowlCount(EStage stage, ERestaurantFloorType floor)
     {
         int stageIndex = (int)stage;
@@ -1782,7 +2166,7 @@ public static class UserInfo
         if (_enabledCustomerDic.ContainsKey(data.Id))
             return;
 
-        _enabledCustomerDic.Add(data.Id, new SaveCustomerData(data.Id, 0));
+        _enabledCustomerDic.Add(data.Id, new SaveCustomerData(data.Id, string.Empty, 0));
         OnEnabledCustomerHandler?.Invoke();
     }
 
@@ -1805,12 +2189,148 @@ public static class UserInfo
     }
 
 
+    public static void GiveCustomerSkin(CustomerSkinData data)
+    {
+        if (data == null)
+        {
+            DebugLog.LogError("고객 스킨 데이터가 null입니다.");
+            return;
+        }
+
+        if (_giveCustomerSkinSet.Contains(data.Id))
+        {
+            DebugLog.Log("이미 가지고 있습니다: " + data.Id);
+            return;
+        }
+
+        _giveCustomerSkinSet.Add(data.Id);
+        OnGiveCustomerSkinHandler?.Invoke();
+    }
+
+    public static void GiveCustomerSkin(string skinId)
+    {
+        CustomerSkinData skinData = SkinDataManager.Instance.GetCustomerSkinData(skinId);
+        if (skinData == null)
+        {
+            DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
+            return;
+        }
+
+        GiveCustomerSkin(skinData);
+    }
+    
+    public static void SetCustomerSkin(CustomerData customer, CustomerSkinData skinData)
+    {
+        if (customer == null)
+        {
+            DebugLog.LogError("고객 데이터가 null입니다.");
+            return;
+        }
+
+        if(!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData saveData))
+        {
+            DebugLog.LogError("해당 고객이 활성화되지 않았습니다: " + customer.Id);
+            return;
+        }
+
+        saveData.SetSkinId(skinData == null ? string.Empty : skinData.Id);
+        OnChangeCustomerSkinHandler?.Invoke();
+    }
+
+
+    public static void SetCustomerSkin(CustomerData customer, string skinId)
+    {
+        if (customer == null)
+        {
+            DebugLog.LogError("고객 데이터가 null입니다.");
+            return;
+        }
+
+        CustomerSkinData skinData = SkinDataManager.Instance.GetCustomerSkinData(skinId);
+        if (skinData == null)
+        {
+            DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
+            return;
+        }
+        SetCustomerSkin(customer, skinData);
+    }
+
+    public static CustomerSkinData GetEquipCustomerSkin(CustomerData customer)
+    {
+        if (customer == null)
+        {
+            DebugLog.LogError("고객 데이터가 null입니다.");
+            return null;
+        }
+
+        if (!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData saveData))
+        {
+            DebugLog.LogError("해당 고객이 활성화되지 않았습니다: " + customer.Id);
+            return null;
+        }
+
+        string skinId = saveData.SkinId;
+        if (string.IsNullOrEmpty(skinId))
+        {
+            DebugLog.Log("고객 스킨이 설정되어 있지 않습니다: " + customer.Id);
+            return null;
+        }
+
+        CustomerSkinData skinData = SkinDataManager.Instance.GetCustomerSkinData(skinId);
+        if (skinData == null)
+        {
+            DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
+            return null;
+        }
+
+        return skinData;
+    }
+
+    public static CustomerSkinData GetEquipCustomerSkin(string customerId)
+    {
+        if (string.IsNullOrWhiteSpace(customerId))
+        {
+            DebugLog.LogError("고객 ID가 비어있습니다.");
+            return null;
+        }
+
+        CustomerData customer = CustomerDataManager.Instance.GetCustomerData(customerId);
+        if (customer == null)
+        {
+            DebugLog.LogError("해당 Id값에 일치하는 손님 정보가 없습니다: " + customerId);
+            return null;
+        }
+
+        return GetEquipCustomerSkin(customer);
+    }
+
+    public static bool IsGiveCustomerSkin(string skinId)
+    {
+        return _giveCustomerSkinSet.Contains(skinId);
+    }
+
+
     public static void CustomerVisits(CustomerData customer)
     {
         if (!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData data))
             return;
 
         _enabledCustomerDic[customer.Id].AddVisitCount();
+        OnVisitedCustomerHandler?.Invoke();
+    }
+
+    public static void CustomerVisits(CustomerData customer, int visitCount)
+    {
+        if (visitCount <= 0)
+        {
+            DebugLog.LogError("방문 횟수는 0보다 커야 합니다: " + visitCount);
+            return;
+        }
+
+        if (!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData data))
+            return;
+
+        _enabledCustomerDic[customer.Id].AddVisitCount(visitCount);
         OnVisitedCustomerHandler?.Invoke();
     }
 
@@ -1877,9 +2397,17 @@ public static class UserInfo
         return _clearDailyChallengeSet.Count;
     }
 
+    public static int GetClearWeeklyChallengeCount()
+    {
+        return _clearWeeklyChallengeSet.Count;
+    }
+
     public static bool GetIsDoneChallenge(string id)
     {
         ChallengeData data = ChallengeManager.Instance.GetCallengeData(id);
+
+        if (data == null)
+            return false;
 
         switch (data.Challenges)
         {
@@ -1891,6 +2419,9 @@ public static class UserInfo
 
             case Challenges.AllTime:
                 return _doneAllTimeChallengeSet.Contains(id);
+
+            case Challenges.Weekly:
+                return _doneWeeklyChallengeSet.Contains(id);
         }
 
         return false;
@@ -1908,6 +2439,9 @@ public static class UserInfo
 
             case Challenges.AllTime:
                 return _doneAllTimeChallengeSet.Contains(data.Id);
+
+            case Challenges.Weekly:
+                return _doneWeeklyChallengeSet.Contains(data.Id);
         }
 
         return false;
@@ -1917,7 +2451,9 @@ public static class UserInfo
     public static bool GetIsClearChallenge(string id)
     {
         ChallengeData data = ChallengeManager.Instance.GetCallengeData(id);
-
+        if(data == null)
+            return false;
+            
         switch (data.Challenges)
         {
             case Challenges.Main:
@@ -1925,6 +2461,9 @@ public static class UserInfo
 
             case Challenges.Daily:
                 return _clearDailyChallengeSet.Contains(id);
+
+            case Challenges.Weekly:
+                return _clearWeeklyChallengeSet.Contains(id);
 
             case Challenges.AllTime:
                 return _clearAllTimeChallengeSet.Contains(id);
@@ -1943,6 +2482,9 @@ public static class UserInfo
 
             case Challenges.Daily:
                 return _clearDailyChallengeSet.Contains(data.Id);
+
+            case Challenges.Weekly:
+                return _clearWeeklyChallengeSet.Contains(data.Id);
 
             case Challenges.AllTime:
                 return _clearAllTimeChallengeSet.Contains(data.Id);
@@ -1978,6 +2520,10 @@ public static class UserInfo
                 _doneDailyChallengeSet.Add(id);
                 break;
 
+            case Challenges.Weekly:
+                _doneWeeklyChallengeSet.Add(id);
+                break;
+
             case Challenges.AllTime:
                 _doneAllTimeChallengeSet.Add(id);
                 break;
@@ -2009,6 +2555,10 @@ public static class UserInfo
 
             case Challenges.Daily:
                 _doneDailyChallengeSet.Add(data.Id);
+                break;
+
+            case Challenges.Weekly:
+                _doneWeeklyChallengeSet.Add(data.Id);
                 break;
 
             case Challenges.AllTime:
@@ -2046,6 +2596,10 @@ public static class UserInfo
                 _clearDailyChallengeSet.Add(id);
                 break;
 
+            case Challenges.Weekly:
+                _clearWeeklyChallengeSet.Add(id);
+                break;
+
             case Challenges.AllTime:
                 _clearAllTimeChallengeSet.Add(id);
                 break;
@@ -2079,6 +2633,10 @@ public static class UserInfo
                 _clearDailyChallengeSet.Add(data.Id);
                 break;
 
+            case Challenges.Weekly:
+                _clearWeeklyChallengeSet.Add(data.Id);
+                break;
+
             case Challenges.AllTime:
                 _clearAllTimeChallengeSet.Add(data.Id);
                 break;
@@ -2096,7 +2654,6 @@ public static class UserInfo
         _dailyCleanCount = 0;
         _dailyCookCount = 0;
         _dailyCumulativeCustomerCount = 0;
-        DebugLog.Log("???");
         _doneDailyChallengeSet.Clear();
         _clearDailyChallengeSet.Clear();
 
@@ -2104,14 +2661,27 @@ public static class UserInfo
         OnClearChallengeHandler?.Invoke();
         OnDoneChallengeHandler?.Invoke();
     }
+    
+    public static void ResetWeeklyChallenges()
+    {
+        _weeklyAddMoney = 0;
+        _weeklyCookCount = 0;
+        _weeklyCumulativeCustomerCount = 0;
+        _weeklyCleanCount = 0;
+        _weeklyExterminationGatecrasherCustomerCount = 0;
+
+        _doneWeeklyChallengeSet.Clear();
+        _clearWeeklyChallengeSet.Clear();
+
+        DebugLog.Log("주간 챌린지가 초기화되었습니다.");
+    }
 
     #endregion
 
     #region NotificationMessageData
-
     public static void AddNotification(string id)
     {
-        if(string.IsNullOrWhiteSpace(id))
+        if (string.IsNullOrWhiteSpace(id))
         {
             DebugLog.LogError("현재 알림을 등록하려한 ID값이 잘못됬습니다: " + id);
             return;
@@ -2135,6 +2705,9 @@ public static class UserInfo
         if (!_notificationMessageSet.Contains(id))
             return;
 
+        if(!_clearNotificationMessageSet.Contains(id))
+            _clearNotificationMessageSet.Add(id);    
+
         _notificationMessageSet.Remove(id);
         OnRemoveNotificationHandler?.Invoke(id);
     }
@@ -2150,10 +2723,21 @@ public static class UserInfo
         return _notificationMessageSet.Contains(id);
     }
 
+    public static bool IsClearNotification(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            DebugLog.LogError("현재 알림을 확인하려한 ID값이 잘못됬습니다: " + id);
+            return false;
+        }
+
+        return _clearNotificationMessageSet.Contains(id);
+    }
 
     #endregion
 
     #region 환경 설정
+
 
     public static void ChangeGachaItemSortType(GradeSortType sortType)
     {

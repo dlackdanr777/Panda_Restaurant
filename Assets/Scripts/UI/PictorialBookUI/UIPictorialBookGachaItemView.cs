@@ -17,7 +17,6 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
     [SerializeField] private Image _itemImage;
     [SerializeField] private UIItemStar _itemStar;
     [SerializeField] private UIImageFillAmount _giveItemFillAmount;
-    [SerializeField] private TextMeshProUGUI _itemLevelText;
     [SerializeField] private TextMeshProUGUI _itemCountText;
     [SerializeField] private TextMeshProUGUI _itemNameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
@@ -25,6 +24,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
     [SerializeField] private UIImageAndText _addScoreLayout;
     [SerializeField] private UIImageAndText _tipPerMinuteLayout;
     [SerializeField] private UIButtonAndText _upgradeButton;
+    [SerializeField] private UITextAndText _giveCountGroup;
 
     [Space]
     [Header("Audios")]
@@ -92,7 +92,8 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
             _tipPerMinuteLayout.gameObject.SetActive(false);
             _giveItemFillAmount.SetActive(false);
             _upgradeButton.gameObject.SetActive(false);
-            SetStar(GachaItemRank.Length);
+            _giveCountGroup.gameObject.SetActive(false);
+            SetStar(Rank.Length);
             _itemNameText.text = string.Empty;
             _descriptionText.text = string.Empty;
             _data = null;
@@ -104,21 +105,22 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
             _blackImage.gameObject.SetActive(false);
             _giveItemFillAmount.SetActive(true);
             _upgradeButton.gameObject.SetActive(true);
+            _giveCountGroup.gameObject.SetActive(true);
             _itemNameText.text = _data.Name;
             int requiredItemCount = UserInfo.GetUpgradeRequiredItemCount(_data);
             int giveItemCount = UserInfo.GetGiveItemCount(_data);
             int level = UserInfo.GetGachaItemLevel(_data);
-            _itemCountText.text = requiredItemCount == 0 ? "Max" : giveItemCount + "/" + requiredItemCount;
+            _giveCountGroup.SetText1(giveItemCount.ToString());
+            _itemCountText.text = requiredItemCount == 0 ? "최대 업그레이드" : requiredItemCount <= giveItemCount ? "업그레이드" : giveItemCount + "/" + requiredItemCount;
             _giveItemFillAmount.SetFillAmount(requiredItemCount == 0 ? 1 : giveItemCount <= 0 ? 0 : (float)giveItemCount / requiredItemCount);
-            _itemLevelText.text = level <= 0 ? "Lv.Max" : "Lv." + level;
             if (UserInfo.IsGachaItemUpgradeEnabled(_data))
             {
-                _upgradeButton.SetText("업그레이드");
+                _upgradeButton.SetText(level <= 0 ? "Lv.Max" : "Lv." + level);
                 _upgradeButton.Interactable(UserInfo.IsGachaItemUpgradeRequirementMet(_data));
             }
             else
             {
-                _upgradeButton.SetText("최대 업그레이드");
+                _upgradeButton.SetText(level <= 0 ? "Lv.Max" : "Lv." + level);
                 _upgradeButton.Interactable(false);
             }
 
@@ -128,6 +130,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
             _blackImage.gameObject.SetActive(true);
             _giveItemFillAmount.SetActive(false);
             _upgradeButton.gameObject.SetActive(false);
+            _giveCountGroup.gameObject.SetActive(false);
             _itemNameText.text = "???";
         }
 
@@ -145,40 +148,40 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
     }
 
 
-    private void SetStar(GachaItemRank rank)
+    private void SetStar(Rank rank)
     {
         _itemStar.SetStar(rank);
         switch (rank)
         {
-            case GachaItemRank.Normal1:
+            case Rank.Normal1:
                 _normalFrameImage.gameObject.SetActive(true);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);
                 _specialFrameImage.gameObject.SetActive(false);
                 break;
 
-            case GachaItemRank.Normal2:
+            case Rank.Normal2:
                 _normalFrameImage.gameObject.SetActive(true);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);
                 _specialFrameImage.gameObject.SetActive(false);
                 break;
 
-            case GachaItemRank.Rare:
+            case Rank.Rare:
                 _normalFrameImage.gameObject.SetActive(false);
                 _rareFrameImage.gameObject.SetActive(true);
                 _uniqueFrameImage.gameObject.SetActive(false);
                 _specialFrameImage.gameObject.SetActive(false);
                 break;
 
-            case GachaItemRank.Unique:
+            case Rank.Unique:
                 _normalFrameImage.gameObject.SetActive(false);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(true);
                 _specialFrameImage.gameObject.SetActive(false);
                 break;
 
-            case GachaItemRank.Special:
+            case Rank.Special:
                 _normalFrameImage.gameObject.SetActive(false);
                 _rareFrameImage.gameObject.SetActive(false);
                 _uniqueFrameImage.gameObject.SetActive(false);
@@ -199,7 +202,7 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
         if (_data == null)
             throw new System.Exception("아이템이 null인 상태로 강화 버튼을 클릭했습니다.");
 
-        if(UserInfo.UpgradeGachaItem(_data))
+        if (UserInfo.UpgradeGachaItem(_data))
         {
             SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
             _flashEffect.Emit(1);
@@ -210,4 +213,6 @@ public class UIPictorialBookGachaItemView : MonoBehaviour
             PopupManager.Instance.ShowDisplayText("알 수 없는 오류 발생");
         }
     }
+    
+
 }

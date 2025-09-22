@@ -70,6 +70,21 @@ public class Customer : MonoBehaviour
         _spriteRenderer.color = Color.white;
     }
 
+
+    public void FixSpritePosition(bool isFloor)
+    {
+        if (isFloor)
+        {
+            _spriteParent.localPosition = new Vector3(0, -AStar.Instance.NodeSize * 2, 0);
+            _spriteRenderer.transform.localPosition = Vector3.zero;
+        }
+        else
+        {
+            _spriteParent.localPosition = new Vector3(0, -0.2f, 0);
+            _spriteRenderer.transform.localPosition = Vector3.zero;
+        }
+    }
+
     public void SetVisitFloor(ERestaurantFloorType floor)
     {
         _visitFloor = floor;
@@ -204,11 +219,13 @@ public class Customer : MonoBehaviour
     private IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
         yield return YieldCache.WaitForSeconds(0.6f);
+        _spriteRenderer.color = Color.white;
         _spriteRenderer.TweenAlpha(0, 0.4f, Ease.Constant).OnComplete(() => _moveObj.transform.position = _tableManager.GetDoorPos(RestaurantType.Hall, _targetPos));
         //SetSpriteDir(-1);
         yield return YieldCache.WaitForSeconds(1f);
         _spriteRenderer.TweenAlpha(1, 0.4f, Ease.Constant);
         yield return YieldCache.WaitForSeconds(1f);
+        _spriteRenderer.color = Color.white;
         onCompleted?.Invoke();
     }
 

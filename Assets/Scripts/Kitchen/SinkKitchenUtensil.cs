@@ -32,16 +32,23 @@ public class SinkKitchenUtensil : KitchenUtensil
         UpdateSink();
 
         UserInfo.OnChangeSinkBowlHandler += UpdateSink;
+        UserInfo.OnChangeMaxSinkBowlHandler += OnChangeMaxBowlCount;
+    }
+
+    private void OnChangeMaxBowlCount()
+    { 
+        _sinkGaugeBar.OnChangeMaxBowlCount();
+        UpdateSink();
     }
 
 
-    public void UpdateSink()
+    private void UpdateSink()
     {
         int cntBowlCount = UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _floorType);
         int maxBowlCount = UserInfo.GetMaxSinkBowlCount(UserInfo.CurrentStage, _floorType);
 
         float oneBowlGauge = 1f / maxBowlCount;
-        float gauge = Mathf.Clamp((float)cntBowlCount / maxBowlCount, 0, 1);
+        float gauge = (float)cntBowlCount / maxBowlCount;
         gauge = Mathf.Clamp(gauge - (oneBowlGauge * _washGauge), 0, 1);
         _sinkGaugeBar.SetGauge(cntBowlCount, maxBowlCount, gauge);
     }
@@ -88,7 +95,7 @@ public class SinkKitchenUtensil : KitchenUtensil
             _washGauge = 0;
         }
 
-        _washGauge += Time.deltaTime / (_isTouchWashing && _isStaffWashing ? 2 : 4);
+        _washGauge += Time.deltaTime / (_isTouchWashing && _isStaffWashing ? 1 : 2);
         UpdateSink();
     }
 
@@ -114,6 +121,16 @@ public class SinkKitchenUtensil : KitchenUtensil
     private void TouchUpEvent()
     {
         _isTouchWashing = false;
+    }
+
+    protected override void SetRendererScale(KitchenUtensilData data)
+    {
+        base.SetRendererScale(data);
+        if (_batchType == KitchenUtensilBatchType.Lower)
+        {
+            _spriteRenderer.transform.localPosition -= new Vector3(0, 0.7f, 0);
+        }
+
     }
 
 

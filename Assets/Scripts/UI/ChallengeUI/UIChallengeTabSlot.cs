@@ -16,15 +16,22 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
     [SerializeField] private Image _percentBar;
     [SerializeField] private Image _moneyImage;
     [SerializeField] private Image _diaImage;
+    [SerializeField] private Image _scoreImage;
     [SerializeField] private TextMeshProUGUI _rewardText;
     [SerializeField] private TextMeshProUGUI _countText;
+    [SerializeField] private GameObject _andImage;
+    [SerializeField] private UITextAndText _scoreTextGroup;
 
     [Space]
     [Header("Option")]
+    [SerializeField] private Color _progressColor;
     [SerializeField] private Color _doneColor;
 
     private ChallengeData _data;
     public ChallengeData Data => _data;
+
+
+    private UIChallenge _uiChallenge;
 
     public override void Init()
     {
@@ -32,6 +39,11 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
         _doneButton.onClick.AddListener(OnDoneButtonClicked);
 
         ChallengeManager.Instance.OnChallengePercentUpdateHandler += UpdatePercent;
+    }
+
+    public void SetUIChellenge(UIChallenge uiChallenge)
+    {
+        _uiChallenge = uiChallenge;
     }
 
     public override void UpdateSlot(ChallengeData data)
@@ -60,36 +72,48 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
         _descriptionText.text = data.Description;
         _rewardText.text = Utility.ConvertToMoney(data.RewardMoney);
         _countText.SetText(ChallengeManager.Instance.GetChallengeCountStr(data));
-        
-        if (UserInfo.GetIsClearChallenge(_data.Id))
+
+        if (data.RewardScore <= 0)
         {
-            _clearButton.gameObject.SetActive(true);
-            _doneButton.gameObject.SetActive(false);
-            _shortCutButton.gameObject.SetActive(false);
-            _layoutImage.color = new Color(0.8f, 0.8f, 0.8f, 1);
-            _percentBar.fillAmount = 1;
-            _percentBar.color = _doneColor;
-            return;
-        }
-        else if (UserInfo.GetIsDoneChallenge(_data.Id))
-        {
-            _doneButton.gameObject.SetActive(true);
-            _shortCutButton.gameObject.SetActive(false);
-            _clearButton.gameObject.SetActive(false);
-            _layoutImage.color = Color.white;
-            _percentBar.fillAmount = 1;
-            _percentBar.color = _doneColor;
-            return;
+            _scoreTextGroup.gameObject.SetActive(false);
+            _andImage.SetActive(false);
         }
         else
         {
-            _shortCutButton.gameObject.SetActive(true);
-            _doneButton.gameObject.SetActive(false);
-            _clearButton.gameObject.SetActive(false);
-            _layoutImage.color = Color.white;
-            _percentBar.color = Color.white;
-            return;
+            _scoreTextGroup.gameObject.SetActive(true);
+            _andImage.SetActive(true);
+            _scoreTextGroup.SetText1(Utility.ConvertToMoney(data.RewardScore));
         }
+        
+        if (UserInfo.GetIsClearChallenge(_data.Id))
+            {
+                _clearButton.gameObject.SetActive(true);
+                _doneButton.gameObject.SetActive(false);
+                _shortCutButton.gameObject.SetActive(false);
+                _layoutImage.color = new Color(0.8f, 0.8f, 0.8f, 1);
+                _percentBar.fillAmount = 1;
+                _percentBar.color = _doneColor;
+                return;
+            }
+            else if (UserInfo.GetIsDoneChallenge(_data.Id))
+            {
+                _doneButton.gameObject.SetActive(true);
+                _shortCutButton.gameObject.SetActive(false);
+                _clearButton.gameObject.SetActive(false);
+                _layoutImage.color = Color.white;
+                _percentBar.fillAmount = 1;
+                _percentBar.color = _doneColor;
+                return;
+            }
+            else
+            {
+                _shortCutButton.gameObject.SetActive(true);
+                _doneButton.gameObject.SetActive(false);
+                _clearButton.gameObject.SetActive(false);
+                _layoutImage.color = Color.white;
+                _percentBar.color = _progressColor;
+                return;
+            }
     }
 
 
@@ -120,12 +144,20 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
         {
             UserInfo.AddMoney(_data.RewardMoney);
             SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.GoldSound);
+            _uiChallenge.StartCoinAnime(_data.RewardMoney, _moneyImage.transform.position);
         }
 
         else if(_data.MoneyType == MoneyType.Dia)
         {
             UserInfo.AddDia(_data.RewardMoney);
             SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.DiaSound);
+            _uiChallenge.StartDiaAnime(_data.RewardMoney, _diaImage.transform.position);
+        }
+
+        if (0 < _data.RewardScore)
+        {
+            UserInfo.AddScore(_data.RewardScore);
+            _uiChallenge.StartScoreAnime(_scoreImage.transform.position);
         }
         UserInfo.ClearChallenge(_data);
     }

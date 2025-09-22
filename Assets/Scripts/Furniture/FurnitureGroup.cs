@@ -55,10 +55,10 @@ public class FurnitureGroup : MonoBehaviour
     {
         switch (type)
         {
-            case EquipStaffType.Waiter1:
+            case EquipStaffType.Waiter:
                 return _defaultWaiter1Pos.position;
-            case EquipStaffType.Waiter2:
-                return _defaultWaiter2Pos.position;
+            //case EquipStaffType.Waiter2:
+                //return _defaultWaiter2Pos.position;
             case EquipStaffType.Cleaner:
                 return _cleanerWaitTr.position;
             case EquipStaffType.Manager:
@@ -144,7 +144,6 @@ public class FurnitureGroup : MonoBehaviour
         else if (Mathf.Abs(_door2.position.y - pos.y) < 2)
             return _door2.position;
 
-        DebugLog.LogError("위치 값이 이상합니다. door1: " + _door1.position + " door2: " + _door2.position + " tablePos: " + pos);
         return Vector3.zero;
     }
 
@@ -161,7 +160,7 @@ public class FurnitureGroup : MonoBehaviour
                 return _hallFoodPos[i].position;
             }
 
-            throw new Exception("홀의 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요.");
+            throw new Exception("홀의 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요: " + pos);
         }
         else if(type == RestaurantType.Kitchen)
         {
@@ -173,7 +172,7 @@ public class FurnitureGroup : MonoBehaviour
                 return _kitchenFoodPos[i].position;
             }
 
-            throw new Exception("주방 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요.");
+            throw new Exception("주방 배식대 입구의 위치나, 스탭 위치를 다시 확인해주세요: " + pos);
         }
 
         throw new Exception("타입이 이상합니다: " + type);
@@ -204,7 +203,7 @@ public class FurnitureGroup : MonoBehaviour
             _tableDataList.Add(data);
             _dropGarbageAreaList.Add(data.DropGarbageArea);
 
-            for(int i = 0, cnt = data.DropCoinAreas.Length; i < cnt; ++i)
+            for (int i = 0, cnt = data.DropCoinAreas.Length; i < cnt; ++i)
             {
                 _dropCoinAreaList.Add(data.DropCoinAreas[i]);
             }
@@ -220,11 +219,6 @@ public class FurnitureGroup : MonoBehaviour
         {
             _furnitureDic[_furniture[i].Type].Add(_furniture[i]);
             _furniture[i].Init(tableManager, _floorType);
-        }
-
-        for (int i = 0, cnt = (int)FurnitureType.Length; i < cnt; ++i)
-        {
-            OnChangeFurnitureEvent(_floorType, (FurnitureType)i);
         }
 
         GameObject obj = new GameObject(_floorType.ToString() + " Table");
@@ -255,13 +249,13 @@ public class FurnitureGroup : MonoBehaviour
 
             SaveTableData saveTableData = UserInfo.GetTableData(UserInfo.CurrentStage, _floorType, type);
             GarbageAreaData garbageData = saveTableData.GarbageAreaData;
-            data.DropGarbageArea.Init(garbageData);
+            data.DropGarbageArea.Init(garbageData, _floorType);
             data.TableState = saveTableData.NeedCleaning ? ETableState.NeedCleaning : data.TableState;
 
             for (int j = 0, cntJ = data.DropCoinAreas.Length; j < cntJ; ++j)
             {
                 CoinAreaData coinData = saveTableData.CoinAreaDatas[j];
-                data.DropCoinAreas[j].Init(coinData);
+                data.DropCoinAreas[j].Init(coinData, _floorType);
             }
 
             TableFurniture tableFurniture = (TableFurniture)_furniture[i];
@@ -387,6 +381,7 @@ public class FurnitureGroup : MonoBehaviour
 
         _foodType = foodType;
     }
+
 
 
     private void OnDestroy()

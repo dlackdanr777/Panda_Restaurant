@@ -30,7 +30,7 @@ public class StaffDataManager : MonoBehaviour
     public StaffData GetStaffData(string id)
     {
         if (!_staffDataDic.TryGetValue(id, out StaffData data))
-            throw new System.Exception("ÇØ´ç id°ªÀÌ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù:" + id);
+            throw new System.Exception("í•´ë‹¹ idê°’ì´ ì¡´ì¬í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤:" + id);
 
         return data;
     }
@@ -82,7 +82,7 @@ public class StaffDataManager : MonoBehaviour
         else if (data is ChefData)
             return StaffGroupType.Chef;
 
-        throw new System.Exception("ÇØ´ç Å¸ÀÔÀÌ ÀÌ»óÇÕ´Ï´Ù: " + data.Id);
+        throw new System.Exception("í•´ë‹¹ íƒ€ì…ì´ ì´ìƒí•©ë‹ˆë‹¤: " + data.Id);
     }
 
     public StaffGroupType GetStaffGroupType(EquipStaffType type)
@@ -90,7 +90,7 @@ public class StaffDataManager : MonoBehaviour
         if (type == EquipStaffType.Manager)
             return StaffGroupType.Manager;
 
-        else if (type == EquipStaffType.Waiter1 || type == EquipStaffType.Waiter2)
+    else if (type == EquipStaffType.Waiter /*|| type == EquipStaffType.Waiter2*/)
             return StaffGroupType.Waiter;
 
         else if (type == EquipStaffType.Cleaner)
@@ -102,10 +102,10 @@ public class StaffDataManager : MonoBehaviour
         else if (type == EquipStaffType.Guard)
             return StaffGroupType.Guard;
 
-        else if (type == EquipStaffType.Chef1 || type == EquipStaffType.Chef2)
+        else if (type == EquipStaffType.Chef /*|| type == EquipStaffType.Chef2*/)
             return StaffGroupType.Chef;
 
-        throw new System.Exception("ÇØ´ç Å¸ÀÔÀÌ ÀÌ»óÇÕ´Ï´Ù: " + type);
+        throw new System.Exception("í•´ë‹¹ íƒ€ì…ì´ ì´ìƒí•©ë‹ˆë‹¤: " + type);
     }
 
     public List<EquipStaffType> GetEquipStaffTypeList(StaffData data)
@@ -121,10 +121,10 @@ public class StaffDataManager : MonoBehaviour
             typeList.Add(EquipStaffType.Manager);
 
         if (type == StaffGroupType.Waiter)
-            typeList.Add(EquipStaffType.Waiter1);
+            typeList.Add(EquipStaffType.Waiter);
 
-        if (type == StaffGroupType.Waiter)
-            typeList.Add(EquipStaffType.Waiter2);
+        //if (type == StaffGroupType.Waiter)
+            //typeList.Add(EquipStaffType.Waiter2);
 
         if (type == StaffGroupType.Cleaner)
             typeList.Add(EquipStaffType.Cleaner);
@@ -136,12 +136,23 @@ public class StaffDataManager : MonoBehaviour
             typeList.Add(EquipStaffType.Guard);
 
         if (type == StaffGroupType.Chef)
-            typeList.Add(EquipStaffType.Chef1);
+            typeList.Add(EquipStaffType.Chef);
 
-        if (type == StaffGroupType.Chef)
-            typeList.Add(EquipStaffType.Chef2);
+        //if (type == StaffGroupType.Chef)
+            //typeList.Add(EquipStaffType.Chef2);
 
         return typeList;
+    }
+
+    public RestaurantType GetStaffRestaurantType(StaffData data)
+    {
+        if (data is ManagerData || data is WaiterData || data is CleanerData || data is MarketerData || data is GuardData)
+            return RestaurantType.Hall;
+
+        else if (data is ChefData)
+            return RestaurantType.Kitchen;
+
+        throw new System.Exception("í•´ë‹¹ íƒ€ì…ì´ ì´ìƒí•©ë‹ˆë‹¤: " + data.Id);
     }
 
 

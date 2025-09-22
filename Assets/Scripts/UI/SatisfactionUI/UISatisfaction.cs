@@ -26,7 +26,7 @@ public class UISatisfaction : MonoBehaviour
     private SatisfactionSystem _satisfactionSystem;
     private float _maxLength;
     private SatisfactionType _satisfactionType;
-
+    private float _tmpSatisfaction = 0;
 
     public void Init(SatisfactionSystem satisfactionSystem)
     {
@@ -37,12 +37,11 @@ public class UISatisfaction : MonoBehaviour
         _satisfactionImage.rectTransform.anchorMin = new Vector2(0, 0.5f);
         
         _maxLength = _uiSatisfaction.sizeDelta.x;
-
+        _tmpSatisfaction = satisfactionSystem.Satisfaction;
         _satisfactionType = _satisfactionSystem.GetSatisfactionType();
         SetSatisfactionImage();
 
         _satisfactionImage.rectTransform.anchoredPosition = SatisfactionImagePosCaculator();
-
         _satisfactionSystem.OnChangeSatisfactionHandler += OnChagneSatisfactionEvent;
     }
 
@@ -50,9 +49,18 @@ public class UISatisfaction : MonoBehaviour
     private void OnChagneSatisfactionEvent()
     {
         _satisfactionImage.rectTransform.TweenStop();
-        //_satisfactionImage.rectTransform.anchoredPosition = new Vector2(xPosition, currentPos.y);
+        _satisfactionImage.transform.localScale = Vector3.one;
         _satisfactionImage.rectTransform.TweenAnchoredPosition(SatisfactionImagePosCaculator(), 0.1f, Ease.Constant);
-        TweenSatisfactionImage();
+        _satisfactionImage.TweenScale(Vector3.one * 1.1f, 0.05f, Ease.OutBack).OnComplete(() =>
+        {
+            _satisfactionImage.TweenScale(Vector3.one, 0.08f, Ease.InBack);
+        });
+        CheckSatisfaction();
+
+        float dir = _satisfactionSystem.Satisfaction - _tmpSatisfaction;
+        _satisfactionEffectAnimator.SetTrigger("Action");
+        _satisfactionEffectImage1.sprite = dir <= 0 ? _veryDissatisfactorySprite : _satisfactorySprite;
+        _satisfactionEffectImage2.sprite = dir <= 0 ? _veryDissatisfactorySprite : _satisfactorySprite;
     }
 
 
@@ -73,22 +81,12 @@ public class UISatisfaction : MonoBehaviour
         return new Vector2(xPosition, 0);
     }
 
-    private void TweenSatisfactionImage()
+    private void CheckSatisfaction()
     {
         SatisfactionType satisfactionType = _satisfactionSystem.GetSatisfactionType();
         if(satisfactionType != _satisfactionType)
         {
-            int dir = (int)satisfactionType - (int)_satisfactionType;
             _satisfactionType = satisfactionType;
-            _satisfactionImage.transform.localScale = Vector3.one;
-            _satisfactionImage.TweenScale(Vector3.one * 1.2f, 0.05f, Ease.OutBack).OnComplete(() =>
-            {
-                _satisfactionImage.TweenScale(Vector3.one, 0.08f, Ease.InBack);
-            });
-
-            _satisfactionEffectAnimator.gameObject.SetActive(true);
-            _satisfactionEffectImage1.sprite = dir <= 0 ? _veryDissatisfactorySprite : _satisfactorySprite;
-            _satisfactionEffectImage2.sprite = dir <= 0 ? _veryDissatisfactorySprite : _satisfactorySprite;
             SetSatisfactionImage();
         }
     }
@@ -110,11 +108,5 @@ public class UISatisfaction : MonoBehaviour
                 _satisfactionImage.sprite = _veryDissatisfactorySprite;
                 break;
         }
-    }
-
-
-    private void OnDisable()
-    {
-        _satisfactionEffectAnimator.gameObject.SetActive(false);
     }
 }

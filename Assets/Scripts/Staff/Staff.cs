@@ -8,6 +8,7 @@ using Muks.Tween;
 public class Staff : MonoBehaviour
 {
     public event Action OnLevelUpEventHandler;
+    [SerializeField] protected Animator _animator;
     [SerializeField] protected GameObject _moveObj;
     [SerializeField] protected GameObject _spriteParent;
     [SerializeField] protected SpriteRenderer _spriteRenderer;
@@ -15,8 +16,8 @@ public class Staff : MonoBehaviour
 
     [Space]
     [Header("Skill")]
-    [SerializeField] private SpriteRenderer _skillEffect;
-    [SerializeField] private AudioClip _skillActiveSound;
+    [SerializeField] protected SpriteRenderer _skillEffect;
+    [SerializeField] protected AudioClip _skillActiveSound;
 
     protected TableManager _tableManager;
     protected KitchenSystem _kitchenSystem;
@@ -32,6 +33,9 @@ public class Staff : MonoBehaviour
     protected EStaffState _state;
     protected ERestaurantFloorType _equipFloorType;
     public ERestaurantFloorType EquipFloorType => _equipFloorType;
+    protected RestaurantType _restaurantType;
+    public RestaurantType RestaurantType => _restaurantType;
+
 
     protected bool _usingSkill;
     protected float _skillTimer;
@@ -41,9 +45,10 @@ public class Staff : MonoBehaviour
     protected float _scaleX;
     protected float _moveSpeed;
     protected float _speedMul;
-    public float SpeedMul => Mathf.Clamp((1 + _speedMul) * GameManager.Instance.AddStaffSpeedMul, 0.5f, 3f);
+    public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(StaffDataManager.Instance.GetStaffGroupType(_staffType))), 0.5f, 3f);
 
     protected Coroutine _useSkillRoutine;
+    protected RuntimeAnimatorController _defaultAnimatorController;
 
 
     public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController, FeverSystem feverSystem)
@@ -60,6 +65,13 @@ public class Staff : MonoBehaviour
         UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
         _feverSystem.OnStartFeverHandler += OnStartFeverEvent;
         _feverSystem.OnEndFeverHandler += OnEndFeverEvent;
+
+        if (_animator != null)
+        {
+            DebugLog.Log("스탭 애니메이터 컨트롤러 초기화: " + name + " - " + _animator.runtimeAnimatorController);
+            _defaultAnimatorController = _animator.runtimeAnimatorController;
+        }
+
         gameObject.SetActive(false);
     }
 
@@ -109,7 +121,15 @@ public class Staff : MonoBehaviour
         gameObject.SetActive(true);
         _staffData = staffData;
         _equipFloorType = equipFloorType;
+        _restaurantType = StaffDataManager.Instance.GetStaffRestaurantType(staffData);
         _staffData.AddSlot(this, _tableManager, _kitchenSystem, _customerController);
+
+        if (_animator != null)
+        {
+            DebugLog.Log("스탭 애니메이터 컨트롤러 설정: " + name + " - " + _staffData.AnimatorController);
+            _animator.runtimeAnimatorController = _staffData.AnimatorController == null ? _defaultAnimatorController : _staffData.AnimatorController;  
+        }
+
         _moveSpeed = staffData.GetSpeed(Level);
         _speedMul = 0;
         _usingSkill = false;
@@ -133,6 +153,8 @@ public class Staff : MonoBehaviour
 
     public virtual void TweenAlpha(float alpha, float duration, Ease ease, Action onCompleted = null)
     {
+        _skillEffect.TweenStop();
+        _spriteRenderer.TweenStop();
         _skillEffect?.TweenAlpha(alpha, duration, ease);
         _spriteRenderer.TweenAlpha(alpha, duration, ease).OnComplete(onCompleted);
     }
@@ -233,19 +255,12 @@ public class Staff : MonoBehaviour
         _usingSkill = true;
         Vibration.Vibrate(500);
         SkillEffectSetActive(true);
-        DebugLog.Log("스킬 사용: " + name);
-        SoundManager.Instance.PlayEffectAudio(EffectType.Restaurant, _skillActiveSound);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_equipFloorType, _restaurantType);
+        SoundManager.Instance.PlayEffectAudio(effectType, _skillActiveSound);
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 
-        float duration = _staffData.Skill.Duration + GameManager.Instance.AddStaffSkillTime + _staffType switch
-        {
-            EquipStaffType.Marketer => GameManager.Instance.AddMarketerSkillTime,
-            EquipStaffType.Waiter1 => GameManager.Instance.AddWaiterSkillTime,
-            EquipStaffType.Waiter2 => GameManager.Instance.AddServerSkillTime,
-            EquipStaffType.Cleaner => GameManager.Instance.AddCleanerSkillTime,
-            EquipStaffType.Guard => GameManager.Instance.AddGuardSkillTime,
-            _ => 0
-        };
+        float multiplier = 1f + GameManager.Instance.GetStaffSkillTimeMul(StaffDataManager.Instance.GetStaffGroupType(_staffType));
+        float duration = _staffData.Skill.Duration * multiplier;
         float timer = 0;
         while (timer < duration)
         {
@@ -278,7 +293,7 @@ public class Staff : MonoBehaviour
 
         _moveCompleted = onCompleted;
         RestaurantType type = RestaurantType.Hall;
-        if (_staffType == EquipStaffType.Chef1 || _staffType == EquipStaffType.Chef2)
+        if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
             type = RestaurantType.Kitchen;
 
         Vector3 customerDoorPos = _tableManager.GetDoorPos(type, transform.position);
@@ -328,7 +343,7 @@ public class Staff : MonoBehaviour
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
             RestaurantType type = RestaurantType.Hall;
-            if (_staffType == EquipStaffType.Chef1 || _staffType == EquipStaffType.Chef2)
+            if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
                 type = RestaurantType.Kitchen;
 
             _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(_tableManager.GetDoorPos(type, _targetPos), _targetPos, TargetMove)));
@@ -373,12 +388,14 @@ public class Staff : MonoBehaviour
     {
         yield return YieldCache.WaitForSeconds(0.6f);
         RestaurantType type = RestaurantType.Hall;
-        if (_staffType == EquipStaffType.Chef1 || _staffType == EquipStaffType.Chef2)
+        if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
             type = RestaurantType.Kitchen;
         TweenAlpha(0, 0.4f, Ease.Constant, () => _moveObj.transform.position = _tableManager.GetDoorPos(type, _targetPos));
         yield return YieldCache.WaitForSeconds(1f);
         TweenAlpha(1, 0.4f, Ease.Constant);
         yield return YieldCache.WaitForSeconds(1f);
+         _skillEffect.color = Color.white;
+        _spriteRenderer.color = Color.white;
         onCompleted?.Invoke();
     }
 
@@ -391,16 +408,7 @@ public class Staff : MonoBehaviour
         if (_staffData.Skill == null)
             return;
 
-        _skillCoolTime = _staffData.Skill.Cooldown + GameManager.Instance.SubStaffSkillCoolTime + _staffType switch
-        {
-            EquipStaffType.Marketer => GameManager.Instance.SubMarketerSkillCoolTime,
-            EquipStaffType.Waiter1 => GameManager.Instance.SubWaiterSkillCoolTime,
-            EquipStaffType.Waiter2 => GameManager.Instance.SubServerSkillCoolTime,
-            EquipStaffType.Cleaner => GameManager.Instance.SubCleanerSkillCoolTime,
-            EquipStaffType.Guard => GameManager.Instance.SubGuardSkillCoolTime,
-            _ => 0
-        };
-
+        _skillCoolTime = _staffData.Skill.Cooldown;
         _skillCoolTime = _skillCoolTime < 0.1f ? 0.1f : _skillCoolTime;
     }
 

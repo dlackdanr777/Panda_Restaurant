@@ -7,7 +7,6 @@ using Muks.PathFinding.AStar;
 public class StaffWaiter : Staff
 {
     [Header("Waiter Components")]
-    [SerializeField] private Animator _animator;
     [SerializeField] private Animator _bowlAnimator;
     [SerializeField] private SpriteRenderer _topBowl;
     [SerializeField] private SpriteRenderer _bottomBowl;
@@ -31,7 +30,7 @@ public class StaffWaiter : Staff
 
         _bowlAnimator.enabled = true;
 
-        int order = (int)_staffType - (int)EquipStaffType.Waiter1;
+        int order = (int)_staffType - (int)EquipStaffType.Waiter;
         _spriteRenderer.sortingOrder = order * 3;
         _foodRenderer.sortingOrder = (order * 3) + 1;
         _bottomBowl.sortingOrder = (order * 3) + 1;
@@ -105,6 +104,14 @@ public class StaffWaiter : Staff
             _bowlAnimator.enabled = false;
             _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() =>
             {
+                _spriteRenderer.TweenStop();
+                _bottomBowl.TweenStop();
+                _topBowl.TweenStop();
+                _skillEffect.TweenStop();
+                _spriteRenderer.color = Color.white;
+                _bottomBowl.color = Color.white;
+                _topBowl.color = Color.white;
+                _skillEffect.color = Color.white;
                 AStar.Instance.RequestPath(_tableManager.GetDoorPos(RestaurantType.Hall, _targetPos), _targetPos, TargetMove);
                 _bowlAnimator.enabled = true;
             }));

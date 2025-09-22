@@ -6,9 +6,9 @@ using UnityEngine.UI;
 
 public class UIEquipButtonGroup : MonoBehaviour
 {
-    [SerializeField] private UIButtonAndText _floor1Button;
-    [SerializeField] private UIButtonAndText _floor2Button;
-    [SerializeField] private UIButtonAndText _floor3Button;
+    [SerializeField] private UI3LayerButton _floor1Button;
+    [SerializeField] private UI3LayerButton _floor2Button;
+    [SerializeField] private UI3LayerButton _floor3Button;
     [SerializeField] private UIButtonAndText _cancelButton;
     [SerializeField] private GridLayoutGroup _gridLayoutGroup;
     [SerializeField] private CanvasGroup _canvasGroup;
@@ -16,7 +16,7 @@ public class UIEquipButtonGroup : MonoBehaviour
     public bool ActiveSelf => gameObject.activeSelf;
     private Vector2 _tmpSapcing;
     private Vector2 _startSapcing;
-    
+
 
     public void Init(UnityAction floor1ButtonClicked, UnityAction floor2ButtonClicked, UnityAction floor3ButtonClicked, UnityAction cancelButtonClicked)
     {
@@ -29,6 +29,10 @@ public class UIEquipButtonGroup : MonoBehaviour
         _floor2Button.AddListener(floor2ButtonClicked);
         _floor3Button.AddListener(floor3ButtonClicked);
         _cancelButton.AddListener(cancelButtonClicked);
+
+        _floor1Button.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor1));
+        _floor2Button.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor2));
+        _floor3Button.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor3));
 
         _tmpSapcing = _gridLayoutGroup.spacing;
         _startSapcing = new Vector2(0, -_gridLayoutGroup.cellSize.y);
@@ -124,5 +128,12 @@ public class UIEquipButtonGroup : MonoBehaviour
             _floor2Button.gameObject.SetActive(false);
             _floor1Button.gameObject.SetActive(false);
         }
+    }
+
+    public void SetFloorButtonColor(bool equipFloor1, bool equipFloor2, bool equipFloor3)
+    {
+        _floor1Button.SetLeftImageColor(equipFloor1 ? Utility.GetFloorBoldColor(ERestaurantFloorType.Floor1) : Color.white);
+        _floor2Button.SetLeftImageColor(equipFloor2 ? Utility.GetFloorBoldColor(ERestaurantFloorType.Floor2) : Color.white);
+        _floor3Button.SetLeftImageColor(equipFloor3 ? Utility.GetFloorBoldColor(ERestaurantFloorType.Floor3) : Color.white);
     }
 }

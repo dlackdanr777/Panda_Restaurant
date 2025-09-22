@@ -14,9 +14,9 @@ public class FeverSystem : MonoBehaviour
     private bool _isFeverStart = false;
     public bool IsFeverStart => _isFeverStart;
 
-    private int _feverGauge = 0;
-    public int FeverGauge => _feverGauge;
-    public void SetFeverGauge(int value) => _feverGauge = value;
+    private float _feverGauge = 0;
+    public float FeverGauge => _feverGauge;
+    public void SetFeverGauge(float value) => _feverGauge = value;
 
     private int _currentMaxFeverGauge = 500;
     public int CurrentMaxFeverGauge => _currentMaxFeverGauge;
@@ -24,12 +24,12 @@ public class FeverSystem : MonoBehaviour
 
     private Coroutine _feverRoutine = null;
 
-    public void AddFeverGauge()
+    public void AddFeverGauge(float addMul = 1)
     {
         if (_isFeverStart || UserInfo.IsTutorialStart)
             return;
 
-        _feverGauge = Mathf.Clamp(_feverGauge + ConstValue.ADD_PEVER_GAUGE, 0, _currentMaxFeverGauge);
+        _feverGauge = Mathf.Clamp(_feverGauge + ConstValue.ADD_PEVER_GAUGE * addMul, 0, _currentMaxFeverGauge);
         DebugLog.Log($"Fever Gauge : {_feverGauge} / {_currentMaxFeverGauge}");
         _uiFever.OnChangeGauge();
     }
@@ -57,7 +57,6 @@ public class FeverSystem : MonoBehaviour
         _uiFever.Init(this);
         _feverGauge = 0;
         _isFeverStart = false;
-        UserInfo.OnAddCustomerCountHandler += AddFeverGauge;
         UserInfo.OnChangeFurnitureHandler += OnEquipFurnitureEvent;
     }
 
@@ -74,7 +73,6 @@ public class FeverSystem : MonoBehaviour
 
     private void OnDestroy()
     {
-        UserInfo.OnAddCustomerCountHandler -= AddFeverGauge;
         UserInfo.OnChangeFurnitureHandler -= OnEquipFurnitureEvent;
     }
 
@@ -101,21 +99,28 @@ public class FeverSystem : MonoBehaviour
 
     private IEnumerator StartFeverRoutine()
     {
-        float time = ConstValue.PEVER_TIME;
+        float time = ConstValue.PEVER_TIME + GameManager.Instance.AddFerverTime;
         float timer = 0;
+        float addTabTimer = 0f;
         OnStartFeverHandler?.Invoke();
         _mainScene.PlayMainMusic();
         GameManager.Instance.SetGameSpeed(1f);
         while (timer < time)
         {
-            yield return YieldCache.WaitForSeconds(0.5f);
+            yield return YieldCache.WaitForSeconds(0.02f);
 
-            if(!_customerController.IsMaxCount)
+            addTabTimer += 0.02f;
+            if (addTabTimer >= 0.5f)
             {
-                _customerController.AddTabCount();
+                if (!_customerController.IsMaxCount)
+                {
+                    _customerController.AddTabCount();
+                }
+                addTabTimer = 0f; // 타이머 리셋
             }
 
-            timer += 0.5f;
+            _uiFever.OnChangeGaugeNoAnime(Mathf.Lerp(1, 0, timer / time));
+            timer += 0.02f;
         }
 
         _isFeverStart = false;

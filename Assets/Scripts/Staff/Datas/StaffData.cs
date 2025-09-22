@@ -8,6 +8,9 @@ public abstract class StaffData : ShopData
     [SerializeField] protected SkillBase _skill;
     public SkillBase Skill => _skill;
 
+    [SerializeField] protected RuntimeAnimatorController _animatorController;
+    public RuntimeAnimatorController AnimatorController => _animatorController;
+
     [Range(6, 30)] [SerializeField] protected float _speed;
 
     public abstract float SecondValue { get; }

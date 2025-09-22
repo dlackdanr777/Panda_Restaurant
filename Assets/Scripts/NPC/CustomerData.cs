@@ -24,7 +24,7 @@ public class CustomerData : ScriptableObject
 
 
     [Space]
-    [Header("殿厘 可记")]
+    [Header("Required Data")]
 
     [SerializeField] protected int _minScore;
     public int MinScore => _minScore;
@@ -47,7 +47,5 @@ public class CustomerData : ScriptableObject
         _minScore = minScore;
         _requiredDish = requiredDish;
         _requiredItem = requiredItem;
-
-        DebugLog.Log($"CustomerData 积己凳: {id} {name} {moveSpeed} {minScore} {requiredItem}");
     }
 }

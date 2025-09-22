@@ -1,3 +1,4 @@
+using Muks.DataBind;
 using Muks.UI;
 using System;
 using System.Collections.Generic;
@@ -6,6 +7,16 @@ using UnityEngine;
 
 public class MainScene : MonoBehaviour
 {
+    [Serializable]
+    private struct BackgroundData
+    {
+        [SerializeField] private AudioClip _backgroundMusic;
+        public AudioClip BackgroundMusic => _backgroundMusic;
+
+        [SerializeField] private GameObject _background;
+        public GameObject Background => _background;
+    }
+
     [Header("Option")]
     [SerializeField] private EStage _stage;
 
@@ -16,6 +27,7 @@ public class MainScene : MonoBehaviour
     [SerializeField] private FeverSystem _feverSystem;
     [SerializeField] private AudioClip _mainSceneMusic;
     [SerializeField] private AudioClip _feverMusic;
+    [SerializeField] private BackgroundData[] _backgroundDatas;
 
     private ERestaurantFloorType _currentFloor;
     public ERestaurantFloorType CurrentFloor => _currentFloor;
@@ -24,11 +36,13 @@ public class MainScene : MonoBehaviour
     public RestaurantType CurrentRestaurantType => _restaurantType;
 
     private float _updateTimer;
+    
+
 
 
     public void PlayMainMusic()
     {
-        if(!_feverSystem.IsFeverStart)
+        if (!_feverSystem.IsFeverStart)
             SoundManager.Instance.PlayBackgroundAudio(_mainSceneMusic, 0.5f);
 
         else
@@ -38,6 +52,9 @@ public class MainScene : MonoBehaviour
     public void SetFloor(ERestaurantFloorType floor)
     {
         _currentFloor = floor;
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_currentFloor, _restaurantType);
+        if (SoundManager.Instance.EffectType != EffectType.UI)
+            SoundManager.Instance.ChangePlayEffectType(effectType, 0.1f);
     }
 
     public void SetRestaurantType(RestaurantType type)
@@ -46,16 +63,30 @@ public class MainScene : MonoBehaviour
             return;
 
         _restaurantType = type;
-        if(SoundManager.Instance.EffectType != EffectType.UI)
-            SoundManager.Instance.ChangePlayEffectType(_restaurantType == RestaurantType.Hall ? EffectType.Hall : EffectType.Kitchen, 0.1f);
+        EffectType effectType = SoundManager.Instance.GetHallEffectType(_currentFloor, _restaurantType);
+        if (SoundManager.Instance.EffectType != EffectType.UI)
+            SoundManager.Instance.ChangePlayEffectType(effectType, 0.1f);
     }
 
     private void Awake()
     {
         UserInfo.ChangeStage(_stage);
-        SoundManager.Instance.ChangePlayEffectType(EffectType.Hall);
+        SoundManager.Instance.ChangePlayEffectType(EffectType.Restaurant);
+        SetBackground();
         _uiNavCoordinator.OnShowUIHandler += OnUIEvent;
         _uiNavCoordinator.OnHideUIHandler += OnUIEvent;
+
+        DataBind.SetUnityActionValue("ChangeBackground", () =>
+        {
+            SetBackground();
+            PlayMainMusic();
+        });
+
+        DataBind.SetUnityActionValue("ShowMeTheMoney", () => UserInfo.AddMoney(1000000));
+        DataBind.SetUnityActionValue("ShowMeTheDia", () => UserInfo.AddDia(1000));
+
+        UserInfo.CheckFurnitureFoodType(UserInfo.CurrentStage);
+        UserInfo.CheckKitchenUtensilFoodType(UserInfo.CurrentStage);
     }
 
 
@@ -67,7 +98,9 @@ public class MainScene : MonoBehaviour
         {
             SequentialCommandManager.Instance.EnqueueCommand(() =>  _uiMainNav.Push("UIAttendance"), () => _uiMainNav.ViewsVisibleStateCheck(), () => !_uiMainNav.CheckActiveView("UIAttendance"), 1, 0.5f);
         }
-
+        SoundManager.Instance.LoadSoundData();
+        ChallengeManager.Instance.UpdateChallenge();
+        GameManager.Instance.SetMiniGameStart(false);
 
 #if UNITY_EDITOR
         UserInfo.AddDia(1000);
@@ -114,6 +147,25 @@ public class MainScene : MonoBehaviour
     }
 
 
+    private void SetBackground()
+    {
+        int randInt = UnityEngine.Random.Range(0, _backgroundDatas.Length);
+        _mainSceneMusic = _backgroundDatas[randInt].BackgroundMusic;
+
+        for(int i = 0; i < _backgroundDatas.Length; i++)
+        {
+            if (i == randInt)
+            {
+                _backgroundDatas[i].Background.SetActive(true);
+            }
+            else
+            {
+                _backgroundDatas[i].Background.SetActive(false);
+            }
+        }
+    }
+
+
     void Update()
     {
         if(Input.GetKeyDown(KeyCode.K))
@@ -149,6 +201,16 @@ public class MainScene : MonoBehaviour
                 GameManager.Instance.AsyncSaveGameData();
             }
 
+            if (UserInfo.CheckLastWeeklyAccessTime())
+            {
+                UserInfo.ResetWeeklyChallenges();
+
+                if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
+                    return;
+
+                GameManager.Instance.AsyncSaveGameData();
+            }
+
         }
     }
 
@@ -157,7 +219,8 @@ public class MainScene : MonoBehaviour
     {
         if(_uiNavCoordinator.GetOpenViewCount() <= 0)
         {
-            SoundManager.Instance.ChangePlayEffectType(_restaurantType == RestaurantType.Hall ? EffectType.Hall : EffectType.Kitchen, 0.1f);
+            EffectType effectType = SoundManager.Instance.GetHallEffectType(_currentFloor, _restaurantType);
+            SoundManager.Instance.ChangePlayEffectType(effectType, 0.1f);
         }
         else
         {

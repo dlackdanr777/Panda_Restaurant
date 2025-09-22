@@ -1,88 +1,199 @@
-﻿ID,퀘스트 타입,바로가기 타입,설명,타입 필요 id,필요 개수,보상 타입,보상,,퀘스트 타입,설명,,,바로가기 타입,위치
-AllTimeReward01,TYPE11,ShortCut01,누적 코인 수익 35000달성,,35000,코인,2000,,TYPE01,가구 구매하기,,,ShortCut01,메인 씬
-AllTimeReward02,TYPE12,ShortCut01,누적 홍보 300회 달성,,300,코인,3000,,TYPE02,주방 구매하기,,,ShortCut02,주방 씬
-AllTimeReward03,TYPE08,ShortCut01,누적 평점 50 달성,,50,코인,2500,,TYPE03,특정 레시피 구매하기,,,ShortCut03,샵(가구)
-AllTimeReward04,TYPE11,ShortCut01,누적 코인 수익 85000달성,,85000,코인,4000,,TYPE04,특정 레시피 제작하기,,,ShortCut04,샵(주방)
-AllTimeReward05,TYPE12,ShortCut01,누적 홍보 1000회 달성,,1000,코인,5000,,TYPE05,특정 스테프 채용하기,,,ShortCut05,샵(스텝)
-AllTimeReward06,TYPE18,ShortCut03,누적 레스토랑 설비 5개 해제,,5,코인,3000,,TYPE06,레시피 배우기 누적 횟수 달성,,,ShortCut06,샵(레시피)
-AllTimeReward07,TYPE19,ShortCut04,누적 주방 설비 5개 해제,,5,코인,5000,,TYPE07,음식 제작 누적 횟수 달성,,,ShortCut07,가게 관리
-AllTimeReward08,TYPE08,ShortCut01,누적 평점 120 달성,,120,코인,5000,,TYPE08,누적 평점 획득 달성,,,ShortCut08,도전 과제
-AllTimeReward09,TYPE18,ShortCut03,누적 레스토랑 설비 8개 해제,,8,코인,8000,,TYPE09,누적 손님 방문 달성,,,ShortCut09,다이어리
-AllTimeReward10,TYPE19,ShortCut04,누적 주방 설비 8개 해제,,8,코인,8000,,TYPE10,새로운 방문 손님 달성,,,ShortCut10,캡슐 머신
-AllTimeReward11,TYPE11,ShortCut01,누적 코인 수익 160000달성,,160000,코인,7500,,TYPE11,누적 코인 획득달성,,,ShortCut11,공지 사항
-AllTimeReward12,TYPE10,ShortCut01,새로운 손님 방문 10명 해제,,10,코인,10000,,TYPE12,누적 홍보 횟수 달성,,,ShortCut12,출석부
-AllTimeReward13,TYPE08,ShortCut01,누적 평점 250 달성,,250,코인,3000,,TYPE13,"누적 가구(레스토랑, 주방) 개수 달성",,,ShortCut13,환경설정
-AllTimeReward14,TYPE05,ShortCut05,종업원 지지 고용하기,STAFF01,1,코인,8000,,TYPE14,누적 식당 가구 세트 획득 달성(속성 구분 없이),,,ShortCut14,샵(가구)_테이블1
-AllTimeReward15,TYPE06,ShortCut06,누적 레시피 10개 달성,,10,코인,8000,,TYPE15,누적 주방 가구 세트 획득 달성(속성 구분 없이),,,ShortCut15,샵(가구)_테이블2
-AllTimeReward16,TYPE18,ShortCut03,누적 레스토랑 설비 12개 해제,,12,코인,10000,,TYPE16,특정 속성 식당 세트 효과 달성,,,ShortCut16,샵(가구)_테이블3
-AllTimeReward17,TYPE19,ShortCut04,누적 주방 설비 12개 해제,,12,코인,10000,,TYPE17,특정 속성 주방 세트 효과 달성,,,ShortCut17,샵(가구)_테이블4
-AllTimeReward18,TYPE12,ShortCut01,누적 홍보 4500회 달성,,4500,코인,8000,,TYPE18,식당 가구 누적 개수 달성,,,ShortCut18,샵(가구)_테이블5
-AllTimeReward19,TYPE08,ShortCut01,누적 평점 300 달성,,300,코인,10000,,TYPE19,주방 가구 누적 개수 달성,,,ShortCut19,샵(가구)_카운터
-AllTimeReward20,TYPE09,ShortCut01,누적 방문 손님 500명 달성,,500,코인,10000,,TYPE20,,,,ShortCut20,샵(가구)_선반
-AllTimeReward21,TYPE28,ShortCut01,누적 쓰레기 청소 25회 달성,,25,코인,8000,,TYPE21,스페셜 손님 방문 횟수 달성,,,ShortCut21,샵(가구)_액자
-AllTimeReward22,TYPE11,ShortCut01,누적 코인 수익 350000달성,,350000,코인,10000,,TYPE22,도둑 손님 퇴치 횟수 달성,,,ShortCut22,샵(가구)_화분
-AllTimeReward23,TYPE25,ShortCut10,누적 캡슐 머신 사용 10회 달성,,10,코인,10000,,TYPE23,락커 손님 퇴치 횟수 달성,,,ShortCut23,샵(가구)_조명
-AllTimeReward24,TYPE16,ShortCut03,내추럴 식당 세트 효과 적용,SET01,7,코인,15000,,TYPE24,"진상 손님(도둑, 락커)퇴치 횟수 달성",,,ShortCut24,샵(가구)_벽지
-AllTimeReward25,TYPE17,ShortCut04,내추럴 주방 세트 효과 적용,KITCHEN01,8,코인,15000,,TYPE25,누적 캡슐 머신 사용 횟수 달성,,,ShortCut25,샵(주방)_조리기1
-AllTimeReward26,TYPE12,ShortCut01,누적 홍보 7000회 달성,,7000,코인,15000,,TYPE26,누적 캡슐 아이템 획득 달성,,,ShortCut26,샵(주방)_조리기2
-AllTimeReward27,TYPE11,ShortCut01,누적 코인 수익 700000달성,,700000,코인,15000,,TYPE27,특정 캡슐 아이템 획득 달성,,,ShortCut27,샵(주방)_조리기3
-AllTimeReward28,TYPE08,ShortCut01,누적 평점 500 달성,,500,코인,15000,,TYPE28,누적 쓰레기 청소 달성,,,ShortCut28,샵(주방)_조리기4
-AllTimeReward29,TYPE16,ShortCut03,모던 식당 세트 효과 적용,SET02,7,코인,20000,,TYPE29,광고 시청 누적 횟수 달성,,,ShortCut29,샵(주방)_조리기5
-AllTimeReward30,TYPE06,ShortCut06,누적 레시피 15개 달성,,15,코인,15000,,TYPE30,일일 퀘스트 모두 완료,,,ShortCut30,샵(주방)_냉장고
-AllTimeReward31,TYPE17,ShortCut04,모던 주방 세트 효과 적용,KITCHEN02,8,코인,20000,,,,,,ShortCut31,샵(주방)_장식장
-AllTimeReward32,TYPE09,ShortCut01,누적 방문 손님 700명 달성,,700,코인,15000,,,,,,ShortCut32,샵(주방)_창문
-AllTimeReward33,TYPE25,ShortCut10,누적 캡슐 머신 사용 20회 달성,,20,코인,20000,,,,,,ShortCut33,샵(주방)_싱크대
-AllTimeReward34,TYPE05,ShortCut05,케이크 루파 고용하기,STAFF18,1,코인,20000,,,,,,ShortCut34,샵(주방)_그릇선반
-AllTimeReward35,TYPE18,ShortCut03,누적 레스토랑 설비 20개 해제,,20,코인,15000,,,,,,ShortCut35,샵(주방)_주방선반
-AllTimeReward36,TYPE19,ShortCut04,누적 주방 설비 20개 해제,,20,코인,15000,,,,,,ShortCut36,샵(주방)_도구선반
-AllTimeReward37,TYPE16,ShortCut03,빈티지 식당 세트 효과 적용,SET03,7,코인,25000,,,,,,ShortCut37,샵(스텝)_매니저
-AllTimeReward38,TYPE17,ShortCut04,빈티지 주방 세트 효과 적용,KITCHEN03,8,코인,25000,,,,,,ShortCut38,샵(스텝)_치어리더
-AllTimeReward39,TYPE09,ShortCut01,누적 방문 손님 1500명 달성,,1500,코인,20000,,,,,,ShortCut39,샵(스텝)_웨이터
-AllTimeReward40,TYPE06,ShortCut06,누적 레시피 25개 달성,,25,코인,20000,,,,,,ShortCut40,샵(스텝)_알바
-AllTimeReward41,TYPE10,ShortCut01,새로운 손님 방문 25명 해제,,25,코인,15000,,,,,,ShortCut41,샵(스텝)_청소부
-AllTimeReward42,TYPE08,ShortCut01,누적 평점 800 달성,,800,코인,20000,,,,,,ShortCut42,샵(스텝)_경호원
-AllTimeReward43,TYPE16,ShortCut03,전통적 식당 세트 효과 적용,SET04,7,코인,30000,,,,,,ShortCut43,샵(스텝)_셰프
-AllTimeReward44,TYPE17,ShortCut04,전통적 주방 세트 효과 적용,KITCHEN04,8,코인,30000,,,,,,,
-AllTimeReward45,TYPE10,ShortCut01,새로운 손님 방문 45명 해제,,45,코인,30000,,,,,,,
-AllTimeReward46,TYPE25,ShortCut10,누적 캡슐 머신 사용 30회 달성,,30,코인,30000,,,,,,,
-AllTimeReward47,TYPE11,ShortCut01,누적 코인 수익 1000000달성,,1000000,코인,20000,,,,,,,
-AllTimeReward48,TYPE21,ShortCut01,도둑 손님 퇴치 10회 달성,,10,코인,10000,,,,,,,
-AllTimeReward49,TYPE26,ShortCut10,누적 캡슐 아이템 30개 획득 달성,,30,코인,50000,,,,,,,
-AllTimeReward50,TYPE06,ShortCut06,누적 레시피 50개 달성,,50,코인,30000,,,,,,,
-AllTimeReward51,TYPE10,ShortCut01,새로운 손님 방문 55명 해제,,55,코인,100000,,,,,,,
-AllTimeReward52,TYPE08,ShortCut01,누적 평점 1500 달성,,1500,코인,30000,,,,,,,
-AllTimeReward53,TYPE18,ShortCut03,누적 레스토랑 설비 35개 해제,,35,코인,20000,,,,,,,
-AllTimeReward54,TYPE19,ShortCut04,누적 주방 설비 35개 해제,,35,코인,20000,,,,,,,
-AllTimeReward55,TYPE28,ShortCut01,누적 쓰레기 청소 80회 달성,,80,코인,35000,,,,,,,
-AllTimeReward56,TYPE25,ShortCut10,누적 캡슐 머신 사용 40회 달성,,40,코인,40000,,,,,,,
-AllTimeReward57,TYPE11,ShortCut01,누적 코인 수익 1500000달성,,1500000,코인,30000,,,,,,,
-AllTimeReward58,TYPE10,ShortCut01,새로운 손님 방문 66명 해제,,66,코인,150000,,,,,,,
-AllTimeReward59,TYPE06,ShortCut06,누적 레시피 60개 달성,,60,코인,100000,,,,,,,
-AllTimeReward60,TYPE09,ShortCut01,누적 방문 손님 3000명 달성,,3000,코인,25000,,,,,,,
-AllTimeReward61,TYPE26,ShortCut10,누적 캡슐 아이템 50개 획득 달성,,50,코인,100000,,,,,,,
-AllTimeReward62,TYPE12,ShortCut01,누적 홍보 15000회 달성,,15000,코인,20000,,,,,,,
-AllTimeReward63,TYPE25,ShortCut10,누적 캡슐 머신 사용 50회 달성,,50,코인,50000,,,,,,,
-AllTimeReward64,TYPE08,ShortCut01,누적 평점 1800 달성,,1800,코인,40000,,,,,,,
-AllTimeReward65,TYPE23,ShortCut01,락커 손님 퇴치 10회 달성,,10,코인,25000,,,,,,,
-AllTimeReward66,TYPE21,ShortCut01,도둑 손님 퇴치 20회 달성,,20,코인,20000,,,,,,,
-AllTimeReward67,TYPE09,ShortCut01,누적 방문 손님 4500명 달성,,4500,코인,30000,,,,,,,
-AllTimeReward68,TYPE10,ShortCut01,새로운 손님 방문 77명 해제,,77,코인,300000,,,,,,,
-AllTimeReward69,TYPE29,ShortCut01,광고 시청 누적 100회 달성,,100,코인,30000,,,,,,,
-AllTimeReward70,TYPE26,ShortCut10,누적 캡슐 아이템 75개 획득 달성,,75,코인,150000,,,,,,,
-AllTimeReward71,TYPE12,ShortCut01,누적 홍보 30000회 달성,,30000,코인,50000,,,,,,,
-AllTimeReward72,TYPE11,ShortCut01,누적 코인 수익 3000000달성,,3000000,코인,40000,,,,,,,
-AllTimeReward73,TYPE05,ShortCut05,판다 멜로 고용하기,STAFF21,1,코인,200000,,,,,,,
-AllTimeReward74,TYPE28,ShortCut01,누적 쓰레기 청소 160회 달성,,160,코인,70000,,,,,,,
-AllTimeReward75,TYPE08,ShortCut01,누적 평점 2500 달성,,2500,코인,90000,,,,,,,
-AllTimeReward76,TYPE29,ShortCut01,광고 시청 누적 200회 달성,,200,코인,50000,,,,,,,
-AllTimeReward77,TYPE23,ShortCut01,락커 손님 퇴치 20회 달성,,20,코인,50000,,,,,,,
-AllTimeReward78,TYPE09,ShortCut01,누적 방문 손님 9000명 달성,,9000,코인,40000,,,,,,,
-AllTimeReward79,TYPE08,ShortCut01,누적 평점 4000 달성,,4000,코인,150000,,,,,,,
-AllTimeReward80,TYPE25,ShortCut10,누적 캡슐 머신 사용 50회 달성,,50,코인,60000,,,,,,,
-AllTimeReward81,TYPE08,ShortCut01,누적 평점 2800 달성,,2800,코인,120000,,,,,,,
-AllTimeReward82,TYPE29,ShortCut01,광고 시청 누적 300회 달성,,300,코인,70000,,,,,,,
-AllTimeReward83,TYPE05,ShortCut05,베르베르 고용하기,STAFF26,1,코인,350000,,,,,,,
-AllTimeReward84,TYPE09,ShortCut01,누적 방문 손님 15000명 달성,,15000,코인,75000,,,,,,,
-AllTimeReward85,TYPE28,ShortCut01,누적 쓰레기 청소 250회 달성,,250,코인,75000,,,,,,,
-AllTimeReward86,TYPE09,ShortCut01,누적 방문 손님 30000명 달성,,30000,코인,100000,,,,,,,
-AllTimeReward87,TYPE05,ShortCut05,미스터 백 고용하기,STAFF27,1,코인,500000,,,,,,,
+﻿ID,퀘스트 타입,바로가기 타입,설명,타입 필요 id,필요 개수,보상 타입1,보상1,보상 타입2,보상2,,퀘스트 타입,설명,,바로가기 타입,위치
+AllTimeReward01,TYPE11,ShortCut01,"누적 코인 수익 5"",""000 달성",,5000,평점,25,코인,500,,TYPE01,가구 구매하기,,ShortCut01,메인 씬
+AllTimeReward02,TYPE11,ShortCut01,"누적 코인 수익 10"",""000 달성",,10000,,50,코인,1000,,TYPE02,주방 구매하기,,ShortCut02,주방 씬
+AllTimeReward03,TYPE11,ShortCut01,"누적 코인 수익 15"",""000 달성",,15000,,75,코인,1500,,TYPE03,특정 레시피 구매하기,,ShortCut03,샵(가구)
+AllTimeReward04,TYPE11,ShortCut01,"누적 코인 수익 20"",""000 달성",,20000,,100,코인,2000,,TYPE04,특정 레시피 제작하기,,ShortCut04,샵(주방)
+AllTimeReward05,TYPE11,ShortCut01,"누적 코인 수익 25"",""000 달성",,25000,,125,코인,2500,,TYPE05,특정 스테프 채용하기,,ShortCut05,샵(스텝)
+AllTimeReward06,TYPE11,ShortCut01,"누적 코인 수익 30"",""000 달성",,30000,,150,코인,3000,,TYPE06,레시피 배우기 누적 횟수 달성,,ShortCut06,샵(레시피)
+AllTimeReward07,TYPE11,ShortCut01,"누적 코인 수익 35"",""000 달성",,35000,,175,코인,3500,,TYPE07,음식 제작(서빙) 누적 횟수 달성,,ShortCut07,가게 관리
+AllTimeReward08,TYPE11,ShortCut01,"누적 코인 수익 40"",""000 달성",,40000,,200,코인,4000,,TYPE08,누적 평점 획득 달성,,ShortCut08,도전 과제
+AllTimeReward09,TYPE11,ShortCut01,"누적 코인 수익 45"",""000 달성",,45000,,225,코인,4500,,TYPE09,방문 손님 누적 횟수달성,,ShortCut09,다이어리
+AllTimeReward10,TYPE11,ShortCut01,"누적 코인 수익 50"",""000 달성",,50000,,250,코인,5000,,TYPE10,새로운 방문 손님 달성,,ShortCut10,캡슐 머신
+AllTimeReward11,TYPE11,ShortCut01,"누적 코인 수익 60"",""000 달성",,60000,,300,코인,6000,,TYPE11,누적 코인 획득달성,,ShortCut11,공지 사항
+AllTimeReward12,TYPE11,ShortCut01,"누적 코인 수익 70"",""000 달성",,70000,,350,코인,7000,,TYPE12,누적 홍보 횟수 달성,,ShortCut12,출석부
+AllTimeReward13,TYPE11,ShortCut01,"누적 코인 수익 80"",""000 달성",,80000,,400,코인,8000,,TYPE13,"누적 가구(레스토랑, 주방) 개수 달성",,ShortCut13,환경설정
+AllTimeReward14,TYPE11,ShortCut01,"누적 코인 수익 90"",""000 달성",,90000,,450,코인,9000,,TYPE14,누적 레스토랑 가구 세트 획득 달성,,,
+AllTimeReward15,TYPE11,ShortCut01,누적 코인 수익 1A 달성,,100000,,500,코인,10000,,TYPE15,누적 주방 가구 세트 획득 달성,,,
+AllTimeReward16,TYPE11,ShortCut01,"누적 코인 수익 1"".""1A 달성",,110000,,550,코인,11000,,TYPE16,특정 레스토랑 가구 세트 획득,,,
+AllTimeReward17,TYPE11,ShortCut01,"누적 코인 수익 1"".""2A 달성",,120000,,600,코인,12000,,TYPE17,특정 주방 세트 획득,,,
+AllTimeReward18,TYPE11,ShortCut01,"누적 코인 수익 1"".""3A 달성",,130000,,650,코인,13000,,TYPE18,레스토랑 가구 누적 개수 달성,,,
+AllTimeReward19,TYPE11,ShortCut01,"누적 코인 수익 1"".""4A 달성",,140000,,700,코인,14000,,TYPE19,주방 가구 누적 개수 달성,,,
+AllTimeReward20,TYPE11,ShortCut01,"누적 코인 수익 1"".""5A 달성",,150000,,750,코인,15000,,TYPE20,,,,
+AllTimeReward21,TYPE11,ShortCut01,"누적 코인 수익 1"".""6A 달성",,160000,,800,코인,16000,,TYPE21,도둑 손님 퇴치 횟수 달성,,,
+AllTimeReward22,TYPE11,ShortCut01,"누적 코인 수익 1"".""7A 달성",,170000,,850,코인,17000,,TYPE22,스페셜 손님 방문 횟수 달성,,,
+AllTimeReward23,TYPE11,ShortCut01,"누적 코인 수익 1"".""8A 달성",,180000,,900,코인,18000,,TYPE23,락커 손님 퇴치 횟수 달성,,,
+AllTimeReward24,TYPE11,ShortCut01,"누적 코인 수익 1"".""9A 달성",,190000,,950,코인,19000,,TYPE24,"진상 손님(도둑, 락커)퇴치 횟수 달성",,,
+AllTimeReward25,TYPE11,ShortCut01,누적 코인 수익 2A 달성,,200000,,1000,코인,20000,,TYPE25,누적 캡슐 머신 사용 횟수 달성,,,
+AllTimeReward26,TYPE11,ShortCut01,"누적 코인 수익 2"".""1A 달성",,210000,,1050,코인,21000,,TYPE26,누적 캡슐 아이템 획득 달성,,,
+AllTimeReward27,TYPE11,ShortCut01,"누적 코인 수익 2"".""2A 달성",,220000,,1100,코인,22000,,TYPE27,특정 캡슐 아이템 획득 달성,,,
+AllTimeReward28,TYPE11,ShortCut01,"누적 코인 수익 2"".""3A 달성",,230000,,1150,코인,23000,,TYPE28,누적 쓰레기 청소 달성,,,
+AllTimeReward29,TYPE11,ShortCut01,"누적 코인 수익 2"".""4A 달성",,240000,,1200,코인,24000,,TYPE29,광고 시청 누적 횟수 달성,,,
+AllTimeReward30,TYPE11,ShortCut01,"누적 코인 수익 2"".""5A 달성",,250000,,1250,코인,25000,,TYPE30,일일 퀘스트 모두 완료,,,
+AllTimeReward31,TYPE11,ShortCut01,"누적 코인 수익 2"".""6A 달성",,260000,,1300,코인,26000,,,,,,
+AllTimeReward32,TYPE11,ShortCut01,"누적 코인 수익 2"".""7A 달성",,270000,,1350,코인,27000,,,,,,
+AllTimeReward33,TYPE11,ShortCut01,"누적 코인 수익 2"".""8A 달성",,280000,,1400,코인,28000,,보상 규칙,,,,
+AllTimeReward34,TYPE11,ShortCut01,"누적 코인 수익 2"".""9A 달성",,290000,,1450,코인,29000,,누적 평점1,누적 평점 보상에서 평점 보상은 요구치 평점의 절반 값을 10으로 나누고 소수점은 반올림한값을 평점으로 보상 지급,,,
+AllTimeReward35,TYPE11,ShortCut01,누적 코인 수익 3A 달성,,300000,,1500,코인,30000,,누적 평점2,코인은 나누기 10 한 값으로 보상,,,
+AllTimeReward36,TYPE11,ShortCut01,"누적 코인 수익 3"".""1A 달성",,310000,,1550,코인,31000,,,,,,
+AllTimeReward37,TYPE11,ShortCut01,"누적 코인 수익 3"".""2A 달성",,320000,,1600,코인,32000,,,,,,
+AllTimeReward38,TYPE11,ShortCut01,"누적 코인 수익 3"".""3A 달성",,330000,,1650,코인,33000,,누적 코인2,코인 보상은 누적 코인의 나누기 10한 값을 보상 지급,,,
+AllTimeReward39,TYPE11,ShortCut01,"누적 코인 수익 3"".""4A 달성",,340000,,1700,코인,34000,,,,,,
+AllTimeReward40,TYPE11,ShortCut01,"누적 코인 수익 3"".""5A 달성",,350000,,1750,코인,35000,,,,,,
+AllTimeReward41,TYPE11,ShortCut01,"누적 코인 수익 3"".""6A 달성",,360000,,1800,코인,36000,,,,,,
+AllTimeReward42,TYPE11,ShortCut01,"누적 코인 수익 3"".""7A 달성",,370000,,1850,코인,37000,,,,,,
+AllTimeReward43,TYPE11,ShortCut01,"누적 코인 수익 3"".""8A 달성",,380000,,1900,코인,38000,,,,,,
+AllTimeReward44,TYPE11,ShortCut01,"누적 코인 수익 3"".""9A 달성",,390000,,1950,코인,39000,,,,,,
+AllTimeReward45,TYPE11,ShortCut01,누적 코인 수익 4A 달성,,400000,,2000,코인,40000,,,,,,
+AllTimeReward46,TYPE11,ShortCut01,"누적 코인 수익 4"".""1A 달성",,410000,,2050,코인,41000,,,,,,
+AllTimeReward47,TYPE11,ShortCut01,"누적 코인 수익 4"".""2A 달성",,420000,,2100,코인,42000,,,,,,
+AllTimeReward48,TYPE11,ShortCut01,"누적 코인 수익 4"".""3A 달성",,430000,,2150,코인,43000,,,,,,
+AllTimeReward49,TYPE11,ShortCut01,"누적 코인 수익 4"".""4A 달성",,440000,,2200,코인,44000,,,,,,
+AllTimeReward50,TYPE11,ShortCut01,"누적 코인 수익 4"".""5A 달성",,450000,,2250,코인,45000,,,,,,
+AllTimeReward51,TYPE11,ShortCut01,"누적 코인 수익 4"".""6A 달성",,460000,,2300,코인,46000,,,,,,
+AllTimeReward52,TYPE11,ShortCut01,"누적 코인 수익 4"".""7A 달성",,470000,,2350,코인,47000,,,,,,
+AllTimeReward53,TYPE11,ShortCut01,"누적 코인 수익 4"".""8A 달성",,480000,,2400,코인,48000,,,,,,
+AllTimeReward54,TYPE11,ShortCut01,"누적 코인 수익 4"".""9A 달성",,490000,,2450,코인,49000,,,,,,
+AllTimeReward55,TYPE11,ShortCut01,누적 코인 수익 5A 달성,,500000,,2500,코인,50000,,,,,,
+AllTimeReward56,TYPE11,ShortCut01,누적 코인 수익 6A 달성,,600000,,3000,코인,60000,,,,,,
+AllTimeReward57,TYPE11,ShortCut01,누적 코인 수익 7A 달성,,700000,,3500,코인,70000,,,,,,
+AllTimeReward58,TYPE11,ShortCut01,누적 코인 수익 8A 달성,,800000,,4000,코인,80000,,,,,,
+AllTimeReward59,TYPE11,ShortCut01,누적 코인 수익 9A 달성,,900000,,4500,코인,90000,,,,,,
+AllTimeReward60,TYPE11,ShortCut01,누적 코인 수익 10A 달성,,1000000,,5000,코인,100000,,,,,,
+,,,,,,,,,,,,,,,
+AllTimeRepeatVisit,TYPE12,ShortCut01,누적 방문 손님 반복 규칙 ( 100회마다 달성),,,,평점(달성 횟수 10%),,코인(달성 횟수x10),,,,,,
+,,,,,,,,,,,,,,,
+AllTimeReward61,TYPE08,ShortCut01,누적 평점 50 달성,,50,,0,코인,5,,,,,,
+AllTimeReward62,TYPE08,ShortCut01,누적 평점 100 달성,,100,,0,코인,10,,,,,,
+AllTimeReward63,TYPE08,ShortCut01,누적 평점 150 달성,,150,,0,코인,15,,,,,,
+AllTimeReward64,TYPE08,ShortCut01,누적 평점 200 달성,,200,,0,코인,20,,,,,,
+AllTimeReward65,TYPE08,ShortCut01,누적 평점 250 달성,,250,,0,코인,25,,,,,,
+AllTimeReward66,TYPE08,ShortCut01,누적 평점 300 달성,,300,,0,코인,30,,,,,,
+AllTimeReward67,TYPE08,ShortCut01,누적 평점 350 달성,,350,,0,코인,35,,,,,,
+AllTimeReward68,TYPE08,ShortCut01,누적 평점 400 달성,,400,,0,코인,40,,,,,,
+AllTimeReward69,TYPE08,ShortCut01,누적 평점 450 달성,,450,,0,코인,45,,,,,,
+AllTimeReward70,TYPE08,ShortCut01,누적 평점 500 달성,,500,,0,코인,50,,,,,,
+AllTimeReward71,TYPE08,ShortCut01,누적 평점 600 달성,,600,,0,코인,60,,,,,,
+AllTimeReward72,TYPE08,ShortCut01,누적 평점 700 달성,,700,,0,코인,70,,,,,,
+AllTimeReward73,TYPE08,ShortCut01,누적 평점 800 달성,,800,,0,코인,80,,,,,,
+AllTimeReward74,TYPE08,ShortCut01,누적 평점 900 달성,,900,,0,코인,90,,,,,,
+AllTimeReward75,TYPE08,ShortCut01,"누적 평점 1"",""000 달성",,1000,,0,코인,100,,,,,,
+AllTimeReward76,TYPE08,ShortCut01,"누적 평점 1"",""500 달성",,1500,,0,코인,150,,,,,,
+AllTimeReward77,TYPE08,ShortCut01,"누적 평점 2"",""000 달성",,2000,,0,코인,200,,,,,,
+AllTimeReward78,TYPE08,ShortCut01,"누적 평점 2"",""500 달성",,2500,,0,코인,250,,,,,,
+AllTimeReward79,TYPE08,ShortCut01,"누적 평점 3"",""000 달성",,3000,,0,코인,300,,,,,,
+AllTimeReward80,TYPE08,ShortCut01,"누적 평점 3"",""500 달성",,3500,,0,코인,350,,,,,,
+AllTimeReward81,TYPE08,ShortCut01,"누적 평점 4"",""000 달성",,4000,,0,코인,400,,,,,,
+AllTimeReward82,TYPE08,ShortCut01,"누적 평점 4"",""500 달성",,4500,,0,코인,450,,,,,,
+AllTimeReward83,TYPE08,ShortCut01,"누적 평점 5"",""000 달성",,5000,,0,코인,500,,,,,,
+AllTimeReward84,TYPE08,ShortCut01,"누적 평점 5"",""500 달성",,5500,,0,코인,550,,,,,,
+AllTimeReward85,TYPE08,ShortCut01,"누적 평점 6"",""000 달성",,6000,,0,코인,600,,,,,,
+AllTimeReward86,TYPE08,ShortCut01,"누적 평점 6"",""500 달성",,6500,,0,코인,650,,,,,,
+AllTimeReward87,TYPE08,ShortCut01,"누적 평점 7"",""000 달성",,7000,,0,코인,700,,,,,,
+AllTimeReward88,TYPE08,ShortCut01,"누적 평점 7"",""500 달성",,7500,,0,코인,750,,,,,,
+AllTimeReward89,TYPE08,ShortCut01,"누적 평점 8"",""000 달성",,8000,,0,코인,800,,,,,,
+AllTimeReward90,TYPE08,ShortCut01,"누적 평점 8"",""500 달성",,8500,,0,코인,850,,,,,,
+AllTimeReward91,TYPE08,ShortCut01,"누적 평점 9"",""000 달성",,9000,,0,코인,900,,,,,,
+AllTimeReward92,TYPE08,ShortCut01,"누적 평점 9"",""500 달성",,9500,,0,코인,950,,,,,,
+AllTimeReward93,TYPE08,ShortCut01,"누적 평점 10"",""000 달성",,10000,,0,코인,1000,,,,,,
+AllTimeReward94,TYPE08,ShortCut01,"누적 평점 20"",""000 달성",,20000,,0,코인,2000,,,,,,
+AllTimeReward95,TYPE08,ShortCut01,"누적 평점 30"",""000 달성",,30000,,0,코인,3000,,,,,,
+AllTimeReward96,TYPE08,ShortCut01,"누적 평점 40"",""000 달성",,40000,,0,코인,4000,,,,,,
+AllTimeReward97,TYPE08,ShortCut01,"누적 평점 50"",""000 달성",,50000,,0,코인,5000,,,,,,
+AllTimeReward98,TYPE08,ShortCut01,"누적 평점 60"",""000 달성",,60000,,0,코인,6000,,,,,,
+AllTimeReward99,TYPE08,ShortCut01,"누적 평점 70"",""000 달성",,70000,,0,코인,7000,,,,,,
+AllTimeReward100,TYPE08,ShortCut01,"누적 평점 80"",""000 달성",,80000,,0,코인,8000,,,,,,
+AllTimeReward101,TYPE08,ShortCut01,"누적 평점 90"",""000 달성",,90000,,0,코인,9000,,,,,,
+AllTimeReward102,TYPE08,ShortCut01,누적 평점 1A 달성,,100000,,0,코인,10000,,,,,,
+AllTimeReward103,TYPE08,ShortCut01,누적 평점 1.1A 달성,,111000,,0,코인,11100,,,,,,
+AllTimeReward104,TYPE08,ShortCut01,누적 평점 1.2A 달성,,120000,,0,코인,12000,,,,,,
+AllTimeReward105,TYPE08,ShortCut01,누적 평점 1.3A 달성,,130000,,0,코인,13000,,,,,,
+AllTimeReward106,TYPE08,ShortCut01,누적 평점 1.4A 달성,,140000,,0,코인,14000,,,,,,
+AllTimeReward107,TYPE08,ShortCut01,누적 평점 1.5A 달성,,150000,,0,코인,15000,,,,,,
+AllTimeReward108,TYPE08,ShortCut01,누적 평점 1.6A 달성,,160000,,0,코인,16000,,,,,,
+AllTimeReward109,TYPE08,ShortCut01,누적 평점 1.7A 달성,,170000,,0,코인,17000,,,,,,
+AllTimeReward110,TYPE08,ShortCut01,누적 평점 1.8A 달성,,180000,,0,코인,18000,,,,,,
+AllTimeReward111,TYPE08,ShortCut01,누적 평점 1.9A 달성,,190000,,0,코인,19000,,,,,,
+AllTimeReward112,TYPE08,ShortCut01,누적 평점 2A 달성,,200000,,0,코인,20000,,,,,,
+AllTimeReward113,TYPE08,ShortCut01,누적 평점 2.1A 달성,,210000,,0,코인,21000,,,,,,
+AllTimeReward114,TYPE08,ShortCut01,누적 평점 2.2A 달성,,220000,,0,코인,22000,,,,,,
+AllTimeReward115,TYPE08,ShortCut01,누적 평점 2.3A 달성,,230000,,0,코인,23000,,,,,,
+AllTimeReward116,TYPE08,ShortCut01,누적 평점 2.4A 달성,,240000,,0,코인,24000,,,,,,
+AllTimeReward117,TYPE08,ShortCut01,누적 평점 2.5A 달성,,250000,,0,코인,25000,,,,,,
+AllTimeReward118,TYPE08,ShortCut01,누적 평점 2.6A 달성,,260000,,0,코인,26000,,,,,,
+AllTimeReward119,TYPE08,ShortCut01,누적 평점 2.7A 달성,,270000,,0,코인,27000,,,,,,
+AllTimeReward120,TYPE08,ShortCut01,누적 평점 2.8A 달성,,280000,,0,코인,28000,,,,,,
+AllTimeReward121,TYPE08,ShortCut01,누적 평점 2.9A 달성,,290000,,0,코인,29000,,,,,,
+AllTimeReward122,TYPE08,ShortCut01,누적 평점 3A 달성,,300000,,0,코인,30000,,,,,,
+AllTimeReward123,TYPE08,ShortCut01,누적 평점 3.1A 달성,,310000,,0,코인,31000,,,,,,
+AllTimeReward124,TYPE08,ShortCut01,누적 평점 3.2A 달성,,320000,,0,코인,32000,,,,,,
+AllTimeReward125,TYPE08,ShortCut01,누적 평점 3.3A 달성,,330000,,0,코인,33000,,,,,,
+AllTimeReward126,TYPE08,ShortCut01,누적 평점 3.4A 달성,,340000,,0,코인,34000,,,,,,
+AllTimeReward127,TYPE08,ShortCut01,누적 평점 3.5A 달성,,350000,,0,코인,35000,,,,,,
+AllTimeReward128,TYPE08,ShortCut01,누적 평점 3.6A 달성,,360000,,0,코인,36000,,,,,,
+AllTimeReward129,TYPE08,ShortCut01,누적 평점 3.7A 달성,,370000,,0,코인,37000,,,,,,
+AllTimeReward130,TYPE08,ShortCut01,누적 평점 3.8A 달성,,380000,,0,코인,38000,,,,,,
+AllTimeReward131,TYPE08,ShortCut01,누적 평점 3.9A 달성,,390000,,0,코인,39000,,,,,,
+AllTimeReward132,TYPE08,ShortCut01,누적 평점 4A 달성,,400000,,0,코인,40000,,,,,,
+AllTimeReward133,TYPE08,ShortCut01,누적 평점 4.1A 달성,,410000,,0,코인,41000,,,,,,
+AllTimeReward134,TYPE08,ShortCut01,누적 평점 4.2A 달성,,420000,,0,코인,42000,,,,,,
+AllTimeReward135,TYPE08,ShortCut01,누적 평점 4.3A 달성,,430000,,0,코인,43000,,,,,,
+AllTimeReward136,TYPE08,ShortCut01,누적 평점 4.4A 달성,,440000,,0,코인,44000,,,,,,
+AllTimeReward137,TYPE08,ShortCut01,누적 평점 4.5A 달성,,450000,,0,코인,45000,,,,,,
+AllTimeReward138,TYPE08,ShortCut01,누적 평점 4.6A 달성,,460000,,0,코인,46000,,,,,,
+AllTimeReward139,TYPE08,ShortCut01,누적 평점 4.7A 달성,,470000,,0,코인,47000,,,,,,
+AllTimeReward140,TYPE08,ShortCut01,누적 평점 4.8A 달성,,480000,,0,코인,48000,,,,,,
+AllTimeReward141,TYPE08,ShortCut01,누적 평점 4.9A 달성,,490000,,0,코인,49000,,,,,,
+AllTimeReward142,TYPE08,ShortCut01,누적 평점 5A 달성,,500000,,0,코인,50000,,,,,,
+AllTimeReward143,TYPE08,ShortCut01,누적 평점 5.1A 달성,,510000,,0,코인,51000,,,,,,
+AllTimeReward144,TYPE08,ShortCut01,누적 평점 5.2A 달성,,520000,,0,코인,52000,,,,,,
+AllTimeReward145,TYPE08,ShortCut01,누적 평점 5.3A 달성,,530000,,0,코인,53000,,,,,,
+AllTimeReward146,TYPE08,ShortCut01,누적 평점 5.4A 달성,,540000,,0,코인,54000,,,,,,
+AllTimeReward147,TYPE08,ShortCut01,누적 평점 5.5A 달성,,550000,,0,코인,55000,,,,,,
+AllTimeReward148,TYPE08,ShortCut01,누적 평점 5.6A 달성,,560000,,0,코인,56000,,,,,,
+AllTimeReward149,TYPE08,ShortCut01,누적 평점 5.7A 달성,,570000,,0,코인,57000,,,,,,
+AllTimeReward150,TYPE08,ShortCut01,누적 평점 5.8A 달성,,580000,,0,코인,58000,,,,,,
+AllTimeReward151,TYPE08,ShortCut01,누적 평점 5.9A 달성,,590000,,0,코인,59000,,,,,,
+AllTimeReward152,TYPE08,ShortCut01,누적 평점 6A 달성,,600000,,0,코인,60000,,,,,,
+AllTimeReward153,TYPE08,ShortCut01,누적 평점 6.1A 달성,,610000,,0,코인,61000,,,,,,
+AllTimeReward154,TYPE08,ShortCut01,누적 평점 6.2A 달성,,620000,,0,코인,62000,,,,,,
+AllTimeReward155,TYPE08,ShortCut01,누적 평점 6.3A 달성,,630000,,0,코인,63000,,,,,,
+AllTimeReward156,TYPE08,ShortCut01,누적 평점 6.4A 달성,,640000,,0,코인,64000,,,,,,
+AllTimeReward157,TYPE08,ShortCut01,누적 평점 6.5A 달성,,650000,,0,코인,65000,,,,,,
+AllTimeReward158,TYPE08,ShortCut01,누적 평점 6.6A 달성,,660000,,0,코인,66000,,,,,,
+AllTimeReward159,TYPE08,ShortCut01,누적 평점 6.7A 달성,,670000,,0,코인,67000,,,,,,
+AllTimeReward160,TYPE08,ShortCut01,누적 평점 6.8A 달성,,680000,,0,코인,68000,,,,,,
+AllTimeReward161,TYPE08,ShortCut01,누적 평점 6.9A 달성,,690000,,0,코인,69000,,,,,,
+AllTimeReward162,TYPE08,ShortCut01,누적 평점 7A 달성,,700000,,0,코인,70000,,,,,,
+AllTimeReward163,TYPE08,ShortCut01,누적 평점 7.1A 달성,,710000,,0,코인,71000,,,,,,
+AllTimeReward164,TYPE08,ShortCut01,누적 평점 7.2A 달성,,720000,,0,코인,72000,,,,,,
+AllTimeReward165,TYPE08,ShortCut01,누적 평점 7.3A 달성,,730000,,0,코인,73000,,,,,,
+AllTimeReward166,TYPE08,ShortCut01,누적 평점 7.4A 달성,,740000,,0,코인,74000,,,,,,
+AllTimeReward167,TYPE08,ShortCut01,누적 평점 7.5A 달성,,750000,,0,코인,75000,,,,,,
+AllTimeReward168,TYPE08,ShortCut01,누적 평점 7.6A 달성,,760000,,0,코인,76000,,,,,,
+AllTimeReward169,TYPE08,ShortCut01,누적 평점 7.7A 달성,,770000,,0,코인,77000,,,,,,
+AllTimeReward170,TYPE08,ShortCut01,누적 평점 7.8A 달성,,780000,,0,코인,78000,,,,,,
+AllTimeReward171,TYPE08,ShortCut01,누적 평점 7.9A 달성,,790000,,0,코인,79000,,,,,,
+AllTimeReward172,TYPE08,ShortCut01,누적 평점 8A 달성,,800000,,0,코인,80000,,,,,,
+AllTimeReward173,TYPE08,ShortCut01,누적 평점 8.1A 달성,,810000,,0,코인,81000,,,,,,
+AllTimeReward174,TYPE08,ShortCut01,누적 평점 8.2A 달성,,820000,,0,코인,82000,,,,,,
+AllTimeReward175,TYPE08,ShortCut01,누적 평점 8.3A 달성,,830000,,0,코인,83000,,,,,,
+AllTimeReward176,TYPE08,ShortCut01,누적 평점 8.4A 달성,,840000,,0,코인,84000,,,,,,
+AllTimeReward177,TYPE08,ShortCut01,누적 평점 8.5A 달성,,850000,,0,코인,85000,,,,,,
+AllTimeReward178,TYPE08,ShortCut01,누적 평점 8.6A 달성,,860000,,0,코인,86000,,,,,,
+AllTimeReward179,TYPE08,ShortCut01,누적 평점 8.7A 달성,,870000,,0,코인,87000,,,,,,
+AllTimeReward180,TYPE08,ShortCut01,누적 평점 8.8A 달성,,880000,,0,코인,88000,,,,,,
+AllTimeReward181,TYPE08,ShortCut01,누적 평점 8.9A 달성,,890000,,0,코인,89000,,,,,,
+AllTimeReward182,TYPE08,ShortCut01,누적 평점 9A 달성,,900000,,0,코인,90000,,,,,,
+AllTimeReward183,TYPE08,ShortCut01,누적 평점 9.1A 달성,,910000,,0,코인,91000,,,,,,
+AllTimeReward184,TYPE08,ShortCut01,누적 평점 9.2A 달성,,920000,,0,코인,92000,,,,,,
+AllTimeReward185,TYPE08,ShortCut01,누적 평점 9.3A 달성,,930000,,0,코인,93000,,,,,,
+AllTimeReward186,TYPE08,ShortCut01,누적 평점 9.4A 달성,,940000,,0,코인,94000,,,,,,
+AllTimeReward187,TYPE08,ShortCut01,누적 평점 9.5A 달성,,950000,,0,코인,95000,,,,,,
+AllTimeReward188,TYPE08,ShortCut01,누적 평점 9.6A 달성,,960000,,0,코인,96000,,,,,,
+AllTimeReward189,TYPE08,ShortCut01,누적 평점 9.7A 달성,,970000,,0,코인,97000,,,,,,
+AllTimeReward190,TYPE08,ShortCut01,누적 평점 9.8A 달성,,980000,,0,코인,98000,,,,,,
+AllTimeReward191,TYPE08,ShortCut01,누적 평점 9.9A 달성,,990000,,0,코인,99000,,,,,,
+AllTimeReward192,TYPE08,ShortCut01,누적 평점 10A 달성,,1000000,,0,코인,100000,,,,,,
+AllTimeRepeatScore,,,"누적 평점 반복 규칙 (10,000마다 달성)",,,,,코인(달성 평점 10%),,,,,,,
+,,,,,,,,,,,,,,,
+AllTimeRepeatGatcha,,,누적 캡슐 머신 반복 규칙 (100회마다 달성),,,,,,다이아(무조건 10개만 지급),,,,,,

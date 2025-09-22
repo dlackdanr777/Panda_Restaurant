@@ -25,6 +25,6 @@ public class UIButtonAndText : MonoBehaviour
 
     public void SetText(string text)
     {
-        _text.text = text;
+        _text.SetText(text);
     }
 }

@@ -8,7 +8,7 @@ public class UIMarketerImage : MonoBehaviour
     [SerializeField] private CameraController _camera;
     [SerializeField] private MainScene _mainScene;
     [SerializeField] private Animator _animator;
-    [SerializeField] private UIParticle _uiParticle;
+    [SerializeField] private GameObject _uiParticle;
     [SerializeField] private ParticleSystem _particleSystem;
     [SerializeField] private Image _marketerImage;
     [SerializeField] private Image _leftHandImage;
@@ -115,7 +115,7 @@ public class UIMarketerImage : MonoBehaviour
 
         _particleCount = data.ParticleCount;
         _particleSystem.gameObject.SetActive(false);
-        _uiParticle.enabled = false;
+        _uiParticle.gameObject.SetActive(false);
         for (int i = _particleSystem.textureSheetAnimation.spriteCount - 1; i >= 0; i--)
         {
             _particleSystem.textureSheetAnimation.RemoveSprite(i);
@@ -127,7 +127,7 @@ public class UIMarketerImage : MonoBehaviour
         }
 
         _particleSystem.gameObject.SetActive(true);
-        _uiParticle.enabled = true;
+        _uiParticle.SetActive(true);
     }
 
 }

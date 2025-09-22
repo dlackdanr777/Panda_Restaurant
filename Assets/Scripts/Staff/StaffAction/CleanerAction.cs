@@ -12,7 +12,7 @@ public class CleanerAction : IStaffAction
     private bool _isNoAction;
     private float _time;
     private float _durationMul;
-    private TweenData _tweenData;
+    private TweenWait _tweenData;
     private Vector3 _cleanerPos;
     private StaffCleaner _cleaner;
 
@@ -62,7 +62,6 @@ public class CleanerAction : IStaffAction
         DropGarbageArea garbageArea = _tableManager.GetMinDistanceGarbageArea(staff.EquipFloorType, staffPos);
         DropCoinArea coinArea = _tableManager.GetMinDistanceCoinArea(staff.EquipFloorType, staffPos);
         TableData tableData = UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, staff.EquipFloorType) ? _tableManager.GetMinDistanceTable(
-            staff.EquipFloorType,
             staffPos,
             _tableManager.GetTableDataList(staff.EquipFloorType, ETableState.NeedCleaning))
             : null;

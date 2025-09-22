@@ -24,7 +24,7 @@ public class UIFever : MonoBehaviour
     private Vector3 _tmpButtonScale;
     private FeverSystem _ferverSystem;
 
-    private int _tmpFeverGauge = 0;
+    private float _tmpFeverGauge = 0;
     public void Init(FeverSystem ferverSystem)
     {
         _ferverSystem = ferverSystem;
@@ -58,17 +58,22 @@ public class UIFever : MonoBehaviour
     {
     }
 
+    public void OnChangeGaugeNoAnime(float gaugeValue)
+    {
+        float fillAmount = gaugeValue <= 0 ? 0 : 0.3f + gaugeValue * 0.7f;
+        _fillAmountImage.SetFillAmonut(fillAmount);
+    }
 
     public void OnChangeGauge()
     {
-        if(_tmpFeverGauge == _ferverSystem.FeverGauge)
+        if (_tmpFeverGauge == _ferverSystem.FeverGauge)
             return;
 
         // 필 어마운트 설정
         _tmpFeverGauge = _ferverSystem.FeverGauge;
-        float fillAmount = _ferverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)_ferverSystem.FeverGauge / _ferverSystem.CurrentMaxFeverGauge) * 0.7f;
+        float fillAmount = _ferverSystem.FeverGauge <= 0 ? 0.3f : 0.3f + ((float)_ferverSystem.FeverGauge / _ferverSystem.CurrentMaxFeverGauge) * 0.7f;
         _fillAmountImage.SetFillAmonut(fillAmount);
-        
+
         // 이펙트 위치 조정 - 특정 좌표로 매핑
         if (_feverGaugeEffectObj != null)
         {
@@ -80,20 +85,20 @@ public class UIFever : MonoBehaviour
                 // 0.3~1.0 범위를 0~1 범위로 정규화
                 normalizedValue = (fillAmount - 0.3f) / 0.7f;
             }
-            
+
             // 80에서 210 사이의 값으로 보간
             float xPos = Mathf.Lerp(80f, 210f, normalizedValue);
-            
+
             // 이펙트 위치 설정
             _feverGaugeEffectObj.anchoredPosition = new Vector2(xPos, 0);
 
-            if(0.3f < fillAmount)
+            if (0.3f < fillAmount)
             {
                 _feverGaugeEffectAnimator.gameObject.SetActive(true);
                 Tween.Wait(0.5f, () => _feverGaugeEffectAnimator.gameObject.SetActive(false));
             }
         }
-        
+
         // 버튼 상태 설정
         bool isActive = _ferverSystem.CurrentMaxFeverGauge <= _ferverSystem.FeverGauge;
         _feverButton.interactable = isActive;

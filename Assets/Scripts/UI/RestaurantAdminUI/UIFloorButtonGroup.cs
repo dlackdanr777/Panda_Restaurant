@@ -1,4 +1,5 @@
 using System;
+using Muks.DataBind;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
@@ -30,10 +31,10 @@ public class UIFloorButtonGroup : MonoBehaviour
         _floor2Button.AddListener(Hide);
         _floor3Button.AddListener(Hide);
 
-        _openButton.AddListener(Show);
+        _openButton.AddListener(OpenButtonClicked);
         for(int i = 0, cnt = _closeButtons.Length; i < cnt; ++i)
         {
-            _closeButtons[i].AddListener(Hide);
+            _closeButtons[i].AddListener(CloseButtonClicked);
         }
 
         UserInfo.OnChangeFloorHandler += OnChangeUnlockFloorEvent;
@@ -68,13 +69,25 @@ public class UIFloorButtonGroup : MonoBehaviour
         _openImage.gameObject.SetActive(true);
     }
 
+    public void OpenButtonClicked()
+    {
+        DataBind.GetUnityActionValue("ButtonClickSound")?.Invoke();
+        OnChangeUnlockFloorEvent();
+        _closeImage.gameObject.SetActive(false);
+        _openImage.gameObject.SetActive(true);
+    }
 
     public void Hide()
-    {
+    {   
         _closeImage.gameObject.SetActive(true);
         _openImage.gameObject.SetActive(false);
     }
-
+    public void CloseButtonClicked()
+    {
+        DataBind.GetUnityActionValue("ButtonClickSound")?.Invoke();
+        _closeImage.gameObject.SetActive(true);
+        _openImage.gameObject.SetActive(false);
+    }
 
     private void OnChangeUnlockFloorEvent()
     {

@@ -64,22 +64,80 @@ namespace Muks.PathFinding.AStar
             }
         }
 
-
         /// <summary>맵 키 없이 자동으로 포함된 맵에서 길찾기</summary>
         public void RequestPath(Vector2 start, Vector2 end, Action<List<Vector2>> callback)
         {
-            var map = FindBestMatchingMap(start);
+            var startMap = FindBestMatchingMap(start);
+            var endMap = FindBestMatchingMap(end);
+            
+            // ? 시작점과 목적지 모두 체크
+            Vector2 correctedStart = start;
+            Vector2 correctedEnd = end;
+            MapData selectedMap = null;
 
-            if (map == null)
+            // 시작점이 맵 밖에 있는 경우
+            if (startMap == null)
             {
-                Debug.LogError($"No map contains start position: {start}");
-                callback(new List<Vector2>());
-                return;
+                var closestStartInfo = FindClosestMapAndTile(start);
+                if (closestStartInfo.map == null)
+                {
+                    Debug.LogError($"No available maps found for start position: {start}");
+                    callback(new List<Vector2>());
+                    return;
+                }
+                startMap = closestStartInfo.map;
+                correctedStart = closestStartInfo.tilePosition;
+                Debug.LogWarning($"Start position was outside map. Moved to closest tile: {correctedStart}");
+            }
+
+            // 목적지가 맵 밖에 있는 경우
+            if (endMap == null)
+            {
+                var closestEndInfo = FindClosestMapAndTile(end);
+                if (closestEndInfo.map == null)
+                {
+                    Debug.LogError($"No available maps found for end position: {end}");
+                    callback(new List<Vector2>());
+                    return;
+                }
+                endMap = closestEndInfo.map;
+                correctedEnd = closestEndInfo.tilePosition;
+                Debug.LogWarning($"End position was outside map. Moved to closest tile: {correctedEnd}");
+            }
+
+            // ? 시작점과 목적지가 같은 맵에 있는지 확인
+            if (startMap == endMap)
+            {
+                selectedMap = startMap;
+            }
+            else
+            {
+                // 다른 맵에 있다면, 목적지 맵을 우선 선택
+                selectedMap = endMap;
+                
+                // 시작점을 목적지 맵 내 가장 가까운 위치로 이동
+                Vector2 newStart = FindClosestWalkableTileInMap(selectedMap, correctedStart);
+                if (newStart != Vector2.zero)
+                {
+                    correctedStart = newStart;
+                    Debug.LogWarning($"Start and end are in different maps. Moved start to: {correctedStart}");
+                }
+                else
+                {
+                    // 목적지 맵에 이동 가능한 타일이 없다면 시작점 맵 사용
+                    selectedMap = startMap;
+                    Vector2 newEnd = FindClosestWalkableTileInMap(selectedMap, correctedEnd);
+                    if (newEnd != Vector2.zero)
+                    {
+                        correctedEnd = newEnd;
+                        Debug.LogWarning($"No walkable tiles in end map. Moved end to: {correctedEnd}");
+                    }
+                }
             }
 
             PathfindingQueue.Instance.Enqueue(() =>
             {
-                var result = PathFinding(map, start, end);
+                var result = PathFinding(selectedMap, correctedStart, correctedEnd);
                 MainThreadDispatcher.Instance.Enqueue(() => callback(result));
             });
         }
@@ -108,10 +166,116 @@ namespace Muks.PathFinding.AStar
             return bestMap;
         }
 
+        /// <summary>위치에서 가장 가까운 맵과 그 맵에서 가장 가까운 이동 가능한 타일 찾기</summary>
+        private (MapData map, Vector2 tilePosition) FindClosestMapAndTile(Vector2 position)
+        {
+            MapData closestMap = null;
+            Vector2 closestTilePos = Vector2.zero;
+            float closestDistance = float.MaxValue;
+
+            foreach (var map in _maps.Values)
+            {
+                // 각 맵에서 가장 가까운 이동 가능한 타일 찾기
+                Vector2 closestTileInMap = FindClosestWalkableTileInMap(map, position);
+                
+                if (closestTileInMap != Vector2.zero) // 이동 가능한 타일이 있다면
+                {
+                    float distance = Vector2.SqrMagnitude(position - closestTileInMap);
+                    if (distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        closestMap = map;
+                        closestTilePos = closestTileInMap;
+                    }
+                }
+            }
+
+            return (closestMap, closestTilePos);
+        }
+
+        /// <summary>특정 맵에서 주어진 위치에 가장 가까운 이동 가능한 타일 찾기</summary>
+        private Vector2 FindClosestWalkableTileInMap(MapData map, Vector2 position)
+        {
+            float nodeSize = NodeSize;
+            
+            // 주어진 위치를 노드 좌표로 변환 (맵 밖이어도 계산)
+            Vector2Int centerNodePos = new Vector2Int(
+                Mathf.RoundToInt((position.x - map.MapBottomLeft.x) / nodeSize - 0.5f),
+                Mathf.RoundToInt((position.y - map.MapBottomLeft.y) / nodeSize - 0.5f)
+            );
+
+            // 나선형으로 검색하여 가장 가까운 이동 가능한 타일 찾기
+            int maxRadius = Mathf.Max(map.SizeX, map.SizeY);
+            
+            for (int radius = 0; radius <= maxRadius; radius++)
+            {
+                // 현재 반지름에서 모든 위치 검사
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    for (int dy = -radius; dy <= radius; dy++)
+                    {
+                        // 현재 반지름의 경계에 있는 점들만 검사 (이미 검사한 내부는 제외)
+                        if (radius > 0 && Mathf.Abs(dx) < radius && Mathf.Abs(dy) < radius)
+                            continue;
+
+                        int nodeX = centerNodePos.x + dx;
+                        int nodeY = centerNodePos.y + dy;
+
+                        // 맵 범위 내인지 확인
+                        if (nodeX >= 0 && nodeX < map.SizeX && nodeY >= 0 && nodeY < map.SizeY)
+                        {
+                            Node node = map.Nodes[nodeX, nodeY];
+                            
+                            // 이동 가능한 타일인지 확인
+                            if (!node.IsWall && node.IsGround)
+                            {
+                                Vector2 tileWorldPos = new Vector2(
+                                    map.MapBottomLeft.x + (nodeX + 0.5f) * nodeSize,
+                                    map.MapBottomLeft.y + (nodeY + 0.5f) * nodeSize
+                                );
+                                return tileWorldPos;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return Vector2.zero; // 이동 가능한 타일을 찾지 못함
+        }
+
         private List<Vector2> PathFinding(MapData map, Vector2 start, Vector2 end)
         {
             Vector2Int sPos = map.WorldToNodePos(start);
             Vector2Int tPos = map.WorldToNodePos(end);
+
+            // ? 노드 위치가 맵 범위 내인지 확인
+            if (sPos.x < 0 || sPos.x >= map.SizeX || sPos.y < 0 || sPos.y >= map.SizeY)
+            {
+                Debug.LogError($"Start position {start} -> node {sPos} is outside map bounds");
+                return new List<Vector2>();
+            }
+            
+            if (tPos.x < 0 || tPos.x >= map.SizeX || tPos.y < 0 || tPos.y >= map.SizeY)
+            {
+                Debug.LogError($"End position {end} -> node {tPos} is outside map bounds");
+                return new List<Vector2>();
+            }
+
+            // ? 시작점과 목적지가 이동 가능한 타일인지 확인
+            var startNode = map.Nodes[sPos.x, sPos.y];
+            var targetNode = map.Nodes[tPos.x, tPos.y];
+
+            if (startNode.IsWall || !startNode.IsGround)
+            {
+                Debug.LogError($"Start position {start} is not walkable (Wall: {startNode.IsWall}, Ground: {startNode.IsGround})");
+                return new List<Vector2>();
+            }
+
+            if (targetNode.IsWall || !targetNode.IsGround)
+            {
+                Debug.LogError($"End position {end} is not walkable (Wall: {targetNode.IsWall}, Ground: {targetNode.IsGround})");
+                return new List<Vector2>();
+            }
 
             foreach (var node in map.Nodes)
             {
@@ -120,9 +284,7 @@ namespace Muks.PathFinding.AStar
                 node.ParentNode = null;
             }
 
-            var startNode = map.Nodes[sPos.x, sPos.y];
-            var targetNode = map.Nodes[tPos.x, tPos.y];
-
+            startNode.G = 0;
             var openList = new List<Node> { startNode };
             var closedSet = new HashSet<Node>();
 
@@ -173,6 +335,7 @@ namespace Muks.PathFinding.AStar
                 }
             }
 
+            Debug.LogWarning($"No path found from {start} to {end}");
             return new List<Vector2>();
         }
 
@@ -223,6 +386,5 @@ namespace Muks.PathFinding.AStar
                 }
             }
         }
-
     }
 }

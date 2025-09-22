@@ -13,6 +13,7 @@ public class UITweenFillAmountImage : MonoBehaviour
     [SerializeField] private float _duration;
     [SerializeField] private Ease _tweenMode;
 
+    public float FillAmount => _fillAmountImage.fillAmount;
 
     private void OnDisable()
     {

@@ -11,12 +11,12 @@ public class NormalCustomer : Customer
     [Space]
     [Header("NormalCustomer Components")]
     [SerializeField] private Customer_Anger _anger;
+    [SerializeField] private Customer_Happy _happy;
     [SerializeField] private GameObject _eatAnimation;
     [SerializeField] private SpriteRenderer _foodRenderer;
 
     private NormalCustomerData _normalCustomerData;
     public NormalCustomerData NormalCustomerData => _normalCustomerData;
-    private CustomerSkill _skill;
 
     private TableData _sitTableData;
 
@@ -34,14 +34,24 @@ public class NormalCustomer : Customer
     private float _doublePricePercent;
     public float DoublePricePercent => _doublePricePercent;
 
+    private float _addFeverGaugeMul = 1;
+    public float AddFeverGaugeMul => _addFeverGaugeMul;
+
+    private float _addSatisfactionMul = 1;
+    public float AddSatisfactionMul => _addSatisfactionMul;
+
     private float _tmpFoodPosX;
     private float _tmpEatAnimePosX;
 
-    public override void Init() 
+    public override void Init()
     {
         _tmpFoodPosX = _foodRenderer.transform.localPosition.x;
         _tmpEatAnimePosX = _eatAnimation.transform.localPosition.x;
+        _anger.Init();
+        _happy.Init();
         HideFood();
+
+        //UserInfo.OnChangeCustomerSkinHandler += OnChangeSkin;
     }
 
 
@@ -55,32 +65,29 @@ public class NormalCustomer : Customer
         _normalCustomerData = (NormalCustomerData)data;
         base.SetData(data, customerController, tableManager);
 
-
+        CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(data.Id);
+        _spriteRenderer.sprite = skinData == null ? data.Sprite : skinData.Sprite;
         StopCoroutines();
         HideFood();
 
         _doublePricePercent = 0;
         _currentFoodPriceMul = 1;
         _orderCount = 1;
-        _anger.Init();
+        _addFeverGaugeMul = 1;
+        _addSatisfactionMul = 1;
+        _anger.SetCustomer(this);
+        _happy.SetCustomer(this);
         ChangeState(CustomerState.Idle);
 
         if (_eatAnimation != null)
             _eatAnimation.SetActive(false);
 
-        if (_skill != null)
-            _skill.Deactivate(this);
+        // if (UnityEngine.Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent, 0, 100))
+        // {
+        //     _currentFoodPriceMul = _currentFoodPriceMul * _foodPriceMul;
+        // }
 
-        if(_normalCustomerData.Skill != null)
-        {
-            _skill = _normalCustomerData.Skill;
-            _normalCustomerData.Skill.Activate(this);
-        }
-
-        if (UnityEngine.Random.Range(0f, 100f) <= Mathf.Clamp(_doublePricePercent + GameManager.Instance.AddFoodDoublePricePercent, 0, 100))
-        {
-            _currentFoodPriceMul = _currentFoodPriceMul * _foodPriceMul;
-        }
+        ApplySkinEffect(skinData);
     }
 
     public void SetSitTableData(TableData tableData)
@@ -142,6 +149,7 @@ public class NormalCustomer : Customer
     public void StartAnger()
     {
         _anger.StartAnime();
+        _happy.StopAnime();
     }
 
 
@@ -150,40 +158,51 @@ public class NormalCustomer : Customer
         _anger.StopAnime();
     }
 
+    public void StartHappy()
+    {
+        _happy.StartAnime();
+        _anger.StopAnime();
+    }
+
+    public void StopHappy()
+    {
+        _happy.StopAnime();
+    }
+
 
     public void ShowFood(Sprite sprite)
     {
         _foodRenderer.sprite = sprite;
 
-     /*   // 새 스프라이트의 크기
-        float newSpriteHeight = sprite.texture.height;
-        float newSpriteWidth = sprite.texture.width;
+        /*   // 새 스프라이트의 크기
+           float newSpriteHeight = sprite.texture.height;
+           float newSpriteWidth = sprite.texture.width;
 
-        // 이전 스프라이트의 크기
-        float originalHeight = _tmpFoodSpriteHeight;
-        float originalWidth = _foodRenderer.sprite.texture.width;
+           // 이전 스프라이트의 크기
+           float originalHeight = _tmpFoodSpriteHeight;
+           float originalWidth = _foodRenderer.sprite.texture.width;
 
-        // 높이와 너비의 비율 계산
-        float heightScaleFactor = newSpriteHeight / originalHeight;
-        float widthScaleFactor = newSpriteWidth / originalWidth;
+           // 높이와 너비의 비율 계산
+           float heightScaleFactor = newSpriteHeight / originalHeight;
+           float widthScaleFactor = newSpriteWidth / originalWidth;
 
-        float scaleFactor;
+           float scaleFactor;
 
-        if (newSpriteHeight > originalHeight || newSpriteWidth > originalWidth)
-        {
-            // 높이나 너비 중 더 큰 값을 기준으로 크기 조정
-            scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
-        }
-        else
-        {
-            // 둘 다 작거나 크기 동일: 가장 큰 값을 기준으로 크기 조정
-            scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
-        }
+           if (newSpriteHeight > originalHeight || newSpriteWidth > originalWidth)
+           {
+               // 높이나 너비 중 더 큰 값을 기준으로 크기 조정
+               scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
+           }
+           else
+           {
+               // 둘 다 작거나 크기 동일: 가장 큰 값을 기준으로 크기 조정
+               scaleFactor = Mathf.Max(heightScaleFactor, widthScaleFactor);
+           }
 
-        // 스프라이트 크기 조정
-        _foodRenderer.transform.localScale = _tmpFoodSize / scaleFactor;
-        DebugLog.Log(scaleFactor);
-        // 스프라이트 활성화*/
+           // 스프라이트 크기 조정
+           _foodRenderer.transform.localScale = _tmpFoodSize / scaleFactor;
+           DebugLog.Log(scaleFactor);
+           // 스프라이트 활성화*/
         _foodRenderer.gameObject.SetActive(true);
     }
 
@@ -205,7 +224,7 @@ public class NormalCustomer : Customer
     {
         StopCoroutines();
     }
-    
+
 
     // 테이블에 앉고 음식 주문 시 호출
     public void StartWaitingForFood()
@@ -213,45 +232,45 @@ public class NormalCustomer : Customer
         _orderFoodCoroutine = StartCoroutine(WaitingForFoodCoroutine());
     }
 
-    
+
     // 음식 서빙 시 호출
     public void StopWaitingForFood()
     {
         StopCoroutines();
     }
-    
+
 
     private IEnumerator WaitingInLineCoroutine()
     {
         float elapsedTime = 0f;
         float maxWaitTime = _normalCustomerData.WaitTime;
-        
+
         while (elapsedTime < maxWaitTime)
         {
             elapsedTime += 0.02f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        
+
         StartAnger();
         LeaveRestaurant();
     }
-    
+
 
     private IEnumerator WaitingForFoodCoroutine()
     {
         float elapsedTime = 0f;
         float maxWaitTime = _normalCustomerData.OrderFoodTime;
-        
+
         while (elapsedTime < maxWaitTime)
         {
             elapsedTime += 0.02f;
             yield return YieldCache.WaitForSeconds(0.02f);
         }
-        
+
         StartAnger();
         LeaveTableAndRestaurant();
     }
-    
+
     // 화가 나서 떠날 때 호출 (대기열에서)
     private void LeaveRestaurant()
     {
@@ -262,11 +281,12 @@ public class NormalCustomer : Customer
             ObjectPoolManager.Instance.DespawnNormalCustomer(this);
         });
     }
-    
+
     // 테이블에서 화가 나서 떠날 때
     private void LeaveTableAndRestaurant()
     {
         DebugLog.Log("테이블에서 나감");
+        _customerController.RemoveCustomerFromLineQueue(this);
         _tableManager.AngerExitCustomer(_sitTableData);
     }
 
@@ -310,7 +330,7 @@ public class NormalCustomer : Customer
             StopCoroutine(_waitingCoroutine);
             _waitingCoroutine = null;
         }
-        
+
         if (_orderFoodCoroutine != null)
         {
             StopCoroutine(_orderFoodCoroutine);
@@ -318,8 +338,51 @@ public class NormalCustomer : Customer
         }
     }
 
+
+    private void ApplySkinEffect(CustomerSkinData skinData)
+    {
+        if (skinData == null)
+            return;
+
+        switch (skinData.UpgradeType)
+        {
+            case SkinCustomerUpgradeType.Type1:
+                _moveSpeed *= 1 + skinData.UpgradeValue / 100f;
+                break;
+            case SkinCustomerUpgradeType.Type2:
+                _currentFoodPriceMul *= 1 + skinData.UpgradeValue / 100f;
+                break;
+            case SkinCustomerUpgradeType.Type3:
+                _orderCount += (int)skinData.UpgradeValue;
+                break;
+            case SkinCustomerUpgradeType.Type4:
+                _addSatisfactionMul *= 1 + skinData.UpgradeValue / 100f;
+                break;
+
+            case SkinCustomerUpgradeType.Type5:
+                _addFeverGaugeMul *=  1 + skinData.UpgradeValue / 100f;
+                break;
+        }
+    }
+
+
+    //배치중인 손님들도 스킨을 바꾸는 함수
+    // private void OnChangeSkin()
+    // {
+    //     if (_customerData == null || !gameObject.activeInHierarchy)
+    //         return;
+
+    //     CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(_customerData.Id);
+    //     _spriteRenderer.sprite = skinData == null ? _customerData.Sprite : skinData.Sprite;
+    // }
+
     private void OnDisable()
     {
         StopCoroutines();
     }
+
+    // private void OnDestroy()
+    // {
+    //     UserInfo.OnChangeCustomerSkinHandler -= OnChangeSkin;
+    // }
 }

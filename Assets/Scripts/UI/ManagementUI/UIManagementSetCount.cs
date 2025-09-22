@@ -1,19 +1,16 @@
 using TMPro;
 using UnityEngine;
 
-public class UIManagementSetCount : MonoBehaviour
+public class UIManagementEquipSlot : MonoBehaviour
 {
-    [SerializeField] private TextMeshProUGUI _setNameText;
-    [SerializeField] private TextMeshProUGUI _setCountValueText;
-    [SerializeField] private TextMeshProUGUI _setDscriptionText;
+    [SerializeField] private TextMeshProUGUI _nameText;
+    [SerializeField] private UIFoodType _foodType;
 
 
-    public void SetData(FoodType foodType, int count, int totalCount)
+    public void SetData(string text, FoodType foodType)
     {
-        _setNameText.text = Utility.FoodTypeStringConverter(foodType);
-        string color = totalCount <= count ? Utility.ColorToHex(Utility.GetColor(ColorType.Positive)) : Utility.ColorToHex(Utility.GetColor(ColorType.Negative));
-        _setCountValueText.text = "<color=" + color +">"+ count + "</color>/" + totalCount;
-        _setDscriptionText.text = "(¿Ï¼º½Ã " + Utility.GetFurnitureFoodTypeSetEffectDescription(foodType) + ")";
+        _nameText.SetText(text);
+        _foodType.SetFoodType(foodType);
     }
 
 }

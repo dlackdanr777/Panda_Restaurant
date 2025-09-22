@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class GachaItemData : BasicData
 {
-    public GachaItemRank GachaItemRank => _rank - 1 < 0 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (int)GachaItemRank.Length <= _rank - 1 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (GachaItemRank)_rank - 1;
+    public Rank GachaItemRank => _rank - 1 < 0 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (int)global::Rank.Length <= _rank - 1 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (Rank)_rank - 1;
 
     private int _addScore;
     public int AddScore => _addScore;

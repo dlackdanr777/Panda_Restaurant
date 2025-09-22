@@ -11,6 +11,7 @@ public class UICustomerView : MonoBehaviour
     {
         OrderFood1,
         OrderFood2,
+        OrderFood3,
         Effect,
         Length,
     }
@@ -18,8 +19,13 @@ public class UICustomerView : MonoBehaviour
     [Header("Components")]
     [SerializeField] private UICustomerBlackImage _blackImage;
     [SerializeField] private Image _specialFrameImage;
-    [SerializeField] private UIImageAndText _gatecrasherFrameImage;
-    [SerializeField] private Image _normalFrameImage;
+    [SerializeField] private Image _gatecrasherFrameImage;
+    [SerializeField] private Image _normalSkinFrameImage;
+    [SerializeField] private Image _rareSkinFrameImage;
+    [SerializeField] private Image _uniqueSkinFrameImage;
+    [SerializeField] private Image _specialSkinFrameImage;
+
+
     [SerializeField] private Image _npcImage;
     [SerializeField] private UITextAndText _visitCountGroup;
     [SerializeField] private TextMeshProUGUI _npcNameText;
@@ -29,13 +35,20 @@ public class UICustomerView : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _effectDescription;
     [SerializeField] private ButtonPressEffect _effectLeftArrowButton;
     [SerializeField] private ButtonPressEffect _effectRightArrowButton;
+    [SerializeField] private ButtonPressEffect _skinButton;
     [SerializeField] private Material _grayMat;
 
     [Space]
     [Header("OrderFood Slot Options")]
     [SerializeField] private RectTransform _orderFoodParent1;
     [SerializeField] private RectTransform _orderFoodParent2;
+    [SerializeField] private RectTransform _orderFoodParent3;
     [SerializeField] private UIOrderFoodSlot _orderFoodSlotPrefab;
+
+
+    [Space]
+    [Header("Test Options")]
+    [SerializeField] private Button _testButton;
 
     private CustomerData _data;
     private CustomerEffectType _effectType;
@@ -44,8 +57,11 @@ public class UICustomerView : MonoBehaviour
     private Vector2 _originalSize;
     private Vector3 _originalPosition;
 
-    public void Init()
+    private UICustomerPictorialBook _uiCustomerPictorialBook;
+
+    public void Init(UICustomerPictorialBook uiCustomerPictorialBook)
     {
+        _uiCustomerPictorialBook = uiCustomerPictorialBook;
         _originalSize = _npcImage.rectTransform.sizeDelta;
         _originalPosition = _npcImage.rectTransform.anchoredPosition;
 
@@ -53,7 +69,7 @@ public class UICustomerView : MonoBehaviour
         _blackImage.gameObject.SetActive(false);
         CreateFoodSlot(3, _orderFoodParent1);
         CreateFoodSlot(3, _orderFoodParent2);
-
+        CreateFoodSlot(3, _orderFoodParent3);
 
         _effectLeftArrowButton.AddListener(() => OnArrowButtonClicked(-1));
         _effectRightArrowButton.AddListener(() => OnArrowButtonClicked(1));
@@ -67,6 +83,11 @@ public class UICustomerView : MonoBehaviour
             }
         }
 
+        _skinButton.AddListener(ShowSkinView);
+        _testButton.onClick.AddListener(AddVisitCount);
+
+        UserInfo.OnVisitedCustomerHandler += OnAddVisitEvent;
+        UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
     }
 
     public void UpdateUI()
@@ -84,7 +105,7 @@ public class UICustomerView : MonoBehaviour
             _effectTitle.gameObject.SetActive(false);
             _visitCountGroup.gameObject.SetActive(false);
             _tendencyTypeText.gameObject.SetActive(false);
-            _normalFrameImage.gameObject.SetActive(true);
+            _normalSkinFrameImage.gameObject.SetActive(true);
             _effectLeftArrowButton.gameObject.SetActive(false);
             _effectRightArrowButton.gameObject.SetActive(false);
             _npcNameText.text = string.Empty;
@@ -98,35 +119,28 @@ public class UICustomerView : MonoBehaviour
         _data = data;
 
         _npcImage.gameObject.SetActive(true);
-        _tendencyTypeText.gameObject.SetActive(false);
-        _npcImage.sprite = data.Sprite;
+        _effectTitle.gameObject.SetActive(true);
+        _tendencyTypeText.gameObject.SetActive(!(data is GatecrasherCustomerData));
 
-        if (data is SpecialCustomerData)
+        CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(data.Id);
+        Sprite customerSprite = null;
+        string nameText = string.Empty;
+        string description = string.Empty;
+        if (skinData == null)
         {
-            _normalFrameImage.gameObject.SetActive(false);
-            _gatecrasherFrameImage.gameObject.SetActive(false);
-            _specialFrameImage.gameObject.SetActive(true);
-            _effectTitle.gameObject.SetActive(true);
-            SetScaleImage(1);
-
-        }
-        else if(data is GatecrasherCustomerData)
-        {
-            _normalFrameImage.gameObject.SetActive(false);
-            _gatecrasherFrameImage.gameObject.SetActive(true);
-            _specialFrameImage.gameObject.SetActive(false);
-            _effectTitle.gameObject.SetActive(false);
-            SetScaleImage(1);
+            customerSprite = data.Sprite;
+            nameText = data.Name;
+            description = data.Description;
         }
         else
         {
-            _normalFrameImage.gameObject.SetActive(true);
-            _gatecrasherFrameImage.gameObject.SetActive(false);
-            _specialFrameImage.gameObject.SetActive(false);
-            _effectTitle.gameObject.SetActive(true);
-            _tendencyTypeText.gameObject.SetActive(true);
-            SetScaleImage(1.3f, 13);
+            customerSprite = skinData.Sprite;
+            nameText = skinData.Name;
+            description = skinData.Description;
         }
+        _npcImage.sprite = customerSprite;
+
+        UpdateFrame(_data, skinData);
 
         Color imageColor = Color.white;
         if (!UserInfo.GetCustomerEnableState(data))
@@ -140,19 +154,13 @@ public class UICustomerView : MonoBehaviour
             _descriptionText.text = "???";
 
             imageColor = Utility.GetColor(ColorType.NoGive);
+            _effectDescription.text = "???";
 
-            if (data is GatecrasherCustomerData)
-            {
-                _effectDescription.text = string.Empty;
-                _gatecrasherFrameImage.SetText("???");
-            }
-            else
-                _effectDescription.text = "???";
         }
         else
         {
             int visitCount = UserInfo.GetVisitedCustomerCount(data);
-            
+
             if (visitCount <= 0)
             {
                 _visitCountGroup.gameObject.SetActive(true);
@@ -162,7 +170,7 @@ public class UICustomerView : MonoBehaviour
                 SetOrderFood(data);
                 _npcNameText.text = "???";
                 _tendencyTypeText.text = "???";
-                _descriptionText.text = data.Description;
+                _descriptionText.text = description;
             }
 
             else
@@ -172,8 +180,8 @@ public class UICustomerView : MonoBehaviour
                 SetOrderFood(data);
 
                 imageColor = Utility.GetColor(ColorType.Give);
-                _npcNameText.text = data.Name;
-                _descriptionText.text = data.Description;
+                _npcNameText.text = nameText;
+                _descriptionText.text = description;
 
                 if (data is NormalCustomerData)
                 {
@@ -185,17 +193,9 @@ public class UICustomerView : MonoBehaviour
                     _tendencyTypeText.text = string.Empty;
                 }
 
+                _effectDescription.text = Utility.GetCustomerEffectDescription(data);
 
-                if (data is GatecrasherCustomerData)
-                {
-                    _effectDescription.text = string.Empty;
-                    _gatecrasherFrameImage.SetText(Utility.GetCustomerEffectDescription(data));
-                }
-                else
-                    _effectDescription.text = Utility.GetCustomerEffectDescription(data);
             }
-
-           
         }
 
 
@@ -240,6 +240,22 @@ public class UICustomerView : MonoBehaviour
     }
 
 
+    private void ShowSkinView()
+    {
+        if (_data == null)
+        {
+            DebugLog.LogError("스킨 뷰를 열 수 없습니다. 고객 데이터가 없습니다.");
+            PopupManager.Instance.ShowPopup("오류 발생", "스킨 뷰를 열 수 없습니다. 고객 데이터가 없습니다.");
+            return;
+        }
+
+        if (_data is NormalCustomerData normalData)
+        {
+            _uiCustomerPictorialBook.ShowSkinView(normalData);
+        }
+    }
+
+
     private void HideOrderFoodSlots()
     {
         for (int i = 0, cnt = _orderFoodSlotList.Count; i < cnt; ++i)
@@ -256,7 +272,7 @@ public class UICustomerView : MonoBehaviour
             return;
 
         NormalCustomerData normalData = (NormalCustomerData)data;
-        if(!UserInfo.GetCustomerEnableState(data))
+        if (!UserInfo.GetCustomerEnableState(data))
         {
             DebugLog.Log(data.Id);
             return;
@@ -265,17 +281,17 @@ public class UICustomerView : MonoBehaviour
         int visitCount = UserInfo.GetVisitedCustomerCount(data);
 
         SetOrderFoodSlot(normalData.RequiredDish, true, string.Empty);
-        SetOrderFoodSlot(normalData.VisitCount100Food, 100 <= visitCount, "방문 " + Utility.SetStringColor(100.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(normalData.VisitCount200Food, 200 <= visitCount, "방문 " + Utility.SetStringColor(200.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(normalData.VisitCount300Food, 300 <= visitCount, "방문 " + Utility.SetStringColor(300.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(normalData.VisitCount400Food, 400 <= visitCount, "방문 " + Utility.SetStringColor(400.ToString(), ColorType.Negative) + "회");
-        SetOrderFoodSlot(normalData.VisitCount500Food, 500 <= visitCount, "방문 " + Utility.SetStringColor(500.ToString(), ColorType.Negative) + "회");
+        Dictionary<int, string> visitCountFoodDic = normalData.GetVisitCountFoodDic();
+        foreach (var food in visitCountFoodDic)
+        {
+            SetOrderFoodSlot(food.Value, food.Key <= visitCount, "방문 " + Utility.SetStringColor(food.Key.ToString(), ColorType.Negative) + "회");
+        }
     }
 
 
     private void SetOrderFoodSlot(string foodId, bool isUnlock, string lockText)
     {
-        if(string.IsNullOrWhiteSpace(foodId))
+        if (string.IsNullOrWhiteSpace(foodId))
         {
             DebugLog.LogError("해당 음식의 id값이 없습니다: " + foodId);
             return;
@@ -283,12 +299,12 @@ public class UICustomerView : MonoBehaviour
 
         FoodData foodData = FoodDataManager.Instance.GetFoodData(foodId);
 
-        if(foodData == null)
+        if (foodData == null)
         {
             throw new System.Exception("해당 음식의 데이터가 없습니다: " + foodId);
         }
 
-        foreach(UIOrderFoodSlot slot in _orderFoodSlotList)
+        foreach (UIOrderFoodSlot slot in _orderFoodSlotList)
         {
             if (slot.gameObject.activeSelf)
                 continue;
@@ -316,12 +332,13 @@ public class UICustomerView : MonoBehaviour
 
     private void SetEffectGroup(CustomerData data)
     {
-        if(!UserInfo.GetCustomerEnableState(data))
+        if (!UserInfo.GetCustomerEnableState(data))
         {
             _effectTitle.gameObject.SetActive(false);
             _effectDescription.gameObject.SetActive(false);
             _orderFoodParent1.gameObject.SetActive(false);
             _orderFoodParent2.gameObject.SetActive(false);
+            _orderFoodParent3.gameObject.SetActive(false);
             _effectLeftArrowButton.gameObject.SetActive(false);
             _effectRightArrowButton.gameObject.SetActive(false);
             return;
@@ -340,30 +357,29 @@ public class UICustomerView : MonoBehaviour
         //     return;
         // }
 
+        _effectTitle.gameObject.SetActive(true);
         if (data is GatecrasherCustomerData)
         {
-            _effectTitle.gameObject.SetActive(false);
             _effectDescription.gameObject.SetActive(false);
             _orderFoodParent1.gameObject.SetActive(false);
             _orderFoodParent2.gameObject.SetActive(false);
-            _effectLeftArrowButton.gameObject.SetActive(false);
-            _effectRightArrowButton.gameObject.SetActive(false);
-            return;
-        }
-
-        else if (data is SpecialCustomerData)
-        {
-            _effectTitle.gameObject.SetActive(true);
+            _orderFoodParent3.gameObject.SetActive(false);
             _effectLeftArrowButton.gameObject.SetActive(false);
             _effectRightArrowButton.gameObject.SetActive(false);
             ChangeEffectGroup(CustomerEffectType.Effect);
             return;
         }
 
-        else if(data is NormalCustomerData)
+        else if (data is SpecialCustomerData)
         {
-            _effectType = CustomerEffectType.OrderFood1;
-            _effectTitle.gameObject.SetActive(true);
+            _effectLeftArrowButton.gameObject.SetActive(false);
+            _effectRightArrowButton.gameObject.SetActive(false);
+            ChangeEffectGroup(CustomerEffectType.Effect);
+            return;
+        }
+
+        else if (data is NormalCustomerData)
+        {
             _effectLeftArrowButton.gameObject.SetActive(true);
             _effectRightArrowButton.gameObject.SetActive(true);
             ChangeEffectGroup(CustomerEffectType.OrderFood1);
@@ -373,32 +389,33 @@ public class UICustomerView : MonoBehaviour
 
     private void OnArrowButtonClicked(int dir)
     {
-        if(dir == 0)
+        if (dir == 0)
             return;
 
         int typeIndex = (int)_effectType + dir;
-        typeIndex %= (int)CustomerEffectType.Length;
+        typeIndex %= (int)CustomerEffectType.Effect;
         if (typeIndex < 0)
-            typeIndex = (int)CustomerEffectType.Length - 1;
+            typeIndex = (int)CustomerEffectType.Effect - 1;
 
-        if((int)CustomerEffectType.OrderFood2 == typeIndex)
+        if ((int)CustomerEffectType.OrderFood2 == typeIndex)
         {
             int childActiveCount = 0;
-            foreach(Transform child in _orderFoodParent2)
+            foreach (Transform child in _orderFoodParent2)
             {
                 if (child.gameObject.activeSelf)
                     childActiveCount++;
             }
-            if(dir <= -1 && childActiveCount == 0)
+            if (dir <= -1 && childActiveCount == 0)
             {
                 typeIndex = (int)CustomerEffectType.OrderFood1;
             }
-            else if(1 <= dir && childActiveCount == 0)
+            else if (1 <= dir && childActiveCount == 0)
             {
-                typeIndex = (int)CustomerEffectType.Effect;
+                typeIndex = (int)CustomerEffectType.OrderFood3;
+                //typeIndex = (int)CustomerEffectType.Effect; 스킬 효과 삭제
             }
         }
-        
+
         ChangeEffectGroup((CustomerEffectType)typeIndex);
     }
 
@@ -410,22 +427,123 @@ public class UICustomerView : MonoBehaviour
             case CustomerEffectType.OrderFood1:
                 _orderFoodParent1.gameObject.SetActive(true);
                 _orderFoodParent2.gameObject.SetActive(false);
+                _orderFoodParent3.gameObject.SetActive(false);
                 _effectDescription.gameObject.SetActive(false);
                 _effectTitle.text = "주문 요리1";
                 break;
             case CustomerEffectType.OrderFood2:
                 _orderFoodParent2.gameObject.SetActive(true);
                 _orderFoodParent1.gameObject.SetActive(false);
+                _orderFoodParent3.gameObject.SetActive(false);
                 _effectDescription.gameObject.SetActive(false);
                 _effectTitle.text = "주문 요리2";
                 break;
+
+            case CustomerEffectType.OrderFood3:
+                _orderFoodParent3.gameObject.SetActive(true);
+                _orderFoodParent1.gameObject.SetActive(false);
+                _orderFoodParent2.gameObject.SetActive(false);
+                _effectDescription.gameObject.SetActive(false);
+                _effectTitle.text = "주문 요리3";
+                break;
+
             case CustomerEffectType.Effect:
                 _effectDescription.gameObject.SetActive(true);
                 _orderFoodParent1.gameObject.SetActive(false);
                 _orderFoodParent2.gameObject.SetActive(false);
+                _orderFoodParent3.gameObject.SetActive(false);
                 _effectTitle.text = "특수 효과";
                 _effectDescription.text = Utility.GetCustomerEffectDescription(_data);
                 break;
         }
+    }
+
+    private void OnAddVisitEvent()
+    {
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        if (_data == null)
+        {
+            DebugLog.LogError("고객 데이터가 없습니다.");
+            return;
+        }
+
+        int visitCount = UserInfo.GetVisitedCustomerCount(_data);
+        _visitCountGroup.SetText1(visitCount.ToString());
+        SetOrderFood(_data);
+    }
+
+
+    //Test 관련 코드
+    private void AddVisitCount()
+    {
+        if (_data == null)
+        {
+            DebugLog.LogError("고객 데이터가 없습니다.");
+            return;
+        }
+
+        UserInfo.CustomerVisits(_data, 10);
+        UserInfo.AddCustomerCount(10);
+    }
+
+
+     private void UpdateFrame(CustomerData data, SkinData skinData)
+    {
+        _normalSkinFrameImage.gameObject.SetActive(false);
+        _rareSkinFrameImage.gameObject.SetActive(false);
+        _uniqueSkinFrameImage.gameObject.SetActive(false);
+        _specialSkinFrameImage.gameObject.SetActive(false);
+        _specialFrameImage.gameObject.SetActive(false);
+        _gatecrasherFrameImage.gameObject.SetActive(false);
+
+
+        if (data is SpecialCustomerData)
+        {
+            _specialFrameImage.gameObject.SetActive(true);
+            SetScaleImage(1);
+        }
+
+        else if (data is GatecrasherCustomerData)
+        {
+            _gatecrasherFrameImage.gameObject.SetActive(true);
+            SetScaleImage(1);
+        }
+
+        else
+        {
+            if (skinData == null)
+            {
+                _normalSkinFrameImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                switch (skinData.Rank)
+                {
+                    case Rank.Normal1:
+                    case Rank.Normal2:
+                        _normalSkinFrameImage.gameObject.SetActive(true);
+                        break;
+
+                    case Rank.Rare:
+                        _rareSkinFrameImage.gameObject.SetActive(true);
+                        break;
+                    case Rank.Unique:
+                        _uniqueSkinFrameImage.gameObject.SetActive(true);
+                        break;
+                    case Rank.Special:
+                        _specialSkinFrameImage.gameObject.SetActive(true);
+                        break;
+                }
+            }
+            SetScaleImage(1.3f, 12);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnVisitedCustomerHandler -= OnAddVisitEvent;
+        UserInfo.OnChangeCustomerSkinHandler -= UpdateUI;
     }
 }

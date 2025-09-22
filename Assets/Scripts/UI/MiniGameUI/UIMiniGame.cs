@@ -79,7 +79,7 @@ public class UIMiniGame : MobileUIView
     [SerializeField] private AudioClip _getSound;
 
 
-    private float _totalTime => ConstValue.DEFAULT_MINIGAME_TIME + GameManager.Instance.AddMiniGameTime;
+    private float _totalTime => ConstValue.DEFAULT_MINIGAME_FEVER_TIME;
 
     private FoodMiniGameData _currentData;
     private int _successCount;
@@ -102,7 +102,6 @@ public class UIMiniGame : MobileUIView
 
     public override void Init()
     {
-        _jarGroup.Init(this);
         _screenButton.onClick.AddListener(() => _onButtonClicked = true);
         _leftTouchButton.AddListener(OnTouchButtonClicked);
         _rightTouchButton.AddListener(OnTouchButtonClicked);
@@ -123,6 +122,7 @@ public class UIMiniGame : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
+        GameManager.Instance.SetMiniGameStart(true);
         SoundManager.Instance.PlayBackgroundAudio(_toturialAudio, 0.5f);
         _timerAudio.Stop();
         StopAllCoroutines();
@@ -163,6 +163,7 @@ public class UIMiniGame : MobileUIView
         {
             VisibleState = VisibleState.Disappeared;
             _canvasGroup.blocksRaycasts = true;
+            GameManager.Instance.SetMiniGameStart(false);
             gameObject.SetActive(false);
         });
     }

@@ -10,13 +10,15 @@ public class UIPictorialBook : MobileUIView
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIPictorialBookGachaItem _uiGachaItem;
     [SerializeField] private UICustomerPictorialBook _uiCustomer;
+    [SerializeField] private UIStatus _uiStatus;
 
     [Header("Button Options")]
     [SerializeField] private Button _gachaItemButton;
     [SerializeField] private Button _customerButton;
+    [SerializeField] private Button _statusButton;
     [SerializeField] private RectTransform _gachaItemButtonClickPos;
     [SerializeField] private RectTransform _customerButtonClickPos;
-
+    [SerializeField] private RectTransform _statusButtonClickPos;
 
     [Space]
     [Header("Animations")]
@@ -33,23 +35,29 @@ public class UIPictorialBook : MobileUIView
 
     private RectTransform _gachaItemButtonTr;
     private RectTransform _customerButtonTr;
+    private RectTransform _statusButtonTr;
     private Vector2 _tmpGachaItemButtonPos;
     private Vector2 _tmpCustomerButtonPos;
+    private Vector2 _tmpStatusButtonPos;
 
 
     public override void Init()
     {
         _uiGachaItem.Init();
         _uiCustomer.Init();
+        _uiStatus.Init();
 
         _gachaItemButton.onClick.AddListener(OnGachaItemButtonClicked);
         _customerButton.onClick.AddListener(OnCustomerButtonClicked);
+        _statusButton.onClick.AddListener(OnStatusButtonClicked);
 
         _gachaItemButtonTr = _gachaItemButton.GetComponent<RectTransform>();
         _customerButtonTr = _customerButton.GetComponent<RectTransform>();
+        _statusButtonTr = _statusButton.GetComponent<RectTransform>();
 
         _tmpGachaItemButtonPos = _gachaItemButtonTr.anchoredPosition;
         _tmpCustomerButtonPos = _customerButtonTr.anchoredPosition;
+        _tmpStatusButtonPos = _statusButtonTr.anchoredPosition;
 
         UserInfo.OnGiveRecipeHandler += CustomerUpdateUI;
         UserInfo.OnChangeScoreHandler += CustomerUpdateUI;
@@ -71,7 +79,7 @@ public class UIPictorialBook : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.anchoredPosition = _hideTargetPos.anchoredPosition;
         OnGachaItemButtonClicked();
-
+        _uiCustomer.HideSkinView();
         TweenData tween = _animeUI.TweenAnchoredPosition(_showTargetPos.anchoredPosition, _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
@@ -104,9 +112,11 @@ public class UIPictorialBook : MobileUIView
     {
         _gachaItemButtonTr.anchoredPosition = _gachaItemButtonClickPos.anchoredPosition;
         _customerButtonTr.anchoredPosition = _tmpCustomerButtonPos;
+        _statusButtonTr.anchoredPosition = _tmpStatusButtonPos;
 
         _uiGachaItem.gameObject.SetActive(true);
         _uiCustomer.gameObject.SetActive(false);
+        _uiStatus.gameObject.SetActive(false);
 
         _uiGachaItem.UpdateUI();
         _uiGachaItem.ChoiceView();
@@ -116,12 +126,31 @@ public class UIPictorialBook : MobileUIView
     {
         _customerButtonTr.anchoredPosition = _customerButtonClickPos.anchoredPosition;
         _gachaItemButtonTr.anchoredPosition = _tmpGachaItemButtonPos;
+        _statusButtonTr.anchoredPosition = _tmpStatusButtonPos;
 
+        _uiCustomer.HideSkinView();
         _uiCustomer.gameObject.SetActive(true);
         _uiGachaItem.gameObject.SetActive(false);
+        _uiStatus.gameObject.SetActive(false);
 
         _uiCustomer.UpdateUI();
         _uiCustomer.ChoiceView();
+    }
+
+
+    private void OnStatusButtonClicked()
+    {
+        _statusButtonTr.anchoredPosition = _statusButtonClickPos.anchoredPosition;
+        _customerButtonTr.anchoredPosition = _tmpCustomerButtonPos;
+        _gachaItemButtonTr.anchoredPosition = _tmpGachaItemButtonPos;
+
+        _uiCustomer.HideSkinView();
+        _uiStatus.gameObject.SetActive(true);
+        _uiCustomer.gameObject.SetActive(false);
+        _uiGachaItem.gameObject.SetActive(false);
+
+        _uiStatus.UpdateUI();
+        _uiStatus.Show();
     }
 
     private void CustomerUpdateUI()

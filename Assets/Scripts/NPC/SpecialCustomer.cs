@@ -51,7 +51,7 @@ public class SpecialCustomer : Customer
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
 
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _visitSound, 0.15f);
+        SoundManager.Instance.PlayEffectAudio(EffectType.None, _visitSound, 0.15f);
 
         if (_touchCoroutine != null)
             StopCoroutine(_touchCoroutine);
@@ -107,9 +107,9 @@ public class SpecialCustomer : Customer
             StopCoroutine(_touchCoroutine);
         _touchCoroutine = StartCoroutine(OnTouchRoutine());
 
-        UserInfo.AddMoney(_touchAddMoney + GameManager.Instance.AddSpecialCustomerMoney);
+        UserInfo.AddMoney(_touchAddMoney);
         _feverSystem?.AddFeverGauge();
-        SoundManager.Instance.PlayEffectAudio(EffectType.Hall, _goldSound);
+        SoundManager.Instance.PlayEffectAudio(EffectType.None, _goldSound);
         if (_touchCount <= 0)
         {
             _isEndEvent = true;

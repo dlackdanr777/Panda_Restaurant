@@ -4,6 +4,16 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "ChefData", menuName = "Scriptable Object/Staff/Chef")]
 public class ChefData : StaffData
 {
+    [Header("ผฮวม ตฅภฬลอ")]
+    [SerializeField] private Sprite _backSprite;
+    public Sprite BackSprite => _backSprite;
+
+    [SerializeField] private Sprite _handSprite;
+    public Sprite HandSprite => _handSprite;
+
+    [SerializeField] private Vector2 _handOffset = new Vector2(0, 0.588f);
+    public Vector2 HandOffset => _handOffset;
+
     [SerializeField] private ChefLevelData[] _chefLevelData;
     public override float SecondValue => _chefLevelData[0].FoodSpeedAddPercent;
     public override int MaxLevel => _chefLevelData.Length;

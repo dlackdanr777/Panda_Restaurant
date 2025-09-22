@@ -8,9 +8,20 @@ using UnityEngine.Events;
 
 public class ChallengeManager : MonoBehaviour
 {
+    public class ChallengeRepeatRule
+    {
+        public int StartValue;      // 반복 시작 값
+        public int Step;            // 반복 간격
+        public Func<int, int> RewardFunc; // 반복 보상 계산 함수
+        public Func<int, int> ScoreFunc;  // 반복 평점 계산 함수 (필요시)
+    }
+
     public event Action OnDailyChallengeUpdateHandler;
     public event Action OnAllTimeChallengeUpdateHandler;
     public event Action OnMainChallengeUpdateHandler;
+    public event Action OnWeeklyChallengeUpdateHandler;
+
+    public event Action OnAddChallengeHandler;
 
     public static ChallengeManager Instance
     {
@@ -39,6 +50,13 @@ public class ChallengeManager : MonoBehaviour
     private static Dictionary<string, ChallengeData> _mainChallengeDataDic = new Dictionary<string, ChallengeData>();
     private static Dictionary<string, ChallengeData> _alltimeChallengeDataDic = new Dictionary<string, ChallengeData>();
     private static Dictionary<string, ChallengeData> _dailyChallengeDataDic = new Dictionary<string, ChallengeData>();
+    private static Dictionary<string, ChallengeData> _weeklyChallengeDataDic = new Dictionary<string, ChallengeData>();
+
+    private static List<ChallengeData> _mainChallengeList = new List<ChallengeData>();
+    private static List<ChallengeData> _dailyChallengeList = new List<ChallengeData>();
+    private static List<ChallengeData> _weeklyChallengeList = new List<ChallengeData>();
+    private static List<ChallengeData> _allTimeChallengeList = new List<ChallengeData>();
+
 
     private static Dictionary<string, Type01ChallengeData> _type01ChallengeDataDic = new Dictionary<string, Type01ChallengeData>();
     private static Dictionary<string, Type02ChallengeData> _type02ChallengeDataDic = new Dictionary<string, Type02ChallengeData>();
@@ -74,14 +92,72 @@ public class ChallengeManager : MonoBehaviour
     private static Dictionary<string, Type33ChallengeData> _type33ChallengeDataDic = new Dictionary<string, Type33ChallengeData>();
     private static Dictionary<string, Type34ChallengeData> _type34ChallengeDataDic = new Dictionary<string, Type34ChallengeData>();
     private static Dictionary<string, Type35ChallengeData> _type35ChallengeDataDic = new Dictionary<string, Type35ChallengeData>();
+    private static Dictionary<string, Type36ChallengeData> _type36ChallengeDataDic = new Dictionary<string, Type36ChallengeData>();
+    private static Dictionary<string, Type37ChallengeData> _type37ChallengeDataDic = new Dictionary<string, Type37ChallengeData>();
+    private static Dictionary<string, Type38ChallengeData> _type38ChallengeDataDic = new Dictionary<string, Type38ChallengeData>();
+    private static Dictionary<string, Type39ChallengeData> _type39ChallengeDataDic = new Dictionary<string, Type39ChallengeData>();
+    private static Dictionary<string, Type40ChallengeData> _type40ChallengeDataDic = new Dictionary<string, Type40ChallengeData>();
+    private static Dictionary<string, Type41ChallengeData> _type41ChallengeDataDic = new Dictionary<string, Type41ChallengeData>();
 
 
     public ChallengeData GetCallengeData(string id)
     {
-        if(_challengeDataDic.TryGetValue(id, out var challengeData))
+        if (_challengeDataDic.TryGetValue(id, out var challengeData))
             return challengeData;
 
-        throw new Exception("도전과제 ID가 존재하지 않습니다: " + id);
+        Debug.LogError("도전과제 ID가 존재하지 않습니다: " + id);
+        return null;
+    }
+
+    public void UpdateChallenge()
+    {
+        Type01ChallengeCheck();
+        Type02ChallengeCheck();
+        Type03ChallengeCheck();
+        Type04ChallengeCheck();
+        Type05ChallengeCheck();
+        Type06ChallengeCheck();
+        Type07ChallengeCheck();
+        Type08ChallengeCheck();
+        Type09ChallengeCheck();
+        Type10ChallengeCheck();
+        Type11ChallengeCheck();
+        Type12ChallengeCheck();
+        Type13ChallengeCheck();
+        Type14ChallengeCheck();
+        Type15ChallengeCheck();
+        Type16ChallengeCheck();
+        Type17ChallengeCheck();
+        Type18ChallengeCheck();
+        Type19ChallengeCheck();
+
+        Type21ChallengeCheck();
+        Type22ChallengeCheck();
+        Type23ChallengeCheck();
+        Type24ChallengeCheck();
+        Type25ChallengeCheck();
+        Type26ChallengeCheck();
+
+        Type28ChallengeCheck();
+
+        Type30ChallengeCheck();
+        Type31ChallengeCheck();
+        Type32ChallengeCheck();
+        Type33ChallengeCheck();
+        Type34ChallengeCheck();
+        Type35ChallengeCheck();
+        Type36ChallengeCheck();
+        Type37ChallengeCheck();
+        Type38ChallengeCheck();
+        Type39ChallengeCheck();
+        Type40ChallengeCheck();
+        Type41ChallengeCheck();
+
+        OnCheckRepeatCoinChallengeEvent();
+        OnCheckRepeatVisitChallengeEvent();
+        OnCheckRepeatScoreChallengeEvent();
+        OnCheckRepeatGatchaChallengeEvent();
+
     }
 
     private void Awake()
@@ -116,7 +192,7 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnGiveFurnitureHandler += Type14ChallengeCheck;
         UserInfo.OnGiveKitchenUtensilHandler += Type15ChallengeCheck;
         UserInfo.OnChangeFurnitureHandler += (floor, type) => Type16ChallengeCheck();
-        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) =>  Type17ChallengeCheck();
+        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => Type17ChallengeCheck();
         UserInfo.OnGiveFurnitureHandler += Type18ChallengeCheck;
         UserInfo.OnGiveKitchenUtensilHandler += Type19ChallengeCheck;
 
@@ -135,6 +211,19 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnAddCookCountHandler += Type33ChallengeCheck;
         UserInfo.OnAddCleanCountHandler += Type34ChallengeCheck;
         UserInfo.OnAddAdvertisingViewCountHandler += Type35ChallengeCheck;
+
+        // 주간 도전과제 이벤트 핸들러
+        OnWeeklyChallengeUpdateHandler += Type36ChallengeCheck;
+        UserInfo.OnAddCustomerCountHandler += Type37ChallengeCheck;
+        UserInfo.OnChangeMoneyHandler += Type38ChallengeCheck;
+        UserInfo.OnAddCookCountHandler += Type39ChallengeCheck;
+        UserInfo.OnAddCleanCountHandler += Type40ChallengeCheck;
+        UserInfo.OnExterminationGatecrasherCustomerHandler += Type41ChallengeCheck;
+
+        UserInfo.OnClearChallengeHandler += OnCheckRepeatCoinChallengeEvent;
+        UserInfo.OnClearChallengeHandler += OnCheckRepeatVisitChallengeEvent;
+        UserInfo.OnClearChallengeHandler += OnCheckRepeatScoreChallengeEvent;
+        UserInfo.OnClearChallengeHandler += OnCheckRepeatGatchaChallengeEvent;
 
         Type01ChallengeCheck();
         Type02ChallengeCheck();
@@ -159,6 +248,9 @@ public class ChallengeManager : MonoBehaviour
         Type21ChallengeCheck();
         Type22ChallengeCheck();
         Type23ChallengeCheck();
+        Type24ChallengeCheck();
+        Type25ChallengeCheck();
+        Type26ChallengeCheck();
 
         Type28ChallengeCheck();
 
@@ -168,6 +260,12 @@ public class ChallengeManager : MonoBehaviour
         Type33ChallengeCheck();
         Type34ChallengeCheck();
         Type35ChallengeCheck();
+        Type36ChallengeCheck();
+        Type37ChallengeCheck();
+        Type38ChallengeCheck();
+        Type39ChallengeCheck();
+        Type40ChallengeCheck();
+        Type41ChallengeCheck();
     }
 
 
@@ -175,17 +273,29 @@ public class ChallengeManager : MonoBehaviour
     {
         _mainChallengeDataDic.Clear();
         _mainChallengeDataDic = SetData(Challenges.Main, "REWARD_MAIN");
+        _mainChallengeList.Clear();
+        _mainChallengeList.AddRange(_mainChallengeDataDic.Values);
 
-        _alltimeChallengeDataDic.Clear();
-        _alltimeChallengeDataDic = SetData(Challenges.AllTime, "REWARD_ALLTIME");
+        // _alltimeChallengeDataDic.Clear();
+        // _alltimeChallengeDataDic = SetAllTimeData("REWARD_ALLTIME");
+        // _allTimeChallengeList.Clear();
+        // _allTimeChallengeList.AddRange(_alltimeChallengeDataDic.Values);
 
         _dailyChallengeDataDic.Clear();
         _dailyChallengeDataDic = SetData(Challenges.Daily, "REWARD_DAILY");
+        _dailyChallengeList.Clear();
+        _dailyChallengeList.AddRange(_dailyChallengeDataDic.Values);
+
+        _weeklyChallengeDataDic.Clear();
+        _weeklyChallengeDataDic = SetData(Challenges.Weekly, "REWARD_WEEKLY");
+        _weeklyChallengeList.Clear();
+        _weeklyChallengeList.AddRange(_weeklyChallengeDataDic.Values);
 
         _challengeDataDic.Clear();
         _challengeDataDic.AddRange(_mainChallengeDataDic);
         _challengeDataDic.AddRange(_alltimeChallengeDataDic);
         _challengeDataDic.AddRange(_dailyChallengeDataDic);
+        _challengeDataDic.AddRange(_weeklyChallengeDataDic);
     }
 
 
@@ -198,7 +308,7 @@ public class ChallengeManager : MonoBehaviour
 
         for (int i = 1, cnt = data.Length - 1; i < cnt; ++i)
         {
-            row = data[i].Split(new char[] { ',' });
+            row = Utility.SplitCsvLine(data[i]);
             string id = string.Concat(row[0].Where(c => !Char.IsWhiteSpace(c)));
 
             if (string.IsNullOrWhiteSpace(id))
@@ -210,15 +320,26 @@ public class ChallengeManager : MonoBehaviour
             string description = row[3];
             string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
             int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
-            MoneyType moneyType = row[6] == "코인" ? MoneyType.Gold : MoneyType.Dia;
+            MoneyType moneyType = row[6].Contains("코인") || row[6].Contains("게임머니") ? MoneyType.Gold : MoneyType.Dia;
             int rewardMoney = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
             ChallengeType challengeType;
+
             switch (type)
             {
                 case "TYPE01":
                     challengeType = ChallengeType.TYPE01;
                     string[] needFurnitureIds = needItemId.Split(new char[] { '.' });
-                    Type01ChallengeData challengeData01 = new Type01ChallengeData(challenges, challengeType, id, description, needFurnitureIds, moneyType, rewardMoney, shortcutAction);
+                    for (int j = 0, cntJ = needFurnitureIds.Length; j < cntJ; j++)
+                    {
+                        FurnitureData furnitureData = FurnitureDataManager.Instance.GetFurnitureData(needFurnitureIds[j]);
+                        if (furnitureData == null)
+                        {
+                            Debug.LogError($"Furniture ID not found: {needFurnitureIds[j]}");
+                            continue;
+                        }
+                        needFurnitureIds[j] = needFurnitureIds[j].Trim();
+                    }
+                    Type01ChallengeData challengeData01 = new Type01ChallengeData(challenges, challengeType, id, description, needFurnitureIds, moneyType, rewardMoney, 0, shortcutAction);
                     _type01ChallengeDataDic.Add(id, challengeData01);
                     dic.Add(id, challengeData01);
                     break;
@@ -226,219 +347,641 @@ public class ChallengeManager : MonoBehaviour
                 case "TYPE02":
                     challengeType = ChallengeType.TYPE02;
                     string[] needKitchenUtensilIds = needItemId.Split(new char[] { '.' });
-                    Type02ChallengeData challengeData02 = new Type02ChallengeData(challenges, challengeType, id, description, needKitchenUtensilIds, moneyType, rewardMoney, shortcutAction);
-                    _type02ChallengeDataDic.Add(id, challengeData02); 
+                    for (int j = 0, cntJ = needKitchenUtensilIds.Length; j < cntJ; j++)
+                    {
+                        KitchenUtensilData kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(needKitchenUtensilIds[j]);
+                        if (kitchenData == null)
+                        {
+                            Debug.LogError($"Kitchen Utensil ID not found: {needKitchenUtensilIds[j]}");
+                            continue;
+                        }
+                        needKitchenUtensilIds[j] = needKitchenUtensilIds[j].Trim();
+                    }
+                    Type02ChallengeData challengeData02 = new Type02ChallengeData(challenges, challengeType, id, description, needKitchenUtensilIds, moneyType, rewardMoney, 0, shortcutAction);
+                    _type02ChallengeDataDic.Add(id, challengeData02);
                     dic.Add(id, challengeData02);
                     break;
 
                 case "TYPE03":
                     challengeType = ChallengeType.TYPE03;
-                    Type03ChallengeData challengeData03 = new Type03ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    if (FoodDataManager.Instance.GetFoodData(needItemId) == null)
+                    {
+                        Debug.LogError($"Recipe ID not found: {needItemId}");
+                        continue;
+                    }
+                    Type03ChallengeData challengeData03 = new Type03ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, 0, shortcutAction);
                     _type03ChallengeDataDic.Add(id, challengeData03);
                     dic.Add(id, challengeData03);
                     break;
 
                 case "TYPE04":
+                    if (FoodDataManager.Instance.GetFoodData(needItemId) == null)
+                    {
+                        Debug.LogError($"Recipe ID not found: {needItemId}");
+                        continue;
+                    }
                     challengeType = ChallengeType.TYPE04;
-                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, 0, shortcutAction);
                     _type04ChallengeDataDic.Add(id, challengeData04);
                     dic.Add(id, challengeData04);
                     break;
 
                 case "TYPE05":
                     challengeType = ChallengeType.TYPE05;
-                    Type05ChallengeData challengeData05 = new Type05ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    if (StaffDataManager.Instance.GetStaffData(needItemId) == null)
+                    {
+                        Debug.LogError($"Staff ID not found: {needItemId}");
+                        continue;
+                    }
+                    Type05ChallengeData challengeData05 = new Type05ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, 0, shortcutAction);
                     _type05ChallengeDataDic.Add(id, challengeData05);
                     dic.Add(id, challengeData05);
                     break;
 
                 case "TYPE06":
                     challengeType = ChallengeType.TYPE06;
-                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type06ChallengeDataDic.Add(id, challengeData06);
                     dic.Add(id, challengeData06);
                     break;
 
                 case "TYPE07":
                     challengeType = ChallengeType.TYPE07;
-                    Type07ChallengeData challengeData07 = new Type07ChallengeData(challenges, challengeType, id, description, needItemId, count, moneyType, rewardMoney, shortcutAction);
+                    if (FoodDataManager.Instance.GetFoodData(needItemId) == null)
+                    {
+                        Debug.LogError($"Recipe ID not found: {needItemId}");
+                        continue;
+                    }
+                    Type07ChallengeData challengeData07 = new Type07ChallengeData(challenges, challengeType, id, description, needItemId, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type07ChallengeDataDic.Add(id, challengeData07);
                     dic.Add(id, challengeData07);
                     break;
 
                 case "TYPE08":
                     challengeType = ChallengeType.TYPE08;
-                    Type08ChallengeData challengeData08 = new Type08ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type08ChallengeData challengeData08 = new Type08ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type08ChallengeDataDic.Add(id, challengeData08);
                     dic.Add(id, challengeData08);
                     break;
 
                 case "TYPE09":
                     challengeType = ChallengeType.TYPE09;
-                    Type09ChallengeData challengeData09 = new Type09ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type09ChallengeData challengeData09 = new Type09ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type09ChallengeDataDic.Add(id, challengeData09);
                     dic.Add(id, challengeData09);
                     break;
 
                 case "TYPE10":
                     challengeType = ChallengeType.TYPE10;
-                    Type10ChallengeData challengeData10 = new Type10ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type10ChallengeData challengeData10 = new Type10ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type10ChallengeDataDic.Add(id, challengeData10);
                     dic.Add(id, challengeData10);
                     break;
 
                 case "TYPE11":
                     challengeType = ChallengeType.TYPE11;
-                    Type11ChallengeData challengeData11 = new Type11ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type11ChallengeData challengeData11 = new Type11ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type11ChallengeDataDic.Add(id, challengeData11);
                     dic.Add(id, challengeData11);
                     break;
 
                 case "TYPE12":
                     challengeType = ChallengeType.TYPE12;
-                    Type12ChallengeData challengeData12 = new Type12ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type12ChallengeData challengeData12 = new Type12ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type12ChallengeDataDic.Add(id, challengeData12);
                     dic.Add(id, challengeData12);
                     break;
 
                 case "TYPE13":
                     challengeType = ChallengeType.TYPE13;
-                    Type13ChallengeData challengeData13 = new Type13ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type13ChallengeData challengeData13 = new Type13ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type13ChallengeDataDic.Add(id, challengeData13);
                     dic.Add(id, challengeData13);
                     break;
 
                 case "TYPE14":
                     challengeType = ChallengeType.TYPE14;
-                    Type14ChallengeData challengeData14 = new Type14ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type14ChallengeData challengeData14 = new Type14ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type14ChallengeDataDic.Add(id, challengeData14);
                     dic.Add(id, challengeData14);
                     break;
 
                 case "TYPE15":
                     challengeType = ChallengeType.TYPE15;
-                    Type15ChallengeData challengeData15 = new Type15ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type15ChallengeData challengeData15 = new Type15ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type15ChallengeDataDic.Add(id, challengeData15);
                     dic.Add(id, challengeData15);
                     break;
 
                 case "TYPE16":
                     challengeType = ChallengeType.TYPE16;
-                    Type16ChallengeData challengeData16 = new Type16ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    Type16ChallengeData challengeData16 = new Type16ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, 0, shortcutAction);
                     _type16ChallengeDataDic.Add(id, challengeData16);
                     dic.Add(id, challengeData16);
                     break;
 
                 case "TYPE17":
                     challengeType = ChallengeType.TYPE17;
-                    Type17ChallengeData challengeData17 = new Type17ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, shortcutAction);
+                    Type17ChallengeData challengeData17 = new Type17ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, 0, shortcutAction);
                     _type17ChallengeDataDic.Add(id, challengeData17);
                     dic.Add(id, challengeData17);
                     break;
 
                 case "TYPE18":
                     challengeType = ChallengeType.TYPE18;
-                    Type18ChallengeData challengeData18 = new Type18ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type18ChallengeData challengeData18 = new Type18ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type18ChallengeDataDic.Add(id, challengeData18);
                     dic.Add(id, challengeData18);
                     break;
 
                 case "TYPE19":
                     challengeType = ChallengeType.TYPE19;
-                    Type19ChallengeData challengeData19 = new Type19ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type19ChallengeData challengeData19 = new Type19ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type19ChallengeDataDic.Add(id, challengeData19);
                     dic.Add(id, challengeData19);
                     break;
 
                 case "TYPE21":
                     challengeType = ChallengeType.TYPE21;
-                    Type21ChallengeData challengeData21 = new Type21ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type21ChallengeData challengeData21 = new Type21ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type21ChallengeDataDic.Add(id, challengeData21);
                     dic.Add(id, challengeData21);
                     break;
 
                 case "TYPE22":
                     challengeType = ChallengeType.TYPE22;
-                    Type22ChallengeData challengeData22 = new Type22ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type22ChallengeData challengeData22 = new Type22ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type22ChallengeDataDic.Add(id, challengeData22);
                     dic.Add(id, challengeData22);
                     break;
 
                 case "TYPE23":
                     challengeType = ChallengeType.TYPE23;
-                    Type23ChallengeData challengeData23 = new Type23ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type23ChallengeData challengeData23 = new Type23ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type23ChallengeDataDic.Add(id, challengeData23);
                     dic.Add(id, challengeData23);
                     break;
 
                 case "TYPE24":
                     challengeType = ChallengeType.TYPE24;
-                    Type24ChallengeData challengeData24 = new Type24ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type24ChallengeData challengeData24 = new Type24ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type24ChallengeDataDic.Add(id, challengeData24);
                     dic.Add(id, challengeData24);
                     break;
 
                 case "TYPE25":
                     challengeType = ChallengeType.TYPE25;
-                    Type25ChallengeData challengeData25 = new Type25ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type25ChallengeData challengeData25 = new Type25ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type25ChallengeDataDic.Add(id, challengeData25);
                     dic.Add(id, challengeData25);
                     break;
 
                 case "TYPE26":
                     challengeType = ChallengeType.TYPE26;
-                    Type26ChallengeData challengeData26 = new Type26ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type26ChallengeData challengeData26 = new Type26ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type26ChallengeDataDic.Add(id, challengeData26);
                     dic.Add(id, challengeData26);
                     break;
 
                 case "TYPE28":
                     challengeType = ChallengeType.TYPE28;
-                    Type28ChallengeData challengeData28 = new Type28ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type28ChallengeData challengeData28 = new Type28ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type28ChallengeDataDic.Add(id, challengeData28);
                     dic.Add(id, challengeData28);
                     break;
 
                 case "TYPE30":
                     challengeType = ChallengeType.TYPE30;
-                    Type30ChallengeData challengeData30 = new Type30ChallengeData(challenges, challengeType, id, description, moneyType, rewardMoney, shortcutAction);
+                    Type30ChallengeData challengeData30 = new Type30ChallengeData(challenges, challengeType, id, description, moneyType, rewardMoney, 0, shortcutAction);
                     _type30ChallengeDataDic.Add(id, challengeData30);
                     dic.Add(id, challengeData30);
                     break;
 
                 case "TYPE31":
                     challengeType = ChallengeType.TYPE31;
-                    Type31ChallengeData challengeData31= new Type31ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type31ChallengeData challengeData31 = new Type31ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type31ChallengeDataDic.Add(id, challengeData31);
                     dic.Add(id, challengeData31);
                     break;
 
                 case "TYPE32":
                     challengeType = ChallengeType.TYPE32;
-                    Type32ChallengeData challengeData32 = new Type32ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type32ChallengeData challengeData32 = new Type32ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type32ChallengeDataDic.Add(id, challengeData32);
                     dic.Add(id, challengeData32);
                     break;
 
                 case "TYPE33":
                     challengeType = ChallengeType.TYPE33;
-                    Type33ChallengeData challengeData33 = new Type33ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type33ChallengeData challengeData33 = new Type33ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type33ChallengeDataDic.Add(id, challengeData33);
                     dic.Add(id, challengeData33);
                     break;
 
                 case "TYPE34":
                     challengeType = ChallengeType.TYPE34;
-                    Type34ChallengeData challengeData34 = new Type34ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type34ChallengeData challengeData34 = new Type34ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type34ChallengeDataDic.Add(id, challengeData34);
                     dic.Add(id, challengeData34);
                     break;
 
                 case "TYPE35":
                     challengeType = ChallengeType.TYPE35;
-                    Type35ChallengeData challengeData35 = new Type35ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, shortcutAction);
+                    Type35ChallengeData challengeData35 = new Type35ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type35ChallengeDataDic.Add(id, challengeData35);
                     dic.Add(id, challengeData35);
+                    break;
+
+                case "TYPE36":
+                    challengeType = ChallengeType.TYPE36;
+                    Type36ChallengeData challengeData36 = new Type36ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
+                    _type36ChallengeDataDic.Add(id, challengeData36);
+                    dic.Add(id, challengeData36);
+                    break;
+
+                case "TYPE37":
+                    challengeType = ChallengeType.TYPE37;
+                    Type37ChallengeData challengeData37 = new Type37ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
+                    _type37ChallengeDataDic.Add(id, challengeData37);
+                    dic.Add(id, challengeData37);
+                    break;
+
+                case "TYPE38":
+                    challengeType = ChallengeType.TYPE38;
+                    Type38ChallengeData challengeData38 = new Type38ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
+                    _type38ChallengeDataDic.Add(id, challengeData38);
+                    dic.Add(id, challengeData38);
+                    break;
+
+                case "TYPE39":
+                    challengeType = ChallengeType.TYPE39;
+                    Type39ChallengeData challengeData39 = new Type39ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
+                    _type39ChallengeDataDic.Add(id, challengeData39);
+                    dic.Add(id, challengeData39);
+                    break;
+
+                case "TYPE40":
+                    challengeType = ChallengeType.TYPE40;
+                    Type40ChallengeData challengeData40 = new Type40ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
+                    _type40ChallengeDataDic.Add(id, challengeData40);
+                    dic.Add(id, challengeData40);
+                    break;
+
+                case "TYPE41":
+                    challengeType = ChallengeType.TYPE41;
+                    Type41ChallengeData challengeData41 = new Type41ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
+                    _type41ChallengeDataDic.Add(id, challengeData41);
+                    dic.Add(id, challengeData41);
+                    break;
+
+            }
+        }
+
+        return dic;
+    }
+
+
+    private Dictionary<string, ChallengeData> SetAllTimeData(string csvFileName)
+    {
+        TextAsset csvData = Resources.Load<TextAsset>(_csvFilePath + csvFileName);
+        Dictionary<string, ChallengeData> dic = new Dictionary<string, ChallengeData>();
+        Challenges challenges = Challenges.AllTime;
+        string[] data = csvData.text.Split(new char[] { '\n' });
+        string[] row;
+
+        for (int i = 1, cnt = data.Length - 1; i < cnt; ++i)
+        {
+            row = Utility.SplitCsvLine(data[i]);
+            string id = string.Concat(row[0].Where(c => !Char.IsWhiteSpace(c)));
+
+            if (string.IsNullOrWhiteSpace(id))
+                continue;
+
+            if (id.Contains("Repeat"))
+            {
+                continue;
+            }
+
+            string type = string.Concat(row[1].Where(c => !Char.IsWhiteSpace(c)));
+            string shortCutType = string.Concat(row[2].Where(c => !Char.IsWhiteSpace(c)));
+            BindData<UnityAction> shortcutAction = GetShortCutAction(row[2]);
+            string description = row[3];
+            string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
+            int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
+
+            int rewardScore = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
+            MoneyType moneyType = row[8].Contains("코인") || row[8].Contains("게임머니") ? MoneyType.Gold : MoneyType.Dia;
+            Debug.Log(id + ", " + row[9]);
+            int rewardMoney = Convert.ToInt32(string.Concat(row[9].Where(c => !Char.IsWhiteSpace(c))));
+            ChallengeType challengeType;
+            switch (type)
+            {
+                case "TYPE01":
+                    challengeType = ChallengeType.TYPE01;
+                    string[] needFurnitureIds = needItemId.Split(new char[] { '.' });
+                    for (int j = 0, cntJ = needFurnitureIds.Length; j < cntJ; j++)
+                    {
+                        FurnitureData furnitureData = FurnitureDataManager.Instance.GetFurnitureData(needFurnitureIds[j]);
+                        if (furnitureData == null)
+                        {
+                            Debug.LogError($"Furniture ID not found: {needFurnitureIds[j]}");
+                            continue;
+                        }
+                        needFurnitureIds[j] = needFurnitureIds[j].Trim();
+                    }
+                    Type01ChallengeData challengeData01 = new Type01ChallengeData(challenges, challengeType, id, description, needFurnitureIds, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type01ChallengeDataDic.Add(id, challengeData01);
+                    dic.Add(id, challengeData01);
+                    break;
+
+                case "TYPE02":
+                    challengeType = ChallengeType.TYPE02;
+                    string[] needKitchenUtensilIds = needItemId.Split(new char[] { '.' });
+                    for (int j = 0, cntJ = needKitchenUtensilIds.Length; j < cntJ; j++)
+                    {
+                        KitchenUtensilData kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData(needKitchenUtensilIds[j]);
+                        if (kitchenData == null)
+                        {
+                            Debug.LogError($"Kitchen Utensil ID not found: {needKitchenUtensilIds[j]}");
+                            continue;
+                        }
+                        needKitchenUtensilIds[j] = needKitchenUtensilIds[j].Trim();
+                    }
+                    Type02ChallengeData challengeData02 = new Type02ChallengeData(challenges, challengeType, id, description, needKitchenUtensilIds, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type02ChallengeDataDic.Add(id, challengeData02);
+                    dic.Add(id, challengeData02);
+                    break;
+
+                case "TYPE03":
+                    challengeType = ChallengeType.TYPE03;
+                    if (FoodDataManager.Instance.GetFoodData(needItemId) == null)
+                    {
+                        Debug.LogError($"Recipe ID not found: {needItemId}");
+                        continue;
+                    }
+                    Type03ChallengeData challengeData03 = new Type03ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type03ChallengeDataDic.Add(id, challengeData03);
+                    dic.Add(id, challengeData03);
+                    break;
+
+                case "TYPE04":
+                    if (FoodDataManager.Instance.GetFoodData(needItemId) == null)
+                    {
+                        Debug.LogError($"Recipe ID not found: {needItemId}");
+                        continue;
+                    }
+                    challengeType = ChallengeType.TYPE04;
+                    Type04ChallengeData challengeData04 = new Type04ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type04ChallengeDataDic.Add(id, challengeData04);
+                    dic.Add(id, challengeData04);
+                    break;
+
+                case "TYPE05":
+                    challengeType = ChallengeType.TYPE05;
+                    if (StaffDataManager.Instance.GetStaffData(needItemId) == null)
+                    {
+                        Debug.LogError($"Staff ID not found: {needItemId}");
+                        continue;
+                    }
+                    Type05ChallengeData challengeData05 = new Type05ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type05ChallengeDataDic.Add(id, challengeData05);
+                    dic.Add(id, challengeData05);
+                    break;
+
+                case "TYPE06":
+                    challengeType = ChallengeType.TYPE06;
+                    Type06ChallengeData challengeData06 = new Type06ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type06ChallengeDataDic.Add(id, challengeData06);
+                    dic.Add(id, challengeData06);
+                    break;
+
+                case "TYPE07":
+                    challengeType = ChallengeType.TYPE07;
+                    if (FoodDataManager.Instance.GetFoodData(needItemId) == null)
+                    {
+                        Debug.LogError($"Recipe ID not found: {needItemId}");
+                        continue;
+                    }
+                    Type07ChallengeData challengeData07 = new Type07ChallengeData(challenges, challengeType, id, description, needItemId, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type07ChallengeDataDic.Add(id, challengeData07);
+                    dic.Add(id, challengeData07);
+                    break;
+
+                case "TYPE08":
+                    challengeType = ChallengeType.TYPE08;
+                    Type08ChallengeData challengeData08 = new Type08ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type08ChallengeDataDic.Add(id, challengeData08);
+                    dic.Add(id, challengeData08);
+                    break;
+
+                case "TYPE09":
+                    challengeType = ChallengeType.TYPE09;
+                    Type09ChallengeData challengeData09 = new Type09ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type09ChallengeDataDic.Add(id, challengeData09);
+                    dic.Add(id, challengeData09);
+                    break;
+
+                case "TYPE10":
+                    challengeType = ChallengeType.TYPE10;
+                    Type10ChallengeData challengeData10 = new Type10ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type10ChallengeDataDic.Add(id, challengeData10);
+                    dic.Add(id, challengeData10);
+                    break;
+
+                case "TYPE11":
+                    challengeType = ChallengeType.TYPE11;
+                    Type11ChallengeData challengeData11 = new Type11ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type11ChallengeDataDic.Add(id, challengeData11);
+                    dic.Add(id, challengeData11);
+                    break;
+
+                case "TYPE12":
+                    challengeType = ChallengeType.TYPE12;
+                    Type12ChallengeData challengeData12 = new Type12ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type12ChallengeDataDic.Add(id, challengeData12);
+                    dic.Add(id, challengeData12);
+                    break;
+
+                case "TYPE13":
+                    challengeType = ChallengeType.TYPE13;
+                    Type13ChallengeData challengeData13 = new Type13ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type13ChallengeDataDic.Add(id, challengeData13);
+                    dic.Add(id, challengeData13);
+                    break;
+
+                case "TYPE14":
+                    challengeType = ChallengeType.TYPE14;
+                    Type14ChallengeData challengeData14 = new Type14ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type14ChallengeDataDic.Add(id, challengeData14);
+                    dic.Add(id, challengeData14);
+                    break;
+
+                case "TYPE15":
+                    challengeType = ChallengeType.TYPE15;
+                    Type15ChallengeData challengeData15 = new Type15ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type15ChallengeDataDic.Add(id, challengeData15);
+                    dic.Add(id, challengeData15);
+                    break;
+
+                case "TYPE16":
+                    challengeType = ChallengeType.TYPE16;
+                    Type16ChallengeData challengeData16 = new Type16ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type16ChallengeDataDic.Add(id, challengeData16);
+                    dic.Add(id, challengeData16);
+                    break;
+
+                case "TYPE17":
+                    challengeType = ChallengeType.TYPE17;
+                    Type17ChallengeData challengeData17 = new Type17ChallengeData(challenges, challengeType, id, description, needItemId, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type17ChallengeDataDic.Add(id, challengeData17);
+                    dic.Add(id, challengeData17);
+                    break;
+
+                case "TYPE18":
+                    challengeType = ChallengeType.TYPE18;
+                    Type18ChallengeData challengeData18 = new Type18ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type18ChallengeDataDic.Add(id, challengeData18);
+                    dic.Add(id, challengeData18);
+                    break;
+
+                case "TYPE19":
+                    challengeType = ChallengeType.TYPE19;
+                    Type19ChallengeData challengeData19 = new Type19ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type19ChallengeDataDic.Add(id, challengeData19);
+                    dic.Add(id, challengeData19);
+                    break;
+
+                case "TYPE21":
+                    challengeType = ChallengeType.TYPE21;
+                    Type21ChallengeData challengeData21 = new Type21ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type21ChallengeDataDic.Add(id, challengeData21);
+                    dic.Add(id, challengeData21);
+                    break;
+
+                case "TYPE22":
+                    challengeType = ChallengeType.TYPE22;
+                    Type22ChallengeData challengeData22 = new Type22ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type22ChallengeDataDic.Add(id, challengeData22);
+                    dic.Add(id, challengeData22);
+                    break;
+
+                case "TYPE23":
+                    challengeType = ChallengeType.TYPE23;
+                    Type23ChallengeData challengeData23 = new Type23ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type23ChallengeDataDic.Add(id, challengeData23);
+                    dic.Add(id, challengeData23);
+                    break;
+
+                case "TYPE24":
+                    challengeType = ChallengeType.TYPE24;
+                    Type24ChallengeData challengeData24 = new Type24ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type24ChallengeDataDic.Add(id, challengeData24);
+                    dic.Add(id, challengeData24);
+                    break;
+
+                case "TYPE25":
+                    challengeType = ChallengeType.TYPE25;
+                    Type25ChallengeData challengeData25 = new Type25ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type25ChallengeDataDic.Add(id, challengeData25);
+                    dic.Add(id, challengeData25);
+                    break;
+
+                case "TYPE26":
+                    challengeType = ChallengeType.TYPE26;
+                    Type26ChallengeData challengeData26 = new Type26ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type26ChallengeDataDic.Add(id, challengeData26);
+                    dic.Add(id, challengeData26);
+                    break;
+
+                case "TYPE28":
+                    challengeType = ChallengeType.TYPE28;
+                    Type28ChallengeData challengeData28 = new Type28ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type28ChallengeDataDic.Add(id, challengeData28);
+                    dic.Add(id, challengeData28);
+                    break;
+
+                case "TYPE30":
+                    challengeType = ChallengeType.TYPE30;
+                    Type30ChallengeData challengeData30 = new Type30ChallengeData(challenges, challengeType, id, description, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type30ChallengeDataDic.Add(id, challengeData30);
+                    dic.Add(id, challengeData30);
+                    break;
+
+                case "TYPE31":
+                    challengeType = ChallengeType.TYPE31;
+                    Type31ChallengeData challengeData31 = new Type31ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type31ChallengeDataDic.Add(id, challengeData31);
+                    dic.Add(id, challengeData31);
+                    break;
+
+                case "TYPE32":
+                    challengeType = ChallengeType.TYPE32;
+                    Type32ChallengeData challengeData32 = new Type32ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type32ChallengeDataDic.Add(id, challengeData32);
+                    dic.Add(id, challengeData32);
+                    break;
+
+                case "TYPE33":
+                    challengeType = ChallengeType.TYPE33;
+                    Type33ChallengeData challengeData33 = new Type33ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type33ChallengeDataDic.Add(id, challengeData33);
+                    dic.Add(id, challengeData33);
+                    break;
+
+                case "TYPE34":
+                    challengeType = ChallengeType.TYPE34;
+                    Type34ChallengeData challengeData34 = new Type34ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type34ChallengeDataDic.Add(id, challengeData34);
+                    dic.Add(id, challengeData34);
+                    break;
+
+                case "TYPE35":
+                    challengeType = ChallengeType.TYPE35;
+                    Type35ChallengeData challengeData35 = new Type35ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type35ChallengeDataDic.Add(id, challengeData35);
+                    dic.Add(id, challengeData35);
+                    break;
+
+                case "TYPE36":
+                    challengeType = ChallengeType.TYPE36;
+                    Type36ChallengeData challengeData36 = new Type36ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type36ChallengeDataDic.Add(id, challengeData36);
+                    dic.Add(id, challengeData36);
+                    break;
+
+                case "TYPE37":
+                    challengeType = ChallengeType.TYPE37;
+                    Type37ChallengeData challengeData37 = new Type37ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type37ChallengeDataDic.Add(id, challengeData37);
+                    dic.Add(id, challengeData37);
+                    break;
+
+                case "TYPE38":
+                    challengeType = ChallengeType.TYPE38;
+                    Type38ChallengeData challengeData38 = new Type38ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type38ChallengeDataDic.Add(id, challengeData38);
+                    dic.Add(id, challengeData38);
+                    break;
+
+                case "TYPE39":
+                    challengeType = ChallengeType.TYPE39;
+                    Type39ChallengeData challengeData39 = new Type39ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type39ChallengeDataDic.Add(id, challengeData39);
+                    dic.Add(id, challengeData39);
+                    break;
+
+                case "TYPE40":
+                    challengeType = ChallengeType.TYPE40;
+                    Type40ChallengeData challengeData40 = new Type40ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type40ChallengeDataDic.Add(id, challengeData40);
+                    dic.Add(id, challengeData40);
+                    break;
+
+                case "TYPE41":
+                    challengeType = ChallengeType.TYPE41;
+                    Type41ChallengeData challengeData41 = new Type41ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type41ChallengeDataDic.Add(id, challengeData41);
+                    dic.Add(id, challengeData41);
                     break;
 
             }
@@ -449,7 +992,7 @@ public class ChallengeManager : MonoBehaviour
 
     public ChallengeData GetCurrentMainChallengeData()
     {
-        foreach(var data in _mainChallengeDataDic)
+        foreach (var data in _mainChallengeDataDic)
         {
             if (UserInfo.GetIsClearChallenge(data.Key))
                 continue;
@@ -462,12 +1005,17 @@ public class ChallengeManager : MonoBehaviour
 
     public List<ChallengeData> GetAllTimeChallenge()
     {
-        return _alltimeChallengeDataDic.Values.ToList();
+        return _allTimeChallengeList;
     }
 
     public List<ChallengeData> GetDailyChallenge()
     {
-        return _dailyChallengeDataDic.Values.ToList();
+        return _dailyChallengeList;
+    }
+
+    public List<ChallengeData> GetWeeklyChallenge()
+    {
+        return _weeklyChallengeList;
     }
 
     public float GetChallengePercent(ChallengeData data)
@@ -486,7 +1034,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE02:
                 Type02ChallengeData data02 = (Type02ChallengeData)data;
-                for(int i = 0, cnt = data02.NeedKitchenUtensilId.Length; i < cnt; i++)
+                for (int i = 0, cnt = data02.NeedKitchenUtensilId.Length; i < cnt; i++)
                 {
                     if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data02.NeedKitchenUtensilId[i]))
                         percent += 1f / cnt;
@@ -667,7 +1215,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE33:
                 Type33ChallengeData data33 = (Type33ChallengeData)data;
-                int dailyCookCount  = UserInfo.DailyCookCount;
+                int dailyCookCount = UserInfo.DailyCookCount;
                 return GetChallengeAchievementRate(dailyCookCount, data33.Count);
 
             case ChallengeType.TYPE34:
@@ -680,6 +1228,35 @@ public class ChallengeManager : MonoBehaviour
                 int dailyAdvertisingViewCount = UserInfo.DailyAdvertisingViewCount;
                 return GetChallengeAchievementRate(dailyAdvertisingViewCount, data35.Count);
 
+            case ChallengeType.TYPE36:
+                int weeklyClearCount = UserInfo.GetClearWeeklyChallengeCount();
+                return GetChallengeAchievementRate(weeklyClearCount, _weeklyChallengeDataDic.Count - 1);
+
+            case ChallengeType.TYPE37:
+                Type37ChallengeData data37 = (Type37ChallengeData)data;
+                int weeklyCustomerCount = UserInfo.WeeklyCumulativeCustomerCount;
+                DebugLog.Log(GetChallengeAchievementRate(weeklyCustomerCount, data37.Count));
+                return GetChallengeAchievementRate(weeklyCustomerCount, data37.Count);
+
+            case ChallengeType.TYPE38:
+                Type38ChallengeData data38 = (Type38ChallengeData)data;
+                long weeklyAddMoney = UserInfo.WeeklyAddMoney;
+                return GetChallengeAchievementRate(weeklyAddMoney, data38.Count);
+
+            case ChallengeType.TYPE39:
+                Type39ChallengeData data39 = (Type39ChallengeData)data;
+                int weeklyCookCount = UserInfo.WeeklyCookCount;
+                return GetChallengeAchievementRate(weeklyCookCount, data39.Count);
+
+            case ChallengeType.TYPE40:
+                Type40ChallengeData data40 = (Type40ChallengeData)data;
+                int weeklyCleanCount = UserInfo.WeeklyCleanCount;
+                return GetChallengeAchievementRate(weeklyCleanCount, data40.Count);
+
+            case ChallengeType.TYPE41:
+                Type41ChallengeData data41 = (Type41ChallengeData)data;
+                int weeklyGatecrasherCustomerCount = UserInfo.WeeklyExterminationGatecrasherCustomerCount;
+                return GetChallengeAchievementRate(weeklyGatecrasherCustomerCount, data41.Count);
 
             default: return 0;
         }
@@ -688,7 +1265,6 @@ public class ChallengeManager : MonoBehaviour
 
     public string GetChallengeCountStr(ChallengeData data)
     {
-        float percent = 0;
         int clearCount = 0;
         switch (data.Type)
         {
@@ -799,7 +1375,7 @@ public class ChallengeManager : MonoBehaviour
                     _equipSetList.Add(equipFurnitureSetCount);
                 }
                 int maxFurnitureCount = _equipSetList.Max();
-                return $"{maxFurnitureCount} / {ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT}"; 
+                return $"{maxFurnitureCount} / {ConstValue.SET_EFFECT_ENABLE_FURNITURE_COUNT}";
 
             case ChallengeType.TYPE17:
                 Type17ChallengeData data17 = (Type17ChallengeData)data;
@@ -897,6 +1473,35 @@ public class ChallengeManager : MonoBehaviour
                 int dailyAdvertisingViewCount = UserInfo.DailyAdvertisingViewCount;
                 return $"{dailyAdvertisingViewCount} / {data35.Count}";
 
+            case ChallengeType.TYPE36:
+                int weeklyClearCount = UserInfo.GetClearWeeklyChallengeCount();
+                return $"{weeklyClearCount} / {_weeklyChallengeDataDic.Count - 1}";
+
+            case ChallengeType.TYPE37:
+                Type37ChallengeData data37 = (Type37ChallengeData)data;
+                int weeklyCustomerCount = UserInfo.WeeklyCumulativeCustomerCount;
+                return $"{weeklyCustomerCount} / {data37.Count}";
+
+            case ChallengeType.TYPE38:
+                Type38ChallengeData data38 = (Type38ChallengeData)data;
+                long weeklyAddMoney = UserInfo.WeeklyAddMoney;
+                return $"{weeklyAddMoney} / {data38.Count}";
+
+            case ChallengeType.TYPE39:
+                Type39ChallengeData data39 = (Type39ChallengeData)data;
+                int weeklyCookCount = UserInfo.WeeklyCookCount;
+                return $"{weeklyCookCount} / {data39.Count}";
+
+            case ChallengeType.TYPE40:
+                Type40ChallengeData data40 = (Type40ChallengeData)data;
+                int weeklyCleanCount = UserInfo.WeeklyCleanCount;
+                return $"{weeklyCleanCount} / {data40.Count}";
+
+            case ChallengeType.TYPE41:
+                Type41ChallengeData data41 = (Type41ChallengeData)data;
+                int weeklyGatecrasherCustomerCount = UserInfo.WeeklyExterminationGatecrasherCustomerCount;
+                return $"{weeklyGatecrasherCustomerCount} / {data41.Count}";
+
             default: return string.Empty;
         }
     }
@@ -911,6 +1516,10 @@ public class ChallengeManager : MonoBehaviour
 
             case Challenges.AllTime:
                 OnAllTimeChallengeUpdateHandler?.Invoke();
+                break;
+
+            case Challenges.Weekly:
+                OnWeeklyChallengeUpdateHandler?.Invoke();
                 break;
 
             case Challenges.Main:
@@ -1072,10 +1681,12 @@ public class ChallengeManager : MonoBehaviour
     private void Type01ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
         foreach (Type01ChallengeData data in _type01ChallengeDataDic.Values)
         {
+            //DebugLog.Log($"Type01ChallengeCheck : {data.Id}");
             if (UserInfo.GetIsDoneChallenge(data.Id))
                 continue;
 
@@ -1085,19 +1696,27 @@ public class ChallengeManager : MonoBehaviour
             bool _isGives = true;
             for (int i = 0, cnt = data.NeedFurnitureIds.Length; i < cnt; i++)
             {
+                //DebugLog.Log($"NeedFurnitureId : {data.NeedFurnitureIds[i]}");
                 if (!UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data.NeedFurnitureIds[i]))
                 {
+                    //DebugLog.Log($"Not Give Furniture : {data.NeedFurnitureIds[i]}");
                     _isGives = false;
                     break;
                 }
+
             }
 
             if (!_isGives) continue;
 
+            //DebugLog.Log($"Challenge Done : {data.Id}");
             switch (data.Challenges)
             {
                 case Challenges.Daily:
                     dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
                     break;
 
                 case Challenges.AllTime:
@@ -1120,12 +1739,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE01);
     }
 
     private void Type02ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
         foreach (Type02ChallengeData data in _type02ChallengeDataDic.Values)
@@ -1149,10 +1772,14 @@ public class ChallengeManager : MonoBehaviour
 
             if (!_isGives) continue;
 
-            switch(data.Challenges)
+            switch (data.Challenges)
             {
                 case Challenges.Daily:
                     dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
                     break;
 
                 case Challenges.AllTime:
@@ -1175,12 +1802,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE02);
     }
 
     private void Type03ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1201,6 +1832,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1219,14 +1854,11 @@ public class ChallengeManager : MonoBehaviour
             UpdateChallengeByChallenges(Challenges.AllTime);
 
         if (mainUpdateEnabled)
-            UpdateChallengeByChallenges(Challenges.Main); if (dailyUpdateEnabled)
-            UpdateChallengeByChallenges(Challenges.Daily);
-
-        if (alltimeUpdateEnabled)
-            UpdateChallengeByChallenges(Challenges.AllTime);
-
-        if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE03);
     }
 
@@ -1234,6 +1866,7 @@ public class ChallengeManager : MonoBehaviour
     private void Type04ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1254,6 +1887,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1273,6 +1910,10 @@ public class ChallengeManager : MonoBehaviour
 
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE04);
     }
 
@@ -1280,6 +1921,7 @@ public class ChallengeManager : MonoBehaviour
     private void Type05ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1300,6 +1942,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1320,12 +1966,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE05);
     }
 
     private void Type06ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1340,6 +1990,24 @@ public class ChallengeManager : MonoBehaviour
             if (UserInfo.GetRecipeCount() < data.RecipeCount)
                 continue;
 
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
             UserInfo.DoneChallenge(data);
         }
 
@@ -1352,12 +2020,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE06);
     }
 
     private void Type07ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1378,6 +2050,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1398,12 +2074,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE07);
     }
 
     private void Type08ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1424,6 +2104,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1444,12 +2128,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE08);
     }
 
     private void Type09ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1470,6 +2158,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1490,6 +2182,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE09);
     }
 
@@ -1497,6 +2192,7 @@ public class ChallengeManager : MonoBehaviour
     private void Type10ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1517,6 +2213,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1537,12 +2237,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE10);
     }
 
     private void Type11ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1563,6 +2267,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1583,12 +2291,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE11);
     }
 
     private void Type12ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1609,6 +2321,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1628,6 +2344,9 @@ public class ChallengeManager : MonoBehaviour
 
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
+          
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
 
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE12);
     }
@@ -1636,6 +2355,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int furnitureCount = UserInfo.GetFurnitureAndKitchenUtensilCount(UserInfo.CurrentStage);
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1656,6 +2376,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1676,12 +2400,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE13);
     }
 
     private void Type14ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
         int collectFurnitureSetCount = UserInfo.GetCollectFurnitureSetDataList(UserInfo.CurrentStage).Count;
@@ -1703,6 +2431,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1723,12 +2455,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE14);
     }
 
     private void Type15ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
         int collectKitchenUtensilSetCount = UserInfo.GetCollectKitchenUtensilSetDataList(UserInfo.CurrentStage).Count;
@@ -1749,6 +2485,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1769,12 +2509,16 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE15);
     }
 
     private void Type16ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1820,6 +2564,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1840,6 +2588,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE16);
     }
 
@@ -1847,6 +2598,7 @@ public class ChallengeManager : MonoBehaviour
     private void Type17ChallengeCheck()
     {
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1902,9 +2654,15 @@ public class ChallengeManager : MonoBehaviour
                 case Challenges.Daily:
                     dailyUpdateEnabled = true;
                     break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
+
                 case Challenges.Main:
                     mainUpdateEnabled = true;
                     break;
@@ -1923,6 +2681,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE17);
     }
 
@@ -1931,6 +2692,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int giveFurnitureCount = UserInfo.GetGiveFurnitureCount(UserInfo.CurrentStage);
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1951,6 +2713,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -1971,6 +2737,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE18);
     }
 
@@ -1979,6 +2748,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int giveKitchenUtensilCount = UserInfo.GetGiveKitchenUtensilCount(UserInfo.CurrentStage);
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -1999,6 +2769,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2019,6 +2793,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE19);
     }
 
@@ -2028,6 +2805,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int visitSpecialCustomerCount = UserInfo.TotalVisitSpecialCustomerCount;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2048,6 +2826,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2068,6 +2850,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE21);
     }
 
@@ -2076,6 +2861,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int exterminationGatecrasherCustomer1Count = UserInfo.TotalExterminationGatecrasherCustomer1Count;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2096,6 +2882,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2116,6 +2906,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE22);
     }
 
@@ -2124,6 +2917,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int exterminationGatecrasherCustomer2Count = UserInfo.TotalExterminationGatecrasherCustomer2Count;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2144,6 +2938,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2161,6 +2959,9 @@ public class ChallengeManager : MonoBehaviour
         if (alltimeUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.AllTime);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
@@ -2171,6 +2972,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int exterminationGatecrasherCustomerCount = UserInfo.TotalExterminationGatecrasherCustomer1Count + UserInfo.TotalExterminationGatecrasherCustomer2Count;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2191,6 +2993,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2211,6 +3017,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE24);
     }
 
@@ -2218,6 +3027,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int totalUseGachaMachineCount = UserInfo.TotalUseGachaMachineCount;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2238,6 +3048,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2258,6 +3072,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE25);
     }
 
@@ -2265,6 +3082,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int totalGachaMachineTypeCount = UserInfo.GetGiveGachaItemDic().Count;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2285,6 +3103,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2305,6 +3127,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE26);
     }
 
@@ -2314,6 +3139,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int cleanCount = UserInfo.TotalCleanCount;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2334,6 +3160,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2354,6 +3184,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE28);
     }
 
@@ -2361,6 +3194,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int count = UserInfo.GetClearDailyChallengeCount();
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
         foreach (Type30ChallengeData data in _type30ChallengeDataDic.Values)
@@ -2380,6 +3214,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2400,6 +3238,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE30);
     }
 
@@ -2410,6 +3251,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int dailyCustomerCount = UserInfo.DailyCumulativeCustomerCount;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2430,6 +3272,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2450,6 +3296,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE31);
     }
 
@@ -2458,6 +3307,7 @@ public class ChallengeManager : MonoBehaviour
     {
         long dailyAddMoney = UserInfo.DailyAddMoney;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2478,6 +3328,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2498,6 +3352,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE32);
     }
 
@@ -2506,6 +3363,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int dailyCookCount = UserInfo.DailyCookCount;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2526,6 +3384,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2546,6 +3408,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE33);
     }
 
@@ -2553,6 +3418,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int dailyCleanCount = UserInfo.DailyCleanCount;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2573,6 +3439,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2593,6 +3463,9 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE34);
     }
 
@@ -2601,6 +3474,7 @@ public class ChallengeManager : MonoBehaviour
     {
         int dailyAdvertisingViewCount = UserInfo.DailyAdvertisingViewCount;
         bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
         bool alltimeUpdateEnabled = false;
         bool mainUpdateEnabled = false;
 
@@ -2621,6 +3495,10 @@ public class ChallengeManager : MonoBehaviour
                     dailyUpdateEnabled = true;
                     break;
 
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
                 case Challenges.AllTime:
                     alltimeUpdateEnabled = true;
                     break;
@@ -2641,6 +3519,754 @@ public class ChallengeManager : MonoBehaviour
         if (mainUpdateEnabled)
             UpdateChallengeByChallenges(Challenges.Main);
 
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE35);
+    }
+
+    private void Type36ChallengeCheck()
+    {
+        int weeklyClearCount = UserInfo.GetClearWeeklyChallengeCount();
+        bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type36ChallengeData data in _type36ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (GetChallengeAchievementRate(weeklyClearCount, _weeklyChallengeDataDic.Count - 1) < 1)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE36);
+    }
+
+    private void Type37ChallengeCheck()
+    {
+        int weeklyCustomerCount = UserInfo.WeeklyCumulativeCustomerCount;
+        bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+        foreach (Type37ChallengeData data in _type37ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (GetChallengeAchievementRate(weeklyCustomerCount, data.Count) < 1)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE37);
+    }
+
+    private void Type38ChallengeCheck()
+    {
+        long weeklyAddMoney = UserInfo.WeeklyAddMoney;
+        bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type38ChallengeData data in _type38ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (GetChallengeAchievementRate(weeklyAddMoney, data.Count) < 1)
+                continue;
+            DebugLog.Log(data.Id);
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE38);
+    }
+
+    private void Type39ChallengeCheck()
+    {
+        int weeklyCookCount = UserInfo.WeeklyCookCount;
+        bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type39ChallengeData data in _type39ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (GetChallengeAchievementRate(weeklyCookCount, data.Count) < 1)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE39);
+    }
+
+    private void Type40ChallengeCheck()
+    {
+        int weeklyCleanCount = UserInfo.WeeklyCleanCount;
+        bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type40ChallengeData data in _type40ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (GetChallengeAchievementRate(weeklyCleanCount, data.Count) < 1)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE40);
+    }
+
+    private void Type41ChallengeCheck()
+    {
+        int weeklyGatecrasherCustomerCount = UserInfo.WeeklyExterminationGatecrasherCustomerCount;
+        bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type41ChallengeData data in _type41ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (GetChallengeAchievementRate(weeklyGatecrasherCustomerCount, data.Count) < 1)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE41);
+    }
+
+
+    private Type11ChallengeData GetNextRepeatCoinChallenge()
+    {
+        int nextLevel = 1;
+
+        // 첫 번째 챌린지가 아직 클리어되지 않았다면 첫 번째 챌린지 생성
+        if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatCoin1"))
+        {
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatCoin1") || _type11ChallengeDataDic.ContainsKey("AllTimeRepeatCoin1"))
+            {
+                return null; // 이미 존재하면 생성하지 않음
+            }
+            nextLevel = 1;
+        }
+        else
+        {
+            // 완료된 반복 챌린지 중 가장 높은 레벨 찾기
+            for (int i = 1; i <= 100; i++)
+            {
+                string id = $"AllTimeRepeatCoin{i}";
+
+                if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+                {
+                    nextLevel = i + 1;
+                }
+                else
+                {
+                    break; // 완료되지 않은 첫 번째 레벨에서 중단
+                }
+            }
+        }
+
+        // 최대 레벨 초과 시 null 반환
+        if (nextLevel > 100)
+            return null;
+
+        // 다음 레벨 챌린지 생성 전 중복 체크
+        string nextId = $"AllTimeRepeatCoin{nextLevel}";
+        if (_challengeDataDic.ContainsKey(nextId) || _type11ChallengeDataDic.ContainsKey(nextId))
+        {
+            return null; // 이미 존재하면 생성하지 않음
+        }
+
+        // CSV 규칙에 따른 목표 계산: 10,000 × 현재 단계(n)
+        int nextGoal = 10000 * nextLevel;
+        
+        // CSV 규칙에 따른 보상 계산
+        int scoreReward, coinReward;
+        
+        if (nextLevel <= 50)
+        {
+            // 1~50: 보상 평점 = 0.15 × 다음단계증가요구필요개수, 보상 코인 = 0.3 × 단계증가요구필요개수
+            int nextLevelGoal = 10000 * (nextLevel + 1);
+            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.15f) / 100) * 100;
+            coinReward = Mathf.RoundToInt((nextGoal * 0.3f) / 100) * 100;
+        }
+        else if (nextLevel <= 100)
+        {
+            // 51~100: 보상 평점 = 0.1 × 다음단계증가요구필요개수, 보상 코인 = 0.2 × 단계증가요구필요개수
+            int nextLevelGoal = 10000 * (nextLevel + 1);
+            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.1f) / 100) * 100;
+            coinReward = Mathf.RoundToInt((nextGoal * 0.2f) / 100) * 100;
+        }
+        else
+        {
+            // 100~: 보상 평점 = 0.05 × 다음단계증가요구필요개수, 보상 코인 = 0.1 × 다음단계증가요구필요개수
+            int nextLevelGoal = 10000 * (nextLevel + 1);
+            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.05f) / 100) * 100;
+            coinReward = Mathf.RoundToInt((nextGoal * 0.1f) / 100) * 100;
+        }
+
+        Type11ChallengeData newData = new Type11ChallengeData(
+            Challenges.AllTime,
+            ChallengeType.TYPE11,
+            nextId,
+            $"누적 코인 수익 {Utility.ConvertToMoney(nextGoal)} 달성",
+            nextGoal,
+            MoneyType.Gold,
+            coinReward,
+            scoreReward,
+            GetShortCutAction("ShortCut01")
+        );
+        return newData;
+    }
+
+
+    private Type09ChallengeData GetNextRepeatVisitChallenge()
+    {
+        int nextLevel = 1;
+
+        // 첫 번째 챌린지가 아직 클리어되지 않았다면 첫 번째 챌린지 생성
+        if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatVisit1"))
+        {
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatVisit1") || _type09ChallengeDataDic.ContainsKey("AllTimeRepeatVisit1"))
+            {
+                return null; // 이미 존재하면 생성하지 않음
+            }
+            nextLevel = 1;
+        }
+        else
+        {
+            // 완료된 반복 챌린지 중 가장 높은 레벨 찾기
+            for (int i = 1; i <= 100; i++)
+            {
+                string id = $"AllTimeRepeatVisit{i}";
+
+                if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+                {
+                    nextLevel = i + 1;
+                }
+                else
+                {
+                    break; // 완료되지 않은 첫 번째 레벨에서 중단
+                }
+            }
+        }
+
+        // 최대 레벨 초과 시 null 반환
+        if (nextLevel > 100)
+            return null;
+
+        // 다음 레벨 챌린지 생성 전 중복 체크
+        string nextId = $"AllTimeRepeatVisit{nextLevel}";
+        if (_challengeDataDic.ContainsKey(nextId) || _type09ChallengeDataDic.ContainsKey(nextId))
+        {
+            return null; // 이미 존재하면 생성하지 않음
+        }
+
+        // CSV 규칙에 따른 목표 계산: 현재 단계(n) × 100
+        int nextGoal = nextLevel * 100;
+        
+        // CSV 규칙에 따른 보상 계산
+        int nextLevelGoal = (nextLevel + 1) * 100;
+        int scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.15f) / 100) * 100;
+        int coinReward = Mathf.RoundToInt((nextGoal * 0.3f) / 100) * 100;
+
+        Type09ChallengeData data = new Type09ChallengeData(
+            Challenges.AllTime,
+            ChallengeType.TYPE09,
+            nextId,
+            $"누적 방문 손님 {Utility.ConvertToMoney(nextGoal)}명 달성",
+            nextGoal,
+            MoneyType.Gold,
+            coinReward,
+            scoreReward,
+            GetShortCutAction("ShortCut01")
+        );
+        return data;
+    }
+
+
+    private Type08ChallengeData GetNextRepeatScoreChallenge()
+    {
+        int nextLevel = 1;
+
+        // 첫 번째 챌린지가 아직 클리어되지 않았다면 첫 번째 챌린지 생성
+        if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatScore1"))
+        {
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatScore1") || _type08ChallengeDataDic.ContainsKey("AllTimeRepeatScore1"))
+            {
+                return null; // 이미 존재하면 생성하지 않음
+            }
+            nextLevel = 1;
+        }
+        else
+        {
+            // 완료된 반복 챌린지 중 가장 높은 레벨 찾기
+            for (int i = 1; i <= 100; i++)
+            {
+                string id = $"AllTimeRepeatScore{i}";
+
+                if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+                {
+                    nextLevel = i + 1;
+                }
+                else
+                {
+                    break; // 완료되지 않은 첫 번째 레벨에서 중단
+                }
+            }
+        }
+
+        // 최대 레벨 초과 시 null 반환  
+        if (nextLevel > 100)
+            return null;
+
+        // 다음 레벨 챌린지 생성 전 중복 체크
+        string nextId = $"AllTimeRepeatScore{nextLevel}";
+        if (_challengeDataDic.ContainsKey(nextId) || _type08ChallengeDataDic.ContainsKey(nextId))
+        {
+            return null; // 이미 존재하면 생성하지 않음
+        }
+
+        // CSV 규칙에 따른 목표 계산
+        int nextGoal;
+        if (nextLevel <= 8)
+        {
+            // 1~8: 50 × 단계(n)
+            nextGoal = 50 * nextLevel;
+        }
+        else if (nextLevel <= 13)
+        {
+            // 9~13: 50(n+1) + 50(n-9) = 50n + 50 + 50(n-9) = 100n + 50 - 450 = 100n - 400
+            nextGoal = 50 * (nextLevel + 1) + 50 * (nextLevel - 9);
+        }
+        else if (nextLevel <= 31)
+        {
+            // 14~31: 500n - 6000
+            nextGoal = 500 * nextLevel - 6000;
+        }
+        else if (nextLevel <= 41)
+        {
+            // 32~41: 10000(n-31)
+            nextGoal = 10000 * (nextLevel - 31);
+        }
+        else
+        {
+            // 42~: 100000(n-41)
+            nextGoal = 100000 * (nextLevel - 41);
+        }
+
+        // CSV 규칙에 따른 보상 계산 (평점 업적은 코인만 보상)
+        int coinReward;
+        if (nextLevel <= 8)
+        {
+            // 1~8: 0.8 × 다음단계증가요구필요개수
+            int nextLevelGoal = 50 * (nextLevel + 1);
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.8f) / 100) * 100;
+        }
+        else if (nextLevel <= 13)
+        {
+            // 9~13: 0.6 × 다음단계증가요구필요개수
+            int nextLevelGoal = 50 * (nextLevel + 2) + 50 * (nextLevel - 8);
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.6f) / 100) * 100;
+        }
+        else if (nextLevel <= 31)
+        {
+            // 14~31: 0.5 × 다음단계증가요구필요개수
+            int nextLevelGoal = 500 * (nextLevel + 1) - 6000;
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.5f) / 100) * 100;
+        }
+        else if (nextLevel <= 41)
+        {
+            // 32~41: 0.4 × 다음단계증가요구필요개수
+            int nextLevelGoal = 10000 * (nextLevel + 1 - 31);
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.4f) / 100) * 100;
+        }
+        else
+        {
+            // 42~: 0.3 × 다음단계증가요구필요개수
+            int nextLevelGoal = 100000 * (nextLevel + 1 - 41);
+            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.3f) / 100) * 100;
+        }
+
+        Type08ChallengeData data = new Type08ChallengeData(
+            Challenges.AllTime,
+            ChallengeType.TYPE08,
+            nextId,
+            $"누적 평점 {Utility.ConvertToMoney(nextGoal)} 달성",
+            nextGoal,
+            MoneyType.Gold,
+            coinReward,
+            0, // 평점 업적은 평점 보상 없음
+            GetShortCutAction("ShortCut01")
+        );
+        return data;
+    }
+
+
+    private Type25ChallengeData GetNextRepeatGatchaChallenge()
+    {
+        int startReward = 100;
+        int repeatStep = 100;
+        int nextLevel = 2; // 1번은 이미 직접 추가했으므로 2부터 시작
+
+        // 첫 번째 챌린지가 클리어되지 않았다면 첫 번째 챌린지 생성
+        if (!UserInfo.ClearAllTimeChallengeSet.Contains("AllTimeRepeatGatcha1"))
+        {
+            if (_challengeDataDic.ContainsKey("AllTimeRepeatGatcha1") || _type25ChallengeDataDic.ContainsKey("AllTimeRepeatGatcha1"))
+            {
+                Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatGatcha1");
+                return null;
+            }
+
+            int firstGoal = startReward + repeatStep * 1;
+            int firstCoinReward = 10;
+            int firstScoreReward = 0;
+
+            Type25ChallengeData firstData = new Type25ChallengeData(
+                Challenges.AllTime,
+                ChallengeType.TYPE25,
+                "AllTimeRepeatGatcha1",
+                $"누적 캡슐 머신 사용 {Utility.ConvertToMoney(firstGoal)}회 달성",
+                firstGoal,
+                MoneyType.Dia,
+                firstCoinReward,
+                firstScoreReward,
+                GetShortCutAction("ShortCut01")
+            );
+            return firstData;
+        }
+
+        // 완료된 반복 챌린지 중 가장 높은 레벨 찾기 (1번은 이미 직접 추가했으므로 2번부터 확인)
+        for (int i = 2; i <= 100; i++)
+        {
+            string id = $"AllTimeRepeatGatcha{i}";
+
+            if (UserInfo.ClearAllTimeChallengeSet.Contains(id))
+            {
+                nextLevel = i + 1;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        // 최대 레벨 초과 시 null 반환
+        if (nextLevel > 100)
+            return null;
+
+        if (_challengeDataDic.ContainsKey($"AllTimeRepeatGatcha{nextLevel}") || _type25ChallengeDataDic.ContainsKey($"AllTimeRepeatGatcha{nextLevel}"))
+        {
+            Debug.LogError("이미 존재하는 챌린지 ID입니다. AllTimeRepeatGatcha" + nextLevel);
+            return null;
+        }
+
+        // 다음 레벨 챌린지 생성
+        int nextGoal = startReward + repeatStep * nextLevel;
+        int coinReward = 10;
+        int scoreReward = 0;
+        string nextId = $"AllTimeRepeatGatcha{nextLevel}";
+        DebugLog.Log(nextId);
+        Type25ChallengeData data = new Type25ChallengeData(
+            Challenges.AllTime,
+            ChallengeType.TYPE25,
+            nextId,
+            $"누적 캡슐 머신 사용 {Utility.ConvertToMoney(nextGoal)}회 달성",
+            nextGoal,
+            MoneyType.Dia,
+            coinReward,
+            scoreReward,
+            GetShortCutAction("ShortCut01")
+        );
+        return data;
+    }
+
+    private void OnCheckRepeatCoinChallengeEvent()
+    {
+        ChallengeData challengeData = GetNextRepeatCoinChallenge();
+        if (challengeData == null)
+            return;
+
+        if (_alltimeChallengeDataDic.ContainsKey(challengeData.Id))
+            return;
+
+        _challengeDataDic.Add(challengeData.Id, challengeData);
+        _alltimeChallengeDataDic.Add(challengeData.Id, challengeData as Type11ChallengeData);
+        _type11ChallengeDataDic.Add(challengeData.Id, challengeData as Type11ChallengeData);
+        _allTimeChallengeList.Add(challengeData);
+        Type11ChallengeCheck();
+        OnAddChallengeHandler?.Invoke();
+    }
+
+    private void OnCheckRepeatVisitChallengeEvent()
+    {
+        ChallengeData challengeData = GetNextRepeatVisitChallenge();
+        if (challengeData == null)
+            return;
+
+        if (_alltimeChallengeDataDic.ContainsKey(challengeData.Id))
+            return;
+
+        _challengeDataDic.Add(challengeData.Id, challengeData);
+        _alltimeChallengeDataDic.Add(challengeData.Id, challengeData as Type09ChallengeData);
+        _type09ChallengeDataDic.Add(challengeData.Id, challengeData as Type09ChallengeData);
+        _allTimeChallengeList.Add(challengeData);
+        Type09ChallengeCheck();
+        OnAddChallengeHandler?.Invoke();
+    }
+
+    private void OnCheckRepeatScoreChallengeEvent()
+    {
+        ChallengeData challengeData = GetNextRepeatScoreChallenge();
+        if (challengeData == null)
+            return;
+
+        if (_alltimeChallengeDataDic.ContainsKey(challengeData.Id))
+            return;
+
+        _challengeDataDic.Add(challengeData.Id, challengeData);
+        _alltimeChallengeDataDic.Add(challengeData.Id, challengeData as Type08ChallengeData);
+        _type08ChallengeDataDic.Add(challengeData.Id, challengeData as Type08ChallengeData);
+        _allTimeChallengeList.Add(challengeData);
+        Type08ChallengeCheck();
+        OnAddChallengeHandler?.Invoke();
+    }
+
+    private void OnCheckRepeatGatchaChallengeEvent()
+    {
+        ChallengeData challengeData = GetNextRepeatGatchaChallenge();
+        if (challengeData == null)
+            return;
+
+        if (_alltimeChallengeDataDic.ContainsKey(challengeData.Id))
+            return;
+
+        _challengeDataDic.Add(challengeData.Id, challengeData);
+        _alltimeChallengeDataDic.Add(challengeData.Id, challengeData as Type25ChallengeData);
+        _type25ChallengeDataDic.Add(challengeData.Id, challengeData as Type25ChallengeData);
+        _allTimeChallengeList.Add(challengeData);
+        Type25ChallengeCheck();
+        DebugLog.Log(challengeData.Id);
+        OnAddChallengeHandler?.Invoke();
     }
 }

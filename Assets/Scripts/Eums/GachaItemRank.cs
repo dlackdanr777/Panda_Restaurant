@@ -1,4 +1,4 @@
-public enum GachaItemRank
+public enum Rank
 {
     Normal1,
     Normal2,

@@ -50,25 +50,40 @@ public class SatisfactionSystem : MonoBehaviour
 
         return true;
     }
+    
+    public int GetTendencyValue(CustomerTendencyType tendencyType)
+    {
+        switch (tendencyType)
+        {
+            case CustomerTendencyType.Normal:
+                return ConstValue.MAX_SATISFACTION;
+            case CustomerTendencyType.Sensitive:
+                return -26;
+            case CustomerTendencyType.HighlySensitive:
+                return 0;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(tendencyType), tendencyType, null);
+        }
+    }
 
 
     /// <summary>손님의 성향과 만족도로 얼마나 더 팁을 추가로 줄지 반환하는 함수</summary>
     public float AddCustomerTipMul(CustomerTendencyType tendencyType)
     {
         //매우 불만족 상태 일경우 팁 및 추가 보상 X
-        if(_satisfaction <= -26)
+        if (_satisfaction <= -26)
             return 0;
 
         //무난한 손님의 경우 10점이상 30점 미만일때 3% 증가
-        if(tendencyType == CustomerTendencyType.Normal && 10 <= _satisfaction && _satisfaction < 30)
+        if (tendencyType == CustomerTendencyType.Normal && 10 <= _satisfaction && _satisfaction < 30)
             return 1.03f;
 
         //무난한 손님이면서 30점 이상일 경우 5% 증가
-        if(tendencyType == CustomerTendencyType.Normal && 30 <= _satisfaction)
+        if (tendencyType == CustomerTendencyType.Normal && 30 <= _satisfaction)
             return 1.05f;
 
         //예민한 손님이면서 30점 이상일 경우 5% 증가 
-        if(tendencyType == CustomerTendencyType.Sensitive && 30 <= _satisfaction)
+        if (tendencyType == CustomerTendencyType.Sensitive && 30 <= _satisfaction)
             return 1.05f;
 
         //초 예민한 손님이면서 40점 이상일 경우 5% 증가 
@@ -99,12 +114,46 @@ public class SatisfactionSystem : MonoBehaviour
 
     private void OnChangeSatisfactionEvent()
     {
-        int satisfaction = UserInfo.GetSatisfaction(UserInfo.CurrentStage);
+        float satisfaction = UserInfo.GetSatisfaction(UserInfo.CurrentStage);
+        
+        // 모든 쓰레기 영역의 쓰레기 수 합계 계산
+        int totalGarbageCount = 0;
         for (int i = 0, cnt = _garbageAreaList.Count; i < cnt; ++i)
         {
-            satisfaction -= _garbageAreaList[i].Count;
+            totalGarbageCount += _garbageAreaList[i].Count;
         }
-        _satisfaction = Mathf.Clamp(satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
+        
+        // 쓰레기 개수에 따른 만족도 차감 점수 계산
+        int satisfactionPenalty = CalculateGarbagePenalty(totalGarbageCount);
+        satisfaction = Mathf.Clamp(satisfaction + satisfactionPenalty, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
+
+        if(satisfaction == _satisfaction)
+            return;
+
+        _satisfaction = satisfaction;
         OnChangeSatisfactionHandler?.Invoke();
+    }
+
+    /// <summary>쓰레기 개수에 따른 만족도 차감 점수를 계산</summary>
+    private int CalculateGarbagePenalty(int garbageCount)
+    {
+        // 쓰레기 개수에 따른 만족도 차감 규칙 적용
+        if (garbageCount <= 2)
+            return 0;       // 0~2개: 변화 없음 (0점)
+        else if (garbageCount <= 5)
+            return -1;       // 3~5개: -1점
+        else if (garbageCount <= 8)
+            return -3;       // 6~8개: -3점
+        else if (garbageCount <= 11)
+            return -6;       // 9~11개: -6점
+        else if (garbageCount <= 14)
+            return -8;       // 12~14개: -8점
+        else
+        {
+            // 15개 이상: -10점 + 추가 2점씩 차감
+            int additionalPenalty = (garbageCount - 15) / 3; // 3개 추가될 때마다
+            int additionalPoints = additionalPenalty * 2;    // 2점씩 추가 차감
+            return -(10 + additionalPoints);
+        }
     }
 }

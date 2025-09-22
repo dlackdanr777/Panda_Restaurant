@@ -9,11 +9,11 @@ public class UIItemStar : MonoBehaviour
     [SerializeField] private GameObject _star4;
     [SerializeField] private GameObject _star5;
 
-    public void SetStar(GachaItemRank rank)
+    public void SetStar(Rank rank)
     {
         switch (rank)
         {
-            case GachaItemRank.Normal1:
+            case Rank.Normal1:
                 _star1.SetActive(true);
                 _star2.SetActive(false);
                 _star3.SetActive(false);
@@ -21,7 +21,7 @@ public class UIItemStar : MonoBehaviour
                 _star5.SetActive(false);
                 break;
 
-            case GachaItemRank.Normal2:
+            case Rank.Normal2:
                 _star1.SetActive(true);
                 _star2.SetActive(true);
                 _star3.SetActive(false);
@@ -29,7 +29,7 @@ public class UIItemStar : MonoBehaviour
                 _star5.SetActive(false);
                 break;
 
-            case GachaItemRank.Rare:
+            case Rank.Rare:
                 _star1.SetActive(true);
                 _star2.SetActive(true);
                 _star3.SetActive(true);
@@ -37,7 +37,7 @@ public class UIItemStar : MonoBehaviour
                 _star5.SetActive(false);
                 break;
 
-            case GachaItemRank.Unique:
+            case Rank.Unique:
                 _star1.SetActive(true);
                 _star2.SetActive(true);
                 _star3.SetActive(true);
@@ -45,7 +45,7 @@ public class UIItemStar : MonoBehaviour
                 _star5.SetActive(false);
                 break;
 
-            case GachaItemRank.Special:
+            case Rank.Special:
                 _star1.SetActive(true);
                 _star2.SetActive(true);
                 _star3.SetActive(true);

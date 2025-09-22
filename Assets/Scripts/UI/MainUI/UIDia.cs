@@ -8,15 +8,21 @@ public class UIDia : MonoBehaviour
     [Header("Components")]
     [SerializeField] private RectTransform _uiDia;
     [SerializeField] private TextMeshProUGUI _diaText;
+    [SerializeField] private ParticleSystem _animeEffect;
 
     [Space]
     [Header("Animations")]
     [SerializeField] private RectTransform _effectSpawnPos;
+    public RectTransform EffectSpawnPos => _effectSpawnPos;
     [SerializeField] private RectTransform _animeParent;
     [SerializeField] private float _moveY;
     [SerializeField] private float _moveDuration;
     [SerializeField] private Ease _moveEase;
     [SerializeField] private Color _startColor;
+
+    [Space]
+    [Header("Options")]
+    [SerializeField] private bool _textAnimeEnable = true;
 
     private int _currentDia;
     private Vector3 _tmpScale;
@@ -45,6 +51,7 @@ public class UIDia : MonoBehaviour
 
     public void StartAnime()
     {
+        _animeEffect.Emit(Random.Range(5, 11));
         _uiDia.TweenStop();
         _uiDia.localScale = _tmpScale;
         _uiDia.TweenScale(_tmpScale * 1.1f, 0.05f, Ease.Constant).OnComplete(() =>
@@ -65,13 +72,16 @@ public class UIDia : MonoBehaviour
             return;
 
         _currentDia = UserInfo.Dia;
-       
-        if(_moneyAnimeRoutine != null)
-            StopCoroutine( _moneyAnimeRoutine );
+
+        if (_moneyAnimeRoutine != null)
+            StopCoroutine(_moneyAnimeRoutine);
 
         _moneyAnimeRoutine = StartCoroutine(AddDiaAnime(addDia));
 
         StartAnime();
+
+        if (!_textAnimeEnable)
+            return;
 
         string sign = addDia < 0 ? "-" : "+";
         Vector3 spawnPos = _animeParent.transform.position;
@@ -94,9 +104,9 @@ public class UIDia : MonoBehaviour
     {
         int startDia = UserInfo.Dia - addDia;
         int targetDia = UserInfo.Dia;
-        float time = 0; 
+        float time = 0;
 
-        while(time < 1)
+        while (time < 1)
         {
             int currentDia = Mathf.FloorToInt(Mathf.Lerp(startDia, targetDia, time));
             _diaText.SetText(Utility.ConvertToMoney(currentDia));
@@ -104,8 +114,16 @@ public class UIDia : MonoBehaviour
             yield return YieldCache.WaitForSeconds(0.02f);
         }
 
-        _diaText.SetText(Utility.ConvertToMoney(UserInfo.Dia));  
+        _diaText.SetText(Utility.ConvertToMoney(UserInfo.Dia));
     }
 
-    
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeDiaHandler -= OnChangeDiaEvent;
+        if (_moneyAnimeRoutine != null)
+            StopCoroutine(_moneyAnimeRoutine);
+        
+        _moneyAnimeRoutine = null;
+    }
+
 }

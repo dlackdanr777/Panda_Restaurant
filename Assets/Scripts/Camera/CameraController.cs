@@ -39,6 +39,12 @@ public class CameraController : MonoBehaviour
     [SerializeField] private LayerMask _draggableLayerMask; // 감지할 레이어
     [SerializeField] private LayerMask _ignoredLayer; // 무시할 레이어
 
+    [Space]
+    [Header("Camera Bounds")]
+    [SerializeField] private Vector3 _boundsOffset = Vector3.zero; // 경계 영역의 중심 오프셋
+    [SerializeField] private Vector3 _boundsSize = new Vector3(20f, 15f, 1f); // 경계 영역의 크기
+    [SerializeField] private bool _showBoundsGizmo = true; // 기즈모 표시 여부
+
 
 
     private Vector2 _startTouchPos;
@@ -67,8 +73,11 @@ public class CameraController : MonoBehaviour
         _mainScene.SetFloor(floor);
         _mainScene.SetRestaurantType(moveType);
         _cam.TweenStop();
+        float dis = Vector3.Distance(_cam.transform.position, _targetPosDic[CurrentFloor][CurrentRestaurant]);
+        float duration = Mathf.Clamp((dis / 25) * _duration, 0.12f, _duration);
+
         TweenData tween;
-        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], _duration, _ease);
+        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], duration, _ease);
         tween.OnComplete(() =>
         {
             _isMoveAction = false;
@@ -83,8 +92,10 @@ public class CameraController : MonoBehaviour
         _mainScene.SetFloor(floor);
 
         _cam.TweenStop();
+        float dis = Vector3.Distance(_cam.transform.position, _targetPosDic[CurrentFloor][CurrentRestaurant]);
+        float duration = Mathf.Clamp((dis / 25) * _duration, 0.12f, _duration);
         TweenData tween;
-        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], _duration, _ease);
+        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], duration, _ease);
         tween.OnComplete(() =>
         {
             _isMoveAction = false;
@@ -98,8 +109,11 @@ public class CameraController : MonoBehaviour
         _isMoveAction = true;
         _mainScene.SetRestaurantType(moveType);
         _cam.TweenStop();
+
+        float dis = Vector3.Distance(_cam.transform.position, _targetPosDic[CurrentFloor][CurrentRestaurant]);
+        float duration = Mathf.Clamp((dis / 25) * _duration, 0.12f, _duration);
         TweenData tween;
-        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], _duration, _ease);
+        tween = _cam.TweenMove(_targetPosDic[CurrentFloor][CurrentRestaurant], duration, _ease);
         tween.OnComplete(() =>
         {
             _isMoveAction = false;
@@ -153,7 +167,7 @@ public class CameraController : MonoBehaviour
     {
         _graphicRaycasters.Clear();
 
-        foreach (GraphicRaycaster gr in FindObjectsOfType<GraphicRaycaster>())
+        foreach (GraphicRaycaster gr in FindObjectsByType<GraphicRaycaster>(FindObjectsSortMode.None))
         {
             _graphicRaycasters.Add(gr);
         }
@@ -296,18 +310,24 @@ public class CameraController : MonoBehaviour
             moveDelta.x = 0; // Y축 이동만 허용 (X축 무시)
         }
 
-        // 🔹 이동 거리 기반으로 속도 조절
+        // 🔹 이동 거리 기반으로 속도 조절 (주석처리 - 스무스한 이동을 위해)
         float speedFactor = 1.0f;
+        /*
         float camDistance = (_cam.transform.position - _startCamPos).magnitude;
         if (camDistance > _moveThreshold)
         {
             float normalizedDistance = Mathf.Clamp01((camDistance - _moveThreshold) / (_moveThreshold * 0.9f));
             speedFactor = Mathf.Lerp(1.0f, 0.05f, normalizedDistance); // 점진적 속도 감소
         }
+        */
 
         // 🔹 최종 이동 적용 (현재 위치에서 이동값 추가)
         Vector3 moveAmount = new Vector3(-moveDelta.x, -moveDelta.y, 0) * Time.fixedDeltaTime * _dragSpeed * speedFactor;
-        _cam.transform.position += moveAmount;  // ❗ 현재 위치에서 이동값을 더함 (덮어씌우는 문제 해결)
+        Vector3 newPosition = _cam.transform.position + moveAmount;
+        
+        // 🔹 카메라 위치를 경계 내로 제한
+        newPosition = ClampCameraPosition(newPosition);
+        _cam.transform.position = newPosition;
 
         // 🔹 새로운 기준점 설정 (이전 터치 위치 업데이트)
         _startTouchPos = currentPos;  // ✅ 터치 이동량을 누적하지 않고 갱신
@@ -416,5 +436,29 @@ public class CameraController : MonoBehaviour
         {
             MoveCamera(CurrentFloor, CurrentRestaurant);
         }
+    }
+
+    // 📌 카메라 위치를 경계 내로 제한하는 메서드
+    private Vector3 ClampCameraPosition(Vector3 position)
+    {
+        Vector3 boundsCenter = _boundsOffset;
+        Vector3 halfSize = _boundsSize * 0.5f;
+        
+        float clampedX = Mathf.Clamp(position.x, boundsCenter.x - halfSize.x, boundsCenter.x + halfSize.x);
+        float clampedY = Mathf.Clamp(position.y, boundsCenter.y - halfSize.y, boundsCenter.y + halfSize.y);
+        return new Vector3(clampedX, clampedY, position.z);
+    }
+
+    // 📌 기즈모로 카메라 경계 영역 표시
+    private void OnDrawGizmos()
+    {
+        if (!_showBoundsGizmo) return;
+        
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireCube(_boundsOffset, _boundsSize);
+        
+        // 반투명한 영역도 표시
+        Gizmos.color = new Color(1f, 1f, 0f, 0.1f);
+        Gizmos.DrawCube(_boundsOffset, _boundsSize);
     }
 }

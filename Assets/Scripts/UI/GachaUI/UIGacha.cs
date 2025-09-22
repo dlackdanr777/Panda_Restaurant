@@ -115,7 +115,7 @@ public class UIGacha : MobileUIView
     public override void Init()
     {
         _scrollImage.Init();
-        _itemDataList = ItemManager.Instance.GetSortGachaItemDataList();
+        _itemDataList = ItemManager.Instance.GetSortGachaItemDataList(GradeSortType.GradeDescending);
         _gachaItemList.Init(_itemDataList);
 
         for (int i = 0; i < 10; ++i)
@@ -327,8 +327,8 @@ public class UIGacha : MobileUIView
             case 4:
                 _currentStep = 4;
 
+                _skipButton.gameObject.SetActive(true);
                 _gachaItemName.gameObject.SetActive(false);
-                _skipButton.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
@@ -351,7 +351,7 @@ public class UIGacha : MobileUIView
                 _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 Utility.ChangeImagePivot(_getItemImage);
-                _getItemSound = _getItemList[_getItemIndex].GachaItemRank == GachaItemRank.Unique || _getItemList[_getItemIndex].GachaItemRank == GachaItemRank.Special ? _getSpecialItemSound : _getNormalItemSound;
+                _getItemSound = _getItemList[_getItemIndex].GachaItemRank == Rank.Unique || _getItemList[_getItemIndex].GachaItemRank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
                 PlayGetItemSound();
                 _gachaItemName.SetText(string.Empty);
                 _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.08f, Ease.Constant).OnComplete(() => _isPlayTextAnime = false);
@@ -404,8 +404,8 @@ public class UIGacha : MobileUIView
             {
                 item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
 
-                if (!UserInfo.CanAddMoreItems(item))
-                    continue;
+                // if (!UserInfo.CanAddMoreItems(item))
+                //     continue;
 
                 _getItemList.Add(item);
                 i++;
@@ -415,7 +415,7 @@ public class UIGacha : MobileUIView
 
             _gachaMacineAnimator.SetTrigger("Start");
             UserInfo.AddDia(-10);
-            UserInfo.AddUserGachaMachineCount(11);
+            UserInfo.AddUserGachaMachineCount(1100);
             GameManager.Instance.SaveGameData();
         }
         else

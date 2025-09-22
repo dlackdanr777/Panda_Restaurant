@@ -155,7 +155,7 @@ public class UITip : MobileUIView
                             _dontTouchArea.gameObject.SetActive(false);
                         }
                     });
-                    time += 0.05f;
+                    time += 0.03f;
                 });
             }
         });

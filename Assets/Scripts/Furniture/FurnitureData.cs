@@ -25,8 +25,10 @@ public class FurnitureData : ShopData
 
     public FurnitureData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType,  FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount)
     {
+        _salesLocationType = SalesLocationType.Shop;
+        
         _sprite = sprite;
-        _thumbnailSPrite = thumbnailSprite;
+        _thumbnailSprite = thumbnailSprite;
         _name = name;
         _id = id;
         _setId = setId;

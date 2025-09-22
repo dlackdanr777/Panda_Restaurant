@@ -10,8 +10,8 @@ public class UIPopup : MonoBehaviour
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private TextMeshProUGUI _titleText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
-    [SerializeField] private Button _okButton;
-
+    [SerializeField] private UIButtonAndText _button1;
+    [SerializeField] private UIButtonAndText _button2;
 
     [Space]
     [Header("Animations")]
@@ -24,22 +24,26 @@ public class UIPopup : MonoBehaviour
     [SerializeField] private Ease _hideTweenMode;
 
 
-    private Action _onOkButtonClicked;
+    private Action _onButton1Clicked;
+    private Action _onButton2Clicked;
 
 
     public void Init()
     {
-        _okButton.onClick.AddListener(OnOkButtonClicked);
+        _button1.AddListener(OnButton1ClickEvent);
+        _button2.AddListener(OnButton2ClickEvent);
         gameObject.SetActive(false);
     }
 
 
-    public void Show(string title, string description, Action okButtonClicked)
+    public void Show(string title, string description)
     {
         gameObject.SetActive(true);
+        _button1.gameObject.SetActive(false);
+        _button2.gameObject.SetActive(false);
         _titleText.text = title;
         _descriptionText.text = description;
-        _onOkButtonClicked = okButtonClicked;
+
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
@@ -49,7 +53,20 @@ public class UIPopup : MonoBehaviour
         {
             _canvasGroup.blocksRaycasts = true;
         });
+    }
 
+    public void SetButton1(string buttonText, Action buttonClicked)
+    {
+        _button1.gameObject.SetActive(true);
+        _button1.SetText(buttonText);
+        _onButton1Clicked = buttonClicked;
+    }
+
+    public void SetButton2(string buttonText, Action buttonClicked)
+    {
+        _button2.gameObject.SetActive(true);
+        _button2.SetText(buttonText);
+        _onButton2Clicked = buttonClicked;
     }
 
 
@@ -67,10 +84,13 @@ public class UIPopup : MonoBehaviour
         });
     }
 
-
-
-    private void OnOkButtonClicked()
+    private void OnButton1ClickEvent()
     {
-        _onOkButtonClicked?.Invoke();
+        _onButton1Clicked?.Invoke();
+    }
+
+    private void OnButton2ClickEvent()
+    {
+        _onButton2Clicked?.Invoke();
     }
 }

@@ -22,6 +22,9 @@ public class KitchenBurnerData
     public Staff UseStaff => _useStaff;
     public void SetUseStaff(Staff value) => _useStaff = value;
 
+    private FoodType _foodType;
+    public FoodType FoodType => _foodType;
+    public void SetFoodType(FoodType foodType) => _foodType = foodType;
 }
 
 

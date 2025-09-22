@@ -67,7 +67,10 @@ public class FurnitureSystem : MonoBehaviour
 
     public TableData GetTableType(ETableState state)
     {
-        for(int i = 0, cnt = (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage); i <= cnt; ++i)
+        int floorIndex = (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
+        //TODO: 위에꺼 활성화 하기
+        //int floorIndex = (int)ERestaurantFloorType.Floor1;
+        for (int i = 0; i <= floorIndex; ++i)
         {
             TableData data = _furnitureGroupDic[(ERestaurantFloorType)i].GetTableType(state);
             if (data == null)

@@ -1,0 +1,164 @@
+﻿ID,퀘스트 타입,바로가기 타입,설명,타입 필요 id,필요 개수,보상 타입,보상,,퀘스트 타입,설명,,,바로가기 타입,위치
+MainReward01,TYPE05,ShortCut05,초보 매니저 포야 고용하기,STAFF06,1,코인,100,,TYPE01,가구 구매하기,,,ShortCut01,메인 씬
+MainReward02,TYPE05,ShortCut05,토루루 고용하기,STAFF11,1,코인,100,,TYPE02,주방 구매하기,,,ShortCut02,주방 씬
+MainReward03,TYPE03,ShortCut06,판다 주먹밥 레시피 배우기,FOOD01,1,코인,100,,TYPE03,특정 레시피 구매하기,,,ShortCut03,샵(가구)
+MainReward04,TYPE01,ShortCut14,우든 클래식 테이블 1 구매,TABLE01_01,1,코인 ,100,,TYPE04,특정 레시피 제작하기,,,ShortCut04,샵(주방)
+MainReward05,TYPE02,ShortCut25,드럼통 화로 1 구매,COOKER01_01,0,코인,100,,TYPE05,특정 스테프 채용하기,,,ShortCut05,샵(스텝)
+MainReward06,TYPE09,ShortCut01,누적 방문 손님 50명 달성,,50,코인,1000,,TYPE06,레시피 배우기 누적 횟수 달성,,,ShortCut06,샵(레시피)
+MainReward07,TYPE11,ShortCut01,누적 매출 5.000 코인 달성,코인,5000,코인,500,,TYPE07,음식 제작 누적 횟수 달성,,,ShortCut07,가게 관리
+MainReward08,TYPE03,ShortCut06,곶감과 우유 레시피 배우기,FOOD02,1,코인,50,,TYPE08,누적 평점 획득 달성,,,ShortCut08,도전 과제
+MainReward09,TYPE01,ShortCut15,우든 클래식 테이블 2 구매,TABLE01_02,1,코인,400,,TYPE09,누적 손님 방문 달성,,,ShortCut09,다이어리
+MainReward10,TYPE09,ShortCut01,누적 방문 손님 100명 달성,,100,코인,1000,,TYPE10,새로운 방문 손님 달성,,,ShortCut10,캡슐 머신
+MainReward11,TYPE11,ShortCut01,누적 매출 10.000 코인 달성,코인,10000,코인,1000,,TYPE11,누적 코인 획득달성,,,ShortCut11,공지 사항
+MainReward12,TYPE02,ShortCut26,드럼통 화로 2 구매,COOKER01_02,1,코인,400,,TYPE12,누적 홍보 횟수 달성,,,ShortCut12,출석부
+MainReward13,TYPE09,ShortCut01,누적 방문 손님 150명 달성,,150,코인,1500,,TYPE13,"누적 가구(레스토랑, 주방) 개수 달성",,,ShortCut13,환경설정
+MainReward14,TYPE11,ShortCut01,누적 매출 20.000 코인 달성,코인,20000,코인,2000,,TYPE14,누적 식당 가구 세트 획득 달성(속성 구분 없이),,,ShortCut14,샵(가구)_테이블1
+MainReward15,TYPE01,ShortCut19,디저트 카운터 구매,COUNTER01,1,코인,1500,,TYPE15,누적 주방 가구 세트 획득 달성(속성 구분 없이),,,ShortCut15,샵(가구)_테이블2
+MainReward16,TYPE03,ShortCut06,떡볶이 레시피 배우기,FOOD03,1,코인,100,,TYPE16,특정 속성 식당 세트 효과 달성,,,ShortCut16,샵(가구)_테이블3
+MainReward17,TYPE01,ShortCut16,우든 클래식 테이블 3 구매,TABLE01_03,1,코인,800,,TYPE17,특정 속성 주방 세트 효과 달성,,,ShortCut17,샵(가구)_테이블4
+MainReward18,TYPE02,ShortCut27,드럼통 화로 3 구매,COOKER01_03,1,코인,600,,TYPE18,식당 가구 누적 개수 달성,,,ShortCut18,샵(가구)_테이블5
+MainReward19,TYPE08,ShortCut01,누적 평점 50 달성,,50,코인,5000,,TYPE19,주방 가구 누적 개수 달성,,,ShortCut19,샵(가구)_카운터
+MainReward20,TYPE09,ShortCut01,누적 방문 손님 200명 달성,,200,코인,2000,,TYPE20,,,,ShortCut20,샵(가구)_선반
+MainReward21,TYPE11,ShortCut01,누적 매출 30.000 코인 달성,코인,30000,코인,3000,,TYPE21,스페셜 손님 방문 횟수 달성,,,ShortCut21,샵(가구)_액자
+MainReward22,TYPE01,ShortCut22,싱그러운 화분 구매,FLOWER01,1,코인,600,,TYPE22,도둑 손님 퇴치 횟수 달성,,,ShortCut22,샵(가구)_화분
+MainReward23,TYPE03,ShortCut06,커스타드 푸딩 레시피 배우기,FOOD04,1,코인,180,,TYPE23,락커 손님 퇴치 횟수 달성,,,ShortCut23,샵(가구)_조명
+MainReward24,TYPE01,ShortCut17,우든 클래식 테이블 4 구매,TABLE01_04,1,코인,1200,,TYPE24,"진상 손님(도둑, 락커)퇴치 횟수 달성",,,ShortCut24,샵(가구)_벽지
+MainReward25,TYPE02,ShortCut28,드럼통 화로 4 구매,COOKER01_04,1,코인,1000,,TYPE25,누적 캡슐 머신 사용 횟수 달성,,,ShortCut25,샵(주방)_조리기1
+MainReward26,TYPE05,ShortCut05,종업원 지지 고용하기,STAFF01,1,코인,675,,TYPE26,누적 캡슐 아이템 획득 달성,,,ShortCut26,샵(주방)_조리기2
+MainReward27,TYPE01,ShortCut20,소박한 선반 구매,RACK01,1,코인,600,,TYPE27,특정 캡슐 아이템 획득 달성,,,ShortCut27,샵(주방)_조리기3
+MainReward28,TYPE09,ShortCut01,누적 방문 손님 250명 달성,,250,코인,2500,,TYPE28,누적 쓰레기 청소 달성,,,ShortCut28,샵(주방)_조리기4
+MainReward29,TYPE02,ShortCut32,노란 커튼 창문 구매,WINDOW01,1,코인,1200,,TYPE29,광고 시청 누적 횟수 달성,,,ShortCut29,샵(주방)_조리기5
+MainReward30,TYPE02,ShortCut31,잡다한 장식장 구매,CABINET01,1,코인,1200,,TYPE30,일일 퀘스트 모두 완료,,,ShortCut30,샵(주방)_냉장고
+MainReward31,TYPE02,ShortCut34,기초 요리 도구 구매,COOKTOOL01,1,코인,600,,,,,,ShortCut31,샵(주방)_장식장
+MainReward32,TYPE02,ShortCut35,기본 주방 선반 구매,KITCHENRACK01,1,코인,600,,,,,,ShortCut32,샵(주방)_창문
+MainReward33,TYPE11,ShortCut01,누적 매출 40.000 코인 달성,코인,40000,코인,4000,,,,,,ShortCut33,샵(주방)_싱크대
+MainReward34,TYPE02,ShortCut30,평범한 냉장고 구매,FRIDGE01,1,코인,1200,,,,,,ShortCut34,샵(주방)_조리 도구
+MainReward35,TYPE01,ShortCut23,넝쿨빛 조명 구매,ACC01,1,코인,1200,,,,,,ShortCut35,샵(주방)_주방 선반
+MainReward36,TYPE03,ShortCut06,아보카도 샐러드 레시피 배우기,FOOD05,1,코인,200,,,,,,ShortCut36,
+MainReward37,TYPE01,ShortCut21,추억의 액자 구매,FRAME01,1,코인,1200,,,,,,ShortCut37,샵(스텝)_매니저
+MainReward38,TYPE01,ShortCut18,우든 클래식 테이블 5 구매,TABLE01_05,1,코인,2000,,,,,,ShortCut38,샵(스텝)_치어리더
+MainReward39,TYPE02,ShortCut29,드럼통 화로 5 구매,COOKER01_05,1,코인,1500,,,,,,ShortCut39,샵(스텝)_웨이터
+MainReward40,TYPE09,ShortCut01,누적 방문 손님 300명 달성,,300,코인,3000,,,,,,ShortCut40,
+MainReward41,TYPE02,ShortCut33,오래된 나무 싱크대 구매,SINK01,1,코인,4600,,,,,,ShortCut41,샵(스텝)_청소부
+MainReward42,TYPE08,ShortCut01,누적 평점 100 달성,,100,코인,10000,,,,,,ShortCut42,샵(스텝)_경호원
+MainReward43,TYPE03,ShortCut06,에그 샌드위치 레시피 배우기,FOOD06,1,코인,300,,,,,,ShortCut43,샵(스텝)_주방장
+MainReward44,TYPE05,ShortCut05,웨이터 지지 고용하기,STAFF02,1,코인,3000,,,,,,,
+MainReward45,TYPE11,ShortCut01,누적 매출 50.000 코인 달성,코인,50000,코인,5000,,,,,,,
+MainReward46,TYPE03,ShortCut06,소떡 소떡 레시피 배우기,FOOD07,1,코인,500,,,,,,,
+MainReward47,TYPE01,ShortCut14,화이트 러너 테이블 1 구매,TABLE02_01,1,코인,1800,,,,,,,
+MainReward48,TYPE02,ShortCut25,무난한 스토브 1 구매,COOKER02_01,1,코인,1800,,,,,,,
+MainReward49,TYPE09,ShortCut01,누적 방문 손님 400명 달성,,400,코인,4000,,,,,,,
+MainReward50,TYPE01,ShortCut22,햇살 받은 화분 구매,FLOWER02,1,코인,2000,,,,,,,
+MainReward51,TYPE01,ShortCut23,스포트라이트 조명 구매,ACC02,1,코인,1200,,,,,,,
+MainReward52,TYPE11,ShortCut01,누적 매출 60.000 코인 달성,코인,60000,코인,6000,,,,,,,
+MainReward53,TYPE03,ShortCut06,김치찌개 레시피 배우기,FOOD08,1,코인,1000,,,,,,,
+MainReward54,TYPE01,ShortCut15,화이트 러너 테이블 2 구매,TABLE02_02,1,코인,2700,,,,,,,
+MainReward55,TYPE05,ShortCut05,심드렁한 도치 고용하기,STAFF16,1,코인,3000,,,,,,,
+MainReward56,TYPE02,ShortCut26,무난한 스토브 2 구매,COOKER02_02,1,코인,2700,,,,,,,
+MainReward57,TYPE08,ShortCut01,누적 평점 200 달성,,200,코인,20000,,,,,,,
+MainReward58,TYPE03,ShortCut06,에그 토스트 레시피 배우기,FOOD09,1,코인,600,,,,,,,
+MainReward59,TYPE09,ShortCut01,누적 방문 손님 500명 달성,,500,코인,5000,,,,,,,
+MainReward60,TYPE01,ShortCut16,화이트 러너 테이블 3 구매,TABLE02_03,1,코인,4050,,,,,,,
+MainReward61,TYPE02,ShortCut27,무난한 스토브 3 구매,COOKER02_03,1,코인,4050,,,,,,,
+MainReward62,TYPE03,ShortCut06,생선 소금 구이 레시피 배우기,FOOD10,1,코인,1000,,,,,,,
+MainReward63,TYPE08,ShortCut01,누적 평점 300 달성,,300,코인,30000,,,,,,,
+MainReward64,TYPE11,ShortCut01,누적 매출 100.000코인 달성,코인,100000,코인,10000,,,,,,,
+MainReward65,TYPE09,ShortCut01,누적 방문 손님 650명 달성,,650,코인,6500,,,,,,,
+MainReward66,TYPE03,ShortCut06,에그 샐러드 레시피 배우기,FOOD11,1,코인,1100,,,,,,,
+MainReward67,TYPE08,ShortCut01,누적 평점 400 달성,,400,코인,40000,,,,,,,
+MainReward68,TYPE01,ShortCut21,추상화 액자 구매,FRAME02,1,코인,3400,,,,,,,
+MainReward69,TYPE02,ShortCut30,철제 냉장고 구매,FRIDGE02,1,코인,3000,,,,,,,
+MainReward70,TYPE02,ShortCut35,쿠키 선반 구매,KITCHENRACK02,1,코인,2000,,,,,,,
+MainReward71,TYPE03,ShortCut06,연어 회 레시피 배우기,FOOD12,1,코인,1200,,,,,,,
+MainReward72,TYPE01,ShortCut17,화이트 러너 테이블 4 구매,TABLE02_04,1,코인,6100,,,,,,,
+MainReward73,TYPE02,ShortCut28,무난한 스토브 4 구매,COOKER02_04,1,코인,6100,,,,,,,
+MainReward74,TYPE08,ShortCut01,누적 평점 500 달성,,500,코인,50000,,,,,,,
+MainReward75,TYPE11,ShortCut01,누적 매출 150.000코인 달성,코인,150000,코인,150000,,,,,,,
+MainReward76,TYPE09,ShortCut01,누적 방문 손님 850명 달성,,850,코인,8500,,,,,,,
+MainReward77,TYPE03,ShortCut06,팬케이크 레시피 배우기,FOOD13,1,코인,1400,,,,,,,
+MainReward78,TYPE01,ShortCut20,고풍스러운 선반 구매,RACK02,1,코인,2000,,,,,,,
+MainReward79,TYPE08,ShortCut01,누적 평점 600 달성,,600,코인,60000,,,,,,,
+MainReward80,TYPE01,ShortCut24,세련된 벽지 구매,WALLPAPER02,1,코인,600,,,,,,,
+MainReward81,TYPE03,ShortCut06,라멘 레시피 배우기,FOOD14,1,코인,1500,,,,,,,
+MainReward82,TYPE01,ShortCut14,빈티지 하트 테이블 1 구매,TABLE03_01,1,코인,12000,,,,,,,
+MainReward83,TYPE02,ShortCut25,오븐과 스토브 1 구매,COOKER03_01,1,코인,12000,,,,,,,
+MainReward84,TYPE08,ShortCut01,누적 평점 700 달성,,700,코인,70000,,,,,,,
+MainReward85,TYPE11,ShortCut01,누적 매출 200.000코인 달성,코인,200000,코인,20000,,,,,,,
+MainReward86,TYPE09,ShortCut01,누적 방문 손님 1.000명 달성,,1000,코인,10000,,,,,,,
+MainReward87,TYPE03,ShortCut06,아메리카노 레시피 배우기,FOOD15,1,코인,1600,,,,,,,
+MainReward88,TYPE01,ShortCut15,빈티지 하트 테이블 2 구매,TABLE03_02,1,코인,18000,,,,,,,
+MainReward89,TYPE02,ShortCut30,메모지 냉장고 구매,FRIDGE03,1,코인,90000,,,,,,,
+MainReward90,TYPE02,ShortCut26,오븐과 스토브 2 구매,COOKER03_02,1,코인,18000,,,,,,,
+MainReward91,TYPE08,ShortCut01,누적 평점 800 달성,,800,코인,80000,,,,,,,
+MainReward92,TYPE02,ShortCut32,숲 속 창문 구매,WINDOW03,1,코인,9000,,,,,,,
+MainReward93,TYPE03,ShortCut06,김치 볶음밥 레시피 배우기,FOOD16,1,코인,1800,,,,,,,
+MainReward94,TYPE01,ShortCut19,빈티지 우드 카운터 구매,COUNTER03,1,코인,17000,,,,,,,
+MainReward95,TYPE02,ShortCut33,정돈된 싱크대 구매,SINK03,1,코인,32000,,,,,,,
+MainReward96,TYPE01,ShortCut16,빈티지 하트 테이블 3 구매,TABLE03_03,1,코인,27000,,,,,,,
+MainReward97,TYPE03,ShortCut06,딸기 탕후루 레시피 배우기,FOOD17,1,코인,1900,,,,,,,
+MainReward98,TYPE02,ShortCut27,오븐과 스토브 3 구매,COOKER03_03,1,코인,27000,,,,,,,
+MainReward99,TYPE02,ShortCut34,오두막 조리 도구 구매,COOKTOOL03,1,코인,9000,,,,,,,
+MainReward100,TYPE03,ShortCut06,토마토 파스타 레시피 배우기,FOOD18,1,코인,2200,,,,,,,
+MainReward101,TYPE01,ShortCut24,다이너 벽지 구매,WALLPAPER03,1,코인,1000,,,,,,,
+MainReward102,TYPE11,ShortCut01,누적 매출 250.000코인 달성,코인,250000,코인,25000,,,,,,,
+MainReward103,TYPE09,ShortCut01,누적 방문 손님 1.200명 달성,,1200,코인,12000,,,,,,,
+MainReward104,TYPE01,ShortCut18,빈티지 하트 테이블 5 구매,TABLE03_05,1,코인,54000,,,,,,,
+MainReward105,TYPE02,ShortCut29,오븐과 스토브 5 구매,COOKER03_05,1,코인,54000,,,,,,,
+MainReward106,TYPE03,ShortCut06,컵라면 레시피 배우기,FOOD19,1,코인,2400,,,,,,,
+MainReward107,TYPE01,ShortCut20,클래식 선반 구매,RACK03,1,코인,9000,,,,,,,
+MainReward108,TYPE02,ShortCut31,골동품 장식장,CABINET03,1,코인,9000,,,,,,,
+MainReward109,TYPE03,ShortCut06,망고 빙수 레시피 배우기,FOOD19,1,코인,2500,,,,,,,
+MainReward110,TYPE01,ShortCut14,중식당 테이블 1 구매,TABLE04_01,1,코인,20000,,,,,,,
+MainReward111,TYPE02,ShortCut25,벽돌 아궁이 1 구매,COOKER04_01,1,코인,20000,,,,,,,
+MainReward112,TYPE03,ShortCut06,먹물 파스타 레시피 배우기,FOOD21,1,코인,2800,,,,,,,
+MainReward113,TYPE01,ShortCut23,연등 거리 조명 구매,ACC04,1,코인,2000,,,,,,,
+MainReward114,TYPE02,ShortCut32,화려한 둥근 창문 구매,WINDOW04,1,코인,20000,,,,,,,
+MainReward115,TYPE01,ShortCut21,동양의 메뉴 족자 구매,FRAME04,1,코인,20000,,,,,,,
+MainReward116,TYPE03,ShortCut06,과일 푸딩 레시피 배우기,FOOD22,1,코인,3000,,,,,,,
+MainReward117,TYPE01,ShortCut16,중식당 테이블 3 구매,TABLE04_03,1,코인,45000,,,,,,,
+MainReward118,TYPE02,ShortCut27,벽돌 아궁이 3 구매,COOKER04_03,1,코인,20000,,,,,,,
+MainReward119,TYPE03,ShortCut06,아이스크림 크레페 레시피 배우기,FOOD23,1,코인,3200,,,,,,,
+MainReward120,TYPE01,ShortCut17,중식당 테이블 4 구매,TABLE04_04,1,코인,60000,,,,,,,
+MainReward121,TYPE02,ShortCut28,벽돌 아궁이 4 구매,COOKER04_04,1,코인,20000,,,,,,,
+MainReward122,TYPE03,ShortCut06,고등어 초밥 레시피 배우기,FOOD24,1,코인,3500,,,,,,,
+MainReward123,TYPE03,ShortCut06,딸기 빙수 레시피 배우기,FOOD25,1,코인,3600,,,,,,,
+MainReward124,TYPE02,ShortCut33,황실 싱크대 구매,SINK04,1,코인,64000,,,,,,,
+MainReward125,TYPE03,ShortCut06,초콜렛 프라푸치노 레시피 배우기,FOOD26,1,코인,3800,,,,,,,
+MainReward126,TYPE01,ShortCut24,황실 벽지 구매,WALLPAPER04,1,코인,2000,,,,,,,
+MainReward127,TYPE01,ShortCut19,전통 목재 계산대 구매,COUNTER06,1,코인,64000,,,,,,,
+MainReward128,TYPE01,ShortCut14,전통 찻잔 테이블 1 구매,TABLE06_01,1,코인,50000,,,,,,,
+MainReward129,TYPE02,ShortCut29,벽돌 아궁이 5 구매,COOKER04_05,1,코인,20000,,,,,,,
+MainReward130,TYPE02,ShortCut32,포레스트 창문 구매,WINDOW05,1,코인,40000,,,,,,,
+MainReward131,TYPE11,ShortCut01,누적 매출 450.000코인 달성,코인,450000,코인,45000,,,,,,,
+MainReward132,TYPE01,ShortCut15,전통 찻잔 테이블 2 구매,TABLE06_02,1,코인,70000,,,,,,,
+MainReward133,TYPE03,ShortCut06,오일 파스타 레시피 배우기,FOOD27,1,코인,4000,,,,,,,
+MainReward134,TYPE03,ShortCut06,버섯 전골 레시피 배우기,FOOD28,1,코인,4200,,,,,,,
+MainReward135,TYPE01,ShortCut20,정원의 선반 구매,RACK06,1,코인,20000,,,,,,,
+MainReward136,TYPE03,ShortCut06,카레 라이스 레시피 배우기,FOOD29,1,코인,4400,,,,,,,
+MainReward137,TYPE01,ShortCut16,전통 찻잔 테이블 3 구매,TABLE06_03,1,코인,10000,,,,,,,
+MainReward138,TYPE03,ShortCut06,딸기 컵케이크 레시피 배우기,FOOD30,1,코인,4600,,,,,,,
+MainReward139,TYPE01,ShortCut17,전통 찻잔 테이블 4 구매,TABLE06_04,1,코인,100000,,,,,,,
+MainReward140,TYPE01,ShortCut22,단아한 화분 구매,FLOWER06,1,코인,40000,,,,,,,
+MainReward141,TYPE03,ShortCut06,페퍼로니 피자 레시피 배우기,FOOD31,1,코인,4800,,,,,,,
+MainReward142,TYPE02,ShortCut31,참나무 장식장 구매,CABINET06,1,코인,70000,,,,,,,
+MainReward143,TYPE11,ShortCut01,누적 매출 600.000코인 달성,코인,600000,코인,60000,,,,,,,
+MainReward144,TYPE01,ShortCut18,전통 찻잔 테이블 5 구매,TABLE06_05,1,코인,120000,,,,,,,
+MainReward145,TYPE02,ShortCut35,수건 선반 구매,KITCHENRACK05,1,코인,20000,,,,,,,
+MainReward146,TYPE02,ShortCut34,브런치 조리 도구 구매,COOKTOOL05,1,코인,60000,,,,,,,
+MainReward147,TYPE01,ShortCut21,단정한 족자 구매,FRAME06,1,코인,20000,,,,,,,
+MainReward148,TYPE02,ShortCut32,과일 나무 창문 구매,WINDOW06,1,코인,60000,,,,,,,
+MainReward149,TYPE01,ShortCut24,한옥 벽지 구매,WALLPAPER06,1,코인,1500,,,,,,,
+MainReward150,TYPE01,ShortCut21,창밖의 노래 구매,FRAME07,1,코인,9000,,,,,,,
+MainReward151,TYPE01,ShortCut20,그린 가든 선반 구매,RACK07,1,코인,11000,,,,,,,
+MainReward152,TYPE02,ShortCut34,고수의 조리 도구 구매,COOKTOOL06,1,코인,78000,,,,,,,
+MainReward153,TYPE08,ShortCut01,누적 평점 1.300 달성,,1300,코인,130000,,,,,,,
+MainReward154,TYPE11,ShortCut01,누적 매출 800.000코인 달성,코인,800000,코인,80000,,,,,,,
+MainReward155,TYPE02,ShortCut30,고양이 쉼터 냉장고,FRIDGE06,1,코인,70000,,,,,,,
+MainReward156,TYPE02,ShortCut32,더블 뷰 창문 구매,WINDOW08,1,코인,80000,,,,,,,
+MainReward157,TYPE02,ShortCut35,고고한 선반 구매,KITCHENRACK07,1,코인,110000,,,,,,,
+MainReward158,TYPE02,ShortCut34,친환경 조리 도구 구매,COOKTOOL07,1,코인,130000,,,,,,,
+MainReward159,TYPE02,ShortCut31,잔잔 찬장 구매,CABINET08,1,코인,70000,,,,,,,
+MainReward160,TYPE11,ShortCut01,누적 매출 850.000코인 달성,코인,850000,코인,85000,,,,,,,
+MainReward161,TYPE09,ShortCut01,누적 방문 손님 2.200명 달성,,2200,코인,22000,,,,,,,
+MainReward162,TYPE01,ShortCut21,포근한 소품 구매,FRAME08,1,코인,40000,,,,,,,
+MainReward163,TYPE02,ShortCut33,통나무 싱크대 구매,SINK06,1,코인,114000,,,,,,,

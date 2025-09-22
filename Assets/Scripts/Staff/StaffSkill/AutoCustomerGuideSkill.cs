@@ -17,6 +17,6 @@ public class AutoCustomerGuideSkill : SkillBase
 
     public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        tableManager.OnCustomerGuideEvent();
+        tableManager.OnCustomerGuideEvent(staff.EquipFloorType);
     }
 }

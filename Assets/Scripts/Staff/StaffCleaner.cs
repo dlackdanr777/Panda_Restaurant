@@ -3,7 +3,6 @@ using UnityEngine;
 public class StaffCleaner : Staff
 {
     [Header("Cleaner Components")]
-    [SerializeField] private Animator _animator;
     [SerializeField] private AudioSource _audio;
     [SerializeField] private AudioClip _cleanSound;
     [SerializeField] private GameObject _cleanerItem;

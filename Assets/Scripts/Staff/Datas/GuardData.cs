@@ -5,7 +5,10 @@ using UnityEngine;
 public class GuardData : StaffData
 {
 
+    [Space]
+    [Header("Guard Data")]
     [SerializeField] private GuardLevelData[] _guardLevelData;
+
     public override float SecondValue => 0;
     public override int MaxLevel => _guardLevelData.Length;
 

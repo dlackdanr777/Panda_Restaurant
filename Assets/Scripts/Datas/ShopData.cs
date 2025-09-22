@@ -5,6 +5,9 @@ public class ShopData : BasicData
     [Space]
     [Header("ShopData")]
 
+    [SerializeField] protected SalesLocationType _salesLocationType;
+    public SalesLocationType SalesLocationType => _salesLocationType;
+
     [SerializeField] protected MoneyType _moneyType;
     public MoneyType MoneyType => _moneyType;
 

@@ -17,7 +17,7 @@ public class UIFurniturePreview : MonoBehaviour
 
     [Space]
     [Header("Buttons")]
-    [SerializeField] private UIButtonAndTwoText _usingButton;
+    [SerializeField] private UI3LayerButton _usingButton;
     [SerializeField] private UIButtonAndText _buyButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
@@ -152,22 +152,29 @@ public class UIFurniturePreview : MonoBehaviour
             {
                 case ERestaurantFloorType.Floor1:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetText1("배치중");
-                    _usingButton.SetText2("1f");
+                    _usingButton.SetCenterText("배치중");
+                    _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor1));
+                    _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor1));
+                    _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor1));
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
 
                 case ERestaurantFloorType.Floor2:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetText1("배치중");
-                    _usingButton.SetText2("2f");
+                    _usingButton.SetCenterText("배치중");
+                    _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor2));
+                    _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor2));
+                    _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor2));
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
+
                     break;
 
                 case ERestaurantFloorType.Floor3:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetText1("배치중");
-                    _usingButton.SetText2("3f");
+                    _usingButton.SetCenterText("배치중");
+                    _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor3));
+                    _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor3));
+                    _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor3));
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
 
@@ -283,7 +290,11 @@ public class UIFurniturePreview : MonoBehaviour
 
     private void OnEquipButtonClicked()
     {
+        bool isFloor1Equip = UserInfo.IsEquipFurniture(UserInfo.CurrentStage, ERestaurantFloorType.Floor1, _currentData.Type);
+        bool isFloor2Equip = UserInfo.IsEquipFurniture(UserInfo.CurrentStage, ERestaurantFloorType.Floor2, _currentData.Type);
+        bool isFloor3Equip = UserInfo.IsEquipFurniture(UserInfo.CurrentStage, ERestaurantFloorType.Floor3, _currentData.Type);
         _equipButtonGroup.Show();
+        _equipButtonGroup.SetFloorButtonColor(isFloor1Equip, isFloor2Equip, isFloor3Equip);
         _equipButton.gameObject.SetActive(false);
     }
 
