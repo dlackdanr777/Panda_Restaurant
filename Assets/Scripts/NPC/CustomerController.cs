@@ -28,7 +28,7 @@ public class CustomerController : MonoBehaviour
     [Range(1, 10)][SerializeField] private int _lineSpacingGrid;
     [SerializeField] private Transform _startLine;
     [SerializeField] private List<Vector3> _specialCustomerTargetPosList;
-    [SerializeField] private Vector3 _gatecrasherCustomer2TargetPos;
+    [SerializeField] private Transform[] _gatecrasherCustomer2TargetPos;
 
 
 
@@ -40,7 +40,7 @@ public class CustomerController : MonoBehaviour
     public int Count => _callCustomers.Count;
     public int WaitCount => _waitCustomers.Count;
 
-    public Vector3 _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
+    public Transform[] _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
     public GatecrasherCustomer[] GatecrasherCustomer => _gatecrasherCustomers;
     public bool IsMaxCount => GameManager.Instance.MaxWaitCustomerCount <= _callCustomers.Count;
 
@@ -195,7 +195,7 @@ public class CustomerController : MonoBehaviour
                     else if (getData is GatecrasherCustomer2Data)
                     {
                         _uiCustomerTutorial.ShowTutorial(getData);
-                        _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
+                        _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos[(int)visitFloor].position, _tableManager, OnCustomerEvent);
                     }
                 }
             }
@@ -362,7 +362,7 @@ public class CustomerController : MonoBehaviour
             _gatecrasherCustomers[floorIndex] = ObjectPoolManager.Instance.SpawnGatecrasherCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
             _gatecrasherCustomers[floorIndex].SetData(data, this, _tableManager);
             _gatecrasherCustomers[floorIndex].SetVisitFloor(visitFloor);
-            _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos, _tableManager, OnCustomerEvent);
+            _gatecrasherCustomers[floorIndex].StartGatecreasherCustomer2Event(_gatecrasherCustomer2TargetPos[(int)visitFloor].position, _tableManager, OnCustomerEvent);
         }
 
         else if (data is SpecialCustomerData)

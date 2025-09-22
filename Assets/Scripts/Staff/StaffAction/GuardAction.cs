@@ -39,52 +39,88 @@ public class GuardAction : IStaffAction
 
         _actionTimer = _actionTime;
 
-        if(_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy)
+        // 진상손님 상태 체크 및 갱신
+        if(_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
         {
+            _gatecrasherCustomer = null;
+            _startAction = false;
+            
+            // 새로운 진상손님 찾기
             if (_customerController.GatecrasherCustomer[(int)staff.EquipFloorType] == null)
                 return;
 
-                _gatecrasherCustomer = _customerController.GatecrasherCustomer[(int)staff.EquipFloorType];
+            _gatecrasherCustomer = _customerController.GatecrasherCustomer[(int)staff.EquipFloorType];
+            
+            // 새로 찾은 진상손님도 유효하지 않으면 리턴
+            if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
+            {
+                _gatecrasherCustomer = null;
+                return;
+            }
         }
 
-        else
+        // 진상손님이 위장 상태인지 체크
+        if (_gatecrasherCustomer.IsInDisguise)
         {
+            _startAction = false;
+            return;
+        }
 
-            if (_gatecrasherCustomer.IsEndEvent)
+        // 액션 시작
+        _startAction = true;
+        Tween.Wait(1 / speedMul, () =>
+        {
+            if (!staff.gameObject.activeInHierarchy)
+            {
+                _startAction = false;
+                return;
+            }
+
+            // 다시 한번 진상손님 상태 체크
+            if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
             {
                 _gatecrasherCustomer = null;
                 _startAction = false;
                 return;
             }
 
-            if (_gatecrasherCustomer.IsInDisguise)
-            {
-                _startAction = false;
-                return;
-            }
-
-            _startAction = true;
-            Tween.Wait(1 / speedMul, () =>
+            staff.SpriteRenderer.TweenAlpha(0, 0.25f / speedMul).OnComplete(() =>
             {
                 if (!staff.gameObject.activeInHierarchy)
-                    return;
-
-                staff.SpriteRenderer.TweenAlpha(0, 0.25f / speedMul).OnComplete(() =>
                 {
-                    staff.transform.position = _gatecrasherCustomer.transform.position + new Vector3(0.2f, 0);
+                    _startAction = false;
+                    return;
+                }
+
+                // 진상손님이 여전히 유효한지 최종 체크
+                if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
+                {
+                    // 원래 위치로 복귀
+                    staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
                     staff.SetSpriteDir(-1);
                     staff.SpriteRenderer.TweenAlpha(1, 0.25f / speedMul).OnComplete(() =>
                     {
-                        if (_gatecrasherCustomer.IsEndEvent)
-                            return;
-
-                        _tmpScale = staff.SpriteRenderer.transform.localScale;
-                        EliminatingGatecrasherCustomer2(staff);
+                        _startAction = false;
+                        _gatecrasherCustomer = null;
                     });
-                });
+                    return;
+                }
 
+                staff.transform.position = _gatecrasherCustomer.transform.position + new Vector3(0.2f, 0);
+                staff.SetSpriteDir(-1);
+                staff.SpriteRenderer.TweenAlpha(1, 0.25f / speedMul).OnComplete(() =>
+                {
+                    if (_gatecrasherCustomer == null || _gatecrasherCustomer.IsEndEvent)
+                    {
+                        _startAction = false;
+                        return;
+                    }
+
+                    _tmpScale = staff.SpriteRenderer.transform.localScale;
+                    EliminatingGatecrasherCustomer2(staff);
+                });
             });
-        }
+        });
 
         return;
     }
@@ -93,8 +129,11 @@ public class GuardAction : IStaffAction
     private void EliminatingGatecrasherCustomer2(Staff staff)
     {
         float speedMul = staff.SpeedMul;
-        if (_gatecrasherCustomer == null)
+        
+        // 진상손님이 사라졌거나 이벤트가 끝났을 때
+        if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
         {
+            _gatecrasherCustomer = null;
             Tween.Wait(1f / speedMul, () =>
             {
                 if (!staff.gameObject.activeInHierarchy)
@@ -113,33 +152,31 @@ public class GuardAction : IStaffAction
             return;
         }
 
-
-        else if (_gatecrasherCustomer.IsEndEvent)
-        {
-            _gatecrasherCustomer = null;
-            Tween.Wait(1f, () =>
-            {
-                if (!staff.gameObject.activeInHierarchy)
-                    return;
-
-                staff.SpriteRenderer.TweenAlpha(0, 1 / speedMul).OnComplete(() =>
-                {
-                    staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
-                    staff.SetSpriteDir(-1);
-                    staff.SpriteRenderer.TweenAlpha(1, 1 / speedMul).OnComplete(() =>
-                    {
-                        _startAction = false;
-                    });
-                });
-            });
-            return;
-        }
-
+        // 진상손님 공격 처리
         float duration = (staff.GetActionValue() / staff.SpeedMul) / Mathf.Max(_gatecrasherCustomer.TotalTouchCount, 1);
         Tween.Wait(duration, () =>
         {
             if (!staff.gameObject.activeInHierarchy)
+            {
+                _startAction = false;
                 return;
+            }
+
+            // 공격 직전에 다시 한번 진상손님 상태 체크
+            if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
+            {
+                _gatecrasherCustomer = null;
+                _startAction = false;
+                
+                // 원래 위치로 복귀
+                staff.SpriteRenderer.TweenAlpha(0, 0.3f / speedMul).OnComplete(() =>
+                {
+                    staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
+                    staff.SetSpriteDir(-1);
+                    staff.SpriteRenderer.TweenAlpha(1, 0.3f / speedMul);
+                });
+                return;
+            }
 
             staff.SetSpriteDir(_gatecrasherCustomer.transform.position.x < staff.transform.position.x ? -1 : 1);
             _gatecrasherCustomer.OnTouchEvent();
@@ -151,6 +188,8 @@ public class GuardAction : IStaffAction
                 staff.SpriteRenderer.transform.localScale = _tmpScale * 0.99f;
                 staff.SpriteRenderer.TweenScale(_tmpScale, duration * 0.5f, Ease.OutBack);
             });
+            
+            // 재귀 호출
             EliminatingGatecrasherCustomer2(staff);
         });
     }
