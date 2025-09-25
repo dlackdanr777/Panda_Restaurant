@@ -87,7 +87,11 @@ public class UIMainCanvas : MonoBehaviour
 
         DataBind.SetUnityActionValue("ShowTimeSkipUI", OnShowTimeSkipUI);
         DataBind.SetUnityActionValue("HideTimeSkipUI", OnHideTimeSkipUI);
-        DataBind.SetUnityActionValue("HideNoAnimeTimeSkiUI", OnHideNoAnimeTimeSkipUI);
+        DataBind.SetUnityActionValue("HideNoAnimeTimeSkipUI", OnHideNoAnimeTimeSkipUI);
+
+        DataBind.SetUnityActionValue("ShowFloorLockUI", OnShowFloorLockUI);
+        DataBind.SetUnityActionValue("HideFloorLockUI", OnHideFloorLockUI);
+        DataBind.SetUnityActionValue("HideNoAnimeFloorLockUI", OnHideNoAnimeFloorLockUI);
 
         DataBind.SetUnityActionValue("ShowFurnitureTable1", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table1));
         DataBind.SetUnityActionValue("ShowFurnitureTable2", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table2));
@@ -386,5 +390,20 @@ public class UIMainCanvas : MonoBehaviour
     private void OnHideNoAnimeTimeSkipUI()
     {
         _uiNav.PopNoAnime("UITimeSkip");
+    }
+
+    public void OnShowFloorLockUI()
+    {
+        _uiNav.Push("UIFloorLock");
+    }
+
+        private void OnHideFloorLockUI()
+    {
+        _uiNav.Pop("UIFloorLock");
+    }
+
+    private void OnHideNoAnimeFloorLockUI()
+    {
+        _uiNav.PopNoAnime("UIFloorLock");
     }
 }

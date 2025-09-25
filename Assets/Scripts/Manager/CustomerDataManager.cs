@@ -184,7 +184,7 @@ public class CustomerDataManager : MonoBehaviour
     private static void LoadNormalCustomerSprites()
     {
         // 스프라이트 리소스 로드
-        Sprite[] sprites = Resources.LoadAll<Sprite>("CustomerData/Sprites/NormalCustomer");
+        Sprite[] sprites = Resources.LoadAll<Sprite>("CustomerData/Sprites/NormalCustomer/Sprite");
 
         foreach (var sprite in sprites)
         {

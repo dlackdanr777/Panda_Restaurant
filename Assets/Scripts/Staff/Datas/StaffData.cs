@@ -8,6 +8,11 @@ public abstract class StaffData : ShopData
     [SerializeField] protected SkillBase _skill;
     public SkillBase Skill => _skill;
 
+    [Space]
+    [Header("Animation Option")]
+    [SerializeField] private Sprite[] _idleSprites;
+    public Sprite[] IdleSprites => _idleSprites;
+
     [SerializeField] protected RuntimeAnimatorController _animatorController;
     public RuntimeAnimatorController AnimatorController => _animatorController;
 

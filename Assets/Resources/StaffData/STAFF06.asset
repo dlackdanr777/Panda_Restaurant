@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9b8dc5b35de2517409d1bc40735a6ac5, type: 3}
   m_Name: STAFF06
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: 9158d705f0439184e9eb231264e897fa, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: 9158d705f0439184e9eb231264e897fa, type: 3}
-  _name: "\uCD08\uBCF4 \uB9E4\uB2C8\uC800 \uD3EC\uC57C"
+  _sprite: {fileID: 21300000, guid: be3ee1ba274aca9428eb7c66ff533025, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 86173548ffbb8da449a17b6a1f354cad, type: 3}
+  _name: "\uD3EC\uC57C"
   _id: STAFF06
   _description: "\uC11C\uD234\uC9C0\uB9CC \uC5F4\uC2EC\uD788 \uC77C\uD558\uB294 \uCE5C\uADFC\uD55C
     \uD3EC\uC57C\r"
@@ -23,6 +23,14 @@ MonoBehaviour:
   _buyScore: 0
   _buyPrice: 1000
   _skill: {fileID: 11400000, guid: 13f8b997e9fafaf439550199ddfb76f7, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: fe1f859038f16014cb21e7616fedd33c, type: 3}
+  - {fileID: 21300000, guid: 514ec75f975a0bf42848cba065c2bbcb, type: 3}
+  - {fileID: 21300000, guid: 5d9376772e7909449ba670a0ced73f02, type: 3}
+  - {fileID: 21300000, guid: 5d9376772e7909449ba670a0ced73f02, type: 3}
+  - {fileID: 21300000, guid: 5d9376772e7909449ba670a0ced73f02, type: 3}
+  - {fileID: 21300000, guid: 514ec75f975a0bf42848cba065c2bbcb, type: 3}
+  - {fileID: 21300000, guid: fe1f859038f16014cb21e7616fedd33c, type: 3}
   _animatorController: {fileID: 0}
   _speed: 6
   _managerLevelData:

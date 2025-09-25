@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e39c2e09d58fec4e92da628aa6f0c2e, type: 3}
   m_Name: STAFF11
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: c9f79ec54bc2c0840bff6c273651b0fd, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: c9f79ec54bc2c0840bff6c273651b0fd, type: 3}
+  _sprite: {fileID: 21300000, guid: 6c2dc9f59e57dda4aa3a54620060a4de, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 6c2dc9f59e57dda4aa3a54620060a4de, type: 3}
   _name: "\uD1A0\uB8E8\uB8E8"
   _id: STAFF11
   _description: "\uD65C\uAE30\uCC28\uACE0 \uBC1C\uB784\uD55C \uC5D0\uB108\uC9C0\uB85C\n\uC190\uB2D8\uC744
@@ -23,6 +23,7 @@ MonoBehaviour:
   _buyScore: 0
   _buyPrice: 0
   _skill: {fileID: 11400000, guid: 1d8e75a245d829746a56f25dd94ba341, type: 2}
+  _idleSprites: []
   _animatorController: {fileID: 0}
   _speed: 6
   _marketerLevelData:
