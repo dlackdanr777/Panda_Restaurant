@@ -149,14 +149,14 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
 
         else if(_data.MoneyType == MoneyType.Dia)
         {
-            UserInfo.AddDia(_data.RewardMoney);
+            UserInfo.AddDia((int)_data.RewardMoney);
             SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.DiaSound);
             _uiChallenge.StartDiaAnime(_data.RewardMoney, _diaImage.transform.position);
         }
 
         if (0 < _data.RewardScore)
         {
-            UserInfo.AddScore(_data.RewardScore);
+            UserInfo.AddScore((int)_data.RewardScore);
             _uiChallenge.StartScoreAnime(_scoreImage.transform.position);
         }
         UserInfo.ClearChallenge(_data);

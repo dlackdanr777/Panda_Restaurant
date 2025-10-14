@@ -171,7 +171,7 @@ public class UIMainChallenge : MobileUIView
 
         else if(_currentData.MoneyType == MoneyType.Dia)
         {
-            UserInfo.AddDia(_currentData.RewardMoney);
+            UserInfo.AddDia((int)_currentData.RewardMoney);
             ChallengeClaerDiaAnime();
         }
 

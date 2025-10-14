@@ -87,10 +87,10 @@ public class GachaTutorial : MonoBehaviour
         _tutorialNav.Push("UITutorial");
         _tutorialNav.Push("UITutorialDescription");
         _uiTutorial.CustomHoleSetActive(false, 170, _gachaButton.name, _gachaButton.transform, false);
-        _uiGacha.SingleButton.gameObject.SetActive(false);
+        //_uiGacha.SingleButton.gameObject.SetActive(false);
         _uiTutorial.Gacha1ButtonSetActive(true);
         GachaItemData needItemData = ItemManager.Instance.GetGachaItemData(_foodData.NeedItem);
-        _uiTutorial.SetGacha1ButtonClickEvent(() => _uiGacha.GetItem(needItemData));
+        //_uiTutorial.SetGacha1ButtonClickEvent(() => _uiGacha.GetItem(needItemData));
         yield return YieldCache.WaitForSeconds(2f);
         yield return _descriptionNPC.ShowDescription2Text("이곳은 아이템을 뽑을 수 있는 곳입니다.");
         yield return _descriptionNPC.ShowDescription2Text("캡슐 머신에는 다양한 아이템들이 나온답니다!");
@@ -114,7 +114,7 @@ public class GachaTutorial : MonoBehaviour
             yield return YieldCache.WaitForSeconds(0.01f);
 
         _uiGacha.GachaStepHandler -= OnGachaCompletedEvent;
-        _uiGacha.SingleButton.gameObject.SetActive(true);
+        //_uiGacha.SingleButton.gameObject.SetActive(true);
         _gachaCompleted = false;
         _descriptionNPC.PopEnabled = false;
         _uiTutorial.PopEnabled = false;

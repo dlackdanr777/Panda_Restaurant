@@ -58,6 +58,7 @@ public class UIStaffPreview : MonoBehaviour
         _equipButton.AddListener(OnEquipButtonClicked);
 
         UserInfo.OnUpgradeStaffHandler += UpdateUI;
+        UserInfo.OnChangeStaffSkinHandler += UpdateUI;
     }
 
 
@@ -97,25 +98,26 @@ public class UIStaffPreview : MonoBehaviour
         }
         int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
 
-        _selectGroup.SetSprite(data.ThumbnailSprite);
-        _selectGroup.SetText(data.Name);
+        StaffSkinData skinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, data);
+        Sprite thumbnailSprite = skinData == null ? (data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite) : skinData.ThumbnailSprite;
+        string name = skinData == null ? data.Name : skinData.Name;
+        string description = skinData == null ? data.Description : skinData.Description;
+
+        _selectGroup.SetSprite(thumbnailSprite);
+        _selectGroup.SetText(name);
 
         _staffEffectGroup.SetText2(Utility.GetStaffEffectDescription(data));
         _skillGroup.SetText2(Utility.GetStaffSkillDescription(data));
         _coolTimeGroup.SetText2(data.Skill.Cooldown + "s");
-        _descriptionText.SetText(data.Description);
-
-
-        StaffData equipData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, floor, _equipStaffType);
-        int equipDataLevel = equipData == null ? 1 : UserInfo.IsGiveStaff(UserInfo.CurrentStage, equipData) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, equipData) : 1;
+        _descriptionText.SetText(description);
 
         if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
         {
             _levelGroup.gameObject.SetActive(true);
             _levelGroup.SetText(data.UpgradeEnable(level) ? "Lv." + level : "Lv.Max");
             ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
-        
-            if(UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
+
+            if (UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
             {
                 _equipTextGroup.gameObject.SetActive(true);
                 EquipStaffType equipType = UserInfo.GetEquipStaffType(UserInfo.CurrentStage, data);
@@ -210,6 +212,9 @@ public class UIStaffPreview : MonoBehaviour
 
     public void UpdateUI()
     {
+        if(!gameObject.activeInHierarchy)
+        {return;}
+
         SetData(_currentFloor, _equipStaffType, _currentData);
     }
 

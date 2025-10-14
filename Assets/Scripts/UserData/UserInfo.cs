@@ -849,7 +849,7 @@ public static class UserInfo
     public static void AddDia(int value)
     {
         _dia += value;
-        _dia =  Mathf.Max(0, _dia);
+        _dia =  Math.Max(0, _dia);
         DataBindDia();
         OnChangeDiaHandler?.Invoke();
     }

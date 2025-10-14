@@ -131,7 +131,6 @@ public class Staff : MonoBehaviour
 
         if (_animator != null)
         {
-            DebugLog.Log("스탭 애니메이터 컨트롤러 설정: " + name + " - " + _staffData.AnimatorController);
             _animator.runtimeAnimatorController = _staffData.AnimatorController == null ? _defaultAnimatorController : _staffData.AnimatorController;
         }
 
@@ -556,6 +555,11 @@ public class Staff : MonoBehaviour
         if (!gameObject.activeInHierarchy)
             return;
 
+        if (_staffData == null)
+            return;
+
+        DebugLog.Log("스탭 스킨 변경: " + name + " - " + _staffData.Id);
+
         StaffSkinData data = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, _staffData);
         if (data == null)
         {
@@ -566,6 +570,20 @@ public class Staff : MonoBehaviour
 
         _sprite = data.Sprite;
         _idleSprites = data.IdleSprites;
+        if (_state == EStaffState.None)
+        {
+            _spriteRenderer.sprite = _sprite;
+        }
+    }
+
+    protected virtual void OnDestroy()
+    {
+        LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
+        GameManager.Instance.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
+        UserInfo.OnUpgradeStaffHandler -= OnLevelUpEvent;
+        UserInfo.OnChangeStaffSkinHandler -= OnChangeSkinEvent;
+        _feverSystem.OnStartFeverHandler -= OnStartFeverEvent;
+        _feverSystem.OnEndFeverHandler -= OnEndFeverEvent;
     }
 
 }

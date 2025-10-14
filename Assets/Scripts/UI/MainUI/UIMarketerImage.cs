@@ -33,6 +33,7 @@ public class UIMarketerImage : MonoBehaviour
     private void OnDestroy()
     {
         UserInfo.OnChangeStaffHandler -= OnChangeMarketerEvent;
+        UserInfo.OnChangeStaffSkinHandler -= OnChangeMarketerSkinEvent;
     }
 
     public void Init()
@@ -41,6 +42,7 @@ public class UIMarketerImage : MonoBehaviour
         OnChangeMarketerEvent(_currentFloor, EquipStaffType.Marketer);
         UserInfo.OnChangeStaffHandler += OnChangeMarketerEvent;
         _camera.OnEndMoveCameraHandler += OnChangeFloorEvent;
+        UserInfo.OnChangeStaffSkinHandler += OnChangeMarketerSkinEvent;
     }
 
     public void StartAnime()
@@ -94,11 +96,19 @@ public class UIMarketerImage : MonoBehaviour
             return;
         }
 
-        if (equipData == _data)
-            return;
-
         _data = (MarketerData)equipData;
         gameObject.SetActive(true);
+        SetData(_data);
+    }
+    
+    private void OnChangeMarketerSkinEvent()
+    {
+        if (_data == null)
+        {
+            gameObject.SetActive(false);
+            return;
+        }
+
         SetData(_data);
     }
 
@@ -106,24 +116,52 @@ public class UIMarketerImage : MonoBehaviour
     {
         gameObject.SetActive(true);
         _data = data;
-        _marketerSprite = data.UISprite;
-        _animationSprite = data.AnimationSprite;
 
-        _marketerImage.sprite = _marketerSprite;
-        _leftHandImage.sprite = data.LeftHandSprite;
-        _rightHandImage.sprite = data.RightHandSprite;
-
-        _particleCount = data.ParticleCount;
-        _particleSystem.gameObject.SetActive(false);
-        _uiParticle.gameObject.SetActive(false);
-        for (int i = _particleSystem.textureSheetAnimation.spriteCount - 1; i >= 0; i--)
+        MarketerSkinData skinData = (MarketerSkinData)UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, _data);
+        if (skinData == null)
         {
-            _particleSystem.textureSheetAnimation.RemoveSprite(i);
+            _marketerSprite = data.UISprite;
+            _animationSprite = data.AnimationSprite;
+
+            _marketerImage.sprite = _marketerSprite;
+            _leftHandImage.sprite = data.LeftHandSprite;
+            _rightHandImage.sprite = data.RightHandSprite;
+
+            _particleCount = data.ParticleCount;
+            _particleSystem.gameObject.SetActive(false);
+            _uiParticle.gameObject.SetActive(false);
+            for (int i = _particleSystem.textureSheetAnimation.spriteCount - 1; i >= 0; i--)
+            {
+                _particleSystem.textureSheetAnimation.RemoveSprite(i);
+            }
+
+            for (int i = 0, cnt = data.ParticleSprites.Length; i < cnt; ++i)
+            {
+                _particleSystem.textureSheetAnimation.AddSprite(data.ParticleSprites[i]);
+            }
         }
-
-        for (int i = 0, cnt = data.ParticleSprites.Length; i < cnt; ++i)
+        else
         {
-            _particleSystem.textureSheetAnimation.AddSprite(data.ParticleSprites[i]);
+            _marketerSprite = skinData.Sprite;
+            _animationSprite = skinData.AnimationSprite;
+
+            _marketerImage.sprite = _marketerSprite;
+            _leftHandImage.sprite = skinData.LeftHandSprite;
+            _rightHandImage.sprite = skinData.RightHandSprite;
+
+            _particleCount = 10;
+            _particleSystem.gameObject.SetActive(false);
+            _uiParticle.gameObject.SetActive(false);
+
+            for (int i = _particleSystem.textureSheetAnimation.spriteCount - 1; i >= 0; i--)
+            {
+                _particleSystem.textureSheetAnimation.RemoveSprite(i);
+            }
+
+            for (int i = 0, cnt = skinData.ParticleSprites.Length; i < cnt; ++i)
+            {
+                _particleSystem.textureSheetAnimation.AddSprite(skinData.ParticleSprites[i]);
+            }
         }
 
         _particleSystem.gameObject.SetActive(true);

@@ -142,7 +142,7 @@ public class UIChallenge : MobileUIView
         _uiWeeklyAlarm.SetActive(_uiWeekly.UpdateUI());
     }
 
-    public void StartCoinAnime(int money, Vector3 coinPos)
+    public void StartCoinAnime(long money, Vector3 coinPos)
     {
         float time = 0;
         int coinCnt = 5;
@@ -170,7 +170,7 @@ public class UIChallenge : MobileUIView
         }
     }
 
-    public void StartDiaAnime(int money, Vector3 coinPos)
+    public void StartDiaAnime(long money, Vector3 coinPos)
     {
         float time = 0;
         int coinCnt = 5;

@@ -52,8 +52,17 @@ public class FirstLoadingScene : MonoBehaviour
                     return;
                 }
 
+
                 BackendManager.Instance.GuestLoginAsync((bro) =>
                            {
+                                using(new VersionManagement())
+                                {
+                                   if(!new VersionManagement().UpdateCheck())
+                                   {
+                                        return;
+                                   }
+                                }
+
                                BackendManager.Instance.GetMyDataAsync("GameData", (bro) =>
                                {
                                    UserInfo.LoadGameData(bro);

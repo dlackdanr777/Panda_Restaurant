@@ -319,9 +319,9 @@ public class ChallengeManager : MonoBehaviour
             BindData<UnityAction> shortcutAction = GetShortCutAction(row[2]);
             string description = row[3];
             string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
-            int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
+            int count = int.TryParse(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))), out int parsedCount) ? parsedCount : 0;
             MoneyType moneyType = row[6].Contains("코인") || row[6].Contains("게임머니") ? MoneyType.Gold : MoneyType.Dia;
-            int rewardMoney = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
+            int rewardMoney = int.TryParse(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))), out int parsedRewardMoney) ? parsedRewardMoney : 0;
             ChallengeType challengeType;
 
             switch (type)
@@ -667,12 +667,12 @@ public class ChallengeManager : MonoBehaviour
             BindData<UnityAction> shortcutAction = GetShortCutAction(row[2]);
             string description = row[3];
             string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
-            int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
+            int count = int.TryParse(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))), out int parsedCount2) ? parsedCount2 : 0;
 
-            int rewardScore = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
+            int rewardScore = int.TryParse(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))), out int parsedRewardScore) ? parsedRewardScore : 0;
             MoneyType moneyType = row[8].Contains("코인") || row[8].Contains("게임머니") ? MoneyType.Gold : MoneyType.Dia;
             Debug.Log(id + ", " + row[9]);
-            int rewardMoney = Convert.ToInt32(string.Concat(row[9].Where(c => !Char.IsWhiteSpace(c))));
+            int rewardMoney = int.TryParse(string.Concat(row[9].Where(c => !Char.IsWhiteSpace(c))), out int parsedRewardMoney2) ? parsedRewardMoney2 : 0;
             ChallengeType challengeType;
             switch (type)
             {
@@ -1071,7 +1071,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE08:
                 Type08ChallengeData data08 = (Type08ChallengeData)data;
-                int socre = UserInfo.Score;
+                long socre = UserInfo.Score;
                 return socre == 0 ? 0 : Math.Min(1, (float)socre / data08.Rank);
 
             case ChallengeType.TYPE09:
@@ -1316,7 +1316,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE08:
                 Type08ChallengeData data08 = (Type08ChallengeData)data;
-                int socre = UserInfo.Score;
+                long socre = UserInfo.Score;
                 return $"{socre} / {data08.Rank}";
 
             case ChallengeType.TYPE09:
@@ -3897,32 +3897,54 @@ public class ChallengeManager : MonoBehaviour
             return null; // 이미 존재하면 생성하지 않음
         }
 
-        // CSV 규칙에 따른 목표 계산: 10,000 × 현재 단계(n)
-        int nextGoal = 10000 * nextLevel;
-        
-        // CSV 규칙에 따른 보상 계산
+        // CSV 규칙에 따른 목표 계산
+        long nextGoal;
         int scoreReward, coinReward;
         
         if (nextLevel <= 50)
         {
-            // 1~50: 보상 평점 = 0.15 × 다음단계증가요구필요개수, 보상 코인 = 0.3 × 단계증가요구필요개수
-            int nextLevelGoal = 10000 * (nextLevel + 1);
-            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.15f) / 100) * 100;
-            coinReward = Mathf.RoundToInt((nextGoal * 0.3f) / 100) * 100;
+            // 1~50: 목표치 = 10,000 × 현재 단계(n)
+            nextGoal = 10000 * nextLevel;
+            
+            // 다음 단계 목표치 계산
+            long nextLevelGoal = 10000 * (nextLevel + 1);
+            
+            // 다음 단계 증가분 계산
+            long increaseAmount = nextLevelGoal - nextGoal;
+            
+            // 보상 계산: 다음 단계 증가분 기준
+            scoreReward = Mathf.RoundToInt((increaseAmount * 0.15f) / 100) * 100;
+            coinReward = Mathf.RoundToInt((increaseAmount * 0.3f) / 100) * 100;
         }
         else if (nextLevel <= 100)
         {
-            // 51~100: 보상 평점 = 0.1 × 다음단계증가요구필요개수, 보상 코인 = 0.2 × 단계증가요구필요개수
-            int nextLevelGoal = 10000 * (nextLevel + 1);
-            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.1f) / 100) * 100;
-            coinReward = Mathf.RoundToInt((nextGoal * 0.2f) / 100) * 100;
+            // 51~100: 목표치 = 500,000 × (1.2)^(n-50)
+            nextGoal = (long)(500000 * Mathf.Pow(1.2f, nextLevel - 50));
+            
+            // 다음 단계 목표치 계산
+            long nextLevelGoal = (long)(500000 * Mathf.Pow(1.2f, (nextLevel + 1) - 50));
+            
+            // 다음 단계 증가분 계산
+            long increaseAmount = nextLevelGoal - nextGoal;
+            
+            // 보상 계산: 다음 단계 증가분의 10%
+            scoreReward = 0; // 51단계 이후는 평점 보상 없음
+            coinReward = Mathf.RoundToInt((increaseAmount * 0.1f) / 100) * 100;
         }
         else
         {
-            // 100~: 보상 평점 = 0.05 × 다음단계증가요구필요개수, 보상 코인 = 0.1 × 다음단계증가요구필요개수
-            int nextLevelGoal = 10000 * (nextLevel + 1);
-            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.05f) / 100) * 100;
-            coinReward = Mathf.RoundToInt((nextGoal * 0.1f) / 100) * 100;
+            // 100~: 계속 지수적 증가
+            nextGoal = (long)(500000 * Mathf.Pow(1.2f, nextLevel - 50));
+            
+            // 다음 단계 목표치 계산
+            long nextLevelGoal = (long)(500000 * Mathf.Pow(1.2f, (nextLevel + 1) - 50));
+            
+            // 다음 단계 증가분 계산
+            long increaseAmount = nextLevelGoal - nextGoal;
+            
+            // 보상 계산
+            scoreReward = Mathf.RoundToInt((increaseAmount * 0.05f) / 100) * 100;
+            coinReward = Mathf.RoundToInt((increaseAmount * 0.1f) / 100) * 100;
         }
 
         Type11ChallengeData newData = new Type11ChallengeData(
