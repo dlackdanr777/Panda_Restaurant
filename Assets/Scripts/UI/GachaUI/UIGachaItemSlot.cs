@@ -2,18 +2,18 @@ using UnityEngine;
 using UnityEngine.UI;
 using Muks.RecyclableScrollView;
 
-public class UIGachaItemSlot : RecyclableScrollSlot<GachaItemData>
+public class UIGachaItemSlot : RecyclableScrollSlot<GachaData>
 {
     [Header("Components")]
     [SerializeField] private Image _itemImage;
     [SerializeField] private UIItemStar _uiStar;
 
-    GachaItemData _data;
+    GachaData _data;
     public override void Init()
     {
     }
 
-    public override void UpdateSlot(GachaItemData data)
+    public override void UpdateSlot(GachaData data)
     {
         if (data == null)
         {
@@ -29,6 +29,6 @@ public class UIGachaItemSlot : RecyclableScrollSlot<GachaItemData>
         gameObject.SetActive(true);
         _itemImage.sprite = data.Sprite;
         Utility.ChangeImagePivot(_itemImage);
-        _uiStar.SetStar(data.GachaItemRank);
+        _uiStar.SetStar(data.Rank);
     }
 }

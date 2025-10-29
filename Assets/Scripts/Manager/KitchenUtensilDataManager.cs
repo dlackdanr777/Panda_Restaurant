@@ -95,7 +95,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
         KitchenDataParse(basePath + "WindowData", KitchenUtensilType.Window, EquipEffectType.AddTipPerMinute);
         KitchenDataParse(basePath + "CooktoolData", KitchenUtensilType.CookingTools, EquipEffectType.AddTipPerMinute);
         KitchenDataParse(basePath + "KitchenrackData", KitchenUtensilType.Kitchenrack, EquipEffectType.AddTipPerMinute);
-        SinkDataParse(basePath + "SinkData", EquipEffectType.AddTipPerMinute);
+        SinkDataParse(basePath + "SinkData", EquipEffectType.AddDishWashSpeedMul);
     }
 
 
@@ -235,12 +235,12 @@ public class KitchenUtensilDataManager : MonoBehaviour
             FoodType foodType = Utility.GetFoodType(attribute);
             string setId = row[3].Trim();
             int addScore = int.Parse(row[4].Trim());
-            int effectValue = int.Parse(row[5].Trim());
+            float effectValue = float.Parse(row[5].Trim());
             int unlockScore = int.Parse(row[6].Trim());
 
             MoneyType moneyType = row[7].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
             int price = int.Parse(row[8].Trim());
-            int maxSinkBowlCount = int.Parse(row[9].Trim());
+            int maxSinkBowlCount = 6;
 
             UnlockConditionType unlockType = row.Length < 11 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[10].Trim());
             string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[11].Trim();

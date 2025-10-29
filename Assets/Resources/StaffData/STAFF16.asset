@@ -18,10 +18,6 @@ MonoBehaviour:
   _id: STAFF16
   _description: "\uC2EC\uB4DC\uB801\uD55C \uD45C\uC815 \uB4A4\uC5D0\n\uBC24\uB0AE\uC5C6\uC774
     \uC5F0\uC2B5\uD558\uB294 \uB178\uB825\uD30C \uB3C4\uCE58\r"
-  _salesLocationType: 0
-  _moneyType: 0
-  _buyScore: 30
-  _buyPrice: 20000
   _skill: {fileID: 11400000, guid: 55429025e47f51e48af3704c79782325, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: 4c813941b6a76704b9a06f6e5f70ca57, type: 3}
@@ -32,7 +28,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: dd53c8dda90cfee409582bfa8fda02fd, type: 3}
   - {fileID: 21300000, guid: 4c813941b6a76704b9a06f6e5f70ca57, type: 3}
   _animatorController: {fileID: 0}
-  _speed: 6
+  _salesLocationType: 0
+  _moneyType: 0
+  _buyScore: 30
+  _buyPrice: 5000
+  _speed: 3.5
   _backSprite: {fileID: 21300000, guid: 2dc4da78b41e5724fa84a6ba2c561fec, type: 3}
   _handSprite: {fileID: 21300000, guid: aede57fb19987a04c9b9e05c6f1ed51b, type: 3}
   _handOffset: {x: -0.18, y: 1.43}
@@ -40,22 +40,22 @@ MonoBehaviour:
   - _upgradeMinScore: 100
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 30000
+      _price: 20000
     _foodSpeedAddPercent: 5
   - _upgradeMinScore: 120
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 45000
+      _price: 30000
     _foodSpeedAddPercent: 5.5
   - _upgradeMinScore: 140
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 67500
+      _price: 45000
     _foodSpeedAddPercent: 6
   - _upgradeMinScore: 160
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 101250
+      _price: 67500
     _foodSpeedAddPercent: 6.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:

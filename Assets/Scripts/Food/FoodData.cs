@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class FoodData : ShopData
+public class FoodData : BasicData, ShopData
 {
     [Space]
     [Header("FoodData")]
@@ -13,11 +13,23 @@ public class FoodData : ShopData
     [SerializeField] private List<FoodLevelData> _foodLevelDataList;
     public int MaxLevel => _foodLevelDataList.Count;
 
-    private FoodMiniGameData _foodMiniGameData;
+    protected FoodMiniGameData _foodMiniGameData;
     public FoodMiniGameData FoodMiniGameData => _foodMiniGameData;
 
-    private FoodType _foodType;
+    protected FoodType _foodType;
     public FoodType FoodType => _foodType;
+
+    protected SalesLocationType _salesLocationType;
+    public SalesLocationType SalesLocationType => _salesLocationType;
+    
+    protected MoneyType _moneyType;
+    public MoneyType MoneyType => _moneyType;
+
+    protected int _buyScore;
+    public int BuyScore => _buyScore;
+
+    protected int _buyPrice;
+    public int BuyPrice => _buyPrice;
 
     public bool MiniGameNeeded => _foodMiniGameData != null ? true : false;
 

@@ -7,7 +7,9 @@ public class UITest : MonoBehaviour
     [SerializeField] private Button _miniGameButton;
     [SerializeField] private UIMiniGame _miniGame;
     [SerializeField] private UIButtonAndText _changeFloorButton;
-
+    [SerializeField] private Button _addClearButton;
+    [SerializeField] private Button _addCustomerButton;
+    [SerializeField] private Button _addCookButton;
 
     [Space]
     [Header("Satisfaction System")]
@@ -23,6 +25,10 @@ public class UITest : MonoBehaviour
 
         FoodMiniGameData data = FoodDataManager.Instance.GetFoodData("FOOD08").FoodMiniGameData;
         _miniGameButton.onClick.AddListener(() => _miniGame.StartMiniGame(data));
+
+        _addClearButton.onClick.AddListener(() => UserInfo.AddCleanCount(100));
+        _addCookButton.onClick.AddListener(() => UserInfo.AddCookCount("COOK01", 100));
+        _addCustomerButton.onClick.AddListener(() => UserInfo.AddCustomerCount(100));
 
         _satisfactionUpButton.onClick.AddListener(() => UserInfo.AddSatisfaction(UserInfo.CurrentStage, 10));
         _satisfactionDownButton.onClick.AddListener(() => UserInfo.AddSatisfaction(UserInfo.CurrentStage, -10));

@@ -62,7 +62,7 @@ public class GameManager : MonoBehaviour
     public float TipMul =>  1 /*Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f)*/;
 
     public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addGiveGachaItemTipPerMinute;
-    public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume;
+    public int MaxTipVolume => Math.Max(3000, _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume);
 
     public float AddFerverTime => _addGachaItemFeverTime;
 
@@ -75,6 +75,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _addEquipKitchenUtensilCookSpeedMul;
     [SerializeField] private int _addEquipKitchenUtensilTipPerMinute;
     [SerializeField] private int _addEquipKitchenUtensilTipVolume;
+    [SerializeField] private float[] _addEquipKitchenUtensilDishWashSpeedMul = new float[(int)ERestaurantFloorType.Length]; // 주방기구 설비 효과 - 설거지 속도 증가 n%
 
     private float[,] _addSetFoodPriceMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //음식 가격 증가 비율
     private float[,] _addSetCookSpeedMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //음식 조리 속도
@@ -164,7 +165,7 @@ public class GameManager : MonoBehaviour
         DebugLog.LogError("스탭 스킬 시간 증가 효과를 찾을 수 없습니다: " + type);
         return 0;
     }
-    
+
     public float GetGachaItemUpgradeValue(UpgradeType type)
     {
         if (_upgradeTypeValueDic.TryGetValue(type, out float value))
@@ -172,6 +173,11 @@ public class GameManager : MonoBehaviour
 
         DebugLog.LogError("업그레이드 타입을 찾을 수 없습니다: " + type);
         return 0;
+    }
+    
+    public float GetEquipKitchenUtensilDishWashSpeedMul(ERestaurantFloorType floor)
+    {
+        return 1 + (_addEquipKitchenUtensilDishWashSpeedMul[(int)floor] * 0.01f);
     }
 
     private void OnUpgradeGachaItemCheck()
@@ -559,6 +565,11 @@ public class GameManager : MonoBehaviour
 
     private void OnEquipKitchenUtensilEffectCheck()
     {
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            _addEquipKitchenUtensilDishWashSpeedMul[i] = 0;
+        }
+        _addEquipKitchenUtensilTipVolume = 0;
         _addEquipKitchenUtensilCookSpeedMul = 0;
         _addEquipKitchenUtensilTipPerMinute = 0;
         int maxTipVolume = 0;
@@ -575,13 +586,16 @@ public class GameManager : MonoBehaviour
                     continue;
 
                 if (data.EquipEffectType == EquipEffectType.AddMaxTip)
-                    maxTipVolume += data.EffectValue;
+                    maxTipVolume += (int)data.EffectValue;
 
                 else if (data.EquipEffectType == EquipEffectType.AddCookSpeed)
-                    cookSpeedMul += data.EffectValue;
+                    cookSpeedMul += (int)data.EffectValue;
 
                 else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
-                    tipPerMinute += data.EffectValue;
+                    tipPerMinute += (int)data.EffectValue;
+
+                else if (data.EquipEffectType == EquipEffectType.AddDishWashSpeedMul)
+                    _addEquipKitchenUtensilDishWashSpeedMul[i] += data.EffectValue;
             }
         }
       

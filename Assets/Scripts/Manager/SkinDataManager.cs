@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class SkinDataManager : MonoBehaviour
 {
@@ -43,6 +44,7 @@ public class SkinDataManager : MonoBehaviour
 
 
 
+    private static List<SkinData> _skinDataList = new List<SkinData>();
     private static List<StaffSkinData> _staffSkinDataList = new List<StaffSkinData>();
     private static Dictionary<string, StaffSkinData> _staffSkinDataDic = new Dictionary<string, StaffSkinData>();
     private static Dictionary<string, List<StaffSkinData>> _staffSkinDataByLocationDic = new Dictionary<string, List<StaffSkinData>>();
@@ -55,6 +57,29 @@ public class SkinDataManager : MonoBehaviour
         { "SKIN_STAFF_UPGRADE04", StaffSkinUpgradeType.Type4 },
     };
 
+ public List<SkinData> GetSortSkinDataList()
+    {
+        return UserInfo.SkinSortType switch
+        {
+            GradeSortType.NameAscending => _skinDataList.OrderBy(data => data.Name).ToList(),
+            GradeSortType.NameDescending => _skinDataList.OrderByDescending(data => data.Name).ToList(),
+            GradeSortType.GradeAscending => _skinDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            GradeSortType.GradeDescending => _skinDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            _ => null
+        };
+    }
+
+    public List<SkinData> GetSortSkinDataList(GradeSortType sortType)
+    {
+        return sortType switch
+        {
+            GradeSortType.NameAscending => _skinDataList.OrderBy(data => data.Name).ToList(),
+            GradeSortType.NameDescending => _skinDataList.OrderByDescending(data => data.Name).ToList(),
+            GradeSortType.GradeAscending => _skinDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            GradeSortType.GradeDescending => _skinDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            _ => null
+        };
+    }
 
 
 
@@ -191,7 +216,7 @@ public class SkinDataManager : MonoBehaviour
 
             _customerSkinDataList.Add(skinData);
             _customerSkinDataDic.Add(id, skinData);
-
+            _skinDataList.Add(skinData);
             if (_customerSkinDataByLocationDic.TryGetValue(equipTargetId, out List<CustomerSkinData> skinList))
             {
                 skinList.Add(skinData);
@@ -525,7 +550,7 @@ public class SkinDataManager : MonoBehaviour
 
             _staffSkinDataList.Add(skinData);
             _staffSkinDataDic.Add(id, skinData);
-
+            _skinDataList.Add(skinData);
             if (_staffSkinDataByLocationDic.TryGetValue(equipTargetId, out List<StaffSkinData> skinList))
             {
                 skinList.Add(skinData);

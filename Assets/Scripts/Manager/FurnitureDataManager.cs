@@ -286,7 +286,6 @@ public class FurnitureDataManager : MonoBehaviour
                 unlockCount = 0;
             }
 
-            bool isChairForward = true;
             string keyId = CutStringUpToChar(id, '_');
             // 🔹 스프라이트 가져오기 (딕셔너리에서 가져오므로 성능 향상)
             if (!_spriteDic.TryGetValue(keyId, out Sprite sprite))
@@ -312,6 +311,7 @@ public class FurnitureDataManager : MonoBehaviour
                 rightChairSprite = null;
             }
 
+            bool isChairForward = false;
             _leftChairArmrestSpriteDic.TryGetValue(keyId, out Sprite leftChairArmrestSprite);
             _rightChairArmrestSpriteDic.TryGetValue(keyId, out Sprite rightChairArmrestSprite);
 

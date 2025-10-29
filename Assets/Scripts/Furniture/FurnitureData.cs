@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class FurnitureData : ShopData
+public class FurnitureData : BasicData, ShopData
 {
     private string _setId;
     public string SetId => _setId;
@@ -22,6 +22,18 @@ public class FurnitureData : ShopData
 
     private UnlockConditionData _unlockData;
     public UnlockConditionData UnlockData => _unlockData;
+
+    private SalesLocationType _salesLocationType;
+    public SalesLocationType SalesLocationType => _salesLocationType;
+    
+    private MoneyType _moneyType;
+    public MoneyType MoneyType => _moneyType;
+
+    private int _buyScore;
+    public int BuyScore => _buyScore;
+
+    private int _buyPrice;
+    public int BuyPrice => _buyPrice;
 
     public FurnitureData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType,  FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount)
     {

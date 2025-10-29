@@ -95,7 +95,7 @@ public class SinkKitchenUtensil : KitchenUtensil
             _washGauge = 0;
         }
 
-        _washGauge += Time.deltaTime / (_isTouchWashing && _isStaffWashing ? 1 : 2);
+        _washGauge += (Time.deltaTime / (_isTouchWashing && _isStaffWashing ? 1 : 2) * GameManager.Instance.GetEquipKitchenUtensilDishWashSpeedMul(_floorType));
         UpdateSink();
     }
 

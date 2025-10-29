@@ -37,7 +37,7 @@ public class UIPictorialBookGachaItemSlot : MonoBehaviour
         _data = data;
         _itemImage.sprite = data.Sprite;
         Utility.ChangeImagePivot(_itemImage);
-        SetStar(data.GachaItemRank);
+        SetStar(data.Rank);
         _alarm?.ChangeAlarmId(data.Id);
     }
 

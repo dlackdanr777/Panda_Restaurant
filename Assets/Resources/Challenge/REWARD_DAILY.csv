@@ -4,4 +4,4 @@ DailyReward02,TYPE32,ShortCut01,"누적 코인 10"",""000획득",,10000,코인,5
 DailyReward03,TYPE33,ShortCut01,음식 제작 90회,,90,코인,5000
 DailyReward04,TYPE34,ShortCut01,쓰레기 줍기 80회,,80,코인,5000
 DailyReward05,TYPE29,ShortCut01,광고 보기 3회,,3,코인,5000
-DailyReward06,TYPE35,ShortCut01,일일 퀘스트 모두 완료하기,,0,다이아,3
+DailyReward06,TYPE30,ShortCut01,일일 퀘스트 모두 완료하기,,0,다이아,3

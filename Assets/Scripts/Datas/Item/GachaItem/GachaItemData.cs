@@ -1,18 +1,14 @@
 using UnityEngine;
 
-public class GachaItemData : BasicData
+public class GachaItemData : GachaData
 {
-    public Rank GachaItemRank => _rank - 1 < 0 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (int)global::Rank.Length <= _rank - 1 ? throw new System.Exception("Rank가 범위 밖에 있습니다.") : (Rank)_rank - 1;
+    
 
     private int _addScore;
     public int AddScore => _addScore;
 
     private int _tipPerMinute;
     public int TipPerMinute => _tipPerMinute;
-
-    private int _rank;
-    public int Rank => _rank;
-    
     private UpgradeType _upgradeType;
     public UpgradeType UpgradeType => _upgradeType;
 
@@ -33,7 +29,7 @@ public class GachaItemData : BasicData
         _description = description;
         _addScore = addScore;
         _tipPerMinute = minutePerTip;
-        _rank = rank;
+        _rank = (Rank)rank - 1;
         _upgradeType = upgradeType;
         _defaultValue = defaultValue;
         _upgradeValue = upgradeValue;

@@ -43,8 +43,6 @@ public class FirstTutorial : MonoBehaviour
         _mainSceneUI.gameObject.SetActive(false);
         _punchHole.gameObject.SetActive(false);
         UserInfo.IsTutorialStart = true;
-        UserInfo.GiveFurniture(EStage.Stage1, "COUNTER01");
-        UserInfo.SetEquipFurniture(UserInfo.CurrentStage, ERestaurantFloorType.Floor1, "COUNTER01");
         UserInfo.GiveFurniture(EStage.Stage1, "WALLPAPER01");
         UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "WALLPAPER01");
         UserInfo.GiveFurniture(EStage.Stage1, "WALLPAPER01");
@@ -320,13 +318,6 @@ public class FirstTutorial : MonoBehaviour
     private void OnSkipButtonClicked()
     {
         UserInfo.GiveRecipe("FOOD01");
-        UserInfo.GiveFurniture(EStage.Stage1, "TABLE01_01");
-        UserInfo.GiveKitchenUtensil(EStage.Stage1, "COOKER01_01");
-        KitchenUtensilData kitchenData = KitchenUtensilDataManager.Instance.GetKitchenUtensilData("COOKER01_01");
-        FurnitureData table1Data = FurnitureDataManager.Instance.GetFurnitureData("TABLE01_01");
-        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, table1Data);
-        UserInfo.SetEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, kitchenData);
-
         _uiTutorial.PopEnabled = true;
         _uiDescriptionNPC.PopEnabled = true;
         _uiNav.Pop("UITutorial");

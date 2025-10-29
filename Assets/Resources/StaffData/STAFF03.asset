@@ -17,14 +17,14 @@ MonoBehaviour:
   _name: "\uCD94\uCD94"
   _id: STAFF03
   _description: "\r"
-  _salesLocationType: 0
-  _moneyType: 0
-  _buyScore: 350
-  _buyPrice: 120000
   _skill: {fileID: 11400000, guid: 01a240b70f7efbc4d803ab7f1d4259e1, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
-  _speed: 8
+  _salesLocationType: 1
+  _moneyType: 0
+  _buyScore: 350
+  _buyPrice: 120000
+  _speed: 5
   _waiterLevelData:
   - _upgradeMinScore: 525
     _upgradeMoneyData:

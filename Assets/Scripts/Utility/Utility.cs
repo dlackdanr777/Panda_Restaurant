@@ -520,14 +520,15 @@ public static class Utility
         };
     }
 
-    public static string GetEquipEffectDescription(EquipEffectType type, int value)
+    public static string GetEquipEffectDescription(EquipEffectType type, float value)
     {
         return type switch
         {
-            EquipEffectType.AddScore => $"평점 <color={ColorToHex(GetColor(ColorType.Positive))}>{value}</color> 점 증가",
-            EquipEffectType.AddTipPerMinute => $"분당 획득 팁 <color={ColorToHex(GetColor(ColorType.Positive))}>{value}</color> 증가",
-            EquipEffectType.AddCookSpeed => "요리 효율 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + value + "%</color> 증가",
-            EquipEffectType.AddMaxTip => "팁 저장량 <color=" + ColorToHex(GetColor(ColorType.Positive)) + ">" + value + "</color> 증가",
+            EquipEffectType.AddScore => $"평점 <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)value}</color> 점 증가",
+            EquipEffectType.AddTipPerMinute => $"분당 획득 팁 <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)value}</color> 증가",
+            EquipEffectType.AddCookSpeed => $"요리 효율 <color={ColorToHex(GetColor(ColorType.Positive))}>{value}%</color> 증가",
+            EquipEffectType.AddMaxTip => $"팁 저장량 <color={ColorToHex(GetColor(ColorType.Positive))}>{(int)value}</color> 증가",
+            EquipEffectType.AddDishWashSpeedMul => $"설거지 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{value}%</color> 증가",
             _ => string.Empty
         };
     }

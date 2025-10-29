@@ -7,11 +7,12 @@ public enum EquipEffectType
     AddTipPerMinute,
     AddCookSpeed,
     AddMaxTip,
+    AddDishWashSpeedMul,
     None,
 }
 
 
-public class KitchenUtensilData : ShopData
+public class KitchenUtensilData : BasicData, ShopData
 {
 
     private KitchenUtensilType _type;
@@ -29,14 +30,26 @@ public class KitchenUtensilData : ShopData
     private EquipEffectType _equipEffectType;
     public EquipEffectType EquipEffectType => _equipEffectType;
 
-    private int _effectValue;
-    public int EffectValue => _effectValue;
+    private float _effectValue;
+    public float EffectValue => _effectValue;
 
     private UnlockConditionData _unlockData;
     public UnlockConditionData UnlockData => _unlockData;
 
+    protected SalesLocationType _salesLocationType;
+    public SalesLocationType SalesLocationType => _salesLocationType;
+    
+    protected MoneyType _moneyType;
+    public MoneyType MoneyType => _moneyType;
 
-    public KitchenUtensilData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, KitchenUtensilType kitchenType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount)
+    protected int _buyScore;
+    public int BuyScore => _buyScore;
+
+    protected int _buyPrice;
+    public int BuyPrice => _buyPrice;
+
+
+    public KitchenUtensilData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, KitchenUtensilType kitchenType, FoodType foodType, int addScore, EquipEffectType euipEffectType, float effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount)
     {
         _salesLocationType = SalesLocationType.Shop;
 

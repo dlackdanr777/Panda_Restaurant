@@ -195,6 +195,8 @@ public static class UserInfo
 
     private static GradeSortType _gachaItemSortType = GradeSortType.GradeDescending;
     public static GradeSortType GachaItemSortType => _gachaItemSortType;
+    private static GradeSortType _skinSortType = GradeSortType.GradeDescending;
+    public static GradeSortType SkinSortType => _skinSortType;
 
     private static ShopSortType _furnitureSortType = ShopSortType.PriceAscending;
     public static ShopSortType FurnitureSortType => _furnitureSortType;
@@ -948,6 +950,14 @@ public static class UserInfo
         OnAddCleanCountHandler?.Invoke();
     }
 
+        public static void AddCleanCount(int count)
+    {
+        _totalCleanCount += count;
+        _dailyCleanCount += count;
+        _weeklyCleanCount += count;
+        OnAddCleanCountHandler?.Invoke();
+    }
+
     public static void AddVisitSpecialCustomerCount()
     {
         _totalVisitSpecialCustomerCount += 1;
@@ -973,6 +983,42 @@ public static class UserInfo
     {
         _totalUseGachaMachineCount += cnt;
         OnUseGachaMachineHandler?.Invoke();
+    }
+
+    public static void GiveSkin(SkinData data)
+    {
+        if (data is StaffSkinData staffSkinData)
+        {
+            GiveStaffSkin(staffSkinData);
+        }
+        else if (data is CustomerSkinData customerSkinData)
+        {
+            GiveCustomerSkin(customerSkinData);
+        }
+        else
+        {
+            DebugLog.LogError("스킨 데이터 타입이 올바르지 않습니다: " + data.Id);
+            return;
+        }
+    }
+
+    public static void GiveSkinList(List<SkinData> data)
+    {
+        foreach (var skin in data)
+        {
+            if (skin is StaffSkinData staffSkinData)
+            {
+                GiveStaffSkin(staffSkinData);
+            }
+            else if (skin is CustomerSkinData customerSkinData)
+            {
+                GiveCustomerSkin(customerSkinData);
+            }
+            else
+            {
+                DebugLog.LogError("스킨 데이터 타입이 올바르지 않습니다: " + skin.Id);
+            }
+        }
     }
 
 
@@ -1679,6 +1725,26 @@ public static class UserInfo
             _dailyCookCount += 1;
             _totalCookCount += 1;
             _weeklyCookCount += 1;
+            OnAddCookCountHandler?.Invoke();
+        }
+    }
+
+        public static void AddCookCount(string id, int count)
+    {
+        if (_recipeCookCountDic.ContainsKey(id))
+        {
+            _recipeCookCountDic[id] += count;
+            _dailyCookCount += count;
+            _totalCookCount += count;
+            _weeklyCookCount += count;
+            OnAddCookCountHandler?.Invoke();
+        }
+        else
+        {
+            _recipeCookCountDic.Add(id, count);
+            _dailyCookCount += count;
+            _totalCookCount += count;
+            _weeklyCookCount += count;
             OnAddCookCountHandler?.Invoke();
         }
     }

@@ -92,12 +92,12 @@ public class ItemManager : MonoBehaviour
 
         foreach (var item in gachaItemDataList)
         {
-            if (!rankItemDict.ContainsKey(item.GachaItemRank))
+            if (!rankItemDict.ContainsKey(item.Rank))
             {
-                rankItemDict[item.GachaItemRank] = new List<GachaItemData>();
-                availableRanks.Add(item.GachaItemRank);
+                rankItemDict[item.Rank] = new List<GachaItemData>();
+                availableRanks.Add(item.Rank);
             }
-            rankItemDict[item.GachaItemRank].Add(item);
+            rankItemDict[item.Rank].Add(item);
         }
 
         // 랭크 선택 시도
@@ -137,6 +137,73 @@ public class ItemManager : MonoBehaviour
             Rank fallbackRank = availableRanks[UnityEngine.Random.Range(0, availableRanks.Count)];
             DebugLog.Log($"랭크 선택 실패, 대체 랭크 {fallbackRank} 사용");
             List<GachaItemData> fallbackItems = rankItemDict[fallbackRank];
+            return fallbackItems[UnityEngine.Random.Range(0, fallbackItems.Count)];
+        }
+
+        // 여기까지 오면 심각한 문제가 있음
+        DebugLog.LogError("사용 가능한 가챠 아이템이 없습니다.");
+        return null;
+    }
+
+        public GachaData GetRandomGachaData(List<GachaData> gachaDataList)
+    {
+        if (gachaDataList == null || gachaDataList.Count == 0)
+        {
+            DebugLog.LogError("가챠 아이템 리스트가 비어있습니다.");
+            return null;
+        }
+
+        // 랭크별로 아이템 분류 (존재하는 랭크만 저장)
+        Dictionary<Rank, List<GachaData>> rankItemDict = new Dictionary<Rank, List<GachaData>>();
+        List<Rank> availableRanks = new List<Rank>();
+
+        foreach (var item in gachaDataList)
+        {
+            if (!rankItemDict.ContainsKey(item.Rank))
+            {
+                rankItemDict[item.Rank] = new List<GachaData>();
+                availableRanks.Add(item.Rank);
+            }
+            rankItemDict[item.Rank].Add(item);
+        }
+
+        // 랭크 선택 시도
+        int maxAttempts = 5; // 최대 시도 횟수 제한
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            float randF = UnityEngine.Random.Range(0f, 1f);
+            float tmp = 0;
+            Rank currentRank = Rank.Normal1;
+
+            // 랭크 선택
+            for (int i = 0, cnt = (int)Rank.Length; i < cnt; ++i)
+            {
+                tmp += Utility.GetGachaItemRankRange((Rank)i);
+                if (randF < tmp)
+                {
+                    currentRank = (Rank)i;
+                    break;
+                }
+            }
+
+            // 선택된 랭크에 아이템이 있는지 확인
+            if (rankItemDict.ContainsKey(currentRank) && rankItemDict[currentRank].Count > 0)
+            {
+                // 해당 랭크의 아이템 중 하나를 랜덤 선택
+                List<GachaData> itemsOfRank = rankItemDict[currentRank];
+                return itemsOfRank[UnityEngine.Random.Range(0, itemsOfRank.Count)];
+            }
+
+            // 해당 랭크에 아이템이 없으면 로그 출력
+            DebugLog.Log($"랭크 {currentRank}에 아이템이 없어 다시 시도합니다. (시도 {attempt + 1}/{maxAttempts})");
+        }
+
+        // 여러 번 시도 후에도 실패했다면 사용 가능한 랭크에서 무작위로 선택
+        if (availableRanks.Count > 0)
+        {
+            Rank fallbackRank = availableRanks[UnityEngine.Random.Range(0, availableRanks.Count)];
+            DebugLog.Log($"랭크 선택 실패, 대체 랭크 {fallbackRank} 사용");
+            List<GachaData> fallbackItems = rankItemDict[fallbackRank];
             return fallbackItems[UnityEngine.Random.Range(0, fallbackItems.Count)];
         }
 

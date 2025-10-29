@@ -4,9 +4,10 @@ using Muks.Tween;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using System;
+using System.Linq;
 
 
-public class UIItemGacha : MonoBehaviour
+public class UIItemGacha : GachaMachineParent
 {
     public event Action<int> GachaStepHandler;
 
@@ -15,13 +16,11 @@ public class UIItemGacha : MonoBehaviour
     [SerializeField] private ScrollingImage _scrollImage;
     [SerializeField] private Animator _gachaMacineAnimator;
     [SerializeField] private UIImageAndText _gachaItemName;
-    [SerializeField] private UIGachaItemList _gachaItemList;
     [SerializeField] private Button _screenButton;
     [SerializeField] private Button _singleButton;
     public Button SingleButton => _singleButton;
     [SerializeField] private Button _tenButton;
     [SerializeField] private Button _skipButton;
-    [SerializeField] private GameObject _uiComponents;
     [SerializeField] private Image _getItemImage;
     [SerializeField] private UIItemStar _itemStar;
 
@@ -49,7 +48,6 @@ public class UIItemGacha : MonoBehaviour
     [SerializeField] private AudioClip _getSpecialItemSound;
 
 
-    private List<GachaItemData> _itemDataList;
     private List<UIGachaItemSlot> _getItemSlotList = new List<UIGachaItemSlot>();
     private List<GachaItemData> _getItemList = new List<GachaItemData>();
     private float _screenTouchWaitTime;
@@ -90,11 +88,11 @@ public class UIItemGacha : MonoBehaviour
         SoundManager.Instance.PlayEffectAudio(EffectType.UI, _getItemSound);
     }
 
-    public void Init()
+    public override void Init(UIGacha uiGacha)
     {
+        _uiGacha = uiGacha;
         _scrollImage.Init();
-        _itemDataList = ItemManager.Instance.GetSortGachaItemDataList(GradeSortType.GradeDescending);
-        _gachaItemList.Init(_itemDataList);
+        _itemDataList = ItemManager.Instance.GetSortGachaItemDataList(GradeSortType.GradeDescending).Select((data) => (GachaData)data).ToList();
 
         for (int i = 0; i < 10; ++i)
         {
@@ -120,18 +118,16 @@ public class UIItemGacha : MonoBehaviour
     }
 
 
-    public void Show()
+    public override void Show()
     {
-        SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
         gameObject.SetActive(true);
         _singleButton.gameObject.SetActive(true);
         _tenButton.gameObject.SetActive(true);
-        _uiComponents.SetActive(true);
-        _screenButton.gameObject.SetActive(false);
+        _uiGacha.SetActiveUIComponents(true);
         _scrollImage.gameObject.SetActive(true);
+        _screenButton.gameObject.SetActive(false);
         _gachaItemName.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
-        _bouncingBall.ResetBalls();
         _bouncingBall.ResetBalls();
         CapsuleSetSibilingIndex(1);
 
@@ -142,10 +138,21 @@ public class UIItemGacha : MonoBehaviour
     }
 
 
-    public void Hide()
+    public override void Hide()
     {
+        gameObject.SetActive(true);
         _screenTouchWaitTime = 0;
-        gameObject.SetActive(false);
+        _singleButton.gameObject.SetActive(false);
+        _tenButton.gameObject.SetActive(false);
+        _uiGacha.SetActiveUIComponents(false);
+        _scrollImage.gameObject.SetActive(false);
+        _screenButton.gameObject.SetActive(false);
+        _gachaItemName.gameObject.SetActive(false);
+        _skipButton.gameObject.SetActive(false);
+
+        _gachaMacineAnimator.enabled = false;
+
+        SetStep(1);
     }
 
 
@@ -177,7 +184,7 @@ public class UIItemGacha : MonoBehaviour
     }
 
 
-    public void OnScreenButtonClicked()
+    public override void OnScreenButtonClicked()
     {
         if (0 < _screenTouchWaitTime)
         {
@@ -246,7 +253,9 @@ public class UIItemGacha : MonoBehaviour
             case 1:
                 _currentStep = 1;
 
-                _uiComponents.SetActive(true);
+                _uiGacha.SetActiveUIComponents(true);
+                _singleButton.gameObject.SetActive(true);
+                _tenButton.gameObject.SetActive(true);
                 _screenButton.gameObject.SetActive(false);
                 _gachaItemName.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
@@ -265,7 +274,9 @@ public class UIItemGacha : MonoBehaviour
                 _currentStep = 2;
                 _screenButton.gameObject.SetActive(true);
                 _skipButton.gameObject.SetActive(true);
-                _uiComponents.SetActive(false);
+                _uiGacha.SetActiveUIComponents(false);
+                _singleButton.gameObject.SetActive(false);
+                _tenButton.gameObject.SetActive(false);
                 _gachaItemName.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
@@ -312,10 +323,10 @@ public class UIItemGacha : MonoBehaviour
                 _isCapsuleColorChanged = true;
 
                 _isPlayTextAnime = true;
-                _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
+                _itemStar.SetStar(_getItemList[_getItemIndex].Rank);
                 _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
                 Utility.ChangeImagePivot(_getItemImage);
-                _getItemSound = _getItemList[_getItemIndex].GachaItemRank == Rank.Unique || _getItemList[_getItemIndex].GachaItemRank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
+                _getItemSound = _getItemList[_getItemIndex].Rank == Rank.Unique || _getItemList[_getItemIndex].Rank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
                 PlayGetItemSound();
                 _gachaItemName.SetText(string.Empty);
                 _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.08f, Ease.Constant).OnComplete(() => _isPlayTextAnime = false);
@@ -329,7 +340,7 @@ public class UIItemGacha : MonoBehaviour
 
 
 
-    private void OnSingleGachaButtonClicked()
+    public override void OnSingleGachaButtonClicked()
     {
 
         if(UserInfo.IsDiaValid(1))
@@ -337,7 +348,7 @@ public class UIItemGacha : MonoBehaviour
             _getItemList.Clear();
             _getItemIndex = 0;
 
-            GachaItemData item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
+            GachaItemData item = (GachaItemData)ItemManager.Instance.GetRandomGachaData(_itemDataList);
             _getItemList.Add(item);
             UserInfo.GiveGachaItem(item);
 
@@ -351,11 +362,10 @@ public class UIItemGacha : MonoBehaviour
         {
             PopupManager.Instance.ShowTextLackDia();
         }
-
     }
 
 
-    private void OnTenGachaButtonClicked()
+    public override void OnTenGachaButtonClicked()
     {
         if(UserInfo.IsDiaValid(10))
         {
@@ -366,7 +376,7 @@ public class UIItemGacha : MonoBehaviour
             int i = 0;
             while (i < 11)
             {
-                item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
+                item = (GachaItemData)ItemManager.Instance.GetRandomGachaData(_itemDataList);
 
                 // if (!UserInfo.CanAddMoreItems(item))
                 //     continue;

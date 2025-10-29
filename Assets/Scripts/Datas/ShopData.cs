@@ -1,19 +1,13 @@
-using UnityEngine;
 
-public class ShopData : BasicData
-{
-    [Space]
-    [Header("ShopData")]
+public interface ShopData
+{ 
+    public string Id { get; }
+    public string Name { get; }
+    public SalesLocationType SalesLocationType { get; }
 
-    [SerializeField] protected SalesLocationType _salesLocationType;
-    public SalesLocationType SalesLocationType => _salesLocationType;
+    public MoneyType MoneyType { get; }
 
-    [SerializeField] protected MoneyType _moneyType;
-    public MoneyType MoneyType => _moneyType;
+    public int BuyScore { get; }
 
-    [SerializeField] protected int _buyScore;
-    public int BuyScore => _buyScore;
-
-    [SerializeField] protected int _buyPrice;
-    public int BuyPrice => _buyPrice;
+    public int BuyPrice { get; }
 }

@@ -1201,6 +1201,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE30:
                 int dailyClearCount = UserInfo.GetClearDailyChallengeCount();
+                DebugLog.Log($"{((Type30ChallengeData)data).Id} {dailyClearCount} / {_dailyChallengeDataDic.Count - 1}");
                 return GetChallengeAchievementRate(dailyClearCount, _dailyChallengeDataDic.Count - 1);
 
             case ChallengeType.TYPE31:
@@ -1235,7 +1236,6 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE37:
                 Type37ChallengeData data37 = (Type37ChallengeData)data;
                 int weeklyCustomerCount = UserInfo.WeeklyCumulativeCustomerCount;
-                DebugLog.Log(GetChallengeAchievementRate(weeklyCustomerCount, data37.Count));
                 return GetChallengeAchievementRate(weeklyCustomerCount, data37.Count);
 
             case ChallengeType.TYPE38:
@@ -1317,7 +1317,7 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE08:
                 Type08ChallengeData data08 = (Type08ChallengeData)data;
                 long socre = UserInfo.Score;
-                return $"{socre} / {data08.Rank}";
+                return $"{Utility.ConvertToMoney(socre)} / {Utility.ConvertToMoney(data08.Rank)}";
 
             case ChallengeType.TYPE09:
                 Type09ChallengeData data09 = (Type09ChallengeData)data;
@@ -1332,7 +1332,7 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE11:
                 Type11ChallengeData data11 = (Type11ChallengeData)data;
                 long moneyCount = UserInfo.TotalAddMoney;
-                return $"{moneyCount} / {data11.MoneyCount}";
+                return $"{Utility.ConvertToMoney(moneyCount)} / {Utility.ConvertToMoney(data11.MoneyCount)}";
 
             case ChallengeType.TYPE12:
                 Type12ChallengeData data12 = (Type12ChallengeData)data;
@@ -1446,6 +1446,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE30:
                 int dailyClearCount = UserInfo.GetClearDailyChallengeCount();
+                DebugLog.Log($"{((Type30ChallengeData)data).Id} {dailyClearCount} / {_dailyChallengeDataDic.Count - 1}");
                 return $"{dailyClearCount} / {_dailyChallengeDataDic.Count - 1}";
 
             case ChallengeType.TYPE31:
@@ -1456,7 +1457,7 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE32:
                 Type32ChallengeData data32 = (Type32ChallengeData)data;
                 long dailyAddMoney = UserInfo.DailyAddMoney;
-                return $"{dailyAddMoney} / {data32.Count}";
+                return $"{Utility.ConvertToMoney(dailyAddMoney)} / {Utility.ConvertToMoney(data32.Count)}";
 
             case ChallengeType.TYPE33:
                 Type33ChallengeData data33 = (Type33ChallengeData)data;
@@ -1485,7 +1486,7 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE38:
                 Type38ChallengeData data38 = (Type38ChallengeData)data;
                 long weeklyAddMoney = UserInfo.WeeklyAddMoney;
-                return $"{weeklyAddMoney} / {data38.Count}";
+                return $"{Utility.ConvertToMoney(weeklyAddMoney)} / {Utility.ConvertToMoney(data38.Count)}";
 
             case ChallengeType.TYPE39:
                 Type39ChallengeData data39 = (Type39ChallengeData)data;
@@ -3897,55 +3898,50 @@ public class ChallengeManager : MonoBehaviour
             return null; // 이미 존재하면 생성하지 않음
         }
 
-        // CSV 규칙에 따른 목표 계산
-        long nextGoal;
-        int scoreReward, coinReward;
+        // CSV 규칙에 따른 목표 계산: 10000 × 1.2^(n-1) (천 단위 반올림)
+        float rawGoal = 10000 * Mathf.Pow(1.2f, nextLevel - 1);
+        long nextGoal = (long)(Mathf.Round(rawGoal / 1000f) * 1000); // 천 단위 반올림
         
-        if (nextLevel <= 50)
+        // 다음 단계 목표치 계산 (천 단위 반올림)
+        float rawNextGoal = 10000 * Mathf.Pow(1.2f, nextLevel);
+        long nextLevelGoal = (long)(Mathf.Round(rawNextGoal / 1000f) * 1000); // 천 단위 반올림
+        
+        // 보상 계산
+        long currentReq = nextGoal;
+        long nextReq = nextLevelGoal;
+        long reqDifference = nextReq - currentReq;
+        
+        // 평점 보상: 최소(0.3×Req(n), 내림천단위(0.05×(Req(n+1)-Req(n))))
+        long scoreOption1 = (long)(currentReq * 0.3f);
+        long scoreOption2 = (long)(reqDifference * 0.05f);
+        
+        // 내림 처리 (1~29단계: 100단위, 30단계 이상: 1000단위)
+        if (nextLevel <= 29)
         {
-            // 1~50: 목표치 = 10,000 × 현재 단계(n)
-            nextGoal = 10000 * nextLevel;
-            
-            // 다음 단계 목표치 계산
-            long nextLevelGoal = 10000 * (nextLevel + 1);
-            
-            // 다음 단계 증가분 계산
-            long increaseAmount = nextLevelGoal - nextGoal;
-            
-            // 보상 계산: 다음 단계 증가분 기준
-            scoreReward = Mathf.RoundToInt((increaseAmount * 0.15f) / 100) * 100;
-            coinReward = Mathf.RoundToInt((increaseAmount * 0.3f) / 100) * 100;
-        }
-        else if (nextLevel <= 100)
-        {
-            // 51~100: 목표치 = 500,000 × (1.2)^(n-50)
-            nextGoal = (long)(500000 * Mathf.Pow(1.2f, nextLevel - 50));
-            
-            // 다음 단계 목표치 계산
-            long nextLevelGoal = (long)(500000 * Mathf.Pow(1.2f, (nextLevel + 1) - 50));
-            
-            // 다음 단계 증가분 계산
-            long increaseAmount = nextLevelGoal - nextGoal;
-            
-            // 보상 계산: 다음 단계 증가분의 10%
-            scoreReward = 0; // 51단계 이후는 평점 보상 없음
-            coinReward = Mathf.RoundToInt((increaseAmount * 0.1f) / 100) * 100;
+            scoreOption2 = (scoreOption2 / 100) * 100; // 100단위 내림
         }
         else
         {
-            // 100~: 계속 지수적 증가
-            nextGoal = (long)(500000 * Mathf.Pow(1.2f, nextLevel - 50));
-            
-            // 다음 단계 목표치 계산
-            long nextLevelGoal = (long)(500000 * Mathf.Pow(1.2f, (nextLevel + 1) - 50));
-            
-            // 다음 단계 증가분 계산
-            long increaseAmount = nextLevelGoal - nextGoal;
-            
-            // 보상 계산
-            scoreReward = Mathf.RoundToInt((increaseAmount * 0.05f) / 100) * 100;
-            coinReward = Mathf.RoundToInt((increaseAmount * 0.1f) / 100) * 100;
+            scoreOption2 = (scoreOption2 / 1000) * 1000; // 1000단위 내림
         }
+        
+        int scoreReward = Mathf.Max(1, (int)Mathf.Min(scoreOption1, scoreOption2));
+        
+        // 코인 보상: 최소(0.5×Req(n), 내림천단위(0.20×(Req(n+1)-Req(n))))
+        long coinOption1 = (long)(currentReq * 0.5f);
+        long coinOption2 = (long)(reqDifference * 0.20f);
+        
+        // 내림 처리 (1~29단계: 100단위, 30단계 이상: 1000단위)
+        if (nextLevel <= 29)
+        {
+            coinOption2 = (coinOption2 / 100) * 100; // 100단위 내림
+        }
+        else
+        {
+            coinOption2 = (coinOption2 / 1000) * 1000; // 1000단위 내림
+        }
+        
+        int coinReward = Mathf.Max(100, (int)Mathf.Min(coinOption1, coinOption2));
 
         Type11ChallengeData newData = new Type11ChallengeData(
             Challenges.AllTime,
@@ -4009,8 +4005,10 @@ public class ChallengeManager : MonoBehaviour
         
         // CSV 규칙에 따른 보상 계산
         int nextLevelGoal = (nextLevel + 1) * 100;
-        int scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.15f) / 100) * 100;
-        int coinReward = Mathf.RoundToInt((nextGoal * 0.3f) / 100) * 100;
+        
+        // 보상 계산: 다음 단계 목표치 기준 (다음 단계증가 요구 필요개수)
+        int scoreReward = Mathf.Max(1, Mathf.RoundToInt(nextLevelGoal * 0.15f));
+        int coinReward = Mathf.Max(100, Mathf.RoundToInt((nextLevelGoal * 0.3f) / 100) * 100);
 
         Type09ChallengeData data = new Type09ChallengeData(
             Challenges.AllTime,
@@ -4069,66 +4067,34 @@ public class ChallengeManager : MonoBehaviour
             return null; // 이미 존재하면 생성하지 않음
         }
 
-        // CSV 규칙에 따른 목표 계산
-        int nextGoal;
-        if (nextLevel <= 8)
-        {
-            // 1~8: 50 × 단계(n)
-            nextGoal = 50 * nextLevel;
-        }
-        else if (nextLevel <= 13)
-        {
-            // 9~13: 50(n+1) + 50(n-9) = 50n + 50 + 50(n-9) = 100n + 50 - 450 = 100n - 400
-            nextGoal = 50 * (nextLevel + 1) + 50 * (nextLevel - 9);
-        }
-        else if (nextLevel <= 31)
-        {
-            // 14~31: 500n - 6000
-            nextGoal = 500 * nextLevel - 6000;
-        }
-        else if (nextLevel <= 41)
-        {
-            // 32~41: 10000(n-31)
-            nextGoal = 10000 * (nextLevel - 31);
-        }
-        else
-        {
-            // 42~: 100000(n-41)
-            nextGoal = 100000 * (nextLevel - 41);
-        }
+        // CSV 규칙에 따른 목표 계산: 100 × 1.2^(n-1) (100 단위 반올림)
+        float rawGoal = 100 * Mathf.Pow(1.2f, nextLevel - 1);
+        int nextGoal = (int)(Mathf.Round(rawGoal / 100f) * 100); // 100 단위 반올림
 
-        // CSV 규칙에 따른 보상 계산 (평점 업적은 코인만 보상)
-        int coinReward;
-        if (nextLevel <= 8)
+        // 다음 단계 목표치 계산 (100 단위 반올림)
+        float rawNextGoal = 100 * Mathf.Pow(1.2f, nextLevel);
+        int nextLevelGoal = (int)(Mathf.Round(rawNextGoal / 100f) * 100); // 100 단위 반올림
+        
+        // 보상 계산
+        int currentReq = nextGoal;
+        int nextReq = nextLevelGoal;
+        int reqDifference = nextReq - currentReq;
+        
+        // 코인 보상: 최소(0.5×Req(n), 내림단위(0.50×(Req(n+1)-Req(n))))
+        int coinOption1 = (int)(currentReq * 0.5f);
+        int coinOption2 = (int)(reqDifference * 0.50f);
+        
+        // 내림 처리 (1~29단계: 100단위, 30단계 이상: 1000단위)
+        if (nextLevel <= 29)
         {
-            // 1~8: 0.8 × 다음단계증가요구필요개수
-            int nextLevelGoal = 50 * (nextLevel + 1);
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.8f) / 100) * 100;
-        }
-        else if (nextLevel <= 13)
-        {
-            // 9~13: 0.6 × 다음단계증가요구필요개수
-            int nextLevelGoal = 50 * (nextLevel + 2) + 50 * (nextLevel - 8);
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.6f) / 100) * 100;
-        }
-        else if (nextLevel <= 31)
-        {
-            // 14~31: 0.5 × 다음단계증가요구필요개수
-            int nextLevelGoal = 500 * (nextLevel + 1) - 6000;
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.5f) / 100) * 100;
-        }
-        else if (nextLevel <= 41)
-        {
-            // 32~41: 0.4 × 다음단계증가요구필요개수
-            int nextLevelGoal = 10000 * (nextLevel + 1 - 31);
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.4f) / 100) * 100;
+            coinOption2 = (coinOption2 / 100) * 100; // 100단위 내림
         }
         else
         {
-            // 42~: 0.3 × 다음단계증가요구필요개수
-            int nextLevelGoal = 100000 * (nextLevel + 1 - 41);
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.3f) / 100) * 100;
+            coinOption2 = (coinOption2 / 1000) * 1000; // 1000단위 내림
         }
+        
+        int coinReward = Mathf.Max(100, Mathf.Min(coinOption1, coinOption2));
 
         Type08ChallengeData data = new Type08ChallengeData(
             Challenges.AllTime,

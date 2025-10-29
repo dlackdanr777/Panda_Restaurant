@@ -17,14 +17,14 @@ MonoBehaviour:
   _name: "\uC591\uC544\uCE58"
   _id: STAFF19
   _description: 
+  _skill: {fileID: 11400000, guid: 67fad8354daa0194fbbcf5833b9ebdca, type: 2}
+  _idleSprites: []
+  _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
   _buyScore: 5400
   _buyPrice: 1300000
-  _skill: {fileID: 11400000, guid: 67fad8354daa0194fbbcf5833b9ebdca, type: 2}
-  _idleSprites: []
-  _animatorController: {fileID: 0}
-  _speed: 6
+  _speed: 5.5
   _backSprite: {fileID: 21300000, guid: c5549e3ea83af8e40b3d698f298064c5, type: 3}
   _handSprite: {fileID: 21300000, guid: 8ff51aa31a4f0a74e8ae4dd72b3a83be, type: 3}
   _handOffset: {x: 0, y: 0.588}

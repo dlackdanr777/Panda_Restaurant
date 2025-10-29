@@ -17,14 +17,14 @@ MonoBehaviour:
   _name: "\uBE44\uBE44"
   _id: STAFF24
   _description: 
+  _skill: {fileID: 11400000, guid: 829f6ba2388631644919520e82a9de3c, type: 2}
+  _idleSprites: []
+  _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
   _buyScore: 6300
   _buyPrice: 1990000
-  _skill: {fileID: 11400000, guid: 829f6ba2388631644919520e82a9de3c, type: 2}
-  _idleSprites: []
-  _animatorController: {fileID: 0}
-  _speed: 9
+  _speed: 5
   _cleanerLevelData:
   - _upgradeMinScore: 9450
     _upgradeMoneyData:

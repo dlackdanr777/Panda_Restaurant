@@ -188,7 +188,7 @@ public class UIChallenge : MobileUIView
                 if (dia.anchoredPosition.y < 0)
                     height *= -1;
 
-                dia.TweenJump(_uiMoney.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                dia.TweenJump(_uiDia.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
                 {
                     ObjectPoolManager.Instance.DespawnUIDia(dia);
                     _uiDia.StartAnime();

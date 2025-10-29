@@ -18,10 +18,6 @@ MonoBehaviour:
   _id: STAFF28
   _description: "\uC9C0\uC9C0\uC758 \uB3D9\uC0DD\n\uC190\uB2D8\uC5D0\uAC8C\uB294
     \uC0C1\uB0E5\uD558\uC9C0\uB9CC \uC624\uBE60\uB9CC \uBCF4\uBA74 \uD654\uAC00 \uB098\uB294\uB4EF..."
-  _salesLocationType: 0
-  _moneyType: 0
-  _buyScore: 8200
-  _buyPrice: 2800000
   _skill: {fileID: 11400000, guid: 1198ffabfe31de2448c9245682a23efc, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: 54b4444c8af32fc4fba56f53fc5046da, type: 3}
@@ -32,7 +28,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: a33c02a6c7244a0419bd2fa445528e11, type: 3}
   - {fileID: 21300000, guid: 54b4444c8af32fc4fba56f53fc5046da, type: 3}
   _animatorController: {fileID: 0}
-  _speed: 10
+  _salesLocationType: 0
+  _moneyType: 0
+  _buyScore: 8200
+  _buyPrice: 2800000
+  _speed: 12
   _waiterLevelData:
   - _upgradeMinScore: 12300
     _upgradeMoneyData:
