@@ -1060,6 +1060,7 @@ public class StageInfo
     public void SetMaxSinkBowlCount(ERestaurantFloorType floor, int maxBowlCount)
     {
         int floorIndex = (int)floor;
+        maxBowlCount = Mathf.Max(6, maxBowlCount);
         _saveKitchenDatas[floorIndex].SetMaxSinkBowlCount(maxBowlCount);
         OnChangeMaxSinkBowlHandler?.Invoke();
     }

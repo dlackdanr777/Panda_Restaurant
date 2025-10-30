@@ -106,8 +106,9 @@ public class SpecialCustomer : Customer
         if (_touchCoroutine != null)
             StopCoroutine(_touchCoroutine);
         _touchCoroutine = StartCoroutine(OnTouchRoutine());
-
-        UserInfo.AddMoney(_touchAddMoney);
+        
+        int calculatedMoney = CaculateAddMoney();
+        UserInfo.AddMoney(calculatedMoney);
         _feverSystem?.AddFeverGauge();
         SoundManager.Instance.PlayEffectAudio(EffectType.None, _goldSound);
         if (_touchCount <= 0)
@@ -125,6 +126,47 @@ public class SpecialCustomer : Customer
             _onCompleted?.Invoke(this);
             return;
         }
+    }
+
+
+    private int CaculateAddMoney()
+    {
+        if (!(_customerData is SpecialCustomerData))
+            return 0;
+
+        SpecialCustomerData specialData = (SpecialCustomerData)_customerData;
+        int R = UserInfo.Score; // 현재 평점
+        
+        //국왕 진
+        if (_customerData.Id.Contains("CUSTOMER78"))
+        {
+            // R이 1000 미만이면 드랍 0
+            int d = (R >= 1000)
+                ? (int)(
+                    Mathf.Floor(
+                        100.0f * Mathf.Pow(1.10f, Mathf.Floor((R - 1000) / 3000.0f))
+                        / 10.0f
+                    ) * 10.0f
+                )
+                : 0;
+            return d;
+        }
+        //여왕 레아
+        else if (_customerData.Id.Contains("CUSTOMER79"))
+        {
+            // R이 5000 미만이면 드랍 0
+            int d = (R >= 5000)
+                ? (int)(
+                    Mathf.Floor(
+                        500.0f * Mathf.Pow(1.50f, Mathf.Floor((R - 5000) / 5000.0f))
+                        / 10.0f
+                    ) * 10.0f
+                )
+                : 0;
+            return d;
+        }
+        
+        return specialData.TouchAddMoney;
     }
 
 

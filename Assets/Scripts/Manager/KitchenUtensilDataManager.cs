@@ -240,7 +240,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
 
             MoneyType moneyType = row[7].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
             int price = int.Parse(row[8].Trim());
-            int maxSinkBowlCount = 6;
+            int maxSinkBowlCount = int.Parse(row[9].Trim());
 
             UnlockConditionType unlockType = row.Length < 11 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[10].Trim());
             string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[11].Trim();

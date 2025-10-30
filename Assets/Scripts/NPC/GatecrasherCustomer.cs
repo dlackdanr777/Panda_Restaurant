@@ -377,39 +377,76 @@ public class GatecrasherCustomer : Customer
         int maxIndex = (int)TableType.Table2 + 1;
         float time = 0;
 
+        // 첫 번째 단계 - Table2까지만 영향
         while(time < _activeDuration * 0.5f)
         {
             tableDataList = tableManager.GetTableDataList(_visitFloor);
             for (int i = 0; i < maxIndex; ++i)
             {
-
                 if (tableDataList[i].CurrentCustomer != null)
                 {
-                    tableDataList[i].CurrentCustomer.StartAnger();
-                    tableManager.AngerExitCustomer(tableDataList[i]);
-                    continue;
+                    NormalCustomerData normalCustomerData = (NormalCustomerData)tableDataList[i].CurrentCustomer.CustomerData;
+                    CustomerTendencyType tendency = normalCustomerData.TendencyType;
+                    
+                    // 성향에 따른 대기 시간 설정
+                    float waitTime = GetAngerWaitTime(tendency);
+                    
+                    // 개별 손님마다 코루틴 시작
+                    StartCoroutine(DelayedAngerCustomer(tableDataList[i], tableManager, waitTime));
                 }
             }
             time += 1;
             yield return YieldCache.WaitForSeconds(1);
         }
 
+        // 두 번째 단계 - 모든 테이블 영향
         maxIndex = (int)TableType.Length;
         while(time < _activeDuration)
         {
             tableDataList = tableManager.GetTableDataList(_visitFloor);
             for (int i = 0; i < maxIndex; ++i)
             {
-
                 if (tableDataList[i].CurrentCustomer != null)
                 {
-                    tableDataList[i].CurrentCustomer.StartAnger();
-                    tableManager.AngerExitCustomer(tableDataList[i]);
-                    continue;
+                    NormalCustomerData normalCustomerData = (NormalCustomerData)tableDataList[i].CurrentCustomer.CustomerData;
+                    CustomerTendencyType tendency = normalCustomerData.TendencyType;
+                    
+                    // 성향에 따른 대기 시간 설정
+                    float waitTime = GetAngerWaitTime(tendency);
+                    
+                    // 개별 손님마다 코루틴 시작
+                    StartCoroutine(DelayedAngerCustomer(tableDataList[i], tableManager, waitTime));
                 }
             }
             time += 1;
             yield return YieldCache.WaitForSeconds(1);
+        }
+    }
+
+    private float GetAngerWaitTime(CustomerTendencyType tendency)
+    {
+        switch (tendency)
+        {
+            case CustomerTendencyType.Normal:
+                return 4f; // 보통 손님 4초
+            case CustomerTendencyType.Sensitive:
+                return 3f; // 예민 손님 3초
+            case CustomerTendencyType.HighlySensitive:
+                return 2f; // 초예민 손님 2초
+            default:
+                return 4f; // 기본값
+        }
+    }
+
+    private IEnumerator DelayedAngerCustomer(TableData tableData, TableManager tableManager, float delay)
+    {
+        yield return YieldCache.WaitForSeconds(delay);
+        
+        // 손님이 여전히 해당 테이블에 있는지 확인
+        if (tableData.CurrentCustomer != null && !_isEndEvent)
+        {
+            tableData.CurrentCustomer.StartAnger();
+            tableManager.AngerExitCustomer(tableData);
         }
     }
 

@@ -153,10 +153,9 @@ public class Staff : MonoBehaviour
         SetStaffState(EStaffState.None);
     }
 
-    public void SetAlpha(float alpha)
+    public virtual void SetAlpha(float alpha)
     {
-        Color nowColor = _spriteRenderer.color;
-        _spriteRenderer.color = new Color(nowColor.r, nowColor.g, nowColor.b, alpha);
+        _spriteRenderer.color = new Color(_spriteRenderer.color.r, _spriteRenderer.color.g, _spriteRenderer.color.b, alpha);
     }
 
     public virtual void TweenAlpha(float alpha, float duration, Ease ease, Action onCompleted = null)
@@ -412,7 +411,7 @@ public class Staff : MonoBehaviour
             type = RestaurantType.Kitchen;
         TweenAlpha(0, 0.4f, Ease.Constant, () => _moveObj.transform.position = _tableManager.GetDoorPos(type, _targetPos));
         yield return YieldCache.WaitForSeconds(1f);
-        TweenAlpha(1, 0.4f, Ease.Constant);
+        TweenAlpha(1, 0.4f, Ease.Constant, () => SetAlpha(1f));
         yield return YieldCache.WaitForSeconds(1f);
         _skillEffect.color = Color.white;
         _spriteRenderer.color = Color.white;

@@ -491,13 +491,13 @@ public static class Utility
         if (data is SpecialCustomerData)
         {
             SpecialCustomerData specialCustomerData = (SpecialCustomerData)data;
-            description = $"{specialCustomerData.ActiveDuration}초 동안 돌아다니며 \n터치시 <color={ColorToHex(GetColor(ColorType.Positive))}>{specialCustomerData.TouchAddMoney}</color>골드를 획득한다";
+            description = $"{specialCustomerData.ActiveDuration}초 동안 돌아다니며 \n터치시 골드를 획득한다";
         }
 
         else if (data is GatecrasherCustomerData)
         {
             GatecrasherCustomerData gatecrasherCustomerData = (GatecrasherCustomerData)data;
-            description = data is GatecrasherCustomer1Data ? $"{gatecrasherCustomerData.ActiveDuration}초 동안 돌아다니며 동전을 훔친다" : $"{gatecrasherCustomerData.ActiveDuration}초 동안 고성방가로 손님들을 쫒아낸다";
+            description = data is GatecrasherCustomer1Data ? $"{gatecrasherCustomerData.ActiveDuration}초 동안 돌아다니며 골드를 훔친다" : $"{gatecrasherCustomerData.ActiveDuration}초 동안 고성방가로 손님들을 쫒아낸다";
         }
 
         else if (data is NormalCustomerData)

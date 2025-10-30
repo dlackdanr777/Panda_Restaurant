@@ -43,10 +43,6 @@ public class FirstTutorial : MonoBehaviour
         _mainSceneUI.gameObject.SetActive(false);
         _punchHole.gameObject.SetActive(false);
         UserInfo.IsTutorialStart = true;
-        UserInfo.GiveFurniture(EStage.Stage1, "WALLPAPER01");
-        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "WALLPAPER01");
-        UserInfo.GiveFurniture(EStage.Stage1, "WALLPAPER01");
-        UserInfo.SetEquipFurniture(EStage.Stage1, ERestaurantFloorType.Floor1, "WALLPAPER01");
 
         UserInfo.GiveStaff(EStage.Stage1, "STAFF11");
         UserInfo.SetEquipStaff(EStage.Stage1, ERestaurantFloorType.Floor1, EquipStaffType.Marketer, "STAFF11");

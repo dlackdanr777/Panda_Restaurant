@@ -82,11 +82,23 @@ public class StaffWaiter : Staff
         _foodRenderer.gameObject.SetActive(false);
     }
 
+    public override void SetAlpha(float alpha)
+    {
+        _bottomBowl.color = new Color(_bottomBowl.color.r, _bottomBowl.color.g, _bottomBowl.color.b, alpha);
+        _topBowl.color = new Color(_topBowl.color.r, _topBowl.color.g, _topBowl.color.b, alpha);
+        base.SetAlpha(alpha);
+    }
+
     public override void TweenAlpha(float alpha, float duration, Ease ease, Action onCompleted = null)
     {
+        _bottomBowl.TweenStop();
+        _topBowl.TweenStop();
         _bottomBowl.TweenAlpha(alpha, duration, ease);
         _topBowl.TweenAlpha(alpha, duration, ease);
-        base.TweenAlpha(alpha, duration, ease, onCompleted);
+        base.TweenAlpha(alpha, duration, ease, () => {
+            onCompleted?.Invoke();
+            SetAlpha(alpha);
+    });
     }
 
     protected override void StairsMove(List<Vector2> nodeList)

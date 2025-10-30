@@ -21,7 +21,7 @@ public class SaveKitchenData
 
     public void SetMaxSinkBowlCount(int count)
     {
-        MaxSinkBowlCount = Mathf.Clamp(count, 1, 30);
+        MaxSinkBowlCount = Mathf.Clamp(count, 6, 30);
     }
 
     public void SetSinkBowlCount(int count)
