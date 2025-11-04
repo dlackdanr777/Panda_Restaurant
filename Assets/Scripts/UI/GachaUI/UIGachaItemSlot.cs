@@ -27,8 +27,13 @@ public class UIGachaItemSlot : RecyclableScrollSlot<GachaData>
 
         _data = data;
         gameObject.SetActive(true);
-        _itemImage.sprite = data.Sprite;
-        Utility.ChangeImagePivot(_itemImage);
+        _itemImage.sprite = data.ThumbnailSprite;
         _uiStar.SetStar(data.Rank);
+
+    }
+    
+    public void ChangeImagePivot()
+    {
+        Utility.ChangeImagePivot(_itemImage);
     }
 }

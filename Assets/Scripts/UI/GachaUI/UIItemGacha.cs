@@ -261,7 +261,7 @@ public class UIItemGacha : GachaMachineParent
                 _skipButton.gameObject.SetActive(false);
                 _getItemIndex = 0;
                 _isCapsuleColorChanged = true;
-
+                _uiGacha.SetActiveGachaMachine(true);
                 for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
                 {
                     _getItemSlotList[i].gameObject.SetActive(false);
@@ -345,6 +345,9 @@ public class UIItemGacha : GachaMachineParent
 
         if(UserInfo.IsDiaValid(1))
         {
+            _uiGacha.SetActiveGachaMachine(false);
+            SetActiveGachaMachine(true);
+        
             _getItemList.Clear();
             _getItemIndex = 0;
 
@@ -369,6 +372,9 @@ public class UIItemGacha : GachaMachineParent
     {
         if(UserInfo.IsDiaValid(10))
         {
+            _uiGacha.SetActiveGachaMachine(false);
+            SetActiveGachaMachine(true);
+
             _getItemList.Clear();
             _getItemIndex = 0;
 
@@ -432,6 +438,7 @@ public class UIItemGacha : GachaMachineParent
         {
             _getItemSlotList[i].UpdateSlot(_getItemList[i]);
             _getItemSlotList[i].gameObject.SetActive(true);
+            _getItemSlotList[i].ChangeImagePivot();
         }
         _getItemIndex = _getItemList.Count - 1;
     }

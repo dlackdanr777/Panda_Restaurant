@@ -82,12 +82,15 @@ public class KitchenUtensilGroup: MonoBehaviour
 
     public void Init()
     {   
-        _burnerDatas = new KitchenBurnerData[(int)KitchenUtensilType.Burner5 + 1];
-        _burnerTimers = new UIBurnerTimer[(int)KitchenUtensilType.Burner5 + 1];
-        for (int i = 0, cnt = (int)KitchenUtensilType.Burner5 + 1; i < cnt; ++i)
+        // Burner는 5개 (Burner1~Burner5, enum 인덱스 0~4)
+        int burnerCount = (int)KitchenUtensilType.Burner5 + 1;
+        _burnerDatas = new KitchenBurnerData[burnerCount];
+        _burnerTimers = new UIBurnerTimer[burnerCount];
+        
+        // Burner 데이터 초기화
+        for (int i = 0; i < burnerCount; ++i)
         {
             _burnerDatas[i] = new KitchenBurnerData();
-            _burnerDatas[i].SetKitchenUtensil(_kitchenUtensils[i]);
             _burnerTimers[i] = Instantiate(_burnerTimerPrefab, _burnerTimerParent);
             _burnerTimers[i].Init();
             _burnerTimers[i].SetWorldTransform(_burnerTimerTrs[i]);
@@ -96,28 +99,34 @@ public class KitchenUtensilGroup: MonoBehaviour
             _smokeAnimations[i].gameObject.SetActive(false);
         }
 
+        // KitchenUtensil 딕셔너리 초기화
         for (int i = 0, cnt = (int)KitchenUtensilType.Length; i < cnt; ++i)
         {
             _kitchenUtensilDic.Add((KitchenUtensilType)i, new List<KitchenUtensil>());
+        }
 
-            if((KitchenUtensilType)i >= KitchenUtensilType.Burner1 && (KitchenUtensilType)i <= KitchenUtensilType.Burner5)
+        // 모든 KitchenUtensil 초기화 및 딕셔너리에 추가
+        for (int i = 0, cnt = _kitchenUtensils.Length; i < cnt; ++i)
+        {
+            _kitchenUtensils[i].Init(_floorType);
+            KitchenUtensilType type = _kitchenUtensils[i].Type;
+            _kitchenUtensilDic[type].Add(_kitchenUtensils[i]);
+            
+            // Burner 타입이면 BurnerKitchenUtensil 리스트에 추가 및 데이터 설정
+            if(type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5)
             {
                 BurnerKitchenUtensil burner = (BurnerKitchenUtensil)_kitchenUtensils[i];
                 if (burner != null)
                 {
+                    int burnerIndex = (int)type; // Burner1=0, Burner2=1, ..., Burner5=4
                     _burnerKitchenUtensils.Add(burner);
-                    burner.SetData(_burnerDatas[i]);
+                    _burnerDatas[burnerIndex].SetKitchenUtensil(_kitchenUtensils[i]);
+                    burner.SetData(_burnerDatas[burnerIndex]);
                 }
             }
         }
 
-        for (int i = 0, cnt = _kitchenUtensils.Length; i < cnt; ++i)
-        {
-            _kitchenUtensils[i].Init(_floorType);
-            _kitchenUtensilDic[_kitchenUtensils[i].Type].Add(_kitchenUtensils[i]);
-        }
-
-        _burnerDatas[0].IsUsable = true;
+        _burnerDatas[0].IsUsable = true; // Burner1은 기본으로 사용 가능
         _sinkKitchenUtensil = (SinkKitchenUtensil)_kitchenUtensilDic[KitchenUtensilType.Sink][0];
         UpdateKitchen();
         UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEvent;
@@ -129,7 +138,6 @@ public class KitchenUtensilGroup: MonoBehaviour
         if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, _floorType))
             return;
 
-
         for (int i = 0, cnt = _burnerDatas.Length; i < cnt; ++i)
         {
             if (!_burnerDatas[i].IsUsable)
@@ -138,23 +146,31 @@ public class KitchenUtensilGroup: MonoBehaviour
             if (_burnerDatas[i].Time <= 0)
             {
                 DequeueFood(i);
+                continue; // return이 아닌 continue로 변경 - 다음 버너도 체크해야 함
             }
 
-            else
+            // 요리 중인 데이터가 있는 경우
+            if (!_burnerDatas[i].CookingData.IsDefault())
             {
                 if (_burnerDatas[i].CookingData.TableData == null || _burnerDatas[i].CookingData.TableData.CurrentCustomer == null)
                 {
                     DequeueFood(i);
-                    return;
+                    continue; // return이 아닌 continue로 변경
                 }
 
                 float subTime = Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, _burnerDatas[i].CookingData.FoodData.FoodType) * (1 + _burnerDatas[i].AddCookSpeedMul * 0.01f * (_burnerDatas[i].UseStaff != null ? _burnerDatas[i].UseStaff.SpeedMul : 1));
-                subTime *= _burnerKitchenUtensils[i].CookSpeedMul;
+                
+                // _burnerKitchenUtensils 리스트의 인덱스가 i와 일치하는지 확인
+                if (i < _burnerKitchenUtensils.Count && _burnerKitchenUtensils[i] != null)
+                {
+                    subTime *= _burnerKitchenUtensils[i].CookSpeedMul;
+                }
+                
                 if (_burnerDatas[i].FoodType == _burnerDatas[i].CookingData.FoodData.FoodType)
                 {
                     subTime *= 1.1f; // 같은 음식 타입일 때는 10% 더 빠르게 요리
-                    //DebugLog.Log("같은 음식 타입: " + _burnerDatas[i].FoodType + " - " + _burnerDatas[i].CookingData.FoodData.FoodType);
                 }
+                
                 _burnerDatas[i].Time -= subTime;
                 _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookTime));
             }
@@ -199,26 +215,31 @@ public class KitchenUtensilGroup: MonoBehaviour
         {
             type = (KitchenUtensilType)i;
             equipData = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, _floorType, type);
+            
+            // 해당 타입의 모든 KitchenUtensil에 데이터 설정
             foreach (KitchenUtensil data in _kitchenUtensilDic[type])
             {
                 data.SetData(equipData);
             }
 
+            // Burner 타입인 경우 추가 처리
             if (type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5)
             {
-                _burnerDatas[i].SetFoodType(equipData != null ? equipData.FoodType : FoodType.None);
-            }
-
-            if (type >= KitchenUtensilType.Burner2 && type <= KitchenUtensilType.Burner5)
-            {
-                if (equipData != null)
+                int burnerIndex = (int)type; // Burner1=0, Burner2=1, ..., Burner5=4
+                _burnerDatas[burnerIndex].SetFoodType(equipData != null ? equipData.FoodType : FoodType.None);
+                
+                // Burner2~5는 장비가 있어야 사용 가능
+                if (type >= KitchenUtensilType.Burner2)
                 {
-                    _burnerDatas[i].IsUsable = true;
-                }
-                else
-                {
-                    _burnerDatas[i].IsUsable = false;
-                    SetDefalutBurnerData(i);
+                    if (equipData != null)
+                    {
+                        _burnerDatas[burnerIndex].IsUsable = true;
+                    }
+                    else
+                    {
+                        _burnerDatas[burnerIndex].IsUsable = false;
+                        SetDefalutBurnerData(burnerIndex);
+                    }
                 }
             }
         }
@@ -232,28 +253,31 @@ public class KitchenUtensilGroup: MonoBehaviour
             return;
 
         KitchenUtensilData equipData = UserInfo.GetEquipKitchenUtensil(UserInfo.CurrentStage, floorType, type);
+        
+        // 해당 타입의 모든 KitchenUtensil에 데이터 설정
         foreach (KitchenUtensil data in _kitchenUtensilDic[type])
         {
             data.SetData(equipData);
         }
-        int index = (int)type;
 
+        // Burner 타입인 경우에만 처리
         if (type >= KitchenUtensilType.Burner1 && type <= KitchenUtensilType.Burner5)
         {
-            _burnerDatas[index].SetFoodType(equipData != null ? equipData.FoodType : FoodType.None);
-        }
+            int burnerIndex = (int)type; // Burner1=0, Burner2=1, ..., Burner5=4
+            _burnerDatas[burnerIndex].SetFoodType(equipData != null ? equipData.FoodType : FoodType.None);
 
-        if (type >= KitchenUtensilType.Burner2 && type <= KitchenUtensilType.Burner5)
-        {
-
-            if (equipData == null)
+            // Burner2~5는 장비가 있어야 사용 가능
+            if (type >= KitchenUtensilType.Burner2)
             {
-                _burnerDatas[index].IsUsable = false;
-                SetDefalutBurnerData(index);
-            }
-            else
-            {
-                _burnerDatas[index].IsUsable = true;
+                if (equipData == null)
+                {
+                    _burnerDatas[burnerIndex].IsUsable = false;
+                    SetDefalutBurnerData(burnerIndex);
+                }
+                else
+                {
+                    _burnerDatas[burnerIndex].IsUsable = true;
+                }
             }
         }
         

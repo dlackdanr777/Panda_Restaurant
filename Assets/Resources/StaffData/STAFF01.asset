@@ -32,27 +32,27 @@ MonoBehaviour:
   _moneyType: 0
   _buyScore: 10
   _buyPrice: 4500
-  _speed: 3.5
+  _speed: 2
   _waiterLevelData:
   - _upgradeMinScore: 20
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 6750
+      _price: 6700
     _addSpeed: 0
   - _upgradeMinScore: 40
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 10125
+      _price: 10000
     _addSpeed: 0.5
   - _upgradeMinScore: 60
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 15187
+      _price: 15000
     _addSpeed: 1
   - _upgradeMinScore: 80
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 22780
+      _price: 25000
     _addSpeed: 1.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:

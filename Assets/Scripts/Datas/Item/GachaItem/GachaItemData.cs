@@ -35,5 +35,6 @@ public class GachaItemData : GachaData
         _upgradeValue = upgradeValue;
         _maxLevel = maxLevel;
         _sprite = sprite;
+        _thumbnailSprite = sprite;
     }
 }

@@ -24,7 +24,7 @@ MonoBehaviour:
   _moneyType: 0
   _buyScore: 50
   _buyPrice: 50000
-  _speed: 5
+  _speed: 4
   _waiterLevelData:
   - _upgradeMinScore: 80
     _upgradeMoneyData:

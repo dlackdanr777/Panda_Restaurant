@@ -206,11 +206,13 @@ public class UISkinGacha : GachaMachineParent
                 _currentStep = 1;
 
                 _uiGacha.SetActiveUIComponents(true);
+                _uiGacha.SetActiveGachaMachine(true);
                 _singleButton.gameObject.SetActive(true);
                 _tenButton.gameObject.SetActive(true);
                 _screenButton.gameObject.SetActive(false);
                 _gachaItemName.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
+
                 _getItemIndex = 0;
                 _isCapsuleColorChanged = true;
 
@@ -246,7 +248,7 @@ public class UISkinGacha : GachaMachineParent
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
 
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
+                _getItemImage.sprite = _getItemList[_getItemIndex].ThumbnailSprite;
                 CapsuleSetSibilingIndex(11);
                 break;
 
@@ -259,7 +261,7 @@ public class UISkinGacha : GachaMachineParent
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
 
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
+                _getItemImage.sprite = _getItemList[_getItemIndex].ThumbnailSprite;
                 CapsuleSetSibilingIndex(11);
                 break;
 
@@ -274,7 +276,7 @@ public class UISkinGacha : GachaMachineParent
 
                 _isPlayTextAnime = true;
                 _itemStar.SetStar(_getItemList[_getItemIndex].Rank);
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
+                _getItemImage.sprite = _getItemList[_getItemIndex].ThumbnailSprite;
                 _getItemSound = _getItemList[_getItemIndex].Rank == Rank.Unique || _getItemList[_getItemIndex].Rank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
                 PlayGetItemSound();
                 _gachaItemName.SetText(string.Empty);
@@ -294,6 +296,9 @@ public class UISkinGacha : GachaMachineParent
 
         if(UserInfo.IsDiaValid(1))
         {
+            _uiGacha.SetActiveGachaMachine(false);
+            SetActiveGachaMachine(true);
+        
             _getItemList.Clear();
             _getItemIndex = 0;
 
@@ -318,6 +323,9 @@ public class UISkinGacha : GachaMachineParent
     {
         if(UserInfo.IsDiaValid(10))
         {
+            _uiGacha.SetActiveGachaMachine(false);
+            SetActiveGachaMachine(true);
+        
             _getItemList.Clear();
             _getItemIndex = 0;
 
@@ -365,7 +373,7 @@ public class UISkinGacha : GachaMachineParent
     {
         _gachaMacineAnimator.SetTrigger("SkipButtonClick");
         CapsuleSetSibilingIndex(12);
-        _getItemImage.sprite = _getItemList[_getItemList.Count - 1].Sprite;
+        _getItemImage.sprite = _getItemList[_getItemList.Count - 1].ThumbnailSprite;
         _gachaItemName.TweenStop();
         _gachaItemName.SetText(_getItemList[_getItemList.Count - 1].Name);
         CapsuleSetSibilingIndex(9);
