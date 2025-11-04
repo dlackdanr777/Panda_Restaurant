@@ -215,7 +215,7 @@ public class UIMainChallenge : MobileUIView
             coin.SetParent(_coinParent);
 
 
-            coin.TweenAnchoredPosition(coinPos, 0.45f, Ease.InQuad).OnComplete(() =>
+            coin.TweenAnchoredPosition(coinPos, 0.3f, Ease.InQuad).OnComplete(() =>
             {
                 float height = 100;
                 if (coin.anchoredPosition.y < 0)
@@ -229,7 +229,7 @@ public class UIMainChallenge : MobileUIView
                     ObjectPoolManager.Instance.DespawnUICoin(coin);
                     _uiMoney.StartAnime();
                 });
-                time += 0.05f;
+                time += 0.03f;
             });
         }
     }
@@ -250,7 +250,7 @@ public class UIMainChallenge : MobileUIView
             Vector2 coinPos = UnityEngine.Random.insideUnitCircle * 300;
             coinPos = _coinPos.anchoredPosition + coinPos;
             dia.SetParent(_coinParent);
-            dia.TweenAnchoredPosition(coinPos, 0.45f, Ease.InQuad).OnComplete(() =>
+            dia.TweenAnchoredPosition(coinPos, 0.3f, Ease.InQuad).OnComplete(() =>
             {
                 float height = 100;
                 if (dia.anchoredPosition.y < 0)
@@ -264,7 +264,7 @@ public class UIMainChallenge : MobileUIView
                     ObjectPoolManager.Instance.DespawnUIDia(dia);
                     _uiDia.StartAnime();
                 });
-                time += 0.05f;
+                time += 0.03f;
             });
         }
     }

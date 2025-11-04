@@ -94,6 +94,7 @@ public class MainScene : MonoBehaviour
     {
         PlayMainMusic();
         OnUIEvent();
+        
         if (UserInfo.CheckNoAttendance())
         {
             SequentialCommandManager.Instance.EnqueueCommand(() =>  _uiMainNav.Push("UIAttendance"), () => _uiMainNav.ViewsVisibleStateCheck(), () => !_uiMainNav.CheckActiveView("UIAttendance"), 1, 0.5f);

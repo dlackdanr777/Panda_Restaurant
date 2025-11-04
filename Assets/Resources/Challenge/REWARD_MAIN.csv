@@ -1,8 +1,8 @@
 ﻿ID,퀘스트 타입,바로가기 타입,설명,타입 필요 id,필요 개수,보상 타입,보상
-MainReward01,TYPE05,ShortCut05,초보 매니저 포야 고용하기,STAFF06,1,코인,100
-MainReward02,TYPE05,ShortCut05,심드렁한 도치 고용하기,STAFF16,1,코인,1000
+MainReward01,TYPE03,ShortCut06,판다 주먹밥 레시피 배우기,FOOD01,1,코인,100
+MainReward02,TYPE05,ShortCut05,초보 매니저 포야 고용하기,STAFF06,1,코인,100
 MainReward03,TYPE01,ShortCut14,우든 클래식 테이블 1 구매,TABLE01_01,1,코인 ,100
-MainReward04,TYPE03,ShortCut06,판다 주먹밥 레시피 배우기,FOOD01,1,코인,100
+MainReward04,TYPE05,ShortCut05,심드렁한 도치 고용하기,STAFF16,1,코인,1000
 MainReward05,TYPE01,ShortCut15,우든 클래식 테이블 2 구매,TABLE01_02,1,코인 ,500
 MainReward06,TYPE05,ShortCut05,종업원 지지 고용하기,STAFF01,1,코인,800
 MainReward07,TYPE02,ShortCut25,드럼통 화로 1 구매,COOKER01_01,0,코인,100

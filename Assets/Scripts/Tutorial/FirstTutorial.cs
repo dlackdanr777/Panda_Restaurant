@@ -46,7 +46,7 @@ public class FirstTutorial : MonoBehaviour
 
         UserInfo.GiveStaff(EStage.Stage1, "STAFF11");
         UserInfo.SetEquipStaff(EStage.Stage1, ERestaurantFloorType.Floor1, EquipStaffType.Marketer, "STAFF11");
-
+        UserInfo.AddMoney(5000);
         SequentialCommandManager.Instance.EnqueueCommand(StartTutorial, () => true, () => UserInfo.IsFirstTutorialClear, 0, 0.3f);
     }
 
