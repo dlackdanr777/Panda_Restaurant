@@ -80,10 +80,12 @@ public class UIStaffSkin : MonoBehaviour
 
         if (_currentSkinData == null)
         {
+            _skinImage.color = Utility.GetColor(ColorType.None);
             SetViewData(customerData.Name, customerData.Description, Utility.GetStaffSkinEffectDescription(null), customerData.ThumbnailSprite);
         }
         else
         {
+            _skinImage.color = UserInfo.IsGiveStaffSkin(_currentSkinData.Id) ? Utility.GetColor(ColorType.None) : Utility.GetColor(ColorType.NoGive);
             SetViewData(_currentSkinData.Name, _currentSkinData.Description, Utility.GetStaffSkinEffectDescription(_currentSkinData), _currentSkinData.ThumbnailSprite);
         }
 
@@ -109,8 +111,8 @@ public class UIStaffSkin : MonoBehaviour
     public void Show(StaffData customerData)
     {
         gameObject.SetActive(true);
+        _customerData = customerData;
         _currentSkinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, customerData);
-        SetSkinList(customerData);
         UpdateUI();
     }
 
@@ -148,6 +150,13 @@ public class UIStaffSkin : MonoBehaviour
             _nameText.text = customerData.Name;
             _descriptionText.text = customerData.Description;
             _effectText.text = Utility.GetCustomerSkinEffectDescription(null);
+
+            if(!UserInfo.IsGiveStaff(UserInfo.CurrentStage, customerData.Id))
+            {
+                _equipButton.gameObject.SetActive(false);
+                _usingButton.gameObject.SetActive(false);
+                return;
+            }
             _equipButton.gameObject.SetActive(equipSkinData != null);
             _usingButton.gameObject.SetActive(equipSkinData == null);
             return;
@@ -157,11 +166,27 @@ public class UIStaffSkin : MonoBehaviour
         _currentSkinData = skinData;
         if (_currentSkinData == null)
         {
+            _skinImage.color = Utility.GetColor(ColorType.None);
             SetViewData(customerData.Name, customerData.Description, Utility.GetStaffSkinEffectDescription(null), customerData.ThumbnailSprite);
         }
         else
         {
+            _skinImage.color = UserInfo.IsGiveStaffSkin(_currentSkinData.Id) ? Utility.GetColor(ColorType.None) : Utility.GetColor(ColorType.NoGive);
             SetViewData(_currentSkinData.Name, _currentSkinData.Description, Utility.GetStaffSkinEffectDescription(_currentSkinData), _currentSkinData.ThumbnailSprite);
+        }
+
+        if(!UserInfo.IsGiveStaff(UserInfo.CurrentStage, _customerData.Id))
+        {
+            _equipButton.gameObject.SetActive(false);
+            _usingButton.gameObject.SetActive(false);
+            return;
+        }
+
+        else if(_currentSkinData != null && !UserInfo.IsGiveStaffSkin(_currentSkinData.Id))
+        {
+            _equipButton.gameObject.SetActive(false);
+            _usingButton.gameObject.SetActive(false);
+            return;
         }
 
         if (equipSkinData != null && equipSkinData.Id == skinData.Id)
@@ -199,7 +224,6 @@ public class UIStaffSkin : MonoBehaviour
 
     private void HideAllSlots()
     {
-        DebugLog.Log("Hide All Slots");
         foreach (var slot in _slotList)
         {
             slot.gameObject.SetActive(false);

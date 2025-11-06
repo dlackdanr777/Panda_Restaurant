@@ -14,14 +14,13 @@ public class UISkinGacha : GachaMachineParent
     [Header("Components")]
     [SerializeField] private ScrollingImage _scrollImage;
     [SerializeField] private Animator _gachaMacineAnimator;
-    [SerializeField] private UIImageAndText _gachaItemName;
     [SerializeField] private Button _screenButton;
     [SerializeField] private Button _singleButton;
     public Button SingleButton => _singleButton;
     [SerializeField] private Button _tenButton;
     [SerializeField] private Button _skipButton;
     [SerializeField] private Image _getItemImage;
-    [SerializeField] private UIItemStar _itemStar;
+    [SerializeField] private UISkinGachaCard _skinGachaCard;
 
     [Space]
     [Header("Slot Options")]
@@ -75,7 +74,7 @@ public class UISkinGacha : GachaMachineParent
         _skipButton.onClick.AddListener(OnSkipButtonClicked);
 
         SetStep(1);
-        _gachaItemName.gameObject.SetActive(false);
+        _skinGachaCard.gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
@@ -94,7 +93,7 @@ public class UISkinGacha : GachaMachineParent
         _uiGacha.SetActiveUIComponents(true);
         _scrollImage.gameObject.SetActive(true);
         _screenButton.gameObject.SetActive(false);
-        _gachaItemName.gameObject.SetActive(false);
+        _skinGachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
         CapsuleSetSibilingIndex(1);
 
@@ -114,7 +113,7 @@ public class UISkinGacha : GachaMachineParent
         _uiGacha.SetActiveUIComponents(false);
         _scrollImage.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
-        _gachaItemName.gameObject.SetActive(false);
+        _skinGachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
 
         _gachaMacineAnimator.enabled = false;
@@ -170,8 +169,8 @@ public class UISkinGacha : GachaMachineParent
 
                 if(_isPlayTextAnime)
                 {
-                    _gachaItemName.TweenStop();
-                    _gachaItemName.SetText(_getItemList[_getItemIndex - 1].Name);
+                    _skinGachaCard.TweenStop();
+                    _skinGachaCard.SetData(_getItemList[_getItemIndex - 1]);
                     _isPlayTextAnime = false;
                     _screenTouchWaitTime = 0.5f;
                     return;
@@ -210,7 +209,7 @@ public class UISkinGacha : GachaMachineParent
                 _singleButton.gameObject.SetActive(true);
                 _tenButton.gameObject.SetActive(true);
                 _screenButton.gameObject.SetActive(false);
-                _gachaItemName.gameObject.SetActive(false);
+                _skinGachaCard.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
 
                 _getItemIndex = 0;
@@ -231,7 +230,7 @@ public class UISkinGacha : GachaMachineParent
                 _uiGacha.SetActiveUIComponents(false);
                 _singleButton.gameObject.SetActive(false);
                 _tenButton.gameObject.SetActive(false);
-                _gachaItemName.gameObject.SetActive(false);
+                _skinGachaCard.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
@@ -240,10 +239,11 @@ public class UISkinGacha : GachaMachineParent
 
             case 3:
                 _currentStep = 3;
-               
+
                 _screenButton.gameObject.SetActive(true);
+                _getItemImage.gameObject.SetActive(true);
                 _skipButton.gameObject.SetActive(true);
-                _gachaItemName.gameObject.SetActive(false);
+                _skinGachaCard.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
@@ -256,7 +256,8 @@ public class UISkinGacha : GachaMachineParent
                 _currentStep = 4;
 
                 _skipButton.gameObject.SetActive(true);
-                _gachaItemName.gameObject.SetActive(false);
+                _getItemImage.gameObject.SetActive(true);
+                _skinGachaCard.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
@@ -268,19 +269,18 @@ public class UISkinGacha : GachaMachineParent
             case 5:
                 _currentStep = 5;
 
-                _gachaItemName.gameObject.SetActive(true);
+                _skinGachaCard.gameObject.SetActive(true);
                 _getItemSlotFrame.gameObject.SetActive(true);
                 _skipButton.gameObject.SetActive(false);
+                _getItemImage.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 _isCapsuleColorChanged = true;
 
                 _isPlayTextAnime = true;
-                _itemStar.SetStar(_getItemList[_getItemIndex].Rank);
+                _skinGachaCard.SetData(_getItemList[_getItemIndex]);
                 _getItemImage.sprite = _getItemList[_getItemIndex].ThumbnailSprite;
                 _getItemSound = _getItemList[_getItemIndex].Rank == Rank.Unique || _getItemList[_getItemIndex].Rank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
                 PlayGetItemSound();
-                _gachaItemName.SetText(string.Empty);
-                _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.08f, Ease.Constant).OnComplete(() => _isPlayTextAnime = false);
                 _getItemIndex++;
                 CapsuleSetSibilingIndex(11);
                 break;
@@ -371,11 +371,11 @@ public class UISkinGacha : GachaMachineParent
 
     private void OnSkipButtonClicked()
     {
+        _skinGachaCard.gameObject.SetActive(true);
+        _getItemImage.gameObject.SetActive(false);
         _gachaMacineAnimator.SetTrigger("SkipButtonClick");
         CapsuleSetSibilingIndex(12);
-        _getItemImage.sprite = _getItemList[_getItemList.Count - 1].ThumbnailSprite;
-        _gachaItemName.TweenStop();
-        _gachaItemName.SetText(_getItemList[_getItemList.Count - 1].Name);
+        _skinGachaCard.SetData(_getItemList[_getItemList.Count - 1]);
         CapsuleSetSibilingIndex(9);
 
         _getItemSlotFrame.gameObject.SetActive(true);

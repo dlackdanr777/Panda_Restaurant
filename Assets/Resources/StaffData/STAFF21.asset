@@ -30,8 +30,8 @@ MonoBehaviour:
   _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
-  _buyScore: 550
-  _buyPrice: 30000
+  _buyScore: 100
+  _buyPrice: 15000
   _speed: 2
   _cleanerLevelData:
   - _upgradeMinScore: 825

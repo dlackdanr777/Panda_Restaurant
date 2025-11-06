@@ -3911,9 +3911,9 @@ public class ChallengeManager : MonoBehaviour
         long nextReq = nextLevelGoal;
         long reqDifference = nextReq - currentReq;
         
-        // 평점 보상: 최소(0.3×Req(n), 내림천단위(0.05×(Req(n+1)-Req(n))))
-        long scoreOption1 = (long)(currentReq * 0.3f);
-        long scoreOption2 = (long)(reqDifference * 0.05f);
+        // 평점 보상: 최소(0.1×Req(n), 내림천단위(0.02×(Req(n+1)-Req(n))))
+        long scoreOption1 = (long)(currentReq * 0.1f);
+        long scoreOption2 = (long)(reqDifference * 0.02f);
         
         // 내림 처리 (1~29단계: 100단위, 30단계 이상: 1000단위)
         if (nextLevel <= 29)

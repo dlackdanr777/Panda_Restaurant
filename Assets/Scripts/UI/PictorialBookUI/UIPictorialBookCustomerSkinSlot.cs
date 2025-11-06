@@ -42,6 +42,7 @@ public class UIPictorialBookCustomerSkinSlot : MonoBehaviour
 
         _customerData = customerData;
         _skinImage.sprite = customerData.Sprite;
+        _skinImage.color = Utility.GetColor(ColorType.None);
         _nameText.text = customerData.Name;
     }
 
@@ -66,6 +67,7 @@ public class UIPictorialBookCustomerSkinSlot : MonoBehaviour
         _customerData = customerData;
         _skinData = skinData;
         _skinImage.sprite = skinData.Sprite;
+        _skinImage.color = UserInfo.IsGiveCustomerSkin(skinData.Id) ? Utility.GetColor(ColorType.None) : Utility.GetColor(ColorType.NoGive);
         _nameText.text = skinData.Name;
 
         switch (skinData.Rank)

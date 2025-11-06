@@ -15,15 +15,14 @@ public class UIStaffSkinSlot : MonoBehaviour
     private StaffSkinData _skinData;
     private StaffData _customerData;
 
-    private Vector2 _originalSize;
-    private Vector3 _originalPosition;
-
     private Action<StaffData, StaffSkinData> _onClickAction;
 
     public void Init(Action<StaffData, StaffSkinData> onClickAction)
     {
         _onClickAction = onClickAction;
         _button.onClick.AddListener(OnButtonClicked);
+
+        UserInfo.OnGiveStaffSkinHandler += OnGiveStaffSkin;
     }
 
     private void SetData(StaffData data)
@@ -38,6 +37,7 @@ public class UIStaffSkinSlot : MonoBehaviour
 
         _customerData = data;
         _skinImage.sprite = data.ThumbnailSprite;
+        _skinImage.color = Utility.GetColor(ColorType.None);
         _nameText.text = data.Name;
     }
 
@@ -61,6 +61,7 @@ public class UIStaffSkinSlot : MonoBehaviour
         _customerData = data;
         _skinData = skinData;
         _skinImage.sprite = skinData.ThumbnailSprite;
+        _skinImage.color = UserInfo.IsGiveStaffSkin(data.Id) ? Utility.GetColor(ColorType.None) : Utility.GetColor(ColorType.NoGive);
         _nameText.text = skinData.Name;
 
         switch (skinData.Rank)
@@ -89,5 +90,18 @@ public class UIStaffSkinSlot : MonoBehaviour
     private void OnButtonClicked()
     {
         _onClickAction?.Invoke(_customerData, _skinData);
+    }
+
+    private void OnGiveStaffSkin()
+    {
+        if (_customerData == null && !gameObject.activeInHierarchy)
+            return;
+
+        SetData(_customerData, _skinData);
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnGiveStaffSkinHandler -= OnGiveStaffSkin;
     }
 }

@@ -209,8 +209,6 @@ public class WaiterAction : IStaffAction
         if (servingTableData == null)
             return;
             
-
-        DebugLog.Log("웨이터 서빙 액션 시작1: " + servingTableData.TableFurniture.name);
         if (0.5f < Mathf.Abs(servingTableData.transform.position.y - _waiter.transform.position.y) && !_notEqulsFloor)
         {
             _waiter.SetStaffState(EStaffState.None);
@@ -219,7 +217,6 @@ public class WaiterAction : IStaffAction
             _isUsed = false;
             return;
         }
-        DebugLog.Log("웨이터 서빙 액션 시작2: " + servingTableData.TableFurniture.name);
         _waiter.BowlSetActive(false);
         float speedMul = _waiter.SpeedMul;
         _isNoAction = false;
@@ -299,10 +296,7 @@ public class WaiterAction : IStaffAction
                     return;
                 }
 
-                _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall, _waiter.transform.position), 0, () =>
-                {
-
-                    _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
+                _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
                     {
                         if (orderTableData.CurrentCustomer == null || orderTableData.TableState != ETableState.UseStaff)
                         {
@@ -318,7 +312,6 @@ public class WaiterAction : IStaffAction
                             SetNoneState();
                         });
                     });
-                });
             });
 
         });

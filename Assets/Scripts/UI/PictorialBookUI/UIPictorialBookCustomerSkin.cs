@@ -83,10 +83,12 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         CustomerTendencyType tendencyType = _customerData.TendencyType;
         if (_currentSkinData == null)
         {
+            _skinImage.color = Utility.GetColor(ColorType.None);
             SetViewData(customerData.Name, customerData.Description, Utility.GetCustomerSkinEffectDescription(null), tendencyType, customerData.Sprite);
         }
         else
         {
+            _skinImage.color = UserInfo.IsGiveCustomerSkin(_currentSkinData.Id) ? Utility.GetColor(ColorType.None) : Utility.GetColor(ColorType.NoGive);
             SetViewData(_currentSkinData.Name, _currentSkinData.Description, Utility.GetCustomerSkinEffectDescription(_currentSkinData), tendencyType, _currentSkinData.Sprite);
         }
 
@@ -114,8 +116,8 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
     {
         _skinSrollView.gameObject.SetActive(true);
         gameObject.SetActive(true);
+        _customerData = customerData;
         _currentSkinData = UserInfo.GetEquipCustomerSkin(customerData);
-        SetSkinList(customerData);
         UpdateUI();
     }
 
@@ -151,6 +153,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         {
             _currentSkinData = null;
             _skinImage.sprite = customerData.Sprite;
+            _skinImage.color = Utility.GetColor(ColorType.None);
             _nameText.text = customerData.Name;
             _descriptionText.text = customerData.Description;
             _effectText.text = Utility.GetCustomerSkinEffectDescription(null);
@@ -165,11 +168,21 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         CustomerTendencyType tendencyType = _customerData.TendencyType;
         if (_currentSkinData == null)
         {
+            _skinImage.color = Utility.GetColor(ColorType.None);
             SetViewData(customerData.Name, customerData.Description, Utility.GetCustomerSkinEffectDescription(null), tendencyType, customerData.Sprite);
         }
         else
         {
+            _skinImage.color = UserInfo.IsGiveCustomerSkin(_currentSkinData.Id) ? Utility.GetColor(ColorType.None) : Utility.GetColor(ColorType.NoGive);
             SetViewData(_currentSkinData.Name, _currentSkinData.Description, Utility.GetCustomerSkinEffectDescription(_currentSkinData), tendencyType, _currentSkinData.Sprite);
+        }
+
+        UpdateFrame(customerData, skinData);
+        if(_currentSkinData != null && !UserInfo.IsGiveCustomerSkin(_currentSkinData.Id))
+        {
+            _equipButton.gameObject.SetActive(false);
+            _usingButton.gameObject.SetActive(false);
+            return;
         }
 
         if (equipSkinData != null && equipSkinData.Id == skinData.Id)
@@ -182,8 +195,6 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             _equipButton.gameObject.SetActive(true);
             _usingButton.gameObject.SetActive(false);
         }
-
-        UpdateFrame(customerData, skinData);
     }
 
 
@@ -259,6 +270,5 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
             }
         }
         SetScaleImage(1.3f, 12);
-
     }
 }
