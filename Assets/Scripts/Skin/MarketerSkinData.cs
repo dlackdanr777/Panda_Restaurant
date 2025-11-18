@@ -15,7 +15,7 @@ public class MarketerSkinData : StaffSkinData
     public Sprite[] ParticleSprites => _particleSprites;
 
 
-    public MarketerSkinData(Sprite sprite, Sprite thumbnail, Sprite[] idleSprites, string id, string name, string description, int addScore, int addTipPerMinute, Rank rank, SalesLocationType salesLocationType, int buyPrice, StaffSkinUpgradeType upgradeType, float upgradeValue, string equipId, Sprite actionSprite, Sprite leftHand, Sprite rightHand, Sprite[] particleSprites) : base(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, rank, salesLocationType, buyPrice, upgradeType, upgradeValue, equipId)
+    public MarketerSkinData(Sprite sprite, Sprite thumbnail, Sprite[] idleSprites, string id, string name, string description, int addScore, int addTipPerMinute, Rank rank, SalesLocationType salesLocationType, int buyPrice, StaffSkinUpgradeType upgradeType, float upgradeValue, string equipId, int duplicationToken, Sprite actionSprite, Sprite leftHand, Sprite rightHand, Sprite[] particleSprites) : base(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, rank, salesLocationType, buyPrice, upgradeType, upgradeValue, equipId, duplicationToken)
     {
         _animationSprite = actionSprite;
         _leftHandSprite = leftHand;

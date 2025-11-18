@@ -144,6 +144,33 @@ namespace Muks.Tween
             return TweenMoveY(target.transform, targetPosY, duration, ease);
         }
 
+        /// <summary>목표 값으로 지속 시간동안 오브젝트를 이동시키는 함수</summary>
+        public static TweenData TweenLocalMove(this Component target, Vector3 targetPosition, float duration, Ease ease = Ease.Constant)
+        {
+            if (!target.TryGetComponent(out TweenLocalTransformMove tweenData))
+                tweenData = target.gameObject.AddComponent<TweenLocalTransformMove>();
+
+            TweenDataSequence tmpData = new TweenDataSequence(targetPosition, duration, ease, null);
+
+            tweenData.IsLoop = false;
+            tweenData.AddDataSequence(tmpData);
+
+            if (!tweenData.enabled)
+            {
+                tweenData.ElapsedDuration = 0;
+                tweenData.TotalDuration = 0;
+                tweenData.enabled = true;
+            }
+
+            return tweenData;
+        }
+
+        /// <summary>목표 값으로 지속 시간동안 오브젝트를 이동시키는 함수</summary>
+        public static TweenData TweenLocalMove(this GameObject target, Vector3 targetPosition, float duration, Ease ease = Ease.Constant)
+        {
+            return TweenLocalMove(target.transform, targetPosition, duration, ease);
+        }
+
 
         /// <summary>목표 값으로 지속 시간동안 오브젝트를 회전시키는 함수</summary>
         public static TweenData TweenRotate(this Component target, Vector3 targetEulerAngles, float duration, Ease ease = Ease.Constant)

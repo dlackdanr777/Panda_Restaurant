@@ -420,7 +420,7 @@ public static class Utility
                 break;
 
             case GuardData:
-                description = $"진상 손님 퇴치(퇴치 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                description = $"진상 손님 퇴치(퇴치 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>s)";
                 break;
 
             case ChefData:
@@ -457,7 +457,7 @@ public static class Utility
                 break;
 
             case GuardData:
-                description = $"진상 손님 퇴치(퇴치 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>)";
+                description = $"진상 손님 퇴치(퇴치 속도 <color={ColorToHex(GetColor(ColorType.Positive))}>{data.GetActionValue(level)}</color>s)";
                 break;
 
             case ChefData:

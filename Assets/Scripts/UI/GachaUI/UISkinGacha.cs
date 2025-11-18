@@ -20,12 +20,12 @@ public class UISkinGacha : GachaMachineParent
     [SerializeField] private Button _tenButton;
     [SerializeField] private Button _skipButton;
     [SerializeField] private Image _getItemImage;
-    [SerializeField] private UISkinGachaCard _skinGachaCard;
+    [SerializeField] private UIGachaCard _skinGachaCard;
 
     [Space]
     [Header("Slot Options")]
     [SerializeField] private Transform _getItemSlotFrame;
-    [SerializeField] private UIGachaItemSlot _slotPrefab;
+    [SerializeField] private UIGachaCardSlot _slotPrefab;
 
     [Space]
     [Header("Capsule Options")]
@@ -38,9 +38,9 @@ public class UISkinGacha : GachaMachineParent
     [Header("Audios")]
     [SerializeField] private AudioClip _getNormalItemSound;
     [SerializeField] private AudioClip _getSpecialItemSound;
+    [SerializeField] private AudioSource _gachaSound;
 
-
-    private List<UIGachaItemSlot> _getItemSlotList = new List<UIGachaItemSlot>();
+    private List<UIGachaCardSlot> _getItemSlotList = new List<UIGachaCardSlot>();
     private List<SkinData> _getItemList = new List<SkinData>();
     private float _screenTouchWaitTime;
     private int _currentStep;
@@ -50,9 +50,15 @@ public class UISkinGacha : GachaMachineParent
     private AudioClip _getItemSound;
 
 
+
     public void PlayGetItemSound()
     {
         SoundManager.Instance.PlayEffectAudio(EffectType.UI, _getItemSound);
+    }
+
+    public void PlayGachaSound()
+    {
+        _gachaSound.Play();
     }
 
     public override void Init(UIGacha uiGacha)
@@ -63,7 +69,7 @@ public class UISkinGacha : GachaMachineParent
 
         for (int i = 0; i < 10; ++i)
         {
-            UIGachaItemSlot slot = Instantiate(_slotPrefab, _getItemSlotFrame);
+            UIGachaCardSlot slot = Instantiate(_slotPrefab, _getItemSlotFrame);
             _getItemSlotList.Add(slot);
             slot.gameObject.SetActive(false);
         }
@@ -145,11 +151,12 @@ public class UISkinGacha : GachaMachineParent
             DebugLog.Log("아직 터치할 수 없습니다.");
             return;
         }
-
+        _gachaSound.Stop();
         switch (_currentStep)
         {
             case 1:
                 _gachaMacineAnimator.SetTrigger("Stop");
+
                 break;
 
             case 2:
@@ -175,18 +182,26 @@ public class UISkinGacha : GachaMachineParent
                     _screenTouchWaitTime = 0.5f;
                     return;
                 }
-
-                SkinData currentItem = _getItemList[_getItemIndex - 1];
-
-                for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
+                if (_getItemList.Count() <= _getItemIndex - 1)
                 {
-                    if (_getItemSlotList[i].gameObject.activeSelf)
-                        continue;
+                    for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
+                    {
+                        if (_getItemSlotList[i].gameObject.activeSelf)
+                            continue;
 
-                    _getItemSlotList[i].gameObject.SetActive(true);
-                    _getItemSlotList[i].UpdateSlot(currentItem);
-                    break;
+                        _getItemSlotList[i].gameObject.SetActive(true);
+                        _getItemSlotList[i].SetData(_getItemList[i]);
+                        break;
+                    }
                 }
+                else
+                {
+                    for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
+                    {
+                        _getItemSlotList[i].gameObject.SetActive(false);
+                    }
+                }
+
                 _gachaMacineAnimator.SetTrigger("Step2Skip");
                 break;
         
@@ -377,7 +392,7 @@ public class UISkinGacha : GachaMachineParent
         CapsuleSetSibilingIndex(12);
         _skinGachaCard.SetData(_getItemList[_getItemList.Count - 1]);
         CapsuleSetSibilingIndex(9);
-
+        _gachaSound.Stop();
         _getItemSlotFrame.gameObject.SetActive(true);
         for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
         {
@@ -386,7 +401,7 @@ public class UISkinGacha : GachaMachineParent
 
         for(int i = 0, cnt = _getItemList.Count - 1; i < cnt; i++)
         {
-            _getItemSlotList[i].UpdateSlot(_getItemList[i]);
+            _getItemSlotList[i].SetData(_getItemList[i]);
             _getItemSlotList[i].gameObject.SetActive(true);
         }
         _getItemIndex = _getItemList.Count - 1;

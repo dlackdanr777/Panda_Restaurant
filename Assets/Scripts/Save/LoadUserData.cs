@@ -44,6 +44,8 @@ public class LoadUserData
     public string LastAttendanceTime;
     public int TotalAttendanceDays;
 
+    public int SkinToken;
+
 
 
     public Dictionary<string, int> GiveRecipeLevelDic = new Dictionary<string, int>();
@@ -131,7 +133,7 @@ public class LoadUserData
 
             LoadCustomerDataList(data);
             LoadStringSet(data, "GiveCustomerSkinList", GiveCustomerSkinSet);
-
+            SkinToken = GetInt("SkinToken");
             LoadTimeData(data);
             foreach (var item in TimeDataDic)
             {

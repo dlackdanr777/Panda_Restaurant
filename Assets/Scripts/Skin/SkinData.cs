@@ -25,4 +25,7 @@ public class SkinData : GachaData, ShopData
 
     protected int _buyPrice;
     public int BuyPrice => _buyPrice;
+
+    protected int _duplicationToken;
+    public int DuplicationToken => _duplicationToken;
 }

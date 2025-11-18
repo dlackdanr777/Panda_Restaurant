@@ -12,7 +12,7 @@ public class StaffSkinData : SkinData
     public RuntimeAnimatorController AnimatorController => _animatorController;
 
 
-    public StaffSkinData(Sprite sprite, Sprite thumbnail, Sprite[] idleSprites, string id, string name, string description, int addScore, int addTipPerMinute, Rank rank, SalesLocationType salesLocationType, int buyPrice, StaffSkinUpgradeType upgradeType, float upgradeValue, string equipId)
+    public StaffSkinData(Sprite sprite, Sprite thumbnail, Sprite[] idleSprites, string id, string name, string description, int addScore, int addTipPerMinute, Rank rank, SalesLocationType salesLocationType, int buyPrice, StaffSkinUpgradeType upgradeType, float upgradeValue, string equipId, int duplicationToken)
     {
         _sprite = sprite;
         _thumbnailSprite = thumbnail;
@@ -29,6 +29,7 @@ public class StaffSkinData : SkinData
         _equipId = equipId;
         _upgradeType = upgradeType;
         _equipId = equipId;
+        _duplicationToken = duplicationToken;
         _animatorController = Resources.Load<RuntimeAnimatorController>("StaffData/Animator/" + id);
     }
 }

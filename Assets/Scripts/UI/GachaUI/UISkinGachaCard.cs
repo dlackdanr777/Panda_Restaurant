@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UISkinGachaCard : MonoBehaviour
+public class UIGachaCard : MonoBehaviour
 {
     [SerializeField] private Image _star1Frame;
     [SerializeField] private Image _star3Frame;
@@ -18,7 +18,7 @@ public class UISkinGachaCard : MonoBehaviour
 
 
 
-    public void SetData(SkinData data)
+    public void SetData(GachaData data)
     {
         if (data == null)
         {
@@ -35,7 +35,7 @@ public class UISkinGachaCard : MonoBehaviour
         _itemStar.SetStar(data.Rank);
     }
     
-    private void SetImage(SkinData data)
+    private void SetImage(GachaData data)
     {
         if (data == null)
         {
@@ -47,69 +47,101 @@ public class UISkinGachaCard : MonoBehaviour
     }
 
 
-    private void SetDescription(SkinData data)
+    private void SetDescription(GachaData data)
     {
         _descriptionText.SetText(data.Description);
     }
 
 
-    private void SetName(SkinData data)
+    private void SetName(GachaData data)
     {
         _nameText.SetText(data.Name);
     }
 
-    private void SetEffect(SkinData data)
+    private void SetEffect(GachaData data)
     {
-        
+        if (data is SkinData)
+        {
+            if (data is StaffSkinData staffSkinData)
+            {
+                _effectText.SetText(Utility.GetStaffSkinEffectDescription(staffSkinData));
+            }
+
+            else if (data is CustomerSkinData customerSkinData)
+            {
+                _effectText.SetText(Utility.GetCustomerSkinEffectDescription(customerSkinData));
+            }
+
+        }
+        else if (data is GachaItemData itemData)
+        {
+            _effectText.SetText(Utility.GetGachaItemEffectDescription(itemData));
+        }
+        else
+        {
+            _effectText.SetText(string.Empty);
+        }
+
     }
 
 
-    private void SetType(SkinData data)
+    private void SetType(GachaData data)
     {
-        if (data is StaffSkinData)
+        if (data is SkinData)
         {
-            StaffData staffData = StaffDataManager.Instance.GetStaffData(data.EquipId);
-
-            if (staffData == null)
+            SkinData skinData = (SkinData)data;
+            if (data is StaffSkinData)
             {
-                DebugLog.LogError("해당 스킨의 스탭 데이터를 찾을 수 없습니다. 스킨ID: " + data.Id);
-                return;
+
+                StaffData staffData = StaffDataManager.Instance.GetStaffData(skinData.EquipId);
+
+                if (staffData == null)
+                {
+                    DebugLog.LogError("해당 스킨의 스탭 데이터를 찾을 수 없습니다. 스킨ID: " + data.Id);
+                    return;
+                }
+
+                string typeStr = Utility.StaffTypeStringConverter(StaffDataManager.Instance.GetStaffGroupType(staffData));
+                _typeText.SetText(typeStr);
             }
 
-            string typeStr = Utility.StaffTypeStringConverter(StaffDataManager.Instance.GetStaffGroupType(staffData));
-            _typeText.SetText(typeStr);
-        }
-
-        else if (data is CustomerSkinData)
-        {
-            CustomerData customerData = CustomerDataManager.Instance.GetCustomerData(data.EquipId);
-
-            if (customerData == null)
+            else if (data is CustomerSkinData)
             {
-                DebugLog.LogError("해당 스킨의 고객 데이터를 찾을 수 없습니다. 스킨ID: " + data.Id);
-                return;
-            }
+                CustomerData customerData = CustomerDataManager.Instance.GetCustomerData(skinData.EquipId);
 
-            string typeStr = "손님";
-            _typeText.SetText(typeStr);
+                if (customerData == null)
+                {
+                    DebugLog.LogError("해당 스킨의 고객 데이터를 찾을 수 없습니다. 스킨ID: " + data.Id);
+                    return;
+                }
+
+                string typeStr = "손님";
+                _typeText.SetText(typeStr);
+            }
         }
+
+        else
+        {
+            _typeText.SetText("아이템");
+        }
+
     }
 
 
-     private void UpdateFrame(SkinData skinData)
+     private void UpdateFrame(GachaData data)
     {
         _star1Frame.gameObject.SetActive(false);
         _star3Frame.gameObject.SetActive(false);
         _star4Frame.gameObject.SetActive(false);
         _star5Frame.gameObject.SetActive(false);
 
-        if (skinData == null)
+        if (data == null)
         {
             _star1Frame.gameObject.SetActive(true);
         }
         else
         {
-            switch (skinData.Rank)
+            switch (data.Rank)
             {
                 case Rank.Normal1:
                 case Rank.Normal2:

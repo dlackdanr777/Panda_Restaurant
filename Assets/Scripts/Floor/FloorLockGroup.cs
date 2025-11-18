@@ -5,6 +5,7 @@ using UnityEngine;
 public class FloorLockGroup : MonoBehaviour
 {
     [SerializeField] private ERestaurantFloorType _floorType;
+    [SerializeField] private string _unlockChallengeId;
 
     [Space]
     [SerializeField] private int _score;
@@ -18,13 +19,16 @@ public class FloorLockGroup : MonoBehaviour
     [SerializeField] private GameObject _tweenTarget;
     [SerializeField] private FloorValueGroup _scoreGroup;
     [SerializeField] private FloorValueGroup _moneyGroup;
+    [SerializeField] private BoxCollider2D _collider2D;
+    [SerializeField] private GameObject _goldIcon;
+    [SerializeField] private GameObject _diaIcon;
 
 
     private void Start()
     {
         CheckFloorLock();
         UserInfo.OnChangeFloorHandler += CheckFloorLock;
-
+        UserInfo.OnClearChallengeHandler += CheckFloorLock;
         _touchEvent.AddDownEvent(OnTouchStart);
         _touchEvent.AddUpEvent(OnTouchEnd);
     }
@@ -34,15 +38,16 @@ public class FloorLockGroup : MonoBehaviour
     private void CheckFloorLock()
     {
         bool isUnlock = UserInfo.IsFloorValid(UserInfo.CurrentStage, _floorType);
+        bool challengeClear = string.IsNullOrEmpty(_unlockChallengeId) || UserInfo.GetIsClearChallenge(_unlockChallengeId);
         _lockObject.SetActive(!isUnlock);
-
+        _collider2D.enabled = challengeClear;
         if (isUnlock)
             return;
 
         _scoreGroup.SetValue(_score, UserInfo.IsScoreValid(_score));
-
-
         _moneyGroup.SetValue(_moneyAmount, _moneyType == MoneyType.Gold ? UserInfo.IsMoneyValid(_moneyAmount) : UserInfo.IsDiaValid(_moneyAmount));
+        _goldIcon.SetActive(_moneyType == MoneyType.Gold);
+        _diaIcon.SetActive(_moneyType == MoneyType.Dia);
     }
 
 
@@ -66,6 +71,7 @@ public class FloorLockGroup : MonoBehaviour
     private void OnDestroy()
     {
         UserInfo.OnChangeFloorHandler -= CheckFloorLock;
+        UserInfo.OnClearChallengeHandler -= CheckFloorLock;
     }
 
 }

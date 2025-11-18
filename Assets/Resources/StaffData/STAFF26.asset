@@ -35,29 +35,29 @@ MonoBehaviour:
   _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
-  _buyScore: 1200
-  _buyPrice: 600000
+  _buyScore: 8000
+  _buyPrice: 2000000
   _speed: 10
   _guardLevelData:
-  - _upgradeMinScore: 1800
+  - _upgradeMinScore: 12000
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 900000
+      _price: 4000000
     _actionTime: 7
-  - _upgradeMinScore: 2400
+  - _upgradeMinScore: 17000
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 1350000
+      _price: 6050000
     _actionTime: 6.5
-  - _upgradeMinScore: 3000
+  - _upgradeMinScore: 21000
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 2025000
+      _price: 9025000
     _actionTime: 6
-  - _upgradeMinScore: 3600
+  - _upgradeMinScore: 25000
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 3037500
+      _price: 12037500
     _actionTime: 5.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:

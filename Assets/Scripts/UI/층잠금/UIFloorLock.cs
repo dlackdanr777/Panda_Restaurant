@@ -12,6 +12,8 @@ public class UIFloorLock : MobileUIView
     [SerializeField] private GameObject _buttonGroup;
     [SerializeField] private Button _okButton;
     [SerializeField] private TextMeshProUGUI _moneyText;
+    [SerializeField] private GameObject _moneyIcon;
+    [SerializeField] private GameObject _diaIcon;
 
 
     [Space]
@@ -71,6 +73,9 @@ public class UIFloorLock : MobileUIView
     {
         _uiNav.Push("UIFloorLock");
         _floorType = floorType;
+        _moneyIcon.SetActive(moneyType == MoneyType.Gold);
+        _diaIcon.SetActive(moneyType == MoneyType.Dia);
+
         if (!UserInfo.IsScoreValid(score))
         {
             _titleText.SetText("평점이 부족합니다,,,");

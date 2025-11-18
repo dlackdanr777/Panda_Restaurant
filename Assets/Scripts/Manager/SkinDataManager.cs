@@ -497,11 +497,13 @@ public class SkinDataManager : MonoBehaviour
             int addScore = Utility.StrToInt(row[4].Trim());
             int addTipPerMinute = Utility.StrToInt(row[5].Trim());
             int rank = Utility.StrToInt(row[6].Trim());
-            SalesLocationType salesLocationType = GetSalesLocationType(row[8].Trim());
+            //SalesLocationType salesLocationType = GetSalesLocationType(row[8].Trim());
+            SalesLocationType salesLocationType = SalesLocationType.None;
             int money = Utility.StrToInt(row[9].Trim());
             StaffSkinUpgradeType upgradeType = GetSkinStaffUpgradeType(row[10].Trim());
             float upgradeValue = Utility.StrToFloat(row[11].Trim());
             string equipTargetId = row[12].Trim();
+            int duplicationToken = Utility.StrToInt(row[13].Trim());
 
             if (!_staffSpriteDic.TryGetValue(id, out Sprite sprite))
             {
@@ -535,7 +537,7 @@ public class SkinDataManager : MonoBehaviour
                     _marketerRightHandSpriteDic.TryGetValue(id, out Sprite rightHand))
                 {
                     Sprite[] particleSprites = _marketerEffectSpriteDic.ContainsKey(id) ? _marketerEffectSpriteDic[id] : null;
-                    skinData = new MarketerSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, actionSprite, leftHand, rightHand, particleSprites);
+                    skinData = new MarketerSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, duplicationToken, actionSprite, leftHand, rightHand, particleSprites);
                 }
                 else
                 {
@@ -544,7 +546,7 @@ public class SkinDataManager : MonoBehaviour
             }
             else
             {
-                skinData = new StaffSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId);
+                skinData = new StaffSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, duplicationToken);
             }
 
 

@@ -61,7 +61,8 @@ public class UIStaffSkinSlot : MonoBehaviour
         _customerData = data;
         _skinData = skinData;
         _skinImage.sprite = skinData.ThumbnailSprite;
-        _skinImage.color = UserInfo.IsGiveStaffSkin(data.Id) ? Utility.GetColor(ColorType.None) : Utility.GetColor(ColorType.NoGive);
+        DebugLog.Log($"Set Skin Slot: {data.Name} - {skinData.Name} {UserInfo.IsGiveStaffSkin(skinData.Id)}");
+        _skinImage.color = UserInfo.IsGiveStaffSkin(skinData.Id) ? Utility.GetColor(ColorType.None) : Utility.GetColor(ColorType.NoGive);
         _nameText.text = skinData.Name;
 
         switch (skinData.Rank)

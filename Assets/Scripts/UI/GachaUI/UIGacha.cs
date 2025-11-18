@@ -4,6 +4,7 @@ using Muks.Tween;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using System;
+using UnityEngine.EventSystems;
 
 public class UIGacha : MobileUIView
 {
@@ -18,6 +19,7 @@ public class UIGacha : MobileUIView
     [SerializeField] private Button _leftButton;
     [SerializeField] private Button _rightButton;
     [SerializeField] private RectTransform _machineParent;
+    [SerializeField] private ScrollRect _scrollRect;
 
     [Space]
     [Header("Animations")]
@@ -44,6 +46,109 @@ public class UIGacha : MobileUIView
         _leftButton.onClick.AddListener(() => SetMachine(-1));
         _rightButton.onClick.AddListener(() => SetMachine(1));
         gameObject.SetActive(false);
+
+        // ScrollRect에 EventTrigger 추가
+        EventTrigger trigger = _scrollRect.gameObject.GetComponent<EventTrigger>();
+        if (trigger == null)
+        {
+            trigger = _scrollRect.gameObject.AddComponent<EventTrigger>();
+        }
+
+        // BeginDrag 이벤트
+        EventTrigger.Entry beginDragEntry = new EventTrigger.Entry();
+        beginDragEntry.eventID = EventTriggerType.BeginDrag;
+        beginDragEntry.callback.AddListener((data) => { OnScrollBeginDrag((PointerEventData)data); });
+        trigger.triggers.Add(beginDragEntry);
+
+        // Drag 이벤트
+        EventTrigger.Entry dragEntry = new EventTrigger.Entry();
+        dragEntry.eventID = EventTriggerType.Drag;
+        dragEntry.callback.AddListener((data) => { OnScrollDrag((PointerEventData)data); });
+        trigger.triggers.Add(dragEntry);
+
+        // EndDrag 이벤트
+        EventTrigger.Entry endDragEntry = new EventTrigger.Entry();
+        endDragEntry.eventID = EventTriggerType.EndDrag;
+        endDragEntry.callback.AddListener((data) => { OnScrollEndDrag((PointerEventData)data); });
+        trigger.triggers.Add(endDragEntry);
+    }
+
+
+    private void OnScrollBeginDrag(PointerEventData eventData)
+    {
+        DebugLog.Log("스크롤 시작");
+        _machineParent.TweenStop();
+        _rightButton.gameObject.SetActive(false);
+        _leftButton.gameObject.SetActive(false);
+
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            _gachaMachines[i].Hide();
+            _gachaMachines[i].TweenStop();
+        }
+    }
+
+    private void OnScrollDrag(PointerEventData eventData)
+    {
+        float currentX = _machineParent.anchoredPosition.x;
+
+        // 각 인덱스 위치까지의 거리 계산
+        float distanceTo0 = Mathf.Abs(currentX - (-440f));
+        float distanceTo1 = Mathf.Abs(currentX - (-1130f));
+
+        // 최대 거리 (두 위치 사이의 거리)
+        float maxDistance = 690f; // |-440 - (-1130)| = 690
+
+        // 0번 머신 크기 계산 (가까울수록 1.0, 멀수록 0.9)
+        float scale0 = Mathf.Lerp(1.0f, 0.8f, Mathf.Clamp01(distanceTo0 / maxDistance));
+        _gachaMachines[0].transform.localScale = Vector3.one * scale0;
+
+        // 1번 머신 크기 계산 (가까울수록 1.0, 멀수록 0.9)
+        float scale1 = Mathf.Lerp(1.0f, 0.8f, Mathf.Clamp01(distanceTo1 / maxDistance));
+        _gachaMachines[1].transform.localScale = Vector3.one * scale1;
+    }
+
+    private void OnScrollEndDrag(PointerEventData eventData)
+    {
+        DebugLog.Log("스크롤 종료");
+
+        float currentX = _machineParent.anchoredPosition.x;
+        int targetIndex = 0;
+        float targetX = -440f;
+
+        // 현재 X 위치에 따라 가장 가까운 인덱스 결정
+        float distanceTo0 = Mathf.Abs(currentX - (-440f));
+        float distanceTo1 = Mathf.Abs(currentX - (-1130f));
+
+        if (distanceTo1 < distanceTo0)
+        {
+            targetIndex = 1;
+            targetX = -1130f;
+        }
+
+        // 목표 위치로 Tween 이동
+        float duration = 0.3f;
+        Vector2 targetPos = new Vector2(targetX, _machineParent.anchoredPosition.y);
+        
+        // 모든 머신 스케일 0.8로
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            _gachaMachines[i].TweenStop();
+            _gachaMachines[i].TweenScale(Vector3.one * 0.8f, duration, Ease.Constant);
+        }
+
+        // 타겟 머신만 1.0으로
+        _gachaMachines[targetIndex].TweenStop();
+        _gachaMachines[targetIndex].TweenScale(Vector3.one, duration, Ease.Constant);
+
+        _machineParent.TweenStop();
+        _machineParent.TweenAnchoredPosition(targetPos, duration, Ease.Constant).OnComplete(() =>
+        {
+            // 이동 완료 후 해당 머신 설정
+            SetMachine(_gachaMachines[targetIndex]);
+            _rightButton.gameObject.SetActive(true);
+            _leftButton.gameObject.SetActive(true);
+        });
     }
 
 
@@ -119,17 +224,20 @@ public class UIGacha : MobileUIView
         for(int i = 0; i < _gachaMachines.Length; i++)
         {
             _gachaMachines[i].TweenStop();
-            _gachaMachines[i].transform.localScale = Vector3.one;
             _gachaMachines[i].TweenScale(Vector3.one * 0.8f, duration, Ease.Smoothstep);
         }
 
         int currentIndex = Array.IndexOf(_gachaMachines, _currentGachaMachine);
         Vector3 pos = _machineParent.anchoredPosition;
-        pos.x = currentIndex * -666f;
+        
+        // 인덱스에 따른 X 위치 설정
+        if (currentIndex == 0)
+            pos.x = -440f;
+        else if (currentIndex == 1)
+            pos.x = -1130f;
 
         _currentGachaMachine.TweenStop();
         _machineParent.TweenStop();
-        _currentGachaMachine.transform.localScale = Vector3.one * 0.8f;
         _currentGachaMachine.TweenScale(Vector3.one, duration, Ease.Smoothstep);
         _machineParent.TweenAnchoredPosition(pos, duration, Ease.Smoothstep).OnComplete(() =>
         {
@@ -146,7 +254,12 @@ public class UIGacha : MobileUIView
         }
         int currentIndex = Array.IndexOf(_gachaMachines, _currentGachaMachine);
         Vector3 pos = _machineParent.anchoredPosition;
-        pos.x = currentIndex * -666f;
+        
+        // 인덱스에 따른 X 위치 설정
+        if (currentIndex == 0)
+            pos.x = -440f;
+        else if (currentIndex == 1)
+            pos.x = -1130f;
 
         _currentGachaMachine.TweenStop();
         _machineParent.TweenStop();
