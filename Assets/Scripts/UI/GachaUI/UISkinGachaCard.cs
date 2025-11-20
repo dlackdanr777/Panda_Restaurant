@@ -4,6 +4,7 @@ using UnityEngine.UI;
 
 public class UIGachaCard : MonoBehaviour
 {
+    [SerializeField] private RectTransform _rectTransform;
     [SerializeField] private Image _star1Frame;
     [SerializeField] private Image _star3Frame;
     [SerializeField] private Image _star4Frame;
@@ -17,6 +18,11 @@ public class UIGachaCard : MonoBehaviour
     [SerializeField] private UIItemStar _itemStar;
 
 
+    public void SetPosition(Vector3 position)
+    {
+        _rectTransform.anchoredPosition = position;
+    }
+
 
     public void SetData(GachaData data)
     {
@@ -25,7 +31,7 @@ public class UIGachaCard : MonoBehaviour
             DebugLog.LogError("스킨 데이터가 없습니다.");
             return;
         }
-        
+
         SetImage(data);
         UpdateFrame(data);
         SetName(data);

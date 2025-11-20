@@ -127,7 +127,7 @@ public class UIGacha : MobileUIView
         }
 
         // 목표 위치로 Tween 이동
-        float duration = 0.3f;
+        float duration = 0.1f;
         Vector2 targetPos = new Vector2(targetX, _machineParent.anchoredPosition.y);
         
         // 모든 머신 스케일 0.8로
@@ -145,7 +145,7 @@ public class UIGacha : MobileUIView
         _machineParent.TweenAnchoredPosition(targetPos, duration, Ease.Constant).OnComplete(() =>
         {
             // 이동 완료 후 해당 머신 설정
-            SetMachine(_gachaMachines[targetIndex]);
+            SetMachineNoAnime(_gachaMachines[targetIndex]);
             _rightButton.gameObject.SetActive(true);
             _leftButton.gameObject.SetActive(true);
         });
@@ -216,6 +216,17 @@ public class UIGacha : MobileUIView
         _gachaItemList.UpdateData(gachaMachine.ItemDataList);
 
         SetMachineParentPosAnime();
+    }
+
+    private void SetMachineNoAnime(GachaMachineParent gachaMachine)
+    {
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            _gachaMachines[i].Hide();
+        }
+        _currentGachaMachine = gachaMachine;
+        _gachaItemList.UpdateData(gachaMachine.ItemDataList);
+        _currentGachaMachine.Show();
     }
 
     private void SetMachineParentPosAnime()
