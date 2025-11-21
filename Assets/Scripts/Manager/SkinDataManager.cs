@@ -26,12 +26,16 @@ public class SkinDataManager : MonoBehaviour
     private static Dictionary<string, CustomerSkinData> _customerSkinDataDic = new Dictionary<string, CustomerSkinData>();
     private static Dictionary<string, List<CustomerSkinData>> _customerSkinDataByLocationDic = new Dictionary<string, List<CustomerSkinData>>();
     private static Dictionary<string, Sprite> _customerSpriteDic = new Dictionary<string, Sprite>();
-    private static Dictionary<string, Sprite> _customerThumbnailSpriteDic = new Dictionary<string, Sprite>();
+    private static Dictionary<string, Sprite> _staffThumbnailSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite[]> _customerIdleSpriteDic = new Dictionary<string, Sprite[]>();
     private static Dictionary<string, Sprite> _marketerAnimationSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _marketerLeftHandSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _marketerRightHandSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite[]> _marketerEffectSpriteDic = new Dictionary<string, Sprite[]>();
+
+    private static Dictionary<string, Sprite> _chefBackSpriteDic = new Dictionary<string, Sprite>();
+    private static Dictionary<string, Sprite> _chefHandSpriteDic = new Dictionary<string, Sprite>();
+
 
     private Dictionary<string, SkinCustomerUpgradeType> _customerSkinUpgradeTypeDic = new Dictionary<string, SkinCustomerUpgradeType>
     {
@@ -143,6 +147,10 @@ public class SkinDataManager : MonoBehaviour
         LoadMarketerSkinLeftHandSprites();
         LoadMarketerSkinRightHandSprites();
         LoadStaffSkinParticleSprites();
+
+        LoadChefSkinBackSprite();
+        LoadChefSkinHandSprite();
+
         SkinStaffDataParse("StaffData/Skin/CSVData/StaffSkinDataList");
     }
 
@@ -276,13 +284,13 @@ public class SkinDataManager : MonoBehaviour
             string key = sprite.name;
             key = key.Trim();
             // 중복 체크
-            if (_customerThumbnailSpriteDic.ContainsKey(key))
+            if (_staffThumbnailSpriteDic.ContainsKey(key))
             {
                 Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
                 continue;
             }
 
-            _customerThumbnailSpriteDic.Add(key, sprite);
+            _staffThumbnailSpriteDic.Add(key, sprite);
         }
     }
 
@@ -387,7 +395,7 @@ public class SkinDataManager : MonoBehaviour
         }
     }
 
-        private static void LoadMarketerSkinRightHandSprites()
+    private static void LoadMarketerSkinRightHandSprites()
     {
         // 스프라이트 리소스 로드
         Sprite[] sprites = Resources.LoadAll<Sprite>("StaffData/Skin/Sprites/치어리더/Items/RightHand");
@@ -463,6 +471,44 @@ public class SkinDataManager : MonoBehaviour
         }
     }
 
+    private static void LoadChefSkinBackSprite()
+    {
+        // 스프라이트 리소스 로드
+        Sprite[] sprites = Resources.LoadAll<Sprite>("StaffData/Skin/Sprites/Chef/Back");
+        foreach (var sprite in sprites)
+        {
+            string key = sprite.name;
+            key = key.Trim();
+            // 중복 체크
+            if (_chefBackSpriteDic.ContainsKey(key))
+            {
+                Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
+                continue;
+            }
+
+            _chefBackSpriteDic.Add(key, sprite);
+        }
+    }
+
+    private static void LoadChefSkinHandSprite()
+    {
+        // 스프라이트 리소스 로드
+        Sprite[] sprites = Resources.LoadAll<Sprite>("StaffData/Skin/Sprites/Chef/Hand");
+        foreach (var sprite in sprites)
+        {
+            string key = sprite.name;
+            key = key.Trim();
+            // 중복 체크
+            if (_chefHandSpriteDic.ContainsKey(key))
+            {
+                Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
+                continue;
+            }
+
+            _chefHandSpriteDic.Add(key, sprite);
+        }
+    }
+
 
     private void SkinStaffDataParse(string loadPath)
     {
@@ -511,7 +557,7 @@ public class SkinDataManager : MonoBehaviour
                 continue;
             }
 
-            if (!_customerThumbnailSpriteDic.TryGetValue(id, out Sprite thumbnail))
+            if (!_staffThumbnailSpriteDic.TryGetValue(id, out Sprite thumbnail))
             {
                 Debug.LogError($"썸네일 스프라이트를 찾을 수 없습니다: {id}");
                 thumbnail = sprite;
@@ -543,6 +589,12 @@ public class SkinDataManager : MonoBehaviour
                 {
                     throw new Exception($"치어리더 아이템 스프라이트를 찾을 수 없습니다: {id}");
                 }
+            }
+
+            else if (_chefBackSpriteDic.TryGetValue(id, out Sprite backSprite) && _chefHandSpriteDic.TryGetValue(id, out Sprite handSprite))
+            {
+                DebugLog.Log("Chef Skin Loaded: " + id);
+                skinData = new ChefSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, duplicationToken, backSprite, handSprite, new Vector2(-0.18f, 1.43f));
             }
             else
             {

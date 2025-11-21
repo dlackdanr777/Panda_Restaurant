@@ -17,13 +17,13 @@ MonoBehaviour:
   _name: "\uB77C\uB77C"
   _id: STAFF13
   _description: 
+  _skill: {fileID: 11400000, guid: cc1627697d70f09418e134e717be2a29, type: 2}
+  _idleSprites: []
+  _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
   _buyScore: 2500
   _buyPrice: 570000
-  _skill: {fileID: 11400000, guid: cc1627697d70f09418e134e717be2a29, type: 2}
-  _idleSprites: []
-  _animatorController: {fileID: 0}
   _speed: 6
   _marketerLevelData:
   - _upgradeMinScore: 3750
@@ -51,11 +51,11 @@ MonoBehaviour:
       _moneyType: 0
       _price: -1
     _marketingTime: 11
-  _uiSprite: {fileID: 21300000, guid: cdcf2d8272fd1404ea881e67fa4bb7f1, type: 3}
-  _animationSprite: {fileID: 21300000, guid: 8dca3533148bea24a8b9c7927d55c7e7, type: 3}
-  _leftHandSprite: {fileID: 21300000, guid: 907e24f290c5b3f4eba58655c9b1ae7f, type: 3}
-  _rightHandSprite: {fileID: 21300000, guid: b35b062db1d9b4f489cdc147bf2f20ac, type: 3}
+  _uiSprite: {fileID: 21300000, guid: ded7658feb386fd4ba515f91c34742cb, type: 3}
+  _animationSprite: {fileID: 21300000, guid: b327c1bc3ec78b04893e6cde0740da08, type: 3}
+  _leftHandSprite: {fileID: 21300000, guid: f66acee7b9987d14596c647722646162, type: 3}
+  _rightHandSprite: {fileID: 21300000, guid: fe1920e1f2e5c6643924700f780824d1, type: 3}
   _particleCount: 10
   _particleSprites:
-  - {fileID: 21300000, guid: 4ca869a495540fc4b8c01c7d817f1027, type: 3}
-  - {fileID: 21300000, guid: b73e7a1cef4b8b942945d982190913b0, type: 3}
+  - {fileID: 21300000, guid: 8672ffbc140515c4e8a0ab3b8af8e175, type: 3}
+  - {fileID: 21300000, guid: faf4c805b67eee7499626eea5897b09b, type: 3}

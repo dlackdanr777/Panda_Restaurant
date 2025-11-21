@@ -549,7 +549,7 @@ public class Staff : MonoBehaviour
         SkillEffectSetActive(false);
     }
 
-    private void OnChangeSkinEvent()
+    protected virtual void OnChangeSkinEvent()
     {
         if (!gameObject.activeInHierarchy)
             return;
