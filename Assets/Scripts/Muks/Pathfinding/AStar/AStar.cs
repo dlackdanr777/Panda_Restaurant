@@ -243,38 +243,77 @@ namespace Muks.PathFinding.AStar
             return Vector2.zero; // 이동 가능한 타일을 찾지 못함
         }
 
+        /// <summary>맵 내에서 특정 노드 좌표 근처의 이동 가능한 노드 찾기</summary>
+        private Vector2 FindClosestWalkableNodeInMap(MapData map, Vector2Int nodePos)
+        {
+            float nodeSize = NodeSize;
+            int maxRadius = Mathf.Max(map.SizeX, map.SizeY);
+            
+            for (int radius = 0; radius <= maxRadius; radius++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    for (int dy = -radius; dy <= radius; dy++)
+                    {
+                        if (radius > 0 && Mathf.Abs(dx) < radius && Mathf.Abs(dy) < radius)
+                            continue;
+
+                        int nodeX = nodePos.x + dx;
+                        int nodeY = nodePos.y + dy;
+
+                        if (nodeX >= 0 && nodeX < map.SizeX && nodeY >= 0 && nodeY < map.SizeY)
+                        {
+                            Node node = map.Nodes[nodeX, nodeY];
+                            
+                            if (!node.IsWall && node.IsGround)
+                            {
+                                Vector2 tileWorldPos = new Vector2(
+                                    map.MapBottomLeft.x + (nodeX + 0.5f) * nodeSize,
+                                    map.MapBottomLeft.y + (nodeY + 0.5f) * nodeSize
+                                );
+                                return tileWorldPos;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return Vector2.zero;
+        }
+
         private List<Vector2> PathFinding(MapData map, Vector2 start, Vector2 end)
         {
             Vector2Int sPos = map.WorldToNodePos(start);
             Vector2Int tPos = map.WorldToNodePos(end);
 
-            // ? 노드 위치가 맵 범위 내인지 확인
-            if (sPos.x < 0 || sPos.x >= map.SizeX || sPos.y < 0 || sPos.y >= map.SizeY)
-            {
-                Debug.LogError($"Start position {start} -> node {sPos} is outside map bounds");
-                return new List<Vector2>();
-            }
-            
-            if (tPos.x < 0 || tPos.x >= map.SizeX || tPos.y < 0 || tPos.y >= map.SizeY)
-            {
-                Debug.LogError($"End position {end} -> node {tPos} is outside map bounds");
-                return new List<Vector2>();
-            }
-
-            // ? 시작점과 목적지가 이동 가능한 타일인지 확인
+            // 시작점이 이동 불가능한 경우 가장 가까운 이동 가능한 노드 찾기
             var startNode = map.Nodes[sPos.x, sPos.y];
-            var targetNode = map.Nodes[tPos.x, tPos.y];
-
             if (startNode.IsWall || !startNode.IsGround)
             {
-                Debug.LogError($"Start position {start} is not walkable (Wall: {startNode.IsWall}, Ground: {startNode.IsGround})");
-                return new List<Vector2>();
+                Vector2 correctedStart = FindClosestWalkableNodeInMap(map, sPos);
+                if (correctedStart == Vector2.zero)
+                {
+                    Debug.LogError($"No walkable node found near start position {start}");
+                    return new List<Vector2>();
+                }
+                sPos = map.WorldToNodePos(correctedStart);
+                startNode = map.Nodes[sPos.x, sPos.y];
+                Debug.LogWarning($"Start position was not walkable. Moved to closest walkable node: {correctedStart}");
             }
 
+            // 목적지가 이동 불가능한 경우 가장 가까운 이동 가능한 노드 찾기
+            var targetNode = map.Nodes[tPos.x, tPos.y];
             if (targetNode.IsWall || !targetNode.IsGround)
             {
-                Debug.LogError($"End position {end} is not walkable (Wall: {targetNode.IsWall}, Ground: {targetNode.IsGround})");
-                return new List<Vector2>();
+                Vector2 correctedEnd = FindClosestWalkableNodeInMap(map, tPos);
+                if (correctedEnd == Vector2.zero)
+                {
+                    Debug.LogError($"No walkable node found near end position {end}");
+                    return new List<Vector2>();
+                }
+                tPos = map.WorldToNodePos(correctedEnd);
+                targetNode = map.Nodes[tPos.x, tPos.y];
+                Debug.LogWarning($"End position was not walkable. Moved to closest walkable node: {correctedEnd}");
             }
 
             foreach (var node in map.Nodes)

@@ -361,11 +361,11 @@ public class Staff : MonoBehaviour
 
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
-            RestaurantType type = RestaurantType.Hall;
-            if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
-                type = RestaurantType.Kitchen;
-
-            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(_tableManager.GetDoorPos(type, _targetPos), _targetPos, TargetMove)));
+            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => 
+            {
+                // 텔레포트 후 현재 위치에서 목적지로 경로 탐색
+                AStar.Instance.RequestPath(_moveObj.transform.position, _targetPos, TargetMove);
+            }));
         }
         ));
     }
@@ -409,7 +409,9 @@ public class Staff : MonoBehaviour
         RestaurantType type = RestaurantType.Hall;
         if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
             type = RestaurantType.Kitchen;
-        TweenAlpha(0, 0.4f, Ease.Constant, () => _moveObj.transform.position = _tableManager.GetDoorPos(type, _targetPos));
+        
+        Vector3 doorPos = _tableManager.GetDoorPos(type, _targetPos);
+        TweenAlpha(0, 0.4f, Ease.Constant, () => _moveObj.transform.position = doorPos);
         yield return YieldCache.WaitForSeconds(1f);
         TweenAlpha(1, 0.4f, Ease.Constant, () => SetAlpha(1f));
         yield return YieldCache.WaitForSeconds(1f);
