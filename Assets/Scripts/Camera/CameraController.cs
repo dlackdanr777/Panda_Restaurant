@@ -417,12 +417,12 @@ public class CameraController : MonoBehaviour
         {
             int nextFloorIndex = (int)CurrentFloor + (yDiff > 0 ? 1 : -1);
 
-            // // 범위를 벗어나면 원래 위치로 복귀
-            // if (nextFloorIndex > (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage) || nextFloorIndex < (int)ERestaurantFloorType.Floor1)
-            // {
-            //     MoveCamera(CurrentFloor, CurrentRestaurant);
-            //     return;
-            // }
+            // 범위를 벗어나면 원래 위치로 복귀
+            if (nextFloorIndex >= (int)ERestaurantFloorType.Length || nextFloorIndex < (int)ERestaurantFloorType.Floor1)
+            {
+                MoveCamera(CurrentFloor, CurrentRestaurant);
+                return;
+            }
 
             nextFloor = (ERestaurantFloorType)nextFloorIndex;
         }

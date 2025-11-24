@@ -446,6 +446,27 @@ public class Type19ChallengeData : ChallengeData
 }
 
 
+/// <summary>층수 해금 도전과제</summary>
+public class Type20ChallengeData : ChallengeData
+{
+    protected ERestaurantFloorType _floorType;
+    public ERestaurantFloorType FloorType => _floorType;
+
+    public Type20ChallengeData(Challenges challenges, ChallengeType type, string id, string description, ERestaurantFloorType floorType, MoneyType moneyType, long rewardMoney, long rewardScore, BindData<UnityAction> shortcutAction)
+    {
+        _challenges = challenges;
+        _type = type;
+        _id = id;
+        _description = description;
+        _floorType = floorType;
+        _moneyType = moneyType;
+        _rewardMoney = rewardMoney;
+        _rewardScore = rewardScore;
+        _shortcutAction = shortcutAction;
+    }
+}
+
+
 
 /// <summary>특수 손님 방문 횟수 달성 도전과제</summary>
 public class Type21ChallengeData : ChallengeData

@@ -77,6 +77,7 @@ public class ChallengeManager : MonoBehaviour
     private static Dictionary<string, Type17ChallengeData> _type17ChallengeDataDic = new Dictionary<string, Type17ChallengeData>();
     private static Dictionary<string, Type18ChallengeData> _type18ChallengeDataDic = new Dictionary<string, Type18ChallengeData>();
     private static Dictionary<string, Type19ChallengeData> _type19ChallengeDataDic = new Dictionary<string, Type19ChallengeData>();
+    private static Dictionary<string, Type20ChallengeData> _type20ChallengeDataDic = new Dictionary<string, Type20ChallengeData>();
 
     private static Dictionary<string, Type21ChallengeData> _type21ChallengeDataDic = new Dictionary<string, Type21ChallengeData>();
     private static Dictionary<string, Type22ChallengeData> _type22ChallengeDataDic = new Dictionary<string, Type22ChallengeData>();
@@ -130,7 +131,7 @@ public class ChallengeManager : MonoBehaviour
         Type17ChallengeCheck();
         Type18ChallengeCheck();
         Type19ChallengeCheck();
-
+        Type20ChallengeCheck();
         Type21ChallengeCheck();
         Type22ChallengeCheck();
         Type23ChallengeCheck();
@@ -195,7 +196,7 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => Type17ChallengeCheck();
         UserInfo.OnGiveFurnitureHandler += Type18ChallengeCheck;
         UserInfo.OnGiveKitchenUtensilHandler += Type19ChallengeCheck;
-
+        UserInfo.OnChangeFloorHandler += Type20ChallengeCheck;
         UserInfo.OnVisitSpecialCustomerHandler += Type21ChallengeCheck;
         UserInfo.OnExterminationGatecrasherCustomerHandler += Type22ChallengeCheck;
         UserInfo.OnExterminationGatecrasherCustomerHandler += Type23ChallengeCheck;
@@ -244,7 +245,7 @@ public class ChallengeManager : MonoBehaviour
         Type17ChallengeCheck();
         Type18ChallengeCheck();
         Type19ChallengeCheck();
-
+        Type20ChallengeCheck();
         Type21ChallengeCheck();
         Type22ChallengeCheck();
         Type23ChallengeCheck();
@@ -499,6 +500,14 @@ public class ChallengeManager : MonoBehaviour
                     Type19ChallengeData challengeData19 = new Type19ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
                     _type19ChallengeDataDic.Add(id, challengeData19);
                     dic.Add(id, challengeData19);
+                    break;
+
+                case "TYPE20":
+                    challengeType = ChallengeType.TYPE20;
+                    ERestaurantFloorType floorType = (ERestaurantFloorType)(int.Parse(needItemId) - 1);
+                    Type20ChallengeData challengeData20 = new Type20ChallengeData(challenges, challengeType, id, description, floorType, moneyType, rewardMoney, 0, shortcutAction);
+                    _type20ChallengeDataDic.Add(id, challengeData20);
+                    dic.Add(id, challengeData20);
                     break;
 
                 case "TYPE21":
@@ -851,6 +860,14 @@ public class ChallengeManager : MonoBehaviour
                     dic.Add(id, challengeData19);
                     break;
 
+                case "TYPE20":
+                    challengeType = ChallengeType.TYPE20;
+                    ERestaurantFloorType floorType = (ERestaurantFloorType)(int.Parse(needItemId) - 1);
+                    Type20ChallengeData challengeData20 = new Type20ChallengeData(challenges, challengeType, id, description, floorType, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type20ChallengeDataDic.Add(id, challengeData20);
+                    dic.Add(id, challengeData20);
+                    break;
+
                 case "TYPE21":
                     challengeType = ChallengeType.TYPE21;
                     Type21ChallengeData challengeData21 = new Type21ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
@@ -1164,6 +1181,11 @@ public class ChallengeManager : MonoBehaviour
                 int giveKitchenUntensilCount = UserInfo.GetGiveKitchenUtensilCount(UserInfo.CurrentStage);
                 return giveKitchenUntensilCount == 0 ? 0 : Math.Min(1, (float)giveKitchenUntensilCount / data19.Count);
 
+            case ChallengeType.TYPE20:
+                Type20ChallengeData data20 = (Type20ChallengeData)data;
+                int openFloorCount = UserInfo.IsFloorValid(UserInfo.CurrentStage, data20.FloorType) ? 1 : 0;
+                return openFloorCount;
+
             case ChallengeType.TYPE21:
                 Type21ChallengeData data21 = (Type21ChallengeData)data;
                 int totalVisitSpecialCustomerCount = UserInfo.TotalVisitSpecialCustomerCount;
@@ -1408,6 +1430,11 @@ public class ChallengeManager : MonoBehaviour
                 Type19ChallengeData data19 = (Type19ChallengeData)data;
                 int giveKitchenUntensilCount = UserInfo.GetGiveKitchenUtensilCount(UserInfo.CurrentStage);
                 return $"{giveKitchenUntensilCount} / {data19.Count}";
+
+            case ChallengeType.TYPE20:
+                Type20ChallengeData data20 = (Type20ChallengeData)data;
+                int openFloorCount = UserInfo.IsFloorValid(UserInfo.CurrentStage, data20.FloorType) ? 1 : 0;
+                return $"{openFloorCount} / 1";
 
             case ChallengeType.TYPE21:
                 Type21ChallengeData data21 = (Type21ChallengeData)data;
@@ -2762,6 +2789,60 @@ public class ChallengeManager : MonoBehaviour
                 continue;
 
             if (giveKitchenUtensilCount < data.Count)
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE19);
+    }
+
+        private void Type20ChallengeCheck()
+    {
+        bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type20ChallengeData data in _type20ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (UserInfo.IsFloorValid(UserInfo.CurrentStage, data.FloorType))
                 continue;
 
             switch (data.Challenges)

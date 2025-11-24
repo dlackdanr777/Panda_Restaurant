@@ -120,7 +120,7 @@ public class KitchenUtensilGroup: MonoBehaviour
                 {
                     int burnerIndex = (int)type; // Burner1=0, Burner2=1, ..., Burner5=4
                     _burnerKitchenUtensils.Add(burner);
-                    _burnerDatas[burnerIndex].SetKitchenUtensil(_kitchenUtensils[i]);
+                    _burnerDatas[burnerIndex].SetKitchenUtensil(burner);
                     burner.SetData(_burnerDatas[burnerIndex]);
                 }
             }

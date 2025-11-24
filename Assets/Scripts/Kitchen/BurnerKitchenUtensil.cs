@@ -5,6 +5,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
     [SerializeField] private SpriteTouchEvent _touchEvent;
     [SerializeField] private AudioClip _touchSound;
     [SerializeField] private AudioSource _audioSource;
+    [SerializeField] private ParticleSystem _chefEffect;
 
 
     private KitchenBurnerData _burnerData;
@@ -19,12 +20,19 @@ public class BurnerKitchenUtensil : KitchenUtensil
         _touchEvent.AddDownEvent(TouchDownEvent);
         _touchEvent.AddUpEvent(TouchUpEvent);
         _audioSource.clip = _touchSound;
+        SetChefEffect(false);
     }
 
     public void SetData(KitchenBurnerData data)
     {
         _burnerData = data;
 
+    }
+
+    public void SetChefEffect(bool isOn)
+    {
+        DebugLog.Log($"SetChefEffect: {isOn} on Burner {Type}");
+        _chefEffect.gameObject.SetActive(isOn);
     }
 
     private void TouchDownEvent()
