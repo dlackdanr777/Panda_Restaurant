@@ -144,6 +144,14 @@ public class MainScene : MonoBehaviour
         UserInfo.SetEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, "COOKER01_01");
 #endif
 
+        //Test Code
+        var list = SkinDataManager.Instance.GetSortSkinDataList();
+        for(int i = 0, cnt = list.Count; i < cnt; i++)
+        {
+            UserInfo.GiveSkin(list[i]);
+        }
+        //
+
         GameManager.Instance.ChanceScene();
     }
 

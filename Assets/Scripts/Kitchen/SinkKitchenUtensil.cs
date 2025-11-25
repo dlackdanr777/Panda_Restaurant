@@ -8,6 +8,7 @@ public class SinkKitchenUtensil : KitchenUtensil
     [SerializeField] private SpriteTouchEvent _touchEvent;
     [SerializeField] private AudioSource _washingSound;
     [SerializeField] private GameObject _washingEffect;
+    [SerializeField] private ParticleSystem _chefEffect;
 
     private bool _isStaffWashing;
     public bool IsStaffWashing => _isStaffWashing;
@@ -33,7 +34,14 @@ public class SinkKitchenUtensil : KitchenUtensil
 
         UserInfo.OnChangeSinkBowlHandler += UpdateSink;
         UserInfo.OnChangeMaxSinkBowlHandler += OnChangeMaxBowlCount;
+        SetChefEffect(false);
     }
+
+        public void SetChefEffect(bool isOn)
+    {
+        _chefEffect.gameObject.SetActive(isOn);
+    }
+
 
     private void OnChangeMaxBowlCount()
     { 

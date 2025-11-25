@@ -31,7 +31,6 @@ public class BurnerKitchenUtensil : KitchenUtensil
 
     public void SetChefEffect(bool isOn)
     {
-        DebugLog.Log($"SetChefEffect: {isOn} on Burner {Type}");
         _chefEffect.gameObject.SetActive(isOn);
     }
 

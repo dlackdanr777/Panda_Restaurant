@@ -8,6 +8,7 @@ public class UIStaffSkin : MonoBehaviour
 {
     private const int MAX_SLOT_COUNT = 10;
     [SerializeField] private TextMeshProUGUI _nameText;
+    [SerializeField] private TextMeshProUGUI _typeText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private TextMeshProUGUI _effectText;
     [SerializeField] private Image _skinImage;
@@ -74,6 +75,9 @@ public class UIStaffSkin : MonoBehaviour
     public void SetSkinList(StaffData customerData)
     {
         _customerData = customerData;
+        StaffGroupType groupType = StaffDataManager.Instance.GetStaffGroupType(customerData);
+        string typeText = Utility.StaffTypeStringConverter(groupType);
+        _typeText.SetText(typeText);
         if (_customerData == null)
         {
             Debug.LogError("고객 데이터가 없습니다.");

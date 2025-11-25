@@ -222,6 +222,7 @@ public class ChefAction : IStaffAction
                 if (_sink.UseStaff == null && _sink.UseStaff != staff && UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, staff.EquipFloorType) <= 0)
                 {
                     staff.SetStaffState(EStaffState.None);
+                    _sink.SetChefEffect(false);
                     _isUsed = false;
                     _notEqulsFloor = false;
                     _time = 0;
@@ -230,6 +231,7 @@ public class ChefAction : IStaffAction
 
                 staff.SetStaffState(EStaffState.Action);
                 _sink.StartStaffAction();
+                _sink.SetChefEffect(true);
                 UpdateSinkAction(actionStopResult);
             });
         });
@@ -240,6 +242,7 @@ public class ChefAction : IStaffAction
         if (_sink.UseStaff == null || _sink.UseStaff != _staff || UserInfo.IsTutorialStart || stopResult())
         {
             _isNoAction = false;
+            _sink.SetChefEffect(false);
             ResetStaffState(_staff);
             return;
         }
@@ -248,6 +251,7 @@ public class ChefAction : IStaffAction
         {
             _sink.SetUseStaff(_staff);
             _sink.StartStaffAction();
+            _sink.SetChefEffect(true);
             UpdateSinkAction(stopResult);
         });
     }
