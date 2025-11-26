@@ -22,6 +22,7 @@ public class UISkinGacha : GachaMachineParent
     [SerializeField] private Button _skipButton;
     [SerializeField] private Image _getItemImage;
     [SerializeField] private UIGachaCard _skinGachaCard;
+    [SerializeField] private GachaCapsule _capsule;
 
     [Space]
     [Header("Slot Options")]
@@ -108,6 +109,7 @@ public class UISkinGacha : GachaMachineParent
         _screenButton.gameObject.SetActive(false);
         _skinGachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
+        _capsule.gameObject.SetActive(false);
         CapsuleSetSibilingIndex(1);
 
         SetStep(1);
@@ -128,7 +130,7 @@ public class UISkinGacha : GachaMachineParent
         _screenButton.gameObject.SetActive(false);
         _skinGachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
-
+        _capsule.gameObject.SetActive(false);
         _gachaMacineAnimator.enabled = false;
         SetStep(1);
     }
@@ -226,6 +228,7 @@ public class UISkinGacha : GachaMachineParent
                 _screenButton.gameObject.SetActive(false);
                 _skinGachaCard.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
+                _capsule.gameObject.SetActive(false);
                 _skinGachaCard.TweenStop();
 
                 for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
@@ -248,6 +251,7 @@ public class UISkinGacha : GachaMachineParent
                 _tenButton.gameObject.SetActive(false);
                 _skinGachaCard.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
+                _capsule.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
                 CapsuleSetSibilingIndex(1);
@@ -261,6 +265,7 @@ public class UISkinGacha : GachaMachineParent
                 _skipButton.gameObject.SetActive(10 <= _getItemList.Count());
                 _skinGachaCard.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
+                _capsule.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
 
@@ -275,6 +280,7 @@ public class UISkinGacha : GachaMachineParent
                 _getItemImage.gameObject.SetActive(true);
                 _skinGachaCard.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
+                _capsule.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
 
@@ -288,6 +294,7 @@ public class UISkinGacha : GachaMachineParent
                 _getItemSlotFrame.gameObject.SetActive(true);
                 _skipButton.gameObject.SetActive(false);
                 _getItemImage.gameObject.SetActive(false);
+                _capsule.gameObject.SetActive(false);
                 _screenTouchWaitTime = 0.2f;
                 _isCapsuleColorChanged = true;
 
@@ -425,11 +432,23 @@ public class UISkinGacha : GachaMachineParent
             _getItemSlotList[i].TweenScale(Vector3.one, 0.2f, Ease.OutBack);
             yield return YieldCache.WaitForSeconds(0.1f);
         }
+        yield return YieldCache.WaitForSeconds(0.1f);
+        _capsule.gameObject.SetActive(true);
+        _capsule.SetCapsuleColor(_capsuleColors[UnityEngine.Random.Range(0, _capsuleColors.Length)]);
+        _capsule.TweenStop();
+        _capsule.SetAnchoredPosition(new Vector2(0, -2000));
+        _capsule.TweenAnchoredPosition(new Vector2(0, 0), 1f, Ease.Smoothstep);
 
-        yield return YieldCache.WaitForSeconds(0.5f);
+        yield return YieldCache.WaitForSeconds(1.5f);
+
+        _capsule.StartOpen();
+        _capsule.SetSprite(_getItemList[_getItemList.Count - 1].ThumbnailSprite);
+
+        yield return YieldCache.WaitForSeconds(1.5f);
+        _capsule.gameObject.SetActive(false);
         _skinGachaCard.gameObject.SetActive(true);
         _skinGachaCard.SetData(_getItemList[_getItemList.Count - 1]);
-        _skinGachaCard.SetPosition(new Vector3(500, 0, 0));
+        _skinGachaCard.SetPosition(new Vector3(600, 0, 0));
         _getItemSound = _getItemList[_getItemList.Count - 1].Rank == Rank.Unique || _getItemList[_getItemList.Count - 1].Rank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
         PlayGetItemSound();
         _skinGachaCard.TweenStop();

@@ -28,7 +28,7 @@ public class StageInfo
     public EStage Stage => _stage;
 
 
-    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor3;
+    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor2;
     public ERestaurantFloorType UnlockFloor => _unlockFloor;
 
 
@@ -441,7 +441,7 @@ public class StageInfo
             DebugLog.Log("직원 스킨이 설정되어 있지 않습니다: " + staff.Id);
             return null;
         }
-
+        DebugLog.Log("직원 스킨 아이디: " + skinId);
         StaffSkinData skinData = SkinDataManager.Instance.GetStaffSkinData(skinId);
         if (skinData == null)
         {

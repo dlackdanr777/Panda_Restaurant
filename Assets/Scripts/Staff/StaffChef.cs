@@ -113,7 +113,7 @@ public class StaffChef : Staff
     public override void SetStaffState(EStaffState state)
     {
         base.SetStaffState(state);
-        _spriteRenderer.sprite = state == EStaffState.Action ? _backSprite : _staffData.Sprite;
+        _spriteRenderer.sprite = state == EStaffState.Action ? _backSprite : _sprite;
         _animator.SetInteger("State", (int)_state);
     }
 }

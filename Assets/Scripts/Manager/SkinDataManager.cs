@@ -582,8 +582,10 @@ public class SkinDataManager : MonoBehaviour
                 if (_marketerLeftHandSpriteDic.TryGetValue(id, out Sprite leftHand) &&
                     _marketerRightHandSpriteDic.TryGetValue(id, out Sprite rightHand))
                 {
+
                     Sprite[] particleSprites = _marketerEffectSpriteDic.ContainsKey(id) ? _marketerEffectSpriteDic[id] : null;
                     skinData = new MarketerSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, duplicationToken, actionSprite, leftHand, rightHand, particleSprites);
+                    DebugLog.Log(skinData.Name);
                 }
                 else
                 {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Muks.MobileUI;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -7,6 +8,7 @@ using UnityEngine.UI;
 public class UIStaffSkin : MonoBehaviour
 {
     private const int MAX_SLOT_COUNT = 10;
+    [SerializeField] private MobileUINavigation _uiNav;
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private TextMeshProUGUI _typeText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
@@ -117,6 +119,7 @@ public class UIStaffSkin : MonoBehaviour
     public void Show(StaffData customerData)
     {
         gameObject.SetActive(true);
+        _hideButton.gameObject.SetActive(true);
         _customerData = customerData;
         _currentSkinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, customerData);
         UpdateUI();
@@ -257,6 +260,7 @@ public class UIStaffSkin : MonoBehaviour
         if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, _customerData))
         {
             UserInfo.SetStaffSkin(UserInfo.CurrentStage, _customerData, _currentSkinData);
+            PopupManager.Instance.ShowDisplayText("스킨이 교체되었습니다.");
         }
         else
         {

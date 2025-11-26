@@ -114,9 +114,17 @@ public class UIMarketerImage : MonoBehaviour
 
     private void SetData(MarketerData data)
     {
+        if (data == null)
+        {
+            gameObject.SetActive(false);
+            _data = null;
+            return;
+        }
+
         gameObject.SetActive(true);
         _data = data;
 
+        
         MarketerSkinData skinData = (MarketerSkinData)UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, _data);
         if (skinData == null)
         {
