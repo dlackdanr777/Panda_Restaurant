@@ -58,6 +58,14 @@ public class GuardAction : IStaffAction
                 return;
             }
         }
+        
+        // 진상손님이 같은 층에 있는지 확인
+        if (_gatecrasherCustomer.VisitFloor != staff.EquipFloorType)
+        {
+            _gatecrasherCustomer = null;
+            _startAction = false;
+            return;
+        }
 
         // 진상손님이 위장 상태인지 체크
         if (_gatecrasherCustomer.IsInDisguise)
@@ -89,6 +97,7 @@ public class GuardAction : IStaffAction
                 if (!staff.gameObject.activeInHierarchy)
                 {
                     _startAction = false;
+                    staff.SetAlpha(1f);
                     return;
                 }
 
@@ -113,6 +122,7 @@ public class GuardAction : IStaffAction
                     if (_gatecrasherCustomer == null || _gatecrasherCustomer.IsEndEvent)
                     {
                         _startAction = false;
+                        staff.SetAlpha(1f);
                         return;
                     }
 
@@ -137,10 +147,19 @@ public class GuardAction : IStaffAction
             Tween.Wait(1f / speedMul, () =>
             {
                 if (!staff.gameObject.activeInHierarchy)
+                {
+                    staff.SetAlpha(1f);
                     return;
+                }
 
                 staff.SpriteRenderer.TweenAlpha(0, 0.3f / speedMul).OnComplete(() =>
                 {
+                    if (!staff.gameObject.activeInHierarchy)
+                    {
+                        staff.SetAlpha(1f);
+                        return;
+                    }
+                    
                     staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
                     staff.SetSpriteDir(-1);
                     staff.SpriteRenderer.TweenAlpha(1, 0.3f / speedMul).OnComplete(() =>
@@ -171,6 +190,12 @@ public class GuardAction : IStaffAction
                 // 원래 위치로 복귀
                 staff.SpriteRenderer.TweenAlpha(0, 0.3f / speedMul).OnComplete(() =>
                 {
+                    if (!staff.gameObject.activeInHierarchy)
+                    {
+                        staff.SetAlpha(1f);
+                        return;
+                    }
+                    
                     staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
                     staff.SetSpriteDir(-1);
                     staff.SpriteRenderer.TweenAlpha(1, 0.3f / speedMul);

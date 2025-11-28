@@ -160,10 +160,16 @@ public class Staff : MonoBehaviour
 
     public virtual void TweenAlpha(float alpha, float duration, Ease ease, Action onCompleted = null)
     {
-        _skillEffect.TweenStop();
-        _spriteRenderer.TweenStop();
+        if (_skillEffect != null)
+            _skillEffect.TweenStop();
+        
+        if (_spriteRenderer != null)
+            _spriteRenderer.TweenStop();
+        
         _skillEffect?.TweenAlpha(alpha, duration, ease);
-        _spriteRenderer.TweenAlpha(alpha, duration, ease).OnComplete(onCompleted);
+        
+        if (_spriteRenderer != null)
+            _spriteRenderer.TweenAlpha(alpha, duration, ease).OnComplete(onCompleted);
     }
 
 
@@ -331,8 +337,11 @@ public class Staff : MonoBehaviour
             StopCoroutine(_moveCoroutine);
 
         if (_teleportCoroutine != null)
+        {
             StopCoroutine(_teleportCoroutine);
-
+            // 텔레포트 중단 시 알파값 복구
+            SetAlpha(1f);
+        }
     }
 
 
@@ -406,6 +415,13 @@ public class Staff : MonoBehaviour
     protected IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
         yield return YieldCache.WaitForSeconds(0.6f);
+        
+        if (!gameObject.activeInHierarchy)
+        {
+            SetAlpha(1f);
+            yield break;
+        }
+        
         RestaurantType type = RestaurantType.Hall;
         if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
             type = RestaurantType.Kitchen;
@@ -413,10 +429,21 @@ public class Staff : MonoBehaviour
         Vector3 doorPos = _tableManager.GetDoorPos(type, _targetPos);
         TweenAlpha(0, 0.4f, Ease.Constant, () => _moveObj.transform.position = doorPos);
         yield return YieldCache.WaitForSeconds(1f);
+        
+        if (!gameObject.activeInHierarchy)
+        {
+            SetAlpha(1f);
+            yield break;
+        }
+        
         TweenAlpha(1, 0.4f, Ease.Constant, () => SetAlpha(1f));
         yield return YieldCache.WaitForSeconds(1f);
-        _skillEffect.color = Color.white;
-        _spriteRenderer.color = Color.white;
+        
+        if (_skillEffect != null)
+            _skillEffect.color = Color.white;
+        if (_spriteRenderer != null)
+            _spriteRenderer.color = Color.white;
+        
         onCompleted?.Invoke();
     }
 
