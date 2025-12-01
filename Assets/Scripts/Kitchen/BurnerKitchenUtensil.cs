@@ -14,6 +14,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
 
     public float CookSpeedMul => _isTouch ? 2f : 1f;
 
+
     public override void Init(ERestaurantFloorType floor)
     {
         base.Init(floor);
@@ -55,7 +56,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
             
         if (_data == null && Type != KitchenUtensilType.Burner1)
                 return;
-                
+
         if (!_burnerData.CookingData.IsDefault() && _isTouch && !_audioSource.isPlaying)
         {
             _audioSource.Play();
@@ -64,6 +65,15 @@ public class BurnerKitchenUtensil : KitchenUtensil
         else if ((_burnerData.CookingData.IsDefault() && _audioSource.isPlaying) || (!_isTouch && _audioSource.isPlaying))
         {
             _audioSource.Stop();
+        }
+        
+        if(!_burnerData.CookingData.IsDefault() && (_isTouch || _burnerData.UseStaff != null))
+        {
+            SetChefEffect(true);
+        }
+        else
+        {
+            SetChefEffect(false);
         }
     }
 }

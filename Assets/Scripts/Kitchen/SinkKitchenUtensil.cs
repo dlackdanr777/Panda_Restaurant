@@ -87,6 +87,7 @@ public class SinkKitchenUtensil : KitchenUtensil
         if (!_isTouchWashing && !_isStaffWashing)
         {
             _washingEffect.SetActive(false);
+            _chefEffect.gameObject.SetActive(false);
             _washingSound.Stop();
             return;
         }
@@ -94,6 +95,7 @@ public class SinkKitchenUtensil : KitchenUtensil
         if (!_washingEffect.activeSelf)
         {
             _washingEffect.SetActive(true);
+            _chefEffect.gameObject.SetActive(true);
             _washingSound.Play();
         }
 

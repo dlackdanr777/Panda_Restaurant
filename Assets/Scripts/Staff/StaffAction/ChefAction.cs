@@ -311,7 +311,6 @@ public class ChefAction : IStaffAction
 
         // 요리 속도 증가 적용
         data.SetAddCookSpeedMul(_staff.GetActionValue());
-        data.KitchenUtensil.SetChefEffect(true);
         // 다음 업데이트까지 약간의 지연
         _tweenData = Tween.Wait(0.5f, () => {
             // 상태 변수 명시적 검사 추가
@@ -333,7 +332,6 @@ public class ChefAction : IStaffAction
             data.SetStaffUsable(false);
             data.SetUseStaff(null);
             data.SetAddCookSpeedMul(0);
-            data.KitchenUtensil.SetChefEffect(false);
             // _burnerData 초기화 추가
             if (_burnerData == data)
             {
