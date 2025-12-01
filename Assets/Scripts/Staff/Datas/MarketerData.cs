@@ -28,6 +28,15 @@ public class MarketerData : StaffData
     [SerializeField] private Sprite[] _particleSprites;
     public Sprite[] ParticleSprites => _particleSprites;
 
+    [Space]
+    [Header("light stick Option")]
+    [SerializeField] private Vector2 _leftHandOffset;
+    public Vector2 LeftHandOffset => _leftHandOffset;
+    [SerializeField] private Vector2 _rightHandOffset;
+    public Vector2 RightHandOffset => _rightHandOffset;
+    [Range(0.1f, 2f)] [SerializeField] private float _scale = 1f;
+    public float Scale => _scale;
+
 
 
     public override float SecondValue => 0;

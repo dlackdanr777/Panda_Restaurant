@@ -59,3 +59,6 @@ MonoBehaviour:
   _particleSprites:
   - {fileID: 21300000, guid: 21b6b28733f986340b333d5ae2d8d9c5, type: 3}
   - {fileID: 21300000, guid: 601e56b1add93d8428e8b3624643a1a1, type: 3}
+  _leftHandOffset: {x: 0, y: -15}
+  _rightHandOffset: {x: 0, y: -15}
+  _scale: 1

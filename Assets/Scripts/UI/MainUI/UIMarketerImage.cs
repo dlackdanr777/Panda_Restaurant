@@ -123,7 +123,10 @@ public class UIMarketerImage : MonoBehaviour
 
         gameObject.SetActive(true);
         _data = data;
-
+        _leftHandImage.rectTransform.anchoredPosition = data.LeftHandOffset;
+        _rightHandImage.rectTransform.anchoredPosition = data.RightHandOffset;
+        _leftHandImage.rectTransform.localScale = Vector3.one * data.Scale;
+        _rightHandImage.rectTransform.localScale = Vector3.one * data.Scale;
         
         MarketerSkinData skinData = (MarketerSkinData)UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, _data);
         if (skinData == null)
