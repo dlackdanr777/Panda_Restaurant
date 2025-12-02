@@ -417,8 +417,10 @@ public class CameraController : MonoBehaviour
         {
             int nextFloorIndex = (int)CurrentFloor + (yDiff > 0 ? 1 : -1);
 
+
+            //TODO:층수 3층제한에서 길이로 변경필요
             // 범위를 벗어나면 원래 위치로 복귀
-            if (nextFloorIndex >= (int)ERestaurantFloorType.Length || nextFloorIndex < (int)ERestaurantFloorType.Floor1)
+            if (nextFloorIndex >= (int)ERestaurantFloorType.Floor3 || nextFloorIndex < (int)ERestaurantFloorType.Floor1)
             {
                 MoveCamera(CurrentFloor, CurrentRestaurant);
                 return;

@@ -141,29 +141,37 @@ public class SpecialCustomer : Customer
         if (_customerData.Id.Contains("CUSTOMER78"))
         {
             // R이 1000 미만이면 드랍 0
-            int d = (R >= 1000)
-                ? (int)(
-                    Mathf.Floor(
-                        100.0f * Mathf.Pow(1.10f, Mathf.Floor((R - 1000) / 3000.0f))
-                        / 10.0f
-                    ) * 10.0f
-                )
-                : 0;
-            return d;
+            if (R < 1000)
+                return 0;
+            
+            // k = (R - 1000) / 3000의 내림값
+            int k = Mathf.FloorToInt((R - 1000) / 3000.0f);
+            
+            // 기본 금액 * 1.10^k
+            float baseAmount = 100.0f * Mathf.Pow(1.10f, k);
+            
+            // 10의 자리로 내림
+            int d = Mathf.FloorToInt(baseAmount / 10.0f) * 10;
+            
+            return Mathf.Max(d, 0); // 음수 방지
         }
         //여왕 레아
         else if (_customerData.Id.Contains("CUSTOMER79"))
         {
             // R이 5000 미만이면 드랍 0
-            int d = (R >= 5000)
-                ? (int)(
-                    Mathf.Floor(
-                        500.0f * Mathf.Pow(1.50f, Mathf.Floor((R - 5000) / 5000.0f))
-                        / 10.0f
-                    ) * 10.0f
-                )
-                : 0;
-            return d;
+            if (R < 5000)
+                return 0;
+            
+            // k = (R - 5000) / 5000의 내림값
+            int k = Mathf.FloorToInt((R - 5000) / 5000.0f);
+            
+            // 기본 금액 * 1.50^k
+            float baseAmount = 500.0f * Mathf.Pow(1.50f, k);
+            
+            // 10의 자리로 내림
+            int d = Mathf.FloorToInt(baseAmount / 10.0f) * 10;
+            
+            return Mathf.Max(d, 0); // 음수 방지
         }
         
         return specialData.TouchAddMoney;
