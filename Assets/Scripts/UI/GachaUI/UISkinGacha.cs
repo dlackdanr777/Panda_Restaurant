@@ -73,6 +73,7 @@ public class UISkinGacha : GachaMachineParent
     {
         _uiGacha = uiGacha;
         _scrollImage.Init();
+        _skinGachaCard.Init();
         _itemDataList = SkinDataManager.Instance.GetSortSkinDataList(GradeSortType.GradeDescending).Select(data => (GachaData)data).ToList();
 
         for (int i = 0; i < 10; ++i)
@@ -223,6 +224,7 @@ public class UISkinGacha : GachaMachineParent
                 StopAllCoroutines();
                 _uiGacha.SetActiveUIComponents(true);
                 _uiGacha.SetActiveGachaMachine(true);
+                _uiGacha.SetStartGacha(false);
                 _singleButton.gameObject.SetActive(true);
                 _tenButton.gameObject.SetActive(true);
                 _screenButton.gameObject.SetActive(false);
@@ -247,6 +249,7 @@ public class UISkinGacha : GachaMachineParent
                 _screenButton.gameObject.SetActive(true);
                 _skipButton.gameObject.SetActive(10 <= _getItemList.Count());
                 _uiGacha.SetActiveUIComponents(false);
+                _uiGacha.SetStartGacha(true);
                 _singleButton.gameObject.SetActive(false);
                 _tenButton.gameObject.SetActive(false);
                 _skinGachaCard.gameObject.SetActive(false);
@@ -295,21 +298,25 @@ public class UISkinGacha : GachaMachineParent
                 _skipButton.gameObject.SetActive(false);
                 _getItemImage.gameObject.SetActive(false);
                 _capsule.gameObject.SetActive(false);
-                _screenTouchWaitTime = 0.2f;
+
                 _isCapsuleColorChanged = true;
 
                 _isPlayTextAnime = true;
                 if (10 <= _getItemList.Count() && _getItemList.Count() <= _getItemIndex + 1)
                 {
+
                     OnSkipButtonClicked();
                 }
                 else
                 {
+                    _screenTouchWaitTime = 0.2f;
                     _getItemSound = _getItemList[_getItemIndex].Rank == Rank.Unique || _getItemList[_getItemIndex].Rank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
                     PlayGetItemSound();
 
                     _skinGachaCard.gameObject.SetActive(true);
                     _skinGachaCard.SetData(_getItemList[_getItemIndex]);
+                    _skinGachaCard.ResetScale();
+                    _getItemImage.gameObject.SetActive(true);
                     _getItemImage.sprite = _getItemList[_getItemIndex].ThumbnailSprite;
                     _skinGachaCard.SetPosition(new Vector3(0, 0, 0));
                 }
@@ -403,6 +410,7 @@ public class UISkinGacha : GachaMachineParent
 
     private void OnSkipButtonClicked()
     {
+        _screenTouchWaitTime = 5f;
         _getItemIndex = _getItemList.Count - 1;
         StopAllCoroutines();
         StartCoroutine(SkipRoutine());
@@ -449,11 +457,12 @@ public class UISkinGacha : GachaMachineParent
         _skinGachaCard.gameObject.SetActive(true);
         _skinGachaCard.SetData(_getItemList[_getItemList.Count - 1]);
         _skinGachaCard.SetPosition(new Vector3(600, 0, 0));
+
         _getItemSound = _getItemList[_getItemList.Count - 1].Rank == Rank.Unique || _getItemList[_getItemList.Count - 1].Rank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
         PlayGetItemSound();
         _skinGachaCard.TweenStop();
-        _skinGachaCard.transform.localScale = Vector3.one * 1.5f;
-        _skinGachaCard.TweenScale(Vector3.one * 1.3f, 0.2f, Ease.OutBack);
+        _skinGachaCard.transform.localScale = Vector3.one * 1.3f;
+        _skinGachaCard.TweenScale(Vector3.one * 1f, 0.2f, Ease.OutBack);
 
     }
 }

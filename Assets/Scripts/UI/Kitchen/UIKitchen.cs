@@ -41,6 +41,7 @@ public class UIKitchen : MobileUIView
     private List<KitchenUtensilData> _currentTypeDataList;
 
     private bool _isInitialized = false;
+    private Vector3 _tmpScale;
 
     public override void Init()
     {
@@ -57,6 +58,7 @@ public class UIKitchen : MobileUIView
         SubscribeEvents();
 
         _isInitialized = true;
+        _tmpScale = _animeUI.transform.localScale;
         gameObject.SetActive(false);
     }
 
@@ -98,7 +100,7 @@ public class UIKitchen : MobileUIView
         // 데이터 설정과 UI 업데이트를 한 번에 처리
         SetKitchenUtensilDataDataOptimized(KitchenUtensilType.Burner1);
 
-        TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
+        TweenData tween = _animeUI.TweenScale(_tmpScale, _showDuration, _showTweenMode);
         tween.OnComplete(() => 
         {
             VisibleState = VisibleState.Appeared;
@@ -318,7 +320,7 @@ public class UIKitchen : MobileUIView
         _uiRestaurantAdmin.MainUISetActive(true);
         transform.SetAsLastSibling();
         _canvasGroup.blocksRaycasts = false;
-        _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
+        _animeUI.transform.localScale = _tmpScale;
 
         TweenData tween = _animeUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
         tween.OnComplete(() =>

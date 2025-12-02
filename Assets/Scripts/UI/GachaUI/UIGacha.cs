@@ -33,7 +33,14 @@ public class UIGacha : MobileUIView
 
     private GachaMachineParent _currentGachaMachine;
 
+    private bool _isStartGacha;
+    public bool IsStartGacha => _isStartGacha;
+    public void SetStartGacha(bool isStart)
+    {
+        _isStartGacha = isStart;
+        _scrollRect.enabled = !isStart;
 
+    }
     public override void Init()
     {
         for (int i = 0; i < _gachaMachines.Length; i++)
@@ -76,6 +83,9 @@ public class UIGacha : MobileUIView
 
     private void OnScrollBeginDrag(PointerEventData eventData)
     {
+        if(_isStartGacha)
+            return;
+
         DebugLog.Log("스크롤 시작");
         _machineParent.TweenStop();
         _rightButton.gameObject.SetActive(false);
@@ -90,6 +100,9 @@ public class UIGacha : MobileUIView
 
     private void OnScrollDrag(PointerEventData eventData)
     {
+        if(_isStartGacha)
+            return;
+
         float currentX = _machineParent.anchoredPosition.x;
 
         // 각 인덱스 위치까지의 거리 계산
@@ -110,6 +123,9 @@ public class UIGacha : MobileUIView
 
     private void OnScrollEndDrag(PointerEventData eventData)
     {
+        if (_isStartGacha)
+            return;
+            
         DebugLog.Log("스크롤 종료");
 
         float currentX = _machineParent.anchoredPosition.x;
@@ -159,6 +175,7 @@ public class UIGacha : MobileUIView
         gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+        SetStartGacha(false);
         SetMachine(_gachaMachines[0]);
         SetMachineParentPos();
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);

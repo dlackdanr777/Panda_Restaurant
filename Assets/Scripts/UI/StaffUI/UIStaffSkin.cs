@@ -20,6 +20,7 @@ public class UIStaffSkin : MonoBehaviour
     [SerializeField] private UIButtonAndText _buyButton;
     [SerializeField] private UIImageAndText _noMoneyButton;
     [SerializeField] private Button[] _arrowButtons;
+    [SerializeField] private GameObject _tokenUI;
 
 
     [Header("Slot Options")]
@@ -59,7 +60,7 @@ public class UIStaffSkin : MonoBehaviour
             button.onClick.AddListener(ArrowButtonClicked);
 
         Hide();
-
+        _tokenUI.gameObject.SetActive(false);
         UserInfo.OnChangeStaffSkinHandler += UpdateUI;
     }
 
@@ -122,6 +123,7 @@ public class UIStaffSkin : MonoBehaviour
         _hideButton.gameObject.SetActive(true);
         _customerData = customerData;
         _currentSkinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, customerData);
+        _tokenUI.gameObject.SetActive(true);
         UpdateUI();
     }
 
@@ -129,6 +131,7 @@ public class UIStaffSkin : MonoBehaviour
     public void Hide()
     {
         gameObject.SetActive(false);
+        _tokenUI.gameObject.SetActive(false);
     }
 
     public void UpdateUI()

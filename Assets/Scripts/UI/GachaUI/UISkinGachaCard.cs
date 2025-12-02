@@ -17,6 +17,23 @@ public class UIGachaCard : MonoBehaviour
 
     [SerializeField] private UIItemStar _itemStar;
 
+    private Vector3 _tmpScale;
+
+
+    public void Init()
+    {
+        _tmpScale = _rectTransform.localScale;
+    }
+
+    public void SetScale(float scale)
+    {
+        _rectTransform.localScale = Vector3.one * scale;
+    }
+
+    public void ResetScale()
+    {
+        _rectTransform.localScale = _tmpScale;
+    }
 
     public void SetPosition(Vector3 position)
     {
