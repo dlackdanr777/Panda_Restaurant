@@ -12,6 +12,8 @@ namespace Muks.PathFinding
         public static MainThreadDispatcher Instance => _instance;
         private static MainThreadDispatcher _instance;
 
+        [SerializeField] private int _maxActionsPerFrame = 5; // 프레임당 최대 처리 개수
+        [SerializeField] private float _maxExecutionTimeMs = 5f; // 프레임당 최대 실행 시간 (밀리초)
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void CreateObj()
@@ -29,9 +31,22 @@ namespace Muks.PathFinding
         {
             lock (_executionQueue)
             {
-                while (0 < _executionQueue.Count)
+                int processedCount = 0;
+                float startTime = Time.realtimeSinceStartup;
+                
+                while (_executionQueue.Count > 0)
                 {
+                    // 프레임당 최대 개수 체크
+                    if (processedCount >= _maxActionsPerFrame)
+                        break;
+                    
+                    // 실행 시간 체크 (밀리초 단위)
+                    float elapsedMs = (Time.realtimeSinceStartup - startTime) * 1000f;
+                    if (elapsedMs >= _maxExecutionTimeMs)
+                        break;
+                    
                     _executionQueue.Dequeue().Invoke();
+                    processedCount++;
                 }
             }
         }

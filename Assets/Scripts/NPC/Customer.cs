@@ -191,16 +191,53 @@ public class Customer : MonoBehaviour
             nodeList.RemoveAt(0);
 
         _spriteRenderer.color = Color.white;
+        
+        Vector3 currentPos;
+        Vector2 targetVec;
+        Vector2 direction;
+        float distanceSqr;
+        float step;
+        
         foreach (Vector2 vec in nodeList)
         {
-            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f) // 제곱 거리 비교
+            targetVec = vec;
+            
+            while (true)
             {
-                Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
-                SetSpriteDir(dir.x);
-                float step = Time.deltaTime * _moveSpeed * 0.7f; // 프레임 독립적 이동 속도
-                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
+                currentPos = _moveObj.transform.position;
+                
+                // 거리 제곱 계산 (GC 없음)
+                float dx = targetVec.x - currentPos.x;
+                float dy = targetVec.y - currentPos.y;
+                distanceSqr = dx * dx + dy * dy;
+                
+                if (distanceSqr <= 0.01f)
+                    break;
+                
+                // 방향 계산 및 정규화 (재사용)
+                float distance = Mathf.Sqrt(distanceSqr);
+                direction.x = dx / distance;
+                direction.y = dy / distance;
+                
+                SetSpriteDir(direction.x);
+                
+                step = Time.deltaTime * _moveSpeed * 0.7f;
+                
+                // MoveTowards 직접 구현 (GC 없음)
+                if (distance > step)
+                {
+                    currentPos.x += direction.x * step;
+                    currentPos.y += direction.y * step;
+                }
+                else
+                {
+                    currentPos.x = targetVec.x;
+                    currentPos.y = targetVec.y;
+                }
+                
+                _moveObj.transform.position = currentPos;
                 ChangeState(CustomerState.Run);
-                yield return null; // 프레임마다 실행
+                yield return null;
             }
         }
 

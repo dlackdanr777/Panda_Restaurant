@@ -18,15 +18,7 @@ MonoBehaviour:
   _id: STAFF29
   _description: "\r"
   _skill: {fileID: 11400000, guid: 6513e175122c20641a60cad9e71895fa, type: 2}
-  _idleSprites:
-  - {fileID: 21300000, guid: 2f5a3040e2d670a49b3db080a20c5c20, type: 3}
-  - {fileID: 21300000, guid: 34bcd1599b553944ca5ec173ff9a4f5f, type: 3}
-  - {fileID: 21300000, guid: 1e53d3161e656ec4a987577161dd0581, type: 3}
-  - {fileID: 21300000, guid: dc2d730aff9e4f442a207a695cc91640, type: 3}
-  - {fileID: 21300000, guid: 8991859923b12ef44839205ffeba5ff3, type: 3}
-  - {fileID: 21300000, guid: 521812f50fced3540847cea9f1a88999, type: 3}
-  - {fileID: 21300000, guid: bd6de23bbfb99264c90d74e83cfbd5ee, type: 3}
-  - {fileID: 21300000, guid: 1f6de7de46601d741ab8f64af37a24d7, type: 3}
+  _idleSprites: []
   _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0

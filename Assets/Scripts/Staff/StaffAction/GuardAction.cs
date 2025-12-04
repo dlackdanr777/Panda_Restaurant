@@ -105,7 +105,7 @@ public class GuardAction : IStaffAction
                 if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
                 {
                     // 원래 위치로 복귀
-                    staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
+                    staff.transform.position = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Guard);
                     staff.SetSpriteDir(-1);
                     staff.SpriteRenderer.TweenAlpha(1, 0.25f / speedMul).OnComplete(() =>
                     {
@@ -160,7 +160,7 @@ public class GuardAction : IStaffAction
                         return;
                     }
                     
-                    staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
+                    staff.transform.position = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Guard);
                     staff.SetSpriteDir(-1);
                     staff.SpriteRenderer.TweenAlpha(1, 0.3f / speedMul).OnComplete(() =>
                     {
@@ -196,7 +196,7 @@ public class GuardAction : IStaffAction
                         return;
                     }
                     
-                    staff.transform.position = _tableManager.GetStaffPos(0, EquipStaffType.Guard);
+                    staff.transform.position = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Guard);
                     staff.SetSpriteDir(-1);
                     staff.SpriteRenderer.TweenAlpha(1, 0.3f / speedMul);
                 });

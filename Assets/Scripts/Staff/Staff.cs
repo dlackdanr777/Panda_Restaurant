@@ -386,18 +386,55 @@ public class Staff : MonoBehaviour
             nodeList.RemoveAt(0);
 
         SetStaffState(EStaffState.Run);
+        
+        Vector3 currentPos;
+        Vector2 targetVec;
+        float distanceSqr;
+        float step;
+
+        
         foreach (Vector2 vec in nodeList)
         {
-            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f)
+            targetVec = vec;
+            
+            while (true)
             {
-                Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
-                SetSpriteDir(dir.x);
-                float step = Time.deltaTime * _moveSpeed * SpeedMul;
-                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
+                currentPos = _moveObj.transform.position;
+                
+                // 거리 제곱 계산 (GC 없음)
+                float dx = targetVec.x - currentPos.x;
+                float dy = targetVec.y - currentPos.y;
+                distanceSqr = dx * dx + dy * dy;
+                
+                if (distanceSqr <= 0.01f)
+                    break;
+                
+                // 방향 계산 및 정규화
+                float distance = Mathf.Sqrt(distanceSqr);
+                float dirX = dx / distance;
+                float dirY = dy / distance;
+                
+                SetSpriteDir(dirX);
+                
+                step = Time.deltaTime * _moveSpeed * SpeedMul;
+                
+                // MoveTowards 직접 구현 (GC 없음)
+                if (distance > step)
+                {
+                    currentPos.x += dirX * step;
+                    currentPos.y += dirY * step;
+                }
+                else
+                {
+                    currentPos.x = targetVec.x;
+                    currentPos.y = targetVec.y;
+                }
+                
+                _moveObj.transform.position = currentPos;
                 yield return null;
             }
 
-            _moveObj.transform.position = vec;
+            _moveObj.transform.position = new Vector3(targetVec.x, targetVec.y, currentPos.z);
         }
 
         SetStaffState(EStaffState.None);

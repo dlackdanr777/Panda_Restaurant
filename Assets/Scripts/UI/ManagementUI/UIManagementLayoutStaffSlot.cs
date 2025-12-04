@@ -32,7 +32,8 @@ public class UIManagementLayoutStaffSlot : MonoBehaviour
 
         gameObject.SetActive(true);
         _staffData = staffData;
-        _staffImage.sprite = staffData.Sprite;
+        SkinData skinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, staffData.Id);
+        _staffImage.sprite = skinData != null ? skinData.ThumbnailSprite : staffData.ThumbnailSprite;
         _staffTypeText.text = Utility.StaffTypeStringConverter(type);
     }
 
