@@ -803,12 +803,10 @@ public class SoundManager : MonoBehaviour
         
         if (groups != null && groups.Length > 0)
         {
-            DebugLog.Log($"AudioMixer 그룹 찾음: {effectType} -> {groupName}");
             return groups[0];
         }
         else
         {
-            DebugLog.LogError($"AudioMixer 그룹을 찾을 수 없습니다: {effectType} -> {groupName}, 기본 SoundEffect 사용");
             return _audioMixer.FindMatchingGroups("SoundEffect")[0];
         }
     }

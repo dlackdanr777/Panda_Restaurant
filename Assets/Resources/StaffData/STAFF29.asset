@@ -18,7 +18,18 @@ MonoBehaviour:
   _id: STAFF29
   _description: "\r"
   _skill: {fileID: 11400000, guid: 6513e175122c20641a60cad9e71895fa, type: 2}
-  _idleSprites: []
+  _idleSprites:
+  - {fileID: 21300000, guid: 11da87c369d50e34d864b246d2366b83, type: 3}
+  - {fileID: 21300000, guid: 8c2c34197d8098744b245647fbdfafb1, type: 3}
+  - {fileID: 21300000, guid: 59f1ae322837fcb44a4aacd7b8b987d3, type: 3}
+  - {fileID: 21300000, guid: dc506de34f87f1d449a33f6534343d65, type: 3}
+  - {fileID: 21300000, guid: b2e32a6552411284b80611fe5809a8b9, type: 3}
+  - {fileID: 21300000, guid: 5d8742055ed55b04ea2b589ed7bc8799, type: 3}
+  - {fileID: 21300000, guid: df48564acc3d8b04085b31a77ec2c3c1, type: 3}
+  - {fileID: 21300000, guid: 6a80cba86b3a5dd4eb4f84957e019195, type: 3}
+  - {fileID: 21300000, guid: 6a80cba86b3a5dd4eb4f84957e019195, type: 3}
+  - {fileID: 21300000, guid: 6a80cba86b3a5dd4eb4f84957e019195, type: 3}
+  - {fileID: 21300000, guid: 6a80cba86b3a5dd4eb4f84957e019195, type: 3}
   _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0

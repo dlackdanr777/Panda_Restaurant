@@ -9,7 +9,7 @@ public class StaffDataManager : MonoBehaviour
     {
         get
         {
-            if(_instance == null)
+            if (_instance == null)
             {
                 GameObject obj = new GameObject("StaffDataManager");
                 _instance = obj.AddComponent<StaffDataManager>();
@@ -24,6 +24,7 @@ public class StaffDataManager : MonoBehaviour
     private static StaffData[] _staffDatas;
     private static Dictionary<string, StaffData> _staffDataDic = new Dictionary<string, StaffData>();
     private static List<StaffData>[] _staffTypeDataList;
+    private static Dictionary<string, MarketerLightStickData> _marketerLightStickDataDic = new Dictionary<string, MarketerLightStickData>();
 
 
 
@@ -90,7 +91,7 @@ public class StaffDataManager : MonoBehaviour
         if (type == EquipStaffType.Manager)
             return StaffGroupType.Manager;
 
-    else if (type == EquipStaffType.Waiter /*|| type == EquipStaffType.Waiter2*/)
+        else if (type == EquipStaffType.Waiter /*|| type == EquipStaffType.Waiter2*/)
             return StaffGroupType.Waiter;
 
         else if (type == EquipStaffType.Cleaner)
@@ -124,7 +125,7 @@ public class StaffDataManager : MonoBehaviour
             typeList.Add(EquipStaffType.Waiter);
 
         //if (type == StaffGroupType.Waiter)
-            //typeList.Add(EquipStaffType.Waiter2);
+        //typeList.Add(EquipStaffType.Waiter2);
 
         if (type == StaffGroupType.Cleaner)
             typeList.Add(EquipStaffType.Cleaner);
@@ -139,7 +140,7 @@ public class StaffDataManager : MonoBehaviour
             typeList.Add(EquipStaffType.Chef);
 
         //if (type == StaffGroupType.Chef)
-            //typeList.Add(EquipStaffType.Chef2);
+        //typeList.Add(EquipStaffType.Chef2);
 
         return typeList;
     }
@@ -171,16 +172,87 @@ public class StaffDataManager : MonoBehaviour
         _staffDataDic.Clear();
         _staffTypeDataList = new List<StaffData>[(int)EquipStaffType.Length];
 
-        for(int i = 0, cnt = (int)StaffGroupType.Length; i < cnt; i++)
+        for (int i = 0, cnt = (int)StaffGroupType.Length; i < cnt; i++)
         {
             _staffTypeDataList[i] = new List<StaffData>();
         }
 
         _staffDatas = Resources.LoadAll<StaffData>("StaffData");
-        for(int i = 0, cnt = _staffDatas.Length; i < cnt; i++)
+        for (int i = 0, cnt = _staffDatas.Length; i < cnt; i++)
         {
             _staffDataDic.Add(_staffDatas[i].Id, _staffDatas[i]);
             _staffTypeDataList[(int)_instance.GetStaffGroupType(_staffDatas[i])].Add(_staffDatas[i]);
+        }
+
+        InitMarketerLightStickData("StaffData/LightStickData");
+    }
+
+    public MarketerLightStickData GetMarketerLightStickData(string id)
+    {
+        if (!_marketerLightStickDataDic.TryGetValue(id, out MarketerLightStickData data))
+        {
+            float size = 1;
+            float animeLeftPosX = 0;
+            float animeLeftPosY = 0;
+            float animeRightPosX = 0;
+            float animeRightPosY = 0;
+            float idleLeftPosX = 0;
+            float idleLeftPosY = 0;
+            float idleRightPosX = 0;
+            float idleRightPosY = 0;
+
+            MarketerLightStickData lightStickData = new MarketerLightStickData(size,
+                new Vector2(animeLeftPosX, animeLeftPosY),
+                new Vector2(animeRightPosX, animeRightPosY),
+                new Vector2(idleLeftPosX, idleLeftPosY),
+                new Vector2(idleRightPosX, idleRightPosY));
+
+            _marketerLightStickDataDic.Add(id, lightStickData);
+            data = lightStickData;
+        }
+
+        return data;
+    }
+
+
+    private static void InitMarketerLightStickData(string loadPath)
+    {
+        _marketerLightStickDataDic.Clear();
+        TextAsset csvData = Resources.Load<TextAsset>(loadPath);
+        if (csvData == null)
+        {
+            Debug.LogError($"파일을 찾을 수 없습니다: {loadPath}");
+            return;
+        }
+
+        string[] data = csvData.text.Split('\n');
+        for (int i = 1; i < data.Length; i++) // 첫 번째 줄은 헤더라서 건너뜀
+        {
+            string[] row = data[i].Split(',');
+            string id = row[0].Trim();
+
+            if( string.IsNullOrEmpty(id))
+                continue;
+
+            DebugLog.Log($"LightStickData ID: {id}");
+            DebugLog.Log($"Data Length: {row.Length}"); 
+            float size = Utility.StrToFloat(row[2].Trim());
+            float animeLeftPosX = Utility.StrToFloat(row[3].Trim());
+            float animeLeftPosY = Utility.StrToFloat(row[4].Trim());
+            float animeRightPosX = Utility.StrToFloat(row[5].Trim());
+            float animeRightPosY = Utility.StrToFloat(row[6].Trim());
+            float idleLeftPosX = Utility.StrToFloat(row[7].Trim());
+            float idleLeftPosY = Utility.StrToFloat(row[8].Trim());
+            float idleRightPosX = Utility.StrToFloat(row[9].Trim());
+            float idleRightPosY = Utility.StrToFloat(row[10].Trim());
+
+            MarketerLightStickData lightStickData = new MarketerLightStickData(size,
+                new Vector2(animeLeftPosX, animeLeftPosY),
+                new Vector2(animeRightPosX, animeRightPosY),
+                new Vector2(idleLeftPosX, idleLeftPosY),
+                new Vector2(idleRightPosX, idleRightPosY));
+
+            _marketerLightStickDataDic.Add(id, lightStickData);
         }
     }
 }
