@@ -109,7 +109,7 @@ public class Furniture : MonoBehaviour
             yield break;
 
 
-        float frameTime = 0.1f; // 프레임 당 시간
+        float frameTime = 0.2f; // 프레임 당 시간
         List<Sprite> animationSprites = _data.AnimationSpriteList;
         while (true)
         {
