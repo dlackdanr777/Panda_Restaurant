@@ -1,3 +1,4 @@
+using Muks.DataBind;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -32,6 +33,8 @@ public class UITest : MonoBehaviour
 
         _satisfactionUpButton.onClick.AddListener(() => UserInfo.AddSatisfaction(UserInfo.CurrentStage, 10));
         _satisfactionDownButton.onClick.AddListener(() => UserInfo.AddSatisfaction(UserInfo.CurrentStage, -10));
+
+        DataBind.SetUnityActionValue("SetActiveTestUI", SetActiveTestUI);
     }
 
     private void Start()
@@ -48,5 +51,10 @@ public class UITest : MonoBehaviour
 
         UserInfo.ChangeUnlockFloor(UserInfo.CurrentStage, nextFloor);
         _changeFloorButton.SetText(Utility.GetFloorStrKrByType(currentFloor) + "변환");
+    }
+
+    private void SetActiveTestUI()
+    {
+        gameObject.SetActive(!gameObject.activeSelf);
     }
 }
