@@ -51,10 +51,8 @@ MonoBehaviour:
       _moneyType: 0
       _price: -1
     _marketingTime: 12
-  _uiSprite: {fileID: 21300000, guid: 60886630feed9f343b558940f3ced4fc, type: 3}
-  _animationSprite: {fileID: 21300000, guid: 56aa8dff23d45aa448fe29a7a1c90c1c, type: 3}
-  _leftHandSprite: {fileID: 21300000, guid: d30420f7f9e248947ab6a2d875352113, type: 3}
-  _rightHandSprite: {fileID: 21300000, guid: 5ee67af1a9acb614aa2661b37dfca707, type: 3}
+  _uiSprite: {fileID: 21300000, guid: 3b07a818db00d80488b6e6231a774abc, type: 3}
+  _animationSprite: {fileID: 21300000, guid: 277b952233dde6c4391ea6914c63f6b7, type: 3}
   _particleCount: 5
   _particleSprites:
   - {fileID: 21300000, guid: c049a34100e87284498233828484e10c, type: 3}

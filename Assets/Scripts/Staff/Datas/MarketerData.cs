@@ -12,13 +12,6 @@ public class MarketerData : StaffData
 
     [SerializeField] private Sprite _animationSprite;
     public Sprite AnimationSprite => _animationSprite;
-
-    [SerializeField] private Sprite _leftHandSprite;
-    public Sprite LeftHandSprite => _leftHandSprite;
-
-    [SerializeField] private Sprite _rightHandSprite;
-    public Sprite RightHandSprite => _rightHandSprite;
-
     [Space]
     [Header("Particle Option")]
 

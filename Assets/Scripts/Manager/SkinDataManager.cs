@@ -29,8 +29,6 @@ public class SkinDataManager : MonoBehaviour
     private static Dictionary<string, Sprite> _staffThumbnailSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite[]> _customerIdleSpriteDic = new Dictionary<string, Sprite[]>();
     private static Dictionary<string, Sprite> _marketerAnimationSpriteDic = new Dictionary<string, Sprite>();
-    private static Dictionary<string, Sprite> _marketerLeftHandSpriteDic = new Dictionary<string, Sprite>();
-    private static Dictionary<string, Sprite> _marketerRightHandSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite[]> _marketerEffectSpriteDic = new Dictionary<string, Sprite[]>();
 
     private static Dictionary<string, Sprite> _chefBackSpriteDic = new Dictionary<string, Sprite>();
@@ -144,8 +142,6 @@ public class SkinDataManager : MonoBehaviour
         LoadStaffSkinThumbnails();
         LoadStaffSkinIdleSprites();
         LoadMarketerSkinAnimationSprites();
-        LoadMarketerSkinLeftHandSprites();
-        LoadMarketerSkinRightHandSprites();
         LoadStaffSkinParticleSprites();
 
         LoadChefSkinBackSprite();
@@ -376,43 +372,6 @@ public class SkinDataManager : MonoBehaviour
         }
     }
 
-    private static void LoadMarketerSkinLeftHandSprites()
-    {
-        // 스프라이트 리소스 로드
-        Sprite[] sprites = Resources.LoadAll<Sprite>("StaffData/Skin/Sprites/치어리더/Items/LeftHand");
-        foreach (var sprite in sprites)
-        {
-            string key = sprite.name;
-            key = key.Trim();
-            // 중복 체크
-            if (_marketerLeftHandSpriteDic.ContainsKey(key))
-            {
-                Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
-                continue;
-            }
-
-            _marketerLeftHandSpriteDic.Add(key, sprite);
-        }
-    }
-
-    private static void LoadMarketerSkinRightHandSprites()
-    {
-        // 스프라이트 리소스 로드
-        Sprite[] sprites = Resources.LoadAll<Sprite>("StaffData/Skin/Sprites/치어리더/Items/RightHand");
-        foreach (var sprite in sprites)
-        {
-            string key = sprite.name;
-            key = key.Trim();
-            // 중복 체크
-            if (_marketerRightHandSpriteDic.ContainsKey(key))
-            {
-                Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
-                continue;
-            }
-
-            _marketerRightHandSpriteDic.Add(key, sprite);
-        }
-    }
 
     private static void LoadStaffSkinParticleSprites()
     {
@@ -579,18 +538,8 @@ public class SkinDataManager : MonoBehaviour
             StaffSkinData skinData = null;
             if (_marketerAnimationSpriteDic.TryGetValue(id, out Sprite actionSprite))
             {
-                if (_marketerLeftHandSpriteDic.TryGetValue(id, out Sprite leftHand) &&
-                    _marketerRightHandSpriteDic.TryGetValue(id, out Sprite rightHand))
-                {
-
-                    Sprite[] particleSprites = _marketerEffectSpriteDic.ContainsKey(id) ? _marketerEffectSpriteDic[id] : null;
-                    skinData = new MarketerSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, duplicationToken, actionSprite, leftHand, rightHand, particleSprites);
-                    DebugLog.Log(skinData.Name);
-                }
-                else
-                {
-                    throw new Exception($"치어리더 아이템 스프라이트를 찾을 수 없습니다: {id}");
-                }
+                Sprite[] particleSprites = _marketerEffectSpriteDic.ContainsKey(id) ? _marketerEffectSpriteDic[id] : null;
+                skinData = new MarketerSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, duplicationToken, actionSprite, particleSprites);
             }
 
             else if (_chefBackSpriteDic.TryGetValue(id, out Sprite backSprite) && _chefHandSpriteDic.TryGetValue(id, out Sprite handSprite))

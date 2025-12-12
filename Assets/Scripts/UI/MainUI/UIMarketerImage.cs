@@ -12,8 +12,6 @@ public class UIMarketerImage : MonoBehaviour
     [SerializeField] private GameObject _uiParticle;
     [SerializeField] private ParticleSystem _particleSystem;
     [SerializeField] private Image _marketerImage;
-    [SerializeField] private Image _leftHandImage;
-    [SerializeField] private Image _rightHandImage;
     [SerializeField] private GameObject _emptyObject;
 
     [SerializeField] private Sprite[] _emptySprites;
@@ -64,7 +62,6 @@ public class UIMarketerImage : MonoBehaviour
         _marketerImage.sprite = _animationSprite;
         _marketerAnimator.SetTrigger("Touch");
         _particleSystem.Emit(_particleCount);
-        SetAnimeHandPosition();
     }
 
     public void EndAnime()
@@ -77,7 +74,6 @@ public class UIMarketerImage : MonoBehaviour
         }
 
         _marketerImage.sprite = _marketerSprite;
-        SetIdleHandPosition();
     }
 
 
@@ -156,8 +152,6 @@ public class UIMarketerImage : MonoBehaviour
             _animationSprite = data.AnimationSprite;
 
             _marketerImage.sprite = _marketerSprite;
-            _leftHandImage.sprite = data.LeftHandSprite;
-            _rightHandImage.sprite = data.RightHandSprite;
 
             _particleCount = data.ParticleCount;
             _particleSystem.gameObject.SetActive(false);
@@ -172,18 +166,12 @@ public class UIMarketerImage : MonoBehaviour
                 _particleSystem.textureSheetAnimation.AddSprite(data.ParticleSprites[i]);
             }
 
-            _lightStickData = StaffDataManager.Instance.GetMarketerLightStickData(_data.Id);
-            SetIdleHandPosition();
         }
         else
         {
             _marketerSprite = skinData.Sprite;
             _animationSprite = skinData.AnimationSprite;
-
             _marketerImage.sprite = _marketerSprite;
-            _leftHandImage.sprite = skinData.LeftHandSprite;
-            _rightHandImage.sprite = skinData.RightHandSprite;
-
             _particleCount = 10;
             _particleSystem.gameObject.SetActive(false);
             _uiParticle.gameObject.SetActive(false);
@@ -198,45 +186,9 @@ public class UIMarketerImage : MonoBehaviour
                 _particleSystem.textureSheetAnimation.AddSprite(skinData.ParticleSprites[i]);
             }
 
-            _lightStickData = StaffDataManager.Instance.GetMarketerLightStickData(skinData.Id);
-            SetIdleHandPosition();
         }
 
         _particleSystem.gameObject.SetActive(true);
         _uiParticle.SetActive(true);
     }
-
-
-    private void SetIdleHandPosition()
-    {
-        if (_lightStickData == null)
-        {
-            _leftHandImage.transform.localScale = Vector3.one;
-            _rightHandImage.transform.localScale = Vector3.one;
-            _leftHandImage.rectTransform.anchoredPosition = Vector2.zero;
-            _rightHandImage.rectTransform.anchoredPosition = Vector2.zero;
-        }
-
-        _leftHandImage.transform.localScale = Vector3.one * _lightStickData.Size;
-        _rightHandImage.transform.localScale = Vector3.one * _lightStickData.Size;
-        _leftHandImage.rectTransform.anchoredPosition = _lightStickData.LeftActionHandOffset;
-        _rightHandImage.rectTransform.anchoredPosition = _lightStickData.RightIdleHandOffset;
-    }
-    
-    private void SetAnimeHandPosition()
-    {
-        if (_lightStickData == null)
-        {
-            _leftHandImage.transform.localScale = Vector3.one;
-            _rightHandImage.transform.localScale = Vector3.one;
-            _leftHandImage.rectTransform.anchoredPosition = Vector2.zero;
-            _rightHandImage.rectTransform.anchoredPosition = Vector2.zero;
-        }
-
-        _leftHandImage.transform.localScale = Vector3.one * _lightStickData.Size;
-        _rightHandImage.transform.localScale = Vector3.one * _lightStickData.Size;
-        _leftHandImage.rectTransform.anchoredPosition = _lightStickData.LeftIdleHandOffset;
-        _rightHandImage.rectTransform.anchoredPosition = _lightStickData.RightActionHandOffset;
-    }
-
 }

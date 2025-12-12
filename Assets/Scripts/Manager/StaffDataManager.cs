@@ -24,7 +24,7 @@ public class StaffDataManager : MonoBehaviour
     private static StaffData[] _staffDatas;
     private static Dictionary<string, StaffData> _staffDataDic = new Dictionary<string, StaffData>();
     private static List<StaffData>[] _staffTypeDataList;
-    private static Dictionary<string, MarketerLightStickData> _marketerLightStickDataDic = new Dictionary<string, MarketerLightStickData>();
+    //private static Dictionary<string, MarketerLightStickData> _marketerLightStickDataDic = new Dictionary<string, MarketerLightStickData>();
 
 
 
@@ -184,75 +184,75 @@ public class StaffDataManager : MonoBehaviour
             _staffTypeDataList[(int)_instance.GetStaffGroupType(_staffDatas[i])].Add(_staffDatas[i]);
         }
 
-        InitMarketerLightStickData("StaffData/LightStickData");
+        //InitMarketerLightStickData("StaffData/LightStickData");
     }
 
-    public MarketerLightStickData GetMarketerLightStickData(string id)
-    {
-        if (!_marketerLightStickDataDic.TryGetValue(id, out MarketerLightStickData data))
-        {
-            float size = 1;
-            float animeLeftPosX = 0;
-            float animeLeftPosY = 0;
-            float animeRightPosX = 0;
-            float animeRightPosY = 0;
-            float idleLeftPosX = 0;
-            float idleLeftPosY = 0;
-            float idleRightPosX = 0;
-            float idleRightPosY = 0;
+    // public MarketerLightStickData GetMarketerLightStickData(string id)
+    // {
+    //     if (!_marketerLightStickDataDic.TryGetValue(id, out MarketerLightStickData data))
+    //     {
+    //         float size = 1;
+    //         float animeLeftPosX = 0;
+    //         float animeLeftPosY = 0;
+    //         float animeRightPosX = 0;
+    //         float animeRightPosY = 0;
+    //         float idleLeftPosX = 0;
+    //         float idleLeftPosY = 0;
+    //         float idleRightPosX = 0;
+    //         float idleRightPosY = 0;
 
-            MarketerLightStickData lightStickData = new MarketerLightStickData(size,
-                new Vector2(animeLeftPosX, animeLeftPosY),
-                new Vector2(animeRightPosX, animeRightPosY),
-                new Vector2(idleLeftPosX, idleLeftPosY),
-                new Vector2(idleRightPosX, idleRightPosY));
+    //         MarketerLightStickData lightStickData = new MarketerLightStickData(size,
+    //             new Vector2(animeLeftPosX, animeLeftPosY),
+    //             new Vector2(animeRightPosX, animeRightPosY),
+    //             new Vector2(idleLeftPosX, idleLeftPosY),
+    //             new Vector2(idleRightPosX, idleRightPosY));
 
-            _marketerLightStickDataDic.Add(id, lightStickData);
-            data = lightStickData;
-        }
+    //         _marketerLightStickDataDic.Add(id, lightStickData);
+    //         data = lightStickData;
+    //     }
 
-        return data;
-    }
+    //     return data;
+    // }
 
 
-    private static void InitMarketerLightStickData(string loadPath)
-    {
-        _marketerLightStickDataDic.Clear();
-        TextAsset csvData = Resources.Load<TextAsset>(loadPath);
-        if (csvData == null)
-        {
-            Debug.LogError($"파일을 찾을 수 없습니다: {loadPath}");
-            return;
-        }
+    // private static void InitMarketerLightStickData(string loadPath)
+    // {
+    //     _marketerLightStickDataDic.Clear();
+    //     TextAsset csvData = Resources.Load<TextAsset>(loadPath);
+    //     if (csvData == null)
+    //     {
+    //         Debug.LogError($"파일을 찾을 수 없습니다: {loadPath}");
+    //         return;
+    //     }
 
-        string[] data = csvData.text.Split('\n');
-        for (int i = 1; i < data.Length; i++) // 첫 번째 줄은 헤더라서 건너뜀
-        {
-            string[] row = data[i].Split(',');
-            string id = row[0].Trim();
+    //     string[] data = csvData.text.Split('\n');
+    //     for (int i = 1; i < data.Length; i++) // 첫 번째 줄은 헤더라서 건너뜀
+    //     {
+    //         string[] row = data[i].Split(',');
+    //         string id = row[0].Trim();
 
-            if( string.IsNullOrEmpty(id))
-                continue;
+    //         if( string.IsNullOrEmpty(id))
+    //             continue;
 
-            DebugLog.Log($"LightStickData ID: {id}");
-            DebugLog.Log($"Data Length: {row.Length}"); 
-            float size = Utility.StrToFloat(row[2].Trim());
-            float animeLeftPosX = Utility.StrToFloat(row[3].Trim());
-            float animeLeftPosY = Utility.StrToFloat(row[4].Trim());
-            float animeRightPosX = Utility.StrToFloat(row[5].Trim());
-            float animeRightPosY = Utility.StrToFloat(row[6].Trim());
-            float idleLeftPosX = Utility.StrToFloat(row[7].Trim());
-            float idleLeftPosY = Utility.StrToFloat(row[8].Trim());
-            float idleRightPosX = Utility.StrToFloat(row[9].Trim());
-            float idleRightPosY = Utility.StrToFloat(row[10].Trim());
+    //         DebugLog.Log($"LightStickData ID: {id}");
+    //         DebugLog.Log($"Data Length: {row.Length}"); 
+    //         float size = Utility.StrToFloat(row[2].Trim());
+    //         float animeLeftPosX = Utility.StrToFloat(row[3].Trim());
+    //         float animeLeftPosY = Utility.StrToFloat(row[4].Trim());
+    //         float animeRightPosX = Utility.StrToFloat(row[5].Trim());
+    //         float animeRightPosY = Utility.StrToFloat(row[6].Trim());
+    //         float idleLeftPosX = Utility.StrToFloat(row[7].Trim());
+    //         float idleLeftPosY = Utility.StrToFloat(row[8].Trim());
+    //         float idleRightPosX = Utility.StrToFloat(row[9].Trim());
+    //         float idleRightPosY = Utility.StrToFloat(row[10].Trim());
 
-            MarketerLightStickData lightStickData = new MarketerLightStickData(size,
-                new Vector2(animeLeftPosX, animeLeftPosY),
-                new Vector2(animeRightPosX, animeRightPosY),
-                new Vector2(idleLeftPosX, idleLeftPosY),
-                new Vector2(idleRightPosX, idleRightPosY));
+    //         MarketerLightStickData lightStickData = new MarketerLightStickData(size,
+    //             new Vector2(animeLeftPosX, animeLeftPosY),
+    //             new Vector2(animeRightPosX, animeRightPosY),
+    //             new Vector2(idleLeftPosX, idleLeftPosY),
+    //             new Vector2(idleRightPosX, idleRightPosY));
 
-            _marketerLightStickDataDic.Add(id, lightStickData);
-        }
-    }
+    //         _marketerLightStickDataDic.Add(id, lightStickData);
+    //     }
+    // }
 }

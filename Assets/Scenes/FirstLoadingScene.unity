@@ -516,14 +516,18 @@ MonoBehaviour:
   _foodPriceMul: 0
   _totalAddSpeedMul: 0
   _cookingSpeedMul: 1
-  _addEquipFurnitureScore: 0
+  _addFurnitureScore: 0
   _addEquipFurnitureCookSpeedMul: 0
   _addEquipFurnitureTipPerMinute: 0
   _addEquipFurnitureMaxTipVolume: 0
-  _addEquipKitchenUtensilScore: 0
+  _addKitchenUtensilScore: 0
   _addEquipKitchenUtensilCookSpeedMul: 0
   _addEquipKitchenUtensilTipPerMinute: 0
   _addEquipKitchenUtensilTipVolume: 0
+  _addEquipKitchenUtensilDishWashSpeedMul:
+  - 0
+  - 0
+  - 0
   _addGiveGachaItemScore: 0
   _addGiveGachaItemTipPerMinute: 0
   _addGiveRecipeMiniGameTime: 0
@@ -896,10 +900,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 6093875081832481785}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 600, y: 600}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1331865619
 MonoBehaviour:
@@ -1508,7 +1512,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 1}
+  m_Color: {r: 0.14509805, g: 0.14509805, b: 0.14901961, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
