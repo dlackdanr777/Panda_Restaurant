@@ -70,7 +70,8 @@ namespace Muks.PathFinding.AStar
             var startMap = FindBestMatchingMap(start);
             var endMap = FindBestMatchingMap(end);
             
-            // ? 시작점과 목적지 모두 체크
+            // 원래 시작 위치 저장 (경로 보정용)
+            Vector2 originalStart = start;
             Vector2 correctedStart = start;
             Vector2 correctedEnd = end;
             MapData selectedMap = null;
@@ -137,7 +138,7 @@ namespace Muks.PathFinding.AStar
 
             PathfindingQueue.Instance.Enqueue(() =>
             {
-                var result = PathFinding(selectedMap, correctedStart, correctedEnd);
+                var result = PathFinding(selectedMap, correctedStart, correctedEnd, originalStart);
                 MainThreadDispatcher.Instance.Enqueue(() => callback(result));
             });
         }
@@ -281,7 +282,7 @@ namespace Muks.PathFinding.AStar
             return Vector2.zero;
         }
 
-        private List<Vector2> PathFinding(MapData map, Vector2 start, Vector2 end)
+        private List<Vector2> PathFinding(MapData map, Vector2 start, Vector2 end, Vector2 originalStart)
         {
             Vector2Int sPos = map.WorldToNodePos(start);
             Vector2Int tPos = map.WorldToNodePos(end);
@@ -349,6 +350,21 @@ namespace Muks.PathFinding.AStar
 
                     path.Add(startNode.toWorldPosition(map.MapBottomLeft));
                     path.Reverse();
+                    
+                    // 경로의 첫 번째 지점을 원래 시작 위치로 교체 (순간이동 방지)
+                    if (path.Count > 0)
+                    {
+                        float dx = path[0].x - originalStart.x;
+                        float dy = path[0].y - originalStart.y;
+                        float distSqr = dx * dx + dy * dy;
+                        
+                        // 첫 노드가 원래 위치에서 1 유닛 이내면 원래 위치로 교체
+                        if (distSqr < 1f)
+                        {
+                            path[0] = originalStart;
+                        }
+                    }
+                    
                     return path;
                 }
 

@@ -187,12 +187,38 @@ public class Customer : MonoBehaviour
     {
         _path = nodeList;
 
-        if (1 < nodeList.Count)
-            nodeList.RemoveAt(0);
+        // 현재 위치에서 너무 가까운 첫 노드들을 모두 제거 (순간이동 방지)
+        Vector3 currentPos = _moveObj.transform.position;
+        while (nodeList.Count > 1)
+        {
+            float dx = nodeList[0].x - currentPos.x;
+            float dy = nodeList[0].y - currentPos.y;
+            float distSqr = dx * dx + dy * dy;
+            
+            // 0.5 유닛 이내면 스킵
+            if (distSqr < 0.25f)
+                nodeList.RemoveAt(0);
+            else
+                break;
+        }
+
+        // nodeList가 비어있거나 모두 가까운 노드였을 경우 즉시 완료 처리
+        if (nodeList.Count == 0)
+        {
+            ChangeState(CustomerState.Idle);
+            SetSpriteDir(_moveEndDir);
+            onCompleted?.Invoke();
+            
+            if (!_isStairsMove)
+            {
+                _moveCompleted?.Invoke();
+                _moveCompleted = null;
+            }
+            yield break;
+        }
 
         _spriteRenderer.color = Color.white;
         
-        Vector3 currentPos;
         Vector2 targetVec;
         Vector2 direction;
         float distanceSqr;

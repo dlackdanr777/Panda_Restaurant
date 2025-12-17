@@ -195,7 +195,7 @@ public class TableManager : MonoBehaviour
                 customer.ChangeState(CustomerState.Sit);
                 customer.FixSpritePosition(false);
 
-                Tween.Wait(1f, () =>
+                Tween.Wait(1.5f, () =>
                 {
                     if (data.CurrentCustomer == null)
                         return;
