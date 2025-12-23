@@ -1,5 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,6 +17,7 @@ public class UIsetting : MobileUIView
     [SerializeField] private Button _homePageButton;
     [SerializeField] private Button _customerServiceButton;
     [SerializeField] private Button _privacyButton;
+    [SerializeField] private TextMeshProUGUI _versionText;
 
 
     [Space]
@@ -51,6 +53,7 @@ public class UIsetting : MobileUIView
         _alramButton.IsOn(SoundManager.Instance.IsVibration);
         _musicButton.IsOn(0 < SoundManager.Instance.GetVolume(AudioType.BackgroundAudio));
         _soundEffectButton.IsOn(0 < SoundManager.Instance.GetVolume(AudioType.EffectAudio));
+        _versionText.SetText($"Ver: {Application.version}");
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
