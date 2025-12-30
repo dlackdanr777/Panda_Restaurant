@@ -203,6 +203,7 @@ public class MainScene : MonoBehaviour
             {
                 UserInfo.UpdateLastAccessTime();
                 UserInfo.ResetDailyChallenges();
+                UserInfo.ResetAdCount();
 
                 if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
                     return;

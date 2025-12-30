@@ -10,40 +10,25 @@ public class WatchAdButton : MonoBehaviour
     [SerializeField] private string _adUnitId = "crivlh2b6qazuw7n";
 
     [Header("UI")]
+    [SerializeField] private UIAdPopup _adPopup;
     [SerializeField] private Button _adButton;
     [SerializeField] private ButtonPressEffect _buttonPressEffect;
 
-    private LevelPlayRewardedAd rewardedAd;
-
-    private bool _isLoading;     // 로드 중복 방지
-    private bool _wantToShow;    // 유저가 '보려고 눌렀는지' 플래그
-    private bool _rewardGranted; // 보상 중복 지급 방지
-
     private void Awake()
     {
-        // 안전장치
         if (_adButton == null)
         {
-            Debug.LogError($"[RV] _adButton이 인스펙터에 할당되지 않았습니다. (adUnitId: {_adUnitId})");
+            Debug.LogError($"[WatchAdButton] _adButton이 인스펙터에 할당되지 않았습니다. (adUnitId: {_adUnitId})");
             return;
         }
 
-        rewardedAd = new LevelPlayRewardedAd(_adUnitId);
+        // AdManager에 광고 등록
+        AdManager.Instance.RegisterAd(_adUnitId, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed, OnRewarded);
 
-        // 이벤트 구독
-        rewardedAd.OnAdLoaded += OnLoaded;
-        rewardedAd.OnAdLoadFailed += OnLoadFailed;
+        _adButton.onClick.AddListener(ShowAdPopup);
 
-        rewardedAd.OnAdDisplayed += OnDisplayed;
-        rewardedAd.OnAdDisplayFailed += OnDisplayFailed;
-
-        rewardedAd.OnAdClosed += OnClosed;
-        rewardedAd.OnAdRewarded += OnRewarded;
-
-        _adButton.onClick.AddListener(OnClickAd);
-
-        // (선택) 시작하자마자 한 번 미리 로드해두면 UX가 좋아요.
-        Preload();
+        // 시작 시 미리 로드
+        AdManager.Instance.PreloadAd(_adUnitId);
     }
 
     public void Interactable(bool value)
@@ -54,99 +39,109 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (rewardedAd == null) return;
-
-        rewardedAd.OnAdLoaded -= OnLoaded;
-        rewardedAd.OnAdLoadFailed -= OnLoadFailed;
-
-        rewardedAd.OnAdDisplayed -= OnDisplayed;
-        rewardedAd.OnAdDisplayFailed -= OnDisplayFailed;
-
-        rewardedAd.OnAdClosed -= OnClosed;
-        rewardedAd.OnAdRewarded -= OnRewarded;
+        // AdManager에서 광고 등록 해제
+        AdManager.Instance.UnregisterAd(_adUnitId, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed, OnRewarded);
 
         if (_adButton != null)
-            _adButton.onClick.RemoveListener(OnClickAd);
+            _adButton.onClick.RemoveListener(ShowAdPopup);
     }
 
-    private void Preload()
+    private void ShowAdPopup()
     {
-        if (_isLoading) return;
-        if (rewardedAd.IsAdReady()) return;
-
-        _isLoading = true;
-        rewardedAd.LoadAd();
-        Debug.Log($"[RV] Preload(adUnitId: {_adUnitId})");
+        _adPopup.ShowPopup(OnClickAd);
     }
 
     private void OnClickAd()
     {
-        _wantToShow = true;
-
-        // 이미 준비되어 있으면 바로 보여주기
-        if (rewardedAd.IsAdReady())
-        {
-            Debug.Log($"[RV] Ready -> Show(adUnitId: {_adUnitId})");
-            rewardedAd.ShowAd();
-            return;
-        }
-
-        // 준비 안 됐으면 로드부터
-        if (_isLoading) return;
-
-        _isLoading = true;
-        Debug.Log($"[RV] Not ready -> Load(adUnitId: {_adUnitId})");
-        rewardedAd.LoadAd();
+        Debug.Log($"[WatchAdButton] OnClickAd - {_adUnitId}");
+        AdManager.Instance.ShowAd(_adUnitId);
     }
 
     private void OnLoaded(LevelPlayAdInfo adInfo)
     {
-        _isLoading = false;
-        Debug.Log("[RV] Loaded");
+        AdManager.Instance.SetLoading(_adUnitId, false);
+        Debug.Log($"[WatchAdButton] Loaded - {_adUnitId}");
 
-        // ✅ 유저가 보려고 눌렀을 때만 Show (자동 연쇄 재생 방지)
-        if (_wantToShow)
+        // 유저가 보려고 눌렀을 때만 Show
+        if (AdManager.Instance.GetWantToShow(_adUnitId))
         {
-            _wantToShow = false;
-            Debug.Log($"[RV] Show() after Loaded (adUnitId: {_adUnitId})");
-            rewardedAd.ShowAd();
+            AdManager.Instance.SetWantToShow(_adUnitId, false);
+            Debug.Log($"[WatchAdButton] Show after Loaded - {_adUnitId}");
+            AdManager.Instance.ShowAd(_adUnitId);
         }
     }
 
     private void OnLoadFailed(LevelPlayAdError error)
     {
-        _isLoading = false;
-        _wantToShow = false;
-        Debug.LogError($"[RV] LoadFailed: {error} (adUnitId: {_adUnitId})");
+        AdManager.Instance.SetLoading(_adUnitId, false);
+        AdManager.Instance.SetWantToShow(_adUnitId, false);
+        Debug.LogError($"[WatchAdButton] LoadFailed - {_adUnitId}: {error}");
     }
 
     private void OnDisplayed(LevelPlayAdInfo adInfo)
     {
-        _rewardGranted = false; // 광고 시작 시 보상 플래그 초기화
-        Debug.Log($"[RV] Displayed (adUnitId: {_adUnitId})");
+        Debug.Log($"[WatchAdButton] Displayed - {_adUnitId}");
+        
+        // OnDisplayed가 호출되었다는 것은 이 광고가 실제로 표시되고 있다는 의미
+        // 현재 재생 중인 광고로 설정
+        AdManager.Instance.SetCurrentPlayingAd(_adUnitId);
+        AdManager.Instance.SetRewardGranted(_adUnitId, false);
+        Debug.Log($"[WatchAdButton] 내 광고 재생 시작 - {_adUnitId}");
     }
 
     private void OnDisplayFailed(LevelPlayAdInfo adInfo, LevelPlayAdError error)
     {
-        _wantToShow = false;
-        Debug.LogError($"[RV] DisplayFailed: {error} (adUnitId: {_adUnitId})");
+        AdManager.Instance.SetWantToShow(_adUnitId, false);
+        Debug.LogError($"[WatchAdButton] DisplayFailed - {_adUnitId}: {error}");
     }
 
     private void OnClosed(LevelPlayAdInfo adInfo)
     {
-        _wantToShow = false;
-        Debug.Log($"[RV] Closed -> Preload next (adUnitId: {_adUnitId})");
-
-        // ✅ 닫힌 뒤에는 다음 광고를 위해 로드만 (Show는 절대 자동으로 하지 않음)
-        Preload();
+        Debug.Log($"[WatchAdButton] Closed - {_adUnitId}, isCurrentPlaying: {AdManager.Instance.IsCurrentPlayingAd(_adUnitId)}");
+        
+        // 내 광고가 아니면 무시
+        if (!AdManager.Instance.IsCurrentPlayingAd(_adUnitId))
+        {
+            Debug.LogWarning($"[WatchAdButton] OnClosed 무시 - 다른 광고 ({_adUnitId})");
+            return;
+        }
+        
+        // OnRewarded가 먼저 호출되지 않은 경우에만 정리
+        // (에디터에서는 OnClosed -> OnRewarded 순서로 호출될 수 있음)
+        if (AdManager.Instance.GetRewardGranted(_adUnitId))
+        {
+            Debug.Log($"[WatchAdButton] OnClosed - 보상 지급 완료됨, 정리 작업");
+            AdManager.Instance.OnAdPlayFinished(_adUnitId);
+        }
+        else
+        {
+            Debug.Log($"[WatchAdButton] OnClosed - 보상 대기 중, OnRewarded에서 정리 예정");
+        }
+        
+        // 다음 광고 미리 로드
+        AdManager.Instance.PreloadAd(_adUnitId);
     }
 
     private void OnRewarded(LevelPlayAdInfo adInfo, LevelPlayReward reward)
     {
-        if (_rewardGranted) return; // ✅ 중복 지급 방지
-        _rewardGranted = true;
-
-        Debug.Log($"[RV] Rewarded: {reward.Name} x{reward.Amount} (adUnitId: {_adUnitId})");
+        Debug.Log($"[WatchAdButton] Rewarded - {_adUnitId}, isCurrentPlaying: {AdManager.Instance.IsCurrentPlayingAd(_adUnitId)}, reward: {reward.Name} x{reward.Amount}");
+        
+        // 내 광고가 아니면 무시
+        if (!AdManager.Instance.IsCurrentPlayingAd(_adUnitId))
+        {
+            Debug.LogWarning($"[WatchAdButton] OnRewarded 무시 - 다른 광고 ({_adUnitId})");
+            return;
+        }
+        
+        // 중복 지급 방지
+        if (AdManager.Instance.GetRewardGranted(_adUnitId))
+        {
+            Debug.LogWarning($"[WatchAdButton] OnRewarded 무시 - 이미 보상 지급됨 ({_adUnitId})");
+            return;
+        }
+        
+        AdManager.Instance.SetRewardGranted(_adUnitId, true);
+        Debug.Log($"[WatchAdButton] 보상 지급! {_adUnitId}: {reward.Name} x{reward.Amount}");
 
         if (reward.Name == "게임머니")
         {
@@ -158,5 +153,9 @@ public class WatchAdButton : MonoBehaviour
         }
 
         OnAdRewarded?.Invoke();
+        
+        // 보상 지급 후 정리 작업
+        AdManager.Instance.OnAdPlayFinished(_adUnitId);
+        Debug.Log($"[WatchAdButton] OnRewarded 완료, 정리 작업 완료");
     }
 }

@@ -10,7 +10,7 @@ public class UIAttendance : MobileUIView
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIButtonAndPressEffect _attendanceButton;
-    [SerializeField] private UIButtonAndPressEffect _adButton;
+    [SerializeField] private WatchAdButton _adButton;
     [SerializeField] private UILoadingBar _loadingBar;
 
 
@@ -62,7 +62,7 @@ public class UIAttendance : MobileUIView
         }
 
         _attendanceButton.AddListener(() => OnAttendanceButtonClicked(false));
-        _adButton.AddListener(() => OnAttendanceButtonClicked(true));
+        _adButton.OnAdRewarded += () => OnAttendanceButtonClicked(true);
         gameObject.SetActive(false);
     }
 
@@ -168,7 +168,7 @@ public class UIAttendance : MobileUIView
         }
 
         _attendanceButton.interactable = checkAttendance;
-        _adButton.interactable = checkAttendance;
+        _adButton.Interactable(checkAttendance);
         float totalDays = UserInfo.GetTotalAttendanceDays();
         float loadingBarGauge = totalDays <= 0 ? 0 : (totalDays % 7) / 6f; // 6일차에 1.0, 7일차에 0으로 초기화
         _loadingBar.SetFillAmount(loadingBarGauge);

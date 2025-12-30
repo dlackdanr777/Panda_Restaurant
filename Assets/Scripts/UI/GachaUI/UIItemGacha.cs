@@ -366,7 +366,7 @@ public class UIItemGacha : GachaMachineParent
     public override void OnSingleGachaButtonClicked()
     {
 
-        if(UserInfo.IsDiaValid(1))
+        if(UserInfo.IsDiaValid(10))
         {
             _uiGacha.SetActiveGachaMachine(false);
             SetActiveGachaMachine(true);
@@ -379,7 +379,7 @@ public class UIItemGacha : GachaMachineParent
             UserInfo.GiveGachaItem(item);
 
             _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-1);
+            UserInfo.AddDia(-10);
             UserInfo.AddUserGachaMachineCount();
             GameManager.Instance.SaveGameData();
         }
@@ -393,7 +393,7 @@ public class UIItemGacha : GachaMachineParent
 
     public override void OnTenGachaButtonClicked()
     {
-        if(UserInfo.IsDiaValid(10))
+        if(UserInfo.IsDiaValid(100))
         {
             _uiGacha.SetActiveGachaMachine(false);
             SetActiveGachaMachine(true);
@@ -413,7 +413,7 @@ public class UIItemGacha : GachaMachineParent
             UserInfo.GiveGachaItem(_getItemList);
 
             _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-10);
+            UserInfo.AddDia(-100);
             UserInfo.AddUserGachaMachineCount(11);
             GameManager.Instance.SaveGameData();
         }

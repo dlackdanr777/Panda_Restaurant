@@ -4,6 +4,9 @@ using UnityEngine;
 
 public class UIFever : MonoBehaviour
 {
+
+    private const string AdTimeKey = "AdFever";
+    private const int AdTime = 300; // 5분
     [SerializeField] private MainScene _mainScene;
     [SerializeField] private GameObject _feverEffects;
     [SerializeField] private RectTransform _animeStartPos;
@@ -12,6 +15,7 @@ public class UIFever : MonoBehaviour
     [SerializeField] private Animator _feverAnimator;
     [SerializeField] private RectTransform _feverShineEffectObj;
     [SerializeField] private Animator _mirrorBallAnimator;
+    [SerializeField] private WatchAdButton _feverAdButton;
 
 
     [Header("FeverMeter")]
@@ -51,6 +55,11 @@ public class UIFever : MonoBehaviour
         _feverButton.AddListener(OnFeverButtonClicked);
         _ferverSystem.OnStartFeverHandler += StartFeverEvent;
         _ferverSystem.OnEndFeverHandler += EndFeverEvent;
+
+        _feverAdButton.OnAdRewarded += OnAdButtonClicked;
+        TimeManager.Instance.OnRemoveTimeHandler += OnRemoveTimeEvent;
+
+        OnUpdateAdButtonEvent();
     }
 
 
@@ -167,4 +176,33 @@ public class UIFever : MonoBehaviour
             _feverEffects.gameObject.SetActive(false);
         });
     } 
+
+      private void OnRemoveTimeEvent(string key)
+    {
+        if (key != AdTimeKey) return;
+
+        OnUpdateAdButtonEvent();
+    }
+
+
+    private void OnUpdateAdButtonEvent()
+    {
+        if(!TimeManager.Instance.IsAddTime(AdTimeKey) ||  5 <= UserInfo.FeverAdCount)
+        {
+            _feverAdButton.gameObject.SetActive(false);
+            return;
+        }
+
+        _feverAdButton.gameObject.SetActive(true);
+    }
+
+
+    private void OnAdButtonClicked()
+    {
+        TimeManager.Instance.SetTime(AdTimeKey, AdTime);
+        UserInfo.AddFeverAdCount();
+        _ferverSystem.SetFeverGauge(ConstValue.MAX_PEVER_GAUGE);
+        OnChangeGauge();
+        OnUpdateAdButtonEvent();
+    }
 }

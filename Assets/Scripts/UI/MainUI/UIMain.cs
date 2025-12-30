@@ -53,7 +53,7 @@ public class UIMain : MonoBehaviour
 
     private void OnUpdateAdButtonEvent()
     {
-        if(!TimeManager.Instance.IsAddTime(AdCustomerTimeKey) ||  _customerController.IsMaxCount)
+        if(!TimeManager.Instance.IsAddTime(AdCustomerTimeKey) ||  _customerController.IsMaxCount || 10 <= UserInfo.AddCustomerAdCount)
         {
             _watchAdButton.gameObject.SetActive(false);
             return;
@@ -89,6 +89,7 @@ public class UIMain : MonoBehaviour
 
     private IEnumerator AddCustomerRoutine()
     {
+        UserInfo.AddAddCustomerAdCount();
         TimeManager.Instance.SetTime(AdCustomerTimeKey, AdCustomerTime);
         while (!_customerController.IsMaxCount)
         {
