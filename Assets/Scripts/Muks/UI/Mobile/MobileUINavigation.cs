@@ -149,7 +149,7 @@ namespace Muks.MobileUI
             MobileUIView view = _activeViewList.Find(x => x == _viewDic[viewName]);
             if (view == null)
             {
-                Debug.LogError("해당 uiView가 열려있지 않습니다.");
+                Debug.LogError("해당 uiView가 열려있지 않습니다: " + viewName);
                 return;
             }
 

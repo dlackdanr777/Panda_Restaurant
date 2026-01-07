@@ -22,4 +22,9 @@ public static class ConstValue
     public const int DEFAULT_MAX_BOLW_COUNT = 6;
 
 
+    //광고 관련 변수
+    public const int DAILY_AD_GOLD_REWARD_COUNT = 3;
+    public const int DAILY_AD_DIA_REWARD_COUNT = 3;
+
+
 }

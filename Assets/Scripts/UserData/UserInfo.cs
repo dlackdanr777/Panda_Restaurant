@@ -229,6 +229,13 @@ public static class UserInfo
     public static int FeverAdCount => _feverAdCount;
     public static void AddFeverAdCount() => _feverAdCount++;
 
+    private static int _dailyAdGoldRewardCount;
+    public static int DailyAdGoldRewardCount => _dailyAdGoldRewardCount;
+    public static void AddDailyAdGoldRewardCount() => _dailyAdGoldRewardCount++;
+    private static int _dailyAdDiaRewardCount;
+    public static int DailyAdDiaRewardCount => _dailyAdDiaRewardCount;
+    public static void AddDailyAdDiaRewardCount() => _dailyAdDiaRewardCount++;
+
     //###############################################################
 
     #region Init
@@ -445,6 +452,9 @@ public static class UserInfo
         param.Add("AddCustomerAdCount", _addCustomerAdCount);
         param.Add("DoubleTipCounterAdCount", _doubleTipCounterAdCount);
         param.Add("FeverAdCount", _feverAdCount);
+
+        param.Add("DailyAdGoldRewardCount", _dailyAdGoldRewardCount);
+        param.Add("DailyAdDiaRewardCount", _dailyAdDiaRewardCount);
         //--------------------------------
 
         Dictionary<string, int> timeDic = TimeManager.Instance.GetTimeDic();
@@ -643,6 +653,9 @@ public static class UserInfo
         _addCustomerAdCount = loadData.AddCustomerAdCount;
         _doubleTipCounterAdCount = loadData.DoubleTipCounterAdCount;
         _feverAdCount = loadData.FeverAdCount;
+
+        _dailyAdGoldRewardCount = loadData.DailyAdGoldRewardCount;
+        _dailyAdDiaRewardCount = loadData.DailyAdDiaRewardCount;
 
         if (CheckNoAttendance())
         {
@@ -1101,7 +1114,7 @@ public static class UserInfo
     }
 
     // 현재 한국 시간(UTC+9)을 반환하는 메서드
-    private static DateTime GetKoreanTime()
+    public static DateTime GetKoreanTime()
     {
         try
         {
@@ -2884,6 +2897,8 @@ public static class UserInfo
         _addCustomerAdCount = 0;
         _feverAdCount = 0;
         _doubleTipCounterAdCount = 0;
+        _dailyAdGoldRewardCount = 0;
+        _dailyAdDiaRewardCount = 0;
     }
 
     #endregion

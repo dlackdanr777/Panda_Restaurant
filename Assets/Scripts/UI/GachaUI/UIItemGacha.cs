@@ -373,7 +373,6 @@ public class UIItemGacha : GachaMachineParent
         
             _getItemList.Clear();
             _getItemIndex = 0;
-
             GachaItemData item = (GachaItemData)ItemManager.Instance.GetRandomGachaData(_itemDataList);
             _getItemList.Add(item);
             UserInfo.GiveGachaItem(item);
@@ -382,6 +381,8 @@ public class UIItemGacha : GachaMachineParent
             UserInfo.AddDia(-10);
             UserInfo.AddUserGachaMachineCount();
             GameManager.Instance.SaveGameData();
+            PaymentInfo.AddGachaData($"Normal Item Gacha 1");
+            PaymentInfo.SavePaymentData();
         }
 
         else
@@ -416,6 +417,8 @@ public class UIItemGacha : GachaMachineParent
             UserInfo.AddDia(-100);
             UserInfo.AddUserGachaMachineCount(11);
             GameManager.Instance.SaveGameData();
+            PaymentInfo.AddGachaData($"Normal Item Gacha 11");
+            PaymentInfo.SavePaymentData();
         }
         else
         {

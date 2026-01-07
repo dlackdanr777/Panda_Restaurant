@@ -79,6 +79,9 @@ public class LoadUserData
     public int FeverAdCount;
     public int DoubleTipCounterAdCount;
 
+    public int DailyAdGoldRewardCount;
+    public int DailyAdDiaRewardCount;
+
     //###############################
 
     public LoadUserData(JsonData json)
@@ -165,6 +168,9 @@ public class LoadUserData
             AddCustomerAdCount = GetInt("AddCustomerAdCount");
             FeverAdCount = GetInt("FeverAdCount");
             DoubleTipCounterAdCount = GetInt("DoubleTipCounterAdCount");
+
+            DailyAdGoldRewardCount = GetInt("DailyAdGoldRewardCount");
+            DailyAdDiaRewardCount = GetInt("DailyAdDiaRewardCount");
         }
         catch (Exception e)
         {
