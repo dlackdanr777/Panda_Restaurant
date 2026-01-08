@@ -744,8 +744,11 @@ public static class UserInfo
             // 저장된 시간은 이미 한국 시간이므로 그대로 사용
             if (DateTime.TryParse(_lastAttendanceTime, out DateTime lastAttendanceTime))
             {
-                TimeSpan timeDifference = currentServerTime - lastAttendanceTime;
-                return 1 <= timeDifference.TotalDays;
+                // 게임 내 하루 기준으로 비교
+                DateTime currentGameDay = GetGameDay(currentServerTime);
+                DateTime lastGameDay = GetGameDay(lastAttendanceTime);
+                
+                return currentGameDay > lastGameDay;
             }
             return true;
         }
@@ -753,6 +756,34 @@ public static class UserInfo
         {
             DebugLog.LogError($"출석 체크 중 오류 발생: {ex.Message}");
             return true;
+        }
+    }
+
+    // 연속 출석이 끊겼는지 확인 (하루 이상 차이)
+    private static bool IsConsecutiveAttendanceBroken()
+    {
+        if (string.IsNullOrWhiteSpace(_lastAttendanceTime))
+            return false; // 첫 출석인 경우 끊긴 것이 아님
+
+        try
+        {
+            DateTime currentServerTime = GetKoreanTime();
+
+            if (DateTime.TryParse(_lastAttendanceTime, out DateTime lastAttendanceTime))
+            {
+                DateTime currentGameDay = GetGameDay(currentServerTime);
+                DateTime lastGameDay = GetGameDay(lastAttendanceTime);
+                
+                TimeSpan dayDifference = currentGameDay - lastGameDay;
+                // 2일 이상 차이가 나면 연속 출석이 끊긴 것
+                return dayDifference.TotalDays > 1;
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            DebugLog.LogError($"연속 출석 체크 중 오류 발생: {ex.Message}");
+            return false;
         }
     }
 
@@ -851,12 +882,24 @@ public static class UserInfo
 
     public static void UpdateAttendanceData()
     {
+        // 연속 출석이 끊겼는지 확인
+        if (IsConsecutiveAttendanceBroken())
+        {
+            // 하루 이상 출석을 안한 경우 0으로 초기화 후 1로 설정
+            _totalAttendanceDays = 1;
+            DebugLog.Log("연속 출석이 끊겨서 출석 횟수를 1로 초기화합니다.");
+        }
+        else
+        {
+            // 연속 출석 중이면 1 증가
+            _totalAttendanceDays += 1;
+        }
+        
         _lastAttendanceTime = BackendManager.Instance.ServerTime.ToString();
-        _totalAttendanceDays += 1;
         OnUpdateAttendanceDataHandler?.Invoke();
     }
 
-    public static int GetTotalAttendanceDays()
+    public static int GetAttendanceDays()
     {
         return _totalAttendanceDays;
     }
