@@ -67,6 +67,7 @@ public class FirstLoadingScene : MonoBehaviour
                                {
                                    UserInfo.LoadGameData(bro);
                                    UserInfo.LoadStageDataAsync();
+                                   PaymentInfo.LoadPaymentData();
                                    Tween.Wait(0.7f, () =>
                                    {
                                        _uiFirstLoadingScene.HideTitle(() =>

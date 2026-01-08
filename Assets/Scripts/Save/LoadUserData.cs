@@ -72,6 +72,18 @@ public class LoadUserData
 
     public Dictionary<string, SaveTimeData> TimeDataDic = new Dictionary<string, SaveTimeData>();
 
+
+    //#####광고 관련 변수#############
+
+    public int AddCustomerAdCount;
+    public int FeverAdCount;
+    public int DoubleTipCounterAdCount;
+
+    public int DailyAdGoldRewardCount;
+    public int DailyAdDiaRewardCount;
+
+    //###############################
+
     public LoadUserData(JsonData json)
     {
         if (json == null || json.Count == 0)
@@ -152,6 +164,13 @@ public class LoadUserData
 
             LoadStringSet(data, "NotificationMessageList", NotificationMessageSet);
             LoadStringSet(data, "ClearNotificationMessageList", ClearNotificationMessageSet);
+
+            AddCustomerAdCount = GetInt("AddCustomerAdCount");
+            FeverAdCount = GetInt("FeverAdCount");
+            DoubleTipCounterAdCount = GetInt("DoubleTipCounterAdCount");
+
+            DailyAdGoldRewardCount = GetInt("DailyAdGoldRewardCount");
+            DailyAdDiaRewardCount = GetInt("DailyAdDiaRewardCount");
         }
         catch (Exception e)
         {

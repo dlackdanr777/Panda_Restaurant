@@ -93,6 +93,14 @@ public class UIMainCanvas : MonoBehaviour
         DataBind.SetUnityActionValue("HideFloorLockUI", OnHideFloorLockUI);
         DataBind.SetUnityActionValue("HideNoAnimeFloorLockUI", OnHideNoAnimeFloorLockUI);
 
+        DataBind.SetUnityActionValue("ShowAdUI", OnShowAdUI);
+        DataBind.SetUnityActionValue("HideAdUI", OnHideAdUI);
+        DataBind.SetUnityActionValue("HideNoAnimeAdUI", OnHideNoAnimeAdUI);
+
+        DataBind.SetUnityActionValue("ShowPaymentUI", OnShowPaymentUI);
+        DataBind.SetUnityActionValue("HidePaymentUI", OnHidePaymentUI);
+        DataBind.SetUnityActionValue("HideNoAnimePaymentUI", OnHideNoAnimePaymentUI);
+
         DataBind.SetUnityActionValue("ShowFurnitureTable1", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table1));
         DataBind.SetUnityActionValue("ShowFurnitureTable2", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table2));
         DataBind.SetUnityActionValue("ShowFurnitureTable3", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table3));
@@ -397,7 +405,7 @@ public class UIMainCanvas : MonoBehaviour
         _uiNav.Push("UIFloorLock");
     }
 
-        private void OnHideFloorLockUI()
+    private void OnHideFloorLockUI()
     {
         _uiNav.Pop("UIFloorLock");
     }
@@ -405,5 +413,36 @@ public class UIMainCanvas : MonoBehaviour
     private void OnHideNoAnimeFloorLockUI()
     {
         _uiNav.PopNoAnime("UIFloorLock");
+    }
+
+    public void OnShowAdUI()
+    {
+        _uiNav.Push("UIAd");
+    }
+
+    private void OnHideAdUI()
+    {
+        _uiNav.Pop("UIAd");
+    }
+
+    private void OnHideNoAnimeAdUI()
+    {
+        _uiNav.PopNoAnime("UIAd");
+    }
+
+
+    public void OnShowPaymentUI()
+    {
+        _uiNav.Push("UIPayment");
+    }
+
+    private void OnHidePaymentUI()
+    {
+        _uiNav.Pop("UIPayment");
+    }
+
+    private void OnHideNoAnimePaymentUI()
+    {
+        _uiNav.PopNoAnime("UIPayment");
     }
 }

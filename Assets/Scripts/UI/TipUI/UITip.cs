@@ -8,10 +8,11 @@ using UnityEngine.UI;
 
 public class UITip : MobileUIView
 {
+
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private Button _collectTipButton;
-    [SerializeField] private Button _advertisingButton;
+    [SerializeField] private WatchAdButton _adButton;
     [SerializeField] private TextMeshProUGUI _tipText;
     [SerializeField] private UIMoney _uiMoney;
 
@@ -48,7 +49,7 @@ public class UITip : MobileUIView
         _dontTouchArea.SetAsLastSibling();
 
         _collectTipButton.onClick.AddListener(OnCollectTipButtonClicked);
-        _advertisingButton.onClick.AddListener(OnAdvertisingButtonClicked);
+        _adButton.OnAdRewarded += OnAdvertisingButtonClicked;
         UserInfo.OnChangeTipHandler += OnChangeMoneyEvent;
 
         int tip = UserInfo.GetTip(UserInfo.CurrentStage);
@@ -70,7 +71,16 @@ public class UITip : MobileUIView
         _currentTip = tip;
 
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-
+        if(tip <= 0)
+        {
+            _adButton.gameObject.SetActive(false);
+            _collectTipButton.interactable = false;
+        }
+        else
+        {
+            _adButton.gameObject.SetActive(true);
+            _collectTipButton.interactable = true;
+        }
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
@@ -115,7 +125,7 @@ public class UITip : MobileUIView
             return;
         }
 
-        //CoinAnime(true);
+        UserInfo.AddDoubleTipCounterAdCount();
         GiveTipAnime(true);
     }
 
@@ -170,13 +180,23 @@ public class UITip : MobileUIView
             return;
         }
 
-
         int addMoney = UserInfo.GetTip(UserInfo.CurrentStage) - _currentTip;
 
         if (addMoney == 0)
             return;
 
         _currentTip = UserInfo.GetTip(UserInfo.CurrentStage);
+
+        if (_currentTip <= 0)
+        {
+            _adButton.gameObject.SetActive(false);
+            _collectTipButton.interactable = false;
+        }
+        else
+        {
+            _adButton.gameObject.SetActive(true);
+            _collectTipButton.interactable = true;
+        }
 
         if (_moneyAnimeRoutine != null)
             StopCoroutine(_moneyAnimeRoutine);

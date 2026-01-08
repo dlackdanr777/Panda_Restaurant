@@ -967,18 +967,19 @@ namespace Muks.BackEnd
         /// </summary>
         public bool SaveGameData(string tableId, Param param)
         {
+
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
                 return false;
             }
-            
+
             if (!IsLogin || !_isLoaded)
             {
                 Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
                 return false;
             }
-            
+            DebugLog.Log("33");
             // 유저 정보 조회를 위한 조건
             Where where = new Where();
             where.Equal("owner_inDate", Backend.UserInDate);
@@ -1347,6 +1348,7 @@ namespace Muks.BackEnd
                 
                 if (_isLogin && _isSaveEnabled)
                 {
+                    DebugLog.Log("11");
                     OnPauseHandler?.Invoke();
                 }
             }

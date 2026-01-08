@@ -333,7 +333,7 @@ public class UISkinGacha : GachaMachineParent
     public override void OnSingleGachaButtonClicked()
     {
 
-        if(UserInfo.IsDiaValid(1))
+        if(UserInfo.IsDiaValid(10))
         {
             _uiGacha.SetActiveGachaMachine(false);
             SetActiveGachaMachine(true);
@@ -346,9 +346,11 @@ public class UISkinGacha : GachaMachineParent
             UserInfo.GiveSkin(item);
 
             _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-1);
+            UserInfo.AddDia(-10);
             UserInfo.AddUserGachaMachineCount();
             GameManager.Instance.SaveGameData();
+            PaymentInfo.AddGachaData($"Normal Skin Gacha 1");
+            PaymentInfo.SavePaymentData();
         }
 
         else
@@ -360,7 +362,7 @@ public class UISkinGacha : GachaMachineParent
 
     public override void OnTenGachaButtonClicked()
     {
-        if(UserInfo.IsDiaValid(10))
+        if(UserInfo.IsDiaValid(100))
         {
             _uiGacha.SetActiveGachaMachine(false);
             SetActiveGachaMachine(true);
@@ -384,9 +386,11 @@ public class UISkinGacha : GachaMachineParent
             UserInfo.GiveSkinList(_getItemList);
 
             _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-10);
+            UserInfo.AddDia(-100);
             UserInfo.AddUserGachaMachineCount(11);
             GameManager.Instance.SaveGameData();
+            PaymentInfo.AddGachaData($"Normal Skin Gacha 11");
+            PaymentInfo.SavePaymentData();
         }
         else
         {

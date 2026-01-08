@@ -490,9 +490,12 @@ public class Staff : MonoBehaviour
             type = RestaurantType.Kitchen;
         
         Vector3 doorPos = _tableManager.GetDoorPos(type, _targetPos);
-        TweenAlpha(0, 0.4f, Ease.Constant, () => _moveObj.transform.position = doorPos);
+        TweenAlpha(0, 0.4f, Ease.Constant, () => {
+            _moveObj.transform.position = doorPos;
+            SetAlpha(0f);
+            });
         yield return YieldCache.WaitForSeconds(1f);
-        
+        SetAlpha(0f);
         if (!gameObject.activeInHierarchy)
         {
             SetAlpha(1f);
@@ -501,7 +504,7 @@ public class Staff : MonoBehaviour
         
         TweenAlpha(1, 0.4f, Ease.Constant, () => SetAlpha(1f));
         yield return YieldCache.WaitForSeconds(1f);
-        
+        SetAlpha(1f);
         if (_skillEffect != null)
             _skillEffect.color = Color.white;
         if (_spriteRenderer != null)

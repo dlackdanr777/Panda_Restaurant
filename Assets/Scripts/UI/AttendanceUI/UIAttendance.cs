@@ -10,7 +10,7 @@ public class UIAttendance : MobileUIView
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIButtonAndPressEffect _attendanceButton;
-    [SerializeField] private UIButtonAndPressEffect _adButton;
+    [SerializeField] private WatchAdButton _adButton;
     [SerializeField] private UILoadingBar _loadingBar;
 
 
@@ -42,7 +42,7 @@ public class UIAttendance : MobileUIView
      
     public override void Init()
     {
-        int startDay = UserInfo.GetTotalAttendanceDays();
+        int startDay = UserInfo.GetAttendanceDays();
         List<AttendanceData> dataList = AttendanceDataManager.Instance.GetRewardDataList(startDay);
         int baseStartDay = ((startDay - 1) / 7) * 7 + 1;
         for (int i = 0, cnt = 7; i < cnt; i++)
@@ -62,7 +62,7 @@ public class UIAttendance : MobileUIView
         }
 
         _attendanceButton.AddListener(() => OnAttendanceButtonClicked(false));
-        _adButton.AddListener(() => OnAttendanceButtonClicked(true));
+        _adButton.OnAdRewarded += () => OnAttendanceButtonClicked(true);
         gameObject.SetActive(false);
     }
 
@@ -120,14 +120,13 @@ public class UIAttendance : MobileUIView
         }
 
         // 현재 출석 일수 계산
-        int totalDays = UserInfo.GetTotalAttendanceDays();
-        int currentWeek = totalDays / 7; // 현재 주차 계산 (0-based index)
-        int currentDay = totalDays % 7; // 해당 주의 몇 번째 날인지 계산
+        int days = UserInfo.GetAttendanceDays();
+        int currentWeek = days / 7; // 현재 주차 계산 (0-based index)
+        int currentDay = days % 7; // 해당 주의 몇 번째 날인지 계산
 
         // 보상 아이템 처리
         if (currentDay < _slotList.Count)
         {
-            DebugLog.Log(currentWeek + "주차 " + currentDay + "일 출석 체크");
             _slotList[currentDay].ReceiveItem(isAd);
         }
 
@@ -140,7 +139,7 @@ public class UIAttendance : MobileUIView
     private void UpdateUI()
     {
         bool checkAttendance = UserInfo.CheckNoAttendance();
-        int adjustedDays = checkAttendance ? UserInfo.GetTotalAttendanceDays() : UserInfo.GetTotalAttendanceDays() - 1;
+        int adjustedDays = checkAttendance ? UserInfo.GetAttendanceDays() : UserInfo.GetAttendanceDays() - 1;
 
         // UI 갱신: 현재 주의 슬롯만 업데이트
         for (int i = 0; i < _slotList.Count; i++)
@@ -168,8 +167,8 @@ public class UIAttendance : MobileUIView
         }
 
         _attendanceButton.interactable = checkAttendance;
-        _adButton.interactable = checkAttendance;
-        float totalDays = UserInfo.GetTotalAttendanceDays();
+        _adButton.Interactable(checkAttendance);
+        float totalDays = UserInfo.GetAttendanceDays();
         float loadingBarGauge = totalDays <= 0 ? 0 : (totalDays % 7) / 6f; // 6일차에 1.0, 7일차에 0으로 초기화
         _loadingBar.SetFillAmount(loadingBarGauge);
     }

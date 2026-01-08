@@ -26,6 +26,8 @@ public class UIAddCutomerController : MonoBehaviour
     private Vector3 _addCustomerButtonTmpPos;
     private Vector3 _addCustomerButtonTmpScale;
 
+    private TweenData _tweenData;
+
     private void Awake()
     {
         _marketerImage.Init();
@@ -49,15 +51,22 @@ public class UIAddCutomerController : MonoBehaviour
 
     private void OnMaxCustomerEvent()
     {
-        _addCustomerButton.TweenStop();
+        _tweenData?.Clear();
         _addCustomerButton.transform.position = _addCustomerButtonTmpPos;
         _addCustomerButton.transform.localScale = _addCustomerButtonTmpScale;
-        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 10, 0.05f);
-        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x - 10, 0.05f);
-        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 8, 0.03f);
-        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x - 7, 0.02f);
-        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 3, 0.02f);
-        _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x, 0.1f);
+        _tweenData = _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 10, 0.05f).OnComplete(() =>
+        {
+            _tweenData =_addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x - 8, 0.03f).OnComplete(() =>
+            {
+                _tweenData =_addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x + 7, 0.02f).OnComplete(() =>
+                {
+                    _tweenData =_addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x - 3, 0.02f).OnComplete(() =>
+                    {
+                        _tweenData = _addCustomerButton.TweenMoveX(_addCustomerButtonTmpPos.x, 0.1f);
+                    });
+                });
+            });
+        });
     }
 
     private void OnAddCustomerEvent()
