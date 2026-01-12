@@ -14,6 +14,12 @@ public class WatchAdButton : MonoBehaviour
     [SerializeField] private Button _adButton;
     [SerializeField] private ButtonPressEffect _buttonPressEffect;
 
+    [Header("재시도 설정")]
+    [SerializeField] private float _retryDelay = 3f; // 로드 실패 시 재시도 대기 시간
+    [SerializeField] private int _maxRetryCount = 3; // 최대 재시도 횟수
+    
+    private int _currentRetryCount = 0;
+
     private void Awake()
     {
         if (_adButton == null)
@@ -53,13 +59,23 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnClickAd()
     {
-        Debug.Log($"[WatchAdButton] OnClickAd - {_adUnitId}");
+        bool isReady = AdManager.Instance.IsAdReady(_adUnitId);
+        Debug.Log($"[WatchAdButton] OnClickAd - {_adUnitId}, IsReady: {isReady}");
+        
+        if (!isReady)
+        {
+            Debug.LogWarning($"[WatchAdButton] 광고가 아직 준비되지 않음 - 로드 시도 - {_adUnitId}");
+            // TODO: 로딩 인디케이터 표시
+            // ToastManager.Instance?.ShowToast("광고를 불러오는 중입니다...");
+        }
+        
         AdManager.Instance.ShowAd(_adUnitId);
     }
 
     private void OnLoaded(LevelPlayAdInfo adInfo)
     {
         AdManager.Instance.SetLoading(_adUnitId, false);
+        _currentRetryCount = 0; // 로드 성공 시 재시도 카운트 초기화
         Debug.Log($"[WatchAdButton] Loaded - {_adUnitId}");
 
         // 유저가 보려고 눌렀을 때만 Show
@@ -74,8 +90,31 @@ public class WatchAdButton : MonoBehaviour
     private void OnLoadFailed(LevelPlayAdError error)
     {
         AdManager.Instance.SetLoading(_adUnitId, false);
-        AdManager.Instance.SetWantToShow(_adUnitId, false);
         Debug.LogError($"[WatchAdButton] LoadFailed - {_adUnitId}: {error}");
+        
+        // 재시도 카운트 증가
+        _currentRetryCount++;
+        
+        if (_currentRetryCount <= _maxRetryCount)
+        {
+            Debug.Log($"[WatchAdButton] {_retryDelay}초 후 재시도 ({_currentRetryCount}/{_maxRetryCount}) - {_adUnitId}");
+            StartCoroutine(RetryLoadAfterDelay());
+        }
+        else
+        {
+            Debug.LogError($"[WatchAdButton] 최대 재시도 횟수 초과 - {_adUnitId}");
+            AdManager.Instance.SetWantToShow(_adUnitId, false);
+            
+            // TODO: 토스트 메시지 표시
+            // ToastManager.Instance?.ShowToast("광고를 불러올 수 없습니다. 나중에 다시 시도해주세요.");
+        }
+    }
+
+    private System.Collections.IEnumerator RetryLoadAfterDelay()
+    {
+        yield return new WaitForSeconds(_retryDelay);
+        Debug.Log($"[WatchAdButton] 재시도 시작 - {_adUnitId}");
+        AdManager.Instance.PreloadAd(_adUnitId);
     }
 
     private void OnDisplayed(LevelPlayAdInfo adInfo)
@@ -93,6 +132,12 @@ public class WatchAdButton : MonoBehaviour
     {
         AdManager.Instance.SetWantToShow(_adUnitId, false);
         Debug.LogError($"[WatchAdButton] DisplayFailed - {_adUnitId}: {error}");
+        // TODO: 토스트 메시지 표시
+        // ToastManager.Instance?.ShowToast("광고를 재생할 수 없습니다. 잠시 후 다시 시도해주세요.");
+        
+        // 표시 실패 시 다시 로드
+        Debug.Log($"[WatchAdButton] DisplayFailed 후 재로드 시도 - {_adUnitId}");
+        AdManager.Instance.PreloadAd(_adUnitId);
     }
 
     private void OnClosed(LevelPlayAdInfo adInfo)

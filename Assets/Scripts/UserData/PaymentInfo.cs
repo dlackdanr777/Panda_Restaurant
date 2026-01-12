@@ -57,7 +57,6 @@ public static class PaymentInfo
 
     private static Param GetSavePaymentData()
     {
-        DebugLog.Log($"[PaymentInfo] GetSavePaymentData : {_paymentDatas.Count}");
         Param param = new Param();
         param.Add("PaymentDatas", Newtonsoft.Json.JsonConvert.SerializeObject(_paymentDatas));
         param.Add("GachaDatas", Newtonsoft.Json.JsonConvert.SerializeObject(_gachaPaymentDatas));

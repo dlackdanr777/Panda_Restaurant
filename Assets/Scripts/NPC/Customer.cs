@@ -186,7 +186,7 @@ public class Customer : MonoBehaviour
     protected virtual IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {
         _path = nodeList;
-
+        transform.position = nodeList[0];
         // 현재 위치에서 너무 가까운 첫 노드들을 모두 제거 (순간이동 방지)
         Vector3 currentPos = _moveObj.transform.position;
         while (nodeList.Count > 1)
@@ -230,7 +230,7 @@ public class Customer : MonoBehaviour
             
             while (true)
             {
-                currentPos = _moveObj.transform.position;
+                currentPos = transform.position;
                 
                 // 거리 제곱 계산 (GC 없음)
                 float dx = targetVec.x - currentPos.x;

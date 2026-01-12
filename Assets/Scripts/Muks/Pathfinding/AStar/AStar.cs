@@ -325,8 +325,10 @@ namespace Muks.PathFinding.AStar
             }
 
             startNode.G = 0;
+            startNode.H = (Mathf.Abs(sPos.x - tPos.x) + Mathf.Abs(sPos.y - tPos.y)) * 10;
             var openList = new List<Node> { startNode };
             var closedSet = new HashSet<Node>();
+            var openSet = new HashSet<Node> { startNode };
 
             while (openList.Count > 0)
             {
@@ -336,6 +338,7 @@ namespace Muks.PathFinding.AStar
                         current = openList[i];
 
                 openList.Remove(current);
+                openSet.Remove(current);
                 closedSet.Add(current);
 
                 if (current == targetNode)
@@ -380,12 +383,17 @@ namespace Muks.PathFinding.AStar
                         continue;
 
                     int moveCost = current.G + _cost[d];
-                    if (moveCost < next.G || !openList.Contains(next))
+                    if (moveCost < next.G)
                     {
                         next.G = moveCost;
                         next.H = (Mathf.Abs(nx - tPos.x) + Mathf.Abs(ny - tPos.y)) * 10;
                         next.ParentNode = current;
-                        if (!openList.Contains(next)) openList.Add(next);
+                        
+                        if (!openSet.Contains(next))
+                        {
+                            openList.Add(next);
+                            openSet.Add(next);
+                        }
                     }
                 }
             }

@@ -380,7 +380,7 @@ public class UIItemGacha : GachaMachineParent
             _gachaMacineAnimator.SetTrigger("Start");
             UserInfo.AddDia(-10);
             UserInfo.AddUserGachaMachineCount();
-            GameManager.Instance.SaveGameData();
+            GameManager.Instance.AsyncSaveGameData();
             PaymentInfo.AddGachaData($"Normal Item Gacha 1");
             PaymentInfo.SavePaymentData();
         }
@@ -416,7 +416,7 @@ public class UIItemGacha : GachaMachineParent
             _gachaMacineAnimator.SetTrigger("Start");
             UserInfo.AddDia(-100);
             UserInfo.AddUserGachaMachineCount(11);
-            GameManager.Instance.SaveGameData();
+            GameManager.Instance.AsyncSaveGameData();
             PaymentInfo.AddGachaData($"Normal Item Gacha 11");
             PaymentInfo.SavePaymentData();
         }

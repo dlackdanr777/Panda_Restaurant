@@ -348,7 +348,7 @@ public class UISkinGacha : GachaMachineParent
             _gachaMacineAnimator.SetTrigger("Start");
             UserInfo.AddDia(-10);
             UserInfo.AddUserGachaMachineCount();
-            GameManager.Instance.SaveGameData();
+            GameManager.Instance.AsyncSaveGameData();
             PaymentInfo.AddGachaData($"Normal Skin Gacha 1");
             PaymentInfo.SavePaymentData();
         }
@@ -388,7 +388,7 @@ public class UISkinGacha : GachaMachineParent
             _gachaMacineAnimator.SetTrigger("Start");
             UserInfo.AddDia(-100);
             UserInfo.AddUserGachaMachineCount(11);
-            GameManager.Instance.SaveGameData();
+            GameManager.Instance.AsyncSaveGameData();
             PaymentInfo.AddGachaData($"Normal Skin Gacha 11");
             PaymentInfo.SavePaymentData();
         }
