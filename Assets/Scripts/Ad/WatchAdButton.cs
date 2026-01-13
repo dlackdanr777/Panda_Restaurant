@@ -6,7 +6,10 @@ public class WatchAdButton : MonoBehaviour
 {
     public event System.Action OnAdRewarded;
 
- [Header("LevelPlay Rewarded Ad Unit ID")]
+ [Header("Ad Type")]
+    [SerializeField] private AdType _adType = AdType.Reward;
+
+ [Header("LevelPlay Ad Unit ID")]
     [SerializeField] private string _adUnitId = "crivlh2b6qazuw7n";
 
     [Header("UI")]
@@ -28,8 +31,19 @@ public class WatchAdButton : MonoBehaviour
             return;
         }
 
+        Debug.Log($"[WatchAdButton] === 광고 초기화 시작 ===");
+        Debug.Log($"[WatchAdButton] Ad Unit ID: {_adUnitId}");
+        Debug.Log($"[WatchAdButton] Ad Type: {_adType}");
+
         // AdManager에 광고 등록
-        AdManager.Instance.RegisterAd(_adUnitId, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed, OnRewarded);
+        if (_adType == AdType.Reward)
+        {
+            AdManager.Instance.RegisterAd(_adUnitId, _adType, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed, OnRewarded);
+        }
+        else // Interstitial
+        {
+            AdManager.Instance.RegisterAd(_adUnitId, _adType, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed);
+        }
 
         _adButton.onClick.AddListener(ShowAdPopup);
 
@@ -46,7 +60,14 @@ public class WatchAdButton : MonoBehaviour
     private void OnDestroy()
     {
         // AdManager에서 광고 등록 해제
-        AdManager.Instance.UnregisterAd(_adUnitId, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed, OnRewarded);
+        if (_adType == AdType.Reward)
+        {
+            AdManager.Instance.UnregisterAd(_adUnitId, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed, OnRewarded);
+        }
+        else
+        {
+            AdManager.Instance.UnregisterAd(_adUnitId, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed);
+        }
 
         if (_adButton != null)
             _adButton.onClick.RemoveListener(ShowAdPopup);
@@ -142,7 +163,7 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnClosed(LevelPlayAdInfo adInfo)
     {
-        Debug.Log($"[WatchAdButton] Closed - {_adUnitId}, isCurrentPlaying: {AdManager.Instance.IsCurrentPlayingAd(_adUnitId)}");
+        Debug.Log($"[WatchAdButton] Closed - {_adUnitId}, isCurrentPlaying: {AdManager.Instance.IsCurrentPlayingAd(_adUnitId)}, AdType: {_adType}");
         
         // 내 광고가 아니면 무시
         if (!AdManager.Instance.IsCurrentPlayingAd(_adUnitId))
@@ -151,16 +172,34 @@ public class WatchAdButton : MonoBehaviour
             return;
         }
         
-        // OnRewarded가 먼저 호출되지 않은 경우에만 정리
-        // (에디터에서는 OnClosed -> OnRewarded 순서로 호출될 수 있음)
-        if (AdManager.Instance.GetRewardGranted(_adUnitId))
+        // Interstitial의 경우 OnClosed에서 보상 처리
+        if (_adType == AdType.Interstitial)
         {
-            Debug.Log($"[WatchAdButton] OnClosed - 보상 지급 완료됨, 정리 작업");
+            Debug.Log($"[WatchAdButton] Interstitial OnClosed - 보상 처리 시작");
+            
+            // 중복 방지
+            if (!AdManager.Instance.GetRewardGranted(_adUnitId))
+            {
+                AdManager.Instance.SetRewardGranted(_adUnitId, true);
+                Debug.Log($"[WatchAdButton] Interstitial 보상 지급!");
+                OnAdRewarded?.Invoke();
+            }
+            
             AdManager.Instance.OnAdPlayFinished(_adUnitId);
         }
-        else
+        else // Reward
         {
-            Debug.Log($"[WatchAdButton] OnClosed - 보상 대기 중, OnRewarded에서 정리 예정");
+            // OnRewarded가 먼저 호출되지 않은 경우에만 정리
+            // (에디터에서는 OnClosed -> OnRewarded 순서로 호출될 수 있음)
+            if (AdManager.Instance.GetRewardGranted(_adUnitId))
+            {
+                Debug.Log($"[WatchAdButton] OnClosed - 보상 지급 완료됨, 정리 작업");
+                AdManager.Instance.OnAdPlayFinished(_adUnitId);
+            }
+            else
+            {
+                Debug.Log($"[WatchAdButton] OnClosed - 보상 대기 중, OnRewarded에서 정리 예정");
+            }
         }
         
         // 다음 광고 미리 로드
@@ -169,7 +208,14 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnRewarded(LevelPlayAdInfo adInfo, LevelPlayReward reward)
     {
-        Debug.Log($"[WatchAdButton] Rewarded - {_adUnitId}, isCurrentPlaying: {AdManager.Instance.IsCurrentPlayingAd(_adUnitId)}, reward: {reward.Name} x{reward.Amount}");
+        Debug.Log($"[WatchAdButton] Rewarded - {_adUnitId}, isCurrentPlaying: {AdManager.Instance.IsCurrentPlayingAd(_adUnitId)}, reward: {reward.Name} x{reward.Amount}, AdType: {_adType}");
+        
+        // Interstitial은 OnRewarded가 호출되지 않으므로 여기서 처리하지 않음
+        if (_adType != AdType.Reward)
+        {
+            Debug.LogWarning($"[WatchAdButton] OnRewarded 호출되었지만 AdType이 Reward가 아님: {_adType}");
+            return;
+        }
         
         // 내 광고가 아니면 무시
         if (!AdManager.Instance.IsCurrentPlayingAd(_adUnitId))

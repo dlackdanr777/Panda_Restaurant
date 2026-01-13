@@ -2,9 +2,16 @@ using System.Collections.Generic;
 using Unity.Services.LevelPlay;
 using UnityEngine;
 
+public enum AdType
+{
+    Reward,
+    Interstitial
+}
+
 /// <summary>
 /// 광고를 중앙에서 관리하는 싱글톤 매니저
-/// 각 adUnitId별로 하나의 LevelPlayRewardedAd 인스턴스만 생성하여 충돌 방지
+/// 각 adUnitId별로 하나의 광고 인스턴스만 생성하여 충돌 방지
+/// Reward와 Interstitial 광고 모두 지원
 /// </summary>
 public class AdManager : MonoBehaviour
 {
@@ -25,6 +32,12 @@ public class AdManager : MonoBehaviour
 
     // adUnitId별로 LevelPlayRewardedAd 인스턴스를 관리
     private Dictionary<string, LevelPlayRewardedAd> _rewardedAds = new Dictionary<string, LevelPlayRewardedAd>();
+    
+    // adUnitId별로 LevelPlayInterstitialAd 인스턴스를 관리
+    private Dictionary<string, LevelPlayInterstitialAd> _interstitialAds = new Dictionary<string, LevelPlayInterstitialAd>();
+    
+    // 각 adUnitId의 광고 타입 저장
+    private Dictionary<string, AdType> _adTypes = new Dictionary<string, AdType>();
     
     // 각 adUnitId별 상태 관리
     private Dictionary<string, AdState> _adStates = new Dictionary<string, AdState>();
@@ -50,32 +63,53 @@ public class AdManager : MonoBehaviour
     /// <summary>
     /// 특정 adUnitId의 광고를 등록 및 초기화
     /// </summary>
-    public void RegisterAd(string adUnitId, 
+    public void RegisterAd(string adUnitId,
+        AdType adType,
         System.Action<LevelPlayAdInfo> onLoaded,
         System.Action<LevelPlayAdError> onLoadFailed,
         System.Action<LevelPlayAdInfo> onDisplayed,
         System.Action<LevelPlayAdInfo, LevelPlayAdError> onDisplayFailed,
         System.Action<LevelPlayAdInfo> onClosed,
-        System.Action<LevelPlayAdInfo, LevelPlayReward> onRewarded)
+        System.Action<LevelPlayAdInfo, LevelPlayReward> onRewarded = null)
     {
-        if (_rewardedAds.ContainsKey(adUnitId))
+        if (_rewardedAds.ContainsKey(adUnitId) || _interstitialAds.ContainsKey(adUnitId))
         {
             Debug.LogWarning($"[AdManager] adUnitId '{adUnitId}'는 이미 등록되어 있습니다.");
             return;
         }
 
-        Debug.Log($"[AdManager] 광고 등록: {adUnitId}");
+        Debug.Log($"[AdManager] 광고 등록: {adUnitId}, 타입: {adType}");
 
-        var rewardedAd = new LevelPlayRewardedAd(adUnitId);
-        
-        rewardedAd.OnAdLoaded += onLoaded;
-        rewardedAd.OnAdLoadFailed += onLoadFailed;
-        rewardedAd.OnAdDisplayed += onDisplayed;
-        rewardedAd.OnAdDisplayFailed += onDisplayFailed;
-        rewardedAd.OnAdClosed += onClosed;
-        rewardedAd.OnAdRewarded += onRewarded;
+        _adTypes[adUnitId] = adType;
 
-        _rewardedAds[adUnitId] = rewardedAd;
+        if (adType == AdType.Reward)
+        {
+            var rewardedAd = new LevelPlayRewardedAd(adUnitId);
+            
+            rewardedAd.OnAdLoaded += onLoaded;
+            rewardedAd.OnAdLoadFailed += onLoadFailed;
+            rewardedAd.OnAdDisplayed += onDisplayed;
+            rewardedAd.OnAdDisplayFailed += onDisplayFailed;
+            rewardedAd.OnAdClosed += onClosed;
+            if (onRewarded != null)
+                rewardedAd.OnAdRewarded += onRewarded;
+
+            _rewardedAds[adUnitId] = rewardedAd;
+        }
+        else // Interstitial
+        {
+            var interstitialAd = new LevelPlayInterstitialAd(adUnitId);
+            
+            interstitialAd.OnAdLoaded += onLoaded;
+            interstitialAd.OnAdLoadFailed += onLoadFailed;
+            interstitialAd.OnAdDisplayed += onDisplayed;
+            interstitialAd.OnAdDisplayFailed += onDisplayFailed;
+            interstitialAd.OnAdClosed += onClosed;
+            // Interstitial은 OnAdRewarded가 없음
+
+            _interstitialAds[adUnitId] = interstitialAd;
+        }
+
         _adStates[adUnitId] = new AdState();
     }
 
@@ -88,20 +122,40 @@ public class AdManager : MonoBehaviour
         System.Action<LevelPlayAdInfo> onDisplayed,
         System.Action<LevelPlayAdInfo, LevelPlayAdError> onDisplayFailed,
         System.Action<LevelPlayAdInfo> onClosed,
-        System.Action<LevelPlayAdInfo, LevelPlayReward> onRewarded)
+        System.Action<LevelPlayAdInfo, LevelPlayReward> onRewarded = null)
     {
-        if (!_rewardedAds.ContainsKey(adUnitId)) return;
+        if (!_adTypes.ContainsKey(adUnitId)) return;
 
-        var rewardedAd = _rewardedAds[adUnitId];
-        
-        rewardedAd.OnAdLoaded -= onLoaded;
-        rewardedAd.OnAdLoadFailed -= onLoadFailed;
-        rewardedAd.OnAdDisplayed -= onDisplayed;
-        rewardedAd.OnAdDisplayFailed -= onDisplayFailed;
-        rewardedAd.OnAdClosed -= onClosed;
-        rewardedAd.OnAdRewarded -= onRewarded;
+        var adType = _adTypes[adUnitId];
 
-        _rewardedAds.Remove(adUnitId);
+        if (adType == AdType.Reward && _rewardedAds.ContainsKey(adUnitId))
+        {
+            var rewardedAd = _rewardedAds[adUnitId];
+            
+            rewardedAd.OnAdLoaded -= onLoaded;
+            rewardedAd.OnAdLoadFailed -= onLoadFailed;
+            rewardedAd.OnAdDisplayed -= onDisplayed;
+            rewardedAd.OnAdDisplayFailed -= onDisplayFailed;
+            rewardedAd.OnAdClosed -= onClosed;
+            if (onRewarded != null)
+                rewardedAd.OnAdRewarded -= onRewarded;
+
+            _rewardedAds.Remove(adUnitId);
+        }
+        else if (adType == AdType.Interstitial && _interstitialAds.ContainsKey(adUnitId))
+        {
+            var interstitialAd = _interstitialAds[adUnitId];
+            
+            interstitialAd.OnAdLoaded -= onLoaded;
+            interstitialAd.OnAdLoadFailed -= onLoadFailed;
+            interstitialAd.OnAdDisplayed -= onDisplayed;
+            interstitialAd.OnAdDisplayFailed -= onDisplayFailed;
+            interstitialAd.OnAdClosed -= onClosed;
+
+            _interstitialAds.Remove(adUnitId);
+        }
+
+        _adTypes.Remove(adUnitId);
         _adStates.Remove(adUnitId);
 
         Debug.Log($"[AdManager] 광고 등록 해제: {adUnitId}");
@@ -112,7 +166,7 @@ public class AdManager : MonoBehaviour
     /// </summary>
     public void PreloadAd(string adUnitId)
     {
-        if (!_rewardedAds.ContainsKey(adUnitId))
+        if (!_adTypes.ContainsKey(adUnitId))
         {
             Debug.LogError($"[AdManager] adUnitId '{adUnitId}'가 등록되지 않았습니다.");
             return;
@@ -123,8 +177,14 @@ public class AdManager : MonoBehaviour
         if (IsAdReady(adUnitId)) return;
 
         state.IsLoading = true;
-        _rewardedAds[adUnitId].LoadAd();
-        Debug.Log($"[AdManager] Preload: {adUnitId}");
+        var adType = _adTypes[adUnitId];
+
+        if (adType == AdType.Reward)
+            _rewardedAds[adUnitId].LoadAd();
+        else
+            _interstitialAds[adUnitId].LoadAd();
+
+        Debug.Log($"[AdManager] Preload: {adUnitId} ({adType})");
     }
 
     /// <summary>
@@ -132,8 +192,14 @@ public class AdManager : MonoBehaviour
     /// </summary>
     public bool IsAdReady(string adUnitId)
     {
-        if (!_rewardedAds.ContainsKey(adUnitId)) return false;
-        return _rewardedAds[adUnitId].IsAdReady();
+        if (!_adTypes.ContainsKey(adUnitId)) return false;
+
+        var adType = _adTypes[adUnitId];
+
+        if (adType == AdType.Reward)
+            return _rewardedAds.ContainsKey(adUnitId) && _rewardedAds[adUnitId].IsAdReady();
+        else
+            return _interstitialAds.ContainsKey(adUnitId) && _interstitialAds[adUnitId].IsAdReady();
     }
 
     /// <summary>
@@ -141,7 +207,7 @@ public class AdManager : MonoBehaviour
     /// </summary>
     public void ShowAd(string adUnitId)
     {
-        if (!_rewardedAds.ContainsKey(adUnitId))
+        if (!_adTypes.ContainsKey(adUnitId))
         {
             Debug.LogError($"[AdManager] adUnitId '{adUnitId}'가 등록되지 않았습니다.");
             return;
@@ -149,11 +215,16 @@ public class AdManager : MonoBehaviour
 
         var state = _adStates[adUnitId];
         state.WantToShow = true;
+        var adType = _adTypes[adUnitId];
 
         if (IsAdReady(adUnitId))
         {
-            Debug.Log($"[AdManager] Ready -> Show: {adUnitId}");
-            _rewardedAds[adUnitId].ShowAd();
+            Debug.Log($"[AdManager] Ready -> Show: {adUnitId} ({adType})");
+            
+            if (adType == AdType.Reward)
+                _rewardedAds[adUnitId].ShowAd();
+            else
+                _interstitialAds[adUnitId].ShowAd();
             return;
         }
 
@@ -161,8 +232,12 @@ public class AdManager : MonoBehaviour
         if (state.IsLoading) return;
 
         state.IsLoading = true;
-        Debug.Log($"[AdManager] Not ready -> Load: {adUnitId}");
-        _rewardedAds[adUnitId].LoadAd();
+        Debug.Log($"[AdManager] Not ready -> Load: {adUnitId} ({adType})");
+        
+        if (adType == AdType.Reward)
+            _rewardedAds[adUnitId].LoadAd();
+        else
+            _interstitialAds[adUnitId].LoadAd();
     }
 
     /// <summary>
