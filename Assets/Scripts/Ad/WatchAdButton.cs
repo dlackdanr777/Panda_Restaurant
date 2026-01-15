@@ -4,10 +4,20 @@ using UnityEngine.UI;
 
 public class WatchAdButton : MonoBehaviour
 {
+    private enum ShowType
+    {
+        Default,
+        Dia,
+        Coin,
+        Fever,
+        Customer
+    }
+
     public event System.Action OnAdRewarded;
 
- [Header("Ad Type")]
+    [Header("Ad Type")]
     [SerializeField] private AdType _adType = AdType.Reward;
+    [SerializeField] private ShowType _showType = ShowType.Coin;
 
  [Header("LevelPlay Ad Unit ID")]
     [SerializeField] private string _adUnitId = "crivlh2b6qazuw7n";
@@ -75,7 +85,24 @@ public class WatchAdButton : MonoBehaviour
 
     private void ShowAdPopup()
     {
-        _adPopup.ShowPopup(OnClickAd);
+        switch (_showType)
+        {
+            case ShowType.Dia:
+                _adPopup.ShowDiaPopup(OnClickAd);
+                break;
+            case ShowType.Coin:
+                _adPopup.ShowCoinPopup(OnClickAd);
+                break;
+            case ShowType.Fever:
+                _adPopup.ShowFeverPopup(OnClickAd);
+                break;
+            case ShowType.Customer:
+                _adPopup.ShowCustomerPopup(OnClickAd);
+                break;
+            case ShowType.Default:
+                _adPopup.ShowPopup(OnClickAd);
+                break;
+        }
     }
 
     private void OnClickAd()
