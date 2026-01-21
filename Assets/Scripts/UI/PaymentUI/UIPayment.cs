@@ -85,7 +85,7 @@ public class UIPayment : MobileUIView
     {
         if (moneyType == MoneyType.Dia)
         {
-            UserInfo.AddDia(value);
+            return;
         }
         else
         {
@@ -104,6 +104,14 @@ public class UIPayment : MobileUIView
         GameManager.Instance.SaveGameData();
 
         PaymentInfo.AddPaymentData($"MoenyType: {moneyType} | Value: {value} | Price: {price}");
+        PaymentInfo.SavePaymentData();
+    }
+
+    public void AddDia(int dia)
+    {
+        UserInfo.AddDia(dia);
+        GameManager.Instance.SaveGameData();
+        PaymentInfo.AddPaymentData($"MoenyType: {MoneyType.Dia} | Value: {dia}");
         PaymentInfo.SavePaymentData();
     }
 
