@@ -453,7 +453,7 @@ public class GameManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = 60;
+        Application.targetFrameRate = 120;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         UserInfo.DataBindTip(UserInfo.CurrentStage);
         UserInfo.DataBindMoney();

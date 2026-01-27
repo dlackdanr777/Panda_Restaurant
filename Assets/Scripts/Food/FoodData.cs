@@ -4,14 +4,18 @@ using UnityEngine;
 
 public class FoodData : BasicData, ShopData
 {
+    private static readonly int MAX_LEVEL = 10;
+    private static readonly float[] COOKING_TIME_RATIO = { 1, 1f, 1f, 1f, 1f, 0.95f, 0.9f, 0.85f, 0.8f, 0.75f };
+    private static readonly float[] SELL_PRICE_RATIO = {1, 1.2f, 1.3f, 1.4f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f, 1.5f };
+    private static readonly float[] UPGRADE_SCORE_RATIO = {1.2f, 1.5f, 1.8f, 2.1f, 2.4f, 2.8f, 3.3f, 3.9f, 4.6f };
+    private static readonly float[] UPGRADE_PRICE_RATIO = {1.6f, 1.6f, 1.6f, 1.6f, 2.2f, 2.2f, 2.2f, 2.2f, 2.2f };
+    private static readonly int[] UPGRADE_HIDDEN_ITEM_COUNT = { 1, 2, 3, 4, 5, 5, 6, 6, 7 };
+
     [Space]
     [Header("FoodData")]
 
     private string _needItem;
     public string NeedItem => _needItem;
-
-    [SerializeField] private List<FoodLevelData> _foodLevelDataList;
-    public int MaxLevel => _foodLevelDataList.Count;
 
     protected FoodMiniGameData _foodMiniGameData;
     public FoodMiniGameData FoodMiniGameData => _foodMiniGameData;
@@ -31,9 +35,16 @@ public class FoodData : BasicData, ShopData
     protected int _buyPrice;
     public int BuyPrice => _buyPrice;
 
-    public bool MiniGameNeeded => _foodMiniGameData != null ? true : false;
+    private int _sellPrice;
+    public int SellPrice => _sellPrice;
 
-    public FoodData(Sprite sprite, Sprite thumbnailSprite, string name, string id, string description, FoodType foodType, MoneyType moneyType, int buyScore, int buyPrice, string needItem, List<FoodLevelData> foodLevelDataList, FoodMiniGameData foodMiniGameData)
+    private float _cookingTime;
+    public float CookingTime => _cookingTime;
+
+    private bool _needMiniGame;
+    public bool MiniGameNeeded => _needMiniGame;
+
+    public FoodData(Sprite sprite, Sprite thumbnailSprite, string name, string id, string description, FoodType foodType, MoneyType moneyType, int buyScore, int buyPrice, bool needMiniGame, string needItem, int sellPrice, float cookingTime, FoodMiniGameData foodMiniGameData)
     {
         _salesLocationType = SalesLocationType.Shop;
 
@@ -46,74 +57,59 @@ public class FoodData : BasicData, ShopData
         _moneyType = moneyType;
         _buyScore = buyScore;
         _buyPrice = buyPrice;
+        _needMiniGame = needMiniGame;
         _needItem = needItem;
-        _foodLevelDataList = foodLevelDataList;
+        _sellPrice = sellPrice;
+        _cookingTime = cookingTime;
         _foodMiniGameData = foodMiniGameData;
     }
 
 
     public int GetSellPrice(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _foodLevelDataList.Count - 1);
-        return _foodLevelDataList[level].SellPrice;
+        level = Mathf.Clamp(level - 1, 0, MAX_LEVEL - 1);
+        return (int)(_sellPrice * SELL_PRICE_RATIO[level]);
     }
 
     public int GetUpgradeMinScore(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _foodLevelDataList.Count - 1);
-        return _foodLevelDataList[level].UpgradeMinScore;
+        level = Mathf.Clamp(level - 1, 0, MAX_LEVEL - 1);
+        return (int)(_buyScore * UPGRADE_SCORE_RATIO[level]);
     }
 
     public int GetUpgradePrice(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _foodLevelDataList.Count - 1);
-        return _foodLevelDataList[level].UpgradePrice;
+        level = Mathf.Clamp(level - 1, 0, MAX_LEVEL - 1);
+
+        int buyPrice = _buyPrice;
+        for(int i = 0; i < level; i++)
+        {
+            buyPrice = (int)(buyPrice * UPGRADE_PRICE_RATIO[i]);
+        }
+
+        return buyPrice;
     }
 
     public string GetNeedItem(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _foodLevelDataList.Count - 1);
-        return _foodLevelDataList[level].NeedItem;
+        return NeedItem;
+    }
+
+    public int GetNeedItemCount(int level)
+    {
+        level = Mathf.Clamp(level - 1, 0, MAX_LEVEL - 1);
+        return string.IsNullOrWhiteSpace(NeedItem) ? 0 : UPGRADE_HIDDEN_ITEM_COUNT[level];
     }
 
     public float GetCookingTime(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, _foodLevelDataList.Count - 1);
-        return _foodLevelDataList[level].CookingTime;
+        level = Mathf.Clamp(level - 1, 0, MAX_LEVEL - 1);
+        return _cookingTime * COOKING_TIME_RATIO[level];
         
     }
 
     public bool UpgradeEnable(int level)
     {
-        return level < _foodLevelDataList.Count;
-    }
-}
-
-
-[Serializable]
-public class FoodLevelData
-{
-    [SerializeField] private int _sellPrice;
-    public int SellPrice => _sellPrice;
-
-    [SerializeField] private int _upgradeMinScore;
-    public int UpgradeMinScore => _upgradeMinScore;
-
-    [SerializeField] private int _upgradePrice;
-    public int UpgradePrice => _upgradePrice;
-
-    private string _needItem;
-    public string NeedItem => _needItem;
-
-    [SerializeField] private float _cookingTime;
-    public float CookingTime => _cookingTime;
-
-    public FoodLevelData(int sellPrice, int upgradeMinScore, int upgradePrice, string needItem, float cookingTime)
-    {
-        _sellPrice = sellPrice;
-        _upgradeMinScore = upgradeMinScore;
-        _upgradePrice = upgradePrice;
-        _needItem = needItem;
-        _cookingTime = cookingTime;
+        return level < MAX_LEVEL;
     }
 }

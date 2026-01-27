@@ -89,10 +89,10 @@ public class UIPayment : MobileUIView
         }
         else
         {
-            if (!UserInfo.IsMoneyValid(price))
+            if (!UserInfo.IsDiaValid(price))
             {
                 //골드가 부족할때
-                PopupManager.Instance.ShowTextLackMoney();
+                PopupManager.Instance.ShowTextLackDia();
                 return;
             }
             else

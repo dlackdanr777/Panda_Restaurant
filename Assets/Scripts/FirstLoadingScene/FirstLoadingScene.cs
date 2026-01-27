@@ -72,7 +72,10 @@ public class FirstLoadingScene : MonoBehaviour
                                    {
                                        _uiFirstLoadingScene.HideTitle(() =>
                                        {
-                                           Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
+                                           if (UserInfo.IsFirstTutorialClear)
+                                               Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
+                                           else
+                                               Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("IntroScene"));
                                        });
                                    });
                                }, (state) =>
