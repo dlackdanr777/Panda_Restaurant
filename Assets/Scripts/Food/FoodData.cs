@@ -79,7 +79,7 @@ public class FoodData : BasicData, ShopData
 
     public int GetUpgradePrice(int level)
     {
-        level = Mathf.Clamp(level - 1, 0, MAX_LEVEL - 1);
+        level = Mathf.Clamp(level, 0, MAX_LEVEL);
 
         int buyPrice = _buyPrice;
         for(int i = 0; i < level; i++)
@@ -90,9 +90,14 @@ public class FoodData : BasicData, ShopData
         return buyPrice;
     }
 
-    public string GetNeedItem(int level)
+    public string GetNeedItem()
     {
         return NeedItem;
+    }
+
+    public bool IsNeedItem()
+    {
+        return !string.IsNullOrWhiteSpace(NeedItem);
     }
 
     public int GetNeedItemCount(int level)

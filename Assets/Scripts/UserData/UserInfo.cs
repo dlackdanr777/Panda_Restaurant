@@ -221,6 +221,11 @@ public static class UserInfo
     private static int _addCustomerAdCount;
     public static int AddCustomerAdCount => _addCustomerAdCount;
     public static void AddAddCustomerAdCount() => _addCustomerAdCount++;
+
+    private static int _addCustomerDiaCount;
+    public static int AddCustomerDiaCount => _addCustomerDiaCount;
+    public static void AddAddCustomerDiaCount() => _addCustomerDiaCount++;
+
     private static int _doubleTipCounterAdCount;
     public static int DoubleTipCounterAdCount => _doubleTipCounterAdCount;
     public static void AddDoubleTipCounterAdCount() => _doubleTipCounterAdCount++;
@@ -228,6 +233,10 @@ public static class UserInfo
     private static int _feverAdCount;
     public static int FeverAdCount => _feverAdCount;
     public static void AddFeverAdCount() => _feverAdCount++;
+
+    private static int _feverDiaCount;
+    public static int FeverDiaCount => _feverDiaCount;
+    public static void AddFeverDiaCount() => _feverDiaCount++;
 
     private static int _dailyAdGoldRewardCount;
     public static int DailyAdGoldRewardCount => _dailyAdGoldRewardCount;
@@ -452,6 +461,8 @@ public static class UserInfo
         param.Add("AddCustomerAdCount", _addCustomerAdCount);
         param.Add("DoubleTipCounterAdCount", _doubleTipCounterAdCount);
         param.Add("FeverAdCount", _feverAdCount);
+        param.Add("AddCustomerDiaCount", _addCustomerDiaCount);
+        param.Add("FeverDiaCount", _feverDiaCount);
 
         param.Add("DailyAdGoldRewardCount", _dailyAdGoldRewardCount);
         param.Add("DailyAdDiaRewardCount", _dailyAdDiaRewardCount);
@@ -651,8 +662,10 @@ public static class UserInfo
         _skinToken = loadData.SkinToken;
 
         _addCustomerAdCount = loadData.AddCustomerAdCount;
+        _addCustomerDiaCount = loadData.AddCustomerDiaCount;
         _doubleTipCounterAdCount = loadData.DoubleTipCounterAdCount;
         _feverAdCount = loadData.FeverAdCount;
+        _feverDiaCount = loadData.FeverDiaCount;
 
         _dailyAdGoldRewardCount = loadData.DailyAdGoldRewardCount;
         _dailyAdDiaRewardCount = loadData.DailyAdDiaRewardCount;
@@ -1886,12 +1899,6 @@ public static class UserInfo
     {
         if (_giveRecipeLevelDic.TryGetValue(data.Id, out int level))
         {
-            if (!IsMoneyValid(data))
-            {
-                DebugLog.LogError("돈 부족: " + data.Id);
-                return false;
-            }
-
             if (FoodDataManager.Instance.GetFoodData(data.Id).UpgradeEnable(level))
             {
                 _giveRecipeLevelDic[data.Id] = level + 1;
@@ -1933,6 +1940,7 @@ public static class UserInfo
     {
         return _giveGachaItemCountDic;
     }
+
 
     public static bool IsGiveGachaItem(GachaItemData data)
     {
@@ -2076,6 +2084,43 @@ public static class UserInfo
         }
 
         OnGiveGachaItemHandler?.Invoke();
+    }
+
+    public static void RemoveGachaItem(string id, int count)
+    {
+        GachaItemData data = ItemManager.Instance.GetGachaItemData(id);
+        if (data == null)
+        {
+            DebugLog.LogError("해당 하는 아이템이 존재하지 않습니다: " + id);
+            return;
+        }
+    }
+    
+    public static bool RemoveGachaItem(GachaItemData data, int count)
+    {
+        if (data == null)
+        {
+            DebugLog.LogError("해당 하는 아이템이 존재하지 않습니다: " + data.Id);
+            return false;
+        }
+        
+        if (_giveGachaItemCountDic.TryGetValue(data.Id, out int currentCount))
+        {
+            if (currentCount < count)
+            {
+                DebugLog.LogError("보유중인 아이템의 갯수가 부족합니다: " + data.Id);
+                return false;
+            }
+
+            _giveGachaItemCountDic[data.Id] -= count;
+            DebugLog.Log("가챠 아이템 제거: " + data.Id + "  남은 갯수: " + _giveGachaItemCountDic[data.Id]);
+            return true;
+        }
+        else
+        {
+            DebugLog.LogError("보유중인 아이템이 아닙니다: " + data.Id);
+            return false;
+        }
     }
 
 

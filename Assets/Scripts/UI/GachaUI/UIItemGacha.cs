@@ -24,6 +24,7 @@ public class UIItemGacha : GachaMachineParent
     [SerializeField] private Image _getItemImage;
     [SerializeField] private UIGachaCard _skinGachaCard;
     [SerializeField] private GachaCapsule _capsule;
+    [SerializeField] private GameObject _banner;
 
     [Space]
     [Header("Slot Options")]
@@ -126,6 +127,7 @@ public class UIItemGacha : GachaMachineParent
         _tenButton.gameObject.SetActive(true);
         _uiGacha.SetActiveUIComponents(true);
         _scrollImage.gameObject.SetActive(true);
+        _banner.gameObject.SetActive(true);
         _screenButton.gameObject.SetActive(false);
         _skinGachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
@@ -148,6 +150,7 @@ public class UIItemGacha : GachaMachineParent
         _tenButton.gameObject.SetActive(false);
         _uiGacha.SetActiveUIComponents(false);
         _scrollImage.gameObject.SetActive(false);
+        _banner.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
         _skinGachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
@@ -260,6 +263,7 @@ public class UIItemGacha : GachaMachineParent
                 _uiGacha.SetStartGacha(false);
                 _singleButton.gameObject.SetActive(true);
                 _tenButton.gameObject.SetActive(true);
+                _banner.gameObject.SetActive(true);
                 _screenButton.gameObject.SetActive(false);
                 _skinGachaCard.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
@@ -283,6 +287,7 @@ public class UIItemGacha : GachaMachineParent
                 _uiGacha.SetActiveUIComponents(false);
                 _uiGacha.SetStartGacha(true);
                 _singleButton.gameObject.SetActive(false);
+                _banner.gameObject.SetActive(false);
                 _tenButton.gameObject.SetActive(false);
                 _skinGachaCard.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);

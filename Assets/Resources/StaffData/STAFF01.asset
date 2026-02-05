@@ -18,6 +18,7 @@ MonoBehaviour:
   _id: STAFF01
   _description: "\uBD80\uC9C0\uB7F0\uD558\uACE0 \uC131\uC2E4\uD558\uAC8C\n\uC190\uB2D8\uC744
     \uB9DE\uC774\uD558\uB294 \uCE5C\uADFC\uD55C \uC9C0\uC9C0\r"
+  _rank: 0
   _skill: {fileID: 11400000, guid: e02701bebe44c864688b4304e4a359c2, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: 964681fea9d8c9141af63dff551d5648, type: 3}

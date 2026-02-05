@@ -29,7 +29,7 @@ public class FeverSystem : MonoBehaviour
         if (_isFeverStart || UserInfo.IsTutorialStart)
             return;
 
-        _feverGauge = Mathf.Clamp(_feverGauge + ConstValue.ADD_PEVER_GAUGE * addMul, 0, _currentMaxFeverGauge);
+        _feverGauge = Mathf.Clamp(_feverGauge + ConstValue.ADD_FEVER_GAUGE * addMul, 0, _currentMaxFeverGauge);
         DebugLog.Log($"Fever Gauge : {_feverGauge} / {_currentMaxFeverGauge}");
         _uiFever.OnChangeGauge();
     }

@@ -78,6 +78,8 @@ public class LoadUserData
     public int AddCustomerAdCount;
     public int FeverAdCount;
     public int DoubleTipCounterAdCount;
+    public int AddCustomerDiaCount;
+    public int FeverDiaCount;
 
     public int DailyAdGoldRewardCount;
     public int DailyAdDiaRewardCount;
@@ -168,6 +170,8 @@ public class LoadUserData
             AddCustomerAdCount = GetInt("AddCustomerAdCount");
             FeverAdCount = GetInt("FeverAdCount");
             DoubleTipCounterAdCount = GetInt("DoubleTipCounterAdCount");
+            AddCustomerDiaCount = GetInt("AddCustomerDiaCount");
+            FeverDiaCount = GetInt("FeverDiaCount");
 
             DailyAdGoldRewardCount = GetInt("DailyAdGoldRewardCount");
             DailyAdDiaRewardCount = GetInt("DailyAdDiaRewardCount");

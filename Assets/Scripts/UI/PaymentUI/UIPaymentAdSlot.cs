@@ -32,10 +32,10 @@ public class UIPaymentAdSlot : MonoBehaviour
             $"{ConstValue.DAILY_AD_DIA_REWARD_COUNT - UserInfo.DailyAdDiaRewardCount}/{ConstValue.DAILY_AD_DIA_REWARD_COUNT}";
         _countText.SetText(countText);
 
-        bool canWatchAd = _moneyType == MoneyType.Gold ?
-            UserInfo.DailyAdGoldRewardCount < ConstValue.DAILY_AD_GOLD_REWARD_COUNT :
-            UserInfo.DailyAdDiaRewardCount < ConstValue.DAILY_AD_DIA_REWARD_COUNT;
-        _watchAdButton.Interactable(canWatchAd);
+        // bool canWatchAd = _moneyType == MoneyType.Gold ?
+        //     UserInfo.DailyAdGoldRewardCount < ConstValue.DAILY_AD_GOLD_REWARD_COUNT :
+        //     UserInfo.DailyAdDiaRewardCount < ConstValue.DAILY_AD_DIA_REWARD_COUNT;
+        // _watchAdButton.Interactable(canWatchAd);
     }
 
     private void OnAdRewerded()
@@ -43,7 +43,7 @@ public class UIPaymentAdSlot : MonoBehaviour
         if(_moneyType == MoneyType.Gold)
         {
             UserInfo.AddDailyAdGoldRewardCount();
-            long hourMoney = GameManager.Instance.TipPerMinute * 60; // 1 hour worth of tips
+            long hourMoney = GameManager.Instance.TipPerMinute * 50; // 50 minutes worth of tips
             UserInfo.AddMoney(hourMoney);
         }
 

@@ -5,8 +5,8 @@ using UnityEngine;
 
 public class UIMain : MonoBehaviour
 {
-    private const string AdCustomerTimeKey = "AdCustomer";
-    private const int AdCustomerTime = 300; // 5분
+
+    private const int AdCustomerTime = 180; // 3분
 
     [Header("Components")]
     [SerializeField] private CustomerController _customerController;
@@ -27,12 +27,24 @@ public class UIMain : MonoBehaviour
         TimeManager.Instance.OnRemoveTimeHandler += OnRemoveTimeEvent;
 
         _watchAdButton.OnAdRewarded += OnAdButtonClicked;
+        _watchAdButton.OnDiaRewarded += OnDiaButtonClicked;
         OnChangeCustomerCountEvent();
         OnUpdateAdButtonEvent();
     }
 
     private void OnAdButtonClicked()
     {
+        UserInfo.AddAddCustomerAdCount();
+        TimeManager.Instance.SetTime(ConstValue.AD_TIME_CUSTOMER, AdCustomerTime);
+        StopAllCoroutines();
+        StartCoroutine(AddCustomerRoutine());
+    }
+
+    private void OnDiaButtonClicked()
+    {
+        UserInfo.AddAddCustomerDiaCount();
+        DebugLog.Log("UIMain Dia Clicked");
+        TimeManager.Instance.SetTime(ConstValue.DIA_TIME_CUSTOMER, AdCustomerTime);
         StopAllCoroutines();
         StartCoroutine(AddCustomerRoutine());
     }
@@ -45,7 +57,7 @@ public class UIMain : MonoBehaviour
 
     private void OnRemoveTimeEvent(string key)
     {
-        if (key != AdCustomerTimeKey) return;
+        if (key != ConstValue.AD_TIME_CUSTOMER) return;
 
         OnUpdateAdButtonEvent();
     }
@@ -53,11 +65,11 @@ public class UIMain : MonoBehaviour
 
     private void OnUpdateAdButtonEvent()
     {
-        if(!TimeManager.Instance.IsAddTime(AdCustomerTimeKey) ||  _customerController.IsMaxCount || 10 <= UserInfo.AddCustomerAdCount)
-        {
-            _watchAdButton.gameObject.SetActive(false);
-            return;
-        }
+        // if(!TimeManager.Instance.IsAddTime(AdCustomerTimeKey) ||  _customerController.IsMaxCount || 10 <= UserInfo.AddCustomerAdCount)
+        // {
+        //     _watchAdButton.gameObject.SetActive(false);
+        //     return;
+        // }
 
         _watchAdButton.gameObject.SetActive(true);
         _customerCountText.SetText("X " + (GameManager.Instance.MaxWaitCustomerCount - _customerController.Count).ToString());
@@ -89,16 +101,16 @@ public class UIMain : MonoBehaviour
 
     private IEnumerator AddCustomerRoutine()
     {
-        UserInfo.AddAddCustomerAdCount();
-        TimeManager.Instance.SetTime(AdCustomerTimeKey, AdCustomerTime);
+
         while (!_customerController.IsMaxCount)
         {
             _customerController.AddCustomer();
-            _watchAdButton.gameObject.SetActive(false);
+            //_watchAdButton.gameObject.SetActive(false);
             yield return new WaitForSeconds(0.3f);
         }
 
         OnUpdateAdButtonEvent();
     }
+    
 
 }

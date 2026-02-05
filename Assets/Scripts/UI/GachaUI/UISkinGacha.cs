@@ -23,6 +23,7 @@ public class UISkinGacha : GachaMachineParent
     [SerializeField] private Image _getItemImage;
     [SerializeField] private UIGachaCard _skinGachaCard;
     [SerializeField] private GachaCapsule _capsule;
+    [SerializeField] private GameObject _banner;
 
     [Space]
     [Header("Slot Options")]
@@ -111,6 +112,7 @@ public class UISkinGacha : GachaMachineParent
         _skinGachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
         _capsule.gameObject.SetActive(false);
+        _banner.gameObject.SetActive(true);
         CapsuleSetSibilingIndex(1);
 
         SetStep(1);
@@ -132,6 +134,7 @@ public class UISkinGacha : GachaMachineParent
         _skinGachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
         _capsule.gameObject.SetActive(false);
+        _banner.gameObject.SetActive(false);
         _gachaMacineAnimator.enabled = false;
         SetStep(1);
     }
@@ -227,6 +230,7 @@ public class UISkinGacha : GachaMachineParent
                 _uiGacha.SetStartGacha(false);
                 _singleButton.gameObject.SetActive(true);
                 _tenButton.gameObject.SetActive(true);
+                _banner.gameObject.SetActive(true);
                 _screenButton.gameObject.SetActive(false);
                 _skinGachaCard.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
@@ -252,6 +256,7 @@ public class UISkinGacha : GachaMachineParent
                 _uiGacha.SetStartGacha(true);
                 _singleButton.gameObject.SetActive(false);
                 _tenButton.gameObject.SetActive(false);
+                _banner.gameObject.SetActive(false);
                 _skinGachaCard.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(false);
                 _capsule.gameObject.SetActive(false);

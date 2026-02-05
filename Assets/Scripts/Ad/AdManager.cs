@@ -50,13 +50,18 @@ public class AdManager : MonoBehaviour
         public bool IsLoading;
         public bool WantToShow;
         public bool RewardGranted;
+        public float LoadedTime; // 광고가 로드된 시간
+        public float ShowRequestTime; // ShowAd를 호출한 시간
     }
 
     void Awake()
     {
         #if DEVELOPMENT_BUILD || UNITY_EDITOR
+        Debug.Log("[AdManager] 개발 빌드 또는 에디터 모드 - 디버그 활성화");
         LevelPlay.SetAdaptersDebug(true);
         LevelPlay.ValidateIntegration();
+        #else
+        Debug.Log("[AdManager] 릴리즈 빌드 모드");
         #endif
     }
 
@@ -173,18 +178,38 @@ public class AdManager : MonoBehaviour
         }
 
         var state = _adStates[adUnitId];
-        if (state.IsLoading) return;
-        if (IsAdReady(adUnitId)) return;
+        if (state.IsLoading)
+        {
+            Debug.Log($"[AdManager] Preload 스킵 - 이미 로딩 중: {adUnitId}");
+            return;
+        }
+        
+        if (IsAdReady(adUnitId))
+        {
+            float timeSinceLoaded = Time.realtimeSinceStartup - state.LoadedTime;
+            Debug.Log($"[AdManager] Preload 스킵 - 이미 준비됨: {adUnitId} (로드 후 {timeSinceLoaded:F1}초 경과)");
+            
+            // 광고가 5분 이상 오래되었으면 재로드
+            if (timeSinceLoaded > 300f)
+            {
+                Debug.LogWarning($"[AdManager] 광고가 오래됨 ({timeSinceLoaded:F0}초) - 재로드: {adUnitId}");
+                state.LoadedTime = 0;
+            }
+            else
+            {
+                return;
+            }
+        }
 
         state.IsLoading = true;
         var adType = _adTypes[adUnitId];
 
+        Debug.Log($"[AdManager] Preload 시작: {adUnitId} ({adType})");
+        
         if (adType == AdType.Reward)
             _rewardedAds[adUnitId].LoadAd();
         else
             _interstitialAds[adUnitId].LoadAd();
-
-        Debug.Log($"[AdManager] Preload: {adUnitId} ({adType})");
     }
 
     /// <summary>
@@ -216,23 +241,47 @@ public class AdManager : MonoBehaviour
         var state = _adStates[adUnitId];
         state.WantToShow = true;
         var adType = _adTypes[adUnitId];
+        bool isReady = IsAdReady(adUnitId);
 
-        if (IsAdReady(adUnitId))
+        Debug.Log($"[AdManager] ShowAd 호출: {adUnitId} ({adType}), IsReady: {isReady}, IsLoading: {state.IsLoading}");
+
+        if (isReady)
         {
-            Debug.Log($"[AdManager] Ready -> Show: {adUnitId} ({adType})");
+            float timeSinceLoaded = Time.realtimeSinceStartup - state.LoadedTime;
+            Debug.Log($"[AdManager] 광고 표시 시도: {adUnitId} (로드 후 {timeSinceLoaded:F1}초 경과)");
             
-            if (adType == AdType.Reward)
-                _rewardedAds[adUnitId].ShowAd();
-            else
-                _interstitialAds[adUnitId].ShowAd();
+            state.ShowRequestTime = Time.realtimeSinceStartup;
+            
+            try
+            {
+                if (adType == AdType.Reward)
+                    _rewardedAds[adUnitId].ShowAd();
+                else
+                    _interstitialAds[adUnitId].ShowAd();
+                
+                Debug.Log($"[AdManager] ShowAd() 호출 완료: {adUnitId}");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[AdManager] ShowAd() 예외 발생: {adUnitId} - {e.Message}");
+                state.WantToShow = false;
+                // 실패 시 재로드
+                state.LoadedTime = 0;
+                PreloadAd(adUnitId);
+            }
+            
             return;
         }
 
         // 준비 안 됐으면 로드부터
-        if (state.IsLoading) return;
+        if (state.IsLoading)
+        {
+            Debug.Log($"[AdManager] 이미 로딩 중 - 로드 완료 후 자동 표시: {adUnitId}");
+            return;
+        }
 
         state.IsLoading = true;
-        Debug.Log($"[AdManager] Not ready -> Load: {adUnitId} ({adType})");
+        Debug.Log($"[AdManager] 광고 미준비 - 로드 시작: {adUnitId} ({adType})");
         
         if (adType == AdType.Reward)
             _rewardedAds[adUnitId].LoadAd();
@@ -280,6 +329,11 @@ public class AdManager : MonoBehaviour
             _adStates[adUnitId].IsLoading = isLoading;
     }
 
+    public bool IsLoading(string adUnitId)
+    {
+        return _adStates.ContainsKey(adUnitId) && _adStates[adUnitId].IsLoading;
+    }
+
     public bool GetWantToShow(string adUnitId)
     {
         return _adStates.ContainsKey(adUnitId) && _adStates[adUnitId].WantToShow;
@@ -300,5 +354,18 @@ public class AdManager : MonoBehaviour
     {
         if (_adStates.ContainsKey(adUnitId))
             _adStates[adUnitId].RewardGranted = granted;
+    }
+
+    public void SetLoadedTime(string adUnitId)
+    {
+        if (_adStates.ContainsKey(adUnitId))
+            _adStates[adUnitId].LoadedTime = Time.realtimeSinceStartup;
+    }
+
+    public float GetTimeSinceLoaded(string adUnitId)
+    {
+        if (_adStates.ContainsKey(adUnitId) && _adStates[adUnitId].LoadedTime > 0)
+            return Time.realtimeSinceStartup - _adStates[adUnitId].LoadedTime;
+        return -1f;
     }
 }

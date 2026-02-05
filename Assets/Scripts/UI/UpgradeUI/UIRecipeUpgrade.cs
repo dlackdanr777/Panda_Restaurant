@@ -19,6 +19,8 @@ public class UIRecipeUpgrade : MobileUIView
     [SerializeField] private UIButtonAndText _upgradeButton;
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
+    [SerializeField] private UIButtonAndText _needItemButton;
+    [SerializeField] private Image _needItemButtonImage;
 
     [Space]
     [Header("Audios")]
@@ -32,6 +34,7 @@ public class UIRecipeUpgrade : MobileUIView
     {
         _upgradeButton.AddListener(OnUpgradeButtonClicked);
         _notEnoughMoneyButton.AddListener(OnUpgradeButtonClicked);
+        _needItemButton.AddListener(OnUpgradeButtonClicked);
         gameObject.SetActive(false);
     }
 
@@ -51,7 +54,7 @@ public class UIRecipeUpgrade : MobileUIView
         gameObject.SetActive(true);
     }
 
-    
+
     public void SetData(FoodData data)
     {
         _currentData = data;
@@ -63,19 +66,17 @@ public class UIRecipeUpgrade : MobileUIView
         if (_currentData == null)
             throw new System.Exception("레시피 데이터가 NULL입니다.");
 
-        if(!UserInfo.IsGiveRecipe(_currentData))
+        if (!UserInfo.IsGiveRecipe(_currentData))
             throw new System.Exception("해당 레시피를 구매하지 않았습니다.");
 
         _upgradeButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
-
+        _needItemButton.gameObject.SetActive(false);
         int level = UserInfo.GetRecipeLevel(_currentData);
         _selectGroup.SetSprite(_currentData.ThumbnailSprite);
         _selectGroup.SetText(_currentData.Name);
-
-
-        if(_currentData.UpgradeEnable(level))
+        if (_currentData.UpgradeEnable(level))
         {
             _levelText.text = "Lv." + level;
             _lowerFrame.gameObject.SetActive(true);
@@ -89,29 +90,43 @@ public class UIRecipeUpgrade : MobileUIView
             _lowerFrame.gameObject.SetActive(false);
             _maxLevelGroup.gameObject.SetActive(true);
             _maxLevelGroup.SetData(level, Utility.ConvertToMoney(_currentData.GetSellPrice(level)), _currentData.GetCookingTime(level) + "s");
+            return;
         }
 
-        if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
+        if (!_currentData.IsNeedItem())
         {
-            if (UserInfo.IsMoneyValid(_currentData.GetUpgradePrice(level)))
+
+            if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
             {
-                _upgradeButton.gameObject.SetActive(true);
-                _upgradeButton.SetText(Utility.ConvertToMoney(_currentData.GetUpgradePrice(level)));
-                return;
+                if (UserInfo.IsMoneyValid(_currentData.GetUpgradePrice(level)))
+                {
+                    _upgradeButton.gameObject.SetActive(true);
+                    _upgradeButton.SetText(Utility.ConvertToMoney(_currentData.GetUpgradePrice(level)));
+                    return;
+                }
+                else
+                {
+                    _notEnoughMoneyButton.gameObject.SetActive(true);
+                    _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(_currentData.GetUpgradePrice(level)));
+                    return;
+                }
             }
             else
             {
-                _notEnoughMoneyButton.gameObject.SetActive(true);
-                _notEnoughMoneyButton.SetText(Utility.ConvertToMoney(_currentData.GetUpgradePrice(level)));
+                _scoreButton.gameObject.SetActive(true);
+                _scoreButton.SetText(_currentData.GetUpgradeMinScore(level).ToString());
                 return;
             }
         }
+
+        //히든 레시피 일 경우
         else
         {
-            _scoreButton.gameObject.SetActive(true);
-            _scoreButton.SetText(_currentData.GetUpgradeMinScore(level).ToString());
-            return;
+            _needItemButton.gameObject.SetActive(true);
+            _needItemButton.SetText(UserInfo.GetGiveItemCount(_currentData.NeedItem) + " / " + _currentData.GetNeedItemCount(level));
+            _needItemButtonImage.sprite = ItemManager.Instance.GetGachaItemData(_currentData.NeedItem).ThumbnailSprite;
         }
+
     }
 
 
@@ -125,34 +140,86 @@ public class UIRecipeUpgrade : MobileUIView
 
 
         int level = UserInfo.GetRecipeLevel(_currentData);
-        if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
+
+        if (!_currentData.IsNeedItem())
         {
-            int price = _currentData.GetUpgradePrice(level);
-            if (UserInfo.IsMoneyValid(price))
+            if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
             {
-                UserInfo.AddMoney(-price);
-                _miniGameController.StartMiniGame1(_currentData, () =>
+                int price = _currentData.GetUpgradePrice(level);
+                if (UserInfo.IsMoneyValid(price))
                 {
+                    if (_currentData.MiniGameNeeded)
+                    {
+                        _miniGameController.StartMiniGame1(_currentData, () =>
+                        {                  
+                            UserInfo.AddMoney(-price);
+                            UserInfo.UpgradeRecipe(_currentData);
+                            PopupManager.Instance.ShowDisplayText("레시피 업그레이드를 완료했어요!");
+                            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
+                            _flashEffect.Emit(1);
+                            UpdateData();
+                        });
+                    }
+                    else
+                    {
+                        UserInfo.AddMoney(-price);
+                        UserInfo.UpgradeRecipe(_currentData);
+                        PopupManager.Instance.ShowDisplayText("레시피 업그레이드를 완료했어요!");
+                        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
+                        _flashEffect.Emit(1);
+                        UpdateData();
+                    }
+                    //UserInfo.UpgradeRecipe(_currentData);
+                    return;
+                }
+                else
+                {
+                    PopupManager.Instance.ShowTextLackMoney();
+                    return;
+                }
+            }
+
+            else
+            {
+                PopupManager.Instance.ShowTextLackScore();
+                return;
+            }
+        }
+        //히든 레시피 일 경우
+        else
+        {
+            if (UserInfo.GetGiveItemCount(_currentData.NeedItem) >= _currentData.GetNeedItemCount(level))
+            {
+                if (_currentData.MiniGameNeeded)
+                {
+                    _miniGameController.StartMiniGame1(_currentData, () =>
+                    {
+                        UserInfo.RemoveGachaItem(_currentData.NeedItem, _currentData.GetNeedItemCount(level));
+                        UserInfo.UpgradeRecipe(_currentData);
+                        PopupManager.Instance.ShowDisplayText("레시피 업그레이드를 완료했어요!");
+                        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
+                        _flashEffect.Emit(1);
+                        UpdateData();
+                    });
+                    return;
+                }
+                else
+                {
+                    UserInfo.RemoveGachaItem(_currentData.NeedItem, _currentData.GetNeedItemCount(level));
+                    UserInfo.UpgradeRecipe(_currentData);
                     PopupManager.Instance.ShowDisplayText("레시피 업그레이드를 완료했어요!");
                     SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
                     _flashEffect.Emit(1);
                     UpdateData();
-                });
-                //UserInfo.UpgradeRecipe(_currentData);
-                return;
+                    return;
+                }
+
             }
             else
             {
-                PopupManager.Instance.ShowTextLackMoney();
+                PopupManager.Instance.ShowDisplayText("업그레이드에 필요한 아이템이 부족해요!");
                 return;
             }
         }
-
-        else
-        {
-            PopupManager.Instance.ShowTextLackScore();
-            return;
-        }
     }
-
 }

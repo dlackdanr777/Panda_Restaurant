@@ -4,9 +4,7 @@ using UnityEngine;
 
 public class UIFever : MonoBehaviour
 {
-
-    private const string AdTimeKey = "AdFever";
-    private const int AdTime = 300; // 5분
+    private const int AdTime = 120; // 2분
     [SerializeField] private MainScene _mainScene;
     [SerializeField] private GameObject _feverEffects;
     [SerializeField] private RectTransform _animeStartPos;
@@ -57,6 +55,7 @@ public class UIFever : MonoBehaviour
         _ferverSystem.OnEndFeverHandler += EndFeverEvent;
 
         _feverAdButton.OnAdRewarded += OnAdButtonClicked;
+        _feverAdButton.OnDiaRewarded += OnDiaButtonClicked;
         TimeManager.Instance.OnRemoveTimeHandler += OnRemoveTimeEvent;
 
         OnUpdateAdButtonEvent();
@@ -137,13 +136,14 @@ public class UIFever : MonoBehaviour
         _feverButton.TweenStop();
         _feverButton.transform.localScale = _tmpButtonScale;
         _ferverSystem.FeverStart();
+        _feverAdButton.gameObject.SetActive(false);
     }
 
 
     private void StartFeverEvent()
     {
         float tweenTime = 1;
-
+        _feverAdButton.gameObject.SetActive(false);
         _feverButton.interactable = false;
         _mainScene.PlayMainMusic();
         _feverEffects.SetActive(true);
@@ -161,7 +161,7 @@ public class UIFever : MonoBehaviour
     private void EndFeverEvent()
     {
         float tweenTime = 1;
-
+        _feverAdButton.gameObject.SetActive(true);
         _feverAnimeObj.TweenStop();
         _feverAnimeObj.position = _animeEndPos.position;
         _feverButton.interactable = false;
@@ -179,7 +179,7 @@ public class UIFever : MonoBehaviour
 
       private void OnRemoveTimeEvent(string key)
     {
-        if (key != AdTimeKey) return;
+        if (key != ConstValue.AD_TIME_FEVER) return;
 
         OnUpdateAdButtonEvent();
     }
@@ -187,11 +187,11 @@ public class UIFever : MonoBehaviour
 
     private void OnUpdateAdButtonEvent()
     {
-        if(!TimeManager.Instance.IsAddTime(AdTimeKey) ||  5 <= UserInfo.FeverAdCount)
-        {
-            _feverAdButton.gameObject.SetActive(false);
-            return;
-        }
+        // if(!TimeManager.Instance.IsAddTime(AdTimeKey) ||  5 <= UserInfo.FeverAdCount)
+        // {
+        //     _feverAdButton.gameObject.SetActive(false);
+        //     return;
+        // }
 
         _feverAdButton.gameObject.SetActive(true);
     }
@@ -199,10 +199,20 @@ public class UIFever : MonoBehaviour
 
     private void OnAdButtonClicked()
     {
-        TimeManager.Instance.SetTime(AdTimeKey, AdTime);
+        TimeManager.Instance.SetTime(ConstValue.AD_TIME_FEVER, AdTime);
         UserInfo.AddFeverAdCount();
         _ferverSystem.SetFeverGauge(ConstValue.MAX_PEVER_GAUGE);
         OnChangeGauge();
-        OnUpdateAdButtonEvent();
+        //OnUpdateAdButtonEvent();
+    }
+
+    private void OnDiaButtonClicked()
+    {
+        TimeManager.Instance.SetTime(ConstValue.DIA_TIME_FEVER, AdTime);
+        UserInfo.AddFeverDiaCount();
+        _ferverSystem.SetFeverGauge(ConstValue.MAX_PEVER_GAUGE);
+        OnChangeGauge();
+        DebugLog.Log("UIFever Dia Clicked");
+        //OnUpdateAdButtonEvent();
     }
 }

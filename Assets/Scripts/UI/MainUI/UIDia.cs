@@ -83,7 +83,7 @@ public class UIDia : MonoBehaviour
         if (!_textAnimeEnable)
             return;
 
-        string sign = addDia < 0 ? "-" : "+";
+        string sign = addDia < 0 ? "" : "+";
         Vector3 spawnPos = _animeParent.transform.position;
         TextMeshProUGUI tmp = ObjectPoolManager.Instance.SpawnTMP(spawnPos, Quaternion.identity, _animeParent);
 
