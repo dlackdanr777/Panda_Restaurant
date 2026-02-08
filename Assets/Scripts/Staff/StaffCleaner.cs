@@ -1,4 +1,6 @@
 using UnityEngine;
+using System.Collections.Generic;
+using Muks.PathFinding.AStar;
 
 public class StaffCleaner : Staff
 {

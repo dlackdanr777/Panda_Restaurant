@@ -370,8 +370,10 @@ public class Staff : MonoBehaviour
 
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
-            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => 
+            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() =>
             {
+                _spriteRenderer.color = Color.white;
+                _skillEffect.color = Color.white;
                 // 텔레포트 후 현재 위치에서 목적지로 경로 탐색
                 AStar.Instance.RequestPath(_moveObj.transform.position, _targetPos, TargetMove);
             }));

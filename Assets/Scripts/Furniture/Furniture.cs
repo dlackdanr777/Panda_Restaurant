@@ -44,7 +44,7 @@ public class Furniture : MonoBehaviour
 
     public virtual void SetFurnitureData(FurnitureData data)
     {
-        if(_data == data)
+        if(data != null && _data == data)
             return;
 
         _data = data;
