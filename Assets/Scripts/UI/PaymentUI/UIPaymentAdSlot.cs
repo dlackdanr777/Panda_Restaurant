@@ -45,12 +45,14 @@ public class UIPaymentAdSlot : MonoBehaviour
             UserInfo.AddDailyAdGoldRewardCount();
             long hourMoney = GameManager.Instance.TipPerMinute * 50; // 50 minutes worth of tips
             UserInfo.AddMoney(hourMoney);
+            _uIPayment.StartCoinAnime((int)hourMoney / 10000);
         }
 
         else if(_moneyType == MoneyType.Dia)
         {
             UserInfo.AddDailyAdDiaRewardCount();
             UserInfo.AddDia(1);            
+            _uIPayment.StartDiaAnime(1);
         }
         GameManager.Instance.SaveGameData();
         Show();
