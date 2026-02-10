@@ -208,7 +208,7 @@ public class UIFever : MonoBehaviour
 
     private void OnDiaButtonClicked()
     {
-        TimeManager.Instance.SetTime(ConstValue.DIA_TIME_FEVER, AdTime);
+        TimeManager.Instance.SetTime(ConstValue.AD_TIME_FEVER, AdTime);
         UserInfo.AddFeverDiaCount();
         _ferverSystem.SetFeverGauge(ConstValue.MAX_PEVER_GAUGE);
         OnChangeGauge();

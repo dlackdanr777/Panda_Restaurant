@@ -33,7 +33,7 @@ public class WatchAdButton : MonoBehaviour
     [SerializeField] private ButtonPressEffect _buttonPressEffect;
 
     [Header("재시도 설정")]
-    [SerializeField] private float _retryDelay = 3f; // 로드 실패 시 재시도 대기 시간
+    [SerializeField] private float _retryDelay = 1f; // 로드 실패 시 재시도 대기 시간
     [SerializeField] private int _maxRetryCount = 3; // 최대 재시도 횟수
     
     [Header("미리 로딩 설정")]

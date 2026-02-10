@@ -44,7 +44,7 @@ public class UIMain : MonoBehaviour
     {
         UserInfo.AddAddCustomerDiaCount();
         DebugLog.Log("UIMain Dia Clicked");
-        TimeManager.Instance.SetTime(ConstValue.DIA_TIME_CUSTOMER, AdCustomerTime);
+        TimeManager.Instance.SetTime(ConstValue.AD_TIME_CUSTOMER, AdCustomerTime);
         StopAllCoroutines();
         StartCoroutine(AddCustomerRoutine());
     }

@@ -30,9 +30,7 @@ public static class ConstValue
 
     //타임 매니저 관련 변수
     public const string AD_TIME_FEVER = "AdFever";
-    public const string DIA_TIME_FEVER = "DiaFever";
     public const string AD_TIME_CUSTOMER = "AdCustomer";
-    public const string DIA_TIME_CUSTOMER = "DiaCustomer";
     
 
 }

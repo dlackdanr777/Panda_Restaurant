@@ -4,6 +4,7 @@ using Muks.Tween;
 using UnityEngine.UI;
 using TMPro;
 using System;
+using Unity.VisualScripting.Antlr3.Runtime.Tree;
 
 public class UIAdPopup : MobileUIView
 {
@@ -329,28 +330,18 @@ public class UIAdPopup : MobileUIView
             if (!TimeManager.Instance.IsAddTime(ConstValue.AD_TIME_FEVER))
             {
                 SetAdButtonInteractable(false);
+                SetDiaButtonInteractable(false);
                 int seconds = TimeManager.Instance.GetTime(ConstValue.AD_TIME_FEVER);
                 int minutes = seconds / 60;
                 int remainingSeconds = seconds % 60;
                 _adButton.SetText(string.Format("{0:D2}:{1:D2}", minutes, remainingSeconds));
-            }
-            else
-            {
-                _adButton.Interactable(true);
-                _adButton.SetText("광고 시청");
-            }
-
-            if(!TimeManager.Instance.IsAddTime(ConstValue.DIA_TIME_FEVER))
-            {
-                SetDiaButtonInteractable(false);
-                int seconds = TimeManager.Instance.GetTime(ConstValue.DIA_TIME_FEVER);
-                int minutes = seconds / 60;
-                int remainingSeconds = seconds % 60;
                 _diaButton.SetText(string.Format("{0:D2}:{1:D2}", minutes, remainingSeconds));
             }
             else
             {
                 _diaButton.Interactable(true);
+                _adButton.Interactable(true);
+                _adButton.SetText("광고 시청");
                 _diaButton.SetText(_feverDia.ToString());
             }
         }
@@ -359,33 +350,22 @@ public class UIAdPopup : MobileUIView
         {
             if (!TimeManager.Instance.IsAddTime(ConstValue.AD_TIME_CUSTOMER))
             {
+                SetDiaButtonInteractable(false);
                 SetAdButtonInteractable(false);
                 int seconds = TimeManager.Instance.GetTime(ConstValue.AD_TIME_CUSTOMER);
                 int minutes = seconds / 60;
                 int remainingSeconds = seconds % 60;
                 _adButton.SetText(string.Format("{0:D2}:{1:D2}", minutes, remainingSeconds));
+                _diaButton.SetText(string.Format("{0:D2}:{1:D2}", minutes, remainingSeconds));
             }
             else
             {
                 _adButton.Interactable(true);
                 _adButton.SetText("광고 시청");
-            }
 
-
-            if (!TimeManager.Instance.IsAddTime(ConstValue.DIA_TIME_CUSTOMER))
-            {
-                SetDiaButtonInteractable(false);
-                int seconds = TimeManager.Instance.GetTime(ConstValue.DIA_TIME_CUSTOMER);
-                int minutes = seconds / 60;
-                int remainingSeconds = seconds % 60;
-                _diaButton.SetText(string.Format("{0:D2}:{1:D2}", minutes, remainingSeconds));
-            }
-            else
-            {
                 _diaButton.Interactable(true);
                 _diaButton.SetText(_customerDia.ToString());
             }
-
         }
 
         else
@@ -416,18 +396,21 @@ public class UIAdPopup : MobileUIView
 
     private void AdButtonClicked()
     {
+        PopEnabled = false;
         _currentWatchAdButton.OnClickAd();
         _dontTouchArea.SetActive(true);
     }
 
     private void OnAdRewarded()
     {
+        PopEnabled = true;
         _dontTouchArea.SetActive(false);
         _uiNav.Pop("UIAd");
     }
 
     private void OnAdFailed()
     {
+        PopEnabled = true;
         _dontTouchArea.SetActive(false);
         _uiNav.Pop("UIAd");
         
@@ -437,6 +420,7 @@ public class UIAdPopup : MobileUIView
 
     private void OnAdClosed()
     {
+        PopEnabled = true;
         _dontTouchArea.SetActive(false);
         _uiNav.Pop("UIAd");
     }
@@ -449,6 +433,7 @@ public class UIAdPopup : MobileUIView
             PopupManager.Instance.ShowTextLackDia();
             return;
         }
+        PopEnabled = true;
         UserInfo.AddDia(-needDia);
         _currentWatchAdButton.DiaRewarded();
         _uiNav.Pop("UIAd");
