@@ -18,7 +18,7 @@ public class UIPaymentAdSlot : MonoBehaviour
         _uIPayment = uIPayment;
         _moneyType = moneyType;
 
-        long hourMoney = GameManager.Instance.TipPerMinute * 60; // 1 hour worth of tips
+        long hourMoney = GameManager.Instance.AddScore <= 200 ? 2000 :  GameManager.Instance.TipPerMinute * 50; // 50 minutes worth of tips
         string valueText = _moneyType == MoneyType.Gold ? Utility.ConvertToMoney(hourMoney) : "1";
         _valueText.SetText(valueText);
         _watchAdButton.OnAdRewarded += OnAdRewerded;
@@ -43,7 +43,7 @@ public class UIPaymentAdSlot : MonoBehaviour
         if(_moneyType == MoneyType.Gold)
         {
             UserInfo.AddDailyAdGoldRewardCount();
-            long hourMoney = GameManager.Instance.TipPerMinute * 50; // 50 minutes worth of tips
+            long hourMoney = GameManager.Instance.AddScore <= 200 ? 2000 :  GameManager.Instance.TipPerMinute * 50; // 50 minutes worth of tips
             UserInfo.AddMoney(hourMoney);
             _uIPayment.StartCoinAnime((int)hourMoney / 10000);
         }

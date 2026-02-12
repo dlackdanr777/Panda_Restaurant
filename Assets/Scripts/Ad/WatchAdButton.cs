@@ -10,7 +10,9 @@ public class WatchAdButton : MonoBehaviour
         Dia,
         Coin,
         Fever,
-        Customer
+        Customer,
+        Tip,
+
     }
 
     public event System.Action OnAdButtonClicked;   // 광고 버튼 클릭 시
@@ -35,12 +37,14 @@ public class WatchAdButton : MonoBehaviour
     [Header("재시도 설정")]
     [SerializeField] private float _retryDelay = 1f; // 로드 실패 시 재시도 대기 시간
     [SerializeField] private int _maxRetryCount = 3; // 최대 재시도 횟수
+    [SerializeField] private float _loadCooldown = 30f; // 최대 재시도 실패 후 재로드 쿨다운 시간 (초)
     
     [Header("미리 로딩 설정")]
     [SerializeField] private bool _enablePeriodicCheck = true; // 주기적 광고 상태 체크 활성화
     [SerializeField] private float _checkInterval = 10f; // 광고 상태 체크 주기 (초)
     
     private int _currentRetryCount = 0;
+    private float _lastFailedTime = -999f; // 마지막 로드 실패 시간
 
     private void Awake()
     {
@@ -97,6 +101,12 @@ public class WatchAdButton : MonoBehaviour
 
     private void CheckAndPreloadAd()
     {
+        // 쿨다운 체크 - 최근에 실패했으면 재로드하지 않음
+        if (Time.time - _lastFailedTime < _loadCooldown)
+        {
+            return;
+        }
+        
         // 광고가 준비되지 않았고 로딩 중이 아니면 로드
         if (!AdManager.Instance.IsAdReady(_adUnitId) && !AdManager.Instance.IsLoading(_adUnitId))
         {
@@ -142,6 +152,10 @@ public class WatchAdButton : MonoBehaviour
                 break;
             case ShowType.Customer:
                 _adPopup.ShowCustomerPopup(this);
+                break;
+
+            case ShowType.Tip:
+                _adPopup.ShowTipPopup(this);
                 break;
             case ShowType.Default:
                 _adPopup.ShowPopup(this);
@@ -189,6 +203,7 @@ public class WatchAdButton : MonoBehaviour
         AdManager.Instance.SetLoading(_adUnitId, false);
         AdManager.Instance.SetLoadedTime(_adUnitId);
         _currentRetryCount = 0; // 로드 성공 시 재시도 카운트 초기화
+        _lastFailedTime = -999f; // 실패 시간 리셋
         
         Debug.Log($"[WatchAdButton] ★★★ ad loaded ★★★ - {_adUnitId}");
         Debug.Log($"[WatchAdButton] Ad Network: {adInfo.AdNetwork}");
@@ -233,8 +248,11 @@ public class WatchAdButton : MonoBehaviour
         else
         {
             Debug.LogError($"[WatchAdButton] ✖✖✖ 최대 재시도 횟수 초과 - 광고 로드 실패 ✖✖✖ {_adUnitId}");
+            Debug.Log($"[WatchAdButton] {_loadCooldown}초 동안 재로드 시도 중단");
+            
             AdManager.Instance.SetWantToShow(_adUnitId, false);
             _currentRetryCount = 0; // 재시도 카운트 리셋
+            _lastFailedTime = Time.time; // 실패 시간 기록
             
             // 광고 로드 실패 이벤트 호출 (UI 팝업 닫기 등)
             OnAdDisplayFailed?.Invoke();

@@ -17,7 +17,8 @@ public class UIAdPopup : MobileUIView
         Dia,
         Coin,
         Fever,
-        Customer
+        Customer,
+        Tip,
     }
 
     [Header("Components")]
@@ -126,6 +127,7 @@ public class UIAdPopup : MobileUIView
         _coinLayout.SetActive(false);
         _feverLayout.SetActive(false);
         _diaButton.gameObject.SetActive(false);
+        _adCountText.gameObject.SetActive(false);
     }
 
     public void ShowDiaPopup(WatchAdButton watchAdButton)
@@ -148,6 +150,7 @@ public class UIAdPopup : MobileUIView
         _coinLayout.SetActive(false);
         _feverLayout.SetActive(false);
         _diaButton.gameObject.SetActive(false);
+        _adCountText.gameObject.SetActive(true);
         _adCountText.SetText((ConstValue.DAILY_AD_DIA_REWARD_COUNT - UserInfo.DailyAdDiaRewardCount) + "/" + ConstValue.DAILY_AD_DIA_REWARD_COUNT.ToString());
         if (UserInfo.DailyAdDiaRewardCount < ConstValue.DAILY_AD_DIA_REWARD_COUNT)
         {
@@ -159,6 +162,32 @@ public class UIAdPopup : MobileUIView
             _text.SetText("오늘 보상을 모두 획득했어요!");
             _adButton.gameObject.SetActive(false);
         }
+    }
+
+
+     public void ShowTipPopup(WatchAdButton watchAdButton)
+    {
+        // 이미 팝업이 열려있으면 중복 Push 방지
+        if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
+        {
+            return;
+        }
+
+        _currentAdType = AdType.Tip;
+
+        OnAddEvent(watchAdButton);
+        _adButton.SetText("광고 시청");
+        _currentWatchAdButton = watchAdButton;
+        _uiNav.Push("UIAd");
+        _defaultLayout.SetActive(false);
+        _customerLayout.SetActive(false);
+        _diaLayout.SetActive(false);
+        _coinLayout.SetActive(true);
+        _feverLayout.SetActive(false);
+        _diaButton.gameObject.SetActive(false);
+        _adCountText.gameObject.SetActive(false);
+        _text.SetText($"광고를 시청하시고\n{Utility.SetStringColor("팁", ColorType.Positive)}을 두배로 받으시겠습니까?");
+        _adButton.gameObject.SetActive(true);
     }
 
     public void ShowCoinPopup(WatchAdButton watchAdButton)
@@ -181,6 +210,7 @@ public class UIAdPopup : MobileUIView
         _coinLayout.SetActive(true);
         _feverLayout.SetActive(false);
         _diaButton.gameObject.SetActive(false);
+        _adCountText.gameObject.SetActive(true);
         _adCountText.SetText((ConstValue.DAILY_AD_GOLD_REWARD_COUNT - UserInfo.DailyAdGoldRewardCount) + "/" + ConstValue.DAILY_AD_GOLD_REWARD_COUNT.ToString());
         if(UserInfo.DailyAdGoldRewardCount < ConstValue.DAILY_AD_GOLD_REWARD_COUNT)
         {
@@ -216,22 +246,11 @@ public class UIAdPopup : MobileUIView
         _coinLayout.SetActive(false);
         _feverLayout.SetActive(true);
         _diaButton.gameObject.SetActive(true);
+        _adCountText.gameObject.SetActive(true);
+        _diaCountText.gameObject.SetActive(true);
         _adCountText.SetText((ConstValue.AD_FEVER_COUNT - UserInfo.FeverAdCount) + "/" + ConstValue.AD_FEVER_COUNT.ToString());
         _diaCountText.SetText((ConstValue.AD_FEVER_COUNT - UserInfo.FeverDiaCount) + "/" + ConstValue.AD_FEVER_COUNT.ToString());
 
-        if (ConstValue.AD_FEVER_COUNT <= UserInfo.FeverAdCount)
-        {
-            _text.SetText("오늘 시청 가능한\n 광고를 모두 사용했어요");
-            _diaButton.gameObject.SetActive(true);
-            _adButton.gameObject.SetActive(false);
-        }
-
-        else if(ConstValue.AD_FEVER_COUNT <= UserInfo.FeverDiaCount)
-        {
-            _text.SetText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요.");
-            _adButton.gameObject.SetActive(false);
-            _diaButton.gameObject.SetActive(true);
-        }
 
         if (ConstValue.AD_FEVER_COUNT <= UserInfo.FeverDiaCount && ConstValue.AD_FEVER_COUNT <= UserInfo.FeverAdCount)
         {
@@ -241,7 +260,7 @@ public class UIAdPopup : MobileUIView
         }
         else
         {
-             _text.SetText($"{Utility.SetStringColor("피버 게이지", ColorType.Positive)}를\n전부 충전하시겠습니까?");
+            _text.SetText($"{Utility.SetStringColor("피버 게이지", ColorType.Positive)}를\n전부 충전하시겠습니까?");
             _adButton.gameObject.SetActive(true);
             _diaButton.gameObject.SetActive(true);
         }
@@ -280,24 +299,12 @@ public class UIAdPopup : MobileUIView
         _coinLayout.SetActive(false);
         _feverLayout.SetActive(false);
         _diaButton.gameObject.SetActive(true);
+        _adCountText.gameObject.SetActive(true);
+        _diaCountText.gameObject.SetActive(true);
         _adCountText.SetText((ConstValue.AD_CUSTOMER_COUNT - UserInfo.AddCustomerAdCount) + "/" + ConstValue.AD_CUSTOMER_COUNT.ToString());
         _diaCountText.SetText((ConstValue.AD_CUSTOMER_COUNT - UserInfo.AddCustomerDiaCount) + "/" + ConstValue.AD_CUSTOMER_COUNT.ToString());
 
-        if (ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerAdCount)
-        {
-            _text.SetText("오늘 시청 가능한\n 광고를 모두 사용했어요");
-            _diaButton.gameObject.SetActive(true);
-            _adButton.gameObject.SetActive(false);
-        }
-
-        else if(ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerDiaCount)
-        {
-            _text.SetText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요.");
-            _adButton.gameObject.SetActive(false);
-            _diaButton.gameObject.SetActive(true);
-        }
-
-        else if (ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerAdCount && ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerDiaCount)
+        if (ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerAdCount && ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerDiaCount)
         {
             _text.SetText("오늘 보상을 모두 획득했어요!");
             _adButton.gameObject.SetActive(false);
@@ -396,6 +403,29 @@ public class UIAdPopup : MobileUIView
 
     private void AdButtonClicked()
     {
+        if (_currentAdType == AdType.Fever && ConstValue.AD_FEVER_COUNT <= UserInfo.FeverAdCount)
+        {
+            PopupManager.Instance.ShowDisplayText("오늘 시청 가능한\n 광고를 모두 사용했어요");
+            return;
+        }
+
+        else if (_currentAdType == AdType.Customer && ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerAdCount)
+        {
+            PopupManager.Instance.ShowDisplayText("오늘 시청 가능한\n 광고를 모두 사용했어요");
+            return;
+        }
+        else if (_currentAdType == AdType.Dia && ConstValue.DAILY_AD_DIA_REWARD_COUNT <= UserInfo.DailyAdDiaRewardCount)
+        {
+            PopupManager.Instance.ShowDisplayText("오늘 시청 가능한\n 광고를 모두 사용했어요");
+            return;
+        }
+        else if (_currentAdType == AdType.Coin && ConstValue.DAILY_AD_GOLD_REWARD_COUNT <= UserInfo.DailyAdGoldRewardCount)
+        {
+            PopupManager.Instance.ShowDisplayText("오늘 시청 가능한\n 광고를 모두 사용했어요");
+            return;
+
+        }
+
         PopEnabled = false;
         _currentWatchAdButton.OnClickAd();
         _dontTouchArea.SetActive(true);
@@ -405,14 +435,14 @@ public class UIAdPopup : MobileUIView
     {
         PopEnabled = true;
         _dontTouchArea.SetActive(false);
-        _uiNav.Pop("UIAd");
+        _uiNav.PopNoAnime("UIAd");
     }
 
     private void OnAdFailed()
     {
         PopEnabled = true;
         _dontTouchArea.SetActive(false);
-        _uiNav.Pop("UIAd");
+        _uiNav.PopNoAnime("UIAd");
         
         // 광고 로드 실패 메시지 표시
         PopupManager.Instance?.ShowDisplayText("광고를 불러올 수 없습니다.\n잠시 후 다시 시도해주세요.");
@@ -422,11 +452,24 @@ public class UIAdPopup : MobileUIView
     {
         PopEnabled = true;
         _dontTouchArea.SetActive(false);
-        _uiNav.Pop("UIAd");
+        _uiNav.PopNoAnime("UIAd");
     }
 
     private void OnDiaButtonClicked()
     {
+        DebugLog.Log(UserInfo.FeverDiaCount);
+        if (_currentAdType == AdType.Fever && ConstValue.AD_FEVER_COUNT <= UserInfo.FeverDiaCount)
+        {
+            PopupManager.Instance.ShowDisplayText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요.");
+            return;
+        }
+        
+        else if(_currentAdType == AdType.Customer && ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerDiaCount)
+        {
+            PopupManager.Instance.ShowDisplayText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요.");
+            return;
+        }
+
         int needDia = int.Parse(_diaButton.GetText());
         if (!UserInfo.IsDiaValid(needDia))
         {
@@ -436,7 +479,7 @@ public class UIAdPopup : MobileUIView
         PopEnabled = true;
         UserInfo.AddDia(-needDia);
         _currentWatchAdButton.DiaRewarded();
-        _uiNav.Pop("UIAd");
+        _uiNav.PopNoAnime("UIAd");
     }
 
 }

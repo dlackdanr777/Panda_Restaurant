@@ -2987,6 +2987,8 @@ public static class UserInfo
         _doubleTipCounterAdCount = 0;
         _dailyAdGoldRewardCount = 0;
         _dailyAdDiaRewardCount = 0;
+        _addCustomerDiaCount = 0;
+        _feverDiaCount = 0;
     }
 
     #endregion

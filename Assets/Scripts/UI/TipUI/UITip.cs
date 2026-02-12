@@ -129,7 +129,6 @@ public class UITip : MobileUIView
         GiveTipAnime(true);
     }
 
-
     private void GiveTipAnime(bool isAds)
     {
         _dontTouchArea.gameObject.SetActive(true);
