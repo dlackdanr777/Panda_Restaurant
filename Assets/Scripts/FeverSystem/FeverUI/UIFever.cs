@@ -30,12 +30,12 @@ public class UIFever : MonoBehaviour
     public void Init(FeverSystem ferverSystem)
     {
         _ferverSystem = ferverSystem;
-        _tmpFeverGauge = _ferverSystem.FeverGauge;
+        _tmpFeverGauge = FeverSystem.FeverGauge;
         _feverEffects.SetActive(false);
         _feverGaugeEffectAnimator.gameObject.SetActive(false);
         _tmpButtonScale = _feverButton.transform.localScale;
-        _fillAmountImage.SetFillAmountNoAnime(_ferverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)_ferverSystem.FeverGauge / ConstValue.MAX_PEVER_GAUGE) * 0.7f);
-        bool isActive = ConstValue.MAX_PEVER_GAUGE <= _ferverSystem.FeverGauge;
+        _fillAmountImage.SetFillAmountNoAnime(FeverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)FeverSystem.FeverGauge / ConstValue.MAX_PEVER_GAUGE) * 0.7f);
+        bool isActive = ConstValue.MAX_PEVER_GAUGE <= FeverSystem.FeverGauge;
         _feverButton.interactable = isActive;
         if (isActive)
         {
@@ -59,6 +59,9 @@ public class UIFever : MonoBehaviour
         TimeManager.Instance.OnRemoveTimeHandler += OnRemoveTimeEvent;
 
         OnUpdateAdButtonEvent();
+        FeverAdButtonSetActive();
+
+        InvokeRepeating(nameof(FeverAdButtonSetActive), 0, 1f);
     }
 
 
@@ -74,12 +77,12 @@ public class UIFever : MonoBehaviour
 
     public void OnChangeGauge()
     {
-        if (_tmpFeverGauge == _ferverSystem.FeverGauge)
+        if (_tmpFeverGauge == FeverSystem.FeverGauge)
             return;
 
         // 필 어마운트 설정
-        _tmpFeverGauge = _ferverSystem.FeverGauge;
-        float fillAmount = _ferverSystem.FeverGauge <= 0 ? 0.3f : 0.3f + ((float)_ferverSystem.FeverGauge / _ferverSystem.CurrentMaxFeverGauge) * 0.7f;
+        _tmpFeverGauge = FeverSystem.FeverGauge;
+        float fillAmount = FeverSystem.FeverGauge <= 0 ? 0.3f : 0.3f + ((float)FeverSystem.FeverGauge / FeverSystem.CurrentMaxFeverGauge) * 0.7f;
         _fillAmountImage.SetFillAmonut(fillAmount);
 
         // 이펙트 위치 조정 - 특정 좌표로 매핑
@@ -108,7 +111,7 @@ public class UIFever : MonoBehaviour
         }
 
         // 버튼 상태 설정
-        bool isActive = _ferverSystem.CurrentMaxFeverGauge <= _ferverSystem.FeverGauge;
+        bool isActive = FeverSystem.CurrentMaxFeverGauge <= FeverSystem.FeverGauge;
         _feverButton.interactable = isActive;
         if (isActive)
         {
@@ -130,7 +133,7 @@ public class UIFever : MonoBehaviour
         if (_ferverSystem.IsFeverStart || UserInfo.IsTutorialStart || !gameObject.activeInHierarchy)
             return;
 
-        if (_ferverSystem.FeverGauge < _ferverSystem.CurrentMaxFeverGauge)
+        if (FeverSystem.FeverGauge < FeverSystem.CurrentMaxFeverGauge)
             return;
 
         _feverButton.TweenStop();
@@ -169,7 +172,7 @@ public class UIFever : MonoBehaviour
         _ferverSystem.SetFeverGauge(0);
         _feverShineEffectObj.gameObject.SetActive(false);
         _feverAnimator.SetFloat("Speed", 0f);
-        _fillAmountImage.SetFillAmonut(_ferverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)_ferverSystem.FeverGauge / _ferverSystem.CurrentMaxFeverGauge) * 0.7f);
+        _fillAmountImage.SetFillAmonut(FeverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)FeverSystem.FeverGauge / FeverSystem.CurrentMaxFeverGauge) * 0.7f);
         _mirrorBallAnimator.SetBool("Action", false);
         _feverAnimeObj.TweenAnchoredPosition(_animeStartPos.anchoredPosition, tweenTime, Ease.OutBack).OnComplete(() =>
         {
@@ -187,13 +190,12 @@ public class UIFever : MonoBehaviour
 
     private void OnUpdateAdButtonEvent()
     {
-        // if(!TimeManager.Instance.IsAddTime(AdTimeKey) ||  5 <= UserInfo.FeverAdCount)
-        // {
-        //     _feverAdButton.gameObject.SetActive(false);
-        //     return;
-        // }
-
         _feverAdButton.gameObject.SetActive(true);
+    }
+
+    private void FeverAdButtonSetActive()
+    {
+        _feverAdButton.gameObject.SetActive(UserInfo.IsFeverTutorialClear);
     }
 
 

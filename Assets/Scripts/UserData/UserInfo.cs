@@ -2,6 +2,7 @@ using BackEnd;
 using LitJson;
 using Muks.BackEnd;
 using Muks.DataBind;
+using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -65,6 +66,7 @@ public static class UserInfo
     public static bool IsTutorialStart = false;
     public static bool IsFirstTutorialClear = false;
     public static bool IsMiniGameTutorialClear = false;
+    public static bool IsFeverTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
     public static bool IsGatecrasher2TutorialClear = false;
     public static bool IsSpecialCustomer1TutorialClear = false;
@@ -369,6 +371,7 @@ public static class UserInfo
 
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
         param.Add("IsMiniGameTutorialClear", IsMiniGameTutorialClear);
+        param.Add("IsFeverTutorialClear", IsFeverTutorialClear);
         param.Add("IsGatecrasher1TutorialClear", IsGatecrasher1TutorialClear);
         param.Add("IsGatecrasher2TutorialClear", IsGatecrasher2TutorialClear);
         param.Add("IsSpecialCustomer1TutorialClear", IsSpecialCustomer1TutorialClear);
@@ -601,6 +604,7 @@ public static class UserInfo
 
         IsFirstTutorialClear = loadData.IsFirstTutorialClear;
         IsMiniGameTutorialClear = loadData.IsMiniGameTutorialClear;
+        IsFeverTutorialClear = loadData.IsFeverTutorialClear;
         IsGatecrasher1TutorialClear = loadData.IsGatecrasher1TutorialClear;
         IsGatecrasher2TutorialClear = loadData.IsGatecrasher2TutorialClear;
         IsSpecialCustomer1TutorialClear = loadData.IsSpecialCustomer1TutorialClear;

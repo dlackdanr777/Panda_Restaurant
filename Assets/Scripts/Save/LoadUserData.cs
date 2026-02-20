@@ -8,6 +8,7 @@ public class LoadUserData
 {
     public bool IsFirstTutorialClear;
     public bool IsMiniGameTutorialClear;
+    public bool IsFeverTutorialClear;
     public bool IsGatecrasher1TutorialClear;
     public bool IsGatecrasher2TutorialClear;
     public bool IsSpecialCustomer1TutorialClear;
@@ -103,6 +104,7 @@ public class LoadUserData
 
             IsFirstTutorialClear = GetBool("IsFirstTutorialClear");
             IsMiniGameTutorialClear = GetBool("IsMiniGameTutorialClear");
+            IsFeverTutorialClear = GetBool("IsFeverTutorialClear");
             IsGatecrasher1TutorialClear = GetBool("IsGatecrasher1TutorialClear");
             IsGatecrasher2TutorialClear = GetBool("IsGatecrasher2TutorialClear");
             IsSpecialCustomer1TutorialClear = GetBool("IsSpecialCustomer1TutorialClear");

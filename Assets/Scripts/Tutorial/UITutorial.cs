@@ -21,6 +21,7 @@ public class UITutorial : MobileUIView
     public ButtonPressEffect Gacha1Button => _gacha1Button;
     [SerializeField] private TableButton _orderButton;
     [SerializeField] private TableButton _servingButton;
+    [SerializeField] private GameObject _cookTimer;
     [SerializeField] private GameObject _uiPunchHole;
 
     [SerializeField] private HoleClickHandler _shopHole;
@@ -82,6 +83,7 @@ public class UITutorial : MobileUIView
         _orderButton.gameObject.SetActive(false);
         _servingButton.gameObject.SetActive(false);
         _table1Button.gameObject.SetActive(false);
+        _cookTimer.SetActive(false);
         _gacha1Button.gameObject.SetActive(false);
 
         _shopHole.SetActive(false);
@@ -319,6 +321,12 @@ public class UITutorial : MobileUIView
         _orderHoleCursor.SetActive(false);
         _orderHole.Interactable = false;
         _isButtonClicked = false;
+    }
+
+
+    public void CookTimerSetActive(bool value)
+    {
+        _cookTimer.SetActive(value);
     }
 
     public void Table1HoleSetActive(bool value)

@@ -102,7 +102,7 @@ public class UIMain : MonoBehaviour
     private IEnumerator AddCustomerRoutine()
     {
 
-        while (!_customerController.IsMaxCount)
+        while (!CustomerController.IsMaxCount)
         {
             _customerController.AddCustomer();
             //_watchAdButton.gameObject.SetActive(false);

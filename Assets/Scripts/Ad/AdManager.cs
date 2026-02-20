@@ -319,7 +319,10 @@ public class AdManager : MonoBehaviour
         if (_adStates.ContainsKey(adUnitId))
         {
             _adStates[adUnitId].WantToShow = false;
+            _adStates[adUnitId].RewardGranted = false; // 다음 광고를 위해 보상 플래그 초기화
         }
+        
+        Debug.Log($"[AdManager] OnAdPlayFinished - 상태 초기화 완료: {adUnitId}");
     }
 
     // 상태 관리 메서드들

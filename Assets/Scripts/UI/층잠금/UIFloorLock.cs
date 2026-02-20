@@ -1,3 +1,4 @@
+using System;
 using Muks.MobileUI;
 using Muks.Tween;
 using TMPro;
@@ -27,7 +28,7 @@ public class UIFloorLock : MobileUIView
     [SerializeField] private Ease _hideTweenMode;
 
     private ERestaurantFloorType _floorType;
-
+    private Action _onUnlock;   
     public override void Init()
     {
         _okButton.onClick.AddListener(OnOkButtonClicked);
@@ -69,13 +70,14 @@ public class UIFloorLock : MobileUIView
         });
     }
 
-    public void SetData(int score, MoneyType moneyType, int moneyAmount, ERestaurantFloorType floorType)
+    public void SetData(int score, MoneyType moneyType, int moneyAmount, ERestaurantFloorType floorType, Action onUnlock = null)
     {
         _uiNav.Push("UIFloorLock");
         _floorType = floorType;
         _moneyIcon.SetActive(moneyType == MoneyType.Gold);
         _diaIcon.SetActive(moneyType == MoneyType.Dia);
-
+        _onUnlock = onUnlock;
+        
         if (!UserInfo.IsScoreValid(score))
         {
             _titleText.SetText("평점이 부족합니다,,,");
@@ -106,5 +108,6 @@ public class UIFloorLock : MobileUIView
     {
         UserInfo.ChangeUnlockFloor(UserInfo.CurrentStage, _floorType);
         _uiNav.Pop();
+        _onUnlock?.Invoke();
     }
 }

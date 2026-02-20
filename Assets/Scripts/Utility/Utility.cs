@@ -276,47 +276,59 @@ public static class Utility
 
         int level = UserInfo.GetGachaItemLevel(data);
         level = level <= 0 ? 1 : level;
-        float upgradeValue = UserInfo.IsGachaItemMaxLevel(data) ? 0 : data.UpgradeValue;
+        float upgradeValue = UserInfo.IsGachaItemMaxLevel(data) ? 0 : Mathf.Abs(data.UpgradeValue);
         string effectDescription = data.UpgradeType switch
         {
-            UpgradeType.UPGRADE01 => "전체 손님 기본 속도\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE01 => "전체 손님 기본 속도\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
 
-            UpgradeType.UPGRADE02 => "모든 메뉴 제작 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
-            UpgradeType.UPGRADE03 => FoodTypeStringConverter(FoodType.Natural) + " 메뉴 제작 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
-            UpgradeType.UPGRADE04 => FoodTypeStringConverter(FoodType.Modern) + " 메뉴 제작 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
-            UpgradeType.UPGRADE05 => FoodTypeStringConverter(FoodType.Vintage) + " 메뉴 제작 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
-            UpgradeType.UPGRADE06 => FoodTypeStringConverter(FoodType.Traditional) + " 메뉴 제작 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
-            UpgradeType.UPGRADE07 => FoodTypeStringConverter(FoodType.Tropical) + " 메뉴 제작 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
-            UpgradeType.UPGRADE08 => FoodTypeStringConverter(FoodType.Luxury) + " 메뉴 제작 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
-            UpgradeType.UPGRADE09 => FoodTypeStringConverter(FoodType.Cozy) + " 메뉴 제작 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
+            UpgradeType.UPGRADE02 => "모든 메뉴 제작 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
+            UpgradeType.UPGRADE03 => FoodTypeStringConverter(FoodType.Natural) + " 메뉴 제작 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
+            UpgradeType.UPGRADE04 => FoodTypeStringConverter(FoodType.Modern) + " 메뉴 제작 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
+            UpgradeType.UPGRADE05 => FoodTypeStringConverter(FoodType.Vintage) + " 메뉴 제작 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
+            UpgradeType.UPGRADE06 => FoodTypeStringConverter(FoodType.Traditional) + " 메뉴 제작 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
+            UpgradeType.UPGRADE07 => FoodTypeStringConverter(FoodType.Tropical) + " 메뉴 제작 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
+            UpgradeType.UPGRADE08 => FoodTypeStringConverter(FoodType.Luxury) + " 메뉴 제작 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
+            UpgradeType.UPGRADE09 => FoodTypeStringConverter(FoodType.Cozy) + " 메뉴 제작 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 단축",
 
-            UpgradeType.UPGRADE10 => "전체 메뉴 판매 수익\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE11 => FoodTypeStringConverter(FoodType.Natural) + " 메뉴 판매 수익\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE12 => FoodTypeStringConverter(FoodType.Modern) + " 메뉴 판매 수익\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE13 => FoodTypeStringConverter(FoodType.Vintage) + " 메뉴 판매 수익\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE14 => FoodTypeStringConverter(FoodType.Traditional) + " 메뉴 판매 수익\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE15 => FoodTypeStringConverter(FoodType.Tropical) + " 메뉴 판매 수익\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE16 => FoodTypeStringConverter(FoodType.Luxury) + " 메뉴 판매 수익\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE17 => FoodTypeStringConverter(FoodType.Cozy) + " 메뉴 판매 수익\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE10 => "전체 메뉴 판매 수익\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE11 => FoodTypeStringConverter(FoodType.Natural) + " 메뉴 판매 수익\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE12 => FoodTypeStringConverter(FoodType.Modern) + " 메뉴 판매 수익\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE13 => FoodTypeStringConverter(FoodType.Vintage) + " 메뉴 판매 수익\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE14 => FoodTypeStringConverter(FoodType.Traditional) + " 메뉴 판매 수익\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE15 => FoodTypeStringConverter(FoodType.Tropical) + " 메뉴 판매 수익\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE16 => FoodTypeStringConverter(FoodType.Luxury) + " 메뉴 판매 수익\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE17 => FoodTypeStringConverter(FoodType.Cozy) + " 메뉴 판매 수익\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
 
-            UpgradeType.UPGRADE18 => "전체 직원 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE19 => StaffTypeStringConverter(StaffGroupType.Manager) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE20 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE21 => StaffTypeStringConverter(StaffGroupType.Chef) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE22 => StaffTypeStringConverter(StaffGroupType.Marketer) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE23 => StaffTypeStringConverter(StaffGroupType.Cleaner) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE24 => StaffTypeStringConverter(StaffGroupType.Guard) + " 스킬 지속 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE18 => "전체 직원 스킬 지속 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE19 => StaffTypeStringConverter(StaffGroupType.Manager) + " 스킬 지속 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE20 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 스킬 지속 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE21 => StaffTypeStringConverter(StaffGroupType.Chef) + " 스킬 지속 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE22 => StaffTypeStringConverter(StaffGroupType.Marketer) + " 스킬 지속 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE23 => StaffTypeStringConverter(StaffGroupType.Cleaner) + " 스킬 지속 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE24 => StaffTypeStringConverter(StaffGroupType.Guard) + " 스킬 지속 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
 
-            UpgradeType.UPGRADE25 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 이동 속도\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE26 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 이동 속도\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE27 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 이동 속도\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
-            UpgradeType.UPGRADE28 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 이동 속도\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE25 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 이동 속도\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE26 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 이동 속도\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE27 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 이동 속도\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
+            UpgradeType.UPGRADE28 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 이동 속도\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
 
-            UpgradeType.UPGRADE29 => "피버 타임 시간\n" + (data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
-            UpgradeType.UPGRADE30 => "최대 대기 손님\n" + ((int)data.DefaultValue + (int)data.UpgradeValue * (level - 1)) + "명(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "명</color>) 증가",
+            UpgradeType.UPGRADE29 => "피버 타임 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
+            UpgradeType.UPGRADE30 => "최대 대기 손님\n" + (int)Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "명(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "명</color>) 증가",
             _ => "효과 없음"
         };
         return effectDescription;
+    }
+
+
+    public static float GetGachaItemEffectValue(GachaItemData data)
+    {
+        if (data == null)
+            throw new System.Exception("전달 받은 가챠 아이템 데이터가 null 입니다.");
+
+        int level = UserInfo.GetGachaItemLevel(data);
+        level = level <= 0 ? 1 : level;
+        float upgradeValue = UserInfo.IsGachaItemMaxLevel(data) ? 0 : data.UpgradeValue;
+        return Mathf.Abs(data.DefaultValue + upgradeValue * (level - 1));
     }
 
 

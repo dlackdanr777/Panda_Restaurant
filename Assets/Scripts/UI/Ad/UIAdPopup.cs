@@ -423,7 +423,18 @@ public class UIAdPopup : MobileUIView
         {
             PopupManager.Instance.ShowDisplayText("오늘 시청 가능한\n 광고를 모두 사용했어요");
             return;
+        }
 
+        if (_currentAdType == AdType.Fever && FeverSystem.CurrentMaxFeverGauge <= FeverSystem.FeverGauge)
+        {
+            PopupManager.Instance.ShowDisplayText("피버게이지가 가득 차 있습니다.");
+            return;
+        }
+        
+        else if(_currentAdType == AdType.Customer && CustomerController.IsMaxCount)
+        {
+            PopupManager.Instance.ShowDisplayText("손님이 가득 차 있습니다.");
+            return;
         }
 
         PopEnabled = false;
@@ -463,10 +474,22 @@ public class UIAdPopup : MobileUIView
             PopupManager.Instance.ShowDisplayText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요.");
             return;
         }
-        
-        else if(_currentAdType == AdType.Customer && ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerDiaCount)
+
+        else if (_currentAdType == AdType.Customer && ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerDiaCount)
         {
             PopupManager.Instance.ShowDisplayText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요.");
+            return;
+        }
+              
+        if (_currentAdType == AdType.Fever && FeverSystem.CurrentMaxFeverGauge <= FeverSystem.FeverGauge)
+        {
+            PopupManager.Instance.ShowDisplayText("피버게이지가 가득 차 있습니다.");
+            return;
+        }
+        
+        else if(_currentAdType == AdType.Customer && CustomerController.IsMaxCount)
+        {
+            PopupManager.Instance.ShowDisplayText("손님이 가득 차 있습니다.");
             return;
         }
 

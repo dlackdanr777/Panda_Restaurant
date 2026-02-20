@@ -39,17 +39,17 @@ public class UIStatusPreviewSlot : MonoBehaviour
         StringBuilder descriptionStr = new StringBuilder();
         if (upgradeType == UpgradeType.UPGRADE30)
         {
-            descriptionStr.Append(Utility.SetStringColor(((int)GameManager.Instance.GetGachaItemUpgradeValue(upgradeType)).ToString(), ColorType.Positive));
+            descriptionStr.Append(Utility.SetStringColor(((int)Math.Abs(Utility.GetGachaItemEffectValue(_data))).ToString(), ColorType.Positive));
             descriptionStr.Append("명 ");
         }
         else if (upgradeType == UpgradeType.UPGRADE29)
         {
-            descriptionStr.Append(Utility.SetStringColor(GameManager.Instance.GetGachaItemUpgradeValue(upgradeType).ToString("F3"), ColorType.Positive));
+            descriptionStr.Append(Utility.SetStringColor(Mathf.Abs(Utility.GetGachaItemEffectValue(_data)).ToString("F3"), ColorType.Positive));
             descriptionStr.Append("초 ");
         }
         else
         {
-            descriptionStr.Append(Utility.SetStringColor(GameManager.Instance.GetGachaItemUpgradeValue(upgradeType).ToString("F3"), ColorType.Positive));
+            descriptionStr.Append(Utility.SetStringColor(Mathf.Abs(Utility.GetGachaItemEffectValue(_data)).ToString("F3"), ColorType.Positive));
             descriptionStr.Append("% ");
         }
         descriptionStr.Append(descriptionEndStr);

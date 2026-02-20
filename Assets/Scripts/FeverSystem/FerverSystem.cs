@@ -10,18 +10,19 @@ public class FeverSystem : MonoBehaviour
     [SerializeField] private MainScene _mainScene;
     [SerializeField] private UIFever _uiFever;
     [SerializeField] private CustomerController _customerController;
+    [SerializeField] private FeverTutorial _feverTutorial;
 
     private bool _isFeverStart = false;
     public bool IsFeverStart => _isFeverStart;
 
-    private float _feverGauge = 0;
-    public float FeverGauge => _feverGauge;
-    public void SetFeverGauge(float value) => _feverGauge = value;
+    private static float _feverGauge = 0;
+    public static float FeverGauge => _feverGauge;
+    public void SetFeverGauge(float value){_feverGauge = value;}
 
-    private int _currentMaxFeverGauge = 500;
-    public int CurrentMaxFeverGauge => _currentMaxFeverGauge;
+    private static int _currentMaxFeverGauge = 500;
+    public static int CurrentMaxFeverGauge => _currentMaxFeverGauge;
     //private int[] _maxFeverGauges = new int[]{500, 500, 500, 500, 500, 500, 500, 600, 700, 700, 800, 800, 900, 900, 1000, 1000};
-    private int[] _maxFeverGauges = new int[]{10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
+    private static int[] _maxFeverGauges = new int[]{10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
     private Coroutine _feverRoutine = null;
 
     public void AddFeverGauge(float addMul = 1)
@@ -34,11 +35,25 @@ public class FeverSystem : MonoBehaviour
         _uiFever.OnChangeGauge();
     }
 
+    public void StartTutorial()
+    {
+        if (_feverGauge >= _currentMaxFeverGauge)
+        {
+            _feverTutorial.StartTutorial();
+        }
+    }
+
 
     public void FeverStart()
     {
         if(_isFeverStart)
             return;
+
+        if(UserInfo.IsFeverTutorialClear == false)
+        {
+            _feverTutorial.StartTutorial();
+            return;
+        }
 
         _isFeverStart = true;
 
@@ -112,7 +127,7 @@ public class FeverSystem : MonoBehaviour
             addTabTimer += 0.02f;
             if (addTabTimer >= 0.5f)
             {
-                if (!_customerController.IsMaxCount)
+                if (!CustomerController.IsMaxCount)
                 {
                     _customerController.AddTabCount();
                 }

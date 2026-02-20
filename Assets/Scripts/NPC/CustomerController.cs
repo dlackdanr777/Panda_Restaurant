@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -32,17 +33,16 @@ public class CustomerController : MonoBehaviour
 
 
 
-    private List<NormalCustomer> _callCustomers = new List<NormalCustomer>();
+    private static List<NormalCustomer> _callCustomers = new List<NormalCustomer>();
     private List<NormalCustomer> _waitCustomers = new List<NormalCustomer>();
     private GatecrasherCustomer[] _gatecrasherCustomers = new global::GatecrasherCustomer[(int)ERestaurantFloorType.Length];
-    private float _breakInCustomerTimer;
     private bool _breakCustomerEnabled = true;
     public int Count => _callCustomers.Count;
     public int WaitCount => _waitCustomers.Count;
 
     public Transform[] _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
     public GatecrasherCustomer[] GatecrasherCustomer => _gatecrasherCustomers;
-    public bool IsMaxCount => GameManager.Instance.MaxWaitCustomerCount <= _callCustomers.Count;
+    public static bool IsMaxCount => GameManager.Instance.MaxWaitCustomerCount <= _callCustomers.Count;
 
 
     //// UI관련 변수

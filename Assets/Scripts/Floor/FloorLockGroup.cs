@@ -1,6 +1,7 @@
 using Muks.Tween;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class FloorLockGroup : MonoBehaviour
 {
@@ -22,6 +23,9 @@ public class FloorLockGroup : MonoBehaviour
     [SerializeField] private BoxCollider2D _collider2D;
     [SerializeField] private GameObject _goldIcon;
     [SerializeField] private GameObject _diaIcon;
+
+    [Space]
+    [SerializeField] private UnityEvent _onUnlockFloorEvent;
 
 
     private void Start()
@@ -64,7 +68,7 @@ public class FloorLockGroup : MonoBehaviour
         _tweenTarget.transform.localScale = Vector3.one * 0.9f;
         _tweenTarget.TweenScale(Vector3.one * 1f, 0.15f, Ease.OutBack);
 
-        _uiFloorLock.SetData(_score, _moneyType, _moneyAmount, _floorType);
+        _uiFloorLock.SetData(_score, _moneyType, _moneyAmount, _floorType, OnUnlockFloor);
     }
 
 
@@ -72,6 +76,11 @@ public class FloorLockGroup : MonoBehaviour
     {
         UserInfo.OnChangeFloorHandler -= CheckFloorLock;
         UserInfo.OnClearChallengeHandler -= CheckFloorLock;
+    }
+
+    private void OnUnlockFloor()
+    {
+        _onUnlockFloorEvent?.Invoke();
     }
 
 }

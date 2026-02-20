@@ -237,6 +237,9 @@ public class WatchAdButton : MonoBehaviour
             Debug.LogError($"[WatchAdButton] Error Code: {error.ErrorCode}, Message: {error.ErrorMessage}");
         }
         
+        // 사용자가 광고를 보려고 시도했는지 확인
+        bool userWantedToShow = AdManager.Instance.GetWantToShow(_adUnitId);
+        
         // 재시도 카운트 증가
         _currentRetryCount++;
         
@@ -254,11 +257,20 @@ public class WatchAdButton : MonoBehaviour
             _currentRetryCount = 0; // 재시도 카운트 리셋
             _lastFailedTime = Time.time; // 실패 시간 기록
             
-            // 광고 로드 실패 이벤트 호출 (UI 팝업 닫기 등)
-            OnAdDisplayFailed?.Invoke();
-            
-            // TODO: 토스트 메시지 표시
-            // ToastManager.Instance?.ShowToast("광고를 불러올 수 없습니다. 나중에 다시 시도해주세요.");
+            // ★★★ 사용자가 실제로 광고를 보려고 시도했을 때만 에러 이벤트 호출 ★★★
+            // 백그라운드 PreloadAd 실패는 조용히 처리 (팝업 표시 안함)
+            if (userWantedToShow)
+            {
+                Debug.LogWarning($"[WatchAdButton] 사용자 시도 실패 - 에러 팝업 표시");
+                OnAdDisplayFailed?.Invoke();
+                
+                // TODO: 토스트 메시지 표시
+                // ToastManager.Instance?.ShowToast("광고를 불러올 수 없습니다. 나중에 다시 시도해주세요.");
+            }
+            else
+            {
+                Debug.Log($"[WatchAdButton] 백그라운드 로드 실패 - 에러 팝업 표시 안함");
+            }
         }
     }
 
@@ -328,6 +340,13 @@ public class WatchAdButton : MonoBehaviour
             }
             
             AdManager.Instance.OnAdPlayFinished(_adUnitId);
+            
+            // Interstitial은 OnClosed에서 다음 광고 로드
+            if (!AdManager.Instance.IsLoading(_adUnitId) && !AdManager.Instance.IsAdReady(_adUnitId))
+            {
+                Debug.Log($"[WatchAdButton] OnClosed 후 다음 광고 로드 시작 - {_adUnitId}");
+                AdManager.Instance.PreloadAd(_adUnitId);
+            }
         }
         else // Reward
         {
@@ -342,17 +361,9 @@ public class WatchAdButton : MonoBehaviour
             {
                 Debug.Log($"[WatchAdButton] OnClosed - 보상 대기 중, OnRewarded에서 정리 예정");
             }
-        }
-        
-        // 다음 광고 미리 로드 (이미 로딩 중이거나 준비된 경우 스킵)
-        if (!AdManager.Instance.IsLoading(_adUnitId) && !AdManager.Instance.IsAdReady(_adUnitId))
-        {
-            Debug.Log($"[WatchAdButton] OnClosed 후 다음 광고 로드 시작 - {_adUnitId}");
-            AdManager.Instance.PreloadAd(_adUnitId);
-        }
-        else
-        {
-            Debug.Log($"[WatchAdButton] OnClosed - 광고 이미 준비 중/완료됨, 재로드 스킵 - {_adUnitId}");
+            
+            // ★★★ Reward 타입은 OnRewarded에서 PreloadAd를 처리 (연속 실행 안정성 확보) ★★★
+            Debug.Log($"[WatchAdButton] Reward 타입 - PreloadAd는 OnRewarded에서 처리");
         }
     }
 
@@ -400,5 +411,23 @@ public class WatchAdButton : MonoBehaviour
         // 보상 지급 후 정리 작업
         AdManager.Instance.OnAdPlayFinished(_adUnitId);
         Debug.Log($"[WatchAdButton] OnRewarded 완료, 정리 작업 완료");
+        
+        // ★★★ UI 정리 후 다음 광고 미리 로드 (0.5초 지연으로 연속 실행 안정성 확보) ★★★
+        StartCoroutine(PreloadNextAdAfterDelay());
+    }
+    
+    private System.Collections.IEnumerator PreloadNextAdAfterDelay()
+    {
+        yield return new WaitForSeconds(0.5f); // UI 팝업 닫힘 대기
+        
+        if (!AdManager.Instance.IsLoading(_adUnitId) && !AdManager.Instance.IsAdReady(_adUnitId))
+        {
+            Debug.Log($"[WatchAdButton] OnRewarded 후 다음 광고 로드 시작 - {_adUnitId}");
+            AdManager.Instance.PreloadAd(_adUnitId);
+        }
+        else
+        {
+            Debug.Log($"[WatchAdButton] OnRewarded - 광고 이미 준비 중/완료됨, 재로드 스킵 - {_adUnitId}");
+        }
     }
 }

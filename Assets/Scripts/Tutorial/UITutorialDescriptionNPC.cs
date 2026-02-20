@@ -12,6 +12,9 @@ public class UITutorialDescriptionNPC : MobileUIView
     [SerializeField] private Button _skipButton;
     [SerializeField] private UIImageAndText _descriptionText1;
     [SerializeField] private UIImageAndText _descriptionText2;
+    [SerializeField] private UIImageAndText _descriptionText3;
+    [SerializeField] private UIImageAndText _descriptionText4;
+        
     [SerializeField] private Button _screenButton;
     [SerializeField] private GameObject[] _cursorObjs;
 
@@ -25,6 +28,8 @@ public class UITutorialDescriptionNPC : MobileUIView
         _skipButton.onClick.AddListener(OnSkipButtonClicked);
         _descriptionText1.gameObject.SetActive(false);
         _descriptionText2.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
         _isScreenClicked = false;
         _screenButton.onClick.AddListener(() => _isScreenClicked = true);
@@ -37,6 +42,8 @@ public class UITutorialDescriptionNPC : MobileUIView
     {
         _descriptionText1.gameObject.SetActive(false);
         _descriptionText2.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
         for (int i = 0, cnt = _cursorObjs.Length; i < cnt; ++i)
             _cursorObjs[i].gameObject.SetActive(false);
@@ -72,6 +79,8 @@ public class UITutorialDescriptionNPC : MobileUIView
     {
         _descriptionText1.gameObject.SetActive(true);
         _descriptionText2.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
         if (_textCoroutine != null)
             StopCoroutine(_textCoroutine);
         _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText1, str, 0.05f));
@@ -82,9 +91,37 @@ public class UITutorialDescriptionNPC : MobileUIView
     {
         _descriptionText2.gameObject.SetActive(true);
         _descriptionText1.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
         if (_textCoroutine != null)
             StopCoroutine(_textCoroutine);
         _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText2, str, 0.05f));
+        return _textCoroutine;
+    }
+
+    public Coroutine ShowDescription3Text(string str)
+    {
+        _descriptionText3.gameObject.SetActive(true);
+        _descriptionText1.gameObject.SetActive(false);
+        _descriptionText2.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
+        if (_textCoroutine != null)
+            StopCoroutine(_textCoroutine);
+        _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText3, str, 0.05f));
+        return _textCoroutine;
+    }
+
+
+        public Coroutine ShowDescription4Text(string str)
+    {
+        _descriptionText4.gameObject.SetActive(true);
+        _descriptionText1.gameObject.SetActive(false);
+        _descriptionText2.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+
+        if (_textCoroutine != null)
+            StopCoroutine(_textCoroutine);
+        _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText4, str, 0.05f));
         return _textCoroutine;
     }
 
