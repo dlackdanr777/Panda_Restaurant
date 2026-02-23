@@ -98,6 +98,7 @@ public class FirstTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(1);
         yield return _uiDescriptionNPC.ShowDescription1Text("이제 가게가 깔끔해졌어요!");
         yield return _uiDescriptionNPC.ShowDescription1Text("그러면 이제 손님을 불러야겠죠?");
+        _uiTutorial.PunchHoleSetActive(true);
         _uiTutorial.AddCustomerButtonSetActive(true);
         yield return _uiDescriptionNPC.ShowDescription1Text($"오른쪽 하단에 \"호출버튼\" 을 눌러볼까요?");
         UserInfo.GiveRecipe("FOOD01");
@@ -110,6 +111,7 @@ public class FirstTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(5);
         yield return _uiDescriptionNPC.ShowDescription1Text("손님이 도착했어요!");
 
+
         _uiTutorial.CustomerGuideButtonSetActive(true);
         yield return _uiDescriptionNPC.ShowDescription2Text("카운터 위에 \"벨 버튼\"을 눌러서 손님을 안내해볼까요?");
         _uiTutorial.CustomerGuideHoleSetActive(true);
@@ -117,11 +119,13 @@ public class FirstTutorial : MonoBehaviour
             yield return YieldCache.WaitForSeconds(0.02f);
 
         yield return YieldCache.WaitForSeconds(8);
+
         _uiTutorial.OrderButtonSetActive(true);
+        _uiTutorial.OrderHoleSetActive(false);
         yield return YieldCache.WaitForSeconds(1);
         yield return _uiDescriptionNPC.ShowDescription3Text("손님이 주문을 했어요!");
         yield return _uiDescriptionNPC.ShowDescription3Text("음식을 눌러서\n주문을 받아보세요!");
-            _uiTutorial.OrderHoleSetActive(true);
+        _uiTutorial.OrderHoleSetActive(true);
         while (!_uiTutorial.IsButtonClicked)
             yield return YieldCache.WaitForSeconds(0.02f);
 
@@ -137,9 +141,12 @@ public class FirstTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(1);
        _uiTutorial.CookTimerSetActive(false);
         _uiTutorial.ServingButtonSetActive(true);
+        _uiTutorial.ServingHoleSetActive(true);
         yield return _uiDescriptionNPC.ShowDescription1Text("서빙 버튼을 눌러서 음식을 손님에게 전달해보세요!");
         while (!_uiTutorial.IsButtonClicked)
             yield return YieldCache.WaitForSeconds(0.02f);
+        _uiTutorial.ServingHoleSetActive(false);
+        _uiTutorial.ServingButtonSetActive(false);
 
         yield return YieldCache.WaitForSeconds(8);
         yield return _uiDescriptionNPC.ShowDescription1Text("손님이 만족한 것 같아요!");
@@ -344,7 +351,6 @@ public class FirstTutorial : MonoBehaviour
         _uiTutorial.PunchHoleSetActive(false);
         UserInfo.IsFirstTutorialClear = true;
         _mainSceneUI.gameObject.SetActive(true);
-
         _uiTutorial.PopEnabled = true;
         _uiDescriptionNPC.PopEnabled = true;
         yield return YieldCache.WaitForSeconds(0.02f);

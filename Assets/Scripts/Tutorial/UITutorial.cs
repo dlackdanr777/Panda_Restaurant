@@ -34,6 +34,7 @@ public class UITutorial : MobileUIView
     [SerializeField] private HoleClickHandler _backHole;
     [SerializeField] private HoleClickHandler _customerGuideHole;
     [SerializeField] private HoleClickHandler _orderHole;
+        [SerializeField] private HoleClickHandler _servingHole;
     [SerializeField] private HoleClickHandler _table1Hole;
 
     [SerializeField] private EnabledScaleAnimation _addCustonerHoleAnime;
@@ -46,6 +47,7 @@ public class UITutorial : MobileUIView
     [SerializeField] private EnabledScaleAnimation _backHoleAnime;
     [SerializeField] private EnabledScaleAnimation _customerGuideHoleAnime;
     [SerializeField] private EnabledScaleAnimation _orderHoleAnime;
+    [SerializeField] private EnabledScaleAnimation _servingHoleAnime;
     [SerializeField] private EnabledScaleAnimation _table1HoleAnime;
 
     [SerializeField] private GameObject _shopMaskCursor;
@@ -58,6 +60,7 @@ public class UITutorial : MobileUIView
     [SerializeField] private GameObject _backHoleCursor;
     [SerializeField] private GameObject _customerGuideHoleCursor;
     [SerializeField] private GameObject _orderHoleCursor;
+    [SerializeField] private GameObject _servingHoleCursor;
     [SerializeField] private GameObject _table1HoleCursor;
 
     [Space]
@@ -96,6 +99,7 @@ public class UITutorial : MobileUIView
         _backHole.SetActive(false);
         _customerGuideHole.SetActive(false);
         _orderHole.SetActive(false);
+        _servingHole.SetActive(false);
         _table1Hole.SetActive(false);
         _customHole.SetActive(false);
 
@@ -109,6 +113,7 @@ public class UITutorial : MobileUIView
         _backHoleCursor.SetActive(false);
         _customerGuideHoleCursor.SetActive(false);
         _orderHoleCursor.SetActive(false);
+        _servingHoleCursor.SetActive(false);
         _table1HoleCursor.SetActive(false);
         _customHoleCursorParent.gameObject.SetActive(false);
 
@@ -136,7 +141,9 @@ public class UITutorial : MobileUIView
         _backHole.SetTargetObjectName("Back Button");
         _customerGuideHole.SetTargetObjectName("Tutorial Guide Button");
         _orderHole.SetTargetObjectName("Tutorial Order Button");
+        _servingHole.SetTargetObjectName("Tutorial Serving Button");
         _table1Hole.SetTargetObjectName("Table1 Button");
+
 
         _shopMaskAnime.SetCallBack(() => _shopMaskCursor.SetActive(false), null, OnShopMaskAnimeCompleted);
         _addCustonerHoleAnime.SetCallBack(() => _addCustomerHoleCursor.SetActive(false), null, OnAddCustomerHoleAnimeCompleted);
@@ -150,6 +157,7 @@ public class UITutorial : MobileUIView
         _orderHoleAnime.SetCallBack(() => _orderHoleCursor.SetActive(false), null, OnOrderHoleAnimeCompleted);
         _table1HoleAnime.SetCallBack(() => _table1HoleCursor.SetActive(false), null, OnTable1HoleAnimeCompleted);
         _customHoleAnime.SetCallBack(() => _customHoleCursorParent.gameObject.SetActive(false), null, OnCustomHoleAnimeCompleted);
+        _servingHoleAnime.SetCallBack(() => _servingHoleCursor.SetActive(false), null, OnServingHoleAnimeCompleted);
 
         _orderButton.Init();
         _servingButton.Init();
@@ -317,9 +325,17 @@ public class UITutorial : MobileUIView
     {
         _servingButton.gameObject.SetActive(value);
         _servingButton.SetData(FoodDataManager.Instance.GetFoodData("FOOD01"));
-        _orderHole.SetActive(false);
-        _orderHoleCursor.SetActive(false);
-        _orderHole.Interactable = false;
+        _servingHole.SetActive(false);
+        _servingHoleCursor.SetActive(false);
+        _servingHole.Interactable = false;
+        _isButtonClicked = false;
+    }
+
+    public void ServingHoleSetActive(bool value)
+    {
+        _servingHole.SetActive(value);
+        _servingHoleCursor.SetActive(false);
+        _servingHole.Interactable = false;
         _isButtonClicked = false;
     }
 
@@ -531,6 +547,15 @@ public class UITutorial : MobileUIView
         {
             _orderHole.Interactable = true;
             _orderHoleCursor.gameObject.SetActive(true);
+        });
+    }
+    
+        private void OnServingHoleAnimeCompleted()
+    {
+        Tween.Wait(0.05f, () =>
+        {
+            _servingHole.Interactable = true;
+            _servingHoleCursor.gameObject.SetActive(true);
         });
     }
 
