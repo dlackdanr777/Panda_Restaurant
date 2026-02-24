@@ -7,10 +7,12 @@ public class IntroSceneCanvas : MonoBehaviour
     [SerializeField] private Button _showHideButton;
     [SerializeField] private Button _skipButton;
     [SerializeField] private CanvasGroup _skipButtonCanvasGroup;
+    [SerializeField] private UIIntroSkip _introSkipUI;
 
     public void Init(IntroScene introScene)
     {
-        _skipButton.onClick.AddListener(() => introScene.SkipIntroVideo());
+        _introSkipUI.Init(() => introScene.SkipIntroVideo());
+        _skipButton.onClick.AddListener(() => _introSkipUI.Show());
         _skipButtonCanvasGroup.alpha = 0;
         _skipButton.gameObject.SetActive(false);
 

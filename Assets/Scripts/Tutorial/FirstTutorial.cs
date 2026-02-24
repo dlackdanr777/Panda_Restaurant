@@ -75,7 +75,7 @@ public class FirstTutorial : MonoBehaviour
         _punchHole.gameObject.SetActive(true);
         _punchHole.TweenScale(1.5f, 1, 0.35f, Muks.Tween.Ease.OutBack);
         yield return YieldCache.WaitForSeconds(1f);
-        yield return _uiDescriptionNPC.ShowDescription2Text("더러운 곳을 터치해서\n깨끗하게 치워볼까요?");
+        yield return _uiDescriptionNPC.ShowDescription2Text($"{Utility.SetStringColor("더러운 곳을 터치", ColorType.Positive)}해서\n깨끗하게 치워볼까요?");
         _uiTutorial.ScreenButtonSetActive(true);
         _punchHole.gameObject.SetActive(false);
         _uiTutorial.StartTouch(Step2TouchEvent);
@@ -100,7 +100,7 @@ public class FirstTutorial : MonoBehaviour
         yield return _uiDescriptionNPC.ShowDescription1Text("그러면 이제 손님을 불러야겠죠?");
         _uiTutorial.PunchHoleSetActive(true);
         _uiTutorial.AddCustomerButtonSetActive(true);
-        yield return _uiDescriptionNPC.ShowDescription1Text($"오른쪽 하단에 \"호출버튼\" 을 눌러볼까요?");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"오른쪽 하단에 \"{Utility.SetStringColor("호출버튼", ColorType.Positive)}\" 을 눌러볼까요?");
         UserInfo.GiveRecipe("FOOD01");
         _uiTutorial.AddCustomerHoleSetActive(true);
         while (!_uiTutorial.IsButtonClicked)
@@ -113,7 +113,7 @@ public class FirstTutorial : MonoBehaviour
 
 
         _uiTutorial.CustomerGuideButtonSetActive(true);
-        yield return _uiDescriptionNPC.ShowDescription2Text("카운터 위에 \"벨 버튼\"을 눌러서 손님을 안내해볼까요?");
+        yield return _uiDescriptionNPC.ShowDescription2Text($"카운터 위에 \"{Utility.SetStringColor("벨 버튼", ColorType.Positive)}\"을 눌러서 손님을 안내해볼까요?");
         _uiTutorial.CustomerGuideHoleSetActive(true);
         while (!_uiTutorial.IsButtonClicked)
             yield return YieldCache.WaitForSeconds(0.02f);
@@ -136,13 +136,13 @@ public class FirstTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(3);
 
         yield return _uiDescriptionNPC.ShowDescription1Text("조리는 시간이 지나면\n자동으로 완료돼요.");
-        yield return _uiDescriptionNPC.ShowDescription1Text("주방장이나 유저가 직접 터치하면\n조리시간을 단축시킬 수 있습니다.");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"주방장이나 유저가 직접 터치하면\n{Utility.SetStringColor("조리시간을 단축", ColorType.Positive)} 시킬 수 있습니다.");
         _cameraController.MoveCamera(RestaurantType.Hall);
         yield return YieldCache.WaitForSeconds(1);
        _uiTutorial.CookTimerSetActive(false);
         _uiTutorial.ServingButtonSetActive(true);
         _uiTutorial.ServingHoleSetActive(true);
-        yield return _uiDescriptionNPC.ShowDescription1Text("서빙 버튼을 눌러서 음식을 손님에게 전달해보세요!");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"{Utility.SetStringColor("서빙 버튼", ColorType.Positive)}을 눌러서 음식을 손님에게 전달해보세요!");
         while (!_uiTutorial.IsButtonClicked)
             yield return YieldCache.WaitForSeconds(0.02f);
         _uiTutorial.ServingHoleSetActive(false);
@@ -150,14 +150,16 @@ public class FirstTutorial : MonoBehaviour
 
         yield return YieldCache.WaitForSeconds(8);
         yield return _uiDescriptionNPC.ShowDescription1Text("손님이 만족한 것 같아요!");
-        yield return _uiDescriptionNPC.ShowDescription1Text("손님이 떠난 자리에 코인과 쓰레기를 치워야해요.");
-        yield return _uiDescriptionNPC.ShowDescription1Text("바닥의 쓰레기는 가게 만족도를 떨어트려요.");
-        yield return _uiDescriptionNPC.ShowDescription1Text("만족도가 낮으면, 예민한 손님은 그냥\n떠나버린답니다.");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"손님이 떠난 자리에 {Utility.SetStringColor("코인과 쓰레기", ColorType.Positive)}를 치워야해요.");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"바닥의 쓰레기는 \"{Utility.SetStringColor("가게 만족도", ColorType.Positive)}\"를 떨어트려요.");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"만족도가 낮으면, {Utility.SetStringColor("예민한 손님", ColorType.Positive)}은 그냥\n떠나버린답니다.");
         yield return _uiDescriptionNPC.ShowDescription1Text("테이블 위에 그릇도 치워야 해요!");
-        yield return _uiDescriptionNPC.ShowDescription1Text("그릇은 주방에 싱크대로 모입니다.");
-        yield return _uiDescriptionNPC.ShowDescription1Text("터치로 테이블에 그릇을 치워야 손님을 받을 수 있습니다.");
-        yield return _uiDescriptionNPC.ShowDescription1Text("여기서 기본 튜토리얼을 마무리 하겠습니다!");
-        yield return _uiDescriptionNPC.ShowDescription1Text("행운을 빌게요!");
+        yield return _uiDescriptionNPC.ShowDescription1Text("치운 그릇은 주방에 싱크대로 모입니다.");
+        yield return _uiDescriptionNPC.ShowDescription1Text("싱크대가 꽉차면 더 이상 그릇을 치울 수 없어요.");
+        yield return _uiDescriptionNPC.ShowDescription1Text("주의해서 싱크대를 확인해주세요!");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"터치로 {Utility.SetStringColor("테이블에 그릇", ColorType.Positive)}을 치워야 손님을 받을 수 있습니다.");
+        yield return _uiDescriptionNPC.ShowDescription1Text("이것으로 기본 튜토리얼을 마무리 하겠습니다.");
+        yield return _uiDescriptionNPC.ShowDescription1Text("당신만의 레스토랑을 운영해보세요!");
 
 
         // yield return _uiDescriptionNPC.ShowDescription2Text("훌륭해요!");

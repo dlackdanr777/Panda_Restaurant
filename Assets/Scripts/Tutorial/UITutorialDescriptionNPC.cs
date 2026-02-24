@@ -143,14 +143,31 @@ public class UITutorialDescriptionNPC : MobileUIView
         TweenWait tween = Tween.Wait(0.2f, () => _screenButton.gameObject.SetActive(true));
         _isScreenClicked = false;
 
-        yield return YieldCache.WaitForSeconds(duration);
-        for(int i = 0, cnt = str.Length; i < cnt; ++i)
+        // Rich Text 태그를 처리하면서 한 글자씩 출력
+        int index = 0;
+        while(index < str.Length)
         {
-            text.Text.text += str[i];
+            // '<' 를 만나면 '>'까지 태그 전체를 한 번에 추가 (딜레이 없이)
+            if(str[index] == '<')
+            {
+                int tagEndIndex = str.IndexOf('>', index);
+                if(tagEndIndex != -1)
+                {
+                    // 태그 전체를 한 번에 추가
+                    text.Text.text += str.Substring(index, tagEndIndex - index + 1);
+                    index = tagEndIndex + 1;
+                    continue;
+                }
+            }
+            
+            // 일반 텍스트는 한 글자씩 추가
+            text.Text.text += str[index];
             yield return YieldCache.WaitForSeconds(duration);
-
+            
             if(_isScreenClicked)
                 break;
+                
+            index++;
         }
 
         text.Text.text = str;
