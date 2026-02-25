@@ -631,19 +631,37 @@ public class SoundManager : MonoBehaviour
             yield return YieldCache.WaitForSeconds(0.02f);
         }
 
-        // 페이드 아웃 후 모든 그룹 초기화 (다음 페이드인 준비)
-        // 단, 레스토랑 관련 타입 간 전환 시 Restaurant는 유지
-        if (!isRestaurantAreaTransition)
+        // 페이드 아웃 후 초기화 (다음 페이드인 준비)
+        if (isRestaurantAreaTransition)
         {
-            _audioMixer.SetFloat("Restaurant", -80f);
+            // 레스토랑 관련 타입 간 전환 시: Restaurant 그룹은 유지하고, 이전 타입만 -80dB로 설정
+            if (_effectType == EffectType.Hall1)
+                _audioMixer.SetFloat("Hall1", -80f);
+            else if (_effectType == EffectType.Hall2)
+                _audioMixer.SetFloat("Hall2", -80f);
+            else if (_effectType == EffectType.Hall3)
+                _audioMixer.SetFloat("Hall3", -80f);
+            else if (_effectType == EffectType.Kitchen1)
+                _audioMixer.SetFloat("Kitchen1", -80f);
+            else if (_effectType == EffectType.Kitchen2)
+                _audioMixer.SetFloat("Kitchen2", -80f);
+            else if (_effectType == EffectType.Kitchen3)
+                _audioMixer.SetFloat("Kitchen3", -80f);
+            
+            _audioMixer.SetFloat("UI", -80f);
         }
-        _audioMixer.SetFloat("Hall1", -80f);
-        _audioMixer.SetFloat("Hall2", -80f);
-        _audioMixer.SetFloat("Hall3", -80f);
-        _audioMixer.SetFloat("Kitchen1", -80f);
-        _audioMixer.SetFloat("Kitchen2", -80f);
-        _audioMixer.SetFloat("Kitchen3", -80f);
-        _audioMixer.SetFloat("UI", -80f);
+        else
+        {
+            // 레스토랑 타입이 아니거나 레스토랑에서 벗어날 경우: 모든 그룹 초기화
+            _audioMixer.SetFloat("Restaurant", -80f);
+            _audioMixer.SetFloat("Hall1", -80f);
+            _audioMixer.SetFloat("Hall2", -80f);
+            _audioMixer.SetFloat("Hall3", -80f);
+            _audioMixer.SetFloat("Kitchen1", -80f);
+            _audioMixer.SetFloat("Kitchen2", -80f);
+            _audioMixer.SetFloat("Kitchen3", -80f);
+            _audioMixer.SetFloat("UI", -80f);
+        }
 
         // 새 타입 페이드 인 부분 수정
         timer = 0;

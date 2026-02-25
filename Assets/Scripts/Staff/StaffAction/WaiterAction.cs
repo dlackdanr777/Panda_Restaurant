@@ -95,14 +95,14 @@ public class WaiterAction : IStaffAction
 
         TableData servingData = _tableManager.GetMinDistanceTable(_waiter.transform.position, servingTableList);
         TableData orderData = _tableManager.GetMinDistanceTable(_waiter.transform.position, orderTableList);
-
+       
         // 둘 다 없으면 초기화
         if (servingData == null && orderData == null)
         {
             ResetStaffState(staff);
             return;
         }
-
+        _waiter.BowlSetActive(false);
         _isUsed = true;
 
         // 둘 중 하나만 있는 경우
