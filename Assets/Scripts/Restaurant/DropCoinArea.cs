@@ -77,8 +77,17 @@ public class DropCoinArea : MonoBehaviour
         _data.SetMoney(_currentMoney);
         PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
         coin.AddEvent(GiveCoin);
-        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
-        SoundManager.Instance.PlayEffectAudio(effectType, _dropCoinSound, 0.05f);
+
+        if (UserInfo.IsFirstTutorialClear)
+        {
+            EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+            SoundManager.Instance.PlayEffectAudio(effectType, _dropCoinSound, 0.05f);
+        }
+        else
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _dropCoinSound, 0.05f);
+        }
+
         Vector3 targetPos = _dropArea.position;
         targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * Count), 0, 0);
 

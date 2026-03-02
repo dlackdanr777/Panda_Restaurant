@@ -10,7 +10,6 @@ using System.Collections;
 
 public class UISkinGacha : GachaMachineParent
 {
-    public event Action<int> GachaStepHandler;
 
     [Header("Components")]
     [SerializeField] private ScrollingImage _scrollImage;
@@ -324,8 +323,8 @@ public class UISkinGacha : GachaMachineParent
                 _getItemIndex++;
                 break;
         }
-
-        GachaStepHandler?.Invoke(_currentStep);
+        
+        _uiGacha.StartGachaStepEvent(_currentStep);
     }
 
 

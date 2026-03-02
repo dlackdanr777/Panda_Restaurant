@@ -10,7 +10,6 @@ using System.Collections;
 
 public class UIItemGacha : GachaMachineParent
 {
-    public event Action<int> GachaStepHandler;
 
     [Header("Components")]
     [SerializeField] private UIBouncingBall _bouncingBall;
@@ -249,7 +248,8 @@ public class UIItemGacha : GachaMachineParent
     {
         if (_currentStep == step)
             return;
-
+            
+        _uiGacha.StartGachaStepEvent(_currentStep);
         switch (step)
         {
             case 1:
@@ -357,11 +357,21 @@ public class UIItemGacha : GachaMachineParent
                 _getItemIndex++;
                 break;
         }
-
-        GachaStepHandler?.Invoke(_currentStep);
     }
 
+    public void StartAddItem(GachaItemData data)
+    {
 
+        _uiGacha.SetActiveGachaMachine(false);
+        SetActiveGachaMachine(true);
+
+        _getItemList.Clear();
+        _getItemIndex = 0;
+        GachaItemData item = data;
+        _getItemList.Add(item);
+        UserInfo.GiveGachaItem(item);
+        _gachaMacineAnimator.SetTrigger("Start");
+    }
 
     public override void OnSingleGachaButtonClicked()
     {

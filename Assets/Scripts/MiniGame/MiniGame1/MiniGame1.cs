@@ -15,6 +15,7 @@ public class MiniGame1 : MiniGameSystem
 
     [Space]
     [Header("Components")]
+    [SerializeField] private UIMiniGameTutorial _miniGameTutorial;
     [SerializeField] private GameObject[] _clearObjects;
     [SerializeField] private MiniGameFever _miniGameFever;
     [SerializeField] private MiniGame_GaugeBar _scoreBar;
@@ -180,7 +181,16 @@ public class MiniGame1 : MiniGameSystem
         StopAllCoroutines();
         ResetGameState();
         _startTimer.ShowBlackImage();
-        StartCoroutine(MainGameLoop());
+
+
+        _miniGameTutorial.gameObject.SetActive(true);
+        _miniGameTutorial.StartTutorial(() =>
+        {
+            StopAllCoroutines();
+            StartCoroutine(MainGameLoop());
+            _miniGameTutorial.gameObject.SetActive(false);
+        });
+        
     }
 
     public override void Hide()
@@ -193,7 +203,7 @@ public class MiniGame1 : MiniGameSystem
     #region Game Logic
     private IEnumerator MainGameLoop()
     {
-        yield return YieldCache.WaitForSeconds(2);
+        yield return YieldCache.WaitForSeconds(1);
         yield return StartCoroutine(_startTimer.StartTimer());
         while (true)
         {

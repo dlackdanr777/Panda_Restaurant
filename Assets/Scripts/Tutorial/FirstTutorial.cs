@@ -30,6 +30,7 @@ public class FirstTutorial : MonoBehaviour
     [SerializeField] private ParticleSystem _table1BoomParticle;
     [SerializeField] private ParticleSystem _burner1BoomParticle;
     [SerializeField] private PunchHoleAnimation _punchHole;
+    [SerializeField] private AudioClip _cleaningSound;
 
     private int _touchCount;
 
@@ -136,7 +137,8 @@ public class FirstTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(3);
 
         yield return _uiDescriptionNPC.ShowDescription1Text("조리는 시간이 지나면\n자동으로 완료돼요.");
-        yield return _uiDescriptionNPC.ShowDescription1Text($"주방장이나 유저가 직접 터치하면\n{Utility.SetStringColor("조리시간을 단축", ColorType.Positive)} 시킬 수 있습니다.");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"주방장이나 유저가 직접 터치하면");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"{Utility.SetStringColor("조리시간을 단축", ColorType.Positive)} 시킬 수 있습니다.");
         _cameraController.MoveCamera(RestaurantType.Hall);
         yield return YieldCache.WaitForSeconds(1);
        _uiTutorial.CookTimerSetActive(false);
@@ -373,6 +375,7 @@ public class FirstTutorial : MonoBehaviour
         for(int i = 0, cnt = _boomParticles.Length; i < cnt; ++i)
         {
             _boomParticles[i].Emit(1);
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _cleaningSound);
         }
     }
 

@@ -57,6 +57,11 @@ public class UITutorialDescriptionNPC : MobileUIView
         _skipButton.gameObject.SetActive(true);
     }
 
+    public void SkipButtonSetActive(bool active)
+    {
+        _skipButton.gameObject.SetActive(active);
+    }   
+
 
     public void OnSkipOkButtonClicked(Action action)
     {

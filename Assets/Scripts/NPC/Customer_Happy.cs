@@ -32,8 +32,17 @@ public class Customer_Happy : MonoBehaviour
         gameObject.SetActive(true);
         _sprite.transform.localScale = _tmpScale;
         _sprite.color = new Color(_tmpColor.r, _tmpColor.g, _tmpColor.b, 0);
-        EffectType _effectType = SoundManager.Instance.GetHallEffectType(_customer.VisitFloor, RestaurantType.Hall);
-        SoundManager.Instance.PlayEffectAudio(_effectType, _sound);
+
+        if (UserInfo.IsFirstTutorialClear)
+        {
+            EffectType _effectType = SoundManager.Instance.GetHallEffectType(_customer.VisitFloor, RestaurantType.Hall);
+            SoundManager.Instance.PlayEffectAudio(_effectType, _sound);
+        }
+        else
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _sound);
+        }
+
         Vector3 targetScale = _tmpScale + new Vector3(0.1f, 0.1f, 0.1f);
         _sprite.TweenScale(targetScale, 0.5f, Ease.Smoothstep).Loop(LoopType.Yoyo);
         TweenData tween1 = _sprite.TweenAlpha(1, 0.3f, Ease.Smoothstep);

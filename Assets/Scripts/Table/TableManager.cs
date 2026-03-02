@@ -32,10 +32,6 @@ public class TableManager : MonoBehaviour
     [Header("Audios")]
     [SerializeField] private AudioClip _callSound;
 
-    [Space]
-    [Header("Tutorial Components")]
-    [SerializeField] private GachaTutorial _miniGameTutorial;
-
 
 
     public Vector3 GetDoorPos(RestaurantType type, Vector3 pos)
@@ -142,7 +138,10 @@ public class TableManager : MonoBehaviour
     public void OnCustomerGuideEventPlaySound(int sitPos = -1)
     {
         if (OnCustomerGuideEvent(sitPos))
+        {
             SoundManager.Instance.PlayEffectAudio(EffectType.Hall1, _callSound);
+        }
+            
     }
 
     public void OnCustomerGuideEventPlaySound(ERestaurantFloorType floor, int sitPos = -1)
@@ -150,6 +149,15 @@ public class TableManager : MonoBehaviour
         EffectType effectType = SoundManager.Instance.GetHallEffectType(floor, RestaurantType.Hall);
         if (OnCustomerGuideEvent(floor, sitPos))
             SoundManager.Instance.PlayEffectAudio(effectType, _callSound);
+    }
+
+    public void OnCustomerGuideEventPlayUISound(int sitPos = -1)
+    {
+        if (OnCustomerGuideEvent(sitPos))
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _callSound);
+        }
+            
     }
 
 
@@ -236,13 +244,6 @@ public class TableManager : MonoBehaviour
         data.CurrentCustomer.FixSpritePosition(false);
 
         FoodData foodData = data.CurrentCustomer.NormalCustomerData.GetRandomOrderFood();
-
-        bool isMiniGameNeeded = foodData.MiniGameNeeded && string.IsNullOrWhiteSpace(foodData.NeedItem);
-        if (isMiniGameNeeded && !UserInfo.IsMiniGameTutorialClear)
-        {
-            _miniGameTutorial.StartTutorial(foodData, data.transform);
-        }
-
         int foodLevel = UserInfo.GetRecipeLevel(foodData);
         CookingData cookingData = new CookingData(foodData, data, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), () =>
         {

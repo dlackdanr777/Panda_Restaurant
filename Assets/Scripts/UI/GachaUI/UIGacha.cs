@@ -31,6 +31,10 @@ public class UIGacha : MobileUIView
     [Header("Audios")]
     [SerializeField] private AudioClip _backgroundAudio;
 
+    [Space]
+    [Header("Tutorial Components")]
+    [SerializeField] private GachaTutorial _miniGameTutorial;
+
     private GachaMachineParent _currentGachaMachine;
 
     private bool _isStartGacha;
@@ -78,6 +82,11 @@ public class UIGacha : MobileUIView
         endDragEntry.eventID = EventTriggerType.EndDrag;
         endDragEntry.callback.AddListener((data) => { OnScrollEndDrag((PointerEventData)data); });
         trigger.triggers.Add(endDragEntry);
+    }
+
+    public void StartGachaStepEvent(int step)
+    {
+        GachaStepHandler?.Invoke(step);
     }
 
 
@@ -183,6 +192,11 @@ public class UIGacha : MobileUIView
         {
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true;
+
+            if(!UserInfo.IsTutorialStart && !UserInfo.IsMiniGameTutorialClear)
+            {
+                _miniGameTutorial.StartTutorial();
+            }
         });
     }
 

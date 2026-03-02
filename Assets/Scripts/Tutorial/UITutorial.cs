@@ -587,7 +587,7 @@ public class UITutorial : MobileUIView
 
     private void OnCustomerGuideButtonClicked()
     {
-        _tableManager.OnCustomerGuideEventPlaySound(ERestaurantFloorType.Floor1, 0);
+        _tableManager.OnCustomerGuideEventPlayUISound(0);
 
         _customerGuideHole.SetActive(false);
         _customerGuideButton.gameObject.SetActive(false);

@@ -79,6 +79,7 @@ public struct FeverRewardConfig
 public class MiniGameFever : MonoBehaviour
 {
     [Header("Components")]
+    [SerializeField] private UIMiniGameTutorial _uiTutorial;
     [SerializeField] private GameObject[] _feverObjects;
     [SerializeField] private GameObject[] _feverHideObjects;
     [SerializeField] private RectTransform _blackImage;
@@ -154,8 +155,13 @@ public class MiniGameFever : MonoBehaviour
         ResetState();
         StopEffects();
 
-
-        StartCoroutine(Play());
+        _uiTutorial.gameObject.SetActive(true);
+        _uiTutorial.StartTutorial(() =>
+        {
+            StopAllCoroutines();
+            StartCoroutine(Play());
+            _uiTutorial.gameObject.SetActive(false);
+        });
     }
 
     public void Hide()
