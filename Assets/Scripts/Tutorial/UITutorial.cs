@@ -360,8 +360,23 @@ public class UITutorial : MobileUIView
         _customHole.HoleRect.sizeDelta = new Vector2(holeDiameter, holeDiameter);
         _customHole.SetTargetObjectName(targetObjName);
         _customHoleCursorParent.gameObject.SetActive(false);
-        _customHole.HoleRect.transform.position = pos.position;
-        _customHoleCursorParent.transform.position = pos.position;
+        
+        // RectTransform?? ???? ??
+        RectTransform rectTransform = pos as RectTransform;
+        if (rectTransform != null)
+        {
+            // RectTransform?? ??? ??
+            _customHole.HoleRect.transform.position = rectTransform.position;
+            _customHoleCursorParent.transform.position = rectTransform.position;
+        }
+        else
+        {
+            // ?? Transform?? World to Screen ??
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(pos.position);
+            _customHole.HoleRect.transform.position = screenPos;
+            _customHoleCursorParent.transform.position = screenPos;
+        }
+        
         _customHoleCursorParent.sizeDelta = new Vector2(holeDiameter, holeDiameter);
         _customHole.Interactable = false;
         _isButtonClicked = false;

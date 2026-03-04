@@ -156,8 +156,16 @@ public class DropCoinArea : MonoBehaviour
         _currentMoney = 0;
         _data.SetMoney(_currentMoney);
         _data.SetCoinCount(0);
-        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
-        SoundManager.Instance.PlayEffectAudio(effectType, SoundEffectType.GoldSound);
+
+        if(UserInfo.IsFirstTutorialClear)
+        {
+            EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+            SoundManager.Instance.PlayEffectAudio(effectType, SoundEffectType.GoldSound);
+        }
+        else
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, SoundEffectType.GoldSound);
+        }
 
         for (int i = 0; i < _coinList.Count; i++)
         {

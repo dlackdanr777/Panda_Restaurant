@@ -115,8 +115,16 @@ public class DropGarbageArea : MonoBehaviour
             return;
 
         UserInfo.AddCleanCount();
-        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
-        SoundManager.Instance.PlayEffectAudio(effectType, _cleanSound);
+
+        if(UserInfo.IsFirstTutorialClear)
+        {
+             EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+             SoundManager.Instance.PlayEffectAudio(effectType, _cleanSound);
+        }
+        else
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _cleanSound);
+        }
 
         for (int i = 0; i < _garbageList.Count; i++)
         {

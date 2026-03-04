@@ -218,6 +218,7 @@ public class ObjectPoolManager : MonoBehaviour
         for (int i = 0, count = _coinCount; i < count; i++)
         {
             PointerDownSpriteRenderer coin = Instantiate(_coinPrefab, _coinParent.transform);
+            coin.name = "Coin";
             _coinPool.Enqueue(coin);
             coin.gameObject.SetActive(false);
         }
@@ -277,6 +278,7 @@ public class ObjectPoolManager : MonoBehaviour
         for (int i = 0, count = _garbageCount; i < count; i++)
         {
             PointerDownSpriteRenderer garbage = Instantiate(_garbagePrefab, _garbageParent.transform);
+            garbage.name = "Garbage";
             _garbagePool.Enqueue(garbage);
             garbage.gameObject.SetActive(false);
         }
@@ -535,7 +537,7 @@ public class ObjectPoolManager : MonoBehaviour
         _uiDiaPool.Enqueue(dia);
     }
 
-        public RectTransform SpawnUIScore(Vector3 pos, Quaternion rot)
+    public RectTransform SpawnUIScore(Vector3 pos, Quaternion rot)
     {
         RectTransform score;
 
@@ -600,12 +602,6 @@ public class ObjectPoolManager : MonoBehaviour
         _garbagePool.Enqueue(garbage);
         _enabledGarbagePool.Remove(garbage);
     }
-
-    public int GetEnabledGarbageCount()
-    {
-        return _enabledGarbagePool.Count;
-    }
-
 
 
     public TextMeshProUGUI SpawnTMP(Vector3 pos, Quaternion rot, RectTransform parent)
@@ -761,4 +757,18 @@ public class ObjectPoolManager : MonoBehaviour
         touchEffect.gameObject.SetActive(false);
         touchEffect.transform.SetParent(_touchEffectParent.transform);
     }
+
+    public int GetEnabledCoinCount()
+    {
+        // 활성화된 코인 수 = 전체 풀 크기 - Queue에 남아있는(비활성화된) 수
+        return _coinCount - _coinPool.Count;
+    }
+
+
+    public int GetEnabledGarbageCount()
+    {
+        // 이미 추적 중인 활성화된 Garbage 리스트 사용
+        return _enabledGarbagePool.Count;
+    }
+
 }

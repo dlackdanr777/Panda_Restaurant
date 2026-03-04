@@ -61,7 +61,9 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
 
             Button button = result.gameObject.GetComponent<Button>();
             ButtonPressEffect effect = result.gameObject.GetComponent<ButtonPressEffect>();
-            if (button == null && effect == null)
+            IPointerDownHandler clickHandler = result.gameObject.GetComponent<IPointerDownHandler>();
+            SpriteTouchEvent touchEvent = result.gameObject.GetComponent<SpriteTouchEvent>();
+            if (button == null && effect == null && clickHandler == null && touchEvent == null)
                 continue;
 
             DebugLog.Log(name + ": ´Ù¿î");
@@ -69,6 +71,8 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
             DebugLog.Log(effect);
             button?.OnPointerDown(eventData);
             effect?.OnPointerDown(eventData);
+            clickHandler?.OnPointerDown(eventData);
+            touchEvent?.OnPointerDown(eventData);
             _selectButton = button;
             _selectButtonPress = effect;
             return;
@@ -101,15 +105,16 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
 
             Button button = result.gameObject.GetComponent<Button>();
             ButtonPressEffect effect = result.gameObject.GetComponent<ButtonPressEffect>();
-            if (button == null && effect == null)
-                continue;
-
+            IPointerUpHandler clickHandler = result.gameObject.GetComponent<IPointerUpHandler>();
+            SpriteTouchEvent touchEvent = result.gameObject.GetComponent<SpriteTouchEvent>();
             if (button != _selectButton || effect != _selectButtonPress)
                 continue;
 
             _selectButton?.OnPointerClick(eventData);
             _selectButtonPress?.OnPointerUp(eventData);
-            _action?.Invoke();
+            clickHandler?.OnPointerUp(eventData);
+            touchEvent?.OnPointerUp(eventData); 
+            _action?.Invoke();  
             return;
         }
 
