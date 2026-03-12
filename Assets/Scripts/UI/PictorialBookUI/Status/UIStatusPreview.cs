@@ -11,7 +11,7 @@ public class UIStatusPreview : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private UIFoodType _uiFoodType;
-    [SerializeField] private UIStatusItemPreview _itemPreview;
+    [SerializeField] private UIItemPreview _itemPreview;
 
     [Space]
     [Header("Slots")]

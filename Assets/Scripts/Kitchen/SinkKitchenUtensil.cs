@@ -90,6 +90,7 @@ public class SinkKitchenUtensil : KitchenUtensil
             if (_washingEffect.activeSelf)
             {
                 _washingEffect.SetActive(false);
+                _chefEffect.gameObject.SetActive(false);
                 _washingSound.Stop();
             }
             return;

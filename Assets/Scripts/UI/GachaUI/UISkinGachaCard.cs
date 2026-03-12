@@ -14,6 +14,7 @@ public class UIGachaCard : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private TextMeshProUGUI _effectText;
     [SerializeField] private TextMeshProUGUI _typeText;
+    [SerializeField] private Button _closeButton;
 
     [SerializeField] private UIItemStar _itemStar;
 
@@ -23,6 +24,10 @@ public class UIGachaCard : MonoBehaviour
     public void Init()
     {
         _tmpScale = _rectTransform.localScale;
+        if (_closeButton != null)
+        {
+            _closeButton.onClick.AddListener(OnCloseButtonClicked);
+        }
     }
 
     public void SetScale(float scale)
@@ -151,7 +156,7 @@ public class UIGachaCard : MonoBehaviour
     }
 
 
-     private void UpdateFrame(GachaData data)
+    private void UpdateFrame(GachaData data)
     {
         _star1Frame.gameObject.SetActive(false);
         _star3Frame.gameObject.SetActive(false);
@@ -182,5 +187,10 @@ public class UIGachaCard : MonoBehaviour
                     break;
             }
         }
+    }
+    
+    private void OnCloseButtonClicked()
+    {
+        gameObject.SetActive(false);
     }
 }

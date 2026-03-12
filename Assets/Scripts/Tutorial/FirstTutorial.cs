@@ -155,7 +155,7 @@ public class FirstTutorial : MonoBehaviour
         yield return _uiDescriptionNPC.ShowDescription1Text("손님이 만족한 것 같아요!");
         yield return _uiDescriptionNPC.ShowDescription1Text($"손님이 떠난 자리에 {Utility.SetStringColor("코인과 쓰레기", ColorType.Positive)}를 치워볼까요?");
         yield return _uiDescriptionNPC.ShowDescription1Text($"먼저 테이블을 치워주세요.");
-        _uiTutorial.CustomHoleSetActive(true, 600, _table1.name, _table1.transform);
+        _uiTutorial.CustomHoleSetActive(true, 400, _table1.name, _table1.transform);
         bool isTableTouched = false;
         _table1.OnTouchEventHandler += () => isTableTouched = true;
         while (!isTableTouched)
@@ -164,13 +164,15 @@ public class FirstTutorial : MonoBehaviour
 
         yield return YieldCache.WaitForSeconds(1);
         yield return _uiDescriptionNPC.ShowDescription1Text($"다음으로 바닥의 쓰레기를 치워볼까요?");
-        _uiTutorial.CustomHoleSetActive(true, 600, "Garbage", _table1.transform);
+        GameObject garbage = ObjectPoolManager.Instance.GetEnabledGarbagePool()[0].gameObject;
+        _uiTutorial.CustomHoleSetActive(true, 200, garbage.name, garbage.transform);
         while (ObjectPoolManager.Instance.GetEnabledGarbageCount() > 0)
             yield return YieldCache.WaitForSeconds(0.02f);
 
         yield return YieldCache.WaitForSeconds(1);
+        GameObject coin = ObjectPoolManager.Instance.GetEnabledCoinPool()[0].gameObject;
         yield return _uiDescriptionNPC.ShowDescription1Text($"마지막으로 바닥의 동전을 치워볼까요?");
-        _uiTutorial.CustomHoleSetActive(true, 600, "Coin", _table1.transform);
+        _uiTutorial.CustomHoleSetActive(true, 200, coin.name, coin.transform);
         while (ObjectPoolManager.Instance.GetEnabledCoinCount() > 0)
             yield return YieldCache.WaitForSeconds(0.02f);
          

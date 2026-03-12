@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UIStatusItemPreview : MonoBehaviour
+public class UIItemPreview : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private Button _closeButton;

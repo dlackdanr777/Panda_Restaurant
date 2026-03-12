@@ -49,6 +49,7 @@ public class ObjectPoolManager : MonoBehaviour
     private static GameObject _coinParent;
     private static PointerDownSpriteRenderer _coinPrefab;
     private static Queue<PointerDownSpriteRenderer> _coinPool = new Queue<PointerDownSpriteRenderer>();
+    private static List<PointerDownSpriteRenderer> _enabledCoinPool = new List<PointerDownSpriteRenderer>();
 
 
     private static int _garbageCount = 100;
@@ -461,6 +462,7 @@ public class ObjectPoolManager : MonoBehaviour
         if (_coinPool.Count == 0)
         {
             coin = Instantiate(_coinPrefab, pos, rot, _coinParent.transform);
+            _enabledCoinPool.Add(coin);
             return coin;
         }
 
@@ -469,16 +471,24 @@ public class ObjectPoolManager : MonoBehaviour
         coin.gameObject.SetActive(true);
         coin.transform.position = pos;
         coin.transform.rotation = rot;
+        _enabledCoinPool.Add(coin);
         return coin;
     }
 
 
     public void DespawnCoin(PointerDownSpriteRenderer coin)
     {
+        if (!_enabledCoinPool.Contains(coin))
+        {
+            DebugLog.LogError("반환하려는 오브젝트가 coin이 아니거나, 활성화된 Coin Pool에 등록되있지 않습니다.");
+            return;
+        }
+
         coin.gameObject.SetActive(false);
         coin.TweenStop();
         coin.RemoveAllEvent();
         _coinPool.Enqueue(coin);
+        _enabledCoinPool.Remove(coin);
     }
 
 
@@ -758,10 +768,21 @@ public class ObjectPoolManager : MonoBehaviour
         touchEffect.transform.SetParent(_touchEffectParent.transform);
     }
 
+    public List<PointerDownSpriteRenderer> GetEnabledCoinPool()
+    {
+        return _enabledCoinPool;
+    }
+
+    public List<PointerDownSpriteRenderer> GetEnabledGarbagePool()
+    {
+        return _enabledGarbagePool;
+    } 
+
+
     public int GetEnabledCoinCount()
     {
-        // 활성화된 코인 수 = 전체 풀 크기 - Queue에 남아있는(비활성화된) 수
-        return _coinCount - _coinPool.Count;
+        // 이미 추적 중인 활성화된 Coin 리스트 사용
+        return _enabledCoinPool.Count;
     }
 
 
