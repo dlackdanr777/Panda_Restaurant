@@ -19,8 +19,7 @@ MonoBehaviour:
   _description: "\r"
   _rank: 0
   _skill: {fileID: 11400000, guid: c1305190b57c1d54482ece9b2e58be3d, type: 2}
-  _idleSprites:
-  - {fileID: 0}
+  _idleSprites: []
   _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0

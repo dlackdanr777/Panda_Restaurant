@@ -18,16 +18,13 @@ MonoBehaviour:
   _id: STAFF26
   _description: "\uAC15\uB82C\uD55C \uCE74\uB9AC\uC2A4\uB9C8\uB85C \uC9C4\uC0C1\uC744
     \uD1F4\uCE58\n\uC0AC\uC2E4\uC740 \uADC0\uC5EC\uC6B4\uAC78 \uC88B\uC544\uD568\r"
+  _rank: 0
   _skill: {fileID: 11400000, guid: f3029210afede654ca6f3c33a2016896, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: 2e489c975b365404ab4755f595a0aec3, type: 3}
   - {fileID: 21300000, guid: d6c32b6e08275ac4fbd574b9d6cc6723, type: 3}
   - {fileID: 21300000, guid: e871d4e4fb13c914782bd090560f2c37, type: 3}
   - {fileID: 21300000, guid: 1039945b03f49bd4b80853c8bd5d44ab, type: 3}
-  - {fileID: 21300000, guid: 84c24de8ee7e2b641a8e7df6c0b9ccd9, type: 3}
-  - {fileID: 21300000, guid: 84c24de8ee7e2b641a8e7df6c0b9ccd9, type: 3}
-  - {fileID: 21300000, guid: 84c24de8ee7e2b641a8e7df6c0b9ccd9, type: 3}
-  - {fileID: 21300000, guid: 84c24de8ee7e2b641a8e7df6c0b9ccd9, type: 3}
   - {fileID: 21300000, guid: 1039945b03f49bd4b80853c8bd5d44ab, type: 3}
   - {fileID: 21300000, guid: e871d4e4fb13c914782bd090560f2c37, type: 3}
   - {fileID: 21300000, guid: d6c32b6e08275ac4fbd574b9d6cc6723, type: 3}
