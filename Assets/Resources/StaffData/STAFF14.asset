@@ -17,6 +17,7 @@ MonoBehaviour:
   _name: "\uC640\uC640"
   _id: STAFF14
   _description: 
+  _rank: 0
   _skill: {fileID: 11400000, guid: 08a154df61b9ad148ba9988d1345876b, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
@@ -52,13 +53,8 @@ MonoBehaviour:
       _price: -1
     _marketingTime: 10
   _uiSprite: {fileID: 21300000, guid: 328c78ddfdfba164f99fd955ccf6012b, type: 3}
-  _animationSprite: {fileID: 21300000, guid: 42cfca0414abe004caec2638a2120dec, type: 3}
-  _leftHandSprite: {fileID: 21300000, guid: 3562cd40046ba5d4bb3e79d67a84808f, type: 3}
-  _rightHandSprite: {fileID: 21300000, guid: 3c1cb267bc6278a40b9bde135f62dbcb, type: 3}
+  _animationSprite: {fileID: 21300000, guid: 8286009a47f54b94c8a8913922db7cc8, type: 3}
   _particleCount: 7
   _particleSprites:
   - {fileID: 21300000, guid: 21b6b28733f986340b333d5ae2d8d9c5, type: 3}
   - {fileID: 21300000, guid: 601e56b1add93d8428e8b3624643a1a1, type: 3}
-  _leftHandOffset: {x: 0, y: -15}
-  _rightHandOffset: {x: 0, y: -15}
-  _scale: 1

@@ -17,8 +17,17 @@ MonoBehaviour:
   _name: "\uBE44\uBE44"
   _id: STAFF24
   _description: 
+  _rank: 0
   _skill: {fileID: 11400000, guid: 829f6ba2388631644919520e82a9de3c, type: 2}
-  _idleSprites: []
+  _idleSprites:
+  - {fileID: 21300000, guid: 7ab20fc714088bc42af8fc24a50bfaa4, type: 3}
+  - {fileID: 21300000, guid: 8cc128faa26108445996326ccc83708a, type: 3}
+  - {fileID: 21300000, guid: 4a02c6b786fb40944aefb4c5c2970cdc, type: 3}
+  - {fileID: 21300000, guid: 3fed9575c148a474cb05b35714a5a8a5, type: 3}
+  - {fileID: 21300000, guid: 3fed9575c148a474cb05b35714a5a8a5, type: 3}
+  - {fileID: 21300000, guid: 4a02c6b786fb40944aefb4c5c2970cdc, type: 3}
+  - {fileID: 21300000, guid: 8cc128faa26108445996326ccc83708a, type: 3}
+  - {fileID: 21300000, guid: 7ab20fc714088bc42af8fc24a50bfaa4, type: 3}
   _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0

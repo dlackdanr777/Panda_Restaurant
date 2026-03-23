@@ -17,13 +17,15 @@ MonoBehaviour:
   _name: "\uD0C0\uB85C"
   _id: STAFF10
   _description: 
+  _rank: 0
+  _skill: {fileID: 11400000, guid: 95590518b98a27a4cacc1a699f5f9868, type: 2}
+  _idleSprites:
+  - {fileID: 0}
+  _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
   _buyScore: 7500
   _buyPrice: 2500000
-  _skill: {fileID: 11400000, guid: 95590518b98a27a4cacc1a699f5f9868, type: 2}
-  _idleSprites: []
-  _animatorController: {fileID: 0}
   _speed: 6
   _managerLevelData:
   - _upgradeMinScore: 11250

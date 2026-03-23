@@ -18,8 +18,17 @@ MonoBehaviour:
   _id: STAFF30
   _description: "\uD3F4\uC758 \uD615 \uD53C\uD130\n\uB2A5\uCCAD\uB5A0\uB294 \uC131\uACA9\uACFC
     \uB2EC\uB9AC \uBB34\uC220\uC758 \uACE0\uC218"
+  _rank: 0
   _skill: {fileID: 11400000, guid: 474e93abb1dd6db45baa9ab57be2cef1, type: 2}
-  _idleSprites: []
+  _idleSprites:
+  - {fileID: 21300000, guid: 4ec4dac7bff2d6b4182cb98d4c9020d9, type: 3}
+  - {fileID: 21300000, guid: 3e647c077f316814eb4d35b1a28b5710, type: 3}
+  - {fileID: 21300000, guid: f096b45717f2bcc40bb7e348a52da024, type: 3}
+  - {fileID: 21300000, guid: d707a1c8838922149ad6addb8a3a211f, type: 3}
+  - {fileID: 21300000, guid: d707a1c8838922149ad6addb8a3a211f, type: 3}
+  - {fileID: 21300000, guid: f096b45717f2bcc40bb7e348a52da024, type: 3}
+  - {fileID: 21300000, guid: 3e647c077f316814eb4d35b1a28b5710, type: 3}
+  - {fileID: 21300000, guid: 4ec4dac7bff2d6b4182cb98d4c9020d9, type: 3}
   _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0

@@ -17,6 +17,7 @@ MonoBehaviour:
   _name: "\uC81C\uB808\uBBF8"
   _id: STAFF12
   _description: 
+  _rank: 0
   _skill: {fileID: 11400000, guid: c07c74e5ac1573e4ab8b7d33229faba3, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
@@ -52,7 +53,7 @@ MonoBehaviour:
       _price: -1
     _marketingTime: 12
   _uiSprite: {fileID: 21300000, guid: 3b07a818db00d80488b6e6231a774abc, type: 3}
-  _animationSprite: {fileID: 21300000, guid: 277b952233dde6c4391ea6914c63f6b7, type: 3}
+  _animationSprite: {fileID: 21300000, guid: 3007a205944745f4088cef8e3ae3ee7c, type: 3}
   _particleCount: 5
   _particleSprites:
   - {fileID: 21300000, guid: c049a34100e87284498233828484e10c, type: 3}

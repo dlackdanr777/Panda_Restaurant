@@ -19,7 +19,15 @@ MonoBehaviour:
   _description: 
   _rank: 0
   _skill: {fileID: 11400000, guid: ace4d82401b0b084691be89b9fc0f63e, type: 2}
-  _idleSprites: []
+  _idleSprites:
+  - {fileID: 21300000, guid: 3de4fa4a79fe159408d0cea251b70d9d, type: 3}
+  - {fileID: 21300000, guid: 7b3c8f0575b8c1c499ac1dd6613a7785, type: 3}
+  - {fileID: 21300000, guid: 65ac573e5267f694f9aa136d4e1eb189, type: 3}
+  - {fileID: 21300000, guid: b0b7a3b1dcd847b468b5bb3057a988c4, type: 3}
+  - {fileID: 21300000, guid: b0b7a3b1dcd847b468b5bb3057a988c4, type: 3}
+  - {fileID: 21300000, guid: 65ac573e5267f694f9aa136d4e1eb189, type: 3}
+  - {fileID: 21300000, guid: 7b3c8f0575b8c1c499ac1dd6613a7785, type: 3}
+  - {fileID: 21300000, guid: 3de4fa4a79fe159408d0cea251b70d9d, type: 3}
   _animatorController: {fileID: 0}
   _salesLocationType: 1
   _moneyType: 0

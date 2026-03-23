@@ -18,12 +18,14 @@ MonoBehaviour:
   _id: STAFF28
   _description: "\uC9C0\uC9C0\uC758 \uB3D9\uC0DD\n\uC190\uB2D8\uC5D0\uAC8C\uB294
     \uC0C1\uB0E5\uD558\uC9C0\uB9CC \uC624\uBE60\uB9CC \uBCF4\uBA74 \uD654\uAC00 \uB098\uB294\uB4EF..."
+  _rank: 0
   _skill: {fileID: 11400000, guid: 1198ffabfe31de2448c9245682a23efc, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: 54b4444c8af32fc4fba56f53fc5046da, type: 3}
   - {fileID: 21300000, guid: a33c02a6c7244a0419bd2fa445528e11, type: 3}
   - {fileID: 21300000, guid: 7df2990b8cb856f4e94244b7bb613a49, type: 3}
-  - {fileID: 21300000, guid: 7df2990b8cb856f4e94244b7bb613a49, type: 3}
+  - {fileID: 21300000, guid: b3cdc58b6053c904a8089fe8f08dbf77, type: 3}
+  - {fileID: 21300000, guid: b3cdc58b6053c904a8089fe8f08dbf77, type: 3}
   - {fileID: 21300000, guid: 7df2990b8cb856f4e94244b7bb613a49, type: 3}
   - {fileID: 21300000, guid: a33c02a6c7244a0419bd2fa445528e11, type: 3}
   - {fileID: 21300000, guid: 54b4444c8af32fc4fba56f53fc5046da, type: 3}

@@ -18,12 +18,14 @@ MonoBehaviour:
   _id: STAFF16
   _description: "\uC2EC\uB4DC\uB801\uD55C \uD45C\uC815 \uB4A4\uC5D0\n\uBC24\uB0AE\uC5C6\uC774
     \uC5F0\uC2B5\uD558\uB294 \uB178\uB825\uD30C \uB3C4\uCE58\r"
+  _rank: 0
   _skill: {fileID: 11400000, guid: 55429025e47f51e48af3704c79782325, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: 4c813941b6a76704b9a06f6e5f70ca57, type: 3}
   - {fileID: 21300000, guid: dd53c8dda90cfee409582bfa8fda02fd, type: 3}
   - {fileID: 21300000, guid: 587be8f566059b34793262bd65cd2ac6, type: 3}
-  - {fileID: 21300000, guid: 587be8f566059b34793262bd65cd2ac6, type: 3}
+  - {fileID: 21300000, guid: 539a65c3e22ec2646bb8d3d05fc1dac4, type: 3}
+  - {fileID: 21300000, guid: 539a65c3e22ec2646bb8d3d05fc1dac4, type: 3}
   - {fileID: 21300000, guid: 587be8f566059b34793262bd65cd2ac6, type: 3}
   - {fileID: 21300000, guid: dd53c8dda90cfee409582bfa8fda02fd, type: 3}
   - {fileID: 21300000, guid: 4c813941b6a76704b9a06f6e5f70ca57, type: 3}

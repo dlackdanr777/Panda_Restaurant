@@ -1602,7 +1602,7 @@ public class ChallengeManager : MonoBehaviour
                 return DataBind.GetUnityActionBindData("UIPictorialBook");
 
             case "ShortCut10":
-                return DataBind.GetUnityActionBindData("ShowGachaUI");
+                return DataBind.GetUnityActionBindData("ShortCut10");
 
             case "ShortCut12":
                 return DataBind.GetUnityActionBindData("ShowAttendanceUI");

@@ -17,6 +17,7 @@ MonoBehaviour:
   _name: "\uD53C\uD06C"
   _id: STAFF23
   _description: 
+  _rank: 0
   _skill: {fileID: 11400000, guid: 8700ffc1d7466c449b5dbefcf0d09cde, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}

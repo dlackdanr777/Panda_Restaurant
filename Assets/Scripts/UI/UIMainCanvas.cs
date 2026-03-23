@@ -325,6 +325,12 @@ public class UIMainCanvas : MonoBehaviour
 
     private void OnShowGachaUI()
     {
+        if (!UserInfo.GetIsClearChallenge("MainReward12"))
+        {
+            PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
+            return;
+        }
+        
         _uiNav.Push("UIGacha");
     }
 

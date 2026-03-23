@@ -202,7 +202,7 @@ namespace Muks.MobileUI
         /// <summary> ²¨³ù´ø ¸ðµç UIView¸¦ SetActive(true)ÇÑ´Ù. </summary>
         public override void AllShow()
         {
-            _rootUiView.UIView.gameObject.SetActive(true);
+            _rootUiView.UIView?.gameObject.SetActive(true);
 
             foreach (MobileUIView view in _activeViewList)
             {

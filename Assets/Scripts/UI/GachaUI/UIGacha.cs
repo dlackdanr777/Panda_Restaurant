@@ -179,6 +179,12 @@ public class UIGacha : MobileUIView
 
     public override void Show()
     {
+        if(!UserInfo.GetIsClearChallenge("MainReward12"))
+        {
+            PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
+            return;
+        }
+
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
         gameObject.SetActive(true);
@@ -289,14 +295,14 @@ public class UIGacha : MobileUIView
 
     private void SetMachineParentPos()
     {
-        for(int i = 0; i < _gachaMachines.Length; i++)
+        for (int i = 0; i < _gachaMachines.Length; i++)
         {
             _gachaMachines[i].TweenStop();
             _gachaMachines[i].transform.localScale = Vector3.one * 0.8f;
         }
         int currentIndex = Array.IndexOf(_gachaMachines, _currentGachaMachine);
         Vector3 pos = _machineParent.anchoredPosition;
-        
+
         // 인덱스에 따른 X 위치 설정
         if (currentIndex == 0)
             pos.x = -440f;

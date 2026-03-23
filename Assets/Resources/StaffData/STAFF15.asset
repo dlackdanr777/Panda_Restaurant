@@ -17,6 +17,7 @@ MonoBehaviour:
   _name: "\uD3F4"
   _id: STAFF15
   _description: 
+  _rank: 0
   _skill: {fileID: 11400000, guid: d417214c6d7368941984a20f5d509d44, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
@@ -52,9 +53,7 @@ MonoBehaviour:
       _price: -1
     _marketingTime: 9
   _uiSprite: {fileID: 21300000, guid: c7bb41090b27d9c4d8231bc5acf4813c, type: 3}
-  _animationSprite: {fileID: 21300000, guid: e436362c069d1754b89b0b04c9bf28aa, type: 3}
-  _leftHandSprite: {fileID: 21300000, guid: 5cb26157308f2ea4bbcada7357c5dd72, type: 3}
-  _rightHandSprite: {fileID: 21300000, guid: 8bdbb1125f152dd4d8f807ac5129f71a, type: 3}
+  _animationSprite: {fileID: 21300000, guid: 5c03189b321c0b0408f6343c79b29372, type: 3}
   _particleCount: 7
   _particleSprites:
   - {fileID: 21300000, guid: 0e3846b756c64f34f9055701a285d1ff, type: 3}
