@@ -371,6 +371,7 @@ public class UIItemGacha : GachaMachineParent
         _getItemList.Add(item);
         UserInfo.GiveGachaItem(item);
         _gachaMacineAnimator.SetTrigger("Start");
+        UserInfo.AddUserGachaMachineCount();
     }
 
     public override void OnSingleGachaButtonClicked()

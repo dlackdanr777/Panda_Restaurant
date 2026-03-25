@@ -544,6 +544,7 @@ public class Staff : MonoBehaviour
         for (int i = 0, cnt = _idleSprites.Length; i < cnt; ++i)
         {
             _spriteRenderer.sprite = _idleSprites[i];
+            DebugLog.Log($"[{name}] Idle 애니메이션 - 스프라이트 변경: {_idleSprites[i].name} ({i + 1}/{cnt})");
             yield return YieldCache.WaitForSeconds(0.1f);
         }
 
@@ -571,7 +572,12 @@ public class Staff : MonoBehaviour
         StopIdleAnimation();
         if (_idleSprites != null && _idleSprites.Length > 0)
         {
+            DebugLog.Log($"[{name}] Idle 애니메이션 시작 - {_idleSprites.Length}개의 스프라이트");
             _idleAnimationRoutine = StartCoroutine(IdleAnimationRoutine());
+        }
+        else
+        {
+            DebugLog.LogError($"[{name}] Idle 애니메이션을 시작할 수 없음 - IdleSprites: {(_idleSprites == null ? "null" : "empty")}");
         }
     }
 
@@ -661,15 +667,20 @@ public class Staff : MonoBehaviour
         {
             _sprite = _staffData.Sprite;
             _idleSprites = _staffData.IdleSprites;
+            DebugLog.Log($" - 기본 스킨 사용: IdleSprites {(_idleSprites != null ? _idleSprites.Length.ToString() : "null")}개");
             return;
         }
 
         _sprite = data.Sprite;
         _idleSprites = data.IdleSprites;
+        DebugLog.Log($" - 커스텀 스킨 적용 ({data.Id}): IdleSprites {(_idleSprites != null ? _idleSprites.Length.ToString() : "null")}개");
+
         if (_state == EStaffState.None)
         {
             _spriteRenderer.sprite = _sprite;
         }
+
+        SetStaffState(_state);
     }
 
     protected virtual void OnDestroy()

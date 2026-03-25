@@ -11,7 +11,7 @@ public class WaiterAction : IStaffAction
         Order,
     }
 
-    private const float _duration = 1.5f;
+    private const float _duration = 0.5f;
 
     private TableManager _tableManager;
     private TweenWait _tweenData;

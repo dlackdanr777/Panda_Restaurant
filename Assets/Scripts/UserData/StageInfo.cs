@@ -1177,8 +1177,7 @@ public bool LoadData(ServerStageData loadData)
     if (loadData == null)
         return false;
 
-    //_unlockFloor = loadData.UnlockFloor;
-    _unlockFloor = ERestaurantFloorType.Floor3;
+    _unlockFloor = loadData.UnlockFloor;
     _score = loadData.Score;
     _tip = loadData.Tip;
     _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);

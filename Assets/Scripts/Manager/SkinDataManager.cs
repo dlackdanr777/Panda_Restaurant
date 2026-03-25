@@ -28,6 +28,7 @@ public class SkinDataManager : MonoBehaviour
     private static Dictionary<string, Sprite> _customerSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _staffThumbnailSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite[]> _customerIdleSpriteDic = new Dictionary<string, Sprite[]>();
+    private static Dictionary<string, Sprite[]> _staffIdleSpriteDic = new Dictionary<string, Sprite[]>();
     private static Dictionary<string, Sprite> _marketerAnimationSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite[]> _marketerEffectSpriteDic = new Dictionary<string, Sprite[]>();
 
@@ -264,7 +265,6 @@ public class SkinDataManager : MonoBehaviour
                 Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
                 continue;
             }
-
             _staffSpriteDic.Add(key, sprite);
             DebugLog.Log(key);
         }
@@ -294,6 +294,9 @@ public class SkinDataManager : MonoBehaviour
     {
         // 스프라이트 리소스 로드
         Sprite[] sprites = Resources.LoadAll<Sprite>("StaffData/Skin/Sprites/IdleSprites");
+        
+        DebugLog.Log($"=== LoadStaffSkinIdleSprites 시작 ===");
+        DebugLog.Log($"로드된 총 스프라이트 개수: {sprites.Length}");
 
         // ID별로 스프라이트들을 그룹화하기 위한 임시 딕셔너리
         Dictionary<string, List<(Sprite sprite, int index)>> tempSpriteDic = new Dictionary<string, List<(Sprite, int)>>();
@@ -301,12 +304,13 @@ public class SkinDataManager : MonoBehaviour
         foreach (var sprite in sprites)
         {
             string spriteName = sprite.name.Trim();
+            DebugLog.Log($"로드된 스프라이트: {spriteName}");
             
             // SKIN_STAFF01-01 형태에서 ID와 인덱스 분리
             string[] parts = spriteName.Split('-');
             if (parts.Length != 2)
             {
-                Debug.LogWarning($"스프라이트 이름 형식이 올바르지 않습니다: {spriteName}");
+                Debug.LogWarning($"스프라이트 이름 형식이 올바르지 않습니다: {spriteName} (parts: {parts.Length})");
                 continue;
             }
 
@@ -342,13 +346,13 @@ public class SkinDataManager : MonoBehaviour
             }
             
             // 최종 딕셔너리에 저장
-            if (_customerIdleSpriteDic.ContainsKey(id))
+            if (_staffIdleSpriteDic.ContainsKey(id))
             {
                 Debug.LogWarning($"중복된 스프라이트 ID가 있습니다: {id}");
                 continue;
             }
             
-            _customerIdleSpriteDic.Add(id, sortedSprites);
+            _staffIdleSpriteDic.Add(id, sortedSprites);
             DebugLog.Log($"Idle 스프라이트 로드 완료: {id} ({sortedSprites.Length}개)");
         }
     }
@@ -524,14 +528,15 @@ public class SkinDataManager : MonoBehaviour
 
             // IdleSprites 배열 가져오기
             Sprite[] idleSprites = null;
-            if (_customerIdleSpriteDic.TryGetValue(id, out Sprite[] originalSprites))
+            if (_staffIdleSpriteDic.TryGetValue(id, out Sprite[] originalSprites))
             {
                 // 애니메이션 패턴 생성 (예: 길이 3일 경우 1 2 3 3 3 2 1)
                 idleSprites = CreateIdleAnimationPattern(originalSprites);
+                DebugLog.Log($"[{id}] IdleSprites 생성 완료: {originalSprites.Length}개 -> {(idleSprites != null ? idleSprites.Length : 0)}개 (패턴 적용)");
             }
             else
             {
-                Debug.LogWarning($"Idle 스프라이트를 찾을 수 없습니다: {id}");
+                Debug.LogWarning($"[{id}] Idle 스프라이트를 찾을 수 없습니다 - _staffIdleSpriteDic에 없음");
                 idleSprites = null; // null로 설정
             }
 
@@ -540,16 +545,18 @@ public class SkinDataManager : MonoBehaviour
             {
                 Sprite[] particleSprites = _marketerEffectSpriteDic.ContainsKey(id) ? _marketerEffectSpriteDic[id] : null;
                 skinData = new MarketerSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, duplicationToken, actionSprite, particleSprites);
+                DebugLog.Log($"[{id}] MarketerSkinData 생성 - IdleSprites: {(idleSprites != null ? idleSprites.Length.ToString() : "null")}개");
             }
 
             else if (_chefBackSpriteDic.TryGetValue(id, out Sprite backSprite) && _chefHandSpriteDic.TryGetValue(id, out Sprite handSprite))
             {
-                DebugLog.Log("Chef Skin Loaded: " + id);
                 skinData = new ChefSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, duplicationToken, backSprite, handSprite, new Vector2(-0.18f, 1.43f));
+                DebugLog.Log($"[{id}] ChefSkinData 생성 - IdleSprites: {(idleSprites != null ? idleSprites.Length.ToString() : "null")}개");
             }
             else
             {
                 skinData = new StaffSkinData(sprite, thumbnail, idleSprites, id, name, description, addScore, addTipPerMinute, (Rank)Mathf.Clamp(rank - 1, 0, rank), salesLocationType, money, upgradeType, upgradeValue, equipTargetId, duplicationToken);
+                DebugLog.Log($"[{id}] StaffSkinData 생성 - IdleSprites: {(idleSprites != null ? idleSprites.Length.ToString() : "null")}개");
             }
 
 

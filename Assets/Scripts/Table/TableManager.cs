@@ -188,34 +188,40 @@ public class TableManager : MonoBehaviour
 
         _customerController.GuideCustomer(targetPos, 0, () =>
         {
-            Tween.Wait(0.1f, () =>
+            // 손님 도착 확인 - 참조 일치 여부 체크
+            if (data.CurrentCustomer == null || data.CurrentCustomer != customer)
             {
-                if (data.CurrentCustomer == null)
-                    return;
+                DebugLog.LogError($"손님 안내 중단: CurrentCustomer 불일치 (Table: {data.name})");
+                return;
+            }
 
-                customer.transform.position = data.ChairTrs[data.SitIndex].position;
-                customer.SetSitTableData(data);
-                data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
-                data.ServingButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
+            // 손님이 도착했으므로 즉시 위치 설정 (대기 시간 제거)
+            customer.transform.position = data.ChairTrs[data.SitIndex].position;
+            customer.SetSitTableData(data);
+            data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
+            data.ServingButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
 
-                customer.SetSpriteDir(-data.SitDir);
-                customer.SetLayer("SitCustomer", 0);
-                customer.ChangeState(CustomerState.Sit);
-                customer.FixSpritePosition(false);
+            customer.SetSpriteDir(-data.SitDir);
+            customer.SetLayer("SitCustomer", 0);
+            customer.ChangeState(CustomerState.Sit);
+            customer.FixSpritePosition(false);
 
-                Tween.Wait(1.5f, () =>
+            Tween.Wait(1.5f, () =>
+            {
+                // 재확인: 손님이 여전히 테이블에 있는지
+                if (data.CurrentCustomer == null || data.CurrentCustomer != customer)
                 {
-                    if (data.CurrentCustomer == null)
-                        return;
+                    DebugLog.LogError($"앉기 애니메이션 후 손님 없음 (Table: {data.name})");
+                    return;
+                }
 
-                    if (!_satisfactionSystem.CheckCustomerTendency(customer.NormalCustomerData.TendencyType))
-                    {
-                        AngerExitCustomer(data);
-                        return;
-                    }
+                if (!_satisfactionSystem.CheckCustomerTendency(customer.NormalCustomerData.TendencyType))
+                {
+                    AngerExitCustomer(data);
+                    return;
+                }
 
-                    OnCustomerSeating(data);
-                });
+                OnCustomerSeating(data);
             });
         });
     }

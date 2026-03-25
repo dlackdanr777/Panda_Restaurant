@@ -154,6 +154,7 @@ public class ObjectPoolManager : MonoBehaviour
         _staffPrefabs[(int)EquipStaffType.Chef] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
         //_staffPrefabs[(int)EquipStaffType.Chef2] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
         _staffPrefabs[(int)EquipStaffType.Marketer] = Resources.Load<StaffMarketer>("ObjectPool/Staff/Marketer");
+        _staffPrefabs[(int)EquipStaffType.Guard] = Resources.Load<StaffGuard>("ObjectPool/Staff/Guard");
         _staffCount = (int)ERestaurantFloorType.Length;
         for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
         {

@@ -1,7 +1,7 @@
 ﻿ID,퀘스트 타입,바로가기 타입,설명,타입 필요 id,필요 개수,보상타입,보상
-DailyReward01,TYPE31,ShortCut01,손님 방문 100회,,100,코인,5000
+DailyReward01,TYPE31,ShortCut01,손님 방문 50회,,50,코인,5000
 DailyReward02,TYPE32,ShortCut01,"누적 코인 10"",""000획득",,10000,코인,5000
-DailyReward03,TYPE33,ShortCut01,음식 제작 90회,,90,코인,5000
-DailyReward04,TYPE34,ShortCut01,쓰레기 줍기 80회,,80,코인,5000
-DailyReward05,TYPE29,ShortCut01,광고 보기 3회,,3,코인,5000
-DailyReward06,TYPE30,ShortCut01,일일 퀘스트 모두 완료하기,,0,다이아,3
+DailyReward03,TYPE33,ShortCut01,음식 제작 40회,,40,코인,5000
+DailyReward04,TYPE34,ShortCut01,쓰레기 줍기 60회,,60,코인,5000
+DailyReward05,TYPE35,ShortCut01,광고 보기 3회,,3,코인,5000
+DailyReward06,TYPE30,ShortCut01,일일 퀘스트 모두 완료하기,,,다이아,10

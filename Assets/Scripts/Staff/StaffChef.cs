@@ -80,6 +80,8 @@ public class StaffChef : Staff
             _backSprite = chefData.BackSprite;
             _handSprite.sprite = chefData.HandSprite;
             _handParent.transform.localPosition = chefData.HandOffset;
+            
+            DebugLog.Log($" - 셰프 기본 스킨 사용: IdleSprites {(_idleSprites != null ? _idleSprites.Length.ToString() : "null")}개");
 
             if (_state == EStaffState.None)
             {
@@ -99,7 +101,10 @@ public class StaffChef : Staff
         _handSprite.sprite = chefSkinData.HandSprite;
         _handParent.transform.localPosition = chefSkinData.HandOffset;
         _spriteRenderer.sprite = _sprite;
+        
+        DebugLog.Log($" - 셰프 커스텀 스킨 적용 ({chefSkinData.Id}): IdleSprites {(_idleSprites != null ? _idleSprites.Length.ToString() : "null")}개");
         DebugLog.Log(" - Hand Position: " + _handParent.transform.localPosition);
+        
         if (_state == EStaffState.None)
         {
             _spriteRenderer.sprite = _sprite;

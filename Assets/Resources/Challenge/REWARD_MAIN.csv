@@ -12,7 +12,7 @@ MainReward10,TYPE03,ShortCut06,떡볶이 레시피 배우기,FOOD03,1,코인,100
 MainReward11,TYPE01,ShortCut16,우든 클래식 테이블 3 구매,TABLE01_03,1,코인 ,1000,
 MainReward12,TYPE11,ShortCut01,누적 매출 30.000 코인 달성,코인,30000,다이아,10,
 MainReward13,TYPE25,ShortCut10,가챠 머신 사용해보기,,1,다이아,3,튜토리얼 구간 (가챠 머신 실행 튜토리얼 강제 연결)
-MainReward14,TYPE03,ShortCut06,김치찌개 레시피 배우기,FOOD08,1,코인,1000,튜토리얼 구간 (레시피 미니게임 제작 튜토리얼 강제 연결)
+MainReward14,TYPE03,ShortCut06,김치찌개 레시피 배우기,FOOD04,1,코인,1000,튜토리얼 구간 (레시피 미니게임 제작 튜토리얼 강제 연결)
 MainReward15,TYPE01,ShortCut22,싱그러운 화분 구매,FLOWER01,1,코인,450,
 MainReward16,TYPE02,ShortCut25,드럼통 화로 1 구매,COOKER01_01,0,코인,100,
 MainReward17,TYPE01,ShortCut21,추억의 액자 구매,FRAME01,1,코인,6750,
