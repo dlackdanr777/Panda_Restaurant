@@ -62,6 +62,7 @@ public class ChefAction : IStaffAction
 
         if (_burnerData != null && _burnerData.UseStaff != null && _burnerData.UseStaff == _staff)
         {
+            _burnerData.KitchenUtensil.SetStaffWorking(false);
             _burnerData.SetStaffUsable(false);
             _burnerData.SetUseStaff(null);
             _burnerData.SetAddCookSpeedMul(0);
@@ -158,13 +159,13 @@ public class ChefAction : IStaffAction
     private void BurnerAction(List<KitchenBurnerData> dataList)
     {
         KitchenBurnerData data = _tableManager.GetMinDistanceBurner( _staff.transform.position, dataList);
-        Debug.Log(data.KitchenUtensil.transform.position);
-        DebugLog.Log(data);
         if (data == null)
         {
             ResetStaffState(_staff);
             return;
         }
+        Debug.Log(data.KitchenUtensil.transform.position);
+        DebugLog.Log(data);
 
         if (1 < Mathf.Abs(data.KitchenUtensil.transform.position.y - _staff.transform.position.y) && !_notEqulsFloor)
         {
@@ -195,6 +196,7 @@ public class ChefAction : IStaffAction
             {
                 if (data.CookingData.IsDefault() || (data.UseStaff != null && data.UseStaff != _staff))
                 {
+                    CleanupBurnerData(data);
                     _staff.SetStaffState(EStaffState.None);
                     _isUsed = false;
                     _notEqulsFloor = false;
@@ -203,6 +205,7 @@ public class ChefAction : IStaffAction
                 }
 
                 _staff.SetStaffState(EStaffState.Action);
+                data.KitchenUtensil.SetStaffWorking(true);
                 UpdateBurnerAction(data);
             });
         });
@@ -219,7 +222,7 @@ public class ChefAction : IStaffAction
         {
             _tweenData = Tween.Wait(_duration / speedMul, () =>
             {
-                if (_sink.UseStaff == null && _sink.UseStaff != staff && UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, staff.EquipFloorType) <= 0)
+                if (_sink.UseStaff == null || _sink.UseStaff != staff || UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, staff.EquipFloorType) <= 0)
                 {
                     staff.SetStaffState(EStaffState.None);
                     _sink.SetChefEffect(false);
@@ -250,7 +253,7 @@ public class ChefAction : IStaffAction
         _tweenData = Tween.Wait(0.1f, () =>
         {
             _sink.SetUseStaff(_staff);
-            _sink.StartStaffAction();
+            _sink.ContinueStaffAction();
             _sink.SetChefEffect(true);
             UpdateSinkAction(stopResult);
         });
@@ -329,6 +332,7 @@ public class ChefAction : IStaffAction
     {
         if (data != null && data.UseStaff == _staff)
         {
+            data.KitchenUtensil.SetStaffWorking(false);
             data.SetStaffUsable(false);
             data.SetUseStaff(null);
             data.SetAddCookSpeedMul(0);

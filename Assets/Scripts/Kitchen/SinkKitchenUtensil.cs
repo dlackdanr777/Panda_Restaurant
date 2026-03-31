@@ -107,9 +107,10 @@ public class SinkKitchenUtensil : KitchenUtensil
         if (!_washingEffect.activeSelf)
         {
             _washingEffect.SetActive(true);
-            _chefEffect.gameObject.SetActive(true);
             _washingSound.Play();
         }
+
+        _chefEffect.gameObject.SetActive(_isTouchWashing || _isStaffWashing);
 
         if (1 <= _washGauge)
         {
@@ -125,6 +126,12 @@ public class SinkKitchenUtensil : KitchenUtensil
     {
         _washingEffect.SetActive(true);
         _washingSound.Play();
+        _isStaffWashing = true;
+    }
+
+    // 이미 세션 중인 상태를 유지 - 사운드 재시작 없이 _isStaffWashing만 갱신
+    public void ContinueStaffAction()
+    {
         _isStaffWashing = true;
     }
 

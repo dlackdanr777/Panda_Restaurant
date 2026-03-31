@@ -1045,6 +1045,7 @@ public static class UserInfo
     {
         _totalAdvertisingViewCount += 1;
         _dailyAdvertisingViewCount += 1;
+        DebugLog.Log($"±¤°í ½ÃÃ» È½¼ö Ãß°¡: ÃÑ {_totalAdvertisingViewCount}È¸, ¿À´Ã {_dailyAdvertisingViewCount}È¸");
         OnAddAdvertisingViewCountHandler?.Invoke();
     }
 

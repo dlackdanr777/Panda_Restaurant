@@ -11,6 +11,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
     private KitchenBurnerData _burnerData;
 
     bool _isTouch = false;
+    bool _isStaffWorking = false;
 
     public float CookSpeedMul => _isTouch ? 2f : 1f;
 
@@ -21,6 +22,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
         _touchEvent.AddDownEvent(TouchDownEvent);
         _touchEvent.AddUpEvent(TouchUpEvent);
         _audioSource.clip = _touchSound;
+        _isStaffWorking = false;
         SetChefEffect(false);
     }
 
@@ -33,6 +35,11 @@ public class BurnerKitchenUtensil : KitchenUtensil
     public void SetChefEffect(bool isOn)
     {
         _chefEffect.gameObject.SetActive(isOn);
+    }
+
+    public void SetStaffWorking(bool isWorking)
+    {
+        _isStaffWorking = isWorking;
     }
 
     private void TouchDownEvent()
@@ -67,7 +74,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
             _audioSource.Stop();
         }
         
-        if(!_burnerData.CookingData.IsDefault() && (_isTouch || _burnerData.UseStaff != null))
+        if(!_burnerData.CookingData.IsDefault() && (_isTouch || _isStaffWorking))
         {
             SetChefEffect(true);
         }

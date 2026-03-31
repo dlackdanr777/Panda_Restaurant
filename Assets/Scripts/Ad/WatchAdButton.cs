@@ -337,6 +337,7 @@ public class WatchAdButton : MonoBehaviour
                 AdManager.Instance.SetRewardGranted(_adUnitId, true);
                 Debug.Log($"[WatchAdButton] ★★★ Interstitial 보상 지급 ★★★");
                 OnAdRewarded?.Invoke();
+                UserInfo.AddAdvertisingViewCount();
             }
             
             AdManager.Instance.OnAdPlayFinished(_adUnitId);
@@ -406,12 +407,12 @@ public class WatchAdButton : MonoBehaviour
             Debug.Log($"[WatchAdButton] 다이아 {reward.Amount} 지급 완료");
         }
 
+        UserInfo.AddAdvertisingViewCount();
         OnAdRewarded?.Invoke();
         
         // 보상 지급 후 정리 작업
         AdManager.Instance.OnAdPlayFinished(_adUnitId);
         Debug.Log($"[WatchAdButton] OnRewarded 완료, 정리 작업 완료");
-        
         // ★★★ UI 정리 후 다음 광고 미리 로드 (0.5초 지연으로 연속 실행 안정성 확보) ★★★
         StartCoroutine(PreloadNextAdAfterDelay());
     }
