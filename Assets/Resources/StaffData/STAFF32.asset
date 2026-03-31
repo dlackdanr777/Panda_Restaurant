@@ -18,6 +18,7 @@ MonoBehaviour:
   _id: STAFF32
   _description: "\uC5B4\uB290 \uB0A0 \uB098\uD0C0\uB09C \uBE44\uBC00\uC2A4\uB7EC\uC6B4
     \uCCAD\uC18C\uBD80 \uC288\uC288\r\n\r"
+  _rank: 0
   _skill: {fileID: 11400000, guid: 9579cb0591dadfa4da2e662700923026, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
@@ -25,7 +26,7 @@ MonoBehaviour:
   _moneyType: 0
   _buyScore: 15000
   _buyPrice: 4000000
-  _speed: 12
+  _speed: 12.5
   _cleanerLevelData:
   - _upgradeMinScore: 18000
     _upgradeMoneyData:

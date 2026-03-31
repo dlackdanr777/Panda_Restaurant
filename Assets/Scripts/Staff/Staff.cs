@@ -308,13 +308,23 @@ public class Staff : MonoBehaviour
     protected int _moveEndDir;
     protected bool _isStairsMove;
 
+    protected virtual void CancelTeleportEffects()
+    {
+        if (_skillEffect != null) _skillEffect.TweenStop();
+        if (_spriteRenderer != null) _spriteRenderer.TweenStop();
+        SetAlpha(1f);
+    }
+
     public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
     {
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
 
         if (_teleportCoroutine != null)
+        {
             StopCoroutine(_teleportCoroutine);
+            CancelTeleportEffects();
+        }
 
         _moveCompleted = onCompleted;
         RestaurantType type = RestaurantType.Hall;
@@ -339,8 +349,8 @@ public class Staff : MonoBehaviour
         if (_teleportCoroutine != null)
         {
             StopCoroutine(_teleportCoroutine);
-            // 텔레포트 중단 시 알파값 복구
-            SetAlpha(1f);
+            // 텔레포트 중단 시 알파값 복구 (Tween도 중단)
+            CancelTeleportEffects();
         }
     }
 

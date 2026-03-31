@@ -89,6 +89,13 @@ public class StaffWaiter : Staff
         base.SetAlpha(alpha);
     }
 
+    protected override void CancelTeleportEffects()
+    {
+        _bottomBowl.TweenStop();
+        _topBowl.TweenStop();
+        base.CancelTeleportEffects();
+    }
+
     public override void TweenAlpha(float alpha, float duration, Ease ease, Action onCompleted = null)
     {
         _bottomBowl.TweenStop();

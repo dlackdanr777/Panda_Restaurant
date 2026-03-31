@@ -33,7 +33,7 @@ MonoBehaviour:
   _moneyType: 0
   _buyScore: 100
   _buyPrice: 15000
-  _speed: 2
+  _speed: 7
   _cleanerLevelData:
   - _upgradeMinScore: 825
     _upgradeMoneyData:

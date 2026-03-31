@@ -21,7 +21,7 @@ public class FeverSystem : MonoBehaviour
 
     private static int _currentMaxFeverGauge = 500;
     public static int CurrentMaxFeverGauge => _currentMaxFeverGauge;
-    private int[] _maxFeverGauges = new int[]{500, 500, 500, 500, 500, 500, 500, 600, 700, 700, 800, 800, 900, 900, 1000, 1000};
+    private int[] _maxFeverGauges = new int[]{550, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000, 1000, 1000, 1000, 1000, 1000, 1000};
     //private static int[] _maxFeverGauges = new int[]{10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
     private Coroutine _feverRoutine = null;
 

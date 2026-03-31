@@ -10,7 +10,7 @@ public static class ConstValue
     //피버 관련 변수
     public const int MAX_PEVER_GAUGE = 1000;
     public const float PEVER_TIME = 10f;
-    public const int ADD_FEVER_GAUGE = 5;
+    public const int ADD_FEVER_GAUGE = 20;
 
 
     //스테이지 관련 변수

@@ -146,7 +146,7 @@ public class StageInfo
 
     public void AddTip(int value)
     {
-        if (GameManager.Instance.MaxTipVolume <= _tip + value)
+        if (GameManager.Instance.MaxTipVolume <= _tip)
             return;
 
         _tip = Mathf.Clamp(_tip + value, 0, GameManager.Instance.MaxTipVolume);
