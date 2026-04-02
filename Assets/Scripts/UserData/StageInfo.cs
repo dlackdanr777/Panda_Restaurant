@@ -23,6 +23,7 @@ public class StageInfo
     public event Action OnChangeMaxSinkBowlHandler;
 
     public event Action OnChangeSatisfactionHandler;
+    public event Action OnChangeFeverGaugeHandler;
 
     private EStage _stage;
     public EStage Stage => _stage;
@@ -40,6 +41,14 @@ public class StageInfo
 
     private float _satisfaction;
     public float Satisfaction => _satisfaction;
+
+    private float _feverGauge;
+    public float FeverGauge => _feverGauge;
+    public void SetFeverGauge(float value)
+    {
+        _feverGauge = value;
+        OnChangeFeverGaugeHandler?.Invoke();
+    }
 
     private Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>> _equipStaffTypeDic = new Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>>();
     private Dictionary<string, SaveStaffData> _giveStaffDic = new Dictionary<string, SaveStaffData>();
@@ -1115,6 +1124,7 @@ public class StageInfo
         data.Score = _score;
         data.Tip = _tip;
         data.Satisfaction = _satisfaction;
+        data.FeverGauge = _feverGauge;
 
         data.SaveKitchenDataList = ConvertKitchenDataToList();
         data.SaveTableDataList = ConvertTableDataToList();
@@ -1181,6 +1191,7 @@ public bool LoadData(ServerStageData loadData)
     _score = loadData.Score;
     _tip = loadData.Tip;
     _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
+    _feverGauge = loadData.FeverGauge;
 
 
         _giveStaffDic.Clear();

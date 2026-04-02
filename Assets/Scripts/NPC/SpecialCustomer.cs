@@ -50,7 +50,7 @@ public class SpecialCustomer : Customer
         _spritePressEffect.Interactable = true;
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
-
+        UserInfo.CustomerVisits(data);
         SoundManager.Instance.PlayEffectAudio(EffectType.None, _visitSound, 0.15f);
 
         if (_touchCoroutine != null)

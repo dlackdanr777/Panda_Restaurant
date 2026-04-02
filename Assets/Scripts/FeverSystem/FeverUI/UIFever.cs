@@ -170,6 +170,7 @@ public class UIFever : MonoBehaviour
         _feverButton.interactable = false;
         _mainScene.PlayMainMusic();
         _ferverSystem.SetFeverGauge(0);
+        _tmpFeverGauge = 0;
         _feverShineEffectObj.gameObject.SetActive(false);
         _feverAnimator.SetFloat("Speed", 0f);
         _fillAmountImage.SetFillAmonut(FeverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)FeverSystem.FeverGauge / FeverSystem.CurrentMaxFeverGauge) * 0.7f);

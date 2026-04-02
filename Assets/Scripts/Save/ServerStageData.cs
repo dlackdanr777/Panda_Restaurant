@@ -11,6 +11,7 @@ public class ServerStageData
     public int Tip;
 
     public float Satisfaction;
+    public float FeverGauge;
 
     public Dictionary<string, Dictionary<string, string>> EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
     public List<SaveStaffData> GiveStaffList = new List<SaveStaffData>();
@@ -37,6 +38,7 @@ public class ServerStageData
         param.Add("Score", Score);
         param.Add("Tip", Tip);
         param.Add("Satisfaction", Satisfaction);
+        param.Add("FeverGauge", FeverGauge);
 
         param.Add("GiveStaffList", GiveStaffList);
         param.Add("EquipStaffDataDic", EquipStaffDataDic);
@@ -72,6 +74,7 @@ public class ServerStageData
         Score = GetInt("Score");
         Tip = GetInt("Tip");
         Satisfaction = GetFloat("Satisfaction");
+        FeverGauge = GetFloat("FeverGauge");
 
 
         if (data.ContainsKey("GiveStaffList"))

@@ -46,6 +46,7 @@ public static class UserInfo
     public static event Action OnChangeMaxSinkBowlHandler;
 
     public static event Action OnChangeSatisfactionHandler;
+    public static event Action OnChangeFeverGaugeHandler;
 
     public static event Action OnDoneChallengeHandler;
     public static event Action OnClearChallengeHandler;
@@ -275,6 +276,7 @@ public static class UserInfo
             _stageInfos[i].OnChangeSinkBowlHandler += OnAddSinkBowlEvent;
             _stageInfos[i].OnChangeMaxSinkBowlHandler += OnChangeMaxBowlEvent;
             _stageInfos[i].OnChangeSatisfactionHandler += OnChangeSatisfactionEvent;
+            _stageInfos[i].OnChangeFeverGaugeHandler += OnChangeFeverGaugeEvent;
 
             _stageInfos[i].OnChangeStaffSkinHandler += OnChangeStaffSkinEvent;
         }
@@ -343,6 +345,11 @@ public static class UserInfo
     private static void OnChangeSatisfactionEvent()
     {
         OnChangeSatisfactionHandler?.Invoke();
+    }
+
+    private static void OnChangeFeverGaugeEvent()
+    {
+        OnChangeFeverGaugeHandler?.Invoke();
     }
 
     private static void OnChangeStaffSkinEvent()
@@ -937,6 +944,18 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].Satisfaction;
+    }
+
+    public static float GetFeverGauge(EStage stage)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].FeverGauge;
+    }
+
+    public static void SetFeverGauge(EStage stage, float value)
+    {
+        int stageIndex = (int)stage;
+        _stageInfos[stageIndex].SetFeverGauge(value);
     }
 
     public static void AddSatisfaction(EStage stage, float value)
