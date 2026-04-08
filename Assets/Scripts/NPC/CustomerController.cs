@@ -244,7 +244,8 @@ public class CustomerController : MonoBehaviour
 
 
         SortCustomerLine();
-        OnGuideCustomerHandler.Invoke();
+        OnChangeCustomerHandler?.Invoke();
+        OnGuideCustomerHandler?.Invoke();
         return true;
     }
 
@@ -252,6 +253,63 @@ public class CustomerController : MonoBehaviour
     private void Awake()
     {
         _breakCustomerEnabled = true;
+        OnChangeCustomerHandler += UpdateWaitingCustomerSave;
+    }
+
+    private void Start()
+    {
+        LoadWaitingCustomers();
+    }
+
+    // 대기 중인 손님 ID리스트를 StageInfo에 동기화
+    private void UpdateWaitingCustomerSave()
+    {
+        List<string> ids = _callCustomers
+            .Where(c => c.NormalCustomerData != null)
+            .Select(c => c.NormalCustomerData.Id)
+            .ToList();
+        UserInfo.SetWaitingCustomerIds(UserInfo.CurrentStage, ids);
+    }
+
+    // 저장된 대기 손님을 스펼
+    private void LoadWaitingCustomers()
+    {
+        IReadOnlyList<string> savedIds = UserInfo.GetWaitingCustomerIds(UserInfo.CurrentStage);
+        if (savedIds == null || savedIds.Count == 0)
+            return;
+
+        float gridSize = AStar.Instance.NodeSize;
+        int slotIndex = 0;
+
+        for (int i = 0; i < savedIds.Count; i++)
+        {
+            if (IsMaxCount)
+                break;
+
+            CustomerData data = CustomerDataManager.Instance.GetCustomerData(savedIds[i]);
+            if (!(data is NormalCustomerData))
+                continue;
+
+            NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
+
+            // 줄 위치에 직접 배치 (Move 이동 없이, 앞줄부터 순서대로 채워짐)
+            Vector2 slotPos = (Vector2)_startLine.position + new Vector2(_lineSpacingGrid * gridSize * slotIndex, 0);
+            customer.transform.position = slotPos;
+
+            customer.SetData(data, this, _tableManager);
+            customer.StartWaiting();
+            customer.SetLayer("WaitCustomer", savedIds.Count - slotIndex);
+
+            _callCustomers.Add(customer);
+            _waitCustomers.Add(customer);
+            slotIndex++;
+        }
+
+        if (_callCustomers.Count > 0)
+        {
+            _tableManager.UpdateTable();
+            OnChangeCustomerHandler?.Invoke();
+        }
     }
 
 

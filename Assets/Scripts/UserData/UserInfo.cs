@@ -958,6 +958,16 @@ public static class UserInfo
         _stageInfos[stageIndex].SetFeverGauge(value);
     }
 
+    public static IReadOnlyList<string> GetWaitingCustomerIds(EStage stage)
+    {
+        return _stageInfos[(int)stage].WaitingCustomerIdList;
+    }
+
+    public static void SetWaitingCustomerIds(EStage stage, List<string> ids)
+    {
+        _stageInfos[(int)stage].SetWaitingCustomerIds(ids);
+    }
+
     public static void AddSatisfaction(EStage stage, float value)
     {
         int stageIndex = (int)stage;

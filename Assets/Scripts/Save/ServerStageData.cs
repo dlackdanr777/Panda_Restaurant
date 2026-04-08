@@ -13,6 +13,8 @@ public class ServerStageData
     public float Satisfaction;
     public float FeverGauge;
 
+    public List<string> WaitingCustomerIdList = new List<string>();
+
     public Dictionary<string, Dictionary<string, string>> EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
     public List<SaveStaffData> GiveStaffList = new List<SaveStaffData>();
     public List<string> GiveStaffSkinList = new List<string>();
@@ -39,6 +41,7 @@ public class ServerStageData
         param.Add("Tip", Tip);
         param.Add("Satisfaction", Satisfaction);
         param.Add("FeverGauge", FeverGauge);
+        param.Add("WaitingCustomerIdList", WaitingCustomerIdList);
 
         param.Add("GiveStaffList", GiveStaffList);
         param.Add("EquipStaffDataDic", EquipStaffDataDic);
@@ -75,6 +78,7 @@ public class ServerStageData
         Tip = GetInt("Tip");
         Satisfaction = GetFloat("Satisfaction");
         FeverGauge = GetFloat("FeverGauge");
+        WaitingCustomerIdList = ConvertJsonToList(data, "WaitingCustomerIdList");
 
 
         if (data.ContainsKey("GiveStaffList"))

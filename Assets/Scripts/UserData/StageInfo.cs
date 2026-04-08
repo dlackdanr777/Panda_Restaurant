@@ -50,6 +50,10 @@ public class StageInfo
         OnChangeFeverGaugeHandler?.Invoke();
     }
 
+    private List<string> _waitingCustomerIdList = new List<string>();
+    public IReadOnlyList<string> WaitingCustomerIdList => _waitingCustomerIdList;
+    public void SetWaitingCustomerIds(List<string> ids) { _waitingCustomerIdList = ids ?? new List<string>(); }
+
     private Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>> _equipStaffTypeDic = new Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>>();
     private Dictionary<string, SaveStaffData> _giveStaffDic = new Dictionary<string, SaveStaffData>();
 
@@ -1125,6 +1129,7 @@ public class StageInfo
         data.Tip = _tip;
         data.Satisfaction = _satisfaction;
         data.FeverGauge = _feverGauge;
+        data.WaitingCustomerIdList = new List<string>(_waitingCustomerIdList);
 
         data.SaveKitchenDataList = ConvertKitchenDataToList();
         data.SaveTableDataList = ConvertTableDataToList();
@@ -1192,6 +1197,7 @@ public bool LoadData(ServerStageData loadData)
     _tip = loadData.Tip;
     _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
     _feverGauge = loadData.FeverGauge;
+    _waitingCustomerIdList = loadData.WaitingCustomerIdList ?? new List<string>();
 
 
         _giveStaffDic.Clear();
