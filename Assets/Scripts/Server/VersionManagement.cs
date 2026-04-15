@@ -43,11 +43,16 @@ namespace Muks.BackEnd
             }
 
             string version = bro.GetReturnValuetoJSON()["version"].ToString();
-            if (version == Application.version)
+            Version server = new Version(version);
+            int compareResult = client.CompareTo(server);
+
+            // 클라이언트 버전이 서버 버전 이상이면 (같거나 더 최신) 업데이트 불필요
+            if (compareResult >= 0)
             {
                 return true;
             }
 
+            // 클라이언트 버전이 서버보다 낮은 경우 (새 버전 존재)
             string forceUpdate = bro.GetReturnValuetoJSON()["type"].ToString();
             //마이너 업데이트면 업데이트 필요 없음
             if(forceUpdate == "1")

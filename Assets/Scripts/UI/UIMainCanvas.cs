@@ -101,6 +101,10 @@ public class UIMainCanvas : MonoBehaviour
         DataBind.SetUnityActionValue("HidePaymentUI", OnHidePaymentUI);
         DataBind.SetUnityActionValue("HideNoAnimePaymentUI", OnHideNoAnimePaymentUI);
 
+        DataBind.SetUnityActionValue("ShowFloor3UI", OnShowFloor3UI);
+        DataBind.SetUnityActionValue("HideFloor3UI", OnHideFloor3UI);
+        DataBind.SetUnityActionValue("HideNoAnimeFloor3UI", OnHideNoAnimeFloor3UI);
+
         DataBind.SetUnityActionValue("ShowFurnitureTable1", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table1));
         DataBind.SetUnityActionValue("ShowFurnitureTable2", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table2));
         DataBind.SetUnityActionValue("ShowFurnitureTable3", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table3));
@@ -450,5 +454,21 @@ public class UIMainCanvas : MonoBehaviour
     private void OnHideNoAnimePaymentUI()
     {
         _uiNav.PopNoAnime("UIPayment");
+    }
+
+
+    public void OnShowFloor3UI()
+    {
+        _uiNav.Push("UIFloor3");
+    }
+
+    private void OnHideFloor3UI()
+    {
+        _uiNav.Pop("UIFloor3");
+    }
+
+    private void OnHideNoAnimeFloor3UI()
+    {
+        _uiNav.PopNoAnime("UIFloor3");
     }
 }

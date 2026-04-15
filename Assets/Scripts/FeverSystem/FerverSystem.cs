@@ -72,10 +72,10 @@ public class FeverSystem : MonoBehaviour
 
     private void Awake()
     {
-        _uiFever.Init(this);
         _isFeverStart = false;
         UserInfo.OnChangeFurnitureHandler += OnEquipFurnitureEvent;
-        OnEquipFurnitureEvent(ERestaurantFloorType.Floor1, FurnitureType.Table1);
+        OnEquipFurnitureEvent(ERestaurantFloorType.Floor1, FurnitureType.Table1); // MaxFeverGauge 먼저 설정
+        _uiFever.Init(this); // 올바른 MaxFeverGauge 반영 후 Init
     }
 
     private void Start()

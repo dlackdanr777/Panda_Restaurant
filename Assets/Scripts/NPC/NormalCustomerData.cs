@@ -46,7 +46,7 @@ public class NormalCustomerData : CustomerData
 
 
 
-    public NormalCustomerData(Sprite sprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, string visitCount25Food, string visitCount50Food, string visitCount100Food, string visitCount200Food, string visitCount300Food, string visitCount400Food, string visitCount500Food, CustomerTendencyType tendencyType, int orderFoodTime, int waitTime) : base(sprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
+    public NormalCustomerData(Sprite sprite, Sprite thumbnailSprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, string visitCount25Food, string visitCount50Food, string visitCount100Food, string visitCount200Food, string visitCount300Food, string visitCount400Food, string visitCount500Food, CustomerTendencyType tendencyType, int orderFoodTime, int waitTime) : base(sprite, thumbnailSprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
     {
         _visitCount25Food = visitCount25Food;
         _visitCount50Food = visitCount50Food;

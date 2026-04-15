@@ -27,15 +27,17 @@ public class UIFever : MonoBehaviour
     private FeverSystem _ferverSystem;
 
     private float _tmpFeverGauge = 0;
+    private int _tmpMaxFeverGauge = 0;
     public void Init(FeverSystem ferverSystem)
     {
         _ferverSystem = ferverSystem;
         _tmpFeverGauge = FeverSystem.FeverGauge;
+        _tmpMaxFeverGauge = FeverSystem.CurrentMaxFeverGauge;
         _feverEffects.SetActive(false);
         _feverGaugeEffectAnimator.gameObject.SetActive(false);
         _tmpButtonScale = _feverButton.transform.localScale;
-        _fillAmountImage.SetFillAmountNoAnime(FeverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)FeverSystem.FeverGauge / ConstValue.MAX_PEVER_GAUGE) * 0.7f);
-        bool isActive = ConstValue.MAX_PEVER_GAUGE <= FeverSystem.FeverGauge;
+        _fillAmountImage.SetFillAmountNoAnime(FeverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)FeverSystem.FeverGauge / FeverSystem.CurrentMaxFeverGauge) * 0.7f);
+        bool isActive = FeverSystem.CurrentMaxFeverGauge <= FeverSystem.FeverGauge;
         _feverButton.interactable = isActive;
         if (isActive)
         {
@@ -77,11 +79,12 @@ public class UIFever : MonoBehaviour
 
     public void OnChangeGauge()
     {
-        if (_tmpFeverGauge == FeverSystem.FeverGauge)
+        if (_tmpFeverGauge == FeverSystem.FeverGauge && _tmpMaxFeverGauge == FeverSystem.CurrentMaxFeverGauge)
             return;
 
         // 필 어마운트 설정
         _tmpFeverGauge = FeverSystem.FeverGauge;
+        _tmpMaxFeverGauge = FeverSystem.CurrentMaxFeverGauge;
         float fillAmount = FeverSystem.FeverGauge <= 0 ? 0.3f : 0.3f + ((float)FeverSystem.FeverGauge / FeverSystem.CurrentMaxFeverGauge) * 0.7f;
         _fillAmountImage.SetFillAmonut(fillAmount);
 
@@ -204,7 +207,7 @@ public class UIFever : MonoBehaviour
     {
         TimeManager.Instance.SetTime(ConstValue.AD_TIME_FEVER, AdTime);
         UserInfo.AddFeverAdCount();
-        _ferverSystem.SetFeverGauge(ConstValue.MAX_PEVER_GAUGE);
+        _ferverSystem.SetFeverGauge(FeverSystem.CurrentMaxFeverGauge);
         OnChangeGauge();
         //OnUpdateAdButtonEvent();
     }
@@ -213,7 +216,7 @@ public class UIFever : MonoBehaviour
     {
         TimeManager.Instance.SetTime(ConstValue.AD_TIME_FEVER, AdTime);
         UserInfo.AddFeverDiaCount();
-        _ferverSystem.SetFeverGauge(ConstValue.MAX_PEVER_GAUGE);
+        _ferverSystem.SetFeverGauge(FeverSystem.CurrentMaxFeverGauge);
         OnChangeGauge();
         DebugLog.Log("UIFever Dia Clicked");
         //OnUpdateAdButtonEvent();

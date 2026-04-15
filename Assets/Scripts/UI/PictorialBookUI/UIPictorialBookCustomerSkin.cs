@@ -152,7 +152,7 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         if (skinData == null)
         {
             _currentSkinData = null;
-            _skinImage.sprite = customerData.Sprite;
+            _skinImage.sprite = customerData.ThumbnailSprite;
             _skinImage.color = Utility.GetColor(ColorType.None);
             _nameText.text = customerData.Name;
             _descriptionText.text = customerData.Description;
