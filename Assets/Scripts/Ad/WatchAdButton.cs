@@ -183,8 +183,8 @@ public class WatchAdButton : MonoBehaviour
             if (isLoading)
             {
                 Debug.LogWarning($"[WatchAdButton] 광고 로딩 중 - {_adUnitId}");
-                // TODO: 로딩 인디케이터 표시
-                // ToastManager.Instance?.ShowToast("광고를 불러오는 중입니다...");
+                // 로딩 완료 후 자동 표시 + 실패 시 OnAdDisplayFailed 트리거를 위해 WantToShow 설정
+                AdManager.Instance.SetWantToShow(_adUnitId, true);
                 return;
             }
             
@@ -360,7 +360,12 @@ public class WatchAdButton : MonoBehaviour
             }
             else
             {
-                Debug.Log($"[WatchAdButton] OnClosed - 보상 대기 중, OnRewarded에서 정리 예정");
+                // 보상 없이 닫힘 (광고 중도 종료 or 에디터 순서 역전 대기)
+                // 에디터가 아닌 빌드 환경에서는 여기 진입 시 OnRewarded가 오지 않음
+                // → UI 잠금 해제를 위해 OnAdClosed 이벤트 발생
+                Debug.Log($"[WatchAdButton] OnClosed - 보상 미지급 상태로 닫힘, UI 잠금 해제");
+                AdManager.Instance.OnAdPlayFinished(_adUnitId);
+                OnAdClosed?.Invoke();
             }
             
             // ★★★ Reward 타입은 OnRewarded에서 PreloadAd를 처리 (연속 실행 안정성 확보) ★★★

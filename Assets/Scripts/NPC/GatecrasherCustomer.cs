@@ -52,6 +52,9 @@ public class GatecrasherCustomer : Customer
 
     private float _touchDamage => 1;
 
+    private bool _isStealing = false;      // 훔치기 애니메이션 진행 중
+    private bool _pendingDeparture = false; // 타이머 만료 후 훔치기 완료 대기 중
+
 
     private void OnDisable()
     {
@@ -90,6 +93,8 @@ public class GatecrasherCustomer : Customer
         _spritePressEffect.RemoveAllListeners();
         _spritePressEffect.AddListener(OnTouchEvent);
         _spriteFillAmount.SetFillAmount(0);
+        _isStealing = false;
+        _pendingDeparture = false;
         SoundManager.Instance.PlayEffectAudio(EffectType.None, _visitSound, 0.15f);
         UserInfo.CustomerVisits(data);
         UserInfo.AddSatisfaction(UserInfo.CurrentStage, -5);
@@ -178,7 +183,7 @@ public class GatecrasherCustomer : Customer
 
     public void LoopGatecreasherCustomer1Event(List<DropCoinArea> dropCoinAreaList, List<Vector3> noCoinTargetPosList)
     {
-        if (_isEndEvent)
+        if (_isEndEvent || _pendingDeparture)
             return;
 
         if (_gatecrasher1Coroutine != null)
@@ -226,12 +231,25 @@ public class GatecrasherCustomer : Customer
 
                         ChangeState(CustomerState.Idle);
                         _stealParticle.Play();
+                        _isStealing = true;
                         _tween = Tween.Wait(2, () =>
                         {
-                            if(_isEndEvent)
+                            _isStealing = false;
+
+                            // 플레이어에게 퇴치된 경우: 훔치기 취소
+                            if (_isEndEvent)
                                 return;
 
+                            // 마지막 훔치기 실행
                             targetArea.OnCoinStealEvent(_spriteRenderer.transform.position + Vector3.up);
+
+                            // 타이머 만료로 인한 퇴장 예약이 있으면 퇴장
+                            if (_pendingDeparture)
+                            {
+                                DoEndDepartEvent();
+                                return;
+                            }
+
                             _tween = Tween.Wait(1.5f, () => LoopGatecreasherCustomer1Event(dropCoinAreaList, noCoinTargetPosList));
                         });
                     }
@@ -458,8 +476,7 @@ public class GatecrasherCustomer : Customer
         if (_isEndEvent)
             yield break;
 
-        _isEndEvent = true;
-
+        // 반복 사이클 코루틴만 먼저 중단 (새 훔치기 시작 방지)
         if (_actionCoroutine != null)
             StopCoroutine(_actionCoroutine);
 
@@ -472,6 +489,19 @@ public class GatecrasherCustomer : Customer
         if (_subSatisfactionCoroutine != null)
             StopCoroutine(_subSatisfactionCoroutine);
 
+        _pendingDeparture = true;
+        _spritePressEffect.Interactable = false;
+
+        // 현재 훔치기 진행 중이면 완료 후 퇴장 (DoEndDepartEvent가 콜백에서 호출됨)
+        if (_isStealing)
+            yield break;
+
+        DoEndDepartEvent();
+    }
+
+    private void DoEndDepartEvent()
+    {
+        _isEndEvent = true;
         StopMove();
         _spritePressEffect.Interactable = false;
         _spriteGroup.TweenSetAlpha(0, 0.7f);
