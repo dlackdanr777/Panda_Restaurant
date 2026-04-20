@@ -85,8 +85,11 @@ public class SoundManager : MonoBehaviour
     private Coroutine _stopBackgroundAudioRoutine;
     private Coroutine _stopEffectAudioRoutine;
     private Coroutine _changeEffectTypeRoutine;
+    private Coroutine _periodicVolumeResetRoutine;
+    private const float VolumeResetInterval = 60f;
 
     private EffectType _effectType = EffectType.Hall1;
+    private EffectType _savedEffectType = EffectType.Hall1;
     public EffectType EffectType => _effectType;
 
     // Helper methods for new EffectType categories
@@ -114,6 +117,7 @@ public class SoundManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         Init();
         LoadSoundData();
+        _periodicVolumeResetRoutine = StartCoroutine(IEPeriodicVolumeReset());
     }
 
     private void Init()
@@ -274,6 +278,8 @@ public class SoundManager : MonoBehaviour
 
     public void ChangePlayEffectType(EffectType type)
     {
+        _savedEffectType = type;
+
         if (_changeEffectTypeRoutine != null)
             StopCoroutine(_changeEffectTypeRoutine);
 
@@ -313,6 +319,8 @@ public class SoundManager : MonoBehaviour
 
     public void ChangePlayEffectType(EffectType type, float duration = 0.02f)
     {
+        _savedEffectType = type;
+
         if (_effectType == type)
         {
             DebugLog.Log("현재 재생중인 효과음 타입과 동일한 타입을 재생 시도 했습니다: " + type.ToString());
@@ -446,11 +454,13 @@ public class SoundManager : MonoBehaviour
 
         if (duration == 0)
         {
-            _audios[(int)AudioType.EffectAudio].Stop();
+            foreach (var pair in _effectAudioDic)
+                foreach (var source in pair.Value)
+                    source.Stop();
             return;
         }
 
-        _stopEffectAudioRoutine = StartCoroutine(IEStopBackgroundAudio(duration));
+        _stopEffectAudioRoutine = StartCoroutine(IEStopEffectAudio(duration));
     }
 
     public void SetVolume(float value, AudioType type)
@@ -752,19 +762,29 @@ public class SoundManager : MonoBehaviour
 
     private IEnumerator IEStopEffectAudio(float duration)
     {
-        float maxVolume = _audios[(int)AudioType.EffectAudio].volume;
         float changeDuration = duration;
         float timer = 0;
 
         while (timer < changeDuration)
         {
             timer += 0.02f;
-            _audios[(int)AudioType.EffectAudio].volume = Mathf.Lerp(maxVolume, 0, timer / changeDuration);
+            float t = timer / changeDuration;
+            foreach (var pair in _effectAudioDic)
+                foreach (var source in pair.Value)
+                    if (source.isPlaying)
+                        source.volume = Mathf.Lerp(_effectVolume, 0, t);
 
             yield return YieldCache.WaitForSeconds(0.02f);
         }
 
-        _audios[(int)AudioType.BackgroundAudio].Stop();
+        foreach (var pair in _effectAudioDic)
+        {
+            foreach (var source in pair.Value)
+            {
+                source.Stop();
+                source.volume = _effectVolume;
+            }
+        }
     }
 
     // ? 각 EffectType에 맞는 AudioMixerGroup 반환
@@ -826,6 +846,63 @@ public class SoundManager : MonoBehaviour
         {
             return _audioMixer.FindMatchingGroups("SoundEffect")[0];
         }
+    }
+
+    private IEnumerator IEPeriodicVolumeReset()
+    {
+        while (true)
+        {
+            yield return YieldCache.WaitForSeconds(VolumeResetInterval);
+            ForceReapplyMixerState();
+        }
+    }
+
+    // 60초 주기 리셋용: 재생 중인 효과음이 있으면 보류
+    private void ForceReapplyMixerState()
+    {
+        if (_changeEffectTypeRoutine != null)
+        {
+            StopCoroutine(_changeEffectTypeRoutine);
+            _changeEffectTypeRoutine = null;
+        }
+
+        foreach (var pair in _effectAudioDic)
+            foreach (var source in pair.Value)
+                if (source.isPlaying)
+                    return;
+
+        DebugLog.Log("[SoundManager] AudioMixer 주기 재설정: " + _savedEffectType);
+        _effectType = _savedEffectType;
+        LoadSoundData();
+        ChangePlayEffectType(_savedEffectType);
+    }
+
+    // 포커스/pause 복귀용: 믹서가 깨진 상태이므로 재생 중 여부 무관하게 즉시 적용
+    private void ForceReapplyMixerStateImmediate()
+    {
+        DebugLog.Log("[SoundManager] AudioMixer 즉시 강제 재설정: " + _savedEffectType);
+
+        if (_changeEffectTypeRoutine != null)
+        {
+            StopCoroutine(_changeEffectTypeRoutine);
+            _changeEffectTypeRoutine = null;
+        }
+
+        _effectType = _savedEffectType;
+        LoadSoundData();
+        ChangePlayEffectType(_savedEffectType);
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        if (hasFocus)
+            ForceReapplyMixerStateImmediate();
+    }
+
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        if (!pauseStatus)
+            ForceReapplyMixerStateImmediate();
     }
 }
 
