@@ -360,7 +360,7 @@ public class UITutorial : MobileUIView
         _customHole.HoleRect.sizeDelta = new Vector2(holeDiameter, holeDiameter);
         _customHole.SetTargetObjectName(targetObjName);
         _customHoleCursorParent.gameObject.SetActive(false);
-        
+
         // RectTransform?? ???? ??
         RectTransform rectTransform = pos as RectTransform;
         if (rectTransform != null)
@@ -376,11 +376,51 @@ public class UITutorial : MobileUIView
             _customHole.HoleRect.transform.position = screenPos;
             _customHoleCursorParent.transform.position = screenPos;
         }
-        
+
         _customHoleCursorParent.sizeDelta = new Vector2(holeDiameter, holeDiameter);
-        _customHole.Interactable = false;
+        _customHole.Interactable = true;
         _isButtonClicked = false;
         _isCustomCursorUp = isCursorUp;
+    }
+
+    public void CustomHoleHide()
+    {
+        _customHole.SetActive(false);
+        _customHoleCursorParent.gameObject.SetActive(false);
+    }
+
+    // ????? ??? ?? ?? Interactable = true? ?? (?? ???)
+    public void CustomHoleSetActiveImmediate(bool value, float holeDiameter, string targetObjName, Transform pos, bool isCursorUp = true)
+    {
+        _customHole.SetActive(value);
+        _customHole.HoleRect.sizeDelta = new Vector2(holeDiameter, holeDiameter);
+        _customHole.SetTargetObjectName(targetObjName);
+
+        RectTransform rectTransform = pos as RectTransform;
+        if (rectTransform != null)
+        {
+            _customHole.HoleRect.transform.position = rectTransform.position;
+            _customHoleCursorParent.transform.position = rectTransform.position;
+        }
+        else
+        {
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(pos.position);
+            _customHole.HoleRect.transform.position = screenPos;
+            _customHoleCursorParent.transform.position = screenPos;
+        }
+
+        _customHoleCursorParent.sizeDelta = new Vector2(holeDiameter, holeDiameter);
+        _customHole.Interactable = true;
+        _isButtonClicked = false;
+        _isCustomCursorUp = isCursorUp;
+        _customHoleCursorParent.gameObject.SetActive(true);
+        _customHoleCursorUp.gameObject.SetActive(isCursorUp);
+        _customHoleCursorDown.gameObject.SetActive(!isCursorUp);
+    }
+    
+    public bool GetCustomHoleActive()
+    {
+        return _customHole.gameObject.activeInHierarchy;
     }
 
 
@@ -588,10 +628,10 @@ public class UITutorial : MobileUIView
     {
         Tween.Wait(0.05f, () =>
         {
-            _customHole.Interactable = true;
-            _customHoleCursorParent.gameObject.SetActive(true);
-            _customHoleCursorUp.gameObject.SetActive(_isCustomCursorUp);
-            _customHoleCursorDown.gameObject.SetActive(!_isCustomCursorUp);
+            // Interactable? CustomHoleSetActive?? ?? true? ???
+            _customHoleCursorParent.gameObject.SetActive(_customHole.gameObject.activeInHierarchy);
+            _customHoleCursorUp.gameObject.SetActive(_isCustomCursorUp && _customHole.gameObject.activeInHierarchy);
+            _customHoleCursorDown.gameObject.SetActive(!_isCustomCursorUp && _customHole.gameObject.activeInHierarchy);
         });
     }
 

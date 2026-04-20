@@ -100,7 +100,8 @@ public class SpecialCustomer : Customer
             return;
 
         _touchCount--;
-        _coinParticle.Emit(UnityEngine.Random.Range(1, 4));
+        if(_coinParticle != null)
+            _coinParticle.Emit(UnityEngine.Random.Range(1, 4));
         _spriteRenderer.sprite = _touchSprite;
 
         if (_touchCoroutine != null)

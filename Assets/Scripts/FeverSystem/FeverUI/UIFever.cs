@@ -18,16 +18,19 @@ public class UIFever : MonoBehaviour
 
     [Header("FeverMeter")]
     [SerializeField] private UIButtonAndPressEffect _feverButton;
+    [SerializeField] private Vector3 _feverButtonNormalScale = Vector3.one;
     [SerializeField] private UITweenFillAmountImage _fillAmountImage;
     [SerializeField] private RectTransform _feverGauge;
     [SerializeField] private RectTransform _feverGaugeEffectObj;
     [SerializeField] private Animator _feverGaugeEffectAnimator;
 
-    private Vector3 _tmpButtonScale;
+    private Vector3 _tmpButtonScale = new Vector3(-1, 1, 1);
     private FeverSystem _ferverSystem;
 
     private float _tmpFeverGauge = 0;
     private int _tmpMaxFeverGauge = 0;
+
+
     public void Init(FeverSystem ferverSystem)
     {
         _ferverSystem = ferverSystem;
@@ -35,7 +38,8 @@ public class UIFever : MonoBehaviour
         _tmpMaxFeverGauge = FeverSystem.CurrentMaxFeverGauge;
         _feverEffects.SetActive(false);
         _feverGaugeEffectAnimator.gameObject.SetActive(false);
-        _tmpButtonScale = _feverButton.transform.localScale;
+        _feverButton.TweenStop();
+        _feverButton.transform.localScale = _tmpButtonScale;
         _fillAmountImage.SetFillAmountNoAnime(FeverSystem.FeverGauge <= 0 ? 0 : 0.3f + ((float)FeverSystem.FeverGauge / FeverSystem.CurrentMaxFeverGauge) * 0.7f);
         bool isActive = FeverSystem.CurrentMaxFeverGauge <= FeverSystem.FeverGauge;
         _feverButton.interactable = isActive;

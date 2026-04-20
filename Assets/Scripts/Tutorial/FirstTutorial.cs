@@ -159,22 +159,50 @@ public class FirstTutorial : MonoBehaviour
         bool isTableTouched = false;
         _table1.OnTouchEventHandler += () => isTableTouched = true;
         while (!isTableTouched)
-            yield return YieldCache.WaitForSeconds(0.02f);
+        {
+            if(!_uiTutorial.GetCustomHoleActive())
+                _uiTutorial.CustomHoleSetActiveImmediate(true, 400, _table1.name, _table1.transform);
+             yield return YieldCache.WaitForSeconds(0.02f);
+        }
+        _uiTutorial.CustomHoleHide();
         _table1.OnTouchEventHandler -= () => isTableTouched = true;
 
-        yield return YieldCache.WaitForSeconds(1);
         yield return _uiDescriptionNPC.ShowDescription1Text($"다음으로 바닥의 쓰레기를 치워볼까요?");
-        GameObject garbage = ObjectPoolManager.Instance.GetEnabledGarbagePool()[0].gameObject;
-        _uiTutorial.CustomHoleSetActive(true, 200, garbage.name, garbage.transform);
+        {
+            var pool = ObjectPoolManager.Instance.GetEnabledGarbagePool();
+            if (pool.Count > 0)
+                _uiTutorial.CustomHoleSetActive(true, 200, pool[0].gameObject.name, pool[0].gameObject.transform);
+        }
         while (ObjectPoolManager.Instance.GetEnabledGarbageCount() > 0)
+        {
+            if (!_uiTutorial.GetCustomHoleActive())
+            {
+                var pool = ObjectPoolManager.Instance.GetEnabledGarbagePool();
+                if (pool.Count > 0)
+                    _uiTutorial.CustomHoleSetActiveImmediate(true, 200, pool[0].gameObject.name, pool[0].gameObject.transform);
+            }
             yield return YieldCache.WaitForSeconds(0.02f);
+        }
+        _uiTutorial.CustomHoleHide();
 
-        yield return YieldCache.WaitForSeconds(1);
-        GameObject coin = ObjectPoolManager.Instance.GetEnabledCoinPool()[0].gameObject;
-        yield return _uiDescriptionNPC.ShowDescription1Text($"마지막으로 바닥의 동전을 치워볼까요?");
-        _uiTutorial.CustomHoleSetActive(true, 200, coin.name, coin.transform);
+        {
+            var pool = ObjectPoolManager.Instance.GetEnabledCoinPool();
+            yield return _uiDescriptionNPC.ShowDescription1Text($"마지막으로 바닥의 동전을 치워볼까요?");
+            if (pool.Count > 0)
+                _uiTutorial.CustomHoleSetActive(true, 200, pool[0].gameObject.name, pool[0].gameObject.transform);
+        }
         while (ObjectPoolManager.Instance.GetEnabledCoinCount() > 0)
+        {
+            if (!_uiTutorial.GetCustomHoleActive())
+            {
+                var pool = ObjectPoolManager.Instance.GetEnabledCoinPool();
+                if (pool.Count > 0)
+                    _uiTutorial.CustomHoleSetActiveImmediate(true, 200, pool[0].gameObject.name, pool[0].gameObject.transform);
+            }
             yield return YieldCache.WaitForSeconds(0.02f);
+        }
+        _uiTutorial.CustomHoleHide();
+            
          
 yield return YieldCache.WaitForSeconds(1);
 

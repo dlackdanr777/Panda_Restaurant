@@ -87,7 +87,7 @@ public class FoodData : BasicData, ShopData
             buyPrice = (int)(buyPrice * UPGRADE_PRICE_RATIO[i]);
         }
 
-        return buyPrice;
+        return buyPrice <= 100 ? 100 : buyPrice;
     }
 
     public string GetNeedItem()
