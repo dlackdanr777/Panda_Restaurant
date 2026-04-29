@@ -123,7 +123,15 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnDestroy()
     {
-        // AdManager에서 광고 등록 해제
+        if (_adButton != null)
+            _adButton.onClick.RemoveListener(ShowAdPopup);
+
+        // AdManager가 이미 파괴된 경우 (앱 종료, 씬 전환 등) 스킵
+        if (!AdManager.HasInstance) return;
+
+        // Awake에서 _adButton == null로 인해 RegisterAd가 호출되지 않은 경우 스킵
+        if (_adButton == null) return;
+
         if (_adType == AdType.Reward)
         {
             AdManager.Instance.UnregisterAd(_adUnitId, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed, OnRewarded);
@@ -132,9 +140,6 @@ public class WatchAdButton : MonoBehaviour
         {
             AdManager.Instance.UnregisterAd(_adUnitId, OnLoaded, OnLoadFailed, OnDisplayed, OnDisplayFailed, OnClosed);
         }
-
-        if (_adButton != null)
-            _adButton.onClick.RemoveListener(ShowAdPopup);
     }
 
     private void ShowAdPopup()
@@ -200,6 +205,7 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnLoaded(LevelPlayAdInfo adInfo)
     {
+        if (this == null) return; // WatchAdButton이 파괴된 후 콜백이 도달한 경우
         AdManager.Instance.SetLoading(_adUnitId, false);
         AdManager.Instance.SetLoadedTime(_adUnitId);
         _currentRetryCount = 0; // 로드 성공 시 재시도 카운트 초기화
@@ -220,6 +226,7 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnLoadFailed(LevelPlayAdError error)
     {
+        if (this == null) return; // WatchAdButton이 파괴된 후 콜백이 도달한 경우
         AdManager.Instance.SetLoading(_adUnitId, false);
         Debug.LogError($"[WatchAdButton] LoadFailed - {_adUnitId}: {error}");
         
@@ -283,6 +290,7 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnDisplayed(LevelPlayAdInfo adInfo)
     {
+        if (this == null) return;
         Debug.Log($"[WatchAdButton] ★★★ 광고 실제 표시됨 ★★★ - {_adUnitId}");
         
         // 광고 표시 이벤트 호출
@@ -297,6 +305,7 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnDisplayFailed(LevelPlayAdInfo adInfo, LevelPlayAdError error)
     {
+        if (this == null) return;
         Debug.LogError($"[WatchAdButton] ✖✖✖ 광고 표시 실패 ✖✖✖ - {_adUnitId}: {error}");
         
         // 광고 실패 이벤트 호출
@@ -317,6 +326,7 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnClosed(LevelPlayAdInfo adInfo)
     {
+        if (this == null) return;
         Debug.Log($"[WatchAdButton] Closed - {_adUnitId}, isCurrentPlaying: {AdManager.Instance.IsCurrentPlayingAd(_adUnitId)}, AdType: {_adType}");
         
         // ★★★ OnDisplayed가 호출되지 않았으면 광고가 실제로 표시되지 않은 것 ★★★
@@ -375,6 +385,7 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnRewarded(LevelPlayAdInfo adInfo, LevelPlayReward reward)
     {
+        if (this == null) return;
         Debug.Log($"[WatchAdButton] Rewarded 콜백 - {_adUnitId}, isCurrentPlaying: {AdManager.Instance.IsCurrentPlayingAd(_adUnitId)}, reward: {reward.Name} x{reward.Amount}, AdType: {_adType}");
         
         // Interstitial은 OnRewarded가 호출되지 않으므로 여기서 처리하지 않음

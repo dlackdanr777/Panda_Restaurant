@@ -196,6 +196,8 @@ public class TableManager : MonoBehaviour
             }
 
             // 손님이 도착했으므로 즉시 위치 설정 (대기 시간 제거)
+            // StopMove()로 경로 탐색 race condition 완전 차단
+            customer.StopMove();
             customer.transform.position = data.ChairTrs[data.SitIndex].position;
             customer.SetSitTableData(data);
             data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);

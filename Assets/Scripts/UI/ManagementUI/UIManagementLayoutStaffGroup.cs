@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Unity.Properties;
 using UnityEngine;
 
 public class UIManagementLayoutStaffGroup : UIManagementLayoutGroup
@@ -28,7 +27,10 @@ public class UIManagementLayoutStaffGroup : UIManagementLayoutGroup
 
     public override void Init()
     {
+        for (int i = _staffSlots.Count - 1; i >= 0; i--)
+            Destroy(_staffSlots[i].gameObject);
         _staffSlots.Clear();
+
         for (int i = 0; i < (int)EquipStaffType.Length; i++)
         {
             UIManagementLayoutStaffSlot slot = Instantiate(_staffSlotPrefab, _slotParent);

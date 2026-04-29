@@ -45,6 +45,9 @@ public class AdManager : MonoBehaviour
     // 현재 재생 중인 adUnitId (에디터 모드에서는 하나만 재생 가능)
     private string _currentPlayingAdUnitId = null;
 
+    public static bool HasInstance => _instance != null;
+    public static bool IsAdPlaying => _instance != null && _instance._currentPlayingAdUnitId != null;
+
     private class AdState
     {
         public bool IsLoading;
@@ -56,6 +59,14 @@ public class AdManager : MonoBehaviour
 
     void Awake()
     {
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        _instance = this;
+        DontDestroyOnLoad(gameObject);
+
         #if DEVELOPMENT_BUILD || UNITY_EDITOR
         Debug.Log("[AdManager] 개발 빌드 또는 에디터 모드 - 디버그 활성화");
         LevelPlay.SetAdaptersDebug(true);

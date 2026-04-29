@@ -116,6 +116,13 @@ namespace Muks.BackEnd
                 // 치명적인 오류 패턴 확인
                 if (IsCriticalError(logString))
                 {
+                    // 광고 재생 중 발생한 오류는 ad SDK 자체 오류일 수 있으므로 팝업/저장비활성화 억제
+                    if (AdManager.HasInstance && AdManager.IsAdPlaying)
+                    {
+                        Debug.LogWarning($"[BackendManager] 광고 재생 중 예외 감지 (억제됨): {logString.Substring(0, Mathf.Min(logString.Length, 120))}");
+                        return;
+                    }
+
                     string truncatedMessage = logString;
                     if (logString.Length > 100)
                         truncatedMessage = logString.Substring(0, 100) + "...";
@@ -1374,6 +1381,13 @@ namespace Muks.BackEnd
 
         private void CheckTokenValidity()
         {
+            // 광고 재생 중에는 토큰 검사 생략 (ad 오버레이로 인한 일시적 네트워크 실패 → 오탐 방지)
+            if (AdManager.HasInstance && AdManager.IsAdPlaying)
+            {
+                Debug.Log("[BackendManager] 광고 재생 중 - 토큰 유효성 검사 건너뜀");
+                return;
+            }
+
             if (_isLogin)
             {
                 // 토큰 유효성 검사를 위한 API 호출

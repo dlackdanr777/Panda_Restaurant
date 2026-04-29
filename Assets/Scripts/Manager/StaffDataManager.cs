@@ -24,6 +24,20 @@ public class StaffDataManager : MonoBehaviour
     private static StaffData[] _staffDatas;
     private static Dictionary<string, StaffData> _staffDataDic = new Dictionary<string, StaffData>();
     private static List<StaffData>[] _staffTypeDataList;
+    private static List<StaffData>[] _staffTypeSortedCache;
+    private static ShopSortType _lastSortType = (ShopSortType)(-1);
+
+    // GroupType별 EquipStaffType 목록 사전 캐시 (GC 압력 제거)
+    private static readonly Dictionary<StaffGroupType, List<EquipStaffType>> _equipStaffTypeCache =
+        new Dictionary<StaffGroupType, List<EquipStaffType>>
+        {
+            { StaffGroupType.Manager,  new List<EquipStaffType> { EquipStaffType.Manager  } },
+            { StaffGroupType.Chef,     new List<EquipStaffType> { EquipStaffType.Chef     } },
+            { StaffGroupType.Waiter,   new List<EquipStaffType> { EquipStaffType.Waiter   } },
+            { StaffGroupType.Cleaner,  new List<EquipStaffType> { EquipStaffType.Cleaner  } },
+            { StaffGroupType.Marketer, new List<EquipStaffType> { EquipStaffType.Marketer } },
+            { StaffGroupType.Guard,    new List<EquipStaffType> { EquipStaffType.Guard    } },
+        };
     //private static Dictionary<string, MarketerLightStickData> _marketerLightStickDataDic = new Dictionary<string, MarketerLightStickData>();
 
 
@@ -50,16 +64,28 @@ public class StaffDataManager : MonoBehaviour
     public List<StaffData> GetSortStaffDataList(EquipStaffType type)
     {
         int typeIndex = (int)GetStaffGroupType(type);
-        return UserInfo.StaffSortType switch
-        {
-            ShopSortType.NameAscending => _staffTypeDataList[typeIndex].OrderBy(data => data.Name).ToList(),
-            ShopSortType.NameDescending => _staffTypeDataList[typeIndex].OrderByDescending(data => data.Name).ToList(),
-            ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_staffTypeDataList[typeIndex], true),
-            ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_staffTypeDataList[typeIndex], false),
-            ShopSortType.None => _staffTypeDataList[typeIndex],
-            _ => null
-        };
+        ShopSortType sortType = UserInfo.StaffSortType;
 
+        // 정렬 기준이 바뀌었을 때만 전체 캐시 재계산
+        if (sortType != _lastSortType)
+        {
+            _lastSortType = sortType;
+            int cnt = (int)StaffGroupType.Length;
+            _staffTypeSortedCache = new List<StaffData>[cnt];
+            for (int i = 0; i < cnt; i++)
+            {
+                _staffTypeSortedCache[i] = sortType switch
+                {
+                    ShopSortType.NameAscending  => _staffTypeDataList[i].OrderBy(d => d.Name).ToList(),
+                    ShopSortType.NameDescending => _staffTypeDataList[i].OrderByDescending(d => d.Name).ToList(),
+                    ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_staffTypeDataList[i], true),
+                    ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_staffTypeDataList[i], false),
+                    _ => _staffTypeDataList[i]
+                };
+            }
+        }
+
+        return _staffTypeSortedCache[typeIndex];
     }
 
 
@@ -88,25 +114,16 @@ public class StaffDataManager : MonoBehaviour
 
     public StaffGroupType GetStaffGroupType(EquipStaffType type)
     {
-        if (type == EquipStaffType.Manager)
-            return StaffGroupType.Manager;
-
-        else if (type == EquipStaffType.Waiter /*|| type == EquipStaffType.Waiter2*/)
-            return StaffGroupType.Waiter;
-
-        else if (type == EquipStaffType.Cleaner)
-            return StaffGroupType.Cleaner;
-
-        else if (type == EquipStaffType.Marketer)
-            return StaffGroupType.Marketer;
-
-        else if (type == EquipStaffType.Guard)
-            return StaffGroupType.Guard;
-
-        else if (type == EquipStaffType.Chef /*|| type == EquipStaffType.Chef2*/)
-            return StaffGroupType.Chef;
-
-        throw new System.Exception("해당 타입이 이상합니다: " + type);
+        return type switch
+        {
+            EquipStaffType.Manager  => StaffGroupType.Manager,
+            EquipStaffType.Chef     => StaffGroupType.Chef,
+            EquipStaffType.Waiter   => StaffGroupType.Waiter,
+            EquipStaffType.Cleaner  => StaffGroupType.Cleaner,
+            EquipStaffType.Marketer => StaffGroupType.Marketer,
+            EquipStaffType.Guard    => StaffGroupType.Guard,
+            _ => throw new System.Exception("해당 타입이 이상합니다: " + type)
+        };
     }
 
     public List<EquipStaffType> GetEquipStaffTypeList(StaffData data)
@@ -117,32 +134,10 @@ public class StaffDataManager : MonoBehaviour
 
     public List<EquipStaffType> GetEquipStaffType(StaffGroupType type)
     {
-        List<EquipStaffType> typeList = new List<EquipStaffType>();
-        if (type == StaffGroupType.Manager)
-            typeList.Add(EquipStaffType.Manager);
+        if (_equipStaffTypeCache.TryGetValue(type, out var cached))
+            return cached;
 
-        if (type == StaffGroupType.Waiter)
-            typeList.Add(EquipStaffType.Waiter);
-
-        //if (type == StaffGroupType.Waiter)
-        //typeList.Add(EquipStaffType.Waiter2);
-
-        if (type == StaffGroupType.Cleaner)
-            typeList.Add(EquipStaffType.Cleaner);
-
-        if (type == StaffGroupType.Marketer)
-            typeList.Add(EquipStaffType.Marketer);
-
-        if (type == StaffGroupType.Guard)
-            typeList.Add(EquipStaffType.Guard);
-
-        if (type == StaffGroupType.Chef)
-            typeList.Add(EquipStaffType.Chef);
-
-        //if (type == StaffGroupType.Chef)
-        //typeList.Add(EquipStaffType.Chef2);
-
-        return typeList;
+        throw new System.Exception("해당 타입이 이상합니다: " + type);
     }
 
     public RestaurantType GetStaffRestaurantType(StaffData data)
@@ -170,7 +165,8 @@ public class StaffDataManager : MonoBehaviour
     private static void Init()
     {
         _staffDataDic.Clear();
-        _staffTypeDataList = new List<StaffData>[(int)EquipStaffType.Length];
+        _lastSortType = (ShopSortType)(-1);
+        _staffTypeDataList = new List<StaffData>[(int)StaffGroupType.Length];
 
         for (int i = 0, cnt = (int)StaffGroupType.Length; i < cnt; i++)
         {

@@ -190,14 +190,9 @@ public class GameManager : MonoBehaviour
         _addGachaItemWaitCustomerMaxCount = 0;
 
 
-        foreach (var key in _upgradeTypeValueDic.Keys.ToList())
+        foreach (var key in _upgradeTypeValueDic.Keys.ToArray())
         {
-            if (_upgradeTypeValueDic.ContainsKey(key))
-                _upgradeTypeValueDic[key] = 0;
-
-            else
-                _upgradeTypeValueDic.Add(key, 0);
-                
+            _upgradeTypeValueDic[key] = 0;
         }
 
         for (int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
@@ -218,7 +213,6 @@ public class GameManager : MonoBehaviour
         foreach (var data in giveGachaItemLevelDic)
         {
             gachaItemData = ItemManager.Instance.GetGachaItemData(data.Key);
-            int itemLevel = data.Value;
             if (gachaItemData == null)
             {
                 DebugLog.LogError("아이템 정보가 데이터베이스에 존재하지 않습니다: " + data.Key);
@@ -376,7 +370,6 @@ public class GameManager : MonoBehaviour
     {
         float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
         cookSpeedMul += (_addGachaItemAllCookingTimeMul * 0.01f) + _addGachaItemFoodCookingTimeMulDic[type] * 0.01f;
-        DebugLog.Log("음식 속도: "+ cookSpeedMul);
         return cookSpeedMul;
     }
 
@@ -385,7 +378,6 @@ public class GameManager : MonoBehaviour
         float foodPriceMul = 1 + _foodPriceMul + (_addSetFoodPriceMul[(int)floor, (int)type] * 0.01f);
         foodPriceMul += (_addGachaItemAllFoodPriceMul * 0.01f) + _addGachaItemFoodPriceMulDic[type] * 0.01f;
         foodPriceMul += _foodTypePriceMul[(int)type] * 0.01f;
-        DebugLog.Log("음식 값: "+ foodPriceMul);
         return foodPriceMul;
     }
 
@@ -460,13 +452,13 @@ public class GameManager : MonoBehaviour
 
         //UserInfo.OnChangeStaffHandler += (floor, type) => OnEquipStaffEffectCheck();
         //UserInfo.OnUpgradeStaffHandler += OnEquipStaffEffectCheck;
-        UserInfo.OnChangeFurnitureHandler += (floor, type) => OnEquipFurnitureEffectCheck();
-        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => OnEquipKitchenUtensilEffectCheck();
+        UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEffectEvent;
+        UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEffectEvent;
         UserInfo.OnGiveFurnitureHandler += OnGiveFurnitureEffectCheck;
         UserInfo.OnGiveKitchenUtensilHandler += OnGiveKitchenUtensilEffectCheck;
 
-        UserInfo.OnChangeFurnitureHandler += (floor, type) => CheckSetDataEffect(floor);
-        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => CheckSetDataEffect(floor);
+        UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureSetDataEvent;
+        UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilSetDataEvent;
         UserInfo.OnGiveRecipeHandler += OnGiveRecipeCheck;
         UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEffectCheck;
         UserInfo.OnGiveGachaItemHandler += OnUpgradeGachaItemCheck;
@@ -492,14 +484,35 @@ public class GameManager : MonoBehaviour
 
 
 
+    private void OnChangeFurnitureEffectEvent(ERestaurantFloorType floor, FurnitureType type) => OnEquipFurnitureEffectCheck();
+    private void OnChangeKitchenUtensilEffectEvent(ERestaurantFloorType floor, KitchenUtensilType type) => OnEquipKitchenUtensilEffectCheck();
+    private void OnChangeFurnitureSetDataEvent(ERestaurantFloorType floor, FurnitureType type) => CheckSetDataEffect(floor);
+    private void OnChangeKitchenUtensilSetDataEvent(ERestaurantFloorType floor, KitchenUtensilType type) => CheckSetDataEffect(floor);
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEffectEvent;
+        UserInfo.OnChangeKitchenUtensilHandler -= OnChangeKitchenUtensilEffectEvent;
+        UserInfo.OnGiveFurnitureHandler -= OnGiveFurnitureEffectCheck;
+        UserInfo.OnGiveKitchenUtensilHandler -= OnGiveKitchenUtensilEffectCheck;
+        UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureSetDataEvent;
+        UserInfo.OnChangeKitchenUtensilHandler -= OnChangeKitchenUtensilSetDataEvent;
+        UserInfo.OnGiveRecipeHandler -= OnGiveRecipeCheck;
+        UserInfo.OnGiveGachaItemHandler -= OnGiveGachaItemEffectCheck;
+        UserInfo.OnGiveGachaItemHandler -= OnUpgradeGachaItemCheck;
+        UserInfo.OnUpgradeGachaItemHandler -= OnUpgradeGachaItemCheck;
+        BackendManager.OnExitHandler -= SaveGameData;
+        BackendManager.OnPauseHandler -= SaveGameData;
+    }
+
     private void OnGiveFurnitureEffectCheck()
     {
         _addFurnitureScore = 0;
         int addScore = 0;
-        List<FurnitureData> _furnitureDataList = UserInfo.GetGiveFurnitureDataList(UserInfo.CurrentStage);
-        for (int i = 0, cnt = _furnitureDataList.Count; i < cnt; ++i)
+        List<FurnitureData> furnitureDataList = UserInfo.GetGiveFurnitureDataList(UserInfo.CurrentStage);
+        for (int i = 0, cnt = furnitureDataList.Count; i < cnt; ++i)
         {
-            FurnitureData data = _furnitureDataList[i];
+            FurnitureData data = furnitureDataList[i];
             if (data == null)
                 continue;
 
@@ -620,8 +633,6 @@ public class GameManager : MonoBehaviour
 
             if(!FoodDataManager.Instance.IsNeedMiniGame(giveRecipeList[i]))
                 continue;
-
-            //_addGiveRecipeMiniGameTime += 5;
         }
     }
 

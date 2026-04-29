@@ -87,17 +87,7 @@ public static class Utility
 
     public static bool EqualStaffType(this EquipStaffType type1, EquipStaffType type2)
     {
-        if (type1 == type2)
-            return true;
-
-        if ((type1 == EquipStaffType.Waiter /*|| type1 == EquipStaffType.Waiter2*/) && (type2 == EquipStaffType.Waiter /*|| type2 == EquipStaffType.Waiter2*/))
-            return true;
-
-        if ((type1 == EquipStaffType.Chef /*|| type1 == EquipStaffType.Chef2*/) && (type2 == EquipStaffType.Chef /*|| type2 == EquipStaffType.Chef2*/))
-            return true;
-
-
-        return false;
+        return type1 == type2;
     }
 
     public static string StaffTypeStringConverter(EquipStaffType type)

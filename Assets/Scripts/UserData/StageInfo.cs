@@ -219,10 +219,8 @@ public class StageInfo
     {
         foreach (var kvp in _equipStaffTypeDic[floor])
         {
-            if (kvp.Value == null || kvp.Value.Id != data.Id)
-                continue;
-
-            return true;
+            if (kvp.Value == data)
+                return true;
         }
 
         return false;

@@ -1,24 +1,24 @@
 public enum EquipStaffType
 {
     Manager,
-    Marketer,
+    Chef,
+//    Chef2,
     Waiter,
 //    Waiter2,
     Cleaner,
+    Marketer,
     Guard,
-    Chef,
-//    Chef2,
     Length
 }
 
 public enum StaffGroupType
 {
     Manager,
-    Marketer,
+    Chef,
     Waiter,
     Cleaner,
+    Marketer,
     Guard,
-    Chef,
     Length
 }
 

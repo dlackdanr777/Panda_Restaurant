@@ -29,6 +29,7 @@ public class Staff : MonoBehaviour
 
     protected EquipStaffType _staffType;
     public EquipStaffType EquipStaffType => _staffType;
+    protected StaffGroupType _staffGroupType;
     protected IStaffAction _staffAction;
     protected EStaffState _state;
     protected ERestaurantFloorType _equipFloorType;
@@ -48,7 +49,7 @@ public class Staff : MonoBehaviour
     protected float _scaleX;
     protected float _moveSpeed;
     protected float _speedMul;
-    public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(StaffDataManager.Instance.GetStaffGroupType(_staffType))), 0.5f, 3f);
+    public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(_staffGroupType)), 0.5f, 3f);
 
     protected Coroutine _useSkillRoutine;
     protected Coroutine _idleAnimationRoutine;
@@ -58,11 +59,11 @@ public class Staff : MonoBehaviour
     public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController, FeverSystem feverSystem)
     {
         _staffType = type;
+        _staffGroupType = StaffDataManager.Instance.GetStaffGroupType(type);
         _tableManager = tableManager;
         _customerController = customerController;
         _kitchenSystem = kitchenSystem;
         _feverSystem = feverSystem;
-        _tableManager = tableManager;
         _spriteRenderer.color = Color.white;
         _scaleX = transform.localScale.x;
         GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;

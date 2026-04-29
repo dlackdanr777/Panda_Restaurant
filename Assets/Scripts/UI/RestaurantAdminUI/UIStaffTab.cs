@@ -11,6 +11,7 @@ public class UIStaffTab : UIRestaurantAdminTab
 
     private UITabSlot[] _slots;
     private ERestaurantFloorType _floorType;
+    private bool _isFloorTypeInitialized = false;
     private bool _isInitialized = false;
 
     // 성능 최적화를 위한 캐시 변수들
@@ -83,9 +84,10 @@ public class UIStaffTab : UIRestaurantAdminTab
 
     public void ChangeFloorType(ERestaurantFloorType floorType)
     {
-        if (_floorType == floorType)
+        if (_isFloorTypeInitialized && _floorType == floorType)
             return;
 
+        _isFloorTypeInitialized = true;
         _floorType = floorType;     
         UpdateUI();
     }

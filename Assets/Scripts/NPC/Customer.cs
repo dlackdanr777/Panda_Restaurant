@@ -48,6 +48,10 @@ public class Customer : MonoBehaviour
     protected CustomerController _customerController;
     protected TableManager _tableManager;
 
+    // AStar 경로 탐색 race condition 방지용 시퀀스 ID
+    // Move()가 여러 번 빠르게 호출될 때 오래된 콜백을 무시하기 위함
+    private int _moveSequenceId = 0;
+
 
 
     public virtual void Init()
@@ -125,7 +129,21 @@ public class Customer : MonoBehaviour
 
         bool isEqualPos = customerDoorPos.y == targetDoorPos.y;
         Vector3 pathPos = isEqualPos ? targetPos : customerDoorPos;
-        AStar.Instance.RequestPath(_moveObj.transform.position, pathPos, isEqualPos ? TargetMove : StairsMove);
+
+        // 시퀀스 ID를 캡처해두고, 콜백 실행 시점에 현재 ID와 비교
+        // 다르면 이미 새로운 Move()가 호출된 것이므로 오래된 경로 무시
+        int seqId = ++_moveSequenceId;
+        StopTeleportRoutine();
+        AStar.Instance.RequestPath(_moveObj.transform.position, pathPos, nodeList =>
+        {
+            if (_moveSequenceId != seqId)
+            {
+                DebugLog.Log($"[Customer] 오래된 경로 탐색 결과 무시 (seqId={seqId}, current={_moveSequenceId})");
+                return;
+            }
+            if (isEqualPos) TargetMove(nodeList);
+            else StairsMove(nodeList);
+        });
     }
 
 
@@ -134,10 +152,20 @@ public class Customer : MonoBehaviour
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
 
-        if (_teleportCoroutine != null)
-            StopCoroutine(_teleportCoroutine);
-
+        StopTeleportRoutine();
         ChangeState(CustomerState.Idle);
+    }
+
+    // 텔레포트 코루틴 중단 시 TweenAlpha도 반드시 함께 중단하고 알파 복원
+    // TweenAlpha는 코루틴과 독립적으로 실행되므로 코루틴만 Stop하면 알파 0 고착 버그 발생
+    private void StopTeleportRoutine()
+    {
+        if (_teleportCoroutine == null)
+            return;
+        StopCoroutine(_teleportCoroutine);
+        _teleportCoroutine = null;
+        _spriteRenderer.TweenStop();
+        _spriteRenderer.color = Color.white;
     }
 
 
@@ -157,8 +185,7 @@ public class Customer : MonoBehaviour
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
 
-        if (_teleportCoroutine != null)
-            StopCoroutine(_teleportCoroutine);
+        StopTeleportRoutine();
 
         _isStairsMove = false;
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList));
@@ -170,8 +197,7 @@ public class Customer : MonoBehaviour
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
 
-        if (_teleportCoroutine != null)
-            StopCoroutine(_teleportCoroutine);
+        StopTeleportRoutine();
 
         _isStairsMove = true;
 

@@ -437,9 +437,15 @@ public class UIAdPopup : MobileUIView
             return;
         }
 
+        if (_currentWatchAdButton == null)
+        {
+            Debug.LogError("[UIAdPopup] _currentWatchAdButton가 null입니다.");
+            return;
+        }
+
         PopEnabled = false;
+        _dontTouchArea.SetActive(true); // OnClickAd 이전에 블로커 활성화 (콜백 순서 안전)
         _currentWatchAdButton.OnClickAd();
-        _dontTouchArea.SetActive(true);
     }
 
     private void OnAdRewarded()

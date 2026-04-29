@@ -2,7 +2,6 @@ using Muks.Tween;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -109,7 +108,7 @@ public class ObjectPoolManager : MonoBehaviour
         _uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         _uiCanvas.sortingOrder = 10;
 
-        CanvasScaler scaler = _uiCanvas.AddComponent<CanvasScaler>();
+        CanvasScaler scaler = _uiCanvas.gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
@@ -160,7 +159,6 @@ public class ObjectPoolManager : MonoBehaviour
         {
             for (int j = 0; j < _staffCount; ++j)
             {
-                DebugLog.Log("Staff Prefab: " + _staffPrefabs[i].name);
                 Staff staff = Instantiate(_staffPrefabs[i], _staffParents[i].transform);
                 _staffPools[i].Enqueue(staff);
                 staff.gameObject.SetActive(false);
@@ -306,12 +304,22 @@ public class ObjectPoolManager : MonoBehaviour
     private static void UIEffectPooling()
     {
         _uiEffectPool = new Queue<UIParticleEffect>[(int)UIEffectType.Length];
-        List<UIParticleEffect> uIParticleEffects = Resources.LoadAll<UIParticleEffect>("ObjectPool/Effect/").ToList();
+        UIParticleEffect[] uIParticleEffects = Resources.LoadAll<UIParticleEffect>("ObjectPool/Effect/");
         for (int i = 0, cnt = (int)UIEffectType.Length; i < cnt; i++)
         {
             _uiEffectPool[i] = new Queue<UIParticleEffect>();
             if (_uiEffectPrefabs[i] == null)
-                _uiEffectPrefabs[i] = uIParticleEffects.Find(x => x.Type == (UIEffectType)i);
+            {
+                UIEffectType targetType = (UIEffectType)i;
+                for (int k = 0; k < uIParticleEffects.Length; k++)
+                {
+                    if (uIParticleEffects[k].Type == targetType)
+                    {
+                        _uiEffectPrefabs[i] = uIParticleEffects[k];
+                        break;
+                    }
+                }
+            }
 
             if (_uiEffectPrefabs[i] == null)
             {
@@ -359,7 +367,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         staff = _staffPools[typeIndex].Dequeue();
-        staff.gameObject.SetActive(false);
         staff.gameObject.SetActive(true);
         staff.transform.position = pos;
         staff.transform.rotation = Quaternion.identity;
@@ -390,7 +397,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         customer = _normalCustomerPool.Dequeue();
-        customer.gameObject.SetActive(false);
         customer.gameObject.SetActive(true);
         customer.transform.position = pos;
         customer.transform.rotation = rot;
@@ -416,7 +422,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         customer = _specialCustomerPool.Dequeue();
-        customer.gameObject.SetActive(false);
         customer.gameObject.SetActive(true);
         customer.transform.position = pos;
         customer.transform.rotation = rot;
@@ -434,7 +439,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         customer = _gatecrasherCustomerPool.Dequeue();
-        customer.gameObject.SetActive(false);
         customer.gameObject.SetActive(true);
         customer.transform.position = pos;
         customer.transform.rotation = rot;
@@ -468,7 +472,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         coin = _coinPool.Dequeue();
-        coin.gameObject.SetActive(false);
         coin.gameObject.SetActive(true);
         coin.transform.position = pos;
         coin.transform.rotation = rot;
@@ -504,7 +507,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         coin = _uiCoinPool.Dequeue();
-        coin.gameObject.SetActive(false);
         coin.gameObject.SetActive(true);
         coin.transform.position = pos;
         coin.transform.rotation = rot;
@@ -532,7 +534,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         dia = _uiDiaPool.Dequeue();
-        dia.gameObject.SetActive(false);
         dia.gameObject.SetActive(true);
         dia.transform.position = pos;
         dia.transform.rotation = rot;
@@ -559,7 +560,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         score = _uiScorePool.Dequeue();
-        score.gameObject.SetActive(false);
         score.gameObject.SetActive(true);
         score.transform.position = pos;
         score.transform.rotation = rot;
@@ -589,7 +589,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         garbage = _garbagePool.Dequeue();
-        garbage.gameObject.SetActive(false);
         garbage.gameObject.SetActive(true);
         garbage.transform.position = pos;
         garbage.transform.rotation = rot;

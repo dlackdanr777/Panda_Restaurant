@@ -101,16 +101,35 @@ public class UIMain : MonoBehaviour
 
     private IEnumerator AddCustomerRoutine()
     {
-
         while (!CustomerController.IsMaxCount)
         {
             _customerController.AddCustomer();
-            //_watchAdButton.gameObject.SetActive(false);
             yield return new WaitForSeconds(0.3f);
         }
 
         OnUpdateAdButtonEvent();
     }
-    
+
+    private void OnDestroy()
+    {
+        if (_watchAdButton != null)
+        {
+            _watchAdButton.OnAdRewarded -= OnAdButtonClicked;
+            _watchAdButton.OnDiaRewarded -= OnDiaButtonClicked;
+        }
+
+        if (_customerController != null)
+        {
+            _customerController.OnChangeCustomerHandler -= OnChangeCustomerCountEvent;
+            _customerController.OnGuideCustomerHandler -= OnChangeCustomerCountEvent;
+            _customerController.OnAddCustomerHandler -= OnUpdateAdButtonEvent;
+            _customerController.OnGuideCustomerHandler -= OnUpdateAdButtonEvent;
+        }
+
+        if (TimeManager.Instance != null)
+            TimeManager.Instance.OnRemoveTimeHandler -= OnRemoveTimeEvent;
+
+        StopAllCoroutines();
+    }
 
 }

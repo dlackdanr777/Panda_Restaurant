@@ -50,6 +50,7 @@ public class UIStaff : MobileUIView
 
     private bool _isInitialized = false;
     private Vector3 _tmpScale;
+    private static readonly Vector3 _hideScale = new Vector3(0.3f, 0.3f, 0.3f);
 
     public override void Init()
     {
@@ -133,7 +134,7 @@ public class UIStaff : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = _tmpScale;
 
-        TweenData tween = _animeUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
+        TweenData tween = _animeUI.TweenScale(_hideScale, _hideDuration, _hideTweenMode);
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Disappeared;
@@ -373,17 +374,13 @@ public class UIStaff : MobileUIView
         _uiSkin.Show(_previewStaffData);
     }
 
-    // 호환성을 위한 기존 메서드들
-    private void SetStaffData(EquipStaffType type) => SetStaffDataOptimized(type);
-    private void SetStaffPreview() => SetStaffPreviewOptimized();
-    private void UpdateUI() => UpdateUIOptimized();
-
     private void OnDestroy()
     {
         UserInfo.OnChangeStaffHandler -= OnChangeStaffEvent;
         UserInfo.OnGiveStaffHandler -= UpdateUIOptimized;
         UserInfo.OnChangeMoneyHandler -= UpdateUIOptimized;
         UserInfo.OnChangeScoreHandler -= UpdateUIOptimized;
+        UserInfo.OnChangeStaffSkinHandler -= UpdateUIOptimized;
         GameManager.Instance.OnChangeScoreHandler -= UpdateUIOptimized;
     }
 }

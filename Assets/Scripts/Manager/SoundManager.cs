@@ -202,6 +202,9 @@ public class SoundManager : MonoBehaviour
 
     public void LoadSoundData()
     {
+        if (_audioMixer == null)
+            return;
+
         float masterVolume = PlayerPrefs.HasKey("MasterVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("MasterVolume"), 0, 1) : 1;
         float backgroundVolume = PlayerPrefs.HasKey("BackgroundVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("BackgroundVolume"), 0, 1) : 1;
         float soundEffectVolume = PlayerPrefs.HasKey("SoundEffectVolume") ? Mathf.Clamp(PlayerPrefs.GetFloat("SoundEffectVolume"), 0, 1) : 1;
@@ -280,10 +283,28 @@ public class SoundManager : MonoBehaviour
     {
         _savedEffectType = type;
 
+        if (_audioMixer == null)
+            return;
+
         if (_changeEffectTypeRoutine != null)
             StopCoroutine(_changeEffectTypeRoutine);
 
         _effectType = type;
+
+        // 효과음이 꺼진 상태면 모든 그룹 음소거 유지
+        float effectVolume = PlayerPrefs.HasKey("SoundEffectVolume") ? PlayerPrefs.GetFloat("SoundEffectVolume") : 1;
+        if (effectVolume <= 0)
+        {
+            _audioMixer.SetFloat("Restaurant", -80f);
+            _audioMixer.SetFloat("Hall1", -80f);
+            _audioMixer.SetFloat("Hall2", -80f);
+            _audioMixer.SetFloat("Hall3", -80f);
+            _audioMixer.SetFloat("Kitchen1", -80f);
+            _audioMixer.SetFloat("Kitchen2", -80f);
+            _audioMixer.SetFloat("Kitchen3", -80f);
+            _audioMixer.SetFloat("UI", -80f);
+            return;
+        }
 
         // Restaurant 그룹 볼륨 설정 (UI 또는 기타일 경우 0, Hall/Kitchen/Restaurant일 경우 1)
         bool isRestaurantArea = IsRestaurantAreaType(type);
@@ -483,6 +504,28 @@ public class SoundManager : MonoBehaviour
             case AudioType.EffectAudio:
                 _audioMixer.SetFloat("SoundEffect", volume);
                 SaveSoundData("SoundEffect", value);
+                if (value <= 0)
+                {
+                    // 모든 효과음 관련 믹서 그룹 음소거
+                    _audioMixer.SetFloat("Restaurant", -80f);
+                    _audioMixer.SetFloat("Hall1", -80f);
+                    _audioMixer.SetFloat("Hall2", -80f);
+                    _audioMixer.SetFloat("Hall3", -80f);
+                    _audioMixer.SetFloat("Kitchen1", -80f);
+                    _audioMixer.SetFloat("Kitchen2", -80f);
+                    _audioMixer.SetFloat("Kitchen3", -80f);
+                    _audioMixer.SetFloat("UI", -80f);
+                }
+                else
+                {
+                    // 현재 effectType에 맞게 믹서 그룹 복원
+                    if (_changeEffectTypeRoutine != null)
+                    {
+                        StopCoroutine(_changeEffectTypeRoutine);
+                        _changeEffectTypeRoutine = null;
+                    }
+                    ChangePlayEffectType(_effectType);
+                }
                 break;
         }
 
@@ -860,16 +903,16 @@ public class SoundManager : MonoBehaviour
     // 60초 주기 리셋용: 재생 중인 효과음이 있으면 보류
     private void ForceReapplyMixerState()
     {
+        foreach (var pair in _effectAudioDic)
+            foreach (var source in pair.Value)
+                if (source.isPlaying)
+                    return;
+
         if (_changeEffectTypeRoutine != null)
         {
             StopCoroutine(_changeEffectTypeRoutine);
             _changeEffectTypeRoutine = null;
         }
-
-        foreach (var pair in _effectAudioDic)
-            foreach (var source in pair.Value)
-                if (source.isPlaying)
-                    return;
 
         DebugLog.Log("[SoundManager] AudioMixer 주기 재설정: " + _savedEffectType);
         _effectType = _savedEffectType;

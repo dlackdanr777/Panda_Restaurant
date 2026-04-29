@@ -335,6 +335,18 @@ public class ServerStageData
     }
 
     // ✅ 기존 리스트를 딕셔너리로 변환 (하위 호환성)
+    // ⚠️ 리스트 인덱스는 저장 당시 enum 순서(Manager=0, Marketer=1, Waiter=2, Cleaner=3, Guard=4, Chef=5)에 고정.
+    //    현재 enum 순서가 바뀌어도 이 매핑은 변경하지 않아야 구 데이터가 올바르게 마이그레이션됩니다.
+    private static readonly string[] _legacyEquipStaffOrder = new string[]
+    {
+        "Manager",   // 0
+        "Marketer",  // 1
+        "Waiter",    // 2
+        "Cleaner",   // 3
+        "Guard",     // 4
+        "Chef",      // 5
+    };
+
     private Dictionary<string, Dictionary<string, string>> ConvertListToDictionary(List<List<string>> staffList)
     {
         Dictionary<string, Dictionary<string, string>> result = new Dictionary<string, Dictionary<string, string>>();
@@ -351,11 +363,10 @@ public class ServerStageData
             
             for (int equipIndex = 0; equipIndex < staffList[floorIndex].Count; equipIndex++)
             {
-                if (equipIndex >= (int)EquipStaffType.Length)
+                if (equipIndex >= _legacyEquipStaffOrder.Length)
                     break;
 
-                EquipStaffType equipType = (EquipStaffType)equipIndex;
-                string equipKey = equipType.ToString();
+                string equipKey = _legacyEquipStaffOrder[equipIndex];
                 string staffId = staffList[floorIndex][equipIndex];
                 
                 equipTypes[equipKey] = staffId ?? "";
