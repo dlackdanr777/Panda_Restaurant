@@ -57,7 +57,7 @@ public class ItemManager : MonoBehaviour
             GradeSortType.NameDescending => _gachaItemDataList.OrderByDescending(data => data.Name).ToList(),
             GradeSortType.GradeAscending => _gachaItemDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
             GradeSortType.GradeDescending => _gachaItemDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
-            _ => null
+            _ => _gachaItemDataList
         };
     }
 
@@ -69,7 +69,7 @@ public class ItemManager : MonoBehaviour
             GradeSortType.NameDescending => _gachaItemDataList.OrderByDescending(data => data.Name).ToList(),
             GradeSortType.GradeAscending => _gachaItemDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
             GradeSortType.GradeDescending => _gachaItemDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
-            _ => null
+            _ => _gachaItemDataList
         };
     }
 

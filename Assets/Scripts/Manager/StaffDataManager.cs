@@ -58,7 +58,7 @@ public class StaffDataManager : MonoBehaviour
     public List<StaffData> GetStaffDataList(EquipStaffType type)
     {
         int typeIndex = (int)GetStaffGroupType(type);
-        return _staffTypeDataList[(int)typeIndex];
+        return _staffTypeDataList[typeIndex];
     }
 
     public List<StaffData> GetSortStaffDataList(EquipStaffType type)

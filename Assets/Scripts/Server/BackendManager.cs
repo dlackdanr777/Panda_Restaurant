@@ -58,18 +58,27 @@ namespace Muks.BackEnd
         public bool IsLoaded => _isLoaded;
 
         public DateTime LocalTime = DateTime.Now;
-        
+
+        // ServerTime 캐시 (동기 네트워크 호출 빈도 제한)
+        private DateTime _cachedServerTime;
+        private float _serverTimeCachedAt = -9999f;
+        private const float ServerTimeCacheSeconds = 60f;
+
         public DateTime ServerTime
         {
             get
             {
+                if (Time.realtimeSinceStartup - _serverTimeCachedAt < ServerTimeCacheSeconds)
+                    return _cachedServerTime;
+
                 BackendReturnObject bro = Backend.Utils.GetServerTime();
 
                 if (bro.IsSuccess())
                 {
                     string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
-                    DateTime dateTime = DateTime.Parse(time);
-                    return dateTime;
+                    _cachedServerTime = DateTime.Parse(time);
+                    _serverTimeCachedAt = Time.realtimeSinceStartup;
+                    return _cachedServerTime;
                 }
                 else
                 {
@@ -113,57 +122,77 @@ namespace Muks.BackEnd
         {
             if (type == LogType.Exception || type == LogType.Error)
             {
-                // 치명적인 오류 패턴 확인
-                if (IsCriticalError(logString))
-                {
-                    // 광고 재생 중 발생한 오류는 ad SDK 자체 오류일 수 있으므로 팝업/저장비활성화 억제
-                    if (AdManager.HasInstance && AdManager.IsAdPlaying)
-                    {
-                        Debug.LogWarning($"[BackendManager] 광고 재생 중 예외 감지 (억제됨): {logString.Substring(0, Mathf.Min(logString.Length, 120))}");
-                        return;
-                    }
+                bool isFatal = IsFatalError(logString);
+                bool isSevere = !isFatal && IsSevereError(logString);
 
-                    string truncatedMessage = logString;
-                    if (logString.Length > 100)
-                        truncatedMessage = logString.Substring(0, 100) + "...";
+                if (!isFatal && !isSevere)
+                    return;
+
+                // 광고 재생 중 발생한 오류는 ad SDK 자체 오류일 수 있으므로 억제
+                if (AdManager.HasInstance && AdManager.IsAdPlaying)
+                {
+                    Debug.LogWarning($"[BackendManager] 광고 재생 중 예외 감지 (억제됨): {logString.Substring(0, Mathf.Min(logString.Length, 120))}");
+                    return;
+                }
+
+                // 오류 로그 업로드 시도 (무한 루프 방지를 위해 try-catch 사용)
+                try
+                {
+                    LogUpload("CriticalErrorDetails",
+                        $"오류: {logString}\n스택 트레이스: {stackTrace}");
+                }
+                catch { }
+
+                // 게임을 중단시킬 치명적 오류(메모리 부족, 스택 오버플로우 등)만 팝업+저장 비활성화
+                if (isFatal)
+                {
+                    string truncatedMessage = logString.Length > 100 ? logString.Substring(0, 100) + "..." : logString;
 
 #if !UNITY_EDITOR
                     ShowPopup("알 수 없는 오류", "오류가 발생하여 게임을 종료합니다.\n게임을 재시작 해주세요.");
-                    ShowPopupExitButton();   
+                    ShowPopupExitButton();
 #endif
 
                     DisableSaving($"치명적 오류 감지: {truncatedMessage}");
-                    
-                    // 오류 로그 업로드 시도 (무한 루프 방지를 위해 try-catch 사용)
-                    try
-                    {
-                        LogUpload("CriticalErrorDetails", 
-                            $"오류: {logString}\n스택 트레이스: {stackTrace}");
-                    }
-                    catch { }
                 }
             }
         }
-        
-        private bool IsCriticalError(string errorMessage)
+
+        // 즉시 게임을 중단시켜야 하는 치명적 오류 (저장 비활성화 + 팝업 표시)
+        private bool IsFatalError(string errorMessage)
         {
-            string[] criticalPatterns = {
-                "NullReferenceException",
-                "IndexOutOfRangeException",
-                "ArgumentNullException",
-                "MissingReferenceException",
-                "KeyNotFoundException",
+            string[] fatalPatterns = {
                 "OutOfMemoryException",
                 "StackOverflowException",
                 "AccessViolationException"
             };
-            
-            foreach (var pattern in criticalPatterns)
+
+            foreach (var pattern in fatalPatterns)
             {
                 if (errorMessage.Contains(pattern))
                     return true;
             }
-            
+
+            return false;
+        }
+
+        // 로그 업로드는 하지만 게임 진행을 막지 않는 심각한 오류
+        private bool IsSevereError(string errorMessage)
+        {
+            string[] severePatterns = {
+                "NullReferenceException",
+                "IndexOutOfRangeException",
+                "ArgumentNullException",
+                "MissingReferenceException",
+                "KeyNotFoundException"
+            };
+
+            foreach (var pattern in severePatterns)
+            {
+                if (errorMessage.Contains(pattern))
+                    return true;
+            }
+
             return false;
         }
         

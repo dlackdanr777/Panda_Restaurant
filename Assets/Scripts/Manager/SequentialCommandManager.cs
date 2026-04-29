@@ -64,8 +64,9 @@ public class SequentialCommandManager : MonoBehaviour
         if (_isExecuting || _commandQueue.Count == 0)
             return;
 
-        StartCoroutine(ExecuteCommand(_commandQueue.Min));
-        _commandQueue.Remove(_commandQueue.Min);
+        var next = _commandQueue.Min;
+        StartCoroutine(ExecuteCommand(next));
+        _commandQueue.Remove(next);
     }
 
     private IEnumerator ExecuteCommand(Command command)

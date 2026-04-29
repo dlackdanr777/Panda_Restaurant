@@ -68,7 +68,7 @@ public class SkinDataManager : MonoBehaviour
             GradeSortType.NameDescending => _skinDataList.OrderByDescending(data => data.Name).ToList(),
             GradeSortType.GradeAscending => _skinDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
             GradeSortType.GradeDescending => _skinDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
-            _ => null
+            _ => _skinDataList
         };
     }
 
@@ -80,7 +80,7 @@ public class SkinDataManager : MonoBehaviour
             GradeSortType.NameDescending => _skinDataList.OrderByDescending(data => data.Name).ToList(),
             GradeSortType.GradeAscending => _skinDataList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
             GradeSortType.GradeDescending => _skinDataList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
-            _ => null
+            _ => _skinDataList
         };
     }
 

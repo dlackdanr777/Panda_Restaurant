@@ -50,7 +50,7 @@ public class FoodDataManager : MonoBehaviour
             ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_foodDataList, true),
             ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_foodDataList, false),
             ShopSortType.None => _foodDataList,
-            _ => null
+            _ => _foodDataList
         };
     }
 

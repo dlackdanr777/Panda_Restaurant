@@ -57,7 +57,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
             ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_kitchenUtensilDataListType[(int)type], true),
             ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_kitchenUtensilDataListType[(int)type], false),
             ShopSortType.None => _kitchenUtensilDataListType[(int)type],
-            _ => null
+            _ => _kitchenUtensilDataListType[(int)type]
         };
     }
 
@@ -118,11 +118,21 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 DebugLog.Log(spriteName + "is thumbnail: " + isThumbnail);
                 if (isThumbnail)
                 {
+                    if (_thumbnailSpriteDic.ContainsKey(key))
+                    {
+                        Debug.LogWarning($"중복된 썸네일 스프라이트 키가 있습니다: {key}");
+                        continue;
+                    }
                     _thumbnailSpriteDic.Add(key, sprite);
                 }
 
                 else
                 {
+                    if (_spriteDic.ContainsKey(key))
+                    {
+                        Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
+                        continue;
+                    }
                     _spriteDic.Add(key, sprite);
                 }
 

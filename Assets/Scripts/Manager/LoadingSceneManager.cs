@@ -43,8 +43,7 @@ public class LoadingSceneManager : MonoBehaviour
 
     private IEnumerator LoadScene()
     {
-        if(!_isStart)
-        yield return null;
+        yield return new WaitUntil(() => _isStart);
 
         AsyncOperation op = SceneManager.LoadSceneAsync(_nextScene);
         op.allowSceneActivation = false;

@@ -62,7 +62,7 @@ public class FurnitureDataManager : MonoBehaviour
             ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_furnitureDataListType[(int)type], true),
             ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_furnitureDataListType[(int)type], false),
             ShopSortType.None => _furnitureDataListType[(int)type],
-            _ => null
+            _ => _furnitureDataListType[(int)type]
         };
     }
 
@@ -124,6 +124,11 @@ public class FurnitureDataManager : MonoBehaviour
                 //DebugLog.Log(spriteName);
                 if (isThumbnail)
                 {
+                    if (_thumbnailSpriteDic.ContainsKey(key))
+                    {
+                        Debug.LogWarning($"중복된 썸네일 스프라이트 키가 있습니다: {key}");
+                        continue;
+                    }
                     _thumbnailSpriteDic.Add(key, sprite);
                 }
 
@@ -133,11 +138,13 @@ public class FurnitureDataManager : MonoBehaviour
                     {
                         if (afterUnderStr.Contains("팔걸이"))
                         {
-                            _leftChairArmrestSpriteDic.Add(key, sprite);
+                            if (!_leftChairArmrestSpriteDic.ContainsKey(key))
+                                _leftChairArmrestSpriteDic.Add(key, sprite);
                         }
                         else
                         {
-                            _leftChairSpriteDic.Add(key, sprite);
+                            if (!_leftChairSpriteDic.ContainsKey(key))
+                                _leftChairSpriteDic.Add(key, sprite);
                         }
                     }
 
@@ -145,22 +152,30 @@ public class FurnitureDataManager : MonoBehaviour
                     {
                         if (afterUnderStr.Contains("팔걸이"))
                         {
-                            _rightChairArmrestSpriteDic.Add(key, sprite);
+                            if (!_rightChairArmrestSpriteDic.ContainsKey(key))
+                                _rightChairArmrestSpriteDic.Add(key, sprite);
                         }
                         else
                         {
-                            _rightChairSpriteDic.Add(key, sprite);
+                            if (!_rightChairSpriteDic.ContainsKey(key))
+                                _rightChairSpriteDic.Add(key, sprite);
                         }
                     }
                     else
                     {
-                        _leftChairSpriteDic.Add(key, sprite);
+                        if (!_leftChairSpriteDic.ContainsKey(key))
+                            _leftChairSpriteDic.Add(key, sprite);
                     }
 
                 }
 
                 else
                 {
+                    if (_spriteDic.ContainsKey(key))
+                    {
+                        Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
+                        continue;
+                    }
                     _spriteDic.Add(key, sprite);
                 }
             }
@@ -186,7 +201,7 @@ public class FurnitureDataManager : MonoBehaviour
             if (string.IsNullOrWhiteSpace(id))
             {
                 Debug.LogError("Id값이 이상합니다: " + id);
-                break;
+                continue;
             }
 
             string name = row[1].Trim();

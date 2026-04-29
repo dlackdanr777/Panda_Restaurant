@@ -59,7 +59,7 @@ public class CustomerDataManager : MonoBehaviour
         List<NormalCustomerData> returnList = new List<NormalCustomerData>();
         for(int i = 0, cnt = _normalCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.GetCustomerEnableState(_customerDataList[i].Id))
+            if (!UserInfo.GetCustomerEnableState(_normalCustomerDataList[i].Id))
                 continue;
 
             returnList.Add(_normalCustomerDataList[i]);
@@ -106,7 +106,7 @@ public class CustomerDataManager : MonoBehaviour
             GradeSortType.GradeAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
             GradeSortType.GradeDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
             GradeSortType.None => _customerDataList,
-            _ => null
+            _ => _customerDataList
         };
     }
 

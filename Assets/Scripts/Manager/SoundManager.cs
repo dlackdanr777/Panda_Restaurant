@@ -219,7 +219,7 @@ public class SoundManager : MonoBehaviour
         _audioMixer.SetFloat("Background", backgroundDB);
         _audioMixer.SetFloat("SoundEffect", soundEffectDB);
 
-        _isVibration = false;
+        _isVibration = isVibration;
     }
 
     public float GetVolume(AudioType audioType)
@@ -250,8 +250,7 @@ public class SoundManager : MonoBehaviour
 
     public void SetVibration(bool value)
     {
-        _isVibration = false;
-        //_isVibration = value;
+        _isVibration = value;
         PlayerPrefs.SetInt("IsVibration", _isVibration ? 1 : 0);
     }
 
