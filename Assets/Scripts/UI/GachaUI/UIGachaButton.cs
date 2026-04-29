@@ -18,4 +18,9 @@ public class UIGachaButton : MonoBehaviour
     {
         _gachaButton.image.material = UserInfo.GetIsClearChallenge("MainReward12") ? _noneMaterial : _grayMaterial;
     }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnClearChallengeHandler -= OnChallengeClear;
+    }
 }

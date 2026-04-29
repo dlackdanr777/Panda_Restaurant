@@ -85,7 +85,7 @@ public class UIMain : MonoBehaviour
             return;
         }
 
-        else if (_customerController.Count < 9 && _customerController.Count < GameManager.Instance.MaxWaitCustomerCount)
+        else if (_customerController.Count < GameManager.Instance.MaxWaitCustomerCount)
         {
             _customerCountImage.gameObject.SetActive(true);
             _customerMaxCountImage.SetActive(false);
@@ -104,7 +104,7 @@ public class UIMain : MonoBehaviour
         while (!CustomerController.IsMaxCount)
         {
             _customerController.AddCustomer();
-            yield return new WaitForSeconds(0.3f);
+            yield return YieldCache.WaitForSeconds(0.3f);
         }
 
         OnUpdateAdButtonEvent();

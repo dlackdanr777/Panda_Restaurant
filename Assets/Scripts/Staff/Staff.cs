@@ -243,7 +243,7 @@ public class Staff : MonoBehaviour
 
         if (_usingSkill)
         {
-            Debug.Log("스킬이 이미 사용중 입니다.");
+            DebugLog.Log("스킬이 이미 사용중 입니다.");
             return;
         }
 

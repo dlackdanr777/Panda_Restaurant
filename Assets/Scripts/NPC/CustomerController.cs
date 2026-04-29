@@ -252,6 +252,7 @@ public class CustomerController : MonoBehaviour
 
     private void Awake()
     {
+        _callCustomers.Clear();
         _breakCustomerEnabled = true;
         OnChangeCustomerHandler += UpdateWaitingCustomerSave;
     }
@@ -264,10 +265,12 @@ public class CustomerController : MonoBehaviour
     // 대기 중인 손님 ID리스트를 StageInfo에 동기화
     private void UpdateWaitingCustomerSave()
     {
-        List<string> ids = _callCustomers
-            .Where(c => c.NormalCustomerData != null)
-            .Select(c => c.NormalCustomerData.Id)
-            .ToList();
+        var ids = new List<string>();
+        for (int i = 0, cnt = _callCustomers.Count; i < cnt; i++)
+        {
+            if (_callCustomers[i].NormalCustomerData != null)
+                ids.Add(_callCustomers[i].NormalCustomerData.Id);
+        }
         UserInfo.SetWaitingCustomerIds(UserInfo.CurrentStage, ids);
     }
 

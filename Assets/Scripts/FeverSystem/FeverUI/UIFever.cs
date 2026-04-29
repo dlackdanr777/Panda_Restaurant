@@ -73,6 +73,22 @@ public class UIFever : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (_ferverSystem != null)
+        {
+            _ferverSystem.OnStartFeverHandler -= StartFeverEvent;
+            _ferverSystem.OnEndFeverHandler -= EndFeverEvent;
+        }
+
+        if (_feverAdButton != null)
+        {
+            _feverAdButton.OnAdRewarded -= OnAdButtonClicked;
+            _feverAdButton.OnDiaRewarded -= OnDiaButtonClicked;
+        }
+
+        if (TimeManager.Instance != null)
+            TimeManager.Instance.OnRemoveTimeHandler -= OnRemoveTimeEvent;
+
+        CancelInvoke(nameof(FeverAdButtonSetActive));
     }
 
     public void OnChangeGaugeNoAnime(float gaugeValue)

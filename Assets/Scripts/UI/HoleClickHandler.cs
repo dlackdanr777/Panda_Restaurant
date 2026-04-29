@@ -14,6 +14,7 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
     private string _targetName;
     private Button _selectButton;
     private ButtonPressEffect _selectButtonPress;
+    private readonly List<RaycastResult> _raycastResults = new List<RaycastResult>();
 
     public void SetActive(bool value)
     {
@@ -42,13 +43,13 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
 
         _selectButton = null;
         _selectButtonPress = null;
-        var results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(eventData, results);
+        _raycastResults.Clear();
+        EventSystem.current.RaycastAll(eventData, _raycastResults);
 
-        if (results.Count <= 0)
+        if (_raycastResults.Count <= 0)
             return;
 
-        foreach (var result in results)
+        foreach (var result in _raycastResults)
         {
             if (result.gameObject == gameObject)
                 continue;
@@ -85,13 +86,13 @@ public class HoleClickHandler : MonoBehaviour, IPointerUpHandler, IPointerDownHa
         if (!Interactable)
             return;
 
-        var results = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(eventData, results);
+        _raycastResults.Clear();
+        EventSystem.current.RaycastAll(eventData, _raycastResults);
 
-        if (results.Count <= 0)
+        if (_raycastResults.Count <= 0)
             return;
 
-        foreach (var result in results)
+        foreach (var result in _raycastResults)
         {
             if (result.gameObject == gameObject)
                 continue;

@@ -42,11 +42,7 @@ public class UIChallenge : MobileUIView
     {
         _uiDaily.Init(this, ChallengeManager.Instance.GetDailyChallenge);
         _uiAllTime.Init(this, ChallengeManager.Instance.GetAllTimeChallenge);
-        _uiDaily.Init(ChallengeManager.Instance.GetDailyChallenge());
-        _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge());
-
         _uiWeekly.Init(this, ChallengeManager.Instance.GetWeeklyChallenge);
-        _uiWeekly.Init(ChallengeManager.Instance.GetWeeklyChallenge());
 
         _uiDailyButton.onClick.AddListener(OnDailyButtonClicked);
         _uiWeeklyButton.onClick.AddListener(OnWeeklyButtonClicked);

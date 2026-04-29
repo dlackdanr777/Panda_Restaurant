@@ -22,6 +22,7 @@ public class FoodDistributionCounter : MonoBehaviour
     private List<GameObject> _foodList = new List<GameObject>();
     private List<ETableState> _beforeTableStateList = new List<ETableState>();
     private List<TableData> _tableDataList;
+    private List<System.Action<ETableState>> _tableStateHandlers = new List<System.Action<ETableState>>();
 
     public void Init(ERestaurantFloorType floor, List<TableData> tableDataList)
     {
@@ -36,7 +37,9 @@ public class FoodDistributionCounter : MonoBehaviour
             _foodList.Add(food);
 
             food.SetActive(false);
-            tableDataList[i].OnChangeTableStateHandler += (state) => OnChangeTableStateEvent();
+            System.Action<ETableState> handler = (state) => OnChangeTableStateEvent();
+            _tableStateHandlers.Add(handler);
+            tableDataList[i].OnChangeTableStateHandler += handler;
         }
 
         OnChangeTableStateEvent();
@@ -70,8 +73,15 @@ public class FoodDistributionCounter : MonoBehaviour
         else
         {
             _bubble.SetActive(true);
-            _bubbleText.SetText("x" + activeCount);
+            _bubbleText.SetText("x{0}", activeCount);
         }
+    }
+
+    private void OnDestroy()
+    {
+        if (_tableDataList == null) return;
+        for (int i = 0; i < _tableDataList.Count && i < _tableStateHandlers.Count; i++)
+            _tableDataList[i].OnChangeTableStateHandler -= _tableStateHandlers[i];
     }
 
 }

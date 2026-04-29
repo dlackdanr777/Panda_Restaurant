@@ -157,7 +157,8 @@ public class FirstTutorial : MonoBehaviour
         yield return _uiDescriptionNPC.ShowDescription1Text($"먼저 테이블을 치워주세요.");
         _uiTutorial.CustomHoleSetActive(true, 400, _table1.name, _table1.transform);
         bool isTableTouched = false;
-        _table1.OnTouchEventHandler += () => isTableTouched = true;
+        System.Action onTableTouched = () => isTableTouched = true;
+        _table1.OnTouchEventHandler += onTableTouched;
         while (!isTableTouched)
         {
             if(!_uiTutorial.GetCustomHoleActive())
@@ -165,7 +166,7 @@ public class FirstTutorial : MonoBehaviour
              yield return YieldCache.WaitForSeconds(0.02f);
         }
         _uiTutorial.CustomHoleHide();
-        _table1.OnTouchEventHandler -= () => isTableTouched = true;
+        _table1.OnTouchEventHandler -= onTableTouched;
 
         yield return _uiDescriptionNPC.ShowDescription1Text($"다음으로 바닥의 쓰레기를 치워볼까요?");
         {
