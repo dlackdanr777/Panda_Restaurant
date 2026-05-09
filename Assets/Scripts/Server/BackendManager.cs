@@ -1015,7 +1015,7 @@ namespace Muks.BackEnd
                 Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
                 return false;
             }
-            DebugLog.Log("33");
+
             // 유저 정보 조회를 위한 조건
             Where where = new Where();
             where.Equal("owner_inDate", Backend.UserInDate);

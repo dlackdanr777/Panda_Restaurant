@@ -22,10 +22,10 @@ public class UIPaymentDia : MonoBehaviour
     public void Init(UIPayment uIPayment)
     {
         _dia01Slot.Init(uIPayment, MoneyType.Dia);
-        _dia02Slot.Init(uIPayment, MoneyType.Dia, 12,  1100);
-        _dia03Slot.Init(uIPayment, MoneyType.Dia, 65, 5500);
-        _dia04Slot.Init(uIPayment, MoneyType.Dia, 140, 11000);
-        _dia05Slot.Init(uIPayment, MoneyType.Dia, 450, 33000);
-        _dia06Slot.Init(uIPayment, MoneyType.Dia, 800, 55000);
+        _dia02Slot.Init(uIPayment, MoneyType.Dia, 12,  1100,  "dia_12");
+        _dia03Slot.Init(uIPayment, MoneyType.Dia, 65,  5500,  "dia_65");
+        _dia04Slot.Init(uIPayment, MoneyType.Dia, 140, 11000, "dia_140");
+        _dia05Slot.Init(uIPayment, MoneyType.Dia, 450, 33000, "dia_450");
+        _dia06Slot.Init(uIPayment, MoneyType.Dia, 800, 55000, "dia_800");
     }
 }
