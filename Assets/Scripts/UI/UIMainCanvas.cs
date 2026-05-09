@@ -14,6 +14,8 @@ public class UIMainCanvas : MonoBehaviour
         _uiNav = GetComponent<MobileUINavigation>();
     }
 
+    
+
     void Start()
     {
         DataBind.SetUnityActionValue("PopUI", OnPopUI);
@@ -104,6 +106,11 @@ public class UIMainCanvas : MonoBehaviour
         DataBind.SetUnityActionValue("ShowFloor3UI", OnShowFloor3UI);
         DataBind.SetUnityActionValue("HideFloor3UI", OnHideFloor3UI);
         DataBind.SetUnityActionValue("HideNoAnimeFloor3UI", OnHideNoAnimeFloor3UI);
+
+        DataBind.SetUnityActionValue("ShowMailboxUI", OnShowMailboxUI);
+        DataBind.SetUnityActionValue("HideMailboxUI", OnHideMailboxUI);
+        DataBind.SetUnityActionValue("HideNoAnimeMailboxUI", OnHideNoAnimeMailboxUI);
+
 
         DataBind.SetUnityActionValue("ShowFurnitureTable1", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table1));
         DataBind.SetUnityActionValue("ShowFurnitureTable2", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table2));
@@ -470,5 +477,20 @@ public class UIMainCanvas : MonoBehaviour
     private void OnHideNoAnimeFloor3UI()
     {
         _uiNav.PopNoAnime("UIFloor3");
+    }
+
+        public void OnShowMailboxUI()
+    {
+        _uiNav.Push("UIMailbox");
+    }
+
+    private void OnHideMailboxUI()
+    {
+        _uiNav.Pop("UIMailbox");
+    }
+
+    private void OnHideNoAnimeMailboxUI()
+    {
+        _uiNav.PopNoAnime("UIMailbox");
     }
 }
