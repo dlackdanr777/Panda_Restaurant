@@ -2,6 +2,7 @@ using BackEnd;
 using Muks.BackEnd;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Purchasing;
@@ -128,7 +129,14 @@ public class IAPManager : MonoBehaviour
         }
 
         _onPurchaseSuccess = onSuccess;
-        _storeController.Purchase(productId);
+        var product  = _storeController.GetProducts().FirstOrDefault(p => p.definition.id == productId);
+        if (product == null)
+        {
+            Debug.LogError($"[IAPManager] 상품을 찾을 수 없습니다: {productId}");
+            _onPurchaseSuccess = null;
+            return;
+        }
+        _storeController.Purchase(new Cart(new CartItem(product)));
         Debug.Log($"[IAPManager] 구매 요청: {productId}");
 #endif
     }
@@ -152,6 +160,8 @@ public class IAPManager : MonoBehaviour
         string receipt   = pendingOrder.Info.Receipt;
 
         Debug.Log($"[IAPManager] 구매 완료, 영수증 검증 시작: {productId}");
+        // 에디터 테스트용 — 실기기 로그에서 아래 줄을 복사해 Inspector _testReceipt에 붙여넣으세요
+        Debug.Log($"[IAPManager][영수증 RAW] {receipt}");
         ValidateWithBackend(productId, receipt, pendingOrder);
     }
 
@@ -208,9 +218,40 @@ public class IAPManager : MonoBehaviour
 
 #if UNITY_EDITOR
     [Header("에디터 영수증 검증 테스트")]
-    [Tooltip("실기기에서 로그로 출력된 영수증 JSON 붙여넣기")]
+    [Tooltip("실기기 로그에서 복사한 영수증 JSON 붙여넣기\n" +
+             "Unity IAP 래핑 형식({\"Store\":\"GooglePlay\",...}) 또는\n" +
+             "purchaseData JSON({\"orderId\":...}) 모두 지원합니다.")]
     [SerializeField, TextArea(3, 8)] private string _testReceipt;
     [SerializeField] private string _testProductId = "dia_12";
+
+    [Serializable] private class _IAPReceiptWrapper { public string Store; public string Payload; }
+    [Serializable] private class _GooglePlayPayload  { public string json; }
+
+    /// <summary>
+    /// Unity IAP 래핑 영수증이면 내부 purchaseData(json 필드)를 추출하고,
+    /// 이미 raw purchaseData이면 그대로 반환합니다.
+    /// </summary>
+    private string ExtractPurchaseData(string receipt)
+    {
+        try
+        {
+            var wrapper = JsonUtility.FromJson<_IAPReceiptWrapper>(receipt);
+            if (!string.IsNullOrEmpty(wrapper?.Payload))
+            {
+                var payload = JsonUtility.FromJson<_GooglePlayPayload>(wrapper.Payload);
+                if (!string.IsNullOrEmpty(payload?.json))
+                {
+                    Debug.Log("[IAPManager][에디터] Unity IAP 래핑 영수증에서 purchaseData 추출 성공");
+                    return payload.json;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning($"[IAPManager][에디터] 영수증 파싱 중 예외 (원본 그대로 사용): {e.Message}");
+        }
+        return receipt;
+    }
 
     [ContextMenu("영수증 검증 테스트 실행")]
     private void EditorTestValidate()
@@ -221,11 +262,13 @@ public class IAPManager : MonoBehaviour
             return;
         }
 
+        string purchaseData = ExtractPurchaseData(_testReceipt);
         Debug.Log($"[IAPManager][에디터] 영수증 검증 테스트 시작: {_testProductId}");
+        Debug.Log($"[IAPManager][에디터] 전송할 purchaseData 앞 80자: {purchaseData[..Mathf.Min(80, purchaseData.Length)]}");
 
         BackendManager.Instance.ProcessBackendAPI(
             "에디터 영수증 검증 테스트",
-            callback => Backend.Receipt.IsValidateGooglePurchase(_testReceipt, _testProductId, bro => callback(bro)),
+            callback => Backend.Receipt.IsValidateGooglePurchase(purchaseData, _testProductId, bro => callback(bro)),
             bro =>
             {
                 Debug.Log($"[IAPManager][에디터] ✅ 검증 성공! productId={_testProductId}");

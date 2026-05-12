@@ -1,6 +1,8 @@
 using Muks.MobileUI;
 using Muks.Tween;
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -18,6 +20,12 @@ public class UIMailbox : MobileUIView
     [SerializeField] private GameObject _loadingIndicator;
 
     [Space]
+    [Header("Sort & Detail")]
+    [SerializeField] private Button _sortButton;
+    [SerializeField] private TextMeshProUGUI _sortButtonText;
+    [SerializeField] private UIMailDetailPopup _detailPopup;
+
+    [Space]
     [Header("Animations")]
     [SerializeField] private GameObject _animeUI;
     [SerializeField] private float _showDuration = 0.25f;
@@ -26,12 +34,14 @@ public class UIMailbox : MobileUIView
     [SerializeField] private Ease _hideTweenMode = Ease.InBack;
 
     private List<UIMailSlot> _slotPool = new List<UIMailSlot>();
+    private bool _sortNewest = true;
 
     public override void Init()
     {
         _closeButton.onClick.AddListener(Hide);
         _receiveAllButton.onClick.AddListener(OnReceiveAllClicked);
-        _refreshButton.onClick.AddListener(OnRefreshClicked);
+        if (_refreshButton != null) _refreshButton.onClick.AddListener(OnRefreshClicked);
+        if (_sortButton != null) _sortButton.onClick.AddListener(OnSortClicked);
 
         MailManager.Instance.OnMailListRefreshed += RefreshUI;
 
@@ -89,8 +99,13 @@ public class UIMailbox : MobileUIView
 
         var mailList = MailManager.Instance.MailList;
 
+        // 정렬: 최신순 = InDate 내림차순, 오래된순 = 오름차순
+        IEnumerable<MailData> sorted = _sortNewest
+            ? mailList.OrderByDescending(m => m.InDate)
+            : mailList.OrderBy(m => m.InDate);
+
         int shown = 0;
-        foreach (var mail in mailList)
+        foreach (var mail in sorted)
         {
             UIMailSlot slot = GetOrCreateSlot();
             slot.SetData(mail);
@@ -110,7 +125,7 @@ public class UIMailbox : MobileUIView
             _loadingIndicator.SetActive(isLoading);
 
         _receiveAllButton.interactable = !isLoading;
-        _refreshButton.interactable = !isLoading;
+        if (_refreshButton != null) _refreshButton.interactable = !isLoading;
     }
 
     #endregion
@@ -152,6 +167,47 @@ public class UIMailbox : MobileUIView
         LoadMailList();
     }
 
+    private void OnSortClicked()
+    {
+        _sortNewest = !_sortNewest;
+        if (_sortButtonText != null)
+            _sortButtonText.text = _sortNewest ? "최신순" : "오래된순";
+        RefreshUI();
+    }
+
+    private void OnSlotClicked(MailData mail)
+    {
+        if (_detailPopup == null) return;
+        _detailPopup.ShowDetail(mail, OnDetailReceive);
+    }
+
+    private void OnDetailReceive(MailData mail)
+    {
+        _detailPopup?.Hide();
+        MailManager.Instance.ReceiveMailAsync(
+            mail,
+            onSuccess: received =>
+            {
+                RefreshUI();
+                PopupManager.Instance?.ShowDisplayText(BuildRewardSummary(received));
+            },
+            onFail: () => RefreshUI()
+        );
+    }
+
+    private void OnSlotDelete(MailData mail)
+    {
+        MailManager.Instance.DeleteMailAsync(
+            mail,
+            onSuccess: () => { /* OnMailListRefreshed 이벤트로 RefreshUI 자동 호출 */ },
+            onFail: () =>
+            {
+                RefreshUI(); // 슬롯 인터랙티브 복원
+                PopupManager.Instance?.ShowDisplayText("삭제에 실패했습니다.");
+            }
+        );
+    }
+
     private void OnSlotReceive(MailData mail)
     {
         MailManager.Instance.ReceiveMailAsync(
@@ -176,7 +232,7 @@ public class UIMailbox : MobileUIView
             if (!s.gameObject.activeSelf) return s;
 
         UIMailSlot newSlot = Instantiate(_slotPrefab, _slotParent);
-        newSlot.Init(OnSlotReceive);
+        newSlot.Init(OnSlotReceive, OnSlotClicked, OnSlotDelete);
         _slotPool.Add(newSlot);
         return newSlot;
     }

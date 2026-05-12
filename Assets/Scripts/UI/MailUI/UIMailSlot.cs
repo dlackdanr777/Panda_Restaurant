@@ -13,16 +13,25 @@ public class UIMailSlot : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _expirationText;
     [SerializeField] private Button _receiveButton;
     [SerializeField] private Button _deleteButton;
+    [SerializeField] private Button _slotButton;           // 슬롯 전체 클릭 → 상세 팝업
     [SerializeField] private GameObject _receivedBadge;   // 수령 완료 표시 오브젝트
     [SerializeField] private GameObject _expiredBadge;    // 만료 표시 오브젝트
 
     private MailData _data;
     private Action<MailData> _onReceive;
+    private Action<MailData> _onSlotClick;
+    private Action<MailData> _onDelete;
 
-    public void Init(Action<MailData> onReceive)
+    public void Init(Action<MailData> onReceive, Action<MailData> onSlotClick = null, Action<MailData> onDelete = null)
     {
         _onReceive = onReceive;
+        _onSlotClick = onSlotClick;
+        _onDelete = onDelete;
         _receiveButton.onClick.AddListener(OnReceiveClicked);
+        if (_slotButton != null)
+            _slotButton.onClick.AddListener(OnSlotClicked);
+        if (_deleteButton != null)
+            _deleteButton.onClick.AddListener(OnDeleteClicked);
     }
 
     public void SetData(MailData data)
@@ -65,13 +74,26 @@ public class UIMailSlot : MonoBehaviour
         _receiveButton.gameObject.SetActive(!isReceived && !isExpired);
 
         if (_deleteButton != null)
-            _deleteButton.gameObject.SetActive(false); // 신규 API에서 삭제 미지원 (수령 시 자동 삭제)
+            _deleteButton.gameObject.SetActive(isReceived); // 수령 완료된 편지만 삭제 가능
 
         if (_receivedBadge != null)
             _receivedBadge.SetActive(isReceived);
 
         if (_expiredBadge != null)
             _expiredBadge.SetActive(isExpired && !isReceived);
+    }
+
+    private void OnSlotClicked()
+    {
+        if (_data == null) return;
+        _onSlotClick?.Invoke(_data);
+    }
+
+    private void OnDeleteClicked()
+    {
+        if (_data == null || !_data.IsReceived) return;
+        _deleteButton.interactable = false;
+        _onDelete?.Invoke(_data);
     }
 
     private void OnReceiveClicked()

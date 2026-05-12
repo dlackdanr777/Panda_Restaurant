@@ -45,6 +45,13 @@ public class UIPaymentSlot : MonoBehaviour
         // 실제 결제 (Google Play IAP)
         if (_moneyType == MoneyType.Dia && !string.IsNullOrEmpty(_productId))
         {
+            if (IAPManager.Instance == null)
+            {
+                Debug.LogError("[UIPaymentSlot] IAPManager.Instance가 null입니다. 씬에 IAPManager가 있는지 확인하세요.");
+                PopupManager.Instance?.ShowDisplayText("결제 서비스를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+                return;
+            }
+
             IAPManager.Instance.BuyProduct(_productId, diaAmount =>
             {
                 _uIPayment.AddDia(diaAmount);

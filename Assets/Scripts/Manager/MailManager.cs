@@ -221,6 +221,132 @@ public class MailManager : MonoBehaviour
     #endregion
 
     // ─────────────────────────────────────────
+    #region 메일 삭제
+
+    /// <summary>읽은(수령한) 메일을 비동기로 삭제합니다</summary>
+    public void DeleteMailAsync(MailData mail, Action onSuccess = null, Action onFail = null)
+    {
+        if (mail == null)
+        {
+            onFail?.Invoke();
+            return;
+        }
+
+        BackendManager.Instance.ProcessBackendAPI(
+            "메일 삭제",
+            callback => Backend.UPost.DeleteUserPost(mail.InDate, bro => callback(bro)),
+            bro =>
+            {
+                _mailList.Remove(mail);
+                onSuccess?.Invoke();
+                OnMailListRefreshed?.Invoke();
+                Debug.Log($"[MailManager] 메일 삭제 완료: {mail.Title}");
+            },
+            state =>
+            {
+                Debug.LogError($"[MailManager] 메일 삭제 실패: {state}");
+                onFail?.Invoke();
+            },
+            maxRetries: 1,
+            usePopup: true
+        );
+    }
+
+    #endregion
+
+    // ─────────────────────────────────────────
+    #region 보상 우편 발송 (자신에게)
+
+    /// <summary>
+    /// MailRewardConfig 기반으로 자신에게 보상 우편을 발송합니다.
+    /// 예) 튜토리얼 클리어, 업적 달성, 이벤트 보상 등
+    /// </summary>
+    public void SendRewardMailToSelfAsync(MailRewardConfig config, Action onSuccess = null, Action onFail = null)
+    {
+        if (config == null)
+        {
+            Debug.LogError("[MailManager] SendRewardMailToSelfAsync: config가 null입니다.");
+            onFail?.Invoke();
+            return;
+        }
+
+        if (string.IsNullOrEmpty(config.TableName) ||
+            string.IsNullOrEmpty(config.Column) ||
+            string.IsNullOrEmpty(config.RowInDate))
+        {
+            Debug.LogError($"[MailManager] SendRewardMailToSelfAsync: config({config.name}) 필드가 비어있습니다.");
+            onFail?.Invoke();
+            return;
+        }
+
+        PostItem postItem = new PostItem
+        {
+            TableName  = config.TableName,
+            Column     = config.Column,
+            RowInDate  = config.RowInDate
+        };
+
+        string receiverInDate = Backend.UserInDate;
+
+        BackendManager.Instance.ProcessBackendAPI(
+            $"보상 우편 발송: {config.Description}",
+            callback => Backend.UPost.SendUserPost(receiverInDate, postItem, bro => callback(bro)),
+            bro =>
+            {
+                onSuccess?.Invoke();
+                Debug.Log($"[MailManager] 보상 우편 발송 완료: {config.Description}");
+            },
+            state =>
+            {
+                Debug.LogError($"[MailManager] 보상 우편 발송 실패: {config.Description} / {state}");
+                onFail?.Invoke();
+            },
+            maxRetries: 2,
+            usePopup: false
+        );
+    }
+
+    /// <summary>
+    /// 여러 보상을 순차적으로 자신에게 발송합니다.
+    /// 모두 성공해야 onSuccess가 호출됩니다.
+    /// </summary>
+    public void SendRewardMailsToSelfAsync(MailRewardConfig[] configs, Action onSuccess = null, Action onFail = null)
+    {
+        if (configs == null || configs.Length == 0)
+        {
+            onFail?.Invoke();
+            return;
+        }
+
+        int remaining = configs.Length;
+        bool anyFailed = false;
+
+        foreach (var config in configs)
+        {
+            SendRewardMailToSelfAsync(
+                config,
+                onSuccess: () =>
+                {
+                    remaining--;
+                    if (remaining <= 0)
+                    {
+                        if (anyFailed) onFail?.Invoke();
+                        else onSuccess?.Invoke();
+                    }
+                },
+                onFail: () =>
+                {
+                    anyFailed = true;
+                    remaining--;
+                    if (remaining <= 0) onFail?.Invoke();
+                }
+            );
+        }
+    }
+
+    #endregion
+
+    // ─────────────────────────────────────────
     #region 보상 지급
 
     /// <summary>ReceivePostItem 응답 파싱 → postItems: [{item, itemCount}, ...]</summary>

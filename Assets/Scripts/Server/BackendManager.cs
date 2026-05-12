@@ -37,7 +37,8 @@ namespace Muks.BackEnd
                 {
                     GameObject obj = new GameObject("BackendManager");
                     _instance = obj.AddComponent<BackendManager>();
-                    DontDestroyOnLoad(obj);
+                    if (Application.isPlaying)
+                        DontDestroyOnLoad(obj);
                 }
 
                 return _instance;
