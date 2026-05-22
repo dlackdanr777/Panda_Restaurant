@@ -14,7 +14,7 @@ public class UIMainCanvas : MonoBehaviour
         _uiNav = GetComponent<MobileUINavigation>();
     }
 
-    
+
 
     void Start()
     {

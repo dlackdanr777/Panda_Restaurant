@@ -324,7 +324,7 @@ public class ChallengeManager : MonoBehaviour
             MoneyType moneyType = row[6].Contains("코인") || row[6].Contains("게임머니") ? MoneyType.Gold : MoneyType.Dia;
             int rewardMoney = int.TryParse(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))), out int parsedRewardMoney) ? parsedRewardMoney : 0;
             ChallengeType challengeType;
-
+    
             switch (type)
             {
                 case "TYPE01":
@@ -3734,7 +3734,7 @@ public class ChallengeManager : MonoBehaviour
 
             if (GetChallengeAchievementRate(weeklyAddMoney, data.Count) < 1)
                 continue;
-            DebugLog.Log(data.Id);
+
             switch (data.Challenges)
             {
                 case Challenges.Daily:

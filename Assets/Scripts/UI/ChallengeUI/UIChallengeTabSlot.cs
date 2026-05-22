@@ -139,7 +139,13 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             DebugLog.Log("도전과제 데이터가 슬롯에 없습니다.");
             return;
         }
-        
+
+        if (_uiChallenge == null)
+        {
+            DebugLog.LogError("UIChallenge 참조가 없습니다. SetUIChellenge()를 확인해주세요.");
+            return;
+        }
+
         if(_data.MoneyType == MoneyType.Gold)
         {
             UserInfo.AddMoney(_data.RewardMoney);

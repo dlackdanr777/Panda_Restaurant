@@ -1,3 +1,5 @@
+using BackEnd;
+using Muks.BackEnd;
 using Muks.MobileUI;
 using Muks.Tween;
 using TMPro;
@@ -35,7 +37,9 @@ public class UIsetting : MobileUIView
         _alramButton.Init(() => OnVibrationButtonClicked(false), () => OnVibrationButtonClicked(true), SoundManager.Instance.IsVibration);
         _musicButton.Init(() => SoundManager.Instance.SetVolume(0, AudioType.BackgroundAudio), () => SoundManager.Instance.SetVolume(1, AudioType.BackgroundAudio), 0 < SoundManager.Instance.GetVolume(AudioType.BackgroundAudio));
         _soundEffectButton.Init(() => SoundManager.Instance.SetVolume(0, AudioType.EffectAudio), () => SoundManager.Instance.SetVolume(1, AudioType.EffectAudio), 0 < SoundManager.Instance.GetVolume(AudioType.EffectAudio));
-        _userId.Init(UserInfo.UserId);
+        _userId.Init(BackendManager.Instance.IsLogin
+            ? (string.IsNullOrEmpty(UserInfo.GamerId) ? Backend.UserNickName : UserInfo.GamerId)
+            : "로그인안됨");
         _homePageButton.onClick.AddListener(OnHomepageButtonClicked);
         _customerServiceButton.onClick.AddListener(OnCustomerServiceButtonClicked);
         _privacyButton.onClick.AddListener(() => PopupManager.Instance.ShowDisplayText("현재 지원하지 않는 버튼입니다."));

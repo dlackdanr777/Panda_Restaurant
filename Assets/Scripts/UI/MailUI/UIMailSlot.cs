@@ -1,4 +1,5 @@
 using System;
+using BackEnd;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,31 +8,43 @@ using UnityEngine.UI;
 public class UIMailSlot : MonoBehaviour
 {
     [Header("Components")]
-    [SerializeField] private TextMeshProUGUI _titleText;
-    [SerializeField] private TextMeshProUGUI _contentText;
-    [SerializeField] private TextMeshProUGUI _rewardText;
-    [SerializeField] private TextMeshProUGUI _expirationText;
-    [SerializeField] private Button _receiveButton;
-    [SerializeField] private Button _deleteButton;
-    [SerializeField] private Button _slotButton;           // 슬롯 전체 클릭 → 상세 팝업
-    [SerializeField] private GameObject _receivedBadge;   // 수령 완료 표시 오브젝트
-    [SerializeField] private GameObject _expiredBadge;    // 만료 표시 오브젝트
+    [SerializeField] private Image _npcImage;           // NPC 이미지 (발신자에 따라 다르게 표시)
+    [SerializeField] private UIImageAndText _item;           // 아이템
+    [SerializeField] private Image _itemBackground;       // 아이템 배경 (아이템이 있는 경우)
+    [SerializeField] private TextMeshProUGUI _senderText;       // 발신자
+    [SerializeField] private TextMeshProUGUI _contentText;      // 내용
+    [SerializeField] private TextMeshProUGUI _expirationText;   // 만료일
+    [SerializeField] private Button _receiveButton;             // 받기 버튼 (아이템 있는 편지)
+    [SerializeField] private Button _readButton;                // 읽기 버튼 (아이템 없는 편지)
+    [SerializeField] private Button _slotButton;                // 슬롯 전체 클릭 → 상세 팝업
+    [SerializeField] private GameObject _unreceivedImage;      // 미수령 상태 이미지
+    [SerializeField] private GameObject _receivedImage;        // 수령 완료 이미지
+
+    [SerializeField] private Image _receivedIcon;
+    [SerializeField] private Image _readIcon;
+
+    [Space]
+    [SerializeField] private Sprite _adminSprite;       // 관리자 우편 이미지
+    [SerializeField] private Sprite _defaultNpcSprite;  // 기본 NPC 이미지
+    [SerializeField] private Sprite _diaSprite;
+    [SerializeField] private Sprite _goldSprite;
+    [SerializeField] private Sprite _unreceivedSlotSprite; // 기본 아이템 이미지 (아이콘 못 찾았을 때)
+    [SerializeField] private Sprite _receivedSlotSprite;   // 수령 완료 아이템 이미지 (아이콘 못 찾았을 때)
 
     private MailData _data;
     private Action<MailData> _onReceive;
     private Action<MailData> _onSlotClick;
-    private Action<MailData> _onDelete;
 
-    public void Init(Action<MailData> onReceive, Action<MailData> onSlotClick = null, Action<MailData> onDelete = null)
+
+    public void Init(Action<MailData> onReceive, Action<MailData> onSlotClick = null)
     {
         _onReceive = onReceive;
         _onSlotClick = onSlotClick;
-        _onDelete = onDelete;
         _receiveButton.onClick.AddListener(OnReceiveClicked);
+        if (_readButton != null)
+            _readButton.onClick.AddListener(OnReadClicked);
         if (_slotButton != null)
             _slotButton.onClick.AddListener(OnSlotClicked);
-        if (_deleteButton != null)
-            _deleteButton.onClick.AddListener(OnDeleteClicked);
     }
 
     public void SetData(MailData data)
@@ -44,23 +57,56 @@ public class UIMailSlot : MonoBehaviour
     {
         if (_data == null) return;
 
-        _titleText.text = _data.Title;
-        _contentText.text = _data.Content;
+        if (_senderText != null)  _senderText.text  = _data.Author;
+        if (_contentText != null) _contentText.text = _data.Title;
 
-        // 보상 미리보기 (GetPostList에서 items 배열 제공)
+        // ── NPC 이미지: 쿠폰 우편이거나 발신자가 "운영팀"이면 어드민 스프라이트 ──
+        if (_npcImage != null)
+        {
+            bool isAdmin = _data.PostType == PostType.Coupon || _data.Author == "운영자" || _data.Author == "운영팀";
+            _npcImage.sprite = isAdmin ? _adminSprite : _defaultNpcSprite;
+        }
+
+        // ── 아이템 아이콘 & 텍스트 ───────────────────────────────────────────
         if (_data.Items.Count > 0)
         {
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            System.Text.StringBuilder names  = new System.Text.StringBuilder();
+            System.Text.StringBuilder counts = new System.Text.StringBuilder();
             foreach (var item in _data.Items)
-                sb.Append($"{item.ItemName} x{item.ItemCount}  ");
-            _rewardText.text = sb.ToString().TrimEnd();
+            {
+                names.AppendLine(item.ItemName);
+                counts.AppendLine($"x{Utility.ConvertToMoney(item.ItemCount)}");
+            }
+            if (_item != null)
+            {
+                _item.SetText(counts.ToString().TrimEnd());
+            }
+
+            // 첫 번째 아이템 기준으로 아이콘 결정
+            if (_item != null)
+            {
+                string firstId = _data.Items[0].ItemName;
+                Sprite icon = GetItemSprite(firstId);
+                if (icon != null)
+                {
+                    _item.SetSprite(icon);
+                    _item.gameObject.SetActive(true);
+                }
+                else
+                {
+                    _item.gameObject.SetActive(false);
+                }
+            }
         }
         else
         {
-            _rewardText.text = "보상 없음";
+            if (_item != null)
+            {
+                _item.SetText(string.Empty);
+            }
+            if (_item != null) _item.gameObject.SetActive(false);
         }
 
-        // 만료일
         if (_expirationText != null)
         {
             _expirationText.text = _data.ExpirationDate != System.DateTime.MaxValue
@@ -68,19 +114,42 @@ public class UIMailSlot : MonoBehaviour
                 : string.Empty;
         }
 
-        bool isExpired  = _data.IsExpired;
         bool isReceived = _data.IsReceived;
+        bool isExpired  = _data.IsExpired;
+        bool hasItem    = _data.Items != null && _data.Items.Count > 0;
 
-        _receiveButton.gameObject.SetActive(!isReceived && !isExpired);
+        // 아이템 있는 미수령: 받기 버튼 / 아이템 없는 미수령: 읽기 버튼
+        bool canReceive = !isReceived && !isExpired && hasItem;
+        bool canRead    = !isReceived && !isExpired && !hasItem;
+        _receiveButton.gameObject.SetActive(canReceive);
+        if (_readButton != null) _readButton.gameObject.SetActive(canRead);
 
-        if (_deleteButton != null)
-            _deleteButton.gameObject.SetActive(isReceived); // 수령 완료된 편지만 삭제 가능
+        if (_receivedIcon != null) _receivedIcon.gameObject.SetActive(hasItem && isReceived);
+        if (_readIcon != null)     _readIcon.gameObject.SetActive(!hasItem && isReceived);
+        
+        if (_itemBackground != null)
+        {
+            _itemBackground.gameObject.SetActive(hasItem);
+            if (hasItem) _itemBackground.sprite = isReceived ? _receivedSlotSprite : _unreceivedSlotSprite;
+        }
+    }
 
-        if (_receivedBadge != null)
-            _receivedBadge.SetActive(isReceived);
+    /// <summary>아이템 ID로 스프라이트를 반환합니다. 해당 없으면 null.</summary>
+    private Sprite GetItemSprite(string itemId)
+    {
+        if (string.IsNullOrEmpty(itemId)) return null;
 
-        if (_expiredBadge != null)
-            _expiredBadge.SetActive(isExpired && !isReceived);
+        if (itemId == "Dia" || itemId == "다이아") return _diaSprite;
+        if (itemId == "Gold" || itemId == "코인")  return _goldSprite;
+
+        try { return ItemManager.Instance.GetGachaItemData(itemId)?.Sprite; } catch { }
+        try { return FurnitureDataManager.Instance.GetFurnitureData(itemId)?.ThumbnailSprite; } catch { }
+        try { return KitchenUtensilDataManager.Instance.GetKitchenUtensilData(itemId)?.ThumbnailSprite; } catch { }
+        try { return StaffDataManager.Instance.GetStaffData(itemId)?.Sprite; } catch { }
+        try { return SkinDataManager.Instance.GetCustomerSkinData(itemId)?.Sprite; } catch { }
+        try { return SkinDataManager.Instance.GetStaffSkinData(itemId)?.Sprite; } catch { }
+
+        return null;
     }
 
     private void OnSlotClicked()
@@ -89,11 +158,12 @@ public class UIMailSlot : MonoBehaviour
         _onSlotClick?.Invoke(_data);
     }
 
-    private void OnDeleteClicked()
+    private void OnReadClicked()
     {
-        if (_data == null || !_data.IsReceived) return;
-        _deleteButton.interactable = false;
-        _onDelete?.Invoke(_data);
+        DebugLog.Log($"[UIMailSlot] OnReadClicked - mail={_data?.Title}, isReceived={_data?.IsReceived}, onSlotClick null={_onSlotClick == null}");
+        if (_data == null || _data.IsReceived || _data.IsExpired) return;
+        _readButton.interactable = false;
+        _onSlotClick?.Invoke(_data);
     }
 
     private void OnReceiveClicked()

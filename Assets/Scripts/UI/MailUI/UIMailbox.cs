@@ -1,5 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -11,18 +12,16 @@ public class UIMailbox : MobileUIView
 {
     [Header("Components")]
     [SerializeField] private GameObject _dontTouchArea;
-    [SerializeField] private Button _closeButton;
     [SerializeField] private Button _receiveAllButton;
-    [SerializeField] private Button _refreshButton;
+    [SerializeField] private Button _deleteReadButton;
     [SerializeField] private Transform _slotParent;
     [SerializeField] private UIMailSlot _slotPrefab;
-    [SerializeField] private GameObject _emptyNotice;
     [SerializeField] private GameObject _loadingIndicator;
 
     [Space]
     [Header("Sort & Detail")]
-    [SerializeField] private Button _sortButton;
-    [SerializeField] private TextMeshProUGUI _sortButtonText;
+    [SerializeField] private UIButtonAndText _sortButton;
+    [SerializeField] private TextMeshProUGUI _mailCountText;
     [SerializeField] private UIMailDetailPopup _detailPopup;
 
     [Space]
@@ -38,29 +37,34 @@ public class UIMailbox : MobileUIView
 
     public override void Init()
     {
-        _closeButton.onClick.AddListener(Hide);
         _receiveAllButton.onClick.AddListener(OnReceiveAllClicked);
-        if (_refreshButton != null) _refreshButton.onClick.AddListener(OnRefreshClicked);
-        if (_sortButton != null) _sortButton.onClick.AddListener(OnSortClicked);
+        if (_deleteReadButton != null) _deleteReadButton.onClick.AddListener(OnDeleteReadClicked);
+        if (_sortButton != null) _sortButton.AddListener(OnSortToggled);
 
         MailManager.Instance.OnMailListRefreshed += RefreshUI;
 
         gameObject.SetActive(false);
+        _detailPopup.Init();
     }
 
     public override void Show()
     {
+        StopAllCoroutines();
+        _detailPopup.gameObject.SetActive(false);
         _animeUI.TweenStop();
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
-        if(_dontTouchArea != null) _dontTouchArea.SetActive(true);
-        TweenData tween = _animeUI.TweenScale(new Vector3(1f, 1f, 1f), _showDuration, _showTweenMode);
-        tween.OnComplete(() =>
+
+        if (_dontTouchArea != null) _dontTouchArea.SetActive(true);
+        TweenData showTween = _animeUI.TweenScale(new Vector3(1f, 1f, 1f), _showDuration, _showTweenMode);
+
+        showTween.OnComplete(() =>
         {
+
             VisibleState = VisibleState.Appeared;
-            if(_dontTouchArea != null) _dontTouchArea.SetActive(false);
+            if (_dontTouchArea != null) _dontTouchArea.SetActive(false);
         });
 
         LoadMailList();
@@ -68,11 +72,11 @@ public class UIMailbox : MobileUIView
 
     public override void Hide()
     {
+        _detailPopup.gameObject.SetActive(false);
         _animeUI.TweenStop();
         VisibleState = VisibleState.Disappearing;
         if (_dontTouchArea != null) _dontTouchArea.SetActive(true);
         _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
-
         TweenData tween = _animeUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
         tween.OnComplete(() =>
         {
@@ -113,10 +117,17 @@ public class UIMailbox : MobileUIView
             shown++;
         }
 
-        if (_emptyNotice != null)
-            _emptyNotice.SetActive(shown == 0);
+        if (_mailCountText != null)
+            _mailCountText.text = $"{shown}/100";
 
         _receiveAllButton.interactable = MailManager.Instance.UnreceivedCount > 0;
+
+        // 읽은 편지가 있을 때만 삭제 버튼 표시
+        if (_deleteReadButton != null)
+        {
+            bool hasRead = MailManager.Instance.MailList.Any(m => m.IsReceived);
+            _deleteReadButton.gameObject.SetActive(hasRead);
+        }
     }
 
     private void SetLoading(bool isLoading)
@@ -125,7 +136,6 @@ public class UIMailbox : MobileUIView
             _loadingIndicator.SetActive(isLoading);
 
         _receiveAllButton.interactable = !isLoading;
-        if (_refreshButton != null) _refreshButton.interactable = !isLoading;
     }
 
     #endregion
@@ -162,23 +172,42 @@ public class UIMailbox : MobileUIView
         MailManager.Instance.ReceiveAllCouponMailAsync(onDone, onFail);
     }
 
-    private void OnRefreshClicked()
-    {
-        LoadMailList();
-    }
-
-    private void OnSortClicked()
+    private void OnSortToggled()
     {
         _sortNewest = !_sortNewest;
-        if (_sortButtonText != null)
-            _sortButtonText.text = _sortNewest ? "최신순" : "오래된순";
+        if (_sortButton != null)
+            _sortButton.SetText(_sortNewest ? "최신순" : "오래된순");
         RefreshUI();
+    }
+
+    private void OnDeleteReadClicked()
+    {
+        if (_deleteReadButton != null) _deleteReadButton.interactable = false;
+        SetLoading(true);
+        MailManager.Instance.DeleteAllReadMailAsync(onSuccess: () =>
+        {
+            SetLoading(false);
+            PopupManager.Instance?.ShowDisplayText("읽은 편지를 삭제했습니다.");
+        });
     }
 
     private void OnSlotClicked(MailData mail)
     {
+        DebugLog.Log($"[UIMailbox] OnSlotClicked - mail={mail?.Title}, detailPopup null={_detailPopup == null}");
         if (_detailPopup == null) return;
+
+        // 팝업을 먼저 열고 → 아이템 없는 미수령 편지는 자동 수령 처리
         _detailPopup.ShowDetail(mail, OnDetailReceive);
+        DebugLog.Log("[UIMailbox] ShowDetail 호출 완료");
+
+        if ((mail.Items == null || mail.Items.Count == 0) && !mail.IsReceived && !mail.IsExpired)
+        {
+            MailManager.Instance.ReceiveMailAsync(
+                mail,
+                onSuccess: _ => RefreshUI(),
+                onFail: () => RefreshUI()
+            );
+        }
     }
 
     private void OnDetailReceive(MailData mail)
@@ -192,19 +221,6 @@ public class UIMailbox : MobileUIView
                 PopupManager.Instance?.ShowDisplayText(BuildRewardSummary(received));
             },
             onFail: () => RefreshUI()
-        );
-    }
-
-    private void OnSlotDelete(MailData mail)
-    {
-        MailManager.Instance.DeleteMailAsync(
-            mail,
-            onSuccess: () => { /* OnMailListRefreshed 이벤트로 RefreshUI 자동 호출 */ },
-            onFail: () =>
-            {
-                RefreshUI(); // 슬롯 인터랙티브 복원
-                PopupManager.Instance?.ShowDisplayText("삭제에 실패했습니다.");
-            }
         );
     }
 
@@ -232,7 +248,7 @@ public class UIMailbox : MobileUIView
             if (!s.gameObject.activeSelf) return s;
 
         UIMailSlot newSlot = Instantiate(_slotPrefab, _slotParent);
-        newSlot.Init(OnSlotReceive, OnSlotClicked, OnSlotDelete);
+        newSlot.Init(OnSlotReceive, OnSlotClicked);
         _slotPool.Add(newSlot);
         return newSlot;
     }

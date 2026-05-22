@@ -487,6 +487,14 @@ namespace Muks.BackEnd
                     if (bro == null || !bro.IsSuccess())
                     {
                         Debug.LogError("[BackendManager] 게스트 로그인 실패: " + bro?.GetMessage());
+                        if (bro.GetStatusCode() == "403")
+                        {
+                            Debug.LogWarning("[BackendManager] 접근 차단된 계정입니다.");
+                            ShowPopup("접근 차단", "이 계정은 접근이 차단되었습니다.\n자세한 문의는 고객센터를 이용해주세요.");
+                            ShowPopupExitButton();
+                            return; // 재시도 팝업 없이 종료 버튼만 노출
+                        }
+
                         if (bro.GetStatusCode() == "401")
                         {
                             Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
@@ -527,6 +535,30 @@ namespace Muks.BackEnd
                 3,
                 true
             );
+        }
+
+        /// <summary>
+        /// 뒤끝 서버에서 유저의 gamerId(UUID)를 조회해 UserInfo.GamerId에 저장합니다.
+        /// 로그인 직후 한 번 호출하면 이후 모든 UI에서 재사용할 수 있습니다.
+        /// </summary>
+        public void FetchGamerIdAsync(Action onSuccess = null, Action onFail = null)
+        {
+            Backend.BMember.GetUserInfo((bro) =>
+            {
+                if (bro.IsSuccess())
+                {
+                    string gamerId = bro.GetReturnValuetoJSON()["row"]["gamerId"]?.ToString();
+                    if (!string.IsNullOrEmpty(gamerId))
+                        UserInfo.SetGamerId(gamerId);
+                    Debug.Log($"[BackendManager] GamerId 조회 완료: {gamerId}");
+                    onSuccess?.Invoke();
+                }
+                else
+                {
+                    Debug.LogWarning("[BackendManager] GamerId 조회 실패: " + bro.GetMessage());
+                    onFail?.Invoke();
+                }
+            });
         }
 
 

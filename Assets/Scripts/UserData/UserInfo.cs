@@ -83,6 +83,9 @@ public static class UserInfo
     private static string _userId;
     public static string UserId => _userId;
 
+    private static string _gamerId;
+    public static string GamerId => _gamerId;
+
     private static string _firstAccessTime;
     public static string FirstAccessTime => _firstAccessTime;
 
@@ -641,7 +644,7 @@ public static class UserInfo
         _weeklyCleanCount = loadData.WeeklyCleanCount;
         _weeklyExterminationGatecrasherCustomerCount = loadData.WeeklyExterminationGatecrasherCustomerCount;
 
-        _userId = string.IsNullOrWhiteSpace(loadData.UserId) || !loadData.UserId.StartsWith("User") ? "User" + UnityEngine.Random.Range(10000000, 20000000) : loadData.UserId;
+        _userId = string.IsNullOrWhiteSpace(loadData.UserId) ? string.Empty : loadData.UserId;
         _firstAccessTime = loadData.FirstAccessTime;
         _lastAccessTime = loadData.LastAccessTime;
         _lastAttendanceTime = loadData.LastAttendanceTime;
@@ -744,11 +747,18 @@ public static class UserInfo
         DebugLog.Log("데이터 로드 완료");
     }
 
+    public static void SetUserId(string id)
+    {
+        _userId = id;
+    }
+
+    public static void SetGamerId(string id)
+    {
+        _gamerId = id;
+    }
+
     public static void SetFirstAccessTime(DateTime time)
     {
-        if (string.IsNullOrWhiteSpace(_userId))
-            _userId = "User" + UnityEngine.Random.Range(10000000, 20000000);
-
         AddDia(100);
         AddMoney(15000);
         _firstAccessTime = time.ToString();

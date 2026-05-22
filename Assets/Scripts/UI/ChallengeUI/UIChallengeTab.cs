@@ -38,6 +38,7 @@ public class UIChallengeTab : MonoBehaviour
         _uiChallengeTabSlotList.Clear();
 
         // 새 슬롯들 생성
+        DebugLog.Log($"[UIChallengeTab] CreateSlots - 데이터 수: {_dataList.Count}");
         for (int i = 0; i < _dataList.Count; i++)
         {
             UIChallengeTabSlot slot = Instantiate(_slotPrefab, _contentRect);
@@ -60,6 +61,7 @@ public class UIChallengeTab : MonoBehaviour
         for (int i = currentSlots; i < requiredSlots; i++)
         {
             UIChallengeTabSlot slot = Instantiate(_slotPrefab, _contentRect);
+            slot.Init();
             slot.SetUIChellenge(_uiChallenge);
             _uiChallengeTabSlotList.Add(slot);
         }

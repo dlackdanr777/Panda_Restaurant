@@ -55,6 +55,9 @@ public class FirstLoadingScene : MonoBehaviour
 
                 BackendManager.Instance.GuestLoginAsync((bro) =>
                            {
+                                // UUID(gamerId) 조회 - 실패해도 게임 진행
+                                BackendManager.Instance.FetchGamerIdAsync();
+
                                 using(new VersionManagement())
                                 {
                                    if(!new VersionManagement().UpdateCheck())
@@ -68,16 +71,19 @@ public class FirstLoadingScene : MonoBehaviour
                                    UserInfo.LoadGameData(bro);
                                    UserInfo.LoadStageDataAsync();
                                    PaymentInfo.LoadPaymentData();
-                                   Tween.Wait(0.7f, () =>
+                                   AssignRandomNicknameIfNeeded(() =>
                                    {
-                                       _uiFirstLoadingScene.HideTitle(() =>
+                                       Tween.Wait(0.7f, () =>
                                        {
-                                           if (UserInfo.IsFirstTutorialClear)
-                                               Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
-                                           else
-                                               Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("IntroScene"));
+                                           _uiFirstLoadingScene.HideTitle(() =>
+                                           {
+                                               if (UserInfo.IsFirstTutorialClear)
+                                                   Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
+                                               else
+                                                   Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("IntroScene"));
 
-                                        //Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
+                                            //Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
+                                           });
                                        });
                                    });
                                }, (state) =>
@@ -95,6 +101,54 @@ public class FirstLoadingScene : MonoBehaviour
                                BackendManager.Instance.ShowPopupExitButton();
                            });
             });
+        });
+    }
+
+    private void AssignRandomNicknameIfNeeded(System.Action onComplete)
+    {
+        if (!string.IsNullOrWhiteSpace(UserInfo.UserId))
+        {
+            onComplete?.Invoke();
+            return;
+        }
+        TryCreateRandomNickname(onComplete, 10);
+    }
+
+    private void TryCreateRandomNickname(System.Action onComplete, int retriesLeft)
+    {
+        if (retriesLeft <= 0)
+        {
+            Debug.LogError("[FirstLoadingScene] 닉네임 생성 실패: 최대 재시도 횟수 초과");
+            onComplete?.Invoke();
+            return;
+        }
+
+        string candidate = "User" + UnityEngine.Random.Range(10000000, 20000000);
+        Backend.BMember.CheckNicknameDuplication(candidate, (checkBro) =>
+        {
+            if (checkBro.IsSuccess())
+            {
+                Backend.BMember.CreateNickname(candidate, (createBro) =>
+                {
+                    if (createBro.IsSuccess())
+                    {
+                        UserInfo.SetUserId(candidate);
+                        BackendManager.Instance.SaveGameDataAsync("GameData", UserInfo.GetSaveUserData());
+                        Debug.Log($"[FirstLoadingScene] 닉네임 생성 완료: {candidate}");
+                        onComplete?.Invoke();
+                    }
+                    else
+                    {
+                        Debug.LogError($"[FirstLoadingScene] 닉네임 생성 실패, 재시도: {createBro.GetMessage()}");
+                        TryCreateRandomNickname(onComplete, retriesLeft - 1);
+                    }
+                });
+            }
+            else
+            {
+                Debug.Log($"[FirstLoadingScene] 닉네임 중복 또는 오류, 재시도: {checkBro.GetMessage()}");
+                TryCreateRandomNickname(onComplete, retriesLeft - 1);
+            }
         });
     }
 

@@ -40,9 +40,14 @@ public class UIChallenge : MobileUIView
 
     public override void Init()
     {
+        // UIChallenge 참조를 먼저 설정한 뒤 슬롯 생성
         _uiDaily.Init(this, ChallengeManager.Instance.GetDailyChallenge);
         _uiAllTime.Init(this, ChallengeManager.Instance.GetAllTimeChallenge);
         _uiWeekly.Init(this, ChallengeManager.Instance.GetWeeklyChallenge);
+
+        _uiDaily.Init(ChallengeManager.Instance.GetDailyChallenge());
+        _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge());
+        _uiWeekly.Init(ChallengeManager.Instance.GetWeeklyChallenge());
 
         _uiDailyButton.onClick.AddListener(OnDailyButtonClicked);
         _uiWeeklyButton.onClick.AddListener(OnWeeklyButtonClicked);

@@ -295,7 +295,6 @@ public class FurnitureDataManager : MonoBehaviour
             string attribute = row[2].Trim();
             FoodType foodType = Utility.GetFoodType(attribute);
             string setId = (row[3].Trim());
-            DebugLog.Log(row[4].Trim());
             int table1AddScore = int.Parse(row[4].Trim());
             int table1EffectValue = int.Parse(row[5].Trim());
 
