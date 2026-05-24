@@ -218,7 +218,7 @@ public class UIMailbox : MobileUIView
             onSuccess: received =>
             {
                 RefreshUI();
-                PopupManager.Instance?.ShowDisplayText(BuildRewardSummary(received));
+                PopupManager.Instance?.ShowDisplayText("보상을 수령했습니다!");
             },
             onFail: () => RefreshUI()
         );
@@ -231,7 +231,7 @@ public class UIMailbox : MobileUIView
             onSuccess: received =>
             {
                 RefreshUI();
-                PopupManager.Instance?.ShowDisplayText(BuildRewardSummary(received));
+                PopupManager.Instance?.ShowDisplayText("보상을 수령했습니다!");
             },
             onFail: () => RefreshUI()
         );

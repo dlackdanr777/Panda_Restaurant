@@ -848,7 +848,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cbd59f93efffe8a47b29fb1fc5074d11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _targetScale: {x: 0.9, y: 0.9, z: 0.9}
+  _targetScale: {x: 0.95, y: 0.95, z: 0.95}
   _pressDuration: 0.15
   _buttonDownTweenMode: 23
   _buttonUpTweenMode: 22

@@ -47,7 +47,7 @@ public class UIMailDetailPopup : MonoBehaviour
         DebugLog.Log($"메일 상세 팝업 Show: {mail.Title} (받기 가능: {!mail.IsReceived && !mail.IsExpired && mail.Items != null && mail.Items.Count > 0})");
         // 발신자
         if (_senderText != null)
-            _senderText.text = mail.Author;
+            _senderText.text = GetAuthorDisplayName(mail.Author);
 
         // 제목
         if (_titleText != null)
@@ -60,8 +60,27 @@ public class UIMailDetailPopup : MonoBehaviour
         // NPC 이미지
         if (_npcImage != null)
         {
-            bool isAdmin = mail.PostType == PostType.Coupon || mail.Author == "운영팀";
-            _npcImage.sprite = isAdmin ? _adminSprite : _defaultNpcSprite;
+            bool isAdmin = mail.PostType == PostType.Coupon || mail.Author == "운영팀" || mail.Author == "운영자";
+            if (isAdmin)
+            {
+                _npcImage.sprite = _adminSprite;
+            }
+            else if (mail.Author.StartsWith("STAFF", System.StringComparison.OrdinalIgnoreCase))
+            {
+                Sprite staffSprite = null;
+                try { staffSprite = StaffDataManager.Instance.GetStaffData(mail.Author)?.Sprite; } catch { }
+                _npcImage.sprite = staffSprite != null ? staffSprite : _defaultNpcSprite;
+            }
+            else if (mail.Author.StartsWith("CUSTOMER", System.StringComparison.OrdinalIgnoreCase))
+            {
+                Sprite customerSprite = null;
+                try { customerSprite = CustomerDataManager.Instance.GetCustomerData(mail.Author)?.ThumbnailSprite; } catch { }
+                _npcImage.sprite = customerSprite != null ? customerSprite : _defaultNpcSprite;
+            }
+            else
+            {
+                _npcImage.sprite = _defaultNpcSprite;
+            }
         }
 
         // 아이템 아이콘 & 수량
@@ -151,6 +170,21 @@ public class UIMailDetailPopup : MonoBehaviour
         _onReceive?.Invoke(_currentMail);
     }
 
+    /// <summary>발신자 ID를 표시 이름으로 변환합니다.</summary>
+    private string GetAuthorDisplayName(string author)
+    {
+        if (string.IsNullOrEmpty(author)) return author;
+        if (author.StartsWith("STAFF", System.StringComparison.OrdinalIgnoreCase))
+        {
+            try { string n = StaffDataManager.Instance.GetStaffData(author)?.Name; if (!string.IsNullOrEmpty(n)) return n; } catch { }
+        }
+        else if (author.StartsWith("CUSTOMER", System.StringComparison.OrdinalIgnoreCase))
+        {
+            try { string n = CustomerDataManager.Instance.GetCustomerData(author)?.Name; if (!string.IsNullOrEmpty(n)) return n; } catch { }
+        }
+        return author;
+    }
+
     /// <summary>아이템 ID로 스프라이트를 반환합니다. 해당 없으면 null.</summary>
     private Sprite GetItemSprite(string itemId)
     {
@@ -160,6 +194,7 @@ public class UIMailDetailPopup : MonoBehaviour
         if (itemId == "Gold" || itemId == "코인")  return _goldSprite;
 
         try { return ItemManager.Instance.GetGachaItemData(itemId)?.Sprite; } catch { }
+        try { return FoodDataManager.Instance.GetFoodData(itemId)?.ThumbnailSprite; } catch { }
         try { return FurnitureDataManager.Instance.GetFurnitureData(itemId)?.ThumbnailSprite; } catch { }
         try { return KitchenUtensilDataManager.Instance.GetKitchenUtensilData(itemId)?.ThumbnailSprite; } catch { }
         try { return StaffDataManager.Instance.GetStaffData(itemId)?.Sprite; } catch { }

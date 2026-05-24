@@ -644,7 +644,19 @@ public class MailManager : MonoBehaviour
             }
         }
         catch { }
-
+        // ?? 음식(레시피) ???????????????????????????????????????????????
+        try
+        {
+            FoodData foodData = FoodDataManager.Instance.GetFoodData(itemId);
+            if (foodData != null)
+            {
+                for (int i = 0; i < itemCount; i++)
+                    UserInfo.GiveRecipe(foodData);
+                Debug.Log($"[MailManager] 음식 레시피 {itemId} x{itemCount} 지급");
+                return;
+            }
+        }
+        catch { }
         Debug.LogWarning($"[MailManager] 알 수 없는 아이템 ID: {itemId} x{itemCount}");
     }
 

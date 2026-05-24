@@ -57,14 +57,33 @@ public class UIMailSlot : MonoBehaviour
     {
         if (_data == null) return;
 
-        if (_senderText != null)  _senderText.text  = _data.Author;
+        if (_senderText != null)  _senderText.text  = GetAuthorDisplayName(_data.Author);
         if (_contentText != null) _contentText.text = _data.Title;
 
         // ── NPC 이미지: 쿠폰 우편이거나 발신자가 "운영팀"이면 어드민 스프라이트 ──
         if (_npcImage != null)
         {
             bool isAdmin = _data.PostType == PostType.Coupon || _data.Author == "운영자" || _data.Author == "운영팀";
-            _npcImage.sprite = isAdmin ? _adminSprite : _defaultNpcSprite;
+            if (isAdmin)
+            {
+                _npcImage.sprite = _adminSprite;
+            }
+            else if (_data.Author.StartsWith("STAFF", System.StringComparison.OrdinalIgnoreCase))
+            {
+                Sprite staffSprite = null;
+                try { staffSprite = StaffDataManager.Instance.GetStaffData(_data.Author)?.Sprite; } catch { }
+                _npcImage.sprite = staffSprite != null ? staffSprite : _defaultNpcSprite;
+            }
+            else if (_data.Author.StartsWith("CUSTOMER", System.StringComparison.OrdinalIgnoreCase))
+            {
+                Sprite customerSprite = null;
+                try { customerSprite = CustomerDataManager.Instance.GetCustomerData(_data.Author)?.ThumbnailSprite; } catch { }
+                _npcImage.sprite = customerSprite != null ? customerSprite : _defaultNpcSprite;
+            }
+            else
+            {
+                _npcImage.sprite = _defaultNpcSprite;
+            }
         }
 
         // ── 아이템 아이콘 & 텍스트 ───────────────────────────────────────────
@@ -134,6 +153,21 @@ public class UIMailSlot : MonoBehaviour
         }
     }
 
+    /// <summary>발신자 ID를 표시 이름으로 변환합니다.</summary>
+    private string GetAuthorDisplayName(string author)
+    {
+        if (string.IsNullOrEmpty(author)) return author;
+        if (author.StartsWith("STAFF", System.StringComparison.OrdinalIgnoreCase))
+        {
+            try { string n = StaffDataManager.Instance.GetStaffData(author)?.Name; if (!string.IsNullOrEmpty(n)) return n; } catch { }
+        }
+        else if (author.StartsWith("CUSTOMER", System.StringComparison.OrdinalIgnoreCase))
+        {
+            try { string n = CustomerDataManager.Instance.GetCustomerData(author)?.Name; if (!string.IsNullOrEmpty(n)) return n; } catch { }
+        }
+        return author;
+    }
+
     /// <summary>아이템 ID로 스프라이트를 반환합니다. 해당 없으면 null.</summary>
     private Sprite GetItemSprite(string itemId)
     {
@@ -143,6 +177,7 @@ public class UIMailSlot : MonoBehaviour
         if (itemId == "Gold" || itemId == "코인")  return _goldSprite;
 
         try { return ItemManager.Instance.GetGachaItemData(itemId)?.Sprite; } catch { }
+        try { return FoodDataManager.Instance.GetFoodData(itemId)?.ThumbnailSprite; } catch { }
         try { return FurnitureDataManager.Instance.GetFurnitureData(itemId)?.ThumbnailSprite; } catch { }
         try { return KitchenUtensilDataManager.Instance.GetKitchenUtensilData(itemId)?.ThumbnailSprite; } catch { }
         try { return StaffDataManager.Instance.GetStaffData(itemId)?.Sprite; } catch { }
