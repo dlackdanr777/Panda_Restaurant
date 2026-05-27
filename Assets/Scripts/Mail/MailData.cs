@@ -21,6 +21,7 @@ public class MailData
     public string Author { get; private set; }
     public DateTime ExpirationDate { get; private set; }
     public bool IsReceived { get; private set; }
+    public bool IsHidden { get; private set; }
     public List<MailItem> Items { get; private set; }
 
     /// <summary>GameData 수령 이력 레코드의 inDate (이력 메일만 설정됨)</summary>
@@ -113,12 +114,16 @@ public class MailData
     private MailData() { }
 
     public void SetReceived() => IsReceived = true;
+    public void SetHidden() => IsHidden = true;
 
     public void SetHistoryInDate(string histInDate)
     {
         HistoryInDate = histInDate;
         IsFromHistory = !string.IsNullOrEmpty(histInDate);
     }
+
+    /// <summary>UPost 메일에 이력 레코드 inDate만 연결합니다. IsFromHistory는 변경하지 않습니다.</summary>
+    public void LinkHistoryRecord(string histInDate) => HistoryInDate = histInDate;
 
     /// <summary>GameData에 저장할 Param 직렬화</summary>
     public Param ToHistoryParam()
@@ -141,7 +146,9 @@ public class MailData
         }
         sb.Append("]");
         p.Add("items", sb.ToString());
-        p.Add("receivedAt", DateTime.UtcNow.ToString("O"));
+        p.Add("isReceived", IsReceived ? 1 : 0);
+        p.Add("receivedAt", IsReceived ? DateTime.UtcNow.ToString("O") : string.Empty);
+        p.Add("isHidden", IsHidden ? 1 : 0);
 
         return p;
     }
@@ -151,7 +158,8 @@ public class MailData
     {
         var data = new MailData();
         data.Items       = new List<MailItem>();
-        data.IsReceived  = true;
+        data.IsReceived  = !row.ContainsKey("isReceived") || row["isReceived"].ToString() != "0";
+        data.IsHidden    = row.ContainsKey("isHidden") && row["isHidden"].ToString() == "1";
         data.IsFromHistory = true;
         data.HistoryInDate = historyRecordInDate;
 

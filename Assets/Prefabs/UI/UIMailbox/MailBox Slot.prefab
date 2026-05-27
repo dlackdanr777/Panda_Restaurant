@@ -746,7 +746,6 @@ MonoBehaviour:
   _itemBackground: {fileID: 8412663297488505862}
   _senderText: {fileID: 5356946972285095401}
   _contentText: {fileID: 598174365260730842}
-  _expirationText: {fileID: 1872455427455253395}
   _receiveButton: {fileID: 2618734343774847144}
   _readButton: {fileID: 3920749913388825878}
   _slotButton: {fileID: 5147740424434331888}
@@ -754,8 +753,8 @@ MonoBehaviour:
   _receivedImage: {fileID: 7633758898431360396}
   _receivedIcon: {fileID: 1256260294954666854}
   _readIcon: {fileID: 2804543277446477829}
-  _adminSprite: {fileID: 21300000, guid: 7e7084cf63ad1fc4bbc9ff2c06d7e56f, type: 3}
-  _defaultNpcSprite: {fileID: 21300000, guid: 31808f8b423bc2e4580d68b26a62edd5, type: 3}
+  _adminSprite: {fileID: 21300000, guid: 9d6c8bd72d2273a4188da2acb84f6161, type: 3}
+  _defaultNpcSprite: {fileID: 0}
   _diaSprite: {fileID: 21300000, guid: 13704f2ecab913c4a92f8c41b26bcce4, type: 3}
   _goldSprite: {fileID: 21300000, guid: 9d0736377ef554c439fffc4d97ca1b34, type: 3}
   _unreceivedSlotSprite: {fileID: 21300000, guid: e91f6f8b7f1aadd4298e91c68a60ad72,
@@ -1747,7 +1746,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &641314602007493244
 RectTransform:
   m_ObjectHideFlags: 0

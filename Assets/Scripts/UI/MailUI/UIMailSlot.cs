@@ -13,7 +13,7 @@ public class UIMailSlot : MonoBehaviour
     [SerializeField] private Image _itemBackground;       // 아이템 배경 (아이템이 있는 경우)
     [SerializeField] private TextMeshProUGUI _senderText;       // 발신자
     [SerializeField] private TextMeshProUGUI _contentText;      // 내용
-    [SerializeField] private TextMeshProUGUI _expirationText;   // 만료일
+    //[SerializeField] private TextMeshProUGUI _expirationText;   // 만료일
     [SerializeField] private Button _receiveButton;             // 받기 버튼 (아이템 있는 편지)
     [SerializeField] private Button _readButton;                // 읽기 버튼 (아이템 없는 편지)
     [SerializeField] private Button _slotButton;                // 슬롯 전체 클릭 → 상세 팝업
@@ -126,12 +126,12 @@ public class UIMailSlot : MonoBehaviour
             if (_item != null) _item.gameObject.SetActive(false);
         }
 
-        if (_expirationText != null)
-        {
-            _expirationText.text = _data.ExpirationDate != System.DateTime.MaxValue
-                ? $"만료: {_data.ExpirationDate:MM/dd HH:mm}"
-                : string.Empty;
-        }
+        // if (_expirationText != null)
+        // {
+        //     _expirationText.text = _data.ExpirationDate != System.DateTime.MaxValue
+        //         ? $"만료: {_data.ExpirationDate:MM/dd HH:mm}"
+        //         : string.Empty;
+        // }
 
         bool isReceived = _data.IsReceived;
         bool isExpired  = _data.IsExpired;

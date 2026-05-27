@@ -41,6 +41,12 @@ public class MailManager : MonoBehaviour
     private List<MailData> _mailList = new List<MailData>();
     public IReadOnlyList<MailData> MailList => _mailList;
 
+    /// <summary>이미 MailHistory에 저장된 우편의 originalInDate 모음</summary>
+    private HashSet<string> _historyOrigInDates = new HashSet<string>();
+
+    /// <summary>사용자가 삭제(숨김) 처리한 우편의 originalInDate 모음</summary>
+    private HashSet<string> _hiddenOrigInDates = new HashSet<string>();
+
     /// <summary>愿由ъ옄 ?고렪 以??섎졊 媛?ν븳(誘몄닔?뮤룸?留뚮즺) 媛쒖닔</summary>
     public int UnreceivedCount
     {
@@ -79,6 +85,8 @@ public class MailManager : MonoBehaviour
     public void LoadMailListAsync(Action onSuccess = null, Action onFail = null)
     {
         _mailList.Clear();
+        _historyOrigInDates.Clear();
+        _hiddenOrigInDates.Clear();
 
         // Admin ??Coupon ???섎졊 ?대젰 ?쒖쑝濡?濡쒕뱶
         LoadByTypeAsync(PostType.Admin, () =>
@@ -86,8 +94,7 @@ public class MailManager : MonoBehaviour
             LoadByTypeAsync(PostType.Coupon, () =>
             {
                 LoadReceivedHistoryAsync(() =>
-                {
-                    onSuccess?.Invoke();
+                {                    SaveNewMailsToHistory();                    RemoveHiddenMailsFromList();                    onSuccess?.Invoke();
                     InvokeRefreshed();
                     Debug.Log($"[MailManager] ?꾩껜 硫붿씪 {_mailList.Count}嫄?濡쒕뱶 ?꾨즺 (誘몄닔?? {UnreceivedCount}嫄?");
                 });
@@ -97,6 +104,8 @@ public class MailManager : MonoBehaviour
             {
                 LoadReceivedHistoryAsync(() =>
                 {
+                    SaveNewMailsToHistory();
+                    RemoveHiddenMailsFromList();
                     onSuccess?.Invoke();
                     InvokeRefreshed();
                 });
@@ -117,34 +126,40 @@ public class MailManager : MonoBehaviour
                 try
                 {
                     JsonData rows = bro.FlattenRows();
-                    DateTime cutoff = DateTime.UtcNow.AddDays(-30);
-
                     for (int i = 0; i < rows.Count; i++)
                     {
                         JsonData row = rows[i];
                         string histInDate = row.ContainsKey("inDate") ? row["inDate"].ToString() : string.Empty;
                         string origInDate = row.ContainsKey("originalInDate") ? row["originalInDate"].ToString() : string.Empty;
 
-                        // 30???댁긽 吏???대젰? GameData?먯꽌 ?쒓굅
-                        if (row.ContainsKey("receivedAt") &&
-                            DateTime.TryParse(row["receivedAt"].ToString(), out DateTime receivedAt) &&
-                            receivedAt < cutoff)
+                        // 만료일이 지난 이력은 서버에 보존하되 UI에는 표시하지 않음
+                        string expStr = row.ContainsKey("expirationDate") ? row["expirationDate"].ToString() : string.Empty;
+                        bool isExpired = !string.IsNullOrEmpty(expStr) &&
+                                         DateTime.TryParse(expStr, out DateTime expDate) &&
+                                         expDate < DateTime.UtcNow;
+
+                        if (isExpired) continue;
+
+                        // 사용자가 삭제(숨김) 처리한 이력은 UI에 표시하지 않음
+                        bool isHidden = row.ContainsKey("isHidden") && row["isHidden"].ToString() == "1";
+                        if (isHidden)
                         {
-                            if (!string.IsNullOrEmpty(histInDate))
-                                BackendManager.Instance.ProcessBackendAPI(
-                                    "?대젰 留뚮즺 ??젣",
-                                    cb => Backend.GameData.DeleteV2(HISTORY_TABLE, histInDate, Backend.UserInDate, br => cb(br)),
-                                    _ => Debug.Log($"[MailManager] 留뚮즺 ?대젰 ??젣: {histInDate}"),
-                                    _ => { },
-                                    maxRetries: 0, usePopup: false
-                                );
+                            _hiddenOrigInDates.Add(origInDate);
                             continue;
                         }
 
-                        // UPost 紐⑸줉???대? ?덈뒗 硫붿씪? 以묐났 異붽? ????
+                        // UPost 목록에 이미 있는 메일은 중복 추가 방지, HistoryInDate 연결
                         bool exists = false;
                         for (int j = 0; j < _mailList.Count; j++)
-                            if (_mailList[j].InDate == origInDate) { exists = true; break; }
+                        {
+                            if (_mailList[j].InDate == origInDate)
+                            {
+                                exists = true;
+                                _mailList[j].LinkHistoryRecord(histInDate);
+                                break;
+                            }
+                        }
+                        _historyOrigInDates.Add(origInDate);
 
                         if (!exists)
                         {
@@ -188,7 +203,60 @@ public class MailManager : MonoBehaviour
             usePopup: false
         );
     }
+    /// <summary>이미 저장된 이력 레코드를 수령 완료로 갱신합니다.</summary>
+    private void UpdateMailHistory(MailData mail)
+    {
+        if (string.IsNullOrEmpty(mail.HistoryInDate)) return;
+        Param param = mail.ToHistoryParam();
+        BackendManager.Instance.ProcessBackendAPI(
+            "우편 이력 갱신",
+            callback => Backend.GameData.UpdateV2(HISTORY_TABLE, mail.HistoryInDate, Backend.UserInDate, param, bro => callback(bro)),
+            bro =>
+            {
+                mail.SetHistoryInDate(mail.HistoryInDate); // IsFromHistory = true 갱신
+                Debug.Log($"[MailManager] 우편 이력 갱신 완료: {mail.Title}");
+            },
+            state => Debug.LogWarning($"[MailManager] 우편 이력 갱신 실패: {state}"),
+            maxRetries: 1,
+            usePopup: false
+        );
+    }
 
+    /// <summary>UPost 메일을 수령 전에 이력에 미리 등록합니다 (수령 없이 만료 시에도 내역 보존).</summary>
+    private void SaveMailRecordToHistory(MailData mail)
+    {
+        if (!string.IsNullOrEmpty(mail.HistoryInDate)) return; // 이미 저장됨
+        Param param = mail.ToHistoryParam();
+        BackendManager.Instance.ProcessBackendAPI(
+            "우편 이력 사전 저장",
+            callback => Backend.GameData.Insert(HISTORY_TABLE, param, bro => callback(bro)),
+            bro =>
+            {
+                string histInDate = bro.GetInDate();
+                mail.LinkHistoryRecord(histInDate); // IsFromHistory는 변경하지 않음
+                Debug.Log($"[MailManager] 우편 이력 사전 저장 완료: {mail.Title}");
+            },
+            state => Debug.LogWarning($"[MailManager] 우편 이력 사전 저장 실패: {state}"),
+            maxRetries: 1,
+            usePopup: false
+        );
+    }
+
+    /// <summary>MailHistory에 없는 UPost 메일을 일괄 저장합니다.</summary>
+    private void SaveNewMailsToHistory()
+    {
+        foreach (var mail in _mailList)
+        {
+            if (!mail.IsFromHistory && !_historyOrigInDates.Contains(mail.InDate))
+                SaveMailRecordToHistory(mail);
+        }
+    }
+
+    /// <summary>isHidden으로 마킹된 UPost 메일을 _mailList에서 제거합니다.</summary>
+    private void RemoveHiddenMailsFromList()
+    {
+        _mailList.RemoveAll(m => !m.IsFromHistory && _hiddenOrigInDates.Contains(m.InDate));
+    }
     private void LoadByTypeAsync(PostType postType, Action onSuccess, Action onFail)
     {
         BackendManager.Instance.ProcessBackendAPI(
@@ -249,7 +317,10 @@ public class MailManager : MonoBehaviour
             {
                 mail.SetReceived();
                 GiveRewardFromSingleReceive(bro);
-                SaveMailToHistory(mail);
+                if (!string.IsNullOrEmpty(mail.HistoryInDate))
+                    UpdateMailHistory(mail);
+                else
+                    SaveMailToHistory(mail);
                 onSuccess?.Invoke(mail);
                 OnMailReceived?.Invoke(mail);                InvokeRefreshed();                Debug.Log($"[MailManager] 硫붿씪 ?섎졊 ?꾨즺: {mail.Title}");
             },
@@ -306,7 +377,10 @@ public class MailManager : MonoBehaviour
                     if (mail.PostType == postType && !mail.IsReceived && !mail.IsExpired)
                     {
                         mail.SetReceived();
-                        SaveMailToHistory(mail);
+                        if (!string.IsNullOrEmpty(mail.HistoryInDate))
+                            UpdateMailHistory(mail);
+                        else
+                            SaveMailToHistory(mail);
                     }
 
                 onSuccess?.Invoke();
@@ -328,8 +402,7 @@ public class MailManager : MonoBehaviour
 
     // ?????????????????????????????????????????
     #region 硫붿씪 ??젣
-
-    /// <summary>?쎌?(?섎졊?? 硫붿씪??鍮꾨룞湲곕줈 ??젣?⑸땲??/summary>
+    /// <summary>메일을 UI 목록에서 제거하고 서버 이력에 isHidden=1로 저장합니다.</summary>
     public void DeleteMailAsync(MailData mail, Action onSuccess = null, Action onFail = null)
     {
         if (mail == null)
@@ -338,56 +411,20 @@ public class MailManager : MonoBehaviour
             return;
         }
 
-        // ?섎졊 ?대젰(GameData)?먯꽌 ??硫붿씪 ??GameData ?덉퐫????젣
-        if (mail.IsFromHistory && !string.IsNullOrEmpty(mail.HistoryInDate))
-        {
-            BackendManager.Instance.ProcessBackendAPI(
-                "?섎졊 ?대젰 ??젣",
-                callback => Backend.GameData.DeleteV2(HISTORY_TABLE, mail.HistoryInDate, Backend.UserInDate, bro => callback(bro)),
-                bro =>
-                {
-                    _mailList.Remove(mail);
-                    onSuccess?.Invoke();
-                    InvokeRefreshed();
-                    Debug.Log($"[MailManager] ?섎졊 ?대젰 ??젣 ?꾨즺: {mail.Title}");
-                },
-                state =>
-                {
-                    Debug.LogWarning($"[MailManager] ?섎졊 ?대젰 ??젣 ?ㅽ뙣: {state}");
-                    _mailList.Remove(mail);
-                    onSuccess?.Invoke();
-                    InvokeRefreshed();
-                },
-                maxRetries: 0,
-                usePopup: false
-            );
-            return;
-        }
+        mail.SetHidden();
+        _mailList.Remove(mail);
+        onSuccess?.Invoke();
+        InvokeRefreshed();
+        Debug.Log($"[MailManager] 메일 UI 목록에서 제거 (서버 보존): {mail.Title}");
 
-        // ?쇰컲 UPost 硫붿씪 ??DeleteUserPost ?쒕룄 (?섎졊 ???쒕쾭媛 ?뚮퉬 泥섎━?덉쑝硫??ㅽ뙣?섏?留?濡쒖뺄 ?쒓굅)
-        BackendManager.Instance.ProcessBackendAPI(
-            "硫붿씪 ??젣",
-            callback => Backend.UPost.DeleteUserPost(mail.InDate, bro => callback(bro)),
-            bro =>
-            {
-                _mailList.Remove(mail);
-                onSuccess?.Invoke();
-                InvokeRefreshed();
-                Debug.Log($"[MailManager] 硫붿씪 ??젣 ?꾨즺: {mail.Title}");
-            },
-            state =>
-            {
-                Debug.LogWarning($"[MailManager] 硫붿씪 ??젣 ?ㅽ뙣(?쒕쾭 ?뚮퉬 泥섎━??: {state}");
-                _mailList.Remove(mail);
-                onSuccess?.Invoke();
-                InvokeRefreshed();
-            },
-            maxRetries: 0,
-            usePopup: false
-        );
+        // MailHistory에 isHidden=1 저장 (재로드 시에도 표시 안 되도록)
+        if (!string.IsNullOrEmpty(mail.HistoryInDate))
+            UpdateMailHistory(mail);
+        else
+            Debug.LogWarning($"[MailManager] HistoryInDate 없음 - 재로드 시 재등장 가능: {mail.Title}");
     }
 
-    /// <summary>?섎졊 ?꾨즺??硫붿씪 ?꾩껜瑜???젣?⑸땲??/summary>
+
     public void DeleteAllReadMailAsync(Action onSuccess = null)
     {
         List<MailData> readMails = new List<MailData>();

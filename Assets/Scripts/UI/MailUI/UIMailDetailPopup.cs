@@ -17,7 +17,7 @@ public class UIMailDetailPopup : MonoBehaviour
     [SerializeField] private Image _itemBackground;             // 아이템 배경 (아이템이 있는 경우)
     [SerializeField] private TextMeshProUGUI _itemCountText;    // 아이템 수량
     [SerializeField] private Button _receiveButton;             // 받기 버튼 (아이템 있는 편지)
-    [SerializeField] private TextMeshProUGUI _expirationText;   // 만료일
+    //[SerializeField] private TextMeshProUGUI _expirationText;   // 만료일
     [SerializeField] private Image _receivedIcon;              // 아이템 수령 완료 아이콘
     [SerializeField] private Image _readIcon;                  // 편지 읽음 완료 아이콘
 
@@ -120,13 +120,13 @@ public class UIMailDetailPopup : MonoBehaviour
                 _itemIcon.gameObject.SetActive(false);
         }
 
-        // 만료일
-        if (_expirationText != null)
-        {
-            _expirationText.text = mail.ExpirationDate != System.DateTime.MaxValue
-                ? $"만료: {mail.ExpirationDate:MM/dd HH:mm}"
-                : string.Empty;
-        }
+        // // 만료일
+        // if (_expirationText != null)
+        // {
+        //     _expirationText.text = mail.ExpirationDate != System.DateTime.MaxValue
+        //         ? $"만료: {mail.ExpirationDate:MM/dd HH:mm}"
+        //         : string.Empty;
+        // }
 
         // 받기 버튼: 아이템 있는 미수령 편지만 표시
         bool canReceive = !mail.IsReceived && !mail.IsExpired && hasItem;
