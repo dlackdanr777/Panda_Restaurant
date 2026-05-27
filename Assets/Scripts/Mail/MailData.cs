@@ -30,7 +30,7 @@ public class MailData
     public bool IsFromHistory { get; private set; }
 
     /// <summary>만료일이 지났으면 true</summary>
-    public bool IsExpired => DateTime.UtcNow > ExpirationDate;
+    public bool IsExpired => UserInfo.GetKoreanTime() > ExpirationDate;
 
     // UPost 응답으로 생성
     public MailData(PostType postType, JsonData json)
@@ -147,7 +147,7 @@ public class MailData
         sb.Append("]");
         p.Add("items", sb.ToString());
         p.Add("isReceived", IsReceived ? 1 : 0);
-        p.Add("receivedAt", IsReceived ? DateTime.UtcNow.ToString("O") : string.Empty);
+        p.Add("receivedAt", IsReceived ? UserInfo.GetKoreanTime().ToString("O") : string.Empty);
         p.Add("isHidden", IsHidden ? 1 : 0);
 
         return p;

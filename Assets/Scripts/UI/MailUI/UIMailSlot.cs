@@ -58,7 +58,7 @@ public class UIMailSlot : MonoBehaviour
         if (_data == null) return;
 
         if (_senderText != null)  _senderText.text  = GetAuthorDisplayName(_data.Author);
-        if (_contentText != null) _contentText.text = _data.Title;
+        if (_contentText != null) _contentText.text = GetContentPreview(_data.Content);
 
         // ── NPC 이미지: 쿠폰 우편이거나 발신자가 "운영팀"이면 어드민 스프라이트 ──
         if (_npcImage != null)
@@ -151,6 +151,18 @@ public class UIMailSlot : MonoBehaviour
             _itemBackground.gameObject.SetActive(hasItem);
             if (hasItem) _itemBackground.sprite = isReceived ? _receivedSlotSprite : _unreceivedSlotSprite;
         }
+    }
+
+    /// <summary>내용 미리보기: 20자 초과 시 잘라서 … 표시, 줄바꿈이 먼저 나오면 그 앞까지만 표시</summary>
+    private string GetContentPreview(string content)
+    {
+        if (string.IsNullOrEmpty(content)) return string.Empty;
+        int nlIdx = content.IndexOfAny(new[] { '\n', '\r' });
+        if (nlIdx >= 0 && nlIdx < 20)
+            return content.Substring(0, nlIdx);
+        if (content.Length > 20)
+            return content.Substring(0, 20) + "...";
+        return content;
     }
 
     /// <summary>발신자 ID를 표시 이름으로 변환합니다.</summary>

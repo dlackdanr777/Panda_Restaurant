@@ -136,7 +136,7 @@ public class MailManager : MonoBehaviour
                         string expStr = row.ContainsKey("expirationDate") ? row["expirationDate"].ToString() : string.Empty;
                         bool isExpired = !string.IsNullOrEmpty(expStr) &&
                                          DateTime.TryParse(expStr, out DateTime expDate) &&
-                                         expDate < DateTime.UtcNow;
+                                         expDate < UserInfo.GetKoreanTime();
 
                         if (isExpired) continue;
 
