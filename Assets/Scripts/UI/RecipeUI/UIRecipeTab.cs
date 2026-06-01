@@ -1,9 +1,13 @@
 using Muks.MobileUI;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 public class UIRecipeTab : UIRestaurantAdminTab
 {
+    public event Action OnShowEvent;
+    public event Action OnBuyEvent;
+
     [Header("Components")]
     [SerializeField] private MobileUINavigation _uiNav;
     [SerializeField] private UIRecipeUpgrade _uiUpgrade;
@@ -148,6 +152,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
     public override void SetAttention()
     {
         UpdateUI();
+        OnShowEvent?.Invoke();
     }
 
     public override void SetNotAttention()
@@ -188,6 +193,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
         UserInfo.GiveRecipe(data);
         PopupManager.Instance.ShowDisplayText("새로운 레시피를 배웠어요!");
+        OnBuyEvent?.Invoke();
     }
 
     private void OnUpgradeButtonClicked(FoodData data)

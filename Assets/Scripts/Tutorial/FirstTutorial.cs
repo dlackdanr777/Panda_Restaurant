@@ -115,7 +115,7 @@ public class FirstTutorial : MonoBehaviour
 
 
         _uiTutorial.CustomerGuideButtonSetActive(true);
-        yield return _uiDescriptionNPC.ShowDescription2Text($"카운터 위에 \"{Utility.SetStringColor("벨 버튼", ColorType.Positive)}\"을 눌러서 손님을 안내해볼까요?");
+        yield return _uiDescriptionNPC.ShowDescription2Text($"카운터 위에 \"{Utility.SetStringColor("벨 버튼", ColorType.Positive)}\"을 눌러서\n손님을 안내해볼까요?");
         _uiTutorial.CustomerGuideHoleSetActive(true);
         while (!_uiTutorial.IsButtonClicked)
             yield return YieldCache.WaitForSeconds(0.02f);
@@ -209,14 +209,14 @@ yield return YieldCache.WaitForSeconds(1);
 
         yield return _uiDescriptionNPC.ShowDescription1Text($"바닥의 쓰레기는 \"{Utility.SetStringColor("가게 만족도", ColorType.Positive)}\"를 떨어트려요.");
         yield return _uiDescriptionNPC.ShowDescription1Text($"만족도가 낮으면, {Utility.SetStringColor("예민한 손님", ColorType.Positive)}은 그냥\n떠나버린답니다.");
-        yield return _uiDescriptionNPC.ShowDescription1Text($"{Utility.SetStringColor("그릇을 치우지 않은 테이블에는 손님을 받을 수가 없어요.", ColorType.Positive)}");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"{Utility.SetStringColor("그릇을 치우지 않은 테이블에는\n손님을 받을 수가 없어요.", ColorType.Positive)}");
         yield return _uiDescriptionNPC.ShowDescription1Text("정리하신 테이블 위의 그릇은 싱크대로 모입니다.");
         yield return _uiDescriptionNPC.ShowDescription1Text("싱크대로 가볼까요?");
         _cameraController.MoveCamera(RestaurantType.Kitchen);
         yield return YieldCache.WaitForSeconds(2);
 
         yield return _uiDescriptionNPC.ShowDescription1Text($"식당에서 치운 그릇은 싱크대에 쌓이게 됩니다.");
-        yield return _uiDescriptionNPC.ShowDescription1Text($"싱크대가 꽉차면 그릇을 치울 수 없으니 그 전에 그릇을 치워주세요.");
+        yield return _uiDescriptionNPC.ShowDescription1Text($"싱크대가 꽉차면\n그릇을 치울 수 없으니 그 전에 그릇을 치워주세요.");
         yield return _uiDescriptionNPC.ShowDescription1Text($"싱크대를 꾹 누르면 설거지를 할 수 있어요.");
 
         while (0 < _sink.GetSinkBowlCount())

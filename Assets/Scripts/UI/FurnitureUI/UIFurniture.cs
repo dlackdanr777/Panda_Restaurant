@@ -8,6 +8,12 @@ using UnityEngine;
 
 public class UIFurniture : MobileUIView
 {
+
+    public event Action OnShowEvent;
+    public event Action OnBuyEvent;
+
+        
+
     [Header("Components")]
     [SerializeField] private UIRestaurantAdmin _uiRestaurantAdmin;
     [SerializeField] private FurnitureSystem _furnitureSystem;
@@ -110,6 +116,7 @@ public class UIFurniture : MobileUIView
         {
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true;
+            OnShowEvent?.Invoke();
         });
     }
 
@@ -319,6 +326,7 @@ public class UIFurniture : MobileUIView
 
         UserInfo.GiveFurniture(UserInfo.CurrentStage, data);
         PopupManager.Instance.ShowDisplayText("새로운 가구를 구매했어요!");
+        OnBuyEvent?.Invoke();
     }
 
     private void OnChangeFurnitureEvent(ERestaurantFloorType floor, FurnitureType type)

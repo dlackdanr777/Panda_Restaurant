@@ -132,13 +132,24 @@ public class MailManager : MonoBehaviour
                         string histInDate = row.ContainsKey("inDate") ? row["inDate"].ToString() : string.Empty;
                         string origInDate = row.ContainsKey("originalInDate") ? row["originalInDate"].ToString() : string.Empty;
 
-                        // 만료일이 지난 이력은 서버에 보존하되 UI에는 표시하지 않음
+                        // 서버 만료일 초과 → 서버에서 삭제
                         string expStr = row.ContainsKey("expirationDate") ? row["expirationDate"].ToString() : string.Empty;
-                        bool isExpired = !string.IsNullOrEmpty(expStr) &&
-                                         DateTime.TryParse(expStr, out DateTime expDate) &&
-                                         expDate < UserInfo.GetKoreanTime();
+                        bool isServerExpired = !string.IsNullOrEmpty(expStr) &&
+                                               DateTime.TryParse(expStr, out DateTime expDate) &&
+                                               expDate < UserInfo.GetKoreanTime();
 
-                        if (isExpired) continue;
+                        if (isServerExpired)
+                        {
+                            if (!string.IsNullOrEmpty(histInDate))
+                                DeleteHistoryRecord(histInDate);
+                            continue;
+                        }
+
+                        // 도착일+30일 초과 → UI에서만 숨김, 서버 데이터 유지
+                        bool isUiExpired = DateTime.TryParse(origInDate, out DateTime arrivedDate) &&
+                                           UserInfo.GetKoreanTime() > arrivedDate.AddDays(30);
+
+                        if (isUiExpired) continue;
 
                         // 사용자가 삭제(숨김) 처리한 이력은 UI에 표시하지 않음
                         bool isHidden = row.ContainsKey("isHidden") && row["isHidden"].ToString() == "1";
@@ -424,6 +435,21 @@ public class MailManager : MonoBehaviour
             Debug.LogWarning($"[MailManager] HistoryInDate 없음 - 재로드 시 재등장 가능: {mail.Title}");
     }
 
+
+    /// <summary>만료일이 지난 MailHistory 레코드를 서버에서 삭제합니다.</summary>
+    private void DeleteHistoryRecord(string histInDate)
+    {
+        Where where = new Where();
+        where.Equal("inDate", histInDate);
+        BackendManager.Instance.ProcessBackendAPI(
+            "만료 이력 서버 삭제",
+            callback => Backend.GameData.Delete(HISTORY_TABLE, where, bro => callback(bro)),
+            bro => Debug.Log($"[MailManager] 만료 이력 삭제 완료: {histInDate}"),
+            state => Debug.LogWarning($"[MailManager] 만료 이력 삭제 실패: {state}"),
+            maxRetries: 1,
+            usePopup: false
+        );
+    }
 
     public void DeleteAllReadMailAsync(Action onSuccess = null)
     {

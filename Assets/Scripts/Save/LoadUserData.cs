@@ -13,6 +13,8 @@ public class LoadUserData
     public bool IsGatecrasher2TutorialClear;
     public bool IsSpecialCustomer1TutorialClear;
     public bool IsSpecialCustomer2TutorialClear;
+    public bool IsFurnitureTutorialClear;
+    public bool IsRecipeTutorialClear;
 
     public EStage _unlockStage;
     public int Dia;
@@ -109,6 +111,8 @@ public class LoadUserData
             IsGatecrasher2TutorialClear = GetBool("IsGatecrasher2TutorialClear");
             IsSpecialCustomer1TutorialClear = GetBool("IsSpecialCustomer1TutorialClear");
             IsSpecialCustomer2TutorialClear = GetBool("IsSpecialCustomer2TutorialClear");
+            IsFurnitureTutorialClear = GetBool("IsFurnitureTutorialClear");
+            IsRecipeTutorialClear = GetBool("IsRecipeTutorialClear");
 
             Dia = GetInt("Dia");
             Money = GetLong("Money");

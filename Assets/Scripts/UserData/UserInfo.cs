@@ -72,6 +72,8 @@ public static class UserInfo
     public static bool IsGatecrasher2TutorialClear = false;
     public static bool IsSpecialCustomer1TutorialClear = false;
     public static bool IsSpecialCustomer2TutorialClear = false;
+    public static bool IsFurnitureTutorialClear = false;
+    public static bool IsRecipeTutorialClear = false;
 
     private static EStage _unlockStage;
     public static EStage UnlockStage => _unlockStage;
@@ -386,6 +388,8 @@ public static class UserInfo
         param.Add("IsGatecrasher2TutorialClear", IsGatecrasher2TutorialClear);
         param.Add("IsSpecialCustomer1TutorialClear", IsSpecialCustomer1TutorialClear);
         param.Add("IsSpecialCustomer2TutorialClear", IsSpecialCustomer2TutorialClear);
+        param.Add("IsFurnitureTutorialClear", IsFurnitureTutorialClear);
+        param.Add("IsRecipeTutorialClear", IsRecipeTutorialClear);
 
         param.Add("UnlockStage", (int)_unlockStage);
         param.Add("Dia", _dia);
@@ -619,6 +623,8 @@ public static class UserInfo
         IsGatecrasher2TutorialClear = loadData.IsGatecrasher2TutorialClear;
         IsSpecialCustomer1TutorialClear = loadData.IsSpecialCustomer1TutorialClear;
         IsSpecialCustomer2TutorialClear = loadData.IsSpecialCustomer2TutorialClear;
+        IsFurnitureTutorialClear = loadData.IsFurnitureTutorialClear;
+        IsRecipeTutorialClear = loadData.IsRecipeTutorialClear;
 
         _dia = loadData.Dia;
         _money = loadData.Money;

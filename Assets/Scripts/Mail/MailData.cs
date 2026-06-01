@@ -29,8 +29,20 @@ public class MailData
     /// <summary>GameData 수령 이력에서 로드된 메일이면 true</summary>
     public bool IsFromHistory { get; private set; }
 
-    /// <summary>만료일이 지났으면 true</summary>
-    public bool IsExpired => UserInfo.GetKoreanTime() > ExpirationDate;
+    /// <summary>UI에서 숨겨야 하면 true (도착일+30일 초과 또는 만료일 초과 중 이른 것)</summary>
+    public bool IsExpired
+    {
+        get
+        {
+            DateTime now = UserInfo.GetKoreanTime();
+            if (now > ExpirationDate) return true;
+            if (DateTime.TryParse(InDate, out DateTime arrivedDate) && now > arrivedDate.AddDays(30)) return true;
+            return false;
+        }
+    }
+
+    /// <summary>서버에서 삭제해야 하면 true (만료일 초과)</summary>
+    public bool IsServerExpired => UserInfo.GetKoreanTime() > ExpirationDate;
 
     // UPost 응답으로 생성
     public MailData(PostType postType, JsonData json)
