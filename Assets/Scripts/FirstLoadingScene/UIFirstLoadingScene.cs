@@ -8,11 +8,28 @@ public class UIFirstLoadingScene : MonoBehaviour
 {
     [SerializeField] private Image _title;
     [SerializeField] private TextMeshProUGUI _errorText;
+    [SerializeField] private Button _googleLoginButton;
 
     public void Init()
     {
         _title.color = new Color(_title.color.r, _title.color.g, _title.color.b, 0);
         _errorText.gameObject.SetActive(false);
+        if (_googleLoginButton != null)
+            _googleLoginButton.gameObject.SetActive(false);
+    }
+
+    public void ShowGoogleLoginButton(Action onGoogleLogin)
+    {
+        if (_googleLoginButton == null) return;
+        _googleLoginButton.gameObject.SetActive(true);
+        _googleLoginButton.onClick.RemoveAllListeners();
+        _googleLoginButton.onClick.AddListener(() => onGoogleLogin?.Invoke());
+    }
+
+    public void HideGoogleLoginButton()
+    {
+        if (_googleLoginButton == null) return;
+        _googleLoginButton.gameObject.SetActive(false);
     }
 
 

@@ -567,6 +567,96 @@ namespace Muks.BackEnd
             _isSaveEnabled = false;
             _isLogin = false;
         }
+
+        /// <summary>
+        /// 서버 인증 코드(또는 IdToken)로 뒤끝 연동 로그인을 비동기적으로 수행합니다
+        /// </summary>
+        public void GoogleFederationLoginAsync(string authCode, FederationType federationType, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            if (IsLogin)
+            {
+                Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
+                return;
+            }
+
+            if (federationType == FederationType.GPGS2)
+            {
+                // GPGS2: authCode → GetGPGS2AccessToken → AuthorizeFederation 2단계
+                ProcessBackendAPI(
+                    "GPGS2 로그인 액세스 토큰 획득",
+                    (callback) => Backend.BMember.GetGPGS2AccessToken(authCode, (bro) => callback?.Invoke(bro)),
+                    (bro) =>
+                    {
+                        string accessToken = bro.GetReturnValuetoJSON()["access_token"].ToString();
+                        Debug.Log("[BackendManager] GetGPGS2AccessToken 성공, 뒤끝 연동 로그인 시도");
+                        ProcessBackendAPI(
+                            "GPGS2 연동 로그인",
+                            (callback2) => Backend.BMember.AuthorizeFederation(accessToken, federationType, (bro2) => callback2?.Invoke(bro2)),
+                            (bro2) =>
+                            {
+                                _isLogin = true;
+                                if (bro2.GetStatusCode() == "201")
+                                    Debug.Log("[BackendManager] GPGS2 연동 신규 가입 성공");
+                                else
+                                    Debug.Log("[BackendManager] GPGS2 연동 로그인 성공");
+                                onSuccess?.Invoke(bro2);
+                            },
+                            onFail,
+                            0,
+                            false
+                        );
+                    },
+                    onFail,
+                    0,
+                    false
+                );
+            }
+            else
+            {
+                ProcessBackendAPI(
+                    "구글 연동 로그인",
+                    (callback) => Backend.BMember.AuthorizeFederation(authCode, federationType, (bro) => callback?.Invoke(bro)),
+                    (bro) =>
+                    {
+                        _isLogin = true;
+                        if (bro.GetStatusCode() == "201")
+                            Debug.Log($"[BackendManager] {federationType} 연동 신규 가입 성공");
+                        else
+                            Debug.Log($"[BackendManager] {federationType} 연동 로그인 성공");
+                        onSuccess?.Invoke(bro);
+                    },
+                    onFail,
+                    0,
+                    false
+                );
+            }
+        }
+
+        /// <summary>
+        /// 뒤끝 토큰으로 자동 로그인을 비동기적으로 시도합니다
+        /// </summary>
+        public void TokenLoginAsync(Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            if (IsLogin)
+            {
+                Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
+                return;
+            }
+
+            ProcessBackendAPI(
+                "토큰 자동 로그인",
+                (callback) => Backend.BMember.LoginWithTheBackendToken((bro) => callback?.Invoke(bro)),
+                (bro) =>
+                {
+                    _isLogin = true;
+                    Debug.Log("[BackendManager] 토큰 자동 로그인 성공");
+                    onSuccess?.Invoke(bro);
+                },
+                onFail,
+                1,
+                false
+            );
+        }
         
         /// <summary>
         /// 회원가입을 비동기적으로 수행합니다
@@ -1190,6 +1280,14 @@ namespace Muks.BackEnd
             string errorCode = bro.GetErrorCode();
             string statusCode = bro.GetStatusCode();
             
+            // GPGS2 인증 코드 관련 에러는 어떤 상태 코드여도 토큰 갱신 불가 → 즉시 실패
+            string broMessage = bro.GetMessage() ?? "";
+            if (broMessage.Contains("GPGS2"))
+            {
+                Debug.LogError($"[BackendManager] GPGS2 인증 코드 오류 (서버 설정 확인 필요): {broMessage}");
+                return BackendState.Failure;
+            }
+
             // 상태 코드별 처리
             switch (statusCode)
             {
@@ -1246,7 +1344,14 @@ namespace Muks.BackEnd
             }
             else if (bro.IsBadAccessTokenError())
             {
-                return RefreshTheBackendToken(3) ? BackendState.Retry : BackendState.Failure;
+                // GPGS2 serverAuthCode 관련 에러는 토큰 갱신 불가 - 즉시 실패 처리
+                string msg = bro.GetMessage();
+                if (msg != null && msg.Contains("GPGS2"))
+                {
+                    Debug.LogError($"[BackendManager] GPGS2 인증 코드 오류 (토큰 갱신 불가): {msg}");
+                    return BackendState.Failure;
+                }
+                return IsLogin && RefreshTheBackendToken(3) ? BackendState.Retry : BackendState.Failure;
             }
             
             // 기타 오류
