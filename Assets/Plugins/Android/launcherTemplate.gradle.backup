@@ -1,0 +1,55 @@
+apply plugin: 'com.android.application'
+apply from: '../shared/keepUnitySymbols.gradle'
+**APPLY_PLUGINS**
+
+configurations.all {
+    resolutionStrategy {
+        force 'androidx.credentials:credentials:1.5.0'
+        force 'androidx.credentials:credentials-play-services-auth:1.5.0'
+        force 'com.google.android.libraries.identity.googleid:googleid:1.1.1'
+    }
+}
+
+android {
+    compileSdk **APIVERSION**
+    buildToolsVersion = "**BUILDTOOLS**"
+    ndkPath "**NDKPATH**"
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdk **MINSDK**
+        targetSdk **TARGETSDK**
+        applicationId '**APPLICATIONID**'
+        versionCode **VERSIONCODE**
+        versionName '**VERSIONNAME**'
+    }
+
+    lint {
+        abortOnError false
+    }
+
+    aaptOptions {
+        noCompress = **BUILTIN_NOCOMPRESS** + unityStreamingAssets.tokenize(', ')
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~"
+    }
+
+    buildTypes {
+        debug {
+            minifyEnabled **MINIFY_DEBUG**
+            proguardFiles getDefaultProguardFile('proguard-android.txt')**SIGNCONFIG_DEBUG**
+        }
+        release {
+            minifyEnabled **MINIFY_RELEASE**
+            proguardFiles getDefaultProguardFile('proguard-android.txt')**SIGNCONFIG**
+        }
+    }
+**PACKAGING_OPTIONS**
+}
+
+dependencies {
+    implementation project(':unityLibrary')
+**DEPS**}

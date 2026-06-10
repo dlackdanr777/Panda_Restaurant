@@ -102,7 +102,7 @@ public class UIsetting : MobileUIView
     {
         bool isLinked = GoogleLoginManager.GetLoginPreference() == GoogleLoginManager.LoginPreference.Google;
         if (_googleLinkButton != null)
-            _googleLinkButton.gameObject.SetActive(true);
+            _googleLinkButton.gameObject.SetActive(!isLinked);
         if (_googleLinkText != null)
         {
             _googleLinkText.gameObject.SetActive(isLinked);
@@ -142,7 +142,8 @@ public class UIsetting : MobileUIView
                 {
                     _googleLoginManager.ConfirmNewLink();
                     UpdateGoogleLinkUI();
-                    PopupManager.Instance.ShowDisplayText("구글 연동이 완료되었습니다.");
+                    UserInfo.AddDia(100);
+                    PopupManager.Instance.ShowDisplayText("구글 연동이 완료되었습니다.\n다이아 100개를 지급했습니다.");
                 });
                 BackendManager.Instance.SetPopupButton2("아니오", () =>
                 {

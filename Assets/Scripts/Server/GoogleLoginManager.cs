@@ -2,14 +2,10 @@ using BackEnd;
 using Muks.BackEnd;
 using System;
 using UnityEngine;
-#if UNITY_ANDROID
-using GooglePlayGames;
-using GooglePlayGames.BasicApi;
-#endif
 
 namespace Muks.BackEnd
 {
-    /// <summary>Google Play Games Services(GPGS2) 기반 로그인 및 뒤끝 연동 매니저</summary>
+    /// <summary>뒤끝 Toolkit GoogleLogin 기반 로그인 및 연동 매니저</summary>
     public class GoogleLoginManager : MonoBehaviour
     {
         public static event Action OnGoogleLoginSuccessHandler;
@@ -19,6 +15,11 @@ namespace Muks.BackEnd
         public enum LoginPreference { None = 0, Google = 1, Guest = 2 }
 
         private const string LOGIN_PREF_KEY = "LoginPreference";
+        private const string GOOGLE_DISPLAY_NAME_KEY = "GoogleDisplayName";
+
+        private string _pendingToken;
+        private string _pendingDisplayName;
+        private bool _isGoogleLoginInProgress;
 
         public static LoginPreference GetLoginPreference()
         {
@@ -31,22 +32,28 @@ namespace Muks.BackEnd
             PlayerPrefs.Save();
         }
 
-        private void Awake()
+        public static string GetLinkedGoogleDisplayName()
         {
-#if UNITY_ANDROID
-            PlayGamesPlatform.Activate();
-            Debug.Log("[GoogleLoginManager] Google Play Games 플랫폼 활성화 완료");
-#endif
+            return PlayerPrefs.GetString(GOOGLE_DISPLAY_NAME_KEY, string.Empty);
         }
+
+        private static void SaveLinkedGoogleDisplayName(string displayName)
+        {
+            PlayerPrefs.SetString(GOOGLE_DISPLAY_NAME_KEY, displayName);
+            PlayerPrefs.Save();
+        }
+
+        // ──────────────────────────────────────────────────────────────────
+        // 자동 로그인
+        // ──────────────────────────────────────────────────────────────────
 
         /// <summary>
         /// 앱 시작 시 뒤끝 토큰 자동 로그인을 먼저 시도합니다.
-        /// 실패하면 GPG 자동 로그인(Silent Sign-In)을 시도하고,
-        /// 그마저도 실패하면 onFail 콜백을 호출합니다(로그인 버튼 표시 등).
+        /// 실패하면 구글 로그인(Toolkit)을 시도하고,
+        /// 그마저도 실패하면 onFail 콜백을 호출합니다.
         /// </summary>
         public void TryAutoLogin(Action onFail = null)
         {
-            // 1단계: 뒤끝 저장 토큰으로 자동 로그인
             BackendManager.Instance.TokenLoginAsync(
                 onSuccess: (bro) =>
                 {
@@ -55,14 +62,44 @@ namespace Muks.BackEnd
                 },
                 onFail: (state) =>
                 {
-                    Debug.Log("[GoogleLoginManager] 뒤끝 토큰 자동 로그인 실패, GPG 자동 로그인 시도");
-                    // 2단계: GPG Silent Sign-In 시도
-                    TryGPGSilentLogin(onFail);
+                    // 사용자가 명시적으로 로그아웃한 경우(LoginPreference.None) 구글 자동 로그인을 시도하지 않습니다.
+                    // 이를 통해 로그아웃 후 이전 계정으로 자동 복귀되는 버그를 방지합니다.
+                    if (GetLoginPreference() == LoginPreference.None)
+                    {
+                        Debug.Log("[GoogleLoginManager] 로그아웃 상태 — 구글 자동 로그인 건너뜀");
+                        onFail?.Invoke();
+                        return;
+                    }
+
+                    Debug.Log("[GoogleLoginManager] 뒤끝 토큰 자동 로그인 실패, 구글 로그인 시도");
+                    TryGoogleAutoLogin(onFail);
                 }
             );
         }
 
-        /// <summary>뒤끝 토큰 로그인만 시도합니다 (GPG 없이). 게스트 사용자 재로그인에 사용합니다.</summary>
+        private void TryGoogleAutoLogin(Action onFail)
+        {
+#if UNITY_ANDROID
+            if (_isGoogleLoginInProgress) { onFail?.Invoke(); return; }
+            _isGoogleLoginInProgress = true;
+            TheBackend.ToolKit.GoogleLogin.Android.GoogleLogin((isSuccess, errorMessage, token) =>
+            {
+                _isGoogleLoginInProgress = false;
+                if (!isSuccess)
+                {
+                    Debug.Log("[GoogleLoginManager] 구글 자동 로그인 실패: " + errorMessage);
+                    onFail?.Invoke();
+                    return;
+                }
+                LoginBackendWithGoogleToken(token, isAuto: true, onFail: onFail);
+            });
+#else
+            Debug.LogWarning("[GoogleLoginManager] 구글 로그인은 Android 전용입니다.");
+            onFail?.Invoke();
+#endif
+        }
+
+        /// <summary>뒤끝 토큰 로그인만 시도합니다. 게스트 사용자 재로그인에 사용합니다.</summary>
         public void TryTokenLogin(Action onSuccess, Action onFail = null)
         {
             BackendManager.Instance.TokenLoginAsync(
@@ -79,162 +116,113 @@ namespace Muks.BackEnd
             );
         }
 
-        private void TryGPGSilentLogin(Action onFail)
-        {
-#if UNITY_ANDROID
-            PlayGamesPlatform.Instance.Authenticate(status =>
-            {
-                if (status == SignInStatus.Success)
-                {
-                    Debug.Log("[GoogleLoginManager] GPG 자동 로그인 성공, 서버 인증 코드 요청");
-                    RequestServerAuthCodeAndLogin(onFail);
-                }
-                else
-                {
-                    Debug.Log("[GoogleLoginManager] GPG 자동 로그인 실패: " + status + " → 로그인 버튼 표시");
-                    onFail?.Invoke();
-                }
-            });
-#else
-            Debug.LogWarning("[GoogleLoginManager] GPG는 Android 전용입니다.");
-            onFail?.Invoke();
-#endif
-        }
+        // ──────────────────────────────────────────────────────────────────
+        // 수동 로그인 / 로그아웃
+        // ──────────────────────────────────────────────────────────────────
 
         /// <summary>구글 로그인 버튼 클릭 시 호출합니다.</summary>
         public void OnClickGoogleLogin()
         {
 #if UNITY_ANDROID
-            PlayGamesPlatform.Instance.ManuallyAuthenticate(status =>
+            if (_isGoogleLoginInProgress) return;
+            _isGoogleLoginInProgress = true;
+            TheBackend.ToolKit.GoogleLogin.Android.GoogleLogin((isSuccess, errorMessage, token) =>
             {
-                if (status == SignInStatus.Success)
+                _isGoogleLoginInProgress = false;
+                if (!isSuccess)
                 {
-                    Debug.Log("[GoogleLoginManager] GPG 수동 로그인 성공, 서버 인증 코드 요청");
-                    RequestServerAuthCodeAndLogin(null);
-                }
-                else
-                {
-                    Debug.LogError("[GoogleLoginManager] GPG 수동 로그인 실패: " + status);
+                    Debug.LogError("[GoogleLoginManager] 구글 로그인 실패: " + errorMessage);
                     OnGoogleLoginFailedHandler?.Invoke();
+                    return;
                 }
+                LoginBackendWithGoogleToken(token, isAuto: false, onFail: null);
             });
 #else
-            Debug.LogError("[GoogleLoginManager] GPG는 Android 전용입니다.");
+            Debug.LogError("[GoogleLoginManager] 구글 로그인은 Android 전용입니다.");
             OnGoogleLoginFailedHandler?.Invoke();
 #endif
         }
 
-        private void RequestServerAuthCodeAndLogin(Action onFail)
+        private void LoginBackendWithGoogleToken(string token, bool isAuto, Action onFail)
         {
-#if UNITY_ANDROID
-            PlayGamesPlatform.Instance.RequestServerSideAccess(
-                /* forceRefreshToken= */ false,
-                authCode =>
-                {
-                    if (string.IsNullOrEmpty(authCode))
-                    {
-                        Debug.LogError("[GoogleLoginManager] 서버 인증 코드가 비어 있습니다. WebClientId 설정을 확인하세요.");
-                        if (onFail != null)
-                            onFail.Invoke();
-                        else
-                            OnGoogleLoginFailedHandler?.Invoke();
-                        return;
-                    }
-
-                    Debug.Log($"[GoogleLoginManager] authCode 획득 성공 (길이:{authCode.Length})");
-                    LoginBackendWithGPG(authCode, onFail);
-                }
-            );
-#endif
-        }
-
-        private void LoginBackendWithGPG(string serverAuthCode, Action onFail)
-        {
-            // 1단계: authCode → GPGS2 AccessToken
-            Backend.BMember.GetGPGS2AccessToken(serverAuthCode, tokenBro =>
+            Backend.BMember.AuthorizeFederation(token, FederationType.Google, bro =>
             {
-                if (!tokenBro.IsSuccess())
+                if (bro.IsSuccess())
                 {
-                    Debug.LogError("[GoogleLoginManager] GPGS2 AccessToken 획득 실패: " + tokenBro.GetMessage());
+                    BackendManager.Instance.NotifyFederationLoginSuccess();
+                    Debug.Log($"[GoogleLoginManager] 뒤끝 구글 페더레이션 로그인 성공 (statusCode: {bro.GetStatusCode()})");
+                    if (isAuto)
+                        OnGoogleAutoLoginSuccessHandler?.Invoke();
+                    else
+                        OnGoogleLoginSuccessHandler?.Invoke();
+                }
+                else
+                {
+                    Debug.LogError("[GoogleLoginManager] 뒤끝 구글 페더레이션 로그인 실패: " + bro.GetMessage());
                     if (onFail != null)
                         onFail.Invoke();
                     else
                         OnGoogleLoginFailedHandler?.Invoke();
-                    return;
                 }
-
-                string accessToken = tokenBro.GetReturnValuetoJSON()["access_token"].ToString();
-                Debug.Log("[GoogleLoginManager] GPGS2 AccessToken 획득 성공, 뒤끝 페더레이션 로그인 시도");
-
-                // 2단계: AccessToken → AuthorizeFederation(GPGS2)
-                Backend.BMember.AuthorizeFederation(accessToken, FederationType.GPGS2, bro =>
-                {
-                    if (bro.IsSuccess())
-                    {
-                        BackendManager.Instance.NotifyFederationLoginSuccess();
-                        Debug.Log($"[GoogleLoginManager] 뒤끝 GPGS2 페더레이션 로그인 성공 (statusCode: {bro.GetStatusCode()})");
-                        if (onFail != null)
-                            OnGoogleAutoLoginSuccessHandler?.Invoke();  // 자동 로그인 경로
-                        else
-                            OnGoogleLoginSuccessHandler?.Invoke();       // 수동 로그인 경로
-                    }
-                    else
-                    {
-                        Debug.LogError("[GoogleLoginManager] 뒤끝 GPGS2 페더레이션 로그인 실패: " + bro.GetMessage());
-                        if (onFail != null)
-                            onFail.Invoke();
-                        else
-                            OnGoogleLoginFailedHandler?.Invoke();
-                    }
-                });
             });
         }
 
-        /// <summary>GPG 로그아웃 및 뒤끝 로그아웃을 수행합니다.</summary>
+        /// <summary>
+        /// 구글 계정 로그아웃 후 뒤끝 세션도 초기화합니다.
+        /// 이후 로그인 시 계정 선택 화면이 표시됩니다.
+        /// </summary>
+        public void SignOutGoogle(Action onSuccess = null, Action onFail = null)
+        {
+#if UNITY_ANDROID
+            TheBackend.ToolKit.GoogleLogin.Android.GoogleSignOut((isSuccess, errorMessage) =>
+            {
+                if (!isSuccess)
+                {
+                    Debug.LogError("[GoogleLoginManager] 구글 로그아웃 실패: " + errorMessage);
+                    onFail?.Invoke();
+                    return;
+                }
+                Backend.BMember.Logout();
+                BackendManager.Instance.LogOut();
+                SetLoginPreference(LoginPreference.None);
+                SaveLinkedGoogleDisplayName(string.Empty);
+                Debug.Log("[GoogleLoginManager] 구글 로그아웃 완료");
+                onSuccess?.Invoke();
+            });
+#else
+            Backend.BMember.Logout();
+            BackendManager.Instance.LogOut();
+            SetLoginPreference(LoginPreference.None);
+            SaveLinkedGoogleDisplayName(string.Empty);
+            onSuccess?.Invoke();
+#endif
+        }
+
+        /// <summary>뒤끝 세션만 초기화합니다.</summary>
         public void SignOut()
         {
             BackendManager.Instance.LogOut();
             Debug.Log("[GoogleLoginManager] 로그아웃 완료");
         }
 
-        /// <summary>
-        /// 뒤끝 로컬 토큰을 포함한 세션을 완전히 초기화합니다.
-        /// 다른 구글 계정으로 전환하기 위해 앱을 종료하기 전에 호출하면,
-        /// 재시작 시 TokenLoginAsync가 실패하여 GPGS 자동 로그인이 수행됩니다.
-        /// </summary>
+        /// <summary>세션을 완전히 초기화합니다. 다른 계정으로 전환 전에 호출합니다.</summary>
         public void ClearSessionForSwitch()
         {
             Backend.BMember.Logout();
             BackendManager.Instance.LogOut();
-            Debug.Log("[GoogleLoginManager] 세션 클리어 완료 — 재시작 시 GPGS 자동 로그인 예정");
+            Debug.Log("[GoogleLoginManager] 세션 클리어 완료");
         }
 
         // ──────────────────────────────────────────────────────────────────
         // 구글 연동 (설정 화면에서 사용)
         // ──────────────────────────────────────────────────────────────────
 
-        private string _pendingAccessToken;
-        private string _pendingDisplayName;
-
-        private const string GOOGLE_DISPLAY_NAME_KEY = "GoogleDisplayName";
-
-        public static string GetLinkedGoogleDisplayName()
-        {
-            return PlayerPrefs.GetString(GOOGLE_DISPLAY_NAME_KEY, string.Empty);
-        }
-
-        private static void SaveLinkedGoogleDisplayName(string displayName)
-        {
-            PlayerPrefs.SetString(GOOGLE_DISPLAY_NAME_KEY, displayName);
-            PlayerPrefs.Save();
-        }
-
         /// <summary>
         /// 설정 화면에서 구글 연동 버튼 클릭 시 호출합니다.
-        /// GPGS 인증 → GPGS2 AccessToken 획득 → AuthorizeFederation 결과에 따라 콜백 호출.
-        ///   onNewLink             : 연동된 계정 없음 (신규 연동 완료 상태 — 취소 시 CancelNewLink 호출)
-        ///   onExistingOtherAccount: 이 구글 ID가 다른 백엔드 계정에 연동됨 (전환 여부 확인 필요)
-        ///   onAlreadyLinked       : 이미 현재 계정에 연동되어 있음
+        /// 구글 로그인 → AuthorizeFederation 결과에 따라 콜백 호출.
+        ///   onNewLink             : 이 구글 계정에 연동된 뒤끝 ID 없음 (201)
+        ///   onExistingOtherAccount: 이 구글 계정이 다른 뒤끝 계정에 연동됨
+        ///   onAlreadyLinked       : 현재 계정에 이미 연동됨 (200)
         ///   onFail                : 인증 오류 또는 네트워크 오류
         /// </summary>
         public void LinkGoogleAccount(
@@ -244,62 +232,68 @@ namespace Muks.BackEnd
             Action onFail)
         {
 #if UNITY_ANDROID
-            PlayGamesPlatform.Instance.ManuallyAuthenticate(status =>
+            if (_isGoogleLoginInProgress)
             {
-                if (status != SignInStatus.Success)
+                Debug.LogWarning("[GoogleLoginManager] 구글 연동: 이미 진행 중입니다.");
+                return;
+            }
+            _isGoogleLoginInProgress = true;
+            TheBackend.ToolKit.GoogleLogin.Android.GoogleLogin((isSuccess, errorMessage, token) =>
+            {
+                _isGoogleLoginInProgress = false;
+                if (!isSuccess)
                 {
-                    Debug.LogError("[GoogleLoginManager] 구글 연동: GPGS 인증 실패 " + status);
+                    Debug.LogError("[GoogleLoginManager] 구글 연동: 구글 로그인 실패 — " + errorMessage);
                     onFail?.Invoke();
                     return;
                 }
 
-                PlayGamesPlatform.Instance.RequestServerSideAccess(false, authCode =>
+                _pendingToken = token;
+                _pendingDisplayName = string.Empty;
+
+                // AuthorizeFederation 응답 의미:
+                //   201 → 이 구글 계정을 현재 계정에 신규 연동
+                //   200 → 이 구글 계정에 연동된 뒤끝 계정으로 로그인됨
+                //          (같은 계정이면 이미 연동, 다른 계정이면 전환됨)
+                //   Error → 현재 계정이 이미 다른 구글 계정에 연동되어 있음
+                string indateBefore = Backend.UserInDate;
+                Backend.BMember.AuthorizeFederation(token, FederationType.Google, bro =>
                 {
-                    if (string.IsNullOrEmpty(authCode))
+                    if (bro.IsSuccess())
                     {
-                        Debug.LogError("[GoogleLoginManager] 구글 연동: 서버 인증 코드 획득 실패");
-                        onFail?.Invoke();
-                        return;
-                    }
-
-                    _pendingDisplayName = PlayGamesPlatform.Instance.localUser.userName;
-
-                    Backend.BMember.GetGPGS2AccessToken(authCode, tokenBro =>
-                    {
-                        if (!tokenBro.IsSuccess())
+                        if (bro.GetStatusCode() == "201")
                         {
-                            Debug.LogError("[GoogleLoginManager] 구글 연동: GPGS2 AccessToken 획득 실패 " + tokenBro.GetMessage());
-                            onFail?.Invoke();
-                            return;
+                            // 신규 연동
+                            Debug.Log("[GoogleLoginManager] 구글 연동: 신규 연동 완료 (201)");
+                            onNewLink?.Invoke();
                         }
-
-                        string accessToken = tokenBro.GetReturnValuetoJSON()["access_token"].ToString();
-                        _pendingAccessToken = accessToken;
-
-                        Backend.BMember.AuthorizeFederation(accessToken, FederationType.GPGS2, bro =>
+                        else
                         {
-                            if (bro.IsSuccess())
+                            // 200: 이 구글 계정에 연동된 계정으로 로그인됨
+                            // → 연동 전후 indate 비교로 계정이 바뀌었는지 판단
+                            string indateAfter = Backend.UserInDate;
+                            if (indateBefore == indateAfter)
                             {
-                                if (bro.GetStatusCode() == "201")
-                                {
-                                    Debug.Log("[GoogleLoginManager] 구글 연동: 신규 연동 완료 (201)");
-                                    onNewLink?.Invoke();
-                                }
-                                else
-                                {
-                                    Debug.Log("[GoogleLoginManager] 구글 연동: 이미 현재 계정에 연동됨 (200)");
-                                    _pendingAccessToken = null;
-                                    onAlreadyLinked?.Invoke();
-                                }
+                                // 같은 계정 → 현재 계정에 이미 연동된 구글 계정
+                                Debug.Log("[GoogleLoginManager] 구글 연동: 이미 현재 계정에 연동됨 (200)");
+                                _pendingToken = null;
+                                onAlreadyLinked?.Invoke();
                             }
                             else
                             {
-                                // 다른 계정에 이미 연동된 구글 ID
-                                Debug.Log("[GoogleLoginManager] 구글 연동: 다른 계정에 연동된 구글 ID — " + bro.GetMessage());
+                                // 다른 계정으로 전환됨 → 계정 전환 여부 확인 팝업
+                                Debug.Log($"[GoogleLoginManager] 구글 연동: 다른 계정으로 전환됨 (200) {indateBefore} → {indateAfter}");
                                 onExistingOtherAccount?.Invoke();
                             }
-                        });
-                    });
+                        }
+                    }
+                    else
+                    {
+                        // 에러: 현재 계정이 이미 다른 구글 계정에 연동됨
+                        Debug.Log("[GoogleLoginManager] 구글 연동: 에러 — " + bro.GetMessage());
+                        _pendingToken = null;
+                        onFail?.Invoke();
+                    }
                 });
             });
 #else
@@ -313,43 +307,47 @@ namespace Muks.BackEnd
         {
             SetLoginPreference(LoginPreference.Google);
             SaveLinkedGoogleDisplayName(_pendingDisplayName ?? string.Empty);
-            _pendingAccessToken = null;
+            _pendingToken = null;
             _pendingDisplayName = null;
             Debug.Log("[GoogleLoginManager] 구글 연동 확정");
         }
 
-        /// <summary>신규 연동 취소 — 선호도를 저장하지 않고 종료합니다.</summary>
+        /// <summary>신규 연동 취소.</summary>
         public void CancelNewLink()
         {
-            _pendingAccessToken = null;
+            _pendingToken = null;
             Debug.Log("[GoogleLoginManager] 구글 연동 취소");
         }
 
-        /// <summary>
-        /// 연동된 다른 구글 계정으로 전환합니다.
-        /// 현재 세션을 로그아웃하고 구글 연동 계정으로 재로그인합니다.
-        /// </summary>
+        /// <summary>연동된 다른 구글 계정으로 전환합니다.</summary>
         public void SwitchToLinkedAccount(Action onSuccess, Action onFail)
         {
-            string token = _pendingAccessToken;
-            _pendingAccessToken = null;
+            string token = _pendingToken;
+            _pendingToken = null;
 
             if (string.IsNullOrEmpty(token))
             {
-                Debug.LogError("[GoogleLoginManager] SwitchToLinkedAccount: pendingAccessToken이 없습니다.");
+                Debug.LogError("[GoogleLoginManager] SwitchToLinkedAccount: pendingToken이 없습니다.");
                 onFail?.Invoke();
                 return;
             }
 
+            // Backend.BMember.Logout()으로 backend.dat 토큰 파일을 초기화합니다.
+            // 이 과정 없이는 재시작 시 기존 A계정 토큰으로 로그인됩니다.
+            Backend.BMember.Logout();
             BackendManager.Instance.LogOut();
+
             BackendManager.Instance.FederationLoginWithAccessTokenAsync(
                 token,
-                FederationType.GPGS2,
+                FederationType.Google,
                 onSuccess: (bro) =>
                 {
                     SetLoginPreference(LoginPreference.Google);
                     SaveLinkedGoogleDisplayName(_pendingDisplayName ?? string.Empty);
                     _pendingDisplayName = null;
+                    // B계정 로그인 성공 후 즉시 저장을 비활성화합니다.
+                    // Application.Quit() 시 OnApplicationQuit이 A계정 데이터를 B계정에 덮어쓰는 것을 방지합니다.
+                    BackendManager.Instance.LogOut();
                     Debug.Log("[GoogleLoginManager] 구글 연동 계정 전환 성공");
                     onSuccess?.Invoke();
                 },
