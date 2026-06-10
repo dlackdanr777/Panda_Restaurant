@@ -78,11 +78,27 @@ public class FirstLoadingScene : MonoBehaviour
     private void StartLoginFlow()
     {
 #if UNITY_ANDROID
-        _googleLoginManager.TryAutoLogin(onFail: () =>
+        var pref = GoogleLoginManager.GetLoginPreference();
+        if (pref == GoogleLoginManager.LoginPreference.Google)
         {
-            _uiFirstLoadingScene.ShowGoogleLoginButton(() => _googleLoginManager.OnClickGoogleLogin());
-        });
+            // Google 선호: 자동 로그인 시도, 실패 시 게스트
+            _googleLoginManager.TryAutoLogin(onFail: () => DoGuestLogin());
+        }
+        else
+        {
+            // 게스트 또는 최초 실행: 토큰 재로그인 시도, 실패 시 게스트
+            _googleLoginManager.TryTokenLogin(
+                onSuccess: () => OnLoginCompleted(),
+                onFail: () => DoGuestLogin()
+            );
+        }
 #else
+        DoGuestLogin();
+#endif
+    }
+
+    private void DoGuestLogin()
+    {
         BackendManager.Instance.GuestLoginAsync(
             onSuccess: (bro) => OnLoginCompleted(),
             onFail: (state) =>
@@ -93,13 +109,10 @@ public class FirstLoadingScene : MonoBehaviour
                 BackendManager.Instance.ShowPopupExitButton();
             }
         );
-#endif
     }
 
     private void OnLoginCompleted()
     {
-        _uiFirstLoadingScene.HideGoogleLoginButton();
-
         // UUID(gamerId) 조회 - 실패해도 게임 진행
         BackendManager.Instance.FetchGamerIdAsync();
 

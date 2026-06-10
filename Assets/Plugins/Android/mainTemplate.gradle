@@ -2,12 +2,20 @@ apply plugin: 'com.android.library'
 apply from: '../shared/keepUnitySymbols.gradle'
 **APPLY_PLUGINS**
 
+configurations.all {
+    resolutionStrategy {
+        force 'com.google.games:gpgs-plugin-support:2.1.0'
+    }
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 // Android Resolver Dependencies Start
     implementation 'com.google.android.gms:play-services-ads-identifier:18.1.0' // Assets/LevelPlay/Editor/IronSourceSDKDependencies.xml:12
-    // gpgs-plugin-support는 Unity가 .srcaar를 로컬 모듈로 자동 포함하므로 Maven 선언 제외
-    // gpgs-plugin-support 전이 의존성을 직접 선언
+    // gpgs-plugin-support is already included as a local AAR by the Bee build system (libs/gpgs-plugin-support-2.1.0.aar)
+    // Declaring it here again as a Maven dependency causes duplicate DEX classes error
+    // implementation 'com.google.games:gpgs-plugin-support:2.1.0' // Assets/GooglePlayGames/com.google.play.games/Editor/GooglePlayGamesPluginDependencies.xml:11
+    // Transitive dependencies of gpgs-plugin-support:2.1.0 (must be declared explicitly since the Maven entry above is disabled)
     implementation 'com.google.android.gms:play-services-games-v2:21.0.0'
     implementation 'com.google.android.gms:play-services-nearby:18.5.0'
     implementation 'com.unity3d.ads:unity-ads:4.16.6' // Assets/LevelPlay/Editor/ISUnityAdsAdapterDependencies.xml:9

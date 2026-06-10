@@ -887,7 +887,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &927149206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2000,7 +2000,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _title: {fileID: 1331865619}
   _errorText: {fileID: 1645499227}
-  _googleLoginButton: {fileID: 927149206}
 --- !u!1 &7527443413827743949
 GameObject:
   m_ObjectHideFlags: 0

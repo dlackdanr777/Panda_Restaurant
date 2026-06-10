@@ -569,6 +569,56 @@ namespace Muks.BackEnd
         }
 
         /// <summary>
+        /// 페더레이션 로그인 성공을 외부에서 통보받아 로그인 상태를 활성화합니다.
+        /// GoogleLoginManager 등 외부에서 Backend.BMember.AuthorizeFederation 직접 호출 후 사용합니다.
+        /// </summary>
+        public void NotifyFederationLoginSuccess()
+        {
+            _isLogin = true;
+            _isSaveEnabled = true;
+            Debug.Log("[BackendManager] 페더레이션 로그인 상태 활성화");
+        }
+
+        /// <summary>
+        /// 이미 획득한 GPGS2 AccessToken으로 뒤끝 연동 로그인을 수행합니다 (계정 전환 시 사용).
+        /// LogOut() 호출 후 이 메서드를 사용하여 다른 구글 연동 계정으로 전환합니다.
+        /// </summary>
+        public void FederationLoginWithAccessTokenAsync(string accessToken, FederationType federationType, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            if (IsLogin)
+            {
+                Debug.LogWarning("[BackendManager] FederationLoginWithAccessToken: 이미 로그인 상태입니다.");
+                return;
+            }
+
+            ProcessBackendAPI(
+                "구글 연동 계정 전환 로그인",
+                (callback) => Backend.BMember.AuthorizeFederation(accessToken, federationType, (bro) => callback?.Invoke(bro)),
+                (bro) =>
+                {
+                    Debug.Log($"[BackendManager] AuthorizeFederation 응답 statusCode: {bro.GetStatusCode()}, message: {bro.GetMessage()}");
+                    if (bro.GetStatusCode() == "201")
+                    {
+                        // 201 = 신규 계정 생성 → 연동된 계정으로 전환 실패 (토큰이 만료되었거나 잘못된 경우)
+                        Debug.LogError("[BackendManager] 연동 계정 전환 실패: 201 신규 계정 생성됨. accessToken이 이미 만료되었을 수 있습니다.");
+                        _isLogin = false;
+                        _isSaveEnabled = false;
+                        Backend.BMember.Logout();
+                        onFail?.Invoke(BackendState.Failure);
+                        return;
+                    }
+                    _isLogin = true;
+                    _isSaveEnabled = true;
+                    Debug.Log($"[BackendManager] 구글 연동 계정 전환 로그인 성공 (statusCode: {bro.GetStatusCode()})");
+                    onSuccess?.Invoke(bro);
+                },
+                onFail,
+                0,
+                false
+            );
+        }
+
+        /// <summary>
         /// 서버 인증 코드(또는 IdToken)로 뒤끝 연동 로그인을 비동기적으로 수행합니다
         /// </summary>
         public void GoogleFederationLoginAsync(string authCode, FederationType federationType, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
