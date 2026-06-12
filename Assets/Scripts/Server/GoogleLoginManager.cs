@@ -21,6 +21,11 @@ namespace Muks.BackEnd
         private string _pendingDisplayName;
         private bool _isGoogleLoginInProgress;
 
+        // LinkGoogleAccount 시작 시점의 현재 계정 indate를 저장합니다.
+        // 연동 시도 중 세션이 바뀌더라도 원래 계정과의 비교에 사용합니다.
+        // ConfirmNewLink / SwitchToLinkedAccount / SignOutGoogle 시 null로 초기화됩니다.
+        private string _originalUserIndate;
+
         public static LoginPreference GetLoginPreference()
         {
             return (LoginPreference)PlayerPrefs.GetInt(LOGIN_PREF_KEY, (int)LoginPreference.None);
@@ -186,6 +191,7 @@ namespace Muks.BackEnd
                 BackendManager.Instance.LogOut();
                 SetLoginPreference(LoginPreference.None);
                 SaveLinkedGoogleDisplayName(string.Empty);
+                _originalUserIndate = null;
                 Debug.Log("[GoogleLoginManager] 구글 로그아웃 완료");
                 onSuccess?.Invoke();
             });
@@ -194,6 +200,7 @@ namespace Muks.BackEnd
             BackendManager.Instance.LogOut();
             SetLoginPreference(LoginPreference.None);
             SaveLinkedGoogleDisplayName(string.Empty);
+            _originalUserIndate = null;
             onSuccess?.Invoke();
 #endif
         }
@@ -256,16 +263,36 @@ namespace Muks.BackEnd
                 //   200 → 이 구글 계정에 연동된 뒤끝 계정으로 로그인됨
                 //          (같은 계정이면 이미 연동, 다른 계정이면 전환됨)
                 //   Error → 현재 계정이 이미 다른 구글 계정에 연동되어 있음
-                string indateBefore = Backend.UserInDate;
+                //
+                // _originalUserIndate: 첫 연동 시도 시점의 원래 계정 indate.
+                // CancelExistingAccountSwitch 후 세션이 완전히 복원되지 않은 경우에도
+                // 올바른 비교가 가능하도록 null일 때만 초기화합니다.
+                if (_originalUserIndate == null)
+                    _originalUserIndate = Backend.UserInDate;
+                string indateBefore = _originalUserIndate;
                 Backend.BMember.AuthorizeFederation(token, FederationType.Google, bro =>
                 {
                     if (bro.IsSuccess())
                     {
                         if (bro.GetStatusCode() == "201")
                         {
-                            // 신규 연동
-                            Debug.Log("[GoogleLoginManager] 구글 연동: 신규 연동 완료 (201)");
-                            onNewLink?.Invoke();
+                            // 신규 연동 — 구글 계정 식별자(이메일)를 displayName으로 저장
+                            Backend.BMember.GetUserInfo(userBro =>
+                            {
+                                if (userBro.IsSuccess())
+                                {
+                                    var row = userBro.GetReturnValuetoJSON()?["row"];
+                                    string fedId = row?["federationId"]?.ToString();
+                                    _pendingDisplayName = !string.IsNullOrEmpty(fedId) ? fedId : Backend.UserNickName;
+                                }
+                                else
+                                {
+                                    _pendingDisplayName = Backend.UserNickName;
+                                }
+                                Debug.Log($"[GoogleLoginManager] 구글 연동: 신규 연동 완료 (201) displayName={_pendingDisplayName}");
+                                onNewLink?.Invoke();
+                            });
+                            return; // GetUserInfo 콜백에서 onNewLink 호출
                         }
                         else
                         {
@@ -309,6 +336,7 @@ namespace Muks.BackEnd
             SaveLinkedGoogleDisplayName(_pendingDisplayName ?? string.Empty);
             _pendingToken = null;
             _pendingDisplayName = null;
+            _originalUserIndate = null;
             Debug.Log("[GoogleLoginManager] 구글 연동 확정");
         }
 
@@ -316,7 +344,33 @@ namespace Muks.BackEnd
         public void CancelNewLink()
         {
             _pendingToken = null;
+            _originalUserIndate = null;
             Debug.Log("[GoogleLoginManager] 구글 연동 취소");
+        }
+
+        /// <summary>
+        /// 다른 계정으로의 전환을 취소하고 원래 세션을 복구합니다.
+        /// AuthorizeFederation(200) 후 아니오를 선택했을 때 호출합니다.
+        /// Backend.BMember.Logout()을 호출하지 않아 디스크 토큰(원래 계정)을 보존한 뒤
+        /// TokenLogin으로 원래 계정 세션을 복구합니다.
+        /// </summary>
+        public void CancelExistingAccountSwitch(Action onSuccess = null, Action onFail = null)
+        {
+            _pendingToken = null;
+            // Backend.BMember.Logout()을 호출하지 않아 디스크 토큰(원래 계정 A)을 보존합니다.
+            BackendManager.Instance.LogOut(); // in-memory 상태만 리셋
+            BackendManager.Instance.TokenLoginAsync(
+                onSuccess: (bro) =>
+                {
+                    Debug.Log("[GoogleLoginManager] 계정 전환 취소, 원래 계정 복구 성공");
+                    onSuccess?.Invoke();
+                },
+                onFail: (state) =>
+                {
+                    Debug.LogError("[GoogleLoginManager] 계정 전환 취소, 원래 계정 복구 실패: " + state);
+                    onFail?.Invoke();
+                }
+            );
         }
 
         /// <summary>연동된 다른 구글 계정으로 전환합니다.</summary>
@@ -324,6 +378,7 @@ namespace Muks.BackEnd
         {
             string token = _pendingToken;
             _pendingToken = null;
+            _originalUserIndate = null; // 계정 전환 확정 — 스냅샷 초기화
 
             if (string.IsNullOrEmpty(token))
             {

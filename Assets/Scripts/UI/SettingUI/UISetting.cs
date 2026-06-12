@@ -167,7 +167,12 @@ public class UIsetting : MobileUIView
                         }
                     );
                 });
-                BackendManager.Instance.SetPopupButton2("아니오", null);
+                BackendManager.Instance.SetPopupButton2("아니오", () =>
+                {
+                    _googleLoginManager.CancelExistingAccountSwitch(
+                        onFail: () => PopupManager.Instance.ShowDisplayText("원래 계정 복구에 실패했습니다.\n앱을 재시작해 주세요.")
+                    );
+                });
             },
             onAlreadyLinked: () =>
             {

@@ -700,6 +700,7 @@ namespace Muks.BackEnd
                 (bro) =>
                 {
                     _isLogin = true;
+                    _isSaveEnabled = true;
                     Debug.Log("[BackendManager] 토큰 자동 로그인 성공");
                     onSuccess?.Invoke(bro);
                 },
