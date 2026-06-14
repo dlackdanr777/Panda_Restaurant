@@ -107,7 +107,10 @@ public class FurnitureDataManager : MonoBehaviour
 
     private static void LoadFurnitureSprites(string basePath)
     {
-        string[] setFolders = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19" };
+        var setFolderList = new List<string>();
+        for (int i = 1; i <= 68; i++) setFolderList.Add(i.ToString("D2"));
+
+        string[] setFolders = setFolderList.ToArray();
 
         foreach (string setFolder in setFolders)
         {
