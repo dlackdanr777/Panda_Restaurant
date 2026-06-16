@@ -12,27 +12,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93bdf2a61116f5a4bbf3c395f44840da, type: 3}
   m_Name: STAFF18
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: 8254e5c60529b2947ac68e109914dd7c, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: 8254e5c60529b2947ac68e109914dd7c, type: 3}
-  _name: "\uCF00\uC774\uD06C \uB8E8\uD30C"
+  _sprite: {fileID: 21300000, guid: fde72f9bdf80c0f44bfc39aa2a303458, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: c0314fc401c5c4149b4e42e016871de0, type: 3}
+  _name: "\uB8E8\uD30C"
   _id: STAFF18
   _description: "\uB2EC\uCF64\uD55C \uC2E4\uB825\uC744 \uAC16\uACE0 \uC788\uB294
     \uCC9C\uC7AC \uC694\uB9AC\uC0AC\r"
+  _rank: 0
+  _skill: {fileID: 11400000, guid: 46422746b9f38374fb77e35d096d48de, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: cec58be14e65c3d44af9f022638348d9, type: 3}
+  - {fileID: 21300000, guid: 26ab9657a0763e8489d2cae13f063dfa, type: 3}
+  - {fileID: 21300000, guid: a6248b44a7c1cb346a6db27445cf4c4e, type: 3}
+  - {fileID: 21300000, guid: 9646ae2bbac71b24d9ecac372649b740, type: 3}
+  - {fileID: 21300000, guid: 9646ae2bbac71b24d9ecac372649b740, type: 3}
+  - {fileID: 21300000, guid: a6248b44a7c1cb346a6db27445cf4c4e, type: 3}
+  - {fileID: 21300000, guid: 26ab9657a0763e8489d2cae13f063dfa, type: 3}
+  - {fileID: 21300000, guid: cec58be14e65c3d44af9f022638348d9, type: 3}
+  _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
   _buyScore: 450
   _buyPrice: 135000
-  _skill: {fileID: 11400000, guid: 46422746b9f38374fb77e35d096d48de, type: 2}
-  _animatorController: {fileID: 0}
-  _speed: 6
-  _backSprite: {fileID: 21300000, guid: b3172874b4cb86f4b9e59fb56605cc9d, type: 3}
-  _handSprite: {fileID: 21300000, guid: 7484dc2bb7400314a8a37f79d0334f60, type: 3}
+  _speed: 4.5
+  _backSprite: {fileID: 21300000, guid: 02c8edd5f649a4f46b7269b958dd8bf3, type: 3}
+  _handSprite: {fileID: 21300000, guid: c0924842182cfff488c72735eb46eeef, type: 3}
   _handOffset: {x: 0, y: 0.588}
   _chefLevelData:
-  - _upgradeMinScore: 380
+  - _upgradeMinScore: 675
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 25
+      _price: 202500
     _foodSpeedAddPercent: 6
   - _upgradeMinScore: 900
     _upgradeMoneyData:

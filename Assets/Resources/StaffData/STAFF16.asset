@@ -12,42 +12,52 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 93bdf2a61116f5a4bbf3c395f44840da, type: 3}
   m_Name: STAFF16
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: aefbc0e461fd052448532bdf7be6c20a, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: aefbc0e461fd052448532bdf7be6c20a, type: 3}
-  _name: "\uC2EC\uB4DC\uB801\uD55C \uB3C4\uCE58"
+  _sprite: {fileID: 21300000, guid: a8ed7ed7ab3ab80439f7d8ccbb11a0b3, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: cff7d3c45cd0fb04cbd4fa8df991122d, type: 3}
+  _name: "\uB3C4\uCE58"
   _id: STAFF16
   _description: "\uC2EC\uB4DC\uB801\uD55C \uD45C\uC815 \uB4A4\uC5D0\n\uBC24\uB0AE\uC5C6\uC774
     \uC5F0\uC2B5\uD558\uB294 \uB178\uB825\uD30C \uB3C4\uCE58\r"
+  _rank: 0
+  _skill: {fileID: 11400000, guid: 55429025e47f51e48af3704c79782325, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 4c813941b6a76704b9a06f6e5f70ca57, type: 3}
+  - {fileID: 21300000, guid: dd53c8dda90cfee409582bfa8fda02fd, type: 3}
+  - {fileID: 21300000, guid: 587be8f566059b34793262bd65cd2ac6, type: 3}
+  - {fileID: 21300000, guid: 539a65c3e22ec2646bb8d3d05fc1dac4, type: 3}
+  - {fileID: 21300000, guid: 539a65c3e22ec2646bb8d3d05fc1dac4, type: 3}
+  - {fileID: 21300000, guid: 587be8f566059b34793262bd65cd2ac6, type: 3}
+  - {fileID: 21300000, guid: dd53c8dda90cfee409582bfa8fda02fd, type: 3}
+  - {fileID: 21300000, guid: 4c813941b6a76704b9a06f6e5f70ca57, type: 3}
+  _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
-  _buyScore: 30
-  _buyPrice: 20000
-  _skill: {fileID: 11400000, guid: 55429025e47f51e48af3704c79782325, type: 2}
-  _animatorController: {fileID: 0}
-  _speed: 6
-  _backSprite: {fileID: 21300000, guid: 2dc4da78b41e5724fa84a6ba2c561fec, type: 3}
-  _handSprite: {fileID: 21300000, guid: aede57fb19987a04c9b9e05c6f1ed51b, type: 3}
+  _buyScore: 10
+  _buyPrice: 3500
+  _speed: 2
+  _backSprite: {fileID: 21300000, guid: 1e0bfc1639a46ba4eae3f915617057c5, type: 3}
+  _handSprite: {fileID: 21300000, guid: 6cd7d36e2bda36f4cb5d86f20f96089c, type: 3}
   _handOffset: {x: -0.18, y: 1.43}
   _chefLevelData:
   - _upgradeMinScore: 100
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 30000
+      _price: 20000
     _foodSpeedAddPercent: 5
   - _upgradeMinScore: 120
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 45000
+      _price: 30000
     _foodSpeedAddPercent: 5.5
   - _upgradeMinScore: 140
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 67500
+      _price: 45000
     _foodSpeedAddPercent: 6
   - _upgradeMinScore: 160
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 101250
+      _price: 67500
     _foodSpeedAddPercent: 6.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:

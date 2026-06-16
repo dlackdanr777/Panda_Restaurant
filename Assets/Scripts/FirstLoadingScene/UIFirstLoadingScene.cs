@@ -1,8 +1,8 @@
 using Muks.Tween;
-using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 public class UIFirstLoadingScene : MonoBehaviour
 {
@@ -14,7 +14,6 @@ public class UIFirstLoadingScene : MonoBehaviour
         _title.color = new Color(_title.color.r, _title.color.g, _title.color.b, 0);
         _errorText.gameObject.SetActive(false);
     }
-
 
     public void ShowErrorText(string errorText)
     {

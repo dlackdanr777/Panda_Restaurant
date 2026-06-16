@@ -94,6 +94,7 @@ public class MainScene : MonoBehaviour
     {
         PlayMainMusic();
         OnUIEvent();
+        
         if (UserInfo.CheckNoAttendance())
         {
             SequentialCommandManager.Instance.EnqueueCommand(() =>  _uiMainNav.Push("UIAttendance"), () => _uiMainNav.ViewsVisibleStateCheck(), () => !_uiMainNav.CheckActiveView("UIAttendance"), 1, 0.5f);
@@ -142,6 +143,14 @@ public class MainScene : MonoBehaviour
         UserInfo.GiveKitchenUtensil(EStage.Stage1, "COOKER01_01");
         UserInfo.SetEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, "COOKER01_01");
 #endif
+
+        //Test Code
+        var list = SkinDataManager.Instance.GetSortSkinDataList();
+        for(int i = 0, cnt = list.Count; i < cnt; i++)
+        {
+            UserInfo.GiveSkin(list[i]);
+        }
+        //
 
         GameManager.Instance.ChanceScene();
     }
@@ -194,6 +203,7 @@ public class MainScene : MonoBehaviour
             {
                 UserInfo.UpdateLastAccessTime();
                 UserInfo.ResetDailyChallenges();
+                UserInfo.ResetAdCount();
 
                 if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
                     return;

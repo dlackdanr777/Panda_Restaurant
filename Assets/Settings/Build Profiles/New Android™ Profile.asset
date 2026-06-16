@@ -23,6 +23,8 @@ MonoBehaviour:
   - m_enabled: 1
     m_path: Assets/Scenes/FirstLoadingScene.unity
   - m_enabled: 1
+    m_path: Assets/Scenes/IntroScene.unity
+  - m_enabled: 1
     m_path: Assets/Scenes/Stage1.unity
   - m_enabled: 1
     m_path: Assets/Scenes/LoadingScene.unity
@@ -168,14 +170,8 @@ MonoBehaviour:
     - line: '|   loadStoreDebugModeEnabled: 0'
     - line: '|   visionOSBundleVersion: 1.0'
     - line: '|   tvOSBundleVersion: 1.0'
-    - line: '|   bundleVersion: 0.1.11'
-    - line: '|   preloadedAssets:'
-    - line: '|   - {fileID: 8809792029177104436, guid: 8f49a511a8c2a7a428532e45acc86a1b,
-        type: 2}'
-    - line: '|   - {fileID: 11400000, guid: ff46c819df58a8c469e19311cfbc36de, type:
-        2}'
-    - line: '|   - {fileID: 11400000, guid: 30b763d89188da04e870593241b05b2a, type:
-        2}'
+    - line: '|   bundleVersion: 0.1.34'
+    - line: '|   preloadedAssets: []'
     - line: '|   metroInputSource: 0'
     - line: '|   wsaTransparentSwapchain: 0'
     - line: '|   m_HolographicPauseOnTrackingLoss: 1'
@@ -206,9 +202,9 @@ MonoBehaviour:
     - line: '|     iPhone: 0'
     - line: '|     tvOS: 0'
     - line: '|   overrideDefaultApplicationIdentifier: 1'
-    - line: '|   AndroidBundleVersionCode: 12'
-    - line: '|   AndroidMinSdkVersion: 23'
-    - line: '|   AndroidTargetSdkVersion: 33'
+    - line: '|   AndroidBundleVersionCode: 35'
+    - line: '|   AndroidMinSdkVersion: 24'
+    - line: '|   AndroidTargetSdkVersion: 35'
     - line: '|   AndroidPreferredInstallLocation: 1'
     - line: '|   aotOptions: '
     - line: '|   stripEngineCode: 1'
@@ -291,11 +287,11 @@ MonoBehaviour:
     - line: '|   templateDefaultScene: Assets/Scenes/SampleScene.unity'
     - line: '|   useCustomMainManifest: 0'
     - line: '|   useCustomLauncherManifest: 0'
-    - line: '|   useCustomMainGradleTemplate: 0'
-    - line: '|   useCustomLauncherGradleManifest: 0'
+    - line: '|   useCustomMainGradleTemplate: 1'
+    - line: '|   useCustomLauncherGradleManifest: 1'
     - line: '|   useCustomBaseGradleTemplate: 0'
-    - line: '|   useCustomGradlePropertiesTemplate: 0'
-    - line: '|   useCustomGradleSettingsTemplate: 0'
+    - line: '|   useCustomGradlePropertiesTemplate: 1'
+    - line: '|   useCustomGradleSettingsTemplate: 1'
     - line: '|   useCustomProguardFile: 0'
     - line: '|   AndroidTargetArchitectures: 3'
     - line: '|   AndroidSplashScreenScale: 0'
@@ -857,7 +853,8 @@ MonoBehaviour:
     - line: '|   webGLWebAssemblyBigInt: 0'
     - line: '|   webGLCloseOnQuit: 0'
     - line: '|   webWasm2023: 0'
-    - line: '|   scriptingDefineSymbols: {}'
+    - line: '|   scriptingDefineSymbols:'
+    - line: '|     Android: LEVELPLAY_DEPENDENCIES_INSTALLED'
     - line: '|   additionalCompilerArguments: {}'
     - line: '|   platformArchitecture: {}'
     - line: '|   scriptingBackend: {}'
@@ -950,7 +947,8 @@ MonoBehaviour:
     - line: '|   XboxOneOverrideIdentityName: '
     - line: '|   XboxOneOverrideIdentityPublisher: '
     - line: '|   vrEditorSettings: {}'
-    - line: '|   cloudServicesEnabled: {}'
+    - line: '|   cloudServicesEnabled:'
+    - line: '|     Purchasing: 1'
     - line: '|   luminIcon:'
     - line: '|     m_Name: '
     - line: '|     m_ModelFolderPath: '
@@ -976,7 +974,7 @@ MonoBehaviour:
     - line: '|   framebufferDepthMemorylessMode: 0'
     - line: '|   qualitySettingsNames: []'
     - line: '|   projectName: Panda_ Tycoon'
-    - line: '|   organizationId: cmuks'
+    - line: '|   organizationId: multiverse1104'
     - line: '|   cloudEnabled: 0'
     - line: '|   legacyClampBlendShapeWeights: 0'
     - line: '|   hmiLoadingImage: {instanceID: 0}'

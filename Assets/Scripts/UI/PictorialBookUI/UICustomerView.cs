@@ -128,7 +128,7 @@ public class UICustomerView : MonoBehaviour
         string description = string.Empty;
         if (skinData == null)
         {
-            customerSprite = data.Sprite;
+            customerSprite = data.ThumbnailSprite;
             nameText = data.Name;
             description = data.Description;
         }

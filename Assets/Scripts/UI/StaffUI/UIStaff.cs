@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIStaff : MobileUIView
 {
@@ -12,10 +13,12 @@ public class UIStaff : MobileUIView
     [SerializeField] private UIStaffUpgrade _uiStaffUpgrade;
     [SerializeField] private StaffController _staffController;
     [SerializeField] private UIStaffPreview _uiStaffPreview;
+    [SerializeField] private UIStaffSkin _uiSkin;
     [SerializeField] private ButtonPressEffect _leftArrowButton;
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private TextMeshProUGUI _typeText;
+    [SerializeField] private Button _showSkinButton;
 
     [Space]
     [Header("Animations")]
@@ -38,25 +41,25 @@ public class UIStaff : MobileUIView
     [SerializeField] private AudioClip _equipSound;
     [SerializeField] private AudioClip _dequipSound;
 
+
+    private StaffData _previewStaffData;
     private EquipStaffType _currentType;
     private ERestaurantFloorType _currentFloorType;
     private List<UIRestaurantAdminStaffSlot>[] _slots = new List<UIRestaurantAdminStaffSlot>[(int)EquipStaffType.Length];
     private List<StaffData> _currentTypeDataList;
 
-    // 성능 최적화를 위한 캐시 변수들
-    private readonly (ERestaurantFloorType, UIRestaurantAdminStaffSlot)[] _equipSlotCache = 
-        new (ERestaurantFloorType, UIRestaurantAdminStaffSlot)[(int)ERestaurantFloorType.Length];
-    private readonly List<int> _siblingIndexCache = new List<int>(32);
     private bool _isInitialized = false;
+    private Vector3 _tmpScale;
+    private static readonly Vector3 _hideScale = new Vector3(0.3f, 0.3f, 0.3f);
 
     public override void Init()
     {
         if (_isInitialized) return;
 
+        _uiSkin.Init();
         _leftArrowButton.AddListener(() => ChangeStaffData(-1));
         _rightArrowButton.AddListener(() => ChangeStaffData(1));
         _uiStaffPreview.Init(OnEquipButtonClicked, OnUsingButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
-
         // 슬롯 미리 생성 최적화
         InitializeSlots();
 
@@ -66,7 +69,9 @@ public class UIStaff : MobileUIView
         // 초기 설정
         SetStaffDataOptimized(EquipStaffType.Manager);
 
+        _showSkinButton.onClick.AddListener(OnShowSkinButtonClicked);
         _isInitialized = true;
+        _tmpScale = _animeUI.transform.localScale;
         gameObject.SetActive(false);
     }
 
@@ -82,6 +87,7 @@ public class UIStaff : MobileUIView
                 int dataIndex = j;
                 UIRestaurantAdminStaffSlot slot = Instantiate(_slotPrefab, _slotParnet);
                 slot.Init(() => OnSlotClicked(typeDataList[dataIndex]));
+                slot.SetFrame(Rank.Normal1);
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
             }
@@ -94,6 +100,7 @@ public class UIStaff : MobileUIView
         UserInfo.OnGiveStaffHandler += UpdateUIOptimized;
         UserInfo.OnChangeMoneyHandler += UpdateUIOptimized;
         UserInfo.OnChangeScoreHandler += UpdateUIOptimized;
+        UserInfo.OnChangeStaffSkinHandler += UpdateUIOptimized;
         GameManager.Instance.OnChangeScoreHandler += UpdateUIOptimized;
     }
 
@@ -101,6 +108,7 @@ public class UIStaff : MobileUIView
     {
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
+        _uiSkin.Hide();
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
@@ -108,7 +116,7 @@ public class UIStaff : MobileUIView
         // 데이터 설정과 UI 업데이트를 한 번에 처리
         SetStaffDataOptimized(EquipStaffType.Manager);
 
-        TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
+        TweenData tween = _animeUI.TweenScale(_tmpScale, _showDuration, _showTweenMode);
         tween.OnComplete(() => 
         {
             VisibleState = VisibleState.Appeared;
@@ -121,11 +129,12 @@ public class UIStaff : MobileUIView
         VisibleState = VisibleState.Disappearing;
         _animeUI.SetActive(true);
         _uiRestaurantAdmin.MainUISetActive(true);
+        _uiSkin.Hide();
         transform.SetAsLastSibling();
         _canvasGroup.blocksRaycasts = false;
-        _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
+        _animeUI.transform.localScale = _tmpScale;
 
-        TweenData tween = _animeUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
+        TweenData tween = _animeUI.TweenScale(_hideScale, _hideDuration, _hideTweenMode);
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Disappeared;
@@ -168,6 +177,8 @@ public class UIStaff : MobileUIView
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _currentFloorType, _currentType);
         StaffData previewData = equipStaffData ?? (_currentTypeDataList.Count > 0 ? _currentTypeDataList[0] : null);
+        _previewStaffData = previewData;
+        
         _uiStaffPreview.SetData(_currentFloorType, _currentType, previewData);
     }
 
@@ -194,6 +205,9 @@ public class UIStaff : MobileUIView
             slot.transform.SetSiblingIndex(i);
 
             bool isGiven = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data);
+            StaffSkinData equipSkinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, data);
+            slot.SetFrame(equipSkinData != null ? equipSkinData.Rank : Rank.Normal1);
+             
             if (isGiven)
             {
                 ProcessEquippedSlot(data, slot);
@@ -209,8 +223,9 @@ public class UIStaff : MobileUIView
     private void ProcessEquippedSlot(StaffData data, UIRestaurantAdminStaffSlot slot)
     {
         ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
-        Sprite thumbnailSprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
-        
+        StaffSkinData skinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, data);
+        Sprite thumbnailSprite = skinData == null ? (data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite) : skinData.ThumbnailSprite;
+        string name = skinData == null ? data.Name : skinData.Name;
         // 장착 상태 처리
         if (UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
         {
@@ -228,20 +243,22 @@ public class UIStaff : MobileUIView
 
         if (floorType <= ERestaurantFloorType.Floor3)
         {
-            slot.SetUse(thumbnailSprite, data.Name, statusText, floorType);
+            slot.SetUse(thumbnailSprite, name, statusText, floorType);
         }
         else
         {
-            slot.SetOperate(thumbnailSprite, data.Name, statusText);
+            slot.SetOperate(thumbnailSprite, name, statusText);
         }
     }
 
     private void ProcessUnequippedSlot(StaffData data, UIRestaurantAdminStaffSlot slot)
     {
-        Sprite thumbnailSprite = data.ThumbnailSprite == null ?  data.Sprite : data.ThumbnailSprite;
+        StaffSkinData skinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, data);
+        Sprite thumbnailSprite = skinData == null ? (data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite) : skinData.ThumbnailSprite;
+        string name = skinData == null ? data.Name : skinData.Name;
         if (!UserInfo.IsScoreValid(data))
         {
-            slot.SetLowReputation(thumbnailSprite, data.Name, data.BuyScore.ToString());
+            slot.SetLowReputation(thumbnailSprite, name, data.BuyScore.ToString());
             return;
         }
 
@@ -250,20 +267,20 @@ public class UIStaff : MobileUIView
         if (data.MoneyType == MoneyType.Gold)
         {
             if (UserInfo.IsMoneyValid(data))
-                slot.SetEnoughPrice(thumbnailSprite, data.Name, priceText, data.MoneyType);
+                slot.SetEnoughPrice(thumbnailSprite, name, priceText, data.MoneyType);
             else
-                slot.SetNotEnoughMoneyPrice(thumbnailSprite, data.Name, priceText);
+                slot.SetNotEnoughMoneyPrice(thumbnailSprite, name, priceText);
         }
         else if (data.MoneyType == MoneyType.Dia)
         {
             if (UserInfo.IsDiaValid(data))
-                slot.SetEnoughPrice(thumbnailSprite, data.Name, priceText, data.MoneyType);
+                slot.SetEnoughPrice(thumbnailSprite, name, priceText, data.MoneyType);
             else
-                slot.SetNotEnoughDiaPrice(thumbnailSprite, data.Name, priceText);
+                slot.SetNotEnoughDiaPrice(thumbnailSprite, name, priceText);
         }
         else
         {
-            slot.SetEnoughPrice(thumbnailSprite, data.Name, priceText, data.MoneyType);
+            slot.SetEnoughPrice(thumbnailSprite, name, priceText, data.MoneyType);
         }
     }
 
@@ -345,13 +362,17 @@ public class UIStaff : MobileUIView
 
     private void OnSlotClicked(StaffData data)
     {
+        _previewStaffData = data;
         _uiStaffPreview.SetData(_currentFloorType, _currentType, data);
     }
 
-    // 호환성을 위한 기존 메서드들
-    private void SetStaffData(EquipStaffType type) => SetStaffDataOptimized(type);
-    private void SetStaffPreview() => SetStaffPreviewOptimized();
-    private void UpdateUI() => UpdateUIOptimized();
+    private void OnShowSkinButtonClicked()
+    {
+        if (_previewStaffData == null)
+            return;
+
+        _uiSkin.Show(_previewStaffData);
+    }
 
     private void OnDestroy()
     {
@@ -359,6 +380,7 @@ public class UIStaff : MobileUIView
         UserInfo.OnGiveStaffHandler -= UpdateUIOptimized;
         UserInfo.OnChangeMoneyHandler -= UpdateUIOptimized;
         UserInfo.OnChangeScoreHandler -= UpdateUIOptimized;
+        UserInfo.OnChangeStaffSkinHandler -= UpdateUIOptimized;
         GameManager.Instance.OnChangeScoreHandler -= UpdateUIOptimized;
     }
 }

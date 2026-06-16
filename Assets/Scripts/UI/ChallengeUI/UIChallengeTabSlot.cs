@@ -139,7 +139,13 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             DebugLog.Log("도전과제 데이터가 슬롯에 없습니다.");
             return;
         }
-        
+
+        if (_uiChallenge == null)
+        {
+            DebugLog.LogError("UIChallenge 참조가 없습니다. SetUIChellenge()를 확인해주세요.");
+            return;
+        }
+
         if(_data.MoneyType == MoneyType.Gold)
         {
             UserInfo.AddMoney(_data.RewardMoney);
@@ -149,14 +155,14 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
 
         else if(_data.MoneyType == MoneyType.Dia)
         {
-            UserInfo.AddDia(_data.RewardMoney);
+            UserInfo.AddDia((int)_data.RewardMoney);
             SoundManager.Instance.PlayEffectAudio(EffectType.None, SoundEffectType.DiaSound);
             _uiChallenge.StartDiaAnime(_data.RewardMoney, _diaImage.transform.position);
         }
 
         if (0 < _data.RewardScore)
         {
-            UserInfo.AddScore(_data.RewardScore);
+            UserInfo.AddScore((int)_data.RewardScore);
             _uiChallenge.StartScoreAnime(_scoreImage.transform.position);
         }
         UserInfo.ClearChallenge(_data);

@@ -12,13 +12,6 @@ public class MarketerData : StaffData
 
     [SerializeField] private Sprite _animationSprite;
     public Sprite AnimationSprite => _animationSprite;
-
-    [SerializeField] private Sprite _leftHandSprite;
-    public Sprite LeftHandSprite => _leftHandSprite;
-
-    [SerializeField] private Sprite _rightHandSprite;
-    public Sprite RightHandSprite => _rightHandSprite;
-
     [Space]
     [Header("Particle Option")]
 
@@ -27,7 +20,6 @@ public class MarketerData : StaffData
 
     [SerializeField] private Sprite[] _particleSprites;
     public Sprite[] ParticleSprites => _particleSprites;
-
 
 
     public override float SecondValue => 0;

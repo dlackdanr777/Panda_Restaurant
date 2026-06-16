@@ -37,7 +37,8 @@ namespace Muks.BackEnd
                 {
                     GameObject obj = new GameObject("BackendManager");
                     _instance = obj.AddComponent<BackendManager>();
-                    DontDestroyOnLoad(obj);
+                    if (Application.isPlaying)
+                        DontDestroyOnLoad(obj);
                 }
 
                 return _instance;
@@ -58,18 +59,27 @@ namespace Muks.BackEnd
         public bool IsLoaded => _isLoaded;
 
         public DateTime LocalTime = DateTime.Now;
-        
+
+        // ServerTime 캐시 (동기 네트워크 호출 빈도 제한)
+        private DateTime _cachedServerTime;
+        private float _serverTimeCachedAt = -9999f;
+        private const float ServerTimeCacheSeconds = 60f;
+
         public DateTime ServerTime
         {
             get
             {
+                if (Time.realtimeSinceStartup - _serverTimeCachedAt < ServerTimeCacheSeconds)
+                    return _cachedServerTime;
+
                 BackendReturnObject bro = Backend.Utils.GetServerTime();
 
                 if (bro.IsSuccess())
                 {
                     string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
-                    DateTime dateTime = DateTime.Parse(time);
-                    return dateTime;
+                    _cachedServerTime = DateTime.Parse(time);
+                    _serverTimeCachedAt = Time.realtimeSinceStartup;
+                    return _cachedServerTime;
                 }
                 else
                 {
@@ -113,50 +123,77 @@ namespace Muks.BackEnd
         {
             if (type == LogType.Exception || type == LogType.Error)
             {
-                // 치명적인 오류 패턴 확인
-                if (IsCriticalError(logString))
+                bool isFatal = IsFatalError(logString);
+                bool isSevere = !isFatal && IsSevereError(logString);
+
+                if (!isFatal && !isSevere)
+                    return;
+
+                // 광고 재생 중 발생한 오류는 ad SDK 자체 오류일 수 있으므로 억제
+                if (AdManager.HasInstance && AdManager.IsAdPlaying)
                 {
-                    string truncatedMessage = logString;
-                    if (logString.Length > 100)
-                        truncatedMessage = logString.Substring(0, 100) + "...";
+                    Debug.LogWarning($"[BackendManager] 광고 재생 중 예외 감지 (억제됨): {logString.Substring(0, Mathf.Min(logString.Length, 120))}");
+                    return;
+                }
+
+                // 오류 로그 업로드 시도 (무한 루프 방지를 위해 try-catch 사용)
+                try
+                {
+                    LogUpload("CriticalErrorDetails",
+                        $"오류: {logString}\n스택 트레이스: {stackTrace}");
+                }
+                catch { }
+
+                // 게임을 중단시킬 치명적 오류(메모리 부족, 스택 오버플로우 등)만 팝업+저장 비활성화
+                if (isFatal)
+                {
+                    string truncatedMessage = logString.Length > 100 ? logString.Substring(0, 100) + "..." : logString;
 
 #if !UNITY_EDITOR
                     ShowPopup("알 수 없는 오류", "오류가 발생하여 게임을 종료합니다.\n게임을 재시작 해주세요.");
-                    ShowPopupExitButton();   
+                    ShowPopupExitButton();
 #endif
 
                     DisableSaving($"치명적 오류 감지: {truncatedMessage}");
-                    
-                    // 오류 로그 업로드 시도 (무한 루프 방지를 위해 try-catch 사용)
-                    try
-                    {
-                        LogUpload("CriticalErrorDetails", 
-                            $"오류: {logString}\n스택 트레이스: {stackTrace}");
-                    }
-                    catch { }
                 }
             }
         }
-        
-        private bool IsCriticalError(string errorMessage)
+
+        // 즉시 게임을 중단시켜야 하는 치명적 오류 (저장 비활성화 + 팝업 표시)
+        private bool IsFatalError(string errorMessage)
         {
-            string[] criticalPatterns = {
-                "NullReferenceException",
-                "IndexOutOfRangeException",
-                "ArgumentNullException",
-                "MissingReferenceException",
-                "KeyNotFoundException",
+            string[] fatalPatterns = {
                 "OutOfMemoryException",
                 "StackOverflowException",
                 "AccessViolationException"
             };
-            
-            foreach (var pattern in criticalPatterns)
+
+            foreach (var pattern in fatalPatterns)
             {
                 if (errorMessage.Contains(pattern))
                     return true;
             }
-            
+
+            return false;
+        }
+
+        // 로그 업로드는 하지만 게임 진행을 막지 않는 심각한 오류
+        private bool IsSevereError(string errorMessage)
+        {
+            string[] severePatterns = {
+                "NullReferenceException",
+                "IndexOutOfRangeException",
+                "ArgumentNullException",
+                "MissingReferenceException",
+                "KeyNotFoundException"
+            };
+
+            foreach (var pattern in severePatterns)
+            {
+                if (errorMessage.Contains(pattern))
+                    return true;
+            }
+
             return false;
         }
         
@@ -450,6 +487,14 @@ namespace Muks.BackEnd
                     if (bro == null || !bro.IsSuccess())
                     {
                         Debug.LogError("[BackendManager] 게스트 로그인 실패: " + bro?.GetMessage());
+                        if (bro.GetStatusCode() == "403")
+                        {
+                            Debug.LogWarning("[BackendManager] 접근 차단된 계정입니다.");
+                            ShowPopup("접근 차단", "이 계정은 접근이 차단되었습니다.\n자세한 문의는 고객센터를 이용해주세요.");
+                            ShowPopupExitButton();
+                            return; // 재시도 팝업 없이 종료 버튼만 노출
+                        }
+
                         if (bro.GetStatusCode() == "401")
                         {
                             Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
@@ -492,11 +537,177 @@ namespace Muks.BackEnd
             );
         }
 
+        /// <summary>
+        /// 뒤끝 서버에서 유저의 gamerId(UUID)를 조회해 UserInfo.GamerId에 저장합니다.
+        /// 로그인 직후 한 번 호출하면 이후 모든 UI에서 재사용할 수 있습니다.
+        /// </summary>
+        public void FetchGamerIdAsync(Action onSuccess = null, Action onFail = null)
+        {
+            Backend.BMember.GetUserInfo((bro) =>
+            {
+                if (bro.IsSuccess())
+                {
+                    string gamerId = bro.GetReturnValuetoJSON()["row"]["gamerId"]?.ToString();
+                    if (!string.IsNullOrEmpty(gamerId))
+                        UserInfo.SetGamerId(gamerId);
+                    Debug.Log($"[BackendManager] GamerId 조회 완료: {gamerId}");
+                    onSuccess?.Invoke();
+                }
+                else
+                {
+                    Debug.LogWarning("[BackendManager] GamerId 조회 실패: " + bro.GetMessage());
+                    onFail?.Invoke();
+                }
+            });
+        }
+
 
         public void LogOut()
         {
             _isSaveEnabled = false;
             _isLogin = false;
+        }
+
+        /// <summary>
+        /// 페더레이션 로그인 성공을 외부에서 통보받아 로그인 상태를 활성화합니다.
+        /// GoogleLoginManager 등 외부에서 Backend.BMember.AuthorizeFederation 직접 호출 후 사용합니다.
+        /// </summary>
+        public void NotifyFederationLoginSuccess()
+        {
+            _isLogin = true;
+            _isSaveEnabled = true;
+            Debug.Log("[BackendManager] 페더레이션 로그인 상태 활성화");
+        }
+
+        /// <summary>
+        /// 이미 획득한 GPGS2 AccessToken으로 뒤끝 연동 로그인을 수행합니다 (계정 전환 시 사용).
+        /// LogOut() 호출 후 이 메서드를 사용하여 다른 구글 연동 계정으로 전환합니다.
+        /// </summary>
+        public void FederationLoginWithAccessTokenAsync(string accessToken, FederationType federationType, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            
+            if (IsLogin)
+            {
+                Debug.LogWarning("[BackendManager] FederationLoginWithAccessToken: 이미 로그인 상태입니다.");
+                return;
+            }
+
+            ProcessBackendAPI(
+                "구글 연동 계정 전환 로그인",
+                (callback) => Backend.BMember.AuthorizeFederation(accessToken, federationType, (bro) => callback?.Invoke(bro)),
+                (bro) =>
+                {
+                    Debug.Log($"[BackendManager] AuthorizeFederation 응답 statusCode: {bro.GetStatusCode()}, message: {bro.GetMessage()}");
+                    if (bro.GetStatusCode() == "201")
+                    {
+                        // 201 = 신규 계정 생성 → 연동된 계정으로 전환 실패 (토큰이 만료되었거나 잘못된 경우)
+                        Debug.LogError("[BackendManager] 연동 계정 전환 실패: 201 신규 계정 생성됨. accessToken이 이미 만료되었을 수 있습니다.");
+                        _isLogin = false;
+                        _isSaveEnabled = false;
+                        Backend.BMember.Logout();
+                        onFail?.Invoke(BackendState.Failure);
+                        return;
+                    }
+                    _isLogin = true;
+                    _isSaveEnabled = true;
+                    Debug.Log($"[BackendManager] 구글 연동 계정 전환 로그인 성공 (statusCode: {bro.GetStatusCode()})");
+                    onSuccess?.Invoke(bro);
+                },
+                onFail,
+                0,
+                false
+            );
+        }
+
+        /// <summary>
+        /// 서버 인증 코드(또는 IdToken)로 뒤끝 연동 로그인을 비동기적으로 수행합니다
+        /// </summary>
+        public void GoogleFederationLoginAsync(string authCode, FederationType federationType, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            if (IsLogin)
+            {
+                Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
+                return;
+            }
+
+            if (federationType == FederationType.GPGS2)
+            {
+                // GPGS2: authCode → GetGPGS2AccessToken → AuthorizeFederation 2단계
+                ProcessBackendAPI(
+                    "GPGS2 로그인 액세스 토큰 획득",
+                    (callback) => Backend.BMember.GetGPGS2AccessToken(authCode, (bro) => callback?.Invoke(bro)),
+                    (bro) =>
+                    {
+                        string accessToken = bro.GetReturnValuetoJSON()["access_token"].ToString();
+                        Debug.Log("[BackendManager] GetGPGS2AccessToken 성공, 뒤끝 연동 로그인 시도");
+                        ProcessBackendAPI(
+                            "GPGS2 연동 로그인",
+                            (callback2) => Backend.BMember.AuthorizeFederation(accessToken, federationType, (bro2) => callback2?.Invoke(bro2)),
+                            (bro2) =>
+                            {
+                                _isLogin = true;
+                                if (bro2.GetStatusCode() == "201")
+                                    Debug.Log("[BackendManager] GPGS2 연동 신규 가입 성공");
+                                else
+                                    Debug.Log("[BackendManager] GPGS2 연동 로그인 성공");
+                                onSuccess?.Invoke(bro2);
+                            },
+                            onFail,
+                            0,
+                            false
+                        );
+                    },
+                    onFail,
+                    0,
+                    false
+                );
+            }
+            else
+            {
+                ProcessBackendAPI(
+                    "구글 연동 로그인",
+                    (callback) => Backend.BMember.AuthorizeFederation(authCode, federationType, (bro) => callback?.Invoke(bro)),
+                    (bro) =>
+                    {
+                        _isLogin = true;
+                        if (bro.GetStatusCode() == "201")
+                            Debug.Log($"[BackendManager] {federationType} 연동 신규 가입 성공");
+                        else
+                            Debug.Log($"[BackendManager] {federationType} 연동 로그인 성공");
+                        onSuccess?.Invoke(bro);
+                    },
+                    onFail,
+                    0,
+                    false
+                );
+            }
+        }
+
+        /// <summary>
+        /// 뒤끝 토큰으로 자동 로그인을 비동기적으로 시도합니다
+        /// </summary>
+        public void TokenLoginAsync(Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            if (IsLogin)
+            {
+                Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
+                return;
+            }
+
+            ProcessBackendAPI(
+                "토큰 자동 로그인",
+                (callback) => Backend.BMember.LoginWithTheBackendToken((bro) => callback?.Invoke(bro)),
+                (bro) =>
+                {
+                    _isLogin = true;
+                    _isSaveEnabled = true;
+                    Debug.Log("[BackendManager] 토큰 자동 로그인 성공");
+                    onSuccess?.Invoke(bro);
+                },
+                onFail,
+                1,
+                false
+            );
         }
         
         /// <summary>
@@ -967,18 +1178,19 @@ namespace Muks.BackEnd
         /// </summary>
         public bool SaveGameData(string tableId, Param param)
         {
+
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
                 return false;
             }
-            
+
             if (!IsLogin || !_isLoaded)
             {
                 Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
                 return false;
             }
-            
+
             // 유저 정보 조회를 위한 조건
             Where where = new Where();
             where.Equal("owner_inDate", Backend.UserInDate);
@@ -1120,6 +1332,14 @@ namespace Muks.BackEnd
             string errorCode = bro.GetErrorCode();
             string statusCode = bro.GetStatusCode();
             
+            // GPGS2 인증 코드 관련 에러는 어떤 상태 코드여도 토큰 갱신 불가 → 즉시 실패
+            string broMessage = bro.GetMessage() ?? "";
+            if (broMessage.Contains("GPGS2"))
+            {
+                Debug.LogError($"[BackendManager] GPGS2 인증 코드 오류 (서버 설정 확인 필요): {broMessage}");
+                return BackendState.Failure;
+            }
+
             // 상태 코드별 처리
             switch (statusCode)
             {
@@ -1176,7 +1396,14 @@ namespace Muks.BackEnd
             }
             else if (bro.IsBadAccessTokenError())
             {
-                return RefreshTheBackendToken(3) ? BackendState.Retry : BackendState.Failure;
+                // GPGS2 serverAuthCode 관련 에러는 토큰 갱신 불가 - 즉시 실패 처리
+                string msg = bro.GetMessage();
+                if (msg != null && msg.Contains("GPGS2"))
+                {
+                    Debug.LogError($"[BackendManager] GPGS2 인증 코드 오류 (토큰 갱신 불가): {msg}");
+                    return BackendState.Failure;
+                }
+                return IsLogin && RefreshTheBackendToken(3) ? BackendState.Retry : BackendState.Failure;
             }
             
             // 기타 오류
@@ -1347,6 +1574,7 @@ namespace Muks.BackEnd
                 
                 if (_isLogin && _isSaveEnabled)
                 {
+                    DebugLog.Log("11");
                     OnPauseHandler?.Invoke();
                 }
             }
@@ -1372,6 +1600,13 @@ namespace Muks.BackEnd
 
         private void CheckTokenValidity()
         {
+            // 광고 재생 중에는 토큰 검사 생략 (ad 오버레이로 인한 일시적 네트워크 실패 → 오탐 방지)
+            if (AdManager.HasInstance && AdManager.IsAdPlaying)
+            {
+                Debug.Log("[BackendManager] 광고 재생 중 - 토큰 유효성 검사 건너뜀");
+                return;
+            }
+
             if (_isLogin)
             {
                 // 토큰 유효성 검사를 위한 API 호출

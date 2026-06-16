@@ -8,6 +8,12 @@ using UnityEngine;
 
 public class UIFurniture : MobileUIView
 {
+
+    public event Action OnShowEvent;
+    public event Action OnBuyEvent;
+
+        
+
     [Header("Components")]
     [SerializeField] private UIRestaurantAdmin _uiRestaurantAdmin;
     [SerializeField] private FurnitureSystem _furnitureSystem;
@@ -43,6 +49,7 @@ public class UIFurniture : MobileUIView
     private List<FurnitureData> _currentTypeDataList;
 
     private bool _isInitialized = false;
+    private Vector3 _tmpScale;
 
     public override void Init()
     {
@@ -62,6 +69,7 @@ public class UIFurniture : MobileUIView
         SetFurnitureDataOptimized(FurnitureType.Table1);
 
         _isInitialized = true;
+        _tmpScale = _animeUI.transform.localScale;
         gameObject.SetActive(false);
     }
 
@@ -103,11 +111,12 @@ public class UIFurniture : MobileUIView
         // 데이터 설정과 UI 업데이트를 한 번에 처리
         SetFurnitureDataOptimized(FurnitureType.Table1);
 
-        TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
+        TweenData tween = _animeUI.TweenScale(_tmpScale, _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true;
+            OnShowEvent?.Invoke();
         });
     }
 
@@ -118,7 +127,7 @@ public class UIFurniture : MobileUIView
         _uiRestaurantAdmin.MainUISetActive(true);
         transform.SetAsLastSibling();
         _canvasGroup.blocksRaycasts = false;
-        _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
+        _animeUI.transform.localScale = _tmpScale;
 
         TweenData tween = _animeUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
         tween.OnComplete(() =>
@@ -317,6 +326,7 @@ public class UIFurniture : MobileUIView
 
         UserInfo.GiveFurniture(UserInfo.CurrentStage, data);
         PopupManager.Instance.ShowDisplayText("새로운 가구를 구매했어요!");
+        OnBuyEvent?.Invoke();
     }
 
     private void OnChangeFurnitureEvent(ERestaurantFloorType floor, FurnitureType type)

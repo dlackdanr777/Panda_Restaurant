@@ -23,12 +23,13 @@ public class StageInfo
     public event Action OnChangeMaxSinkBowlHandler;
 
     public event Action OnChangeSatisfactionHandler;
+    public event Action OnChangeFeverGaugeHandler;
 
     private EStage _stage;
     public EStage Stage => _stage;
 
 
-    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor3;
+    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor1;
     public ERestaurantFloorType UnlockFloor => _unlockFloor;
 
 
@@ -40,6 +41,18 @@ public class StageInfo
 
     private float _satisfaction;
     public float Satisfaction => _satisfaction;
+
+    private float _feverGauge;
+    public float FeverGauge => _feverGauge;
+    public void SetFeverGauge(float value)
+    {
+        _feverGauge = value;
+        OnChangeFeverGaugeHandler?.Invoke();
+    }
+
+    private List<string> _waitingCustomerIdList = new List<string>();
+    public IReadOnlyList<string> WaitingCustomerIdList => _waitingCustomerIdList;
+    public void SetWaitingCustomerIds(List<string> ids) { _waitingCustomerIdList = ids ?? new List<string>(); }
 
     private Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>> _equipStaffTypeDic = new Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>>();
     private Dictionary<string, SaveStaffData> _giveStaffDic = new Dictionary<string, SaveStaffData>();
@@ -149,7 +162,7 @@ public class StageInfo
         if (GameManager.Instance.MaxTipVolume <= _tip)
             return;
 
-        _tip = _tip + value;
+        _tip = Mathf.Clamp(_tip + value, 0, GameManager.Instance.MaxTipVolume);
         OnChangeTipHandler?.Invoke();
     }
 
@@ -206,10 +219,8 @@ public class StageInfo
     {
         foreach (var kvp in _equipStaffTypeDic[floor])
         {
-            if (kvp.Value == null || kvp.Value.Id != data.Id)
-                continue;
-
-            return true;
+            if (kvp.Value == data)
+                return true;
         }
 
         return false;
@@ -441,7 +452,7 @@ public class StageInfo
             DebugLog.Log("직원 스킨이 설정되어 있지 않습니다: " + staff.Id);
             return null;
         }
-
+        DebugLog.Log("직원 스킨 아이디: " + skinId);
         StaffSkinData skinData = SkinDataManager.Instance.GetStaffSkinData(skinId);
         if (skinData == null)
         {
@@ -1060,6 +1071,7 @@ public class StageInfo
     public void SetMaxSinkBowlCount(ERestaurantFloorType floor, int maxBowlCount)
     {
         int floorIndex = (int)floor;
+        maxBowlCount = Mathf.Max(6, maxBowlCount);
         _saveKitchenDatas[floorIndex].SetMaxSinkBowlCount(maxBowlCount);
         OnChangeMaxSinkBowlHandler?.Invoke();
     }
@@ -1114,6 +1126,8 @@ public class StageInfo
         data.Score = _score;
         data.Tip = _tip;
         data.Satisfaction = _satisfaction;
+        data.FeverGauge = _feverGauge;
+        data.WaitingCustomerIdList = new List<string>(_waitingCustomerIdList);
 
         data.SaveKitchenDataList = ConvertKitchenDataToList();
         data.SaveTableDataList = ConvertTableDataToList();
@@ -1176,11 +1190,12 @@ public bool LoadData(ServerStageData loadData)
     if (loadData == null)
         return false;
 
-    //_unlockFloor = loadData.UnlockFloor;
-    _unlockFloor = ERestaurantFloorType.Floor3;
+    _unlockFloor = loadData.UnlockFloor;
     _score = loadData.Score;
     _tip = loadData.Tip;
     _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
+    _feverGauge = loadData.FeverGauge;
+    _waitingCustomerIdList = loadData.WaitingCustomerIdList ?? new List<string>();
 
 
         _giveStaffDic.Clear();

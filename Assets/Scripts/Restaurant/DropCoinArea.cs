@@ -77,8 +77,17 @@ public class DropCoinArea : MonoBehaviour
         _data.SetMoney(_currentMoney);
         PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
         coin.AddEvent(GiveCoin);
-        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
-        SoundManager.Instance.PlayEffectAudio(effectType, _dropCoinSound, 0.05f);
+
+        if (UserInfo.IsFirstTutorialClear)
+        {
+            EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+            SoundManager.Instance.PlayEffectAudio(effectType, _dropCoinSound, 0.05f);
+        }
+        else
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _dropCoinSound, 0.05f);
+        }
+
         Vector3 targetPos = _dropArea.position;
         targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * Count), 0, 0);
 
@@ -147,8 +156,16 @@ public class DropCoinArea : MonoBehaviour
         _currentMoney = 0;
         _data.SetMoney(_currentMoney);
         _data.SetCoinCount(0);
-        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
-        SoundManager.Instance.PlayEffectAudio(effectType, SoundEffectType.GoldSound);
+
+        if(UserInfo.IsFirstTutorialClear)
+        {
+            EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+            SoundManager.Instance.PlayEffectAudio(effectType, SoundEffectType.GoldSound);
+        }
+        else
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, SoundEffectType.GoldSound);
+        }
 
         for (int i = 0; i < _coinList.Count; i++)
         {

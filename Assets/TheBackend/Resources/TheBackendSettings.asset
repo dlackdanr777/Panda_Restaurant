@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: TheBackendSettings
   m_EditorClassIdentifier: 
   clientAppID: 21c31f60-a186-11ef-a556-bfddcc4fec9a8757
-  signatureKey: 07ddf110-a186-11ef-b780-ed390bebfd6d8757
+  signatureKey: e7e36f80-9f44-11f0-a1e4-274a1fb2a9ed8757
   functionAuthKey: 
-  packageName: com.MultiverseStudio.RestaurantGame
+  packageName: com.MultiverseStudio.EveryonesRestaurant
   sendLogReport: 1
   timeOutSec: 100
   Version: 5.15.0

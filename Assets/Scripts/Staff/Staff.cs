@@ -29,12 +29,16 @@ public class Staff : MonoBehaviour
 
     protected EquipStaffType _staffType;
     public EquipStaffType EquipStaffType => _staffType;
+    protected StaffGroupType _staffGroupType;
     protected IStaffAction _staffAction;
     protected EStaffState _state;
     protected ERestaurantFloorType _equipFloorType;
     public ERestaurantFloorType EquipFloorType => _equipFloorType;
     protected RestaurantType _restaurantType;
     public RestaurantType RestaurantType => _restaurantType;
+
+    protected Sprite _sprite;
+    protected Sprite[] _idleSprites;
 
 
     protected bool _usingSkill;
@@ -45,24 +49,26 @@ public class Staff : MonoBehaviour
     protected float _scaleX;
     protected float _moveSpeed;
     protected float _speedMul;
-    public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(StaffDataManager.Instance.GetStaffGroupType(_staffType))), 0.5f, 3f);
+    public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(_staffGroupType)), 0.5f, 3f);
 
     protected Coroutine _useSkillRoutine;
+    protected Coroutine _idleAnimationRoutine;
     protected RuntimeAnimatorController _defaultAnimatorController;
 
 
     public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController, FeverSystem feverSystem)
     {
         _staffType = type;
+        _staffGroupType = StaffDataManager.Instance.GetStaffGroupType(type);
         _tableManager = tableManager;
         _customerController = customerController;
         _kitchenSystem = kitchenSystem;
         _feverSystem = feverSystem;
-        _tableManager = tableManager;
         _spriteRenderer.color = Color.white;
         _scaleX = transform.localScale.x;
         GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
         UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
+        UserInfo.OnChangeStaffSkinHandler += OnChangeSkinEvent;
         _feverSystem.OnStartFeverHandler += OnStartFeverEvent;
         _feverSystem.OnEndFeverHandler += OnEndFeverEvent;
 
@@ -77,13 +83,13 @@ public class Staff : MonoBehaviour
 
     public float GetActionValue()
     {
-        if(_staffData == null)
+        if (_staffData == null)
         {
             throw new Exception("현재 스탭 데이터가 null입니다.");
         }
 
         int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, _staffData);
-        if(level <= 0)
+        if (level <= 0)
         {
             throw new Exception("현재 스탭 데이터를 보유하고 있지 않습니다: " + _staffData.Id);
         }
@@ -126,37 +132,45 @@ public class Staff : MonoBehaviour
 
         if (_animator != null)
         {
-            DebugLog.Log("스탭 애니메이터 컨트롤러 설정: " + name + " - " + _staffData.AnimatorController);
-            _animator.runtimeAnimatorController = _staffData.AnimatorController == null ? _defaultAnimatorController : _staffData.AnimatorController;  
+            _animator.runtimeAnimatorController = _staffData.AnimatorController == null ? _defaultAnimatorController : _staffData.AnimatorController;
         }
 
         _moveSpeed = staffData.GetSpeed(Level);
         _speedMul = 0;
         _usingSkill = false;
         _skillTimer = 0;
+
+        OnChangeSkinEvent();
         _spriteRenderer.enabled = false;
-        _spriteRenderer.sprite = staffData.Sprite;
-        _spriteParent.transform.localPosition = new Vector3(0, -(AStar.Instance.NodeSize * 0.5f), 0);
+        _spriteRenderer.sprite = _sprite;
         _spriteRenderer.transform.localPosition = Vector3.zero;
+        _spriteParent.transform.localPosition = new Vector3(0, -(AStar.Instance.NodeSize * 0.5f), 0);
         _spriteRenderer.enabled = true;
 
         _staffAction = staffData.GetStaffAction(this, _tableManager, _kitchenSystem, _customerController);
 
         OnChangeSkillValueEvent();
+        // 스탭 데이터 설정 완료 후 기본적으로 Idle 상태로 설정하여 Idle 애니메이션 시작
+        SetStaffState(EStaffState.None);
     }
 
-    public void SetAlpha(float alpha)
+    public virtual void SetAlpha(float alpha)
     {
-        Color nowColor = _spriteRenderer.color;
-        _spriteRenderer.color = new Color(nowColor.r, nowColor.g, nowColor.b, alpha);
+        _spriteRenderer.color = new Color(_spriteRenderer.color.r, _spriteRenderer.color.g, _spriteRenderer.color.b, alpha);
     }
 
     public virtual void TweenAlpha(float alpha, float duration, Ease ease, Action onCompleted = null)
     {
-        _skillEffect.TweenStop();
-        _spriteRenderer.TweenStop();
+        if (_skillEffect != null)
+            _skillEffect.TweenStop();
+        
+        if (_spriteRenderer != null)
+            _spriteRenderer.TweenStop();
+        
         _skillEffect?.TweenAlpha(alpha, duration, ease);
-        _spriteRenderer.TweenAlpha(alpha, duration, ease).OnComplete(onCompleted);
+        
+        if (_spriteRenderer != null)
+            _spriteRenderer.TweenAlpha(alpha, duration, ease).OnComplete(onCompleted);
     }
 
 
@@ -168,6 +182,16 @@ public class Staff : MonoBehaviour
     public virtual void SetStaffState(EStaffState state)
     {
         _state = state;
+
+        // Idle 상태(None)일 때만 Idle 애니메이션 시작
+        if (_state == EStaffState.None)
+        {
+            StartIdleAnimation();
+        }
+        else
+        {
+            StopIdleAnimation();
+        }
     }
 
 
@@ -182,7 +206,7 @@ public class Staff : MonoBehaviour
         _spriteRenderer.sortingLayerName = sortingLayerName;
         _spriteRenderer.sortingOrder = orderInLayer;
 
-        if(_skillEffect != null)
+        if (_skillEffect != null)
         {
             _skillEffect.sortingLayerName = sortingLayerName;
             _skillEffect.sortingOrder = orderInLayer - 1;
@@ -197,7 +221,7 @@ public class Staff : MonoBehaviour
 
     public void StaffAction()
     {
-        if(_staffAction == null)
+        if (_staffAction == null)
             return;
 
         _staffAction.PerformAction(this);
@@ -219,7 +243,7 @@ public class Staff : MonoBehaviour
 
         if (_usingSkill)
         {
-            Debug.Log("스킬이 이미 사용중 입니다.");
+            DebugLog.Log("스킬이 이미 사용중 입니다.");
             return;
         }
 
@@ -242,11 +266,13 @@ public class Staff : MonoBehaviour
 
     private void OnDisable()
     {
-        if(transform != null)
+        if (transform != null)
             transform.TweenStop();
 
         if (_spriteRenderer != null)
             _spriteRenderer.TweenStop();
+
+        StopIdleAnimation();
     }
 
 
@@ -283,13 +309,23 @@ public class Staff : MonoBehaviour
     protected int _moveEndDir;
     protected bool _isStairsMove;
 
+    protected virtual void CancelTeleportEffects()
+    {
+        if (_skillEffect != null) _skillEffect.TweenStop();
+        if (_spriteRenderer != null) _spriteRenderer.TweenStop();
+        SetAlpha(1f);
+    }
+
     public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
     {
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
 
         if (_teleportCoroutine != null)
+        {
             StopCoroutine(_teleportCoroutine);
+            CancelTeleportEffects();
+        }
 
         _moveCompleted = onCompleted;
         RestaurantType type = RestaurantType.Hall;
@@ -312,8 +348,11 @@ public class Staff : MonoBehaviour
             StopCoroutine(_moveCoroutine);
 
         if (_teleportCoroutine != null)
+        {
             StopCoroutine(_teleportCoroutine);
-
+            // 텔레포트 중단 시 알파값 복구 (Tween도 중단)
+            CancelTeleportEffects();
+        }
     }
 
 
@@ -342,11 +381,13 @@ public class Staff : MonoBehaviour
 
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
-            RestaurantType type = RestaurantType.Hall;
-            if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
-                type = RestaurantType.Kitchen;
-
-            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(_tableManager.GetDoorPos(type, _targetPos), _targetPos, TargetMove)));
+            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() =>
+            {
+                _spriteRenderer.color = Color.white;
+                _skillEffect.color = Color.white;
+                // 텔레포트 후 현재 위치에서 목적지로 경로 탐색
+                AStar.Instance.RequestPath(_moveObj.transform.position, _targetPos, TargetMove);
+            }));
         }
         ));
     }
@@ -354,22 +395,85 @@ public class Staff : MonoBehaviour
 
     protected IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {
-        if (1 < nodeList.Count)
-            nodeList.RemoveAt(0);
+        // 현재 위치에서 너무 가까운 첫 노드들을 모두 제거 (순간이동 방지)
+        Vector3 currentPos = _moveObj.transform.position;
+        while (nodeList.Count > 1)
+        {
+            float dx = nodeList[0].x - currentPos.x;
+            float dy = nodeList[0].y - currentPos.y;
+            float distSqr = dx * dx + dy * dy;
+            
+            // 0.5 유닛 이내면 스킵
+            if (distSqr < 0.25f)
+                nodeList.RemoveAt(0);
+            else
+                break;
+        }
+
+        // nodeList가 비어있거나 모두 가까운 노드였을 경우 즉시 완료 처리
+        if (nodeList.Count == 0)
+        {
+            SetStaffState(EStaffState.None);
+            SetSpriteDir(_moveEndDir);
+            onCompleted?.Invoke();
+            
+            if (!_isStairsMove)
+            {
+                _moveCompleted?.Invoke();
+                _moveCompleted = null;
+            }
+            yield break;
+        }
 
         SetStaffState(EStaffState.Run);
+        
+        Vector2 targetVec;
+        float distanceSqr;
+        float step;
+
+        
         foreach (Vector2 vec in nodeList)
         {
-            while ((vec - (Vector2)_moveObj.transform.position).sqrMagnitude > 0.01f)
+            targetVec = vec;
+            
+            while (true)
             {
-                Vector2 dir = (vec - (Vector2)_moveObj.transform.position).normalized;
-                SetSpriteDir(dir.x);
-                float step = Time.deltaTime * _moveSpeed * SpeedMul;
-                _moveObj.transform.position = Vector2.MoveTowards(_moveObj.transform.position, vec, step);
+                currentPos = _moveObj.transform.position;
+                
+                // 거리 제곱 계산 (GC 없음)
+                float dx = targetVec.x - currentPos.x;
+                float dy = targetVec.y - currentPos.y;
+                distanceSqr = dx * dx + dy * dy;
+                
+                if (distanceSqr <= 0.01f)
+                    break;
+                
+                // 방향 계산 및 정규화
+                float distance = Mathf.Sqrt(distanceSqr);
+                float dirX = dx / distance;
+                float dirY = dy / distance;
+                
+                SetSpriteDir(dirX);
+                
+                step = Time.deltaTime * _moveSpeed * SpeedMul;
+                
+                // MoveTowards 직접 구현 (GC 없음)
+                if (distance > step)
+                {
+                    currentPos.x += dirX * step;
+                    currentPos.y += dirY * step;
+                }
+                else
+                {
+                    currentPos.x = targetVec.x;
+                    currentPos.y = targetVec.y;
+                }
+                
+                _moveObj.transform.position = currentPos;
                 yield return null;
             }
 
-            _moveObj.transform.position = vec;
+            _moveObj.transform.position = new Vector3(targetVec.x, targetVec.y, currentPos.z);
         }
 
         SetStaffState(EStaffState.None);
@@ -387,15 +491,38 @@ public class Staff : MonoBehaviour
     protected IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
         yield return YieldCache.WaitForSeconds(0.6f);
+        
+        if (!gameObject.activeInHierarchy)
+        {
+            SetAlpha(1f);
+            yield break;
+        }
+        
         RestaurantType type = RestaurantType.Hall;
         if (_staffType == EquipStaffType.Chef /*|| _staffType == EquipStaffType.Chef2*/)
             type = RestaurantType.Kitchen;
-        TweenAlpha(0, 0.4f, Ease.Constant, () => _moveObj.transform.position = _tableManager.GetDoorPos(type, _targetPos));
+        
+        Vector3 doorPos = _tableManager.GetDoorPos(type, _targetPos);
+        TweenAlpha(0, 0.4f, Ease.Constant, () => {
+            _moveObj.transform.position = doorPos;
+            SetAlpha(0f);
+            });
         yield return YieldCache.WaitForSeconds(1f);
-        TweenAlpha(1, 0.4f, Ease.Constant);
+        SetAlpha(0f);
+        if (!gameObject.activeInHierarchy)
+        {
+            SetAlpha(1f);
+            yield break;
+        }
+        
+        TweenAlpha(1, 0.4f, Ease.Constant, () => SetAlpha(1f));
         yield return YieldCache.WaitForSeconds(1f);
-         _skillEffect.color = Color.white;
-        _spriteRenderer.color = Color.white;
+        SetAlpha(1f);
+        if (_skillEffect != null)
+            _skillEffect.color = Color.white;
+        if (_spriteRenderer != null)
+            _spriteRenderer.color = Color.white;
+        
         onCompleted?.Invoke();
     }
 
@@ -418,6 +545,60 @@ public class Staff : MonoBehaviour
             return;
 
         _skillEffect.gameObject.SetActive(isActive);
+    }
+
+    protected IEnumerator IdleSpriteCoroutine()
+    {
+        if (_staffData == null || _idleSprites == null || _idleSprites.Length == 0)
+            yield break;
+
+        for (int i = 0, cnt = _idleSprites.Length; i < cnt; ++i)
+        {
+            _spriteRenderer.sprite = _idleSprites[i];
+            DebugLog.Log($"[{name}] Idle 애니메이션 - 스프라이트 변경: {_idleSprites[i].name} ({i + 1}/{cnt})");
+            yield return YieldCache.WaitForSeconds(0.1f);
+        }
+
+        _spriteRenderer.sprite = _sprite;
+    }
+
+    protected IEnumerator IdleAnimationRoutine()
+    {
+        while (true)
+        {
+            // 10~20초 사이 랜덤 대기
+            float waitTime = UnityEngine.Random.Range(5f, 10f);
+            yield return YieldCache.WaitForSeconds(waitTime);
+
+            // 여전히 Idle 상태인지 확인
+            if (_state == EStaffState.None && _staffData != null)
+            {
+                yield return StartCoroutine(IdleSpriteCoroutine());
+            }
+        }
+    }
+
+    protected void StartIdleAnimation()
+    {
+        StopIdleAnimation();
+        if (_idleSprites != null && _idleSprites.Length > 0)
+        {
+            DebugLog.Log($"[{name}] Idle 애니메이션 시작 - {_idleSprites.Length}개의 스프라이트");
+            _idleAnimationRoutine = StartCoroutine(IdleAnimationRoutine());
+        }
+        else
+        {
+            DebugLog.LogError($"[{name}] Idle 애니메이션을 시작할 수 없음 - IdleSprites: {(_idleSprites == null ? "null" : "empty")}");
+        }
+    }
+
+    protected void StopIdleAnimation()
+    {
+        if (_idleAnimationRoutine != null)
+        {
+            StopCoroutine(_idleAnimationRoutine);
+            _idleAnimationRoutine = null;
+        }
     }
 
 
@@ -452,11 +633,12 @@ public class Staff : MonoBehaviour
         {
             _staffData.RemoveSlot(this, _tableManager, _kitchenSystem, _customerController);
 
-            if(_staffData.Skill != null && _usingSkill)
+            if (_staffData.Skill != null && _usingSkill)
                 _staffData.Skill.Deactivate(this, _tableManager, _kitchenSystem, _customerController);
         }
 
         StopAllCoroutines();
+        StopIdleAnimation();
         _staffData = null;
         _staffAction = null;
         ObjectPoolManager.Instance.DespawnStaff(_staffType, this);
@@ -464,7 +646,7 @@ public class Staff : MonoBehaviour
 
     private void OnStartFeverEvent()
     {
-        if(!gameObject.activeInHierarchy)
+        if (!gameObject.activeInHierarchy)
             return;
 
         SkillEffectSetActive(true);
@@ -475,10 +657,51 @@ public class Staff : MonoBehaviour
         if (!gameObject.activeInHierarchy)
             return;
 
-        if(_usingSkill)
+        if (_usingSkill)
             return;
 
         SkillEffectSetActive(false);
+    }
+
+    protected virtual void OnChangeSkinEvent()
+    {
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        if (_staffData == null)
+            return;
+
+        DebugLog.Log("스탭 스킨 변경: " + name + " - " + _staffData.Id);
+
+        StaffSkinData data = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, _staffData);
+        if (data == null)
+        {
+            _sprite = _staffData.Sprite;
+            _idleSprites = _staffData.IdleSprites;
+            DebugLog.Log($" - 기본 스킨 사용: IdleSprites {(_idleSprites != null ? _idleSprites.Length.ToString() : "null")}개");
+            return;
+        }
+
+        _sprite = data.Sprite;
+        _idleSprites = data.IdleSprites;
+        DebugLog.Log($" - 커스텀 스킨 적용 ({data.Id}): IdleSprites {(_idleSprites != null ? _idleSprites.Length.ToString() : "null")}개");
+
+        if (_state == EStaffState.None)
+        {
+            _spriteRenderer.sprite = _sprite;
+        }
+
+        SetStaffState(_state);
+    }
+
+    protected virtual void OnDestroy()
+    {
+        LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
+        GameManager.Instance.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
+        UserInfo.OnUpgradeStaffHandler -= OnLevelUpEvent;
+        UserInfo.OnChangeStaffSkinHandler -= OnChangeSkinEvent;
+        _feverSystem.OnStartFeverHandler -= OnStartFeverEvent;
+        _feverSystem.OnEndFeverHandler -= OnEndFeverEvent;
     }
 
 }

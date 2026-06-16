@@ -21,6 +21,7 @@ public class UITutorial : MobileUIView
     public ButtonPressEffect Gacha1Button => _gacha1Button;
     [SerializeField] private TableButton _orderButton;
     [SerializeField] private TableButton _servingButton;
+    [SerializeField] private GameObject _cookTimer;
     [SerializeField] private GameObject _uiPunchHole;
 
     [SerializeField] private HoleClickHandler _shopHole;
@@ -33,6 +34,7 @@ public class UITutorial : MobileUIView
     [SerializeField] private HoleClickHandler _backHole;
     [SerializeField] private HoleClickHandler _customerGuideHole;
     [SerializeField] private HoleClickHandler _orderHole;
+        [SerializeField] private HoleClickHandler _servingHole;
     [SerializeField] private HoleClickHandler _table1Hole;
 
     [SerializeField] private EnabledScaleAnimation _addCustonerHoleAnime;
@@ -45,6 +47,7 @@ public class UITutorial : MobileUIView
     [SerializeField] private EnabledScaleAnimation _backHoleAnime;
     [SerializeField] private EnabledScaleAnimation _customerGuideHoleAnime;
     [SerializeField] private EnabledScaleAnimation _orderHoleAnime;
+    [SerializeField] private EnabledScaleAnimation _servingHoleAnime;
     [SerializeField] private EnabledScaleAnimation _table1HoleAnime;
 
     [SerializeField] private GameObject _shopMaskCursor;
@@ -57,6 +60,7 @@ public class UITutorial : MobileUIView
     [SerializeField] private GameObject _backHoleCursor;
     [SerializeField] private GameObject _customerGuideHoleCursor;
     [SerializeField] private GameObject _orderHoleCursor;
+    [SerializeField] private GameObject _servingHoleCursor;
     [SerializeField] private GameObject _table1HoleCursor;
 
     [Space]
@@ -82,6 +86,7 @@ public class UITutorial : MobileUIView
         _orderButton.gameObject.SetActive(false);
         _servingButton.gameObject.SetActive(false);
         _table1Button.gameObject.SetActive(false);
+        _cookTimer.SetActive(false);
         _gacha1Button.gameObject.SetActive(false);
 
         _shopHole.SetActive(false);
@@ -94,6 +99,7 @@ public class UITutorial : MobileUIView
         _backHole.SetActive(false);
         _customerGuideHole.SetActive(false);
         _orderHole.SetActive(false);
+        _servingHole.SetActive(false);
         _table1Hole.SetActive(false);
         _customHole.SetActive(false);
 
@@ -107,6 +113,7 @@ public class UITutorial : MobileUIView
         _backHoleCursor.SetActive(false);
         _customerGuideHoleCursor.SetActive(false);
         _orderHoleCursor.SetActive(false);
+        _servingHoleCursor.SetActive(false);
         _table1HoleCursor.SetActive(false);
         _customHoleCursorParent.gameObject.SetActive(false);
 
@@ -134,7 +141,9 @@ public class UITutorial : MobileUIView
         _backHole.SetTargetObjectName("Back Button");
         _customerGuideHole.SetTargetObjectName("Tutorial Guide Button");
         _orderHole.SetTargetObjectName("Tutorial Order Button");
+        _servingHole.SetTargetObjectName("Tutorial Serving Button");
         _table1Hole.SetTargetObjectName("Table1 Button");
+
 
         _shopMaskAnime.SetCallBack(() => _shopMaskCursor.SetActive(false), null, OnShopMaskAnimeCompleted);
         _addCustonerHoleAnime.SetCallBack(() => _addCustomerHoleCursor.SetActive(false), null, OnAddCustomerHoleAnimeCompleted);
@@ -148,6 +157,7 @@ public class UITutorial : MobileUIView
         _orderHoleAnime.SetCallBack(() => _orderHoleCursor.SetActive(false), null, OnOrderHoleAnimeCompleted);
         _table1HoleAnime.SetCallBack(() => _table1HoleCursor.SetActive(false), null, OnTable1HoleAnimeCompleted);
         _customHoleAnime.SetCallBack(() => _customHoleCursorParent.gameObject.SetActive(false), null, OnCustomHoleAnimeCompleted);
+        _servingHoleAnime.SetCallBack(() => _servingHoleCursor.SetActive(false), null, OnServingHoleAnimeCompleted);
 
         _orderButton.Init();
         _servingButton.Init();
@@ -315,10 +325,24 @@ public class UITutorial : MobileUIView
     {
         _servingButton.gameObject.SetActive(value);
         _servingButton.SetData(FoodDataManager.Instance.GetFoodData("FOOD01"));
-        _orderHole.SetActive(false);
-        _orderHoleCursor.SetActive(false);
-        _orderHole.Interactable = false;
+        _servingHole.SetActive(false);
+        _servingHoleCursor.SetActive(false);
+        _servingHole.Interactable = false;
         _isButtonClicked = false;
+    }
+
+    public void ServingHoleSetActive(bool value)
+    {
+        _servingHole.SetActive(value);
+        _servingHoleCursor.SetActive(false);
+        _servingHole.Interactable = false;
+        _isButtonClicked = false;
+    }
+
+
+    public void CookTimerSetActive(bool value)
+    {
+        _cookTimer.SetActive(value);
     }
 
     public void Table1HoleSetActive(bool value)
@@ -336,12 +360,67 @@ public class UITutorial : MobileUIView
         _customHole.HoleRect.sizeDelta = new Vector2(holeDiameter, holeDiameter);
         _customHole.SetTargetObjectName(targetObjName);
         _customHoleCursorParent.gameObject.SetActive(false);
-        _customHole.HoleRect.transform.position = pos.position;
-        _customHoleCursorParent.transform.position = pos.position;
+
+        // RectTransform?? ???? ??
+        RectTransform rectTransform = pos as RectTransform;
+        if (rectTransform != null)
+        {
+            // RectTransform?? ??? ??
+            _customHole.HoleRect.transform.position = rectTransform.position;
+            _customHoleCursorParent.transform.position = rectTransform.position;
+        }
+        else
+        {
+            // ?? Transform?? World to Screen ??
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(pos.position);
+            _customHole.HoleRect.transform.position = screenPos;
+            _customHoleCursorParent.transform.position = screenPos;
+        }
+
         _customHoleCursorParent.sizeDelta = new Vector2(holeDiameter, holeDiameter);
-        _customHole.Interactable = false;
+        _customHole.Interactable = true;
         _isButtonClicked = false;
         _isCustomCursorUp = isCursorUp;
+    }
+
+    public void CustomHoleHide()
+    {
+        _customHole.SetActive(false);
+        _customHoleCursorParent.gameObject.SetActive(false);
+    }
+
+    // ????? ??? ?? ?? Interactable = true? ?? (?? ???)
+    public void CustomHoleSetActiveImmediate(bool value, float holeDiameter, string targetObjName, Transform pos, bool isCursorUp = true)
+    {
+        _customHole.SetActive(value);
+        _customHole.HoleRect.sizeDelta = new Vector2(holeDiameter, holeDiameter);
+        _customHole.SetTargetObjectName(targetObjName);
+
+        RectTransform rectTransform = pos as RectTransform;
+        if (rectTransform != null)
+        {
+            _customHole.HoleRect.transform.position = rectTransform.position;
+            _customHoleCursorParent.transform.position = rectTransform.position;
+        }
+        else
+        {
+            Vector3 screenPos = Camera.main.WorldToScreenPoint(pos.position);
+            _customHole.HoleRect.transform.position = screenPos;
+            _customHoleCursorParent.transform.position = screenPos;
+        }
+
+        _customHoleCursorParent.sizeDelta = new Vector2(holeDiameter, holeDiameter);
+        _customHole.Interactable = true;
+        _isButtonClicked = false;
+        _isCustomCursorUp = isCursorUp;
+        _customHoleCursorParent.gameObject.SetActive(true);
+        _customHoleCursorUp.gameObject.SetActive(isCursorUp);
+        _customHoleCursorDown.gameObject.SetActive(!isCursorUp);
+    }
+    
+    public bool GetCustomHoleActive()
+    {
+        return _customHole.gameObject.activeInHierarchy;
     }
 
 
@@ -525,6 +604,15 @@ public class UITutorial : MobileUIView
             _orderHoleCursor.gameObject.SetActive(true);
         });
     }
+    
+        private void OnServingHoleAnimeCompleted()
+    {
+        Tween.Wait(0.05f, () =>
+        {
+            _servingHole.Interactable = true;
+            _servingHoleCursor.gameObject.SetActive(true);
+        });
+    }
 
     private void OnTable1HoleAnimeCompleted()
     {
@@ -540,10 +628,10 @@ public class UITutorial : MobileUIView
     {
         Tween.Wait(0.05f, () =>
         {
-            _customHole.Interactable = true;
-            _customHoleCursorParent.gameObject.SetActive(true);
-            _customHoleCursorUp.gameObject.SetActive(_isCustomCursorUp);
-            _customHoleCursorDown.gameObject.SetActive(!_isCustomCursorUp);
+            // Interactable? CustomHoleSetActive?? ?? true? ???
+            _customHoleCursorParent.gameObject.SetActive(_customHole.gameObject.activeInHierarchy);
+            _customHoleCursorUp.gameObject.SetActive(_isCustomCursorUp && _customHole.gameObject.activeInHierarchy);
+            _customHoleCursorDown.gameObject.SetActive(!_isCustomCursorUp && _customHole.gameObject.activeInHierarchy);
         });
     }
 
@@ -554,7 +642,7 @@ public class UITutorial : MobileUIView
 
     private void OnCustomerGuideButtonClicked()
     {
-        _tableManager.OnCustomerGuideEventPlaySound(ERestaurantFloorType.Floor1, 0);
+        _tableManager.OnCustomerGuideEventPlayUISound(0);
 
         _customerGuideHole.SetActive(false);
         _customerGuideButton.gameObject.SetActive(false);

@@ -149,7 +149,7 @@ namespace Muks.MobileUI
             MobileUIView view = _activeViewList.Find(x => x == _viewDic[viewName]);
             if (view == null)
             {
-                Debug.LogError("해당 uiView가 열려있지 않습니다.");
+                Debug.LogError("해당 uiView가 열려있지 않습니다: " + viewName);
                 return;
             }
 
@@ -202,7 +202,7 @@ namespace Muks.MobileUI
         /// <summary> 꺼놨던 모든 UIView를 SetActive(true)한다. </summary>
         public override void AllShow()
         {
-            _rootUiView.UIView.gameObject.SetActive(true);
+            _rootUiView.UIView?.gameObject.SetActive(true);
 
             foreach (MobileUIView view in _activeViewList)
             {

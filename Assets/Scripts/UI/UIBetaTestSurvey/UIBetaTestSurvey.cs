@@ -6,37 +6,37 @@ public class UIBetaTestSurvey : MonoBehaviour
     [Header("Components")]
     [SerializeField] private Button _surveyButton;
     [SerializeField] private Image _alramImage;
-/*
+
     private void Awake()
     {
         _surveyButton.onClick.AddListener(OnButtonClicked);
-        OnGiveFurnitureEvent();
-        UserInfo.OnGiveFurnitureHandler += OnGiveFurnitureEvent;
+        OnVisitiedCustomerEvent();
+        UserInfo.OnAddCustomerCountHandler += OnVisitiedCustomerEvent;
     }
 
 
     private void OnEnable()
     {
-        OnGiveFurnitureEvent();
+        OnVisitiedCustomerEvent();
     }
-*/
 
-   /* private void OnGiveFurnitureEvent()
+
+   private void OnVisitiedCustomerEvent()
     {
-        bool isActive = UserInfo.IsActivatedFurnitureEffectSet(EStage.Stage1, "SET01");
+        bool isActive = UserInfo.TotalCumulativeCustomerCount >= 200;
         _alramImage.gameObject.SetActive(isActive);
     }
 
 
     private void OnButtonClicked()
     {
-        DebugLog.Log(UserInfo.GetEffectSetFurnitureCount(EStage.Stage1, "SET01"));
-        if(UserInfo.IsActivatedFurnitureEffectSet(EStage.Stage1, "SET01"))
+        DebugLog.Log(UserInfo.TotalCumulativeCustomerCount);
+        if(UserInfo.TotalCumulativeCustomerCount >= 200)
         {
-            Application.OpenURL("https://naver.me/5XJ7mKyj");
+            Application.OpenURL("https://form.naver.com/response/oXNuUpre4vaCQgEzQ5J0LQ");
             return;
         }
 
-        PopupManager.Instance.ShowDisplayText("원스토어 리워드를 참가하시려면\n가구 '평범한 세트' 를 완성해 주세요!");
-    }*/
+        PopupManager.Instance.ShowDisplayText("원스토어 리워드를 참가하시려면\n방문 손님 200명을 달성하세요.");
+    }
 }

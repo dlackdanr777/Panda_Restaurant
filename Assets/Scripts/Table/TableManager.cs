@@ -32,10 +32,6 @@ public class TableManager : MonoBehaviour
     [Header("Audios")]
     [SerializeField] private AudioClip _callSound;
 
-    [Space]
-    [Header("Tutorial Components")]
-    [SerializeField] private GachaTutorial _miniGameTutorial;
-
 
 
     public Vector3 GetDoorPos(RestaurantType type, Vector3 pos)
@@ -142,7 +138,10 @@ public class TableManager : MonoBehaviour
     public void OnCustomerGuideEventPlaySound(int sitPos = -1)
     {
         if (OnCustomerGuideEvent(sitPos))
+        {
             SoundManager.Instance.PlayEffectAudio(EffectType.Hall1, _callSound);
+        }
+            
     }
 
     public void OnCustomerGuideEventPlaySound(ERestaurantFloorType floor, int sitPos = -1)
@@ -150,6 +149,15 @@ public class TableManager : MonoBehaviour
         EffectType effectType = SoundManager.Instance.GetHallEffectType(floor, RestaurantType.Hall);
         if (OnCustomerGuideEvent(floor, sitPos))
             SoundManager.Instance.PlayEffectAudio(effectType, _callSound);
+    }
+
+    public void OnCustomerGuideEventPlayUISound(int sitPos = -1)
+    {
+        if (OnCustomerGuideEvent(sitPos))
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _callSound);
+        }
+            
     }
 
 
@@ -180,34 +188,42 @@ public class TableManager : MonoBehaviour
 
         _customerController.GuideCustomer(targetPos, 0, () =>
         {
-            Tween.Wait(0.1f, () =>
+            // 손님 도착 확인 - 참조 일치 여부 체크
+            if (data.CurrentCustomer == null || data.CurrentCustomer != customer)
             {
-                if (data.CurrentCustomer == null)
-                    return;
+                DebugLog.LogError($"손님 안내 중단: CurrentCustomer 불일치 (Table: {data.name})");
+                return;
+            }
 
-                customer.transform.position = data.ChairTrs[data.SitIndex].position;
-                customer.SetSitTableData(data);
-                data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
-                data.ServingButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
+            // 손님이 도착했으므로 즉시 위치 설정 (대기 시간 제거)
+            // StopMove()로 경로 탐색 race condition 완전 차단
+            customer.StopMove();
+            customer.transform.position = data.ChairTrs[data.SitIndex].position;
+            customer.SetSitTableData(data);
+            data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
+            data.ServingButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
 
-                customer.SetSpriteDir(-data.SitDir);
-                customer.SetLayer("SitCustomer", 0);
-                customer.ChangeState(CustomerState.Sit);
-                customer.FixSpritePosition(false);
+            customer.SetSpriteDir(-data.SitDir);
+            customer.SetLayer("SitCustomer", 0);
+            customer.ChangeState(CustomerState.Sit);
+            customer.FixSpritePosition(false);
 
-                Tween.Wait(1f, () =>
+            Tween.Wait(1.5f, () =>
+            {
+                // 재확인: 손님이 여전히 테이블에 있는지
+                if (data.CurrentCustomer == null || data.CurrentCustomer != customer)
                 {
-                    if (data.CurrentCustomer == null)
-                        return;
+                    DebugLog.LogError($"앉기 애니메이션 후 손님 없음 (Table: {data.name})");
+                    return;
+                }
 
-                    if (!_satisfactionSystem.CheckCustomerTendency(customer.NormalCustomerData.TendencyType))
-                    {
-                        AngerExitCustomer(data);
-                        return;
-                    }
+                if (!_satisfactionSystem.CheckCustomerTendency(customer.NormalCustomerData.TendencyType))
+                {
+                    AngerExitCustomer(data);
+                    return;
+                }
 
-                    OnCustomerSeating(data);
-                });
+                OnCustomerSeating(data);
             });
         });
     }
@@ -236,13 +252,6 @@ public class TableManager : MonoBehaviour
         data.CurrentCustomer.FixSpritePosition(false);
 
         FoodData foodData = data.CurrentCustomer.NormalCustomerData.GetRandomOrderFood();
-
-        bool isMiniGameNeeded = foodData.MiniGameNeeded && string.IsNullOrWhiteSpace(foodData.NeedItem);
-        if (isMiniGameNeeded && !UserInfo.IsMiniGameTutorialClear)
-        {
-            _miniGameTutorial.StartTutorial(foodData, data.transform);
-        }
-
         int foodLevel = UserInfo.GetRecipeLevel(foodData);
         CookingData cookingData = new CookingData(foodData, data, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), () =>
         {

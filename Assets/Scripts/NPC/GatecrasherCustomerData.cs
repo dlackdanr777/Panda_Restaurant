@@ -17,7 +17,7 @@ public abstract class GatecrasherCustomerData : CustomerData
     [SerializeField] private RuntimeAnimatorController _controller;
     public RuntimeAnimatorController Controller => _controller;
 
-    public GatecrasherCustomerData(Sprite sprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, int activeDuration, int touchCount, float spawnChance, RuntimeAnimatorController controller) : base(sprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
+    public GatecrasherCustomerData(Sprite sprite, Sprite thumbnailSprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, int activeDuration, int touchCount, float spawnChance, RuntimeAnimatorController controller) : base(sprite, thumbnailSprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
     {
         _activeDuration = activeDuration;
         _touchCount = touchCount;

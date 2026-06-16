@@ -4,16 +4,7 @@ using Muks.Tween;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using System;
-
-[System.Serializable]
-public class Capsule
-{
-    [SerializeField] private Sprite _upperCapsule;
-    public Sprite UpperCapsule => _upperCapsule;
-
-    [SerializeField] private Sprite _lowerCapsule;
-    public Sprite LowerCapsule => _lowerCapsule;
-}
+using UnityEngine.EventSystems;
 
 public class UIGacha : MobileUIView
 {
@@ -22,31 +13,13 @@ public class UIGacha : MobileUIView
     [Header("Components")]
     [SerializeField] private MainScene _mainScene;
     [SerializeField] private CanvasGroup _canvasGroup;
-    [SerializeField] private UIBouncingBall _bouncingBall;
-    [SerializeField] private ScrollingImage _scrollImage;
-    [SerializeField] private Animator _gachaMacineAnimator;
-    [SerializeField] private UIImageAndText _gachaItemName;
-    [SerializeField] private UIGachaItemList _gachaItemList;
-    [SerializeField] private Button _screenButton;
-    [SerializeField] private Button _singleButton;
-    public Button SingleButton => _singleButton;
-    [SerializeField] private Button _tenButton;
-    [SerializeField] private Button _skipButton;
+    [SerializeField] private GachaMachineParent[] _gachaMachines;
     [SerializeField] private GameObject _uiComponents;
-    [SerializeField] private Image _getItemImage;
-    [SerializeField] private UIItemStar _itemStar;
-
-    [Space]
-    [Header("Slot Options")]
-    [SerializeField] private Transform _getItemSlotFrame;
-    [SerializeField] private UIGachaItemSlot _slotPrefab;
-
-    [Space]
-    [Header("Capsule Options")]
-    [SerializeField] private RectTransform _capsules;
-    [SerializeField] private Image _upperCapsule;
-    [SerializeField] private Image _lowerCapsule;
-    [SerializeField] private Capsule[] _capsuleColors;
+    [SerializeField] private UIGachaSlotList _gachaItemList;
+    [SerializeField] private Button _leftButton;
+    [SerializeField] private Button _rightButton;
+    [SerializeField] private RectTransform _machineParent;
+    [SerializeField] private ScrollRect _scrollRect;
 
     [Space]
     [Header("Animations")]
@@ -55,124 +28,182 @@ public class UIGacha : MobileUIView
     [SerializeField] private Ease _showTweenMode;
 
     [Space]
-    [SerializeField] private float _hideDuration;
-    [SerializeField] private Ease _hideTweenMode;
-
-    [Space]
     [Header("Audios")]
     [SerializeField] private AudioClip _backgroundAudio;
-    [SerializeField] private AudioClip _leverSound;
-    [SerializeField] private AudioClip _shakeCapsuleSound;
-    [SerializeField] private AudioClip _fallCapsuleSound;
-    [SerializeField] private AudioClip _openDoorSound;
-    [SerializeField] private AudioClip _boomSound;
-    [SerializeField] private AudioClip _getNormalItemSound;
-    [SerializeField] private AudioClip _getSpecialItemSound;
 
+    [Space]
+    [Header("Tutorial Components")]
+    [SerializeField] private GachaTutorial _miniGameTutorial;
 
-    private List<GachaItemData> _itemDataList;
-    private List<UIGachaItemSlot> _slotList = new List<UIGachaItemSlot>();
-    private List<UIGachaItemSlot> _getItemSlotList = new List<UIGachaItemSlot>();
-    private List<GachaItemData> _getItemList = new List<GachaItemData>();
-    private float _screenTouchWaitTime;
-    private int _currentStep;
-    private int _getItemIndex = 0;
-    private bool _isCapsuleColorChanged;
-    private bool _isPlayTextAnime;
-    private AudioClip _getItemSound;
+    private GachaMachineParent _currentGachaMachine;
 
-
-    public void PlayLeverSound()
+    private bool _isStartGacha;
+    public bool IsStartGacha => _isStartGacha;
+    public void SetStartGacha(bool isStart)
     {
-        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _leverSound);
-    }
+        _isStartGacha = isStart;
+        _scrollRect.enabled = !isStart;
 
-    public void PlayShakeCapsuleSound()
-    {
-        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _shakeCapsuleSound);
     }
-
-    public void PlayFallCapsuleSound()
-    {
-        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _fallCapsuleSound);
-    }
-
-    public void PlayOpenDoorSound()
-    {
-        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _openDoorSound);
-    }
-
-    public void PlayBoomSound()
-    {
-        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _boomSound);
-    }
-
-    public void PlayGetItemSound()
-    {
-        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _getItemSound);
-    }
-
     public override void Init()
     {
-        _scrollImage.Init();
-        _itemDataList = ItemManager.Instance.GetSortGachaItemDataList(GradeSortType.GradeDescending);
-        _gachaItemList.Init(_itemDataList);
-
-        for (int i = 0; i < 10; ++i)
+        for (int i = 0; i < _gachaMachines.Length; i++)
         {
-            UIGachaItemSlot slot = Instantiate(_slotPrefab, _getItemSlotFrame);
-            _getItemSlotList.Add(slot);
-            slot.gameObject.SetActive(false);
+            _gachaMachines[i].Init(this);
+            _gachaMachines[i].Hide();
+        }
+        _gachaItemList.Init(_gachaMachines[0].ItemDataList);
+        SetMachine(_gachaMachines[0]);
+        _leftButton.onClick.AddListener(() => SetMachine(-1));
+        _rightButton.onClick.AddListener(() => SetMachine(1));
+        gameObject.SetActive(false);
+
+        // ScrollRect에 EventTrigger 추가
+        EventTrigger trigger = _scrollRect.gameObject.GetComponent<EventTrigger>();
+        if (trigger == null)
+        {
+            trigger = _scrollRect.gameObject.AddComponent<EventTrigger>();
         }
 
-        _screenButton.onClick.AddListener(OnScreenButtonClicked);
-        _singleButton.onClick.AddListener(OnSingleGachaButtonClicked);
-        _tenButton.onClick.AddListener(OnTenGachaButtonClicked);
-        _skipButton.onClick.AddListener(OnSkipButtonClicked);
+        // BeginDrag 이벤트
+        EventTrigger.Entry beginDragEntry = new EventTrigger.Entry();
+        beginDragEntry.eventID = EventTriggerType.BeginDrag;
+        beginDragEntry.callback.AddListener((data) => { OnScrollBeginDrag((PointerEventData)data); });
+        trigger.triggers.Add(beginDragEntry);
 
-        SetStep(1);
-        _gachaItemName.gameObject.SetActive(false);
-        gameObject.SetActive(false);
+        // Drag 이벤트
+        EventTrigger.Entry dragEntry = new EventTrigger.Entry();
+        dragEntry.eventID = EventTriggerType.Drag;
+        dragEntry.callback.AddListener((data) => { OnScrollDrag((PointerEventData)data); });
+        trigger.triggers.Add(dragEntry);
+
+        // EndDrag 이벤트
+        EventTrigger.Entry endDragEntry = new EventTrigger.Entry();
+        endDragEntry.eventID = EventTriggerType.EndDrag;
+        endDragEntry.callback.AddListener((data) => { OnScrollEndDrag((PointerEventData)data); });
+        trigger.triggers.Add(endDragEntry);
     }
 
-    private void Update()
+    public void StartGachaStepEvent(int step)
     {
-        if( 0 < _screenTouchWaitTime)
-            _screenTouchWaitTime -= Time.deltaTime;
+        GachaStepHandler?.Invoke(step);
+    }
+
+
+    private void OnScrollBeginDrag(PointerEventData eventData)
+    {
+        if(_isStartGacha)
+            return;
+
+        DebugLog.Log("스크롤 시작");
+        _machineParent.TweenStop();
+        _rightButton.gameObject.SetActive(false);
+        _leftButton.gameObject.SetActive(false);
+
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            _gachaMachines[i].Hide();
+            _gachaMachines[i].TweenStop();
+        }
+    }
+
+    private void OnScrollDrag(PointerEventData eventData)
+    {
+        if(_isStartGacha)
+            return;
+
+        float currentX = _machineParent.anchoredPosition.x;
+
+        // 각 인덱스 위치까지의 거리 계산
+        float distanceTo0 = Mathf.Abs(currentX - (-440f));
+        float distanceTo1 = Mathf.Abs(currentX - (-1130f));
+
+        // 최대 거리 (두 위치 사이의 거리)
+        float maxDistance = 690f; // |-440 - (-1130)| = 690
+
+        // 0번 머신 크기 계산 (가까울수록 1.0, 멀수록 0.9)
+        float scale0 = Mathf.Lerp(1.0f, 0.8f, Mathf.Clamp01(distanceTo0 / maxDistance));
+        _gachaMachines[0].transform.localScale = Vector3.one * scale0;
+
+        // 1번 머신 크기 계산 (가까울수록 1.0, 멀수록 0.9)
+        float scale1 = Mathf.Lerp(1.0f, 0.8f, Mathf.Clamp01(distanceTo1 / maxDistance));
+        _gachaMachines[1].transform.localScale = Vector3.one * scale1;
+    }
+
+    private void OnScrollEndDrag(PointerEventData eventData)
+    {
+        if (_isStartGacha)
+            return;
+            
+        DebugLog.Log("스크롤 종료");
+
+        float currentX = _machineParent.anchoredPosition.x;
+        int targetIndex = 0;
+        float targetX = -440f;
+
+        // 현재 X 위치에 따라 가장 가까운 인덱스 결정
+        float distanceTo0 = Mathf.Abs(currentX - (-440f));
+        float distanceTo1 = Mathf.Abs(currentX - (-1130f));
+
+        if (distanceTo1 < distanceTo0)
+        {
+            targetIndex = 1;
+            targetX = -1130f;
+        }
+
+        // 목표 위치로 Tween 이동
+        float duration = 0.1f;
+        Vector2 targetPos = new Vector2(targetX, _machineParent.anchoredPosition.y);
+        
+        // 모든 머신 스케일 0.8로
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            _gachaMachines[i].TweenStop();
+            _gachaMachines[i].TweenScale(Vector3.one * 0.8f, duration, Ease.Constant);
+        }
+
+        // 타겟 머신만 1.0으로
+        _gachaMachines[targetIndex].TweenStop();
+        _gachaMachines[targetIndex].TweenScale(Vector3.one, duration, Ease.Constant);
+
+        _machineParent.TweenStop();
+        _machineParent.TweenAnchoredPosition(targetPos, duration, Ease.Constant).OnComplete(() =>
+        {
+            // 이동 완료 후 해당 머신 설정
+            SetMachineNoAnime(_gachaMachines[targetIndex]);
+            _rightButton.gameObject.SetActive(true);
+            _leftButton.gameObject.SetActive(true);
+        });
     }
 
 
     public override void Show()
     {
+        if(!UserInfo.GetIsClearChallenge("MainReward12"))
+        {
+            PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
+            return;
+        }
+
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
         gameObject.SetActive(true);
-        _singleButton.gameObject.SetActive(true);
-        _tenButton.gameObject.SetActive(true);
-        _uiComponents.SetActive(false);
-        _screenButton.gameObject.SetActive(false);
-        _scrollImage.gameObject.SetActive(false);
-        _gachaItemName.gameObject.SetActive(false);
-        _skipButton.gameObject.SetActive(false);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-        _bouncingBall.ResetBalls();
-        CapsuleSetSibilingIndex(1);
-
+        SetStartGacha(false);
+        SetMachine(_gachaMachines[0]);
+        SetMachineParentPos();
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true;
-            _uiComponents.SetActive(true);
-            _scrollImage.gameObject.SetActive(true);
-            _gachaMacineAnimator.enabled = true;
-        });
 
-        SetStep(1);
-        _screenTouchWaitTime = 0;
-        _gachaMacineAnimator.enabled = false;
-        OnScreenButtonClicked();
+            if(!UserInfo.IsTutorialStart && !UserInfo.IsMiniGameTutorialClear)
+            {
+                _miniGameTutorial.StartTutorial();
+            }
+        });
     }
 
 
@@ -180,285 +211,109 @@ public class UIGacha : MobileUIView
     {
         VisibleState = VisibleState.Disappeared;
         _mainScene.PlayMainMusic();
-        _screenTouchWaitTime = 0;
         gameObject.SetActive(false);
     }
 
-
-    public void GetItem(GachaItemData data)
+    public void SetActiveUIComponents(bool isActive)
     {
-        _getItemList.Clear();
-        _getItemIndex = 0;
-
-        _getItemList.Add(data);
-        UserInfo.GiveGachaItem(data);
-
-        _gachaMacineAnimator.SetTrigger("Start");
+        _uiComponents.SetActive(isActive);
     }
 
-    public void CapsuleSetSibilingIndex(int index)
+    public void SetActiveGachaMachine(bool isActive)
     {
-        _capsules.SetSiblingIndex(index);
-    }
-
-    public void StartBallBounce()
-    {
-        _bouncingBall.NoSpeedDamping = false;
-        _bouncingBall.StartBounce();
-    }
-
-    public void StopBallBounce()
-    {
-        _bouncingBall.NoSpeedDamping = true;
-    }
-
-
-    public void OnScreenButtonClicked()
-    {
-        if (0 < _screenTouchWaitTime)
+        for(int i = 0; i < _gachaMachines.Length; i++)
         {
-            DebugLog.Log("���� ��ġ�� �� �����ϴ�.");
-            return;
+            _gachaMachines[i].SetActiveGachaMachine(isActive);
         }
 
-        switch (_currentStep)
+    }
+
+    private void SetMachine(int dir)
+    {
+        int currentIndex = Array.IndexOf(_gachaMachines, _currentGachaMachine);
+        int nextIndex = currentIndex + dir;
+
+        if (nextIndex < 0)
+            nextIndex = _gachaMachines.Length - 1;
+        else if (nextIndex >= _gachaMachines.Length)
+            nextIndex = 0;
+
+        SetMachine(_gachaMachines[nextIndex]);
+
+
+    }
+
+    private void SetMachine(GachaMachineParent gachaMachine)
+    {
+        for (int i = 0; i < _gachaMachines.Length; i++)
         {
-            case 1:
-                _gachaMacineAnimator.SetTrigger("Stop");
-                break;
+            _gachaMachines[i].Hide();
+        }
+        _currentGachaMachine = gachaMachine;
+        _gachaItemList.UpdateData(gachaMachine.ItemDataList);
 
-            case 2:
-                _gachaMacineAnimator.SetTrigger("Step2Skip");
-                StopBallBounce();
-                break;
+        SetMachineParentPosAnime();
+    }
 
-            case 3:
-                _gachaMacineAnimator.SetTrigger("CapsuleOpen");
-                StopBallBounce();
-                break;
+    private void SetMachineNoAnime(GachaMachineParent gachaMachine)
+    {
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            _gachaMachines[i].Hide();
+        }
+        _currentGachaMachine = gachaMachine;
+        _gachaItemList.UpdateData(gachaMachine.ItemDataList);
+        _currentGachaMachine.Show();
+    }
 
-            case 5:
-                StopBallBounce();
-                if (_getItemList.Count <= _getItemIndex)
-                {
-                    _gachaMacineAnimator.SetTrigger("Stop");
-                    return;
-                }
+    private void SetMachineParentPosAnime()
+    {
+        float duration = 0.5f;
+        for(int i = 0; i < _gachaMachines.Length; i++)
+        {
+            _gachaMachines[i].TweenStop();
+            _gachaMachines[i].TweenScale(Vector3.one * 0.8f, duration, Ease.Smoothstep);
+        }
 
-                if(_isPlayTextAnime)
-                {
-                    _gachaItemName.TweenStop();
-                    _gachaItemName.SetText(_getItemList[_getItemIndex - 1].Name);
-                    _isPlayTextAnime = false;
-                    _screenTouchWaitTime = 0.5f;
-                    return;
-                }
-
-                GachaItemData currentItem = _getItemList[_getItemIndex - 1];
-
-                for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
-                {
-                    if (_getItemSlotList[i].gameObject.activeSelf)
-                        continue;
-
-                    _getItemSlotList[i].gameObject.SetActive(true);
-                    _getItemSlotList[i].UpdateSlot(currentItem);
-                    break;
-                }
-                _gachaMacineAnimator.SetTrigger("Step2Skip");
-                break;
+        int currentIndex = Array.IndexOf(_gachaMachines, _currentGachaMachine);
+        Vector3 pos = _machineParent.anchoredPosition;
         
-        }
+        // 인덱스에 따른 X 위치 설정
+        if (currentIndex == 0)
+            pos.x = -440f;
+        else if (currentIndex == 1)
+            pos.x = -1130f;
 
+        _currentGachaMachine.TweenStop();
+        _machineParent.TweenStop();
+        _currentGachaMachine.TweenScale(Vector3.one, duration, Ease.Smoothstep);
+        _machineParent.TweenAnchoredPosition(pos, duration, Ease.Smoothstep).OnComplete(() =>
+        {
+            _currentGachaMachine.Show();
+        });
     }
 
-    public void SetStep(int step)
+    private void SetMachineParentPos()
     {
-        if (_currentStep == step)
-            return;
-
-        switch (step)
+        for (int i = 0; i < _gachaMachines.Length; i++)
         {
-            case 1:
-                _currentStep = 1;
-
-                _uiComponents.SetActive(true);
-                _screenButton.gameObject.SetActive(false);
-                _gachaItemName.gameObject.SetActive(false);
-                _skipButton.gameObject.SetActive(false);
-                _getItemIndex = 0;
-                _isCapsuleColorChanged = true;
-
-                for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
-                {
-                    _getItemSlotList[i].gameObject.SetActive(false);
-                }
-
-                CapsuleSetSibilingIndex(1);
-                break;
-
-            case 2:
-                _currentStep = 2;
-                _screenButton.gameObject.SetActive(true);
-                _skipButton.gameObject.SetActive(true);
-                _uiComponents.SetActive(false);
-                _gachaItemName.gameObject.SetActive(false);
-                _getItemSlotFrame.gameObject.SetActive(false);
-                _screenTouchWaitTime = 0.2f;
-                CapsuleColorChange();
-                CapsuleSetSibilingIndex(1);
-                break;
-
-            case 3:
-                _currentStep = 3;
-               
-                _screenButton.gameObject.SetActive(true);
-                _skipButton.gameObject.SetActive(true);
-                _gachaItemName.gameObject.SetActive(false);
-                _getItemSlotFrame.gameObject.SetActive(false);
-                _screenTouchWaitTime = 0.2f;
-                CapsuleColorChange();
-
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
-                Utility.ChangeImagePivot(_getItemImage);
-                CapsuleSetSibilingIndex(11);
-                break;
-
-            case 4:
-                _currentStep = 4;
-
-                _skipButton.gameObject.SetActive(true);
-                _gachaItemName.gameObject.SetActive(false);
-                _getItemSlotFrame.gameObject.SetActive(false);
-                _screenTouchWaitTime = 0.2f;
-                CapsuleColorChange();
-
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
-                Utility.ChangeImagePivot(_getItemImage);
-                CapsuleSetSibilingIndex(11);
-                break;
-
-            case 5:
-                _currentStep = 5;
-
-                _gachaItemName.gameObject.SetActive(true);
-                _getItemSlotFrame.gameObject.SetActive(true);
-                _skipButton.gameObject.SetActive(false);
-                _screenTouchWaitTime = 0.2f;
-                _isCapsuleColorChanged = true;
-
-                _isPlayTextAnime = true;
-                _itemStar.SetStar(_getItemList[_getItemIndex].GachaItemRank);
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
-                Utility.ChangeImagePivot(_getItemImage);
-                _getItemSound = _getItemList[_getItemIndex].GachaItemRank == Rank.Unique || _getItemList[_getItemIndex].GachaItemRank == Rank.Special ? _getSpecialItemSound : _getNormalItemSound;
-                PlayGetItemSound();
-                _gachaItemName.SetText(string.Empty);
-                _gachaItemName.TweenCharacter(_getItemList[_getItemIndex].Name, 0.08f, Ease.Constant).OnComplete(() => _isPlayTextAnime = false);
-                _getItemIndex++;
-                CapsuleSetSibilingIndex(11);
-                break;
+            _gachaMachines[i].TweenStop();
+            _gachaMachines[i].transform.localScale = Vector3.one * 0.8f;
         }
+        int currentIndex = Array.IndexOf(_gachaMachines, _currentGachaMachine);
+        Vector3 pos = _machineParent.anchoredPosition;
 
-        GachaStepHandler?.Invoke(_currentStep);
+        // 인덱스에 따른 X 위치 설정
+        if (currentIndex == 0)
+            pos.x = -440f;
+        else if (currentIndex == 1)
+            pos.x = -1130f;
+
+        _currentGachaMachine.TweenStop();
+        _machineParent.TweenStop();
+        _machineParent.anchoredPosition = pos;
+        _currentGachaMachine.Show();
+        _currentGachaMachine.transform.localScale = Vector3.one;
     }
 
-
-
-    private void OnSingleGachaButtonClicked()
-    {
-
-        if(UserInfo.IsDiaValid(1))
-        {
-            _getItemList.Clear();
-            _getItemIndex = 0;
-
-            GachaItemData item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
-            _getItemList.Add(item);
-            UserInfo.GiveGachaItem(item);
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-1);
-            UserInfo.AddUserGachaMachineCount();
-            GameManager.Instance.SaveGameData();
-        }
-
-        else
-        {
-            PopupManager.Instance.ShowTextLackDia();
-        }
-
-    }
-
-
-    private void OnTenGachaButtonClicked()
-    {
-        if(UserInfo.IsDiaValid(10))
-        {
-            _getItemList.Clear();
-            _getItemIndex = 0;
-
-            GachaItemData item;
-            int i = 0;
-            while (i < 11)
-            {
-                item = ItemManager.Instance.GetRandomGachaItem(_itemDataList);
-
-                // if (!UserInfo.CanAddMoreItems(item))
-                //     continue;
-
-                _getItemList.Add(item);
-                i++;
-            }
-
-            UserInfo.GiveGachaItem(_getItemList);
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-10);
-            UserInfo.AddUserGachaMachineCount(1100);
-            GameManager.Instance.SaveGameData();
-        }
-        else
-        {
-            PopupManager.Instance.ShowTextLackDia();
-        }
-
-    }
-
-
-    private void CapsuleColorChange()
-    {
-        if (!_isCapsuleColorChanged)
-            return;
-
-        int randInt = UnityEngine.Random.Range(0, _capsuleColors.Length);
-        _upperCapsule.sprite = _capsuleColors[randInt].UpperCapsule;
-        _lowerCapsule.sprite = _capsuleColors[randInt].LowerCapsule;
-        _isCapsuleColorChanged = false;
-    }
-
-
-    private void OnSkipButtonClicked()
-    {
-        _gachaMacineAnimator.SetTrigger("SkipButtonClick");
-        CapsuleSetSibilingIndex(12);
-        _getItemImage.sprite = _getItemList[_getItemList.Count - 1].Sprite;
-        Utility.ChangeImagePivot(_getItemImage);
-        _gachaItemName.TweenStop();
-        _gachaItemName.SetText(_getItemList[_getItemList.Count - 1].Name);
-        CapsuleSetSibilingIndex(9);
-
-        _getItemSlotFrame.gameObject.SetActive(true);
-        for (int i = 0, cnt = _getItemSlotList.Count; i < cnt; i++)
-        {
-            _getItemSlotList[i].gameObject.SetActive(false);
-        }
-
-        for(int i = 0, cnt = _getItemList.Count - 1; i < cnt; i++)
-        {
-            _getItemSlotList[i].UpdateSlot(_getItemList[i]);
-            _getItemSlotList[i].gameObject.SetActive(true);
-        }
-        _getItemIndex = _getItemList.Count - 1;
-    }
 }

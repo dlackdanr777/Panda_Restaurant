@@ -38,19 +38,16 @@ public class UICustomerTutorial : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
-        Tween.Wait(1.5f,() =>
-        {
-            Vibration.Vibrate(500);
-            gameObject.SetActive(true);
-            _canvasGroup.blocksRaycasts = false;
-            _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        Vibration.Vibrate(500);
+        gameObject.SetActive(true);
+        _canvasGroup.blocksRaycasts = false;
+        _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
-            TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
-            tween.OnComplete(() =>
-            {
-                VisibleState = VisibleState.Appeared;
-                _canvasGroup.blocksRaycasts = true;
-            });
+        TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
+        tween.OnComplete(() =>
+        {
+            VisibleState = VisibleState.Appeared;
+            _canvasGroup.blocksRaycasts = true;
         });
     }
 
@@ -79,7 +76,7 @@ public class UICustomerTutorial : MobileUIView
         if (UserInfo.IsTutorialStart)
             return;
 
-        SequentialCommandManager.Instance.EnqueueCommand(() => ExecuteShowUICommand(data),() => _uiNav.ViewsVisibleStateCheck(), () => !_uiNav.CheckActiveView("UICustomerTutorial"), 5, 1);
+        SequentialCommandManager.Instance.EnqueueCommand(() => ExecuteShowUICommand(data),() => _uiNav.ViewsVisibleStateCheck(), () => !_uiNav.CheckActiveView("UICustomerTutorial"), 5, 1f);
     }
 
 

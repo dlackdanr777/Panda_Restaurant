@@ -111,7 +111,7 @@ public class TimeManager : MonoBehaviour
             // 2. 시간 감소 및 만료된 타이머 표시
             foreach (var key in keys)
             {
-                Debug.Log($"Key: {key}, Time: {_timeDic[key]}");
+                DebugLog.Log($"Key: {key}, Time: {_timeDic[key]}");
                 if (_timeDic[key] <= 0)
                 {
                     _removeList.Add(key);

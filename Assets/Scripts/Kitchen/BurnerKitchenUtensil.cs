@@ -5,13 +5,16 @@ public class BurnerKitchenUtensil : KitchenUtensil
     [SerializeField] private SpriteTouchEvent _touchEvent;
     [SerializeField] private AudioClip _touchSound;
     [SerializeField] private AudioSource _audioSource;
+    [SerializeField] private ParticleSystem _chefEffect;
 
 
     private KitchenBurnerData _burnerData;
 
     bool _isTouch = false;
+    bool _isStaffWorking = false;
 
     public float CookSpeedMul => _isTouch ? 2f : 1f;
+
 
     public override void Init(ERestaurantFloorType floor)
     {
@@ -19,12 +22,24 @@ public class BurnerKitchenUtensil : KitchenUtensil
         _touchEvent.AddDownEvent(TouchDownEvent);
         _touchEvent.AddUpEvent(TouchUpEvent);
         _audioSource.clip = _touchSound;
+        _isStaffWorking = false;
+        SetChefEffect(false);
     }
 
     public void SetData(KitchenBurnerData data)
     {
         _burnerData = data;
 
+    }
+
+    public void SetChefEffect(bool isOn)
+    {
+        _chefEffect.gameObject.SetActive(isOn);
+    }
+
+    public void SetStaffWorking(bool isWorking)
+    {
+        _isStaffWorking = isWorking;
     }
 
     private void TouchDownEvent()
@@ -48,7 +63,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
             
         if (_data == null && Type != KitchenUtensilType.Burner1)
                 return;
-                
+
         if (!_burnerData.CookingData.IsDefault() && _isTouch && !_audioSource.isPlaying)
         {
             _audioSource.Play();
@@ -57,6 +72,15 @@ public class BurnerKitchenUtensil : KitchenUtensil
         else if ((_burnerData.CookingData.IsDefault() && _audioSource.isPlaying) || (!_isTouch && _audioSource.isPlaying))
         {
             _audioSource.Stop();
+        }
+        
+        if(!_burnerData.CookingData.IsDefault() && (_isTouch || _isStaffWorking))
+        {
+            SetChefEffect(true);
+        }
+        else
+        {
+            SetChefEffect(false);
         }
     }
 }

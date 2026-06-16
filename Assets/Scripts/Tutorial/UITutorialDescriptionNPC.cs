@@ -12,6 +12,9 @@ public class UITutorialDescriptionNPC : MobileUIView
     [SerializeField] private Button _skipButton;
     [SerializeField] private UIImageAndText _descriptionText1;
     [SerializeField] private UIImageAndText _descriptionText2;
+    [SerializeField] private UIImageAndText _descriptionText3;
+    [SerializeField] private UIImageAndText _descriptionText4;
+        
     [SerializeField] private Button _screenButton;
     [SerializeField] private GameObject[] _cursorObjs;
 
@@ -25,6 +28,8 @@ public class UITutorialDescriptionNPC : MobileUIView
         _skipButton.onClick.AddListener(OnSkipButtonClicked);
         _descriptionText1.gameObject.SetActive(false);
         _descriptionText2.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
         _isScreenClicked = false;
         _screenButton.onClick.AddListener(() => _isScreenClicked = true);
@@ -37,6 +42,8 @@ public class UITutorialDescriptionNPC : MobileUIView
     {
         _descriptionText1.gameObject.SetActive(false);
         _descriptionText2.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);
         for (int i = 0, cnt = _cursorObjs.Length; i < cnt; ++i)
             _cursorObjs[i].gameObject.SetActive(false);
@@ -49,6 +56,11 @@ public class UITutorialDescriptionNPC : MobileUIView
         gameObject.SetActive(true);
         _skipButton.gameObject.SetActive(true);
     }
+
+    public void SkipButtonSetActive(bool active)
+    {
+        _skipButton.gameObject.SetActive(active);
+    }   
 
 
     public void OnSkipOkButtonClicked(Action action)
@@ -72,6 +84,8 @@ public class UITutorialDescriptionNPC : MobileUIView
     {
         _descriptionText1.gameObject.SetActive(true);
         _descriptionText2.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
         if (_textCoroutine != null)
             StopCoroutine(_textCoroutine);
         _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText1, str, 0.05f));
@@ -82,9 +96,37 @@ public class UITutorialDescriptionNPC : MobileUIView
     {
         _descriptionText2.gameObject.SetActive(true);
         _descriptionText1.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
         if (_textCoroutine != null)
             StopCoroutine(_textCoroutine);
         _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText2, str, 0.05f));
+        return _textCoroutine;
+    }
+
+    public Coroutine ShowDescription3Text(string str)
+    {
+        _descriptionText3.gameObject.SetActive(true);
+        _descriptionText1.gameObject.SetActive(false);
+        _descriptionText2.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
+        if (_textCoroutine != null)
+            StopCoroutine(_textCoroutine);
+        _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText3, str, 0.05f));
+        return _textCoroutine;
+    }
+
+
+        public Coroutine ShowDescription4Text(string str)
+    {
+        _descriptionText4.gameObject.SetActive(true);
+        _descriptionText1.gameObject.SetActive(false);
+        _descriptionText2.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+
+        if (_textCoroutine != null)
+            StopCoroutine(_textCoroutine);
+        _textCoroutine = StartCoroutine(ShowDescriptionTextRoutine(_descriptionText4, str, 0.05f));
         return _textCoroutine;
     }
 
@@ -106,14 +148,31 @@ public class UITutorialDescriptionNPC : MobileUIView
         TweenWait tween = Tween.Wait(0.2f, () => _screenButton.gameObject.SetActive(true));
         _isScreenClicked = false;
 
-        yield return YieldCache.WaitForSeconds(duration);
-        for(int i = 0, cnt = str.Length; i < cnt; ++i)
+        // Rich Text 태그를 처리하면서 한 글자씩 출력
+        int index = 0;
+        while(index < str.Length)
         {
-            text.Text.text += str[i];
+            // '<' 를 만나면 '>'까지 태그 전체를 한 번에 추가 (딜레이 없이)
+            if(str[index] == '<')
+            {
+                int tagEndIndex = str.IndexOf('>', index);
+                if(tagEndIndex != -1)
+                {
+                    // 태그 전체를 한 번에 추가
+                    text.Text.text += str.Substring(index, tagEndIndex - index + 1);
+                    index = tagEndIndex + 1;
+                    continue;
+                }
+            }
+            
+            // 일반 텍스트는 한 글자씩 추가
+            text.Text.text += str[index];
             yield return YieldCache.WaitForSeconds(duration);
-
+            
             if(_isScreenClicked)
                 break;
+                
+            index++;
         }
 
         text.Text.text = str;

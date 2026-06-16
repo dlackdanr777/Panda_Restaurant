@@ -10,7 +10,7 @@ public static class ConstValue
     //피버 관련 변수
     public const int MAX_PEVER_GAUGE = 1000;
     public const float PEVER_TIME = 10f;
-    public const int ADD_PEVER_GAUGE = 5;
+    public const int ADD_FEVER_GAUGE = 20;
 
 
     //스테이지 관련 변수
@@ -21,5 +21,16 @@ public static class ConstValue
     //주방 관련 변수
     public const int DEFAULT_MAX_BOLW_COUNT = 6;
 
+
+    //광고 관련 변수
+    public const int DAILY_AD_GOLD_REWARD_COUNT = 3;
+    public const int DAILY_AD_DIA_REWARD_COUNT = 3;
+    public const int AD_CUSTOMER_COUNT = 5; // 5번
+    public const int AD_FEVER_COUNT = 5; //5번
+
+    //타임 매니저 관련 변수
+    public const string AD_TIME_FEVER = "AdFever";
+    public const string AD_TIME_CUSTOMER = "AdCustomer";
+    
 
 }

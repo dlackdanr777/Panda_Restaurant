@@ -22,7 +22,7 @@ public class SpecialCustomerData : CustomerData
     public int TouchAddMoney => _touchAddMoney;
 
 
-    public SpecialCustomerData(Sprite sprite, Sprite touchSprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, int activeDuration, int touchCount, int touchAddMoney, float spawnChance) : base(sprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
+    public SpecialCustomerData(Sprite sprite, Sprite thumbnailSprite, Sprite touchSprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem, int activeDuration, int touchCount, int touchAddMoney, float spawnChance) : base(sprite, thumbnailSprite, id, name, description, moveSpeed, minScore, requiredDish, requiredItem)
     {
         _touchSprite = touchSprite;
         _activeDuration = activeDuration;

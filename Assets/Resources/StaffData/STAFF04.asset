@@ -12,19 +12,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
   m_Name: STAFF04
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: c9eeaf6288c55954e85809c9e09ccb84, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: c9eeaf6288c55954e85809c9e09ccb84, type: 3}
-  _name: "\uCC28\uC774\uB098 \uC9C0\uC9C0"
+  _sprite: {fileID: 21300000, guid: f381ac28a3312a04083a418534934ea3, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 9c9ba841c63eef0479e131d1568d09f6, type: 3}
+  _name: "\uD1A0\uD1A0"
   _id: STAFF04
-  _description: "\uBC1D\uACE0 \uBA85\uB791\uD55C \uCC28\uC774\uB098\uD48D \uBCF5\uC7A5\uC758
-    \uD65C\uBC1C\uD55C \uC9C0\uC9C0\r"
-  _salesLocationType: 0
+  _description: 
+  _rank: 0
+  _skill: {fileID: 11400000, guid: ace4d82401b0b084691be89b9fc0f63e, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 3de4fa4a79fe159408d0cea251b70d9d, type: 3}
+  - {fileID: 21300000, guid: 7b3c8f0575b8c1c499ac1dd6613a7785, type: 3}
+  - {fileID: 21300000, guid: 65ac573e5267f694f9aa136d4e1eb189, type: 3}
+  - {fileID: 21300000, guid: b0b7a3b1dcd847b468b5bb3057a988c4, type: 3}
+  - {fileID: 21300000, guid: b0b7a3b1dcd847b468b5bb3057a988c4, type: 3}
+  - {fileID: 21300000, guid: 65ac573e5267f694f9aa136d4e1eb189, type: 3}
+  - {fileID: 21300000, guid: 7b3c8f0575b8c1c499ac1dd6613a7785, type: 3}
+  - {fileID: 21300000, guid: 3de4fa4a79fe159408d0cea251b70d9d, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 1
   _moneyType: 0
   _buyScore: 4500
   _buyPrice: 1050000
-  _skill: {fileID: 11400000, guid: ace4d82401b0b084691be89b9fc0f63e, type: 2}
-  _animatorController: {fileID: 0}
-  _speed: 9
+  _speed: 5.5
   _waiterLevelData:
   - _upgradeMinScore: 6750
     _upgradeMoneyData:

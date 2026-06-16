@@ -2,7 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UIStatusItemPreview : MonoBehaviour
+public class UIItemPreview : MonoBehaviour
 {
     [Header("Components")]
     [SerializeField] private Button _closeButton;
@@ -52,7 +52,7 @@ public class UIStatusItemPreview : MonoBehaviour
         _addScoreLayout.SetText(_data.AddScore.ToString());
         _tipPerMinuteLayout.SetText(Utility.ConvertToMoney(_data.TipPerMinute));
         _effectDescriptionText.text = Utility.GetGachaItemEffectDescription(_data);
-        SetStar(_data.GachaItemRank);
+        SetStar(_data.Rank);
         _itemImage.sprite = _data.Sprite;
         Utility.ChangeImagePivot(_itemImage);
     }

@@ -12,40 +12,54 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
   m_Name: STAFF02
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: 561a66e482de8704192a054dddf29c13, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: 561a66e482de8704192a054dddf29c13, type: 3}
-  _name: "\uC591\uBCF5\uC785\uC740 \uC9C0\uC9C0"
+  _sprite: {fileID: 21300000, guid: 338fdd366a499e141aa884f8aa2c681e, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 13ecd98e5decc0648b44c3ff8db955d9, type: 3}
+  _name: "\uB355\uB355"
   _id: STAFF02
-  _description: "\uAE54\uB054\uD55C \uC815\uC7A5 \uCC28\uB9BC\uC73C\uB85C\n\uC815\uC911\uD55C
-    \uC11C\uBE44\uC2A4\uB97C \uC81C\uACF5\uD558\uB294 \uC9C0\uC9C0\r"
-  _salesLocationType: 0
+  _description: 
+  _rank: 0
+  _skill: {fileID: 11400000, guid: 9bd6d0278c021c04680bdded85a56132, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 125ed35ffab28dd4390d1e41f10c3ec7, type: 3}
+  - {fileID: 21300000, guid: d336b244cadb74444ab094472cd82669, type: 3}
+  - {fileID: 21300000, guid: 4ad6a87444b5c7944b97600528d59931, type: 3}
+  - {fileID: 21300000, guid: b32aa387987f2b14f8064bb4e8b57c8a, type: 3}
+  - {fileID: 21300000, guid: b32aa387987f2b14f8064bb4e8b57c8a, type: 3}
+  - {fileID: 21300000, guid: 4ad6a87444b5c7944b97600528d59931, type: 3}
+  - {fileID: 21300000, guid: d336b244cadb74444ab094472cd82669, type: 3}
+  - {fileID: 21300000, guid: 125ed35ffab28dd4390d1e41f10c3ec7, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 1
   _moneyType: 0
   _buyScore: 50
-  _buyPrice: 15000
-  _skill: {fileID: 11400000, guid: 9bd6d0278c021c04680bdded85a56132, type: 2}
-  _animatorController: {fileID: 0}
-  _speed: 7
+  _buyPrice: 50000
+  _speed: 4
   _waiterLevelData:
   - _upgradeMinScore: 80
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 22500
+      _price: 75000
     _addSpeed: 0
   - _upgradeMinScore: 110
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 33750
+      _price: 100000
     _addSpeed: 0.5
   - _upgradeMinScore: 140
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 50625
+      _price: 125000
     _addSpeed: 1
   - _upgradeMinScore: 170
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 75937
+      _price: 150000
     _addSpeed: 1.5
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _addSpeed: 2
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0

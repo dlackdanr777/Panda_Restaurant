@@ -12,6 +12,7 @@ public class StaffController : MonoBehaviour
 
 
     private Dictionary<ERestaurantFloorType, StaffGroup> _staffGroupDic = new Dictionary<ERestaurantFloorType, StaffGroup>();
+    private List<StaffGroup> _staffGroupList = new List<StaffGroup>();
 
     private void Awake()
     {
@@ -26,6 +27,7 @@ public class StaffController : MonoBehaviour
 
             group.Init(_customerController, _tableManager, _kitchenSystem, _feverSystem);
             _staffGroupDic.Add(group.FloorType, group);
+            _staffGroupList.Add(group);
         }
     }
 
@@ -36,8 +38,9 @@ public class StaffController : MonoBehaviour
             return;
         }
 
-        foreach (StaffGroup group in _staffGroupDic.Values)
+        for (int i = 0, cnt = _staffGroupList.Count; i < cnt; ++i)
         {
+            StaffGroup group = _staffGroupList[i];
             if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, group.FloorType))
                 continue;
 

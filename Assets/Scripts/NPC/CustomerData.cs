@@ -8,6 +8,8 @@ public class CustomerData : ScriptableObject
     [Header("Status")]
     [SerializeField] protected Sprite _sprite;
     public Sprite Sprite => _sprite;
+    [SerializeField] protected Sprite _thumbnailSprite;
+    public Sprite ThumbnailSprite => _thumbnailSprite;
 
     [SerializeField] protected string _name;
     public string Name => _name;
@@ -37,9 +39,10 @@ public class CustomerData : ScriptableObject
 
 
 
-    public CustomerData(Sprite sprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem)
+    public CustomerData(Sprite sprite, Sprite thumbnailSprite, string id, string name, string description, float moveSpeed, int minScore, string requiredDish, string requiredItem)
     {
         _sprite = sprite;
+        _thumbnailSprite = thumbnailSprite;
         _id = id;
         _name = name;
         _description = description;

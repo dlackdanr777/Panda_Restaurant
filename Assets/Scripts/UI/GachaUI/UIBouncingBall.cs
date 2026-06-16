@@ -54,23 +54,26 @@ public class UIBouncingBall : MonoBehaviour
         }
     }
 
-    // 공의 리셋 함수: 공을 아래쪽에 모아서 위치시킴
+    // 공의 리셋 함수: 공을 원 경계 안에 배치
     public void ResetBalls()
     {
-        float bottomPosition = -_circleBoundaryRadius + 50f; // 공들이 아래쪽에 모여있도록 설정
-        float randomXPosition;
-
         foreach (var ball in _ballList)
         {
-            // 공의 초기 위치를 원의 아래쪽에 랜덤하게 배치
-            randomXPosition = Random.Range(-_circleBoundaryRadius + ball.Radius, _circleBoundaryRadius - ball.Radius);
-            ball.BallRect.anchoredPosition = new Vector2(randomXPosition, bottomPosition);
+            // 반드시 경계 안쪽에 배치 (경계 밖 snap 버그 방지)
+            float maxRadius = Mathf.Max(0f, _circleBoundaryRadius - ball.Radius);
+            float randomRadius = Random.Range(0f, maxRadius * 0.8f); // 여유를 두고 80% 이내
+            float randomAngle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float x = Mathf.Cos(randomAngle) * randomRadius;
+            float y = Mathf.Sin(randomAngle) * randomRadius;
+
+            ball.BallRect.anchoredPosition = new Vector2(x, y);
 
             // 초기 속도는 0으로 설정 (바운스 시작 전)
             ball.Velocity = Vector2.zero;
 
+            // localRotation 사용 (world rotation과의 혼용 방지)
             float randZ = Random.Range(0f, 360f);
-            ball.BallRect.rotation = Quaternion.Euler(0, 0, randZ);
+            ball.BallRect.localRotation = Quaternion.Euler(0, 0, randZ);
         }
     }
 
@@ -102,23 +105,8 @@ public class UIBouncingBall : MonoBehaviour
             if (ball.RotationSpeed < 0.5f && -0.5f < ball.RotationSpeed)
                 ball.RotationSpeed = 0;
 
-            // 원의 중심으로부터 공의 현재 위치까지의 거리 계산 (원 경계와 충돌 체크)
-            if (Vector2.Distance(Vector2.zero, ball.BallRect.anchoredPosition) >= _circleBoundaryRadius - ball.Radius)
-            {
-                // 경계에 도달하면 반사
-                Vector2 normal = ball.BallRect.anchoredPosition.normalized; // 법선 벡터 계산
-                ball.Velocity = Vector2.Reflect(ball.Velocity, normal); // 반사 벡터 계산
-
-                // NoSpeedDamping이 false일 때만 속도 감속을 적용
-                if (_noSpeedDamping)
-                {
-                    // 반사 시 에너지 손실 (속도 감소)
-                    ball.Velocity *= _bounceDamping;
-                }
-
-                // 경계를 넘지 않도록 공 위치 조정
-                ball.BallRect.anchoredPosition = normal * (_circleBoundaryRadius - ball.Radius);
-            }
+            // 원 경계 충돌 체크 및 보정
+            ClampToBoundary(ball);
 
             // 다른 공들과 충돌 체크
             for (int j = i + 1; j < _ballList.Count; j++)
@@ -160,6 +148,10 @@ public class UIBouncingBall : MonoBehaviour
                     Vector2 correction = collisionNormal * (overlap / 2);
                     ball.BallRect.anchoredPosition += correction;
                     otherBall.BallRect.anchoredPosition -= correction;
+
+                    // 충돌 교정 후 각 공이 경계를 벗어났는지 재확인 (Mask 클리핑 방지)
+                    ClampToBoundary(ball);
+                    ClampToBoundary(otherBall);
                 }
             }
         }
@@ -169,6 +161,21 @@ public class UIBouncingBall : MonoBehaviour
     void Update()
     {
         BounceBalls();
+    }
+
+    // 경계 체크 및 보정 (충돌 후 재사용 가능하도록 분리)
+    private void ClampToBoundary(Ball ball)
+    {
+        float dist = ball.BallRect.anchoredPosition.magnitude;
+        float limit = _circleBoundaryRadius - ball.Radius;
+        if (dist >= limit)
+        {
+            Vector2 normal = ball.BallRect.anchoredPosition.normalized;
+            ball.Velocity = Vector2.Reflect(ball.Velocity, -normal);
+            if (_noSpeedDamping)
+                ball.Velocity *= _bounceDamping;
+            ball.BallRect.anchoredPosition = normal * limit;
+        }
     }
 
 

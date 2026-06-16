@@ -10,18 +10,17 @@ public class FeverSystem : MonoBehaviour
     [SerializeField] private MainScene _mainScene;
     [SerializeField] private UIFever _uiFever;
     [SerializeField] private CustomerController _customerController;
+    [SerializeField] private FeverTutorial _feverTutorial;
 
     private bool _isFeverStart = false;
     public bool IsFeverStart => _isFeverStart;
 
-    private float _feverGauge = 0;
-    public float FeverGauge => _feverGauge;
-    public void SetFeverGauge(float value) => _feverGauge = value;
+    private static int _currentMaxFeverGauge = 500;
+    public static int CurrentMaxFeverGauge => _currentMaxFeverGauge;
+    private int[] _maxFeverGauges = new int[]{550, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000, 1000, 1000, 1000, 1000, 1000, 1000};
 
-    private int _currentMaxFeverGauge = 500;
-    public int CurrentMaxFeverGauge => _currentMaxFeverGauge;
-    private int[] _maxFeverGauges = new int[]{10, 10, 10, 10, 10, 10, 10, 600, 700, 700, 800, 800, 900, 900, 1000, 1000};
-
+    public static float FeverGauge => UserInfo.GetFeverGauge(UserInfo.CurrentStage);
+    public void SetFeverGauge(float value) { UserInfo.SetFeverGauge(UserInfo.CurrentStage, value); }
     private Coroutine _feverRoutine = null;
 
     public void AddFeverGauge(float addMul = 1)
@@ -29,9 +28,22 @@ public class FeverSystem : MonoBehaviour
         if (_isFeverStart || UserInfo.IsTutorialStart)
             return;
 
-        _feverGauge = Mathf.Clamp(_feverGauge + ConstValue.ADD_PEVER_GAUGE * addMul, 0, _currentMaxFeverGauge);
-        DebugLog.Log($"Fever Gauge : {_feverGauge} / {_currentMaxFeverGauge}");
+        // 이미 현재 맥스 이상이면 수정하지 않음 (로드된 게이지가 덮어쓰이는 것 방지)
+        if (FeverGauge >= _currentMaxFeverGauge)
+            return;
+
+        float newGauge = Mathf.Clamp(FeverGauge + ConstValue.ADD_FEVER_GAUGE * addMul, 0, _currentMaxFeverGauge);
+        UserInfo.SetFeverGauge(UserInfo.CurrentStage, newGauge);
+        DebugLog.Log($"Fever Gauge : {FeverGauge} / {_currentMaxFeverGauge}");
         _uiFever.OnChangeGauge();
+    }
+
+    public void StartTutorial()
+    {
+        if (FeverGauge >= _currentMaxFeverGauge)
+        {
+            _feverTutorial.StartTutorial();
+        }
     }
 
 
@@ -39,6 +51,12 @@ public class FeverSystem : MonoBehaviour
     {
         if(_isFeverStart)
             return;
+
+        if(UserInfo.IsFeverTutorialClear == false)
+        {
+            _feverTutorial.StartTutorial();
+            return;
+        }
 
         _isFeverStart = true;
 
@@ -54,15 +72,14 @@ public class FeverSystem : MonoBehaviour
 
     private void Awake()
     {
-        _uiFever.Init(this);
-        _feverGauge = 0;
         _isFeverStart = false;
         UserInfo.OnChangeFurnitureHandler += OnEquipFurnitureEvent;
+        OnEquipFurnitureEvent(ERestaurantFloorType.Floor1, FurnitureType.Table1); // MaxFeverGauge 먼저 설정
+        _uiFever.Init(this); // 올바른 MaxFeverGauge 반영 후 Init
     }
 
     private void Start()
     {
-        OnEquipFurnitureEvent(ERestaurantFloorType.Floor1, FurnitureType.Table1);
     }
 
 
@@ -102,9 +119,10 @@ public class FeverSystem : MonoBehaviour
         float time = ConstValue.PEVER_TIME + GameManager.Instance.AddFerverTime;
         float timer = 0;
         float addTabTimer = 0f;
+        SetFeverGauge(0); // 피버 시작 즉시 0으로 저장 (저장 도중 중단 시 MAX로 남는 문제 방지)
         OnStartFeverHandler?.Invoke();
         _mainScene.PlayMainMusic();
-        GameManager.Instance.SetGameSpeed(1f);
+        GameManager.Instance.SetGameSpeed(1.5f);
         while (timer < time)
         {
             yield return YieldCache.WaitForSeconds(0.02f);
@@ -112,7 +130,7 @@ public class FeverSystem : MonoBehaviour
             addTabTimer += 0.02f;
             if (addTabTimer >= 0.5f)
             {
-                if (!_customerController.IsMaxCount)
+                if (!CustomerController.IsMaxCount)
                 {
                     _customerController.AddTabCount();
                 }

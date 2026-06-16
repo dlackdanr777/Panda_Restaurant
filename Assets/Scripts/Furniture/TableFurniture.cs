@@ -1,7 +1,9 @@
+using System;
 using UnityEngine;
 
 public class TableFurniture : Furniture
 {
+    public event Action OnTouchEventHandler;
     [Space]
     [Header("Table Furniture")]
     [SerializeField] private Sprite _defalutLeftChairSprite;
@@ -214,9 +216,18 @@ public class TableFurniture : Furniture
 
         _tableData.TableState = ETableState.Empty;
         UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, _floor);
-        EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
-        SoundManager.Instance.PlayEffectAudio(effectType, _cleanSound);
+        if (UserInfo.IsFirstTutorialClear)
+        {
+            EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+            SoundManager.Instance.PlayEffectAudio(effectType, _cleanSound);
+        }
+        else
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _cleanSound);
+        }
+
         _tableManager.UpdateTable();
+        OnTouchEventHandler?.Invoke();
     }
 
 

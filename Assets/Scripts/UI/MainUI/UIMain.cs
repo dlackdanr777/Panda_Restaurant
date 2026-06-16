@@ -1,79 +1,135 @@
+using System.Collections;
 using Muks.Tween;
+using TMPro;
 using UnityEngine;
 
 public class UIMain : MonoBehaviour
 {
+
+    private const int AdCustomerTime = 180; // 3분
+
     [Header("Components")]
     [SerializeField] private CustomerController _customerController;
     [SerializeField] private UIImageAndText _customerCountImage;
     [SerializeField] private GameObject _customerMaxCountImage;
-    [SerializeField] private UIButtonAndText _watchAdButton;
-
+    [SerializeField] private WatchAdButton _watchAdButton;
+    [SerializeField] private TextMeshProUGUI _customerCountText;
 
     private void Awake()
     {
         _customerController.OnChangeCustomerHandler += OnChangeCustomerCountEvent;
         _customerController.OnGuideCustomerHandler += OnChangeCustomerCountEvent;
         GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnChangeCustomerCountEvent;
-        //_customerController.OnAddCustomerHandler += OnUpdateAdButtonEvent;
-        //_customerController.OnGuideCustomerHandler += OnUpdateAdButtonEvent;
-        //GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnUpdateAdButtonEvent;
 
-        //_watchAdButton.AddListener(OnAdButtonClicked);
-       OnChangeCustomerCountEvent();
-        //OnUpdateAdButtonEvent();
+        _customerController.OnAddCustomerHandler += OnUpdateAdButtonEvent;
+        _customerController.OnGuideCustomerHandler += OnUpdateAdButtonEvent;
+        GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnUpdateAdButtonEvent;
+        TimeManager.Instance.OnRemoveTimeHandler += OnRemoveTimeEvent;
+
+        _watchAdButton.OnAdRewarded += OnAdButtonClicked;
+        _watchAdButton.OnDiaRewarded += OnDiaButtonClicked;
+        OnChangeCustomerCountEvent();
+        OnUpdateAdButtonEvent();
     }
 
     private void OnAdButtonClicked()
     {
-        int count = GameManager.Instance.MaxWaitCustomerCount - _customerController.Count;
-        for(int i = 0; i < count; ++i)
-        {
-            Tween.Wait(0.2f, () => _customerController.AddCustomer());
-        }
+        UserInfo.AddAddCustomerAdCount();
+        TimeManager.Instance.SetTime(ConstValue.AD_TIME_CUSTOMER, AdCustomerTime);
+        StopAllCoroutines();
+        StartCoroutine(AddCustomerRoutine());
+    }
+
+    private void OnDiaButtonClicked()
+    {
+        UserInfo.AddAddCustomerDiaCount();
+        DebugLog.Log("UIMain Dia Clicked");
+        TimeManager.Instance.SetTime(ConstValue.AD_TIME_CUSTOMER, AdCustomerTime);
+        StopAllCoroutines();
+        StartCoroutine(AddCustomerRoutine());
     }
 
 
     private void OnEnable()
     {
-        //OnChangeCustomerCountEvent();
+        OnChangeCustomerCountEvent();
+    }
+
+    private void OnRemoveTimeEvent(string key)
+    {
+        if (key != ConstValue.AD_TIME_CUSTOMER) return;
+
+        OnUpdateAdButtonEvent();
     }
 
 
     private void OnUpdateAdButtonEvent()
     {
-        if(_customerController.IsMaxCount)
-        {
-            _watchAdButton.gameObject.SetActive(false);
-            return;
-        }
+        // if(!TimeManager.Instance.IsAddTime(AdCustomerTimeKey) ||  _customerController.IsMaxCount || 10 <= UserInfo.AddCustomerAdCount)
+        // {
+        //     _watchAdButton.gameObject.SetActive(false);
+        //     return;
+        // }
 
         _watchAdButton.gameObject.SetActive(true);
-        _watchAdButton.SetText("X "+ (GameManager.Instance.MaxWaitCustomerCount - _customerController.Count).ToString());
+        _customerCountText.SetText("X " + (GameManager.Instance.MaxWaitCustomerCount - _customerController.Count).ToString());
     }
 
 
     private void OnChangeCustomerCountEvent()
     {
-        if(_customerController.Count <= 9)
+        if (_customerController.Count <= 9)
         {
             _customerCountImage.gameObject.SetActive(false);
             _customerMaxCountImage.gameObject.SetActive(false);
             return;
         }
 
-        else if(_customerController.Count < 9 &&_customerController.Count < GameManager.Instance.MaxWaitCustomerCount)
+        else if (_customerController.Count < GameManager.Instance.MaxWaitCustomerCount)
         {
             _customerCountImage.gameObject.SetActive(true);
             _customerMaxCountImage.SetActive(false);
             _customerCountImage.SetText(Mathf.Clamp(_customerController.Count - 9, 0, 30).ToString());
         }
 
-        else if(GameManager.Instance.MaxWaitCustomerCount <= _customerController.Count)
+        else if (GameManager.Instance.MaxWaitCustomerCount <= _customerController.Count)
         {
             _customerMaxCountImage.SetActive(true);
             _customerCountImage.gameObject.SetActive(false);
         }
+    }
+
+    private IEnumerator AddCustomerRoutine()
+    {
+        while (!CustomerController.IsMaxCount)
+        {
+            _customerController.AddCustomer();
+            yield return YieldCache.WaitForSeconds(0.3f);
+        }
+
+        OnUpdateAdButtonEvent();
+    }
+
+    private void OnDestroy()
+    {
+        if (_watchAdButton != null)
+        {
+            _watchAdButton.OnAdRewarded -= OnAdButtonClicked;
+            _watchAdButton.OnDiaRewarded -= OnDiaButtonClicked;
+        }
+
+        if (_customerController != null)
+        {
+            _customerController.OnChangeCustomerHandler -= OnChangeCustomerCountEvent;
+            _customerController.OnGuideCustomerHandler -= OnChangeCustomerCountEvent;
+            _customerController.OnAddCustomerHandler -= OnUpdateAdButtonEvent;
+            _customerController.OnGuideCustomerHandler -= OnUpdateAdButtonEvent;
+        }
+
+        if (TimeManager.Instance != null)
+            TimeManager.Instance.OnRemoveTimeHandler -= OnRemoveTimeEvent;
+
+        StopAllCoroutines();
     }
 
 }

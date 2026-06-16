@@ -26,7 +26,7 @@ public class CustomerDataManager : MonoBehaviour
     private static List<GatecrasherCustomerData> _gatecrasherCustomerDataList = new List<GatecrasherCustomerData>();
     private static Dictionary<string, CustomerData> _customerDataDic = new Dictionary<string, CustomerData>();
 
-
+    private static Dictionary<string, Sprite> _customerThumbnailSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _customerSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _specialCustomerTouchSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, RuntimeAnimatorController> _gatecrasherCustomerAnimatorDic = new Dictionary<string, RuntimeAnimatorController>();
@@ -42,6 +42,12 @@ public class CustomerDataManager : MonoBehaviour
         return data;
     }
 
+    public Sprite GetCustomerThumbnailSprite(string id)
+    {
+        _customerThumbnailSpriteDic.TryGetValue(id.ToUpper(), out Sprite sprite);
+        return sprite;
+    }
+
     public List<CustomerData> GetCustomerDataList()
     {
         return _customerDataList;
@@ -53,7 +59,7 @@ public class CustomerDataManager : MonoBehaviour
         List<NormalCustomerData> returnList = new List<NormalCustomerData>();
         for(int i = 0, cnt = _normalCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.GetCustomerEnableState(_customerDataList[i].Id))
+            if (!UserInfo.GetCustomerEnableState(_normalCustomerDataList[i].Id))
                 continue;
 
             returnList.Add(_normalCustomerDataList[i]);
@@ -100,7 +106,7 @@ public class CustomerDataManager : MonoBehaviour
             GradeSortType.GradeAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
             GradeSortType.GradeDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
             GradeSortType.None => _customerDataList,
-            _ => null
+            _ => _customerDataList
         };
     }
 
@@ -166,6 +172,7 @@ public class CustomerDataManager : MonoBehaviour
         LoadGatecrasherCustomerSprites();
         LoadGatecrasherCustomerAnimator();
         LoadCustomerSkill();
+        LoadCustomerThumbnailSprites();
 
         NormalCustomerDataParse("CustomerData/CSVData/NormalCustomerData");
         SpecialCustomerDataParse("CustomerData/CSVData/SpecialCustomerData");
@@ -181,13 +188,45 @@ public class CustomerDataManager : MonoBehaviour
         CheckEnableCustomer();
     }
 
+    private static void LoadCustomerThumbnailSprites()
+    {
+        string[] paths = new string[]
+        {
+            "CustomerData/Sprites/NormalCustomer/Sprite",
+            "CustomerData/Sprites/SpecialCustomer",
+            "CustomerData/Sprites/GatecrasherCustomer"
+        };
+
+        foreach (var path in paths)
+        {
+            Sprite[] sprites = Resources.LoadAll<Sprite>(path);
+            foreach (var sprite in sprites)
+            {
+                if (!sprite.name.Contains("썸네일"))
+                    continue;
+
+                string key = Utility.CutStringUpToChar(sprite.name, '_').ToUpper();
+                if (_customerThumbnailSpriteDic.ContainsKey(key))
+                {
+                    Debug.LogWarning($"중복된 썸네일 스프라이트 키가 있습니다: {key}");
+                    continue;
+                }
+                _customerThumbnailSpriteDic.Add(key, sprite);
+                DebugLog.Log($"썸네일 로드: {key}");
+            }
+        }
+    }
+
     private static void LoadNormalCustomerSprites()
     {
         // 스프라이트 리소스 로드
-        Sprite[] sprites = Resources.LoadAll<Sprite>("CustomerData/Sprites/NormalCustomer");
+        Sprite[] sprites = Resources.LoadAll<Sprite>("CustomerData/Sprites/NormalCustomer/Sprite");
 
         foreach (var sprite in sprites)
         {
+            if (sprite.name.Contains("썸네일"))
+                continue;
+
             string key = Utility.CutStringUpToChar(sprite.name, '_').ToUpper();
             // 중복 체크
             if (_customerSpriteDic.ContainsKey(key))
@@ -207,6 +246,9 @@ public class CustomerDataManager : MonoBehaviour
 
         foreach (var sprite in sprites)
         {
+            if (sprite.name.Contains("썸네일"))
+                continue;
+
             string key = Utility.CutStringUpToChar(sprite.name, '_').ToUpper();
             string afterUnderStr = Utility.GetStringAfterChar(sprite.name, '_'); // 언더바 이후 문자열
             bool isTouch = afterUnderStr.Contains("터치") || afterUnderStr.Contains("반응");
@@ -242,6 +284,9 @@ public class CustomerDataManager : MonoBehaviour
 
         foreach (var sprite in sprites)
         {
+            if (sprite.name.Contains("썸네일"))
+                continue;
+
             string key = Utility.CutStringUpToChar(sprite.name, '_').ToUpper();
 
                 if (_customerSpriteDic.ContainsKey(key))
@@ -347,7 +392,12 @@ public class CustomerDataManager : MonoBehaviour
                 continue;
             }
 
-            NormalCustomerData customerData = new NormalCustomerData(sprite, id, name, description, moveSpeed, visitMinScore, requiredFood, requiredItem, visitCount25Food, visitCount50Food, visitCount100Food, visitCount200Food, visitCount300Food, visitCount400Food, visitCount500Food, tendencyType, orderWaitTime, waitTime);
+            if(!_customerThumbnailSpriteDic.TryGetValue(id, out Sprite thumbnailSprite))
+            {
+                thumbnailSprite = sprite;
+            }
+
+            NormalCustomerData customerData = new NormalCustomerData(sprite, thumbnailSprite, id, name, description, moveSpeed, visitMinScore, requiredFood, requiredItem, visitCount25Food, visitCount50Food, visitCount100Food, visitCount200Food, visitCount300Food, visitCount400Food, visitCount500Food, tendencyType, orderWaitTime, waitTime);
 
             _customerDataDic.Add(id, customerData);
             _customerDataList.Add(customerData);
@@ -398,13 +448,17 @@ public class CustomerDataManager : MonoBehaviour
                 continue;
             }
 
+            if(!_customerThumbnailSpriteDic.TryGetValue(id, out Sprite thumbnailSprite))
+            {
+                thumbnailSprite = sprite;
+            }
+
             if(!_specialCustomerTouchSpriteDic.TryGetValue(id, out Sprite touchSprite))
             {
                 Debug.LogError($"터치 스프라이트가 없습니다: {id}");
                 touchSprite = sprite;
             }
-
-            SpecialCustomerData customerData = new SpecialCustomerData(sprite, touchSprite, id, name, description, moveSpeed, visitMinScore, requiredDish, requiredItem, activeDuration, touchCount, touchAddMoney, spawnChance);
+            SpecialCustomerData customerData = new SpecialCustomerData(sprite, thumbnailSprite, touchSprite, id, name, description, moveSpeed, visitMinScore, requiredDish, requiredItem, activeDuration, touchCount, touchAddMoney, spawnChance);
 
             _customerDataDic.Add(id, customerData);
             _customerDataList.Add(customerData);
@@ -454,22 +508,31 @@ public class CustomerDataManager : MonoBehaviour
                 continue;
             }
 
+            if (!_customerThumbnailSpriteDic.TryGetValue(id, out Sprite thumbnailSprite))
+            {
+                thumbnailSprite = sprite;
+            }
+            else
+            {
+                DebugLog.Log($"썸네일 스프라이트 로드: {id}");
+            }
+
             if (!_gatecrasherCustomerAnimatorDic.TryGetValue(id, out RuntimeAnimatorController animator))
             {
                 Debug.LogError($"애니메이션이 없습니다: {id}");
                 continue;
             }
-
+            
 
             GatecrasherCustomerData customerData = null;
             if(attribute.Contains("진상1"))
             {
-                GatecrasherCustomer1Data gatecrasherCustomer1Data = new GatecrasherCustomer1Data(sprite, id, name, description, moveSpeed, visitMinScore, requiredDish, requiredItem, activeDuration, touchCount, spawnChance, _normalCustomerAnimator, animator);
+                GatecrasherCustomer1Data gatecrasherCustomer1Data = new GatecrasherCustomer1Data(sprite, thumbnailSprite, id, name, description, moveSpeed, visitMinScore, requiredDish, requiredItem, activeDuration, touchCount, spawnChance, _normalCustomerAnimator, animator);
                 customerData = gatecrasherCustomer1Data;
             }
             else if(attribute.Contains("진상2"))
             {
-                GatecrasherCustomer2Data gatecrasherCustomer2Data = new GatecrasherCustomer2Data(sprite, id, name, description, moveSpeed, visitMinScore, requiredDish, requiredItem, activeDuration, touchCount, spawnChance, animator);
+                GatecrasherCustomer2Data gatecrasherCustomer2Data = new GatecrasherCustomer2Data(sprite, thumbnailSprite, id, name, description, moveSpeed, visitMinScore, requiredDish, requiredItem, activeDuration, touchCount, spawnChance, animator);
                 customerData = gatecrasherCustomer2Data;
             }
             

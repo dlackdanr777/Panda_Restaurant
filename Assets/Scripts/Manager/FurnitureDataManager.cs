@@ -33,7 +33,7 @@ public class FurnitureDataManager : MonoBehaviour
     private static Dictionary<string, Sprite> _leftChairArmrestSpriteDic = new Dictionary<string, Sprite>();
     private static Dictionary<string, Sprite> _rightChairArmrestSpriteDic = new Dictionary<string, Sprite>();
 
-
+    private static Dictionary<string, List<Sprite>> _animationSpriteDic = new Dictionary<string, List<Sprite>>();
 
     public FurnitureData GetFurnitureData(string id)
     {
@@ -62,7 +62,7 @@ public class FurnitureDataManager : MonoBehaviour
             ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_furnitureDataListType[(int)type], true),
             ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_furnitureDataListType[(int)type], false),
             ShopSortType.None => _furnitureDataListType[(int)type],
-            _ => null
+            _ => _furnitureDataListType[(int)type]
         };
     }
 
@@ -92,6 +92,7 @@ public class FurnitureDataManager : MonoBehaviour
         }
 
         LoadFurnitureSprites("FurnitureData/Sprites");
+        LoadAnimationSprites();
 
         string basePath = "FurnitureData/CSVData/";
         TableDataParse(basePath + "TableData", EquipEffectType.AddTipPerMinute);
@@ -106,7 +107,10 @@ public class FurnitureDataManager : MonoBehaviour
 
     private static void LoadFurnitureSprites(string basePath)
     {
-        string[] setFolders = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19" };
+        var setFolderList = new List<string>();
+        for (int i = 1; i <= 68; i++) setFolderList.Add(i.ToString("D2"));
+
+        string[] setFolders = setFolderList.ToArray();
 
         foreach (string setFolder in setFolders)
         {
@@ -123,6 +127,11 @@ public class FurnitureDataManager : MonoBehaviour
                 //DebugLog.Log(spriteName);
                 if (isThumbnail)
                 {
+                    if (_thumbnailSpriteDic.ContainsKey(key))
+                    {
+                        Debug.LogWarning($"중복된 썸네일 스프라이트 키가 있습니다: {key}");
+                        continue;
+                    }
                     _thumbnailSpriteDic.Add(key, sprite);
                 }
 
@@ -132,11 +141,13 @@ public class FurnitureDataManager : MonoBehaviour
                     {
                         if (afterUnderStr.Contains("팔걸이"))
                         {
-                            _leftChairArmrestSpriteDic.Add(key, sprite);
+                            if (!_leftChairArmrestSpriteDic.ContainsKey(key))
+                                _leftChairArmrestSpriteDic.Add(key, sprite);
                         }
                         else
                         {
-                            _leftChairSpriteDic.Add(key, sprite);
+                            if (!_leftChairSpriteDic.ContainsKey(key))
+                                _leftChairSpriteDic.Add(key, sprite);
                         }
                     }
 
@@ -144,22 +155,30 @@ public class FurnitureDataManager : MonoBehaviour
                     {
                         if (afterUnderStr.Contains("팔걸이"))
                         {
-                            _rightChairArmrestSpriteDic.Add(key, sprite);
+                            if (!_rightChairArmrestSpriteDic.ContainsKey(key))
+                                _rightChairArmrestSpriteDic.Add(key, sprite);
                         }
                         else
                         {
-                            _rightChairSpriteDic.Add(key, sprite);
+                            if (!_rightChairSpriteDic.ContainsKey(key))
+                                _rightChairSpriteDic.Add(key, sprite);
                         }
                     }
                     else
                     {
-                        _leftChairSpriteDic.Add(key, sprite);
+                        if (!_leftChairSpriteDic.ContainsKey(key))
+                            _leftChairSpriteDic.Add(key, sprite);
                     }
 
                 }
 
                 else
                 {
+                    if (_spriteDic.ContainsKey(key))
+                    {
+                        Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
+                        continue;
+                    }
                     _spriteDic.Add(key, sprite);
                 }
             }
@@ -185,7 +204,7 @@ public class FurnitureDataManager : MonoBehaviour
             if (string.IsNullOrWhiteSpace(id))
             {
                 Debug.LogError("Id값이 이상합니다: " + id);
-                break;
+                continue;
             }
 
             string name = row[1].Trim();
@@ -219,10 +238,17 @@ public class FurnitureDataManager : MonoBehaviour
                 thumbnailSprite = sprite;
             }
 
+            List<Sprite> animationSpriteList = null;
+            if (_animationSpriteDic.TryGetValue(keyId, out List<Sprite> animationSprites))
+            {
+                animationSpriteList = animationSprites;
+            }
+
             // 🔹 FurnitureData 생성
             FurnitureData furnitureData = new FurnitureData(
                 sprite,
                 thumbnailSprite,
+                animationSpriteList,
                 id,
                 setId,
                 name,
@@ -278,7 +304,7 @@ public class FurnitureDataManager : MonoBehaviour
             MoneyType moneyType = row[7].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;
             int tableBuyScore = int.Parse(row[6].Trim());
             int tableBuyPrice = int.Parse(row[8].Trim());
-            FurnitureType tableType = GetTableTypeFromId(id);   
+            FurnitureType tableType = GetTableTypeFromId(id);
             UnlockConditionType unlockType = row.Length < 10 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[9].Trim());
             string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[10].Trim();
             if (unlockType == UnlockConditionType.None || !int.TryParse(row[11].Trim(), out int unlockCount))
@@ -286,7 +312,6 @@ public class FurnitureDataManager : MonoBehaviour
                 unlockCount = 0;
             }
 
-            bool isChairForward = true;
             string keyId = CutStringUpToChar(id, '_');
             // 🔹 스프라이트 가져오기 (딕셔너리에서 가져오므로 성능 향상)
             if (!_spriteDic.TryGetValue(keyId, out Sprite sprite))
@@ -312,13 +337,20 @@ public class FurnitureDataManager : MonoBehaviour
                 rightChairSprite = null;
             }
 
+            bool isChairForward = false;
             _leftChairArmrestSpriteDic.TryGetValue(keyId, out Sprite leftChairArmrestSprite);
             _rightChairArmrestSpriteDic.TryGetValue(keyId, out Sprite rightChairArmrestSprite);
 
+            List<Sprite> animationSpriteList = null;
+            if (_animationSpriteDic.TryGetValue(keyId, out List<Sprite> animationSprites))
+            {
+                animationSpriteList = animationSprites;
+            }
 
             FurnitureData tableData = new TableFurnitureData(
                 sprite,
                 thumbnailSprite,
+                animationSpriteList,
                 id,
                 setId,
                 name,
@@ -344,6 +376,71 @@ public class FurnitureDataManager : MonoBehaviour
             _furnitureDataList.Add(tableData);
             _furnitureDataListType[(int)tableData.Type].Add(tableData);
 
+        }
+    }
+    
+    private static void LoadAnimationSprites()
+    {
+        // 스프라이트 리소스 로드
+        Sprite[] sprites = Resources.LoadAll<Sprite>("FurnitureData/Sprites/Animation");
+
+        // ID별로 스프라이트들을 그룹화하기 위한 임시 딕셔너리
+        Dictionary<string, List<(Sprite sprite, int index)>> tempSpriteDic = new Dictionary<string, List<(Sprite, int)>>();
+
+        foreach (var sprite in sprites)
+        {
+            string spriteName = sprite.name.Trim();
+            DebugLog.Log($"로딩된 스프라이트 이름: {spriteName}");
+            // SKIN_STAFF01-01 형태에서 ID와 인덱스 분리
+            string[] parts = spriteName.Split('-');
+            if (parts.Length != 2)
+            {
+                Debug.LogWarning($"스프라이트 이름 형식이 올바르지 않습니다: {spriteName}");
+                continue;
+            }
+
+            string id = parts[0].Trim(); // SKIN_STAFF01
+            if (!int.TryParse(parts[1].Trim(), out int index))
+            {
+                Debug.LogWarning($"스프라이트 인덱스를 파싱할 수 없습니다: {spriteName}");
+                continue;
+            }
+
+            // 임시 딕셔너리에 추가
+            if (!tempSpriteDic.ContainsKey(id))
+            {
+                tempSpriteDic[id] = new List<(Sprite, int)>();
+            }
+            tempSpriteDic[id].Add((sprite, index));
+        }
+
+        // 각 ID별로 인덱스 순서대로 정렬하여 최종 딕셔너리에 저장
+        foreach (var kvp in tempSpriteDic)
+        {
+            string id = kvp.Key;
+            var spriteList = kvp.Value;
+            
+            // 인덱스 기준으로 오름차순 정렬
+            spriteList.Sort((a, b) => a.index.CompareTo(b.index));
+            
+            // Sprite 배열로 변환
+            Sprite[] sortedSprites = new Sprite[spriteList.Count];
+            for (int i = 0; i < spriteList.Count; i++)
+            {
+                sortedSprites[i] = spriteList[i].sprite;
+            }
+            
+            // 최종 딕셔너리에 저장
+            if (_animationSpriteDic.ContainsKey(id))
+            {
+                Debug.LogWarning($"중복된 스프라이트 ID가 있습니다: {id}");
+                continue;
+            }
+
+            _animationSpriteDic.Add(id, sortedSprites.ToList());
+            DebugLog.Log($"Idle 스프라이트 로드 완료: {id} ({sortedSprites.Length}개)");
+            sortedSprites = null;
+            spriteList = null;
         }
     }
 

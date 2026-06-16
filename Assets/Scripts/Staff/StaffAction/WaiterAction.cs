@@ -11,7 +11,7 @@ public class WaiterAction : IStaffAction
         Order,
     }
 
-    private const float _duration = 2f;
+    private const float _duration = 0.5f;
 
     private TableManager _tableManager;
     private TweenWait _tweenData;
@@ -95,14 +95,14 @@ public class WaiterAction : IStaffAction
 
         TableData servingData = _tableManager.GetMinDistanceTable(_waiter.transform.position, servingTableList);
         TableData orderData = _tableManager.GetMinDistanceTable(_waiter.transform.position, orderTableList);
-
+       
         // 둘 다 없으면 초기화
         if (servingData == null && orderData == null)
         {
             ResetStaffState(staff);
             return;
         }
-
+        _waiter.BowlSetActive(false);
         _isUsed = true;
 
         // 둘 중 하나만 있는 경우
@@ -209,8 +209,6 @@ public class WaiterAction : IStaffAction
         if (servingTableData == null)
             return;
             
-
-        DebugLog.Log("웨이터 서빙 액션 시작1: " + servingTableData.TableFurniture.name);
         if (0.5f < Mathf.Abs(servingTableData.transform.position.y - _waiter.transform.position.y) && !_notEqulsFloor)
         {
             _waiter.SetStaffState(EStaffState.None);
@@ -219,7 +217,6 @@ public class WaiterAction : IStaffAction
             _isUsed = false;
             return;
         }
-        DebugLog.Log("웨이터 서빙 액션 시작2: " + servingTableData.TableFurniture.name);
         _waiter.BowlSetActive(false);
         float speedMul = _waiter.SpeedMul;
         _isNoAction = false;
@@ -299,10 +296,7 @@ public class WaiterAction : IStaffAction
                     return;
                 }
 
-                _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall, _waiter.transform.position), 0, () =>
-                {
-
-                    _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
+                _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
                     {
                         if (orderTableData.CurrentCustomer == null || orderTableData.TableState != ETableState.UseStaff)
                         {
@@ -318,7 +312,6 @@ public class WaiterAction : IStaffAction
                             SetNoneState();
                         });
                     });
-                });
             });
 
         });

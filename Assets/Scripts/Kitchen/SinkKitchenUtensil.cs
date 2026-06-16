@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Audio;
 
 public class SinkKitchenUtensil : KitchenUtensil
 {
@@ -8,11 +9,16 @@ public class SinkKitchenUtensil : KitchenUtensil
     [SerializeField] private SpriteTouchEvent _touchEvent;
     [SerializeField] private AudioSource _washingSound;
     [SerializeField] private GameObject _washingEffect;
+    [SerializeField] private ParticleSystem _chefEffect;
+
+    [Header("Tutorial")]
+    [SerializeField] private AudioMixerGroup _tutorialAudioMixerGroup;
 
     private bool _isStaffWashing;
     public bool IsStaffWashing => _isStaffWashing;
     private bool _isTouchWashing;
     private float _washGauge;
+    private AudioMixerGroup _originalAudioMixerGroup;
 
     public Staff UseStaff => _useStaff;
     public void SetUseStaff(Staff staff) => _useStaff = staff;
@@ -27,13 +33,26 @@ public class SinkKitchenUtensil : KitchenUtensil
         _sinkGaugeBar.Init(floor);
         _washingSound.Stop();
         _washingEffect.SetActive(false);
+        _originalAudioMixerGroup = _washingSound.outputAudioMixerGroup;
         _touchEvent.AddDownEvent(TouchDownEvent);
         _touchEvent.AddUpEvent(TouchUpEvent);
         UpdateSink();
 
         UserInfo.OnChangeSinkBowlHandler += UpdateSink;
         UserInfo.OnChangeMaxSinkBowlHandler += OnChangeMaxBowlCount;
+        SetChefEffect(false);
     }
+
+    public void SetChefEffect(bool isOn)
+    {
+        _chefEffect.gameObject.SetActive(isOn);
+    }
+    
+    public int GetSinkBowlCount()
+    {
+        return UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _floorType);
+    }
+
 
     private void OnChangeMaxBowlCount()
     { 
@@ -56,13 +75,13 @@ public class SinkKitchenUtensil : KitchenUtensil
 
     private void FixedUpdate()
     {
-        if (UserInfo.IsTutorialStart)
-        {
-            _isTouchWashing = false;
-            _isStaffWashing = false;
-            _washingEffect.gameObject.SetActive(false);
-            _washingSound.Stop();
-        }
+        // if (UserInfo.IsTutorialStart)
+        // {
+        //     _isTouchWashing = false;
+        //     _isStaffWashing = false;
+        //     _washingEffect.gameObject.SetActive(false);
+        //     _washingSound.Stop();
+        // }
 
         if (UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _floorType) <= 0)
         {
@@ -71,6 +90,7 @@ public class SinkKitchenUtensil : KitchenUtensil
             if (_washingEffect.activeSelf)
             {
                 _washingEffect.SetActive(false);
+                _chefEffect.gameObject.SetActive(false);
                 _washingSound.Stop();
             }
             return;
@@ -79,6 +99,7 @@ public class SinkKitchenUtensil : KitchenUtensil
         if (!_isTouchWashing && !_isStaffWashing)
         {
             _washingEffect.SetActive(false);
+            _chefEffect.gameObject.SetActive(false);
             _washingSound.Stop();
             return;
         }
@@ -89,13 +110,15 @@ public class SinkKitchenUtensil : KitchenUtensil
             _washingSound.Play();
         }
 
+        _chefEffect.gameObject.SetActive(_isTouchWashing || _isStaffWashing);
+
         if (1 <= _washGauge)
         {
             UserInfo.SubSinkBowlCount(UserInfo.CurrentStage, _floorType);
             _washGauge = 0;
         }
 
-        _washGauge += Time.deltaTime / (_isTouchWashing && _isStaffWashing ? 1 : 2);
+        _washGauge += (Time.deltaTime / (_isTouchWashing && _isStaffWashing ? 1 : 2) * GameManager.Instance.GetEquipKitchenUtensilDishWashSpeedMul(_floorType));
         UpdateSink();
     }
 
@@ -106,19 +129,34 @@ public class SinkKitchenUtensil : KitchenUtensil
         _isStaffWashing = true;
     }
 
+    // 이미 세션 중인 상태를 유지 - 사운드 재시작 없이 _isStaffWashing만 갱신
+    public void ContinueStaffAction()
+    {
+        _isStaffWashing = true;
+    }
+
     public void EndStaffAction()
     {
         _isStaffWashing = false;
     }
 
 
-    private void TouchDownEvent()
+    public void TouchDownEvent()
     {
         _isTouchWashing = true;
+        if(UserInfo.IsTutorialStart)
+        {
+            _washingSound.outputAudioMixerGroup = _tutorialAudioMixerGroup;
+        }
+        else
+        {
+            _washingSound.outputAudioMixerGroup = _originalAudioMixerGroup;
+        }
+
     }
 
 
-    private void TouchUpEvent()
+    public void TouchUpEvent()
     {
         _isTouchWashing = false;
     }

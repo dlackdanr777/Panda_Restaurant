@@ -72,6 +72,6 @@ public class GuardData : StaffData
 [Serializable]
 public class GuardLevelData : StaffLevelData
 {
-    [Range(0f, 10f)][SerializeField] private float _actionTime;
+    [Range(0f, 100f)][SerializeField] private float _actionTime;
     public float ActionTime => _actionTime;
 }

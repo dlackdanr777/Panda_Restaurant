@@ -12,18 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e39c2e09d58fec4e92da628aa6f0c2e, type: 3}
   m_Name: STAFF13
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: 0a365582d939a8b4b9af5c37972f926d, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: 0a365582d939a8b4b9af5c37972f926d, type: 3}
-  _name: "\uD1A0\uB8E8\uBC88"
+  _sprite: {fileID: 21300000, guid: ded7658feb386fd4ba515f91c34742cb, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 93d94b61db32f844c99f25e7158bd744, type: 3}
+  _name: "\uB77C\uB77C"
   _id: STAFF13
-  _description: "\uBE75 \uB0C4\uC0C8\uB97C \uB9E1\uACE0 \uC190\uB2D8\uBCF4\uB2E4
-    \uB354 \uD765\uBD84\uD55C \uD1A0\uB8E8\uB8E8\r"
+  _description: 
+  _rank: 0
+  _skill: {fileID: 11400000, guid: cc1627697d70f09418e134e717be2a29, type: 2}
+  _idleSprites: []
+  _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
   _buyScore: 2500
   _buyPrice: 570000
-  _skill: {fileID: 11400000, guid: cc1627697d70f09418e134e717be2a29, type: 2}
-  _animatorController: {fileID: 0}
   _speed: 6
   _marketerLevelData:
   - _upgradeMinScore: 3750
@@ -51,11 +52,9 @@ MonoBehaviour:
       _moneyType: 0
       _price: -1
     _marketingTime: 11
-  _uiSprite: {fileID: 21300000, guid: cdcf2d8272fd1404ea881e67fa4bb7f1, type: 3}
-  _animationSprite: {fileID: 21300000, guid: 8dca3533148bea24a8b9c7927d55c7e7, type: 3}
-  _leftHandSprite: {fileID: 21300000, guid: 907e24f290c5b3f4eba58655c9b1ae7f, type: 3}
-  _rightHandSprite: {fileID: 21300000, guid: b35b062db1d9b4f489cdc147bf2f20ac, type: 3}
+  _uiSprite: {fileID: 21300000, guid: ded7658feb386fd4ba515f91c34742cb, type: 3}
+  _animationSprite: {fileID: 21300000, guid: 133ca042dc674c54ab933ac922325650, type: 3}
   _particleCount: 10
   _particleSprites:
-  - {fileID: 21300000, guid: 4ca869a495540fc4b8c01c7d817f1027, type: 3}
-  - {fileID: 21300000, guid: b73e7a1cef4b8b942945d982190913b0, type: 3}
+  - {fileID: 21300000, guid: 8672ffbc140515c4e8a0ab3b8af8e175, type: 3}
+  - {fileID: 21300000, guid: faf4c805b67eee7499626eea5897b09b, type: 3}

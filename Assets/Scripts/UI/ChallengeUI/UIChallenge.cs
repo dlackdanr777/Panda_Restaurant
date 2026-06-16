@@ -40,12 +40,13 @@ public class UIChallenge : MobileUIView
 
     public override void Init()
     {
+        // UIChallenge 참조를 먼저 설정한 뒤 슬롯 생성
         _uiDaily.Init(this, ChallengeManager.Instance.GetDailyChallenge);
         _uiAllTime.Init(this, ChallengeManager.Instance.GetAllTimeChallenge);
+        _uiWeekly.Init(this, ChallengeManager.Instance.GetWeeklyChallenge);
+
         _uiDaily.Init(ChallengeManager.Instance.GetDailyChallenge());
         _uiAllTime.Init(ChallengeManager.Instance.GetAllTimeChallenge());
-
-        _uiWeekly.Init(this, ChallengeManager.Instance.GetWeeklyChallenge);
         _uiWeekly.Init(ChallengeManager.Instance.GetWeeklyChallenge());
 
         _uiDailyButton.onClick.AddListener(OnDailyButtonClicked);
@@ -142,7 +143,7 @@ public class UIChallenge : MobileUIView
         _uiWeeklyAlarm.SetActive(_uiWeekly.UpdateUI());
     }
 
-    public void StartCoinAnime(int money, Vector3 coinPos)
+    public void StartCoinAnime(long money, Vector3 coinPos)
     {
         float time = 0;
         int coinCnt = 5;
@@ -170,7 +171,7 @@ public class UIChallenge : MobileUIView
         }
     }
 
-    public void StartDiaAnime(int money, Vector3 coinPos)
+    public void StartDiaAnime(long money, Vector3 coinPos)
     {
         float time = 0;
         int coinCnt = 5;
@@ -188,7 +189,7 @@ public class UIChallenge : MobileUIView
                 if (dia.anchoredPosition.y < 0)
                     height *= -1;
 
-                dia.TweenJump(_uiMoney.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
+                dia.TweenJump(_uiDia.EffectSpawnPos.position, height, _coinDuration + time, _coinEase).OnComplete(() =>
                 {
                     ObjectPoolManager.Instance.DespawnUIDia(dia);
                     _uiDia.StartAnime();

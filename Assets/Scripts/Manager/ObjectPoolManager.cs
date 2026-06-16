@@ -2,7 +2,6 @@ using Muks.Tween;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -49,6 +48,7 @@ public class ObjectPoolManager : MonoBehaviour
     private static GameObject _coinParent;
     private static PointerDownSpriteRenderer _coinPrefab;
     private static Queue<PointerDownSpriteRenderer> _coinPool = new Queue<PointerDownSpriteRenderer>();
+    private static List<PointerDownSpriteRenderer> _enabledCoinPool = new List<PointerDownSpriteRenderer>();
 
 
     private static int _garbageCount = 100;
@@ -108,7 +108,7 @@ public class ObjectPoolManager : MonoBehaviour
         _uiCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
         _uiCanvas.sortingOrder = 10;
 
-        CanvasScaler scaler = _uiCanvas.AddComponent<CanvasScaler>();
+        CanvasScaler scaler = _uiCanvas.gameObject.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
@@ -153,12 +153,12 @@ public class ObjectPoolManager : MonoBehaviour
         _staffPrefabs[(int)EquipStaffType.Chef] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
         //_staffPrefabs[(int)EquipStaffType.Chef2] = Resources.Load<StaffChef>("ObjectPool/Staff/Chef");
         _staffPrefabs[(int)EquipStaffType.Marketer] = Resources.Load<StaffMarketer>("ObjectPool/Staff/Marketer");
+        _staffPrefabs[(int)EquipStaffType.Guard] = Resources.Load<StaffGuard>("ObjectPool/Staff/Guard");
         _staffCount = (int)ERestaurantFloorType.Length;
         for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
         {
             for (int j = 0; j < _staffCount; ++j)
             {
-                DebugLog.Log("Staff Prefab: " + _staffPrefabs[i].name);
                 Staff staff = Instantiate(_staffPrefabs[i], _staffParents[i].transform);
                 _staffPools[i].Enqueue(staff);
                 staff.gameObject.SetActive(false);
@@ -218,6 +218,7 @@ public class ObjectPoolManager : MonoBehaviour
         for (int i = 0, count = _coinCount; i < count; i++)
         {
             PointerDownSpriteRenderer coin = Instantiate(_coinPrefab, _coinParent.transform);
+            coin.name = "Coin";
             _coinPool.Enqueue(coin);
             coin.gameObject.SetActive(false);
         }
@@ -277,6 +278,7 @@ public class ObjectPoolManager : MonoBehaviour
         for (int i = 0, count = _garbageCount; i < count; i++)
         {
             PointerDownSpriteRenderer garbage = Instantiate(_garbagePrefab, _garbageParent.transform);
+            garbage.name = "Garbage";
             _garbagePool.Enqueue(garbage);
             garbage.gameObject.SetActive(false);
         }
@@ -302,12 +304,22 @@ public class ObjectPoolManager : MonoBehaviour
     private static void UIEffectPooling()
     {
         _uiEffectPool = new Queue<UIParticleEffect>[(int)UIEffectType.Length];
-        List<UIParticleEffect> uIParticleEffects = Resources.LoadAll<UIParticleEffect>("ObjectPool/Effect/").ToList();
+        UIParticleEffect[] uIParticleEffects = Resources.LoadAll<UIParticleEffect>("ObjectPool/Effect/");
         for (int i = 0, cnt = (int)UIEffectType.Length; i < cnt; i++)
         {
             _uiEffectPool[i] = new Queue<UIParticleEffect>();
             if (_uiEffectPrefabs[i] == null)
-                _uiEffectPrefabs[i] = uIParticleEffects.Find(x => x.Type == (UIEffectType)i);
+            {
+                UIEffectType targetType = (UIEffectType)i;
+                for (int k = 0; k < uIParticleEffects.Length; k++)
+                {
+                    if (uIParticleEffects[k].Type == targetType)
+                    {
+                        _uiEffectPrefabs[i] = uIParticleEffects[k];
+                        break;
+                    }
+                }
+            }
 
             if (_uiEffectPrefabs[i] == null)
             {
@@ -355,7 +367,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         staff = _staffPools[typeIndex].Dequeue();
-        staff.gameObject.SetActive(false);
         staff.gameObject.SetActive(true);
         staff.transform.position = pos;
         staff.transform.rotation = Quaternion.identity;
@@ -386,7 +397,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         customer = _normalCustomerPool.Dequeue();
-        customer.gameObject.SetActive(false);
         customer.gameObject.SetActive(true);
         customer.transform.position = pos;
         customer.transform.rotation = rot;
@@ -412,7 +422,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         customer = _specialCustomerPool.Dequeue();
-        customer.gameObject.SetActive(false);
         customer.gameObject.SetActive(true);
         customer.transform.position = pos;
         customer.transform.rotation = rot;
@@ -430,7 +439,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         customer = _gatecrasherCustomerPool.Dequeue();
-        customer.gameObject.SetActive(false);
         customer.gameObject.SetActive(true);
         customer.transform.position = pos;
         customer.transform.rotation = rot;
@@ -459,24 +467,32 @@ public class ObjectPoolManager : MonoBehaviour
         if (_coinPool.Count == 0)
         {
             coin = Instantiate(_coinPrefab, pos, rot, _coinParent.transform);
+            _enabledCoinPool.Add(coin);
             return coin;
         }
 
         coin = _coinPool.Dequeue();
-        coin.gameObject.SetActive(false);
         coin.gameObject.SetActive(true);
         coin.transform.position = pos;
         coin.transform.rotation = rot;
+        _enabledCoinPool.Add(coin);
         return coin;
     }
 
 
     public void DespawnCoin(PointerDownSpriteRenderer coin)
     {
+        if (!_enabledCoinPool.Contains(coin))
+        {
+            DebugLog.LogError("반환하려는 오브젝트가 coin이 아니거나, 활성화된 Coin Pool에 등록되있지 않습니다.");
+            return;
+        }
+
         coin.gameObject.SetActive(false);
         coin.TweenStop();
         coin.RemoveAllEvent();
         _coinPool.Enqueue(coin);
+        _enabledCoinPool.Remove(coin);
     }
 
 
@@ -491,7 +507,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         coin = _uiCoinPool.Dequeue();
-        coin.gameObject.SetActive(false);
         coin.gameObject.SetActive(true);
         coin.transform.position = pos;
         coin.transform.rotation = rot;
@@ -519,7 +534,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         dia = _uiDiaPool.Dequeue();
-        dia.gameObject.SetActive(false);
         dia.gameObject.SetActive(true);
         dia.transform.position = pos;
         dia.transform.rotation = rot;
@@ -535,7 +549,7 @@ public class ObjectPoolManager : MonoBehaviour
         _uiDiaPool.Enqueue(dia);
     }
 
-        public RectTransform SpawnUIScore(Vector3 pos, Quaternion rot)
+    public RectTransform SpawnUIScore(Vector3 pos, Quaternion rot)
     {
         RectTransform score;
 
@@ -546,7 +560,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         score = _uiScorePool.Dequeue();
-        score.gameObject.SetActive(false);
         score.gameObject.SetActive(true);
         score.transform.position = pos;
         score.transform.rotation = rot;
@@ -576,7 +589,6 @@ public class ObjectPoolManager : MonoBehaviour
         }
 
         garbage = _garbagePool.Dequeue();
-        garbage.gameObject.SetActive(false);
         garbage.gameObject.SetActive(true);
         garbage.transform.position = pos;
         garbage.transform.rotation = rot;
@@ -600,12 +612,6 @@ public class ObjectPoolManager : MonoBehaviour
         _garbagePool.Enqueue(garbage);
         _enabledGarbagePool.Remove(garbage);
     }
-
-    public int GetEnabledGarbageCount()
-    {
-        return _enabledGarbagePool.Count;
-    }
-
 
 
     public TextMeshProUGUI SpawnTMP(Vector3 pos, Quaternion rot, RectTransform parent)
@@ -761,4 +767,29 @@ public class ObjectPoolManager : MonoBehaviour
         touchEffect.gameObject.SetActive(false);
         touchEffect.transform.SetParent(_touchEffectParent.transform);
     }
+
+    public List<PointerDownSpriteRenderer> GetEnabledCoinPool()
+    {
+        return _enabledCoinPool;
+    }
+
+    public List<PointerDownSpriteRenderer> GetEnabledGarbagePool()
+    {
+        return _enabledGarbagePool;
+    } 
+
+
+    public int GetEnabledCoinCount()
+    {
+        // 이미 추적 중인 활성화된 Coin 리스트 사용
+        return _enabledCoinPool.Count;
+    }
+
+
+    public int GetEnabledGarbageCount()
+    {
+        // 이미 추적 중인 활성화된 Garbage 리스트 사용
+        return _enabledGarbagePool.Count;
+    }
+
 }

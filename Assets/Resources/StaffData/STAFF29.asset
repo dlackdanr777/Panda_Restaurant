@@ -13,17 +13,31 @@ MonoBehaviour:
   m_Name: STAFF29
   m_EditorClassIdentifier: 
   _sprite: {fileID: 21300000, guid: c59a1dac76864fc4da8421f6866ddf80, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: c59a1dac76864fc4da8421f6866ddf80, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 1a7eaa872ef415a47afb4c66a52cc55d, type: 3}
   _name: "\uC170\uD504 \uBC14\uB77C"
   _id: STAFF29
   _description: "\r"
+  _rank: 0
+  _skill: {fileID: 11400000, guid: 6513e175122c20641a60cad9e71895fa, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 11da87c369d50e34d864b246d2366b83, type: 3}
+  - {fileID: 21300000, guid: 8c2c34197d8098744b245647fbdfafb1, type: 3}
+  - {fileID: 21300000, guid: 59f1ae322837fcb44a4aacd7b8b987d3, type: 3}
+  - {fileID: 21300000, guid: dc506de34f87f1d449a33f6534343d65, type: 3}
+  - {fileID: 21300000, guid: b2e32a6552411284b80611fe5809a8b9, type: 3}
+  - {fileID: 21300000, guid: 5d8742055ed55b04ea2b589ed7bc8799, type: 3}
+  - {fileID: 21300000, guid: df48564acc3d8b04085b31a77ec2c3c1, type: 3}
+  - {fileID: 21300000, guid: 6a80cba86b3a5dd4eb4f84957e019195, type: 3}
+  - {fileID: 21300000, guid: 3fb05c28d1976a146bdef0a2031e50ae, type: 3}
+  - {fileID: 21300000, guid: 7694cd5e11b164641b7de55c6de8358f, type: 3}
+  - {fileID: 21300000, guid: 2cb72210d4023414d9b8aaed83e12a24, type: 3}
+  - {fileID: 21300000, guid: db8f722d5c6e12043912ea579f91f7fe, type: 3}
+  _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
   _buyScore: 8600
   _buyPrice: 2700000
-  _skill: {fileID: 11400000, guid: 6513e175122c20641a60cad9e71895fa, type: 2}
-  _animatorController: {fileID: 0}
-  _speed: 6
+  _speed: 8
   _backSprite: {fileID: 21300000, guid: 0ece14e7cfa56714787d6a4d3e2e4c89, type: 3}
   _handSprite: {fileID: 21300000, guid: 96fdbbf9dd8ab34429405ea8d8d27670, type: 3}
   _handOffset: {x: 0.1, y: 1.35}

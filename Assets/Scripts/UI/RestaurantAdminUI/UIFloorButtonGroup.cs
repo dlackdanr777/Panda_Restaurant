@@ -91,33 +91,33 @@ public class UIFloorButtonGroup : MonoBehaviour
 
     private void OnChangeUnlockFloorEvent()
     {
-        if (!_openImage.gameObject.activeInHierarchy)
-            return;
+        // if (!_openImage.gameObject.activeInHierarchy)
+        //     return;
 
         ERestaurantFloorType currentFloorType = UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
         if (currentFloorType == ERestaurantFloorType.Floor3)
         {
-            _floor3Button.interactable = true;
-            _floor2Button.interactable = true;
-            _floor1Button.interactable = true;
+            _floor3Button.gameObject.SetActive(true);
+            _floor2Button.gameObject.SetActive(true);
+            _floor1Button.gameObject.SetActive(true);
         }
         else if (currentFloorType == ERestaurantFloorType.Floor2)
         {
-            _floor3Button.interactable = false;
-            _floor2Button.interactable = true;
-            _floor1Button.interactable = true;
+            _floor3Button.gameObject.SetActive(false);
+            _floor2Button.gameObject.SetActive(true);
+            _floor1Button.gameObject.SetActive(true);
         }
         else if (currentFloorType == ERestaurantFloorType.Floor1)
         {
-            _floor3Button.interactable = false;
-            _floor2Button.interactable = false;
-            _floor1Button.interactable = true;
+            _floor3Button.gameObject.SetActive(false);
+            _floor2Button.gameObject.SetActive(false);
+            _floor1Button.gameObject.SetActive(true);
         }
         else
         {
-            _floor3Button.interactable = false;
-            _floor2Button.interactable = false;
-            _floor1Button.interactable = false;
+            _floor3Button.gameObject.SetActive(false);
+            _floor2Button.gameObject.SetActive(false);
+            _floor1Button.gameObject.SetActive(false);
         }
     }
 

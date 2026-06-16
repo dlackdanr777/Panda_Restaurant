@@ -77,6 +77,7 @@ public class ChallengeManager : MonoBehaviour
     private static Dictionary<string, Type17ChallengeData> _type17ChallengeDataDic = new Dictionary<string, Type17ChallengeData>();
     private static Dictionary<string, Type18ChallengeData> _type18ChallengeDataDic = new Dictionary<string, Type18ChallengeData>();
     private static Dictionary<string, Type19ChallengeData> _type19ChallengeDataDic = new Dictionary<string, Type19ChallengeData>();
+    private static Dictionary<string, Type20ChallengeData> _type20ChallengeDataDic = new Dictionary<string, Type20ChallengeData>();
 
     private static Dictionary<string, Type21ChallengeData> _type21ChallengeDataDic = new Dictionary<string, Type21ChallengeData>();
     private static Dictionary<string, Type22ChallengeData> _type22ChallengeDataDic = new Dictionary<string, Type22ChallengeData>();
@@ -130,7 +131,7 @@ public class ChallengeManager : MonoBehaviour
         Type17ChallengeCheck();
         Type18ChallengeCheck();
         Type19ChallengeCheck();
-
+        Type20ChallengeCheck();
         Type21ChallengeCheck();
         Type22ChallengeCheck();
         Type23ChallengeCheck();
@@ -195,7 +196,7 @@ public class ChallengeManager : MonoBehaviour
         UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => Type17ChallengeCheck();
         UserInfo.OnGiveFurnitureHandler += Type18ChallengeCheck;
         UserInfo.OnGiveKitchenUtensilHandler += Type19ChallengeCheck;
-
+        UserInfo.OnChangeFloorHandler += Type20ChallengeCheck;
         UserInfo.OnVisitSpecialCustomerHandler += Type21ChallengeCheck;
         UserInfo.OnExterminationGatecrasherCustomerHandler += Type22ChallengeCheck;
         UserInfo.OnExterminationGatecrasherCustomerHandler += Type23ChallengeCheck;
@@ -244,7 +245,7 @@ public class ChallengeManager : MonoBehaviour
         Type17ChallengeCheck();
         Type18ChallengeCheck();
         Type19ChallengeCheck();
-
+        Type20ChallengeCheck();
         Type21ChallengeCheck();
         Type22ChallengeCheck();
         Type23ChallengeCheck();
@@ -319,11 +320,11 @@ public class ChallengeManager : MonoBehaviour
             BindData<UnityAction> shortcutAction = GetShortCutAction(row[2]);
             string description = row[3];
             string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
-            int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
+            int count = int.TryParse(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))), out int parsedCount) ? parsedCount : 0;
             MoneyType moneyType = row[6].Contains("코인") || row[6].Contains("게임머니") ? MoneyType.Gold : MoneyType.Dia;
-            int rewardMoney = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
+            int rewardMoney = int.TryParse(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))), out int parsedRewardMoney) ? parsedRewardMoney : 0;
             ChallengeType challengeType;
-
+    
             switch (type)
             {
                 case "TYPE01":
@@ -501,6 +502,14 @@ public class ChallengeManager : MonoBehaviour
                     dic.Add(id, challengeData19);
                     break;
 
+                case "TYPE20":
+                    challengeType = ChallengeType.TYPE20;
+                    ERestaurantFloorType floorType = (ERestaurantFloorType)(int.Parse(needItemId) - 1);
+                    Type20ChallengeData challengeData20 = new Type20ChallengeData(challenges, challengeType, id, description, floorType, moneyType, rewardMoney, 0, shortcutAction);
+                    _type20ChallengeDataDic.Add(id, challengeData20);
+                    dic.Add(id, challengeData20);
+                    break;
+
                 case "TYPE21":
                     challengeType = ChallengeType.TYPE21;
                     Type21ChallengeData challengeData21 = new Type21ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, 0, shortcutAction);
@@ -667,12 +676,12 @@ public class ChallengeManager : MonoBehaviour
             BindData<UnityAction> shortcutAction = GetShortCutAction(row[2]);
             string description = row[3];
             string needItemId = string.Concat(row[4].Where(c => !Char.IsWhiteSpace(c)));
-            int count = Convert.ToInt32(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))));
+            int count = int.TryParse(string.Concat(row[5].Where(c => !Char.IsWhiteSpace(c))), out int parsedCount2) ? parsedCount2 : 0;
 
-            int rewardScore = Convert.ToInt32(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))));
+            int rewardScore = int.TryParse(string.Concat(row[7].Where(c => !Char.IsWhiteSpace(c))), out int parsedRewardScore) ? parsedRewardScore : 0;
             MoneyType moneyType = row[8].Contains("코인") || row[8].Contains("게임머니") ? MoneyType.Gold : MoneyType.Dia;
             Debug.Log(id + ", " + row[9]);
-            int rewardMoney = Convert.ToInt32(string.Concat(row[9].Where(c => !Char.IsWhiteSpace(c))));
+            int rewardMoney = int.TryParse(string.Concat(row[9].Where(c => !Char.IsWhiteSpace(c))), out int parsedRewardMoney2) ? parsedRewardMoney2 : 0;
             ChallengeType challengeType;
             switch (type)
             {
@@ -849,6 +858,14 @@ public class ChallengeManager : MonoBehaviour
                     Type19ChallengeData challengeData19 = new Type19ChallengeData(challenges, challengeType, id, description, count, moneyType, rewardMoney, rewardScore, shortcutAction);
                     _type19ChallengeDataDic.Add(id, challengeData19);
                     dic.Add(id, challengeData19);
+                    break;
+
+                case "TYPE20":
+                    challengeType = ChallengeType.TYPE20;
+                    ERestaurantFloorType floorType = (ERestaurantFloorType)(int.Parse(needItemId) - 1);
+                    Type20ChallengeData challengeData20 = new Type20ChallengeData(challenges, challengeType, id, description, floorType, moneyType, rewardMoney, rewardScore, shortcutAction);
+                    _type20ChallengeDataDic.Add(id, challengeData20);
+                    dic.Add(id, challengeData20);
                     break;
 
                 case "TYPE21":
@@ -1071,7 +1088,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE08:
                 Type08ChallengeData data08 = (Type08ChallengeData)data;
-                int socre = UserInfo.Score;
+                long socre = UserInfo.Score;
                 return socre == 0 ? 0 : Math.Min(1, (float)socre / data08.Rank);
 
             case ChallengeType.TYPE09:
@@ -1164,6 +1181,11 @@ public class ChallengeManager : MonoBehaviour
                 int giveKitchenUntensilCount = UserInfo.GetGiveKitchenUtensilCount(UserInfo.CurrentStage);
                 return giveKitchenUntensilCount == 0 ? 0 : Math.Min(1, (float)giveKitchenUntensilCount / data19.Count);
 
+            case ChallengeType.TYPE20:
+                Type20ChallengeData data20 = (Type20ChallengeData)data;
+                int openFloorCount = UserInfo.IsFloorValid(UserInfo.CurrentStage, data20.FloorType) ? 1 : 0;
+                return openFloorCount;
+
             case ChallengeType.TYPE21:
                 Type21ChallengeData data21 = (Type21ChallengeData)data;
                 int totalVisitSpecialCustomerCount = UserInfo.TotalVisitSpecialCustomerCount;
@@ -1201,6 +1223,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE30:
                 int dailyClearCount = UserInfo.GetClearDailyChallengeCount();
+                DebugLog.Log($"{((Type30ChallengeData)data).Id} {dailyClearCount} / {_dailyChallengeDataDic.Count - 1}");
                 return GetChallengeAchievementRate(dailyClearCount, _dailyChallengeDataDic.Count - 1);
 
             case ChallengeType.TYPE31:
@@ -1235,7 +1258,6 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE37:
                 Type37ChallengeData data37 = (Type37ChallengeData)data;
                 int weeklyCustomerCount = UserInfo.WeeklyCumulativeCustomerCount;
-                DebugLog.Log(GetChallengeAchievementRate(weeklyCustomerCount, data37.Count));
                 return GetChallengeAchievementRate(weeklyCustomerCount, data37.Count);
 
             case ChallengeType.TYPE38:
@@ -1316,8 +1338,8 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE08:
                 Type08ChallengeData data08 = (Type08ChallengeData)data;
-                int socre = UserInfo.Score;
-                return $"{socre} / {data08.Rank}";
+                long socre = UserInfo.Score;
+                return $"{Utility.ConvertToMoney(socre)} / {Utility.ConvertToMoney(data08.Rank)}";
 
             case ChallengeType.TYPE09:
                 Type09ChallengeData data09 = (Type09ChallengeData)data;
@@ -1332,7 +1354,7 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE11:
                 Type11ChallengeData data11 = (Type11ChallengeData)data;
                 long moneyCount = UserInfo.TotalAddMoney;
-                return $"{moneyCount} / {data11.MoneyCount}";
+                return $"{Utility.ConvertToMoney(moneyCount)} / {Utility.ConvertToMoney(data11.MoneyCount)}";
 
             case ChallengeType.TYPE12:
                 Type12ChallengeData data12 = (Type12ChallengeData)data;
@@ -1409,6 +1431,11 @@ public class ChallengeManager : MonoBehaviour
                 int giveKitchenUntensilCount = UserInfo.GetGiveKitchenUtensilCount(UserInfo.CurrentStage);
                 return $"{giveKitchenUntensilCount} / {data19.Count}";
 
+            case ChallengeType.TYPE20:
+                Type20ChallengeData data20 = (Type20ChallengeData)data;
+                int openFloorCount = UserInfo.IsFloorValid(UserInfo.CurrentStage, data20.FloorType) ? 1 : 0;
+                return $"{openFloorCount} / 1";
+
             case ChallengeType.TYPE21:
                 Type21ChallengeData data21 = (Type21ChallengeData)data;
                 int totalVisitSpecialCustomerCount = UserInfo.TotalVisitSpecialCustomerCount;
@@ -1446,6 +1473,7 @@ public class ChallengeManager : MonoBehaviour
 
             case ChallengeType.TYPE30:
                 int dailyClearCount = UserInfo.GetClearDailyChallengeCount();
+                DebugLog.Log($"{((Type30ChallengeData)data).Id} {dailyClearCount} / {_dailyChallengeDataDic.Count - 1}");
                 return $"{dailyClearCount} / {_dailyChallengeDataDic.Count - 1}";
 
             case ChallengeType.TYPE31:
@@ -1456,7 +1484,7 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE32:
                 Type32ChallengeData data32 = (Type32ChallengeData)data;
                 long dailyAddMoney = UserInfo.DailyAddMoney;
-                return $"{dailyAddMoney} / {data32.Count}";
+                return $"{Utility.ConvertToMoney(dailyAddMoney)} / {Utility.ConvertToMoney(data32.Count)}";
 
             case ChallengeType.TYPE33:
                 Type33ChallengeData data33 = (Type33ChallengeData)data;
@@ -1485,7 +1513,7 @@ public class ChallengeManager : MonoBehaviour
             case ChallengeType.TYPE38:
                 Type38ChallengeData data38 = (Type38ChallengeData)data;
                 long weeklyAddMoney = UserInfo.WeeklyAddMoney;
-                return $"{weeklyAddMoney} / {data38.Count}";
+                return $"{Utility.ConvertToMoney(weeklyAddMoney)} / {Utility.ConvertToMoney(data38.Count)}";
 
             case ChallengeType.TYPE39:
                 Type39ChallengeData data39 = (Type39ChallengeData)data;
@@ -1574,7 +1602,7 @@ public class ChallengeManager : MonoBehaviour
                 return DataBind.GetUnityActionBindData("UIPictorialBook");
 
             case "ShortCut10":
-                return DataBind.GetUnityActionBindData("ShowGachaUI");
+                return DataBind.GetUnityActionBindData("ShortCut10");
 
             case "ShortCut12":
                 return DataBind.GetUnityActionBindData("ShowAttendanceUI");
@@ -2799,6 +2827,60 @@ public class ChallengeManager : MonoBehaviour
         OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE19);
     }
 
+        private void Type20ChallengeCheck()
+    {
+        bool dailyUpdateEnabled = false;
+        bool weeklyUpdateEnabled = false;
+        bool alltimeUpdateEnabled = false;
+        bool mainUpdateEnabled = false;
+
+        foreach (Type20ChallengeData data in _type20ChallengeDataDic.Values)
+        {
+            if (UserInfo.GetIsDoneChallenge(data.Id))
+                continue;
+
+            if (UserInfo.GetIsClearChallenge(data.Id))
+                continue;
+
+            if (UserInfo.IsFloorValid(UserInfo.CurrentStage, data.FloorType))
+                continue;
+
+            switch (data.Challenges)
+            {
+                case Challenges.Daily:
+                    dailyUpdateEnabled = true;
+                    break;
+
+                case Challenges.Weekly:
+                    weeklyUpdateEnabled = true;
+                    break;
+
+                case Challenges.AllTime:
+                    alltimeUpdateEnabled = true;
+                    break;
+
+                case Challenges.Main:
+                    mainUpdateEnabled = true;
+                    break;
+            }
+            UserInfo.DoneChallenge(data);
+        }
+
+        if (dailyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Daily);
+
+        if (alltimeUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.AllTime);
+
+        if (mainUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Main);
+
+        if (weeklyUpdateEnabled)
+            UpdateChallengeByChallenges(Challenges.Weekly);
+
+        OnChallengePercentUpdateHandler?.Invoke(ChallengeType.TYPE19);
+    }
+
 
 
     private void Type21ChallengeCheck()
@@ -3652,7 +3734,7 @@ public class ChallengeManager : MonoBehaviour
 
             if (GetChallengeAchievementRate(weeklyAddMoney, data.Count) < 1)
                 continue;
-            DebugLog.Log(data.Id);
+
             switch (data.Challenges)
             {
                 case Challenges.Daily:
@@ -3897,33 +3979,54 @@ public class ChallengeManager : MonoBehaviour
             return null; // 이미 존재하면 생성하지 않음
         }
 
-        // CSV 규칙에 따른 목표 계산: 10,000 × 현재 단계(n)
-        int nextGoal = 10000 * nextLevel;
+        // CSV 규칙에 따른 목표 계산: 10000 × 1.2^(n-1) (천 단위 반올림)
+        float rawGoal = 10000 * Mathf.Pow(1.2f, nextLevel - 1);
+        long nextGoal = (long)(Mathf.Round(rawGoal / 1000f) * 1000); // 천 단위 반올림
         
-        // CSV 규칙에 따른 보상 계산
-        int scoreReward, coinReward;
+        // 다음 단계 목표치 계산 (천 단위 반올림)
+        float rawNextGoal = 10000 * Mathf.Pow(1.2f, nextLevel);
+        long nextLevelGoal = (long)(Mathf.Round(rawNextGoal / 1000f) * 1000); // 천 단위 반올림
         
-        if (nextLevel <= 50)
+        // 보상 계산
+        long currentReq = nextGoal;
+        long nextReq = nextLevelGoal;
+        long reqDifference = nextReq - currentReq;
+        
+        // 평점 보상: 최소(0.1×Req(n), 내림천단위(0.01×(Req(n+1)-Req(n))))
+        long scoreOption1 = (long)(currentReq * 0.1f);
+        long scoreOption2 = (long)(reqDifference * 0.01f);
+        
+        // 내림 처리 (1~29단계: 50단위, 30~49단계: 100단위, 50단계 이상: 1000단위)
+        if (nextLevel <= 29)
         {
-            // 1~50: 보상 평점 = 0.15 × 다음단계증가요구필요개수, 보상 코인 = 0.3 × 단계증가요구필요개수
-            int nextLevelGoal = 10000 * (nextLevel + 1);
-            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.15f) / 100) * 100;
-            coinReward = Mathf.RoundToInt((nextGoal * 0.3f) / 100) * 100;
+            scoreOption2 = (scoreOption2 / 50) * 50; // 50단위 내림
         }
-        else if (nextLevel <= 100)
+        else if (nextLevel <= 49)
         {
-            // 51~100: 보상 평점 = 0.1 × 다음단계증가요구필요개수, 보상 코인 = 0.2 × 단계증가요구필요개수
-            int nextLevelGoal = 10000 * (nextLevel + 1);
-            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.1f) / 100) * 100;
-            coinReward = Mathf.RoundToInt((nextGoal * 0.2f) / 100) * 100;
+            scoreOption2 = (scoreOption2 / 100) * 100; // 100단위 내림
         }
         else
         {
-            // 100~: 보상 평점 = 0.05 × 다음단계증가요구필요개수, 보상 코인 = 0.1 × 다음단계증가요구필요개수
-            int nextLevelGoal = 10000 * (nextLevel + 1);
-            scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.05f) / 100) * 100;
-            coinReward = Mathf.RoundToInt((nextGoal * 0.1f) / 100) * 100;
+            scoreOption2 = (scoreOption2 / 1000) * 1000; // 1000단위 내림
         }
+        
+        int scoreReward = Mathf.Max(1, (int)Mathf.Min(scoreOption1, scoreOption2));
+        
+        // 코인 보상: 최소(0.5×Req(n), 내림천단위(0.20×(Req(n+1)-Req(n))))
+        long coinOption1 = (long)(currentReq * 0.5f);
+        long coinOption2 = (long)(reqDifference * 0.20f);
+        
+        // 내림 처리 (1~29단계: 100단위, 30단계 이상: 1000단위)
+        if (nextLevel <= 29)
+        {
+            coinOption2 = (coinOption2 / 100) * 100; // 100단위 내림
+        }
+        else
+        {
+            coinOption2 = (coinOption2 / 1000) * 1000; // 1000단위 내림
+        }
+        
+        int coinReward = Mathf.Max(100, (int)Mathf.Min(coinOption1, coinOption2));
 
         Type11ChallengeData newData = new Type11ChallengeData(
             Challenges.AllTime,
@@ -3987,8 +4090,10 @@ public class ChallengeManager : MonoBehaviour
         
         // CSV 규칙에 따른 보상 계산
         int nextLevelGoal = (nextLevel + 1) * 100;
-        int scoreReward = Mathf.RoundToInt((nextLevelGoal * 0.15f) / 100) * 100;
-        int coinReward = Mathf.RoundToInt((nextGoal * 0.3f) / 100) * 100;
+        
+        // 보상 계산: 다음 단계 목표치 기준 (다음 단계증가 요구 필요개수)
+        int scoreReward = Mathf.Max(1, Mathf.RoundToInt(nextLevelGoal * 0.15f));
+        int coinReward = Mathf.Max(100, Mathf.RoundToInt((nextLevelGoal * 0.3f) / 100) * 100);
 
         Type09ChallengeData data = new Type09ChallengeData(
             Challenges.AllTime,
@@ -4047,66 +4152,34 @@ public class ChallengeManager : MonoBehaviour
             return null; // 이미 존재하면 생성하지 않음
         }
 
-        // CSV 규칙에 따른 목표 계산
-        int nextGoal;
-        if (nextLevel <= 8)
-        {
-            // 1~8: 50 × 단계(n)
-            nextGoal = 50 * nextLevel;
-        }
-        else if (nextLevel <= 13)
-        {
-            // 9~13: 50(n+1) + 50(n-9) = 50n + 50 + 50(n-9) = 100n + 50 - 450 = 100n - 400
-            nextGoal = 50 * (nextLevel + 1) + 50 * (nextLevel - 9);
-        }
-        else if (nextLevel <= 31)
-        {
-            // 14~31: 500n - 6000
-            nextGoal = 500 * nextLevel - 6000;
-        }
-        else if (nextLevel <= 41)
-        {
-            // 32~41: 10000(n-31)
-            nextGoal = 10000 * (nextLevel - 31);
-        }
-        else
-        {
-            // 42~: 100000(n-41)
-            nextGoal = 100000 * (nextLevel - 41);
-        }
+        // CSV 규칙에 따른 목표 계산: 100 × 1.2^(n-1) (100 단위 반올림)
+        float rawGoal = 100 * Mathf.Pow(1.2f, nextLevel - 1);
+        int nextGoal = (int)(Mathf.Round(rawGoal / 100f) * 100); // 100 단위 반올림
 
-        // CSV 규칙에 따른 보상 계산 (평점 업적은 코인만 보상)
-        int coinReward;
-        if (nextLevel <= 8)
+        // 다음 단계 목표치 계산 (100 단위 반올림)
+        float rawNextGoal = 100 * Mathf.Pow(1.2f, nextLevel);
+        int nextLevelGoal = (int)(Mathf.Round(rawNextGoal / 100f) * 100); // 100 단위 반올림
+        
+        // 보상 계산
+        int currentReq = nextGoal;
+        int nextReq = nextLevelGoal;
+        int reqDifference = nextReq - currentReq;
+        
+        // 코인 보상: 최소(0.5×Req(n), 내림단위(0.50×(Req(n+1)-Req(n))))
+        int coinOption1 = (int)(currentReq * 0.5f);
+        int coinOption2 = (int)(reqDifference * 0.50f);
+        
+        // 내림 처리 (1~29단계: 100단위, 30단계 이상: 1000단위)
+        if (nextLevel <= 29)
         {
-            // 1~8: 0.8 × 다음단계증가요구필요개수
-            int nextLevelGoal = 50 * (nextLevel + 1);
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.8f) / 100) * 100;
-        }
-        else if (nextLevel <= 13)
-        {
-            // 9~13: 0.6 × 다음단계증가요구필요개수
-            int nextLevelGoal = 50 * (nextLevel + 2) + 50 * (nextLevel - 8);
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.6f) / 100) * 100;
-        }
-        else if (nextLevel <= 31)
-        {
-            // 14~31: 0.5 × 다음단계증가요구필요개수
-            int nextLevelGoal = 500 * (nextLevel + 1) - 6000;
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.5f) / 100) * 100;
-        }
-        else if (nextLevel <= 41)
-        {
-            // 32~41: 0.4 × 다음단계증가요구필요개수
-            int nextLevelGoal = 10000 * (nextLevel + 1 - 31);
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.4f) / 100) * 100;
+            coinOption2 = (coinOption2 / 100) * 100; // 100단위 내림
         }
         else
         {
-            // 42~: 0.3 × 다음단계증가요구필요개수
-            int nextLevelGoal = 100000 * (nextLevel + 1 - 41);
-            coinReward = Mathf.RoundToInt((nextLevelGoal * 0.3f) / 100) * 100;
+            coinOption2 = (coinOption2 / 1000) * 1000; // 1000단위 내림
         }
+        
+        int coinReward = Mathf.Max(100, Mathf.Min(coinOption1, coinOption2));
 
         Type08ChallengeData data = new Type08ChallengeData(
             Challenges.AllTime,

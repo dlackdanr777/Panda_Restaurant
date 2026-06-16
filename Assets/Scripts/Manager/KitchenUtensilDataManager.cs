@@ -57,7 +57,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
             ShopSortType.PriceAscending => ShopItemSort.SortByPrice(_kitchenUtensilDataListType[(int)type], true),
             ShopSortType.PriceDescending => ShopItemSort.SortByPrice(_kitchenUtensilDataListType[(int)type], false),
             ShopSortType.None => _kitchenUtensilDataListType[(int)type],
-            _ => null
+            _ => _kitchenUtensilDataListType[(int)type]
         };
     }
 
@@ -95,13 +95,15 @@ public class KitchenUtensilDataManager : MonoBehaviour
         KitchenDataParse(basePath + "WindowData", KitchenUtensilType.Window, EquipEffectType.AddTipPerMinute);
         KitchenDataParse(basePath + "CooktoolData", KitchenUtensilType.CookingTools, EquipEffectType.AddTipPerMinute);
         KitchenDataParse(basePath + "KitchenrackData", KitchenUtensilType.Kitchenrack, EquipEffectType.AddTipPerMinute);
-        SinkDataParse(basePath + "SinkData", EquipEffectType.AddTipPerMinute);
+        SinkDataParse(basePath + "SinkData", EquipEffectType.AddDishWashSpeedMul);
     }
 
 
     private static void LoadFurnitureSprites(string basePath)
     {
-        string[] setFolders = { "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"};
+        var setFolderList = new List<string>();
+        for (int i = 1; i <= 48; i++) setFolderList.Add(i.ToString("D2"));
+        string[] setFolders = setFolderList.ToArray();
 
         foreach (string setFolder in setFolders)
         {
@@ -118,11 +120,21 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 DebugLog.Log(spriteName + "is thumbnail: " + isThumbnail);
                 if (isThumbnail)
                 {
+                    if (_thumbnailSpriteDic.ContainsKey(key))
+                    {
+                        Debug.LogWarning($"중복된 썸네일 스프라이트 키가 있습니다: {key}");
+                        continue;
+                    }
                     _thumbnailSpriteDic.Add(key, sprite);
                 }
 
                 else
                 {
+                    if (_spriteDic.ContainsKey(key))
+                    {
+                        Debug.LogWarning($"중복된 스프라이트 키가 있습니다: {key}");
+                        continue;
+                    }
                     _spriteDic.Add(key, sprite);
                 }
 
@@ -235,7 +247,7 @@ public class KitchenUtensilDataManager : MonoBehaviour
             FoodType foodType = Utility.GetFoodType(attribute);
             string setId = row[3].Trim();
             int addScore = int.Parse(row[4].Trim());
-            int effectValue = int.Parse(row[5].Trim());
+            float effectValue = float.Parse(row[5].Trim());
             int unlockScore = int.Parse(row[6].Trim());
 
             MoneyType moneyType = row[7].Trim() == "게임 머니" || row[7].Trim() == "코인" ? MoneyType.Gold : MoneyType.Dia;

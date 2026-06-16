@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public abstract class StaffData : ShopData
+public abstract class StaffData : BasicData,ShopData
 {
     [Space]
     [Header("StaffData")]
@@ -8,10 +8,27 @@ public abstract class StaffData : ShopData
     [SerializeField] protected SkillBase _skill;
     public SkillBase Skill => _skill;
 
+    [Space]
+    [Header("Animation Option")]
+    [SerializeField] private Sprite[] _idleSprites;
+    public Sprite[] IdleSprites => _idleSprites;
+
     [SerializeField] protected RuntimeAnimatorController _animatorController;
     public RuntimeAnimatorController AnimatorController => _animatorController;
 
-    [Range(6, 30)] [SerializeField] protected float _speed;
+    [SerializeField] protected SalesLocationType _salesLocationType;
+    public SalesLocationType SalesLocationType => _salesLocationType;
+    
+    [SerializeField] protected MoneyType _moneyType;
+    public MoneyType MoneyType => _moneyType;
+
+    [SerializeField] protected int _buyScore;
+    public int BuyScore => _buyScore;
+
+    [SerializeField] protected int _buyPrice;
+    public int BuyPrice => _buyPrice;
+
+    [Range(1, 30)] [SerializeField] protected float _speed;
 
     public abstract float SecondValue { get; }
     public abstract int MaxLevel { get; }

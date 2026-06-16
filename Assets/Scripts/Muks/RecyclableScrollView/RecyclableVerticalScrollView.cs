@@ -38,9 +38,9 @@ namespace Muks.RecyclableScrollView
             // 훨씬 큰 풀 크기로 설정
             int minBufferCount = Mathf.Max(_bufferCount, 8); // 최소 8행 버퍼
             _poolSize = _contentVisibleSlotCount + (minBufferCount * 3 * _itemsPerRow); // 3배 버퍼
-            
+
             Debug.Log($"풀 크기 설정: {_poolSize}, 가시 슬롯: {_contentVisibleSlotCount}");
-            
+
             int index = -minBufferCount * _itemsPerRow;
             for (int i = 0; i < _poolSize; i++)
             {
@@ -49,11 +49,16 @@ namespace Muks.RecyclableScrollView
                 item.Init();
                 UpdateSlot(item, index++);
             }
-            
+
             _scrollRect.onValueChanged.AddListener(OnScroll);
             InitializeScrollView();
+            AddInit();
         }
 
+        public virtual void AddInit()
+        {
+            
+        }
 
         public override void UpdateData(List<T> dataList)
         {

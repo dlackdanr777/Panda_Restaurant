@@ -14,6 +14,7 @@ public class StaffGroup : MonoBehaviour
     private FeverSystem _feverSystem;
 
     private Dictionary<EquipStaffType, Staff> _staffDic = new Dictionary<EquipStaffType, Staff>();
+    private List<Staff> _staffList = new List<Staff>();
 
 
 
@@ -26,11 +27,12 @@ public class StaffGroup : MonoBehaviour
         for (int i = 0, cnt = (int)EquipStaffType.Length; i < cnt; ++i)
         {
             EquipStaffType type = (EquipStaffType)i;
-            Staff staff = ObjectPoolManager.Instance.SpawnStaff(type, transform.position, transform);;
+            Staff staff = ObjectPoolManager.Instance.SpawnStaff(type, transform.position, transform);
             staff.name = _floorType.ToString() + "_" + (EquipStaffType)i;
             staff.Init(type, tableManager, kitchenSystem, customerController, feverStstem);
 
             _staffDic.Add(type, staff);
+            _staffList.Add(staff);
             StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);
 
             if (data == null)
@@ -51,8 +53,9 @@ public class StaffGroup : MonoBehaviour
 
     public void UpdateStaff()
     {
-        foreach(Staff staff in _staffDic.Values)
+        for (int i = 0, cnt = _staffList.Count; i < cnt; ++i)
         {
+            Staff staff = _staffList[i];
             if (staff == null)
                 continue;
 

@@ -10,9 +10,9 @@ public class KitchenBurnerData
     public float AddCookSpeedMul => _addCookSpeedMul;
     public void SetAddCookSpeedMul(float value) => _addCookSpeedMul = Mathf.Max(value, 0);
 
-    private KitchenUtensil _kitchenUtensil;
-    public KitchenUtensil KitchenUtensil => _kitchenUtensil;
-    public void SetKitchenUtensil(KitchenUtensil kitchenUtensil) => _kitchenUtensil = kitchenUtensil;
+    private BurnerKitchenUtensil _kitchenUtensil;
+    public BurnerKitchenUtensil KitchenUtensil => _kitchenUtensil;
+    public void SetKitchenUtensil(BurnerKitchenUtensil kitchenUtensil) => _kitchenUtensil = kitchenUtensil;
 
     private bool _staffUsable;
     public bool IsStaffUsable => _staffUsable;

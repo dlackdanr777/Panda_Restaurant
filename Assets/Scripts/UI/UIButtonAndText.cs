@@ -27,4 +27,9 @@ public class UIButtonAndText : MonoBehaviour
     {
         _text.SetText(text);
     }
+
+    public string GetText()
+    {
+        return _text.text;
+    }
 }

@@ -11,6 +11,7 @@ public class UIStaffTab : UIRestaurantAdminTab
 
     private UITabSlot[] _slots;
     private ERestaurantFloorType _floorType;
+    private bool _isFloorTypeInitialized = false;
     private bool _isInitialized = false;
 
     // 성능 최적화를 위한 캐시 변수들
@@ -40,6 +41,7 @@ public class UIStaffTab : UIRestaurantAdminTab
         }
 
         UserInfo.OnChangeStaffHandler += UpdateUIOptimized;
+        UserInfo.OnChangeStaffSkinHandler += UpdateUI;
         _isInitialized = true;
     }
 
@@ -59,7 +61,8 @@ public class UIStaffTab : UIRestaurantAdminTab
         for (int i = 0; i < staffTypeCount; i++)
         {
             BasicData newData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, (EquipStaffType)i);
-            Sprite newSprite = newData?.ThumbnailSprite;
+            SkinData newSkinData = newData != null ? UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, newData.Id) : null;
+            Sprite newSprite = newSkinData != null ? newSkinData.ThumbnailSprite : newData?.ThumbnailSprite;
             _slots[i].UpdateUI(newSprite, _typeStringCache[i]);
         }
     }
@@ -81,9 +84,10 @@ public class UIStaffTab : UIRestaurantAdminTab
 
     public void ChangeFloorType(ERestaurantFloorType floorType)
     {
-        if (_floorType == floorType)
+        if (_isFloorTypeInitialized && _floorType == floorType)
             return;
 
+        _isFloorTypeInitialized = true;
         _floorType = floorType;     
         UpdateUI();
     }
@@ -96,5 +100,6 @@ public class UIStaffTab : UIRestaurantAdminTab
     private void OnDestroy()
     {
         UserInfo.OnChangeStaffHandler -= UpdateUIOptimized;
+        UserInfo.OnChangeStaffSkinHandler -= UpdateUI;
     }
 }

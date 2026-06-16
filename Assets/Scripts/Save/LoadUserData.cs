@@ -8,10 +8,13 @@ public class LoadUserData
 {
     public bool IsFirstTutorialClear;
     public bool IsMiniGameTutorialClear;
+    public bool IsFeverTutorialClear;
     public bool IsGatecrasher1TutorialClear;
     public bool IsGatecrasher2TutorialClear;
     public bool IsSpecialCustomer1TutorialClear;
     public bool IsSpecialCustomer2TutorialClear;
+    public bool IsFurnitureTutorialClear;
+    public bool IsRecipeTutorialClear;
 
     public EStage _unlockStage;
     public int Dia;
@@ -44,6 +47,8 @@ public class LoadUserData
     public string LastAttendanceTime;
     public int TotalAttendanceDays;
 
+    public int SkinToken;
+
 
 
     public Dictionary<string, int> GiveRecipeLevelDic = new Dictionary<string, int>();
@@ -70,6 +75,20 @@ public class LoadUserData
 
     public Dictionary<string, SaveTimeData> TimeDataDic = new Dictionary<string, SaveTimeData>();
 
+
+    //#####광고 관련 변수#############
+
+    public int AddCustomerAdCount;
+    public int FeverAdCount;
+    public int DoubleTipCounterAdCount;
+    public int AddCustomerDiaCount;
+    public int FeverDiaCount;
+
+    public int DailyAdGoldRewardCount;
+    public int DailyAdDiaRewardCount;
+
+    //###############################
+
     public LoadUserData(JsonData json)
     {
         if (json == null || json.Count == 0)
@@ -87,10 +106,13 @@ public class LoadUserData
 
             IsFirstTutorialClear = GetBool("IsFirstTutorialClear");
             IsMiniGameTutorialClear = GetBool("IsMiniGameTutorialClear");
+            IsFeverTutorialClear = GetBool("IsFeverTutorialClear");
             IsGatecrasher1TutorialClear = GetBool("IsGatecrasher1TutorialClear");
             IsGatecrasher2TutorialClear = GetBool("IsGatecrasher2TutorialClear");
             IsSpecialCustomer1TutorialClear = GetBool("IsSpecialCustomer1TutorialClear");
             IsSpecialCustomer2TutorialClear = GetBool("IsSpecialCustomer2TutorialClear");
+            IsFurnitureTutorialClear = GetBool("IsFurnitureTutorialClear");
+            IsRecipeTutorialClear = GetBool("IsRecipeTutorialClear");
 
             Dia = GetInt("Dia");
             Money = GetLong("Money");
@@ -131,7 +153,7 @@ public class LoadUserData
 
             LoadCustomerDataList(data);
             LoadStringSet(data, "GiveCustomerSkinList", GiveCustomerSkinSet);
-
+            SkinToken = GetInt("SkinToken");
             LoadTimeData(data);
             foreach (var item in TimeDataDic)
             {
@@ -150,6 +172,15 @@ public class LoadUserData
 
             LoadStringSet(data, "NotificationMessageList", NotificationMessageSet);
             LoadStringSet(data, "ClearNotificationMessageList", ClearNotificationMessageSet);
+
+            AddCustomerAdCount = GetInt("AddCustomerAdCount");
+            FeverAdCount = GetInt("FeverAdCount");
+            DoubleTipCounterAdCount = GetInt("DoubleTipCounterAdCount");
+            AddCustomerDiaCount = GetInt("AddCustomerDiaCount");
+            FeverDiaCount = GetInt("FeverDiaCount");
+
+            DailyAdGoldRewardCount = GetInt("DailyAdGoldRewardCount");
+            DailyAdDiaRewardCount = GetInt("DailyAdDiaRewardCount");
         }
         catch (Exception e)
         {

@@ -62,7 +62,7 @@ public class GameManager : MonoBehaviour
     public float TipMul =>  1 /*Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f)*/;
 
     public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addGiveGachaItemTipPerMinute;
-    public int MaxTipVolume => _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume;
+    public int MaxTipVolume => Math.Max(3000, _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume);
 
     public float AddFerverTime => _addGachaItemFeverTime;
 
@@ -75,6 +75,7 @@ public class GameManager : MonoBehaviour
     [SerializeField] private float _addEquipKitchenUtensilCookSpeedMul;
     [SerializeField] private int _addEquipKitchenUtensilTipPerMinute;
     [SerializeField] private int _addEquipKitchenUtensilTipVolume;
+    [SerializeField] private float[] _addEquipKitchenUtensilDishWashSpeedMul = new float[(int)ERestaurantFloorType.Length]; // 주방기구 설비 효과 - 설거지 속도 증가 n%
 
     private float[,] _addSetFoodPriceMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //음식 가격 증가 비율
     private float[,] _addSetCookSpeedMul = new float[(int)ERestaurantFloorType.Length, (int)FoodType.Length]; //음식 조리 속도
@@ -164,7 +165,7 @@ public class GameManager : MonoBehaviour
         DebugLog.LogError("스탭 스킬 시간 증가 효과를 찾을 수 없습니다: " + type);
         return 0;
     }
-    
+
     public float GetGachaItemUpgradeValue(UpgradeType type)
     {
         if (_upgradeTypeValueDic.TryGetValue(type, out float value))
@@ -172,6 +173,11 @@ public class GameManager : MonoBehaviour
 
         DebugLog.LogError("업그레이드 타입을 찾을 수 없습니다: " + type);
         return 0;
+    }
+    
+    public float GetEquipKitchenUtensilDishWashSpeedMul(ERestaurantFloorType floor)
+    {
+        return 1 + (_addEquipKitchenUtensilDishWashSpeedMul[(int)floor] * 0.01f);
     }
 
     private void OnUpgradeGachaItemCheck()
@@ -184,14 +190,9 @@ public class GameManager : MonoBehaviour
         _addGachaItemWaitCustomerMaxCount = 0;
 
 
-        foreach (var key in _upgradeTypeValueDic.Keys.ToList())
+        foreach (var key in _upgradeTypeValueDic.Keys.ToArray())
         {
-            if (_upgradeTypeValueDic.ContainsKey(key))
-                _upgradeTypeValueDic[key] = 0;
-
-            else
-                _upgradeTypeValueDic.Add(key, 0);
-                
+            _upgradeTypeValueDic[key] = 0;
         }
 
         for (int i = 0, cnt = (int)FoodType.Length; i < cnt; ++i)
@@ -212,7 +213,6 @@ public class GameManager : MonoBehaviour
         foreach (var data in giveGachaItemLevelDic)
         {
             gachaItemData = ItemManager.Instance.GetGachaItemData(data.Key);
-            int itemLevel = data.Value;
             if (gachaItemData == null)
             {
                 DebugLog.LogError("아이템 정보가 데이터베이스에 존재하지 않습니다: " + data.Key);
@@ -370,7 +370,6 @@ public class GameManager : MonoBehaviour
     {
         float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
         cookSpeedMul += (_addGachaItemAllCookingTimeMul * 0.01f) + _addGachaItemFoodCookingTimeMulDic[type] * 0.01f;
-        DebugLog.Log("음식 속도: "+ cookSpeedMul);
         return cookSpeedMul;
     }
 
@@ -379,7 +378,6 @@ public class GameManager : MonoBehaviour
         float foodPriceMul = 1 + _foodPriceMul + (_addSetFoodPriceMul[(int)floor, (int)type] * 0.01f);
         foodPriceMul += (_addGachaItemAllFoodPriceMul * 0.01f) + _addGachaItemFoodPriceMulDic[type] * 0.01f;
         foodPriceMul += _foodTypePriceMul[(int)type] * 0.01f;
-        DebugLog.Log("음식 값: "+ foodPriceMul);
         return foodPriceMul;
     }
 
@@ -447,20 +445,20 @@ public class GameManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = 60;
+        Application.targetFrameRate = 120;
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         UserInfo.DataBindTip(UserInfo.CurrentStage);
         UserInfo.DataBindMoney();
 
         //UserInfo.OnChangeStaffHandler += (floor, type) => OnEquipStaffEffectCheck();
         //UserInfo.OnUpgradeStaffHandler += OnEquipStaffEffectCheck;
-        UserInfo.OnChangeFurnitureHandler += (floor, type) => OnEquipFurnitureEffectCheck();
-        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => OnEquipKitchenUtensilEffectCheck();
+        UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEffectEvent;
+        UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilEffectEvent;
         UserInfo.OnGiveFurnitureHandler += OnGiveFurnitureEffectCheck;
         UserInfo.OnGiveKitchenUtensilHandler += OnGiveKitchenUtensilEffectCheck;
 
-        UserInfo.OnChangeFurnitureHandler += (floor, type) => CheckSetDataEffect(floor);
-        UserInfo.OnChangeKitchenUtensilHandler += (floor, type) => CheckSetDataEffect(floor);
+        UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureSetDataEvent;
+        UserInfo.OnChangeKitchenUtensilHandler += OnChangeKitchenUtensilSetDataEvent;
         UserInfo.OnGiveRecipeHandler += OnGiveRecipeCheck;
         UserInfo.OnGiveGachaItemHandler += OnGiveGachaItemEffectCheck;
         UserInfo.OnGiveGachaItemHandler += OnUpgradeGachaItemCheck;
@@ -486,14 +484,35 @@ public class GameManager : MonoBehaviour
 
 
 
+    private void OnChangeFurnitureEffectEvent(ERestaurantFloorType floor, FurnitureType type) => OnEquipFurnitureEffectCheck();
+    private void OnChangeKitchenUtensilEffectEvent(ERestaurantFloorType floor, KitchenUtensilType type) => OnEquipKitchenUtensilEffectCheck();
+    private void OnChangeFurnitureSetDataEvent(ERestaurantFloorType floor, FurnitureType type) => CheckSetDataEffect(floor);
+    private void OnChangeKitchenUtensilSetDataEvent(ERestaurantFloorType floor, KitchenUtensilType type) => CheckSetDataEffect(floor);
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEffectEvent;
+        UserInfo.OnChangeKitchenUtensilHandler -= OnChangeKitchenUtensilEffectEvent;
+        UserInfo.OnGiveFurnitureHandler -= OnGiveFurnitureEffectCheck;
+        UserInfo.OnGiveKitchenUtensilHandler -= OnGiveKitchenUtensilEffectCheck;
+        UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureSetDataEvent;
+        UserInfo.OnChangeKitchenUtensilHandler -= OnChangeKitchenUtensilSetDataEvent;
+        UserInfo.OnGiveRecipeHandler -= OnGiveRecipeCheck;
+        UserInfo.OnGiveGachaItemHandler -= OnGiveGachaItemEffectCheck;
+        UserInfo.OnGiveGachaItemHandler -= OnUpgradeGachaItemCheck;
+        UserInfo.OnUpgradeGachaItemHandler -= OnUpgradeGachaItemCheck;
+        BackendManager.OnExitHandler -= SaveGameData;
+        BackendManager.OnPauseHandler -= SaveGameData;
+    }
+
     private void OnGiveFurnitureEffectCheck()
     {
         _addFurnitureScore = 0;
         int addScore = 0;
-        List<FurnitureData> _furnitureDataList = UserInfo.GetGiveFurnitureDataList(UserInfo.CurrentStage);
-        for (int i = 0, cnt = _furnitureDataList.Count; i < cnt; ++i)
+        List<FurnitureData> furnitureDataList = UserInfo.GetGiveFurnitureDataList(UserInfo.CurrentStage);
+        for (int i = 0, cnt = furnitureDataList.Count; i < cnt; ++i)
         {
-            FurnitureData data = _furnitureDataList[i];
+            FurnitureData data = furnitureDataList[i];
             if (data == null)
                 continue;
 
@@ -559,6 +578,11 @@ public class GameManager : MonoBehaviour
 
     private void OnEquipKitchenUtensilEffectCheck()
     {
+        for (int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
+        {
+            _addEquipKitchenUtensilDishWashSpeedMul[i] = 0;
+        }
+        _addEquipKitchenUtensilTipVolume = 0;
         _addEquipKitchenUtensilCookSpeedMul = 0;
         _addEquipKitchenUtensilTipPerMinute = 0;
         int maxTipVolume = 0;
@@ -575,13 +599,16 @@ public class GameManager : MonoBehaviour
                     continue;
 
                 if (data.EquipEffectType == EquipEffectType.AddMaxTip)
-                    maxTipVolume += data.EffectValue;
+                    maxTipVolume += (int)data.EffectValue;
 
                 else if (data.EquipEffectType == EquipEffectType.AddCookSpeed)
-                    cookSpeedMul += data.EffectValue;
+                    cookSpeedMul += (int)data.EffectValue;
 
                 else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
-                    tipPerMinute += data.EffectValue;
+                    tipPerMinute += (int)data.EffectValue;
+
+                else if (data.EquipEffectType == EquipEffectType.AddDishWashSpeedMul)
+                    _addEquipKitchenUtensilDishWashSpeedMul[i] += data.EffectValue;
             }
         }
       
@@ -606,8 +633,6 @@ public class GameManager : MonoBehaviour
 
             if(!FoodDataManager.Instance.IsNeedMiniGame(giveRecipeList[i]))
                 continue;
-
-            //_addGiveRecipeMiniGameTime += 5;
         }
     }
 

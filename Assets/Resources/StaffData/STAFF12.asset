@@ -12,18 +12,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e39c2e09d58fec4e92da628aa6f0c2e, type: 3}
   m_Name: STAFF12
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: df332576e8d59a94b999d472b245df80, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: df332576e8d59a94b999d472b245df80, type: 3}
-  _name: "\uC820\uD2C0 \uD1A0\uB8E8\uB8E8"
+  _sprite: {fileID: 21300000, guid: 3b07a818db00d80488b6e6231a774abc, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 6cfe2a94eab886a47bef56cc8e6a5b83, type: 3}
+  _name: "\uC81C\uB808\uBBF8"
   _id: STAFF12
-  _description: "\uAE54\uB054\uD55C \uB9E4\uB108\uB85C \uC190\uB2D8\uB4E4\n\uB9C8\uC74C\uAE4C\uC9C0
-    \uC815\uC911\uD788 \uBAA8\uC2DC\uB294 \uC2E0\uC0AC \uD1A0\uB8E8\uB8E8\r"
+  _description: 
+  _rank: 0
+  _skill: {fileID: 11400000, guid: c07c74e5ac1573e4ab8b7d33229faba3, type: 2}
+  _idleSprites: []
+  _animatorController: {fileID: 0}
   _salesLocationType: 0
   _moneyType: 0
   _buyScore: 150
   _buyPrice: 50000
-  _skill: {fileID: 11400000, guid: c07c74e5ac1573e4ab8b7d33229faba3, type: 2}
-  _animatorController: {fileID: 0}
   _speed: 6
   _marketerLevelData:
   - _upgradeMinScore: 225
@@ -51,12 +52,12 @@ MonoBehaviour:
       _moneyType: 0
       _price: -1
     _marketingTime: 12
-  _uiSprite: {fileID: 21300000, guid: df332576e8d59a94b999d472b245df80, type: 3}
-  _animationSprite: {fileID: 21300000, guid: 035fa15597b07944698323c3d5380ee9, type: 3}
-  _leftHandSprite: {fileID: 21300000, guid: ba7db56348668024192878964747cdc5, type: 3}
-  _rightHandSprite: {fileID: 21300000, guid: 50d5a53ccca4a4044ab4e902d4175dec, type: 3}
+  _uiSprite: {fileID: 21300000, guid: 3b07a818db00d80488b6e6231a774abc, type: 3}
+  _animationSprite: {fileID: 21300000, guid: 3007a205944745f4088cef8e3ae3ee7c, type: 3}
   _particleCount: 5
   _particleSprites:
-  - {fileID: 21300000, guid: 46ba48cad0030fa4b919a406d2fdc150, type: 3}
-  - {fileID: 21300000, guid: 409f98981382ae14baf0ceb265b0803a, type: 3}
-  - {fileID: 21300000, guid: a240870c696fd06458f39203a8ed0ffa, type: 3}
+  - {fileID: 21300000, guid: c049a34100e87284498233828484e10c, type: 3}
+  - {fileID: 21300000, guid: d351c294045ed1e498b9ace7fef0504e, type: 3}
+  - {fileID: 21300000, guid: 24c718da403d5d042a75ce4d9e0bd32c, type: 3}
+  - {fileID: 21300000, guid: 58fbcaa30110544479ae9c9a9629c42d, type: 3}
+  - {fileID: 21300000, guid: 9686c4155cbf6b342bcf149548d1f07b, type: 3}

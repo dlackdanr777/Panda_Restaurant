@@ -70,7 +70,8 @@ namespace Muks.PathFinding.AStar
             var startMap = FindBestMatchingMap(start);
             var endMap = FindBestMatchingMap(end);
             
-            // ? 시작점과 목적지 모두 체크
+            // 원래 시작 위치 저장 (경로 보정용)
+            Vector2 originalStart = start;
             Vector2 correctedStart = start;
             Vector2 correctedEnd = end;
             MapData selectedMap = null;
@@ -137,7 +138,7 @@ namespace Muks.PathFinding.AStar
 
             PathfindingQueue.Instance.Enqueue(() =>
             {
-                var result = PathFinding(selectedMap, correctedStart, correctedEnd);
+                var result = PathFinding(selectedMap, correctedStart, correctedEnd, originalStart);
                 MainThreadDispatcher.Instance.Enqueue(() => callback(result));
             });
         }
@@ -243,38 +244,77 @@ namespace Muks.PathFinding.AStar
             return Vector2.zero; // 이동 가능한 타일을 찾지 못함
         }
 
-        private List<Vector2> PathFinding(MapData map, Vector2 start, Vector2 end)
+        /// <summary>맵 내에서 특정 노드 좌표 근처의 이동 가능한 노드 찾기</summary>
+        private Vector2 FindClosestWalkableNodeInMap(MapData map, Vector2Int nodePos)
+        {
+            float nodeSize = NodeSize;
+            int maxRadius = Mathf.Max(map.SizeX, map.SizeY);
+            
+            for (int radius = 0; radius <= maxRadius; radius++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    for (int dy = -radius; dy <= radius; dy++)
+                    {
+                        if (radius > 0 && Mathf.Abs(dx) < radius && Mathf.Abs(dy) < radius)
+                            continue;
+
+                        int nodeX = nodePos.x + dx;
+                        int nodeY = nodePos.y + dy;
+
+                        if (nodeX >= 0 && nodeX < map.SizeX && nodeY >= 0 && nodeY < map.SizeY)
+                        {
+                            Node node = map.Nodes[nodeX, nodeY];
+                            
+                            if (!node.IsWall && node.IsGround)
+                            {
+                                Vector2 tileWorldPos = new Vector2(
+                                    map.MapBottomLeft.x + (nodeX + 0.5f) * nodeSize,
+                                    map.MapBottomLeft.y + (nodeY + 0.5f) * nodeSize
+                                );
+                                return tileWorldPos;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return Vector2.zero;
+        }
+
+        private List<Vector2> PathFinding(MapData map, Vector2 start, Vector2 end, Vector2 originalStart)
         {
             Vector2Int sPos = map.WorldToNodePos(start);
             Vector2Int tPos = map.WorldToNodePos(end);
 
-            // ? 노드 위치가 맵 범위 내인지 확인
-            if (sPos.x < 0 || sPos.x >= map.SizeX || sPos.y < 0 || sPos.y >= map.SizeY)
-            {
-                Debug.LogError($"Start position {start} -> node {sPos} is outside map bounds");
-                return new List<Vector2>();
-            }
-            
-            if (tPos.x < 0 || tPos.x >= map.SizeX || tPos.y < 0 || tPos.y >= map.SizeY)
-            {
-                Debug.LogError($"End position {end} -> node {tPos} is outside map bounds");
-                return new List<Vector2>();
-            }
-
-            // ? 시작점과 목적지가 이동 가능한 타일인지 확인
+            // 시작점이 이동 불가능한 경우 가장 가까운 이동 가능한 노드 찾기
             var startNode = map.Nodes[sPos.x, sPos.y];
-            var targetNode = map.Nodes[tPos.x, tPos.y];
-
             if (startNode.IsWall || !startNode.IsGround)
             {
-                Debug.LogError($"Start position {start} is not walkable (Wall: {startNode.IsWall}, Ground: {startNode.IsGround})");
-                return new List<Vector2>();
+                Vector2 correctedStart = FindClosestWalkableNodeInMap(map, sPos);
+                if (correctedStart == Vector2.zero)
+                {
+                    Debug.LogError($"No walkable node found near start position {start}");
+                    return new List<Vector2>();
+                }
+                sPos = map.WorldToNodePos(correctedStart);
+                startNode = map.Nodes[sPos.x, sPos.y];
+                Debug.LogWarning($"Start position was not walkable. Moved to closest walkable node: {correctedStart}");
             }
 
+            // 목적지가 이동 불가능한 경우 가장 가까운 이동 가능한 노드 찾기
+            var targetNode = map.Nodes[tPos.x, tPos.y];
             if (targetNode.IsWall || !targetNode.IsGround)
             {
-                Debug.LogError($"End position {end} is not walkable (Wall: {targetNode.IsWall}, Ground: {targetNode.IsGround})");
-                return new List<Vector2>();
+                Vector2 correctedEnd = FindClosestWalkableNodeInMap(map, tPos);
+                if (correctedEnd == Vector2.zero)
+                {
+                    Debug.LogError($"No walkable node found near end position {end}");
+                    return new List<Vector2>();
+                }
+                tPos = map.WorldToNodePos(correctedEnd);
+                targetNode = map.Nodes[tPos.x, tPos.y];
+                Debug.LogWarning($"End position was not walkable. Moved to closest walkable node: {correctedEnd}");
             }
 
             foreach (var node in map.Nodes)
@@ -285,8 +325,10 @@ namespace Muks.PathFinding.AStar
             }
 
             startNode.G = 0;
+            startNode.H = (Mathf.Abs(sPos.x - tPos.x) + Mathf.Abs(sPos.y - tPos.y)) * 10;
             var openList = new List<Node> { startNode };
             var closedSet = new HashSet<Node>();
+            var openSet = new HashSet<Node> { startNode };
 
             while (openList.Count > 0)
             {
@@ -296,6 +338,7 @@ namespace Muks.PathFinding.AStar
                         current = openList[i];
 
                 openList.Remove(current);
+                openSet.Remove(current);
                 closedSet.Add(current);
 
                 if (current == targetNode)
@@ -310,6 +353,21 @@ namespace Muks.PathFinding.AStar
 
                     path.Add(startNode.toWorldPosition(map.MapBottomLeft));
                     path.Reverse();
+                    
+                    // 경로의 첫 번째 지점을 원래 시작 위치로 교체 (순간이동 방지)
+                    if (path.Count > 0)
+                    {
+                        float dx = path[0].x - originalStart.x;
+                        float dy = path[0].y - originalStart.y;
+                        float distSqr = dx * dx + dy * dy;
+                        
+                        // 첫 노드가 원래 위치에서 1 유닛 이내면 원래 위치로 교체
+                        if (distSqr < 1f)
+                        {
+                            path[0] = originalStart;
+                        }
+                    }
+                    
                     return path;
                 }
 
@@ -325,12 +383,17 @@ namespace Muks.PathFinding.AStar
                         continue;
 
                     int moveCost = current.G + _cost[d];
-                    if (moveCost < next.G || !openList.Contains(next))
+                    if (moveCost < next.G)
                     {
                         next.G = moveCost;
                         next.H = (Mathf.Abs(nx - tPos.x) + Mathf.Abs(ny - tPos.y)) * 10;
                         next.ParentNode = current;
-                        if (!openList.Contains(next)) openList.Add(next);
+                        
+                        if (!openSet.Contains(next))
+                        {
+                            openList.Add(next);
+                            openSet.Add(next);
+                        }
                     }
                 }
             }

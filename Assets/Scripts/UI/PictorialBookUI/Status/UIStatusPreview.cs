@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using TMPro;
@@ -10,7 +11,7 @@ public class UIStatusPreview : MonoBehaviour
     [SerializeField] private TextMeshProUGUI _nameText;
     [SerializeField] private TextMeshProUGUI _descriptionText;
     [SerializeField] private UIFoodType _uiFoodType;
-    [SerializeField] private UIStatusItemPreview _itemPreview;
+    [SerializeField] private UIItemPreview _itemPreview;
 
     [Space]
     [Header("Slots")]
@@ -40,17 +41,17 @@ public class UIStatusPreview : MonoBehaviour
         StringBuilder descriptionStr = new StringBuilder();
         if (_upgradeType == UpgradeType.UPGRADE30)
         {
-            descriptionStr.Append(Utility.SetStringColor(((int)GameManager.Instance.GetGachaItemUpgradeValue(_upgradeType)).ToString(), ColorType.Positive));
+            descriptionStr.Append(Utility.SetStringColor((Math.Abs((int)GameManager.Instance.GetGachaItemUpgradeValue(_upgradeType))).ToString(), ColorType.Positive));
             descriptionStr.Append("명 ");
         }
         else if (_upgradeType == UpgradeType.UPGRADE29)
         {
-            descriptionStr.Append(Utility.SetStringColor(GameManager.Instance.GetGachaItemUpgradeValue(_upgradeType).ToString("F3"), ColorType.Positive));
+            descriptionStr.Append(Utility.SetStringColor(Mathf.Abs(GameManager.Instance.GetGachaItemUpgradeValue(_upgradeType)).ToString("F3"), ColorType.Positive));
             descriptionStr.Append("초 ");
         }
         else
         {
-            descriptionStr.Append(Utility.SetStringColor(GameManager.Instance.GetGachaItemUpgradeValue(_upgradeType).ToString("F3"), ColorType.Positive));
+            descriptionStr.Append(Utility.SetStringColor(Mathf.Abs(GameManager.Instance.GetGachaItemUpgradeValue(_upgradeType)).ToString("F3"), ColorType.Positive));
             descriptionStr.Append("% ");
         }
         descriptionStr.Append(descriptionEndStr);
@@ -70,17 +71,17 @@ public class UIStatusPreview : MonoBehaviour
         StringBuilder descriptionStr = new StringBuilder();
         if (upgradeType == UpgradeType.UPGRADE30)
         {
-            descriptionStr.Append(Utility.SetStringColor(((int)GameManager.Instance.GetGachaItemUpgradeValue(upgradeType)).ToString(), ColorType.Positive));
+            descriptionStr.Append(Utility.SetStringColor((Math.Abs((int)GameManager.Instance.GetGachaItemUpgradeValue(upgradeType))).ToString(), ColorType.Positive));
             descriptionStr.Append("명 ");
         }
         else if (upgradeType == UpgradeType.UPGRADE29)
         {
-            descriptionStr.Append(Utility.SetStringColor(GameManager.Instance.GetGachaItemUpgradeValue(upgradeType).ToString("F3"), ColorType.Positive));
+            descriptionStr.Append(Utility.SetStringColor(Mathf.Abs(GameManager.Instance.GetGachaItemUpgradeValue(upgradeType)).ToString("F3"), ColorType.Positive));
             descriptionStr.Append("초 ");
         }
         else
         {
-            descriptionStr.Append(Utility.SetStringColor(GameManager.Instance.GetGachaItemUpgradeValue(upgradeType).ToString("F3"), ColorType.Positive));
+            descriptionStr.Append(Utility.SetStringColor(Mathf.Abs(GameManager.Instance.GetGachaItemUpgradeValue(upgradeType)).ToString("F3"), ColorType.Positive));
             descriptionStr.Append("% ");
         }
         descriptionStr.Append(descriptionEndStr);

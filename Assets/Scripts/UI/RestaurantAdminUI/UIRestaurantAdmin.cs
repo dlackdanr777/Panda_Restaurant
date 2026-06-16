@@ -54,6 +54,8 @@ public class UIRestaurantAdmin : MobileUIView
     private UIRestaurantAdminTabButton[] _tabButtons;
     private UIRestaurantAdminTab[] _tabs;
 
+    private Vector3 _tmpScale;
+
     public override void Init()
     {
         if (_isInitialized) return;
@@ -93,6 +95,7 @@ public class UIRestaurantAdmin : MobileUIView
         SetBackgroundImageOptimized(_floorType);
 
         _isInitialized = true;
+        _tmpScale = _mainUI.transform.localScale;
         gameObject.SetActive(false);
     }
 
@@ -128,7 +131,7 @@ public class UIRestaurantAdmin : MobileUIView
             VisibleState = VisibleState.Appeared;
             _mainUI.SetActive(true);
             _mainUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-            TweenData tween2 = _mainUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
+            TweenData tween2 = _mainUI.TweenScale(_tmpScale, _showDuration, _showTweenMode);
             tween2.OnComplete(() => 
             {
                 _canvasGroup.blocksRaycasts = true;
@@ -146,7 +149,7 @@ public class UIRestaurantAdmin : MobileUIView
             _canvasGroup.blocksRaycasts = false;
             _canvasGroup.alpha = 1;
             _dontTouchArea.gameObject.SetActive(true);
-            _mainUI.transform.localScale = Vector3.one;
+            _mainUI.transform.localScale = _tmpScale;
             TweenData tween = _mainUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
             tween.OnComplete(() =>
             {
@@ -199,7 +202,7 @@ public class UIRestaurantAdmin : MobileUIView
         _canvasGroup.blocksRaycasts = true;
         _canvasGroup.alpha = 1;
         _dontTouchArea.gameObject.SetActive(false);
-        _mainUI.transform.localScale = Vector3.one;
+        _mainUI.transform.localScale = _tmpScale;
         _mainUI.SetActive(active);
     }
 

@@ -12,39 +12,50 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
   m_Name: STAFF01
   m_EditorClassIdentifier: 
-  _sprite: {fileID: 21300000, guid: fb847d038146a1441ac3b262fbc1802b, type: 3}
-  _thumbnailSprite: {fileID: 21300000, guid: fb847d038146a1441ac3b262fbc1802b, type: 3}
-  _name: "\uC885\uC5C5\uC6D0 \uC9C0\uC9C0"
+  _sprite: {fileID: 21300000, guid: b70709beaa72c954092f345e5aee43dd, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 7710a02815f35d04fb3a725237a4013c, type: 3}
+  _name: "\uC9C0\uC9C0"
   _id: STAFF01
   _description: "\uBD80\uC9C0\uB7F0\uD558\uACE0 \uC131\uC2E4\uD558\uAC8C\n\uC190\uB2D8\uC744
     \uB9DE\uC774\uD558\uB294 \uCE5C\uADFC\uD55C \uC9C0\uC9C0\r"
-  _salesLocationType: 0
+  _rank: 0
+  _skill: {fileID: 11400000, guid: e02701bebe44c864688b4304e4a359c2, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 964681fea9d8c9141af63dff551d5648, type: 3}
+  - {fileID: 21300000, guid: c8442b301e3e68a4fb53d9f5c647d492, type: 3}
+  - {fileID: 21300000, guid: 68c30c6073f334c4e997691fb05ed8cb, type: 3}
+  - {fileID: 21300000, guid: 05dd46321840f464abef80a6e6596e4e, type: 3}
+  - {fileID: 21300000, guid: 05dd46321840f464abef80a6e6596e4e, type: 3}
+  - {fileID: 21300000, guid: 68c30c6073f334c4e997691fb05ed8cb, type: 3}
+  - {fileID: 21300000, guid: 68c30c6073f334c4e997691fb05ed8cb, type: 3}
+  - {fileID: 21300000, guid: c8442b301e3e68a4fb53d9f5c647d492, type: 3}
+  - {fileID: 21300000, guid: 964681fea9d8c9141af63dff551d5648, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 1
   _moneyType: 0
   _buyScore: 10
   _buyPrice: 4500
-  _skill: {fileID: 11400000, guid: e02701bebe44c864688b4304e4a359c2, type: 2}
-  _animatorController: {fileID: 0}
-  _speed: 6
+  _speed: 2
   _waiterLevelData:
   - _upgradeMinScore: 20
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 6750
+      _price: 6700
     _addSpeed: 0
   - _upgradeMinScore: 40
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 10125
+      _price: 10000
     _addSpeed: 0.5
   - _upgradeMinScore: 60
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 15187
+      _price: 15000
     _addSpeed: 1
   - _upgradeMinScore: 80
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 22780
+      _price: 25000
     _addSpeed: 1.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:
