@@ -30,8 +30,10 @@ public class LevelPlayBoot : MonoBehaviour
         }
         
         // 1) 디버그 로그
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         LevelPlay.SetAdaptersDebug(true);
         Debug.Log("[LevelPlayBoot] SetAdaptersDebug(true) 설정 완료");
+#endif
         
         // 2) 연동 검증
         LevelPlay.ValidateIntegration();
@@ -42,6 +44,10 @@ public class LevelPlayBoot : MonoBehaviour
         LevelPlay.OnInitFailed += OnInitFailed;
         
         Debug.Log("[LevelPlayBoot] 초기화 이벤트 등록 완료");
+
+        // 4) SDK 초기화
+        LevelPlay.Init(appKey);
+        Debug.Log("[LevelPlayBoot] LevelPlay.Init() 호출 완료");
     }
 
     private void OnDestroy()

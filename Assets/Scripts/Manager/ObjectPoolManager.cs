@@ -97,8 +97,11 @@ public class ObjectPoolManager : MonoBehaviour
 
     private void Awake()
     {
-        if (_instance != null)
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
             return;
+        }
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
@@ -363,6 +366,8 @@ public class ObjectPoolManager : MonoBehaviour
         if (_staffPools[typeIndex].Count == 0)
         {
             staff = Instantiate(_staffPrefabs[typeIndex], pos, Quaternion.identity, parent);
+            staff.gameObject.SetActive(true);
+            staff.ObjectPoolSpawnEvent();
             return staff;
         }
 
@@ -618,9 +623,9 @@ public class ObjectPoolManager : MonoBehaviour
     {
         TextMeshProUGUI tmp;
 
-        if (_garbagePool.Count == 0)
+        if (_tmpPool.Count == 0)
         {
-            tmp = Instantiate(_tmpPrefab, pos, rot, _garbageParent.transform);
+            tmp = Instantiate(_tmpPrefab, pos, rot, _tmpParent.transform);
             tmp.transform.parent = parent;
             _enabledTmpPool.Add(tmp);
             return tmp;
@@ -664,7 +669,6 @@ public class ObjectPoolManager : MonoBehaviour
         if (_uiEffectPool[index].Count == 0)
         {
             effect = Instantiate(_uiEffectPrefabs[index], pos, rot, _uiCanvas.transform);
-            _uiEffectPool[index].Enqueue(effect);
             return effect;
         }
 

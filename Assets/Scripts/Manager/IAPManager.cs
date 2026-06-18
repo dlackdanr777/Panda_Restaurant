@@ -160,8 +160,10 @@ public class IAPManager : MonoBehaviour
         string receipt   = pendingOrder.Info.Receipt;
 
         Debug.Log($"[IAPManager] 구매 완료, 영수증 검증 시작: {productId}");
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         // 에디터 테스트용 — 실기기 로그에서 아래 줄을 복사해 Inspector _testReceipt에 붙여넣으세요
         Debug.Log($"[IAPManager][영수증 RAW] {receipt}");
+#endif
         ValidateWithBackend(productId, receipt, pendingOrder);
     }
 
