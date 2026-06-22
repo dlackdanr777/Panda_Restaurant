@@ -9,6 +9,7 @@ namespace Muks.Tween
         private float _totalDuration;
         private float _elapsedDuration;
         private Action _onCompleted;
+        private bool _isCompleting;
 
         public void Stop()
         {
@@ -20,6 +21,7 @@ namespace Muks.Tween
             _totalDuration = 0f;
             _elapsedDuration = 0f;
             _onCompleted = null;
+            _isCompleting = false;
         }
 
         internal void SetData(float totalDuration, Action onCompleted)
@@ -32,12 +34,13 @@ namespace Muks.Tween
         protected void Update()
         {
             // 부모 Update 호출하지 않고 직접 처리
-            if (!enabled || !gameObject.activeInHierarchy)
+            if (!enabled || !gameObject.activeInHierarchy || _isCompleting)
                 return;
 
             _elapsedDuration += Time.deltaTime;
             if (_elapsedDuration >= _totalDuration)
             {
+                _isCompleting = true;
                 StartCoroutine(CompleteWithDelay());
             }
 

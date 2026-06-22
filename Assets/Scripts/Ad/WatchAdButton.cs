@@ -34,6 +34,8 @@ public class WatchAdButton : MonoBehaviour
     [SerializeField] private Button _adButton;
     [SerializeField] private ButtonPressEffect _buttonPressEffect;
 
+    private bool _isInitialized;
+
     [Header("재시도 설정")]
     [SerializeField] private float _retryDelay = 1f; // 로드 실패 시 재시도 대기 시간
     [SerializeField] private int _maxRetryCount = 3; // 최대 재시도 횟수
@@ -51,9 +53,11 @@ public class WatchAdButton : MonoBehaviour
         if (_adButton == null)
         {
             Debug.LogError($"[WatchAdButton] _adButton이 인스펙터에 할당되지 않았습니다. (adUnitId: {_adUnitId})");
+            enabled = false;
             return;
         }
 
+        _isInitialized = true;
         Debug.Log($"[WatchAdButton] === 광고 초기화 시작 ===");
         Debug.Log($"[WatchAdButton] Ad Unit ID: {_adUnitId}");
         Debug.Log($"[WatchAdButton] Ad Type: {_adType}");
@@ -76,6 +80,9 @@ public class WatchAdButton : MonoBehaviour
 
     private void OnEnable()
     {
+        if (!_isInitialized)
+            return;
+
         // 활성화될 때마다 광고가 준비되지 않았으면 로드
         if (!AdManager.Instance.IsAdReady(_adUnitId) && !AdManager.Instance.IsLoading(_adUnitId))
         {

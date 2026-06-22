@@ -64,8 +64,11 @@ public class KitchenUtensilDataManager : MonoBehaviour
 
     private void Awake()
     {
-        if (_instance != null)
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
             return;
+        }
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
@@ -175,10 +178,12 @@ public class KitchenUtensilDataManager : MonoBehaviour
             int price = int.Parse(row[8].Trim());
 
             UnlockConditionType unlockType = row.Length < 10 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[9].Trim());
-            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[10].Trim();
-            if(unlockType == UnlockConditionType.None || !int.TryParse(row[11].Trim(), out int unlockCount))
+            string unlockId = (unlockType == UnlockConditionType.None || row.Length < 11) ? string.Empty : row[10].Trim();
+            
+            int unlockCount = 0;
+            if (unlockType != UnlockConditionType.None && row.Length >= 12)
             {
-                unlockCount = 0;
+                int.TryParse(row[11].Trim(), out unlockCount);
             }
 
 
@@ -255,10 +260,12 @@ public class KitchenUtensilDataManager : MonoBehaviour
             int maxSinkBowlCount = int.Parse(row[9].Trim());
 
             UnlockConditionType unlockType = row.Length < 11 ? UnlockConditionType.None : Utility.GetUnlockConditionType(row[10].Trim());
-            string unlockId = unlockType == UnlockConditionType.None ? string.Empty : row[11].Trim();
-            if (unlockType == UnlockConditionType.None || !int.TryParse(row[12].Trim(), out int unlockCount))
+            string unlockId = (unlockType == UnlockConditionType.None || row.Length < 12) ? string.Empty : row[11].Trim();
+            
+            int unlockCount = 0;
+            if (unlockType != UnlockConditionType.None && row.Length >= 13)
             {
-                unlockCount = 0;
+                int.TryParse(row[12].Trim(), out unlockCount);
             }
 
 

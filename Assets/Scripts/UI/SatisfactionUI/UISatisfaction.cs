@@ -109,4 +109,10 @@ public class UISatisfaction : MonoBehaviour
                 break;
         }
     }
+
+    private void OnDestroy()
+    {
+        if (_satisfactionSystem != null)
+            _satisfactionSystem.OnChangeSatisfactionHandler -= OnChagneSatisfactionEvent;
+    }
 }

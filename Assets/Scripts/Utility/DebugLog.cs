@@ -15,4 +15,11 @@ public static class DebugLog
         Debug.LogError(obj);
 #endif
     }
+
+    public static void LogWarning(object obj)
+    {
+#if UNITY_EDITOR
+        Debug.LogWarning(obj);
+#endif
+    }
 }

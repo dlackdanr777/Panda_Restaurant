@@ -452,6 +452,7 @@ public class UIAdPopup : MobileUIView
     {
         PopEnabled = true;
         _dontTouchArea.SetActive(false);
+        OnRemoveEvent();
         _uiNav.PopNoAnime("UIAd");
     }
 
@@ -459,6 +460,7 @@ public class UIAdPopup : MobileUIView
     {
         PopEnabled = true;
         _dontTouchArea.SetActive(false);
+        OnRemoveEvent();
         _uiNav.PopNoAnime("UIAd");
         
         // 광고 로드 실패 메시지 표시
@@ -469,6 +471,7 @@ public class UIAdPopup : MobileUIView
     {
         PopEnabled = true;
         _dontTouchArea.SetActive(false);
+        OnRemoveEvent();
         _uiNav.PopNoAnime("UIAd");
     }
 
@@ -511,4 +514,8 @@ public class UIAdPopup : MobileUIView
         _uiNav.PopNoAnime("UIAd");
     }
 
+    private void OnDestroy()
+    {
+        OnRemoveEvent();
+    }
 }

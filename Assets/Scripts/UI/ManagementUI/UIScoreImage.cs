@@ -80,4 +80,16 @@ public class UIScoreImage : MonoBehaviour
         _scoreText.SetText(Utility.ConvertToMoney(UserInfo.Dia));
     }
 
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeScoreHandler -= OnScoreChangeEvent;
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnChangeScoreHandler -= OnScoreChangeEvent;
+
+        if (_moneyAnimeRoutine != null)
+            StopCoroutine(_moneyAnimeRoutine);
+
+        _moneyAnimeRoutine = null;
+    }
 }

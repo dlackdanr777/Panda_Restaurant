@@ -245,7 +245,10 @@ public class TableManager : MonoBehaviour
         }
 
         if (data.OrdersCount <= 0)
+        {
             EndEat(data);
+            return;
+        }
 
         data.CurrentCustomer.ChangeState(CustomerState.Idle);
         data.CurrentCustomer.HideFood();
@@ -870,6 +873,7 @@ public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurn
         _customerController.OnChangeCustomerHandler -= UpdateTable;
         _customerController.OnGuideCustomerHandler -= UpdateTable;
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEvent;
+        UserInfo.OnChangeFurnitureHandler -= OnChangeTableEvent;
         UserInfo.OnChangeFloorHandler -= UpdateTable;
     }
 }

@@ -66,6 +66,12 @@ public class SinkKitchenUtensil : KitchenUtensil
         int cntBowlCount = UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _floorType);
         int maxBowlCount = UserInfo.GetMaxSinkBowlCount(UserInfo.CurrentStage, _floorType);
 
+        if (maxBowlCount <= 0)
+        {
+            _sinkGaugeBar.SetGauge(0, 0, 0);
+            return;
+        }
+
         float oneBowlGauge = 1f / maxBowlCount;
         float gauge = (float)cntBowlCount / maxBowlCount;
         gauge = Mathf.Clamp(gauge - (oneBowlGauge * _washGauge), 0, 1);
@@ -175,5 +181,6 @@ public class SinkKitchenUtensil : KitchenUtensil
     private void OnDestroy()
     {
         UserInfo.OnChangeSinkBowlHandler -= UpdateSink;
+        UserInfo.OnChangeMaxSinkBowlHandler -= OnChangeMaxBowlCount;
     }
 }

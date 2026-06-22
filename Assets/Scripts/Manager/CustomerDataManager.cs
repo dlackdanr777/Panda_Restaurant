@@ -151,11 +151,14 @@ public class CustomerDataManager : MonoBehaviour
 
     private void Awake()
     {
-        if (_instance != null)
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
             return;
+        }
 
         _instance = this;
-        DontDestroyOnLoad(_instance);
+        DontDestroyOnLoad(gameObject);
         Init();
     }
 
@@ -164,8 +167,16 @@ public class CustomerDataManager : MonoBehaviour
     {
         _customerDataDic.Clear();
         _customerDataList.Clear();
+        _normalCustomerDataList.Clear();
         _specialCustomerDataList.Clear();
         _gatecrasherCustomerDataList.Clear();
+
+        _customerThumbnailSpriteDic.Clear();
+        _customerSpriteDic.Clear();
+        _specialCustomerTouchSpriteDic.Clear();
+        _gatecrasherCustomerAnimatorDic.Clear();
+        _customerSkillDic.Clear();
+        _normalCustomerAnimator = null;
 
         LoadNormalCustomerSprites();
         LoadSpecialCustomerSprites();
@@ -357,7 +368,14 @@ public class CustomerDataManager : MonoBehaviour
 
         for (int i = 1; i < data.Length; i++) // 첫 번째 줄은 헤더라서 건너뜀
         {
-            string[] row = data[i].Split(',');
+            string[] row = Utility.SplitCsvLine(data[i]);
+
+            if (row.Length < 18)
+            {
+                DebugLog.LogWarning($"NormalCustomerData row {i}: 컬럼 수 부족 ({row.Length}/18)");
+                continue;
+            }
+
             string id = row[0].Trim();
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -421,6 +439,13 @@ public class CustomerDataManager : MonoBehaviour
         for (int i = 1; i < data.Length; i++) // 첫 번째 줄은 헤더라서 건너뜀
         {
             string[] row = data[i].Split(',');
+
+            if (row.Length < 13)
+            {
+                DebugLog.LogWarning($"SpecialCustomerData row {i}: 컬럼 수 부족 ({row.Length}/13)");
+                continue;
+            }
+
             string id = row[0].Trim();
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -437,10 +462,10 @@ public class CustomerDataManager : MonoBehaviour
             int visitMinScore = int.TryParse(row[6].Trim(), out int minScore) ? minScore : 0;
             string visitGiveFurnitureId = row[7].Trim(); //사용하지 않음
             string requiredItem = row[8].Trim();
-            float spawnChance = float.Parse(row[9].Trim());
-            int activeDuration = int.Parse(row[10].Trim());
-            int touchCount = int.Parse(row[11].Trim());
-            int touchAddMoney = int.Parse(row[12].Trim());
+            float spawnChance = float.TryParse(row[9].Trim(), out float chance) ? chance : 0f;
+            int activeDuration = int.TryParse(row[10].Trim(), out int duration) ? duration : 0;
+            int touchCount = int.TryParse(row[11].Trim(), out int count) ? count : 0;
+            int touchAddMoney = int.TryParse(row[12].Trim(), out int money) ? money : 0;
 
             if (!_customerSpriteDic.TryGetValue(id, out Sprite sprite))
             {
@@ -482,6 +507,13 @@ public class CustomerDataManager : MonoBehaviour
         for (int i = 1; i < data.Length; i++) // 첫 번째 줄은 헤더라서 건너뜀
         {
             string[] row = data[i].Split(',');
+
+            if (row.Length < 12)
+            {
+                DebugLog.LogWarning($"GatecrasherCustomerData row {i}: 컬럼 수 부족 ({row.Length}/12)");
+                continue;
+            }
+
             string id = row[0].Trim();
             if (string.IsNullOrWhiteSpace(id))
             {
@@ -498,9 +530,9 @@ public class CustomerDataManager : MonoBehaviour
             int visitMinScore = int.TryParse(row[6].Trim(), out int minScore) ? minScore : 0;
             string visitGiveFurnitureId = row[7].Trim(); //사용하지 않음
             string requiredItem = row[8].Trim();
-            float spawnChance = float.Parse(row[9].Trim());
-            int activeDuration = int.Parse(row[10].Trim());
-            int touchCount = int.Parse(row[11].Trim());
+            float spawnChance = float.TryParse(row[9].Trim(), out float chance) ? chance : 0f;
+            int activeDuration = int.TryParse(row[10].Trim(), out int duration) ? duration : 0;
+            int touchCount = int.TryParse(row[11].Trim(), out int count) ? count : 0;
 
             if (!_customerSpriteDic.TryGetValue(id, out Sprite sprite))
             {
@@ -565,6 +597,10 @@ public class CustomerDataManager : MonoBehaviour
         UserInfo.OnChangeMoneyHandler -= CheckEnableCustomer;
         UserInfo.OnGiveGachaItemHandler -= CheckEnableCustomer;
         UserInfo.OnGiveRecipeHandler -= CheckEnableCustomer;
-        GameManager.Instance.OnChangeScoreHandler -= CheckEnableCustomer;
+
+        if (GameManager.Instance != null)
+            GameManager.Instance.OnChangeScoreHandler -= CheckEnableCustomer;
+
+        UserInfo.OnVisitedCustomerHandler -= CheckCustomerNotification;
     }
 }

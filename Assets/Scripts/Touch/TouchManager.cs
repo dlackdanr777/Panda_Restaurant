@@ -39,6 +39,7 @@ public class TouchManager : MonoBehaviour
         if (_touchCanvas == null)
         {
             Debug.LogError("TouchCanvas 프리팹을 찾을 수 없습니다.");
+            enabled = false;
             return;
         }
 
@@ -47,7 +48,8 @@ public class TouchManager : MonoBehaviour
         _touchImage = Resources.Load<UITouchImage>("Manager/TouchManager/UITouchImage");
         if (_touchImage == null)
         {
-            Debug.LogError("UITouchImage 프리팹을 찾을 수 없습니다.");
+            Debug.LogError("UITouchImage 프리팩을 찾을 수 없습니다.");
+            enabled = false;
             return;
         }
 

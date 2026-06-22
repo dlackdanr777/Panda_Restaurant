@@ -82,8 +82,10 @@ public class MainScene : MonoBehaviour
             PlayMainMusic();
         });
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         DataBind.SetUnityActionValue("ShowMeTheMoney", () => UserInfo.AddMoney(1000000));
         DataBind.SetUnityActionValue("ShowMeTheDia", () => UserInfo.AddDia(1000));
+#endif
 
         UserInfo.CheckFurnitureFoodType(UserInfo.CurrentStage);
         UserInfo.CheckKitchenUtensilFoodType(UserInfo.CurrentStage);
@@ -142,7 +144,6 @@ public class MainScene : MonoBehaviour
 
         UserInfo.GiveKitchenUtensil(EStage.Stage1, "COOKER01_01");
         UserInfo.SetEquipKitchenUtensil(EStage.Stage1, ERestaurantFloorType.Floor1, "COOKER01_01");
-#endif
 
         //Test Code
         var list = SkinDataManager.Instance.GetSortSkinDataList();
@@ -151,6 +152,7 @@ public class MainScene : MonoBehaviour
             UserInfo.GiveSkin(list[i]);
         }
         //
+#endif
 
         GameManager.Instance.ChanceScene();
     }

@@ -156,4 +156,15 @@ public class SatisfactionSystem : MonoBehaviour
             return -(10 + additionalPoints);
         }
     }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeSatisfactionHandler -= OnChangeSatisfactionEvent;
+
+        for (int i = 0, cnt = _garbageAreaList.Count; i < cnt; ++i)
+        {
+            if (_garbageAreaList[i] != null)
+                _garbageAreaList[i].OnChangeGarbageCountHandler -= OnChangeSatisfactionEvent;
+        }
+    }
 }

@@ -47,6 +47,13 @@ public class DropGarbageArea : MonoBehaviour
     private void LoadData(GarbageAreaData data)
     {
         _garbageData = data;
+
+        if (_maxGarbageCount <= 0)
+        {
+            DebugLog.LogWarning("DropGarbageArea: _maxGarbageCount가 0 이하입니다.");
+            return;
+        }
+
         int count = Mathf.Clamp(_garbageData.Count, 0, _maxGarbageCount);
 
         for (int i = 0, cnt = _garbageList.Count; i < cnt; ++i)
@@ -74,6 +81,12 @@ public class DropGarbageArea : MonoBehaviour
 
     public void DropGarbage(Vector3 startPos)
     {
+        if (_maxGarbageCount <= 0)
+        {
+            DebugLog.LogWarning("DropGarbageArea: _maxGarbageCount가 0 이하입니다.");
+            return;
+        }
+
         PointerDownSpriteRenderer garbage = ObjectPoolManager.Instance.SpawnGarbage(startPos, Quaternion.identity);
         garbage.SpriteRenderer.color = Color.white;
 
@@ -153,6 +166,17 @@ public class DropGarbageArea : MonoBehaviour
     {
         DespawnGarbage();
         LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
+    }
+
+    private void OnDestroy()
+    {
+        LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
+
+        for (int i = 0, cnt = _garbageList.Count; i < cnt; ++i)
+        {
+            if (_garbageList[i] != null)
+                _garbageList[i].RemoveEvent(CleanGarbage);
+        }
     }
 
 

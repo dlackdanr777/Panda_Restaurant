@@ -58,4 +58,14 @@ public class UITipText : MonoBehaviour
         }
         _tipText.text = Utility.ConvertToMoney(UserInfo.GetTip(UserInfo.CurrentStage));
     }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeTipHandler -= OnChangeMoneyEvent;
+
+        if (_moneyAnimeRoutine != null)
+            StopCoroutine(_moneyAnimeRoutine);
+
+        _moneyAnimeRoutine = null;
+    }
 }
