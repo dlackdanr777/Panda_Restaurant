@@ -42,6 +42,7 @@ public class IAPManager : MonoBehaviour
 
     private StoreController _storeController;
     private Action<int> _onPurchaseSuccess;
+    private bool _isPurchasing;
 
     public bool IsInitialized { get; private set; }
 
@@ -128,6 +129,14 @@ public class IAPManager : MonoBehaviour
             return;
         }
 
+        if (_isPurchasing)
+        {
+            Debug.LogWarning("[IAPManager] 이미 결제 진행 중입니다.");
+            PopupManager.Instance?.ShowDisplayText("이미 결제가 진행 중입니다.");
+            return;
+        }
+
+        _isPurchasing = true;
         _onPurchaseSuccess = onSuccess;
         var product  = _storeController.GetProducts().FirstOrDefault(p => p.definition.id == productId);
         if (product == null)
@@ -170,6 +179,7 @@ public class IAPManager : MonoBehaviour
     private void OnPurchaseFailed(FailedOrder failedOrder)
     {
         Debug.LogError($"[IAPManager] 구매 실패: {failedOrder.FailureReason}");
+        _isPurchasing = false;
         _onPurchaseSuccess = null;
     }
 
@@ -197,16 +207,18 @@ public class IAPManager : MonoBehaviour
                     Debug.LogError($"[IAPManager] 다이아 매핑 없음: {productId}");
                 }
 
+                _isPurchasing = false;
                 _onPurchaseSuccess = null;
                 _storeController.ConfirmPurchase(pendingOrder);
             },
             state =>
             {
                 Debug.LogError($"[IAPManager] 뒤끝 영수증 검증 실패: {state}");
-                PopupManager.Instance?.ShowDisplayText("영수증 검증에 실패했습니다. 고객센터에 문의해주세요.");
+                // 서버 장애 또는 네트워크 오류 가능성이 있으므로 ConfirmPurchase하지 않습니다.
+                // 다음 실행 시 FetchPurchases()가 pending order를 다시 처리합니다.
+                PopupManager.Instance?.ShowDisplayText("결제 검증에 실패했습니다. 네트워크 확인 후 재시도해주세요.");
+                _isPurchasing = false;
                 _onPurchaseSuccess = null;
-                // 검증 실패해도 confirm 해야 pending 상태가 해제됩니다
-                _storeController.ConfirmPurchase(pendingOrder);
             },
             maxRetries: 3,
             usePopup: false

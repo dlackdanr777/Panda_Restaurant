@@ -74,7 +74,7 @@ namespace Muks.BackEnd
 
                 BackendReturnObject bro = Backend.Utils.GetServerTime();
 
-                if (bro.IsSuccess())
+                if (bro != null && bro.IsSuccess())
                 {
                     string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
                     _cachedServerTime = DateTime.Parse(time);
@@ -83,6 +83,12 @@ namespace Muks.BackEnd
                 }
                 else
                 {
+                    // 캐시된 서버 시간이 있으면 사용, 없으면 로컬 시간 반환
+                    if (_serverTimeCachedAt > 0)
+                    {
+                        float elapsed = Time.realtimeSinceStartup - _serverTimeCachedAt;
+                        return _cachedServerTime.AddSeconds(elapsed);
+                    }
                     return LocalTime;
                 }
             }
@@ -310,13 +316,14 @@ namespace Muks.BackEnd
                 }
                 else
                 {
-                    string errorMessage = bro.GetMessage();
+                    string errorMessage = bro != null ? bro.GetMessage() : "BackendReturnObject is null";
+                    string errorCode = bro != null ? bro.GetErrorCode() : "NULL_RESPONSE";
                     Debug.LogError($"[BackendManager] {operationName} 실패: {errorMessage}");
                     
                     if (usePopup)
                     {
                         ShowPopup("네트워크 에러", 
-                            $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
+                            $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {errorCode}");
                         SetPopupButton1("재시도", () => backendFunction(HandleCallback));
                         ShowPopupExitButton();
                     }
@@ -381,13 +388,14 @@ namespace Muks.BackEnd
                     }
                     else
                     {
-                        string errorMessage = bro.GetMessage();
+                        string errorMessage = bro != null ? bro.GetMessage() : "BackendReturnObject is null";
+                        string errorCode = bro != null ? bro.GetErrorCode() : "NULL_RESPONSE";
                         Debug.LogError($"[BackendManager] {operationName} 실패: {errorMessage}");
                         
                         if (usePopup)
                         {
                             ShowPopup("네트워크 에러", 
-                                $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {bro.GetErrorCode()}");
+                                $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {errorCode}");
                         }
                         
                         return bro;
@@ -483,10 +491,17 @@ namespace Muks.BackEnd
             void HandleGuestLogin(Action<BackendReturnObject> callback)
             {
                 Backend.BMember.GuestLogin((bro) => {
-                    // 특수 케이스: 게스트 정보 삭제 후 재시도
-                    if (bro == null || !bro.IsSuccess())
+                    // 특수 케이스: bro null 또는 실패
+                    if (bro == null)
                     {
-                        Debug.LogError("[BackendManager] 게스트 로그인 실패: " + bro?.GetMessage());
+                        Debug.LogError("[BackendManager] 게스트 로그인 실패: bro == null");
+                        onFail?.Invoke(BackendState.Failure);
+                        return;
+                    }
+
+                    if (!bro.IsSuccess())
+                    {
+                        Debug.LogError("[BackendManager] 게스트 로그인 실패: " + bro.GetMessage());
                         if (bro.GetStatusCode() == "403")
                         {
                             Debug.LogWarning("[BackendManager] 접근 차단된 계정입니다.");
@@ -1310,6 +1325,9 @@ namespace Muks.BackEnd
 
         #region 로그 및 오류 처리
 
+        // 오류 로그 업로드 재귀 방지 플래그
+        private bool _isUploadingErrorLog;
+
         /// <summary>
         /// 백엔드 오류를 분류하고 적절한 처리 방향을 결정합니다
         /// </summary>
@@ -1321,12 +1339,20 @@ namespace Muks.BackEnd
             if (bro.IsSuccess())
                 return BackendState.Success;
             
-            try
+            if (!_isUploadingErrorLog)
             {
-                // 오류 로그 업로드 (실패해도 계속 진행)
-                ErrorLogUpload(bro);
+                try
+                {
+                    _isUploadingErrorLog = true;
+                    // 오류 로그 업로드 (실패해도 계속 진행)
+                    ErrorLogUpload(bro);
+                }
+                catch {}
+                finally
+                {
+                    _isUploadingErrorLog = false;
+                }
             }
-            catch {}
             
             // 오류 유형 분석
             string errorCode = bro.GetErrorCode();
@@ -1423,6 +1449,12 @@ namespace Muks.BackEnd
             }
             
             BackendReturnObject callback = Backend.BMember.RefreshTheBackendToken();
+
+            if (callback == null)
+            {
+                Debug.LogError("[BackendManager] 토큰 갱신 실패: 응답 없음");
+                return false;
+            }
 
             if (callback.IsSuccess())
             {

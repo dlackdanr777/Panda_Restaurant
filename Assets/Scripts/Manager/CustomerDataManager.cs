@@ -103,8 +103,8 @@ public class CustomerDataManager : MonoBehaviour
         {
             GradeSortType.NameAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
             GradeSortType.NameDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
-            GradeSortType.GradeAscending => _customerDataList.OrderBy(data => data.Name).ToList(),
-            GradeSortType.GradeDescending => _customerDataList.OrderByDescending(data => data.Name).ToList(),
+            GradeSortType.GradeAscending => _customerDataList.OrderBy(data => data.MinScore).ToList(),
+            GradeSortType.GradeDescending => _customerDataList.OrderByDescending(data => data.MinScore).ToList(),
             GradeSortType.None => _customerDataList,
             _ => _customerDataList
         };
@@ -417,6 +417,11 @@ public class CustomerDataManager : MonoBehaviour
 
             NormalCustomerData customerData = new NormalCustomerData(sprite, thumbnailSprite, id, name, description, moveSpeed, visitMinScore, requiredFood, requiredItem, visitCount25Food, visitCount50Food, visitCount100Food, visitCount200Food, visitCount300Food, visitCount400Food, visitCount500Food, tendencyType, orderWaitTime, waitTime);
 
+            if (_customerDataDic.ContainsKey(id))
+            {
+                Debug.LogError($"[CustomerDataManager] 중복 NormalCustomer ID: {id}");
+                continue;
+            }
             _customerDataDic.Add(id, customerData);
             _customerDataList.Add(customerData);
             _normalCustomerDataList.Add(customerData);
@@ -485,6 +490,11 @@ public class CustomerDataManager : MonoBehaviour
             }
             SpecialCustomerData customerData = new SpecialCustomerData(sprite, thumbnailSprite, touchSprite, id, name, description, moveSpeed, visitMinScore, requiredDish, requiredItem, activeDuration, touchCount, touchAddMoney, spawnChance);
 
+            if (_customerDataDic.ContainsKey(id))
+            {
+                Debug.LogError($"[CustomerDataManager] 중복 SpecialCustomer ID: {id}");
+                continue;
+            }
             _customerDataDic.Add(id, customerData);
             _customerDataList.Add(customerData);
             _specialCustomerDataList.Add(customerData);
@@ -574,6 +584,11 @@ public class CustomerDataManager : MonoBehaviour
                 continue;
             }
 
+            if (_customerDataDic.ContainsKey(id))
+            {
+                Debug.LogError($"[CustomerDataManager] 중복 GatecrasherCustomer ID: {id}");
+                continue;
+            }
             _customerDataDic.Add(id, customerData);
             _customerDataList.Add(customerData);
             _gatecrasherCustomerDataList.Add(customerData);

@@ -6,6 +6,8 @@ using System.Collections.Generic;
 
 public class LoadUserData
 {
+    public bool IsValid { get; private set; }
+
     public bool IsFirstTutorialClear;
     public bool IsMiniGameTutorialClear;
     public bool IsFeverTutorialClear;
@@ -181,9 +183,12 @@ public class LoadUserData
 
             DailyAdGoldRewardCount = GetInt("DailyAdGoldRewardCount");
             DailyAdDiaRewardCount = GetInt("DailyAdDiaRewardCount");
+
+            IsValid = true;
         }
         catch (Exception e)
         {
+            IsValid = false;
             DebugLog.LogError($"Failed to load user data: {e.Message}");
         }
     }

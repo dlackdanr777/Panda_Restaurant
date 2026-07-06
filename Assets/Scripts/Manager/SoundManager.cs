@@ -110,8 +110,11 @@ public class SoundManager : MonoBehaviour
 
     private void Awake()
     {
-        if (_instance != null)
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
             return;
+        }
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
@@ -124,6 +127,13 @@ public class SoundManager : MonoBehaviour
     {
         _effectAudioDic.Clear();
         _audioMixer = Resources.Load<AudioMixer>("Audio/AudioMixer");
+
+        if (_audioMixer == null)
+        {
+            Debug.LogError("[SoundManager] AudioMixer not found: Audio/AudioMixer");
+            return;
+        }
+
         _clips = new AudioClip[(int)SoundEffectType.Length];
         
         for (int i = 0, cnt = (int)SoundEffectType.Length; i < cnt; ++i)
@@ -150,7 +160,14 @@ public class SoundManager : MonoBehaviour
         _audios[(int)AudioType.BackgroundAudio].volume = _backgroundVolume;
         _audios[(int)AudioType.BackgroundAudio].dopplerLevel = 0;
         _audios[(int)AudioType.BackgroundAudio].reverbZoneMix = 0;
-        _audios[(int)AudioType.BackgroundAudio].outputAudioMixerGroup = _audioMixer.FindMatchingGroups("Background")[0];
+
+        var bgGroups = _audioMixer.FindMatchingGroups("Background");
+        if (bgGroups == null || bgGroups.Length == 0)
+        {
+            Debug.LogError("[SoundManager] AudioMixer group not found: Background");
+            return;
+        }
+        _audios[(int)AudioType.BackgroundAudio].outputAudioMixerGroup = bgGroups[0];
 
         for (int i = (int)EffectType.None, cnt = (int)EffectType.UI + 1; i < cnt; ++i)
         {

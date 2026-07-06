@@ -50,6 +50,12 @@ public class UIAttendance : MobileUIView
             UIAttendanceSlot slot = Instantiate(_slotPrefab, _slotParent.transform);
             _slotList.Add(slot);
 
+            if (i >= dataList.Count)
+            {
+                slot.gameObject.SetActive(false);
+                continue;
+            }
+
             if(i == cnt - 1)
             {
                 slot.SetDataToSpecial(dataList[i]);

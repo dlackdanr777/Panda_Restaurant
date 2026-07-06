@@ -124,8 +124,10 @@ public class WatchAdButton : MonoBehaviour
 
     public void Interactable(bool value)
     {
-        _buttonPressEffect.Interactable = value;
-        _adButton.interactable = value;
+        if (_buttonPressEffect != null)
+            _buttonPressEffect.Interactable = value;
+        if (_adButton != null)
+            _adButton.interactable = value;
     }
 
     private void OnDestroy()
@@ -151,6 +153,12 @@ public class WatchAdButton : MonoBehaviour
 
     private void ShowAdPopup()
     {
+        if (_adPopup == null)
+        {
+            Debug.LogError($"[WatchAdButton] _adPopup이 없습니다. adUnitId={_adUnitId}");
+            return;
+        }
+
         switch (_showType)
         {
             case ShowType.Dia:
@@ -339,7 +347,14 @@ public class WatchAdButton : MonoBehaviour
         // ★★★ OnDisplayed가 호출되지 않았으면 광고가 실제로 표시되지 않은 것 ★★★
         if (!AdManager.Instance.IsCurrentPlayingAd(_adUnitId))
         {
-            Debug.LogError($"[WatchAdButton] ✖✖✖ OnClosed 무시 ✖✖✖ - 광고가 실제로 표시되지 않음 (OnDisplayed 미호출) - {_adUnitId}");
+            Debug.LogWarning($"[WatchAdButton] OnClosed - OnDisplayed 미호출 닫힌: {_adUnitId}");
+            // 상태 정리 및 다음 광고 미리 로드
+            AdManager.Instance.OnAdPlayFinished(_adUnitId);
+            AdManager.Instance.SetWantToShow(_adUnitId, false);
+            AdManager.Instance.SetRewardGranted(_adUnitId, false);
+            OnAdClosed?.Invoke();
+            if (!AdManager.Instance.IsLoading(_adUnitId))
+                AdManager.Instance.PreloadAd(_adUnitId);
             return;
         }
         
@@ -382,8 +397,9 @@ public class WatchAdButton : MonoBehaviour
                 // → UI 잠금 해제를 위해 OnAdClosed 이벤트 발생
                 Debug.Log($"[WatchAdButton] OnClosed - 보상 미지급 상태로 닫힘, UI 잠금 해제");
                 AdManager.Instance.OnAdPlayFinished(_adUnitId);
-                OnAdClosed?.Invoke();
-            }
+                OnAdClosed?.Invoke();                // Reward 타입 중도 종료 시도 다음 광고 미리 로드
+                if (!AdManager.Instance.IsLoading(_adUnitId))
+                    AdManager.Instance.PreloadAd(_adUnitId);            }
             
             // ★★★ Reward 타입은 OnRewarded에서 PreloadAd를 처리 (연속 실행 안정성 확보) ★★★
             Debug.Log($"[WatchAdButton] Reward 타입 - PreloadAd는 OnRewarded에서 처리");

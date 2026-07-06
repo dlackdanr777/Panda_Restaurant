@@ -384,6 +384,12 @@ public class ObjectPoolManager : MonoBehaviour
     public void DespawnStaff(EquipStaffType type, Staff staff)
     {
         int typeIndex = (int)type;
+        if (staff == null) return;
+        if (_staffPools[typeIndex].Contains(staff))
+        {
+            DebugLog.LogWarning("[ObjectPoolManager] Staff 이중 Despawn 무시: " + type);
+            return;
+        }
         staff.gameObject.SetActive(false);
         staff.ObjectPoolDespawnEvent();
         staff.transform.SetParent(_staffParents[typeIndex].transform);
@@ -397,21 +403,30 @@ public class ObjectPoolManager : MonoBehaviour
 
         if (_normalCustomerPool.Count == 0)
         {
-            customer = Instantiate(_normalCustomerPrefab, pos, rot, _customerParent.transform);
-            return customer;
+            customer = Instantiate(_normalCustomerPrefab, _customerParent.transform);
+            customer.Init();
+        }
+        else
+        {
+            customer = _normalCustomerPool.Dequeue();
         }
 
-        customer = _normalCustomerPool.Dequeue();
         customer.gameObject.SetActive(true);
-        customer.transform.position = pos;
-        customer.transform.rotation = rot;
+        customer.transform.SetPositionAndRotation(pos, rot);
         return customer;
     }
 
 
     public void DespawnNormalCustomer(NormalCustomer customer)
     {
+        if (customer == null) return;
+        if (_normalCustomerPool.Contains(customer))
+        {
+            DebugLog.LogWarning("[ObjectPoolManager] NormalCustomer 이중 Despawn 무시");
+            return;
+        }
         customer.gameObject.SetActive(false);
+        customer.transform.SetParent(_customerParent.transform);
         _normalCustomerPool.Enqueue(customer);
     }
 
@@ -422,14 +437,16 @@ public class ObjectPoolManager : MonoBehaviour
 
         if (_specialCustomerPool.Count == 0)
         {
-            customer = Instantiate(_specialCustomerPrefab, pos, rot, _customerParent.transform);
-            return customer;
+            customer = Instantiate(_specialCustomerPrefab, _customerParent.transform);
+            customer.Init();
+        }
+        else
+        {
+            customer = _specialCustomerPool.Dequeue();
         }
 
-        customer = _specialCustomerPool.Dequeue();
         customer.gameObject.SetActive(true);
-        customer.transform.position = pos;
-        customer.transform.rotation = rot;
+        customer.transform.SetPositionAndRotation(pos, rot);
         return customer;
     }
 
@@ -439,14 +456,16 @@ public class ObjectPoolManager : MonoBehaviour
 
         if (_gatecrasherCustomerPool.Count == 0)
         {
-            customer = Instantiate(_gatecrasherCustomerPrefab, pos, rot, _customerParent.transform);
-            return customer;
+            customer = Instantiate(_gatecrasherCustomerPrefab, _customerParent.transform);
+            customer.Init();
+        }
+        else
+        {
+            customer = _gatecrasherCustomerPool.Dequeue();
         }
 
-        customer = _gatecrasherCustomerPool.Dequeue();
         customer.gameObject.SetActive(true);
-        customer.transform.position = pos;
-        customer.transform.rotation = rot;
+        customer.transform.SetPositionAndRotation(pos, rot);
         return customer;
     }
 
@@ -454,13 +473,27 @@ public class ObjectPoolManager : MonoBehaviour
 
     public void DespawnSpecialCustomer(SpecialCustomer customer)
     {
+        if (customer == null) return;
+        if (_specialCustomerPool.Contains(customer))
+        {
+            DebugLog.LogWarning("[ObjectPoolManager] SpecialCustomer 이중 Despawn 무시");
+            return;
+        }
         customer.gameObject.SetActive(false);
+        customer.transform.SetParent(_customerParent.transform);
         _specialCustomerPool.Enqueue(customer);
     }
 
     public void DespawnGatecrasherCustomer(GatecrasherCustomer customer)
     {
+        if (customer == null) return;
+        if (_gatecrasherCustomerPool.Contains(customer))
+        {
+            DebugLog.LogWarning("[ObjectPoolManager] GatecrasherCustomer 이중 Despawn 무시");
+            return;
+        }
         customer.gameObject.SetActive(false);
+        customer.transform.SetParent(_customerParent.transform);
         _gatecrasherCustomerPool.Enqueue(customer);
     }
 
@@ -699,15 +732,17 @@ public class ObjectPoolManager : MonoBehaviour
 
         if (_smokeParitclePool.Count == 0)
         {
-            particle = Instantiate(_smokeParticlePrefab, pos, rot, _particleParent.transform);
-            return particle;
+            particle = Instantiate(_smokeParticlePrefab, _particleParent.transform);
+            particle.Init();
+        }
+        else
+        {
+            particle = _smokeParitclePool.Dequeue();
+            particle.gameObject.SetActive(false);
+            particle.gameObject.SetActive(true);
         }
 
-        particle = _smokeParitclePool.Dequeue();
-        particle.gameObject.SetActive(false);
-        particle.gameObject.SetActive(true);
-        particle.transform.position = pos;
-        particle.transform.rotation = rot;
+        particle.transform.SetPositionAndRotation(pos, rot);
         particle.SetScale(scale);
         return particle;
     }
@@ -772,12 +807,12 @@ public class ObjectPoolManager : MonoBehaviour
         touchEffect.transform.SetParent(_touchEffectParent.transform);
     }
 
-    public List<PointerDownSpriteRenderer> GetEnabledCoinPool()
+    public IReadOnlyList<PointerDownSpriteRenderer> GetEnabledCoinPool()
     {
         return _enabledCoinPool;
     }
 
-    public List<PointerDownSpriteRenderer> GetEnabledGarbagePool()
+    public IReadOnlyList<PointerDownSpriteRenderer> GetEnabledGarbagePool()
     {
         return _enabledGarbagePool;
     } 

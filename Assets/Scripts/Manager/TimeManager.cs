@@ -75,7 +75,7 @@ public class TimeManager : MonoBehaviour
         _removeList.Clear();
     }
 
-    public Dictionary<string, int> GetTimeDic()
+    public IReadOnlyDictionary<string, int> GetTimeDic()
     {
         return _timeDic;
     }
@@ -88,8 +88,11 @@ public class TimeManager : MonoBehaviour
 
     private void Awake()
     {
-        if (_instance != null)
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
             return;
+        }
 
         _instance = this;
         DontDestroyOnLoad(gameObject);
@@ -111,7 +114,9 @@ public class TimeManager : MonoBehaviour
             // 2. 시간 감소 및 만료된 타이머 표시
             foreach (var key in keys)
             {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
                 DebugLog.Log($"Key: {key}, Time: {_timeDic[key]}");
+#endif
                 if (_timeDic[key] <= 0)
                 {
                     _removeList.Add(key);

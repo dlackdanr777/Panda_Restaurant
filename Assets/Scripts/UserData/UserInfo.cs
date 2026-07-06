@@ -2,7 +2,6 @@ using BackEnd;
 using LitJson;
 using Muks.BackEnd;
 using Muks.DataBind;
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -365,10 +364,8 @@ public static class UserInfo
 
     #endregion
 
-    public static Param GetSaveUserData()
+    public static void ApplyDailyWeeklyResetIfNeeded()
     {
-        Param param = new Param();
-
         if (CheckLastAccessTime())
         {
             UpdateLastAccessTime();
@@ -380,6 +377,11 @@ public static class UserInfo
         {
             ResetWeeklyChallenges();
         }
+    }
+
+    public static Param GetSaveUserData()
+    {
+        Param param = new Param();
 
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
         param.Add("IsMiniGameTutorialClear", IsMiniGameTutorialClear);
@@ -485,7 +487,7 @@ public static class UserInfo
         param.Add("DailyAdDiaRewardCount", _dailyAdDiaRewardCount);
         //--------------------------------
 
-        Dictionary<string, int> timeDic = TimeManager.Instance.GetTimeDic();
+        IReadOnlyDictionary<string, int> timeDic = TimeManager.Instance.GetTimeDic();
         List<SaveTimeData> timeDataList = new List<SaveTimeData>();
         foreach (var data in timeDic)
         {
@@ -610,9 +612,9 @@ public static class UserInfo
         }
 
         LoadUserData loadData = new LoadUserData(json);
-        if (loadData == null)
+        if (loadData == null || !loadData.IsValid)
         {
-            Debug.LogError("Parsing Error");
+            Debug.LogError("[UserInfo] 유저 데이터 파싱 실패. 기본값 적용 중단.");
             return;
         }
 

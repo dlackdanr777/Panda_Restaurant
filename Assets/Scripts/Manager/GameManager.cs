@@ -15,13 +15,14 @@ public class GameManager : MonoBehaviour
             {
                 GameObject obj = new GameObject("GameManager");
                 _instance = obj.AddComponent<GameManager>();
-                DontDestroyOnLoad(obj);
+                DontDestroyOnLoad(_instance.gameObject);
             }
 
             return _instance;
         }
     }
     private static GameManager _instance;
+    public static bool HasInstance => _instance != null;
     public event Action OnChangeTipPerMinuteHandler;
     public event Action OnChangeScoreHandler;
     public event Action OnChangeStaffSkillValueHandler;
@@ -398,8 +399,14 @@ public class GameManager : MonoBehaviour
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 
+        UserInfo.ApplyDailyWeeklyResetIfNeeded();
         Param param = UserInfo.GetSaveUserData();
-        BackendManager.Instance.SaveGameData("GameData", param);
+        bool success = BackendManager.Instance.SaveGameData("GameData", param);
+        if (!success)
+        {
+            DebugLog.LogError("[GameManager] GameData 저장 실패. StageData 저장을 중단합니다.");
+            return;
+        }
         UserInfo.SaveStageData();
         DebugLog.Log("저장");
     }
@@ -409,6 +416,7 @@ public class GameManager : MonoBehaviour
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 
+        UserInfo.ApplyDailyWeeklyResetIfNeeded();
         Param param = UserInfo.GetSaveUserData();
         BackendManager.Instance.SaveGameDataAsync("GameData", param, (bro) =>{
             UserInfo.SaveStageDataAsync();

@@ -36,6 +36,15 @@ public class FoodDataManager : MonoBehaviour
         return data;
     }
 
+    public bool TryGetFoodData(string id, out FoodData data)
+    {
+        if (_foodDataDic.TryGetValue(id, out data))
+            return true;
+
+        DebugLog.LogError($"[FoodDataManager] FoodData 없음: {id}");
+        return false;
+    }
+
     public List<FoodData> GetFoodDataList()
     {
         return _foodDataList;
@@ -101,6 +110,18 @@ public class FoodDataManager : MonoBehaviour
         TextAsset csvData = Resources.Load<TextAsset>("FoodData/FoodDataList");
         TextAsset miniGameData = Resources.Load<TextAsset>("FoodData/FoodMiniGameDataList");
 
+        if (csvData == null)
+        {
+            Debug.LogError("[FoodDataManager] FoodDataList CSV가 없습니다.");
+            return;
+        }
+
+        if (miniGameData == null)
+        {
+            Debug.LogError("[FoodDataManager] FoodMiniGameDataList CSV가 없습니다.");
+            return;
+        }
+
         string[] data = miniGameData.text.Split(new char[] { '\n' });
         string[] row;
 
@@ -164,8 +185,24 @@ public class FoodDataManager : MonoBehaviour
             if (!int.TryParse(row[10].Replace(" ", ""), out int buyPrice))
                 buyPrice = 0;
 
-            int sellPrice = int.Parse(row[11].Replace(" ", ""));
-            float cookSpeed = float.Parse(row[12].Replace(" ", ""));
+            if (row.Length < 13)
+            {
+                Debug.LogWarning($"[FoodDataManager] FoodData row {i}: 컬럼 수 부족 ({row.Length}/13)");
+                continue;
+            }
+
+            if (!int.TryParse(row[11].Replace(" ", ""), out int sellPrice))
+            {
+                Debug.LogWarning($"[FoodDataManager] sellPrice 파싱 실패: row {i}, value={row[11]}");
+                sellPrice = 0;
+            }
+
+            if (!float.TryParse(row[12].Replace(" ", ""), System.Globalization.NumberStyles.Float,
+                System.Globalization.CultureInfo.InvariantCulture, out float cookSpeed))
+            {
+                Debug.LogWarning($"[FoodDataManager] cookSpeed 파싱 실패: row {i}, value={row[12]}");
+                cookSpeed = 1f;
+            }
 
             if (!_foodMiniGameDataDic.TryGetValue(id, out FoodMiniGameData foodMiniGameData))
                 foodMiniGameData = null;

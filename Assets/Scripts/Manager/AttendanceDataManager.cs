@@ -73,8 +73,11 @@ public class AttendanceDataManager : MonoBehaviour
 
     private void Awake()
     {
-        if (_instance != null)
+        if (_instance != null && _instance != this)
+        {
+            Destroy(gameObject);
             return;
+        }
 
         _instance = this;
         DontDestroyOnLoad(_instance.gameObject);
@@ -87,21 +90,46 @@ public class AttendanceDataManager : MonoBehaviour
     {
         TextAsset csvData = Resources.Load<TextAsset>(_csvFilePath + csvFileName);
         Dictionary<int, AttendanceData> dic = new Dictionary<int, AttendanceData>();
-        string[] data = csvData.text.Split(new char[] { '\n' });
-        string[] row;
 
-        for (int i = 1, cnt = data.Length - 1; i < cnt; ++i)
+        if (csvData == null)
         {
-            row = data[i].Split(new char[] { ',' });
-            string id = string.Concat(row[0].Where(c => !Char.IsWhiteSpace(c)));
+            Debug.LogError($"[AttendanceDataManager] CSV not found: {csvFileName}");
+            return dic;
+        }
 
-            if (string.IsNullOrWhiteSpace(id))
+        string[] data = csvData.text.Split(new char[] { '\n' });
+
+        int dayCounter = 0;
+        for (int i = 1, cnt = data.Length; i < cnt; ++i)
+        {
+            if (string.IsNullOrWhiteSpace(data[i]))
                 continue;
 
-            MoneyType moneyType = string.Concat(row[1].Where(c => !Char.IsWhiteSpace(c))) == "코인" ? MoneyType.Gold : MoneyType.Dia;
-            int rewardValue = Convert.ToInt32(string.Concat(row[2].Where(c => !Char.IsWhiteSpace(c))));
+            string[] row = data[i].Split(new char[] { ',' });
 
-            dic.Add(i, new AttendanceData(moneyType, rewardValue));
+            if (row.Length < 3)
+            {
+                Debug.LogWarning($"[AttendanceDataManager] invalid row at line {i}: column count {row.Length} < 3");
+                continue;
+            }
+
+            dayCounter++;
+
+            string rewardType = string.Concat(row[1].Where(c => !Char.IsWhiteSpace(c)));
+            // ??? ?? ??? ? ?? ?? ?? ??
+            MoneyType moneyType = (rewardType == "코인" || rewardType == "??" ||
+                                   rewardType == "????" || rewardType == "Gold")
+                ? MoneyType.Gold
+                : MoneyType.Dia;
+
+            string rewardStr = string.Concat(row[2].Where(c => !Char.IsWhiteSpace(c)));
+            if (!int.TryParse(rewardStr, out int rewardValue))
+            {
+                Debug.LogWarning($"[AttendanceDataManager] invalid reward at line {i}: {row[2]}");
+                continue;
+            }
+
+            dic[dayCounter] = new AttendanceData(moneyType, rewardValue);
         }
 
         return dic;
