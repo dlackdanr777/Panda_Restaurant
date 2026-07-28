@@ -179,11 +179,11 @@ public class UIGacha : MobileUIView
 
     public override void Show()
     {
-        if(!UserInfo.GetIsClearChallenge("MainReward12"))
-        {
-            PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
-            return;
-        }
+        // if(!UserInfo.GetIsClearChallenge("MainReward12"))
+        // {
+        //     PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
+        //     return;
+        // }
 
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);

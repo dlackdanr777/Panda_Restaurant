@@ -110,15 +110,15 @@ public class UIAdPopup : MobileUIView
 
     public void ShowPopup(WatchAdButton watchAdButton)
     {
-        // ?��? ?�업???�려?�으�?중복 Push 방�?
+        // 이미 팝업이 열려있으므로 중복 Push 방지
         if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
         {
             return;
         }
         _currentAdType = AdType.None;
         OnAddEvent(watchAdButton);
-        _text.SetText("광고�??�청?�시겠습?�까?");
-        _adButton.SetText("광고 ?�청");
+        _text.SetText("광고를 요청하시겠습니까?");
+        _adButton.SetText("광고 요청");
         _currentWatchAdButton = watchAdButton;
         PushUIAd();
         _defaultLayout.SetActive(true);
@@ -132,7 +132,7 @@ public class UIAdPopup : MobileUIView
 
     public void ShowDiaPopup(WatchAdButton watchAdButton)
     {
-        // ?��? ?�업???�려?�으�?중복 Push 방�?
+        // 이미 팝업이 열려있으므로 중복 Push 방지
         if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
         {
             return;
@@ -141,7 +141,7 @@ public class UIAdPopup : MobileUIView
         _currentAdType = AdType.Dia;
 
         OnAddEvent(watchAdButton);
-        _adButton.SetText("광고 ?�청");
+        _adButton.SetText("광고 요청");
         _currentWatchAdButton = watchAdButton;
         PushUIAd();
         _defaultLayout.SetActive(false);
@@ -154,12 +154,12 @@ public class UIAdPopup : MobileUIView
         _adCountText.SetText((ConstValue.DAILY_AD_DIA_REWARD_COUNT - UserInfo.DailyAdDiaRewardCount) + "/" + ConstValue.DAILY_AD_DIA_REWARD_COUNT.ToString());
         if (UserInfo.DailyAdDiaRewardCount < ConstValue.DAILY_AD_DIA_REWARD_COUNT)
         {
-            _text.SetText($"광고�??�청?�시�?n{Utility.SetStringColor("보상", ColorType.Positive)}??받으?�겠?�니�?");
+            _text.SetText($"광고를 요청하시면\n{Utility.SetStringColor("보상", ColorType.Positive)}을 받으시겠습니까?");
             _adButton.gameObject.SetActive(true);
         }
         else
         {
-            _text.SetText("?�늘 보상??모두 ?�득?�어??");
+            _text.SetText("오늘 보상을 모두 획득했어요");
             _adButton.gameObject.SetActive(false);
         }
     }
@@ -167,7 +167,7 @@ public class UIAdPopup : MobileUIView
 
      public void ShowTipPopup(WatchAdButton watchAdButton)
     {
-        // ?��? ?�업???�려?�으�?중복 Push 방�?
+        // 이미 팝업이 열려있으므로 중복 Push 방지
         if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
         {
             return;
@@ -176,7 +176,7 @@ public class UIAdPopup : MobileUIView
         _currentAdType = AdType.Tip;
 
         OnAddEvent(watchAdButton);
-        _adButton.SetText("광고 ?�청");
+        _adButton.SetText("광고 요청");
         _currentWatchAdButton = watchAdButton;
         PushUIAd();
         _defaultLayout.SetActive(false);
@@ -186,13 +186,13 @@ public class UIAdPopup : MobileUIView
         _feverLayout.SetActive(false);
         _diaButton.gameObject.SetActive(false);
         _adCountText.gameObject.SetActive(false);
-        _text.SetText($"광고�??�청?�시�?n{Utility.SetStringColor("팁", ColorType.Positive)}???�배�?받으?�겠?�니�?");
+        _text.SetText($"광고를 요청하시면\n{Utility.SetStringColor("팁", ColorType.Positive)}을 2배로 받으시겠습니까?");
         _adButton.gameObject.SetActive(true);
     }
 
     public void ShowCoinPopup(WatchAdButton watchAdButton)
     {
-        // ?��? ?�업???�려?�으�?중복 Push 방�?
+        // 이미 팝업이 열려있으므로 중복 Push 방지
         if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
         {
             return;
@@ -201,7 +201,7 @@ public class UIAdPopup : MobileUIView
         _currentAdType = AdType.Coin;
 
         OnAddEvent(watchAdButton);
-        _adButton.SetText("광고 ?�청");
+        _adButton.SetText("광고 요청");
         _currentWatchAdButton = watchAdButton;
         PushUIAd();
         _defaultLayout.SetActive(false);
@@ -214,19 +214,19 @@ public class UIAdPopup : MobileUIView
         _adCountText.SetText((ConstValue.DAILY_AD_GOLD_REWARD_COUNT - UserInfo.DailyAdGoldRewardCount) + "/" + ConstValue.DAILY_AD_GOLD_REWARD_COUNT.ToString());
         if(UserInfo.DailyAdGoldRewardCount < ConstValue.DAILY_AD_GOLD_REWARD_COUNT)
         {
-            _text.SetText($"광고�??�청?�시�?n{Utility.SetStringColor("보상", ColorType.Positive)}??받으?�겠?�니�?");
+            _text.SetText($"광고를 요청하시면\n{Utility.SetStringColor("보상", ColorType.Positive)}을 받으시겠습니까?");
             _adButton.gameObject.SetActive(true);
         }
         else
         {
-            _text.SetText("?�늘 보상??모두 ?�득?�어??");
+            _text.SetText("오늘 보상을 모두 획득했어요");
             _adButton.gameObject.SetActive(false);
         }
     }
 
     public void ShowFeverPopup(WatchAdButton watchAdButton)
     {
-        // ?��? ?�업???�려?�으�?중복 Push 방�?
+        // 이미 팝업이 열려있으므로 중복 Push 방지
         if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
         {
             return;
@@ -235,8 +235,8 @@ public class UIAdPopup : MobileUIView
         _currentAdType = AdType.Fever;
 
         OnAddEvent(watchAdButton);
-        _text.SetText($"{Utility.SetStringColor("?�버 게이지", ColorType.Positive)}�?n?��? 충전?�시겠습?�까?");
-        _adButton.SetText("광고 ?�청");
+        _text.SetText($"{Utility.SetStringColor("피버 게이지", ColorType.Positive)}를\n가득 충전하시겠습니까?");
+        _adButton.SetText("광고 요청");
         _diaButton.SetText(_feverDia.ToString());
         _currentWatchAdButton = watchAdButton;
         PushUIAd();
@@ -254,13 +254,13 @@ public class UIAdPopup : MobileUIView
 
         if (ConstValue.AD_FEVER_COUNT <= UserInfo.FeverDiaCount && ConstValue.AD_FEVER_COUNT <= UserInfo.FeverAdCount)
         {
-            _text.SetText("?�늘 보상??모두 ?�득?�어??");
+            _text.SetText("오늘 보상을 모두 획득했어요");
             _adButton.gameObject.SetActive(false);
             _diaButton.gameObject.SetActive(false);
         }
         else
         {
-            _text.SetText($"{Utility.SetStringColor("?�버 게이지", ColorType.Positive)}�?n?��? 충전?�시겠습?�까?");
+            _text.SetText($"{Utility.SetStringColor("피버 게이지", ColorType.Positive)}를\n가득 충전하시겠습니까?");
             _adButton.gameObject.SetActive(true);
             _diaButton.gameObject.SetActive(true);
         }
@@ -279,7 +279,7 @@ public class UIAdPopup : MobileUIView
 
     public void ShowCustomerPopup(WatchAdButton watchAdButton)
     {
-        // ?��? ?�업???�려?�으�?중복 Push 방�?
+        // 이미 팝업이 열려있으므로 중복 Push 방지
         if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
         {
             return;
@@ -288,8 +288,8 @@ public class UIAdPopup : MobileUIView
         _currentAdType = AdType.Customer;
 
         OnAddEvent(watchAdButton);
-        _text.SetText($"{Utility.SetStringColor("?�님", ColorType.Positive)}???�꺼번에\n?�출 ?�시겠습?�까?");
-        _adButton.SetText("광고 ?�청");
+        _text.SetText($"{Utility.SetStringColor("손님", ColorType.Positive)}을 한꺼번에\n호출 하시겠습니까?");
+        _adButton.SetText("광고 요청");
         _diaButton.SetText(_customerDia.ToString());
         _currentWatchAdButton = watchAdButton;
         PushUIAd();
@@ -306,13 +306,13 @@ public class UIAdPopup : MobileUIView
 
         if (ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerAdCount && ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerDiaCount)
         {
-            _text.SetText("?�늘 보상??모두 ?�득?�어??");
+            _text.SetText("오늘 보상을 모두 획득했어요");
             _adButton.gameObject.SetActive(false);
             _diaButton.gameObject.SetActive(false);
         }
         else
         {
-            _text.SetText($"{Utility.SetStringColor("?�님", ColorType.Positive)}???�꺼번에\n?�출 ?�시겠습?�까?");
+            _text.SetText($"{Utility.SetStringColor("손님", ColorType.Positive)}을 한꺼번에\n호출 하시겠습니까?");
             _adButton.gameObject.SetActive(true);
             _diaButton.gameObject.SetActive(true);
         }
@@ -348,7 +348,7 @@ public class UIAdPopup : MobileUIView
             {
                 _diaButton.Interactable(true);
                 _adButton.Interactable(true);
-                _adButton.SetText("광고 ?�청");
+                _adButton.SetText("광고 요청");
                 _diaButton.SetText(_feverDia.ToString());
             }
         }
@@ -368,7 +368,7 @@ public class UIAdPopup : MobileUIView
             else
             {
                 _adButton.Interactable(true);
-                _adButton.SetText("광고 ?�청");
+                _adButton.SetText("광고 요청");
 
                 _diaButton.Interactable(true);
                 _diaButton.SetText(_customerDia.ToString());
@@ -378,7 +378,7 @@ public class UIAdPopup : MobileUIView
         else
         {
             _adButton.Interactable(true);
-            _adButton.SetText("광고 ?�청");
+            _adButton.SetText("광고 요청");
         }
     }
 
@@ -390,7 +390,7 @@ public class UIAdPopup : MobileUIView
         }
         else
         {
-            DebugLog.LogWarning("[UIAdPopup] _uiNav??null?�니?? MobileUINavigation??UIAd가 ?�록?��? ?�았?�니?? Show()�?직접 ?�출?�니??");
+            DebugLog.LogWarning("[UIAdPopup] _uiNav가 null입니다. MobileUINavigation에 UIAd가 등록되지 않았습니다. Show()를 직접 호출합니다.");
             Show();
         }
     }
@@ -447,24 +447,24 @@ public class UIAdPopup : MobileUIView
 
         if (_currentAdType == AdType.Fever && FeverSystem.CurrentMaxFeverGauge <= FeverSystem.FeverGauge)
         {
-            PopupManager.Instance.ShowDisplayText("?�버게이지가 가??�??�습?�다.");
+            PopupManager.Instance.ShowDisplayText("피버게이지가 가득 찼습니다.");
             return;
         }
 
         else if(_currentAdType == AdType.Customer && CustomerController.IsMaxCount)
         {
-            PopupManager.Instance.ShowDisplayText("?�님??가??�??�습?�다.");
+            PopupManager.Instance.ShowDisplayText("손님이 가득 찼습니다.");
             return;
         }
 
         if (_currentWatchAdButton == null)
         {
-            Debug.LogError("[UIAdPopup] _currentWatchAdButton가 null?�니??");
+            Debug.LogError("[UIAdPopup] _currentWatchAdButton가 null입니다.");
             return;
         }
 
         PopEnabled = false;
-        _dontTouchArea.SetActive(true); // OnClickAd ?�전??블로�??�성??(콜백 ?�서 ?�전)
+        _dontTouchArea.SetActive(true); // OnClickAd 이전에 블로킹 활성화(콜백에서 해제)
         _currentWatchAdButton.OnClickAd();
     }
 
@@ -483,8 +483,8 @@ public class UIAdPopup : MobileUIView
         OnRemoveEvent();
         PopUIAd();
         
-        // 광고 로드 ?�패 메시지 ?�시
-        PopupManager.Instance?.ShowDisplayText("광고�?불러?????�습?�다.\n?�시 ???�시 ?�도?�주?�요.");
+        // 광고 로드 실패 메시지 표시
+        PopupManager.Instance?.ShowDisplayText("광고를 불러오지 못했습니다.\n잠시 후 다시 시도해주세요.");
     }
 
     private void OnAdClosed()
@@ -500,23 +500,23 @@ public class UIAdPopup : MobileUIView
         DebugLog.Log(UserInfo.FeverDiaCount);
         if (_currentAdType == AdType.Fever && ConstValue.AD_FEVER_COUNT <= UserInfo.FeverDiaCount)
         {
-            PopupManager.Instance.ShowDisplayText("?�늘 ?�용?????�는\n?�이???�용 ?�수�?모두 ?�용?�어??");
+            PopupManager.Instance.ShowDisplayText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요");
             return;
         }
         else if (_currentAdType == AdType.Customer && ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerDiaCount)
         {
-            PopupManager.Instance.ShowDisplayText("?�늘 ?�용?????�는\n?�이???�용 ?�수�?모두 ?�용?�어??");
+            PopupManager.Instance.ShowDisplayText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요");
             return;
         }
               
         if (_currentAdType == AdType.Fever && FeverSystem.CurrentMaxFeverGauge <= FeverSystem.FeverGauge)
         {
-            PopupManager.Instance.ShowDisplayText("?�버게이지가 가??�??�습?�다.");
+            PopupManager.Instance.ShowDisplayText("피버게이지가 가득 찼습니다.");
             return;
         }
         else if(_currentAdType == AdType.Customer && CustomerController.IsMaxCount)
         {
-            PopupManager.Instance.ShowDisplayText("?�님??가??�??�습?�다.");
+            PopupManager.Instance.ShowDisplayText("손님이 가득 찼습니다.");
             return;
         }
 

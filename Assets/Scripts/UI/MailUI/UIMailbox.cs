@@ -58,7 +58,7 @@ public class UIMailbox : MobileUIView
         transform.SetAsLastSibling();
 
         if (_dontTouchArea != null) _dontTouchArea.SetActive(true);
-        TweenData showTween = _animeUI.TweenScale(new Vector3(1f, 1f, 1f), _showDuration, _showTweenMode);
+        TweenData showTween = _animeUI.TweenScale(new Vector3(0.95f, 0.95f, 0.95f), _showDuration, _showTweenMode);
 
         showTween.OnComplete(() =>
         {
@@ -76,7 +76,7 @@ public class UIMailbox : MobileUIView
         _animeUI.TweenStop();
         VisibleState = VisibleState.Disappearing;
         if (_dontTouchArea != null) _dontTouchArea.SetActive(true);
-        _animeUI.transform.localScale = new Vector3(1f, 1f, 1f);
+        _animeUI.transform.localScale = new Vector3(0.95f, 0.95f, 0.95f);
         TweenData tween = _animeUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
         tween.OnComplete(() =>
         {
