@@ -229,6 +229,12 @@ public class AdManager : MonoBehaviour
     {
         if (!_sdkReady)
         {
+            // SDK가 아직 초기화되지 않았으면 재시도를 요청합니다.
+            if (LevelPlayBoot.Instance != null)
+                LevelPlayBoot.Instance.EnsureInitialized();
+            else
+                Debug.LogError("[AdManager] LevelPlayBoot 인스턴스가 없습니다.");
+
             if (_pendingShow != null)
             {
                 Debug.LogWarning("[AdManager] ShowAd 실패 — SDK 초기화 대기 요청이 이미 있음");
