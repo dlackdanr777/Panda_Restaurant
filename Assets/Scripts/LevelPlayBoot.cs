@@ -9,6 +9,8 @@ using Unity.Services.LevelPlay;
 [DefaultExecutionOrder(-50)]
 public class LevelPlayBoot : MonoBehaviour
 {
+    private const string AdsBuildStamp = "ADS_FIX_20260729_V3";
+
     [SerializeField] private string appKey = "YOUR_LEVELPLAY_APP_KEY";
 
     [Header("모드 설정")]
@@ -17,12 +19,18 @@ public class LevelPlayBoot : MonoBehaviour
 
     private void Awake()
     {
+        Debug.LogError($"[ADS_BOOT] {AdsBuildStamp} LevelPlayBoot.Awake");
+
         // ── App Key 검증 ──
         if (string.IsNullOrEmpty(appKey) || appKey == "YOUR_LEVELPLAY_APP_KEY")
         {
             Debug.LogError("[LevelPlayBoot] appKey가 설정되지 않았습니다! 인스펙터에서 실제 App Key를 입력하세요.");
             return;
         }
+
+        // 중요: LevelPlay.Init() 이전에 AdManager를 반드시 생성하여
+        // OnInitSuccess 구독이 Init 호출 전에 등록됨을 보장합니다.
+        AdManager.Instance.SetTestSuiteMode(enableTestSuite);
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         LevelPlay.SetAdaptersDebug(true);
@@ -34,8 +42,6 @@ public class LevelPlayBoot : MonoBehaviour
         {
             Debug.LogWarning("[LevelPlayBoot] Integration Test Suite 모드 활성화 — 일반 광고 로드 비활성화");
             LevelPlay.SetMetaData("is_test_suite", "enable");
-            // AdManager가 SDK 초기화 완료 후 광고를 로드하지 않도록 플래그 설정
-            AdManager.Instance.SetTestSuiteMode(true);
         }
         else
         {
@@ -45,8 +51,9 @@ public class LevelPlayBoot : MonoBehaviour
         LevelPlay.OnInitSuccess += OnInitSuccess;
         LevelPlay.OnInitFailed  += OnInitFailed;
 
+        Debug.LogError($"[ADS_BOOT_V3] Init 호출 직전, AppKey={appKey}");
         LevelPlay.Init(appKey);
-        Debug.Log($"[LevelPlayBoot] LevelPlay.Init() 호출 완료");
+        Debug.LogError("[ADS_BOOT_V3] LevelPlay.Init 호출 완료");
     }
 
     private void OnDestroy()

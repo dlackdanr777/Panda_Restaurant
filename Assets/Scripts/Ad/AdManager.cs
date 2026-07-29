@@ -21,6 +21,9 @@ public enum AdType
 [DefaultExecutionOrder(-100)]
 public class AdManager : MonoBehaviour
 {
+    // ── 빌드 식별자 (로그에서 APK 버전 확인용) ──
+    private const string BuildStamp = "ADS_FIX_20260729_V3";
+
     private static AdManager _instance;
     public static AdManager Instance
     {
@@ -101,6 +104,8 @@ public class AdManager : MonoBehaviour
         }
         _instance = this;
         DontDestroyOnLoad(gameObject);
+
+        Debug.LogError($"[ADS_BOOT] {BuildStamp} AdManager.Awake");
 
         // SDK 초기화 완료 이벤트 구독 (LevelPlay.Init() 호출 전에 등록해야 함)
         LevelPlay.OnInitSuccess += OnSdkInitSuccess;
