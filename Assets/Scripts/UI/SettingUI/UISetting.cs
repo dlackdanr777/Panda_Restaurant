@@ -108,9 +108,24 @@ public class UIsetting : MobileUIView
             _googleLinkText.gameObject.SetActive(isLinked);
             if (isLinked)
             {
-                string displayName = GoogleLoginManager.GetLinkedGoogleDisplayName();
-                if (!string.IsNullOrEmpty(displayName))
-                    _googleLinkText.SetText2(displayName);
+                string cached = GoogleLoginManager.GetLinkedGoogleDisplayName();
+                if (!string.IsNullOrEmpty(cached) && cached.Contains("@"))
+                {
+                    _googleLinkText.SetText2(cached);
+                }
+                else
+                {
+#if UNITY_ANDROID
+                    // 잘못된 데이터(숫자 ID 등) → 구글에서 이메일 조회만 (저장은 연동 시점에만)
+                    _googleLoginManager.FetchLinkedEmail(id =>
+                    {
+                        if (_googleLinkText != null)
+                            _googleLinkText.SetText2(!string.IsNullOrEmpty(id) ? id : "구글 계정 연동됨");
+                    });
+#else
+                    _googleLinkText.SetText2("구글 계정 연동됨");
+#endif
+                }
             }
         }
 

@@ -1,6 +1,7 @@
 using BackEnd;
 using Muks.BackEnd;
 using System;
+using System.Text;
 using UnityEngine;
 
 namespace Muks.BackEnd
@@ -46,6 +47,47 @@ namespace Muks.BackEnd
         {
             PlayerPrefs.SetString(GOOGLE_DISPLAY_NAME_KEY, displayName);
             PlayerPrefs.Save();
+        }
+
+        public static void ClearLinkedGoogleDisplayName()
+        {
+            PlayerPrefs.DeleteKey(GOOGLE_DISPLAY_NAME_KEY);
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>JWT ID 토큰에서 email 클레임을 추출합니다.</summary>
+        private static string ExtractEmailFromGoogleToken(string idToken)
+        {
+            try
+            {
+                string[] parts = idToken.Split('.');
+                if (parts.Length < 2) return string.Empty;
+                string payload = parts[1].Replace('-', '+').Replace('_', '/');
+                int pad = payload.Length % 4;
+                if (pad != 0) payload += new string('=', 4 - pad);
+                string json = Encoding.UTF8.GetString(Convert.FromBase64String(payload));
+                var match = System.Text.RegularExpressions.Regex.Match(json, @"""email""\s*:\s*""([^""]+)""");
+                return match.Success ? match.Groups[1].Value : string.Empty;
+            }
+            catch { return string.Empty; }
+        }
+
+        /// <summary>잘못된 캐시 복구용 — 구글 로그인으로 이메일만 조회하며 저장하지 않습니다.</summary>
+        public void FetchLinkedEmail(Action<string> onComplete)
+        {
+#if UNITY_ANDROID
+            TheBackend.ToolKit.GoogleLogin.Android.GoogleLogin((isSuccess, errorMessage, token) =>
+            {
+                if (!isSuccess || string.IsNullOrEmpty(token))
+                {
+                    onComplete?.Invoke(string.Empty);
+                    return;
+                }
+                onComplete?.Invoke(ExtractEmailFromGoogleToken(token));
+            });
+#else
+            onComplete?.Invoke(string.Empty);
+#endif
         }
 
         // ──────────────────────────────────────────────────────────────────
@@ -256,7 +298,7 @@ namespace Muks.BackEnd
                 }
 
                 _pendingToken = token;
-                _pendingDisplayName = string.Empty;
+                _pendingDisplayName = ExtractEmailFromGoogleToken(token);
 
                 // AuthorizeFederation 응답 의미:
                 //   201 → 이 구글 계정을 현재 계정에 신규 연동
@@ -276,23 +318,9 @@ namespace Muks.BackEnd
                     {
                         if (bro.GetStatusCode() == "201")
                         {
-                            // 신규 연동 — 구글 계정 식별자(이메일)를 displayName으로 저장
-                            Backend.BMember.GetUserInfo(userBro =>
-                            {
-                                if (userBro.IsSuccess())
-                                {
-                                    var row = userBro.GetReturnValuetoJSON()?["row"];
-                                    string fedId = row?["federationId"]?.ToString();
-                                    _pendingDisplayName = !string.IsNullOrEmpty(fedId) ? fedId : Backend.UserNickName;
-                                }
-                                else
-                                {
-                                    _pendingDisplayName = Backend.UserNickName;
-                                }
-                                Debug.Log($"[GoogleLoginManager] 구글 연동: 신규 연동 완료 (201) displayName={_pendingDisplayName}");
-                                onNewLink?.Invoke();
-                            });
-                            return; // GetUserInfo 콜백에서 onNewLink 호출
+                            // JWT에서 이미 이메일을 추출했으므로 그대로 사용
+                            Debug.Log($"[GoogleLoginManager] 구글 연동: 신규 연동 완료 (201) email={_pendingDisplayName}");
+                            onNewLink?.Invoke();
                         }
                         else
                         {
