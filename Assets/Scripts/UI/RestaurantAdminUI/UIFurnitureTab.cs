@@ -78,12 +78,13 @@ public class UIFurnitureTab : UIRestaurantAdminTab
         // 필요시 구현
     }
 
-    public void ChangeFloorType(ERestaurantFloorType floorType)
+    public override void ChangeFloorType(ERestaurantFloorType floorType)
     {
         if (_floorType == floorType)
             return;
 
-        _floorType = floorType;   
+        _floorType = floorType;
+        UpdateTabBackground(floorType);
         UpdateUI();
     }
 

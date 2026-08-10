@@ -82,13 +82,14 @@ public class UIStaffTab : UIRestaurantAdminTab
         _uiStaff.ShowUIStaff(_floorType, type);
     }
 
-    public void ChangeFloorType(ERestaurantFloorType floorType)
+    public override void ChangeFloorType(ERestaurantFloorType floorType)
     {
         if (_isFloorTypeInitialized && _floorType == floorType)
             return;
 
         _isFloorTypeInitialized = true;
-        _floorType = floorType;     
+        _floorType = floorType;
+        UpdateTabBackground(floorType);
         UpdateUI();
     }
 

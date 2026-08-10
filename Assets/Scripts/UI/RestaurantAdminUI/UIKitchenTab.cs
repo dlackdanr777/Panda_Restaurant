@@ -81,12 +81,13 @@ public class UIKitchenTab : UIRestaurantAdminTab
         }
     }
 
-    public void ChangeFloorType(ERestaurantFloorType floorType)
+    public override void ChangeFloorType(ERestaurantFloorType floorType)
     {
         if (_floorType == floorType)
             return;
 
         _floorType = floorType;
+        UpdateTabBackground(floorType);
         UpdateUI();
     }
 

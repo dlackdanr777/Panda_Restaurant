@@ -20,6 +20,7 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private ScrollingImage[] _scrollImages;
     private ScrollingImage _currentScrollImage;
 
+
     [Space]
     [Header("Tabs")]
     [SerializeField] private UIFurnitureTab _furnitureTab;
@@ -320,13 +321,16 @@ public class UIRestaurantAdmin : MobileUIView
             return;
 
         _floorType = floorType;
-        // 한 번에 모든 탭 업데이트
+        
+        // 한 번에 모든 탭 업데이트 (각 탭이 자신의 배경을 관리)
         _kitchenTab.ChangeFloorType(_floorType);
         _furnitureTab.ChangeFloorType(_floorType);
         _staffTab.ChangeFloorType(_floorType);
+        _recipeTab.ChangeFloorType(_floorType);
         _floorButtonGroup.SetFloorText(_floorType);
 
         SetBackgroundImageOptimized(_floorType);
     }
+    
 }
 

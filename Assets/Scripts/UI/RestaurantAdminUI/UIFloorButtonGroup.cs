@@ -7,39 +7,35 @@ using UnityEngine.UI;
 
 public class UIFloorButtonGroup : MonoBehaviour
 {
-    [Header("Buttons")]
-    [SerializeField] private ButtonPressEffect _openButton;
-    [SerializeField] private ButtonPressEffect[] _closeButtons;
-    [SerializeField] private UIButtonAndPressEffect _floor1Button;
-    [SerializeField] private UIButtonAndPressEffect _floor2Button;
-    [SerializeField] private UIButtonAndPressEffect _floor3Button;
-
+    [Header("Toggle Button")]
+    [SerializeField] private Button _toggleButton;
+    [SerializeField] private Image _buttonImage;
+    
+    [Space]
+    [Header("Floor Images")]
+    [SerializeField] private Sprite _floor1Sprite;
+    [SerializeField] private Sprite _vipRoomSprite;
+    
     [Space]
     [Header("Components")]
-    [SerializeField] private Image _closeImage;
-    [SerializeField] private Image _openImage;
     [SerializeField] private TextMeshProUGUI _floorText;
+
+    private UnityAction _floor1ButtonClicked;
+    private UnityAction _floor2ButtonClicked;
+    private ERestaurantFloorType _currentFloor = ERestaurantFloorType.Floor1;
+    private bool _isVIPUnlocked = false;
 
 
     public void Init(UnityAction floor1ButtonClicked, UnityAction floor2ButtonClicked, UnityAction floor3ButtonClicked)
     {
-        _floor1Button.AddListener(floor1ButtonClicked);
-        _floor2Button.AddListener(floor2ButtonClicked);
-        _floor3Button.AddListener(floor3ButtonClicked);
-
-        _floor1Button.AddListener(Hide);
-        _floor2Button.AddListener(Hide);
-        _floor3Button.AddListener(Hide);
-
-        _openButton.AddListener(OpenButtonClicked);
-        for(int i = 0, cnt = _closeButtons.Length; i < cnt; ++i)
-        {
-            _closeButtons[i].AddListener(CloseButtonClicked);
-        }
+        _floor1ButtonClicked = floor1ButtonClicked;
+        _floor2ButtonClicked = floor2ButtonClicked;
+        
+        _toggleButton.onClick.AddListener(OnToggleButtonClicked);
 
         UserInfo.OnChangeFloorHandler += OnChangeUnlockFloorEvent;
         OnChangeUnlockFloorEvent();
-        Hide();
+        UpdateButtonVisual();
     }
 
 
@@ -51,74 +47,66 @@ public class UIFloorButtonGroup : MonoBehaviour
 
     public void SetFloorText(ERestaurantFloorType floor)
     {
-        string text = floor switch
+        _currentFloor = floor;
+        UpdateButtonVisual();
+    }
+    
+    private void OnToggleButtonClicked()
+    {
+        DataBind.GetUnityActionValue("ButtonClickSound")?.Invoke();
+        
+        if (!_isVIPUnlocked)
+            return;
+        
+        // 1? ? VIP? ??
+        if (_currentFloor == ERestaurantFloorType.Floor1)
         {
-            ERestaurantFloorType.Floor1 => "1Ãþ",
-            ERestaurantFloorType.Floor2 => "2Ãþ",
-            ERestaurantFloorType.Floor3 => "3Ãþ",
-            _ => "Error"
-        };
-
-        _floorText.SetText(text);
+            _floor2ButtonClicked?.Invoke();
+        }
+        else
+        {
+            _floor1ButtonClicked?.Invoke();
+        }
     }
-
-    public void Show()
+    
+    private void UpdateButtonVisual()
     {
-        OnChangeUnlockFloorEvent();
-        _closeImage.gameObject.SetActive(false);
-        _openImage.gameObject.SetActive(true);
-    }
-
-    public void OpenButtonClicked()
-    {
-        DataBind.GetUnityActionValue("ButtonClickSound")?.Invoke();
-        OnChangeUnlockFloorEvent();
-        _closeImage.gameObject.SetActive(false);
-        _openImage.gameObject.SetActive(true);
-    }
-
-    public void Hide()
-    {   
-        _closeImage.gameObject.SetActive(true);
-        _openImage.gameObject.SetActive(false);
-    }
-    public void CloseButtonClicked()
-    {
-        DataBind.GetUnityActionValue("ButtonClickSound")?.Invoke();
-        _closeImage.gameObject.SetActive(true);
-        _openImage.gameObject.SetActive(false);
+        if (!_isVIPUnlocked)
+        {
+            // VIP? ???: 1? ???? ??
+            if (_buttonImage != null && _floor1Sprite != null)
+                _buttonImage.sprite = _floor1Sprite;
+            
+            if (_floorText != null)
+                _floorText.SetText("1?");
+        }
+        else
+        {
+            // VIP? ??: ?? ?? ?? ??? ??
+            if (_buttonImage != null)
+            {
+                _buttonImage.sprite = _currentFloor == ERestaurantFloorType.Floor1 
+                    ? _floor1Sprite 
+                    : _vipRoomSprite;
+            }
+            
+            if (_floorText != null)
+            {
+                string text = _currentFloor == ERestaurantFloorType.Floor1 ? "1?" : "VIP?";
+                _floorText.SetText(text);
+            }
+        }
     }
 
     private void OnChangeUnlockFloorEvent()
     {
-        // if (!_openImage.gameObject.activeInHierarchy)
-        //     return;
-
-        ERestaurantFloorType currentFloorType = UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
-        if (currentFloorType == ERestaurantFloorType.Floor3)
-        {
-            _floor3Button.gameObject.SetActive(true);
-            _floor2Button.gameObject.SetActive(true);
-            _floor1Button.gameObject.SetActive(true);
-        }
-        else if (currentFloorType == ERestaurantFloorType.Floor2)
-        {
-            _floor3Button.gameObject.SetActive(false);
-            _floor2Button.gameObject.SetActive(true);
-            _floor1Button.gameObject.SetActive(true);
-        }
-        else if (currentFloorType == ERestaurantFloorType.Floor1)
-        {
-            _floor3Button.gameObject.SetActive(false);
-            _floor2Button.gameObject.SetActive(false);
-            _floor1Button.gameObject.SetActive(true);
-        }
-        else
-        {
-            _floor3Button.gameObject.SetActive(false);
-            _floor2Button.gameObject.SetActive(false);
-            _floor1Button.gameObject.SetActive(false);
-        }
+        ERestaurantFloorType unlockedFloor = UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
+        
+        // VIP?(2? ??) ?? ?? ??
+        _isVIPUnlocked = unlockedFloor == ERestaurantFloorType.Floor2 || 
+                         unlockedFloor == ERestaurantFloorType.Floor3;
+        
+        UpdateButtonVisual();
     }
 
 

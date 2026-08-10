@@ -206,6 +206,11 @@ public class UIRecipeTab : UIRestaurantAdminTab
         _uiUpgrade.SetData(data);
         _uiRecipePreview.SetData(data);
     }
+    
+    public override void ChangeFloorType(ERestaurantFloorType floorType)
+    {
+        UpdateTabBackground(floorType);
+    }
 
     private void OnDestroy()
     {

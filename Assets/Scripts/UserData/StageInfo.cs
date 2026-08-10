@@ -29,7 +29,7 @@ public class StageInfo
     public EStage Stage => _stage;
 
 
-    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor1;
+    private ERestaurantFloorType _unlockFloor = ERestaurantFloorType.Floor2;
     public ERestaurantFloorType UnlockFloor => _unlockFloor;
 
 
