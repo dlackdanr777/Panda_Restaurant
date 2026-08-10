@@ -254,7 +254,7 @@ public class Staff : MonoBehaviour
         }
         else
         {
-            _skillTimer += Time.deltaTime * SpeedMul;
+            _skillTimer += Time.deltaTime;
         }
     }
 
