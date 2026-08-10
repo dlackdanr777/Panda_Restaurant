@@ -247,7 +247,8 @@ public class Staff : MonoBehaviour
             return;
         }
 
-        if (_skillCoolTime <= _skillTimer)
+        int cooldown = StaffSkillTimeCalculator.CalculateCooldownSeconds(_skillCoolTime, Level);
+        if (cooldown <= _skillTimer)
         {
             _skillTimer = 0;
             _useSkillRoutine = StartCoroutine(UseSkillCoroutine(tableManager, kitchenSystem, customerController));
@@ -285,8 +286,8 @@ public class Staff : MonoBehaviour
         SoundManager.Instance.PlayEffectAudio(effectType, _skillActiveSound);
         _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
 
-        float multiplier = 1f + GameManager.Instance.GetStaffSkillTimeMul(StaffDataManager.Instance.GetStaffGroupType(_staffType));
-        float duration = _staffData.Skill.Duration * multiplier;
+        float permanentDurationBonusRate = GameManager.Instance.GetStaffSkillTimeMul(StaffDataManager.Instance.GetStaffGroupType(_staffType));
+        int duration = StaffSkillTimeCalculator.CalculateDurationSeconds(_staffData.Skill.Duration, Level, permanentDurationBonusRate);
         float timer = 0;
         while (timer < duration)
         {
