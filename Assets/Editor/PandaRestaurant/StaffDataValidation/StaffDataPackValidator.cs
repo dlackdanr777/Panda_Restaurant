@@ -338,6 +338,163 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
         }
 
+        internal static bool TryBuildReadOnlySnapshot(
+            string selectedFolder,
+            out StaffOfficialDataPackageSnapshot snapshot,
+            out IReadOnlyList<string> diagnostics)
+        {
+            snapshot = null;
+            ValidationReport report = new ValidationReport();
+            if (string.IsNullOrWhiteSpace(selectedFolder))
+            {
+                report.Error("공식 데이터 폴더가 선택되지 않았습니다.");
+                diagnostics = CreateReadOnlyDiagnostics(report);
+                return false;
+            }
+
+            GitInfo gitInfo = ReadGitInfo();
+            if (!gitInfo.BranchAvailable)
+            {
+                report.Error("현재 Git 브랜치를 읽지 못했습니다: " + gitInfo.ErrorMessage);
+            }
+            else if (!string.Equals(gitInfo.Branch, ExpectedBranch, StringComparison.Ordinal))
+            {
+                report.Error(
+                    "현재 Git 브랜치가 지정 브랜치와 다릅니다. 현재: " + gitInfo.Branch
+                    + ", 지정: " + ExpectedBranch);
+            }
+
+            if (!gitInfo.HeadAvailable)
+            {
+                report.Error("현재 Git HEAD를 읽지 못했습니다: " + gitInfo.ErrorMessage);
+            }
+
+            Dictionary<string, MatchedFile> matchedFiles = new Dictionary<string, MatchedFile>(StringComparer.Ordinal);
+            MatchOfficialFiles(selectedFolder, matchedFiles, report);
+            BuildHashResult(matchedFiles, report);
+            ValidateEncodings(matchedFiles, report);
+            ValidatePhysicalLineCounts(matchedFiles, report);
+
+            Dictionary<string, CsvTable> tables = new Dictionary<string, CsvTable>(StringComparer.Ordinal);
+            Dictionary<string, string> tableErrors = new Dictionary<string, string>(StringComparer.Ordinal);
+            BuildCsvTables(matchedFiles, tables, tableErrors);
+
+            List<FinalStaffRow> finalRows;
+            ValidateFinal17(tables, tableErrors, report, out finalRows);
+
+            HashSet<string> skillIds;
+            ValidateSkillTypes(tables, tableErrors, finalRows, report, out skillIds);
+
+            Dictionary<string, RoleGrowthRow> roleGrowthRows;
+            ValidateRoleGrowth(tables, tableErrors, report, out roleGrowthRows);
+
+            Dictionary<string, RoleBaseRow> roleBaseRows;
+            ValidateRoleBase(
+                tables,
+                tableErrors,
+                finalRows,
+                roleGrowthRows,
+                report,
+                out roleBaseRows);
+
+            Dictionary<int, LevelRuleRow> levelRows;
+            ValidateLevelRule(tables, tableErrors, report, out levelRows);
+
+            Dictionary<string, CostRuleRow> costRows;
+            Dictionary<string, SummaryRow> summaryRows;
+            ValidateCostAndSummary(
+                tables,
+                tableErrors,
+                finalRows,
+                report,
+                out costRows,
+                out summaryRows);
+
+            Dictionary<string, string> policies;
+            ValidatePolicy(tables, tableErrors, report, out policies);
+            ValidateGachaUpgradeType(tables, tableErrors, report);
+            ValidateCrossReferences(
+                finalRows,
+                skillIds,
+                roleBaseRows,
+                roleGrowthRows,
+                costRows,
+                summaryRows,
+                report);
+
+            if (report.ErrorCount == 0)
+            {
+                try
+                {
+                    List<StaffOfficialFileSnapshot> files = new List<StaffOfficialFileSnapshot>();
+                    for (int index = 0; index < OfficialFiles.Length; index++)
+                    {
+                        OfficialFileSpec spec = OfficialFiles[index];
+                        MatchedFile matchedFile;
+                        CsvTable table;
+                        if (!matchedFiles.TryGetValue(spec.Key, out matchedFile)
+                            || !tables.TryGetValue(spec.Key, out table)
+                            || matchedFile.DecodedText == null)
+                        {
+                            report.Error(spec.DisplayName + ": 완전한 Snapshot을 만들 수 없습니다.");
+                            break;
+                        }
+
+                        files.Add(
+                            new StaffOfficialFileSnapshot(
+                                spec.Key,
+                                spec.DisplayName,
+                                matchedFile.Path,
+                                matchedFile.Hash,
+                                GetEncodingLabel(spec.Encoding),
+                                spec.PhysicalLineCount,
+                                CountPhysicalLines(matchedFile.DecodedText),
+                                table.Headers,
+                                table.Rows));
+                    }
+
+                    if (report.ErrorCount == 0 && files.Count == OfficialFiles.Length)
+                    {
+                        snapshot = new StaffOfficialDataPackageSnapshot(
+                            Path.GetFullPath(selectedFolder),
+                            gitInfo.Branch,
+                            gitInfo.Head,
+                            files);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    snapshot = null;
+                    report.Error("공식 데이터 Snapshot 생성에 실패했습니다: " + exception.Message);
+                }
+            }
+
+            diagnostics = CreateReadOnlyDiagnostics(report);
+            if (report.ErrorCount != 0 || snapshot == null)
+            {
+                snapshot = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        private static IReadOnlyList<string> CreateReadOnlyDiagnostics(ValidationReport report)
+        {
+            List<string> diagnosticCopy = new List<string>();
+            for (int index = 0; index < report.Warnings.Count; index++)
+            {
+                diagnosticCopy.Add("WARNING: " + report.Warnings[index]);
+            }
+
+            for (int index = 0; index < report.Errors.Count; index++)
+            {
+                diagnosticCopy.Add("ERROR: " + report.Errors[index]);
+            }
+
+            return diagnosticCopy.AsReadOnly();
+        }
+
         private static CheckResult MatchOfficialFiles(
             string selectedFolder,
             Dictionary<string, MatchedFile> matchedFiles,
