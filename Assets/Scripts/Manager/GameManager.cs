@@ -158,6 +158,21 @@ public class GameManager : MonoBehaviour
         return _totalAddSpeedMul;
     }
 
+    public float GetStaffMoveSpeedMul(StaffGroupType type)
+    {
+        return GetStaffSpeedMul(type);
+    }
+
+    public float GetStaffWorkSpeedMul()
+    {
+        return _totalAddSpeedMul;
+    }
+
+    public float GetGuardEliminationSpeedMul()
+    {
+        return GetStaffSpeedMul(StaffGroupType.Guard);
+    }
+
     public float GetStaffSkillTimeMul(StaffGroupType type)
     {
         if (_addGachaItemStaffSkillTimeDic.TryGetValue(type, out float value))

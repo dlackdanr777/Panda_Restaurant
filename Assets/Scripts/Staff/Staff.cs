@@ -50,6 +50,9 @@ public class Staff : MonoBehaviour
     protected float _moveSpeed;
     protected float _speedMul;
     public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(_staffGroupType)), 0.5f, 3f);
+    public float MoveSpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffMoveSpeedMul(_staffGroupType)), 0.5f, 3f);
+    public float WorkSpeedMul => Mathf.Clamp(1 + GameManager.Instance.GetStaffWorkSpeedMul(), 0.5f, 3f);
+    public float GuardEliminationSpeedMul => Mathf.Clamp(1 + GameManager.Instance.GetGuardEliminationSpeedMul(), 0.5f, 3f);
 
     protected Coroutine _useSkillRoutine;
     protected Coroutine _idleAnimationRoutine;
@@ -456,7 +459,7 @@ public class Staff : MonoBehaviour
                 
                 SetSpriteDir(dirX);
                 
-                step = Time.deltaTime * _moveSpeed * SpeedMul;
+                step = Time.deltaTime * _moveSpeed * MoveSpeedMul;
                 
                 // MoveTowards 직접 구현 (GC 없음)
                 if (distance > step)
