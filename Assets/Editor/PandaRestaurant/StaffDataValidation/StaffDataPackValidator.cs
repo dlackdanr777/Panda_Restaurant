@@ -13,7 +13,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 {
     internal static class StaffDataPackValidator
     {
-        private const string MenuPath = "Tools/Panda Restaurant/Staff/Validate Final17 Data Pack";
+        private const string MenuPath = "Tools/Panda Restaurant/Staff/Validate Staff Data Pack";
         private const string ExpectedBranch = "26/08/06_CodexTest_01(Staff-Skill-01)";
 
         private static readonly OfficialFileSpec[] OfficialFiles =
@@ -65,6 +65,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 "StaffSkillType",
                 "588da08e86387f33758a394d79c85cd37fe7e630b59d02b3a80d02dab4034854",
                 11,
+                ExpectedEncoding.Cp949),
+            new OfficialFileSpec(
+                "GachaUpgradeType",
+                "Final03 GOTCHA UpgradeType",
+                "fd3b74d6972f4e97e6dc50d944162af35c1ca5b0504fa903088c3c914e5e6994",
+                31,
                 ExpectedEncoding.Cp949)
         };
 
@@ -92,27 +98,105 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private static readonly string[] GradeKeys = { "NORMAL", "RARE", "UNIQUE", "SPECIAL" };
         private static readonly string[] RoleKeys = { "WAITER", "CLEANER", "CHEF", "MANAGER", "CHEERLEADER", "GUARD" };
 
+        private static readonly string[] GachaUpgradeTypeHeaders =
+        {
+            "강화 TYPE ID",
+            "강화 내용(숫자는 초록색으로 색 변경)",
+            "강화",
+            "단위",
+            "속성"
+        };
+
+        private static readonly GachaUpgradeExpectation[] GachaUpgradeExpectations =
+        {
+            new GachaUpgradeExpectation(
+                "UPGRADE18",
+                "전체 스텝 스킬 타임 n% 증가",
+                "전체 스텝 스킬 지속시간 증가",
+                "지속시간%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE19",
+                "매니저 스텝 스킬 타임 n% 증가",
+                "매니저 스킬 지속시간 증가",
+                "지속시간%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE20",
+                "웨이터 스텝 스킬 타임 n% 증가",
+                "웨이터 스킬 지속시간 증가",
+                "지속시간%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE21",
+                "주방장 스텝 스킬 타임 n% 증가",
+                "주방장 스킬 지속시간 증가",
+                "지속시간%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE22",
+                "치어리더 스텝 스킬 타임 n% 증가",
+                "치어리더 스킬 지속시간 증가",
+                "지속시간%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE23",
+                "청소부 스텝 스킬 타임 n% 증가",
+                "청소부 스킬 지속시간 증가",
+                "지속시간%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE24",
+                "가드 스텝 스킬 타임 n% 증가",
+                "가드 스킬 지속시간 증가",
+                "지속시간%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE25",
+                "웨이터 스텝 이동 속도 n% 증가",
+                "웨이터 이동 속도 증가",
+                "이동속도%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE26",
+                "주방장 스텝 이동 속도 n% 증가",
+                "주방장 이동 속도 증가",
+                "이동속도%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE27",
+                "청소부 스텝 이동 속도 n% 증가",
+                "청소부 이동 속도 증가",
+                "이동속도%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE28",
+                "가드 스텝 퇴치 속도 n% 증가",
+                "가드 퇴치 속도 증가",
+                "퇴치속도%증가"),
+            new GachaUpgradeExpectation(
+                "UPGRADE29",
+                "피버 타임 n초 증가",
+                "피버 타임 증가",
+                "SEC"),
+            new GachaUpgradeExpectation(
+                "UPGRADE30",
+                "최대 줄서기 손님 n명 증가",
+                "최대 줄서기 손님 증가",
+                "인원 증가")
+        };
+
         [MenuItem(MenuPath)]
-        private static void ValidateFinal17DataPack()
+        private static void ValidateStaffDataPack()
         {
             string initialDirectory = Directory.GetParent(Application.dataPath) != null
                 ? Directory.GetParent(Application.dataPath).FullName
                 : Application.dataPath;
             string selectedFolder = EditorUtility.OpenFolderPanel(
-                "Final17 공식 데이터 폴더 선택",
+                "Staff 공식 데이터 폴더 선택",
                 initialDirectory,
                 string.Empty);
 
             if (string.IsNullOrWhiteSpace(selectedFolder))
             {
                 UnityEngine.Debug.LogWarning(
-                    "[Final17 Staff Data Validation]\n폴더 선택이 취소되어 검증하지 않았습니다.");
+                    "[Staff Data Pack Validation]\n폴더 선택이 취소되어 검증하지 않았습니다.");
                 return;
             }
 
             ValidationReport report = new ValidationReport();
             StringBuilder output = new StringBuilder();
-            output.AppendLine("[Final17 Staff Data Validation]");
+            output.AppendLine("[Staff Data Pack Validation]");
             output.AppendLine();
             output.AppendLine("1. 선택한 폴더: " + selectedFolder);
 
@@ -200,6 +284,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 report,
                 out policies);
 
+            CheckResult gachaUpgradeTypeResult = ValidateGachaUpgradeType(
+                tables,
+                tableErrors,
+                report);
+
             CheckResult crossReferenceResult = ValidateCrossReferences(
                 finalRows,
                 skillIds,
@@ -220,22 +309,24 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             output.AppendLine("   데이터 간 교차검증: " + (crossReferenceResult.Passed ? "PASS" : "FAIL"));
             AppendDetails(output, crossReferenceResult.Details);
 
-            output.AppendLine("15. 경고 수: " + report.WarningCount);
+            AppendCheck(output, 15, "GOTCHA UpgradeType 검증", gachaUpgradeTypeResult);
+
+            output.AppendLine("16. 경고 수: " + report.WarningCount);
             for (int i = 0; i < report.Warnings.Count; i++)
             {
                 output.AppendLine("   WARNING: " + report.Warnings[i]);
             }
 
-            output.AppendLine("16. 오류 수: " + report.ErrorCount);
+            output.AppendLine("17. 오류 수: " + report.ErrorCount);
             for (int i = 0; i < report.Errors.Count; i++)
             {
                 output.AppendLine("   ERROR: " + report.Errors[i]);
             }
 
             bool passed = report.ErrorCount == 0;
-            output.AppendLine("17. 최종 결과: " + (passed ? "PASS" : "FAIL"));
+            output.AppendLine("18. 최종 결과: " + (passed ? "PASS" : "FAIL"));
             output.AppendLine();
-            output.AppendLine("FINAL17 DATA PACK VALIDATION: " + (passed ? "PASS" : "FAIL"));
+            output.AppendLine("STAFF DATA PACK VALIDATION: " + (passed ? "PASS" : "FAIL"));
 
             if (passed)
             {
@@ -331,12 +422,13 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             if (ignoredPaths.Count == 0)
             {
-                result.AddDetail("- 공식 8개 외 CSV: 없음");
+                result.AddDetail("- 공식 " + OfficialFiles.Length + "개 외 CSV: 없음");
             }
             else
             {
-                report.Warning("공식 8개 외 CSV " + ignoredPaths.Count + "개를 무시했습니다.");
-                result.AddDetail("- 공식 8개 외 CSV(검증에서 무시): " + ignoredPaths.Count + "개");
+                report.Warning("공식 " + OfficialFiles.Length + "개 외 CSV " + ignoredPaths.Count + "개를 무시했습니다.");
+                result.AddDetail(
+                    "- 공식 " + OfficialFiles.Length + "개 외 CSV(검증에서 무시): " + ignoredPaths.Count + "개");
                 for (int i = 0; i < ignoredPaths.Count; i++)
                 {
                     result.AddDetail("  · " + ignoredPaths[i]);
@@ -1311,6 +1403,331 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             return result;
         }
 
+        private static CheckResult ValidateGachaUpgradeType(
+            Dictionary<string, CsvTable> tables,
+            Dictionary<string, string> tableErrors,
+            ValidationReport report)
+        {
+            CheckResult result = new CheckResult();
+            CsvTable table;
+            if (!TryGetTable(
+                    "GachaUpgradeType",
+                    "Final03 GOTCHA UpgradeType",
+                    tables,
+                    tableErrors,
+                    result,
+                    report,
+                    out table))
+            {
+                return result;
+            }
+
+            ValidateColumnCounts(table, "Final03 GOTCHA UpgradeType", result, report);
+
+            bool headersValid = RequireHeaders(
+                table,
+                GachaUpgradeTypeHeaders,
+                "Final03 GOTCHA UpgradeType",
+                result,
+                report);
+            if (table.Headers.Count != GachaUpgradeTypeHeaders.Length)
+            {
+                result.Fail(
+                    report,
+                    "Final03 GOTCHA UpgradeType 헤더는 정확히 " + GachaUpgradeTypeHeaders.Length
+                    + "개여야 하지만 실제로는 " + table.Headers.Count + "개입니다.");
+                headersValid = false;
+            }
+
+            int comparableHeaderCount = Math.Min(table.Headers.Count, GachaUpgradeTypeHeaders.Length);
+            for (int headerIndex = 0; headerIndex < comparableHeaderCount; headerIndex++)
+            {
+                string actualHeader = table.Headers[headerIndex] ?? string.Empty;
+                string expectedHeader = GachaUpgradeTypeHeaders[headerIndex];
+                if (!string.Equals(actualHeader, actualHeader.Trim(), StringComparison.Ordinal))
+                {
+                    result.Fail(
+                        report,
+                        "Final03 GOTCHA UpgradeType 헤더 " + (headerIndex + 1) + "에 앞뒤 공백이 있습니다: "
+                        + actualHeader);
+                    headersValid = false;
+                }
+
+                if (!string.Equals(actualHeader, expectedHeader, StringComparison.Ordinal))
+                {
+                    result.Fail(
+                        report,
+                        "Final03 GOTCHA UpgradeType 헤더 순서 또는 값이 다릅니다. 위치 " + (headerIndex + 1)
+                        + ", 예상 '" + expectedHeader + "', 실제 '" + actualHeader + "'");
+                    headersValid = false;
+                }
+            }
+
+            if (!headersValid)
+            {
+                return result;
+            }
+
+            if (table.Rows.Count != 30)
+            {
+                result.Fail(
+                    report,
+                    "Final03 GOTCHA UpgradeType 데이터 행은 30행이어야 하지만 실제로는 "
+                    + table.Rows.Count + "행입니다.");
+            }
+
+            Dictionary<string, int> idCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int rowIndex = 0; rowIndex < table.Rows.Count; rowIndex++)
+            {
+                List<string> row = table.Rows[rowIndex];
+                int physicalRow = rowIndex + 2;
+
+                for (int cellIndex = 0; cellIndex < row.Count; cellIndex++)
+                {
+                    string cell = row[cellIndex] ?? string.Empty;
+                    if (!string.Equals(cell, cell.Trim(), StringComparison.Ordinal))
+                    {
+                        string columnName = cellIndex < table.Headers.Count
+                            ? table.Headers[cellIndex]
+                            : "추가 열 " + (cellIndex + 1);
+                        result.Fail(
+                            report,
+                            "Final03 GOTCHA UpgradeType " + physicalRow + "행 '" + columnName
+                            + "' 셀에 앞뒤 공백이 있습니다.");
+                    }
+                }
+
+                string id = table.Get(row, "강화 TYPE ID");
+                string detail = table.Get(row, "강화 내용(숫자는 초록색으로 색 변경)");
+                string summary = table.Get(row, "강화");
+                string unit = table.Get(row, "단위");
+
+                if (string.IsNullOrEmpty(id))
+                {
+                    result.Fail(report, "Final03 GOTCHA UpgradeType " + physicalRow + "행의 강화 TYPE ID가 비어 있습니다.");
+                }
+                else
+                {
+                    int existingCount;
+                    idCounts.TryGetValue(id, out existingCount);
+                    idCounts[id] = existingCount + 1;
+                }
+
+                if (string.IsNullOrEmpty(detail))
+                {
+                    result.Fail(report, "Final03 GOTCHA UpgradeType " + physicalRow + "행의 상세 설명이 비어 있습니다.");
+                }
+
+                if (string.IsNullOrEmpty(summary))
+                {
+                    result.Fail(report, "Final03 GOTCHA UpgradeType " + physicalRow + "행의 요약이 비어 있습니다.");
+                }
+
+                if (string.IsNullOrEmpty(unit))
+                {
+                    result.Fail(report, "Final03 GOTCHA UpgradeType " + physicalRow + "행의 단위가 비어 있습니다.");
+                }
+
+                if (unit.IndexOf('\'') >= 0 || unit.IndexOf('"') >= 0)
+                {
+                    result.Fail(
+                        report,
+                        "Final03 GOTCHA UpgradeType " + physicalRow
+                        + "행의 단위 셀 값에 작은따옴표 또는 쌍따옴표 문자가 포함되어 있습니다: " + unit);
+                }
+
+                int upgradeNumber;
+                if (!TryParseGachaUpgradeNumber(id, out upgradeNumber))
+                {
+                    result.Fail(
+                        report,
+                        "Final03 GOTCHA UpgradeType " + physicalRow
+                        + "행의 ID 형식이 UPGRADE 두 자리 숫자 형식이 아닙니다: " + id);
+                    continue;
+                }
+
+                if (upgradeNumber < 1 || upgradeNumber > 30)
+                {
+                    result.Fail(
+                        report,
+                        "Final03 GOTCHA UpgradeType에 허용 범위 UPGRADE01~UPGRADE30을 벗어난 ID가 있습니다: " + id);
+                    continue;
+                }
+
+                string expectedUnit = GetExpectedGachaUpgradeUnit(upgradeNumber);
+                if (!string.Equals(unit, expectedUnit, StringComparison.Ordinal))
+                {
+                    result.Fail(
+                        report,
+                        id + " 단위가 다릅니다. 예상 '" + expectedUnit + "', 실제 '" + unit + "'");
+                }
+
+                if (unit == "+sec" || unit == "+SEC" || unit == "+속도%")
+                {
+                    result.Fail(report, id + "에 과거의 잘못된 단위값이 존재합니다: " + unit);
+                }
+
+                GachaUpgradeExpectation expectation = FindGachaUpgradeExpectation(id);
+                if (expectation != null)
+                {
+                    ValidateGachaUpgradeExpectation(
+                        expectation,
+                        detail,
+                        summary,
+                        unit,
+                        result,
+                        report);
+                }
+
+                if (id == "UPGRADE25")
+                {
+                    string allCells = string.Join("|", row.ToArray());
+                    if (allCells.IndexOf("매니저", StringComparison.Ordinal) >= 0
+                        || allCells.IndexOf("Manager", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        result.Fail(report, "UPGRADE25에 과거 매니저 이동속도 연결 문구가 존재합니다.");
+                    }
+                }
+                else if (id == "UPGRADE28")
+                {
+                    if (detail.IndexOf("가드 스텝 이동 속도", StringComparison.Ordinal) >= 0
+                        || summary.IndexOf("가드 이동 속도 증가", StringComparison.Ordinal) >= 0
+                        || unit.IndexOf("이동속도", StringComparison.Ordinal) >= 0)
+                    {
+                        result.Fail(report, "UPGRADE28에 과거 가드 이동속도 정의가 존재합니다.");
+                    }
+                }
+                else if (id == "UPGRADE29")
+                {
+                    if (detail.IndexOf("피버 타임 n% 증가", StringComparison.Ordinal) >= 0
+                        || unit.IndexOf("시간%증가", StringComparison.Ordinal) >= 0
+                        || unit.IndexOf("속도%증가", StringComparison.Ordinal) >= 0)
+                    {
+                        result.Fail(report, "UPGRADE29에 과거 퍼센트 또는 속도 단위 정의가 존재합니다.");
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<string, int> pair in idCounts)
+            {
+                if (pair.Value > 1)
+                {
+                    result.Fail(report, "Final03 GOTCHA UpgradeType ID가 중복되었습니다: " + pair.Key);
+                }
+            }
+
+            for (int number = 1; number <= 30; number++)
+            {
+                string expectedId = "UPGRADE" + number.ToString("00", CultureInfo.InvariantCulture);
+                int count;
+                if (!idCounts.TryGetValue(expectedId, out count) || count != 1)
+                {
+                    result.Fail(report, expectedId + "가 정확히 1행 존재하지 않습니다.");
+                }
+            }
+
+            result.AddDetail("- 정확한 헤더 5개와 데이터 30행 검사 완료");
+            result.AddDetail("- UPGRADE01~UPGRADE30 연속성·중복·누락 검사 완료");
+            result.AddDetail("- 단위 그룹 및 셀 앞뒤 공백·실제 따옴표 문자 검사 완료");
+            result.AddDetail("- UPGRADE18~UPGRADE30 상세·요약·단위 의미 검사 완료");
+            result.AddDetail("- UPGRADE25 매니저 매핑 및 UPGRADE28 가드 이동속도 재유입 차단 확인");
+            return result;
+        }
+
+        private static bool TryParseGachaUpgradeNumber(string id, out int number)
+        {
+            number = 0;
+            return !string.IsNullOrEmpty(id)
+                   && id.Length == 9
+                   && id.StartsWith("UPGRADE", StringComparison.Ordinal)
+                   && int.TryParse(
+                       id.Substring(7, 2),
+                       NumberStyles.None,
+                       CultureInfo.InvariantCulture,
+                       out number);
+        }
+
+        private static string GetExpectedGachaUpgradeUnit(int upgradeNumber)
+        {
+            if (upgradeNumber == 1)
+            {
+                return "이동속도%";
+            }
+
+            if (upgradeNumber <= 9)
+            {
+                return "시간%단축";
+            }
+
+            if (upgradeNumber <= 17)
+            {
+                return "코인 수익%증가";
+            }
+
+            if (upgradeNumber <= 24)
+            {
+                return "지속시간%증가";
+            }
+
+            if (upgradeNumber <= 27)
+            {
+                return "이동속도%증가";
+            }
+
+            if (upgradeNumber == 28)
+            {
+                return "퇴치속도%증가";
+            }
+
+            return upgradeNumber == 29 ? "SEC" : "인원 증가";
+        }
+
+        private static GachaUpgradeExpectation FindGachaUpgradeExpectation(string id)
+        {
+            for (int index = 0; index < GachaUpgradeExpectations.Length; index++)
+            {
+                if (string.Equals(GachaUpgradeExpectations[index].Id, id, StringComparison.Ordinal))
+                {
+                    return GachaUpgradeExpectations[index];
+                }
+            }
+
+            return null;
+        }
+
+        private static void ValidateGachaUpgradeExpectation(
+            GachaUpgradeExpectation expectation,
+            string detail,
+            string summary,
+            string unit,
+            CheckResult result,
+            ValidationReport report)
+        {
+            if (!string.Equals(detail, expectation.Detail, StringComparison.Ordinal))
+            {
+                result.Fail(
+                    report,
+                    expectation.Id + " 상세 설명이 다릅니다. 예상 '" + expectation.Detail
+                    + "', 실제 '" + detail + "'");
+            }
+
+            if (!string.Equals(summary, expectation.Summary, StringComparison.Ordinal))
+            {
+                result.Fail(
+                    report,
+                    expectation.Id + " 요약이 다릅니다. 예상 '" + expectation.Summary
+                    + "', 실제 '" + summary + "'");
+            }
+
+            if (!string.Equals(unit, expectation.Unit, StringComparison.Ordinal))
+            {
+                result.Fail(
+                    report,
+                    expectation.Id + " 핵심 의미 단위가 다릅니다. 예상 '" + expectation.Unit
+                    + "', 실제 '" + unit + "'");
+            }
+        }
+
         private static CheckResult ValidateCrossReferences(
             List<FinalStaffRow> finalRows,
             HashSet<string> skillIds,
@@ -2103,6 +2520,22 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 }
 
                 return records;
+            }
+        }
+
+        private sealed class GachaUpgradeExpectation
+        {
+            public readonly string Id;
+            public readonly string Detail;
+            public readonly string Summary;
+            public readonly string Unit;
+
+            public GachaUpgradeExpectation(string id, string detail, string summary, string unit)
+            {
+                Id = id;
+                Detail = detail;
+                Summary = summary;
+                Unit = unit;
             }
         }
 
