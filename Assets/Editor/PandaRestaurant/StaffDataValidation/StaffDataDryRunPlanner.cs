@@ -234,17 +234,6 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     false));
             }
 
-            if (official.RoleKey == "CHEF")
-            {
-                issues.Add(Issue(
-                    "CHEF_ADD_SPEED_SCHEMA_REQUIRED",
-                    official.Id,
-                    StaffDryRunFieldDisposition.RUNTIME_SCHEMA_REQUIRED,
-                    "Chef level data has no dedicated movement-speed growth field.",
-                    false,
-                    true));
-            }
-
             if (official.Id == "STAFF02" && current.LevelCount == 6)
             {
                 issues.Add(Issue(
@@ -291,17 +280,6 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             AddUpgradeCostPlans(fields, null, official, context, create);
             AddFutureSystemPlans(fields, official);
             AddLegacyMetadataPlans(fields, legacy);
-
-            if (official.RoleKey == "CHEF")
-            {
-                issues.Add(Issue(
-                    "CHEF_ADD_SPEED_SCHEMA_REQUIRED",
-                    official.Id,
-                    StaffDryRunFieldDisposition.RUNTIME_SCHEMA_REQUIRED,
-                    "Chef level data needs a dedicated movement-speed growth field before Apply.",
-                    false,
-                    true));
-            }
 
             StaffDataDryRunSkillPlan skill = BuildNewSkillPlan(context, official, issues);
             StaffDataDryRunVisualPlan visual = BuildNewVisualPlan(context, official, legacy, issues);
@@ -655,13 +633,13 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                         context.GetRoleBase(official, "COOKING_EFFICIENCY").BaseValue,
                         normalDisposition,
                         current != null);
-                    fields.Add(new StaffDataDryRunFieldPlan(
+                    mismatch |= AddRoleNumberField(
+                        fields,
                         "Levels[" + levelIndex + "]._addSpeed",
-                        string.Empty,
-                        FormatNumber(growth[levelIndex]),
-                        StaffDryRunFieldDisposition.RUNTIME_SCHEMA_REQUIRED,
-                        true,
-                        "Dedicated Chef movement-speed growth field does not exist yet."));
+                        NullableNumber(currentLevel != null ? currentLevel.AddSpeed : null),
+                        growth[levelIndex],
+                        normalDisposition,
+                        current != null);
                 }
                 else if (official.RoleKey == "MANAGER")
                 {
@@ -1083,13 +1061,33 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireSkillNumberMismatch(existing, true, 28, "current skill duration mismatch", errors);
             RequireSkillNumberMismatch(existing, false, 28, "current skill cooldown mismatch", errors);
             RequireIssueCount(existing, "EXISTING_SKILL_CLASS_MISMATCH", 17, errors);
-            RequireIssueCount(existing, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 7, errors);
+            RequireIssueCount(existing, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 0, errors);
             RequireIssueCount(existing, "STAFF02_LEVEL6_SAVE_MIGRATION_REQUIRED", 1, errors);
+            RequireReadinessCount(
+                existing,
+                StaffDryRunReadiness.PLAN_READY_WITH_WARNINGS,
+                14,
+                errors);
+            RequireReadinessCount(existing, StaffDryRunReadiness.SKILL_CLASS_REQUIRED, 17, errors);
+            RequireReadinessCount(existing, StaffDryRunReadiness.SAVE_MIGRATION_REQUIRED, 1, errors);
+            RequireReadinessCount(existing, StaffDryRunReadiness.RUNTIME_SCHEMA_REQUIRED, 0, errors);
+            RequireReadinessCount(
+                existing,
+                StaffDryRunReadiness.MULTIPLE_PREREQUISITES_REQUIRED,
+                0,
+                errors);
 
             RequireIssueCount(created, "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED", 22, errors);
-            RequireIssueCount(created, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 16, errors);
-            RequireNewPrerequisiteUnion(created, 28, errors);
-            RequireReadinessCount(created, StaffDryRunReadiness.ASSET_PLAN_READY, 32, errors);
+            RequireIssueCount(created, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 0, errors);
+            RequireNewPrerequisiteUnion(created, 22, errors);
+            RequireReadinessCount(created, StaffDryRunReadiness.ASSET_PLAN_READY, 38, errors);
+            RequireReadinessCount(created, StaffDryRunReadiness.SKILL_CLASS_REQUIRED, 22, errors);
+            RequireReadinessCount(created, StaffDryRunReadiness.RUNTIME_SCHEMA_REQUIRED, 0, errors);
+            RequireReadinessCount(
+                created,
+                StaffDryRunReadiness.MULTIPLE_PREREQUISITES_REQUIRED,
+                0,
+                errors);
             RequireIdlePolicyCount(created, "USE_LEGACY_IDLE_FRAMES", 36, errors);
             RequireIdlePolicyCount(
                 created,

@@ -85,6 +85,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             result.Set(14, ValidateDeepImmutability(first, result));
             result.Set(15, ValidateNonDestructiveImplementation(first, second, result));
             CountWarningsAndPrerequisites(first, result);
+            Require(result.WarningCount == 65, "Plan warning baseline changed.", result);
+            Require(result.PrerequisiteCount == 40, "Plan prerequisite baseline changed.", result);
+            Require(CountChangedFields(first) == 2146, "Changed-field baseline changed.", result);
             return result;
         }
 
@@ -304,7 +307,15 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         {
             int existingGap = 0;
             int newGap = 0;
+            int schemaIssueCount = CountIssues(plan, "CHEF_ADD_SPEED_SCHEMA_REQUIRED");
+            int addSpeedFieldCount = 0;
+            int existingAddSpeedFieldCount = 0;
+            int newAddSpeedFieldCount = 0;
+            int existingUnchangedLevelOneCount = 0;
+            int existingChangedHigherLevelCount = 0;
             int repurposedFoodField = 0;
+            string[] targets = { "0", "0.5", "1", "1.5", "2" };
+            bool valid = true;
             for (int index = 0; index < plan.StaffPlans.Count; index++)
             {
                 StaffDataDryRunStaffPlan staff = plan.StaffPlans[index];
@@ -317,9 +328,60 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 existingGap += gap && staff.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING ? 1 : 0;
                 newGap += gap && staff.AssetAction == StaffDryRunAssetAction.CREATE_NEW ? 1 : 0;
                 repurposedFoodField += HasRepurposedChefFoodField(staff) ? 1 : 0;
+
+                int staffAddSpeedFieldCount = 0;
+                HashSet<int> addSpeedLevels = new HashSet<int>();
+                for (int fieldIndex = 0; fieldIndex < staff.FieldPlans.Count; fieldIndex++)
+                {
+                    StaffDataDryRunFieldPlan field = staff.FieldPlans[fieldIndex];
+                    if (!field.FieldPath.EndsWith("._addSpeed", StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    int levelIndex;
+                    if (!TryGetLevelIndex(field.FieldPath, out levelIndex))
+                    {
+                        valid = false;
+                        continue;
+                    }
+
+                    addSpeedFieldCount++;
+                    staffAddSpeedFieldCount++;
+                    valid &= addSpeedLevels.Add(levelIndex)
+                             && field.TargetValue == targets[levelIndex];
+                    if (staff.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING)
+                    {
+                        existingAddSpeedFieldCount++;
+                        valid &= field.CurrentValue == "0"
+                                 && field.Disposition
+                                 == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
+                                 && field.IsChanged == (levelIndex > 0);
+                        existingUnchangedLevelOneCount += levelIndex == 0 && !field.IsChanged ? 1 : 0;
+                        existingChangedHigherLevelCount += levelIndex > 0 && field.IsChanged ? 1 : 0;
+                    }
+                    else
+                    {
+                        newAddSpeedFieldCount++;
+                        valid &= field.CurrentValue == string.Empty
+                                 && field.Disposition
+                                 == StaffDryRunFieldDisposition.AUTO_CREATE_NEW
+                                 && field.IsChanged;
+                    }
+                }
+
+                valid &= staffAddSpeedFieldCount == 5 && addSpeedLevels.Count == 5;
             }
 
-            bool valid = existingGap == 7 && newGap == 16 && repurposedFoodField == 0;
+            valid &= existingGap == 0
+                     && newGap == 0
+                     && schemaIssueCount == 0
+                     && addSpeedFieldCount == 115
+                     && existingAddSpeedFieldCount == 35
+                     && newAddSpeedFieldCount == 80
+                     && existingUnchangedLevelOneCount == 7
+                     && existingChangedHigherLevelCount == 28
+                     && repurposedFoodField == 0;
             return Require(valid, "Chef movement-speed schema plan is incomplete or repurposes cooking efficiency.", result);
         }
 
@@ -445,7 +507,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             ValidationResult result)
         {
             bool valid = first.PlanningPolicyVersion
-                         == "STAFF_DRY_RUN_POLICY_2026_08_11_V2"
+                         == "STAFF_DRY_RUN_POLICY_2026_08_11_V3"
                          && IsSha256(first.PlanFingerprint)
                          && first.PlanFingerprint == second.PlanFingerprint;
             return Require(valid, "Plan fingerprint or policy version is invalid.", result);
@@ -701,7 +763,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             output.AppendLine("- 전체 92명 / 기존 32명 / 신규 60명");
             output.AppendLine("- 자동 값 계획: " + CountChangedFields(plan));
             output.AppendLine("- Skill 선행 구현 필요: " + CountStaffWithSkillPrerequisite(plan));
-            output.AppendLine("- Chef 구조 선행 구현 필요: 23");
+            output.AppendLine(
+                "- Chef 구조 선행 구현 필요: "
+                + CountIssues(plan, "CHEF_ADD_SPEED_SCHEMA_REQUIRED"));
             output.AppendLine("- Save Migration 필요: 1");
             output.AppendLine("- PandaToken·획득 후속 시스템 필요: 92");
             output.AppendLine("- PlanningPolicyVersion: " + plan.PlanningPolicyVersion);
@@ -824,6 +888,26 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             return false;
+        }
+
+        private static int CountIssues(StaffDataDryRunPlanSnapshot plan, string code)
+        {
+            int count = 0;
+            for (int index = 0; index < plan.GlobalIssues.Count; index++)
+            {
+                count += plan.GlobalIssues[index].Code == code ? 1 : 0;
+            }
+
+            for (int planIndex = 0; planIndex < plan.StaffPlans.Count; planIndex++)
+            {
+                IReadOnlyList<StaffDataDryRunIssue> issues = plan.StaffPlans[planIndex].Issues;
+                for (int issueIndex = 0; issueIndex < issues.Count; issueIndex++)
+                {
+                    count += issues[issueIndex].Code == code ? 1 : 0;
+                }
+            }
+
+            return count;
         }
 
         private static bool HasDisposition(

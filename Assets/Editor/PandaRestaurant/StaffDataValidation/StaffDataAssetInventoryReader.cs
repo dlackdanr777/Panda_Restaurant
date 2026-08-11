@@ -841,7 +841,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     role = new RoleDefinition(
                         "CHEF",
                         "_chefLevelData",
-                        null,
+                        "_addSpeed",
                         null,
                         "_foodSpeedAddPercent");
                     return true;

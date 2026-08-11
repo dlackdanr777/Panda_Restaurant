@@ -273,7 +273,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             int staff02SixCount = 0;
             int normalFiveCount = 0;
             int unexpectedLevelCount = 0;
+            int chefCount = 0;
+            int chefFieldCount = 0;
             int chefFieldGapCount = 0;
+            int chefAddSpeedValueCount = 0;
+            int chefAddSpeedZeroCount = 0;
+            int chefAddSpeedMissingCount = 0;
+            int chefAddSpeedInvalidCount = 0;
+            int chefAddSpeedNonZeroCount = 0;
             for (int index = 0; index < snapshot.Staff.Count; index++)
             {
                 StaffDataAssetSnapshot staff = snapshot.Staff[index];
@@ -298,10 +305,41 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     unexpectedLevelCount++;
                 }
 
-                if (string.Equals(staff.ConcreteTypeName, "ChefData", StringComparison.Ordinal)
-                    && !staff.HasChefAddSpeedField)
+                if (string.Equals(staff.ConcreteTypeName, "ChefData", StringComparison.Ordinal))
                 {
-                    chefFieldGapCount++;
+                    chefCount++;
+                    if (staff.HasChefAddSpeedField)
+                    {
+                        chefFieldCount++;
+                    }
+                    else
+                    {
+                        chefFieldGapCount++;
+                    }
+
+                    for (int levelIndex = 0; levelIndex < staff.Levels.Count; levelIndex++)
+                    {
+                        float? addSpeed = staff.Levels[levelIndex].AddSpeed;
+                        if (!addSpeed.HasValue)
+                        {
+                            chefAddSpeedMissingCount++;
+                            continue;
+                        }
+
+                        chefAddSpeedValueCount++;
+                        if (float.IsNaN(addSpeed.Value) || float.IsInfinity(addSpeed.Value))
+                        {
+                            chefAddSpeedInvalidCount++;
+                        }
+                        else if (addSpeed.Value == 0f)
+                        {
+                            chefAddSpeedZeroCount++;
+                        }
+                        else
+                        {
+                            chefAddSpeedNonZeroCount++;
+                        }
+                    }
                 }
             }
 
@@ -314,16 +352,32 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 passed = false;
             }
 
-            if (chefFieldGapCount != 7)
+            if (chefCount != 7
+                || chefFieldCount != 7
+                || chefFieldGapCount != 0
+                || chefAddSpeedValueCount != 35
+                || chefAddSpeedZeroCount != 35
+                || chefAddSpeedMissingCount != 0
+                || chefAddSpeedInvalidCount != 0
+                || chefAddSpeedNonZeroCount != 0)
             {
-                errors.Add("Chef AddSpeed 필드 부재 수가 다릅니다. 예상 7, 실제 " + chefFieldGapCount);
+                errors.Add(
+                    "Chef AddSpeed schema baseline changed. Chef/field/value/zero/missing/invalid/non-zero: "
+                    + chefCount + "/" + chefFieldCount + "/" + chefAddSpeedValueCount + "/"
+                    + chefAddSpeedZeroCount + "/" + chefAddSpeedMissingCount + "/"
+                    + chefAddSpeedInvalidCount + "/" + chefAddSpeedNonZeroCount + ".");
                 passed = false;
             }
 
             details.Add("- KNOWN_MIGRATION_REQUIRED: STAFF02 레벨 배열 6칸");
             details.Add("- 나머지 StaffData 레벨 배열 5칸: " + normalFiveCount + "명");
-            details.Add("- KNOWN_RUNTIME_FIELD_GAP: Chef AddSpeed 필드 없음 "
-                        + chefFieldGapCount + "명");
+            details.Add("- Chef AddSpeed 필드 존재: " + chefFieldCount + "/7");
+            details.Add("- Chef AddSpeed 필드 부재: " + chefFieldGapCount);
+            details.Add("- Chef AddSpeed 값 존재: " + chefAddSpeedValueCount + "/35");
+            details.Add("- 기존 Chef AddSpeed 기본값 0: " + chefAddSpeedZeroCount + "/35");
+            details.Add("- Chef AddSpeed Missing/비정상/비영: "
+                        + chefAddSpeedMissingCount + "/" + chefAddSpeedInvalidCount + "/"
+                        + chefAddSpeedNonZeroCount);
             return passed;
         }
 
