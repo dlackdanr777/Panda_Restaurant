@@ -15,6 +15,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
     {
         private const string MenuPath = "Tools/Panda Restaurant/Staff/Validate Staff Data Pack";
         private const string ExpectedBranch = "26/08/06_CodexTest_01(Staff-Skill-01)";
+        private const string ReservedUnusedSlotACode = "RESERVED_UNUSED_SLOT_A";
+        private const string ReservedUnusedSlotADescription = "예약 스킬 슬롯 A (현재 미사용)";
+        private const string ReservedUnusedSlotBCode = "RESERVED_UNUSED_SLOT_B";
+        private const string ReservedUnusedSlotBDescription = "예약 스킬 슬롯 B (현재 미사용)";
 
         private static readonly OfficialFileSpec[] OfficialFiles =
         {
@@ -63,7 +67,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             new OfficialFileSpec(
                 "SkillType",
                 "StaffSkillType",
-                "588da08e86387f33758a394d79c85cd37fe7e630b59d02b3a80d02dab4034854",
+                "26fdb35b14296418c094a929ddaa040ba94d24ebd20108adab4aaad666b46ad7",
                 11,
                 ExpectedEncoding.Cp949),
             new OfficialFileSpec(
@@ -887,6 +891,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             ValidateColumnCounts(table, "StaffSkillType", result, report);
             Dictionary<string, int> counts = new Dictionary<string, int>(StringComparer.Ordinal);
+            Dictionary<string, string> descriptions = new Dictionary<string, string>(StringComparer.Ordinal);
             int idLessRows = 0;
 
             for (int rowIndex = 0; rowIndex < table.Rows.Count; rowIndex++)
@@ -909,6 +914,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 int count;
                 counts.TryGetValue(id, out count);
                 counts[id] = count + 1;
+                if (!descriptions.ContainsKey(id))
+                {
+                    descriptions.Add(id, description);
+                }
                 skillIds.Add(id);
             }
 
@@ -936,19 +945,127 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 }
             }
 
+            string reservedDescription;
+            if (!descriptions.TryGetValue("STAFF_SKILL02", out reservedDescription)
+                || !string.Equals(
+                    reservedDescription,
+                    ReservedUnusedSlotADescription,
+                    StringComparison.Ordinal))
+            {
+                result.Fail(
+                    report,
+                    "STAFF_SKILL02 설명은 '" + ReservedUnusedSlotADescription + "'이어야 합니다.");
+            }
+
+            if (!descriptions.TryGetValue("STAFF_SKILL07", out reservedDescription)
+                || !string.Equals(
+                    reservedDescription,
+                    ReservedUnusedSlotBDescription,
+                    StringComparison.Ordinal))
+            {
+                result.Fail(
+                    report,
+                    "STAFF_SKILL07 설명은 '" + ReservedUnusedSlotBDescription + "'이어야 합니다.");
+            }
+
+            Dictionary<string, int> expectedReferenceCounts = new Dictionary<string, int>(StringComparer.Ordinal)
+            {
+                { "STAFF_SKILL01", 34 },
+                { "STAFF_SKILL02", 0 },
+                { "STAFF_SKILL03", 15 },
+                { "STAFF_SKILL04", 13 },
+                { "STAFF_SKILL05", 10 },
+                { "STAFF_SKILL06", 3 },
+                { "STAFF_SKILL07", 0 },
+                { "STAFF_SKILL08", 10 },
+                { "STAFF_SKILL09", 2 },
+                { "STAFF_SKILL10", 5 }
+            };
+            Dictionary<string, int> referenceCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (string skillId in expectedReferenceCounts.Keys)
+            {
+                referenceCounts.Add(skillId, 0);
+            }
+
+            int undefinedReferenceCount = 0;
             for (int i = 0; i < finalRows.Count; i++)
             {
                 if (!skillIds.Contains(finalRows[i].SkillId))
                 {
+                    undefinedReferenceCount++;
                     result.Fail(
                         report,
                         finalRows[i].Id + "가 참조하는 스킬이 StaffSkillType에 없습니다: " + finalRows[i].SkillId);
+                    continue;
                 }
+
+                int referenceCount;
+                if (referenceCounts.TryGetValue(finalRows[i].SkillId, out referenceCount))
+                {
+                    referenceCounts[finalRows[i].SkillId] = referenceCount + 1;
+                }
+                else
+                {
+                    undefinedReferenceCount++;
+                    result.Fail(
+                        report,
+                        finalRows[i].Id + "가 공식 범위를 벗어난 스킬을 참조합니다: " + finalRows[i].SkillId);
+                }
+            }
+
+            foreach (KeyValuePair<string, int> pair in expectedReferenceCounts)
+            {
+                int actualReferenceCount = referenceCounts[pair.Key];
+                if (actualReferenceCount != pair.Value)
+                {
+                    result.Fail(
+                        report,
+                        pair.Key + " Final17 참조 수가 다릅니다. 예상: " + pair.Value
+                        + ", 실제: " + actualReferenceCount);
+                }
+            }
+
+            int officialDefinitionCount = counts.Count(
+                pair => IsOfficialSkillId(pair.Key) && pair.Value == 1);
+            int usedSkillCount = referenceCounts.Values.Count(referenceCount => referenceCount > 0);
+            int reservedSkillCount = referenceCounts.Values.Count(referenceCount => referenceCount == 0);
+            int totalReferenceCount = referenceCounts.Values.Sum();
+            if (officialDefinitionCount != 10)
+            {
+                result.Fail(
+                    report,
+                    "정식 Skill 정의 수가 다릅니다. 예상: 10, 실제: " + officialDefinitionCount);
+            }
+
+            if (usedSkillCount != 8 || reservedSkillCount != 2)
+            {
+                result.Fail(
+                    report,
+                    "Skill 사용 상태 수가 다릅니다. 사용 중 예상/실제: 8/" + usedSkillCount
+                    + ", 예약 예상/실제: 2/" + reservedSkillCount);
+            }
+
+            if (totalReferenceCount != 92 || totalReferenceCount != finalRows.Count)
+            {
+                result.Fail(
+                    report,
+                    "전체 Staff Skill 참조 수가 다릅니다. 예상: 92, 실제: " + totalReferenceCount);
             }
 
             result.AddDetail("- STAFF_SKILL01~STAFF_SKILL10 각각 1행 확인");
             result.AddDetail("- ID 없는 데이터 행: " + idLessRows);
             result.AddDetail("- Final17 스킬 참조 " + finalRows.Count + "행 검사 완료");
+            result.AddDetail("- 정식 Skill 정의: " + officialDefinitionCount + "개");
+            result.AddDetail("- 사용 중 Skill: " + usedSkillCount + "개");
+            result.AddDetail("- 예약 Skill: " + reservedSkillCount + "개");
+            result.AddDetail(
+                "- STAFF_SKILL02: " + ReservedUnusedSlotACode
+                + " / 참조 " + referenceCounts["STAFF_SKILL02"] + "명");
+            result.AddDetail(
+                "- STAFF_SKILL07: " + ReservedUnusedSlotBCode
+                + " / 참조 " + referenceCounts["STAFF_SKILL07"] + "명");
+            result.AddDetail("- Skill 참조 전체: " + totalReferenceCount + "/92");
+            result.AddDetail("- 누락·미정의 참조: " + undefinedReferenceCount);
             return result;
         }
 
