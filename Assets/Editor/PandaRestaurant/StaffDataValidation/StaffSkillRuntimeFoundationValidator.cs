@@ -37,6 +37,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(17, "Context Percent", ValidateContextPercents);
             report.Run(18, "구조 불변성", ValidateStructure);
             report.Run(19, "비파괴", ValidateNonDestructiveDesign);
+            report.Run(20, "Coordinator 정상 취소", ValidateCoordinatorCancellation);
+            report.Run(21, "Coordinator 중복 취소", ValidateCoordinatorDuplicateCancellation);
+            report.Run(22, "Deactivate 예외 정리", ValidateCoordinatorDeactivateException);
+            report.Run(23, "Stale Token 정리", ValidateCoordinatorStaleToken);
+            report.Run(24, "Null Action", ValidateCoordinatorNullAction);
+            report.Run(25, "Coordinator 입력 예외", ValidateCoordinatorInputExceptions);
+            report.Run(26, "GameManager Registry 소유 구조", ValidateGameManagerRegistryStructure);
+            report.Run(27, "Staff Runtime Context 연결 구조", ValidateStaffRuntimeStructure);
             report.Print();
         }
 
@@ -494,7 +502,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 typeof(StaffSkillEffectType),
                 typeof(StaffSkillEffectRegistry),
                 typeof(StaffSkillRuntimeContext),
-                typeof(StaffSkillCancellationReason)
+                typeof(StaffSkillCancellationReason),
+                typeof(StaffSkillCancellationCoordinator)
             };
 
             foreach (Type type in pureTypes)
@@ -507,6 +516,300 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
             Require(registry.TotalSourceCount == 0, "Pure construction must not create effect state.");
             Require(!context.IsActive, "Pure construction must not start an activation.");
+        }
+
+        private static void ValidateCoordinatorCancellation()
+        {
+            StaffSkillEffectRegistry registry = new StaffSkillEffectRegistry();
+            StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken token = context.BeginActivation("normal-cancellation");
+            context.SetPersonalMoveBonusPercent(token, 100f);
+            context.SetAssignedCookingBonusPercent(token, 150f);
+            context.AdvanceCustomerCallTimer(token, 0.25f, 0.5f);
+            registry.RegisterOrUpdate(
+                StaffSkillEffectType.AllStaffMovePercent,
+                token,
+                50f,
+                "normal-cancellation");
+            registry.RegisterOrUpdate(
+                StaffSkillEffectType.FoodPricePercent,
+                token,
+                50f,
+                "normal-cancellation");
+
+            int deactivateCount = 0;
+            Exception deactivateException;
+            bool cancelled = StaffSkillCancellationCoordinator.TryCancel(
+                context,
+                registry,
+                token,
+                () => deactivateCount++,
+                out deactivateException);
+
+            Require(cancelled, "The current token must be cancelled.");
+            Require(deactivateCount == 1, "Deactivate must run exactly once.");
+            Require(deactivateException == null, "Successful Deactivate must not return an exception.");
+            Require(registry.TotalSourceCount == 0, "Cancellation must remove every registry source for the token.");
+            Require(!context.IsActive, "Cancellation must leave the context inactive.");
+            Require(!context.CurrentActivationToken.IsValid, "Cancellation must invalidate the current token.");
+            RequireNear(0f, context.PersonalMoveBonusPercent, "Cancellation must clear personal move percent.");
+            RequireNear(0f, context.AssignedCookingBonusPercent, "Cancellation must clear cooking percent.");
+            RequireNear(0f, context.CustomerCallElapsedTime, "Cancellation must clear the customer call timer.");
+        }
+
+        private static void ValidateCoordinatorDuplicateCancellation()
+        {
+            StaffSkillEffectRegistry registry = new StaffSkillEffectRegistry();
+            StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken token = context.BeginActivation("duplicate-cancellation");
+            registry.RegisterOrUpdate(
+                StaffSkillEffectType.GlobalCookingSpeedPercent,
+                token,
+                50f,
+                "duplicate-cancellation");
+
+            int deactivateCount = 0;
+            Exception firstException;
+            Exception secondException;
+            bool firstCancelled = StaffSkillCancellationCoordinator.TryCancel(
+                context,
+                registry,
+                token,
+                () => deactivateCount++,
+                out firstException);
+            bool secondCancelled = StaffSkillCancellationCoordinator.TryCancel(
+                context,
+                registry,
+                token,
+                () => deactivateCount++,
+                out secondException);
+
+            Require(firstCancelled, "The first cancellation must succeed.");
+            Require(!secondCancelled, "The duplicate cancellation must be a safe no-op.");
+            Require(deactivateCount == 1, "Duplicate cancellation must not repeat Deactivate.");
+            Require(firstException == null && secondException == null, "Duplicate cancellation must not return an exception.");
+            Require(registry.TotalSourceCount == 0, "Duplicate cancellation must leave the registry empty.");
+            Require(!context.IsActive, "Duplicate cancellation must leave the context inactive.");
+        }
+
+        private static void ValidateCoordinatorDeactivateException()
+        {
+            StaffSkillEffectRegistry registry = new StaffSkillEffectRegistry();
+            StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken token = context.BeginActivation("deactivate-exception");
+            context.SetPersonalMoveBonusPercent(token, 100f);
+            registry.RegisterOrUpdate(
+                StaffSkillEffectType.NormalCustomerMovePercent,
+                token,
+                100f,
+                "deactivate-exception");
+            InvalidOperationException expectedException =
+                new InvalidOperationException("Expected Deactivate failure.");
+
+            Exception deactivateException;
+            bool cancelled = StaffSkillCancellationCoordinator.TryCancel(
+                context,
+                registry,
+                token,
+                () => { throw expectedException; },
+                out deactivateException);
+
+            Require(cancelled, "Cancellation must complete when Deactivate throws.");
+            Require(ReferenceEquals(expectedException, deactivateException), "The Deactivate exception must be returned unchanged.");
+            Require(registry.TotalSourceCount == 0, "Deactivate failure must not leave registry sources.");
+            Require(!context.IsActive, "Deactivate failure must not leave the context active.");
+            RequireNear(0f, context.PersonalMoveBonusPercent, "Deactivate failure must clear temporary context values.");
+        }
+
+        private static void ValidateCoordinatorStaleToken()
+        {
+            StaffSkillEffectRegistry registry = new StaffSkillEffectRegistry();
+            StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken tokenA = context.BeginActivation("activation-a");
+            Exception firstException;
+            StaffSkillCancellationCoordinator.TryCancel(
+                context,
+                registry,
+                tokenA,
+                null,
+                out firstException);
+            Require(firstException == null, "Activation A cleanup must not return an exception.");
+
+            StaffSkillSourceToken tokenB = context.BeginActivation("activation-b");
+            registry.RegisterOrUpdate(
+                StaffSkillEffectType.FoodPricePercent,
+                tokenA,
+                40f,
+                "stale-a");
+            registry.RegisterOrUpdate(
+                StaffSkillEffectType.FoodPricePercent,
+                tokenB,
+                50f,
+                "current-b");
+
+            int staleDeactivateCount = 0;
+            Exception staleException;
+            bool staleCancelled = StaffSkillCancellationCoordinator.TryCancel(
+                context,
+                registry,
+                tokenA,
+                () => staleDeactivateCount++,
+                out staleException);
+
+            Require(!staleCancelled, "A stale token must not cancel the current activation.");
+            Require(staleDeactivateCount == 0, "A stale token must not run Deactivate.");
+            Require(staleException == null, "A stale cancellation must not return an exception.");
+            Require(!registry.ContainsSource(StaffSkillEffectType.FoodPricePercent, tokenA), "A stale source must be removed.");
+            Require(registry.ContainsSource(StaffSkillEffectType.FoodPricePercent, tokenB), "The current source must remain registered.");
+            Require(context.IsCurrentToken(tokenB), "Activation B must remain current and active.");
+
+            Exception cleanupException;
+            StaffSkillCancellationCoordinator.TryCancel(
+                context,
+                registry,
+                tokenB,
+                null,
+                out cleanupException);
+            Require(cleanupException == null, "Activation B cleanup must not return an exception.");
+        }
+
+        private static void ValidateCoordinatorNullAction()
+        {
+            StaffSkillEffectRegistry registry = new StaffSkillEffectRegistry();
+            StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken token = context.BeginActivation("null-action");
+            registry.RegisterOrUpdate(
+                StaffSkillEffectType.RestaurantTipPayoutPercent,
+                token,
+                50f,
+                "null-action");
+
+            Exception deactivateException;
+            bool cancelled = StaffSkillCancellationCoordinator.TryCancel(
+                context,
+                registry,
+                token,
+                null,
+                out deactivateException);
+
+            Require(cancelled, "A null action must still cancel the current token.");
+            Require(deactivateException == null, "A null action must not create an exception.");
+            Require(registry.TotalSourceCount == 0, "A null action must still clear registry sources.");
+            Require(!context.IsActive, "A null action must still clear the context.");
+        }
+
+        private static void ValidateCoordinatorInputExceptions()
+        {
+            StaffSkillEffectRegistry registry = new StaffSkillEffectRegistry();
+            StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken token = context.BeginActivation("input-exceptions");
+            registry.RegisterOrUpdate(
+                StaffSkillEffectType.AllStaffMovePercent,
+                token,
+                50f,
+                "input-exceptions");
+            Exception ignoredException = null;
+
+            RequireThrows<ArgumentNullException>(
+                () => StaffSkillCancellationCoordinator.TryCancel(
+                    null,
+                    registry,
+                    token,
+                    null,
+                    out ignoredException),
+                "A null context must be rejected.");
+            RequireThrows<ArgumentNullException>(
+                () => StaffSkillCancellationCoordinator.TryCancel(
+                    context,
+                    null,
+                    token,
+                    null,
+                    out ignoredException),
+                "A null registry must be rejected.");
+            RequireThrows<ArgumentOutOfRangeException>(
+                () => StaffSkillCancellationCoordinator.TryCancel(
+                    context,
+                    registry,
+                    default(StaffSkillSourceToken),
+                    null,
+                    out ignoredException),
+                "An invalid token must be rejected.");
+
+            Require(context.IsCurrentToken(token), "Invalid inputs must not change the active context.");
+            Require(registry.ContainsSource(StaffSkillEffectType.AllStaffMovePercent, token), "Invalid inputs must not change registry state.");
+
+            Exception cleanupException;
+            StaffSkillCancellationCoordinator.TryCancel(
+                context,
+                registry,
+                token,
+                null,
+                out cleanupException);
+            Require(cleanupException == null, "Input test cleanup must not return an exception.");
+        }
+
+        private static void ValidateGameManagerRegistryStructure()
+        {
+            PropertyInfo registryProperty = typeof(GameManager).GetProperty(
+                "StaffSkillEffectRegistry",
+                BindingFlags.Instance | BindingFlags.Public);
+            Require(registryProperty != null, "GameManager.StaffSkillEffectRegistry must exist.");
+            Require(registryProperty.PropertyType == typeof(StaffSkillEffectRegistry), "GameManager Registry property type is incorrect.");
+            Require(registryProperty.GetSetMethod(true) == null, "GameManager Registry property must not have a setter.");
+
+            MethodInfo tryGetMethod = typeof(GameManager).GetMethod(
+                "TryGetExistingInstance",
+                BindingFlags.Static | BindingFlags.Public,
+                null,
+                new[] { typeof(GameManager).MakeByRefType() },
+                null);
+            Require(tryGetMethod != null, "GameManager.TryGetExistingInstance must exist.");
+            Require(tryGetMethod.ReturnType == typeof(bool), "TryGetExistingInstance must return bool.");
+
+            FieldInfo[] fields = typeof(GameManager).GetFields(
+                BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
+            foreach (FieldInfo field in fields)
+            {
+                Require(
+                    !(field.IsStatic && field.FieldType == typeof(StaffSkillEffectRegistry)),
+                    "GameManager must not store the Registry in a static field.");
+            }
+        }
+
+        private static void ValidateStaffRuntimeStructure()
+        {
+            ValidateReadOnlyProperty(
+                typeof(Staff),
+                "RuntimeSkillContext",
+                typeof(StaffSkillRuntimeContext));
+            ValidateReadOnlyProperty(
+                typeof(Staff),
+                "SkillEffectRegistry",
+                typeof(StaffSkillEffectRegistry));
+            ValidateReadOnlyProperty(
+                typeof(Staff),
+                "CurrentSkillSourceToken",
+                typeof(StaffSkillSourceToken));
+
+            FieldInfo contextField = typeof(Staff).GetField(
+                "_skillRuntimeContext",
+                BindingFlags.Instance | BindingFlags.NonPublic);
+            Require(contextField != null, "Staff must own a Runtime Context field.");
+            Require(contextField.FieldType == typeof(StaffSkillRuntimeContext), "Staff Runtime Context field type is incorrect.");
+            Require(contextField.IsInitOnly, "Staff Runtime Context field must remain readonly.");
+        }
+
+        private static void ValidateReadOnlyProperty(
+            Type ownerType,
+            string propertyName,
+            Type expectedType)
+        {
+            PropertyInfo property = ownerType.GetProperty(
+                propertyName,
+                BindingFlags.Instance | BindingFlags.Public);
+            Require(property != null, ownerType.Name + "." + propertyName + " must exist.");
+            Require(property.PropertyType == expectedType, ownerType.Name + "." + propertyName + " type is incorrect.");
+            Require(property.GetSetMethod(true) == null, ownerType.Name + "." + propertyName + " must not have a setter.");
         }
 
         private static void AssertRegistryUnchangedAfterException(
@@ -637,7 +940,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("20. 오류 수: " + _errors.Count);
+                _output.AppendLine("28. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -645,7 +948,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "21. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "29. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)

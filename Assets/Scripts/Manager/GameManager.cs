@@ -23,10 +23,22 @@ public class GameManager : MonoBehaviour
     }
     private static GameManager _instance;
     public static bool HasInstance => _instance != null;
+
+    public static bool TryGetExistingInstance(out GameManager instance)
+    {
+        instance = _instance;
+        return instance != null;
+    }
+
     public event Action OnChangeTipPerMinuteHandler;
     public event Action OnChangeScoreHandler;
     public event Action OnChangeStaffSkillValueHandler;
     public event Action OnChangeMaxWaitCustomerCountHandler;
+
+    private readonly StaffSkillEffectRegistry _staffSkillEffectRegistry =
+        new StaffSkillEffectRegistry();
+    public StaffSkillEffectRegistry StaffSkillEffectRegistry => _staffSkillEffectRegistry;
+    public int ActiveStaffSkillEffectSourceCount => _staffSkillEffectRegistry.TotalSourceCount;
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
@@ -441,6 +453,7 @@ public class GameManager : MonoBehaviour
 
     public void ChanceScene()
     {
+        _staffSkillEffectRegistry.ClearAll();
         _foodPriceMul = 0;
         _totalAddSpeedMul = 0;
         _addPromotionCustomer = 1;
@@ -515,8 +528,14 @@ public class GameManager : MonoBehaviour
     private void OnChangeFurnitureSetDataEvent(ERestaurantFloorType floor, FurnitureType type) => CheckSetDataEffect(floor);
     private void OnChangeKitchenUtensilSetDataEvent(ERestaurantFloorType floor, KitchenUtensilType type) => CheckSetDataEffect(floor);
 
+    private void OnApplicationQuit()
+    {
+        _staffSkillEffectRegistry.ClearAll();
+    }
+
     private void OnDestroy()
     {
+        _staffSkillEffectRegistry.ClearAll();
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEffectEvent;
         UserInfo.OnChangeKitchenUtensilHandler -= OnChangeKitchenUtensilEffectEvent;
         UserInfo.OnGiveFurnitureHandler -= OnGiveFurnitureEffectCheck;
