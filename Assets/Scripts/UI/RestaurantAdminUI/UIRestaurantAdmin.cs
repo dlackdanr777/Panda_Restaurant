@@ -20,6 +20,10 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private ScrollingImage[] _scrollImages;
     private ScrollingImage _currentScrollImage;
 
+    [Space]
+    [Header("Floor Button Groups")]
+    [SerializeField] private GameObject _floor1ButtonGroup;
+    [SerializeField] private GameObject[] _vipRoomButtonGroups;
 
     [Space]
     [Header("Tabs")]
@@ -30,10 +34,10 @@ public class UIRestaurantAdmin : MobileUIView
 
     [Space]
     [Header("Buttons")]
-    [SerializeField] private UIRestaurantAdminTabButton _furnitureButton;
-    [SerializeField] private UIRestaurantAdminTabButton _staffButton;
-    [SerializeField] private UIRestaurantAdminTabButton _recipeButton;
-    [SerializeField] private UIRestaurantAdminTabButton _kitchenButton;
+    [SerializeField] private UIRestaurantAdminTabButton[] _furnitureButtons;
+    [SerializeField] private UIRestaurantAdminTabButton[] _staffButtons;
+    [SerializeField] private UIRestaurantAdminTabButton[] _recipeButtons;
+    [SerializeField] private UIRestaurantAdminTabButton[] _kitchenButtons;
 
     [Space]
     [Header("Animations")]
@@ -52,7 +56,6 @@ public class UIRestaurantAdmin : MobileUIView
     private bool _isInitialized = false;
 
     // 캐시된 참조들
-    private UIRestaurantAdminTabButton[] _tabButtons;
     private UIRestaurantAdminTab[] _tabs;
 
     private Vector3 _tmpScale;
@@ -62,21 +65,35 @@ public class UIRestaurantAdmin : MobileUIView
         if (_isInitialized) return;
 
         // 배열 캐싱으로 반복 접근 최적화
-        _tabButtons = new UIRestaurantAdminTabButton[] 
-        { 
-            _furnitureButton, _staffButton, _recipeButton, _kitchenButton 
-        };
-        
         _tabs = new UIRestaurantAdminTab[] 
         { 
             _furnitureTab, _staffTab, _recipeTab, _kitchenTab 
         };
 
         // 이벤트 등록
-        _staffButton.OnClickEvent(ShowStaffTab);
-        _furnitureButton.OnClickEvent(ShowFurnitureTab);
-        _recipeButton.OnClickEvent(ShowRecipeTab);
-        _kitchenButton.OnClickEvent(ShowKitchenTab);
+        if (_furnitureButtons != null)
+        {
+            foreach (var btn in _furnitureButtons)
+                btn?.OnClickEvent(ShowFurnitureTab);
+        }
+        
+        if (_staffButtons != null)
+        {
+            foreach (var btn in _staffButtons)
+                btn?.OnClickEvent(ShowStaffTab);
+        }
+        
+        if (_recipeButtons != null)
+        {
+            foreach (var btn in _recipeButtons)
+                btn?.OnClickEvent(ShowRecipeTab);
+        }
+        
+        if (_kitchenButtons != null)
+        {
+            foreach (var btn in _kitchenButtons)
+                btn?.OnClickEvent(ShowKitchenTab);
+        }
 
         // 탭 초기화
         _staffTab.Init();
@@ -122,7 +139,14 @@ public class UIRestaurantAdmin : MobileUIView
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
         _dontTouchArea.gameObject.SetActive(true);
-        ChangeFloorTypeOptimized(_mainScene.CurrentFloor);
+        
+        // Floor 타입 강제 초기화하여 ChangeFloorType이 항상 실행되도록 함
+        ERestaurantFloorType targetFloor = _mainScene.CurrentFloor;
+        _floorType = (ERestaurantFloorType)(-1); // 강제로 다른 값으로 설정
+        ChangeFloorTypeOptimized(targetFloor);
+        
+        // Floor Button Groups 초기 상태 설정
+        UpdateFloorButtonGroups(targetFloor);
 
         _recipeTab.UpdateUI();
 
@@ -245,13 +269,24 @@ public class UIRestaurantAdmin : MobileUIView
     // 탭 활성화 로직 통합 및 최적화
     private void SetTabActive(int activeIndex)
     {
-        // 탭 버튼 상태 설정
-        for (int i = 0; i < _tabButtons.Length; i++)
+        // 탭 버튼 상태 설정 - 모든 버튼 그룹 처리
+        UIRestaurantAdminTabButton[][] allButtons = { _furnitureButtons, _staffButtons, _recipeButtons, _kitchenButtons };
+        
+        for (int i = 0; i < allButtons.Length; i++)
         {
-            if (i == activeIndex)
-                _tabButtons[i].SelectButton();
-            else
-                _tabButtons[i].UnselectedButton();
+            if (allButtons[i] != null)
+            {
+                foreach (var btn in allButtons[i])
+                {
+                    if (btn != null)
+                    {
+                        if (i == activeIndex)
+                            btn.SelectButton();
+                        else
+                            btn.UnselectedButton();
+                    }
+                }
+            }
         }
 
         // 탭 Attention 상태 설정
@@ -330,6 +365,24 @@ public class UIRestaurantAdmin : MobileUIView
         _floorButtonGroup.SetFloorText(_floorType);
 
         SetBackgroundImageOptimized(_floorType);
+        UpdateFloorButtonGroups(_floorType);
+    }
+    
+    private void UpdateFloorButtonGroups(ERestaurantFloorType floorType)
+    {
+        bool isFloor1 = floorType == ERestaurantFloorType.Floor1;
+        
+        if (_floor1ButtonGroup != null)
+            _floor1ButtonGroup.SetActive(isFloor1);
+        
+        if (_vipRoomButtonGroups != null)
+        {
+            foreach (var vipRoomGroup in _vipRoomButtonGroups)
+            {
+                if (vipRoomGroup != null)
+                    vipRoomGroup.SetActive(!isFloor1);
+            }
+        }
     }
     
 }

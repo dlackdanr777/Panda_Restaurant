@@ -14,6 +14,7 @@ public class UIKitchenTab : UIRestaurantAdminTab
     private UITabSlot[] _slots;
     private ERestaurantFloorType _floorType;
     private bool _isInitialized = false;
+    private bool _isFloorTypeInitialized = false;
 
     // 성능 최적화를 위한 캐시 변수들
     private readonly string[] _typeStringCache = new string[(int)KitchenUtensilType.Length];
@@ -83,9 +84,10 @@ public class UIKitchenTab : UIRestaurantAdminTab
 
     public override void ChangeFloorType(ERestaurantFloorType floorType)
     {
-        if (_floorType == floorType)
+        if (_isFloorTypeInitialized && _floorType == floorType)
             return;
 
+        _isFloorTypeInitialized = true;
         _floorType = floorType;
         UpdateTabBackground(floorType);
         UpdateUI();

@@ -7,18 +7,18 @@ using UnityEngine.UI;
 
 public class UIFloorButtonGroup : MonoBehaviour
 {
+    [Header("Button Group Images")]
+    [SerializeField] private UnityEngine.UI.Image[] _buttonGroupImages; // 스프라이트가 변경될 이미지들
+    [SerializeField] private Sprite _floor1Sprite; // 1층용 스프라이트
+    [SerializeField] private Sprite _vipRoomSprite; // VIP룸용 스프라이트
+    
+    [Space]
+    [Header("Floor Text")]
+    [SerializeField] private TextMeshProUGUI _floorText; // 층 표시 텍스트
+    
+    [Space]
     [Header("Toggle Button")]
     [SerializeField] private Button _toggleButton;
-    [SerializeField] private Image _buttonImage;
-    
-    [Space]
-    [Header("Floor Images")]
-    [SerializeField] private Sprite _floor1Sprite;
-    [SerializeField] private Sprite _vipRoomSprite;
-    
-    [Space]
-    [Header("Components")]
-    [SerializeField] private TextMeshProUGUI _floorText;
 
     private UnityAction _floor1ButtonClicked;
     private UnityAction _floor2ButtonClicked;
@@ -35,7 +35,7 @@ public class UIFloorButtonGroup : MonoBehaviour
 
         UserInfo.OnChangeFloorHandler += OnChangeUnlockFloorEvent;
         OnChangeUnlockFloorEvent();
-        UpdateButtonVisual();
+        UpdateButtonGroupVisibility();
     }
 
 
@@ -48,7 +48,7 @@ public class UIFloorButtonGroup : MonoBehaviour
     public void SetFloorText(ERestaurantFloorType floor)
     {
         _currentFloor = floor;
-        UpdateButtonVisual();
+        UpdateButtonGroupVisibility();
     }
     
     private void OnToggleButtonClicked()
@@ -58,7 +58,7 @@ public class UIFloorButtonGroup : MonoBehaviour
         if (!_isVIPUnlocked)
             return;
         
-        // 1? ? VIP? ??
+        // 1층 ↔ VIP룸 토글
         if (_currentFloor == ERestaurantFloorType.Floor1)
         {
             _floor2ButtonClicked?.Invoke();
@@ -69,32 +69,48 @@ public class UIFloorButtonGroup : MonoBehaviour
         }
     }
     
-    private void UpdateButtonVisual()
+    private void UpdateButtonGroupVisibility()
     {
+        Sprite targetSprite = null;
+        string floorText = "";
+        
         if (!_isVIPUnlocked)
         {
-            // VIP? ???: 1? ???? ??
-            if (_buttonImage != null && _floor1Sprite != null)
-                _buttonImage.sprite = _floor1Sprite;
-            
-            if (_floorText != null)
-                _floorText.SetText("1?");
+            // VIP룸 미해금: 1층 스프라이트 표시
+            targetSprite = _floor1Sprite;
+            floorText = "1층";
         }
         else
         {
-            // VIP? ??: ?? ?? ?? ??? ??
-            if (_buttonImage != null)
+            // VIP룸 해금: 현재 층에 따라 스프라이트 전환
+            if (_currentFloor == ERestaurantFloorType.Floor1)
             {
-                _buttonImage.sprite = _currentFloor == ERestaurantFloorType.Floor1 
-                    ? _floor1Sprite 
-                    : _vipRoomSprite;
+                targetSprite = _floor1Sprite;
+                floorText = "1층";
             }
-            
-            if (_floorText != null)
+            else
             {
-                string text = _currentFloor == ERestaurantFloorType.Floor1 ? "1?" : "VIP?";
-                _floorText.SetText(text);
+                targetSprite = _vipRoomSprite;
+                floorText = "VIP룸";
             }
+        }
+        
+        // 모든 이미지에 스프라이트 적용
+        if (_buttonGroupImages != null && targetSprite != null)
+        {
+            foreach (var image in _buttonGroupImages)
+            {
+                if (image != null)
+                {
+                    image.sprite = targetSprite;
+                }
+            }
+        }
+        
+        // 텍스트 업데이트
+        if (_floorText != null)
+        {
+            _floorText.text = floorText;
         }
     }
 
@@ -102,11 +118,11 @@ public class UIFloorButtonGroup : MonoBehaviour
     {
         ERestaurantFloorType unlockedFloor = UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
         
-        // VIP?(2? ??) ?? ?? ??
+        // VIP룸(2층 이상) 해금 여부 확인
         _isVIPUnlocked = unlockedFloor == ERestaurantFloorType.Floor2 || 
                          unlockedFloor == ERestaurantFloorType.Floor3;
         
-        UpdateButtonVisual();
+        UpdateButtonGroupVisibility();
     }
 
 
