@@ -1058,8 +1058,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireChangedFieldCount(existing, "StaffData._speed", 29, "current speed mismatch", errors);
             RequireIssueCount(existing, "CURRENT_ROLE_VALUE_MISMATCH", 23, errors);
             RequireIssueCount(existing, "CURRENT_UPGRADE_COST_MISMATCH", 32, errors);
-            RequireSkillNumberMismatch(existing, true, 28, "current skill duration mismatch", errors);
-            RequireSkillNumberMismatch(existing, false, 28, "current skill cooldown mismatch", errors);
+            RequireSkillNumberMismatch(existing, true, 15, "current skill duration mismatch", errors);
+            RequireSkillNumberMismatch(existing, false, 13, "current skill cooldown mismatch", errors);
             RequireIssueCount(existing, "EXISTING_SKILL_CLASS_MISMATCH", 17, errors);
             RequireIssueCount(existing, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 0, errors);
             RequireIssueCount(existing, "STAFF02_LEVEL6_SAVE_MIGRATION_REQUIRED", 1, errors);

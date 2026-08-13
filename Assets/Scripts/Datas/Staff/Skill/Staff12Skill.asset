@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: STAFF12Skill
   m_EditorClassIdentifier: 
   _description: 
-  _cooldown: 150
-  _duration: 10
+  _cooldown: 160
+  _duration: 15
   _touchInterval: 0.5

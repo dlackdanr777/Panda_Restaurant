@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: STAFF22Skill
   m_EditorClassIdentifier: 
   _description: 
-  _cooldown: 100
-  _duration: 13
+  _cooldown: 110
+  _duration: 20
   _speedUpMul: 100

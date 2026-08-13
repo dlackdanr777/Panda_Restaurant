@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: STAFF28SKILL
   m_EditorClassIdentifier: 
   _description: 
-  _cooldown: 150
+  _cooldown: 110
   _duration: 20
   _speedUpMul: 100
