@@ -65,7 +65,7 @@ public class Staff : MonoBehaviour
     protected float _moveSpeed;
     protected float _speedMul;
     public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(_staffGroupType)), 0.5f, 3f);
-    public float MoveSpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffMoveSpeedMul(_staffGroupType)), 0.5f, 3f);
+    public float MoveSpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffMoveSpeedMul(_staffGroupType)) + (_skillRuntimeContext.PersonalMoveBonusPercent * 0.01f), 0.5f, 3f);
     public float WorkSpeedMul => Mathf.Clamp(1 + GameManager.Instance.GetStaffWorkSpeedMul(), 0.5f, 3f);
     public float GuardEliminationSpeedMul => Mathf.Clamp(1 + GameManager.Instance.GetGuardEliminationSpeedMul(), 0.5f, 3f);
 
@@ -446,8 +446,8 @@ public class Staff : MonoBehaviour
                         break;
                     }
 
-                    timer += 0.02f;
-                    yield return YieldCache.WaitForSeconds(0.02f);
+                    timer += Time.deltaTime;
+                    yield return null;
                 }
 
                 if (updateSucceeded)

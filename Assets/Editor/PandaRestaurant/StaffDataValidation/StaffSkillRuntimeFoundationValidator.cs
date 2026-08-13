@@ -45,6 +45,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(25, "Coordinator 입력 예외", ValidateCoordinatorInputExceptions);
             report.Run(26, "GameManager Registry 소유 구조", ValidateGameManagerRegistryStructure);
             report.Run(27, "Staff Runtime Context 연결 구조", ValidateStaffRuntimeStructure);
+            report.Run(28, "Skill01 PersonalMove Context", ValidateSkill01PersonalMoveContext);
+            report.Run(29, "Skill03 Staff별 Timer", ValidateSkill03PerStaffTimer);
+            report.Run(30, "Skill ScriptableObject 구조", ValidateSkillScriptableObjectStructure);
+            report.Run(31, "Staff MoveSpeedMul 구조", ValidateStaffMoveSpeedStructure);
             report.Print();
         }
 
@@ -799,6 +803,116 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(contextField.IsInitOnly, "Staff Runtime Context field must remain readonly.");
         }
 
+        private static void ValidateSkill01PersonalMoveContext()
+        {
+            StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken first = context.BeginActivation("STAFF21/STAFF_SKILL01");
+
+            context.SetPersonalMoveBonusPercent(first, 100f);
+            RequireNear(100f, context.PersonalMoveBonusPercent, "Skill01 must register a 100 percent personal move bonus.");
+            RequireNear(
+                2f,
+                1f + context.PersonalMoveBonusPercent * 0.01f,
+                "A 100 percent personal move bonus must mean a 2.0 multiplier.");
+
+            context.SetPersonalMoveBonusPercent(first, 0f);
+            RequireNear(0f, context.PersonalMoveBonusPercent, "Skill01 deactivation must register zero percent.");
+
+            context.SetPersonalMoveBonusPercent(first, 100f);
+            Cancel(context, first);
+            RequireNear(0f, context.PersonalMoveBonusPercent, "Cancellation must clear the Skill01 personal move bonus.");
+
+            StaffSkillSourceToken second = context.BeginActivation("STAFF21/STAFF_SKILL01/reassigned");
+            context.SetPersonalMoveBonusPercent(second, 25f);
+            context.SetPersonalMoveBonusPercent(first, 100f);
+            RequireNear(25f, context.PersonalMoveBonusPercent, "A stale token must not change the Skill01 personal move bonus.");
+            Cancel(context, second);
+        }
+
+        private static void ValidateSkill03PerStaffTimer()
+        {
+            MethodInfo advanceTimerMethod = typeof(StaffSkillRuntimeContext).GetMethod(
+                "AdvanceCustomerCallTimer",
+                BindingFlags.Instance | BindingFlags.Public,
+                null,
+                new[] { typeof(StaffSkillSourceToken), typeof(float), typeof(float) },
+                null);
+            Require(advanceTimerMethod != null, "Skill03 timer API must accept only token, delta time, and interval.");
+
+            StaffSkillRuntimeContext contextA = new StaffSkillRuntimeContext();
+            StaffSkillRuntimeContext contextB = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken tokenA = contextA.BeginActivation("STAFF11/STAFF_SKILL03/A");
+            StaffSkillSourceToken tokenB = contextB.BeginActivation("STAFF11/STAFF_SKILL03/B");
+
+            Require(contextA.AdvanceCustomerCallTimer(tokenA, 0.2f, 0.5f) == 0, "Skill03 must preserve the first 0.2 seconds.");
+            Require(contextA.AdvanceCustomerCallTimer(tokenA, 0.3f, 0.5f) == 1, "Skill03 0.2 + 0.3 seconds must trigger once.");
+            RequireNear(0f, contextA.CustomerCallElapsedTime, "A complete Skill03 interval must leave no remainder.");
+            RequireNear(0f, contextB.CustomerCallElapsedTime, "A second Staff timer must remain independent.");
+
+            Require(contextA.AdvanceCustomerCallTimer(tokenA, 1.2f, 0.5f) == 2, "Skill03 1.2 seconds must trigger twice.");
+            RequireNear(0.2f, contextA.CustomerCallElapsedTime, "Skill03 must preserve the 0.2 second remainder.");
+
+            Cancel(contextA, tokenA);
+            RequireNear(0f, contextA.CustomerCallElapsedTime, "Skill03 cancellation must clear the timer.");
+            StaffSkillSourceToken nextTokenA = contextA.BeginActivation("STAFF11/STAFF_SKILL03/A2");
+            Require(contextA.AdvanceCustomerCallTimer(nextTokenA, 0.1f, 0.5f) == 0, "A new Skill03 activation must start independently.");
+            Require(contextA.AdvanceCustomerCallTimer(tokenA, 1f, 0.5f) == 0, "A stale Skill03 token must trigger zero calls.");
+            RequireNear(0.1f, contextA.CustomerCallElapsedTime, "A stale Skill03 token must not change the current timer.");
+            Cancel(contextA, nextTokenA);
+            RequireNear(0f, contextA.CustomerCallElapsedTime, "Skill03 cancellation must leave the timer at zero.");
+            Cancel(contextB, tokenB);
+        }
+
+        private static void ValidateSkillScriptableObjectStructure()
+        {
+            ValidateDeclaredInstanceFields(typeof(SpeedUpSkill), "_speedUpMul");
+            ValidateDeclaredInstanceFields(typeof(TouchAddCustomerButtonSkill), "_touchInterval");
+
+            FieldInfo timerField = typeof(TouchAddCustomerButtonSkill).GetField(
+                "_timer",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            Require(timerField == null, "TouchAddCustomerButtonSkill must not store a shared _timer field.");
+        }
+
+        private static void ValidateStaffMoveSpeedStructure()
+        {
+            ValidateReadOnlyProperty(
+                typeof(Staff),
+                "RuntimeSkillContext",
+                typeof(StaffSkillRuntimeContext));
+            ValidateReadOnlyProperty(
+                typeof(Staff),
+                "CurrentSkillSourceToken",
+                typeof(StaffSkillSourceToken));
+            ValidateReadOnlyProperty(
+                typeof(Staff),
+                "MoveSpeedMul",
+                typeof(float));
+        }
+
+        private static void ValidateDeclaredInstanceFields(
+            Type ownerType,
+            params string[] expectedFieldNames)
+        {
+            HashSet<string> remainingNames = new HashSet<string>(expectedFieldNames);
+            FieldInfo[] fields = ownerType.GetFields(
+                BindingFlags.Instance
+                | BindingFlags.Public
+                | BindingFlags.NonPublic
+                | BindingFlags.DeclaredOnly);
+
+            foreach (FieldInfo field in fields)
+            {
+                Require(
+                    remainingNames.Remove(field.Name),
+                    ownerType.Name + "." + field.Name + " is an unexpected instance field.");
+            }
+
+            Require(
+                remainingNames.Count == 0,
+                ownerType.Name + " is missing an expected serialized field.");
+        }
+
         private static void ValidateReadOnlyProperty(
             Type ownerType,
             string propertyName,
@@ -940,7 +1054,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("28. 오류 수: " + _errors.Count);
+                _output.AppendLine("32. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -948,7 +1062,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "29. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "33. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)

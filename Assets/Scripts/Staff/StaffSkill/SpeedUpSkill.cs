@@ -12,12 +12,16 @@ public class SpeedUpSkill : SkillBase
     public override void Activate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
         DebugLog.Log("스피드업 실행중");
-        staff.AddSpeedMul(_speedUpMul);
+        staff.RuntimeSkillContext.SetPersonalMoveBonusPercent(
+            staff.CurrentSkillSourceToken,
+            _speedUpMul);
     }
 
     public override void Deactivate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        staff.AddSpeedMul(-_speedUpMul);
+        staff.RuntimeSkillContext.SetPersonalMoveBonusPercent(
+            staff.CurrentSkillSourceToken,
+            0f);
     }
 
     public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)

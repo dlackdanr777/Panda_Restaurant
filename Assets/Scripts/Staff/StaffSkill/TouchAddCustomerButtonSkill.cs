@@ -9,11 +9,8 @@ public class TouchAddCustomerButtonSkill : SkillBase
 
     public override float SecondValue => 0;
 
-
-    private float _timer;
     public override void Activate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        _timer = 0;
     }
 
     public override void Deactivate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
@@ -22,10 +19,12 @@ public class TouchAddCustomerButtonSkill : SkillBase
 
     public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
     {
-        _timer += 0.02f * staff.SpeedMul;
-        if (_touchInterval <= _timer)
+        int completedIntervals = staff.RuntimeSkillContext.AdvanceCustomerCallTimer(
+            staff.CurrentSkillSourceToken,
+            Time.deltaTime,
+            _touchInterval);
+        for (int intervalIndex = 0; intervalIndex < completedIntervals; intervalIndex++)
         {
-            _timer = 0;
             customerController.AddTabCount();
         }
     }
