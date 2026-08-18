@@ -230,7 +230,7 @@ public static class Utility
         return type switch
         {
             ERestaurantFloorType.Floor1 => "1f",
-            ERestaurantFloorType.Floor2 => "2f",
+            ERestaurantFloorType.Floor2 => "vip",
             ERestaurantFloorType.Floor3 => "3f",
             _ => throw new System.Exception("해당 층 수 타입이 이상합니다: " + type)
         };

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIFurniture : MobileUIView
 {
@@ -22,6 +23,11 @@ public class UIFurniture : MobileUIView
     [SerializeField] private ButtonPressEffect _rightArrowButton;
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private TextMeshProUGUI _typeText;
+    [SerializeField] private Image _backgroundImage;
+    [SerializeField] private Sprite _normalBackgroundSprite;
+    [SerializeField] private Sprite _vipBackgroundSprite;
+    [SerializeField] private GameObject _normalObject;
+    [SerializeField] private GameObject _vipObject;
 
     [Space]
     [Header("Animations")]
@@ -143,7 +149,24 @@ public class UIFurniture : MobileUIView
         _uiRestaurantAdmin.ShowFurnitureTab();
         _uiNav.Push("UIFurniture");
         _currentFloorType = floorType;
+        UpdateFloorUI();
         SetFurnitureDataOptimized(type);
+    }
+
+    private void UpdateFloorUI()
+    {
+        if (_currentFloorType == ERestaurantFloorType.Floor1)
+        {
+            _backgroundImage.sprite = _normalBackgroundSprite;
+            _normalObject.SetActive(true);
+            _vipObject.SetActive(false);
+        }
+        else if (_currentFloorType == ERestaurantFloorType.Floor2)
+        {
+            _backgroundImage.sprite = _vipBackgroundSprite;
+            _normalObject.SetActive(false);
+            _vipObject.SetActive(true);
+        }
     }
 
     // 최적화된 데이터 설정 메서드
