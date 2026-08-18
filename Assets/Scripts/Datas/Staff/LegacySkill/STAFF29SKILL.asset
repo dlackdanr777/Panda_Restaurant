@@ -9,11 +9,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f6dec9edb1244c84d99fc7f5daea02f9, type: 3}
-  m_Name: STAFF19Skill
+  m_Script: {fileID: 11500000, guid: 15efc14f4db31c4479b80bcb04a376d5, type: 3}
+  m_Name: STAFF29SKILL
   m_EditorClassIdentifier: 
-  _description: "\uB9E1\uC740 \uC8FC\uBC29 \uC74C\uC2DD \uC81C\uC791 \uC18D\uB3C4
-    (150%) \uC99D\uAC00"
-  _cooldown: 160
-  _duration: 25
-  _assignedCookingSpeedUpPercent: 150
+  _description: 
+  _cooldown: 150
+  _duration: 30
+  _speedUpMul: 100

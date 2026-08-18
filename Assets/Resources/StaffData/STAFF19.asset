@@ -18,7 +18,7 @@ MonoBehaviour:
   _id: STAFF19
   _description: 
   _rank: 0
-  _skill: {fileID: 11400000, guid: 67fad8354daa0194fbbcf5833b9ebdca, type: 2}
+  _skill: {fileID: 11400000, guid: 661820f63879f5944aed60a31747802b, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: 767c5742fa4a04941876fca706be22ba, type: 3}
   - {fileID: 21300000, guid: bc94a4e1a65ae2349b5ccb307a47aca1, type: 3}
@@ -43,23 +43,28 @@ MonoBehaviour:
       _moneyType: 0
       _price: 1950000
     _foodSpeedAddPercent: 6.5
+    _addSpeed: 0
   - _upgradeMinScore: 10800
     _upgradeMoneyData:
       _moneyType: 0
       _price: 2925000
     _foodSpeedAddPercent: 7
+    _addSpeed: 0
   - _upgradeMinScore: 13500
     _upgradeMoneyData:
       _moneyType: 0
       _price: 4387500
     _foodSpeedAddPercent: 7.5
+    _addSpeed: 0
   - _upgradeMinScore: 16200
     _upgradeMoneyData:
       _moneyType: 0
       _price: 6581250
     _foodSpeedAddPercent: 8
+    _addSpeed: 0
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
     _foodSpeedAddPercent: 8.5
+    _addSpeed: 0

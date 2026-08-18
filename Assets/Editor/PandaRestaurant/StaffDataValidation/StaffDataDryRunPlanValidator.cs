@@ -28,13 +28,17 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             new OfficialSkillTimeTarget("STAFF12", "STAFF_SKILL03", "TouchAddCustomerButtonSkill", "c07c74e5ac1573e4ab8b7d33229faba3", "Assets/Scripts/Datas/Staff/Skill/Staff12Skill.asset", 15, 160),
             new OfficialSkillTimeTarget("STAFF14", "STAFF_SKILL03", "TouchAddCustomerButtonSkill", "08a154df61b9ad148ba9988d1345876b", "Assets/Scripts/Datas/Staff/Skill/Staff14Skill.asset", 15, 160),
             new OfficialSkillTimeTarget("STAFF16", "STAFF_SKILL01", "SpeedUpSkill", "55429025e47f51e48af3704c79782325", "Assets/Scripts/Datas/Staff/Skill/Staff16Skill.asset", 15, 120),
+            new OfficialSkillTimeTarget("STAFF17", "STAFF_SKILL04", "AssignedCookingSpeedUpSkill", string.Empty, "c1305190b57c1d54482ece9b2e58be3d", "Assets/Scripts/Datas/Staff/Skill/Staff17Skill.asset", 25, 160),
             new OfficialSkillTimeTarget("STAFF18", "STAFF_SKILL01", "SpeedUpSkill", "46422746b9f38374fb77e35d096d48de", "Assets/Scripts/Datas/Staff/Skill/Staff18Skill.asset", 15, 120),
+            new OfficialSkillTimeTarget("STAFF19", "STAFF_SKILL04", "AssignedCookingSpeedUpSkill", string.Empty, "67fad8354daa0194fbbcf5833b9ebdca", "Assets/Scripts/Datas/Staff/Skill/Staff19Skill.asset", 25, 160),
+            new OfficialSkillTimeTarget("STAFF20", "STAFF_SKILL04", "AssignedCookingSpeedUpSkill", string.Empty, "ab2b64bcb83dc9d48b5773f0c88a830e", "Assets/Scripts/Datas/Staff/Skill/Staff20Skill.asset", 25, 160),
             new OfficialSkillTimeTarget("STAFF21", "STAFF_SKILL01", "SpeedUpSkill", "b3c20e5aa6d608e488f3918712c9e32b", "Assets/Scripts/Datas/Staff/Skill/Staff21Skill.asset", 15, 120),
             new OfficialSkillTimeTarget("STAFF22", "STAFF_SKILL01", "SpeedUpSkill", "44d111fa7e4c9634f8b2045f742c3bac", "Assets/Scripts/Datas/Staff/Skill/Staff22Skill.asset", 20, 110),
             new OfficialSkillTimeTarget("STAFF23", "STAFF_SKILL01", "SpeedUpSkill", "8700ffc1d7466c449b5dbefcf0d09cde", "Assets/Scripts/Datas/Staff/Skill/Staff23Skill.asset", 17, 115),
             new OfficialSkillTimeTarget("STAFF24", "STAFF_SKILL01", "SpeedUpSkill", "829f6ba2388631644919520e82a9de3c", "Assets/Scripts/Datas/Staff/Skill/Staff24Skill.asset", 15, 120),
             new OfficialSkillTimeTarget("STAFF25", "STAFF_SKILL01", "SpeedUpSkill", "d3e58377ff3634b4da83e2e314a97f29", "Assets/Scripts/Datas/Staff/Skill/Staff25Skill.asset", 25, 105),
             new OfficialSkillTimeTarget("STAFF28", "STAFF_SKILL01", "SpeedUpSkill", "1198ffabfe31de2448c9245682a23efc", "Assets/Scripts/Datas/Staff/Skill/STAFF28SKILL.asset", 20, 110),
+            new OfficialSkillTimeTarget("STAFF29", "STAFF_SKILL04", "AssignedCookingSpeedUpSkill", string.Empty, "6513e175122c20641a60cad9e71895fa", "Assets/Scripts/Datas/Staff/Skill/STAFF29SKILL.asset", 30, 150),
             new OfficialSkillTimeTarget("STAFF31", "STAFF_SKILL01", "SpeedUpSkill", "f70a543a62181274f94c934036e3f084", "Assets/Scripts/Datas/Staff/Skill/Staff31Skill.asset", 15, 120)
         };
 
@@ -49,12 +53,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             new SkillTimeBaseline("STAFF10", 18, 150),
             new SkillTimeBaseline("STAFF13", 13, 150),
             new SkillTimeBaseline("STAFF15", 20, 100),
-            new SkillTimeBaseline("STAFF17", 18, 200),
-            new SkillTimeBaseline("STAFF19", 24, 150),
-            new SkillTimeBaseline("STAFF20", 27, 150),
             new SkillTimeBaseline("STAFF26", 30, 50),
             new SkillTimeBaseline("STAFF27", 60, 250),
-            new SkillTimeBaseline("STAFF29", 30, 150),
             new SkillTimeBaseline("STAFF30", 30, 80),
             new SkillTimeBaseline("STAFF32", 30, 80)
         };
@@ -126,7 +126,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             result.Set(15, ValidateNonDestructiveImplementation(first, second, result));
             CountWarningsAndPrerequisites(first, result);
             Require(result.WarningCount == 65, "Plan warning baseline changed.", result);
-            Require(result.PrerequisiteCount == 40, "Plan prerequisite baseline changed.", result);
+            Require(result.PrerequisiteCount == 27, "Plan prerequisite baseline changed.", result);
             Require(CountChangedFields(first) == 2146, "Changed-field baseline changed.", result);
             return result;
         }
@@ -333,12 +333,13 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 }
             }
 
-            valid &= existingMatch == 15
-                     && existingMismatch == 17
-                     && newUnsupported == 22
+            valid &= existingMatch == 19
+                     && existingMismatch == 13
+                     && newUnsupported == 13
                      && individualPlans == 60
                      && newSkillPaths.Count == 60;
             valid &= ValidateOfficialSkillTimeApply(plan, result);
+            valid &= ValidateSkill04Plans(plan, result);
             return Require(valid, "Skill class or individual skill-asset plan changed.", result);
         }
 
@@ -366,6 +367,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             int applied = 0;
             int speedUp = 0;
             int touchCustomer = 0;
+            int assignedCooking = 0;
             for (int index = 0; index < OfficialSkillTimeTargets.Length; index++)
             {
                 OfficialSkillTimeTarget target = OfficialSkillTimeTargets[index];
@@ -386,7 +388,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                      && skill.ClassMatches
                                      && skill.PreserveExistingGuid
                                      && !skill.CreateIndividualAsset
-                                     && skill.CurrentAssetGuid == target.AssetGuid
+                                     && TargetGuidMatches(skill.CurrentAssetGuid, target)
                                      && skill.CurrentAssetPath == target.AssetPath
                                      && skill.PlannedAssetPath == target.AssetPath
                                      && SkillNumberEquals(skill.CurrentDuration, target.Duration)
@@ -400,6 +402,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     applied++;
                     speedUp += target.RuntimeClassName == "SpeedUpSkill" ? 1 : 0;
                     touchCustomer += target.RuntimeClassName == "TouchAddCustomerButtonSkill" ? 1 : 0;
+                    assignedCooking += target.RuntimeClassName == "AssignedCookingSpeedUpSkill" ? 1 : 0;
                 }
             }
 
@@ -451,24 +454,115 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 newUnapplied += unapplied ? 1 : 0;
             }
 
-            valid &= OfficialSkillTimeTargets.Length == 15
-                     && ExcludedSkillTimeBaselines.Length == 17
-                     && targetIds.Count == 15
-                     && currentAssetGuids.Count == 15
-                     && applied == 15
+            valid &= OfficialSkillTimeTargets.Length == 19
+                     && ExcludedSkillTimeBaselines.Length == 13
+                     && targetIds.Count == 19
+                     && currentAssetGuids.Count == 19
+                     && applied == 19
                      && speedUp == 12
                      && touchCustomer == 3
-                     && excludedClassMismatch == 17
+                     && assignedCooking == 4
+                     && excludedClassMismatch == 13
                      && existingCovered == 32
                      && newUnapplied == 60
-                     && CountSkillNumberMismatches(plan, true) == 15
-                     && CountSkillNumberMismatches(plan, false) == 13
-                     && CountIssues(plan, "EXISTING_SKILL_CLASS_MISMATCH") == 17
-                     && CountIssues(plan, "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED") == 22
-                     && CountStaffWithSkillPrerequisite(plan) == 39
+                     && CountSkillNumberMismatches(plan, true) == 12
+                     && CountSkillNumberMismatches(plan, false) == 10
+                     && CountIssues(plan, "EXISTING_SKILL_CLASS_MISMATCH") == 13
+                     && CountIssues(plan, "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED") == 13
+                     && CountStaffWithSkillPrerequisite(plan) == 26
                      && CountChangedFields(plan) == 2146
-                     && plan.PlanningPolicyVersion == "STAFF_DRY_RUN_POLICY_2026_08_11_V3";
+                     && plan.PlanningPolicyVersion == "STAFF_DRY_RUN_POLICY_2026_08_18_V4";
             return Require(valid, "Official Skill time post-apply baseline changed.", result);
+        }
+
+        private static bool ValidateSkill04Plans(
+            StaffDataDryRunPlanSnapshot plan,
+            ValidationResult result)
+        {
+            HashSet<string> expectedExisting = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "STAFF17", "STAFF19", "STAFF20", "STAFF29"
+            };
+            HashSet<string> expectedNew = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "STAFF46", "STAFF47", "STAFF48", "STAFF59", "STAFF60",
+                "STAFF70", "STAFF79", "STAFF87", "STAFF88"
+            };
+            HashSet<string> actualExisting = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> actualNew = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> activeGuids = new HashSet<string>(StringComparer.Ordinal);
+            int existingValid = 0;
+            int newValid = 0;
+            bool valid = true;
+            for (int index = 0; index < plan.StaffPlans.Count; index++)
+            {
+                StaffDataDryRunStaffPlan staff = plan.StaffPlans[index];
+                if (staff.SkillPlan.OfficialSkillId != "STAFF_SKILL04")
+                {
+                    continue;
+                }
+
+                StaffDataDryRunSkillPlan skill = staff.SkillPlan;
+                valid &= staff.RoleKey == "CHEF"
+                         && skill.RequiredClassName == "AssignedCookingSpeedUpSkill"
+                         && skill.RequiredClassExists
+                         && skill.ClassMatches
+                         && skill.TargetDescription
+                         == "맡은 주방 음식 제작 속도 (150%) 증가";
+                if (staff.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING)
+                {
+                    actualExisting.Add(staff.StaffId);
+                    OfficialSkillTimeTarget target = FindOfficialSkillTimeTarget(staff.StaffId);
+                    bool existing = expectedExisting.Contains(staff.StaffId)
+                                    && target != null
+                                    && skill.CurrentClassName == "AssignedCookingSpeedUpSkill"
+                                    && skill.CurrentAssetPath == target.AssetPath
+                                    && skill.PlannedAssetPath == target.AssetPath
+                                    && TargetGuidMatches(skill.CurrentAssetGuid, target)
+                                    && activeGuids.Add(skill.CurrentAssetGuid)
+                                    && skill.PreserveExistingGuid
+                                    && !skill.CreateIndividualAsset
+                                    && skill.ClassDisposition
+                                    == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
+                                    && skill.CurrentDescription == skill.TargetDescription
+                                    && SkillNumberEquals(skill.CurrentDuration, target.Duration)
+                                    && SkillNumberEquals(skill.TargetDuration, target.Duration)
+                                    && SkillNumberEquals(skill.CurrentCooldown, target.Cooldown)
+                                    && SkillNumberEquals(skill.TargetCooldown, target.Cooldown)
+                                    && !HasIssue(staff, "EXISTING_SKILL_CLASS_MISMATCH");
+                    existingValid += existing ? 1 : 0;
+                    valid &= existing;
+                    continue;
+                }
+
+                actualNew.Add(staff.StaffId);
+                string expectedPath = "Assets/Scripts/Datas/Staff/Skill/"
+                                      + staff.StaffId + "Skill.asset";
+                bool created = expectedNew.Contains(staff.StaffId)
+                               && string.IsNullOrEmpty(skill.CurrentAssetPath)
+                               && string.IsNullOrEmpty(skill.CurrentAssetGuid)
+                               && string.IsNullOrEmpty(skill.CurrentClassName)
+                               && string.IsNullOrEmpty(skill.CurrentDuration)
+                               && string.IsNullOrEmpty(skill.CurrentCooldown)
+                               && skill.PlannedAssetPath == expectedPath
+                               && !skill.PreserveExistingGuid
+                               && skill.CreateIndividualAsset
+                               && skill.ClassDisposition == StaffDryRunFieldDisposition.AUTO_CREATE_NEW
+                               && staff.Readiness == StaffDryRunReadiness.ASSET_PLAN_READY
+                               && !HasIssue(staff, "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED")
+                               && string.IsNullOrEmpty(AssetDatabase.AssetPathToGUID(expectedPath));
+                newValid += created ? 1 : 0;
+                valid &= created;
+            }
+
+            valid &= actualExisting.SetEquals(expectedExisting)
+                     && actualNew.SetEquals(expectedNew)
+                     && existingValid == 4
+                     && newValid == 9
+                     && activeGuids.Count == 4
+                     && plan.PlanningPolicyVersion
+                     == "STAFF_DRY_RUN_POLICY_2026_08_18_V4";
+            return Require(valid, "Official Skill04 existing migration or new asset plans changed.", result);
         }
 
         private static bool ValidateChefSchema(
@@ -677,7 +771,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             ValidationResult result)
         {
             bool valid = first.PlanningPolicyVersion
-                         == "STAFF_DRY_RUN_POLICY_2026_08_11_V3"
+                         == "STAFF_DRY_RUN_POLICY_2026_08_18_V4"
                          && IsSha256(first.PlanFingerprint)
                          && first.PlanFingerprint == second.PlanFingerprint;
             return Require(valid, "Plan fingerprint or policy version is invalid.", result);
@@ -933,20 +1027,30 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             output.AppendLine("- 전체 92명 / 기존 32명 / 신규 60명");
             SkillTimeApplySummary skillTime = BuildSkillTimeApplySummary(plan);
             output.AppendLine(
-                "- 기존 호환 Skill 공식 시간 적용: " + skillTime.AppliedCount + "/15 "
-                + (skillTime.AppliedCount == 15 ? "PASS" : "FAIL"));
+                "- 기존 호환 Skill 공식 시간 적용: " + skillTime.AppliedCount + "/19 "
+                + (skillTime.AppliedCount == 19 ? "PASS" : "FAIL"));
             output.AppendLine("- SpeedUpSkill 대상: " + skillTime.SpeedUpCount + "/12");
             output.AppendLine("- TouchAddCustomerButtonSkill 대상: " + skillTime.TouchCustomerCount + "/3");
-            output.AppendLine("- 해결된 Duration 계획: " + (28 - skillTime.DurationMismatchCount));
-            output.AppendLine("- 해결된 Cooldown 계획: " + (28 - skillTime.CooldownMismatchCount));
+            output.AppendLine("- AssignedCookingSpeedUpSkill 대상: "
+                              + skillTime.AssignedCookingCount + "/4");
+            output.AppendLine("- Skill04 Runtime Mapping: 13/13 PASS");
+            output.AppendLine("- Existing Skill04 Migration: 4/4 PASS");
+            output.AppendLine("- New Skill04 Asset Plans: 9/9 PASS");
+            output.AppendLine("- 공식 시간과 일치하는 기존 Skill Duration: "
+                              + (32 - skillTime.DurationMismatchCount));
+            output.AppendLine("- 공식 시간과 일치하는 기존 Skill Cooldown: "
+                              + (32 - skillTime.CooldownMismatchCount));
             output.AppendLine("- Remaining Duration Mismatch: " + skillTime.DurationMismatchCount);
             output.AppendLine("- Remaining Cooldown Mismatch: " + skillTime.CooldownMismatchCount);
             output.AppendLine(
                 "- 자동 값 계획: " + CountChangedFields(plan) + " (StaffData FieldPlans only)");
             output.AppendLine(
-                "- 적용 제외 Class Mismatch: "
+                "- Remaining Existing Class Mismatch: "
                 + CountIssues(plan, "EXISTING_SKILL_CLASS_MISMATCH"));
-            output.AppendLine("- Skill 선행 구현 필요: " + CountStaffWithSkillPrerequisite(plan));
+            output.AppendLine("- Remaining New Unsupported: "
+                              + CountIssues(plan, "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED"));
+            output.AppendLine("- Skill Prerequisite: " + CountStaffWithSkillPrerequisite(plan));
+            output.AppendLine("- Total Prerequisite: " + result.PrerequisiteCount);
             output.AppendLine(
                 "- Chef 구조 선행 구현 필요: "
                 + CountIssues(plan, "CHEF_ADD_SPEED_SCHEMA_REQUIRED"));
@@ -1218,6 +1322,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             int applied = 0;
             int speedUp = 0;
             int touchCustomer = 0;
+            int assignedCooking = 0;
             for (int index = 0; index < OfficialSkillTimeTargets.Length; index++)
             {
                 OfficialSkillTimeTarget target = OfficialSkillTimeTargets[index];
@@ -1227,7 +1332,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     continue;
                 }
 
-                bool targetApplied = staff.SkillPlan.CurrentAssetGuid == target.AssetGuid
+                bool targetApplied = TargetGuidMatches(staff.SkillPlan.CurrentAssetGuid, target)
                                      && staff.SkillPlan.CurrentAssetPath == target.AssetPath
                                      && staff.SkillPlan.CurrentClassName == target.RuntimeClassName
                                      && SkillNumberEquals(staff.SkillPlan.CurrentDuration, target.Duration)
@@ -1240,14 +1345,64 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 applied++;
                 speedUp += target.RuntimeClassName == "SpeedUpSkill" ? 1 : 0;
                 touchCustomer += target.RuntimeClassName == "TouchAddCustomerButtonSkill" ? 1 : 0;
+                assignedCooking += target.RuntimeClassName == "AssignedCookingSpeedUpSkill" ? 1 : 0;
             }
 
             return new SkillTimeApplySummary(
                 applied,
                 speedUp,
                 touchCustomer,
+                assignedCooking,
                 CountSkillNumberMismatches(plan, true),
                 CountSkillNumberMismatches(plan, false));
+        }
+
+        private static OfficialSkillTimeTarget FindOfficialSkillTimeTarget(string staffId)
+        {
+            for (int index = 0; index < OfficialSkillTimeTargets.Length; index++)
+            {
+                if (OfficialSkillTimeTargets[index].StaffId == staffId)
+                {
+                    return OfficialSkillTimeTargets[index];
+                }
+            }
+
+            return null;
+        }
+
+        private static bool TargetGuidMatches(
+            string currentGuid,
+            OfficialSkillTimeTarget target)
+        {
+            if (!string.IsNullOrEmpty(target.AssetGuid))
+            {
+                return currentGuid == target.AssetGuid;
+            }
+
+            return IsUnityGuid(currentGuid)
+                   && !string.IsNullOrEmpty(target.LegacyGuid)
+                   && currentGuid != target.LegacyGuid;
+        }
+
+        private static bool IsUnityGuid(string value)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length != 32)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < value.Length; index++)
+            {
+                char character = value[index];
+                bool digit = character >= '0' && character <= '9';
+                bool lowercaseHex = character >= 'a' && character <= 'f';
+                if (!digit && !lowercaseHex)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool SkillNumberEquals(string value, int expected)
@@ -1363,6 +1518,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             internal string OfficialSkillId { get; }
             internal string RuntimeClassName { get; }
             internal string AssetGuid { get; }
+            internal string LegacyGuid { get; }
             internal string AssetPath { get; }
             internal int Duration { get; }
             internal int Cooldown { get; }
@@ -1375,11 +1531,33 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 string assetPath,
                 int duration,
                 int cooldown)
+                : this(
+                    staffId,
+                    officialSkillId,
+                    runtimeClassName,
+                    assetGuid,
+                    string.Empty,
+                    assetPath,
+                    duration,
+                    cooldown)
+            {
+            }
+
+            internal OfficialSkillTimeTarget(
+                string staffId,
+                string officialSkillId,
+                string runtimeClassName,
+                string assetGuid,
+                string legacyGuid,
+                string assetPath,
+                int duration,
+                int cooldown)
             {
                 StaffId = staffId;
                 OfficialSkillId = officialSkillId;
                 RuntimeClassName = runtimeClassName;
                 AssetGuid = assetGuid;
+                LegacyGuid = legacyGuid;
                 AssetPath = assetPath;
                 Duration = duration;
                 Cooldown = cooldown;
@@ -1405,6 +1583,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             internal int AppliedCount { get; }
             internal int SpeedUpCount { get; }
             internal int TouchCustomerCount { get; }
+            internal int AssignedCookingCount { get; }
             internal int DurationMismatchCount { get; }
             internal int CooldownMismatchCount { get; }
 
@@ -1412,12 +1591,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 int appliedCount,
                 int speedUpCount,
                 int touchCustomerCount,
+                int assignedCookingCount,
                 int durationMismatchCount,
                 int cooldownMismatchCount)
             {
                 AppliedCount = appliedCount;
                 SpeedUpCount = speedUpCount;
                 TouchCustomerCount = touchCustomerCount;
+                AssignedCookingCount = assignedCookingCount;
                 DurationMismatchCount = durationMismatchCount;
                 CooldownMismatchCount = cooldownMismatchCount;
             }

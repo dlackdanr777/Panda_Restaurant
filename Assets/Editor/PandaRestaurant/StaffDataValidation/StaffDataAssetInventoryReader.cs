@@ -11,6 +11,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
     {
         internal const string StaffDataFolder = "Assets/Resources/StaffData";
         internal const string SkillFolder = "Assets/Scripts/Datas/Staff/Skill";
+        internal const string LegacySkillFolder = "Assets/Scripts/Datas/Staff/LegacySkill";
 
         internal static bool TryBuildReadOnlyInventory(
             out StaffDataAssetInventorySnapshot snapshot,
@@ -74,6 +75,18 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             {
                 string path = AssetDatabase.GUIDToAssetPath(skillGuids[index]);
                 if (IsAssetFileInFolder(path, SkillFolder))
+                {
+                    paths.Add(path);
+                }
+            }
+
+            string[] legacySkillGuids = AssetDatabase.FindAssets(
+                string.Empty,
+                new[] { LegacySkillFolder });
+            for (int index = 0; index < legacySkillGuids.Length; index++)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(legacySkillGuids[index]);
+                if (IsAssetFileInFolder(path, LegacySkillFolder))
                 {
                     paths.Add(path);
                 }

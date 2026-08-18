@@ -14,6 +14,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
     {
         private const string MenuPath =
             "Tools/Panda Restaurant/Staff/Validate Current Staff Asset Inventory";
+        private const string AssignedCookingScriptGuid =
+            "f6dec9edb1244c84d99fc7f5daea02f9";
 
         private static readonly Dictionary<string, int> ExpectedStaffClassCounts =
             new Dictionary<string, int>(StringComparer.Ordinal)
@@ -29,9 +31,18 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private static readonly Dictionary<string, int> ExpectedSkillClassCounts =
             new Dictionary<string, int>(StringComparer.Ordinal)
             {
-                { "SpeedUpSkill", 27 },
-                { "TouchAddCustomerButtonSkill", 5 }
+                { "SpeedUpSkill", 23 },
+                { "TouchAddCustomerButtonSkill", 5 },
+                { "AssignedCookingSpeedUpSkill", 4 }
             };
+
+        private static readonly Skill04MigrationTarget[] Skill04MigrationTargets =
+        {
+            new Skill04MigrationTarget("STAFF17", "Staff17Skill.asset", "STAFF17Skill", "c1305190b57c1d54482ece9b2e58be3d", 18, 200, 25, 160),
+            new Skill04MigrationTarget("STAFF19", "Staff19Skill.asset", "STAFF19Skill", "67fad8354daa0194fbbcf5833b9ebdca", 24, 150, 25, 160),
+            new Skill04MigrationTarget("STAFF20", "Staff20Skill.asset", "STAFF20Skill", "ab2b64bcb83dc9d48b5773f0c88a830e", 27, 150, 25, 160),
+            new Skill04MigrationTarget("STAFF29", "STAFF29SKILL.asset", "STAFF29SKILL", "6513e175122c20641a60cad9e71895fa", 30, 150, 30, 150)
+        };
 
         [MenuItem(MenuPath)]
         private static void ValidateCurrentStaffAssetInventory()
@@ -100,6 +111,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                            errors);
             bool immutabilityPassed = inventoryPassed
                                       && ValidateDeepImmutability(firstSnapshot, errors);
+            bool skill04MigrationPassed = inventoryPassed
+                                          && ValidateSkill04Migration(
+                                              firstSnapshot,
+                                              details[13],
+                                              errors);
 
             Dictionary<string, AssetFileState> afterState;
             bool afterStateBuilt = TryCollectTargetAssetState(
@@ -121,6 +137,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                           && fingerprintPassed
                           && deterministicPassed
                           && immutabilityPassed
+                          && skill04MigrationPassed
                           && assetStatePassed
                           && errors.Count == 0;
 
@@ -139,13 +156,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             AppendResult(output, 10, "결정론적 재생성", deterministicPassed, details[10]);
             AppendResult(output, 11, "깊은 불변성", immutabilityPassed, details[11]);
             AppendResult(output, 12, "실행 전후 에셋 불변", assetStatePassed, details[12]);
-            output.AppendLine("13. 오류 수: " + errors.Count);
+            AppendResult(output, 13, "Skill04 기존 직원·Legacy 보존", skill04MigrationPassed, details[13]);
+            output.AppendLine("14. 오류 수: " + errors.Count);
             for (int index = 0; index < errors.Count; index++)
             {
                 output.AppendLine("   ERROR: " + errors[index]);
             }
 
-            output.AppendLine("14. 최종 결과: " + (passed ? "PASS" : "FAIL"));
+            output.AppendLine("15. 최종 결과: " + (passed ? "PASS" : "FAIL"));
             output.AppendLine();
             output.AppendLine(
                 "CURRENT STAFF ASSET INVENTORY VALIDATION: " + (passed ? "PASS" : "FAIL"));
@@ -557,13 +575,170 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             details.Add("- Skill 에셋: " + snapshot.Skills.Count + "개");
             details.Add("- 공통 필드 누락: 0 (Inventory 생성 성공 기준)");
-            details.Add("- SpeedUpSkill/TouchAddCustomerButtonSkill: "
-                        + GetCount(classCounts, "SpeedUpSkill") + "/"
-                        + GetCount(classCounts, "TouchAddCustomerButtonSkill"));
+            details.Add("- SpeedUp / Touch / AssignedCooking: "
+                        + GetCount(classCounts, "SpeedUpSkill") + " / "
+                        + GetCount(classCounts, "TouchAddCustomerButtonSkill") + " / "
+                        + GetCount(classCounts, "AssignedCookingSpeedUpSkill"));
             details.Add("- Missing Script/Serialized Reference/비정상 시간: "
                         + missingScriptCount + "/" + missingSerializedReferenceCount
                         + "/" + invalidTimingCount);
             return passed;
+        }
+
+        private static bool ValidateSkill04Migration(
+            StaffDataAssetInventorySnapshot snapshot,
+            List<string> details,
+            List<string> errors)
+        {
+            bool passed = true;
+            int activePassed = 0;
+            int legacyPassed = 0;
+            int legacyActiveReferences = 0;
+            HashSet<string> activeGuids = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> legacyGuids = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < Skill04MigrationTargets.Length; index++)
+            {
+                legacyGuids.Add(Skill04MigrationTargets[index].LegacyGuid);
+            }
+
+            for (int index = 0; index < Skill04MigrationTargets.Length; index++)
+            {
+                Skill04MigrationTarget target = Skill04MigrationTargets[index];
+                StaffDataAssetSnapshot staff;
+                if (!snapshot.TryGetStaff(target.StaffId, out staff) || staff == null)
+                {
+                    errors.Add("Skill04 대상 StaffData가 없습니다: " + target.StaffId);
+                    passed = false;
+                    continue;
+                }
+
+                string activePath = StaffDataAssetInventoryReader.SkillFolder
+                                    + "/" + target.FileName;
+                string legacyPath = StaffDataAssetInventoryReader.LegacySkillFolder
+                                    + "/" + target.FileName;
+                StaffSkillAssetSnapshot active = null;
+                bool activeFound = staff.SkillReference != null
+                                   && staff.SkillReference.IsAssigned
+                                   && !staff.SkillReference.IsMissing
+                                   && staff.SkillReference.AssetPath == activePath
+                                   && snapshot.TryGetSkill(staff.SkillReference.AssetGuid, out active)
+                                   && active != null;
+                bool activeValid = activeFound
+                                   && active.ConcreteTypeName == "AssignedCookingSpeedUpSkill"
+                                   && active.ScriptGuid == AssignedCookingScriptGuid
+                                   && active.UnityObjectName == target.ObjectName
+                                   && active.Description
+                                   == "맡은 주방 음식 제작 속도 (150%) 증가"
+                                   && Approximately(active.Duration, target.OfficialDuration)
+                                   && Approximately(active.Cooldown, target.OfficialCooldown)
+                                   && active.ReferenceCount == 1
+                                   && active.ReferencedStaffIds.Count == 1
+                                   && active.ReferencedStaffIds[0] == target.StaffId
+                                   && IsUnityGuid(active.AssetGuid)
+                                   && !legacyGuids.Contains(active.AssetGuid)
+                                   && activeGuids.Add(active.AssetGuid);
+                List<string> activeReferences = FindAssetReferences(
+                    active == null ? string.Empty : active.AssetGuid,
+                    activePath);
+                activeValid &= activeReferences.Count == 1
+                               && activeReferences[0] == staff.AssetPath;
+                AssignedCookingSpeedUpSkill assigned = activeValid
+                    ? AssetDatabase.LoadAssetAtPath<AssignedCookingSpeedUpSkill>(activePath)
+                    : null;
+                SerializedProperty percent = assigned == null
+                    ? null
+                    : new SerializedObject(assigned).FindProperty(
+                        "_assignedCookingSpeedUpPercent");
+                activeValid &= percent != null && Approximately(percent.floatValue, 150f);
+                if (activeValid)
+                {
+                    activePassed++;
+                }
+                else
+                {
+                    errors.Add("Skill04 Active Asset 검증 실패: " + target.StaffId);
+                    passed = false;
+                }
+
+                string legacyGuid = AssetDatabase.AssetPathToGUID(legacyPath);
+                SpeedUpSkill legacy = AssetDatabase.LoadAssetAtPath<SpeedUpSkill>(legacyPath);
+                bool legacyValid = legacy != null
+                                   && legacyGuid == target.LegacyGuid
+                                   && legacy.name == target.ObjectName
+                                   && Approximately(legacy.Duration, target.LegacyDuration)
+                                   && Approximately(legacy.Cooldown, target.LegacyCooldown)
+                                   && Approximately(legacy.FirstValue, 100f);
+                List<string> legacyReferences = FindAssetReferences(legacyGuid, legacyPath);
+                legacyActiveReferences += legacyReferences.Count;
+                legacyValid &= legacyReferences.Count == 0;
+                if (legacyValid)
+                {
+                    legacyPassed++;
+                }
+                else
+                {
+                    errors.Add("Skill04 Legacy Asset 보존 검증 실패: " + target.StaffId);
+                    passed = false;
+                }
+            }
+
+            Dictionary<string, int> classCounts = new Dictionary<string, int>(StringComparer.Ordinal);
+            int shared = 0;
+            int orphan = 0;
+            for (int index = 0; index < snapshot.Skills.Count; index++)
+            {
+                StaffSkillAssetSnapshot skill = snapshot.Skills[index];
+                int count;
+                classCounts.TryGetValue(skill.ConcreteTypeName, out count);
+                classCounts[skill.ConcreteTypeName] = count + 1;
+                shared += skill.IsShared ? 1 : 0;
+                orphan += skill.IsOrphan ? 1 : 0;
+            }
+
+            details.Add("- Active Skill Asset: " + snapshot.Skills.Count);
+            details.Add("- SpeedUp / Touch / AssignedCooking: "
+                        + GetCount(classCounts, "SpeedUpSkill") + " / "
+                        + GetCount(classCounts, "TouchAddCustomerButtonSkill") + " / "
+                        + GetCount(classCounts, "AssignedCookingSpeedUpSkill"));
+            details.Add("- Skill04 기존 직원 전환: " + activePassed + "/4");
+            details.Add("- Legacy Skill 보존: " + legacyPassed + "/4");
+            details.Add("- Active Shared / Orphan: " + shared + " / " + orphan);
+            details.Add("- Legacy Active Reference: " + legacyActiveReferences);
+            return passed;
+        }
+
+        private static List<string> FindAssetReferences(string guid, string targetPath)
+        {
+            List<string> references = new List<string>();
+            if (string.IsNullOrEmpty(guid))
+            {
+                return references;
+            }
+
+            string[] assetPaths = AssetDatabase.GetAllAssetPaths();
+            for (int index = 0; index < assetPaths.Length; index++)
+            {
+                string path = assetPaths[index];
+                if (!path.StartsWith("Assets/", StringComparison.Ordinal)
+                    || path == targetPath
+                    || AssetDatabase.IsValidFolder(path))
+                {
+                    continue;
+                }
+
+                string[] dependencies = AssetDatabase.GetDependencies(path, false);
+                for (int dependencyIndex = 0; dependencyIndex < dependencies.Length; dependencyIndex++)
+                {
+                    if (dependencies[dependencyIndex] == targetPath)
+                    {
+                        references.Add(path);
+                        break;
+                    }
+                }
+            }
+
+            references.Sort(StringComparer.Ordinal);
+            return references;
         }
 
         private static bool ValidateStaffSkillGraph(
@@ -1070,6 +1245,32 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             return !float.IsNaN(value) && !float.IsInfinity(value) && value >= 0f;
         }
 
+        private static bool Approximately(float left, float right)
+        {
+            return Math.Abs(left - right) <= 0.0001f;
+        }
+
+        private static bool IsUnityGuid(string value)
+        {
+            if (string.IsNullOrEmpty(value) || value.Length != 32)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < value.Length; index++)
+            {
+                char character = value[index];
+                bool digit = character >= '0' && character <= '9';
+                bool lowercaseHex = character >= 'a' && character <= 'f';
+                if (!digit && !lowercaseHex)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         private static bool IsPathInSkillFolder(string path)
         {
             return !string.IsNullOrEmpty(path)
@@ -1142,7 +1343,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private static Dictionary<int, List<string>> CreateDetailSections()
         {
             Dictionary<int, List<string>> result = new Dictionary<int, List<string>>();
-            for (int number = 1; number <= 12; number++)
+            for (int number = 1; number <= 13; number++)
             {
                 result.Add(number, new List<string>());
             }
@@ -1161,6 +1362,38 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             for (int index = 0; index < details.Count; index++)
             {
                 output.AppendLine("   " + details[index]);
+            }
+        }
+
+        private sealed class Skill04MigrationTarget
+        {
+            internal string StaffId { get; }
+            internal string FileName { get; }
+            internal string ObjectName { get; }
+            internal string LegacyGuid { get; }
+            internal float LegacyDuration { get; }
+            internal float LegacyCooldown { get; }
+            internal float OfficialDuration { get; }
+            internal float OfficialCooldown { get; }
+
+            internal Skill04MigrationTarget(
+                string staffId,
+                string fileName,
+                string objectName,
+                string legacyGuid,
+                float legacyDuration,
+                float legacyCooldown,
+                float officialDuration,
+                float officialCooldown)
+            {
+                StaffId = staffId;
+                FileName = fileName;
+                ObjectName = objectName;
+                LegacyGuid = legacyGuid;
+                LegacyDuration = legacyDuration;
+                LegacyCooldown = legacyCooldown;
+                OfficialDuration = officialDuration;
+                OfficialCooldown = officialCooldown;
             }
         }
 
