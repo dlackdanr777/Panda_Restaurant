@@ -14,6 +14,7 @@ public class BurnerKitchenUtensil : KitchenUtensil
     bool _isStaffWorking = false;
 
     public float CookSpeedMul => _isTouch ? 2f : 1f;
+    public bool IsStaffWorking => _isStaffWorking;
 
 
     public override void Init(ERestaurantFloorType floor)

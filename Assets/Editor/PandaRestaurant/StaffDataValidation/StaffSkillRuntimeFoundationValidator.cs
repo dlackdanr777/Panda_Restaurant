@@ -49,6 +49,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(29, "Skill03 Staff별 Timer", ValidateSkill03PerStaffTimer);
             report.Run(30, "Skill ScriptableObject 구조", ValidateSkillScriptableObjectStructure);
             report.Run(31, "Staff MoveSpeedMul 구조", ValidateStaffMoveSpeedStructure);
+            report.Run(32, "Skill04 AssignedCooking Context", ValidateSkill04AssignedCookingContext);
+            report.Run(33, "Skill04 조리 배율 Helper", ValidateSkill04CalculationHelper);
+            report.Run(34, "Skill04 Class 구조", ValidateSkill04ClassStructure);
+            report.Run(35, "Burner StaffWorking 구조", ValidateBurnerWorkingProperty);
+            report.Run(36, "Skill04 비파괴 구조", ValidateSkill04NonDestructiveStructure);
             report.Print();
         }
 
@@ -890,6 +895,168 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 typeof(float));
         }
 
+        private static void ValidateSkill04AssignedCookingContext()
+        {
+            StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken firstToken = context.BeginActivation("STAFF_SKILL04");
+
+            context.SetAssignedCookingBonusPercent(firstToken, 150f);
+            RequireNear(
+                150f,
+                context.AssignedCookingBonusPercent,
+                "Skill04 must register a 150 percent assigned cooking bonus.");
+            RequireNear(
+                2.5f,
+                1f + context.AssignedCookingBonusPercent * 0.01f,
+                "Skill04 150 percent must mean a 2.5 multiplier.");
+
+            StaffSkillRuntimeContext independentContext = new StaffSkillRuntimeContext();
+            StaffSkillSourceToken independentToken = independentContext.BeginActivation("STAFF_SKILL04_INDEPENDENT");
+            independentContext.SetAssignedCookingBonusPercent(independentToken, 75f);
+            RequireNear(
+                150f,
+                context.AssignedCookingBonusPercent,
+                "A second Context must not change the first Skill04 Context.");
+            RequireNear(
+                75f,
+                independentContext.AssignedCookingBonusPercent,
+                "Skill04 Context values must remain independent.");
+            Cancel(independentContext, independentToken);
+
+            context.SetAssignedCookingBonusPercent(firstToken, 0f);
+            RequireNear(
+                0f,
+                context.AssignedCookingBonusPercent,
+                "Skill04 deactivation must register zero percent.");
+
+            Cancel(context, firstToken);
+            RequireNear(
+                0f,
+                context.AssignedCookingBonusPercent,
+                "Skill04 cancellation must leave the assigned cooking bonus at zero.");
+
+            StaffSkillSourceToken secondToken = context.BeginActivation("STAFF_SKILL04_NEXT");
+            context.SetAssignedCookingBonusPercent(secondToken, 40f);
+            context.SetAssignedCookingBonusPercent(firstToken, 150f);
+            RequireNear(
+                40f,
+                context.AssignedCookingBonusPercent,
+                "A stale token must not change the Skill04 assigned cooking bonus.");
+            Cancel(context, secondToken);
+        }
+
+        private static void ValidateSkill04CalculationHelper()
+        {
+            MethodInfo method = typeof(KitchenUtensilGroup).GetMethod(
+                "CalculateAssignedCookingSpeedMultiplier",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Require(method != null, "Skill04 cooking multiplier helper is missing.");
+            Require(method.ReturnType == typeof(float), "Skill04 cooking multiplier helper must return float.");
+
+            ParameterInfo[] parameters = method.GetParameters();
+            Require(parameters.Length == 3, "Skill04 cooking multiplier helper must have three parameters.");
+            Require(parameters[0].ParameterType == typeof(bool), "Skill04 helper parameter 1 must be bool.");
+            Require(parameters[1].ParameterType == typeof(bool), "Skill04 helper parameter 2 must be bool.");
+            Require(parameters[2].ParameterType == typeof(float), "Skill04 helper parameter 3 must be float.");
+
+            RequireNear(1f, InvokeSkill04Multiplier(method, false, false, 150f), "No assigned Staff must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, false, true, 150f), "Working without an assigned Staff must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, false, 150f), "A moving Staff must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, true, 0f), "Zero percent must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, true, -1f), "A negative percent must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, true, float.NaN), "NaN must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, true, float.PositiveInfinity), "Positive infinity must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, true, float.NegativeInfinity), "Negative infinity must produce 1.0.");
+            RequireNear(2.5f, InvokeSkill04Multiplier(method, true, true, 150f), "150 percent must produce 2.5.");
+            RequireNear(11f, InvokeSkill04Multiplier(method, true, true, 1000f), "1000 percent must produce 11.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, true, 1000.01f), "An out-of-range finite percent must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, true, 1001f), "1001 percent must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, true, float.MaxValue), "float.MaxValue must produce 1.0.");
+        }
+
+        private static float InvokeSkill04Multiplier(
+            MethodInfo method,
+            bool hasAssignedStaff,
+            bool isStaffWorking,
+            float assignedCookingBonusPercent)
+        {
+            object result = method.Invoke(
+                null,
+                new object[] { hasAssignedStaff, isStaffWorking, assignedCookingBonusPercent });
+            Require(result is float, "Skill04 cooking multiplier helper returned an invalid value.");
+            return (float)result;
+        }
+
+        private static void ValidateSkill04ClassStructure()
+        {
+            Type skillType = typeof(AssignedCookingSpeedUpSkill);
+            Require(skillType.BaseType == typeof(SkillBase), "AssignedCookingSpeedUpSkill must inherit SkillBase.");
+            Require(!skillType.IsAbstract, "AssignedCookingSpeedUpSkill must not be abstract.");
+            ValidateDeclaredInstanceFields(skillType, "_assignedCookingSpeedUpPercent");
+
+            FieldInfo percentField = skillType.GetField(
+                "_assignedCookingSpeedUpPercent",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            Require(percentField != null, "Skill04 assigned cooking percent field is missing.");
+            Require(percentField.FieldType == typeof(float), "Skill04 assigned cooking percent field must be float.");
+            Require(
+                percentField.GetCustomAttribute<SerializeField>() != null,
+                "Skill04 assigned cooking percent field must be serialized.");
+
+            RangeAttribute range = percentField.GetCustomAttribute<RangeAttribute>();
+            Require(range != null, "Skill04 assigned cooking percent field must have a Range attribute.");
+            RequireNear(0f, range.min, "Skill04 assigned cooking percent minimum must be zero.");
+            RequireNear(1000f, range.max, "Skill04 assigned cooking percent maximum must be 1000.");
+
+            CreateAssetMenuAttribute menu = skillType.GetCustomAttribute<CreateAssetMenuAttribute>();
+            Require(menu != null, "AssignedCookingSpeedUpSkill must have CreateAssetMenu.");
+            Require(menu.fileName == "AssignedCookingSpeedUpSkill", "Skill04 CreateAssetMenu filename changed.");
+            Require(
+                menu.menuName == "Scriptable Object/Skill/AssignedCookingSpeedUpSkill",
+                "Skill04 CreateAssetMenu path changed.");
+
+            ValidateReadOnlyProperty(skillType, "FirstValue", typeof(float));
+            ValidateReadOnlyProperty(skillType, "SecondValue", typeof(float));
+        }
+
+        private static void ValidateBurnerWorkingProperty()
+        {
+            ValidateReadOnlyProperty(
+                typeof(BurnerKitchenUtensil),
+                "IsStaffWorking",
+                typeof(bool));
+
+            FieldInfo workingField = typeof(BurnerKitchenUtensil).GetField(
+                "_isStaffWorking",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            Require(workingField != null, "Burner private _isStaffWorking field must remain present.");
+            Require(workingField.FieldType == typeof(bool), "Burner _isStaffWorking field must remain bool.");
+            Require(workingField.IsPrivate, "Burner _isStaffWorking field must remain private.");
+        }
+
+        private static void ValidateSkill04NonDestructiveStructure()
+        {
+            FieldInfo[] skillFields = typeof(AssignedCookingSpeedUpSkill).GetFields(
+                BindingFlags.Instance
+                | BindingFlags.Public
+                | BindingFlags.NonPublic
+                | BindingFlags.DeclaredOnly);
+            Require(skillFields.Length == 1, "Skill04 must have exactly one declared instance field.");
+            Require(skillFields[0].FieldType == typeof(float), "Skill04 must not store Runtime object references.");
+
+            MethodInfo helper = typeof(KitchenUtensilGroup).GetMethod(
+                "CalculateAssignedCookingSpeedMultiplier",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Require(helper != null && helper.IsStatic, "Skill04 cooking multiplier helper must remain static and pure.");
+
+            PropertyInfo workingProperty = typeof(BurnerKitchenUtensil).GetProperty(
+                "IsStaffWorking",
+                BindingFlags.Instance | BindingFlags.Public);
+            Require(
+                workingProperty != null && workingProperty.GetSetMethod(true) == null,
+                "Burner StaffWorking state must remain read-only outside the existing setter method.");
+        }
+
         private static void ValidateDeclaredInstanceFields(
             Type ownerType,
             params string[] expectedFieldNames)
@@ -1054,7 +1221,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("32. 오류 수: " + _errors.Count);
+                _output.AppendLine("37. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -1062,7 +1229,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "33. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "38. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)

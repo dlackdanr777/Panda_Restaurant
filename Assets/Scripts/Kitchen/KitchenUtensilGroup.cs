@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class KitchenUtensilGroup: MonoBehaviour
 {
+    private const float MaximumAssignedCookingBonusPercent = 1000f;
+
     [Header("Option")]
     [SerializeField] private ERestaurantFloorType _floorType;
     public ERestaurantFloorType FloorType => _floorType;
@@ -51,6 +53,33 @@ public class KitchenUtensilGroup: MonoBehaviour
     public SinkKitchenUtensil GetSinkKitchenUtensil()
     {
         return _sinkKitchenUtensil;
+    }
+
+    private static float CalculateAssignedCookingSpeedMultiplier(
+        bool hasAssignedStaff,
+        bool isStaffWorking,
+        float assignedCookingBonusPercent)
+    {
+        if (!hasAssignedStaff
+            || !isStaffWorking
+            || assignedCookingBonusPercent <= 0f
+            || float.IsNaN(assignedCookingBonusPercent)
+            || float.IsInfinity(assignedCookingBonusPercent)
+            || assignedCookingBonusPercent > MaximumAssignedCookingBonusPercent)
+        {
+            return 1f;
+        }
+
+        float multiplier = 1f + assignedCookingBonusPercent * 0.01f;
+        if (float.IsNaN(multiplier)
+            || float.IsInfinity(multiplier)
+            || multiplier < 1f
+            || multiplier > 11f)
+        {
+            return 1f;
+        }
+
+        return multiplier;
     }
 
 
@@ -158,7 +187,18 @@ public class KitchenUtensilGroup: MonoBehaviour
                     continue; // return이 아닌 continue로 변경
                 }
 
-                float subTime = Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, _burnerDatas[i].CookingData.FoodData.FoodType) * (1 + _burnerDatas[i].AddCookSpeedMul * 0.01f * (_burnerDatas[i].UseStaff != null ? _burnerDatas[i].UseStaff.SpeedMul : 1));
+                KitchenBurnerData burnerData = _burnerDatas[i];
+                Staff assignedStaff = burnerData.UseStaff;
+                BurnerKitchenUtensil burner = burnerData.KitchenUtensil;
+                float assignedCookingSpeedMultiplier = CalculateAssignedCookingSpeedMultiplier(
+                    assignedStaff != null,
+                    burner != null && burner.IsStaffWorking,
+                    assignedStaff != null
+                        ? assignedStaff.RuntimeSkillContext.AssignedCookingBonusPercent
+                        : 0f);
+
+                float subTime = Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, burnerData.CookingData.FoodData.FoodType) * (1 + burnerData.AddCookSpeedMul * 0.01f * (assignedStaff != null ? assignedStaff.SpeedMul : 1));
+                subTime *= assignedCookingSpeedMultiplier;
                 
                 // _burnerKitchenUtensils 리스트의 인덱스가 i와 일치하는지 확인
                 if (i < _burnerKitchenUtensils.Count && _burnerKitchenUtensils[i] != null)
