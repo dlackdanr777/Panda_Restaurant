@@ -72,7 +72,9 @@ public class GameManager : MonoBehaviour
 
 
     public int AddScore => _addFurnitureScore + _addKitchenUtensilScore + _addGiveGachaItemScore;
-    public float TipMul =>  1 /*Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f)*/;
+    // FOOD_TIP_POLICY_2026_08_19_V1
+    private const float BaseFoodTipMultiplier = 0.5f;
+    public float TipMul => BaseFoodTipMultiplier;
 
     public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addGiveGachaItemTipPerMinute;
     public int MaxTipVolume => Math.Max(3000, _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume);

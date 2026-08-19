@@ -63,6 +63,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(42, "FoodPriceUpSkill Class 구조", ValidateSkill05ClassStructure);
             report.Run(43, "Food Price Getter 구조", ValidateSkill05FoodPriceGetterStructure);
             report.Run(44, "주문 가격 Boundary", ValidateSkill05OrderPriceBoundary);
+            report.Run(45, "음식 기본 팁률 50%", ValidateBaseFoodTipPolicy);
+            report.Run(46, "음식 팁 공식·격리 구조", ValidateFoodTipIsolationStructure);
             report.Print();
         }
 
@@ -1508,6 +1510,183 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(endEatSource.Contains("int finalPaymentTip"), "EndEat must preserve finalPaymentTip.");
         }
 
+        private static void ValidateBaseFoodTipPolicy()
+        {
+            Type gameManagerType = typeof(GameManager);
+            FieldInfo multiplierField = gameManagerType.GetField(
+                "BaseFoodTipMultiplier",
+                BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            Require(multiplierField != null, "BaseFoodTipMultiplier constant is missing.");
+            Require(multiplierField.FieldType == typeof(float), "BaseFoodTipMultiplier must be float.");
+            Require(multiplierField.IsPrivate, "BaseFoodTipMultiplier must be private.");
+            Require(multiplierField.IsStatic, "BaseFoodTipMultiplier must be static.");
+            Require(multiplierField.IsLiteral, "BaseFoodTipMultiplier must be const.");
+            Require(
+                multiplierField.GetCustomAttribute<SerializeField>() == null,
+                "BaseFoodTipMultiplier must not be serialized.");
+            Require(
+                !typeof(UnityEngine.Object).IsAssignableFrom(multiplierField.FieldType),
+                "BaseFoodTipMultiplier must not be a Unity Object.");
+
+            object rawValue = multiplierField.GetRawConstantValue();
+            Require(rawValue is float, "BaseFoodTipMultiplier constant value must be float.");
+            float multiplier = (float)rawValue;
+            RequireNear(0.5f, multiplier, "BaseFoodTipMultiplier must be 0.5f.");
+
+            PropertyInfo tipMulProperty = gameManagerType.GetProperty(
+                "TipMul",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+            Require(tipMulProperty != null, "GameManager.TipMul property is missing.");
+            Require(tipMulProperty.PropertyType == typeof(float), "GameManager.TipMul must return float.");
+            Require(tipMulProperty.GetIndexParameters().Length == 0, "GameManager.TipMul must not be an indexer.");
+            MethodInfo getter = tipMulProperty.GetGetMethod();
+            Require(getter != null && getter.IsPublic, "GameManager.TipMul must have a public getter.");
+            Require(!getter.IsStatic, "GameManager.TipMul must remain an instance property.");
+            Require(tipMulProperty.GetSetMethod(true) == null, "GameManager.TipMul must not have a setter.");
+
+            string gameManagerSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Manager/GameManager.cs"));
+            string tipMulSource = ExtractSourceSection(
+                gameManagerSource,
+                "// FOOD_TIP_POLICY_2026_08_19_V1",
+                "public int TipPerMinute");
+            Require(
+                CountOccurrences(gameManagerSource, "FOOD_TIP_POLICY_2026_08_19_V1") == 1,
+                "Food tip policy marker must exist exactly once.");
+            Require(
+                tipMulSource.Contains("private const float BaseFoodTipMultiplier = 0.5f;"),
+                "BaseFoodTipMultiplier must be a private 0.5f literal constant.");
+            Require(
+                tipMulSource.Contains("public float TipMul => BaseFoodTipMultiplier;"),
+                "GameManager.TipMul must return BaseFoodTipMultiplier directly.");
+            Require(!tipMulSource.Contains("=> 1"), "GameManager.TipMul must not return the old hard-coded 1.");
+            Require(
+                !tipMulSource.Contains("_addEquipStaffTipMul"),
+                "GameManager.TipMul must not retain the legacy equipment-tip comment.");
+
+            ValidateBaseFoodTipCase(0, multiplier, 1f, 0);
+            ValidateBaseFoodTipCase(1, multiplier, 1f, 0);
+            ValidateBaseFoodTipCase(2, multiplier, 1f, 1);
+            ValidateBaseFoodTipCase(3, multiplier, 1f, 1);
+            ValidateBaseFoodTipCase(100, multiplier, 1f, 50);
+            ValidateBaseFoodTipCase(100, multiplier, 1.03f, 51);
+            ValidateBaseFoodTipCase(100, multiplier, 1.05f, 52);
+            ValidateBaseFoodTipCase(1500, multiplier, 1f, 750);
+            ValidateBaseFoodTipCase(1500, multiplier, 1.05f, 787);
+        }
+
+        private static void ValidateBaseFoodTipCase(
+            int sellPrice,
+            float baseMultiplier,
+            float satisfactionMultiplier,
+            int expected)
+        {
+            int actual = Mathf.FloorToInt(sellPrice * baseMultiplier * satisfactionMultiplier);
+            Require(
+                actual == expected,
+                "Base food tip calculation changed. SellPrice=" + sellPrice
+                + ", Satisfaction=" + satisfactionMultiplier
+                + ", Expected=" + expected
+                + ", Actual=" + actual + ".");
+        }
+
+        private static void ValidateFoodTipIsolationStructure()
+        {
+            string tableSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Table/TableManager.cs"));
+            string seatingSource = ExtractSourceSection(
+                tableSource,
+                "public void OnCustomerSeating(TableData data)",
+                "public void OnCustomerOrder(TableData data)");
+            string endEatSource = ExtractSourceSection(
+                tableSource,
+                "private void EndEat(TableData data)",
+                "private void DirtyTable(TableData data)");
+            string coinSource = ExtractSourceSection(
+                tableSource,
+                "private void StartCoinAnime(TableData data)",
+                "private void StartGarbageAnime(TableData data)");
+            string tipCalculationSource = ExtractSourceSection(
+                seatingSource,
+                "int tip =",
+                "data.TotalTip += tip;");
+            string priceCalculationSource = ExtractSourceSection(
+                seatingSource,
+                "int totalPrice =",
+                "data.TotalPrice += totalPrice;");
+
+            int sellPriceIndex = tipCalculationSource.IndexOf("foodData.GetSellPrice(foodLevel)", StringComparison.Ordinal);
+            int tipMultiplierIndex = tipCalculationSource.IndexOf("GameManager.Instance.TipMul", StringComparison.Ordinal);
+            int satisfactionIndex = tipCalculationSource.IndexOf("_satisfactionSystem.AddCustomerTipMul(", StringComparison.Ordinal);
+            int totalTipIndex = seatingSource.IndexOf("data.TotalTip += tip;", StringComparison.Ordinal);
+            int totalPriceIndex = seatingSource.IndexOf("int totalPrice =", StringComparison.Ordinal);
+            int foodPriceMultiplierIndex = priceCalculationSource.IndexOf(
+                "GameManager.Instance.GetFoodPriceMul(",
+                StringComparison.Ordinal);
+
+            Require(tipCalculationSource.Contains("Mathf.FloorToInt("), "Order tip must use Mathf.FloorToInt.");
+            Require(sellPriceIndex >= 0, "Order tip must use the recipe-level sell price.");
+            Require(tipMultiplierIndex > sellPriceIndex, "Base food tip multiplier must follow the sell price.");
+            Require(satisfactionIndex > tipMultiplierIndex, "Satisfaction tip multiplier must remain after TipMul.");
+            Require(totalTipIndex > satisfactionIndex, "Each floored order tip must accumulate into data.TotalTip.");
+            Require(totalPriceIndex > totalTipIndex, "Food price calculation must remain separate from order tip accumulation.");
+            Require(foodPriceMultiplierIndex >= 0, "Food price multiplier must remain in the price calculation.");
+            Require(
+                CountOccurrences(seatingSource, "GameManager.Instance.TipMul") == 1,
+                "OnCustomerSeating must read TipMul exactly once per order.");
+            Require(
+                CountOccurrences(tableSource, "GameManager.Instance.TipMul") == 1,
+                "Only OnCustomerSeating may read TipMul in TableManager.");
+            Require(!seatingSource.Contains("FoodPricePercent"), "Order tip must not query Skill05 directly.");
+            Require(!seatingSource.Contains("_feverSystem"), "Order tip must not query Fever.");
+            Require(!seatingSource.Contains("IsFeverStart"), "Order tip must not depend on Fever state.");
+            Require(
+                !tipCalculationSource.Contains("GetFoodPriceMul"),
+                "Order tip must not include the food price multiplier.");
+            Require(
+                !priceCalculationSource.Contains("TipMul"),
+                "Food price calculation must not include the base food tip multiplier.");
+
+            Require(endEatSource.Contains("int basePaymentTip = data.TotalTip;"), "EndEat must preserve basePaymentTip.");
+            Require(endEatSource.Contains("EStage paymentStage = UserInfo.CurrentStage;"), "EndEat must preserve paymentStage.");
+            Require(
+                CountOccurrences(endEatSource, "StaffSkillEffectType.RestaurantTipPayoutPercent") == 1,
+                "EndEat must read the Skill06 payout percent exactly once.");
+            Require(
+                CountOccurrences(endEatSource, "StaffPaymentTipCalculator.CalculateFoodPaymentTipPayout") == 1,
+                "EndEat must calculate the final payment tip exactly once.");
+            Require(endEatSource.Contains("int finalPaymentTip"), "EndEat must preserve the payment tip Snapshot.");
+            Require(
+                endEatSource.Contains("UserInfo.AddTip(paymentStage, finalPaymentTip);"),
+                "EndEat must pay the captured tip to the captured Stage.");
+            Require(!endEatSource.Contains("TipMul"), "EndEat must not reapply the base food tip multiplier.");
+
+            Require(
+                coinSource.Contains("data.TotalPrice * (_feverSystem.IsFeverStart ? 2f : 1f)"),
+                "StartCoinAnime must preserve the independent Fever 2x food price.");
+            Require(
+                CountOccurrences(coinSource, "_feverSystem.IsFeverStart") == 1,
+                "StartCoinAnime must read Fever exactly once for food price.");
+            Require(!coinSource.Contains("data.TotalTip *"), "StartCoinAnime must not multiply tips by Fever.");
+            Require(!coinSource.Contains("TipMul"), "StartCoinAnime must not apply the base food tip multiplier.");
+
+            RequireProjectSourceDoesNotContain("Assets/Scripts/Scenes/MainScene.cs", "TipMul");
+            RequireProjectSourceDoesNotContain("Assets/Scripts/UserData/StageInfo.cs", "TipMul");
+            RequireProjectSourceDoesNotContain("Assets/Scripts/UserData/UserInfo.cs", "TipMul");
+            RequireProjectSourceDoesNotContain(
+                "Assets/Scripts/Staff/StaffSkill/AutoTipCollectSkill.cs",
+                "TipMul");
+            RequireProjectSourceDoesNotContain(
+                "Assets/Scripts/Staff/StaffPaymentTipCalculator.cs",
+                "BaseFoodTipMultiplier");
+            RequireProjectSourceDoesNotContain(
+                "Assets/Scripts/Staff/StaffPaymentTipCalculator.cs",
+                "TipMul");
+            RequireProjectSourceDoesNotContain(
+                "Assets/Scripts/Staff/StaffSkill/FoodPriceUpSkill.cs",
+                "TipMul");
+        }
+
         private static string ReadProjectText(string relativePath)
         {
             string projectRoot = Path.GetDirectoryName(Application.dataPath);
@@ -1722,7 +1901,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("45. 오류 수: " + _errors.Count);
+                _output.AppendLine("47. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -1730,7 +1909,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "46. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "48. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)
