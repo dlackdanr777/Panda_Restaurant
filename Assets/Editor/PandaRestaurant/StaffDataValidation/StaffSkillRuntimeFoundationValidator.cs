@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Reflection;
 using System.Text;
 using UnityEditor;
@@ -54,6 +55,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(34, "Skill04 Class 구조", ValidateSkill04ClassStructure);
             report.Run(35, "Burner StaffWorking 구조", ValidateBurnerWorkingProperty);
             report.Run(36, "Skill04 비파괴 구조", ValidateSkill04NonDestructiveStructure);
+            report.Run(37, "Skill06 Registry", ValidateSkill06Registry);
+            report.Run(38, "Payment Tip Calculator", ValidatePaymentTipCalculator);
+            report.Run(39, "Skill06 Class 구조", ValidateSkill06ClassStructure);
+            report.Run(40, "Skill06 결제 Boundary", ValidateSkill06PaymentBoundary);
             report.Print();
         }
 
@@ -1057,6 +1062,291 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 "Burner StaffWorking state must remain read-only outside the existing setter method.");
         }
 
+        private static void ValidateSkill06Registry()
+        {
+            StaffSkillEffectRegistry registry = new StaffSkillEffectRegistry();
+            StaffSkillEffectType effectType = StaffSkillEffectType.RestaurantTipPayoutPercent;
+            StaffSkillSourceToken sourceA = new StaffSkillSourceToken(101, 1);
+            StaffSkillSourceToken sourceB = new StaffSkillSourceToken(102, 1);
+            StaffSkillSourceToken sourceC = new StaffSkillSourceToken(103, 1);
+            StaffSkillSourceToken staleSource = new StaffSkillSourceToken(104, 1);
+
+            RequireNear(0f, registry.GetHighestPercent(effectType), "Skill06 initial highest percent must be zero.");
+            RequireNear(1f, registry.GetMultiplier(effectType), "Skill06 initial multiplier must be 1.0.");
+
+            registry.RegisterOrUpdate(effectType, sourceA, 50f, "STAFF_SKILL06:A");
+            RequireNear(50f, registry.GetHighestPercent(effectType), "Skill06 source A must register 50 percent.");
+            RequireNear(1.5f, registry.GetMultiplier(effectType), "Skill06 50 percent must produce 1.5.");
+
+            registry.RegisterOrUpdate(effectType, sourceB, 50f, "STAFF_SKILL06:B");
+            Require(registry.GetSourceCount(effectType) == 2, "Two Skill06 sources must both remain registered.");
+            RequireNear(1.5f, registry.GetMultiplier(effectType), "Two 50 percent sources must remain 1.5.");
+
+            registry.RegisterOrUpdate(effectType, sourceC, 75f, "STAFF_SKILL06:C");
+            RequireNear(75f, registry.GetHighestPercent(effectType), "The highest Skill06 source must be 75 percent.");
+            RequireNear(1.75f, registry.GetMultiplier(effectType), "Skill06 75 percent must produce 1.75.");
+
+            Require(registry.Remove(effectType, sourceC), "Removing Skill06 source C must succeed.");
+            RequireNear(50f, registry.GetHighestPercent(effectType), "Removing the highest source must restore 50 percent.");
+            Require(registry.Remove(effectType, sourceA), "Removing Skill06 source A must succeed.");
+            Require(registry.ContainsSource(effectType, sourceB), "Skill06 source B must remain registered.");
+            RequireNear(1.5f, registry.GetMultiplier(effectType), "Remaining Skill06 source B must keep 1.5.");
+
+            Require(!registry.Remove(effectType, staleSource), "Removing an absent stale source must be a no-op.");
+            Require(registry.ContainsSource(effectType, sourceB), "Removing a stale source must not remove source B.");
+            Require(registry.RemoveAllForSource(sourceB) == 1, "RemoveAllForSource must remove Skill06 source B.");
+            RequireNear(1f, registry.GetMultiplier(effectType), "Removing every Skill06 source must restore 1.0.");
+
+            registry.RegisterOrUpdate(effectType, sourceA, 50f, "STAFF_SKILL06:A");
+            registry.RegisterOrUpdate(effectType, sourceC, 75f, "STAFF_SKILL06:C");
+            registry.ClearAll();
+            Require(registry.GetSourceCount(effectType) == 0, "Skill06 ClearAll must remove every source.");
+            Require(registry.TotalSourceCount == 0, "Skill06 ClearAll must leave the Registry empty.");
+            RequireNear(0f, registry.GetHighestPercent(effectType), "Skill06 ClearAll must restore zero percent.");
+            RequireNear(1f, registry.GetMultiplier(effectType), "Skill06 ClearAll must restore 1.0.");
+        }
+
+        private static void ValidatePaymentTipCalculator()
+        {
+            Type calculatorType = typeof(TableManager).Assembly.GetType("StaffPaymentTipCalculator");
+            Require(calculatorType != null, "StaffPaymentTipCalculator type is missing.");
+            Require(calculatorType.IsAbstract && calculatorType.IsSealed, "StaffPaymentTipCalculator must be static.");
+
+            MethodInfo method = calculatorType.GetMethod(
+                "CalculateFoodPaymentTipPayout",
+                BindingFlags.Static | BindingFlags.NonPublic);
+            Require(method != null, "CalculateFoodPaymentTipPayout is missing.");
+            Require(method.IsStatic, "CalculateFoodPaymentTipPayout must be static.");
+            Require(!method.IsPublic, "CalculateFoodPaymentTipPayout does not need to be public.");
+            Require(method.ReturnType == typeof(int), "CalculateFoodPaymentTipPayout must return int.");
+
+            ParameterInfo[] parameters = method.GetParameters();
+            Require(parameters.Length == 2, "CalculateFoodPaymentTipPayout must have two parameters.");
+            Require(parameters[0].ParameterType == typeof(int), "Payment Tip parameter 1 must be int.");
+            Require(parameters[1].ParameterType == typeof(float), "Payment Tip parameter 2 must be float.");
+
+            Require(InvokePaymentTipCalculator(method, 0, 50f) == 0, "Base 0 with 50 percent must produce 0.");
+            Require(InvokePaymentTipCalculator(method, 1, 50f) == 1, "Base 1 with 50 percent must produce 1.");
+            Require(InvokePaymentTipCalculator(method, 2, 50f) == 3, "Base 2 with 50 percent must produce 3.");
+            Require(InvokePaymentTipCalculator(method, 3, 50f) == 4, "Base 3 with 50 percent must produce 4.");
+            Require(InvokePaymentTipCalculator(method, 100, 50f) == 150, "Base 100 with 50 percent must produce 150.");
+            Require(InvokePaymentTipCalculator(method, 2, 1000f) == 22, "Base 2 with 1000 percent must produce 22.");
+            Require(InvokePaymentTipCalculator(method, 100, 1000.01f) == 100, "An out-of-range percent must be neutral.");
+            Require(InvokePaymentTipCalculator(method, 100, -1f) == 100, "A negative percent must be neutral.");
+            Require(InvokePaymentTipCalculator(method, 100, float.NaN) == 100, "NaN percent must be neutral.");
+            Require(InvokePaymentTipCalculator(method, 100, float.PositiveInfinity) == 100, "Positive infinity must be neutral.");
+            Require(InvokePaymentTipCalculator(method, 100, float.NegativeInfinity) == 100, "Negative infinity must be neutral.");
+            Require(InvokePaymentTipCalculator(method, -1, 50f) == 0, "A negative Base Tip must produce zero.");
+            Require(
+                InvokePaymentTipCalculator(method, int.MaxValue, 50f) == int.MaxValue,
+                "An overflowing Payment Tip must saturate at int.MaxValue.");
+
+            FieldInfo[] calculatorFields = calculatorType.GetFields(
+                BindingFlags.Static
+                | BindingFlags.Instance
+                | BindingFlags.Public
+                | BindingFlags.NonPublic
+                | BindingFlags.DeclaredOnly);
+            foreach (FieldInfo field in calculatorFields)
+            {
+                Require(field.IsStatic, "StaffPaymentTipCalculator must not store instance state.");
+                Require(
+                    !typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType),
+                    "StaffPaymentTipCalculator must not store Unity Object references.");
+            }
+        }
+
+        private static int InvokePaymentTipCalculator(
+            MethodInfo method,
+            int baseTip,
+            float payoutBonusPercent)
+        {
+            object result = method.Invoke(null, new object[] { baseTip, payoutBonusPercent });
+            Require(result is int, "CalculateFoodPaymentTipPayout returned an invalid value.");
+            return (int)result;
+        }
+
+        private static void ValidateSkill06ClassStructure()
+        {
+            Type skillType = typeof(FoodPaymentTipUpSkill);
+            Require(skillType.BaseType == typeof(SkillBase), "FoodPaymentTipUpSkill must inherit SkillBase.");
+            Require(!skillType.IsAbstract, "FoodPaymentTipUpSkill must not be abstract.");
+            ValidateDeclaredInstanceFields(skillType, "_foodPaymentTipUpPercent");
+
+            FieldInfo percentField = skillType.GetField(
+                "_foodPaymentTipUpPercent",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            Require(percentField != null, "Skill06 payment tip percent field is missing.");
+            Require(percentField.FieldType == typeof(float), "Skill06 payment tip percent field must be float.");
+            Require(
+                percentField.GetCustomAttribute<SerializeField>() != null,
+                "Skill06 payment tip percent field must be serialized.");
+
+            RangeAttribute range = percentField.GetCustomAttribute<RangeAttribute>();
+            Require(range != null, "Skill06 payment tip percent field must have a Range attribute.");
+            RequireNear(0f, range.min, "Skill06 payment tip percent minimum must be zero.");
+            RequireNear(1000f, range.max, "Skill06 payment tip percent maximum must be 1000.");
+
+            CreateAssetMenuAttribute menu = skillType.GetCustomAttribute<CreateAssetMenuAttribute>();
+            Require(menu != null, "FoodPaymentTipUpSkill must have CreateAssetMenu.");
+            Require(menu.fileName == "FoodPaymentTipUpSkill", "Skill06 CreateAssetMenu filename changed.");
+            Require(
+                menu.menuName == "Scriptable Object/Skill/FoodPaymentTipUpSkill",
+                "Skill06 CreateAssetMenu path changed.");
+
+            ValidateReadOnlyProperty(skillType, "FirstValue", typeof(float));
+            ValidateReadOnlyProperty(skillType, "SecondValue", typeof(float));
+
+            string source = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Staff/StaffSkill/FoodPaymentTipUpSkill.cs"));
+            Require(
+                source.Contains("private float _foodPaymentTipUpPercent = 50f;"),
+                "Skill06 payment tip percent default must be 50f.");
+            Require(
+                source.Contains("public override float FirstValue => _foodPaymentTipUpPercent;"),
+                "Skill06 FirstValue must return the serialized percent field.");
+            Require(
+                source.Contains("public override float SecondValue => 0;"),
+                "Skill06 SecondValue must return zero.");
+            Require(
+                source.Contains(
+                    "public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)\n"
+                    + "    {\n"
+                    + "    }"),
+                "Skill06 ActivateUpdate must remain empty.");
+            Require(!source.Contains("GameManager.Instance"), "Skill06 must use the Staff cached Registry.");
+            Require(source.Contains("StaffSkillEffectType.RestaurantTipPayoutPercent"), "Skill06 EffectType is missing.");
+            Require(source.Contains("RegisterOrUpdate("), "Skill06 Activate must register its Source.");
+            Require(source.Contains("effectRegistry.Remove("), "Skill06 Deactivate must remove its Source.");
+
+            FieldInfo[] fields = skillType.GetFields(
+                BindingFlags.Instance
+                | BindingFlags.Public
+                | BindingFlags.NonPublic
+                | BindingFlags.DeclaredOnly);
+            Require(fields.Length == 1, "Skill06 must have exactly one declared instance field.");
+            Require(fields[0].FieldType == typeof(float), "Skill06 must not store Runtime object references.");
+        }
+
+        private static void ValidateSkill06PaymentBoundary()
+        {
+            string tableSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Table/TableManager.cs"));
+            string endEatSource = ExtractSourceSection(
+                tableSource,
+                "private void EndEat(TableData data)",
+                "private void DirtyTable(TableData data)");
+
+            int baseTipIndex = endEatSource.IndexOf("int basePaymentTip = data.TotalTip;", StringComparison.Ordinal);
+            int stageIndex = endEatSource.IndexOf("EStage paymentStage = UserInfo.CurrentStage;", StringComparison.Ordinal);
+            int percentIndex = endEatSource.IndexOf("float payoutBonusPercent = 0f;", StringComparison.Ordinal);
+            int managerIndex = endEatSource.IndexOf("GameManager.TryGetExistingInstance", StringComparison.Ordinal);
+            int effectIndex = endEatSource.IndexOf(
+                "StaffSkillEffectType.RestaurantTipPayoutPercent",
+                StringComparison.Ordinal);
+            int calculatorIndex = endEatSource.IndexOf(
+                "StaffPaymentTipCalculator.CalculateFoodPaymentTipPayout",
+                StringComparison.Ordinal);
+            int finalTipIndex = endEatSource.IndexOf("int finalPaymentTip", StringComparison.Ordinal);
+            int coinIndex = endEatSource.IndexOf("StartCoinAnime(data);", StringComparison.Ordinal);
+
+            Require(baseTipIndex >= 0, "EndEat must capture basePaymentTip.");
+            Require(stageIndex > baseTipIndex, "EndEat must capture paymentStage after Base Tip.");
+            Require(percentIndex > stageIndex, "EndEat must initialize payoutBonusPercent after paymentStage.");
+            Require(managerIndex > percentIndex, "EndEat must use TryGetExistingInstance for the Registry Snapshot.");
+            Require(effectIndex > managerIndex, "EndEat must read RestaurantTipPayoutPercent from the existing Manager.");
+            Require(finalTipIndex > effectIndex, "EndEat must define finalPaymentTip after the Registry Snapshot.");
+            Require(calculatorIndex > finalTipIndex, "EndEat must calculate finalPaymentTip with the pure Calculator.");
+            Require(coinIndex > calculatorIndex, "EndEat must calculate the final tip before StartCoinAnime.");
+            Require(
+                CountOccurrences(endEatSource, "StaffSkillEffectType.RestaurantTipPayoutPercent") == 1,
+                "EndEat must read RestaurantTipPayoutPercent exactly once.");
+            Require(
+                CountOccurrences(tableSource, "StaffSkillEffectType.RestaurantTipPayoutPercent") == 1,
+                "Only EndEat may read RestaurantTipPayoutPercent in TableManager.");
+            Require(
+                endEatSource.Contains("UserInfo.AddTip(paymentStage, finalPaymentTip);"),
+                "EndEat must add the captured final tip to the captured Stage.");
+            Require(
+                !tableSource.Contains("UserInfo.AddTip(UserInfo.CurrentStage, tip);"),
+                "The old delayed CurrentStage payment path must be removed.");
+            Require(
+                !ExtractSourceSection(
+                        tableSource,
+                        "public void OnCustomerSeating(TableData data)",
+                        "public void OnCustomerOrder(TableData data)")
+                    .Contains("RestaurantTipPayoutPercent"),
+                "OnCustomerSeating must not read the Skill06 Registry.");
+
+            RequireProjectSourceDoesNotContain(
+                "Assets/Scripts/UserData/UserInfo.cs",
+                "RestaurantTipPayoutPercent");
+            RequireProjectSourceDoesNotContain(
+                "Assets/Scripts/UserData/StageInfo.cs",
+                "RestaurantTipPayoutPercent");
+            RequireProjectSourceDoesNotContain(
+                "Assets/Scripts/Scenes/MainScene.cs",
+                "RestaurantTipPayoutPercent");
+
+            string autoTipSource = ReadProjectText(
+                "Assets/Scripts/Staff/StaffSkill/AutoTipCollectSkill.cs");
+            Require(
+                !autoTipSource.Contains("RestaurantTipPayoutPercent"),
+                "AutoTipCollectSkill must remain isolated from Skill06.");
+            Require(autoTipSource.Contains("GameManager.Instance.MaxTipVolume"), "AutoTipCollectSkill capacity check changed.");
+            Require(autoTipSource.Contains("UserInfo.TipCollection(UserInfo.CurrentStage);"), "AutoTipCollectSkill collection call changed.");
+        }
+
+        private static string ReadProjectText(string relativePath)
+        {
+            string projectRoot = Path.GetDirectoryName(Application.dataPath);
+            Require(!string.IsNullOrEmpty(projectRoot), "Unity project root could not be resolved.");
+            string fullPath = Path.Combine(
+                projectRoot,
+                relativePath.Replace('/', Path.DirectorySeparatorChar));
+            Require(File.Exists(fullPath), "Required source file is missing: " + relativePath);
+            return File.ReadAllText(fullPath);
+        }
+
+        private static string NormalizeSourceLineEndings(string source)
+        {
+            return source.Replace("\r\n", "\n").Replace('\r', '\n');
+        }
+
+        private static string ExtractSourceSection(
+            string source,
+            string startMarker,
+            string endMarker)
+        {
+            int startIndex = source.IndexOf(startMarker, StringComparison.Ordinal);
+            Require(startIndex >= 0, "Source start marker is missing: " + startMarker);
+            int endIndex = source.IndexOf(endMarker, startIndex, StringComparison.Ordinal);
+            Require(endIndex > startIndex, "Source end marker is missing: " + endMarker);
+            return source.Substring(startIndex, endIndex - startIndex);
+        }
+
+        private static int CountOccurrences(string source, string value)
+        {
+            int count = 0;
+            int index = 0;
+            while ((index = source.IndexOf(value, index, StringComparison.Ordinal)) >= 0)
+            {
+                count++;
+                index += value.Length;
+            }
+
+            return count;
+        }
+
+        private static void RequireProjectSourceDoesNotContain(
+            string relativePath,
+            string forbiddenValue)
+        {
+            Require(
+                !ReadProjectText(relativePath).Contains(forbiddenValue),
+                relativePath + " must not contain " + forbiddenValue + ".");
+        }
+
         private static void ValidateDeclaredInstanceFields(
             Type ownerType,
             params string[] expectedFieldNames)
@@ -1221,7 +1511,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("37. 오류 수: " + _errors.Count);
+                _output.AppendLine("41. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -1229,7 +1519,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "38. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "42. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)

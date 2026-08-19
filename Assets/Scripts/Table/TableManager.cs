@@ -530,7 +530,21 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        int tip = data.TotalTip;
+        int basePaymentTip = data.TotalTip;
+        EStage paymentStage = UserInfo.CurrentStage;
+        float payoutBonusPercent = 0f;
+        GameManager existingGameManager;
+        if (GameManager.TryGetExistingInstance(out existingGameManager))
+        {
+            payoutBonusPercent =
+                existingGameManager.StaffSkillEffectRegistry.GetHighestPercent(
+                    StaffSkillEffectType.RestaurantTipPayoutPercent);
+        }
+
+        int finalPaymentTip =
+            StaffPaymentTipCalculator.CalculateFoodPaymentTipPayout(
+                basePaymentTip,
+                payoutBonusPercent);
         data.CurrentCustomer.ChangeState(CustomerState.Idle);
         data.CurrentCustomer.HideFood();
         UserInfo.CustomerVisits(data.CurrentCustomer.CustomerData);
@@ -545,7 +559,7 @@ public class TableManager : MonoBehaviour
 
             ExitCustomer(data);
  
-            UserInfo.AddTip(UserInfo.CurrentStage, tip);
+            UserInfo.AddTip(paymentStage, finalPaymentTip);
             UpdateTable();
         });
     }
