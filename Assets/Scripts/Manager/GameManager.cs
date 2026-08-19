@@ -406,7 +406,10 @@ public class GameManager : MonoBehaviour
         float foodPriceMul = 1 + _foodPriceMul + (_addSetFoodPriceMul[(int)floor, (int)type] * 0.01f);
         foodPriceMul += (_addGachaItemAllFoodPriceMul * 0.01f) + _addGachaItemFoodPriceMulDic[type] * 0.01f;
         foodPriceMul += _foodTypePriceMul[(int)type] * 0.01f;
-        return foodPriceMul;
+        float staffSkillMultiplier =
+            _staffSkillEffectRegistry.GetMultiplier(
+                StaffSkillEffectType.FoodPricePercent);
+        return foodPriceMul * staffSkillMultiplier;
     }
 
     public void AppendPromotionCustomer(int value)

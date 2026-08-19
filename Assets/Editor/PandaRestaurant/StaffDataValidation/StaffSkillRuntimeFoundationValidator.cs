@@ -59,6 +59,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(38, "Payment Tip Calculator", ValidatePaymentTipCalculator);
             report.Run(39, "Skill06 Class 구조", ValidateSkill06ClassStructure);
             report.Run(40, "Skill06 결제 Boundary", ValidateSkill06PaymentBoundary);
+            report.Run(41, "Skill05 Registry", ValidateSkill05Registry);
+            report.Run(42, "FoodPriceUpSkill Class 구조", ValidateSkill05ClassStructure);
+            report.Run(43, "Food Price Getter 구조", ValidateSkill05FoodPriceGetterStructure);
+            report.Run(44, "주문 가격 Boundary", ValidateSkill05OrderPriceBoundary);
             report.Print();
         }
 
@@ -1297,6 +1301,213 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(autoTipSource.Contains("UserInfo.TipCollection(UserInfo.CurrentStage);"), "AutoTipCollectSkill collection call changed.");
         }
 
+        private static void ValidateSkill05Registry()
+        {
+            StaffSkillEffectRegistry registry = new StaffSkillEffectRegistry();
+            StaffSkillEffectType effectType = StaffSkillEffectType.FoodPricePercent;
+            StaffSkillSourceToken sourceA = new StaffSkillSourceToken(501, 1);
+            StaffSkillSourceToken sourceB = new StaffSkillSourceToken(502, 1);
+            StaffSkillSourceToken sourceC = new StaffSkillSourceToken(503, 1);
+            StaffSkillSourceToken staleSource = new StaffSkillSourceToken(504, 1);
+
+            RequireNear(0f, registry.GetHighestPercent(effectType), "Skill05 initial percent must be zero.");
+            RequireNear(1f, registry.GetMultiplier(effectType), "Skill05 initial multiplier must be 1.0.");
+
+            registry.RegisterOrUpdate(effectType, sourceA, 50f, "STAFF_SKILL05:A");
+            RequireNear(50f, registry.GetHighestPercent(effectType), "Skill05 source A must register 50 percent.");
+            RequireNear(1.5f, registry.GetMultiplier(effectType), "Skill05 50 percent must produce 1.5.");
+
+            registry.RegisterOrUpdate(effectType, sourceB, 50f, "STAFF_SKILL05:B");
+            Require(registry.GetSourceCount(effectType) == 2, "Skill05 equal sources must remain independent.");
+            RequireNear(1.5f, registry.GetMultiplier(effectType), "Two Skill05 50 percent sources must remain 1.5.");
+
+            registry.RegisterOrUpdate(effectType, sourceC, 75f, "STAFF_SKILL05:C");
+            RequireNear(75f, registry.GetHighestPercent(effectType), "Skill05 highest percent must be 75.");
+            RequireNear(1.75f, registry.GetMultiplier(effectType), "Skill05 75 percent must produce 1.75.");
+
+            Require(registry.Remove(effectType, sourceC), "Skill05 highest source must be removable.");
+            RequireNear(50f, registry.GetHighestPercent(effectType), "Skill05 must fall back to 50 percent.");
+            Require(registry.Remove(effectType, sourceA), "Skill05 source A must be removable.");
+            Require(registry.ContainsSource(effectType, sourceB), "Skill05 source B must remain registered.");
+            RequireNear(1.5f, registry.GetMultiplier(effectType), "Remaining Skill05 source B must keep 1.5.");
+
+            Require(!registry.Remove(effectType, staleSource), "Removing an absent stale Skill05 source must be a no-op.");
+            Require(registry.ContainsSource(effectType, sourceB), "A stale removal must not remove the current Skill05 source.");
+            Require(registry.RemoveAllForSource(sourceB) == 1, "RemoveAllForSource must remove Skill05 source B.");
+            Require(registry.GetSourceCount(effectType) == 0, "Every Skill05 source must be removed.");
+            RequireNear(1f, registry.GetMultiplier(effectType), "Removing every Skill05 source must restore 1.0.");
+
+            registry.RegisterOrUpdate(effectType, sourceA, 50f, "STAFF_SKILL05:A");
+            registry.RegisterOrUpdate(effectType, sourceC, 75f, "STAFF_SKILL05:C");
+            registry.ClearAll();
+            Require(registry.GetSourceCount(effectType) == 0, "Skill05 ClearAll must remove every source.");
+            Require(registry.TotalSourceCount == 0, "Skill05 ClearAll must leave the Registry empty.");
+            RequireNear(1f, registry.GetMultiplier(effectType), "Skill05 ClearAll must restore 1.0.");
+        }
+
+        private static void ValidateSkill05ClassStructure()
+        {
+            Type skillType = typeof(FoodPriceUpSkill);
+            Require(skillType.BaseType == typeof(SkillBase), "FoodPriceUpSkill must inherit SkillBase directly.");
+            Require(!skillType.IsAbstract, "FoodPriceUpSkill must not be abstract.");
+            ValidateDeclaredInstanceFields(skillType, "_foodPriceUpPercent");
+
+            FieldInfo percentField = skillType.GetField(
+                "_foodPriceUpPercent",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            Require(percentField != null, "Skill05 food price percent field is missing.");
+            Require(percentField.FieldType == typeof(float), "Skill05 food price percent field must be float.");
+            Require(
+                percentField.GetCustomAttribute<SerializeField>() != null,
+                "Skill05 food price percent field must be serialized.");
+
+            RangeAttribute range = percentField.GetCustomAttribute<RangeAttribute>();
+            Require(range != null, "Skill05 food price percent field must have a Range attribute.");
+            RequireNear(0f, range.min, "Skill05 food price percent minimum must be zero.");
+            RequireNear(1000f, range.max, "Skill05 food price percent maximum must be 1000.");
+
+            CreateAssetMenuAttribute menu = skillType.GetCustomAttribute<CreateAssetMenuAttribute>();
+            Require(menu != null, "FoodPriceUpSkill must have CreateAssetMenu.");
+            Require(menu.fileName == "FoodPriceUpSkill", "Skill05 CreateAssetMenu filename changed.");
+            Require(
+                menu.menuName == "Scriptable Object/Skill/FoodPriceUpSkill",
+                "Skill05 CreateAssetMenu path changed.");
+
+            ValidateReadOnlyProperty(skillType, "FirstValue", typeof(float));
+            ValidateReadOnlyProperty(skillType, "SecondValue", typeof(float));
+
+            string source = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Staff/StaffSkill/FoodPriceUpSkill.cs"));
+            string metaSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Staff/StaffSkill/FoodPriceUpSkill.cs.meta"));
+            Require(
+                CountOccurrences(metaSource, "guid: 2166c039b7672614f9452cc7ec63189a") == 1,
+                "FoodPriceUpSkill Script GUID changed.");
+            Require(
+                source.Contains("private float _foodPriceUpPercent = 50f;"),
+                "Skill05 food price percent default must be 50f.");
+            Require(
+                source.Contains("public override float FirstValue => _foodPriceUpPercent;"),
+                "Skill05 FirstValue must return the serialized percent field.");
+            Require(
+                source.Contains("public override float SecondValue => 0;"),
+                "Skill05 SecondValue must return zero.");
+            Require(
+                source.Contains(
+                    "public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)\n"
+                    + "    {\n"
+                    + "    }"),
+                "Skill05 ActivateUpdate must remain empty.");
+            Require(source.Contains("StaffSkillEffectType.FoodPricePercent"), "Skill05 EffectType is missing.");
+            Require(source.Contains("RegisterOrUpdate("), "Skill05 Activate must register its Source.");
+            Require(source.Contains("effectRegistry.Remove("), "Skill05 Deactivate must remove its Source.");
+            Require(!source.Contains("GameManager.Instance"), "Skill05 must use the Staff cached Registry.");
+            Require(!source.Contains("AddFoodPriceMul"), "Skill05 must not use the Legacy additive price channel.");
+            Require(!source.Contains("-_foodPriceUpPercent"), "Skill05 must not restore by subtracting a negative percent.");
+            Require(!source.Contains("Debug.Log"), "Skill05 must not add unrelated Runtime logs.");
+
+            FieldInfo[] fields = skillType.GetFields(
+                BindingFlags.Instance
+                | BindingFlags.Public
+                | BindingFlags.NonPublic
+                | BindingFlags.DeclaredOnly);
+            Require(fields.Length == 1, "Skill05 must have exactly one declared instance field.");
+            Require(fields[0].FieldType == typeof(float), "Skill05 must not store Runtime object references.");
+            Require(
+                !typeof(UnityEngine.Object).IsAssignableFrom(fields[0].FieldType),
+                "Skill05 must not store Unity Object references.");
+        }
+
+        private static void ValidateSkill05FoodPriceGetterStructure()
+        {
+            string gameManagerSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Manager/GameManager.cs"));
+            string foodPriceSource = ExtractSourceSection(
+                gameManagerSource,
+                "public float GetFoodPriceMul(ERestaurantFloorType floor, FoodType type)",
+                "public void AppendPromotionCustomer(int value)");
+            string cookingSpeedSource = ExtractSourceSection(
+                gameManagerSource,
+                "public float GetCookingSpeedMul(ERestaurantFloorType floor, FoodType type)",
+                "public float GetFoodPriceMul(ERestaurantFloorType floor, FoodType type)");
+            string staffSpeedSource = ExtractSourceSection(
+                gameManagerSource,
+                "public float GetStaffSpeedMul(StaffGroupType type)",
+                "public float GetStaffMoveSpeedMul(StaffGroupType type)");
+
+            int baseIndex = foodPriceSource.IndexOf("float foodPriceMul =", StringComparison.Ordinal);
+            int lastBaseChannelIndex = foodPriceSource.IndexOf("_foodTypePriceMul", StringComparison.Ordinal);
+            int registryIndex = foodPriceSource.IndexOf("_staffSkillEffectRegistry.GetMultiplier(", StringComparison.Ordinal);
+            int returnIndex = foodPriceSource.IndexOf("return foodPriceMul * staffSkillMultiplier;", StringComparison.Ordinal);
+
+            Require(baseIndex >= 0, "GetFoodPriceMul must preserve the existing base price calculation.");
+            Require(foodPriceSource.Contains("_foodPriceMul"), "GetFoodPriceMul must preserve the Legacy price field.");
+            Require(foodPriceSource.Contains("_addSetFoodPriceMul"), "GetFoodPriceMul must preserve the set price channel.");
+            Require(foodPriceSource.Contains("_addGachaItemAllFoodPriceMul"), "GetFoodPriceMul must preserve the all-food Gacha channel.");
+            Require(foodPriceSource.Contains("_addGachaItemFoodPriceMulDic"), "GetFoodPriceMul must preserve the FoodType Gacha channel.");
+            Require(lastBaseChannelIndex >= 0, "GetFoodPriceMul must preserve the existing FoodType price channel.");
+            Require(registryIndex > lastBaseChannelIndex, "Skill05 Registry multiplier must be read after every base price channel.");
+            Require(returnIndex > registryIndex, "GetFoodPriceMul must multiply the completed base price by Skill05.");
+            Require(
+                CountOccurrences(foodPriceSource, "StaffSkillEffectType.FoodPricePercent") == 1,
+                "GetFoodPriceMul must read FoodPricePercent exactly once.");
+            Require(
+                CountOccurrences(foodPriceSource, "_staffSkillEffectRegistry.GetMultiplier(") == 1,
+                "GetFoodPriceMul must query the Registry multiplier exactly once.");
+            Require(
+                CountOccurrences(gameManagerSource, "StaffSkillEffectType.FoodPricePercent") == 1,
+                "Only GetFoodPriceMul may use FoodPricePercent in GameManager.");
+            Require(!foodPriceSource.Contains("_foodPriceMul ="), "GetFoodPriceMul must not write Registry values into the Legacy price field.");
+            Require(!foodPriceSource.Contains("+ 0.5f"), "GetFoodPriceMul must not add a hard-coded Skill05 bonus.");
+            Require(!foodPriceSource.Contains("RestaurantTipPayoutPercent"), "GetFoodPriceMul must remain isolated from Skill06.");
+            Require(!cookingSpeedSource.Contains("FoodPricePercent"), "GetCookingSpeedMul must remain isolated from Skill05.");
+            Require(!staffSpeedSource.Contains("FoodPricePercent"), "GetStaffSpeedMul must remain isolated from Skill05.");
+        }
+
+        private static void ValidateSkill05OrderPriceBoundary()
+        {
+            string tableSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Table/TableManager.cs"));
+            string seatingSource = ExtractSourceSection(
+                tableSource,
+                "public void OnCustomerSeating(TableData data)",
+                "public void OnCustomerOrder(TableData data)");
+            string endEatSource = ExtractSourceSection(
+                tableSource,
+                "private void EndEat(TableData data)",
+                "private void DirtyTable(TableData data)");
+            string coinSource = ExtractSourceSection(
+                tableSource,
+                "private void StartCoinAnime(TableData data)",
+                "private void StartGarbageAnime(TableData data)");
+
+            Require(
+                CountOccurrences(seatingSource, "GameManager.Instance.GetFoodPriceMul(") == 1,
+                "OnCustomerSeating must snapshot the Skill05-aware food price exactly once.");
+            Require(
+                seatingSource.Contains("int totalPrice = (int)(cookingData.Price"),
+                "OnCustomerSeating must preserve integer truncation for the order price.");
+            Require(
+                seatingSource.Contains("data.TotalPrice += totalPrice;"),
+                "OnCustomerSeating must preserve the accumulated order price Snapshot.");
+            Require(
+                CountOccurrences(tableSource, "GameManager.Instance.GetFoodPriceMul(") == 1,
+                "Only OnCustomerSeating may calculate the food price multiplier in TableManager.");
+            Require(!tableSource.Contains("StaffSkillEffectType.FoodPricePercent"), "TableManager must not query the Skill05 Registry directly.");
+            Require(!endEatSource.Contains("FoodPricePercent"), "EndEat must not recalculate Skill05 food prices.");
+            Require(!coinSource.Contains("FoodPricePercent"), "StartCoinAnime must not recalculate Skill05 food prices.");
+            Require(
+                coinSource.Contains("data.TotalPrice * (_feverSystem.IsFeverStart ? 2f : 1f)"),
+                "StartCoinAnime must preserve the independent Fever 2x price multiplier.");
+            Require(
+                endEatSource.Contains("StaffSkillEffectType.RestaurantTipPayoutPercent"),
+                "EndEat must preserve the Skill06 payment tip Registry.");
+            Require(
+                endEatSource.Contains("StaffPaymentTipCalculator.CalculateFoodPaymentTipPayout"),
+                "EndEat must preserve the Skill06 final payment tip calculation.");
+            Require(endEatSource.Contains("int finalPaymentTip"), "EndEat must preserve finalPaymentTip.");
+        }
+
         private static string ReadProjectText(string relativePath)
         {
             string projectRoot = Path.GetDirectoryName(Application.dataPath);
@@ -1511,7 +1722,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("41. 오류 수: " + _errors.Count);
+                _output.AppendLine("45. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -1519,7 +1730,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "42. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "46. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)
