@@ -18,7 +18,7 @@ MonoBehaviour:
   _id: STAFF07
   _description: 
   _rank: 0
-  _skill: {fileID: 11400000, guid: 18348c8c96719374da1f6ba1bcd2987d, type: 2}
+  _skill: {fileID: 11400000, guid: 3bc83c4e0ebd95d47af0030f1db506fe, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
   _salesLocationType: 1

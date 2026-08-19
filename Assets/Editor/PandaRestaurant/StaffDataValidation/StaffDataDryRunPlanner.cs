@@ -1044,6 +1044,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireCount("role GUARD", GetCount(roles, "GUARD"), 2, errors);
             RequireSkill04Distribution(plans, errors);
             RequireSkill06Distribution(plans, errors);
+            RequireSkill05Distribution(plans, errors);
 
             Dictionary<string, int> ranks = CountBy(plans, plan => plan.TargetRankName);
             RequireCount("rank Normal2", GetCount(ranks, "Normal2"), 23, errors);
@@ -1062,17 +1063,22 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireChangedFieldCount(existing, "StaffData._speed", 29, "current speed mismatch", errors);
             RequireIssueCount(existing, "CURRENT_ROLE_VALUE_MISMATCH", 23, errors);
             RequireIssueCount(existing, "CURRENT_UPGRADE_COST_MISMATCH", 32, errors);
-            RequireSkillNumberMismatch(existing, true, 11, "current skill duration mismatch", errors);
-            RequireSkillNumberMismatch(existing, false, 9, "current skill cooldown mismatch", errors);
-            RequireIssueCount(existing, "EXISTING_SKILL_CLASS_MISMATCH", 12, errors);
+            RequireSkillNumberMismatch(existing, true, 5, "current skill duration mismatch", errors);
+            RequireSkillNumberMismatch(existing, false, 3, "current skill cooldown mismatch", errors);
+            RequireIssueCount(existing, "EXISTING_SKILL_CLASS_MISMATCH", 6, errors);
+            RequireIssueStaffIds(
+                existing,
+                "EXISTING_SKILL_CLASS_MISMATCH",
+                new[] { "STAFF06", "STAFF08", "STAFF10", "STAFF15", "STAFF27", "STAFF30" },
+                errors);
             RequireIssueCount(existing, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 0, errors);
             RequireIssueCount(existing, "STAFF02_LEVEL6_SAVE_MIGRATION_REQUIRED", 1, errors);
             RequireReadinessCount(
                 existing,
                 StaffDryRunReadiness.PLAN_READY_WITH_WARNINGS,
-                19,
+                25,
                 errors);
-            RequireReadinessCount(existing, StaffDryRunReadiness.SKILL_CLASS_REQUIRED, 12, errors);
+            RequireReadinessCount(existing, StaffDryRunReadiness.SKILL_CLASS_REQUIRED, 6, errors);
             RequireReadinessCount(existing, StaffDryRunReadiness.SAVE_MIGRATION_REQUIRED, 1, errors);
             RequireReadinessCount(existing, StaffDryRunReadiness.RUNTIME_SCHEMA_REQUIRED, 0, errors);
             RequireReadinessCount(
@@ -1200,6 +1206,57 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
         }
 
+        private static void RequireSkill05Distribution(
+            IReadOnlyList<StaffDataDryRunStaffPlan> plans,
+            List<string> errors)
+        {
+            HashSet<string> expectedExisting = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "STAFF04", "STAFF05", "STAFF07", "STAFF13", "STAFF26", "STAFF32"
+            };
+            HashSet<string> expectedNew = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "STAFF37", "STAFF49", "STAFF54", "STAFF73"
+            };
+            HashSet<string> actualExisting = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> actualNew = new HashSet<string>(StringComparer.Ordinal);
+            bool mappingMatches = true;
+            for (int index = 0; index < plans.Count; index++)
+            {
+                StaffDataDryRunStaffPlan plan = plans[index];
+                if (plan.SkillPlan.OfficialSkillId != "STAFF_SKILL05")
+                {
+                    continue;
+                }
+
+                mappingMatches &= plan.SkillPlan.RequiredClassName == "FoodPriceUpSkill"
+                                  && plan.SkillPlan.RequiredClassExists
+                                  && plan.SkillPlan.ClassMatches;
+                if (plan.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING)
+                {
+                    actualExisting.Add(plan.StaffId);
+                    mappingMatches &= !plan.SkillPlan.CreateIndividualAsset;
+                }
+                else
+                {
+                    actualNew.Add(plan.StaffId);
+                    mappingMatches &= plan.SkillPlan.CreateIndividualAsset
+                                      && plan.SkillPlan.ClassDisposition
+                                      == StaffDryRunFieldDisposition.AUTO_CREATE_NEW;
+                }
+            }
+
+            if (!actualExisting.SetEquals(expectedExisting)
+                || !actualNew.SetEquals(expectedNew)
+                || !mappingMatches)
+            {
+                errors.Add(
+                    "OFFICIAL_SKILL05_DISTRIBUTION_CHANGED: expected existing 6/new 4 with FoodPriceUpSkill mapping; actual existing "
+                    + actualExisting.Count + "/new " + actualNew.Count
+                    + ", mapping match " + mappingMatches + ".");
+            }
+        }
+
         private static void RequireChangedFieldCount(
             List<StaffDataDryRunStaffPlan> plans,
             string fieldPath,
@@ -1273,6 +1330,34 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     + expected.ToString(CultureInfo.InvariantCulture) + ", actual "
                     + count.ToString(CultureInfo.InvariantCulture) + ". Staff IDs: "
                     + string.Join(", ", staffIds));
+            }
+        }
+
+        private static void RequireIssueStaffIds(
+            List<StaffDataDryRunStaffPlan> plans,
+            string code,
+            IReadOnlyCollection<string> expectedIds,
+            List<string> errors)
+        {
+            HashSet<string> actual = new HashSet<string>(StringComparer.Ordinal);
+            for (int planIndex = 0; planIndex < plans.Count; planIndex++)
+            {
+                for (int issueIndex = 0; issueIndex < plans[planIndex].Issues.Count; issueIndex++)
+                {
+                    if (plans[planIndex].Issues[issueIndex].Code == code)
+                    {
+                        actual.Add(plans[planIndex].StaffId);
+                    }
+                }
+            }
+
+            if (!actual.SetEquals(expectedIds))
+            {
+                List<string> actualIds = new List<string>(actual);
+                actualIds.Sort(StringComparer.Ordinal);
+                errors.Add(
+                    "CURRENT_BASELINE_CHANGED: " + code
+                    + " Staff IDs: " + string.Join(", ", actualIds));
             }
         }
 
@@ -1865,7 +1950,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                             row[8],
                             speed,
                             skillId,
-                            skillId == "STAFF_SKILL04" || skillId == "STAFF_SKILL06"
+                            skillId == "STAFF_SKILL04" || skillId == "STAFF_SKILL05" || skillId == "STAFF_SKILL06"
                                 ? lockedSkillDescription
                                 : row[11],
                             duration,

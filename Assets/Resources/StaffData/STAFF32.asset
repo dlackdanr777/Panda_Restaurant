@@ -19,7 +19,7 @@ MonoBehaviour:
   _description: "\uC5B4\uB290 \uB0A0 \uB098\uD0C0\uB09C \uBE44\uBC00\uC2A4\uB7EC\uC6B4
     \uCCAD\uC18C\uBD80 \uC288\uC288\r\n\r"
   _rank: 0
-  _skill: {fileID: 11400000, guid: 9579cb0591dadfa4da2e662700923026, type: 2}
+  _skill: {fileID: 11400000, guid: a05a910bbdc41fc4f802f884ec3007e2, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
   _salesLocationType: 0
