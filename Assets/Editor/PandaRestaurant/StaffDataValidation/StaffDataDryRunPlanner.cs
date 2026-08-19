@@ -51,7 +51,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     { "STAFF_SKILL01", "SpeedUpSkill" },
                     { "STAFF_SKILL03", "TouchAddCustomerButtonSkill" },
                     { "STAFF_SKILL04", "AssignedCookingSpeedUpSkill" },
-                    { "STAFF_SKILL05", "FoodPriceUpSkill" }
+                    { "STAFF_SKILL05", "FoodPriceUpSkill" },
+                    { "STAFF_SKILL06", "FoodPaymentTipUpSkill" }
                 });
 
         private static readonly HashSet<string> IntentionalNoFrameIdleStaff =
@@ -1042,6 +1043,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireCount("role CLEANER", GetCount(roles, "CLEANER"), 14, errors);
             RequireCount("role GUARD", GetCount(roles, "GUARD"), 2, errors);
             RequireSkill04Distribution(plans, errors);
+            RequireSkill06Distribution(plans, errors);
 
             Dictionary<string, int> ranks = CountBy(plans, plan => plan.TargetRankName);
             RequireCount("rank Normal2", GetCount(ranks, "Normal2"), 23, errors);
@@ -1060,17 +1062,17 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireChangedFieldCount(existing, "StaffData._speed", 29, "current speed mismatch", errors);
             RequireIssueCount(existing, "CURRENT_ROLE_VALUE_MISMATCH", 23, errors);
             RequireIssueCount(existing, "CURRENT_UPGRADE_COST_MISMATCH", 32, errors);
-            RequireSkillNumberMismatch(existing, true, 12, "current skill duration mismatch", errors);
-            RequireSkillNumberMismatch(existing, false, 10, "current skill cooldown mismatch", errors);
-            RequireIssueCount(existing, "EXISTING_SKILL_CLASS_MISMATCH", 13, errors);
+            RequireSkillNumberMismatch(existing, true, 11, "current skill duration mismatch", errors);
+            RequireSkillNumberMismatch(existing, false, 9, "current skill cooldown mismatch", errors);
+            RequireIssueCount(existing, "EXISTING_SKILL_CLASS_MISMATCH", 12, errors);
             RequireIssueCount(existing, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 0, errors);
             RequireIssueCount(existing, "STAFF02_LEVEL6_SAVE_MIGRATION_REQUIRED", 1, errors);
             RequireReadinessCount(
                 existing,
                 StaffDryRunReadiness.PLAN_READY_WITH_WARNINGS,
-                18,
+                19,
                 errors);
-            RequireReadinessCount(existing, StaffDryRunReadiness.SKILL_CLASS_REQUIRED, 13, errors);
+            RequireReadinessCount(existing, StaffDryRunReadiness.SKILL_CLASS_REQUIRED, 12, errors);
             RequireReadinessCount(existing, StaffDryRunReadiness.SAVE_MIGRATION_REQUIRED, 1, errors);
             RequireReadinessCount(existing, StaffDryRunReadiness.RUNTIME_SCHEMA_REQUIRED, 0, errors);
             RequireReadinessCount(
@@ -1079,11 +1081,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 0,
                 errors);
 
-            RequireIssueCount(created, "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED", 13, errors);
+            RequireIssueCount(created, "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED", 11, errors);
             RequireIssueCount(created, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 0, errors);
-            RequireNewPrerequisiteUnion(created, 13, errors);
-            RequireReadinessCount(created, StaffDryRunReadiness.ASSET_PLAN_READY, 47, errors);
-            RequireReadinessCount(created, StaffDryRunReadiness.SKILL_CLASS_REQUIRED, 13, errors);
+            RequireNewPrerequisiteUnion(created, 11, errors);
+            RequireReadinessCount(created, StaffDryRunReadiness.ASSET_PLAN_READY, 49, errors);
+            RequireReadinessCount(created, StaffDryRunReadiness.SKILL_CLASS_REQUIRED, 11, errors);
             RequireReadinessCount(created, StaffDryRunReadiness.RUNTIME_SCHEMA_REQUIRED, 0, errors);
             RequireReadinessCount(
                 created,
@@ -1149,6 +1151,52 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     "OFFICIAL_SKILL04_DISTRIBUTION_CHANGED: expected existing 4/new 9, all CHEF; actual existing "
                     + actualExisting.Count + "/new " + actualNew.Count
                     + ", all CHEF " + allChef + ".");
+            }
+        }
+
+        private static void RequireSkill06Distribution(
+            IReadOnlyList<StaffDataDryRunStaffPlan> plans,
+            List<string> errors)
+        {
+            HashSet<string> expectedExisting = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "STAFF09"
+            };
+            HashSet<string> expectedNew = new HashSet<string>(StringComparer.Ordinal)
+            {
+                "STAFF51", "STAFF81"
+            };
+            HashSet<string> actualExisting = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> actualNew = new HashSet<string>(StringComparer.Ordinal);
+            bool rolesMatch = true;
+            for (int index = 0; index < plans.Count; index++)
+            {
+                StaffDataDryRunStaffPlan plan = plans[index];
+                if (plan.SkillPlan.OfficialSkillId != "STAFF_SKILL06")
+                {
+                    continue;
+                }
+
+                if (plan.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING)
+                {
+                    actualExisting.Add(plan.StaffId);
+                    rolesMatch &= plan.RoleKey == "MANAGER";
+                }
+                else
+                {
+                    actualNew.Add(plan.StaffId);
+                    rolesMatch &= plan.RoleKey == "CLEANER";
+                }
+            }
+
+            if (!actualExisting.SetEquals(expectedExisting)
+                || !actualNew.SetEquals(expectedNew)
+                || !rolesMatch)
+            {
+                errors.Add(
+                    "OFFICIAL_SKILL06_DISTRIBUTION_CHANGED: expected existing STAFF09 MANAGER/new STAFF51, STAFF81 CLEANER; actual existing "
+                    + actualExisting.Count + "/new " + actualNew.Count
+                    + ", roles match " + rolesMatch + ".");
             }
         }
 
@@ -1817,7 +1865,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                             row[8],
                             speed,
                             skillId,
-                            skillId == "STAFF_SKILL04"
+                            skillId == "STAFF_SKILL04" || skillId == "STAFF_SKILL06"
                                 ? lockedSkillDescription
                                 : row[11],
                             duration,

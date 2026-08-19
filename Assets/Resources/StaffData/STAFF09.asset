@@ -18,7 +18,7 @@ MonoBehaviour:
   _id: STAFF09
   _description: 
   _rank: 0
-  _skill: {fileID: 11400000, guid: 3576053ed0b398d43a296e16eaf3aff6, type: 2}
+  _skill: {fileID: 11400000, guid: fb806c2f27d84ad4e97ee448e222e645, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: dd4e947e99816f74f96a7d5cda917e06, type: 3}
   - {fileID: 21300000, guid: 1ec72eb96c65146409835a1e2ada2cb4, type: 3}
