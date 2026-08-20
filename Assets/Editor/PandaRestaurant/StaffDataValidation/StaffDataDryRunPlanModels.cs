@@ -496,7 +496,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
     internal sealed class StaffDataDryRunPlanSnapshot
     {
-        internal const string PolicyVersion = "STAFF_DRY_RUN_POLICY_2026_08_19_V6";
+        internal const string PolicyVersion = "STAFF_DRY_RUN_POLICY_2026_08_20_V7";
 
         private readonly IReadOnlyList<StaffDataDryRunStaffPlan> _staffPlans;
         private readonly IReadOnlyDictionary<string, StaffDataDryRunStaffPlan> _staffById;
