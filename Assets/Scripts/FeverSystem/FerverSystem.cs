@@ -210,7 +210,6 @@ public class FeverSystem : MonoBehaviour
                 yield break;
             }
 
-            SetLegacyFeverSpeed(true);
             while (context.IsCurrentToken(activeToken))
             {
                 yield return null;
@@ -305,15 +304,6 @@ public class FeverSystem : MonoBehaviour
                 DebugLog.LogError("[Fever] Runtime context cleanup failed.\n" + exception);
             }
 
-            try
-            {
-                SetLegacyFeverSpeed(false);
-            }
-            catch (Exception exception)
-            {
-                DebugLog.LogError("[Fever] Legacy speed cleanup failed.\n" + exception);
-            }
-
             if (stopRunningCoroutine && runningCoroutine != null)
             {
                 try
@@ -353,21 +343,4 @@ public class FeverSystem : MonoBehaviour
         }
     }
 
-    private void SetLegacyFeverSpeed(bool isActive)
-    {
-        // FEVER_LEGACY_SPEED_BRIDGE_REMOVE_IN_FEVER_01_C
-        if (_gameManager == null)
-        {
-            return;
-        }
-
-        if (isActive)
-        {
-            _gameManager.SetGameSpeed(1.5f);
-        }
-        else
-        {
-            _gameManager.SetGameSpeed(0f);
-        }
-    }
 }

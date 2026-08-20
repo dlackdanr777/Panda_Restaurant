@@ -167,6 +167,13 @@ public class KitchenUtensilGroup: MonoBehaviour
         if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, _floorType))
             return;
 
+        GameManager gameManager = GameManager.Instance;
+        float globalCookingSkillMultiplier =
+            gameManager.StaffSkillEffectRegistry.GetMultiplier(
+                StaffSkillEffectType.GlobalCookingSpeedPercent);
+        float feverCookingMultiplier =
+            gameManager.FeverRuntimeContext.CookingMultiplier;
+
         for (int i = 0, cnt = _burnerDatas.Length; i < cnt; ++i)
         {
             if (!_burnerDatas[i].IsUsable)
@@ -190,26 +197,45 @@ public class KitchenUtensilGroup: MonoBehaviour
                 KitchenBurnerData burnerData = _burnerDatas[i];
                 Staff assignedStaff = burnerData.UseStaff;
                 BurnerKitchenUtensil burner = burnerData.KitchenUtensil;
-                float assignedCookingSpeedMultiplier = CalculateAssignedCookingSpeedMultiplier(
+                float existingCookingMultiplier =
+                    gameManager.GetCookingSpeedMul(
+                        _floorType,
+                        burnerData.CookingData.FoodData.FoodType);
+                float assignedStaffRoleMultiplier =
+                    1f
+                    + burnerData.AddCookSpeedMul * 0.01f
+                    * (assignedStaff != null ? assignedStaff.SpeedMul : 1f);
+                float assignedCookingSkillMultiplier = CalculateAssignedCookingSpeedMultiplier(
                     assignedStaff != null,
                     burner != null && burner.IsStaffWorking,
                     assignedStaff != null
                         ? assignedStaff.RuntimeSkillContext.AssignedCookingBonusPercent
                         : 0f);
 
-                float subTime = Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, burnerData.CookingData.FoodData.FoodType) * (1 + burnerData.AddCookSpeedMul * 0.01f * (assignedStaff != null ? assignedStaff.SpeedMul : 1));
-                subTime *= assignedCookingSpeedMultiplier;
+                float burnerMultiplier = 1f;
+                float sameFoodTypeMultiplier = 1f;
                 
                 // _burnerKitchenUtensils 리스트의 인덱스가 i와 일치하는지 확인
                 if (i < _burnerKitchenUtensils.Count && _burnerKitchenUtensils[i] != null)
                 {
-                    subTime *= _burnerKitchenUtensils[i].CookSpeedMul;
+                    burnerMultiplier = _burnerKitchenUtensils[i].CookSpeedMul;
                 }
                 
                 if (_burnerDatas[i].FoodType == _burnerDatas[i].CookingData.FoodData.FoodType)
                 {
-                    subTime *= 1.1f; // 같은 음식 타입일 때는 10% 더 빠르게 요리
+                    sameFoodTypeMultiplier = 1.1f; // 같은 음식 타입일 때는 10% 더 빠르게 요리
                 }
+
+                float finalCookingMultiplier =
+                    FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                        existingCookingMultiplier,
+                        assignedStaffRoleMultiplier,
+                        assignedCookingSkillMultiplier,
+                        globalCookingSkillMultiplier,
+                        feverCookingMultiplier,
+                        burnerMultiplier,
+                        sameFoodTypeMultiplier);
+                float subTime = Time.deltaTime * finalCookingMultiplier;
                 
                 _burnerDatas[i].Time -= subTime;
                 _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookTime));

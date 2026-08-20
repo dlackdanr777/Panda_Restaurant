@@ -71,6 +71,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(50, "FeverSystem 생명주기·Clock 구조", ValidateFeverSystemLifecycleStructure);
             report.Run(51, "Fever Gauge UI 실시간 감소", ValidateFeverGaugeRealtimeUi);
             report.Run(52, "Fever 구매 UI·결제 잠금", ValidateFeverPurchaseLock);
+            report.Run(53, "Fever 배율 Calculator", ValidateFeverMultiplierCalculator);
+            report.Run(54, "Legacy Fever Bridge 제거", ValidateLegacyFeverBridgeRemoval);
+            report.Run(55, "Fever 음식가격 Context 경계", ValidateFeverFoodPriceBoundary);
+            report.Run(56, "일반 손님 이동 채널", ValidateNormalCustomerMoveChannel);
+            report.Run(57, "Staff 이동·역할 행동 채널", ValidateStaffMoveAndRoleActionChannels);
+            report.Run(58, "조리 채널·최종 상한", ValidateCookingChannelAndCap);
             report.Print();
         }
 
@@ -1505,8 +1511,23 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(!endEatSource.Contains("FoodPricePercent"), "EndEat must not recalculate Skill05 food prices.");
             Require(!coinSource.Contains("FoodPricePercent"), "StartCoinAnime must not recalculate Skill05 food prices.");
             Require(
-                coinSource.Contains("data.TotalPrice * (_feverSystem.IsFeverStart ? 2f : 1f)"),
-                "StartCoinAnime must preserve the independent Fever 2x price multiplier.");
+                coinSource.Contains("float feverFoodPriceMultiplier = 1f;"),
+                "StartCoinAnime must use a safe neutral Fever food-price multiplier.");
+            Require(
+                coinSource.Contains("GameManager.TryGetExistingInstance(out existingGameManager)"),
+                "StartCoinAnime must query only an existing GameManager for Fever price.");
+            Require(
+                CountOccurrences(coinSource, "FeverRuntimeContext.FoodPriceMultiplier") == 1,
+                "StartCoinAnime must read the FeverRuntimeContext food-price multiplier exactly once.");
+            Require(
+                coinSource.Contains("data.TotalPrice * feverFoodPriceMultiplier"),
+                "StartCoinAnime must apply the FeverRuntimeContext food-price multiplier to the captured TotalPrice.");
+            Require(
+                !coinSource.Contains("_feverSystem.IsFeverStart ? 2f : 1f"),
+                "StartCoinAnime must not use the legacy FeverSystem price ternary.");
+            Require(
+                !coinSource.Contains("data.TotalTip * feverFoodPriceMultiplier"),
+                "StartCoinAnime must not apply the Fever food-price multiplier to tips.");
             Require(
                 endEatSource.Contains("StaffSkillEffectType.RestaurantTipPayoutPercent"),
                 "EndEat must preserve the Skill06 payment tip Registry.");
@@ -1668,13 +1689,28 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(!endEatSource.Contains("TipMul"), "EndEat must not reapply the base food tip multiplier.");
 
             Require(
-                coinSource.Contains("data.TotalPrice * (_feverSystem.IsFeverStart ? 2f : 1f)"),
-                "StartCoinAnime must preserve the independent Fever 2x food price.");
+                coinSource.Contains("float feverFoodPriceMultiplier = 1f;"),
+                "StartCoinAnime must preserve the neutral Fever food-price default.");
             Require(
-                CountOccurrences(coinSource, "_feverSystem.IsFeverStart") == 1,
-                "StartCoinAnime must read Fever exactly once for food price.");
+                coinSource.Contains("GameManager.TryGetExistingInstance(out existingGameManager)"),
+                "StartCoinAnime must query only an existing GameManager for Fever price.");
+            Require(
+                CountOccurrences(coinSource, "FeverRuntimeContext.FoodPriceMultiplier") == 1,
+                "StartCoinAnime must read the Fever Context food-price multiplier exactly once.");
+            Require(
+                coinSource.Contains("data.TotalPrice * feverFoodPriceMultiplier"),
+                "StartCoinAnime must apply Fever only to the captured food price.");
+            Require(
+                !coinSource.Contains("_feverSystem.IsFeverStart ? 2f : 1f"),
+                "StartCoinAnime must not use the legacy FeverSystem price ternary.");
             Require(!coinSource.Contains("data.TotalTip *"), "StartCoinAnime must not multiply tips by Fever.");
             Require(!coinSource.Contains("TipMul"), "StartCoinAnime must not apply the base food tip multiplier.");
+            Require(
+                !tipCalculationSource.Contains("FeverRuntimeContext.FoodPriceMultiplier"),
+                "Order tip calculation must not consume the Fever food-price multiplier.");
+            Require(
+                !endEatSource.Contains("FeverRuntimeContext.FoodPriceMultiplier"),
+                "Skill06 payment-tip calculation must not consume the Fever food-price multiplier.");
 
             RequireProjectSourceDoesNotContain("Assets/Scripts/Scenes/MainScene.cs", "TipMul");
             RequireProjectSourceDoesNotContain("Assets/Scripts/UserData/StageInfo.cs", "TipMul");
@@ -2007,9 +2043,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             string destroySource = ExtractSourceSection(source, "private void OnDestroy()", "private void OnChangeSceneEvent()");
             string sceneSource = ExtractSourceSection(source, "private void OnChangeSceneEvent()", "private void OnEquipFurnitureEvent(");
             string routineSource = ExtractSourceSection(source, "private IEnumerator StartFeverRoutine(", "private void StopFeverRuntime(");
-            string cleanupSource = ExtractSourceSection(source, "private void StopFeverRuntime(", "private void SetLegacyFeverSpeed(");
-            string bridgeSource = source.Substring(
-                source.IndexOf("private void SetLegacyFeverSpeed(", StringComparison.Ordinal));
+            int cleanupStartIndex = source.IndexOf("private void StopFeverRuntime(", StringComparison.Ordinal);
+            Require(cleanupStartIndex >= 0, "Fever cleanup method is missing.");
+            string cleanupSource = source.Substring(cleanupStartIndex);
 
             Require(!source.Contains("private bool _isFeverStart"), "Legacy local Fever state field must be removed.");
             Require(source.Contains("private FeverRuntimeToken _activeFeverToken;"), "FeverSystem must store an activation token.");
@@ -2042,48 +2078,6 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(source.Contains("OnStartFeverHandler?.Invoke();"), "Fever start event must remain.");
             Require(source.Contains("OnEndFeverHandler?.Invoke();"), "Fever end event must remain.");
             Require(CountOccurrences(source, "_mainScene.PlayMainMusic();") == 2, "Fever music calls must remain at start and end.");
-            Require(
-                CountOccurrences(source, "FEVER_LEGACY_SPEED_BRIDGE_REMOVE_IN_FEVER_01_C") == 1,
-                "The Fever legacy bridge marker must exist exactly once.");
-            Require(bridgeSource.Contains("_gameManager.SetGameSpeed(1.5f);"), "Legacy Fever start speed bridge must remain.");
-            Require(bridgeSource.Contains("_gameManager.SetGameSpeed(0f);"), "Legacy Fever end speed bridge must remain.");
-
-            string[] consumerPaths =
-            {
-                "Assets/Scripts/Table/TableManager.cs",
-                "Assets/Scripts/NPC/NormalCustomer.cs",
-                "Assets/Scripts/NPC/Customer.cs",
-                "Assets/Scripts/Staff/Staff.cs",
-                "Assets/Scripts/Staff/StaffAction/ManagerAction.cs",
-                "Assets/Scripts/Staff/StaffAction/MarketerAction.cs",
-                "Assets/Scripts/Staff/StaffAction/WaiterAction.cs",
-                "Assets/Scripts/Staff/StaffAction/CleanerAction.cs",
-                "Assets/Scripts/Staff/StaffAction/GuardAction.cs",
-                "Assets/Scripts/Staff/StaffAction/ChefAction.cs",
-                "Assets/Scripts/Kitchen/KitchenUtensilGroup.cs",
-                "Assets/Scripts/Kitchen/BurnerKitchenUtensil.cs",
-                "Assets/Scripts/Kitchen/KitchenSystem.cs"
-            };
-            string[] multiplierNames =
-            {
-                "FoodPriceMultiplier",
-                "NormalCustomerMoveMultiplier",
-                "StaffMoveMultiplier",
-                "ManagerGuideMultiplier",
-                "MarketerCallMultiplier",
-                "CookingMultiplier"
-            };
-
-            foreach (string consumerPath in consumerPaths)
-            {
-                string consumerSource = ReadProjectText(consumerPath);
-                foreach (string multiplierName in multiplierNames)
-                {
-                    Require(
-                        !consumerSource.Contains(multiplierName),
-                        consumerPath + " must not consume Fever multiplier " + multiplierName + " before FEVER-01-C.");
-                }
-            }
         }
 
         private static void ValidateFeverGaugeRealtimeUi()
@@ -2271,6 +2265,358 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(fixedUpdateSource.Contains("SetAdButtonInteractable(false);"), "Active Fever must disable the ad button.");
             Require(fixedUpdateSource.Contains("SetDiaButtonInteractable(false);"), "Active Fever must disable the dia button.");
             Require(fixedUpdateSource.Contains("return;"), "Active Fever FixedUpdate guard must not re-enable buttons later in the frame.");
+        }
+
+        private static void ValidateFeverMultiplierCalculator()
+        {
+            RequireNear(
+                1f,
+                FeverRuntimeMultiplierCalculator.CalculateNormalCustomerMoveMultiplier(1f, 1f, 1f),
+                "Normal customer base multiplier is incorrect.");
+            RequireNear(
+                2f,
+                FeverRuntimeMultiplierCalculator.CalculateNormalCustomerMoveMultiplier(1f, 1f, 2f),
+                "Normal customer Fever multiplier is incorrect.");
+            RequireNear(
+                3f,
+                FeverRuntimeMultiplierCalculator.CalculateNormalCustomerMoveMultiplier(1f, 2f, 2f),
+                "Normal customer Skill08 and Fever must clamp to 3.");
+            RequireNear(
+                0f,
+                FeverRuntimeMultiplierCalculator.CalculateNormalCustomerMoveMultiplier(0f, 1f, 1f),
+                "A valid zero normal-customer multiplier must remain zero.");
+
+            RequireNear(
+                1f,
+                FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier(1f, 1f, 1f, 1f),
+                "Staff base move multiplier is incorrect.");
+            RequireNear(
+                2f,
+                FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier(1f, 2f, 1f, 1f),
+                "Skill01 Staff move multiplier is incorrect.");
+            RequireNear(
+                2f,
+                FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier(1f, 1f, 1f, 2f),
+                "Fever Staff move multiplier is incorrect.");
+            RequireNear(
+                3f,
+                FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier(1f, 2f, 1f, 2f),
+                "Skill01 and Fever must clamp Staff movement to 3.");
+            RequireNear(
+                3f,
+                FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier(1f, 2f, 1.5f, 2f),
+                "Skill01, Skill10, and Fever must clamp Staff movement to 3.");
+            RequireNear(
+                0.5f,
+                FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier(0f, 1f, 1f, 1f),
+                "A valid zero Staff multiplier must clamp to 0.5.");
+
+            RequireNear(
+                2.5f,
+                FeverRuntimeMultiplierCalculator.CalculateRoleActionMultiplier(1.25f, 2f),
+                "Role action Fever multiplication is incorrect.");
+
+            RequireNear(
+                2f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 1f, 1f, 2f, 1f, 1f),
+                "Fever cooking multiplier is incorrect.");
+            RequireNear(
+                5f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 2.5f, 1.5f, 2f, 1f, 1f),
+                "Skill04, Skill09, and Fever must clamp cooking to 5.");
+            RequireNear(
+                5f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 2.5f, 1.5f, 2f, 2f, 1.1f),
+                "Burner and same-food multipliers must remain inside the final cooking cap.");
+            RequireNear(
+                0f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    0f, 1f, 1f, 1f, 1f, 1f, 1f),
+                "A valid zero cooking multiplier must remain zero.");
+
+            RequireNear(
+                1f,
+                FeverRuntimeMultiplierCalculator.CalculateNormalCustomerMoveMultiplier(float.NaN, 1f, 1f),
+                "NaN normal-customer input must return the neutral multiplier.");
+            RequireNear(
+                1f,
+                FeverRuntimeMultiplierCalculator.CalculateNormalCustomerMoveMultiplier(1f, float.PositiveInfinity, 1f),
+                "Infinite normal-customer input must return the neutral multiplier.");
+            RequireNear(
+                1f,
+                FeverRuntimeMultiplierCalculator.CalculateNormalCustomerMoveMultiplier(1f, 1f, -1f),
+                "Negative normal-customer input must return the neutral multiplier.");
+            RequireNear(
+                1f,
+                FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier(1f, float.NaN, 1f, 1f),
+                "Invalid Staff input must return the neutral multiplier.");
+            RequireNear(
+                1f,
+                FeverRuntimeMultiplierCalculator.CalculateRoleActionMultiplier(float.PositiveInfinity, 1f),
+                "Invalid role-action input must return the neutral multiplier.");
+            RequireNear(
+                1f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 1f, 1f, 1f, -1f, 1f),
+                "Invalid cooking input must return the neutral multiplier.");
+
+            Type calculatorType = typeof(FeverRuntimeMultiplierCalculator);
+            Require(calculatorType.IsAbstract && calculatorType.IsSealed, "Fever multiplier calculator must be static.");
+            foreach (FieldInfo field in calculatorType.GetFields(
+                         BindingFlags.Static
+                         | BindingFlags.Instance
+                         | BindingFlags.Public
+                         | BindingFlags.NonPublic
+                         | BindingFlags.DeclaredOnly))
+            {
+                Require(field.IsLiteral, "Fever multiplier calculator must not contain a Runtime field: " + field.Name);
+                Require(
+                    !typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType),
+                    "Fever multiplier calculator must not reference a Unity Object: " + field.Name);
+                Require(
+                    !IsMutableCollectionType(field.FieldType),
+                    "Fever multiplier calculator must not contain a mutable collection: " + field.Name);
+            }
+
+            foreach (PropertyInfo property in calculatorType.GetProperties(
+                         BindingFlags.Static
+                         | BindingFlags.Instance
+                         | BindingFlags.Public
+                         | BindingFlags.NonPublic
+                         | BindingFlags.DeclaredOnly))
+            {
+                Require(property.GetSetMethod(true) == null, "Fever multiplier calculator property must be read-only: " + property.Name);
+            }
+
+            string source = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/FeverSystem/FeverRuntimeMultiplierCalculator.cs"));
+            Require(
+                CountOccurrences(source, "FEVER_POLICY_2026_08_19_V2") == 1,
+                "The Fever V2 calculator policy marker must exist exactly once.");
+            Require(!source.Contains("using UnityEngine"), "Fever multiplier calculator must not depend on UnityEngine.");
+            Require(source.Contains("(double)existingMultiplier"), "Movement multiplication must start in double precision.");
+            Require(source.Contains("(double)existingCookingMultiplier"), "Cooking multiplication must start in double precision.");
+            Require(!source.Contains("params "), "Fever multiplier calculator must not allocate a params array.");
+            Require(!source.Contains("List<"), "Fever multiplier calculator must not contain a List.");
+            Require(!source.Contains("Dictionary<"), "Fever multiplier calculator must not contain a Dictionary.");
+            Require(!source.Contains("System.Linq"), "Fever multiplier calculator must not use LINQ.");
+            Require(!source.Contains("Func<"), "Fever multiplier calculator must not contain a Func delegate.");
+            Require(!source.Contains("Action<"), "Fever multiplier calculator must not contain an Action delegate.");
+        }
+
+        private static void ValidateLegacyFeverBridgeRemoval()
+        {
+            string feverSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/FeverSystem/FerverSystem.cs"));
+            Require(!feverSource.Contains("SetLegacyFeverSpeed"), "Legacy Fever speed bridge method and calls must be removed.");
+            Require(!feverSource.Contains("SetGameSpeed"), "FeverSystem must not call SetGameSpeed.");
+            Require(
+                !feverSource.Contains("FEVER_LEGACY_SPEED_BRIDGE_REMOVE_IN_FEVER_01_C"),
+                "The completed legacy bridge marker must be removed.");
+            Require(feverSource.Contains("_feverRuntimeContext.TryActivate("), "Fever Context activation must remain.");
+            Require(feverSource.Contains("context.Advance(activeToken, deltaSeconds)"), "Fever Context clock must remain.");
+            Require(feverSource.Contains("_feverRuntimeContext?.Deactivate(token);"), "Fever Context cleanup must remain.");
+            Require(feverSource.Contains("float deltaSeconds = Time.deltaTime;"), "Fever actual-delta clock must remain.");
+            Require(feverSource.Contains("result.AutoCallOpportunityCount"), "Fever auto-call opportunities must remain.");
+            Require(feverSource.Contains("private void StopFeverRuntime("), "Common Fever cleanup must remain.");
+
+            string gameManagerSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Manager/GameManager.cs"));
+            Require(gameManagerSource.Contains("public void SetGameSpeed(float value)"), "GameManager legacy SetGameSpeed definition must remain.");
+            Require(gameManagerSource.Contains("private float _totalAddSpeedMul = 0;"), "GameManager legacy speed field must remain.");
+
+            string runtimeRoot = Path.Combine(Application.dataPath, "Scripts");
+            string[] runtimeFiles = Directory.GetFiles(runtimeRoot, "*.cs", SearchOption.AllDirectories);
+            int runtimeCallCount = 0;
+            foreach (string runtimeFile in runtimeFiles)
+            {
+                runtimeCallCount += CountOccurrences(File.ReadAllText(runtimeFile), ".SetGameSpeed(");
+            }
+
+            Require(runtimeCallCount == 0, "Project Runtime SetGameSpeed call count must be zero.");
+        }
+
+        private static void ValidateFeverFoodPriceBoundary()
+        {
+            string tableSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Table/TableManager.cs"));
+            string startCoinSource = ExtractSourceSection(
+                tableSource,
+                "private void StartCoinAnime(TableData data)",
+                "private void StartGarbageAnime(TableData data)");
+            string endEatSource = ExtractSourceSection(
+                tableSource,
+                "private void EndEat(TableData data)",
+                "private void DirtyTable(TableData data)");
+
+            Require(
+                startCoinSource.Contains("GameManager.TryGetExistingInstance(out existingGameManager)"),
+                "Food payment must query only an existing GameManager.");
+            Require(
+                CountOccurrences(startCoinSource, "FeverRuntimeContext.FoodPriceMultiplier") == 1,
+                "Food payment must read the Fever food-price multiplier exactly once.");
+            Require(!startCoinSource.Contains("GameManager.Instance"), "Food payment must not create or fetch GameManager.");
+            Require(!startCoinSource.Contains("IsFeverStart ? 2f : 1f"), "Food payment must not use the legacy Fever ternary.");
+            Require(
+                startCoinSource.Contains("data.TotalPrice * feverFoodPriceMultiplier"),
+                "Fever must multiply only the snapshotted food price.");
+            Require(!startCoinSource.Contains("data.TotalTip *"), "Fever must not multiply the food payment tip.");
+            Require(startCoinSource.Contains("data.TotalTip = 0;"), "Food payment tip cleanup must remain.");
+            Require(
+                tableSource.Contains("cookingData.Price * data.CurrentCustomer.CurrentFoodPriceMul"),
+                "Skill05 order-time price snapshot must remain.");
+            Require(
+                endEatSource.Contains("int basePaymentTip = data.TotalTip;"),
+                "Skill06 payment-tip snapshot must remain.");
+            Require(
+                endEatSource.Contains("StaffPaymentTipCalculator.CalculateFoodPaymentTipPayout("),
+                "Skill06 payment-tip calculator must remain.");
+
+            string gameManagerSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Manager/GameManager.cs"));
+            Require(
+                gameManagerSource.Contains("private const float BaseFoodTipMultiplier = 0.5f;"),
+                "The 50 percent base food-tip policy must remain.");
+        }
+
+        private static void ValidateNormalCustomerMoveChannel()
+        {
+            string normalSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/NPC/NormalCustomer.cs"));
+            string moveSource = ExtractSourceSection(
+                normalSource,
+                "protected override IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)",
+                "private void StopCoroutines()");
+
+            Require(
+                moveSource.Contains("FeverRuntimeMultiplierCalculator.CalculateNormalCustomerMoveMultiplier("),
+                "Normal customer movement must use the Fever multiplier calculator.");
+            Require(moveSource.Contains("gameManager.AddCustomerSpeedMul"), "Existing customer movement multiplier must remain.");
+            Require(
+                CountOccurrences(moveSource, "StaffSkillEffectType.NormalCustomerMovePercent") == 1,
+                "Skill08 Registry multiplier must be read exactly once.");
+            Require(
+                CountOccurrences(moveSource, "FeverRuntimeContext.NormalCustomerMoveMultiplier") == 1,
+                "Normal-customer Fever multiplier must be read exactly once.");
+            Require(moveSource.Contains("Time.deltaTime"), "Normal customer movement must retain Time.deltaTime.");
+            Require(moveSource.Contains("_moveSpeed"), "Normal customer movement must retain the skin-adjusted move speed.");
+            Require(moveSource.Contains("* 0.7f"), "Normal customer movement must retain the 0.7 factor.");
+            Require(moveSource.Contains("currentPos.x += direction.x * step;"), "Normal customer GC-free movement must remain.");
+            Require(
+                FeverRuntimeMultiplierCalculator.MaxNormalCustomerMoveMultiplier == 3f,
+                "Normal customer movement cap must be 3.");
+
+            string[] excludedCustomerPaths =
+            {
+                "Assets/Scripts/NPC/Customer.cs",
+                "Assets/Scripts/NPC/SpecialCustomer.cs",
+                "Assets/Scripts/NPC/GatecrasherCustomer.cs"
+            };
+            foreach (string excludedPath in excludedCustomerPaths)
+            {
+                string excludedSource = ReadProjectText(excludedPath);
+                Require(!excludedSource.Contains("FeverRuntimeContext"), excludedPath + " must not consume Fever Context.");
+                Require(!excludedSource.Contains("FeverRuntimeMultiplierCalculator"), excludedPath + " must not consume the Fever calculator.");
+                Require(!excludedSource.Contains("NormalCustomerMovePercent"), excludedPath + " must not consume Skill08.");
+            }
+        }
+
+        private static void ValidateStaffMoveAndRoleActionChannels()
+        {
+            string staffSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Staff/Staff.cs"));
+            string speedSource = ExtractSourceSection(staffSource, "public float SpeedMul", "public float MoveSpeedMul");
+            string moveSource = ExtractSourceSection(staffSource, "public float MoveSpeedMul", "public float WorkSpeedMul");
+            string workSource = ExtractSourceSection(staffSource, "public float WorkSpeedMul", "public float GuardEliminationSpeedMul");
+            string guardSource = ExtractSourceSection(staffSource, "public float GuardEliminationSpeedMul", "protected Coroutine _useSkillRoutine;");
+
+            Require(
+                moveSource.Contains("FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier("),
+                "Staff movement must use the Fever multiplier calculator.");
+            Require(moveSource.Contains("gameManager.GetStaffMoveSpeedMul(_staffGroupType)"), "Existing Staff movement multiplier must remain.");
+            Require(moveSource.Contains("_skillRuntimeContext.PersonalMoveBonusPercent"), "Skill01 personal movement multiplier must remain.");
+            Require(
+                CountOccurrences(moveSource, "StaffSkillEffectType.AllStaffMovePercent") == 1,
+                "Skill10 Registry multiplier must be read exactly once.");
+            Require(
+                CountOccurrences(moveSource, "FeverRuntimeContext.StaffMoveMultiplier") == 1,
+                "Staff Fever movement multiplier must be read exactly once.");
+            Require(
+                FeverRuntimeMultiplierCalculator.MaxStaffMoveMultiplier == 3f,
+                "Staff movement cap must be 3.");
+            Require(!speedSource.Contains("FeverRuntimeContext"), "Staff SpeedMul must not consume Fever Context.");
+            Require(!speedSource.Contains("FeverRuntimeMultiplierCalculator"), "Staff SpeedMul must not consume the Fever calculator.");
+            Require(!workSource.Contains("FeverRuntimeContext"), "Staff WorkSpeedMul must not consume Fever Context.");
+            Require(!guardSource.Contains("FeverRuntimeContext"), "Guard elimination speed must not consume Fever Context.");
+
+            string managerSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Staff/StaffAction/ManagerAction.cs"));
+            Require(managerSource.Contains("staff.SpeedMul"), "Manager action must preserve the existing Staff speed multiplier.");
+            Require(managerSource.Contains("FeverRuntimeContext.ManagerGuideMultiplier"), "Manager action must consume its Fever channel.");
+            Require(
+                managerSource.Contains("FeverRuntimeMultiplierCalculator.CalculateRoleActionMultiplier("),
+                "Manager action must use the role-action calculator.");
+
+            string marketerSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Staff/StaffAction/MarketerAction.cs"));
+            Require(marketerSource.Contains("staff.SpeedMul"), "Marketer action must preserve the existing Staff speed multiplier.");
+            Require(marketerSource.Contains("FeverRuntimeContext.MarketerCallMultiplier"), "Marketer action must consume its Fever channel.");
+            Require(
+                marketerSource.Contains("FeverRuntimeMultiplierCalculator.CalculateRoleActionMultiplier("),
+                "Marketer action must use the role-action calculator.");
+            Require(marketerSource.Contains("_customerController.AddTabCount();"), "Marketer customer-call action must remain.");
+
+            string[] excludedActionPaths =
+            {
+                "Assets/Scripts/Staff/StaffAction/WaiterAction.cs",
+                "Assets/Scripts/Staff/StaffAction/CleanerAction.cs",
+                "Assets/Scripts/Staff/StaffAction/GuardAction.cs",
+                "Assets/Scripts/Staff/StaffAction/ChefAction.cs"
+            };
+            foreach (string excludedPath in excludedActionPaths)
+            {
+                string excludedSource = ReadProjectText(excludedPath);
+                Require(!excludedSource.Contains("FeverRuntimeContext"), excludedPath + " must not consume Fever Context.");
+                Require(!excludedSource.Contains("FeverRuntimeMultiplierCalculator"), excludedPath + " must not consume the Fever calculator.");
+                Require(!excludedSource.Contains("IsFeverStart"), excludedPath + " must not consume Fever state.");
+            }
+        }
+
+        private static void ValidateCookingChannelAndCap()
+        {
+            string kitchenSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Kitchen/KitchenUtensilGroup.cs"));
+            Require(
+                kitchenSource.Contains("FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier("),
+                "Kitchen cooking must use the Fever multiplier calculator.");
+            Require(kitchenSource.Contains("gameManager.GetCookingSpeedMul("), "Existing global cooking multiplier must remain.");
+            Require(
+                kitchenSource.Contains("CalculateAssignedCookingSpeedMultiplier("),
+                "Skill04 assigned-cooking multiplier must remain.");
+            Require(
+                CountOccurrences(kitchenSource, "StaffSkillEffectType.GlobalCookingSpeedPercent") == 1,
+                "Skill09 Registry multiplier must be read exactly once.");
+            Require(
+                CountOccurrences(kitchenSource, "FeverRuntimeContext.CookingMultiplier") == 1,
+                "Fever cooking multiplier must be read exactly once.");
+            Require(kitchenSource.Contains("burnerData.AddCookSpeedMul * 0.01f"), "Assigned Chef role multiplier must remain.");
+            Require(kitchenSource.Contains("assignedStaff.SpeedMul"), "Assigned Chef role speed must remain.");
+            Require(kitchenSource.Contains("_burnerKitchenUtensils[i].CookSpeedMul"), "Burner multiplier must remain.");
+            Require(kitchenSource.Contains("sameFoodTypeMultiplier = 1.1f;"), "Same-food 1.1 multiplier must remain.");
+            Require(kitchenSource.Contains("Time.deltaTime * finalCookingMultiplier"), "Cooking must apply the final multiplier to delta time.");
+            Require(!kitchenSource.Contains("PersonalMoveBonusPercent"), "Cooking must not consume Skill01 personal movement.");
+            Require(!kitchenSource.Contains("AllStaffMovePercent"), "Cooking must not consume Skill10 Staff movement.");
+            Require(
+                FeverRuntimeMultiplierCalculator.MaxCookingMultiplier == 5f,
+                "Final cooking multiplier cap must be 5.");
+
+            string sinkSource = ReadProjectText("Assets/Scripts/Kitchen/SinkKitchenUtensil.cs");
+            Require(!sinkSource.Contains("FeverRuntimeContext"), "Sink must not consume Fever Context.");
+            Require(!sinkSource.Contains("FeverRuntimeMultiplierCalculator"), "Sink must not consume the Fever calculator.");
+            Require(!sinkSource.Contains("IsFeverStart"), "Sink must not consume Fever state.");
         }
 
         private static void ValidateFeverMultipliers(
@@ -2518,7 +2864,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("53. 오류 수: " + _errors.Count);
+                _output.AppendLine("59. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -2526,7 +2872,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "54. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "60. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)

@@ -328,7 +328,19 @@ public class NormalCustomer : Customer
                 
                 SetSpriteDir(direction.x);
                 
-                step = Time.deltaTime * _moveSpeed * GameManager.Instance.AddCustomerSpeedMul * 0.7f;
+                GameManager gameManager = GameManager.Instance;
+                float existingMultiplier = gameManager.AddCustomerSpeedMul;
+                float normalCustomerSkillMultiplier =
+                    gameManager.StaffSkillEffectRegistry.GetMultiplier(
+                        StaffSkillEffectType.NormalCustomerMovePercent);
+                float feverMultiplier =
+                    gameManager.FeverRuntimeContext.NormalCustomerMoveMultiplier;
+                float finalMultiplier =
+                    FeverRuntimeMultiplierCalculator.CalculateNormalCustomerMoveMultiplier(
+                        existingMultiplier,
+                        normalCustomerSkillMultiplier,
+                        feverMultiplier);
+                step = Time.deltaTime * _moveSpeed * finalMultiplier * 0.7f;
                 
                 // MoveTowards 직접 구현 (GC 없음)
                 if (distance > step)

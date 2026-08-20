@@ -65,7 +65,29 @@ public class Staff : MonoBehaviour
     protected float _moveSpeed;
     protected float _speedMul;
     public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(_staffGroupType)), 0.5f, 3f);
-    public float MoveSpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffMoveSpeedMul(_staffGroupType)) + (_skillRuntimeContext.PersonalMoveBonusPercent * 0.01f), 0.5f, 3f);
+    public float MoveSpeedMul
+    {
+        get
+        {
+            GameManager gameManager = GameManager.Instance;
+            float existingMultiplier =
+                (1f + _speedMul)
+                + gameManager.GetStaffMoveSpeedMul(_staffGroupType);
+            float personalMoveMultiplier =
+                1f + _skillRuntimeContext.PersonalMoveBonusPercent * 0.01f;
+            float allStaffMoveMultiplier =
+                gameManager.StaffSkillEffectRegistry.GetMultiplier(
+                    StaffSkillEffectType.AllStaffMovePercent);
+            float feverMultiplier =
+                gameManager.FeverRuntimeContext.StaffMoveMultiplier;
+
+            return FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier(
+                existingMultiplier,
+                personalMoveMultiplier,
+                allStaffMoveMultiplier,
+                feverMultiplier);
+        }
+    }
     public float WorkSpeedMul => Mathf.Clamp(1 + GameManager.Instance.GetStaffWorkSpeedMul(), 0.5f, 3f);
     public float GuardEliminationSpeedMul => Mathf.Clamp(1 + GameManager.Instance.GetGuardEliminationSpeedMul(), 0.5f, 3f);
 
