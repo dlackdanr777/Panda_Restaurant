@@ -19,6 +19,11 @@ public class UIStaff : MobileUIView
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private TextMeshProUGUI _typeText;
     [SerializeField] private Button _showSkinButton;
+    [SerializeField] private Image _backgroundImage;
+    [SerializeField] private Sprite _normalBackgroundSprite;
+    [SerializeField] private Sprite _vipBackgroundSprite;
+    [SerializeField] private GameObject _normalObject;
+    [SerializeField] private GameObject _vipObject;
 
     [Space]
     [Header("Animations")]
@@ -148,7 +153,24 @@ public class UIStaff : MobileUIView
         _uiRestaurantAdmin.ShowStaffTab();
         _uiNav.Push("UIStaff");
         _currentFloorType = floorType;
+        UpdateFloorUI();
         SetStaffDataOptimized(type);
+    }
+
+    private void UpdateFloorUI()
+    {
+        if (_currentFloorType == ERestaurantFloorType.Floor1)
+        {
+            _backgroundImage.sprite = _normalBackgroundSprite;
+            _normalObject.SetActive(true);
+            _vipObject.SetActive(false);
+        }
+        else if (_currentFloorType == ERestaurantFloorType.Floor2)
+        {
+            _backgroundImage.sprite = _vipBackgroundSprite;
+            _normalObject.SetActive(false);
+            _vipObject.SetActive(true);
+        }
     }
 
     // 최적화된 데이터 설정 메서드

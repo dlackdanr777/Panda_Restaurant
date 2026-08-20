@@ -25,7 +25,6 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private UIButtonAndText _notEnoughMoneyButton;
     [SerializeField] private UIButtonAndText _scoreButton;
     [SerializeField] private UIButtonAndText _equipButton;
-    [SerializeField] private UIEquipButtonGroup _equipButtonGroup;
 
     [Space]
     [Header("Sprites")]
@@ -47,7 +46,6 @@ public class UIStaffPreview : MonoBehaviour
     public void Init(Action<ERestaurantFloorType, EquipStaffType, StaffData> onEquipButtonClicked, Action<ERestaurantFloorType, StaffData> onUsingButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
     {
         _selectGroup.Init();
-        _equipButtonGroup.Init(On1FloorEquipButtonClicked, On2FloorEquipButtonClicked, On3FloorEquipButtonClicked, OnEquipCancelButtonClicked);
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         _onEquipButtonClicked = onEquipButtonClicked;
         _onBuyButtonClicked = onBuyButtonClicked;
@@ -75,7 +73,6 @@ public class UIStaffPreview : MonoBehaviour
         _notEnoughMoneyButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
         _equipTextGroup.gameObject.SetActive(false);
-        _equipButtonGroup.HideNoAnime();
 
         if (data == null)
         {
@@ -230,7 +227,7 @@ public class UIStaffPreview : MonoBehaviour
     }
 
 
-    private void OnEquipEvent(ERestaurantFloorType type)
+    private void OnEquipButtonClicked()
     {
         if (_currentData == null)
         {
@@ -238,51 +235,14 @@ public class UIStaffPreview : MonoBehaviour
             return;
         }
 
-        _equipButtonGroup.HideNoAnime();
-        _equipButton.gameObject.SetActive(false);
-
         if(UserInfo.IsEquipStaff(UserInfo.CurrentStage, _currentData))
         {
             _onUsingButtonClicked?.Invoke(_currentFloor, _currentData);
         }
         else
         {
-            _onEquipButtonClicked?.Invoke(type, _equipStaffType, _currentData);
+            _onEquipButtonClicked?.Invoke(_currentFloor, _equipStaffType, _currentData);
         }
-
-    }
-
-
-    private void OnEquipButtonClicked()
-    {
-        bool isFloor1Equip = UserInfo.IsEquipStaff(UserInfo.CurrentStage, ERestaurantFloorType.Floor1, _equipStaffType);
-        bool isFloor2Equip = UserInfo.IsEquipStaff(UserInfo.CurrentStage, ERestaurantFloorType.Floor2, _equipStaffType);
-        bool isFloor3Equip = UserInfo.IsEquipStaff(UserInfo.CurrentStage, ERestaurantFloorType.Floor3, _equipStaffType);
-
-        _equipButtonGroup.SetFloorButtonColor(isFloor1Equip, isFloor2Equip, isFloor3Equip);
-        _equipButtonGroup.Show();
-        _equipButton.gameObject.SetActive(false);
-    }
-
-    private void OnEquipCancelButtonClicked()
-    {
-        _equipButtonGroup.Hide(() => _equipButton.gameObject.SetActive(true));
-    }
-
-
-    private void On1FloorEquipButtonClicked()
-    {
-        OnEquipEvent(ERestaurantFloorType.Floor1);
-    }
-
-    private void On2FloorEquipButtonClicked()
-    {
-        OnEquipEvent(ERestaurantFloorType.Floor2);
-    }
-
-    private void On3FloorEquipButtonClicked()
-    {
-        OnEquipEvent(ERestaurantFloorType.Floor3);
     }
 
 

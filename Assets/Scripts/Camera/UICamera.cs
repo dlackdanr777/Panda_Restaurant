@@ -27,7 +27,7 @@ public class UICamera : MonoBehaviour
         //_rightArrowButton.onClick.AddListener(MoveHall);
 
 
-        _floorButtonGroup.Init(() => MoveFloor(ERestaurantFloorType.Floor1), () => MoveFloor(ERestaurantFloorType.Floor2), () => MoveFloor(ERestaurantFloorType.Floor3));
+        //_floorButtonGroup.Init(() => MoveFloor(ERestaurantFloorType.Floor1), () => MoveFloor(ERestaurantFloorType.Floor2), () => MoveFloor(ERestaurantFloorType.Floor3));
 
 
         DataBind.SetUnityActionValue("ShowRestaurant", () => 
