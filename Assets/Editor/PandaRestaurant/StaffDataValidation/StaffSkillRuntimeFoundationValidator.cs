@@ -77,6 +77,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(56, "일반 손님 이동 채널", ValidateNormalCustomerMoveChannel);
             report.Run(57, "Staff 이동·역할 행동 채널", ValidateStaffMoveAndRoleActionChannels);
             report.Run(58, "조리 채널·최종 상한", ValidateCookingChannelAndCap);
+            report.Run(59, "Skill08 Registry·Class", ValidateSkill08RegistryAndClass);
+            report.Run(60, "Skill09 Registry·Class", ValidateSkill09RegistryAndClass);
+            report.Run(61, "Skill10 Registry·Class", ValidateSkill10RegistryAndClass);
+            report.Run(62, "Skill08·09·10 소비 경계", ValidateRemainingSkillConsumptionBoundaries);
             report.Print();
         }
 
@@ -2619,6 +2623,242 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(!sinkSource.Contains("IsFeverStart"), "Sink must not consume Fever state.");
         }
 
+        private static void ValidateSkill08RegistryAndClass()
+        {
+            ValidateRemainingSkillRegistry(
+                StaffSkillEffectType.NormalCustomerMovePercent,
+                100f,
+                150f,
+                "Skill08");
+            ValidateRemainingSkillClass(
+                typeof(NormalCustomerMoveSpeedUpSkill),
+                "Assets/Scripts/Staff/StaffSkill/NormalCustomerMoveSpeedUpSkill.cs",
+                "NormalCustomerMoveSpeedUpSkill",
+                "_normalCustomerMoveSpeedUpPercent",
+                "100f",
+                "STAFF_SKILL08",
+                "NormalCustomerMovePercent");
+        }
+
+        private static void ValidateSkill09RegistryAndClass()
+        {
+            ValidateRemainingSkillRegistry(
+                StaffSkillEffectType.GlobalCookingSpeedPercent,
+                50f,
+                75f,
+                "Skill09");
+            ValidateRemainingSkillClass(
+                typeof(GlobalCookingSpeedUpSkill),
+                "Assets/Scripts/Staff/StaffSkill/GlobalCookingSpeedUpSkill.cs",
+                "GlobalCookingSpeedUpSkill",
+                "_globalCookingSpeedUpPercent",
+                "50f",
+                "STAFF_SKILL09",
+                "GlobalCookingSpeedPercent");
+        }
+
+        private static void ValidateSkill10RegistryAndClass()
+        {
+            ValidateRemainingSkillRegistry(
+                StaffSkillEffectType.AllStaffMovePercent,
+                50f,
+                75f,
+                "Skill10");
+            ValidateRemainingSkillClass(
+                typeof(AllStaffMoveSpeedUpSkill),
+                "Assets/Scripts/Staff/StaffSkill/AllStaffMoveSpeedUpSkill.cs",
+                "AllStaffMoveSpeedUpSkill",
+                "_allStaffMoveSpeedUpPercent",
+                "50f",
+                "STAFF_SKILL10",
+                "AllStaffMovePercent");
+        }
+
+        private static void ValidateRemainingSkillRegistry(
+            StaffSkillEffectType effectType,
+            float officialPercent,
+            float higherPercent,
+            string skillName)
+        {
+            StaffSkillEffectRegistry registry = new StaffSkillEffectRegistry();
+            StaffSkillSourceToken sourceA = new StaffSkillSourceToken(801, 2);
+            StaffSkillSourceToken sourceB = new StaffSkillSourceToken(802, 1);
+            StaffSkillSourceToken higherSource = new StaffSkillSourceToken(803, 1);
+            StaffSkillSourceToken staleSource = new StaffSkillSourceToken(801, 1);
+            float officialMultiplier = 1f + officialPercent * 0.01f;
+            float higherMultiplier = 1f + higherPercent * 0.01f;
+
+            RequireNear(0f, registry.GetHighestPercent(effectType), skillName + " initial percent must be zero.");
+            RequireNear(1f, registry.GetMultiplier(effectType), skillName + " initial multiplier must be 1.0.");
+
+            registry.RegisterOrUpdate(effectType, sourceA, officialPercent, skillName + ":A");
+            RequireNear(
+                officialPercent,
+                registry.GetHighestPercent(effectType),
+                skillName + " official percent was not registered.");
+            RequireNear(
+                officialMultiplier,
+                registry.GetMultiplier(effectType),
+                skillName + " official multiplier is incorrect.");
+
+            registry.RegisterOrUpdate(effectType, sourceB, officialPercent, skillName + ":B");
+            Require(registry.GetSourceCount(effectType) == 2, skillName + " equal sources must remain independent.");
+            RequireNear(
+                officialMultiplier,
+                registry.GetMultiplier(effectType),
+                skillName + " equal sources must use HIGHEST_ONLY.");
+
+            registry.RegisterOrUpdate(effectType, higherSource, higherPercent, skillName + ":HIGHER");
+            RequireNear(
+                higherPercent,
+                registry.GetHighestPercent(effectType),
+                skillName + " must select the higher Source percent.");
+            RequireNear(
+                higherMultiplier,
+                registry.GetMultiplier(effectType),
+                skillName + " higher Source multiplier is incorrect.");
+
+            Require(registry.Remove(effectType, higherSource), skillName + " higher Source must be removable.");
+            RequireNear(
+                officialMultiplier,
+                registry.GetMultiplier(effectType),
+                skillName + " must restore the next-highest Source.");
+            Require(!registry.Remove(effectType, staleSource), skillName + " stale Source removal must be a no-op.");
+            Require(registry.GetSourceCount(effectType) == 2, skillName + " stale removal changed current Sources.");
+
+            Require(registry.Remove(effectType, sourceA), skillName + " Source A must be removable.");
+            Require(registry.RemoveAllForSource(sourceB) == 1, skillName + " Source B must be removable by token.");
+            RequireNear(0f, registry.GetHighestPercent(effectType), skillName + " full removal must restore zero percent.");
+            RequireNear(1f, registry.GetMultiplier(effectType), skillName + " full removal must restore 1.0.");
+
+            registry.RegisterOrUpdate(effectType, sourceA, officialPercent, skillName + ":A");
+            registry.RegisterOrUpdate(effectType, higherSource, higherPercent, skillName + ":HIGHER");
+            registry.ClearAll();
+            Require(registry.GetSourceCount(effectType) == 0, skillName + " ClearAll must remove every Source.");
+            Require(registry.TotalSourceCount == 0, skillName + " ClearAll must leave the Registry empty.");
+            RequireNear(1f, registry.GetMultiplier(effectType), skillName + " ClearAll must restore 1.0.");
+        }
+
+        private static void ValidateRemainingSkillClass(
+            Type skillType,
+            string sourcePath,
+            string className,
+            string fieldName,
+            string defaultValueLiteral,
+            string officialSkillId,
+            string effectTypeName)
+        {
+            Require(skillType.BaseType == typeof(SkillBase), className + " must inherit SkillBase directly.");
+            Require(!skillType.IsAbstract, className + " must not be abstract.");
+            ValidateDeclaredInstanceFields(skillType, fieldName);
+
+            FieldInfo percentField = skillType.GetField(
+                fieldName,
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            Require(percentField != null, className + " percent field is missing.");
+            Require(percentField.FieldType == typeof(float), className + " percent field must be float.");
+            Require(percentField.IsPrivate, className + " percent field must be private.");
+            Require(
+                percentField.GetCustomAttribute<SerializeField>() != null,
+                className + " percent field must be serialized.");
+
+            RangeAttribute range = percentField.GetCustomAttribute<RangeAttribute>();
+            Require(range != null, className + " percent field must have a Range attribute.");
+            RequireNear(0f, range.min, className + " percent minimum must be zero.");
+            RequireNear(1000f, range.max, className + " percent maximum must be 1000.");
+
+            CreateAssetMenuAttribute menu = skillType.GetCustomAttribute<CreateAssetMenuAttribute>();
+            Require(menu != null, className + " must have CreateAssetMenu.");
+            Require(menu.fileName == className, className + " CreateAssetMenu filename changed.");
+            Require(
+                menu.menuName == "Scriptable Object/Skill/" + className,
+                className + " CreateAssetMenu path changed.");
+
+            ValidateReadOnlyProperty(skillType, "FirstValue", typeof(float));
+            ValidateReadOnlyProperty(skillType, "SecondValue", typeof(float));
+
+            string source = NormalizeSourceLineEndings(ReadProjectText(sourcePath));
+            Require(
+                source.Contains("private float " + fieldName + " = " + defaultValueLiteral + ";"),
+                className + " official default percent changed.");
+            Require(
+                source.Contains("public override float FirstValue => " + fieldName + ";"),
+                className + " FirstValue must return its serialized percent.");
+            Require(
+                source.Contains("public override float SecondValue => 0;"),
+                className + " SecondValue must return zero.");
+            Require(
+                source.Contains(
+                    "public override void ActivateUpdate(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)\n"
+                    + "    {\n"
+                    + "    }"),
+                className + " ActivateUpdate must remain empty.");
+            Require(
+                CountOccurrences(source, "StaffSkillEffectType." + effectTypeName) == 2,
+                className + " must register and remove only its official EffectType.");
+            Require(CountOccurrences(source, "RegisterOrUpdate(") == 1, className + " must register exactly one Source.");
+            Require(CountOccurrences(source, "effectRegistry.Remove(") == 1, className + " must remove exactly one Source.");
+            Require(
+                source.Contains("\"" + officialSkillId + ":\" + staffId + \":\" + nameof(" + className + ")"),
+                className + " debug label must contain its official Skill ID, Staff ID, and class name.");
+            Require(
+                source.Contains("throw new ArgumentNullException(nameof(staff));"),
+                className + " Activate must reject a null Staff.");
+            Require(
+                source.Contains("throw new InvalidOperationException("),
+                className + " Activate must reject a missing cached Registry.");
+            Require(
+                source.Contains("effectRegistry == null || !sourceToken.IsValid"),
+                className + " Deactivate must safely ignore a missing Registry or invalid token.");
+            Require(!source.Contains("GameManager.Instance"), className + " must use the Staff cached Registry.");
+            Require(!source.Contains("FeverRuntimeContext"), className + " must not store or consume Fever state.");
+            Require(!source.Contains("FeverRuntimeMultiplierCalculator"), className + " must not calculate consumer multipliers.");
+            Require(!source.Contains("GetMultiplier("), className + " must not consume its Registry channel directly.");
+            Require(!source.Contains("Debug.Log"), className + " must not add Runtime logs.");
+
+            FieldInfo[] fields = skillType.GetFields(
+                BindingFlags.Instance
+                | BindingFlags.Public
+                | BindingFlags.NonPublic
+                | BindingFlags.DeclaredOnly);
+            Require(fields.Length == 1, className + " must have exactly one declared instance field.");
+            Require(fields[0].FieldType == typeof(float), className + " must not store Runtime object references.");
+            Require(
+                !typeof(UnityEngine.Object).IsAssignableFrom(fields[0].FieldType),
+                className + " must not store Unity Object references.");
+        }
+
+        private static void ValidateRemainingSkillConsumptionBoundaries()
+        {
+            ValidateNormalCustomerMoveChannel();
+            ValidateStaffMoveAndRoleActionChannels();
+            ValidateCookingChannelAndCap();
+
+            string feverContextSource = ReadProjectText(
+                "Assets/Scripts/FeverSystem/FeverRuntimeContext.cs");
+            string registrySource = ReadProjectText(
+                "Assets/Scripts/Staff/StaffSkill/StaffSkillEffectRegistry.cs");
+            Require(
+                !feverContextSource.Contains("StaffSkillEffectRegistry"),
+                "Fever Context must remain independent from the Staff Skill Registry.");
+            Require(
+                !registrySource.Contains("FeverRuntimeContext"),
+                "Staff Skill Registry must remain independent from Fever Context.");
+
+            string skill08Source = ReadProjectText(
+                "Assets/Scripts/Staff/StaffSkill/NormalCustomerMoveSpeedUpSkill.cs");
+            string skill09Source = ReadProjectText(
+                "Assets/Scripts/Staff/StaffSkill/GlobalCookingSpeedUpSkill.cs");
+            string skill10Source = ReadProjectText(
+                "Assets/Scripts/Staff/StaffSkill/AllStaffMoveSpeedUpSkill.cs");
+            Require(!skill08Source.Contains("GlobalCookingSpeedPercent"), "Skill08 must not consume Skill09.");
+            Require(!skill08Source.Contains("AllStaffMovePercent"), "Skill08 must not consume Skill10.");
+            Require(!skill09Source.Contains("NormalCustomerMovePercent"), "Skill09 must not consume Skill08.");
+            Require(!skill09Source.Contains("AllStaffMovePercent"), "Skill09 must not consume Skill10.");
+            Require(!skill10Source.Contains("NormalCustomerMovePercent"), "Skill10 must not consume Skill08.");
+            Require(!skill10Source.Contains("GlobalCookingSpeedPercent"), "Skill10 must not consume Skill09.");
+        }
+
         private static void ValidateFeverMultipliers(
             FeverRuntimeContext context,
             float expected,
@@ -2864,7 +3104,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("59. 오류 수: " + _errors.Count);
+                _output.AppendLine("63. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -2872,7 +3112,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "60. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "64. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)
