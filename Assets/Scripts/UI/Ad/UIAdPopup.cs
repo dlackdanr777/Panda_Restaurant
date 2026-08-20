@@ -226,6 +226,12 @@ public class UIAdPopup : MobileUIView
 
     public void ShowFeverPopup(WatchAdButton watchAdButton)
     {
+        if (IsFeverRuntimeActive())
+        {
+            PopupManager.Instance.ShowDisplayText("피버 타임 중에는 게이지를 충전할 수 없습니다.");
+            return;
+        }
+
         // 이미 팝업이 열려있으므로 중복 Push 방지
         if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
         {
@@ -330,8 +336,23 @@ public class UIAdPopup : MobileUIView
         }
     }
 
+    private static bool IsFeverRuntimeActive()
+    {
+        GameManager existingGameManager;
+        return
+            GameManager.TryGetExistingInstance(out existingGameManager)
+            && existingGameManager.FeverRuntimeContext.IsActive;
+    }
+
     private void FixedUpdate()
     {
+        if (_currentAdType == AdType.Fever && IsFeverRuntimeActive())
+        {
+            SetAdButtonInteractable(false);
+            SetDiaButtonInteractable(false);
+            return;
+        }
+
         if (_currentAdType == AdType.Fever)
         {
             if (!TimeManager.Instance.IsAddTime(ConstValue.AD_TIME_FEVER))
@@ -424,6 +445,12 @@ public class UIAdPopup : MobileUIView
 
     private void AdButtonClicked()
     {
+        if (_currentAdType == AdType.Fever && IsFeverRuntimeActive())
+        {
+            PopupManager.Instance.ShowDisplayText("피버 타임 중에는 게이지를 충전할 수 없습니다.");
+            return;
+        }
+
         if (_currentAdType == AdType.Fever && ConstValue.AD_FEVER_COUNT <= UserInfo.FeverAdCount)
         {
             PopupManager.Instance.ShowDisplayText("오늘 시청 가능한 횟수를 모두 사용했습니다.");
@@ -497,6 +524,12 @@ public class UIAdPopup : MobileUIView
 
     private void OnDiaButtonClicked()
     {
+        if (_currentAdType == AdType.Fever && IsFeverRuntimeActive())
+        {
+            PopupManager.Instance.ShowDisplayText("피버 타임 중에는 게이지를 충전할 수 없습니다.");
+            return;
+        }
+
         DebugLog.Log(UserInfo.FeverDiaCount);
         if (_currentAdType == AdType.Fever && ConstValue.AD_FEVER_COUNT <= UserInfo.FeverDiaCount)
         {

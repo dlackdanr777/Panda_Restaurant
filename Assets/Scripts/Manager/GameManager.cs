@@ -40,6 +40,10 @@ public class GameManager : MonoBehaviour
     public StaffSkillEffectRegistry StaffSkillEffectRegistry => _staffSkillEffectRegistry;
     public int ActiveStaffSkillEffectSourceCount => _staffSkillEffectRegistry.TotalSourceCount;
 
+    private readonly FeverRuntimeContext _feverRuntimeContext =
+        new FeverRuntimeContext();
+    public FeverRuntimeContext FeverRuntimeContext => _feverRuntimeContext;
+
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
     private bool _isMiniGameStart;
@@ -459,6 +463,7 @@ public class GameManager : MonoBehaviour
     public void ChanceScene()
     {
         _staffSkillEffectRegistry.ClearAll();
+        _feverRuntimeContext.Reset();
         _foodPriceMul = 0;
         _totalAddSpeedMul = 0;
         _addPromotionCustomer = 1;
@@ -536,11 +541,13 @@ public class GameManager : MonoBehaviour
     private void OnApplicationQuit()
     {
         _staffSkillEffectRegistry.ClearAll();
+        _feverRuntimeContext.Reset();
     }
 
     private void OnDestroy()
     {
         _staffSkillEffectRegistry.ClearAll();
+        _feverRuntimeContext.Reset();
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEffectEvent;
         UserInfo.OnChangeKitchenUtensilHandler -= OnChangeKitchenUtensilEffectEvent;
         UserInfo.OnGiveFurnitureHandler -= OnGiveFurnitureEffectCheck;

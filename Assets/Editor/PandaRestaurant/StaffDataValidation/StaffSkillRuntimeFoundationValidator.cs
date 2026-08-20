@@ -65,6 +65,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(44, "주문 가격 Boundary", ValidateSkill05OrderPriceBoundary);
             report.Run(45, "음식 기본 팁률 50%", ValidateBaseFoodTipPolicy);
             report.Run(46, "음식 팁 공식·격리 구조", ValidateFoodTipIsolationStructure);
+            report.Run(47, "Fever Context·Token", ValidateFeverContextAndToken);
+            report.Run(48, "Fever Clock·자동 호출", ValidateFeverClockAndAutoCall);
+            report.Run(49, "GameManager Fever Context 소유", ValidateGameManagerFeverContextOwnership);
+            report.Run(50, "FeverSystem 생명주기·Clock 구조", ValidateFeverSystemLifecycleStructure);
+            report.Run(51, "Fever Gauge UI 실시간 감소", ValidateFeverGaugeRealtimeUi);
+            report.Run(52, "Fever 구매 UI·결제 잠금", ValidateFeverPurchaseLock);
             report.Print();
         }
 
@@ -1687,6 +1693,617 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 "TipMul");
         }
 
+        private static void ValidateFeverContextAndToken()
+        {
+            FeverRuntimeContext contextA = new FeverRuntimeContext();
+            FeverRuntimeContext contextB = new FeverRuntimeContext();
+
+            Require(contextA.ContextId > 0, "Fever Context A ID must be positive.");
+            Require(contextB.ContextId > 0, "Fever Context B ID must be positive.");
+            Require(contextA.ContextId != contextB.ContextId, "Fever Context IDs must be unique.");
+            Require(!default(FeverRuntimeToken).IsValid, "The default Fever token must be invalid.");
+            Require(!contextA.IsActive, "A new Fever Context must be inactive.");
+            Require(!contextA.CurrentToken.IsValid, "A new Fever Context token must be invalid.");
+            RequireNear(0f, contextA.DurationSeconds, "A new Fever duration must be zero.");
+            RequireNear(0f, contextA.ElapsedSeconds, "A new Fever elapsed time must be zero.");
+            RequireNear(0f, contextA.RemainingRatio, "A new Fever remaining ratio must be zero.");
+            RequireNear(0f, contextA.AutoCallRemainderSeconds, "A new Fever remainder must be zero.");
+            ValidateFeverMultipliers(contextA, 1f, "Inactive Fever");
+
+            long initialSequence = contextA.ActivationSequence;
+            Require(
+                !contextA.TryActivate(0f, out FeverRuntimeToken zeroDurationToken),
+                "Zero Fever duration must be rejected.");
+            Require(!zeroDurationToken.IsValid, "Rejected zero duration must return an invalid token.");
+            Require(
+                !contextA.TryActivate(-1f, out FeverRuntimeToken negativeDurationToken),
+                "Negative Fever duration must be rejected.");
+            Require(!negativeDurationToken.IsValid, "Rejected negative duration must return an invalid token.");
+            Require(
+                !contextA.TryActivate(float.NaN, out FeverRuntimeToken nanDurationToken),
+                "NaN Fever duration must be rejected.");
+            Require(!nanDurationToken.IsValid, "Rejected NaN duration must return an invalid token.");
+            Require(
+                !contextA.TryActivate(float.PositiveInfinity, out FeverRuntimeToken infiniteDurationToken),
+                "Infinite Fever duration must be rejected.");
+            Require(!infiniteDurationToken.IsValid, "Rejected infinite duration must return an invalid token.");
+            Require(!contextA.IsActive, "Rejected Fever activations must not activate the Context.");
+            Require(
+                contextA.ActivationSequence == initialSequence,
+                "Rejected Fever activations must not change the sequence.");
+
+            Require(
+                contextA.TryActivate(10f, out FeverRuntimeToken tokenA),
+                "A finite positive Fever duration must activate.");
+            Require(tokenA.IsValid, "A successful Fever activation must return a valid token.");
+            Require(contextA.IsCurrentToken(tokenA), "The activated Fever token must be current.");
+            Require(contextA.CurrentToken == tokenA, "The Context must expose the current Fever token.");
+            RequireNear(10f, contextA.DurationSeconds, "The activated Fever duration must be stored.");
+            RequireNear(0f, contextA.ElapsedSeconds, "A new Fever activation must start at zero elapsed time.");
+            RequireNear(1f, contextA.RemainingRatio, "A new Fever activation must start at ratio 1.0.");
+            ValidateFeverMultipliers(contextA, 2f, "Active Fever");
+
+            FeverRuntimeToken equalToken = new FeverRuntimeToken(
+                tokenA.ContextId,
+                tokenA.ActivationSequence);
+            FeverRuntimeToken differentSequence = new FeverRuntimeToken(
+                tokenA.ContextId,
+                tokenA.ActivationSequence + 1);
+            Require(tokenA == equalToken && tokenA.Equals(equalToken), "Equal Fever tokens must compare equal.");
+            Require(tokenA.GetHashCode() == equalToken.GetHashCode(), "Equal Fever token hashes must match.");
+            Require(tokenA != differentSequence, "Different Fever activation sequences must not compare equal.");
+            Require(
+                tokenA.ToString() == tokenA.ContextId + ":" + tokenA.ActivationSequence,
+                "Fever token text must use the context:sequence format.");
+            Dictionary<FeverRuntimeToken, string> tokenDictionary =
+                new Dictionary<FeverRuntimeToken, string>();
+            tokenDictionary.Add(tokenA, "fever");
+            Require(tokenDictionary[equalToken] == "fever", "Fever token must be a stable dictionary key.");
+            RequireThrows<ArgumentOutOfRangeException>(
+                () => new FeverRuntimeToken(0, 1),
+                "A zero Fever Context ID must be rejected.");
+            RequireThrows<ArgumentOutOfRangeException>(
+                () => new FeverRuntimeToken(1, 0),
+                "A zero Fever activation sequence must be rejected.");
+
+            FeverRuntimeAdvanceResult quarterSecond = contextA.Advance(tokenA, 0.25f);
+            Require(quarterSecond.IsCurrentActivation, "The current Fever token must advance.");
+            long activeSequence = contextA.ActivationSequence;
+            float elapsedBeforeDuplicate = contextA.ElapsedSeconds;
+            float remainderBeforeDuplicate = contextA.AutoCallRemainderSeconds;
+            Require(
+                !contextA.TryActivate(5f, out FeverRuntimeToken duplicateToken),
+                "A duplicate Fever activation must be rejected.");
+            Require(!duplicateToken.IsValid, "A duplicate Fever activation must return an invalid token.");
+            Require(contextA.CurrentToken == tokenA, "Duplicate activation must preserve the current Fever token.");
+            Require(
+                contextA.ActivationSequence == activeSequence,
+                "Duplicate activation must preserve the Fever sequence.");
+            RequireNear(
+                elapsedBeforeDuplicate,
+                contextA.ElapsedSeconds,
+                "Duplicate activation must preserve Fever elapsed time.");
+            RequireNear(
+                remainderBeforeDuplicate,
+                contextA.AutoCallRemainderSeconds,
+                "Duplicate activation must preserve the auto-call remainder.");
+
+            Require(contextB.TryActivate(5f, out FeverRuntimeToken tokenB), "Context B must activate.");
+            Require(!contextA.IsCurrentToken(tokenB), "A different Fever Context token must be rejected.");
+            Require(!contextA.Deactivate(tokenB), "A different Context token must not deactivate Fever.");
+            Require(contextA.CurrentToken == tokenA, "A foreign token must not change the active Fever token.");
+            Require(contextB.Deactivate(tokenB), "Context B cleanup must succeed.");
+
+            long contextIdBeforeReset = contextA.ContextId;
+            Require(contextA.Deactivate(tokenA), "The current Fever token must deactivate.");
+            Require(!contextA.IsActive, "Deactivated Fever Context must be inactive.");
+            Require(!contextA.CurrentToken.IsValid, "Deactivated Fever token must be invalid.");
+            ValidateFeverMultipliers(contextA, 1f, "Deactivated Fever");
+            Require(!contextA.Deactivate(tokenA), "Duplicate Fever deactivation must return false.");
+
+            contextA.Reset();
+            contextA.Reset();
+            Require(contextA.ContextId == contextIdBeforeReset, "Reset must preserve the Fever Context ID.");
+            Require(contextA.ActivationSequence == activeSequence, "Reset must preserve the Fever sequence.");
+            Require(contextA.TryActivate(3f, out FeverRuntimeToken nextToken), "Fever must reactivate after Reset.");
+            Require(
+                nextToken.ActivationSequence == activeSequence + 1,
+                "A new Fever activation must increment the sequence.");
+            Require(!contextA.Deactivate(tokenA), "A stale Fever token must not deactivate a new activation.");
+            FeverRuntimeAdvanceResult staleResult = contextA.Advance(tokenA, 1f);
+            Require(!staleResult.IsCurrentActivation, "A stale Fever token must not advance a new activation.");
+            RequireNear(0f, contextA.ElapsedSeconds, "A stale Fever token must not change elapsed time.");
+            Require(contextA.Deactivate(nextToken), "The current reactivation token must clean up.");
+
+            Type contextType = typeof(FeverRuntimeContext);
+            Require(contextType.IsSealed, "FeverRuntimeContext must be sealed.");
+            foreach (PropertyInfo property in contextType.GetProperties(BindingFlags.Instance | BindingFlags.Public))
+            {
+                Require(
+                    property.GetSetMethod() == null,
+                    "FeverRuntimeContext public property must not have a public setter: " + property.Name);
+            }
+
+            foreach (FieldInfo field in contextType.GetFields(
+                         BindingFlags.Instance
+                         | BindingFlags.Public
+                         | BindingFlags.NonPublic
+                         | BindingFlags.DeclaredOnly))
+            {
+                Require(
+                    !typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType),
+                    "FeverRuntimeContext must not reference a Unity Object: " + field.Name);
+                Require(
+                    !IsMutableCollectionType(field.FieldType),
+                    "FeverRuntimeContext must not contain a mutable collection: " + field.Name);
+                Require(
+                    field.FieldType != typeof(Action),
+                    "FeverRuntimeContext must not contain an Action delegate: " + field.Name);
+            }
+
+            string contextSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/FeverSystem/FeverRuntimeContext.cs"));
+            Require(!contextSource.Contains("using UnityEngine"), "FeverRuntimeContext must not depend on UnityEngine.");
+            Require(
+                CountOccurrences(contextSource, "FEVER_POLICY_2026_08_19_V2") == 1,
+                "The Fever V2 policy marker must exist exactly once.");
+        }
+
+        private static void ValidateFeverClockAndAutoCall()
+        {
+            FeverRuntimeContext splitContext = new FeverRuntimeContext();
+            Require(splitContext.TryActivate(5f, out FeverRuntimeToken splitToken), "Split clock must activate.");
+            FeverRuntimeAdvanceResult splitFirst = splitContext.Advance(splitToken, 0.2f);
+            Require(splitFirst.AutoCallOpportunityCount == 0, "0.2 seconds must not complete an auto-call interval.");
+            FeverRuntimeAdvanceResult splitSecond = splitContext.Advance(splitToken, 0.3f);
+            Require(splitSecond.AutoCallOpportunityCount == 1, "0.2 + 0.3 seconds must produce one opportunity.");
+            RequireNear(0f, splitSecond.AutoCallRemainderSeconds, "0.2 + 0.3 seconds must leave no remainder.");
+
+            FeverRuntimeContext bulkContext = new FeverRuntimeContext();
+            Require(bulkContext.TryActivate(5f, out FeverRuntimeToken bulkToken), "Bulk clock must activate.");
+            FeverRuntimeAdvanceResult bulkResult = bulkContext.Advance(bulkToken, 1.2f);
+            Require(bulkResult.AutoCallOpportunityCount == 2, "1.2 seconds must produce two opportunities.");
+            RequireNear(0.2f, bulkResult.AutoCallRemainderSeconds, "1.2 seconds must preserve a 0.2 remainder.");
+            float elapsedBeforePause = bulkContext.ElapsedSeconds;
+            float remainderBeforePause = bulkContext.AutoCallRemainderSeconds;
+            FeverRuntimeAdvanceResult pauseResult = bulkContext.Advance(bulkToken, 0f);
+            Require(pauseResult.AutoCallOpportunityCount == 0, "A zero delta must produce no opportunity.");
+            RequireNear(0f, pauseResult.ConsumedDeltaSeconds, "A zero delta must consume no time.");
+            RequireNear(elapsedBeforePause, bulkContext.ElapsedSeconds, "A zero delta must preserve elapsed time.");
+            RequireNear(remainderBeforePause, bulkContext.AutoCallRemainderSeconds, "A zero delta must preserve remainder.");
+
+            FeverRuntimeContext limitedContext = new FeverRuntimeContext();
+            Require(limitedContext.TryActivate(1f, out FeverRuntimeToken limitedToken), "Limited clock must activate.");
+            FeverRuntimeAdvanceResult limitedResult = limitedContext.Advance(limitedToken, 2f);
+            Require(limitedResult.IsCurrentActivation, "The current limited clock must advance.");
+            Require(limitedResult.DurationCompleted, "The limited clock must report completion.");
+            Require(limitedResult.AutoCallOpportunityCount == 2, "One consumed second must produce two opportunities.");
+            RequireNear(1f, limitedResult.ConsumedDeltaSeconds, "Advance must consume only remaining duration.");
+            RequireNear(1f, limitedContext.ElapsedSeconds, "Elapsed time must stop at the duration.");
+            RequireNear(0f, limitedResult.RemainingRatio, "A completed duration must have ratio zero.");
+            FeverRuntimeAdvanceResult afterCompletion = limitedContext.Advance(limitedToken, 100f);
+            Require(afterCompletion.IsCurrentActivation, "Completion must not auto-deactivate the Context.");
+            Require(afterCompletion.DurationCompleted, "A completed active Context must remain completed.");
+            Require(afterCompletion.AutoCallOpportunityCount == 0, "No intervals may be created after completion.");
+            RequireNear(0f, afterCompletion.ConsumedDeltaSeconds, "No time may be consumed after completion.");
+
+            FeverRuntimeContext tenSecondContext = new FeverRuntimeContext();
+            Require(tenSecondContext.TryActivate(10f, out FeverRuntimeToken tenSecondToken), "Ten-second clock must activate.");
+            FeverRuntimeAdvanceResult tenSecondResult = tenSecondContext.Advance(tenSecondToken, 10f);
+            Require(tenSecondResult.AutoCallOpportunityCount == 20, "Ten seconds must produce exactly twenty opportunities.");
+            Require(tenSecondResult.DurationCompleted, "Ten seconds must complete a ten-second duration.");
+
+            FeverRuntimeContext invalidDeltaContext = new FeverRuntimeContext();
+            Require(invalidDeltaContext.TryActivate(5f, out FeverRuntimeToken invalidDeltaToken), "Invalid-delta clock must activate.");
+            invalidDeltaContext.Advance(invalidDeltaToken, 0.25f);
+            AssertFeverClockUnchangedAfterException(
+                invalidDeltaContext,
+                () => invalidDeltaContext.Advance(invalidDeltaToken, -1f),
+                "Negative Fever delta must be rejected.");
+            AssertFeverClockUnchangedAfterException(
+                invalidDeltaContext,
+                () => invalidDeltaContext.Advance(invalidDeltaToken, float.NaN),
+                "NaN Fever delta must be rejected.");
+            AssertFeverClockUnchangedAfterException(
+                invalidDeltaContext,
+                () => invalidDeltaContext.Advance(invalidDeltaToken, float.PositiveInfinity),
+                "Infinite Fever delta must be rejected.");
+
+            Require(invalidDeltaContext.Deactivate(invalidDeltaToken), "Invalid-delta Context must clean up.");
+            FeverRuntimeAdvanceResult inactiveResult = invalidDeltaContext.Advance(invalidDeltaToken, 1f);
+            Require(!inactiveResult.IsCurrentActivation, "Inactive Fever Advance must be rejected.");
+            RequireNear(0f, invalidDeltaContext.ElapsedSeconds, "Inactive Advance must not change elapsed time.");
+            RequireNear(0f, invalidDeltaContext.AutoCallRemainderSeconds, "Inactive Advance must not change remainder.");
+
+            Require(invalidDeltaContext.TryActivate(5f, out FeverRuntimeToken currentToken), "Context must reactivate.");
+            FeverRuntimeAdvanceResult staleResult = invalidDeltaContext.Advance(invalidDeltaToken, 1f);
+            Require(!staleResult.IsCurrentActivation, "Stale Fever Advance must be rejected.");
+            RequireNear(0f, invalidDeltaContext.ElapsedSeconds, "Stale Advance must not change elapsed time.");
+            Require(invalidDeltaContext.IsCurrentToken(currentToken), "Stale Advance must preserve the current token.");
+            Require(invalidDeltaContext.Deactivate(currentToken), "Reactivated Context must clean up.");
+        }
+
+        private static void ValidateGameManagerFeverContextOwnership()
+        {
+            Type gameManagerType = typeof(GameManager);
+            FieldInfo contextField = gameManagerType.GetField(
+                "_feverRuntimeContext",
+                BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
+            Require(contextField != null, "GameManager Fever Context field is missing.");
+            Require(contextField.FieldType == typeof(FeverRuntimeContext), "GameManager Fever Context field type is incorrect.");
+            Require(contextField.IsPrivate, "GameManager Fever Context field must be private.");
+            Require(!contextField.IsStatic, "GameManager Fever Context field must not be static.");
+            Require(contextField.IsInitOnly, "GameManager Fever Context field must be readonly.");
+            Require(
+                contextField.GetCustomAttribute<SerializeField>() == null,
+                "GameManager Fever Context field must not be serialized.");
+
+            int contextFieldCount = 0;
+            foreach (FieldInfo field in gameManagerType.GetFields(
+                         BindingFlags.Instance
+                         | BindingFlags.Public
+                         | BindingFlags.NonPublic
+                         | BindingFlags.DeclaredOnly))
+            {
+                if (field.FieldType == typeof(FeverRuntimeContext))
+                {
+                    contextFieldCount++;
+                }
+            }
+
+            Require(contextFieldCount == 1, "GameManager must own exactly one FeverRuntimeContext field.");
+
+            PropertyInfo contextProperty = gameManagerType.GetProperty(
+                "FeverRuntimeContext",
+                BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly);
+            Require(contextProperty != null, "GameManager FeverRuntimeContext property is missing.");
+            Require(contextProperty.PropertyType == typeof(FeverRuntimeContext), "GameManager FeverRuntimeContext property type is incorrect.");
+            Require(contextProperty.GetGetMethod() != null, "GameManager FeverRuntimeContext getter must be public.");
+            Require(!contextProperty.GetGetMethod().IsStatic, "GameManager FeverRuntimeContext property must not be static.");
+            Require(contextProperty.GetSetMethod(true) == null, "GameManager FeverRuntimeContext property must be read-only.");
+
+            string source = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Manager/GameManager.cs"));
+            string chanceSceneSource = ExtractSourceSection(
+                source,
+                "public void ChanceScene()",
+                "private void Awake()");
+            string quitSource = ExtractSourceSection(
+                source,
+                "private void OnApplicationQuit()",
+                "private void OnDestroy()");
+            string destroySource = ExtractSourceSection(
+                source,
+                "private void OnDestroy()",
+                "private void OnGiveFurnitureEffectCheck()");
+
+            Require(
+                CountOccurrences(source, "new FeverRuntimeContext()") == 1,
+                "GameManager must construct exactly one FeverRuntimeContext.");
+            Require(
+                CountOccurrences(source, "_feverRuntimeContext.Reset();") == 3,
+                "GameManager must Reset Fever Context in exactly three lifecycle paths.");
+            Require(chanceSceneSource.Contains("_staffSkillEffectRegistry.ClearAll();"), "ChanceScene must preserve Staff Registry ClearAll.");
+            Require(chanceSceneSource.Contains("_feverRuntimeContext.Reset();"), "ChanceScene must Reset Fever Context.");
+            Require(chanceSceneSource.Contains("_totalAddSpeedMul = 0;"), "ChanceScene must preserve the legacy speed reset.");
+            Require(quitSource.Contains("_staffSkillEffectRegistry.ClearAll();"), "OnApplicationQuit must preserve Staff Registry ClearAll.");
+            Require(quitSource.Contains("_feverRuntimeContext.Reset();"), "OnApplicationQuit must Reset Fever Context.");
+            Require(destroySource.Contains("_staffSkillEffectRegistry.ClearAll();"), "OnDestroy must preserve Staff Registry ClearAll.");
+            Require(destroySource.Contains("_feverRuntimeContext.Reset();"), "OnDestroy must Reset Fever Context.");
+            Require(source.Contains("public void SetGameSpeed(float value)"), "Legacy SetGameSpeed must remain.");
+            Require(source.Contains("[SerializeField] private float _totalAddSpeedMul = 0;"), "Legacy total speed field must remain.");
+            Require(source.Contains("public float AddCustomerSpeedMul =>"), "AddCustomerSpeedMul must remain.");
+            Require(source.Contains("public float GetStaffSpeedMul(StaffGroupType type)"), "GetStaffSpeedMul must remain.");
+            Require(source.Contains("public float GetCookingSpeedMul(ERestaurantFloorType floor, FoodType type)"), "GetCookingSpeedMul must remain.");
+        }
+
+        private static void ValidateFeverSystemLifecycleStructure()
+        {
+            string source = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/FeverSystem/FerverSystem.cs"));
+            string awakeSource = ExtractSourceSection(source, "private void Awake()", "private void Start()");
+            string disableSource = ExtractSourceSection(source, "private void OnDisable()", "private void OnApplicationQuit()");
+            string quitSource = ExtractSourceSection(source, "private void OnApplicationQuit()", "private void OnDestroy()");
+            string destroySource = ExtractSourceSection(source, "private void OnDestroy()", "private void OnChangeSceneEvent()");
+            string sceneSource = ExtractSourceSection(source, "private void OnChangeSceneEvent()", "private void OnEquipFurnitureEvent(");
+            string routineSource = ExtractSourceSection(source, "private IEnumerator StartFeverRoutine(", "private void StopFeverRuntime(");
+            string cleanupSource = ExtractSourceSection(source, "private void StopFeverRuntime(", "private void SetLegacyFeverSpeed(");
+            string bridgeSource = source.Substring(
+                source.IndexOf("private void SetLegacyFeverSpeed(", StringComparison.Ordinal));
+
+            Require(!source.Contains("private bool _isFeverStart"), "Legacy local Fever state field must be removed.");
+            Require(source.Contains("private FeverRuntimeToken _activeFeverToken;"), "FeverSystem must store an activation token.");
+            Require(source.Contains("_feverRuntimeContext.TryActivate("), "FeverSystem must use TryActivate.");
+            Require(routineSource.Contains("context.Advance(activeToken, deltaSeconds)"), "Fever routine must advance by token.");
+            Require(cleanupSource.Contains("_feverRuntimeContext?.Deactivate(token);"), "Fever cleanup must deactivate by token.");
+            Require(
+                cleanupSource.Contains("&& !_feverRuntimeContext.IsCurrentToken(token)"),
+                "Fever cleanup must isolate an older stale token from a newer active Fever.");
+            Require(routineSource.Contains("yield return null;"), "Fever routine must advance once per frame.");
+            Require(routineSource.Contains("float deltaSeconds = Time.deltaTime;"), "Fever routine must use Time.deltaTime.");
+            Require(!source.Contains("WaitForSeconds(0.02f)"), "Legacy fixed Fever wait must be removed.");
+            Require(!source.Contains("timer += 0.02f"), "Legacy fixed Fever duration increment must be removed.");
+            Require(!source.Contains("addTabTimer += 0.02f"), "Legacy fixed auto-call increment must be removed.");
+            Require(routineSource.Contains("result.AutoCallOpportunityCount"), "Fever routine must consume every auto-call opportunity.");
+            Require(routineSource.Contains("CustomerController.IsMaxCount"), "Fever auto-call must preserve the wait-line maximum guard.");
+            Require(routineSource.Contains("result.RemainingRatio"), "Fever UI must use the Context remaining ratio.");
+            Require(routineSource.Contains("result.DurationCompleted"), "Fever routine must use Context duration completion.");
+            Require(routineSource.Contains("if (!result.IsCurrentActivation)"), "Fever routine must reject stale Advance results.");
+            Require(routineSource.Contains("finally"), "Fever routine must use a finally cleanup path.");
+            Require(disableSource.Contains("StopFeverRuntime("), "OnDisable must use common Fever cleanup.");
+            Require(quitSource.Contains("StopFeverRuntime("), "OnApplicationQuit must use common Fever cleanup.");
+            Require(destroySource.Contains("StopFeverRuntime("), "OnDestroy must use common Fever cleanup.");
+            Require(sceneSource.Contains("StopFeverRuntime("), "Scene change must use common Fever cleanup.");
+            Require(awakeSource.Contains("_gameManager = GameManager.Instance;"), "Awake must cache GameManager.");
+            Require(
+                awakeSource.Contains("_feverRuntimeContext = _gameManager.FeverRuntimeContext;"),
+                "Awake must cache the GameManager Fever Context.");
+            Require(!cleanupSource.Contains("GameManager.Instance"), "Fever cleanup must not create or fetch GameManager.");
+            Require(source.Contains("OnStartFeverHandler?.Invoke();"), "Fever start event must remain.");
+            Require(source.Contains("OnEndFeverHandler?.Invoke();"), "Fever end event must remain.");
+            Require(CountOccurrences(source, "_mainScene.PlayMainMusic();") == 2, "Fever music calls must remain at start and end.");
+            Require(
+                CountOccurrences(source, "FEVER_LEGACY_SPEED_BRIDGE_REMOVE_IN_FEVER_01_C") == 1,
+                "The Fever legacy bridge marker must exist exactly once.");
+            Require(bridgeSource.Contains("_gameManager.SetGameSpeed(1.5f);"), "Legacy Fever start speed bridge must remain.");
+            Require(bridgeSource.Contains("_gameManager.SetGameSpeed(0f);"), "Legacy Fever end speed bridge must remain.");
+
+            string[] consumerPaths =
+            {
+                "Assets/Scripts/Table/TableManager.cs",
+                "Assets/Scripts/NPC/NormalCustomer.cs",
+                "Assets/Scripts/NPC/Customer.cs",
+                "Assets/Scripts/Staff/Staff.cs",
+                "Assets/Scripts/Staff/StaffAction/ManagerAction.cs",
+                "Assets/Scripts/Staff/StaffAction/MarketerAction.cs",
+                "Assets/Scripts/Staff/StaffAction/WaiterAction.cs",
+                "Assets/Scripts/Staff/StaffAction/CleanerAction.cs",
+                "Assets/Scripts/Staff/StaffAction/GuardAction.cs",
+                "Assets/Scripts/Staff/StaffAction/ChefAction.cs",
+                "Assets/Scripts/Kitchen/KitchenUtensilGroup.cs",
+                "Assets/Scripts/Kitchen/BurnerKitchenUtensil.cs",
+                "Assets/Scripts/Kitchen/KitchenSystem.cs"
+            };
+            string[] multiplierNames =
+            {
+                "FoodPriceMultiplier",
+                "NormalCustomerMoveMultiplier",
+                "StaffMoveMultiplier",
+                "ManagerGuideMultiplier",
+                "MarketerCallMultiplier",
+                "CookingMultiplier"
+            };
+
+            foreach (string consumerPath in consumerPaths)
+            {
+                string consumerSource = ReadProjectText(consumerPath);
+                foreach (string multiplierName in multiplierNames)
+                {
+                    Require(
+                        !consumerSource.Contains(multiplierName),
+                        consumerPath + " must not consume Fever multiplier " + multiplierName + " before FEVER-01-C.");
+                }
+            }
+        }
+
+        private static void ValidateFeverGaugeRealtimeUi()
+        {
+            string uiFeverSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/FeverSystem/FeverUI/UIFever.cs"));
+            string realtimeGaugeSource = ExtractSourceSection(
+                uiFeverSource,
+                "public void OnChangeGaugeNoAnime(float gaugeValue)",
+                "public void OnChangeGauge()");
+            string normalGaugeSource = ExtractSourceSection(
+                uiFeverSource,
+                "public void OnChangeGauge()",
+                "private void OnFeverButtonClicked()");
+
+            int clampIndex = realtimeGaugeSource.IndexOf(
+                "float ratio = Mathf.Clamp01(gaugeValue);",
+                StringComparison.Ordinal);
+            int mappingIndex = realtimeGaugeSource.IndexOf(
+                "float fillAmount = ratio <= 0f ? 0f : 0.3f + ratio * 0.7f;",
+                StringComparison.Ordinal);
+            int directSetterIndex = realtimeGaugeSource.IndexOf(
+                "_fillAmountImage.SetFillAmountNoAnime(fillAmount);",
+                StringComparison.Ordinal);
+
+            Require(clampIndex >= 0, "Realtime Fever gauge input must use Mathf.Clamp01.");
+            Require(mappingIndex > clampIndex, "Realtime Fever gauge must preserve the 0 / 0.3 + ratio * 0.7 mapping.");
+            Require(directSetterIndex > mappingIndex, "Realtime Fever gauge must use the direct no-animation setter.");
+            Require(
+                !realtimeGaugeSource.Contains("SetFillAmonut("),
+                "Realtime Fever gauge must not restart the animated fill setter.");
+            Require(
+                !realtimeGaugeSource.Contains("Tween"),
+                "Realtime Fever gauge must not create or restart a Tween.");
+            Require(
+                normalGaugeSource.Contains("_fillAmountImage.SetFillAmonut(fillAmount);"),
+                "Normal Fever gauge charging must preserve its animated setter.");
+
+            string tweenSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/UI/UITweenFillAmountImage.cs"));
+            string animatedSetterSource = ExtractSourceSection(
+                tweenSource,
+                "public void SetFillAmonut(float value)",
+                "public void SetFillAmountNoAnime(float value)");
+            string directSetterSource = tweenSource.Substring(
+                tweenSource.IndexOf("public void SetFillAmountNoAnime(float value)", StringComparison.Ordinal));
+            Require(animatedSetterSource.Contains("_fillAmountImage.TweenStop();"), "Animated fill setter must preserve TweenStop.");
+            Require(animatedSetterSource.Contains("_fillAmountImage.TweenFillAmount("), "Animated fill setter must preserve TweenFillAmount.");
+            Require(directSetterSource.Contains("_fillAmountImage.TweenStop();"), "Direct fill setter must stop an existing Tween.");
+            Require(directSetterSource.Contains("_fillAmountImage.fillAmount = value;"), "Direct fill setter must assign fillAmount directly.");
+        }
+
+        private static void ValidateFeverPurchaseLock()
+        {
+            string uiFeverSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/FeverSystem/FeverUI/UIFever.cs"));
+            string initSource = ExtractSourceSection(
+                uiFeverSource,
+                "public void Init(FeverSystem ferverSystem)",
+                "private void OnDestroy()");
+            string clickSource = ExtractSourceSection(
+                uiFeverSource,
+                "private void OnFeverButtonClicked()",
+                "private void StartFeverEvent()");
+            string startSource = ExtractSourceSection(
+                uiFeverSource,
+                "private void StartFeverEvent()",
+                "private void EndFeverEvent()");
+            string endSource = ExtractSourceSection(
+                uiFeverSource,
+                "private void EndFeverEvent()",
+                "private void OnRemoveTimeEvent(");
+            string updateSource = ExtractSourceSection(
+                uiFeverSource,
+                "private void OnUpdateAdButtonEvent()",
+                "private void FeverAdButtonSetActive()");
+            string repeatingSource = ExtractSourceSection(
+                uiFeverSource,
+                "private void FeverAdButtonSetActive()",
+                "private void RefreshFeverPurchaseButtonState()");
+            string refreshSource = ExtractSourceSection(
+                uiFeverSource,
+                "private void RefreshFeverPurchaseButtonState()",
+                "private void OnAdButtonClicked()");
+
+            Require(
+                CountOccurrences(uiFeverSource, "RefreshFeverPurchaseButtonState()") == 7,
+                "UIFever must route every purchase-button state path through one common function.");
+            Require(initSource.Contains("RefreshFeverPurchaseButtonState();"), "UIFever.Init must refresh purchase state.");
+            Require(clickSource.Contains("RefreshFeverPurchaseButtonState();"), "Fever click must refresh purchase state after activation.");
+            Require(startSource.Contains("RefreshFeverPurchaseButtonState();"), "Fever start must refresh purchase state.");
+            Require(endSource.Contains("RefreshFeverPurchaseButtonState();"), "Fever end must refresh purchase state.");
+            Require(updateSource.Contains("RefreshFeverPurchaseButtonState();"), "Ad-button update must refresh purchase state.");
+            Require(repeatingSource.Contains("RefreshFeverPurchaseButtonState();"), "Repeated purchase update must use the common function.");
+            Require(refreshSource.Contains("_ferverSystem != null"), "Purchase state must be null-safe for FeverSystem.");
+            Require(refreshSource.Contains("UserInfo.IsFeverTutorialClear"), "Purchase state must require tutorial completion.");
+            Require(refreshSource.Contains("&& !_ferverSystem.IsFeverStart;"), "Purchase state must reject active Fever.");
+            Require(refreshSource.Contains("_feverAdButton.Interactable(canPurchase);"), "Purchase state must update Interactable.");
+            Require(refreshSource.Contains("_feverAdButton.gameObject.SetActive(canPurchase);"), "Purchase state must update GameObject visibility.");
+            Require(
+                !uiFeverSource.Contains("_feverAdButton.gameObject.SetActive(true)"),
+                "UIFever must not contain an unconditional purchase-button activation.");
+            Require(
+                !uiFeverSource.Contains("SetActive(UserInfo.IsFeverTutorialClear)"),
+                "Repeated purchase state must not use tutorial completion alone.");
+            Require(!uiFeverSource.Contains("GameManager.Instance"), "UIFever purchase state must not create or fetch GameManager.");
+
+            string popupSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/UI/Ad/UIAdPopup.cs"));
+            string helperSource = ExtractSourceSection(
+                popupSource,
+                "private static bool IsFeverRuntimeActive()",
+                "private void FixedUpdate()");
+            string showFeverSource = ExtractSourceSection(
+                popupSource,
+                "public void ShowFeverPopup(WatchAdButton watchAdButton)",
+                "public void ShowCustomerPopup(WatchAdButton watchAdButton)");
+            string fixedUpdateSource = ExtractSourceSection(
+                popupSource,
+                "private void FixedUpdate()",
+                "private void PushUIAd()");
+            string adClickSource = ExtractSourceSection(
+                popupSource,
+                "private void AdButtonClicked()",
+                "private void OnAdRewarded()");
+            string diaClickSource = ExtractSourceSection(
+                popupSource,
+                "private void OnDiaButtonClicked()",
+                "private void OnDestroy()");
+            string rewardSource = ExtractSourceSection(
+                popupSource,
+                "private void OnAdRewarded()",
+                "private void OnAdFailed()");
+
+            Require(
+                helperSource.Contains("GameManager.TryGetExistingInstance(out existingGameManager)"),
+                "Fever popup guard must use the existing GameManager only.");
+            Require(
+                helperSource.Contains("existingGameManager.FeverRuntimeContext.IsActive"),
+                "Fever popup guard must read the Runtime Context active state.");
+            Require(!popupSource.Contains("GameManager.Instance"), "UIAdPopup must not create or fetch GameManager.");
+            Require(
+                CountOccurrences(popupSource, "IsFeverRuntimeActive()") == 5,
+                "Fever Runtime guard must exist only in the helper and four pre-request paths.");
+            Require(!rewardSource.Contains("IsFeverRuntimeActive"), "Reward handler must not silently discard an earned reward.");
+
+            int showGuardIndex = showFeverSource.IndexOf("if (IsFeverRuntimeActive())", StringComparison.Ordinal);
+            int showTypeIndex = showFeverSource.IndexOf("_currentAdType = AdType.Fever;", StringComparison.Ordinal);
+            int pushIndex = showFeverSource.IndexOf("PushUIAd();", StringComparison.Ordinal);
+            Require(showGuardIndex >= 0, "ShowFeverPopup must guard active Fever.");
+            Require(showTypeIndex > showGuardIndex, "ShowFeverPopup guard must run before changing AdType.");
+            Require(pushIndex > showGuardIndex, "ShowFeverPopup guard must run before opening the popup.");
+            Require(showFeverSource.Contains("피버 타임 중에는 게이지를 충전할 수 없습니다."), "ShowFeverPopup must explain the active-Fever lock.");
+
+            int adGuardIndex = adClickSource.IndexOf(
+                "if (_currentAdType == AdType.Fever && IsFeverRuntimeActive())",
+                StringComparison.Ordinal);
+            int adCountIndex = adClickSource.IndexOf("ConstValue.AD_FEVER_COUNT", StringComparison.Ordinal);
+            int adRequestIndex = adClickSource.IndexOf("_currentWatchAdButton.OnClickAd();", StringComparison.Ordinal);
+            Require(adGuardIndex >= 0, "Fever ad click must guard active Fever.");
+            Require(adCountIndex > adGuardIndex, "Fever active guard must run before ad-count checks.");
+            Require(adRequestIndex > adGuardIndex, "Fever active guard must run before requesting an ad.");
+
+            int diaGuardIndex = diaClickSource.IndexOf(
+                "if (_currentAdType == AdType.Fever && IsFeverRuntimeActive())",
+                StringComparison.Ordinal);
+            int diaCountIndex = diaClickSource.IndexOf("ConstValue.AD_FEVER_COUNT", StringComparison.Ordinal);
+            int diaValidationIndex = diaClickSource.IndexOf("UserInfo.IsDiaValid(needDia)", StringComparison.Ordinal);
+            int diaChargeIndex = diaClickSource.IndexOf("UserInfo.AddDia(-needDia);", StringComparison.Ordinal);
+            int diaRewardIndex = diaClickSource.IndexOf("_currentWatchAdButton.DiaRewarded();", StringComparison.Ordinal);
+            Require(diaGuardIndex >= 0, "Fever dia click must guard active Fever.");
+            Require(diaCountIndex > diaGuardIndex, "Fever active guard must run before dia-count checks.");
+            Require(diaValidationIndex > diaGuardIndex, "Fever active guard must run before dia validation.");
+            Require(diaChargeIndex > diaGuardIndex, "Fever active guard must run before dia deduction.");
+            Require(diaRewardIndex > diaChargeIndex, "Dia reward must remain after successful dia deduction.");
+
+            int fixedGuardIndex = fixedUpdateSource.IndexOf(
+                "if (_currentAdType == AdType.Fever && IsFeverRuntimeActive())",
+                StringComparison.Ordinal);
+            int fixedCooldownIndex = fixedUpdateSource.IndexOf(
+                "if (_currentAdType == AdType.Fever)",
+                StringComparison.Ordinal);
+            Require(fixedGuardIndex >= 0, "Open Fever popup must guard active Fever every FixedUpdate.");
+            Require(fixedCooldownIndex > fixedGuardIndex, "Active Fever guard must run before cooldown UI logic.");
+            Require(fixedUpdateSource.Contains("SetAdButtonInteractable(false);"), "Active Fever must disable the ad button.");
+            Require(fixedUpdateSource.Contains("SetDiaButtonInteractable(false);"), "Active Fever must disable the dia button.");
+            Require(fixedUpdateSource.Contains("return;"), "Active Fever FixedUpdate guard must not re-enable buttons later in the frame.");
+        }
+
+        private static void ValidateFeverMultipliers(
+            FeverRuntimeContext context,
+            float expected,
+            string stateName)
+        {
+            RequireNear(expected, context.FoodPriceMultiplier, stateName + " food price multiplier is incorrect.");
+            RequireNear(expected, context.NormalCustomerMoveMultiplier, stateName + " customer move multiplier is incorrect.");
+            RequireNear(expected, context.StaffMoveMultiplier, stateName + " Staff move multiplier is incorrect.");
+            RequireNear(expected, context.ManagerGuideMultiplier, stateName + " manager guide multiplier is incorrect.");
+            RequireNear(expected, context.MarketerCallMultiplier, stateName + " marketer call multiplier is incorrect.");
+            RequireNear(expected, context.CookingMultiplier, stateName + " cooking multiplier is incorrect.");
+        }
+
+        private static void AssertFeverClockUnchangedAfterException(
+            FeverRuntimeContext context,
+            Action action,
+            string message)
+        {
+            FeverRuntimeToken tokenBefore = context.CurrentToken;
+            float durationBefore = context.DurationSeconds;
+            float elapsedBefore = context.ElapsedSeconds;
+            float remainderBefore = context.AutoCallRemainderSeconds;
+            float ratioBefore = context.RemainingRatio;
+            RequireThrows<ArgumentOutOfRangeException>(action, message);
+            Require(context.CurrentToken == tokenBefore, message + " Current token changed.");
+            RequireNear(durationBefore, context.DurationSeconds, message + " Duration changed.");
+            RequireNear(elapsedBefore, context.ElapsedSeconds, message + " Elapsed time changed.");
+            RequireNear(remainderBefore, context.AutoCallRemainderSeconds, message + " Remainder changed.");
+            RequireNear(ratioBefore, context.RemainingRatio, message + " Remaining ratio changed.");
+        }
+
         private static string ReadProjectText(string relativePath)
         {
             string projectRoot = Path.GetDirectoryName(Application.dataPath);
@@ -1901,7 +2518,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("47. 오류 수: " + _errors.Count);
+                _output.AppendLine("53. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -1909,7 +2526,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "48. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "54. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)
