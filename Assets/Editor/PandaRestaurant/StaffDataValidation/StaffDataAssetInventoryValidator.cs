@@ -247,7 +247,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             AppendResult(output, 10, "결정론적 재생성", deterministicPassed, details[10]);
             AppendResult(output, 11, "깊은 불변성", immutabilityPassed, details[11]);
             AppendResult(output, 12, "실행 전후 에셋 불변", assetStatePassed, details[12]);
-            AppendResult(output, 13, "Skill04 기존 직원·Legacy 보존", skill04MigrationPassed, details[13]);
+            AppendResult(output, 13, "Skill04 기존 직원·공식 효과·Legacy 보존", skill04MigrationPassed, details[13]);
             AppendResult(output, 14, "Skill06 기존 직원·Legacy 보존", skill06MigrationPassed, details[14]);
             AppendResult(output, 15, "Skill05 기존 직원·Legacy 보존", skill05MigrationPassed, details[15]);
             AppendResult(output, 16, "Skill08·09 기존 직원·Legacy 보존", remainingSkillMigrationPassed, details[16]);
@@ -698,6 +698,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         {
             bool passed = true;
             int activePassed = 0;
+            int descriptionPassed = 0;
+            int effectPassed = 0;
             int legacyPassed = 0;
             int legacyActiveReferences = 0;
             HashSet<string> activeGuids = new HashSet<string>(StringComparer.Ordinal);
@@ -733,8 +735,6 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                    && active.ConcreteTypeName == "AssignedCookingSpeedUpSkill"
                                    && active.ScriptGuid == AssignedCookingScriptGuid
                                    && active.UnityObjectName == target.ObjectName
-                                   && active.Description
-                                   == "맡은 주방 음식 제작 속도 (150%) 증가"
                                    && Approximately(active.Duration, target.OfficialDuration)
                                    && Approximately(active.Cooldown, target.OfficialCooldown)
                                    && active.ReferenceCount == 1
@@ -748,6 +748,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     activePath);
                 activeValid &= activeReferences.Count == 1
                                && activeReferences[0] == staff.AssetPath;
+                bool descriptionValid = activeValid
+                                        && active.Description
+                                        == "맡은 주방 음식 제작 속도 (250%) 증가";
                 AssignedCookingSpeedUpSkill assigned = activeValid
                     ? AssetDatabase.LoadAssetAtPath<AssignedCookingSpeedUpSkill>(activePath)
                     : null;
@@ -755,7 +758,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     ? null
                     : new SerializedObject(assigned).FindProperty(
                         "_assignedCookingSpeedUpPercent");
-                activeValid &= percent != null && Approximately(percent.floatValue, 150f);
+                bool effectValid = activeValid
+                                   && percent != null
+                                   && Approximately(percent.floatValue, 250f);
+                activeValid &= descriptionValid && effectValid;
+                descriptionPassed += descriptionValid ? 1 : 0;
+                effectPassed += effectValid ? 1 : 0;
                 if (activeValid)
                 {
                     activePassed++;
@@ -807,6 +815,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                         + GetCount(classCounts, "TouchAddCustomerButtonSkill") + " / "
                         + GetCount(classCounts, "AssignedCookingSpeedUpSkill"));
             details.Add("- Skill04 기존 직원 전환: " + activePassed + "/4");
+            details.Add("- Description 250: " + descriptionPassed + "/4");
+            details.Add("- Effect 250: " + effectPassed + "/4");
             details.Add("- Legacy Skill 보존: " + legacyPassed + "/4");
             details.Add("- Active Shared / Orphan: " + shared + " / " + orphan);
             details.Add("- Legacy Active Reference: " + legacyActiveReferences);

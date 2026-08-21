@@ -574,6 +574,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                          && skill.RequiredClassExists
                          && skill.ClassMatches
                          && effect != null
+                         && skill.TargetDescription
+                         == "맡은 주방 음식 제작 속도 (250%) 증가"
                          && effect.TargetFieldPath == "_assignedCookingSpeedUpPercent"
                          && effect.TargetValue == "250";
                 if (staff.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING)
@@ -592,11 +594,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                     && !skill.CreateIndividualAsset
                                     && skill.ClassDisposition
                                     == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
+                                    && skill.CurrentDescription == skill.TargetDescription
                                     && effect.CurrentFieldPath
                                     == "_assignedCookingSpeedUpPercent"
-                                    && effect.CurrentValue == "150"
+                                    && effect.CurrentValue == "250"
                                     && effect.FieldMatches
-                                    && !effect.ValueMatches
+                                    && effect.ValueMatches
                                     && effect.Disposition
                                     == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
                                     && SkillNumberEquals(skill.CurrentDuration, target.Duration)
@@ -1683,6 +1686,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                               + CountChefPassivePlans(plan, true));
             output.AppendLine("- Chef Passive New Plans: "
                               + CountChefPassivePlans(plan, false));
+            output.AppendLine("- Skill04 Existing Applied: "
+                              + CountAppliedSkillEffectPlans(plan, "STAFF_SKILL04"));
             output.AppendLine("- Skill04 Existing Effect Updates: "
                               + CountSkillEffectPlans(plan, "STAFF_SKILL04", true));
             output.AppendLine("- Skill04 New Effect Plans: "
@@ -2027,7 +2032,29 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 bool isExisting = staff.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING;
                 count += staff.SkillPlan.OfficialSkillId == skillId
                          && staff.SkillPlan.EffectPlan != null
-                         && isExisting == existing ? 1 : 0;
+                         && isExisting == existing
+                         && (!existing
+                             || !staff.SkillPlan.EffectPlan.FieldMatches
+                             || !staff.SkillPlan.EffectPlan.ValueMatches) ? 1 : 0;
+            }
+
+            return count;
+        }
+
+        private static int CountAppliedSkillEffectPlans(
+            StaffDataDryRunPlanSnapshot plan,
+            string skillId)
+        {
+            int count = 0;
+            for (int index = 0; index < plan.StaffPlans.Count; index++)
+            {
+                StaffDataDryRunStaffPlan staff = plan.StaffPlans[index];
+                StaffDataDryRunSkillEffectPlan effect = staff.SkillPlan.EffectPlan;
+                count += staff.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING
+                         && staff.SkillPlan.OfficialSkillId == skillId
+                         && effect != null
+                         && effect.FieldMatches
+                         && effect.ValueMatches ? 1 : 0;
             }
 
             return count;

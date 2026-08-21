@@ -678,7 +678,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     ? StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
                     : StaffDryRunFieldDisposition.SKILL_CLASS_MIGRATION_REQUIRED,
                 official.SkillId == "STAFF_SKILL04"
-                    ? "V8 balance plan updates the existing assigned-cooking bonus from 150 to 250."
+                    ? valueMatches
+                        ? "V8 balance plan confirms the existing assigned-cooking bonus is already the official 250."
+                        : "V8 balance plan updates the existing assigned-cooking bonus from 150 to 250."
                     : "V8 redesign migrates the legacy global cooking-speed field to remaining-time reduction.");
         }
 
@@ -1469,7 +1471,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             int existingChefPassiveChanges = 0;
             int newChefPassivePlans = 0;
             int skill03Unchanged = 0;
-            int skill04ExistingEffects = 0;
+            int skill04ExistingApplied = 0;
+            int skill04ExistingEffectUpdates = 0;
             int skill04NewEffects = 0;
             int skill09ExistingRedesign = 0;
             int skill09NewPrerequisite = 0;
@@ -1548,12 +1551,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                         bool existing = common
                                         && effect.CurrentFieldPath
                                         == "_assignedCookingSpeedUpPercent"
-                                        && effect.CurrentValue == "150"
+                                        && effect.CurrentValue == "250"
                                         && effect.FieldMatches
-                                        && !effect.ValueMatches
+                                        && effect.ValueMatches
                                         && effect.Disposition
                                         == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING;
-                        skill04ExistingEffects += existing ? 1 : 0;
+                        skill04ExistingApplied += existing ? 1 : 0;
+                        skill04ExistingEffectUpdates += !effect.FieldMatches
+                                                        || !effect.ValueMatches ? 1 : 0;
                     }
                     else
                     {
@@ -1613,7 +1618,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireCount("V8 existing Chef passive changes", existingChefPassiveChanges, 0, errors);
             RequireCount("V8 new Chef passive plans", newChefPassivePlans, 80, errors);
             RequireCount("SKILL03_UNCHANGED_PASS", skill03Unchanged, 15, errors);
-            RequireCount("V8 Skill04 existing effect updates", skill04ExistingEffects, 4, errors);
+            RequireCount("V8 Skill04 existing applied", skill04ExistingApplied, 4, errors);
+            RequireCount("V8 Skill04 existing effect updates", skill04ExistingEffectUpdates, 0, errors);
             RequireCount("V8 Skill04 new effect plans", skill04NewEffects, 9, errors);
             RequireCount("V8 Skill09 existing redesign", skill09ExistingRedesign, 1, errors);
             RequireCount("V8 Skill09 new prerequisite", skill09NewPrerequisite, 1, errors);

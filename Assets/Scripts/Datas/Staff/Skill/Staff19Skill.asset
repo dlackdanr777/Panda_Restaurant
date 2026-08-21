@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: STAFF19Skill
   m_EditorClassIdentifier: 
   _description: "\uB9E1\uC740 \uC8FC\uBC29 \uC74C\uC2DD \uC81C\uC791 \uC18D\uB3C4
-    (150%) \uC99D\uAC00"
+    (250%) \uC99D\uAC00"
   _cooldown: 160
   _duration: 25
-  _assignedCookingSpeedUpPercent: 150
+  _assignedCookingSpeedUpPercent: 250
