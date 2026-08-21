@@ -14,8 +14,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
     {
         private const string PolicyMarker =
             "SKILL04_BALANCE_MIGRATION_PREVIEW_POLICY_2026_08_22_V1";
+        private const string ApplyPolicyMarker =
+            "SKILL04_BALANCE_MIGRATION_APPLY_POLICY_2026_08_22_V1";
         private const string PreviewMenuPath =
             "Tools/Panda Restaurant/Staff/Preview Skill04 Official Effect Migration";
+        private const string ApplyMenuPath =
+            "Tools/Panda Restaurant/Staff/Apply Skill04 Official Effect Migration";
         private const string ExpectedPackageFingerprint =
             "be7613e884b5ae18dc94e57abc0c941dccfb09486ae9fc5ff75acf4b0e4703af";
         private const string OfficialSkillId = "STAFF_SKILL04";
@@ -110,6 +114,217 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             LogPreview(inspection, warnings, errors);
+        }
+
+        [MenuItem(ApplyMenuPath)]
+        private static void ApplyMigrationFromMenu()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                Debug.LogError(
+                    "[Skill04 Official Effect Migration APPLY]\n"
+                    + "Play Mode에서는 Apply를 실행할 수 없습니다.\n"
+                    + "Asset write: 0\n"
+                    + "SKILL04 OFFICIAL EFFECT MIGRATION APPLY: FAIL");
+                return;
+            }
+
+            List<string> warnings = new List<string>();
+            List<string> errors = new List<string>();
+            MigrationInspection inspection = InspectSafely(
+                "SKILL04_APPLY_INSPECTION_FAILED",
+                warnings,
+                errors);
+            if (inspection.State == MigrationState.ALREADY_APPLIED && errors.Count == 0)
+            {
+                LogApplyResult(
+                    inspection,
+                    warnings,
+                    errors,
+                    true,
+                    "ALREADY_APPLIED",
+                    0);
+                return;
+            }
+
+            if (inspection.State != MigrationState.READY_TO_APPLY || errors.Count != 0)
+            {
+                LogApplyResult(
+                    inspection,
+                    warnings,
+                    errors,
+                    false,
+                    "Apply가 차단된 상태입니다.",
+                    0);
+                return;
+            }
+
+            bool confirmed = EditorUtility.DisplayDialog(
+                "Apply Skill04 Official Effect Migration",
+                "Active Skill04 Asset 4개를 공식 효과로 전환합니다.\n\n"
+                + "- Description 4개 수정\n"
+                + "- Effect 4개: 150 → 250\n"
+                + "- 총 Serialized Field 8개 수정\n"
+                + "- Duration·Cooldown 변경 없음\n"
+                + "- GUID 변경 없음\n"
+                + "- StaffData 변경 없음\n"
+                + "- LegacySkill 변경 없음\n\n"
+                + "계속하시겠습니까?",
+                "Apply",
+                "Cancel");
+            if (!confirmed)
+            {
+                Debug.LogWarning(
+                    "[Skill04 Official Effect Migration APPLY]\n"
+                    + "사용자가 Apply를 취소했습니다.\n"
+                    + "Asset write: 0");
+                return;
+            }
+
+            ExecuteApply();
+        }
+
+        private static MigrationInspection InspectSafely(
+            string failureMarker,
+            List<string> warnings,
+            List<string> errors)
+        {
+            MigrationInspection inspection = new MigrationInspection();
+            try
+            {
+                Inspect(inspection, warnings, errors);
+            }
+            catch (Exception exception)
+            {
+                inspection.State = MigrationState.INVALID;
+                errors.Add(
+                    failureMarker + ": "
+                    + exception.GetType().Name + " - " + exception.Message);
+            }
+
+            return inspection;
+        }
+
+        private static void ExecuteApply()
+        {
+            List<string> warnings = new List<string>();
+            List<string> errors = new List<string>();
+            MigrationInspection finalPreflight = InspectSafely(
+                "SKILL04_APPLY_FINAL_PREFLIGHT_FAILED",
+                warnings,
+                errors);
+            if (finalPreflight.State != MigrationState.READY_TO_APPLY
+                || errors.Count != 0)
+            {
+                errors.Add(
+                    "APPLY_PREFLIGHT_STATE_CHANGED: Apply 직전 상태가 READY_TO_APPLY가 아닙니다.");
+                LogApplyResult(
+                    finalPreflight,
+                    warnings,
+                    errors,
+                    false,
+                    "Apply 직전 재검사 실패.",
+                    0);
+                return;
+            }
+
+            MigrationBackup backup;
+            if (!TryCaptureBackup(out backup, errors))
+            {
+                LogApplyResult(
+                    finalPreflight,
+                    warnings,
+                    errors,
+                    false,
+                    "Apply Snapshot 생성 실패.",
+                    0);
+                return;
+            }
+
+            List<PreparedTarget> prepared;
+            if (!TryPrepareTargets(backup, out prepared, errors))
+            {
+                LogApplyResult(
+                    finalPreflight,
+                    warnings,
+                    errors,
+                    false,
+                    "대상 Property 사전 검사 실패.",
+                    0);
+                return;
+            }
+
+            bool writeStarted = false;
+            try
+            {
+                writeStarted = true;
+                WriteOfficialValues(prepared);
+
+                List<string> postWarnings = new List<string>();
+                List<string> postErrors = new List<string>();
+                MigrationInspection postInspection = InspectSafely(
+                    "SKILL04_POST_APPLY_INSPECTION_FAILED",
+                    postWarnings,
+                    postErrors);
+                if (postInspection.State != MigrationState.ALREADY_APPLIED
+                    || postErrors.Count != 0)
+                {
+                    AddMessages("Post-Apply", postWarnings, warnings);
+                    AddMessages("Post-Apply", postErrors, errors);
+                    throw new InvalidOperationException(
+                        "Post-Apply 상태가 ALREADY_APPLIED가 아닙니다.");
+                }
+
+                MigrationBackup after;
+                if (!TryCaptureBackup(out after, errors)
+                    || !ValidateBackupInvariants(
+                        backup,
+                        after,
+                        true,
+                        errors))
+                {
+                    throw new InvalidOperationException(
+                        "Post-Apply 불변성 검증에 실패했습니다.");
+                }
+
+                LogApplySuccess(postInspection, postWarnings);
+            }
+            catch (Exception exception)
+            {
+                errors.Add(
+                    "SKILL04_EFFECT_APPLY_FAILED: "
+                    + exception.GetType().Name + " - " + exception.Message);
+                if (!writeStarted)
+                {
+                    LogApplyResult(
+                        finalPreflight,
+                        warnings,
+                        errors,
+                        false,
+                        "Apply 실패. Asset write: 0",
+                        0);
+                    return;
+                }
+
+                List<string> rollbackErrors = new List<string>();
+                bool rollbackPassed = TryRollback(backup, rollbackErrors);
+                if (rollbackPassed)
+                {
+                    Debug.Log("SKILL04_EFFECT_ROLLBACK: PASS");
+                    AddMessages("Apply", errors, rollbackErrors);
+                    Debug.LogError(BuildFailureLog(
+                        "Apply 실패 후 원래 상태로 복구했습니다.",
+                        rollbackErrors));
+                }
+                else
+                {
+                    AddMessages("Apply", errors, rollbackErrors);
+                    rollbackErrors.Add("CRITICAL_SKILL04_EFFECT_ROLLBACK_FAILED");
+                    Debug.LogError(BuildFailureLog(
+                        "CRITICAL_SKILL04_EFFECT_ROLLBACK_FAILED",
+                        rollbackErrors));
+                }
+            }
         }
 
         private static void Inspect(
@@ -598,6 +813,507 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                    && !HasMissingSerializedReference(serialized);
         }
 
+        private static bool TryCaptureBackup(
+            out MigrationBackup backup,
+            List<string> errors)
+        {
+            backup = new MigrationBackup();
+            Dictionary<string, List<string>> references = BuildReferenceMap();
+            bool valid = true;
+            for (int index = 0; index < Targets.Length; index++)
+            {
+                MigrationTarget target = Targets[index];
+                AssignedCookingSpeedUpSkill active =
+                    AssetDatabase.LoadAssetAtPath<AssignedCookingSpeedUpSkill>(
+                        target.ActivePath);
+                StaffData staff = AssetDatabase.LoadAssetAtPath<StaffData>(
+                    target.StaffDataPath);
+                SpeedUpSkill legacy = AssetDatabase.LoadAssetAtPath<SpeedUpSkill>(
+                    target.LegacyPath);
+                if (active == null || staff == null || legacy == null)
+                {
+                    errors.Add(
+                        "SKILL04_APPLY_SNAPSHOT_FAILED: Asset을 읽을 수 없습니다: "
+                        + target.StaffId + ".");
+                    valid = false;
+                    continue;
+                }
+
+                SerializedObject activeSerialized = new SerializedObject(active);
+                SerializedProperty description = activeSerialized.FindProperty("_description");
+                SerializedProperty effect = activeSerialized.FindProperty(
+                    "_assignedCookingSpeedUpPercent");
+                SerializedProperty duration = activeSerialized.FindProperty("_duration");
+                SerializedProperty cooldown = activeSerialized.FindProperty("_cooldown");
+                SerializedObject staffSerialized = new SerializedObject(staff);
+                SerializedProperty staffSkill = staffSerialized.FindProperty("_skill");
+                if (description == null
+                    || effect == null
+                    || duration == null
+                    || cooldown == null
+                    || staffSkill == null
+                    || staffSkill.objectReferenceValue == null)
+                {
+                    errors.Add(
+                        "SKILL04_APPLY_SNAPSHOT_FAILED: 필수 Serialized Property가 없습니다: "
+                        + target.StaffId + ".");
+                    valid = false;
+                    continue;
+                }
+
+                TargetBackup targetBackup = new TargetBackup(target);
+                targetBackup.ActiveGuid = AssetDatabase.AssetPathToGUID(target.ActivePath);
+                targetBackup.ActiveMetaSha256 = ComputeAssetFileSha256(
+                    target.ActivePath + ".meta");
+                targetBackup.ObjectName = active.name;
+                targetBackup.ScriptGuid = GetScriptGuid(activeSerialized);
+                targetBackup.ConcreteClass = active.GetType().FullName;
+                targetBackup.Description = description.stringValue;
+                targetBackup.Effect = effect.floatValue;
+                targetBackup.Duration = duration.floatValue;
+                targetBackup.Cooldown = cooldown.floatValue;
+                targetBackup.NonTargetSerializedFingerprint =
+                    CaptureSerializedFingerprint(
+                        activeSerialized,
+                        "_description",
+                        "_assignedCookingSpeedUpPercent");
+                List<string> activeReferences = GetReferences(
+                    references,
+                    target.ActivePath);
+                List<string> legacyReferences = GetReferences(
+                    references,
+                    target.LegacyPath);
+                targetBackup.ActiveReferenceCount = activeReferences.Count;
+                targetBackup.ReferencedStaffId = FormatReferenceStaff(activeReferences);
+                targetBackup.ActiveReferenceFingerprint = BuildReferenceFingerprint(
+                    activeReferences);
+                targetBackup.StaffDataAssetSha256 = ComputeAssetFileSha256(
+                    target.StaffDataPath);
+                targetBackup.StaffDataMetaSha256 = ComputeAssetFileSha256(
+                    target.StaffDataPath + ".meta");
+                targetBackup.StaffSkillReferenceGuid = GetObjectGuid(
+                    staffSkill.objectReferenceValue);
+                targetBackup.LegacyAssetSha256 = ComputeAssetFileSha256(
+                    target.LegacyPath);
+                targetBackup.LegacyMetaSha256 = ComputeAssetFileSha256(
+                    target.LegacyPath + ".meta");
+                targetBackup.LegacyGuid = AssetDatabase.AssetPathToGUID(
+                    target.LegacyPath);
+                targetBackup.LegacyReferenceCount = legacyReferences.Count;
+                targetBackup.LegacyReferenceFingerprint = BuildReferenceFingerprint(
+                    legacyReferences);
+
+                if (string.IsNullOrEmpty(targetBackup.ActiveGuid)
+                    || string.IsNullOrEmpty(targetBackup.ActiveMetaSha256)
+                    || string.IsNullOrEmpty(targetBackup.ScriptGuid)
+                    || string.IsNullOrEmpty(targetBackup.NonTargetSerializedFingerprint)
+                    || string.IsNullOrEmpty(targetBackup.StaffDataAssetSha256)
+                    || string.IsNullOrEmpty(targetBackup.StaffDataMetaSha256)
+                    || string.IsNullOrEmpty(targetBackup.StaffSkillReferenceGuid)
+                    || string.IsNullOrEmpty(targetBackup.LegacyAssetSha256)
+                    || string.IsNullOrEmpty(targetBackup.LegacyMetaSha256)
+                    || string.IsNullOrEmpty(targetBackup.LegacyGuid)
+                    || targetBackup.ActiveReferenceCount != 1
+                    || targetBackup.ReferencedStaffId != target.StaffId
+                    || targetBackup.StaffSkillReferenceGuid != targetBackup.ActiveGuid
+                    || targetBackup.LegacyReferenceCount != 0)
+                {
+                    errors.Add(
+                        "SKILL04_APPLY_SNAPSHOT_FAILED: Snapshot 값이 비어 있습니다: "
+                        + target.StaffId + ".");
+                    valid = false;
+                    continue;
+                }
+
+                backup.Targets.Add(target.StaffId, targetBackup);
+            }
+
+            return valid && backup.Targets.Count == Targets.Length;
+        }
+
+        private static bool TryPrepareTargets(
+            MigrationBackup backup,
+            out List<PreparedTarget> prepared,
+            List<string> errors)
+        {
+            return TryPrepareTargets(backup, true, out prepared, errors);
+        }
+
+        private static bool TryPrepareTargets(
+            MigrationBackup backup,
+            bool requireOriginalValues,
+            out List<PreparedTarget> prepared,
+            List<string> errors)
+        {
+            prepared = new List<PreparedTarget>();
+            for (int index = 0; index < Targets.Length; index++)
+            {
+                MigrationTarget target = Targets[index];
+                TargetBackup targetBackup;
+                if (!backup.Targets.TryGetValue(target.StaffId, out targetBackup))
+                {
+                    errors.Add(
+                        "SKILL04_APPLY_TARGET_INVALID: Backup이 없습니다: "
+                        + target.StaffId + ".");
+                    return false;
+                }
+
+                AssignedCookingSpeedUpSkill active =
+                    AssetDatabase.LoadAssetAtPath<AssignedCookingSpeedUpSkill>(
+                        target.ActivePath);
+                if (active == null
+                    || active.GetType() != typeof(AssignedCookingSpeedUpSkill)
+                    || active.name != targetBackup.ObjectName
+                    || AssetDatabase.AssetPathToGUID(target.ActivePath)
+                    != targetBackup.ActiveGuid
+                    || ComputeAssetFileSha256(target.ActivePath + ".meta")
+                    != targetBackup.ActiveMetaSha256)
+                {
+                    errors.Add(
+                        "SKILL04_APPLY_TARGET_INVALID: Active Asset 기준 불일치: "
+                        + target.StaffId + ".");
+                    return false;
+                }
+
+                SerializedObject serialized = new SerializedObject(active);
+                SerializedProperty description = serialized.FindProperty("_description");
+                SerializedProperty effect = serialized.FindProperty(
+                    "_assignedCookingSpeedUpPercent");
+                if (description == null
+                    || effect == null
+                    || GetScriptGuid(serialized) != targetBackup.ScriptGuid
+                    || CaptureSerializedFingerprint(
+                        serialized,
+                        "_description",
+                        "_assignedCookingSpeedUpPercent")
+                    != targetBackup.NonTargetSerializedFingerprint
+                    || (requireOriginalValues
+                        && (description.stringValue != targetBackup.Description
+                            || !Approximately(effect.floatValue, targetBackup.Effect))))
+                {
+                    errors.Add(
+                        "SKILL04_APPLY_TARGET_INVALID: Property 또는 비대상 필드 불일치: "
+                        + target.StaffId + ".");
+                    return false;
+                }
+
+                prepared.Add(
+                    new PreparedTarget(
+                        active,
+                        serialized,
+                        description,
+                        effect,
+                        targetBackup));
+            }
+
+            return prepared.Count == Targets.Length;
+        }
+
+        private static void WriteOfficialValues(IReadOnlyList<PreparedTarget> prepared)
+        {
+            for (int index = 0; index < prepared.Count; index++)
+            {
+                PreparedTarget target = prepared[index];
+                target.Description.stringValue = TargetDescription;
+                target.Effect.floatValue = TargetEffectPercent;
+                if (!target.Serialized.ApplyModifiedPropertiesWithoutUndo())
+                {
+                    throw new InvalidOperationException(
+                        "Serialized Property 적용에 실패했습니다: "
+                        + target.Backup.Target.StaffId + ".");
+                }
+
+                EditorUtility.SetDirty(target.Asset);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        private static void WriteBackupValues(IReadOnlyList<PreparedTarget> prepared)
+        {
+            for (int index = 0; index < prepared.Count; index++)
+            {
+                PreparedTarget target = prepared[index];
+                target.Description.stringValue = target.Backup.Description;
+                target.Effect.floatValue = target.Backup.Effect;
+                if (!target.Serialized.ApplyModifiedPropertiesWithoutUndo())
+                {
+                    throw new InvalidOperationException(
+                        "Rollback Property 적용에 실패했습니다: "
+                        + target.Backup.Target.StaffId + ".");
+                }
+
+                EditorUtility.SetDirty(target.Asset);
+            }
+
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        }
+
+        private static bool TryRollback(
+            MigrationBackup backup,
+            List<string> errors)
+        {
+            try
+            {
+                List<PreparedTarget> prepared;
+                if (!TryPrepareTargets(
+                        backup,
+                        false,
+                        out prepared,
+                        errors))
+                {
+                    return false;
+                }
+
+                WriteBackupValues(prepared);
+
+                List<string> inspectionWarnings = new List<string>();
+                List<string> inspectionErrors = new List<string>();
+                MigrationInspection restoredInspection = InspectSafely(
+                    "SKILL04_ROLLBACK_INSPECTION_FAILED",
+                    inspectionWarnings,
+                    inspectionErrors);
+                AddMessages("Rollback", inspectionErrors, errors);
+                if (inspectionWarnings.Count != 0)
+                {
+                    Debug.LogWarning(
+                        "[Skill04 Official Effect Migration ROLLBACK]\n"
+                        + string.Join("\n", inspectionWarnings.ToArray()));
+                }
+                if (restoredInspection.State != MigrationState.READY_TO_APPLY
+                    || inspectionErrors.Count != 0)
+                {
+                    return false;
+                }
+
+                MigrationBackup restored;
+                return TryCaptureBackup(out restored, errors)
+                       && ValidateBackupInvariants(
+                           backup,
+                           restored,
+                           false,
+                           errors);
+            }
+            catch (Exception exception)
+            {
+                errors.Add(
+                    "CRITICAL_SKILL04_EFFECT_ROLLBACK_FAILED: "
+                    + exception.GetType().Name + " - " + exception.Message);
+                return false;
+            }
+        }
+
+        private static bool ValidateBackupInvariants(
+            MigrationBackup before,
+            MigrationBackup after,
+            bool expectApplied,
+            List<string> errors)
+        {
+            bool valid = before.Targets.Count == Targets.Length
+                         && after.Targets.Count == Targets.Length;
+            for (int index = 0; index < Targets.Length; index++)
+            {
+                MigrationTarget target = Targets[index];
+                TargetBackup oldValue;
+                TargetBackup newValue;
+                if (!before.Targets.TryGetValue(target.StaffId, out oldValue)
+                    || !after.Targets.TryGetValue(target.StaffId, out newValue))
+                {
+                    errors.Add(
+                        "SKILL04_EFFECT_INVARIANT_CHANGED: Snapshot 누락 "
+                        + target.StaffId + ".");
+                    valid = false;
+                    continue;
+                }
+
+                string expectedDescription = expectApplied
+                    ? TargetDescription
+                    : oldValue.Description;
+                float expectedEffect = expectApplied
+                    ? TargetEffectPercent
+                    : oldValue.Effect;
+                bool targetValid = newValue.ActiveGuid == oldValue.ActiveGuid
+                                   && newValue.ActiveMetaSha256
+                                   == oldValue.ActiveMetaSha256
+                                   && newValue.ObjectName == oldValue.ObjectName
+                                   && newValue.ScriptGuid == oldValue.ScriptGuid
+                                   && newValue.ConcreteClass == oldValue.ConcreteClass
+                                   && newValue.NonTargetSerializedFingerprint
+                                   == oldValue.NonTargetSerializedFingerprint
+                                   && newValue.ActiveReferenceFingerprint
+                                   == oldValue.ActiveReferenceFingerprint
+                                   && newValue.ActiveReferenceCount
+                                   == oldValue.ActiveReferenceCount
+                                   && newValue.ReferencedStaffId
+                                   == oldValue.ReferencedStaffId
+                                   && Approximately(newValue.Duration, oldValue.Duration)
+                                   && Approximately(newValue.Cooldown, oldValue.Cooldown)
+                                   && newValue.StaffDataAssetSha256
+                                   == oldValue.StaffDataAssetSha256
+                                   && newValue.StaffDataMetaSha256
+                                   == oldValue.StaffDataMetaSha256
+                                   && newValue.StaffSkillReferenceGuid
+                                   == oldValue.StaffSkillReferenceGuid
+                                   && newValue.LegacyAssetSha256
+                                   == oldValue.LegacyAssetSha256
+                                   && newValue.LegacyMetaSha256
+                                   == oldValue.LegacyMetaSha256
+                                   && newValue.LegacyGuid == oldValue.LegacyGuid
+                                   && newValue.LegacyReferenceCount
+                                   == oldValue.LegacyReferenceCount
+                                   && newValue.LegacyReferenceFingerprint
+                                   == oldValue.LegacyReferenceFingerprint
+                                   && newValue.Description == expectedDescription
+                                   && Approximately(newValue.Effect, expectedEffect);
+                if (!targetValid)
+                {
+                    errors.Add(
+                        "SKILL04_EFFECT_INVARIANT_CHANGED: "
+                        + target.StaffId + ".");
+                    valid = false;
+                }
+            }
+
+            return valid;
+        }
+
+        private static string CaptureSerializedFingerprint(
+            SerializedObject serialized,
+            string excludedPropertyA,
+            string excludedPropertyB)
+        {
+            SerializedProperty property = serialized.GetIterator();
+            StringBuilder input = new StringBuilder();
+            bool enterChildren = true;
+            while (property.Next(enterChildren))
+            {
+                enterChildren = true;
+                if (IsExcludedProperty(property.propertyPath, excludedPropertyA)
+                    || IsExcludedProperty(property.propertyPath, excludedPropertyB))
+                {
+                    enterChildren = false;
+                    continue;
+                }
+
+                input.Append(property.propertyPath);
+                input.Append('|');
+                input.Append(property.propertyType);
+                input.Append('|');
+                AppendSerializedValue(input, property);
+                input.Append('\n');
+            }
+
+            return ComputeSha256(Encoding.UTF8.GetBytes(input.ToString()));
+        }
+
+        private static bool IsExcludedProperty(
+            string propertyPath,
+            string excludedProperty)
+        {
+            return propertyPath == excludedProperty
+                   || propertyPath.StartsWith(
+                       excludedProperty + ".",
+                       StringComparison.Ordinal);
+        }
+
+        private static void AppendSerializedValue(
+            StringBuilder input,
+            SerializedProperty property)
+        {
+            switch (property.propertyType)
+            {
+                case SerializedPropertyType.Integer:
+                case SerializedPropertyType.ArraySize:
+                case SerializedPropertyType.Character:
+                case SerializedPropertyType.LayerMask:
+                    input.Append(
+                        property.longValue.ToString(CultureInfo.InvariantCulture));
+                    break;
+                case SerializedPropertyType.Boolean:
+                    input.Append(property.boolValue ? "1" : "0");
+                    break;
+                case SerializedPropertyType.Float:
+                    input.Append(
+                        property.doubleValue.ToString("R", CultureInfo.InvariantCulture));
+                    break;
+                case SerializedPropertyType.String:
+                    input.Append(property.stringValue);
+                    break;
+                case SerializedPropertyType.Enum:
+                    input.Append(
+                        property.enumValueIndex.ToString(CultureInfo.InvariantCulture));
+                    break;
+                case SerializedPropertyType.ObjectReference:
+                    input.Append(GetObjectIdentity(property.objectReferenceValue));
+                    break;
+                default:
+                    input.Append(property.type);
+                    if (property.isArray)
+                    {
+                        input.Append(':');
+                        input.Append(
+                            property.arraySize.ToString(CultureInfo.InvariantCulture));
+                    }
+
+                    break;
+            }
+        }
+
+        private static string GetObjectGuid(UnityEngine.Object value)
+        {
+            if (value == null)
+            {
+                return string.Empty;
+            }
+
+            string guid;
+            long localId;
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                    value,
+                    out guid,
+                    out localId))
+            {
+                return string.Empty;
+            }
+
+            return guid;
+        }
+
+        private static string GetObjectIdentity(UnityEngine.Object value)
+        {
+            if (value == null)
+            {
+                return "null";
+            }
+
+            string guid;
+            long localId;
+            if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(
+                    value,
+                    out guid,
+                    out localId))
+            {
+                return "unresolved";
+            }
+
+            return guid + ":" + localId.ToString(CultureInfo.InvariantCulture);
+        }
+
+        private static string BuildReferenceFingerprint(
+            IReadOnlyList<string> references)
+        {
+            StringBuilder input = new StringBuilder();
+            for (int index = 0; index < references.Count; index++)
+            {
+                input.Append(references[index]);
+                input.Append('\n');
+            }
+
+            return ComputeSha256(Encoding.UTF8.GetBytes(input.ToString()));
+        }
+
         private static Dictionary<string, List<string>> BuildReferenceMap()
         {
             Dictionary<string, List<string>> references =
@@ -780,9 +1496,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 return string.Empty;
             }
 
+            return ComputeSha256(File.ReadAllBytes(absolutePath));
+        }
+
+        private static string ComputeSha256(byte[] bytes)
+        {
             using (SHA256 sha256 = SHA256.Create())
             {
-                byte[] hash = sha256.ComputeHash(File.ReadAllBytes(absolutePath));
+                byte[] hash = sha256.ComputeHash(bytes);
                 StringBuilder output = new StringBuilder(hash.Length * 2);
                 for (int index = 0; index < hash.Length; index++)
                 {
@@ -834,6 +1555,96 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             {
                 errors.Add(label + ": " + diagnostics[index]);
             }
+        }
+
+        private static void AddMessages(
+            string label,
+            IReadOnlyList<string> source,
+            List<string> destination)
+        {
+            for (int index = 0; index < source.Count; index++)
+            {
+                destination.Add(label + ": " + source[index]);
+            }
+        }
+
+        private static void LogApplyResult(
+            MigrationInspection inspection,
+            IReadOnlyList<string> warnings,
+            IReadOnlyList<string> errors,
+            bool passed,
+            string message,
+            int assetWriteCount)
+        {
+            StringBuilder output = new StringBuilder();
+            output.AppendLine("[Skill04 Official Effect Migration APPLY]");
+            output.AppendLine("Policy: " + ApplyPolicyMarker);
+            output.AppendLine("Migration State: " + inspection.State);
+            output.AppendLine(message);
+            output.AppendLine("Asset write: " + assetWriteCount);
+            for (int index = 0; index < warnings.Count; index++)
+            {
+                output.AppendLine("WARNING: " + warnings[index]);
+            }
+
+            for (int index = 0; index < errors.Count; index++)
+            {
+                output.AppendLine("ERROR: " + errors[index]);
+            }
+
+            output.AppendLine(
+                "SKILL04 OFFICIAL EFFECT MIGRATION APPLY: "
+                + (passed ? "PASS" : "FAIL"));
+            if (passed)
+            {
+                Debug.Log(output.ToString());
+            }
+            else
+            {
+                Debug.LogError(output.ToString());
+            }
+        }
+
+        private static void LogApplySuccess(
+            MigrationInspection inspection,
+            IReadOnlyList<string> warnings)
+        {
+            StringBuilder output = new StringBuilder();
+            output.AppendLine("[Skill04 Official Effect Migration APPLY]");
+            output.AppendLine("Policy: " + ApplyPolicyMarker);
+            output.AppendLine("Migration State: " + inspection.State);
+            output.AppendLine("- 변경 Asset: 4");
+            output.AppendLine("- 변경 Description: 4");
+            output.AppendLine("- 변경 Effect: 4");
+            output.AppendLine("- 변경 Serialized Field: 8");
+            output.AppendLine("- Duration·Cooldown 변경: 0");
+            output.AppendLine("- Active GUID·meta 변경: 0");
+            output.AppendLine("- StaffData 변경: 0");
+            output.AppendLine("- Legacy 변경: 0");
+            for (int index = 0; index < warnings.Count; index++)
+            {
+                output.AppendLine("WARNING: " + warnings[index]);
+            }
+
+            output.AppendLine("SKILL04 OFFICIAL EFFECT MIGRATION APPLY: PASS");
+            Debug.Log(output.ToString());
+        }
+
+        private static string BuildFailureLog(
+            string message,
+            IReadOnlyList<string> errors)
+        {
+            StringBuilder output = new StringBuilder();
+            output.AppendLine("[Skill04 Official Effect Migration APPLY]");
+            output.AppendLine("Policy: " + ApplyPolicyMarker);
+            output.AppendLine(message);
+            for (int index = 0; index < errors.Count; index++)
+            {
+                output.AppendLine("ERROR: " + errors[index]);
+            }
+
+            output.AppendLine("SKILL04 OFFICIAL EFFECT MIGRATION APPLY: FAIL");
+            return output.ToString();
         }
 
         private static void LogPreview(
@@ -1009,6 +1820,66 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             internal TargetInspection(MigrationTarget target)
             {
                 Target = target;
+            }
+        }
+
+        private sealed class MigrationBackup
+        {
+            internal readonly Dictionary<string, TargetBackup> Targets =
+                new Dictionary<string, TargetBackup>(StringComparer.Ordinal);
+        }
+
+        private sealed class TargetBackup
+        {
+            internal MigrationTarget Target { get; }
+            internal string ActiveGuid = string.Empty;
+            internal string ActiveMetaSha256 = string.Empty;
+            internal string ObjectName = string.Empty;
+            internal string ScriptGuid = string.Empty;
+            internal string ConcreteClass = string.Empty;
+            internal string Description = string.Empty;
+            internal float Effect;
+            internal float Duration;
+            internal float Cooldown;
+            internal string NonTargetSerializedFingerprint = string.Empty;
+            internal int ActiveReferenceCount;
+            internal string ReferencedStaffId = string.Empty;
+            internal string ActiveReferenceFingerprint = string.Empty;
+            internal string StaffDataAssetSha256 = string.Empty;
+            internal string StaffDataMetaSha256 = string.Empty;
+            internal string StaffSkillReferenceGuid = string.Empty;
+            internal string LegacyAssetSha256 = string.Empty;
+            internal string LegacyMetaSha256 = string.Empty;
+            internal string LegacyGuid = string.Empty;
+            internal int LegacyReferenceCount;
+            internal string LegacyReferenceFingerprint = string.Empty;
+
+            internal TargetBackup(MigrationTarget target)
+            {
+                Target = target;
+            }
+        }
+
+        private sealed class PreparedTarget
+        {
+            internal AssignedCookingSpeedUpSkill Asset { get; }
+            internal SerializedObject Serialized { get; }
+            internal SerializedProperty Description { get; }
+            internal SerializedProperty Effect { get; }
+            internal TargetBackup Backup { get; }
+
+            internal PreparedTarget(
+                AssignedCookingSpeedUpSkill asset,
+                SerializedObject serialized,
+                SerializedProperty description,
+                SerializedProperty effect,
+                TargetBackup backup)
+            {
+                Asset = asset;
+                Serialized = serialized;
+                Description = description;
+                Effect = effect;
+                Backup = backup;
             }
         }
 
