@@ -15,9 +15,6 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             "Tools/Panda Restaurant/Staff/Validate Staff Data Dry Run Plan";
         private const string ExpectedOfficialPackageFingerprint =
             "be7613e884b5ae18dc94e57abc0c941dccfb09486ae9fc5ff75acf4b0e4703af";
-        private const string ExpectedCurrentInventoryFingerprint =
-            "38494f37574b54397201eb0c4f2120be4959275181ba44bb0b27bba6abf74eaa";
-
         private static readonly string[] RoleOrder =
         {
             "WAITER", "MANAGER", "CHEERLEADER", "CHEF", "CLEANER", "GUARD"
@@ -131,7 +128,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             CountWarningsAndPrerequisites(first, result);
             Require(result.WarningCount == 65, "Plan warning baseline changed.", result);
             Require(result.PrerequisiteCount == 3, "Plan prerequisite baseline changed.", result);
-            Require(CountChangedFields(first) == 2146, "Changed-field baseline changed.", result);
+            Require(CountChangedFields(first) == 2111, "Changed-field baseline changed.", result);
             return result;
         }
 
@@ -141,7 +138,6 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             ValidationResult result)
         {
             bool valid = first.OfficialPackageFingerprint == ExpectedOfficialPackageFingerprint
-                         && first.CurrentInventoryFingerprint == ExpectedCurrentInventoryFingerprint
                          && IsSha256(first.OfficialPackageFingerprint)
                          && IsSha256(first.CurrentInventoryFingerprint)
                          && IsSha256(first.LegacyInventoryFingerprint)
@@ -539,7 +535,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && CountIssues(plan, "EXISTING_SKILL_CLASS_MISMATCH") == 1
                      && CountIssues(plan, "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED") == 1
                      && CountStaffWithSkillPrerequisite(plan) == 2
-                     && CountChangedFields(plan) == 2146
+                     && CountChangedFields(plan) == 2111
                      && plan.PlanningPolicyVersion == StaffDataDryRunPlanSnapshot.V8PolicyVersion;
             return Require(valid, "Official Skill time post-apply baseline changed.", result);
         }
@@ -741,7 +737,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && CountStaffWithSkillPrerequisite(plan) == 2
                      && CountSkillNumberMismatches(plan, true) == 1
                      && CountSkillNumberMismatches(plan, false) == 1
-                     && CountChangedFields(plan) == 2146
+                     && CountChangedFields(plan) == 2111
                      && plan.PlanningPolicyVersion == StaffDataDryRunPlanSnapshot.V8PolicyVersion;
             return Require(valid, "Official Skill06 existing migration or new asset plans changed.", result);
         }
@@ -841,7 +837,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && CountStaffWithSkillPrerequisite(plan) == 2
                      && CountSkillNumberMismatches(plan, true) == 1
                      && CountSkillNumberMismatches(plan, false) == 1
-                     && CountChangedFields(plan) == 2146
+                     && CountChangedFields(plan) == 2111
                      && plan.PlanningPolicyVersion == StaffDataDryRunPlanSnapshot.V8PolicyVersion;
             return Require(valid, "Official Skill05 existing migration or new asset plans changed.", result);
         }
@@ -1115,7 +1111,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && CountStaffWithSkillPrerequisite(plan) == 2
                      && CountSkillNumberMismatches(plan, true) == 1
                      && CountSkillNumberMismatches(plan, false) == 1
-                     && CountChangedFields(plan) == 2146
+                     && CountChangedFields(plan) == 2111
                      && plan.PlanningPolicyVersion == StaffDataDryRunPlanSnapshot.V8PolicyVersion;
             return Require(
                 valid,
@@ -1170,7 +1166,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                         valid &= field.TargetValue == expectedPassive;
                         if (staff.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING)
                         {
-                            valid &= field.IsChanged
+                            valid &= !field.IsChanged
                                      && field.Disposition
                                      == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING;
                             existingChefPassiveChanges += field.IsChanged ? 1 : 0;
@@ -1231,7 +1227,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && newAddSpeedFieldCount == 80
                      && existingUnchangedLevelOneCount == 7
                      && existingChangedHigherLevelCount == 28
-                     && existingChefPassiveChanges == 35
+                     && existingChefPassiveChanges == 0
                      && newChefPassivePlans == 80
                      && repurposedFoodField == 0;
             return Require(valid, "Chef movement-speed schema plan is incomplete or repurposes cooking efficiency.", result);

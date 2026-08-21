@@ -100,6 +100,17 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             new RemainingSkillMigrationTarget("STAFF27", "STAFF27Skill.asset", "STAFF27SKILL", "4803555ba0e7f7f46af709248b6ac2be", "SpeedUpSkill", 100, 60, 250, "GlobalCookingSpeedUpSkill", GlobalCookingScriptGuid, "전체 주방 음식 제작 속도 (50%) 증가", 50, 30, 200)
         };
 
+        private static readonly ChefPassiveTarget[] ChefPassiveTargets =
+        {
+            new ChefPassiveTarget("STAFF16", "NORMAL", 50f),
+            new ChefPassiveTarget("STAFF17", "NORMAL", 50f),
+            new ChefPassiveTarget("STAFF18", "NORMAL", 50f),
+            new ChefPassiveTarget("STAFF19", "NORMAL", 50f),
+            new ChefPassiveTarget("STAFF20", "NORMAL", 50f),
+            new ChefPassiveTarget("STAFF27", "SPECIAL", 200f),
+            new ChefPassiveTarget("STAFF29", "UNIQUE", 100f)
+        };
+
         [MenuItem(MenuPath)]
         private static void ValidateCurrentStaffAssetInventory()
         {
@@ -187,6 +198,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                                      firstSnapshot,
                                                      details[16],
                                                      errors);
+            bool chefPassivePassed = inventoryPassed
+                                      && ValidateChefOfficialPassive(
+                                          firstSnapshot,
+                                          details[17],
+                                          errors);
 
             Dictionary<string, AssetFileState> afterState;
             bool afterStateBuilt = TryCollectTargetAssetState(
@@ -212,6 +228,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                           && skill06MigrationPassed
                           && skill05MigrationPassed
                           && remainingSkillMigrationPassed
+                          && chefPassivePassed
                           && assetStatePassed
                           && errors.Count == 0;
 
@@ -234,13 +251,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             AppendResult(output, 14, "Skill06 기존 직원·Legacy 보존", skill06MigrationPassed, details[14]);
             AppendResult(output, 15, "Skill05 기존 직원·Legacy 보존", skill05MigrationPassed, details[15]);
             AppendResult(output, 16, "Skill08·09 기존 직원·Legacy 보존", remainingSkillMigrationPassed, details[16]);
-            output.AppendLine("17. 오류 수: " + errors.Count);
+            AppendResult(output, 17, "Chef 공식 패시브 V8", chefPassivePassed, details[17]);
+            output.AppendLine("18. 오류 수: " + errors.Count);
             for (int index = 0; index < errors.Count; index++)
             {
                 output.AppendLine("   ERROR: " + errors[index]);
             }
 
-            output.AppendLine("18. 최종 결과: " + (passed ? "PASS" : "FAIL"));
+            output.AppendLine("19. 최종 결과: " + (passed ? "PASS" : "FAIL"));
             output.AppendLine();
             output.AppendLine(
                 "CURRENT STAFF ASSET INVENTORY VALIDATION: " + (passed ? "PASS" : "FAIL"));
@@ -1370,6 +1388,84 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             return normal && cooking && allStaff;
         }
 
+        private static bool ValidateChefOfficialPassive(
+            StaffDataAssetInventorySnapshot snapshot,
+            List<string> details,
+            List<string> errors)
+        {
+            int staffCount = 0;
+            int valueCount = 0;
+            int normalCount = 0;
+            int uniqueCount = 0;
+            int specialCount = 0;
+            bool passed = true;
+            for (int targetIndex = 0; targetIndex < ChefPassiveTargets.Length; targetIndex++)
+            {
+                ChefPassiveTarget target = ChefPassiveTargets[targetIndex];
+                StaffDataAssetSnapshot staff;
+                if (!snapshot.TryGetStaff(target.StaffId, out staff)
+                    || staff == null
+                    || staff.ConcreteTypeName != "ChefData"
+                    || staff.LevelCount != 5)
+                {
+                    errors.Add("Chef 공식 패시브 대상 구조가 올바르지 않습니다: " + target.StaffId);
+                    passed = false;
+                    continue;
+                }
+
+                staffCount++;
+                int staffValueCount = 0;
+                for (int levelIndex = 0; levelIndex < staff.Levels.Count; levelIndex++)
+                {
+                    float? value = staff.Levels[levelIndex].FoodSpeedAddPercent;
+                    if (value.HasValue
+                        && IsFiniteNonNegative(value.Value)
+                        && Approximately(value.Value, target.ExpectedValue))
+                    {
+                        staffValueCount++;
+                        valueCount++;
+                    }
+                }
+
+                if (staffValueCount != 5)
+                {
+                    errors.Add(
+                        "Chef 공식 패시브 값이 일치하지 않습니다: " + target.StaffId
+                        + " expected "
+                        + target.ExpectedValue.ToString("0.####", CultureInfo.InvariantCulture)
+                        + ", matched " + staffValueCount + "/5");
+                    passed = false;
+                }
+
+                normalCount += target.GradeKey == "NORMAL" ? staffValueCount : 0;
+                uniqueCount += target.GradeKey == "UNIQUE" ? staffValueCount : 0;
+                specialCount += target.GradeKey == "SPECIAL" ? staffValueCount : 0;
+                details.Add(
+                    "- " + target.StaffId + " / " + target.GradeKey + " / "
+                    + target.ExpectedValue.ToString("0.####", CultureInfo.InvariantCulture)
+                    + ": " + staffValueCount + "/5");
+            }
+
+            if (staffCount != 7
+                || valueCount != 35
+                || normalCount != 25
+                || uniqueCount != 5
+                || specialCount != 5)
+            {
+                errors.Add(
+                    "Chef 공식 패시브 V8 합계가 일치하지 않습니다. staff/value/normal/unique/special: "
+                    + staffCount + "/" + valueCount + "/" + normalCount + "/"
+                    + uniqueCount + "/" + specialCount);
+                passed = false;
+            }
+
+            details.Add("- Existing Chef: " + staffCount + "/7");
+            details.Add("- 공식 패시브 값: " + valueCount + "/35");
+            details.Add("- NORMAL / UNIQUE / SPECIAL: "
+                        + normalCount + "/25, " + uniqueCount + "/5, " + specialCount + "/5");
+            return passed;
+        }
+
         private static List<string> FindAssetReferences(string guid, string targetPath)
         {
             List<string> references = new List<string>();
@@ -2013,12 +2109,26 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private static Dictionary<int, List<string>> CreateDetailSections()
         {
             Dictionary<int, List<string>> result = new Dictionary<int, List<string>>();
-            for (int number = 1; number <= 16; number++)
+            for (int number = 1; number <= 17; number++)
             {
                 result.Add(number, new List<string>());
             }
 
             return result;
+        }
+
+        private sealed class ChefPassiveTarget
+        {
+            internal string StaffId { get; }
+            internal string GradeKey { get; }
+            internal float ExpectedValue { get; }
+
+            internal ChefPassiveTarget(string staffId, string gradeKey, float expectedValue)
+            {
+                StaffId = staffId;
+                GradeKey = gradeKey;
+                ExpectedValue = expectedValue;
+            }
         }
 
         private static void AppendResult(

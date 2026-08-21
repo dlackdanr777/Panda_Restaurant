@@ -42,29 +42,29 @@ MonoBehaviour:
     _upgradeMoneyData:
       _moneyType: 0
       _price: 1950000
-    _foodSpeedAddPercent: 6.5
+    _foodSpeedAddPercent: 50
     _addSpeed: 0
   - _upgradeMinScore: 10800
     _upgradeMoneyData:
       _moneyType: 0
       _price: 2925000
-    _foodSpeedAddPercent: 7
+    _foodSpeedAddPercent: 50
     _addSpeed: 0
   - _upgradeMinScore: 13500
     _upgradeMoneyData:
       _moneyType: 0
       _price: 4387500
-    _foodSpeedAddPercent: 7.5
+    _foodSpeedAddPercent: 50
     _addSpeed: 0
   - _upgradeMinScore: 16200
     _upgradeMoneyData:
       _moneyType: 0
       _price: 6581250
-    _foodSpeedAddPercent: 8
+    _foodSpeedAddPercent: 50
     _addSpeed: 0
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _foodSpeedAddPercent: 8.5
+    _foodSpeedAddPercent: 50
     _addSpeed: 0

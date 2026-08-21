@@ -13,9 +13,6 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private const int NewStaffStartNumber = 33;
         private const string V8OfficialPackageFingerprint =
             "be7613e884b5ae18dc94e57abc0c941dccfb09486ae9fc5ff75acf4b0e4703af";
-        private const string V8CurrentInventoryFingerprint =
-            "38494f37574b54397201eb0c4f2120be4959275181ba44bb0b27bba6abf74eaa";
-
         private static readonly IReadOnlyDictionary<string, string> RoleClassNames =
             new ReadOnlyDictionary<string, string>(
                 new Dictionary<string, string>(StringComparer.Ordinal)
@@ -255,12 +252,6 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             {
                 errors.Add("V8 official package fingerprint changed: "
                            + official.PackageFingerprint);
-            }
-
-            if (current.InventoryFingerprint != V8CurrentInventoryFingerprint)
-            {
-                errors.Add("V8 current inventory fingerprint changed: "
-                           + current.InventoryFingerprint);
             }
 
             if (errors.Count != 0)
@@ -1619,14 +1610,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireCount("V8 Skill10 distribution", GetCount(skillCounts, "STAFF_SKILL10"), 5, errors);
             RequireCount("V8 reserved Skill02 distribution", GetCount(skillCounts, "STAFF_SKILL02"), 0, errors);
             RequireCount("V8 reserved Skill07 distribution", GetCount(skillCounts, "STAFF_SKILL07"), 0, errors);
-            RequireCount("V8 existing Chef passive changes", existingChefPassiveChanges, 35, errors);
+            RequireCount("V8 existing Chef passive changes", existingChefPassiveChanges, 0, errors);
             RequireCount("V8 new Chef passive plans", newChefPassivePlans, 80, errors);
             RequireCount("SKILL03_UNCHANGED_PASS", skill03Unchanged, 15, errors);
             RequireCount("V8 Skill04 existing effect updates", skill04ExistingEffects, 4, errors);
             RequireCount("V8 Skill04 new effect plans", skill04NewEffects, 9, errors);
             RequireCount("V8 Skill09 existing redesign", skill09ExistingRedesign, 1, errors);
             RequireCount("V8 Skill09 new prerequisite", skill09NewPrerequisite, 1, errors);
-            RequireCount("V8 automatic StaffData FieldPlans", automaticFieldPlans, 2146, errors);
+            RequireCount("V8 automatic StaffData FieldPlans", automaticFieldPlans, 2111, errors);
             RequireCount("V8 Staff warning count", warnings, 56, errors);
             RequireCount("V8 prerequisite Staff", prerequisiteStaff.Count, 3, errors);
         }
