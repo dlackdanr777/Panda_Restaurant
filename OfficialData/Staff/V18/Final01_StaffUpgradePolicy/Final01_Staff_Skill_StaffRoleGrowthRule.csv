@@ -1,0 +1,7 @@
+﻿역할,역할 명(kor),업그레이드 타겟,단위,Lv.1 누적 보정값 (Lv1_CumulativeDelta),Lv.2 누적 보정값 (Lv2_CumulativeDelta),Lv.3 누적 보정값 (Lv3_CumulativeDelta),Lv.4 누적 보정값 (Lv4_CumulativeDelta),Lv.5 누적 보정값 (Lv5_CumulativeDelta),계산 타입,설명
+WAITER,웨이터,이동속도,SPEED,0,0.5,1,1.5,2,ADD,이동속도 증가
+CLEANER,청소부,이동속도,SPEED,0,0.5,1,1.5,2,ADD,이동속도 증가
+CHEF,주방장,이동속도,SPEED,0,0.5,1,1.5,2,ADD,조리대·싱크대 이동속도 증가
+MANAGER,매니저,안내시간,SEC,0,-0.2,-0.4,-0.6,-0.8,ADD,손님 안내 처리시간 감소
+CHEERLEADER,치어리더,호출시간,SEC,0,-0.2,-0.4,-0.6,-0.8,ADD,기본 손님 호출시간 감소
+GUARD,가드,퇴치시간,SEC,0,-0.5,-1,-1.5,-2,ADD,진상 손님 퇴치시간 감소

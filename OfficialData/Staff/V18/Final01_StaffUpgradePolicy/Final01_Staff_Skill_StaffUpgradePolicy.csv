@@ -1,0 +1,14 @@
+﻿PolicyKey,Value,Note
+MaxLevel,5,"최초 획득 Lv.1, 최대 Lv.5"
+SkillUpgradeStartLevel,4,Lv.4부터 스킬 지속시간·쿨타임 강화 적용
+MaxUpgradeCurrency,DIAMOND,Lv.4→5는 다이아 전용
+PandaTokenForUpgrade,FALSE,판다토큰은 강화에 사용하지 않음
+PandaTokenUseCase,GACHA_DUPLICATE_AND_DIRECT_PURCHASE,판다토큰은 중복 보상·직접 구매 전용
+CooldownStartRule,AFTER_SKILL_DURATION_END,스킬 종료 후 쿨타임 시작
+SpeedAffectsCooldown,FALSE,이동속도·피버는 쿨타임에 영향 없음
+SkillTimeRoundRule,ROUND_HALF_UP,소수점 0.5 이상 올림
+StaffSkinLegacyPolicy,KEEP_BUT_NOT_USED,기존 스킨 시스템은 보존하되 신규 Staff 시스템에서는 비사용
+SkillTimeBase,STAFF_DATA_BASE_VALUE,Lv.4·5는 현재 기준 Staff DB의 기본값에서 계산
+UpgradeScoreRequirementEnabled,FALSE,스텝 강화 평점 조건 미사용
+SkillDurationBonusStackRule,ADDITIVE_BEFORE_ROUND,레벨과 가챠 영구 보너스를 가산 후 1회 반올림
+ManagerGuideTimeMinimum,0.4,향후 상위 등급 대비 매니저 안내시간 하한
