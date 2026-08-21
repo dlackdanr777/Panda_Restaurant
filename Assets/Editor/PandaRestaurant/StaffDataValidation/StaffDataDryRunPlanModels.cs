@@ -81,6 +81,50 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         }
     }
 
+    internal sealed class StaffDataDryRunSkillEffectPlan
+    {
+        internal string CurrentFieldPath { get; }
+        internal string TargetFieldPath { get; }
+        internal string CurrentValue { get; }
+        internal string TargetValue { get; }
+        internal bool FieldMatches { get; }
+        internal bool ValueMatches { get; }
+        internal StaffDryRunFieldDisposition Disposition { get; }
+        internal string Note { get; }
+
+        internal StaffDataDryRunSkillEffectPlan(
+            string currentFieldPath,
+            string targetFieldPath,
+            string currentValue,
+            string targetValue,
+            bool fieldMatches,
+            bool valueMatches,
+            StaffDryRunFieldDisposition disposition,
+            string note)
+        {
+            CurrentFieldPath = currentFieldPath ?? string.Empty;
+            TargetFieldPath = targetFieldPath ?? string.Empty;
+            CurrentValue = currentValue ?? string.Empty;
+            TargetValue = targetValue ?? string.Empty;
+            FieldMatches = fieldMatches;
+            ValueMatches = valueMatches;
+            Disposition = disposition;
+            Note = note ?? string.Empty;
+        }
+
+        internal void AppendFingerprint(StringBuilder input)
+        {
+            StaffDataDryRunPlanSnapshot.AppendValue(input, CurrentFieldPath);
+            StaffDataDryRunPlanSnapshot.AppendValue(input, TargetFieldPath);
+            StaffDataDryRunPlanSnapshot.AppendValue(input, CurrentValue);
+            StaffDataDryRunPlanSnapshot.AppendValue(input, TargetValue);
+            StaffDataDryRunPlanSnapshot.AppendValue(input, FieldMatches ? "1" : "0");
+            StaffDataDryRunPlanSnapshot.AppendValue(input, ValueMatches ? "1" : "0");
+            StaffDataDryRunPlanSnapshot.AppendValue(input, Disposition.ToString());
+            StaffDataDryRunPlanSnapshot.AppendValue(input, Note);
+        }
+    }
+
     internal sealed class StaffDataDryRunSkillPlan
     {
         internal string OfficialSkillId { get; }
@@ -100,6 +144,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         internal string CurrentCooldown { get; }
         internal string TargetCooldown { get; }
         internal StaffDryRunFieldDisposition ClassDisposition { get; }
+        internal StaffDataDryRunSkillEffectPlan EffectPlan { get; }
 
         internal StaffDataDryRunSkillPlan(
             string officialSkillId,
@@ -119,6 +164,47 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             string currentCooldown,
             string targetCooldown,
             StaffDryRunFieldDisposition classDisposition)
+            : this(
+                officialSkillId,
+                requiredClassName,
+                requiredClassExists,
+                currentAssetPath,
+                currentAssetGuid,
+                currentClassName,
+                plannedAssetPath,
+                preserveExistingGuid,
+                createIndividualAsset,
+                classMatches,
+                currentDescription,
+                targetDescription,
+                currentDuration,
+                targetDuration,
+                currentCooldown,
+                targetCooldown,
+                classDisposition,
+                null)
+        {
+        }
+
+        internal StaffDataDryRunSkillPlan(
+            string officialSkillId,
+            string requiredClassName,
+            bool requiredClassExists,
+            string currentAssetPath,
+            string currentAssetGuid,
+            string currentClassName,
+            string plannedAssetPath,
+            bool preserveExistingGuid,
+            bool createIndividualAsset,
+            bool classMatches,
+            string currentDescription,
+            string targetDescription,
+            string currentDuration,
+            string targetDuration,
+            string currentCooldown,
+            string targetCooldown,
+            StaffDryRunFieldDisposition classDisposition,
+            StaffDataDryRunSkillEffectPlan effectPlan)
         {
             OfficialSkillId = officialSkillId ?? string.Empty;
             RequiredClassName = requiredClassName ?? string.Empty;
@@ -137,6 +223,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             CurrentCooldown = currentCooldown ?? string.Empty;
             TargetCooldown = targetCooldown ?? string.Empty;
             ClassDisposition = classDisposition;
+            EffectPlan = effectPlan;
         }
 
         internal void AppendFingerprint(StringBuilder input)
@@ -158,6 +245,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             StaffDataDryRunPlanSnapshot.AppendValue(input, CurrentCooldown);
             StaffDataDryRunPlanSnapshot.AppendValue(input, TargetCooldown);
             StaffDataDryRunPlanSnapshot.AppendValue(input, ClassDisposition.ToString());
+            if (EffectPlan != null)
+            {
+                EffectPlan.AppendFingerprint(input);
+            }
         }
     }
 
@@ -496,7 +587,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
     internal sealed class StaffDataDryRunPlanSnapshot
     {
-        internal const string PolicyVersion = "STAFF_DRY_RUN_POLICY_2026_08_20_V7";
+        internal const string LegacyV7PolicyVersion = "STAFF_DRY_RUN_POLICY_2026_08_20_V7";
+        internal const string V8PolicyVersion = "STAFF_DRY_RUN_POLICY_2026_08_21_V8";
+        internal const string PolicyVersion = LegacyV7PolicyVersion;
 
         private readonly IReadOnlyList<StaffDataDryRunStaffPlan> _staffPlans;
         private readonly IReadOnlyDictionary<string, StaffDataDryRunStaffPlan> _staffById;
@@ -505,7 +598,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         internal string OfficialPackageFingerprint { get; }
         internal string CurrentInventoryFingerprint { get; }
         internal string LegacyInventoryFingerprint { get; }
-        internal string PlanningPolicyVersion { get { return PolicyVersion; } }
+        internal string PlanningPolicyVersion { get; }
         internal IReadOnlyList<StaffDataDryRunStaffPlan> StaffPlans { get { return _staffPlans; } }
         internal IReadOnlyDictionary<string, StaffDataDryRunStaffPlan> StaffById
         {
@@ -521,6 +614,23 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             string legacyInventoryFingerprint,
             IEnumerable<StaffDataDryRunStaffPlan> staffPlans,
             IEnumerable<StaffDataDryRunIssue> globalIssues)
+            : this(
+                officialPackageFingerprint,
+                currentInventoryFingerprint,
+                legacyInventoryFingerprint,
+                staffPlans,
+                globalIssues,
+                LegacyV7PolicyVersion)
+        {
+        }
+
+        internal StaffDataDryRunPlanSnapshot(
+            string officialPackageFingerprint,
+            string currentInventoryFingerprint,
+            string legacyInventoryFingerprint,
+            IEnumerable<StaffDataDryRunStaffPlan> staffPlans,
+            IEnumerable<StaffDataDryRunIssue> globalIssues,
+            string planningPolicyVersion)
         {
             if (staffPlans == null)
             {
@@ -532,9 +642,19 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 throw new ArgumentNullException(nameof(globalIssues));
             }
 
+            if (string.IsNullOrWhiteSpace(planningPolicyVersion)
+                || (planningPolicyVersion != LegacyV7PolicyVersion
+                    && planningPolicyVersion != V8PolicyVersion))
+            {
+                throw new ArgumentException(
+                    "Planning policy version is blank or unknown.",
+                    nameof(planningPolicyVersion));
+            }
+
             OfficialPackageFingerprint = officialPackageFingerprint ?? string.Empty;
             CurrentInventoryFingerprint = currentInventoryFingerprint ?? string.Empty;
             LegacyInventoryFingerprint = legacyInventoryFingerprint ?? string.Empty;
+            PlanningPolicyVersion = planningPolicyVersion;
             List<StaffDataDryRunStaffPlan> planCopy = new List<StaffDataDryRunStaffPlan>(staffPlans);
             planCopy.Sort((left, right) => left.StaffNumber.CompareTo(right.StaffNumber));
             Dictionary<string, StaffDataDryRunStaffPlan> byId =
@@ -555,7 +675,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private string BuildFingerprint()
         {
             StringBuilder input = new StringBuilder();
-            AppendValue(input, PolicyVersion);
+            AppendValue(input, PlanningPolicyVersion);
             AppendValue(input, OfficialPackageFingerprint);
             AppendValue(input, CurrentInventoryFingerprint);
             AppendValue(input, LegacyInventoryFingerprint);
