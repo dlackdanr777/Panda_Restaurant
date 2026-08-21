@@ -78,7 +78,86 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 ExpectedEncoding.Cp949)
         };
 
+        private static readonly OfficialFileSpec[] V8OfficialFiles =
+        {
+            new OfficialFileSpec(
+                StaffOfficialDataPackageKeys.FinalStaff,
+                "Final18 StaffData",
+                "298f6c9f032b5f7ca73facd3a6d13649af0bf6357a5e802064a7f52ac706e51f",
+                93,
+                ExpectedEncoding.Utf8Bom),
+            new OfficialFileSpec(
+                StaffOfficialDataPackageKeys.RoleBase,
+                "StaffRoleBaseRule",
+                "9ade4cdbf6f1d1cd84cd0b138545641e6ae8ef63db85238a65e08c1c32cfd17e",
+                35,
+                ExpectedEncoding.Utf8Bom),
+            new OfficialFileSpec(
+                StaffOfficialDataPackageKeys.RoleGrowth,
+                "StaffRoleGrowthRule",
+                "396bb7be6199fb68db51ffc2b8507d9b4f8004b2516fc8045561bd13f147c413",
+                7,
+                ExpectedEncoding.Utf8Bom),
+            new OfficialFileSpec(
+                StaffOfficialDataPackageKeys.LevelRule,
+                "StaffSkillLevelRule",
+                "afccbbb4e3e092097df4c84c66edde001afa4a002f4c371e0ae877cb88f28605",
+                6,
+                ExpectedEncoding.Utf8Bom),
+            new OfficialFileSpec(
+                StaffOfficialDataPackageKeys.CostRule,
+                "StaffUpgradeCostRule",
+                "92a8fd3fc1bc236c7f3aaa671cbbb8386b40976d0feb3fda13d5595e731fa35b",
+                5,
+                ExpectedEncoding.Utf8Bom),
+            new OfficialFileSpec(
+                StaffOfficialDataPackageKeys.Summary,
+                "StaffUpgradeSummary",
+                "392b0e0396c5144bbb7c58a247a483d0b76ea30759ad65fb81f0ea58ab69b689",
+                5,
+                ExpectedEncoding.Utf8Bom),
+            new OfficialFileSpec(
+                StaffOfficialDataPackageKeys.Policy,
+                "StaffUpgradePolicy",
+                "4a78ec9d409d7d20e58026f0cde7d68662c230091517f40656ee464ba689760b",
+                14,
+                ExpectedEncoding.Utf8Bom),
+            new OfficialFileSpec(
+                StaffOfficialDataPackageKeys.SkillType,
+                "Final02 StaffSkillType",
+                "80dd32318d554e4f1ad0d19493184503c4a81ed081db74fc8980aeb5a425bfd0",
+                11,
+                ExpectedEncoding.Cp949),
+            new OfficialFileSpec(
+                StaffOfficialDataPackageKeys.GachaUpgradeType,
+                "Final03 GOTCHA UpgradeType",
+                "fd3b74d6972f4e97e6dc50d944162af35c1ca5b0504fa903088c3c914e5e6994",
+                31,
+                ExpectedEncoding.Cp949)
+        };
+
         private static readonly string[] Final17Headers =
+        {
+            "ID",
+            "이름",
+            "설명*",
+            "가챠 확률",
+            "희귀도(별)",
+            "등급",
+            "역할",
+            "패시브",
+            "패시브 설명",
+            "기본속도",
+            "스킬",
+            "스킬 설명",
+            "스킬 타임",
+            "쿨타임",
+            "획득 방법 재화",
+            "중복시 지급 토큰",
+            "토큰 구매 가격"
+        };
+
+        private static readonly string[] FinalStaffHeaders =
         {
             "ID",
             "이름",
@@ -183,152 +262,102 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         [MenuItem(MenuPath)]
         private static void ValidateStaffDataPack()
         {
-            string initialDirectory = Directory.GetParent(Application.dataPath) != null
-                ? Directory.GetParent(Application.dataPath).FullName
-                : Application.dataPath;
-            string selectedFolder = EditorUtility.OpenFolderPanel(
-                "Staff 공식 데이터 폴더 선택",
-                initialDirectory,
-                string.Empty);
-
-            if (string.IsNullOrWhiteSpace(selectedFolder))
-            {
-                UnityEngine.Debug.LogWarning(
-                    "[Staff Data Pack Validation]\n폴더 선택이 취소되어 검증하지 않았습니다.");
-                return;
-            }
-
-            ValidationReport report = new ValidationReport();
             StringBuilder output = new StringBuilder();
             output.AppendLine("[Staff Data Pack Validation]");
             output.AppendLine();
-            output.AppendLine("1. 선택한 폴더: " + selectedFolder);
+
+            string activeFolder;
+            StaffOfficialDataSourceKind sourceKind;
+            string resolveError;
+            bool resolved = StaffOfficialDataPathResolver.TryResolveActiveFolder(
+                out activeFolder,
+                out sourceKind,
+                out resolveError);
+            output.AppendLine("Policy: " + StaffOfficialDataPathResolver.PolicyMarker);
+            output.AppendLine("Active Folder: " + (resolved ? activeFolder : "확인 실패"));
+            output.AppendLine("SourceKind: " + (resolved ? sourceKind.ToString() : "확인 실패"));
+            output.AppendLine(
+                "Canonical / Override: "
+                + (resolved && sourceKind == StaffOfficialDataSourceKind.SessionOverride
+                    ? "Override"
+                    : "Canonical"));
 
             GitInfo gitInfo = ReadGitInfo();
-            string branchResult = gitInfo.BranchAvailable && gitInfo.Branch == ExpectedBranch ? "PASS" : "FAIL";
-            output.AppendLine("2. 현재 Git 브랜치: " + gitInfo.Branch + " [" + branchResult + "]");
-            output.AppendLine("3. 현재 HEAD: " + gitInfo.Head);
+            output.AppendLine("Git branch: " + gitInfo.Branch);
+            output.AppendLine("Git HEAD: " + gitInfo.Head);
+            output.AppendLine();
 
-            if (!gitInfo.BranchAvailable)
+            StaffOfficialDataPackageSnapshot snapshot;
+            IReadOnlyList<string> diagnostics;
+            bool built = StaffDataPackValidator.TryBuildCanonicalV8ReadOnlySnapshot(
+                out snapshot,
+                out diagnostics);
+
+            output.AppendLine("1. Active Folder 해석: " + (resolved ? "PASS" : "FAIL"));
+            output.AppendLine("2. V8 Snapshot 생성: " + (built ? "PASS" : "FAIL"));
+            output.AppendLine(
+                "3. 공식 파일 9개 Strict Package: "
+                + (built && snapshot.OfficialFileCount == V8OfficialFiles.Length ? "PASS" : "FAIL"));
+
+            if (built && snapshot != null)
             {
-                report.Error("현재 Git 브랜치를 읽지 못했습니다: " + gitInfo.ErrorMessage);
-            }
-            else if (!string.Equals(gitInfo.Branch, ExpectedBranch, StringComparison.Ordinal))
-            {
-                report.Error(
-                    "현재 Git 브랜치가 지정 브랜치와 다릅니다. 현재: " + gitInfo.Branch
-                    + ", 지정: " + ExpectedBranch);
-            }
-
-            if (!gitInfo.HeadAvailable)
-            {
-                report.Error("현재 Git HEAD를 읽지 못했습니다: " + gitInfo.ErrorMessage);
-            }
-
-            Dictionary<string, MatchedFile> matchedFiles = new Dictionary<string, MatchedFile>(StringComparer.Ordinal);
-            CheckResult matchingResult = MatchOfficialFiles(selectedFolder, matchedFiles, report);
-            AppendCheck(output, 4, "공식 파일 매칭 결과 " + matchedFiles.Count + "/" + OfficialFiles.Length, matchingResult);
-
-            CheckResult hashResult = BuildHashResult(matchedFiles, report);
-            AppendCheck(output, 5, "각 파일 SHA-256", hashResult);
-
-            CheckResult encodingResult = ValidateEncodings(matchedFiles, report);
-            AppendCheck(output, 6, "각 파일 인코딩", encodingResult);
-
-            CheckResult lineResult = ValidatePhysicalLineCounts(matchedFiles, report);
-            AppendCheck(output, 7, "각 파일 행 수", lineResult);
-
-            Dictionary<string, CsvTable> tables = new Dictionary<string, CsvTable>(StringComparer.Ordinal);
-            Dictionary<string, string> tableErrors = new Dictionary<string, string>(StringComparer.Ordinal);
-            BuildCsvTables(matchedFiles, tables, tableErrors);
-
-            List<FinalStaffRow> finalRows;
-            CheckResult final17Result = ValidateFinal17(tables, tableErrors, report, out finalRows);
-
-            HashSet<string> skillIds;
-            CheckResult skillResult = ValidateSkillTypes(tables, tableErrors, finalRows, report, out skillIds);
-
-            Dictionary<string, RoleGrowthRow> roleGrowthRows;
-            CheckResult roleGrowthResult = ValidateRoleGrowth(
-                tables,
-                tableErrors,
-                report,
-                out roleGrowthRows);
-
-            Dictionary<string, RoleBaseRow> roleBaseRows;
-            CheckResult roleBaseResult = ValidateRoleBase(
-                tables,
-                tableErrors,
-                finalRows,
-                roleGrowthRows,
-                report,
-                out roleBaseRows);
-
-            Dictionary<int, LevelRuleRow> levelRows;
-            CheckResult levelResult = ValidateLevelRule(
-                tables,
-                tableErrors,
-                report,
-                out levelRows);
-
-            Dictionary<string, CostRuleRow> costRows;
-            Dictionary<string, SummaryRow> summaryRows;
-            CheckResult costResult = ValidateCostAndSummary(
-                tables,
-                tableErrors,
-                finalRows,
-                report,
-                out costRows,
-                out summaryRows);
-
-            Dictionary<string, string> policies;
-            CheckResult policyResult = ValidatePolicy(
-                tables,
-                tableErrors,
-                report,
-                out policies);
-
-            CheckResult gachaUpgradeTypeResult = ValidateGachaUpgradeType(
-                tables,
-                tableErrors,
-                report);
-
-            CheckResult crossReferenceResult = ValidateCrossReferences(
-                finalRows,
-                skillIds,
-                roleBaseRows,
-                roleGrowthRows,
-                costRows,
-                summaryRows,
-                report);
-
-            AppendCheck(output, 8, "Final17 ID 검증", final17Result);
-            AppendCheck(output, 9, "Skill 참조 검증", skillResult);
-            AppendCheck(output, 10, "RoleBase 검증", roleBaseResult);
-            AppendCheck(output, 11, "RoleGrowth 검증", roleGrowthResult);
-            AppendCheck(output, 12, "LevelRule 검증", levelResult);
-            AppendCheck(output, 13, "Cost/Summary 검증", costResult);
-            AppendCheck(output, 14, "Policy 검증", policyResult);
-
-            output.AppendLine("   데이터 간 교차검증: " + (crossReferenceResult.Passed ? "PASS" : "FAIL"));
-            AppendDetails(output, crossReferenceResult.Details);
-
-            AppendCheck(output, 15, "GOTCHA UpgradeType 검증", gachaUpgradeTypeResult);
-
-            output.AppendLine("16. 경고 수: " + report.WarningCount);
-            for (int i = 0; i < report.Warnings.Count; i++)
-            {
-                output.AppendLine("   WARNING: " + report.Warnings[i]);
+                for (int index = 0; index < snapshot.FilesInOfficialOrder.Count; index++)
+                {
+                    StaffOfficialFileSnapshot file = snapshot.FilesInOfficialOrder[index];
+                    output.AppendLine(
+                        "   - " + file.Key + " / " + file.DisplayName
+                        + " / SHA-256 " + file.Sha256
+                        + " / " + file.EncodingLabel
+                        + " / " + file.ActualPhysicalLineCount + "행");
+                }
             }
 
-            output.AppendLine("17. 오류 수: " + report.ErrorCount);
-            for (int i = 0; i < report.Errors.Count; i++)
+            output.AppendLine(
+                "4. Final18 StaffData ID·구조: " + (built ? "PASS - STAFF01~92 / 92명 / 17열" : "FAIL"));
+            output.AppendLine(
+                "5. Skill 참조·분포: "
+                + (built
+                    ? "PASS - 01:34, 02:0, 03:15, 04:13, 05:10, 06:3, 07:0, 08:10, 09:2, 10:5"
+                    : "FAIL"));
+            output.AppendLine("6. Skill03 완전 동결: " + (built ? "SKILL03_UNCHANGED_PASS" : "FAIL"));
+            output.AppendLine("7. Skill04: " + (built ? "PASS - 추가 250% / 최종 3.5배" : "FAIL"));
+            output.AppendLine("8. Skill09: " + (built ? "PASS - STAFF27·STAFF68 / 1초 / 240초" : "FAIL"));
+            output.AppendLine("9. RoleBase·Chef Passive: " + (built ? "PASS - 50 / 70 / 100 / 200" : "FAIL"));
+            output.AppendLine("10. RoleGrowth·LevelRule: " + (built ? "PASS" : "FAIL"));
+            output.AppendLine("11. Cost/Summary·Policy: " + (built ? "PASS" : "FAIL"));
+            output.AppendLine("12. GOTCHA UpgradeType: " + (built ? "PASS" : "FAIL"));
+            output.AppendLine(
+                "13. PackageFingerprint: "
+                + (built && snapshot != null ? snapshot.PackageFingerprint : "생성 실패"));
+
+            int warningCount = 0;
+            int errorCount = resolved ? 0 : 1;
+            if (!resolved)
             {
-                output.AppendLine("   ERROR: " + report.Errors[i]);
+                output.AppendLine("   ERROR: " + resolveError);
             }
 
-            bool passed = report.ErrorCount == 0;
-            output.AppendLine("18. 최종 결과: " + (passed ? "PASS" : "FAIL"));
+            if (diagnostics != null)
+            {
+                for (int index = 0; index < diagnostics.Count; index++)
+                {
+                    string diagnostic = diagnostics[index];
+                    output.AppendLine("   " + diagnostic);
+                    if (diagnostic.StartsWith("WARNING: ", StringComparison.Ordinal))
+                    {
+                        warningCount++;
+                    }
+                    else if (diagnostic.StartsWith("ERROR: ", StringComparison.Ordinal))
+                    {
+                        errorCount++;
+                    }
+                }
+            }
+
+            bool passed = resolved && built && snapshot != null && errorCount == 0;
+            output.AppendLine("14. 경고 수: " + warningCount);
+            output.AppendLine("15. 오류 수: " + errorCount);
+            output.AppendLine("16. 최종 결과: " + (passed ? "PASS" : "FAIL"));
             output.AppendLine();
             output.AppendLine("STAFF DATA PACK VALIDATION: " + (passed ? "PASS" : "FAIL"));
 
@@ -428,49 +457,13 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             if (report.ErrorCount == 0)
             {
-                try
-                {
-                    List<StaffOfficialFileSnapshot> files = new List<StaffOfficialFileSnapshot>();
-                    for (int index = 0; index < OfficialFiles.Length; index++)
-                    {
-                        OfficialFileSpec spec = OfficialFiles[index];
-                        MatchedFile matchedFile;
-                        CsvTable table;
-                        if (!matchedFiles.TryGetValue(spec.Key, out matchedFile)
-                            || !tables.TryGetValue(spec.Key, out table)
-                            || matchedFile.DecodedText == null)
-                        {
-                            report.Error(spec.DisplayName + ": 완전한 Snapshot을 만들 수 없습니다.");
-                            break;
-                        }
-
-                        files.Add(
-                            new StaffOfficialFileSnapshot(
-                                spec.Key,
-                                spec.DisplayName,
-                                matchedFile.Path,
-                                matchedFile.Hash,
-                                GetEncodingLabel(spec.Encoding),
-                                spec.PhysicalLineCount,
-                                CountPhysicalLines(matchedFile.DecodedText),
-                                table.Headers,
-                                table.Rows));
-                    }
-
-                    if (report.ErrorCount == 0 && files.Count == OfficialFiles.Length)
-                    {
-                        snapshot = new StaffOfficialDataPackageSnapshot(
-                            Path.GetFullPath(selectedFolder),
-                            gitInfo.Branch,
-                            gitInfo.Head,
-                            files);
-                    }
-                }
-                catch (Exception exception)
-                {
-                    snapshot = null;
-                    report.Error("공식 데이터 Snapshot 생성에 실패했습니다: " + exception.Message);
-                }
+                snapshot = TryCreateSnapshot(
+                    selectedFolder,
+                    gitInfo,
+                    OfficialFiles,
+                    matchedFiles,
+                    tables,
+                    report);
             }
 
             diagnostics = CreateReadOnlyDiagnostics(report);
@@ -481,6 +474,505 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             return true;
+        }
+
+        internal static bool TryBuildV8ReadOnlySnapshot(
+            string selectedFolder,
+            out StaffOfficialDataPackageSnapshot snapshot,
+            out IReadOnlyList<string> diagnostics)
+        {
+            snapshot = null;
+            ValidationReport report = new ValidationReport();
+            if (string.IsNullOrWhiteSpace(selectedFolder))
+            {
+                report.Error("V8 공식 데이터 폴더가 선택되지 않았습니다.");
+                diagnostics = CreateReadOnlyDiagnostics(report);
+                return false;
+            }
+
+            GitInfo gitInfo = ReadGitInfo();
+            if (!gitInfo.BranchAvailable)
+            {
+                report.Error("현재 Git 브랜치를 읽지 못했습니다: " + gitInfo.ErrorMessage);
+            }
+            else if (!string.Equals(gitInfo.Branch, ExpectedBranch, StringComparison.Ordinal))
+            {
+                report.Error(
+                    "현재 Git 브랜치가 지정 브랜치와 다릅니다. 현재: " + gitInfo.Branch
+                    + ", 지정: " + ExpectedBranch);
+            }
+
+            if (!gitInfo.HeadAvailable)
+            {
+                report.Error("현재 Git HEAD를 읽지 못했습니다: " + gitInfo.ErrorMessage);
+            }
+
+            Dictionary<string, MatchedFile> matchedFiles =
+                new Dictionary<string, MatchedFile>(StringComparer.Ordinal);
+            MatchOfficialFiles(
+                selectedFolder,
+                V8OfficialFiles,
+                true,
+                matchedFiles,
+                report);
+            BuildHashResult(V8OfficialFiles, matchedFiles, report);
+            ValidateEncodings(V8OfficialFiles, matchedFiles, report);
+            ValidatePhysicalLineCounts(V8OfficialFiles, matchedFiles, report);
+
+            Dictionary<string, CsvTable> tables =
+                new Dictionary<string, CsvTable>(StringComparer.Ordinal);
+            Dictionary<string, string> tableErrors =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+            BuildCsvTables(V8OfficialFiles, matchedFiles, tables, tableErrors);
+
+            List<FinalStaffRow> finalRows;
+            ValidateFinalStaffTable(
+                StaffOfficialDataPackageKeys.FinalStaff,
+                "Final18 StaffData",
+                "Final18 StaffData",
+                FinalStaffHeaders,
+                true,
+                tables,
+                tableErrors,
+                report,
+                out finalRows);
+
+            HashSet<string> skillIds;
+            ValidateSkillTypes(
+                tables,
+                tableErrors,
+                finalRows,
+                "Final18 StaffData",
+                report,
+                out skillIds);
+
+            Dictionary<string, RoleGrowthRow> roleGrowthRows;
+            ValidateRoleGrowth(tables, tableErrors, report, out roleGrowthRows);
+
+            Dictionary<string, RoleBaseRow> roleBaseRows;
+            ValidateRoleBase(
+                tables,
+                tableErrors,
+                finalRows,
+                roleGrowthRows,
+                "Final18 StaffData",
+                report,
+                out roleBaseRows);
+
+            Dictionary<int, LevelRuleRow> levelRows;
+            ValidateLevelRule(tables, tableErrors, report, out levelRows);
+
+            Dictionary<string, CostRuleRow> costRows;
+            Dictionary<string, SummaryRow> summaryRows;
+            ValidateCostAndSummary(
+                tables,
+                tableErrors,
+                finalRows,
+                "Final18 StaffData",
+                report,
+                out costRows,
+                out summaryRows);
+
+            Dictionary<string, string> policies;
+            ValidatePolicy(tables, tableErrors, report, out policies);
+            ValidateGachaUpgradeType(tables, tableErrors, report);
+            ValidateCrossReferences(
+                finalRows,
+                skillIds,
+                roleBaseRows,
+                roleGrowthRows,
+                costRows,
+                summaryRows,
+                "Final18 StaffData",
+                report);
+            ValidateV8Semantics(tables, tableErrors, finalRows, roleBaseRows, report);
+
+            if (report.ErrorCount == 0)
+            {
+                snapshot = TryCreateSnapshot(
+                    selectedFolder,
+                    gitInfo,
+                    V8OfficialFiles,
+                    matchedFiles,
+                    tables,
+                    report);
+            }
+
+            diagnostics = CreateReadOnlyDiagnostics(report);
+            if (report.ErrorCount != 0 || snapshot == null)
+            {
+                snapshot = null;
+                return false;
+            }
+
+            return true;
+        }
+
+        internal static bool TryBuildCanonicalV8ReadOnlySnapshot(
+            out StaffOfficialDataPackageSnapshot snapshot,
+            out IReadOnlyList<string> diagnostics)
+        {
+            snapshot = null;
+            string activeFolder;
+            StaffOfficialDataSourceKind sourceKind;
+            string error;
+            if (!StaffOfficialDataPathResolver.TryResolveActiveFolder(
+                    out activeFolder,
+                    out sourceKind,
+                    out error))
+            {
+                diagnostics = new List<string>
+                {
+                    "ERROR: V8 Active Folder를 해석하지 못했습니다: " + error
+                }.AsReadOnly();
+                return false;
+            }
+
+            IReadOnlyList<string> buildDiagnostics;
+            bool built = TryBuildV8ReadOnlySnapshot(
+                activeFolder,
+                out snapshot,
+                out buildDiagnostics);
+            List<string> combinedDiagnostics = new List<string>();
+            if (sourceKind == StaffOfficialDataSourceKind.SessionOverride)
+            {
+                combinedDiagnostics.Add(
+                    "WARNING: NON_CANONICAL_OVERRIDE - Session Override 폴더를 사용했습니다: "
+                    + activeFolder);
+            }
+
+            if (buildDiagnostics != null)
+            {
+                for (int index = 0; index < buildDiagnostics.Count; index++)
+                {
+                    combinedDiagnostics.Add(buildDiagnostics[index]);
+                }
+            }
+
+            diagnostics = combinedDiagnostics.AsReadOnly();
+            return built;
+        }
+
+        private static StaffOfficialDataPackageSnapshot TryCreateSnapshot(
+            string selectedFolder,
+            GitInfo gitInfo,
+            OfficialFileSpec[] officialFiles,
+            Dictionary<string, MatchedFile> matchedFiles,
+            Dictionary<string, CsvTable> tables,
+            ValidationReport report)
+        {
+            try
+            {
+                List<StaffOfficialFileSnapshot> files = new List<StaffOfficialFileSnapshot>();
+                for (int index = 0; index < officialFiles.Length; index++)
+                {
+                    OfficialFileSpec spec = officialFiles[index];
+                    MatchedFile matchedFile;
+                    CsvTable table;
+                    if (!matchedFiles.TryGetValue(spec.Key, out matchedFile)
+                        || !tables.TryGetValue(spec.Key, out table)
+                        || matchedFile.DecodedText == null)
+                    {
+                        report.Error(spec.DisplayName + ": 완전한 Snapshot을 만들 수 없습니다.");
+                        return null;
+                    }
+
+                    files.Add(
+                        new StaffOfficialFileSnapshot(
+                            spec.Key,
+                            spec.DisplayName,
+                            matchedFile.Path,
+                            matchedFile.Hash,
+                            GetEncodingLabel(spec.Encoding),
+                            spec.PhysicalLineCount,
+                            CountPhysicalLines(matchedFile.DecodedText),
+                            table.Headers,
+                            table.Rows));
+                }
+
+                return new StaffOfficialDataPackageSnapshot(
+                    Path.GetFullPath(selectedFolder),
+                    gitInfo.Branch,
+                    gitInfo.Head,
+                    files);
+            }
+            catch (Exception exception)
+            {
+                report.Error("공식 데이터 Snapshot 생성에 실패했습니다: " + exception.Message);
+                return null;
+            }
+        }
+
+        private static CheckResult ValidateV8Semantics(
+            Dictionary<string, CsvTable> tables,
+            Dictionary<string, string> tableErrors,
+            List<FinalStaffRow> finalRows,
+            Dictionary<string, RoleBaseRow> roleBaseRows,
+            ValidationReport report)
+        {
+            CheckResult result = new CheckResult();
+            CsvTable skillTypeTable;
+            if (!TryGetTable(
+                    StaffOfficialDataPackageKeys.SkillType,
+                    "Final02 StaffSkillType",
+                    tables,
+                    tableErrors,
+                    result,
+                    report,
+                    out skillTypeTable))
+            {
+                return result;
+            }
+
+            Dictionary<string, string> skillDescriptions =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+            for (int rowIndex = 0; rowIndex < skillTypeTable.Rows.Count; rowIndex++)
+            {
+                List<string> row = skillTypeTable.Rows[rowIndex];
+                string id = skillTypeTable.Get(row, "스킬 TYPE ID").Trim();
+                if (!skillDescriptions.ContainsKey(id))
+                {
+                    skillDescriptions.Add(id, skillTypeTable.Get(row, "스킬").Trim());
+                }
+            }
+
+            ValidateV8SkillDefinition(
+                skillDescriptions,
+                "STAFF_SKILL03",
+                "(0.5)초마다 손님 호출 버튼 누름",
+                result,
+                report);
+            ValidateV8SkillDefinition(
+                skillDescriptions,
+                "STAFF_SKILL04",
+                "맡은 주방 음식 제작 속도 (250%) 증가",
+                result,
+                report);
+            ValidateV8SkillDefinition(
+                skillDescriptions,
+                "STAFF_SKILL09",
+                "전체 주방 남은 음식 조리시간 50% 감소!",
+                result,
+                report);
+
+            string[] expectedSkill03Staff =
+            {
+                "STAFF11", "STAFF12", "STAFF14", "STAFF41", "STAFF42",
+                "STAFF43", "STAFF44", "STAFF56", "STAFF57", "STAFF66",
+                "STAFF67", "STAFF76", "STAFF77", "STAFF91", "STAFF92"
+            };
+            string[] expectedSkill04Staff =
+            {
+                "STAFF17", "STAFF19", "STAFF20", "STAFF29", "STAFF46",
+                "STAFF47", "STAFF48", "STAFF59", "STAFF60", "STAFF70",
+                "STAFF79", "STAFF87", "STAFF88"
+            };
+            string[] expectedSkill09Staff = { "STAFF27", "STAFF68" };
+
+            List<FinalStaffRow> skill03Rows = finalRows
+                .Where(row => row.SkillId == "STAFF_SKILL03")
+                .OrderBy(row => row.Id, StringComparer.Ordinal)
+                .ToList();
+            List<FinalStaffRow> skill04Rows = finalRows
+                .Where(row => row.SkillId == "STAFF_SKILL04")
+                .OrderBy(row => row.Id, StringComparer.Ordinal)
+                .ToList();
+            List<FinalStaffRow> skill09Rows = finalRows
+                .Where(row => row.SkillId == "STAFF_SKILL09")
+                .OrderBy(row => row.Id, StringComparer.Ordinal)
+                .ToList();
+
+            ValidateExactStaffSet(
+                "STAFF_SKILL03",
+                skill03Rows,
+                expectedSkill03Staff,
+                result,
+                report);
+            ValidateExactStaffSet(
+                "STAFF_SKILL04",
+                skill04Rows,
+                expectedSkill04Staff,
+                result,
+                report);
+            ValidateExactStaffSet(
+                "STAFF_SKILL09",
+                skill09Rows,
+                expectedSkill09Staff,
+                result,
+                report);
+
+            for (int index = 0; index < skill03Rows.Count; index++)
+            {
+                if (!string.Equals(
+                        skill03Rows[index].SkillDescription,
+                        "손님 빠르게 모으기!",
+                        StringComparison.Ordinal))
+                {
+                    result.Fail(
+                        report,
+                        skill03Rows[index].Id + " STAFF_SKILL03 사용자 설명이 다릅니다.");
+                }
+            }
+
+            for (int index = 0; index < skill04Rows.Count; index++)
+            {
+                FinalStaffRow row = skill04Rows[index];
+                if (row.RoleKey != "CHEF")
+                {
+                    result.Fail(report, row.Id + " STAFF_SKILL04 역할이 CHEF가 아닙니다.");
+                }
+
+                if (!string.Equals(
+                        row.SkillDescription,
+                        "담당 음식 제작 속도 증가!",
+                        StringComparison.Ordinal))
+                {
+                    result.Fail(report, row.Id + " STAFF_SKILL04 사용자 설명이 다릅니다.");
+                }
+
+                if (row.SkillDescription.IndexOf("250%", StringComparison.Ordinal) >= 0
+                    || row.SkillDescription.IndexOf("3.5", StringComparison.Ordinal) >= 0
+                    || row.SkillDescription.IndexOf("350%", StringComparison.Ordinal) >= 0)
+                {
+                    result.Fail(report, row.Id + " STAFF_SKILL04 사용자 설명에 금지된 수치 문자열이 있습니다.");
+                }
+            }
+
+            for (int index = 0; index < skill09Rows.Count; index++)
+            {
+                FinalStaffRow row = skill09Rows[index];
+                if (!string.Equals(
+                        row.SkillDescription,
+                        "전체 음식 조리시간 단축!",
+                        StringComparison.Ordinal)
+                    || !Approximately(row.Duration, 1d)
+                    || !Approximately(row.Cooldown, 240d))
+                {
+                    result.Fail(
+                        report,
+                        row.Id + " STAFF_SKILL09 설명 또는 Duration 1초 / Cooldown 240초가 다릅니다.");
+                }
+            }
+
+            Dictionary<string, double> expectedChefPassive =
+                new Dictionary<string, double>(StringComparer.Ordinal)
+                {
+                    { "NORMAL", 50d },
+                    { "RARE", 70d },
+                    { "UNIQUE", 100d },
+                    { "SPECIAL", 200d }
+                };
+            Dictionary<string, int> expectedChefCounts =
+                new Dictionary<string, int>(StringComparer.Ordinal)
+                {
+                    { "NORMAL", 5 },
+                    { "RARE", 7 },
+                    { "UNIQUE", 9 },
+                    { "SPECIAL", 2 }
+                };
+            Dictionary<string, int> actualChefCounts = expectedChefCounts.Keys.ToDictionary(
+                grade => grade,
+                grade => 0,
+                StringComparer.Ordinal);
+
+            foreach (KeyValuePair<string, double> expected in expectedChefPassive)
+            {
+                string key = BuildRoleBaseKey("CHEF", expected.Key, "COOKING_EFFICIENCY");
+                RoleBaseRow roleBase;
+                if (!roleBaseRows.TryGetValue(key, out roleBase)
+                    || !Approximately(roleBase.BaseValue, expected.Value))
+                {
+                    result.Fail(
+                        report,
+                        "CHEF_PASSIVE_ROLEBASE_MISMATCH: " + key + "는 "
+                        + expected.Value.ToString(CultureInfo.InvariantCulture) + "이어야 합니다.");
+                }
+            }
+
+            for (int index = 0; index < finalRows.Count; index++)
+            {
+                FinalStaffRow row = finalRows[index];
+                if (row.RoleKey != "CHEF")
+                {
+                    continue;
+                }
+
+                if (actualChefCounts.ContainsKey(row.GradeKey))
+                {
+                    actualChefCounts[row.GradeKey]++;
+                }
+
+                double expectedValue;
+                if (expectedChefPassive.TryGetValue(row.GradeKey, out expectedValue))
+                {
+                    string expectedPassive =
+                        "주방에서 맡은 음식 제작 시간 속도 ("
+                        + expectedValue.ToString("0", CultureInfo.InvariantCulture)
+                        + "%) 효율 증가";
+                    if (!string.Equals(row.Passive, expectedPassive, StringComparison.Ordinal))
+                    {
+                        result.Fail(
+                            report,
+                            "CHEF_PASSIVE_ROLEBASE_MISMATCH: " + row.Id
+                            + " 패시브 설명이 등급 RoleBase와 다릅니다.");
+                    }
+                }
+            }
+
+            foreach (KeyValuePair<string, int> expected in expectedChefCounts)
+            {
+                if (actualChefCounts[expected.Key] != expected.Value)
+                {
+                    result.Fail(
+                        report,
+                        "CHEF_PASSIVE_ROLEBASE_MISMATCH: CHEF " + expected.Key
+                        + " 인원은 " + expected.Value + "명이어야 하지만 실제 "
+                        + actualChefCounts[expected.Key] + "명입니다.");
+                }
+            }
+
+            result.AddDetail("- SKILL03_UNCHANGED_PASS");
+            result.AddDetail("- STAFF_SKILL04 추가 250% / 최종 3.5배 의미 잠금");
+            result.AddDetail("- STAFF_SKILL09 STAFF27·STAFF68 / 1초 / 240초 잠금");
+            result.AddDetail("- CHEF Passive RoleBase 50 / 70 / 100 / 200 잠금");
+            return result;
+        }
+
+        private static void ValidateV8SkillDefinition(
+            Dictionary<string, string> skillDescriptions,
+            string skillId,
+            string expectedDescription,
+            CheckResult result,
+            ValidationReport report)
+        {
+            string actualDescription;
+            if (!skillDescriptions.TryGetValue(skillId, out actualDescription)
+                || !string.Equals(actualDescription, expectedDescription, StringComparison.Ordinal))
+            {
+                result.Fail(
+                    report,
+                    skillId + " SkillType 설명이 다릅니다. 예상 '" + expectedDescription
+                    + "', 실제 '" + (actualDescription ?? string.Empty) + "'");
+            }
+        }
+
+        private static void ValidateExactStaffSet(
+            string skillId,
+            List<FinalStaffRow> actualRows,
+            string[] expectedIds,
+            CheckResult result,
+            ValidationReport report)
+        {
+            string[] actualIds = actualRows.Select(row => row.Id).ToArray();
+            string[] orderedExpectedIds = expectedIds.OrderBy(id => id, StringComparer.Ordinal).ToArray();
+            if (!actualIds.SequenceEqual(orderedExpectedIds, StringComparer.Ordinal))
+            {
+                result.Fail(
+                    report,
+                    skillId + " 대상 직원이 다릅니다. 예상: "
+                    + string.Join(", ", orderedExpectedIds) + ", 실제: "
+                    + string.Join(", ", actualIds));
+            }
         }
 
         private static IReadOnlyList<string> CreateReadOnlyDiagnostics(ValidationReport report)
@@ -504,6 +996,21 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Dictionary<string, MatchedFile> matchedFiles,
             ValidationReport report)
         {
+            return MatchOfficialFiles(
+                selectedFolder,
+                OfficialFiles,
+                false,
+                matchedFiles,
+                report);
+        }
+
+        private static CheckResult MatchOfficialFiles(
+            string selectedFolder,
+            OfficialFileSpec[] officialFiles,
+            bool rejectAdditionalCsv,
+            Dictionary<string, MatchedFile> matchedFiles,
+            ValidationReport report)
+        {
             CheckResult result = new CheckResult();
             string[] csvPaths;
 
@@ -520,16 +1027,16 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 return result;
             }
 
-            Dictionary<string, OfficialFileSpec> specByHash = OfficialFiles.ToDictionary(
+            Dictionary<string, OfficialFileSpec> specByHash = officialFiles.ToDictionary(
                 spec => spec.Hash,
                 spec => spec,
                 StringComparer.OrdinalIgnoreCase);
             Dictionary<string, List<ScannedCsv>> candidatesByKey = new Dictionary<string, List<ScannedCsv>>(
                 StringComparer.Ordinal);
 
-            for (int i = 0; i < OfficialFiles.Length; i++)
+            for (int i = 0; i < officialFiles.Length; i++)
             {
-                candidatesByKey.Add(OfficialFiles[i].Key, new List<ScannedCsv>());
+                candidatesByKey.Add(officialFiles[i].Key, new List<ScannedCsv>());
             }
 
             List<string> ignoredPaths = new List<string>();
@@ -556,9 +1063,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 }
             }
 
-            for (int i = 0; i < OfficialFiles.Length; i++)
+            for (int i = 0; i < officialFiles.Length; i++)
             {
-                OfficialFileSpec spec = OfficialFiles[i];
+                OfficialFileSpec spec = officialFiles[i];
                 List<ScannedCsv> candidates = candidatesByKey[spec.Key];
                 if (candidates.Count == 0)
                 {
@@ -583,13 +1090,27 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             if (ignoredPaths.Count == 0)
             {
-                result.AddDetail("- 공식 " + OfficialFiles.Length + "개 외 CSV: 없음");
+                result.AddDetail("- 공식 " + officialFiles.Length + "개 외 CSV: 없음");
+            }
+            else if (rejectAdditionalCsv)
+            {
+                result.Fail(
+                    report,
+                    "V8 Strict Package에 공식 " + officialFiles.Length
+                    + "개 외 CSV " + ignoredPaths.Count + "개가 존재합니다.");
+                result.AddDetail(
+                    "- 공식 " + officialFiles.Length + "개 외 CSV(허용되지 않음): "
+                    + ignoredPaths.Count + "개");
+                for (int i = 0; i < ignoredPaths.Count; i++)
+                {
+                    result.AddDetail("  · " + ignoredPaths[i]);
+                }
             }
             else
             {
-                report.Warning("공식 " + OfficialFiles.Length + "개 외 CSV " + ignoredPaths.Count + "개를 무시했습니다.");
+                report.Warning("공식 " + officialFiles.Length + "개 외 CSV " + ignoredPaths.Count + "개를 무시했습니다.");
                 result.AddDetail(
-                    "- 공식 " + OfficialFiles.Length + "개 외 CSV(검증에서 무시): " + ignoredPaths.Count + "개");
+                    "- 공식 " + officialFiles.Length + "개 외 CSV(검증에서 무시): " + ignoredPaths.Count + "개");
                 for (int i = 0; i < ignoredPaths.Count; i++)
                 {
                     result.AddDetail("  · " + ignoredPaths[i]);
@@ -603,10 +1124,18 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Dictionary<string, MatchedFile> matchedFiles,
             ValidationReport report)
         {
+            return BuildHashResult(OfficialFiles, matchedFiles, report);
+        }
+
+        private static CheckResult BuildHashResult(
+            OfficialFileSpec[] officialFiles,
+            Dictionary<string, MatchedFile> matchedFiles,
+            ValidationReport report)
+        {
             CheckResult result = new CheckResult();
-            for (int i = 0; i < OfficialFiles.Length; i++)
+            for (int i = 0; i < officialFiles.Length; i++)
             {
-                OfficialFileSpec spec = OfficialFiles[i];
+                OfficialFileSpec spec = officialFiles[i];
                 MatchedFile file;
                 if (!matchedFiles.TryGetValue(spec.Key, out file))
                 {
@@ -631,10 +1160,18 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Dictionary<string, MatchedFile> matchedFiles,
             ValidationReport report)
         {
+            return ValidateEncodings(OfficialFiles, matchedFiles, report);
+        }
+
+        private static CheckResult ValidateEncodings(
+            OfficialFileSpec[] officialFiles,
+            Dictionary<string, MatchedFile> matchedFiles,
+            ValidationReport report)
+        {
             CheckResult result = new CheckResult();
-            for (int i = 0; i < OfficialFiles.Length; i++)
+            for (int i = 0; i < officialFiles.Length; i++)
             {
-                OfficialFileSpec spec = OfficialFiles[i];
+                OfficialFileSpec spec = officialFiles[i];
                 MatchedFile file;
                 if (!matchedFiles.TryGetValue(spec.Key, out file))
                 {
@@ -666,10 +1203,18 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Dictionary<string, MatchedFile> matchedFiles,
             ValidationReport report)
         {
+            return ValidatePhysicalLineCounts(OfficialFiles, matchedFiles, report);
+        }
+
+        private static CheckResult ValidatePhysicalLineCounts(
+            OfficialFileSpec[] officialFiles,
+            Dictionary<string, MatchedFile> matchedFiles,
+            ValidationReport report)
+        {
             CheckResult result = new CheckResult();
-            for (int i = 0; i < OfficialFiles.Length; i++)
+            for (int i = 0; i < officialFiles.Length; i++)
             {
-                OfficialFileSpec spec = OfficialFiles[i];
+                OfficialFileSpec spec = officialFiles[i];
                 MatchedFile file;
                 if (!matchedFiles.TryGetValue(spec.Key, out file) || file.DecodedText == null)
                 {
@@ -700,9 +1245,18 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Dictionary<string, CsvTable> tables,
             Dictionary<string, string> tableErrors)
         {
-            for (int i = 0; i < OfficialFiles.Length; i++)
+            BuildCsvTables(OfficialFiles, matchedFiles, tables, tableErrors);
+        }
+
+        private static void BuildCsvTables(
+            OfficialFileSpec[] officialFiles,
+            Dictionary<string, MatchedFile> matchedFiles,
+            Dictionary<string, CsvTable> tables,
+            Dictionary<string, string> tableErrors)
+        {
+            for (int i = 0; i < officialFiles.Length; i++)
             {
-                OfficialFileSpec spec = OfficialFiles[i];
+                OfficialFileSpec spec = officialFiles[i];
                 MatchedFile file;
                 if (!matchedFiles.TryGetValue(spec.Key, out file) || file.DecodedText == null)
                 {
@@ -727,23 +1281,55 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             ValidationReport report,
             out List<FinalStaffRow> finalRows)
         {
+            return ValidateFinalStaffTable(
+                "Final17",
+                "Final17 StaffData",
+                "Final17",
+                Final17Headers,
+                false,
+                tables,
+                tableErrors,
+                report,
+                out finalRows);
+        }
+
+        private static CheckResult ValidateFinalStaffTable(
+            string tableKey,
+            string displayName,
+            string diagnosticName,
+            string[] expectedHeaders,
+            bool requireExactHeaderOrder,
+            Dictionary<string, CsvTable> tables,
+            Dictionary<string, string> tableErrors,
+            ValidationReport report,
+            out List<FinalStaffRow> finalRows)
+        {
             CheckResult result = new CheckResult();
             finalRows = new List<FinalStaffRow>();
             CsvTable table;
-            if (!TryGetTable("Final17", "Final17 StaffData", tables, tableErrors, result, report, out table))
+            if (!TryGetTable(tableKey, displayName, tables, tableErrors, result, report, out table))
             {
                 return result;
             }
 
-            if (!RequireHeaders(table, Final17Headers, "Final17", result, report))
+            if (!RequireHeaders(table, expectedHeaders, diagnosticName, result, report))
             {
                 return result;
             }
 
-            ValidateColumnCounts(table, "Final17", result, report);
+            if (requireExactHeaderOrder
+                && !ValidateExactHeaders(table, expectedHeaders, diagnosticName, result, report))
+            {
+                return result;
+            }
+
+            ValidateColumnCounts(table, diagnosticName, result, report);
             if (table.Rows.Count != 92)
             {
-                result.Fail(report, "Final17 데이터 행은 92행이어야 하지만 실제로는 " + table.Rows.Count + "행입니다.");
+                result.Fail(
+                    report,
+                    diagnosticName + " 데이터 행은 92행이어야 하지만 실제로는 "
+                    + table.Rows.Count + "행입니다.");
             }
 
             Dictionary<string, int> idCounts = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -752,12 +1338,15 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 List<string> row = table.Rows[rowIndex];
                 int physicalRow = rowIndex + 2;
                 bool requiredValuesPresent = true;
-                for (int headerIndex = 0; headerIndex < Final17Headers.Length; headerIndex++)
+                for (int headerIndex = 0; headerIndex < expectedHeaders.Length; headerIndex++)
                 {
-                    string header = Final17Headers[headerIndex];
+                    string header = expectedHeaders[headerIndex];
                     if (string.IsNullOrWhiteSpace(table.Get(row, header)))
                     {
-                        result.Fail(report, "Final17 " + physicalRow + "행의 필수값 '" + header + "'이 비어 있습니다.");
+                        result.Fail(
+                            report,
+                            diagnosticName + " " + physicalRow + "행의 필수값 '"
+                            + header + "'이 비어 있습니다.");
                         requiredValuesPresent = false;
                     }
                 }
@@ -776,12 +1365,18 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 bool gradeValid = TryMapGrade(table.Get(row, "등급"), out gradeKey);
                 if (!roleValid)
                 {
-                    result.Fail(report, "Final17 " + physicalRow + "행의 역할을 해석할 수 없습니다: " + table.Get(row, "역할"));
+                    result.Fail(
+                        report,
+                        diagnosticName + " " + physicalRow + "행의 역할을 해석할 수 없습니다: "
+                        + table.Get(row, "역할"));
                 }
 
                 if (!gradeValid)
                 {
-                    result.Fail(report, "Final17 " + physicalRow + "행의 등급을 해석할 수 없습니다: " + table.Get(row, "등급"));
+                    result.Fail(
+                        report,
+                        diagnosticName + " " + physicalRow + "행의 등급을 해석할 수 없습니다: "
+                        + table.Get(row, "등급"));
                 }
 
                 double gachaProbability;
@@ -802,7 +1397,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 if (!numbersValid)
                 {
-                    result.Fail(report, "Final17 " + physicalRow + "행에 숫자로 읽을 수 없는 값이 있습니다.");
+                    result.Fail(report, diagnosticName + " " + physicalRow + "행에 숫자로 읽을 수 없는 값이 있습니다.");
                     continue;
                 }
 
@@ -814,7 +1409,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     || duplicateToken < 0
                     || tokenPrice < 0)
                 {
-                    result.Fail(report, "Final17 " + physicalRow + "행에 음수 또는 유효하지 않은 숫자가 있습니다.");
+                    result.Fail(report, diagnosticName + " " + physicalRow + "행에 음수 또는 유효하지 않은 숫자가 있습니다.");
                 }
 
                 if (requiredValuesPresent && roleValid && gradeValid)
@@ -825,6 +1420,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                             roleKey,
                             gradeKey,
                             table.Get(row, "스킬").Trim(),
+                            table.Get(row, "패시브").Trim(),
+                            table.Get(row, "스킬 설명").Trim(),
                             baseSpeed,
                             duration,
                             cooldown));
@@ -835,7 +1432,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             {
                 if (pair.Value > 1)
                 {
-                    result.Fail(report, "Final17 직원 ID가 중복되었습니다: " + pair.Key + " (" + pair.Value + "행)");
+                    result.Fail(
+                        report,
+                        diagnosticName + " 직원 ID가 중복되었습니다: " + pair.Key
+                        + " (" + pair.Value + "행)");
                 }
             }
 
@@ -845,7 +1445,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 int count;
                 if (!idCounts.TryGetValue(expectedId, out count) || count != 1)
                 {
-                    result.Fail(report, "Final17에 " + expectedId + "가 정확히 1행 존재하지 않습니다.");
+                    result.Fail(report, diagnosticName + "에 " + expectedId + "가 정확히 1행 존재하지 않습니다.");
                 }
             }
 
@@ -858,7 +1458,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     || number < 1
                     || number > 92)
                 {
-                    result.Fail(report, "Final17에 예상 범위를 벗어난 직원 ID가 있습니다: " + id);
+                    result.Fail(report, diagnosticName + "에 예상 범위를 벗어난 직원 ID가 있습니다: " + id);
                 }
             }
 
@@ -872,6 +1472,23 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Dictionary<string, CsvTable> tables,
             Dictionary<string, string> tableErrors,
             List<FinalStaffRow> finalRows,
+            ValidationReport report,
+            out HashSet<string> skillIds)
+        {
+            return ValidateSkillTypes(
+                tables,
+                tableErrors,
+                finalRows,
+                "Final17",
+                report,
+                out skillIds);
+        }
+
+        private static CheckResult ValidateSkillTypes(
+            Dictionary<string, CsvTable> tables,
+            Dictionary<string, string> tableErrors,
+            List<FinalStaffRow> finalRows,
+            string finalDataName,
             ValidationReport report,
             out HashSet<string> skillIds)
         {
@@ -1020,7 +1637,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 {
                     result.Fail(
                         report,
-                        pair.Key + " Final17 참조 수가 다릅니다. 예상: " + pair.Value
+                        pair.Key + " " + finalDataName + " 참조 수가 다릅니다. 예상: " + pair.Value
                         + ", 실제: " + actualReferenceCount);
                 }
             }
@@ -1054,7 +1671,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             result.AddDetail("- STAFF_SKILL01~STAFF_SKILL10 각각 1행 확인");
             result.AddDetail("- ID 없는 데이터 행: " + idLessRows);
-            result.AddDetail("- Final17 스킬 참조 " + finalRows.Count + "행 검사 완료");
+            result.AddDetail("- " + finalDataName + " 스킬 참조 " + finalRows.Count + "행 검사 완료");
             result.AddDetail("- 정식 Skill 정의: " + officialDefinitionCount + "개");
             result.AddDetail("- 사용 중 Skill: " + usedSkillCount + "개");
             result.AddDetail("- 예약 Skill: " + reservedSkillCount + "개");
@@ -1188,6 +1805,25 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             ValidationReport report,
             out Dictionary<string, RoleBaseRow> roleBaseRows)
         {
+            return ValidateRoleBase(
+                tables,
+                tableErrors,
+                finalRows,
+                roleGrowthRows,
+                "Final17",
+                report,
+                out roleBaseRows);
+        }
+
+        private static CheckResult ValidateRoleBase(
+            Dictionary<string, CsvTable> tables,
+            Dictionary<string, string> tableErrors,
+            List<FinalStaffRow> finalRows,
+            Dictionary<string, RoleGrowthRow> roleGrowthRows,
+            string finalDataName,
+            ValidationReport report,
+            out Dictionary<string, RoleBaseRow> roleBaseRows)
+        {
             CheckResult result = new CheckResult();
             roleBaseRows = new Dictionary<string, RoleBaseRow>(StringComparer.Ordinal);
             CsvTable table;
@@ -1262,7 +1898,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     string key = BuildRoleBaseKey(staff.RoleKey, staff.GradeKey, requiredStats[statIndex]);
                     if (!roleBaseRows.ContainsKey(key))
                     {
-                        result.Fail(report, "Final17 역할·등급에 필요한 RoleBase가 없습니다: " + key);
+                        result.Fail(report, finalDataName + " 역할·등급에 필요한 RoleBase가 없습니다: " + key);
                     }
                 }
 
@@ -1345,7 +1981,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             result.AddDetail("- RoleKey+GradeKey+StatKey 중복 검사 완료");
-            result.AddDetail("- Final17 역할·등급 필수 Stat 커버: " + roleGradePairs.Count + "개 조합");
+            result.AddDetail("- " + finalDataName + " 역할·등급 필수 Stat 커버: " + roleGradePairs.Count + "개 조합");
             result.AddDetail("- 기본 이동속도·가드 0·청소시간·매니저 Lv.5 하한 검사 완료");
             return result;
         }
@@ -1420,6 +2056,25 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Dictionary<string, CsvTable> tables,
             Dictionary<string, string> tableErrors,
             List<FinalStaffRow> finalRows,
+            ValidationReport report,
+            out Dictionary<string, CostRuleRow> costRows,
+            out Dictionary<string, SummaryRow> summaryRows)
+        {
+            return ValidateCostAndSummary(
+                tables,
+                tableErrors,
+                finalRows,
+                "Final17",
+                report,
+                out costRows,
+                out summaryRows);
+        }
+
+        private static CheckResult ValidateCostAndSummary(
+            Dictionary<string, CsvTable> tables,
+            Dictionary<string, string> tableErrors,
+            List<FinalStaffRow> finalRows,
+            string finalDataName,
             ValidationReport report,
             out Dictionary<string, CostRuleRow> costRows,
             out Dictionary<string, SummaryRow> summaryRows)
@@ -1589,7 +2244,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             {
                 if (!costRows.ContainsKey(grade))
                 {
-                    result.Fail(report, "Final17 등급을 CostRule에 매핑할 수 없습니다: " + grade);
+                    result.Fail(report, finalDataName + " 등급을 CostRule에 매핑할 수 없습니다: " + grade);
                 }
             }
 
@@ -2011,6 +2666,27 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Dictionary<string, SummaryRow> summaryRows,
             ValidationReport report)
         {
+            return ValidateCrossReferences(
+                finalRows,
+                skillIds,
+                roleBaseRows,
+                roleGrowthRows,
+                costRows,
+                summaryRows,
+                "Final17",
+                report);
+        }
+
+        private static CheckResult ValidateCrossReferences(
+            List<FinalStaffRow> finalRows,
+            HashSet<string> skillIds,
+            Dictionary<string, RoleBaseRow> roleBaseRows,
+            Dictionary<string, RoleGrowthRow> roleGrowthRows,
+            Dictionary<string, CostRuleRow> costRows,
+            Dictionary<string, SummaryRow> summaryRows,
+            string finalDataName,
+            ValidationReport report)
+        {
             CheckResult result = new CheckResult();
             Dictionary<string, string> skillGradeTimes = new Dictionary<string, string>(StringComparer.Ordinal);
             HashSet<string> roleGradePairs = new HashSet<string>(StringComparer.Ordinal);
@@ -2072,7 +2748,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 }
             }
 
-            result.AddDetail("- Final17 역할·등급 " + roleGradePairs.Count + "개 조합 해석 완료");
+            result.AddDetail("- " + finalDataName + " 역할·등급 " + roleGradePairs.Count + "개 조합 해석 완료");
             result.AddDetail("- 스킬+등급 시간 " + skillGradeTimes.Count + "개 조합 통일 확인");
             result.AddDetail("- CostRule 등급 매핑 완료");
             result.AddDetail("- Summary는 합계 검증에만 사용하고 적용 데이터로 사용하지 않음");
@@ -2112,6 +2788,39 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 if (!table.HasHeader(requiredHeaders[i]))
                 {
                     result.Fail(report, tableName + "에 필수 헤더가 없습니다: " + requiredHeaders[i]);
+                    passed = false;
+                }
+            }
+
+            return passed;
+        }
+
+        private static bool ValidateExactHeaders(
+            CsvTable table,
+            string[] expectedHeaders,
+            string tableName,
+            CheckResult result,
+            ValidationReport report)
+        {
+            bool passed = true;
+            if (table.Headers.Count != expectedHeaders.Length)
+            {
+                result.Fail(
+                    report,
+                    tableName + " 헤더 수가 다릅니다. 예상 " + expectedHeaders.Length
+                    + ", 실제 " + table.Headers.Count);
+                passed = false;
+            }
+
+            int comparisonCount = Math.Min(table.Headers.Count, expectedHeaders.Length);
+            for (int index = 0; index < comparisonCount; index++)
+            {
+                if (!string.Equals(table.Headers[index], expectedHeaders[index], StringComparison.Ordinal))
+                {
+                    result.Fail(
+                        report,
+                        tableName + " 헤더 순서 또는 값이 다릅니다. 위치 " + (index + 1)
+                        + ", 예상 '" + expectedHeaders[index] + "', 실제 '" + table.Headers[index] + "'");
                     passed = false;
                 }
             }
@@ -2819,6 +3528,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             public readonly string RoleKey;
             public readonly string GradeKey;
             public readonly string SkillId;
+            public readonly string Passive;
+            public readonly string SkillDescription;
             public readonly double BaseSpeed;
             public readonly double Duration;
             public readonly double Cooldown;
@@ -2828,6 +3539,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 string roleKey,
                 string gradeKey,
                 string skillId,
+                string passive,
+                string skillDescription,
                 double baseSpeed,
                 double duration,
                 double cooldown)
@@ -2836,6 +3549,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 RoleKey = roleKey;
                 GradeKey = gradeKey;
                 SkillId = skillId;
+                Passive = passive;
+                SkillDescription = skillDescription;
                 BaseSpeed = baseSpeed;
                 Duration = duration;
                 Cooldown = cooldown;

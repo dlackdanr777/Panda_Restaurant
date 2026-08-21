@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
 using System.Text;
 using UnityEditor;
@@ -12,76 +11,67 @@ namespace PandaRestaurant.Editor.StaffDataValidation
     {
         private const string MenuPath =
             "Tools/Panda Restaurant/Staff/Validate Official Data Snapshot";
+        private const string ExpectedV8PackageFingerprint =
+            "be7613e884b5ae18dc94e57abc0c941dccfb09486ae9fc5ff75acf4b0e4703af";
 
-        private static readonly string[] OfficialKeys =
+        private static IReadOnlyList<string> OfficialKeys
         {
-            "Final17",
-            "RoleBase",
-            "RoleGrowth",
-            "LevelRule",
-            "CostRule",
-            "Summary",
-            "Policy",
-            "SkillType",
-            "GachaUpgradeType"
-        };
+            get { return StaffOfficialDataPackageKeys.OrderedKeys; }
+        }
 
         private static readonly Dictionary<string, int> ExpectedDataRowCounts =
             new Dictionary<string, int>(StringComparer.Ordinal)
             {
-                { "Final17", 92 },
-                { "RoleBase", 34 },
-                { "RoleGrowth", 6 },
-                { "LevelRule", 5 },
-                { "CostRule", 4 },
-                { "Summary", 4 },
-                { "Policy", 13 },
-                { "SkillType", 10 },
-                { "GachaUpgradeType", 30 }
+                { StaffOfficialDataPackageKeys.FinalStaff, 92 },
+                { StaffOfficialDataPackageKeys.RoleBase, 34 },
+                { StaffOfficialDataPackageKeys.RoleGrowth, 6 },
+                { StaffOfficialDataPackageKeys.LevelRule, 5 },
+                { StaffOfficialDataPackageKeys.CostRule, 4 },
+                { StaffOfficialDataPackageKeys.Summary, 4 },
+                { StaffOfficialDataPackageKeys.Policy, 13 },
+                { StaffOfficialDataPackageKeys.SkillType, 10 },
+                { StaffOfficialDataPackageKeys.GachaUpgradeType, 30 }
             };
 
         [MenuItem(MenuPath)]
         private static void ValidateOfficialDataSnapshot()
         {
-            string initialDirectory = Directory.GetParent(Application.dataPath) != null
-                ? Directory.GetParent(Application.dataPath).FullName
-                : Application.dataPath;
-            string selectedFolder = EditorUtility.OpenFolderPanel(
-                "Staff 공식 데이터 Snapshot 폴더 선택",
-                initialDirectory,
-                string.Empty);
-
-            if (string.IsNullOrWhiteSpace(selectedFolder))
-            {
-                Debug.LogWarning(
-                    "[Staff Official Data Package Snapshot Validation]\n"
-                    + "폴더 선택이 취소되어 검증하지 않았습니다.");
-                return;
-            }
+            string activeFolder;
+            StaffOfficialDataSourceKind sourceKind;
+            string resolveError;
+            bool activeFolderResolved = StaffOfficialDataPathResolver.TryResolveActiveFolder(
+                out activeFolder,
+                out sourceKind,
+                out resolveError);
 
             StaffOfficialDataPackageSnapshot firstSnapshot;
             IReadOnlyList<string> firstDiagnostics;
-            bool firstBuilt = StaffDataPackValidator.TryBuildReadOnlySnapshot(
-                selectedFolder,
+            bool firstBuilt = StaffDataPackValidator.TryBuildCanonicalV8ReadOnlySnapshot(
                 out firstSnapshot,
                 out firstDiagnostics);
 
             StaffOfficialDataPackageSnapshot secondSnapshot;
             IReadOnlyList<string> secondDiagnostics;
-            bool secondBuilt = StaffDataPackValidator.TryBuildReadOnlySnapshot(
-                selectedFolder,
+            bool secondBuilt = StaffDataPackValidator.TryBuildCanonicalV8ReadOnlySnapshot(
                 out secondSnapshot,
                 out secondDiagnostics);
 
+            List<string> warnings = new List<string>();
             List<string> errors = new List<string>();
-            if (!firstBuilt || firstSnapshot == null)
+            AddDiagnostics("첫 번째 Snapshot", firstDiagnostics, warnings, errors, true);
+            if ((!firstBuilt || firstSnapshot == null)
+                && (firstDiagnostics == null || firstDiagnostics.Count == 0))
             {
-                AddDiagnostics("첫 번째 Snapshot", firstDiagnostics, errors);
+                errors.Add("첫 번째 Snapshot 생성에 실패했지만 진단 정보가 없습니다.");
             }
 
             if (!secondBuilt || secondSnapshot == null)
             {
-                AddDiagnostics("두 번째 Snapshot", secondDiagnostics, errors);
+                AddDiagnostics("두 번째 Snapshot", secondDiagnostics, warnings, errors, false);
+                if (secondDiagnostics == null || secondDiagnostics.Count == 0)
+                {
+                    errors.Add("두 번째 Snapshot 생성에 실패했지만 진단 정보가 없습니다.");
+                }
             }
 
             bool snapshotPassed = firstBuilt && firstSnapshot != null;
@@ -118,6 +108,21 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             StringBuilder output = new StringBuilder();
             output.AppendLine("[Staff Official Data Package Snapshot Validation]");
             output.AppendLine();
+            output.AppendLine(
+                "Active Folder: " + (activeFolderResolved ? activeFolder : "확인 실패: " + resolveError));
+            output.AppendLine(
+                "SourceKind: " + (activeFolderResolved ? sourceKind.ToString() : "확인 실패"));
+            output.AppendLine(
+                "Canonical / Override: "
+                + (activeFolderResolved
+                   && sourceKind == StaffOfficialDataSourceKind.SessionOverride
+                    ? "Override"
+                    : "Canonical"));
+            output.AppendLine(
+                "PackageFingerprint: "
+                + (snapshotPassed ? firstSnapshot.PackageFingerprint : "생성 실패"));
+            output.AppendLine("Expected PackageFingerprint: " + ExpectedV8PackageFingerprint);
+            output.AppendLine();
             AppendResult(output, 1, "Snapshot 생성", snapshotPassed);
             AppendResult(output, 2, "공식 파일 9개", officialFilesPassed);
             AppendResult(output, 3, "Metadata", metadataPassed);
@@ -126,13 +131,19 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             AppendResult(output, 6, "결정론적 재생성", deterministicPassed);
             AppendResult(output, 7, "깊은 불변성", immutabilityPassed);
             AppendResult(output, 8, "PandaToken·Legacy 정책 원본 보존", policyPassed);
-            output.AppendLine("9. 오류 수: " + errors.Count);
+            output.AppendLine("9. 경고 수: " + warnings.Count);
+            for (int index = 0; index < warnings.Count; index++)
+            {
+                output.AppendLine("   WARNING: " + warnings[index]);
+            }
+
+            output.AppendLine("10. 오류 수: " + errors.Count);
             for (int index = 0; index < errors.Count; index++)
             {
                 output.AppendLine("   ERROR: " + errors[index]);
             }
 
-            output.AppendLine("10. 최종 결과: " + (passed ? "PASS" : "FAIL"));
+            output.AppendLine("11. 최종 결과: " + (passed ? "PASS" : "FAIL"));
             output.AppendLine();
             output.AppendLine(
                 "STAFF OFFICIAL DATA SNAPSHOT VALIDATION: " + (passed ? "PASS" : "FAIL"));
@@ -152,29 +163,29 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             List<string> errors)
         {
             bool passed = true;
-            if (snapshot.OfficialFileCount != OfficialKeys.Length)
+            if (snapshot.OfficialFileCount != OfficialKeys.Count)
             {
                 errors.Add(
-                    "공식 파일 수가 다릅니다. 예상 " + OfficialKeys.Length
+                    "공식 파일 수가 다릅니다. 예상 " + OfficialKeys.Count
                     + ", 실제 " + snapshot.OfficialFileCount);
                 passed = false;
             }
 
-            if (snapshot.FilesByKey.Count != OfficialKeys.Length)
+            if (snapshot.FilesByKey.Count != OfficialKeys.Count)
             {
                 errors.Add(
-                    "공식 파일 Dictionary 수가 다릅니다. 예상 " + OfficialKeys.Length
+                    "공식 파일 Dictionary 수가 다릅니다. 예상 " + OfficialKeys.Count
                     + ", 실제 " + snapshot.FilesByKey.Count);
                 passed = false;
             }
 
-            if (snapshot.FilesInOfficialOrder.Count != OfficialKeys.Length)
+            if (snapshot.FilesInOfficialOrder.Count != OfficialKeys.Count)
             {
                 errors.Add("공식 파일 고정 순서 목록의 수가 9개가 아닙니다.");
                 passed = false;
             }
 
-            int comparisonCount = Math.Min(snapshot.FilesInOfficialOrder.Count, OfficialKeys.Length);
+            int comparisonCount = Math.Min(snapshot.FilesInOfficialOrder.Count, OfficialKeys.Count);
             for (int index = 0; index < comparisonCount; index++)
             {
                 string expectedKey = OfficialKeys[index];
@@ -267,7 +278,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             List<string> errors)
         {
             bool passed = true;
-            for (int index = 0; index < OfficialKeys.Length; index++)
+            for (int index = 0; index < OfficialKeys.Count; index++)
             {
                 string key = OfficialKeys[index];
                 StaffOfficialFileSnapshot file;
@@ -299,6 +310,17 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             if (!IsLowercaseSha256(snapshot.PackageFingerprint))
             {
                 errors.Add("PackageFingerprint가 소문자 SHA-256 64자리 형식이 아닙니다.");
+                passed = false;
+            }
+
+            if (!string.Equals(
+                    snapshot.PackageFingerprint,
+                    ExpectedV8PackageFingerprint,
+                    StringComparison.Ordinal))
+            {
+                errors.Add(
+                    "V8 PackageFingerprint가 잠금값과 다릅니다. 예상 "
+                    + ExpectedV8PackageFingerprint + ", 실제 " + snapshot.PackageFingerprint);
                 passed = false;
             }
 
@@ -444,7 +466,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         {
             bool passed = true;
             StaffOfficialFileSnapshot policyFile;
-            if (!snapshot.TryGetFile("Policy", out policyFile) || policyFile == null)
+            if (!snapshot.TryGetFile(StaffOfficialDataPackageKeys.Policy, out policyFile)
+                || policyFile == null)
             {
                 errors.Add("Policy Snapshot을 찾지 못했습니다.");
                 return false;
@@ -466,19 +489,20 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 "KEEP_BUT_NOT_USED",
                 errors);
 
-            StaffOfficialFileSnapshot final17File;
-            if (!snapshot.TryGetFile("Final17", out final17File) || final17File == null)
+            StaffOfficialFileSnapshot finalStaffFile;
+            if (!snapshot.TryGetFile(StaffOfficialDataPackageKeys.FinalStaff, out finalStaffFile)
+                || finalStaffFile == null)
             {
-                errors.Add("Final17 Snapshot을 찾지 못했습니다.");
+                errors.Add("Final Staff Snapshot을 찾지 못했습니다.");
                 return false;
             }
 
             string[] requiredHeaders = { "가챠 확률", "중복시 지급 토큰", "토큰 구매 가격" };
             for (int index = 0; index < requiredHeaders.Length; index++)
             {
-                if (IndexOf(final17File.Headers, requiredHeaders[index]) < 0)
+                if (IndexOf(finalStaffFile.Headers, requiredHeaders[index]) < 0)
                 {
-                    errors.Add("Final17 원본 Header가 보존되지 않았습니다: " + requiredHeaders[index]);
+                    errors.Add("Final Staff 원본 Header가 보존되지 않았습니다: " + requiredHeaders[index]);
                     passed = false;
                 }
             }
@@ -694,17 +718,23 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private static void AddDiagnostics(
             string label,
             IReadOnlyList<string> diagnostics,
-            List<string> errors)
+            List<string> warnings,
+            List<string> errors,
+            bool includeWarnings)
         {
             if (diagnostics == null || diagnostics.Count == 0)
             {
-                errors.Add(label + " 생성에 실패했지만 진단 정보가 없습니다.");
                 return;
             }
 
             for (int index = 0; index < diagnostics.Count; index++)
             {
-                if (diagnostics[index].StartsWith("ERROR: ", StringComparison.Ordinal))
+                if (includeWarnings
+                    && diagnostics[index].StartsWith("WARNING: ", StringComparison.Ordinal))
+                {
+                    warnings.Add(label + " - " + diagnostics[index].Substring("WARNING: ".Length));
+                }
+                else if (diagnostics[index].StartsWith("ERROR: ", StringComparison.Ordinal))
                 {
                     errors.Add(label + " - " + diagnostics[index].Substring("ERROR: ".Length));
                 }
