@@ -3,7 +3,7 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "AssignedCookingSpeedUpSkill", menuName = "Scriptable Object/Skill/AssignedCookingSpeedUpSkill")]
 public class AssignedCookingSpeedUpSkill : SkillBase
 {
-    [Range(0f, 1000f)] [SerializeField] private float _assignedCookingSpeedUpPercent = 150f;
+    [Range(0f, 1000f)] [SerializeField] private float _assignedCookingSpeedUpPercent = 250f;
 
     public override float FirstValue => _assignedCookingSpeedUpPercent;
 

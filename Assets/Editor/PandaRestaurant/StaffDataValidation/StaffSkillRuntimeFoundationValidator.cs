@@ -931,21 +931,21 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             StaffSkillRuntimeContext context = new StaffSkillRuntimeContext();
             StaffSkillSourceToken firstToken = context.BeginActivation("STAFF_SKILL04");
 
-            context.SetAssignedCookingBonusPercent(firstToken, 150f);
+            context.SetAssignedCookingBonusPercent(firstToken, 250f);
             RequireNear(
-                150f,
+                250f,
                 context.AssignedCookingBonusPercent,
-                "Skill04 must register a 150 percent assigned cooking bonus.");
+                "Skill04 must register a 250 percent assigned cooking bonus.");
             RequireNear(
-                2.5f,
+                3.5f,
                 1f + context.AssignedCookingBonusPercent * 0.01f,
-                "Skill04 150 percent must mean a 2.5 multiplier.");
+                "Skill04 250 percent must mean a 3.5 multiplier.");
 
             StaffSkillRuntimeContext independentContext = new StaffSkillRuntimeContext();
             StaffSkillSourceToken independentToken = independentContext.BeginActivation("STAFF_SKILL04_INDEPENDENT");
             independentContext.SetAssignedCookingBonusPercent(independentToken, 75f);
             RequireNear(
-                150f,
+                250f,
                 context.AssignedCookingBonusPercent,
                 "A second Context must not change the first Skill04 Context.");
             RequireNear(
@@ -968,7 +968,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             StaffSkillSourceToken secondToken = context.BeginActivation("STAFF_SKILL04_NEXT");
             context.SetAssignedCookingBonusPercent(secondToken, 40f);
-            context.SetAssignedCookingBonusPercent(firstToken, 150f);
+            context.SetAssignedCookingBonusPercent(firstToken, 250f);
             RequireNear(
                 40f,
                 context.AssignedCookingBonusPercent,
@@ -990,15 +990,16 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(parameters[1].ParameterType == typeof(bool), "Skill04 helper parameter 2 must be bool.");
             Require(parameters[2].ParameterType == typeof(float), "Skill04 helper parameter 3 must be float.");
 
-            RequireNear(1f, InvokeSkill04Multiplier(method, false, false, 150f), "No assigned Staff must produce 1.0.");
-            RequireNear(1f, InvokeSkill04Multiplier(method, false, true, 150f), "Working without an assigned Staff must produce 1.0.");
-            RequireNear(1f, InvokeSkill04Multiplier(method, true, false, 150f), "A moving Staff must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, false, false, 250f), "No assigned Staff must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, false, true, 250f), "Working without an assigned Staff must produce 1.0.");
+            RequireNear(1f, InvokeSkill04Multiplier(method, true, false, 250f), "A moving Staff must produce 1.0.");
             RequireNear(1f, InvokeSkill04Multiplier(method, true, true, 0f), "Zero percent must produce 1.0.");
             RequireNear(1f, InvokeSkill04Multiplier(method, true, true, -1f), "A negative percent must produce 1.0.");
             RequireNear(1f, InvokeSkill04Multiplier(method, true, true, float.NaN), "NaN must produce 1.0.");
             RequireNear(1f, InvokeSkill04Multiplier(method, true, true, float.PositiveInfinity), "Positive infinity must produce 1.0.");
             RequireNear(1f, InvokeSkill04Multiplier(method, true, true, float.NegativeInfinity), "Negative infinity must produce 1.0.");
             RequireNear(2.5f, InvokeSkill04Multiplier(method, true, true, 150f), "150 percent must produce 2.5.");
+            RequireNear(3.5f, InvokeSkill04Multiplier(method, true, true, 250f), "250 percent must produce 3.5.");
             RequireNear(11f, InvokeSkill04Multiplier(method, true, true, 1000f), "1000 percent must produce 11.0.");
             RequireNear(1f, InvokeSkill04Multiplier(method, true, true, 1000.01f), "An out-of-range finite percent must produce 1.0.");
             RequireNear(1f, InvokeSkill04Multiplier(method, true, true, 1001f), "1001 percent must produce 1.0.");
@@ -1048,6 +1049,28 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             ValidateReadOnlyProperty(skillType, "FirstValue", typeof(float));
             ValidateReadOnlyProperty(skillType, "SecondValue", typeof(float));
+
+            const string sourcePath =
+                "Assets/Scripts/Staff/StaffSkill/AssignedCookingSpeedUpSkill.cs";
+            string source = NormalizeSourceLineEndings(ReadProjectText(sourcePath));
+            Require(
+                source.Contains("private float _assignedCookingSpeedUpPercent = 250f;"),
+                "Skill04 official default percent must be 250.");
+            Require(
+                source.Contains("public override float FirstValue => _assignedCookingSpeedUpPercent;"),
+                "Skill04 FirstValue must return its serialized percent.");
+            Require(
+                source.Contains("public override float SecondValue => 0;"),
+                "Skill04 SecondValue must return zero.");
+            Require(
+                CountOccurrences(source, "staff.RuntimeSkillContext.SetAssignedCookingBonusPercent(") == 2,
+                "Skill04 must set only its assigned-cooking Runtime Context channel.");
+            Require(
+                CountOccurrences(source, "staff.CurrentSkillSourceToken") == 2,
+                "Skill04 Activate and Deactivate must use the current Source Token.");
+            Require(
+                AssetDatabase.AssetPathToGUID(sourcePath) == "f6dec9edb1244c84d99fc7f5daea02f9",
+                "AssignedCookingSpeedUpSkill Script GUID changed.");
         }
 
         private static void ValidateBurnerWorkingProperty()
@@ -2330,15 +2353,20 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     1f, 1f, 1f, 1f, 1f, 2f, 1f, 1f),
                 "Fever cooking multiplier is incorrect.");
             RequireNear(
-                7.5f,
+                7f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
-                    1f, 1f, 1f, 2.5f, 1.5f, 2f, 1f, 1f),
-                "Skill04, Skill09, and Fever must remain 7.5 before the cooking cap.");
+                    1f, 1f, 1f, 3.5f, 1f, 2f, 1f, 1f),
+                "Skill04 3.5 and Fever 2.0 must remain 7.0 below the cooking cap.");
             RequireNear(
                 8f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
-                    1f, 1f, 1f, 2.5f, 1.5f, 2f, 2f, 1.1f),
-                "Burner and same-food multipliers must clamp to the final cooking cap of 8.");
+                    1f, 1f, 1f, 3.5f, 1.5f, 2f, 1f, 1f),
+                "Skill04, Skill09, and Fever 10.5 must clamp to the final cooking cap of 8.");
+            RequireNear(
+                8f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1.7f, 1.5f, 3.5f, 1.5f, 2f, 2f, 1.1f),
+                "Additional equipment, Chef, Burner, and same-food channels must not exceed the cooking cap of 8.");
             RequireNear(
                 0f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
@@ -2615,6 +2643,17 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
         private static void ValidateCookingChannelAndCap()
         {
+            RequireNear(
+                3.5f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 1f, 3.5f, 1f, 1f, 1f, 1f),
+                "Official Skill04 assigned cooking must produce 3.5.");
+            RequireNear(
+                8f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 1f, 3.5f, 1.5f, 2f, 1f, 1f),
+                "Official Skill04, Skill09, and Fever cooking must clamp to 8.");
+
             string kitchenSource = NormalizeSourceLineEndings(
                 ReadProjectText("Assets/Scripts/Kitchen/KitchenUtensilGroup.cs"));
             string updateSource = ExtractSourceSection(
