@@ -32,7 +32,6 @@ public class KitchenUtensilGroup: MonoBehaviour
     private UIBurnerTimer[] _burnerTimers;
     private KitchenBurnerData[] _burnerDatas;
     private Dictionary<KitchenUtensilType, List<KitchenUtensil>> _kitchenUtensilDic = new Dictionary<KitchenUtensilType, List<KitchenUtensil>>();
-    private List<BurnerKitchenUtensil> _burnerKitchenUtensils = new List<BurnerKitchenUtensil>();
     private Queue<CookingData> _cookingQueue = new Queue<CookingData>();
     private SinkKitchenUtensil _sinkKitchenUtensil;
 
@@ -148,7 +147,6 @@ public class KitchenUtensilGroup: MonoBehaviour
                 if (burner != null)
                 {
                     int burnerIndex = (int)type; // Burner1=0, Burner2=1, ..., Burner5=4
-                    _burnerKitchenUtensils.Add(burner);
                     _burnerDatas[burnerIndex].SetKitchenUtensil(burner);
                     burner.SetData(_burnerDatas[burnerIndex]);
                 }
@@ -197,14 +195,18 @@ public class KitchenUtensilGroup: MonoBehaviour
                 KitchenBurnerData burnerData = _burnerDatas[i];
                 Staff assignedStaff = burnerData.UseStaff;
                 BurnerKitchenUtensil burner = burnerData.KitchenUtensil;
-                float existingCookingMultiplier =
+                float sharedBaseCookingMultiplier =
                     gameManager.GetCookingSpeedMul(
                         _floorType,
                         burnerData.CookingData.FoodData.FoodType);
-                float assignedStaffRoleMultiplier =
-                    1f
-                    + burnerData.AddCookSpeedMul * 0.01f
-                    * (assignedStaff != null ? assignedStaff.SpeedMul : 1f);
+                float localEquipmentCookingMultiplier =
+                    CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(
+                        burner != null ? burner.EquipmentCookingBonusPercent : 0f);
+                float chefPassiveCookingMultiplier =
+                    CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(
+                        assignedStaff != null,
+                        burner != null && burner.IsStaffWorking,
+                        burnerData.AddCookSpeedMul);
                 float assignedCookingSkillMultiplier = CalculateAssignedCookingSpeedMultiplier(
                     assignedStaff != null,
                     burner != null && burner.IsStaffWorking,
@@ -212,15 +214,9 @@ public class KitchenUtensilGroup: MonoBehaviour
                         ? assignedStaff.RuntimeSkillContext.AssignedCookingBonusPercent
                         : 0f);
 
-                float burnerMultiplier = 1f;
+                float burnerTouchMultiplier = burner != null ? burner.CookSpeedMul : 1f;
                 float sameFoodTypeMultiplier = 1f;
-                
-                // _burnerKitchenUtensils 리스트의 인덱스가 i와 일치하는지 확인
-                if (i < _burnerKitchenUtensils.Count && _burnerKitchenUtensils[i] != null)
-                {
-                    burnerMultiplier = _burnerKitchenUtensils[i].CookSpeedMul;
-                }
-                
+
                 if (_burnerDatas[i].FoodType == _burnerDatas[i].CookingData.FoodData.FoodType)
                 {
                     sameFoodTypeMultiplier = 1.1f; // 같은 음식 타입일 때는 10% 더 빠르게 요리
@@ -228,12 +224,13 @@ public class KitchenUtensilGroup: MonoBehaviour
 
                 float finalCookingMultiplier =
                     FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
-                        existingCookingMultiplier,
-                        assignedStaffRoleMultiplier,
+                        sharedBaseCookingMultiplier,
+                        localEquipmentCookingMultiplier,
+                        chefPassiveCookingMultiplier,
                         assignedCookingSkillMultiplier,
                         globalCookingSkillMultiplier,
                         feverCookingMultiplier,
-                        burnerMultiplier,
+                        burnerTouchMultiplier,
                         sameFoodTypeMultiplier);
                 float subTime = Time.deltaTime * finalCookingMultiplier;
                 

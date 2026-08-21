@@ -3,9 +3,10 @@ using System;
 public static class FeverRuntimeMultiplierCalculator
 {
     // FEVER_POLICY_2026_08_19_V2
+    // COOKING_RUNTIME_POLICY_2026_08_21_V1
     public const float MaxNormalCustomerMoveMultiplier = 3f;
     public const float MaxStaffMoveMultiplier = 3f;
-    public const float MaxCookingMultiplier = 5f;
+    public const float MaxCookingMultiplier = 8f;
 
     public static float CalculateNormalCustomerMoveMultiplier(
         float existingMultiplier,
@@ -68,32 +69,35 @@ public static class FeverRuntimeMultiplierCalculator
     }
 
     public static float CalculateCookingMultiplier(
-        float existingCookingMultiplier,
-        float assignedStaffRoleMultiplier,
+        float sharedBaseCookingMultiplier,
+        float localEquipmentCookingMultiplier,
+        float chefPassiveCookingMultiplier,
         float assignedCookingSkillMultiplier,
         float globalCookingSkillMultiplier,
         float feverMultiplier,
-        float burnerMultiplier,
+        float burnerTouchMultiplier,
         float sameFoodTypeMultiplier)
     {
-        if (!IsFiniteNonNegative(existingCookingMultiplier)
-            || !IsFiniteNonNegative(assignedStaffRoleMultiplier)
+        if (!IsFiniteNonNegative(sharedBaseCookingMultiplier)
+            || !IsFiniteNonNegative(localEquipmentCookingMultiplier)
+            || !IsFiniteNonNegative(chefPassiveCookingMultiplier)
             || !IsFiniteNonNegative(assignedCookingSkillMultiplier)
             || !IsFiniteNonNegative(globalCookingSkillMultiplier)
             || !IsFiniteNonNegative(feverMultiplier)
-            || !IsFiniteNonNegative(burnerMultiplier)
+            || !IsFiniteNonNegative(burnerTouchMultiplier)
             || !IsFiniteNonNegative(sameFoodTypeMultiplier))
         {
             return 1f;
         }
 
         double result =
-            (double)existingCookingMultiplier
-            * assignedStaffRoleMultiplier
+            (double)sharedBaseCookingMultiplier
+            * localEquipmentCookingMultiplier
+            * chefPassiveCookingMultiplier
             * assignedCookingSkillMultiplier
             * globalCookingSkillMultiplier
             * feverMultiplier
-            * burnerMultiplier
+            * burnerTouchMultiplier
             * sameFoodTypeMultiplier;
         return ClampProduct(result, 0f, MaxCookingMultiplier);
     }

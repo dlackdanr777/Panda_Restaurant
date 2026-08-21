@@ -81,6 +81,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(60, "Skill09 Registry·Class", ValidateSkill09RegistryAndClass);
             report.Run(61, "Skill10 Registry·Class", ValidateSkill10RegistryAndClass);
             report.Run(62, "Skill08·09·10 소비 경계", ValidateRemainingSkillConsumptionBoundaries);
+            report.Run(63, "Cooking Percent Helper", ValidateCookingPercentHelper);
+            report.Run(64, "Burner Local Equipment", ValidateBurnerLocalEquipmentStructure);
+            report.Run(65, "Global Equipment Aggregation Removal", ValidateGlobalEquipmentAggregationRemoval);
+            report.Run(66, "Chef Passive Channels and 8x Cap", ValidateChefPassiveChannelsAndCap);
             report.Print();
         }
 
@@ -2323,22 +2327,22 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireNear(
                 2f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
-                    1f, 1f, 1f, 1f, 2f, 1f, 1f),
+                    1f, 1f, 1f, 1f, 1f, 2f, 1f, 1f),
                 "Fever cooking multiplier is incorrect.");
             RequireNear(
-                5f,
+                7.5f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
-                    1f, 1f, 2.5f, 1.5f, 2f, 1f, 1f),
-                "Skill04, Skill09, and Fever must clamp cooking to 5.");
+                    1f, 1f, 1f, 2.5f, 1.5f, 2f, 1f, 1f),
+                "Skill04, Skill09, and Fever must remain 7.5 before the cooking cap.");
             RequireNear(
-                5f,
+                8f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
-                    1f, 1f, 2.5f, 1.5f, 2f, 2f, 1.1f),
-                "Burner and same-food multipliers must remain inside the final cooking cap.");
+                    1f, 1f, 1f, 2.5f, 1.5f, 2f, 2f, 1.1f),
+                "Burner and same-food multipliers must clamp to the final cooking cap of 8.");
             RequireNear(
                 0f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
-                    0f, 1f, 1f, 1f, 1f, 1f, 1f),
+                    0f, 1f, 1f, 1f, 1f, 1f, 1f, 1f),
                 "A valid zero cooking multiplier must remain zero.");
 
             RequireNear(
@@ -2364,11 +2368,28 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireNear(
                 1f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
-                    1f, 1f, 1f, 1f, 1f, -1f, 1f),
+                    1f, -1f, 1f, 1f, 1f, 1f, 1f, 1f),
                 "Invalid cooking input must return the neutral multiplier.");
 
             Type calculatorType = typeof(FeverRuntimeMultiplierCalculator);
             Require(calculatorType.IsAbstract && calculatorType.IsSealed, "Fever multiplier calculator must be static.");
+            MethodInfo cookingMethod = calculatorType.GetMethod(
+                "CalculateCookingMultiplier",
+                BindingFlags.Static | BindingFlags.Public,
+                null,
+                new Type[]
+                {
+                    typeof(float),
+                    typeof(float),
+                    typeof(float),
+                    typeof(float),
+                    typeof(float),
+                    typeof(float),
+                    typeof(float),
+                    typeof(float)
+                },
+                null);
+            Require(cookingMethod != null, "Cooking multiplier calculator must expose eight float channels.");
             foreach (FieldInfo field in calculatorType.GetFields(
                          BindingFlags.Static
                          | BindingFlags.Instance
@@ -2400,9 +2421,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(
                 CountOccurrences(source, "FEVER_POLICY_2026_08_19_V2") == 1,
                 "The Fever V2 calculator policy marker must exist exactly once.");
+            Require(
+                CountOccurrences(source, "COOKING_RUNTIME_POLICY_2026_08_21_V1") == 1,
+                "The cooking Runtime policy marker must exist exactly once in the Fever calculator.");
             Require(!source.Contains("using UnityEngine"), "Fever multiplier calculator must not depend on UnityEngine.");
             Require(source.Contains("(double)existingMultiplier"), "Movement multiplication must start in double precision.");
-            Require(source.Contains("(double)existingCookingMultiplier"), "Cooking multiplication must start in double precision.");
+            Require(source.Contains("(double)sharedBaseCookingMultiplier"), "Cooking multiplication must start in double precision.");
             Require(!source.Contains("params "), "Fever multiplier calculator must not allocate a params array.");
             Require(!source.Contains("List<"), "Fever multiplier calculator must not contain a List.");
             Require(!source.Contains("Dictionary<"), "Fever multiplier calculator must not contain a Dictionary.");
@@ -2593,33 +2617,50 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         {
             string kitchenSource = NormalizeSourceLineEndings(
                 ReadProjectText("Assets/Scripts/Kitchen/KitchenUtensilGroup.cs"));
+            string updateSource = ExtractSourceSection(
+                kitchenSource,
+                "void Update()",
+                "public void EqueueFood(CookingData foodData)");
             Require(
-                kitchenSource.Contains("FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier("),
+                updateSource.Contains("FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier("),
                 "Kitchen cooking must use the Fever multiplier calculator.");
-            Require(kitchenSource.Contains("gameManager.GetCookingSpeedMul("), "Existing global cooking multiplier must remain.");
+            Require(updateSource.Contains("gameManager.GetCookingSpeedMul("), "Shared-base cooking multiplier must remain.");
             Require(
-                kitchenSource.Contains("CalculateAssignedCookingSpeedMultiplier("),
+                updateSource.Contains("CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier("),
+                "The current Burner equipment multiplier must use the cooking Runtime calculator.");
+            Require(
+                updateSource.Contains("CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier("),
+                "Chef passive cooking must use the cooking Runtime calculator.");
+            Require(
+                updateSource.Contains("CalculateAssignedCookingSpeedMultiplier("),
                 "Skill04 assigned-cooking multiplier must remain.");
             Require(
-                CountOccurrences(kitchenSource, "StaffSkillEffectType.GlobalCookingSpeedPercent") == 1,
+                CountOccurrences(updateSource, "StaffSkillEffectType.GlobalCookingSpeedPercent") == 1,
                 "Skill09 Registry multiplier must be read exactly once.");
             Require(
-                CountOccurrences(kitchenSource, "FeverRuntimeContext.CookingMultiplier") == 1,
+                CountOccurrences(updateSource, "FeverRuntimeContext.CookingMultiplier") == 1,
                 "Fever cooking multiplier must be read exactly once.");
-            Require(kitchenSource.Contains("burnerData.AddCookSpeedMul * 0.01f"), "Assigned Chef role multiplier must remain.");
-            Require(kitchenSource.Contains("assignedStaff.SpeedMul"), "Assigned Chef role speed must remain.");
-            Require(kitchenSource.Contains("_burnerKitchenUtensils[i].CookSpeedMul"), "Burner multiplier must remain.");
-            Require(kitchenSource.Contains("sameFoodTypeMultiplier = 1.1f;"), "Same-food 1.1 multiplier must remain.");
-            Require(kitchenSource.Contains("Time.deltaTime * finalCookingMultiplier"), "Cooking must apply the final multiplier to delta time.");
-            Require(!kitchenSource.Contains("PersonalMoveBonusPercent"), "Cooking must not consume Skill01 personal movement.");
-            Require(!kitchenSource.Contains("AllStaffMovePercent"), "Cooking must not consume Skill10 Staff movement.");
+            Require(updateSource.Contains("BurnerKitchenUtensil burner = burnerData.KitchenUtensil;"), "Cooking must use its BurnerData-owned Burner reference.");
             Require(
-                FeverRuntimeMultiplierCalculator.MaxCookingMultiplier == 5f,
-                "Final cooking multiplier cap must be 5.");
+                CountOccurrences(updateSource, "burner.EquipmentCookingBonusPercent") == 1,
+                "The current Burner equipment percent must be read exactly once per update path.");
+            Require(updateSource.Contains("burnerData.AddCookSpeedMul);"), "Chef passive percent must remain connected.");
+            Require(updateSource.Contains("burner != null && burner.IsStaffWorking"), "Chef passive and Skill04 must require active Burner work.");
+            Require(updateSource.Contains("burner.CookSpeedMul"), "Burner touch multiplier must remain.");
+            Require(updateSource.Contains("sameFoodTypeMultiplier = 1.1f;"), "Same-food 1.1 multiplier must remain.");
+            Require(updateSource.Contains("Time.deltaTime * finalCookingMultiplier"), "Cooking must apply the final multiplier to delta time.");
+            Require(!updateSource.Contains("assignedStaff.SpeedMul"), "Chef passive cooking must not consume Staff movement speed.");
+            Require(!kitchenSource.Contains("_burnerKitchenUtensils"), "Cooking must not rely on a parallel Burner index list.");
+            Require(!updateSource.Contains("PersonalMoveBonusPercent"), "Cooking must not consume Skill01 personal movement.");
+            Require(!updateSource.Contains("AllStaffMovePercent"), "Cooking must not consume Skill10 Staff movement.");
+            Require(
+                FeverRuntimeMultiplierCalculator.MaxCookingMultiplier == 8f,
+                "Final cooking multiplier cap must be 8.");
 
             string sinkSource = ReadProjectText("Assets/Scripts/Kitchen/SinkKitchenUtensil.cs");
             Require(!sinkSource.Contains("FeverRuntimeContext"), "Sink must not consume Fever Context.");
             Require(!sinkSource.Contains("FeverRuntimeMultiplierCalculator"), "Sink must not consume the Fever calculator.");
+            Require(!sinkSource.Contains("CookingRuntimeMultiplierCalculator"), "Sink must not consume cooking Runtime channels.");
             Require(!sinkSource.Contains("IsFeverStart"), "Sink must not consume Fever state.");
         }
 
@@ -2857,6 +2898,274 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(!skill09Source.Contains("AllStaffMovePercent"), "Skill09 must not consume Skill10.");
             Require(!skill10Source.Contains("NormalCustomerMovePercent"), "Skill10 must not consume Skill08.");
             Require(!skill10Source.Contains("GlobalCookingSpeedPercent"), "Skill10 must not consume Skill09.");
+        }
+
+        private static void ValidateCookingPercentHelper()
+        {
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(0f), "Equipment 0 percent must produce 1.0.");
+            RequireNear(1.1f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(10f), "Equipment 10 percent must produce 1.1.");
+            RequireNear(1.35f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(35f), "Equipment 35 percent must produce 1.35.");
+            RequireNear(1.7f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(70f), "Equipment 70 percent must produce 1.7.");
+            RequireNear(2.45f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(145f), "Equipment 145 percent must produce 2.45.");
+            RequireNear(11f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(1000f), "Equipment 1000 percent must produce 11.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(-1f), "Negative equipment percent must be neutral.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(1000.01f), "Equipment percent above the policy maximum must be neutral.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(float.NaN), "NaN equipment percent must be neutral.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(float.PositiveInfinity), "Positive infinite equipment percent must be neutral.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(float.NegativeInfinity), "Negative infinite equipment percent must be neutral.");
+
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(false, true, 50f), "Chef passive must require an assigned Staff.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, false, 50f), "Chef passive must require active Burner work.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, true, 0f), "Chef passive 0 percent must produce 1.0.");
+            RequireNear(1.5f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, true, 50f), "Chef passive 50 percent must produce 1.5.");
+            RequireNear(1.7f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, true, 70f), "Chef passive 70 percent must produce 1.7.");
+            RequireNear(2f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, true, 100f), "Chef passive 100 percent must produce 2.0.");
+            RequireNear(3f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, true, 200f), "Chef passive 200 percent must produce 3.0.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, true, -1f), "Negative Chef passive percent must be neutral.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, true, 1000.01f), "Chef passive percent above the policy maximum must be neutral.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, true, float.NaN), "NaN Chef passive percent must be neutral.");
+            RequireNear(1f, CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(true, true, float.PositiveInfinity), "Infinite Chef passive percent must be neutral.");
+
+            Type calculatorType = typeof(CookingRuntimeMultiplierCalculator);
+            Require(calculatorType.IsAbstract && calculatorType.IsSealed, "Cooking Runtime multiplier calculator must be static.");
+            FieldInfo maximumField = calculatorType.GetField(
+                "MaximumCookingBonusPercent",
+                BindingFlags.Static | BindingFlags.Public);
+            Require(maximumField != null && maximumField.IsLiteral, "Cooking percent maximum must be a public constant.");
+            RequireNear(
+                1000f,
+                (float)maximumField.GetRawConstantValue(),
+                "Cooking percent maximum is incorrect.");
+
+            foreach (FieldInfo field in calculatorType.GetFields(
+                         BindingFlags.Static
+                         | BindingFlags.Instance
+                         | BindingFlags.Public
+                         | BindingFlags.NonPublic
+                         | BindingFlags.DeclaredOnly))
+            {
+                Require(field.IsLiteral, "Cooking Runtime calculator must not contain a Runtime field: " + field.Name);
+                Require(
+                    !typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType),
+                    "Cooking Runtime calculator must not reference a Unity Object: " + field.Name);
+                Require(
+                    !IsMutableCollectionType(field.FieldType),
+                    "Cooking Runtime calculator must not contain a mutable collection: " + field.Name);
+            }
+
+            foreach (MethodInfo method in calculatorType.GetMethods(
+                         BindingFlags.Static
+                         | BindingFlags.Public
+                         | BindingFlags.NonPublic
+                         | BindingFlags.DeclaredOnly))
+            {
+                Require(
+                    !typeof(UnityEngine.Object).IsAssignableFrom(method.ReturnType),
+                    "Cooking Runtime calculator must not return a Unity Object: " + method.Name);
+                foreach (ParameterInfo parameter in method.GetParameters())
+                {
+                    Require(
+                        !typeof(UnityEngine.Object).IsAssignableFrom(parameter.ParameterType),
+                        "Cooking Runtime calculator must not accept a Unity Object: " + method.Name);
+                }
+            }
+
+            string source = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Kitchen/CookingRuntimeMultiplierCalculator.cs"));
+            Require(
+                CountOccurrences(source, "COOKING_RUNTIME_POLICY_2026_08_21_V1") == 1,
+                "Cooking Runtime policy marker must exist exactly once.");
+            Require(!source.Contains("using UnityEngine"), "Cooking Runtime calculator must not depend on UnityEngine.");
+            Require(!source.Contains("Mathf"), "Cooking Runtime calculator must not use Mathf.");
+            Require(!source.Contains("GameManager"), "Cooking Runtime calculator must not depend on GameManager.");
+            Require(!source.Contains("List<"), "Cooking Runtime calculator must not contain a List.");
+            Require(!source.Contains("Dictionary<"), "Cooking Runtime calculator must not contain a Dictionary.");
+            Require(!source.Contains("System.Linq"), "Cooking Runtime calculator must not use LINQ.");
+            Require(source.Contains("double multiplier"), "Cooking percent multiplication must use double precision.");
+        }
+
+        private static void ValidateBurnerLocalEquipmentStructure()
+        {
+            ValidateReadOnlyProperty(
+                typeof(BurnerKitchenUtensil),
+                "EquipmentCookingBonusPercent",
+                typeof(float));
+
+            string burnerSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Kitchen/BurnerKitchenUtensil.cs"));
+            string propertySource = ExtractSourceSection(
+                burnerSource,
+                "public float EquipmentCookingBonusPercent",
+                "public override void Init(ERestaurantFloorType floor)");
+            Require(propertySource.Contains("_data == null"), "Burner equipment percent must be neutral without equipment data.");
+            Require(
+                propertySource.Contains("_data.EquipEffectType != EquipEffectType.AddCookSpeed"),
+                "Burner equipment percent must accept only AddCookSpeed data.");
+            Require(propertySource.Contains("return _data.EffectValue;"), "Burner equipment property must expose the raw percent.");
+            Require(!propertySource.Contains("Mathf"), "Burner equipment property must not clamp the raw percent.");
+            Require(!propertySource.Contains("UserInfo"), "Burner equipment property must not query equipped data globally.");
+
+            string kitchenSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Kitchen/KitchenUtensilGroup.cs"));
+            string updateSource = ExtractSourceSection(
+                kitchenSource,
+                "void Update()",
+                "public void EqueueFood(CookingData foodData)");
+            Require(
+                CountOccurrences(updateSource, "burnerData.KitchenUtensil") == 1,
+                "Cooking must resolve exactly one Burner from the current BurnerData.");
+            Require(
+                CountOccurrences(updateSource, "burner.EquipmentCookingBonusPercent") == 1,
+                "Cooking must read only the current Burner's equipment percent.");
+            Require(
+                updateSource.Contains("CalculateEquipmentCookingMultiplier("),
+                "Current Burner equipment percent must pass through the pure calculator.");
+            Require(!updateSource.Contains("UserInfo.GetEquipKitchenUtensil"), "Per-frame cooking must not query equipped data through UserInfo.");
+            Require(!updateSource.Contains("KitchenUtensilDataManager"), "Per-frame cooking must not search the equipment data manager.");
+            Require(!kitchenSource.Contains("_burnerKitchenUtensils"), "Parallel Burner index storage must be removed.");
+        }
+
+        private static void ValidateGlobalEquipmentAggregationRemoval()
+        {
+            string gameManagerSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Manager/GameManager.cs"));
+            string getterSource = ExtractSourceSection(
+                gameManagerSource,
+                "public float GetCookingSpeedMul(ERestaurantFloorType floor, FoodType type)",
+                "public float GetFoodPriceMul(ERestaurantFloorType floor, FoodType type)");
+            string equipmentSource = ExtractSourceSection(
+                gameManagerSource,
+                "private void OnEquipKitchenUtensilEffectCheck()",
+                "private void OnGiveRecipeCheck()");
+
+            Require(!getterSource.Contains("_addEquipKitchenUtensilCookSpeedMul"), "Shared-base cooking must not read the global equipment aggregate.");
+            Require(getterSource.Contains("_totalAddSpeedMul"), "Legacy shared-base cooking speed must remain.");
+            Require(getterSource.Contains("_addSetCookSpeedMul"), "Set cooking speed must remain.");
+            Require(getterSource.Contains("_addGachaItemAllCookingTimeMul"), "All-food Gacha cooking speed must remain.");
+            Require(getterSource.Contains("_addGachaItemFoodCookingTimeMulDic"), "Food-type Gacha cooking speed must remain.");
+
+            Require(
+                equipmentSource.Contains("_addEquipKitchenUtensilCookSpeedMul = 0;"),
+                "Legacy serialized equipment aggregate must reset to zero.");
+            Require(!equipmentSource.Contains("EquipEffectType.AddCookSpeed"), "Kitchen equipment effects must not aggregate AddCookSpeed globally.");
+            Require(!equipmentSource.Contains("cookSpeedMul"), "Kitchen equipment effects must not retain an AddCookSpeed accumulator.");
+            Require(equipmentSource.Contains("EquipEffectType.AddMaxTip"), "Kitchen equipment max-tip handling must remain.");
+            Require(equipmentSource.Contains("EquipEffectType.AddTipPerMinute"), "Kitchen equipment per-minute tip handling must remain.");
+            Require(equipmentSource.Contains("EquipEffectType.AddDishWashSpeedMul"), "Kitchen equipment dishwashing handling must remain.");
+            Require(
+                CountOccurrences(gameManagerSource, "_addEquipKitchenUtensilCookSpeedMul") == 2,
+                "Legacy equipment aggregate must have only its serialized declaration and zero reset.");
+            Require(
+                gameManagerSource.Contains("[SerializeField] private int _addEquipFurnitureCookSpeedMul;"),
+                "Furniture cooking field must remain unchanged.");
+            Require(
+                gameManagerSource.Contains("_addEquipFurnitureCookSpeedMul = cookSpeedMul;"),
+                "Furniture cooking aggregation must remain unchanged.");
+        }
+
+        private static void ValidateChefPassiveChannelsAndCap()
+        {
+            RequireNear(
+                1f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 1f, 1f, 1f, 1f, 1f, 1f),
+                "Neutral cooking channels must produce 1.0.");
+            RequireNear(
+                2f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 1f, 1f, 1f, 2f, 1f, 1f),
+                "Fever cooking must remain 2.0.");
+            RequireNear(
+                1.7f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1.7f, 1f, 1f, 1f, 1f, 1f, 1f),
+                "Local equipment 1.7 must remain independent.");
+            RequireNear(
+                1.5f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 1.5f, 1f, 1f, 1f, 1f, 1f),
+                "Chef passive 1.5 must remain independent.");
+            RequireNear(
+                2.55f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1.7f, 1.5f, 1f, 1f, 1f, 1f, 1f),
+                "Local equipment and Chef passive must multiply independently.");
+            RequireNear(
+                7.5f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 1f, 2.5f, 1.5f, 2f, 1f, 1f),
+                "Skill04, Skill09, and Fever must preserve 7.5.");
+            RequireNear(
+                8f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    1f, 1f, 1f, 2.5f, 1.5f, 2f, 2f, 1f),
+                "Cooking above the policy ceiling must clamp to 8.");
+            RequireNear(
+                8f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    4f, 2f, 3f, 2.5f, 1.5f, 2f, 2f, 1.1f),
+                "Extreme valid cooking channels must clamp to 8.");
+            RequireNear(
+                0f,
+                FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                    0f, 1f, 1f, 1f, 1f, 1f, 1f, 1f),
+                "A valid zero shared-base multiplier must remain zero.");
+            RequireNear(1f, FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(float.NaN, 1f, 1f, 1f, 1f, 1f, 1f, 1f), "NaN shared-base input must be neutral.");
+            RequireNear(1f, FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(1f, float.PositiveInfinity, 1f, 1f, 1f, 1f, 1f, 1f), "Infinite equipment input must be neutral.");
+            RequireNear(1f, FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(1f, 1f, float.NegativeInfinity, 1f, 1f, 1f, 1f, 1f), "Infinite Chef passive input must be neutral.");
+            RequireNear(1f, FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(1f, 1f, 1f, -1f, 1f, 1f, 1f, 1f), "Negative Skill04 input must be neutral.");
+            RequireNear(1f, FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(1f, 1f, 1f, 1f, float.NaN, 1f, 1f, 1f), "NaN Skill09 input must be neutral.");
+            RequireNear(1f, FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(1f, 1f, 1f, 1f, 1f, float.PositiveInfinity, 1f, 1f), "Infinite Fever input must be neutral.");
+            RequireNear(1f, FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(1f, 1f, 1f, 1f, 1f, 1f, -1f, 1f), "Negative touch input must be neutral.");
+            RequireNear(1f, FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(1f, 1f, 1f, 1f, 1f, 1f, 1f, float.NaN), "NaN same-food input must be neutral.");
+
+            string kitchenSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Kitchen/KitchenUtensilGroup.cs"));
+            string updateSource = ExtractSourceSection(
+                kitchenSource,
+                "void Update()",
+                "public void EqueueFood(CookingData foodData)");
+            string finalCallSource = ExtractSourceSection(
+                updateSource,
+                "float finalCookingMultiplier =",
+                "float subTime = Time.deltaTime * finalCookingMultiplier;");
+            string[] orderedChannels =
+            {
+                "sharedBaseCookingMultiplier",
+                "localEquipmentCookingMultiplier",
+                "chefPassiveCookingMultiplier",
+                "assignedCookingSkillMultiplier",
+                "globalCookingSkillMultiplier",
+                "feverCookingMultiplier",
+                "burnerTouchMultiplier",
+                "sameFoodTypeMultiplier"
+            };
+            int previousIndex = -1;
+            foreach (string channel in orderedChannels)
+            {
+                int channelIndex = finalCallSource.IndexOf(channel, StringComparison.Ordinal);
+                Require(channelIndex > previousIndex, "Final cooking channel order is incorrect at " + channel + ".");
+                Require(CountOccurrences(finalCallSource, channel) == 1, "Final cooking channel must appear once: " + channel + ".");
+                previousIndex = channelIndex;
+            }
+
+            Require(updateSource.Contains("assignedStaff != null"), "Chef passive must require an assigned Staff.");
+            Require(updateSource.Contains("burner != null && burner.IsStaffWorking"), "Chef passive must require actual Burner work.");
+            Require(!updateSource.Contains("assignedStaff.SpeedMul"), "Chef passive cooking must not use Staff.SpeedMul.");
+            Require(!updateSource.Contains("PersonalMoveBonusPercent"), "Skill01 must not affect cooking.");
+            Require(!updateSource.Contains("AllStaffMovePercent"), "Skill10 must not affect cooking.");
+            Require(updateSource.Contains("AssignedCookingBonusPercent"), "Skill04 assigned cooking must remain.");
+            Require(updateSource.Contains("GlobalCookingSpeedPercent"), "Skill09 global cooking must remain.");
+            Require(updateSource.Contains("FeverRuntimeContext.CookingMultiplier"), "Fever cooking must remain.");
+            Require(updateSource.Contains("burner.CookSpeedMul"), "Burner touch cooking must remain.");
+            Require(updateSource.Contains("sameFoodTypeMultiplier = 1.1f;"), "Same-food cooking must remain.");
+            Require(FeverRuntimeMultiplierCalculator.MaxCookingMultiplier == 8f, "Final cooking cap must be 8.");
+
+            string sinkSource = ReadProjectText("Assets/Scripts/Kitchen/SinkKitchenUtensil.cs");
+            Require(!sinkSource.Contains("CookingRuntimeMultiplierCalculator"), "Sink must not consume local cooking channels.");
+            Require(!sinkSource.Contains("AssignedCookingBonusPercent"), "Sink must not consume Skill04.");
+            Require(!sinkSource.Contains("GlobalCookingSpeedPercent"), "Sink must not consume Skill09.");
+            Require(!sinkSource.Contains("FeverRuntimeContext"), "Sink must not consume Fever.");
         }
 
         private static void ValidateFeverMultipliers(
@@ -3104,7 +3413,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("63. 오류 수: " + _errors.Count);
+                _output.AppendLine("67. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -3112,7 +3421,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "64. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "68. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)

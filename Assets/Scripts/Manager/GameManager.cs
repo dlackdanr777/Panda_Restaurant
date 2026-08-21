@@ -402,7 +402,7 @@ public class GameManager : MonoBehaviour
 
     public float GetCookingSpeedMul(ERestaurantFloorType floor, FoodType type)
     {
-        float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
+        float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f);
         cookSpeedMul += (_addGachaItemAllCookingTimeMul * 0.01f) + _addGachaItemFoodCookingTimeMulDic[type] * 0.01f;
         return cookSpeedMul;
     }
@@ -643,7 +643,6 @@ public class GameManager : MonoBehaviour
         _addEquipKitchenUtensilCookSpeedMul = 0;
         _addEquipKitchenUtensilTipPerMinute = 0;
         int maxTipVolume = 0;
-        int cookSpeedMul = 0;
         int tipPerMinute = 0;
 
         for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
@@ -658,9 +657,6 @@ public class GameManager : MonoBehaviour
                 if (data.EquipEffectType == EquipEffectType.AddMaxTip)
                     maxTipVolume += (int)data.EffectValue;
 
-                else if (data.EquipEffectType == EquipEffectType.AddCookSpeed)
-                    cookSpeedMul += (int)data.EffectValue;
-
                 else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
                     tipPerMinute += (int)data.EffectValue;
 
@@ -670,7 +666,6 @@ public class GameManager : MonoBehaviour
         }
       
         _addEquipKitchenUtensilTipVolume = maxTipVolume;
-        _addEquipKitchenUtensilCookSpeedMul = cookSpeedMul;
         _addEquipKitchenUtensilTipPerMinute = tipPerMinute;
         OnChangeTipPerMinuteHandler?.Invoke();
     }
