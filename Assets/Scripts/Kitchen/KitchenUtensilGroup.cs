@@ -232,10 +232,15 @@ public class KitchenUtensilGroup: MonoBehaviour
                         feverCookingMultiplier,
                         burnerTouchMultiplier,
                         sameFoodTypeMultiplier);
-                float subTime = Time.deltaTime * finalCookingMultiplier;
-                
-                _burnerDatas[i].Time -= subTime;
-                _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookTime));
+                float deltaSeconds = Time.deltaTime;
+                burnerData.Time = CookingRuntimePolicyCalculator.CalculateNextRemainingTime(
+                    burnerData.CookingData.CookTime,
+                    burnerData.Time,
+                    burnerData.RealElapsedCookingSeconds,
+                    deltaSeconds,
+                    finalCookingMultiplier);
+                burnerData.AdvanceCookingClock(deltaSeconds);
+                _burnerTimers[i].SetFillAmount(1 - (burnerData.Time / burnerData.CookingData.CookTime));
             }
         }
     }
@@ -264,6 +269,7 @@ public class KitchenUtensilGroup: MonoBehaviour
         CookingData cookingData = _cookingQueue.Dequeue();
         _burnerDatas[burnerIndex].CookingData = cookingData;
         _burnerDatas[burnerIndex].Time = cookingData.CookTime;
+        _burnerDatas[burnerIndex].ResetCookingClock();
         _burnerTimers[burnerIndex].SetActive(true);
         _smokeAnimations[burnerIndex].gameObject.SetActive(true);
         _burnerTimers[burnerIndex].SetFillAmount(0);
@@ -350,6 +356,7 @@ public class KitchenUtensilGroup: MonoBehaviour
     private void ResetBurnerData(int index)
     {
         _burnerDatas[index].Time = 0;
+        _burnerDatas[index].ResetCookingClock();
         _burnerDatas[index].CookingData.SetDefault();
         _burnerTimers[index].SetFillAmount(0);
         _burnerTimers[index].SetActive(false);

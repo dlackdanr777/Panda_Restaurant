@@ -6,6 +6,24 @@ public class KitchenBurnerData
     public CookingData CookingData;
     public bool IsUsable;
 
+    private float _realElapsedCookingSeconds;
+    public float RealElapsedCookingSeconds => _realElapsedCookingSeconds;
+    public void ResetCookingClock() => _realElapsedCookingSeconds = 0f;
+    public void AdvanceCookingClock(float deltaSeconds)
+    {
+        if (float.IsNaN(deltaSeconds)
+            || float.IsInfinity(deltaSeconds)
+            || deltaSeconds < 0f)
+        {
+            return;
+        }
+
+        double nextElapsed = (double)_realElapsedCookingSeconds + deltaSeconds;
+        _realElapsedCookingSeconds = nextElapsed >= float.MaxValue
+            ? float.MaxValue
+            : (float)nextElapsed;
+    }
+
     private float _addCookSpeedMul = 0;
     public float AddCookSpeedMul => _addCookSpeedMul;
     public void SetAddCookSpeedMul(float value) => _addCookSpeedMul = Mathf.Max(value, 0);

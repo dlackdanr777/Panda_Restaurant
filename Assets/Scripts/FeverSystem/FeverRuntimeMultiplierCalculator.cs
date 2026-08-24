@@ -4,9 +4,11 @@ public static class FeverRuntimeMultiplierCalculator
 {
     // FEVER_POLICY_2026_08_19_V2
     // COOKING_RUNTIME_POLICY_2026_08_21_V1
+    // COOKING_RUNTIME_CAP_POLICY_2026_08_24_V1
     public const float MaxNormalCustomerMoveMultiplier = 3f;
     public const float MaxStaffMoveMultiplier = 3f;
-    public const float MaxCookingMultiplier = 8f;
+    public const float MaxCookingMultiplier =
+        CookingRuntimePolicyCalculator.MaximumCookingMultiplier;
 
     public static float CalculateNormalCustomerMoveMultiplier(
         float existingMultiplier,
@@ -90,16 +92,23 @@ public static class FeverRuntimeMultiplierCalculator
             return 1f;
         }
 
-        double result =
+        double rawAutomaticMultiplier =
             (double)sharedBaseCookingMultiplier
             * localEquipmentCookingMultiplier
             * chefPassiveCookingMultiplier
             * assignedCookingSkillMultiplier
             * globalCookingSkillMultiplier
             * feverMultiplier
-            * burnerTouchMultiplier
             * sameFoodTypeMultiplier;
-        return ClampProduct(result, 0f, MaxCookingMultiplier);
+        float finiteRawAutomaticMultiplier = rawAutomaticMultiplier >= float.MaxValue
+            ? float.MaxValue
+            : (float)rawAutomaticMultiplier;
+        float softCappedAutomaticMultiplier =
+            CookingRuntimePolicyCalculator.ApplyAutomaticSoftCap(
+                finiteRawAutomaticMultiplier);
+        return CookingRuntimePolicyCalculator.ApplyTouchAndHardCap(
+            softCappedAutomaticMultiplier,
+            burnerTouchMultiplier);
     }
 
     private static bool IsFiniteNonNegative(float value)

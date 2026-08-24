@@ -76,7 +76,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(55, "Fever 음식가격 Context 경계", ValidateFeverFoodPriceBoundary);
             report.Run(56, "일반 손님 이동 채널", ValidateNormalCustomerMoveChannel);
             report.Run(57, "Staff 이동·역할 행동 채널", ValidateStaffMoveAndRoleActionChannels);
-            report.Run(58, "조리 채널·최종 상한", ValidateCookingChannelAndCap);
+            report.Run(58, "조리 채널·Soft/Hard Cap", ValidateCookingChannelAndCap);
             report.Run(59, "Skill08 Registry·Class", ValidateSkill08RegistryAndClass);
             report.Run(60, "Skill09 Registry·Class", ValidateSkill09RegistryAndClass);
             report.Run(61, "Skill10 Registry·Class", ValidateSkill10RegistryAndClass);
@@ -84,7 +84,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(63, "Cooking Percent Helper", ValidateCookingPercentHelper);
             report.Run(64, "Burner Local Equipment", ValidateBurnerLocalEquipmentStructure);
             report.Run(65, "Global Equipment Aggregation Removal", ValidateGlobalEquipmentAggregationRemoval);
-            report.Run(66, "Chef Passive Channels and 8x Cap", ValidateChefPassiveChannelsAndCap);
+            report.Run(66, "Chef Passive Channels and Cooking Cap", ValidateChefPassiveChannelsAndCap);
+            report.Run(67, "조리 Soft Cap 정책", ValidateCookingSoftCapPolicy);
+            report.Run(68, "최소 실제 조리시간 1초", ValidateMinimumCookDurationPolicy);
             report.Print();
         }
 
@@ -2358,15 +2360,15 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     1f, 1f, 1f, 3.5f, 1f, 2f, 1f, 1f),
                 "Skill04 3.5 and Fever 2.0 must remain 7.0 below the cooking cap.");
             RequireNear(
-                8f,
+                10.5f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
                     1f, 1f, 1f, 3.5f, 1.5f, 2f, 1f, 1f),
-                "Skill04, Skill09, and Fever 10.5 must clamp to the final cooking cap of 8.");
+                "Skill04, Skill09, and Fever must preserve 10.5 below the automatic soft cap.");
             RequireNear(
-                8f,
+                58.905f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
                     1f, 1.7f, 1.5f, 3.5f, 1.5f, 2f, 2f, 1.1f),
-                "Additional equipment, Chef, Burner, and same-food channels must not exceed the cooking cap of 8.");
+                "Touch must apply after the automatic cooking channels and soft cap.");
             RequireNear(
                 0f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
@@ -2649,10 +2651,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     1f, 1f, 1f, 3.5f, 1f, 1f, 1f, 1f),
                 "Official Skill04 assigned cooking must produce 3.5.");
             RequireNear(
-                8f,
+                10.5f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
                     1f, 1f, 1f, 3.5f, 1.5f, 2f, 1f, 1f),
-                "Official Skill04, Skill09, and Fever cooking must clamp to 8.");
+                "Official Skill04, Skill09, and Fever cooking must preserve 10.5.");
 
             string kitchenSource = NormalizeSourceLineEndings(
                 ReadProjectText("Assets/Scripts/Kitchen/KitchenUtensilGroup.cs"));
@@ -2687,14 +2689,23 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(updateSource.Contains("burner != null && burner.IsStaffWorking"), "Chef passive and Skill04 must require active Burner work.");
             Require(updateSource.Contains("burner.CookSpeedMul"), "Burner touch multiplier must remain.");
             Require(updateSource.Contains("sameFoodTypeMultiplier = 1.1f;"), "Same-food 1.1 multiplier must remain.");
-            Require(updateSource.Contains("Time.deltaTime * finalCookingMultiplier"), "Cooking must apply the final multiplier to delta time.");
+            Require(
+                updateSource.Contains("CookingRuntimePolicyCalculator.CalculateNextRemainingTime("),
+                "Cooking must use the minimum-duration remaining-time policy.");
+            Require(updateSource.Contains("float deltaSeconds = Time.deltaTime;"), "Cooking must capture frame delta time once.");
+            Require(updateSource.Contains("burnerData.AdvanceCookingClock(deltaSeconds);"), "Cooking must advance the real cooking clock.");
+            Require(!updateSource.Contains("Time -="), "Cooking must not directly subtract multiplied delta time.");
             Require(!updateSource.Contains("assignedStaff.SpeedMul"), "Chef passive cooking must not consume Staff movement speed.");
             Require(!kitchenSource.Contains("_burnerKitchenUtensils"), "Cooking must not rely on a parallel Burner index list.");
             Require(!updateSource.Contains("PersonalMoveBonusPercent"), "Cooking must not consume Skill01 personal movement.");
             Require(!updateSource.Contains("AllStaffMovePercent"), "Cooking must not consume Skill10 Staff movement.");
             Require(
-                FeverRuntimeMultiplierCalculator.MaxCookingMultiplier == 8f,
-                "Final cooking multiplier cap must be 8.");
+                FeverRuntimeMultiplierCalculator.MaxCookingMultiplier
+                == CookingRuntimePolicyCalculator.MaximumCookingMultiplier,
+                "Final cooking multiplier cap must use the cooking Runtime policy.");
+            Require(
+                CookingRuntimePolicyCalculator.MaximumCookingMultiplier == 96f,
+                "Final cooking multiplier cap must be 96.");
 
             string sinkSource = ReadProjectText("Assets/Scripts/Kitchen/SinkKitchenUtensil.cs");
             Require(!sinkSource.Contains("FeverRuntimeContext"), "Sink must not consume Fever Context.");
@@ -3135,15 +3146,15 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     1f, 1f, 1f, 2.5f, 1.5f, 2f, 1f, 1f),
                 "Skill04, Skill09, and Fever must preserve 7.5.");
             RequireNear(
-                8f,
+                15f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
                     1f, 1f, 1f, 2.5f, 1.5f, 2f, 2f, 1f),
-                "Cooking above the policy ceiling must clamp to 8.");
+                "Touch must apply after the 7.5 automatic multiplier.");
             RequireNear(
-                8f,
+                96f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
                     4f, 2f, 3f, 2.5f, 1.5f, 2f, 2f, 1.1f),
-                "Extreme valid cooking channels must clamp to 8.");
+                "Extreme valid cooking channels must clamp to 96.");
             RequireNear(
                 0f,
                 FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
@@ -3167,7 +3178,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             string finalCallSource = ExtractSourceSection(
                 updateSource,
                 "float finalCookingMultiplier =",
-                "float subTime = Time.deltaTime * finalCookingMultiplier;");
+                "float deltaSeconds = Time.deltaTime;");
             string[] orderedChannels =
             {
                 "sharedBaseCookingMultiplier",
@@ -3198,13 +3209,138 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(updateSource.Contains("FeverRuntimeContext.CookingMultiplier"), "Fever cooking must remain.");
             Require(updateSource.Contains("burner.CookSpeedMul"), "Burner touch cooking must remain.");
             Require(updateSource.Contains("sameFoodTypeMultiplier = 1.1f;"), "Same-food cooking must remain.");
-            Require(FeverRuntimeMultiplierCalculator.MaxCookingMultiplier == 8f, "Final cooking cap must be 8.");
+            Require(
+                FeverRuntimeMultiplierCalculator.MaxCookingMultiplier == 96f,
+                "Final cooking cap must be 96.");
 
             string sinkSource = ReadProjectText("Assets/Scripts/Kitchen/SinkKitchenUtensil.cs");
             Require(!sinkSource.Contains("CookingRuntimeMultiplierCalculator"), "Sink must not consume local cooking channels.");
             Require(!sinkSource.Contains("AssignedCookingBonusPercent"), "Sink must not consume Skill04.");
             Require(!sinkSource.Contains("GlobalCookingSpeedPercent"), "Sink must not consume Skill09.");
             Require(!sinkSource.Contains("FeverRuntimeContext"), "Sink must not consume Fever.");
+        }
+
+        private static void ValidateCookingSoftCapPolicy()
+        {
+            Require(
+                CookingRuntimePolicyCalculator.PolicyMarker
+                == "COOKING_RUNTIME_CAP_POLICY_2026_08_24_V1",
+                "Cooking Runtime policy marker changed.");
+            RequireNear(48f, CookingRuntimePolicyCalculator.AutomaticSoftCapStart, "Automatic soft-cap start must be 48.");
+            RequireNear(0.25f, CookingRuntimePolicyCalculator.AutomaticExcessRetention, "Automatic excess retention must be 0.25.");
+            RequireNear(96f, CookingRuntimePolicyCalculator.MaximumCookingMultiplier, "Maximum cooking multiplier must be 96.");
+            RequireNear(30f, CookingRuntimePolicyCalculator.ApplyAutomaticSoftCap(30f), "Automatic 30 must remain 30.");
+            RequireNear(48f, CookingRuntimePolicyCalculator.ApplyAutomaticSoftCap(48f), "Automatic 48 must remain 48.");
+            RequireNear(52f, CookingRuntimePolicyCalculator.ApplyAutomaticSoftCap(64f), "Automatic 64 must soft-cap to 52.");
+            RequireNear(56f, CookingRuntimePolicyCalculator.ApplyAutomaticSoftCap(80f), "Automatic 80 must soft-cap to 56.");
+            RequireNear(61f, CookingRuntimePolicyCalculator.ApplyAutomaticSoftCap(100f), "Automatic 100 must soft-cap to 61.");
+            RequireNear(96f, CookingRuntimePolicyCalculator.ApplyTouchAndHardCap(48f, 2f), "Touch must raise automatic 48 to 96.");
+            RequireNear(96f, CookingRuntimePolicyCalculator.ApplyTouchAndHardCap(52f, 2f), "Touch after soft-cap 52 must hard-cap to 96.");
+            RequireNear(1f, CookingRuntimePolicyCalculator.ApplyAutomaticSoftCap(-1f), "Negative automatic input must be neutral.");
+            RequireNear(1f, CookingRuntimePolicyCalculator.ApplyAutomaticSoftCap(float.NaN), "NaN automatic input must be neutral.");
+            RequireNear(1f, CookingRuntimePolicyCalculator.ApplyAutomaticSoftCap(float.PositiveInfinity), "Infinite automatic input must be neutral.");
+            RequireNear(1f, CookingRuntimePolicyCalculator.ApplyTouchAndHardCap(48f, -1f), "Negative touch input must be neutral.");
+            RequireNear(1f, CookingRuntimePolicyCalculator.ApplyTouchAndHardCap(float.NaN, 2f), "NaN soft-capped input must be neutral.");
+
+            Type policyType = typeof(CookingRuntimePolicyCalculator);
+            Require(policyType.IsAbstract && policyType.IsSealed, "Cooking Runtime policy calculator must be static.");
+            foreach (FieldInfo field in policyType.GetFields(
+                         BindingFlags.Static
+                         | BindingFlags.Instance
+                         | BindingFlags.Public
+                         | BindingFlags.NonPublic
+                         | BindingFlags.DeclaredOnly))
+            {
+                Require(field.IsLiteral, "Cooking Runtime policy calculator must contain constants only: " + field.Name);
+                Require(
+                    !typeof(UnityEngine.Object).IsAssignableFrom(field.FieldType),
+                    "Cooking Runtime policy calculator must not reference a Unity Object: " + field.Name);
+                Require(
+                    !IsMutableCollectionType(field.FieldType),
+                    "Cooking Runtime policy calculator must not contain a mutable collection: " + field.Name);
+            }
+
+            string source = ReadProjectText(
+                "Assets/Scripts/Kitchen/CookingRuntimePolicyCalculator.cs");
+            Require(!source.Contains("using UnityEngine;"), "Cooking Runtime policy calculator must not depend on UnityEngine.");
+            Require(source.Contains("double rawAutomaticMultiplier") == false, "Policy calculator must not duplicate the channel product.");
+            Require(source.Contains("double softCapped"), "Automatic soft-cap calculation must use double precision.");
+            Require(source.Contains("double finalMultiplier"), "Touch and hard-cap calculation must use double precision.");
+        }
+
+        private static void ValidateMinimumCookDurationPolicy()
+        {
+            RequireNear(1f, CookingRuntimePolicyCalculator.MinimumCookDurationSeconds, "Minimum cooking duration must be one second.");
+            RequireNear(6f, CookingRuntimePolicyCalculator.CalculateMinimumRemainingTime(8f, 0.25f), "Eight-second food must retain six seconds at 0.25 real seconds.");
+            RequireNear(4f, CookingRuntimePolicyCalculator.CalculateMinimumRemainingTime(8f, 0.5f), "Eight-second food must retain four seconds at 0.5 real seconds.");
+            RequireNear(0.8f, CookingRuntimePolicyCalculator.CalculateMinimumRemainingTime(8f, 0.9f), "Eight-second food must retain 0.8 seconds at 0.9 real seconds.");
+            RequireNear(0f, CookingRuntimePolicyCalculator.CalculateMinimumRemainingTime(8f, 1f), "Eight-second food may complete at one real second.");
+            RequireNear(6f, CookingRuntimePolicyCalculator.CalculateNextRemainingTime(8f, 8f, 0f, 0.25f, 96f), "The first 0.25-second frame must retain six seconds.");
+            RequireNear(4f, CookingRuntimePolicyCalculator.CalculateNextRemainingTime(8f, 6f, 0.25f, 0.25f, 96f), "The first 0.5 seconds must retain four seconds.");
+            RequireNear(0.8f, CookingRuntimePolicyCalculator.CalculateNextRemainingTime(8f, 4f, 0.5f, 0.4f, 96f), "The first 0.9 seconds must retain 0.8 seconds.");
+            RequireNear(0f, CookingRuntimePolicyCalculator.CalculateNextRemainingTime(8f, 0.8f, 0.9f, 0.1f, 96f), "Cooking may complete at one real second.");
+            RequireNear(7.75f, CookingRuntimePolicyCalculator.CalculateNextRemainingTime(8f, 8f, 0f, 0.25f, 1f), "Low multipliers must preserve normal continuous progress.");
+
+            float steppedRemaining = 8f;
+            float steppedElapsed = 0f;
+            for (int index = 0; index < 10; index++)
+            {
+                steppedRemaining = CookingRuntimePolicyCalculator.CalculateNextRemainingTime(
+                    8f,
+                    steppedRemaining,
+                    steppedElapsed,
+                    0.1f,
+                    96f);
+                steppedElapsed += 0.1f;
+            }
+
+            float singleFrameRemaining =
+                CookingRuntimePolicyCalculator.CalculateNextRemainingTime(
+                    8f,
+                    8f,
+                    0f,
+                    1f,
+                    96f);
+            RequireNear(singleFrameRemaining, steppedRemaining, "Minimum-duration accumulation must be deterministic across frames.");
+            RequireNear(0f, CookingRuntimePolicyCalculator.CalculateNextRemainingTime(0f, 1f, 0f, 0.1f, 1f), "Non-positive initial cooking time must safely return zero.");
+            RequireNear(8f, CookingRuntimePolicyCalculator.CalculateNextRemainingTime(8f, 8f, 0f, -1f, 1f), "Negative delta time must preserve the current value.");
+            RequireNear(8f, CookingRuntimePolicyCalculator.CalculateNextRemainingTime(8f, 8f, 0f, 0.1f, float.NaN), "Invalid cooking multipliers must preserve the current value.");
+
+            string policySource = ReadProjectText(
+                "Assets/Scripts/Kitchen/CookingRuntimePolicyCalculator.cs");
+            string[] forbiddenRoundingApis =
+            {
+                "Math.Round(",
+                "MathF.Round(",
+                "Math.Ceiling(",
+                "MathF.Ceiling(",
+                "Math.Floor(",
+                "MathF.Floor("
+            };
+            foreach (string forbiddenApi in forbiddenRoundingApis)
+            {
+                Require(!policySource.Contains(forbiddenApi), "Internal cooking calculation must not round: " + forbiddenApi);
+            }
+
+            string burnerSource = ReadProjectText(
+                "Assets/Scripts/Kitchen/KitchenBurnerData.cs");
+            Require(burnerSource.Contains("private float _realElapsedCookingSeconds;"), "Burner must own a non-serialized real cooking clock.");
+            Require(burnerSource.Contains("public float RealElapsedCookingSeconds"), "Burner must expose its real cooking clock read-only.");
+            Require(burnerSource.Contains("ResetCookingClock()"), "Burner must expose clock reset.");
+            Require(burnerSource.Contains("AdvanceCookingClock(float deltaSeconds)"), "Burner must expose safe clock advancement.");
+            Require(!burnerSource.Contains("[SerializeField] private float _realElapsedCookingSeconds"), "Real cooking clock must not be serialized.");
+
+            string kitchenSource = NormalizeSourceLineEndings(
+                ReadProjectText("Assets/Scripts/Kitchen/KitchenUtensilGroup.cs"));
+            Require(
+                CountOccurrences(kitchenSource, ".ResetCookingClock();") == 2,
+                "Cooking clock must reset for new food and Burner reset.");
+            Require(
+                CountOccurrences(kitchenSource, ".AdvanceCookingClock(deltaSeconds);") == 1,
+                "Cooking clock must advance once per active cooking frame.");
+            Require(
+                CountOccurrences(kitchenSource, "CookingRuntimePolicyCalculator.CalculateNextRemainingTime(") == 1,
+                "Kitchen must calculate remaining time through the policy exactly once.");
         }
 
         private static void ValidateFeverMultipliers(
@@ -3452,7 +3588,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("67. 오류 수: " + _errors.Count);
+                _output.AppendLine("69. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -3460,7 +3596,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "68. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "70. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)
