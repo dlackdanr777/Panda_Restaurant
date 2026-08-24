@@ -75,7 +75,6 @@ public static class FeverRuntimeMultiplierCalculator
         float localEquipmentCookingMultiplier,
         float chefPassiveCookingMultiplier,
         float assignedCookingSkillMultiplier,
-        float globalCookingSkillMultiplier,
         float feverMultiplier,
         float burnerTouchMultiplier,
         float sameFoodTypeMultiplier)
@@ -84,7 +83,6 @@ public static class FeverRuntimeMultiplierCalculator
             || !IsFiniteNonNegative(localEquipmentCookingMultiplier)
             || !IsFiniteNonNegative(chefPassiveCookingMultiplier)
             || !IsFiniteNonNegative(assignedCookingSkillMultiplier)
-            || !IsFiniteNonNegative(globalCookingSkillMultiplier)
             || !IsFiniteNonNegative(feverMultiplier)
             || !IsFiniteNonNegative(burnerTouchMultiplier)
             || !IsFiniteNonNegative(sameFoodTypeMultiplier))
@@ -97,7 +95,6 @@ public static class FeverRuntimeMultiplierCalculator
             * localEquipmentCookingMultiplier
             * chefPassiveCookingMultiplier
             * assignedCookingSkillMultiplier
-            * globalCookingSkillMultiplier
             * feverMultiplier
             * sameFoodTypeMultiplier;
         float finiteRawAutomaticMultiplier = rawAutomaticMultiplier >= float.MaxValue

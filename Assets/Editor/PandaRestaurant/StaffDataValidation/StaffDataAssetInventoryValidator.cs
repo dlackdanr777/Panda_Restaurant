@@ -32,6 +32,23 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             "e0e2c583b78c98449a5c47e6abfa0ed7";
         private const string GlobalCookingScriptPath =
             "Assets/Scripts/Staff/StaffSkill/GlobalCookingSpeedUpSkill.cs";
+        private const string GlobalRemainingCookingScriptPath =
+            "Assets/Scripts/Staff/StaffSkill/GlobalRemainingCookingTimeReductionSkill.cs";
+        private const string Skill09ActivePath =
+            "Assets/Scripts/Datas/Staff/Skill/STAFF27Skill.asset";
+        private const string Skill09LegacyGlobalPath =
+            "Assets/Scripts/Datas/Staff/LegacySkill/STAFF27GlobalCookingSpeedUpSkill.asset";
+        private const string Skill09LegacySpeedPath =
+            "Assets/Scripts/Datas/Staff/LegacySkill/STAFF27Skill.asset";
+        private const string Skill09LegacyGlobalGuid =
+            "f7650976be31bb0458d7625e3a531527";
+        private const string Skill09LegacySpeedGuid =
+            "4803555ba0e7f7f46af709248b6ac2be";
+        private const string Skill09LegacySpeedAssetSha256 =
+            "bf3d91b6f1b78bedad789b7a3131798356522b7a619f8824194e9ba46795aae6";
+        private const string Skill09LegacySpeedMetaSha256 =
+            "62aa0dfe48bcf573136c6677ac4aacde1bff1282d8eee306259a8957a96766f5";
+        private const int ExpectedComparisonFileCount = 164;
         private const string AllStaffMoveScriptGuid =
             "8c58ec39a18e0964595b700ba01914e9";
         private const string AllStaffMoveScriptPath =
@@ -57,7 +74,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 { "FoodPaymentTipUpSkill", 1 },
                 { "FoodPriceUpSkill", 6 },
                 { "NormalCustomerMoveSpeedUpSkill", 5 },
-                { "GlobalCookingSpeedUpSkill", 1 },
+                { "GlobalCookingSpeedUpSkill", 0 },
+                { "GlobalRemainingCookingTimeReductionSkill", 1 },
                 { "AllStaffMoveSpeedUpSkill", 0 }
             };
 
@@ -96,8 +114,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             new RemainingSkillMigrationTarget("STAFF08", "STAFF08Skill.asset", "STAFF08Skill", "6daef952310a94a41b88276b9cd1cef6", "SpeedUpSkill", 100, 13, 150, "NormalCustomerMoveSpeedUpSkill", NormalCustomerMoveScriptGuid, "손님 이동 속도 (100%) 증가", 100, 18, 150),
             new RemainingSkillMigrationTarget("STAFF10", "STAFF10Skill.asset", "STAFF10Skill", "95590518b98a27a4cacc1a699f5f9868", "SpeedUpSkill", 100, 18, 150, "NormalCustomerMoveSpeedUpSkill", NormalCustomerMoveScriptGuid, "손님 이동 속도 (100%) 증가", 100, 18, 150),
             new RemainingSkillMigrationTarget("STAFF15", "Staff15Skill.asset", "STAFF15Skill", "d417214c6d7368941984a20f5d509d44", "TouchAddCustomerButtonSkill", 0.5f, 20, 100, "NormalCustomerMoveSpeedUpSkill", NormalCustomerMoveScriptGuid, "손님 이동 속도 (100%) 증가", 100, 18, 150),
-            new RemainingSkillMigrationTarget("STAFF30", "Staff30Skill.asset", "Staff30Skill", "474e93abb1dd6db45baa9ab57be2cef1", "SpeedUpSkill", 100, 30, 80, "NormalCustomerMoveSpeedUpSkill", NormalCustomerMoveScriptGuid, "손님 이동 속도 (100%) 증가", 100, 20, 145),
-            new RemainingSkillMigrationTarget("STAFF27", "STAFF27Skill.asset", "STAFF27SKILL", "4803555ba0e7f7f46af709248b6ac2be", "SpeedUpSkill", 100, 60, 250, "GlobalCookingSpeedUpSkill", GlobalCookingScriptGuid, "전체 주방 음식 제작 속도 (50%) 증가", 50, 30, 200)
+            new RemainingSkillMigrationTarget("STAFF30", "Staff30Skill.asset", "Staff30Skill", "474e93abb1dd6db45baa9ab57be2cef1", "SpeedUpSkill", 100, 30, 80, "NormalCustomerMoveSpeedUpSkill", NormalCustomerMoveScriptGuid, "손님 이동 속도 (100%) 증가", 100, 20, 145)
         };
 
         private static readonly ChefPassiveTarget[] ChefPassiveTargets =
@@ -250,7 +267,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             AppendResult(output, 13, "Skill04 기존 직원·공식 효과·Legacy 보존", skill04MigrationPassed, details[13]);
             AppendResult(output, 14, "Skill06 기존 직원·Legacy 보존", skill06MigrationPassed, details[14]);
             AppendResult(output, 15, "Skill05 기존 직원·Legacy 보존", skill05MigrationPassed, details[15]);
-            AppendResult(output, 16, "Skill08·09 기존 직원·Legacy 보존", remainingSkillMigrationPassed, details[16]);
+            AppendResult(output, 16, "Skill08·09·10 기존 직원·Legacy 보존", remainingSkillMigrationPassed, details[16]);
             AppendResult(output, 17, "Chef 공식 패시브 V8", chefPassivePassed, details[17]);
             output.AppendLine("18. 오류 수: " + errors.Count);
             for (int index = 0; index < errors.Count; index++)
@@ -676,7 +693,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             details.Add("- Skill 에셋: " + snapshot.Skills.Count + "개");
             details.Add("- 공통 필드 누락: 0 (Inventory 생성 성공 기준)");
-            details.Add("- SpeedUp / Touch / AssignedCooking / FoodPayment / FoodPrice / NormalCustomer / GlobalCooking / AllStaff: "
+            details.Add("- SpeedUp / Touch / AssignedCooking / FoodPayment / FoodPrice / NormalCustomer / GlobalCooking / GlobalRemaining / AllStaff: "
                         + GetCount(classCounts, "SpeedUpSkill") + " / "
                         + GetCount(classCounts, "TouchAddCustomerButtonSkill") + " / "
                         + GetCount(classCounts, "AssignedCookingSpeedUpSkill") + " / "
@@ -684,6 +701,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                         + GetCount(classCounts, "FoodPriceUpSkill") + " / "
                         + GetCount(classCounts, "NormalCustomerMoveSpeedUpSkill") + " / "
                         + GetCount(classCounts, "GlobalCookingSpeedUpSkill") + " / "
+                        + GetCount(classCounts, "GlobalRemainingCookingTimeReductionSkill") + " / "
                         + GetCount(classCounts, "AllStaffMoveSpeedUpSkill"));
             details.Add("- Missing Script/Serialized Reference/비정상 시간: "
                         + missingScriptCount + "/" + missingSerializedReferenceCount
@@ -938,7 +956,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                && GetCount(classCounts, "FoodPaymentTipUpSkill") == 1
                                && GetCount(classCounts, "FoodPriceUpSkill") == 6
                                && GetCount(classCounts, "NormalCustomerMoveSpeedUpSkill") == 5
-                               && GetCount(classCounts, "GlobalCookingSpeedUpSkill") == 1
+                               && GetCount(classCounts, "GlobalCookingSpeedUpSkill") == 0
+                               && GetCount(classCounts, "GlobalRemainingCookingTimeReductionSkill") == 1
                                && GetCount(classCounts, "AllStaffMoveSpeedUpSkill") == 0
                                && classCounts.Count == 7
                                && shared == 0
@@ -1147,13 +1166,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                && GetCount(classCounts, "FoodPaymentTipUpSkill") == 1
                                && GetCount(classCounts, "FoodPriceUpSkill") == 6
                                && GetCount(classCounts, "NormalCustomerMoveSpeedUpSkill") == 5
-                               && GetCount(classCounts, "GlobalCookingSpeedUpSkill") == 1
+                               && GetCount(classCounts, "GlobalCookingSpeedUpSkill") == 0
+                               && GetCount(classCounts, "GlobalRemainingCookingTimeReductionSkill") == 1
                                && GetCount(classCounts, "AllStaffMoveSpeedUpSkill") == 0
                                && classCounts.Count == 7
                                && activePassed == 6
                                && skill05LegacyPassed == 6
                                && previousLegacyPassed == 5
-                               && legacyAssetCount == 17
+                               && legacyAssetCount == 18
                                && legacyActiveReferences == 0
                                && shared == 0
                                && orphan == 0;
@@ -1196,6 +1216,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             {
                 legacyGuids.Add(RemainingSkillMigrationTargets[index].LegacyGuid);
             }
+            legacyGuids.Add(Skill09LegacyGlobalGuid);
+            legacyGuids.Add(Skill09LegacySpeedGuid);
 
             for (int index = 0; index < RemainingSkillMigrationTargets.Length; index++)
             {
@@ -1281,6 +1303,157 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 }
             }
 
+            StaffDataAssetSnapshot skill09Staff;
+            StaffSkillAssetSnapshot skill09Active = null;
+            string globalRemainingScriptGuid =
+                AssetDatabase.AssetPathToGUID(GlobalRemainingCookingScriptPath);
+            bool skill09ActiveValid = snapshot.TryGetStaff("STAFF27", out skill09Staff)
+                                      && skill09Staff != null
+                                      && skill09Staff.SkillReference != null
+                                      && skill09Staff.SkillReference.IsAssigned
+                                      && !skill09Staff.SkillReference.IsMissing
+                                      && skill09Staff.SkillReference.AssetPath == Skill09ActivePath
+                                      && snapshot.TryGetSkill(
+                                          skill09Staff.SkillReference.AssetGuid,
+                                          out skill09Active)
+                                      && skill09Active != null
+                                      && skill09Active.ConcreteTypeName
+                                      == "GlobalRemainingCookingTimeReductionSkill"
+                                      && skill09Active.ScriptGuid == globalRemainingScriptGuid
+                                      && skill09Active.UnityObjectName == "STAFF27SKILL"
+                                      && skill09Active.Description
+                                      == "전체 주방 남은 음식 조리시간 50% 감소!"
+                                      && Approximately(skill09Active.Duration, 1)
+                                      && Approximately(skill09Active.Cooldown, 240)
+                                      && skill09Active.ReferenceCount == 1
+                                      && skill09Active.ReferencedStaffIds.Count == 1
+                                      && skill09Active.ReferencedStaffIds[0] == "STAFF27"
+                                      && IsUnityGuid(skill09Active.AssetGuid)
+                                      && !legacyGuids.Contains(skill09Active.AssetGuid)
+                                      && activeGuids.Add(skill09Active.AssetGuid);
+            List<string> skill09ActiveReferences = FindAssetReferences(
+                skill09Active == null ? string.Empty : skill09Active.AssetGuid,
+                Skill09ActivePath);
+            GlobalRemainingCookingTimeReductionSkill skill09ActiveAsset =
+                skill09ActiveValid
+                    ? AssetDatabase.LoadAssetAtPath<GlobalRemainingCookingTimeReductionSkill>(
+                        Skill09ActivePath)
+                    : null;
+            SerializedObject skill09ActiveSerialized = skill09ActiveAsset == null
+                ? null
+                : new SerializedObject(skill09ActiveAsset);
+            SerializedProperty skill09ActivePercent = skill09ActiveSerialized == null
+                ? null
+                : skill09ActiveSerialized.FindProperty(
+                    "_remainingCookingTimeReductionPercent");
+            skill09ActiveValid &= skill09ActiveReferences.Count == 1
+                                  && skill09ActiveReferences[0]
+                                  == "Assets/Resources/StaffData/STAFF27.asset"
+                                  && skill09ActiveAsset != null
+                                  && skill09ActivePercent != null
+                                  && Approximately(skill09ActivePercent.floatValue, 50)
+                                  && Approximately(skill09ActiveAsset.FirstValue, 50)
+                                  && !skill09Active.HasMissingScript
+                                  && !skill09Active.HasMissingSerializedReference;
+            if (skill09ActiveValid)
+            {
+                skill09Passed++;
+            }
+            else
+            {
+                errors.Add("Skill09 remaining-time Active Asset validation failed: STAFF27");
+                passed = false;
+            }
+
+            string skill09LegacyGlobalGuid =
+                AssetDatabase.AssetPathToGUID(Skill09LegacyGlobalPath);
+            GlobalCookingSpeedUpSkill skill09LegacyGlobal =
+                AssetDatabase.LoadAssetAtPath<GlobalCookingSpeedUpSkill>(
+                    Skill09LegacyGlobalPath);
+            SerializedObject skill09LegacyGlobalSerialized = skill09LegacyGlobal == null
+                ? null
+                : new SerializedObject(skill09LegacyGlobal);
+            SerializedProperty skill09LegacyGlobalPercent =
+                skill09LegacyGlobalSerialized == null
+                    ? null
+                    : skill09LegacyGlobalSerialized.FindProperty(
+                        "_globalCookingSpeedUpPercent");
+            string skill09LegacyGlobalAssetSha = string.Empty;
+            string skill09LegacyGlobalMetaSha = string.Empty;
+            bool skill09LegacyGlobalFilesReadable = TryGetProjectFileSha256(
+                                                        Skill09LegacyGlobalPath,
+                                                        out skill09LegacyGlobalAssetSha)
+                                                    && TryGetProjectFileSha256(
+                                                        Skill09LegacyGlobalPath + ".meta",
+                                                        out skill09LegacyGlobalMetaSha);
+            List<string> skill09LegacyGlobalReferences = FindAssetReferences(
+                skill09LegacyGlobalGuid,
+                Skill09LegacyGlobalPath);
+            bool skill09LegacyGlobalValid = skill09LegacyGlobal != null
+                                            && skill09LegacyGlobalFilesReadable
+                                            && skill09LegacyGlobalGuid
+                                            == Skill09LegacyGlobalGuid
+                                            && GetScriptGuid(skill09LegacyGlobal)
+                                            == GlobalCookingScriptGuid
+                                            && skill09LegacyGlobal.name
+                                            == "STAFF27GlobalCookingSpeedUpSkill"
+                                            && skill09LegacyGlobal.Description
+                                            == "전체 주방 음식 제작 속도 (50%) 증가"
+                                            && skill09LegacyGlobalPercent != null
+                                            && Approximately(
+                                                skill09LegacyGlobalPercent.floatValue,
+                                                50)
+                                            && Approximately(skill09LegacyGlobal.FirstValue, 50)
+                                            && Approximately(skill09LegacyGlobal.Duration, 30)
+                                            && Approximately(skill09LegacyGlobal.Cooldown, 200)
+                                            && !HasMissingSerializedReference(
+                                                skill09LegacyGlobalSerialized)
+                                            && skill09LegacyGlobalReferences.Count == 0;
+            legacyActiveReferences += skill09LegacyGlobalReferences.Count;
+            legacyPassed += skill09LegacyGlobalValid ? 1 : 0;
+            if (!skill09LegacyGlobalValid)
+            {
+                errors.Add("Skill09 GlobalCooking Legacy Asset preservation failed: STAFF27");
+                passed = false;
+            }
+
+            string skill09LegacySpeedGuid =
+                AssetDatabase.AssetPathToGUID(Skill09LegacySpeedPath);
+            SpeedUpSkill skill09LegacySpeed =
+                AssetDatabase.LoadAssetAtPath<SpeedUpSkill>(Skill09LegacySpeedPath);
+            string skill09LegacySpeedAssetSha;
+            string skill09LegacySpeedMetaSha;
+            bool skill09LegacySpeedShaValid = TryGetProjectFileSha256(
+                                                  Skill09LegacySpeedPath,
+                                                  out skill09LegacySpeedAssetSha)
+                                              && TryGetProjectFileSha256(
+                                                  Skill09LegacySpeedPath + ".meta",
+                                                  out skill09LegacySpeedMetaSha)
+                                              && skill09LegacySpeedAssetSha
+                                              == Skill09LegacySpeedAssetSha256
+                                              && skill09LegacySpeedMetaSha
+                                              == Skill09LegacySpeedMetaSha256;
+            List<string> skill09LegacySpeedReferences = FindAssetReferences(
+                skill09LegacySpeedGuid,
+                Skill09LegacySpeedPath);
+            bool skill09LegacySpeedValid = skill09LegacySpeed != null
+                                           && skill09LegacySpeedShaValid
+                                           && skill09LegacySpeedGuid
+                                           == Skill09LegacySpeedGuid
+                                           && skill09LegacySpeed.name == "STAFF27SKILL"
+                                           && string.IsNullOrEmpty(skill09LegacySpeed.Description)
+                                           && Approximately(skill09LegacySpeed.FirstValue, 100)
+                                           && Approximately(skill09LegacySpeed.Duration, 60)
+                                           && Approximately(skill09LegacySpeed.Cooldown, 250)
+                                           && skill09LegacySpeedReferences.Count == 0;
+            legacyActiveReferences += skill09LegacySpeedReferences.Count;
+            legacyPassed += skill09LegacySpeedValid ? 1 : 0;
+            if (!skill09LegacySpeedValid)
+            {
+                errors.Add("Skill09 SpeedUp Legacy Asset preservation failed: STAFF27");
+                passed = false;
+            }
+
             Dictionary<string, int> classCounts = new Dictionary<string, int>(StringComparer.Ordinal);
             int shared = 0;
             int orphan = 0;
@@ -1319,14 +1492,15 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                      && GetCount(classCounts, "FoodPaymentTipUpSkill") == 1
                                      && GetCount(classCounts, "FoodPriceUpSkill") == 6
                                      && GetCount(classCounts, "NormalCustomerMoveSpeedUpSkill") == 5
-                                     && GetCount(classCounts, "GlobalCookingSpeedUpSkill") == 1
+                                     && GetCount(classCounts, "GlobalCookingSpeedUpSkill") == 0
+                                     && GetCount(classCounts, "GlobalRemainingCookingTimeReductionSkill") == 1
                                      && GetCount(classCounts, "AllStaffMoveSpeedUpSkill") == 0
                                      && classCounts.Count == 7
                                      && activeGuids.Count == 6
                                      && skill08Passed == 5
                                      && skill09Passed == 1
-                                     && legacyPassed == 6
-                                     && legacySkillCount == 17
+                                     && legacyPassed == 7
+                                     && legacySkillCount == 18
                                      && shared == 0
                                      && orphan == 0
                                      && legacyActiveReferences == 0
@@ -1334,7 +1508,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             if (!distributionValid)
             {
                 errors.Add(
-                    "Inventory V7 Skill08·09·10 분포 불일치: active " + snapshot.Skills.Count
+                    "Skill08·09·10 기존 직원·Legacy 보존 분포 불일치: active "
+                    + snapshot.Skills.Count
                     + ", class " + GetCount(classCounts, "SpeedUpSkill") + "/"
                     + GetCount(classCounts, "TouchAddCustomerButtonSkill") + "/"
                     + GetCount(classCounts, "AssignedCookingSpeedUpSkill") + "/"
@@ -1342,6 +1517,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     + GetCount(classCounts, "FoodPriceUpSkill") + "/"
                     + GetCount(classCounts, "NormalCustomerMoveSpeedUpSkill") + "/"
                     + GetCount(classCounts, "GlobalCookingSpeedUpSkill") + "/"
+                    + GetCount(classCounts, "GlobalRemainingCookingTimeReductionSkill") + "/"
                     + GetCount(classCounts, "AllStaffMoveSpeedUpSkill")
                     + ", legacy " + legacySkillCount
                     + ", shared/orphan " + shared + "/" + orphan
@@ -1358,13 +1534,20 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                         + GetCount(classCounts, "FoodPriceUpSkill") + " / "
                         + GetCount(classCounts, "NormalCustomerMoveSpeedUpSkill") + " / "
                         + GetCount(classCounts, "GlobalCookingSpeedUpSkill") + " / "
+                        + GetCount(classCounts, "GlobalRemainingCookingTimeReductionSkill") + " / "
                         + GetCount(classCounts, "AllStaffMoveSpeedUpSkill"));
             details.Add("- Skill08 기존 직원 전환: " + skill08Passed + "/5");
             details.Add("- Skill09 기존 직원 전환: " + skill09Passed + "/1");
             details.Add("- Skill10 기존 직원 대상: 0/0");
-            details.Add("- Legacy Skill 보존: " + legacySkillCount + "/17");
+            details.Add("- Legacy Skill 보존: " + legacySkillCount + "/18");
             details.Add("- Active Shared / Orphan: " + shared + " / " + orphan);
             details.Add("- Legacy Active Reference: " + allLegacyReferences);
+            details.Add("- Skill09 Migration Legacy semantic: "
+                        + (skill09LegacyGlobalValid ? "PASS" : "FAIL"));
+            details.Add("- Skill09 Migration Legacy Asset/meta SHA-256 (정보): "
+                        + skill09LegacyGlobalAssetSha + " / " + skill09LegacyGlobalMetaSha);
+            details.Add("- Skill09 기존 SpeedUp Legacy Asset/meta SHA-256: "
+                        + (skill09LegacySpeedShaValid ? "PASS" : "FAIL"));
             return passed;
         }
 
@@ -1384,18 +1567,27 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             cooking &= cookingScript != null
                        && cookingScript.GetClass() == typeof(GlobalCookingSpeedUpSkill);
 
+            string globalRemainingGuid =
+                AssetDatabase.AssetPathToGUID(GlobalRemainingCookingScriptPath);
+            MonoScript globalRemainingScript = AssetDatabase.LoadAssetAtPath<MonoScript>(
+                GlobalRemainingCookingScriptPath);
+            bool globalRemaining = IsUnityGuid(globalRemainingGuid)
+                                   && globalRemainingScript != null
+                                   && globalRemainingScript.GetClass()
+                                   == typeof(GlobalRemainingCookingTimeReductionSkill);
+
             bool allStaff = AssetDatabase.AssetPathToGUID(AllStaffMoveScriptPath)
                             == AllStaffMoveScriptGuid;
             MonoScript allStaffScript = AssetDatabase.LoadAssetAtPath<MonoScript>(
                 AllStaffMoveScriptPath);
             allStaff &= allStaffScript != null
                         && allStaffScript.GetClass() == typeof(AllStaffMoveSpeedUpSkill);
-            if (!normal || !cooking || !allStaff)
+            if (!normal || !cooking || !globalRemaining || !allStaff)
             {
                 errors.Add("Skill08·09·10 Runtime Script 또는 GUID가 기준과 다릅니다.");
             }
 
-            return normal && cooking && allStaff;
+            return normal && cooking && globalRemaining && allStaff;
         }
 
         private static bool ValidateChefOfficialPassive(
@@ -1812,18 +2004,21 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             List<string> details,
             List<string> errors)
         {
-            bool passed = true;
-            if (before.Count != 162 || after.Count != 162)
+            bool expectedCountPassed = before.Count == ExpectedComparisonFileCount
+                                       && after.Count == ExpectedComparisonFileCount;
+            bool fileListPassed = before.Count == after.Count;
+            bool shaPassed = true;
+            bool guidPassed = true;
+            if (!expectedCountPassed)
             {
-                errors.Add("실행 전후 비교 파일 수가 V7 기준 162개와 다릅니다: "
+                errors.Add("실행 전후 비교 파일 수가 Post-B5 기준 "
+                           + ExpectedComparisonFileCount + "개와 다릅니다: "
                            + before.Count + "/" + after.Count);
-                passed = false;
             }
 
             if (before.Count != after.Count)
             {
                 errors.Add("실행 전후 대상 파일 수가 다릅니다.");
-                passed = false;
             }
 
             foreach (KeyValuePair<string, AssetFileState> entry in before)
@@ -1832,15 +2027,26 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 if (!after.TryGetValue(entry.Key, out afterState))
                 {
                     errors.Add("실행 후 사라진 대상 파일입니다: " + entry.Key);
-                    passed = false;
+                    fileListPassed = false;
                     continue;
                 }
 
-                if (!string.Equals(entry.Value.AssetGuid, afterState.AssetGuid, StringComparison.Ordinal)
-                    || !string.Equals(entry.Value.Sha256, afterState.Sha256, StringComparison.Ordinal))
+                if (!string.Equals(
+                        entry.Value.AssetGuid,
+                        afterState.AssetGuid,
+                        StringComparison.Ordinal))
                 {
-                    errors.Add("실행 전후 GUID 또는 SHA-256이 바뀌었습니다: " + entry.Key);
-                    passed = false;
+                    errors.Add("실행 전후 GUID가 바뀌었습니다: " + entry.Key);
+                    guidPassed = false;
+                }
+
+                if (!string.Equals(
+                        entry.Value.Sha256,
+                        afterState.Sha256,
+                        StringComparison.Ordinal))
+                {
+                    errors.Add("실행 전후 SHA-256이 바뀌었습니다: " + entry.Key);
+                    shaPassed = false;
                 }
             }
 
@@ -1849,13 +2055,18 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 if (!before.ContainsKey(path))
                 {
                     errors.Add("실행 후 새로 생긴 대상 파일입니다: " + path);
-                    passed = false;
+                    fileListPassed = false;
                 }
             }
 
-            details.Add("- 비교 파일: " + before.Count + "개(.asset 및 .meta)");
-            details.Add("- 파일 목록/SHA-256/GUID 동일: " + (passed ? "YES" : "NO"));
-            return passed;
+            details.Add("- 비교 파일: " + before.Count + "/" + after.Count
+                        + " (기대 " + ExpectedComparisonFileCount + "/"
+                        + ExpectedComparisonFileCount + ")");
+            details.Add("- 실행 전후 File List 동일: "
+                        + (fileListPassed ? "YES" : "NO"));
+            details.Add("- 실행 전후 SHA-256 동일: " + (shaPassed ? "YES" : "NO"));
+            details.Add("- 실행 전후 GUID 동일: " + (guidPassed ? "YES" : "NO"));
+            return expectedCountPassed && fileListPassed && shaPassed && guidPassed;
         }
 
         private static string ComputeSha256(byte[] bytes)
@@ -1871,6 +2082,72 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 return builder.ToString();
             }
+        }
+
+        private static bool TryGetProjectFileSha256(
+            string projectRelativePath,
+            out string sha256)
+        {
+            sha256 = string.Empty;
+            try
+            {
+                DirectoryInfo projectDirectory = Directory.GetParent(Application.dataPath);
+                string projectRoot = projectDirectory == null
+                    ? Application.dataPath
+                    : projectDirectory.FullName;
+                string osPath = Path.Combine(
+                    projectRoot,
+                    projectRelativePath.Replace('/', Path.DirectorySeparatorChar));
+                if (!File.Exists(osPath))
+                {
+                    return false;
+                }
+
+                sha256 = ComputeSha256(File.ReadAllBytes(osPath));
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private static string GetScriptGuid(ScriptableObject scriptableObject)
+        {
+            if (scriptableObject == null)
+            {
+                return string.Empty;
+            }
+
+            MonoScript script = MonoScript.FromScriptableObject(scriptableObject);
+            string scriptPath = script == null ? string.Empty : AssetDatabase.GetAssetPath(script);
+            return string.IsNullOrEmpty(scriptPath)
+                ? string.Empty
+                : AssetDatabase.AssetPathToGUID(scriptPath);
+        }
+
+        private static bool HasMissingSerializedReference(SerializedObject serializedObject)
+        {
+            if (serializedObject == null)
+            {
+                return true;
+            }
+
+            SerializedProperty iterator = serializedObject.GetIterator();
+            bool enterChildren = true;
+            while (iterator.NextVisible(enterChildren))
+            {
+                enterChildren = false;
+                if (iterator.propertyType == SerializedPropertyType.ObjectReference
+                    && !string.Equals(iterator.propertyPath, "m_Script", StringComparison.Ordinal)
+                    && iterator.objectReferenceValue == null
+                    && iterator.objectReferenceInstanceIDValue != 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Action AsMutation<T>(IReadOnlyList<T> values, Func<T> valueFactory)

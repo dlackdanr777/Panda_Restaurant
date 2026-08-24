@@ -1,5 +1,58 @@
 using System;
 
+public readonly struct CookingRemainingTimeReductionResult
+{
+    public bool Applied { get; }
+    public float RemainingTime { get; }
+    public float MinimumDurationBaselineCookTime { get; }
+
+    public CookingRemainingTimeReductionResult(
+        bool applied,
+        float remainingTime,
+        float minimumDurationBaselineCookTime)
+    {
+        Applied = applied;
+        RemainingTime = remainingTime;
+        MinimumDurationBaselineCookTime = minimumDurationBaselineCookTime;
+    }
+}
+
+public readonly struct CookingRemainingTimeReductionBatchResult
+{
+    public int TargetBurnerCount { get; }
+    public int ChangedBurnerCount { get; }
+    public float BeforeTotalRemainingTime { get; }
+    public float AfterTotalRemainingTime { get; }
+
+    public CookingRemainingTimeReductionBatchResult(
+        int targetBurnerCount,
+        int changedBurnerCount,
+        float beforeTotalRemainingTime,
+        float afterTotalRemainingTime)
+    {
+        TargetBurnerCount = targetBurnerCount;
+        ChangedBurnerCount = changedBurnerCount;
+        BeforeTotalRemainingTime = beforeTotalRemainingTime;
+        AfterTotalRemainingTime = afterTotalRemainingTime;
+    }
+
+    public CookingRemainingTimeReductionBatchResult Add(
+        CookingRemainingTimeReductionBatchResult other)
+    {
+        return new CookingRemainingTimeReductionBatchResult(
+            TargetBurnerCount + other.TargetBurnerCount,
+            ChangedBurnerCount + other.ChangedBurnerCount,
+            AddFinite(BeforeTotalRemainingTime, other.BeforeTotalRemainingTime),
+            AddFinite(AfterTotalRemainingTime, other.AfterTotalRemainingTime));
+    }
+
+    private static float AddFinite(float left, float right)
+    {
+        double sum = (double)left + right;
+        return sum >= float.MaxValue ? float.MaxValue : (float)sum;
+    }
+}
+
 public static class CookingRuntimePolicyCalculator
 {
     public const string PolicyMarker = "COOKING_RUNTIME_CAP_POLICY_2026_08_24_V1";
@@ -58,6 +111,23 @@ public static class CookingRuntimePolicyCalculator
         float deltaSeconds,
         float finalCookingMultiplier)
     {
+        return CalculateNextRemainingTime(
+            initialCookTime,
+            initialCookTime,
+            currentRemainingTime,
+            elapsedRealSecondsBeforeFrame,
+            deltaSeconds,
+            finalCookingMultiplier);
+    }
+
+    public static float CalculateNextRemainingTime(
+        float initialCookTime,
+        float minimumDurationBaselineCookTime,
+        float currentRemainingTime,
+        float elapsedRealSecondsBeforeFrame,
+        float deltaSeconds,
+        float finalCookingMultiplier)
+    {
         if (!IsFinitePositive(initialCookTime))
         {
             return 0f;
@@ -72,7 +142,9 @@ public static class CookingRuntimePolicyCalculator
         }
 
         if (!IsFiniteNonNegative(deltaSeconds)
-            || !IsFiniteNonNegative(finalCookingMultiplier))
+            || !IsFiniteNonNegative(finalCookingMultiplier)
+            || !IsFiniteNonNegative(minimumDurationBaselineCookTime)
+            || minimumDurationBaselineCookTime > initialCookTime)
         {
             return safeCurrentRemaining;
         }
@@ -84,12 +156,52 @@ public static class CookingRuntimePolicyCalculator
         double candidateRemaining = safeCurrentRemaining
                                     - (double)deltaSeconds * finalCookingMultiplier;
         double minimumRemaining = CalculateMinimumRemainingTimeDouble(
-            initialCookTime,
+            minimumDurationBaselineCookTime,
             nextElapsed);
         double nextRemaining = Math.Max(
             Math.Max(candidateRemaining, minimumRemaining),
             0d);
         return ToRemainingTime(nextRemaining, initialCookTime);
+    }
+
+    public static CookingRemainingTimeReductionResult ApplyInstantRemainingTimeReduction(
+        float initialCookTime,
+        float currentRemainingTime,
+        float minimumDurationBaselineCookTime,
+        float elapsedRealSeconds,
+        float reductionPercent)
+    {
+        CookingRemainingTimeReductionResult unchanged =
+            new CookingRemainingTimeReductionResult(
+                false,
+                currentRemainingTime,
+                minimumDurationBaselineCookTime);
+        if (!IsFinitePositive(initialCookTime)
+            || !IsFiniteNonNegative(currentRemainingTime)
+            || currentRemainingTime > initialCookTime
+            || !IsFiniteNonNegative(minimumDurationBaselineCookTime)
+            || minimumDurationBaselineCookTime > initialCookTime
+            || !IsFiniteNonNegative(elapsedRealSeconds)
+            || !IsFiniteNonNegative(reductionPercent)
+            || reductionPercent > 100f
+            || reductionPercent == 0f)
+        {
+            return unchanged;
+        }
+
+        double factor = 1d - reductionPercent / 100d;
+        double reducedRemaining = currentRemainingTime * factor;
+        double reducedBaseline = minimumDurationBaselineCookTime * factor;
+        double minimumRemaining = CalculateMinimumRemainingTimeDouble(
+            reducedBaseline,
+            elapsedRealSeconds);
+        double finalRemaining = Math.Max(
+            Math.Max(reducedRemaining, minimumRemaining),
+            0d);
+        return new CookingRemainingTimeReductionResult(
+            true,
+            ToRemainingTime(finalRemaining, initialCookTime),
+            ToRemainingTime(reducedBaseline, initialCookTime));
     }
 
     public static float CalculateMinimumRemainingTime(

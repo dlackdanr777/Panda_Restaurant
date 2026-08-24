@@ -8,7 +8,20 @@ public class KitchenBurnerData
 
     private float _realElapsedCookingSeconds;
     public float RealElapsedCookingSeconds => _realElapsedCookingSeconds;
-    public void ResetCookingClock() => _realElapsedCookingSeconds = 0f;
+    private float _minimumDurationBaselineCookTime;
+    public float MinimumDurationBaselineCookTime => _minimumDurationBaselineCookTime;
+    public void InitializeCookingClock(float initialCookTime)
+    {
+        _realElapsedCookingSeconds = 0f;
+        _minimumDurationBaselineCookTime = IsFinitePositive(initialCookTime)
+            ? initialCookTime
+            : 0f;
+    }
+    public void ResetCookingClock()
+    {
+        _realElapsedCookingSeconds = 0f;
+        _minimumDurationBaselineCookTime = 0f;
+    }
     public void AdvanceCookingClock(float deltaSeconds)
     {
         if (float.IsNaN(deltaSeconds)
@@ -22,6 +35,53 @@ public class KitchenBurnerData
         _realElapsedCookingSeconds = nextElapsed >= float.MaxValue
             ? float.MaxValue
             : (float)nextElapsed;
+    }
+
+    public bool TryApplyRemainingCookingTimeReduction(
+        float reductionPercent,
+        out CookingRemainingTimeReductionResult result)
+    {
+        result = new CookingRemainingTimeReductionResult(
+            false,
+            Time,
+            _minimumDurationBaselineCookTime);
+        if (!IsUsable
+            || CookingData.IsDefault()
+            || !IsFinitePositive(Time)
+            || !IsFinitePositive(CookingData.CookTime))
+        {
+            return false;
+        }
+
+        result = CookingRuntimePolicyCalculator.ApplyInstantRemainingTimeReduction(
+            CookingData.CookTime,
+            Time,
+            _minimumDurationBaselineCookTime,
+            _realElapsedCookingSeconds,
+            reductionPercent);
+        if (!result.Applied)
+        {
+            return false;
+        }
+
+        Time = result.RemainingTime;
+        _minimumDurationBaselineCookTime = result.MinimumDurationBaselineCookTime;
+        return true;
+    }
+
+    internal void RestoreCookingClockSnapshot(
+        float remainingTime,
+        float minimumDurationBaselineCookTime)
+    {
+        Time = remainingTime;
+        _minimumDurationBaselineCookTime = minimumDurationBaselineCookTime;
+    }
+
+    private static bool IsFinitePositive(float value)
+    {
+        return !float.IsNaN(value)
+               && !float.IsInfinity(value)
+               && value > 0f;
     }
 
     private float _addCookSpeedMul = 0;

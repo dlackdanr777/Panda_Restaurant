@@ -13,6 +13,26 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private const int NewStaffStartNumber = 33;
         private const string V8OfficialPackageFingerprint =
             "be7613e884b5ae18dc94e57abc0c941dccfb09486ae9fc5ff75acf4b0e4703af";
+        private const int V8CurrentSkillDurationMismatch = 0;
+        private const int V8CurrentSkillCooldownMismatch = 0;
+        private const int V8ExistingSkillClassMismatch = 0;
+        private const int V8ExistingPlanReadyWithWarnings = 31;
+        private const int V8ExistingSkillClassRequired = 0;
+        private const int V8ExistingRuntimeSchemaRequired = 0;
+        private const int V8ExistingMultiplePrerequisitesRequired = 0;
+        private const int V8NewSkillImplementationRequired = 0;
+        private const int V8NewPrerequisiteUnion = 0;
+        private const int V8NewAssetPlanReady = 60;
+        private const int V8NewSkillClassRequired = 0;
+        private const int V8NewRuntimeSchemaRequired = 0;
+        private const int V8NewMultiplePrerequisitesRequired = 0;
+        private const int V8SkillPrerequisiteStaff = 0;
+        private const int V8TotalPrerequisiteStaff = 1;
+        private const int V8SaveMigrationRequired = 1;
+        private const int V8StaffWarningCount = 56;
+        private const int V8GlobalWarningCount = 9;
+        private const int V8FinalWarningCount = 65;
+        private const int V8AutomaticFieldPlans = 2111;
         private static readonly IReadOnlyDictionary<string, string> RoleClassNames =
             new ReadOnlyDictionary<string, string>(
                 new Dictionary<string, string>(StringComparer.Ordinal)
@@ -639,8 +659,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
             else if (official.SkillId == "STAFF_SKILL09")
             {
-                currentFieldPath = "_globalCookingSpeedUpPercent";
                 targetFieldPath = "_remainingCookingTimeReductionPercent";
+                currentFieldPath = current.SkillConcreteTypeName
+                                   == "GlobalRemainingCookingTimeReductionSkill"
+                    ? targetFieldPath
+                    : "_globalCookingSpeedUpPercent";
                 targetValue = "50";
             }
             else
@@ -667,6 +690,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 targetFieldPath,
                 StringComparison.Ordinal);
             bool valueMatches = NumbersEqual(snapshot.NormalizedValue, targetValue);
+            bool skill09Applied = official.SkillId == "STAFF_SKILL09"
+                                  && current.SkillConcreteTypeName
+                                  == "GlobalRemainingCookingTimeReductionSkill";
             return new StaffDataDryRunSkillEffectPlan(
                 currentFieldPath,
                 targetFieldPath,
@@ -674,14 +700,16 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 targetValue,
                 fieldMatches,
                 valueMatches,
-                official.SkillId == "STAFF_SKILL04"
+                official.SkillId == "STAFF_SKILL04" || skill09Applied
                     ? StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
                     : StaffDryRunFieldDisposition.SKILL_CLASS_MIGRATION_REQUIRED,
                 official.SkillId == "STAFF_SKILL04"
                     ? valueMatches
                         ? "V8 balance plan confirms the existing assigned-cooking bonus is already the official 250."
                         : "V8 balance plan updates the existing assigned-cooking bonus from 150 to 250."
-                    : "V8 redesign migrates the legacy global cooking-speed field to remaining-time reduction.");
+                    : skill09Applied
+                        ? "V8 Skill09 remaining-time reduction is already applied to the existing asset."
+                        : "V8 redesign migrates the legacy global cooking-speed field to remaining-time reduction.");
         }
 
         private static StaffDataDryRunSkillEffectPlan BuildNewSkillEffectPlan(
@@ -1340,62 +1368,78 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireSkillNumberMismatch(
                 existing,
                 true,
-                context.Profile.IsV8 ? 1 : 0,
+                V8CurrentSkillDurationMismatch,
                 "current skill duration mismatch",
                 errors);
             RequireSkillNumberMismatch(
                 existing,
                 false,
-                context.Profile.IsV8 ? 1 : 0,
+                V8CurrentSkillCooldownMismatch,
                 "current skill cooldown mismatch",
                 errors);
             RequireIssueCount(
                 existing,
                 "EXISTING_SKILL_CLASS_MISMATCH",
-                context.Profile.IsV8 ? 1 : 0,
+                V8ExistingSkillClassMismatch,
                 errors);
             RequireIssueCount(existing, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 0, errors);
-            RequireIssueCount(existing, "STAFF02_LEVEL6_SAVE_MIGRATION_REQUIRED", 1, errors);
+            RequireIssueCount(
+                existing,
+                "STAFF02_LEVEL6_SAVE_MIGRATION_REQUIRED",
+                V8SaveMigrationRequired,
+                errors);
             RequireReadinessCount(
                 existing,
                 StaffDryRunReadiness.PLAN_READY_WITH_WARNINGS,
-                context.Profile.IsV8 ? 30 : 31,
+                V8ExistingPlanReadyWithWarnings,
                 errors);
             RequireReadinessCount(
                 existing,
                 StaffDryRunReadiness.SKILL_CLASS_REQUIRED,
-                context.Profile.IsV8 ? 1 : 0,
+                V8ExistingSkillClassRequired,
                 errors);
-            RequireReadinessCount(existing, StaffDryRunReadiness.SAVE_MIGRATION_REQUIRED, 1, errors);
-            RequireReadinessCount(existing, StaffDryRunReadiness.RUNTIME_SCHEMA_REQUIRED, 0, errors);
+            RequireReadinessCount(
+                existing,
+                StaffDryRunReadiness.SAVE_MIGRATION_REQUIRED,
+                V8SaveMigrationRequired,
+                errors);
+            RequireReadinessCount(
+                existing,
+                StaffDryRunReadiness.RUNTIME_SCHEMA_REQUIRED,
+                V8ExistingRuntimeSchemaRequired,
+                errors);
             RequireReadinessCount(
                 existing,
                 StaffDryRunReadiness.MULTIPLE_PREREQUISITES_REQUIRED,
-                0,
+                V8ExistingMultiplePrerequisitesRequired,
                 errors);
 
             RequireIssueCount(
                 created,
                 "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED",
-                context.Profile.IsV8 ? 1 : 0,
+                V8NewSkillImplementationRequired,
                 errors);
             RequireIssueCount(created, "CHEF_ADD_SPEED_SCHEMA_REQUIRED", 0, errors);
-            RequireNewPrerequisiteUnion(created, context.Profile.IsV8 ? 1 : 0, errors);
+            RequireNewPrerequisiteUnion(created, V8NewPrerequisiteUnion, errors);
             RequireReadinessCount(
                 created,
                 StaffDryRunReadiness.ASSET_PLAN_READY,
-                context.Profile.IsV8 ? 59 : 60,
+                V8NewAssetPlanReady,
                 errors);
             RequireReadinessCount(
                 created,
                 StaffDryRunReadiness.SKILL_CLASS_REQUIRED,
-                context.Profile.IsV8 ? 1 : 0,
+                V8NewSkillClassRequired,
                 errors);
-            RequireReadinessCount(created, StaffDryRunReadiness.RUNTIME_SCHEMA_REQUIRED, 0, errors);
+            RequireReadinessCount(
+                created,
+                StaffDryRunReadiness.RUNTIME_SCHEMA_REQUIRED,
+                V8NewRuntimeSchemaRequired,
+                errors);
             RequireReadinessCount(
                 created,
                 StaffDryRunReadiness.MULTIPLE_PREREQUISITES_REQUIRED,
-                0,
+                V8NewMultiplePrerequisitesRequired,
                 errors);
             RequireIdlePolicyCount(created, "USE_LEGACY_IDLE_FRAMES", 36, errors);
             RequireIdlePolicyCount(
@@ -1413,7 +1457,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireGlobalIssueCount(globalIssues, "UPGRADE25_RUNTIME_MAPPING_MISMATCH", 1, errors);
             if (context.Profile.IsV8)
             {
-                RequireV8BalancePlans(plans, errors);
+                RequireV8BalancePlans(plans, globalIssues, errors);
             }
         }
 
@@ -1465,6 +1509,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
         private static void RequireV8BalancePlans(
             IReadOnlyList<StaffDataDryRunStaffPlan> plans,
+            IReadOnlyList<StaffDataDryRunIssue> globalIssues,
             List<string> errors)
         {
             Dictionary<string, int> skillCounts = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -1474,11 +1519,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             int skill04ExistingApplied = 0;
             int skill04ExistingEffectUpdates = 0;
             int skill04NewEffects = 0;
+            int skill09ExistingApplied = 0;
             int skill09ExistingRedesign = 0;
+            int skill09NewAssetPlan = 0;
             int skill09NewPrerequisite = 0;
             int automaticFieldPlans = 0;
             int warnings = 0;
             HashSet<string> prerequisiteStaff = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> skillPrerequisiteStaff = new HashSet<string>(StringComparer.Ordinal);
 
             for (int planIndex = 0; planIndex < plans.Count; planIndex++)
             {
@@ -1491,10 +1539,18 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 for (int issueIndex = 0; issueIndex < plan.Issues.Count; issueIndex++)
                 {
-                    warnings += plan.Issues[issueIndex].IsWarning ? 1 : 0;
-                    if (plan.Issues[issueIndex].IsPrerequisite)
+                    StaffDataDryRunIssue issue = plan.Issues[issueIndex];
+                    warnings += issue.IsWarning ? 1 : 0;
+                    if (issue.IsPrerequisite)
                     {
                         prerequisiteStaff.Add(plan.StaffId);
+                        if (issue.Disposition
+                                == StaffDryRunFieldDisposition.SKILL_CLASS_IMPLEMENTATION_REQUIRED
+                            || issue.Disposition
+                                == StaffDryRunFieldDisposition.SKILL_CLASS_MIGRATION_REQUIRED)
+                        {
+                            skillPrerequisiteStaff.Add(plan.StaffId);
+                        }
                     }
                 }
 
@@ -1575,9 +1631,34 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 {
                     if (plan.StaffId == "STAFF27")
                     {
+                        bool applied = plan.SkillPlan.RequiredClassName
+                                       == "GlobalRemainingCookingTimeReductionSkill"
+                                       && plan.SkillPlan.RequiredClassExists
+                                       && plan.SkillPlan.ClassMatches
+                                       && plan.SkillPlan.CurrentClassName
+                                       == "GlobalRemainingCookingTimeReductionSkill"
+                                       && !plan.SkillPlan.CreateIndividualAsset
+                                       && plan.SkillPlan.ClassDisposition
+                                       == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
+                                       && plan.Readiness
+                                       == StaffDryRunReadiness.PLAN_READY_WITH_WARNINGS
+                                       && effect.CurrentFieldPath
+                                       == "_remainingCookingTimeReductionPercent"
+                                       && effect.TargetFieldPath
+                                       == "_remainingCookingTimeReductionPercent"
+                                       && effect.CurrentValue == "50"
+                                       && effect.TargetValue == "50"
+                                       && effect.FieldMatches
+                                       && effect.ValueMatches
+                                       && effect.Disposition
+                                       == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
+                                       && plan.SkillPlan.CurrentDuration == "1"
+                                       && plan.SkillPlan.TargetDuration == "1"
+                                       && plan.SkillPlan.CurrentCooldown == "240"
+                                       && plan.SkillPlan.TargetCooldown == "240";
                         bool redesign = plan.SkillPlan.RequiredClassName
                                         == "GlobalRemainingCookingTimeReductionSkill"
-                                        && !plan.SkillPlan.RequiredClassExists
+                                        && plan.SkillPlan.RequiredClassExists
                                         && !plan.SkillPlan.ClassMatches
                                         && effect.CurrentFieldPath == "_globalCookingSpeedUpPercent"
                                         && effect.TargetFieldPath
@@ -1588,10 +1669,25 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                         && effect.ValueMatches
                                         && plan.SkillPlan.TargetDuration == "1"
                                         && plan.SkillPlan.TargetCooldown == "240";
+                        skill09ExistingApplied += applied ? 1 : 0;
                         skill09ExistingRedesign += redesign ? 1 : 0;
                     }
                     else if (plan.StaffId == "STAFF68")
                     {
+                        bool newAssetPlan = plan.SkillPlan.RequiredClassExists
+                                            && plan.SkillPlan.ClassMatches
+                                            && plan.SkillPlan.CreateIndividualAsset
+                                            && plan.SkillPlan.ClassDisposition
+                                            == StaffDryRunFieldDisposition.AUTO_CREATE_NEW
+                                            && plan.Readiness
+                                            == StaffDryRunReadiness.ASSET_PLAN_READY
+                                            && effect.TargetFieldPath
+                                            == "_remainingCookingTimeReductionPercent"
+                                            && effect.TargetValue == "50"
+                                            && effect.Disposition
+                                            == StaffDryRunFieldDisposition.AUTO_CREATE_NEW
+                                            && plan.SkillPlan.TargetDuration == "1"
+                                            && plan.SkillPlan.TargetCooldown == "240";
                         bool newPrerequisite = !plan.SkillPlan.RequiredClassExists
                                                && plan.Readiness
                                                == StaffDryRunReadiness.SKILL_CLASS_REQUIRED
@@ -1600,6 +1696,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                                && effect.TargetValue == "50"
                                                && plan.SkillPlan.TargetDuration == "1"
                                                && plan.SkillPlan.TargetCooldown == "240";
+                        skill09NewAssetPlan += newAssetPlan ? 1 : 0;
                         skill09NewPrerequisite += newPrerequisite ? 1 : 0;
                     }
                 }
@@ -1621,11 +1718,48 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireCount("V8 Skill04 existing applied", skill04ExistingApplied, 4, errors);
             RequireCount("V8 Skill04 existing effect updates", skill04ExistingEffectUpdates, 0, errors);
             RequireCount("V8 Skill04 new effect plans", skill04NewEffects, 9, errors);
-            RequireCount("V8 Skill09 existing redesign", skill09ExistingRedesign, 1, errors);
-            RequireCount("V8 Skill09 new prerequisite", skill09NewPrerequisite, 1, errors);
-            RequireCount("V8 automatic StaffData FieldPlans", automaticFieldPlans, 2111, errors);
-            RequireCount("V8 Staff warning count", warnings, 56, errors);
-            RequireCount("V8 prerequisite Staff", prerequisiteStaff.Count, 3, errors);
+            RequireCount("V8 Skill09 existing applied", skill09ExistingApplied, 1, errors);
+            RequireCount("V8 Skill09 existing redesign", skill09ExistingRedesign, 0, errors);
+            RequireCount("V8 Skill09 new asset plan", skill09NewAssetPlan, 1, errors);
+            RequireCount("V8 Skill09 new prerequisite", skill09NewPrerequisite, 0, errors);
+            int globalWarnings = CountWarnings(globalIssues);
+            RequireCount(
+                "V8 automatic StaffData FieldPlans",
+                automaticFieldPlans,
+                V8AutomaticFieldPlans,
+                errors);
+            RequireCount("V8 Staff warning count", warnings, V8StaffWarningCount, errors);
+            RequireCount(
+                "V8 global warning count",
+                globalWarnings,
+                V8GlobalWarningCount,
+                errors);
+            RequireCount(
+                "V8 final warning count",
+                warnings + globalWarnings,
+                V8FinalWarningCount,
+                errors);
+            RequireCount(
+                "V8 skill prerequisite Staff",
+                skillPrerequisiteStaff.Count,
+                V8SkillPrerequisiteStaff,
+                errors);
+            RequireCount(
+                "V8 total prerequisite Staff",
+                prerequisiteStaff.Count,
+                V8TotalPrerequisiteStaff,
+                errors);
+        }
+
+        private static int CountWarnings(IReadOnlyList<StaffDataDryRunIssue> issues)
+        {
+            int count = 0;
+            for (int index = 0; index < issues.Count; index++)
+            {
+                count += issues[index].IsWarning ? 1 : 0;
+            }
+
+            return count;
         }
 
         private static void RequireSkill06Distribution(
@@ -1746,7 +1880,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     : "GlobalCookingSpeedUpSkill",
                 new[] { "STAFF27" },
                 new[] { "STAFF68" },
-                profile.IsV8,
+                false,
                 errors);
             RequireSupportedSkillDistribution(
                 plans,
