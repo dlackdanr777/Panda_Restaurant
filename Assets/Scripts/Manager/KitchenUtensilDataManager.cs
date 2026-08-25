@@ -186,6 +186,13 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 int.TryParse(row[11].Trim(), out unlockCount);
             }
 
+            // 층 정보 파싱
+            ERestaurantFloorType floorType = ERestaurantFloorType.Floor1; // 기본값
+            if (row.Length >= 10)
+            {
+                string floorStr = row[9].Trim();
+                floorType = ParseFloorType(floorStr);
+            }
 
             if (!_spriteDic.TryGetValue(id, out Sprite sprite))
             {
@@ -214,7 +221,8 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 effectValue,
                 unlockType,
                 unlockId,
-                unlockCount
+                unlockCount,
+                floorType
             );
 
 
@@ -268,6 +276,13 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 int.TryParse(row[12].Trim(), out unlockCount);
             }
 
+            // 층 정보 파싱
+            ERestaurantFloorType floorType = ERestaurantFloorType.Floor1; // 기본값
+            if (row.Length >= 10)
+            {
+                string floorStr = row[9].Trim();
+                floorType = ParseFloorType(floorStr);
+            }
 
             if (!_spriteDic.TryGetValue(id, out Sprite sprite))
             {
@@ -297,7 +312,8 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 unlockType,
                 unlockId,
                 unlockCount,
-                maxSinkBowlCount
+                maxSinkBowlCount,
+                floorType
             );
 
 
@@ -344,6 +360,15 @@ public class KitchenUtensilDataManager : MonoBehaviour
             // {
             //     unlockCount = 0;
             // }
+
+            // 층 정보 파싱
+            ERestaurantFloorType floorType = ERestaurantFloorType.Floor1; // 기본값
+            if (row.Length >= 10)
+            {
+                string floorStr = row[9].Trim();
+                floorType = ParseFloorType(floorStr);
+            }
+
             KitchenUtensilType type = GetKitchenUtensilTypeFromId(id);
             if (!_spriteDic.TryGetValue(CutStringUpToChar(id, '_'), out Sprite sprite))
             {
@@ -372,7 +397,8 @@ public class KitchenUtensilDataManager : MonoBehaviour
                 effectValue,
                 UnlockConditionType.None,
                 string.Empty,
-                0
+                0,
+                floorType
             );
 
             _kitchenUtensilDataDic.Add(id, cookerData);
@@ -434,5 +460,60 @@ public class KitchenUtensilDataManager : MonoBehaviour
             return str.Substring(0, index);
         else
             return str;
+    }
+
+    /// <summary>
+    /// 층 문자열을 ERestaurantFloorType으로 파싱
+    /// </summary>
+    private static ERestaurantFloorType ParseFloorType(string floorStr)
+    {
+        if (string.IsNullOrWhiteSpace(floorStr))
+            return ERestaurantFloorType.Floor1;
+
+        floorStr = floorStr.Trim();
+
+        // "1층", "2층", "3층" 형태 처리
+        if (floorStr.Contains("1") || floorStr.Contains("일"))
+            return ERestaurantFloorType.Floor1;
+        else if (floorStr.Contains("2") || floorStr.Contains("이"))
+            return ERestaurantFloorType.Floor2;
+        else if (floorStr.Contains("3") || floorStr.Contains("삼"))
+            return ERestaurantFloorType.Floor3;
+
+        return ERestaurantFloorType.Floor1; // 기본값
+    }
+
+    /// <summary>
+    /// 특정 층의 주방 기구 리스트 반환
+    /// </summary>
+    public List<KitchenUtensilData> GetKitchenUtensilDataListByFloor(ERestaurantFloorType floorType)
+    {
+        return _kitchenUtensilDataList.Where(data => data.FloorType == floorType).ToList();
+    }
+
+    /// <summary>
+    /// 특정 층과 타입의 주방 기구 리스트 반환
+    /// </summary>
+    public List<KitchenUtensilData> GetKitchenUtensilDataList(KitchenUtensilType type, ERestaurantFloorType floorType)
+    {
+        return _kitchenUtensilDataListType[(int)type].Where(data => data.FloorType == floorType).ToList();
+    }
+
+    /// <summary>
+    /// 특정 층과 타입의 정렬된 주방 기구 리스트 반환
+    /// </summary>
+    public List<KitchenUtensilData> GetSortKitchenUtensilDataList(KitchenUtensilType type, ERestaurantFloorType floorType)
+    {
+        var filteredList = _kitchenUtensilDataListType[(int)type].Where(data => data.FloorType == floorType).ToList();
+        
+        return UserInfo.KitchenUtensilSortType switch
+        {
+            ShopSortType.NameAscending => filteredList.OrderBy(data => data.Name).ToList(),
+            ShopSortType.NameDescending => filteredList.OrderByDescending(data => data.Name).ToList(),
+            ShopSortType.PriceAscending => ShopItemSort.SortByPrice(filteredList, true),
+            ShopSortType.PriceDescending => ShopItemSort.SortByPrice(filteredList, false),
+            ShopSortType.None => filteredList,
+            _ => filteredList
+        };
     }
 }

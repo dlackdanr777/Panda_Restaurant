@@ -231,6 +231,14 @@ public class FurnitureDataManager : MonoBehaviour
                 int.TryParse(row[11].Trim(), out unlockCount);
             }
 
+            // 🔹 층 정보 파싱
+            ERestaurantFloorType floorType = ERestaurantFloorType.Floor1; // 기본값
+            if (row.Length >= 10)
+            {
+                string floorStr = row[9].Trim();
+                floorType = ParseFloorType(floorStr);
+            }
+
             string keyId = CutStringUpToChar(id, '_');
             // 🔹 스프라이트 가져오기 (딕셔너리에서 가져오므로 성능 향상)
             if (!_spriteDic.TryGetValue(keyId, out Sprite sprite))
@@ -268,7 +276,8 @@ public class FurnitureDataManager : MonoBehaviour
                 effectValue,
                 unlockType,
                 unlockId,
-                unlockCount
+                unlockCount,
+                floorType
             );
 
             // 🔹 리스트 및 딕셔너리에 추가
@@ -319,6 +328,14 @@ public class FurnitureDataManager : MonoBehaviour
             if (unlockType != UnlockConditionType.None && row.Length >= 12)
             {
                 int.TryParse(row[11].Trim(), out unlockCount);
+            }
+
+            // 🔹 층 정보 파싱
+            ERestaurantFloorType floorType = ERestaurantFloorType.Floor1; // 기본값
+            if (row.Length >= 10)
+            {
+                string floorStr = row[9].Trim();
+                floorType = ParseFloorType(floorStr);
             }
 
             string keyId = CutStringUpToChar(id, '_');
@@ -378,7 +395,8 @@ public class FurnitureDataManager : MonoBehaviour
                 rightChairSprite,
                 leftChairArmrestSprite,
                 rightChairArmrestSprite,
-                isChairForward
+                isChairForward,
+                floorType
             );
 
             _furnitureDataDic.Add(id, tableData);
@@ -496,7 +514,7 @@ public class FurnitureDataManager : MonoBehaviour
     }
 
 
-        private static string CutStringUpToChar(string str, char delimiter)
+    private static string CutStringUpToChar(string str, char delimiter)
     {
         str = str.ToUpper();
         int index = str.IndexOf(delimiter);
@@ -505,5 +523,60 @@ public class FurnitureDataManager : MonoBehaviour
             return str.Substring(0, index);
         else
             return str;
+    }
+
+    /// <summary>
+    /// 층 문자열을 ERestaurantFloorType으로 파싱
+    /// </summary>
+    private static ERestaurantFloorType ParseFloorType(string floorStr)
+    {
+        if (string.IsNullOrWhiteSpace(floorStr))
+            return ERestaurantFloorType.Floor1;
+
+        floorStr = floorStr.Trim();
+
+        // "1층", "2층", "3층" 형태 처리
+        if (floorStr.Contains("1") || floorStr.Contains("일"))
+            return ERestaurantFloorType.Floor1;
+        else if (floorStr.Contains("2") || floorStr.Contains("이"))
+            return ERestaurantFloorType.Floor2;
+        else if (floorStr.Contains("3") || floorStr.Contains("삼"))
+            return ERestaurantFloorType.Floor3;
+
+        return ERestaurantFloorType.Floor1; // 기본값
+    }
+
+    /// <summary>
+    /// 특정 층의 가구 리스트 반환
+    /// </summary>
+    public List<FurnitureData> GetFurnitureDataListByFloor(ERestaurantFloorType floorType)
+    {
+        return _furnitureDataList.Where(data => data.FloorType == floorType).ToList();
+    }
+
+    /// <summary>
+    /// 특정 층과 타입의 가구 리스트 반환
+    /// </summary>
+    public List<FurnitureData> GetFurnitureDataList(FurnitureType type, ERestaurantFloorType floorType)
+    {
+        return _furnitureDataListType[(int)type].Where(data => data.FloorType == floorType).ToList();
+    }
+
+    /// <summary>
+    /// 특정 층과 타입의 정렬된 가구 리스트 반환
+    /// </summary>
+    public List<FurnitureData> GetSortFurnitureDataList(FurnitureType type, ERestaurantFloorType floorType)
+    {
+        var filteredList = _furnitureDataListType[(int)type].Where(data => data.FloorType == floorType).ToList();
+        
+        return UserInfo.FurnitureSortType switch
+        {
+            ShopSortType.NameAscending => filteredList.OrderBy(data => data.Name).ToList(),
+            ShopSortType.NameDescending => filteredList.OrderByDescending(data => data.Name).ToList(),
+            ShopSortType.PriceAscending => ShopItemSort.SortByPrice(filteredList, true),
+            ShopSortType.PriceDescending => ShopItemSort.SortByPrice(filteredList, false),
+            ShopSortType.None => filteredList,
+            _ => filteredList
+        };
     }
 }

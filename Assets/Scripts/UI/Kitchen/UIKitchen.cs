@@ -71,16 +71,25 @@ public class UIKitchen : MobileUIView
 
     private void InitializeSlots()
     {
+        // 층별로 주방 기구 수가 다를 수 있으므로, 각 타입마다 충분한 슬롯 풀을 생성
         for (int i = 0; i < (int)KitchenUtensilType.Length; i++)
         {
-            List<KitchenUtensilData> typeDataList = KitchenUtensilDataManager.Instance.GetSortKitchenUtensilDataList((KitchenUtensilType)i);
-            _slots[i] = new List<UIRestaurantAdminFoodTypeSlot>(typeDataList.Count);
-            
-            for (int j = 0; j < typeDataList.Count; j++)
+            // 모든 층의 주방 기구를 합쳐서 최대 슬롯 수 계산
+            int maxSlotCount = 0;
+            for (int floor = 0; floor < (int)ERestaurantFloorType.Length; floor++)
             {
-                int dataIndex = j;
+                List<KitchenUtensilData> floorDataList = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList((KitchenUtensilType)i, (ERestaurantFloorType)floor);
+                if (floorDataList.Count > maxSlotCount)
+                    maxSlotCount = floorDataList.Count;
+            }
+
+            _slots[i] = new List<UIRestaurantAdminFoodTypeSlot>(maxSlotCount);
+            
+            // 최대 개수만큼 슬롯 생성
+            for (int j = 0; j < maxSlotCount; j++)
+            {
                 UIRestaurantAdminFoodTypeSlot slot = Instantiate(_slotPrefab, _slotParnet);
-                slot.Init(() => OnSlotClicked(typeDataList[dataIndex]));
+                slot.Init(() => { }); // 클릭 이벤트는 UpdateUI에서 동적으로 설정
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
             }
@@ -139,6 +148,12 @@ public class UIKitchen : MobileUIView
             _normalObject.SetActive(false);
             _vipObject.SetActive(true);
         }
+        else // Floor3 이상
+        {
+            _backgroundImage.sprite = _vipBackgroundSprite;
+            _normalObject.SetActive(false);
+            _vipObject.SetActive(true);
+        }
     }
 
     // 최적화된 데이터 설정 메서드
@@ -155,7 +170,8 @@ public class UIKitchen : MobileUIView
         }
 
         _currentType = type;
-        _currentTypeDataList = KitchenUtensilDataManager.Instance.GetSortKitchenUtensilDataList(type);
+        // 현재 층의 주방 기구 데이터만 가져오기
+        _currentTypeDataList = KitchenUtensilDataManager.Instance.GetSortKitchenUtensilDataList(type, _currentFloorType);
         _typeText1.text = Utility.KitchenUtensilTypeStringConverter(type);
 
         // 프리뷰와 UI 업데이트를 함께 처리
@@ -187,6 +203,9 @@ public class UIKitchen : MobileUIView
         {
             var data = _currentTypeDataList[i];
             var slot = currentSlots[i];
+
+            // 슬롯 클릭 이벤트 재설정 (층이 변경될 수 있으므로)
+            slot.Init(() => OnSlotClicked(data));
             
             slot.gameObject.SetActive(true);
             slot.SetFoodType(data.FoodType);
@@ -202,6 +221,12 @@ public class UIKitchen : MobileUIView
             {
                 ProcessUnequippedSlot(data, slot);
             }
+        }
+
+        // 사용하지 않는 슬롯 비활성화
+        for (int i = dataCount; i < currentSlots.Count; i++)
+        {
+            currentSlots[i].gameObject.SetActive(false);
         }
     }
 

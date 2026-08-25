@@ -36,10 +36,13 @@ public class FurnitureData : BasicData, ShopData
     private int _buyPrice;
     public int BuyPrice => _buyPrice;
 
+    private ERestaurantFloorType _floorType;
+    public ERestaurantFloorType FloorType => _floorType;
+
     protected List<Sprite> _animationSpriteList;
     public List<Sprite> AnimationSpriteList => _animationSpriteList;
 
-    public FurnitureData(Sprite sprite, Sprite thumbnailSprite, List<Sprite> animationSpriteList, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType,  FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount)
+    public FurnitureData(Sprite sprite, Sprite thumbnailSprite, List<Sprite> animationSpriteList, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType,  FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount, ERestaurantFloorType floorType)
     {
         _salesLocationType = SalesLocationType.Shop;
         
@@ -60,6 +63,7 @@ public class FurnitureData : BasicData, ShopData
 
         _equipEffectType = euipEffectType;
         _effectValue = effectValue;
+        _floorType = floorType;
 
         _unlockData = new UnlockConditionData(unlockType, unlockId, unlockCount);
     }

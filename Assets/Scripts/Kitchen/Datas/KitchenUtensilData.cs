@@ -48,8 +48,11 @@ public class KitchenUtensilData : BasicData, ShopData
     protected int _buyPrice;
     public int BuyPrice => _buyPrice;
 
+    private ERestaurantFloorType _floorType;
+    public ERestaurantFloorType FloorType => _floorType;
 
-    public KitchenUtensilData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, KitchenUtensilType kitchenType, FoodType foodType, int addScore, EquipEffectType euipEffectType, float effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount)
+
+    public KitchenUtensilData(Sprite sprite, Sprite thumbnailSprite, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, KitchenUtensilType kitchenType, FoodType foodType, int addScore, EquipEffectType euipEffectType, float effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount, ERestaurantFloorType floorType)
     {
         _salesLocationType = SalesLocationType.Shop;
 
@@ -69,6 +72,7 @@ public class KitchenUtensilData : BasicData, ShopData
 
         _equipEffectType = euipEffectType;
         _effectValue = effectValue;
+        _floorType = floorType;
 
         _unlockData = new UnlockConditionData(unlockType, unlockId, unlockCount);
     }

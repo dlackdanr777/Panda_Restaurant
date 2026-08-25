@@ -19,7 +19,7 @@ public class TableFurnitureData : FurnitureData
     private bool _isChairForward;
     public bool IsChairForward => _isChairForward;
 
-    public TableFurnitureData(Sprite sprite, Sprite thumbnailSprite, List<Sprite> animationSpriteList, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount, Sprite leftChair, Sprite rightChair, Sprite leftChairArmrestSprite, Sprite rightChairArmrestSprite, bool isChairForward) : base(sprite, thumbnailSprite, animationSpriteList, id, setId, name, moneyType, buyScore, buyPrice, furnitureType, foodType, addScore, euipEffectType, effectValue, unlockType, unlockId, unlockCount)
+    public TableFurnitureData(Sprite sprite, Sprite thumbnailSprite, List<Sprite> animationSpriteList, string id, string setId, string name, MoneyType moneyType, int buyScore, int buyPrice, FurnitureType furnitureType, FoodType foodType, int addScore, EquipEffectType euipEffectType, int effectValue, UnlockConditionType unlockType, string unlockId, int unlockCount, Sprite leftChair, Sprite rightChair, Sprite leftChairArmrestSprite, Sprite rightChairArmrestSprite, bool isChairForward, ERestaurantFloorType floorType) : base(sprite, thumbnailSprite, animationSpriteList, id, setId, name, moneyType, buyScore, buyPrice, furnitureType, foodType, addScore, euipEffectType, effectValue, unlockType, unlockId, unlockCount, floorType)
     {
         _chairSprite = leftChair;
         _rightChairSprite = rightChair;

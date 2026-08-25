@@ -15,10 +15,24 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIFloorButtonGroup _floorButtonGroup;
     [SerializeField] private RectTransform _dontTouchArea;
+    [SerializeField] private GameObject _floor1Object;
+    [SerializeField] private GameObject _vipFloorObject;
 
     [Header("BackgroundImage")]
     [SerializeField] private ScrollingImage[] _scrollImages;
     private ScrollingImage _currentScrollImage;
+
+    [Space]
+    [Header("Floor Transition")]
+    [SerializeField] private Material _transitionMaterial;
+    [SerializeField] private GameObject _transitionOverlay;
+    [SerializeField] private UnityEngine.UI.Image _normalTransitionImage;
+    [SerializeField] private UnityEngine.UI.Image _vipTransitionImage;
+    [SerializeField] private float _transitionDuration = 0.8f;
+    [SerializeField] private float _transitionAngle = -45f;
+    [SerializeField] private float _edgeWidth = 0.15f;
+    [SerializeField] private Color _innerEdgeColor = Color.yellow;
+    [SerializeField] private Color _outerEdgeColor = Color.white;
 
     [Space]
     [Header("Floor Button Groups")]
@@ -53,16 +67,43 @@ public class UIRestaurantAdmin : MobileUIView
     [SerializeField] private AudioClip _shopMusic;
 
     private ERestaurantFloorType _floorType;
+    private ERestaurantFloorType _previousFloorType;
     private bool _isInitialized = false;
 
     // 캐시된 참조들
     private UIRestaurantAdminTab[] _tabs;
 
     private Vector3 _tmpScale;
+    private Material _transitionMaterialInstance;
+    private Coroutine _transitionCoroutine;
 
     public override void Init()
     {
         if (_isInitialized) return;
+
+        // Material 인스턴스 생성
+        if (_transitionMaterial != null && _transitionOverlay != null)
+        {
+            _transitionMaterialInstance = new Material(_transitionMaterial);
+            
+            if (_normalTransitionImage != null)
+                _normalTransitionImage.material = _transitionMaterialInstance;
+            if (_vipTransitionImage != null)
+                _vipTransitionImage.material = _transitionMaterialInstance;
+            
+            // 오버레이는 켜두되, 자식 이미지들만 끄기
+            _transitionOverlay.SetActive(true);
+            if (_normalTransitionImage != null)
+                _normalTransitionImage.gameObject.SetActive(false);
+            if (_vipTransitionImage != null)
+                _vipTransitionImage.gameObject.SetActive(false);
+            
+            _transitionMaterialInstance.SetFloat("_Angle", _transitionAngle);
+            _transitionMaterialInstance.SetFloat("_EdgeWidth", _edgeWidth);
+            _transitionMaterialInstance.SetColor("_InnerEdgeColor", _innerEdgeColor);
+            _transitionMaterialInstance.SetColor("_OuterEdgeColor", _outerEdgeColor);
+            _transitionMaterialInstance.SetFloat("_Progress", 0);
+        }
 
         // 배열 캐싱으로 반복 접근 최적화
         _tabs = new UIRestaurantAdminTab[] 
@@ -167,6 +208,9 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Hide()
     {
+        // 진행 중인 전환 애니메이션 정리
+        CleanupTransition();
+        
         if(_mainUI.activeSelf)
         {
             VisibleState = VisibleState.Disappearing;
@@ -319,10 +363,80 @@ public class UIRestaurantAdmin : MobileUIView
         _kitchenTab.ShowUIKitchen(type);
     }
 
+    // 전환 애니메이션 정리 (UI 닫을 때 호출)
+    private void CleanupTransition()
+    {
+        // 진행 중인 코루틴이 있다면 중지
+        if (_transitionCoroutine != null)
+        {
+            StopCoroutine(_transitionCoroutine);
+            _transitionCoroutine = null;
+        }
+        
+        // 오버레이 비활성화
+        if (_transitionOverlay != null)
+        {
+            if (_normalTransitionImage != null)
+                _normalTransitionImage.gameObject.SetActive(false);
+            if (_vipTransitionImage != null)
+                _vipTransitionImage.gameObject.SetActive(false);
+        }
+        
+        // 메인 UI가 비활성화되어 있다면 다시 활성화
+        if (_mainUI != null && !_mainUI.activeSelf)
+        {
+            _mainUI.SetActive(true);
+        }
+        
+        // 모든 ScrollingImage를 비활성화 (정리)
+        if (_scrollImages != null)
+        {
+            foreach (var scrollImage in _scrollImages)
+            {
+                if (scrollImage != null && scrollImage.gameObject.activeSelf)
+                {
+                    scrollImage.gameObject.SetActive(false);
+                }
+            }
+        }
+        
+        // 현재 _floorType에 맞는 배경으로 강제 설정 (동기화)
+        SetBackgroundImageImmediate(_floorType);
+        
+        // 탭들도 현재 _floorType에 맞게 업데이트
+        _kitchenTab.ChangeFloorType(_floorType);
+        _furnitureTab.ChangeFloorType(_floorType);
+        _staffTab.ChangeFloorType(_floorType);
+        _recipeTab.ChangeFloorType(_floorType);
+    }
+
     // 최적화된 배경 이미지 설정
     private void SetBackgroundImageOptimized(ERestaurantFloorType floor)
     {
+        // 0(Floor1)과 1(Floor2 VIP) 사이 전환일 때만 애니메이션
+        bool shouldAnimate = _currentScrollImage != null &&
+                            (_previousFloorType == ERestaurantFloorType.Floor1 || _previousFloorType == ERestaurantFloorType.Floor2) &&
+                            (floor == ERestaurantFloorType.Floor1 || floor == ERestaurantFloorType.Floor2) &&
+                            _previousFloorType != floor &&
+                            _transitionMaterialInstance != null;
 
+        if (shouldAnimate)
+        {
+            // 기존 코루틴 중지
+            if (_transitionCoroutine != null)
+                StopCoroutine(_transitionCoroutine);
+            
+            _transitionCoroutine = StartCoroutine(TransitionFloorCoroutine(floor));
+        }
+        else
+        {
+            // 즉시 전환 (애니메이션 없음)
+            SetBackgroundImageImmediate(floor);
+        }
+    }
+
+    private void SetBackgroundImageImmediate(ERestaurantFloorType floor)
+    {
         // 이전 배경 비활성화
         if (_currentScrollImage != null)
             _currentScrollImage.gameObject.SetActive(false);
@@ -334,6 +448,165 @@ public class UIRestaurantAdmin : MobileUIView
 
         newScrollImage.gameObject.SetActive(true);
         _currentScrollImage = newScrollImage;
+    }
+
+    private System.Collections.IEnumerator TransitionFloorCoroutine(ERestaurantFloorType targetFloor)
+    {
+        // 사용자 입력 차단 (애니메이션 중 UI 조작 방지)
+        bool prevBlocksRaycasts = _canvasGroup.blocksRaycasts;
+        _canvasGroup.blocksRaycasts = false;
+        
+        // 메인 UI 비활성화
+        bool mainUIWasActive = _mainUI.activeSelf;
+        _mainUI.SetActive(false);
+        
+        ScrollingImage fromScrollImage = _currentScrollImage;
+        ScrollingImage toScrollImage = _scrollImages[(int)targetFloor];
+        
+        if (fromScrollImage == null || toScrollImage == null)
+        {
+            Debug.LogError("ScrollingImage is null!");
+            _mainUI.SetActive(mainUIWasActive);
+            _canvasGroup.blocksRaycasts = prevBlocksRaycasts;
+            SetBackgroundImageImmediate(targetFloor);
+            yield break;
+        }
+        
+        bool toVip = targetFloor == ERestaurantFloorType.Floor2;
+        
+        // 오프셋 동기화
+        toScrollImage.SetOffset(fromScrollImage.Offset);
+        
+        // 텍스처를 가져오기 위해 잠시 활성화
+        ScrollingImage normalScrollImage = _scrollImages[(int)ERestaurantFloorType.Floor1];
+        ScrollingImage vipScrollImage = _scrollImages[(int)ERestaurantFloorType.Floor2];
+        
+        bool normalWasActive = normalScrollImage.gameObject.activeSelf;
+        bool vipWasActive = vipScrollImage.gameObject.activeSelf;
+        
+        // 잠시 활성화하여 텍스처 가져오기
+        normalScrollImage.gameObject.SetActive(true);
+        vipScrollImage.gameObject.SetActive(true);
+        
+        yield return null; // 1프레임 대기
+        
+        // Material에 텍스처 설정
+        Texture normalTex = normalScrollImage.GetTexture();
+        Texture vipTex = vipScrollImage.GetTexture();
+        
+        if (normalTex == null || vipTex == null)
+        {
+            Debug.LogError($"Texture is null! Normal: {(normalTex != null)}, VIP: {(vipTex != null)}");
+            Debug.LogError($"NormalImage: {normalScrollImage.gameObject.name}, VipImage: {vipScrollImage.gameObject.name}");
+            
+            // 원래 상태로 복구
+            normalScrollImage.gameObject.SetActive(normalWasActive);
+            vipScrollImage.gameObject.SetActive(vipWasActive);
+            _mainUI.SetActive(mainUIWasActive);
+            _canvasGroup.blocksRaycasts = prevBlocksRaycasts;
+            
+            SetBackgroundImageImmediate(targetFloor);
+            yield break;
+        }
+        
+        // 오버레이 Image 설정 복사 (sprite, type, pixelsPerUnit 등)
+        if (_normalTransitionImage != null)
+        {
+            var normalImage = normalScrollImage.GetComponent<UnityEngine.UI.Image>();
+            _normalTransitionImage.sprite = normalImage.sprite;
+            _normalTransitionImage.type = normalImage.type;
+            _normalTransitionImage.pixelsPerUnitMultiplier = normalImage.pixelsPerUnitMultiplier;
+            _normalTransitionImage.material = new Material(_transitionMaterialInstance);
+        }
+        
+        if (_vipTransitionImage != null)
+        {
+            var vipImage = vipScrollImage.GetComponent<UnityEngine.UI.Image>();
+            _vipTransitionImage.sprite = vipImage.sprite;
+            _vipTransitionImage.type = vipImage.type;
+            _vipTransitionImage.pixelsPerUnitMultiplier = vipImage.pixelsPerUnitMultiplier;
+            _vipTransitionImage.material = new Material(_transitionMaterialInstance);
+        }
+        
+        _transitionMaterialInstance.SetTexture("_NormalTex", normalTex);
+        _transitionMaterialInstance.SetTexture("_VipTex", vipTex);
+        
+        // 타일링 스케일 설정 (Tiled Image 타일링 유지)
+        Vector2 normalScale = normalScrollImage.GetTextureScale();
+        Vector2 vipScale = vipScrollImage.GetTextureScale();
+        _transitionMaterialInstance.SetVector("_NormalScale", normalScale);
+        _transitionMaterialInstance.SetVector("_VipScale", vipScale);
+        
+        // 오버레이 활성화 및 위치 설정 (배경 이미지는 활성화 상태 유지하여 스크롤링 계속)
+        if (_normalTransitionImage != null)
+            _normalTransitionImage.gameObject.SetActive(true);
+        if (_vipTransitionImage != null)
+            _vipTransitionImage.gameObject.SetActive(true);
+        _transitionOverlay.transform.SetAsLastSibling();
+        
+        float elapsed = 0f;
+        float startProgress = toVip ? 0f : 1f;
+        float endProgress = toVip ? 1f : 0f;
+        
+        Debug.Log($"Starting transition from {_previousFloorType} to {targetFloor}, toVip={toVip}, start={startProgress}, end={endProgress}");
+        
+        while (elapsed < _transitionDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / _transitionDuration);
+            
+            // Ease 적용
+            t = Mathf.SmoothStep(0, 1, t);
+            
+            float currentProgress = Mathf.Lerp(startProgress, endProgress, t);
+            _transitionMaterialInstance.SetFloat("_Progress", currentProgress);
+            
+            // 스크롤링 오프셋 업데이트 (배경이 계속 스크롤되도록)
+            Vector2 normalOffset = normalScrollImage.Offset;
+            Vector2 vipOffset = vipScrollImage.Offset;
+            _transitionMaterialInstance.SetVector("_NormalOffset", normalOffset);
+            _transitionMaterialInstance.SetVector("_VipOffset", vipOffset);
+            
+            // 두 이미지의 Material에도 적용
+            if (_normalTransitionImage != null && _normalTransitionImage.material != null)
+            {
+                _normalTransitionImage.material.SetVector("_NormalOffset", normalOffset);
+                _normalTransitionImage.material.SetVector("_VipOffset", vipOffset);
+                _normalTransitionImage.material.SetFloat("_Progress", currentProgress);
+            }
+            if (_vipTransitionImage != null && _vipTransitionImage.material != null)
+            {
+                _vipTransitionImage.material.SetVector("_NormalOffset", normalOffset);
+                _vipTransitionImage.material.SetVector("_VipOffset", vipOffset);
+                _vipTransitionImage.material.SetFloat("_Progress", currentProgress);
+            }
+            
+            yield return null;
+        }
+        
+        // 최종 상태
+        _transitionMaterialInstance.SetFloat("_Progress", endProgress);
+        
+        Debug.Log("Transition complete");
+        
+        // 이전 배경 비활성화, 새 배경은 이미 활성화 상태
+        if (fromScrollImage != toScrollImage)
+            fromScrollImage.gameObject.SetActive(false);
+        _currentScrollImage = toScrollImage;
+        
+        // 오버레이 비활성화
+        if (_normalTransitionImage != null)
+            _normalTransitionImage.gameObject.SetActive(false);
+        if (_vipTransitionImage != null)
+            _vipTransitionImage.gameObject.SetActive(false);
+        
+        // 메인 UI 다시 활성화
+        _mainUI.SetActive(mainUIWasActive);
+        
+        // 사용자 입력 다시 허용
+        _canvasGroup.blocksRaycasts = prevBlocksRaycasts;
+        
+        _transitionCoroutine = null;
     }
 
     private void ResetBackgroundImageOffsetOptimized()
@@ -355,6 +628,7 @@ public class UIRestaurantAdmin : MobileUIView
         if (_floorType == floorType)
             return;
 
+        _previousFloorType = _floorType;
         _floorType = floorType;
         
         // 한 번에 모든 탭 업데이트 (각 탭이 자신의 배경을 관리)
@@ -372,6 +646,14 @@ public class UIRestaurantAdmin : MobileUIView
     {
         bool isFloor1 = floorType == ERestaurantFloorType.Floor1;
         
+        // 층별 오브젝트 활성/비활성
+        if (_floor1Object != null)
+            _floor1Object.SetActive(isFloor1);
+        
+        if (_vipFloorObject != null)
+            _vipFloorObject.SetActive(!isFloor1);
+        
+        // 층별 버튼 그룹 활성/비활성
         if (_floor1ButtonGroup != null)
             _floor1ButtonGroup.SetActive(isFloor1);
         

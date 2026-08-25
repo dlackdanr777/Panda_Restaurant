@@ -28,10 +28,6 @@ public abstract class UIRestaurantAdminTab : MonoBehaviour
         if (targetSprite != null)
         {
             _tabBackground.sprite = targetSprite;
-            
-            // 알파 페이드 애니메이션
-            _tabBackground.TweenAlpha(0.7f, 0.15f)
-                .OnComplete(() => _tabBackground.TweenAlpha(1f, 0.15f));
         }
     }
 }
