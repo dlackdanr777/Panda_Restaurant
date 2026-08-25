@@ -90,6 +90,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(69, "Skill09 남은 시간 감소 계산", ValidateSkill09RemainingTimeCalculation);
             report.Run(70, "Skill09 1·2층 활성 Burner 경계", ValidateSkill09ActiveBurnerBoundaries);
             report.Run(71, "Skill09 Legacy 지속형 채널 제거", ValidateSkill09LegacyChannelRemoval);
+            report.Run(72, "Deprecated Remaining Migration Safety", ValidateDeprecatedRemainingMigrationSafety);
             report.Print();
         }
 
@@ -3567,6 +3568,125 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 "New Skill09 must apply its immediate effect exactly once.");
         }
 
+        private static void ValidateDeprecatedRemainingMigrationSafety()
+        {
+            const string expectedPolicy =
+                "REMAINING_SKILL_MIGRATION_DEPRECATED_AFTER_SKILL09_2026_08_25";
+            Type migrationType = typeof(StaffRemainingSkillExistingStaffMigrationTool);
+            BindingFlags privateStatic = BindingFlags.Static | BindingFlags.NonPublic;
+            FieldInfo policy = migrationType.GetField("DeprecatedMigrationPolicy", privateStatic);
+            Require(policy != null && policy.IsLiteral, "Deprecated Remaining Migration policy constant is missing.");
+            Require(
+                string.Equals(policy.GetRawConstantValue() as string, expectedPolicy, StringComparison.Ordinal),
+                "Deprecated Remaining Migration policy marker does not match the final Skill09 policy.");
+
+            MethodInfo preview = migrationType.GetMethod("PreviewMigration", privateStatic);
+            MethodInfo apply = migrationType.GetMethod("ApplyMigrationFromMenu", privateStatic);
+            MethodInfo finalAudit = migrationType.GetMethod("FinalStateAudit", privateStatic);
+            MethodInfo blockedApply = migrationType.GetMethod("BlockDeprecatedApply", privateStatic);
+            MethodInfo historicalMigration = migrationType.GetMethod("RunMigrationMenu", privateStatic);
+            Require(preview != null && preview.IsPrivate, "Remaining Migration Preview MenuItem entry point is missing.");
+            Require(apply != null && apply.IsPrivate, "Remaining Migration Apply MenuItem entry point is missing.");
+            Require(preview.GetCustomAttribute<MenuItem>() != null, "Remaining Migration Preview MenuItem must be preserved.");
+            Require(apply.GetCustomAttribute<MenuItem>() != null, "Remaining Migration Apply MenuItem must be preserved.");
+            Require(finalAudit != null && finalAudit.IsPrivate, "Remaining Migration final-state audit must be private.");
+            Require(blockedApply != null && blockedApply.IsPrivate, "Deprecated Remaining Migration Apply blocker must be private.");
+            Require(
+                historicalMigration != null && historicalMigration.IsPrivate,
+                "Historical Remaining Migration implementation must remain private and unreachable.");
+
+            string source = NormalizeSourceLineEndings(
+                ReadProjectText(
+                    "Assets/Editor/PandaRestaurant/StaffDataValidation/"
+                    + "StaffRemainingSkillExistingStaffMigrationTool.cs"));
+            string previewEntry = ExtractSourceSection(
+                source,
+                "[MenuItem(PreviewMenuPath)]",
+                "[MenuItem(ApplyMenuPath)]");
+            string applyEntry = ExtractSourceSection(
+                source,
+                "[MenuItem(ApplyMenuPath)]",
+                "private static void FinalStateAudit()");
+            string finalAuditEntry = ExtractSourceSection(
+                source,
+                "private static void FinalStateAudit()",
+                "private static void BlockDeprecatedApply()");
+            string blockedApplyEntry = ExtractSourceSection(
+                source,
+                "private static void BlockDeprecatedApply()",
+                "private static void ValidateFinalStateInventory(");
+            string finalAuditHelpers = ExtractSourceSection(
+                source,
+                "private static void ValidateFinalStateInventory(",
+                "// Historical migration implementation retained for forensic reference.");
+            string previewReachableSource = previewEntry + finalAuditEntry + finalAuditHelpers;
+            string applyReachableSource = applyEntry + blockedApplyEntry;
+
+            Require(previewEntry.Contains("FinalStateAudit();"), "Remaining Migration Preview must invoke only the final-state audit.");
+            Require(applyEntry.Contains("BlockDeprecatedApply();"), "Remaining Migration Apply must invoke only the permanent blocker.");
+            Require(
+                CountOccurrences(source, "RunMigrationMenu(") == 1,
+                "Historical Remaining Migration execution must have no callers after final Skill09 migration.");
+            Require(!previewReachableSource.Contains("RunMigrationMenu("), "Remaining Migration Preview must not invoke historical migration.");
+            Require(!applyReachableSource.Contains("RunMigrationMenu("), "Remaining Migration Apply must not invoke historical migration.");
+            Require(
+                blockedApplyEntry.Contains("DEPRECATED_MIGRATION_APPLY_BLOCKED"),
+                "Deprecated Remaining Migration Apply must emit its permanent blocked marker.");
+            Require(
+                !blockedApplyEntry.Contains("PASS"),
+                "Deprecated Remaining Migration Apply must never report a successful migration.");
+
+            string[] forbiddenEntryPointOperations =
+            {
+                "OpenFolderPanel(",
+                "DisplayDialog(",
+                "AssetDatabase.CreateAsset(",
+                "AssetDatabase.DeleteAsset(",
+                "AssetDatabase.MoveAsset(",
+                "AssetDatabase.SaveAssets(",
+                "AssetDatabase.StartAssetEditing(",
+                "AssetDatabase.StopAssetEditing(",
+                "AssetDatabase.ImportAsset(",
+                "AssetDatabase.Refresh(",
+                "EditorUtility.SetDirty(",
+                "ApplyModifiedProperties(",
+                "File.Write",
+                "File.Append",
+                "File.Delete(",
+                "Directory.CreateDirectory("
+            };
+            for (int index = 0; index < forbiddenEntryPointOperations.Length; index++)
+            {
+                string forbidden = forbiddenEntryPointOperations[index];
+                Require(
+                    !previewReachableSource.Contains(forbidden),
+                    "Remaining Migration Preview final-state audit must be read-only: " + forbidden);
+                Require(
+                    !applyReachableSource.Contains(forbidden),
+                    "Deprecated Remaining Migration Apply must never write or open UI: " + forbidden);
+            }
+
+            Require(
+                finalAuditHelpers.Contains("GlobalRemainingCookingTimeReductionSkill"),
+                "Remaining Migration final-state audit must verify the redesigned Skill09 class.");
+            Require(
+                source.Contains("f7650976be31bb0458d7625e3a531527")
+                && finalAuditHelpers.Contains("FinalSkill09MigrationLegacyGuid"),
+                "Remaining Migration final-state audit must verify the preserved Skill09 migration Legacy GUID.");
+            Require(
+                finalAuditHelpers.Contains("inventory.Skills.Count != 32")
+                && finalAuditHelpers.Contains("legacySkillCount != 18"),
+                "Remaining Migration final-state audit must require exactly 32 Active and 18 Legacy Skills.");
+            Require(
+                finalAuditEntry.Contains("Asset write: 0")
+                && blockedApplyEntry.Contains("Asset write: 0"),
+                "Remaining Migration Preview and blocked Apply must both report zero Asset writes.");
+            Require(
+                source.Contains("Historical migration implementation retained for forensic reference.")
+                && source.Contains("No MenuItem entry point may invoke it after final Skill09 migration."),
+                "Historical Remaining Migration forensic-retention safety comments must remain explicit.");
+        }
+
         private static void ValidateFeverMultipliers(
             FeverRuntimeContext context,
             float expected,
@@ -3833,7 +3953,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("72. 오류 수: " + _errors.Count);
+                _output.AppendLine("73. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -3841,7 +3961,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "73. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "74. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)

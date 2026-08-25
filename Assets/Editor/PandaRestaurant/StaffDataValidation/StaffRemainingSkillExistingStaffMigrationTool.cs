@@ -11,10 +11,28 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 {
     internal static class StaffRemainingSkillExistingStaffMigrationTool
     {
+        private const string DeprecatedMigrationPolicy =
+            "REMAINING_SKILL_MIGRATION_DEPRECATED_AFTER_SKILL09_2026_08_25";
         private const string PreviewMenuPath =
             "Tools/Panda Restaurant/Staff/Preview Remaining Skill Existing Staff Migration";
         private const string ApplyMenuPath =
             "Tools/Panda Restaurant/Staff/Apply Remaining Skill Existing Staff Migration";
+        private const string ExpectedFinalInventoryFingerprint =
+            "90c3a56ca032d6542359d392ca014ce29b3c367cb227238165d9eadacf0be15b";
+        private const string FinalSkill09ActivePath =
+            "Assets/Scripts/Datas/Staff/Skill/STAFF27Skill.asset";
+        private const string FinalSkill09MigrationLegacyPath =
+            "Assets/Scripts/Datas/Staff/LegacySkill/STAFF27GlobalCookingSpeedUpSkill.asset";
+        private const string FinalSkill09MigrationLegacyGuid =
+            "f7650976be31bb0458d7625e3a531527";
+        private const string FinalSkill09SpeedLegacyPath =
+            "Assets/Scripts/Datas/Staff/LegacySkill/STAFF27Skill.asset";
+        private const string FinalSkill09SpeedLegacyGuid =
+            "4803555ba0e7f7f46af709248b6ac2be";
+        private const string FinalSkill09SpeedLegacyAssetSha256 =
+            "bf3d91b6f1b78bedad789b7a3131798356522b7a619f8824194e9ba46795aae6";
+        private const string FinalSkill09SpeedLegacyMetaSha256 =
+            "62aa0dfe48bcf573136c6677ac4aacde1bff1282d8eee306259a8957a96766f5";
         private const string Final17Sha256 =
             "ce51987f36fec57b434d3b3fcaf796a5fbd4d907a5dd8a0b6b9c507db392c68d";
         private const string SkillTypeSha256 =
@@ -78,15 +96,447 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         [MenuItem(PreviewMenuPath)]
         private static void PreviewMigration()
         {
-            RunMigrationMenu(false);
+            FinalStateAudit();
         }
 
         [MenuItem(ApplyMenuPath)]
         private static void ApplyMigrationFromMenu()
         {
-            RunMigrationMenu(true);
+            BlockDeprecatedApply();
         }
 
+        private static void FinalStateAudit()
+        {
+            List<string> errors = new List<string>();
+            StaffDataAssetInventorySnapshot inventory = null;
+            int legacySkillCount = 0;
+            int sharedSkillCount = 0;
+            int orphanSkillCount = 0;
+            int legacyActiveReferenceCount = 0;
+            int missingScriptCount = 0;
+            int duplicateGuidCount = 0;
+
+            try
+            {
+                IReadOnlyList<string> diagnostics;
+                if (!StaffDataAssetInventoryReader.TryBuildReadOnlyInventory(
+                        out inventory,
+                        out diagnostics)
+                    || inventory == null)
+                {
+                    AddDiagnostics("Final Current Inventory", diagnostics, errors);
+                    if (errors.Count == 0)
+                    {
+                        errors.Add("Final Current Inventory snapshot could not be built.");
+                    }
+                }
+                else
+                {
+                    ValidateFinalStateInventory(
+                        inventory,
+                        errors,
+                        out legacySkillCount,
+                        out sharedSkillCount,
+                        out orphanSkillCount,
+                        out legacyActiveReferenceCount,
+                        out missingScriptCount,
+                        out duplicateGuidCount);
+                }
+            }
+            catch (Exception exception)
+            {
+                errors.Add(
+                    "SUPERSEDED_FINAL_STATE_AUDIT_EXCEPTION: "
+                    + exception.GetType().Name + " - " + exception.Message);
+            }
+
+            StringBuilder output = new StringBuilder();
+            output.AppendLine("[Remaining Skill Existing Staff Migration — DEPRECATED]");
+            output.AppendLine("Policy: " + DeprecatedMigrationPolicy);
+            output.AppendLine(
+                "Status: "
+                + (errors.Count == 0 ? "SUPERSEDED_FINAL_STATE" : "SUPERSEDED_FINAL_STATE_AUDIT: FAIL"));
+            output.AppendLine(
+                "Reason: Skill08 migration and final Skill09 redesign are already applied.");
+            output.AppendLine("Active Skill: " + (inventory != null ? inventory.Skills.Count : 0));
+            output.AppendLine("Legacy Skill: " + legacySkillCount);
+            output.AppendLine("Shared / Orphan: " + sharedSkillCount + " / " + orphanSkillCount);
+            output.AppendLine("Legacy Active Reference: " + legacyActiveReferenceCount);
+            output.AppendLine("Missing Script: " + missingScriptCount);
+            output.AppendLine("Duplicate GUID: " + duplicateGuidCount);
+            output.AppendLine(
+                "InventoryFingerprint: "
+                + (inventory != null ? inventory.InventoryFingerprint : "UNAVAILABLE"));
+            output.AppendLine("Asset write: 0");
+
+            for (int index = 0; index < errors.Count; index++)
+            {
+                output.AppendLine("ERROR: " + errors[index]);
+            }
+
+            if (errors.Count == 0)
+            {
+                output.AppendLine("REMAINING SKILL MIGRATION SUPERSEDED AUDIT: PASS");
+                Debug.Log(output.ToString());
+            }
+            else
+            {
+                output.AppendLine("SUPERSEDED_FINAL_STATE_AUDIT: FAIL");
+                Debug.LogError(output.ToString());
+            }
+        }
+
+        private static void BlockDeprecatedApply()
+        {
+            Debug.LogWarning(
+                "[Remaining Skill Existing Staff Migration — DEPRECATED]\n"
+                + "Policy: " + DeprecatedMigrationPolicy + "\n"
+                + "DEPRECATED_MIGRATION_APPLY_BLOCKED\n"
+                + "This historical migration is superseded by:\n"
+                + "- Skill08 final migration\n"
+                + "- Skill09 GlobalRemainingCookingTimeReductionSkill migration\n"
+                + "- Current Inventory V8\n"
+                + "- Dry Run V8\n"
+                + "Asset write: 0");
+        }
+
+        private static void ValidateFinalStateInventory(
+            StaffDataAssetInventorySnapshot inventory,
+            List<string> errors,
+            out int legacySkillCount,
+            out int sharedSkillCount,
+            out int orphanSkillCount,
+            out int legacyActiveReferenceCount,
+            out int missingScriptCount,
+            out int duplicateGuidCount)
+        {
+            legacySkillCount = 0;
+            sharedSkillCount = 0;
+            orphanSkillCount = 0;
+            legacyActiveReferenceCount = 0;
+            missingScriptCount = 0;
+            duplicateGuidCount = 0;
+
+            if (inventory.Staff.Count != 32)
+            {
+                errors.Add("Expected exactly 32 StaffData assets: " + inventory.Staff.Count + ".");
+            }
+
+            if (inventory.Skills.Count != 32)
+            {
+                errors.Add("Expected exactly 32 Active Skill assets: " + inventory.Skills.Count + ".");
+            }
+
+            if (inventory.InventoryFingerprint != ExpectedFinalInventoryFingerprint)
+            {
+                errors.Add(
+                    "Final InventoryFingerprint mismatch: " + inventory.InventoryFingerprint + ".");
+            }
+
+            HashSet<string> assetGuids = new HashSet<string>(StringComparer.Ordinal);
+            HashSet<string> legacyGuids = new HashSet<string>(StringComparer.Ordinal);
+            Dictionary<string, int> skillClasses = new Dictionary<string, int>(StringComparer.Ordinal);
+            for (int index = 0; index < inventory.Staff.Count; index++)
+            {
+                if (!assetGuids.Add(inventory.Staff[index].AssetGuid))
+                {
+                    duplicateGuidCount++;
+                }
+            }
+
+            for (int index = 0; index < inventory.Skills.Count; index++)
+            {
+                StaffSkillAssetSnapshot skill = inventory.Skills[index];
+                if (!assetGuids.Add(skill.AssetGuid))
+                {
+                    duplicateGuidCount++;
+                }
+
+                if (skill.IsShared)
+                {
+                    sharedSkillCount++;
+                }
+
+                if (skill.IsOrphan)
+                {
+                    orphanSkillCount++;
+                }
+
+                if (skill.HasMissingScript)
+                {
+                    missingScriptCount++;
+                }
+
+                skillClasses[skill.ConcreteTypeName] = GetCount(skillClasses, skill.ConcreteTypeName) + 1;
+            }
+
+            string[] discoveredLegacyGuids = AssetDatabase.FindAssets(
+                string.Empty,
+                new[] { StaffDataAssetInventoryReader.LegacySkillFolder });
+            for (int index = 0; index < discoveredLegacyGuids.Length; index++)
+            {
+                string assetPath = AssetDatabase.GUIDToAssetPath(discoveredLegacyGuids[index]);
+                if (!assetPath.StartsWith(
+                        StaffDataAssetInventoryReader.LegacySkillFolder + "/",
+                        StringComparison.Ordinal)
+                    || !assetPath.EndsWith(".asset", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                legacySkillCount++;
+                string assetGuid = AssetDatabase.AssetPathToGUID(assetPath);
+                legacyGuids.Add(assetGuid);
+                if (!assetGuids.Add(assetGuid))
+                {
+                    duplicateGuidCount++;
+                }
+
+                if (AssetDatabase.LoadAssetAtPath<SkillBase>(assetPath) == null)
+                {
+                    missingScriptCount++;
+                }
+            }
+
+            if (legacySkillCount != 18)
+            {
+                errors.Add("Expected exactly 18 Legacy Skill assets: " + legacySkillCount + ".");
+            }
+
+            for (int index = 0; index < inventory.Staff.Count; index++)
+            {
+                StaffAssetReferenceSnapshot reference = inventory.Staff[index].SkillReference;
+                if (reference != null && legacyGuids.Contains(reference.AssetGuid))
+                {
+                    legacyActiveReferenceCount++;
+                }
+            }
+
+            if (sharedSkillCount != 0 || orphanSkillCount != 0)
+            {
+                errors.Add(
+                    "Active Shared / Orphan must remain 0 / 0: "
+                    + sharedSkillCount + " / " + orphanSkillCount + ".");
+            }
+
+            if (legacyActiveReferenceCount != 0)
+            {
+                errors.Add("Legacy Active Reference must remain zero: " + legacyActiveReferenceCount + ".");
+            }
+
+            if (missingScriptCount != 0)
+            {
+                errors.Add("Missing Script must remain zero: " + missingScriptCount + ".");
+            }
+
+            if (duplicateGuidCount != 0)
+            {
+                errors.Add("Duplicate GUID must remain zero: " + duplicateGuidCount + ".");
+            }
+
+            ValidateFinalSkillClassCount(skillClasses, "SpeedUpSkill", 12, errors);
+            ValidateFinalSkillClassCount(skillClasses, "TouchAddCustomerButtonSkill", 3, errors);
+            ValidateFinalSkillClassCount(skillClasses, "AssignedCookingSpeedUpSkill", 4, errors);
+            ValidateFinalSkillClassCount(skillClasses, "FoodPaymentTipUpSkill", 1, errors);
+            ValidateFinalSkillClassCount(skillClasses, "FoodPriceUpSkill", 6, errors);
+            ValidateFinalSkillClassCount(skillClasses, "NormalCustomerMoveSpeedUpSkill", 5, errors);
+            ValidateFinalSkillClassCount(skillClasses, "GlobalCookingSpeedUpSkill", 0, errors);
+            ValidateFinalSkillClassCount(skillClasses, "GlobalRemainingCookingTimeReductionSkill", 1, errors);
+            ValidateFinalSkillClassCount(skillClasses, "AllStaffMoveSpeedUpSkill", 0, errors);
+
+            ValidateFinalSkill08Targets(inventory, errors);
+            ValidateFinalSkill09State(inventory, errors);
+        }
+
+        private static void ValidateFinalSkillClassCount(
+            Dictionary<string, int> actualCounts,
+            string className,
+            int expectedCount,
+            List<string> errors)
+        {
+            int actualCount = GetCount(actualCounts, className);
+            if (actualCount != expectedCount)
+            {
+                errors.Add(
+                    "Active Skill class mismatch for " + className
+                    + ": expected " + expectedCount + ", actual " + actualCount + ".");
+            }
+        }
+
+        private static void ValidateFinalSkill08Targets(
+            StaffDataAssetInventorySnapshot inventory,
+            List<string> errors)
+        {
+            int validatedTargets = 0;
+            for (int index = 0; index < Targets.Length; index++)
+            {
+                MigrationTarget target = Targets[index];
+                if (target.OfficialSkillId != "STAFF_SKILL08")
+                {
+                    continue;
+                }
+
+                StaffDataAssetSnapshot staff;
+                StaffSkillAssetSnapshot skill;
+                if (!inventory.TryGetStaff(target.StaffId, out staff)
+                    || staff == null
+                    || staff.SkillReference == null
+                    || !inventory.TryGetSkill(staff.SkillReference.AssetGuid, out skill)
+                    || skill == null)
+                {
+                    errors.Add("Final Skill08 StaffData or Active Skill is missing: " + target.StaffId + ".");
+                    continue;
+                }
+
+                bool valid = staff.AssetGuid == target.StaffDataGuid
+                             && staff.SkillReference.AssetPath == target.ActivePath
+                             && staff.SkillConcreteTypeName == "NormalCustomerMoveSpeedUpSkill"
+                             && skill.AssetPath == target.ActivePath
+                             && skill.ConcreteTypeName == "NormalCustomerMoveSpeedUpSkill"
+                             && skill.ReferenceCount == 1
+                             && skill.ReferencedStaffIds[0] == target.StaffId
+                             && Approximately(skill.Duration, target.OfficialDuration)
+                             && Approximately(skill.Cooldown, target.OfficialCooldown)
+                             && ValidateFinalSerializedSkill(
+                                 target.ActivePath,
+                                 typeof(NormalCustomerMoveSpeedUpSkill),
+                                 target.ObjectName,
+                                 "_normalCustomerMoveSpeedUpPercent",
+                                 target.OfficialEffectValue,
+                                 target.OfficialDuration,
+                                 target.OfficialCooldown,
+                                 errors);
+                if (!valid)
+                {
+                    errors.Add("Final Skill08 StaffData / Skill contract mismatch: " + target.StaffId + ".");
+                    continue;
+                }
+
+                validatedTargets++;
+            }
+
+            if (validatedTargets != 5)
+            {
+                errors.Add("Expected exactly five final Skill08 Staff targets: " + validatedTargets + ".");
+            }
+        }
+
+        private static void ValidateFinalSkill09State(
+            StaffDataAssetInventorySnapshot inventory,
+            List<string> errors)
+        {
+            StaffDataAssetSnapshot staff;
+            StaffSkillAssetSnapshot active;
+            if (!inventory.TryGetStaff("STAFF27", out staff)
+                || staff == null
+                || staff.SkillReference == null
+                || !inventory.TryGetSkill(staff.SkillReference.AssetGuid, out active)
+                || active == null)
+            {
+                errors.Add("Final STAFF27 StaffData or Active Skill is missing.");
+                return;
+            }
+
+            string activeGuid = AssetDatabase.AssetPathToGUID(FinalSkill09ActivePath);
+            bool activeValid = IsUnityGuid(activeGuid)
+                               && activeGuid == active.AssetGuid
+                               && activeGuid == staff.SkillReference.AssetGuid
+                               && staff.SkillReference.AssetPath == FinalSkill09ActivePath
+                               && staff.SkillConcreteTypeName == "GlobalRemainingCookingTimeReductionSkill"
+                               && active.AssetPath == FinalSkill09ActivePath
+                               && active.ConcreteTypeName == "GlobalRemainingCookingTimeReductionSkill"
+                               && active.ReferenceCount == 1
+                               && active.ReferencedStaffIds[0] == "STAFF27"
+                               && Approximately(active.Duration, 1d)
+                               && Approximately(active.Cooldown, 240d)
+                               && ValidateFinalSerializedSkill(
+                                   FinalSkill09ActivePath,
+                                   typeof(GlobalRemainingCookingTimeReductionSkill),
+                                   "STAFF27SKILL",
+                                   "_remainingCookingTimeReductionPercent",
+                                   50f,
+                                   1f,
+                                   240f,
+                                   errors);
+            if (!activeValid)
+            {
+                errors.Add("STAFF27 final GlobalRemainingCookingTimeReductionSkill must remain 50 / 1 / 240.");
+            }
+
+            bool migrationLegacyValid =
+                AssetDatabase.AssetPathToGUID(FinalSkill09MigrationLegacyPath)
+                    == FinalSkill09MigrationLegacyGuid
+                && FindAssetReferences(FinalSkill09MigrationLegacyPath).Count == 0
+                && ValidateFinalSerializedSkill(
+                    FinalSkill09MigrationLegacyPath,
+                    typeof(GlobalCookingSpeedUpSkill),
+                    "STAFF27GlobalCookingSpeedUpSkill",
+                    "_globalCookingSpeedUpPercent",
+                    50f,
+                    30f,
+                    200f,
+                    errors);
+            if (!migrationLegacyValid)
+            {
+                errors.Add(
+                    "STAFF27 GlobalCooking migration Legacy must retain GUID "
+                    + FinalSkill09MigrationLegacyGuid + " and 50 / 30 / 200.");
+            }
+
+            bool speedLegacyValid =
+                AssetDatabase.AssetPathToGUID(FinalSkill09SpeedLegacyPath)
+                    == FinalSkill09SpeedLegacyGuid
+                && ComputeAssetFileSha256(FinalSkill09SpeedLegacyPath)
+                    == FinalSkill09SpeedLegacyAssetSha256
+                && ComputeAssetFileSha256(FinalSkill09SpeedLegacyPath + ".meta")
+                    == FinalSkill09SpeedLegacyMetaSha256
+                && FindAssetReferences(FinalSkill09SpeedLegacyPath).Count == 0;
+            if (!speedLegacyValid)
+            {
+                errors.Add("STAFF27 original SpeedUp Legacy GUID / asset SHA / meta SHA mismatch.");
+            }
+        }
+
+        private static bool ValidateFinalSerializedSkill(
+            string assetPath,
+            Type expectedType,
+            string expectedObjectName,
+            string effectField,
+            float expectedEffect,
+            float expectedDuration,
+            float expectedCooldown,
+            List<string> errors)
+        {
+            SkillBase skill = AssetDatabase.LoadAssetAtPath<SkillBase>(assetPath);
+            if (skill == null || skill.GetType() != expectedType || skill.name != expectedObjectName)
+            {
+                errors.Add("Final Skill class or object identity mismatch: " + assetPath + ".");
+                return false;
+            }
+
+            SerializedObject serialized = new SerializedObject(skill);
+            SerializedProperty effect = serialized.FindProperty(effectField);
+            SerializedProperty duration = serialized.FindProperty("_duration");
+            SerializedProperty cooldown = serialized.FindProperty("_cooldown");
+            if (effect == null || duration == null || cooldown == null)
+            {
+                errors.Add("Final Skill serialized property is missing: " + assetPath + ".");
+                return false;
+            }
+
+            bool valid = Approximately(effect.floatValue, expectedEffect)
+                         && Approximately(duration.floatValue, expectedDuration)
+                         && Approximately(cooldown.floatValue, expectedCooldown);
+            if (!valid)
+            {
+                errors.Add("Final Skill effect / duration / cooldown mismatch: " + assetPath + ".");
+            }
+
+            return valid;
+        }
+
+        // Historical migration implementation retained for forensic reference.
+        // No MenuItem entry point may invoke it after final Skill09 migration.
         private static void RunMigrationMenu(bool apply)
         {
             if (apply && EditorApplication.isPlayingOrWillChangePlaymode)
