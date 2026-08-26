@@ -64,8 +64,7 @@ public class UIFever : MonoBehaviour
         _feverAdButton.OnDiaRewarded += OnDiaButtonClicked;
         TimeManager.Instance.OnRemoveTimeHandler += OnRemoveTimeEvent;
 
-        OnUpdateAdButtonEvent();
-        FeverAdButtonSetActive();
+        RefreshFeverPurchaseButtonState();
 
         InvokeRepeating(nameof(FeverAdButtonSetActive), 0, 1f);
     }
@@ -93,8 +92,9 @@ public class UIFever : MonoBehaviour
 
     public void OnChangeGaugeNoAnime(float gaugeValue)
     {
-        float fillAmount = gaugeValue <= 0 ? 0 : 0.3f + gaugeValue * 0.7f;
-        _fillAmountImage.SetFillAmonut(fillAmount);
+        float ratio = Mathf.Clamp01(gaugeValue);
+        float fillAmount = ratio <= 0f ? 0f : 0.3f + ratio * 0.7f;
+        _fillAmountImage.SetFillAmountNoAnime(fillAmount);
     }
 
     public void OnChangeGauge()
@@ -162,14 +162,14 @@ public class UIFever : MonoBehaviour
         _feverButton.TweenStop();
         _feverButton.transform.localScale = _tmpButtonScale;
         _ferverSystem.FeverStart();
-        _feverAdButton.gameObject.SetActive(false);
+        RefreshFeverPurchaseButtonState();
     }
 
 
     private void StartFeverEvent()
     {
         float tweenTime = 1;
-        _feverAdButton.gameObject.SetActive(false);
+        RefreshFeverPurchaseButtonState();
         _feverButton.interactable = false;
         _mainScene.PlayMainMusic();
         _feverEffects.SetActive(true);
@@ -187,7 +187,7 @@ public class UIFever : MonoBehaviour
     private void EndFeverEvent()
     {
         float tweenTime = 1;
-        _feverAdButton.gameObject.SetActive(true);
+        RefreshFeverPurchaseButtonState();
         _feverAnimeObj.TweenStop();
         _feverAnimeObj.position = _animeEndPos.position;
         _feverButton.interactable = false;
@@ -214,12 +214,28 @@ public class UIFever : MonoBehaviour
 
     private void OnUpdateAdButtonEvent()
     {
-        _feverAdButton.gameObject.SetActive(true);
+        RefreshFeverPurchaseButtonState();
     }
 
     private void FeverAdButtonSetActive()
     {
-        _feverAdButton.gameObject.SetActive(UserInfo.IsFeverTutorialClear);
+        RefreshFeverPurchaseButtonState();
+    }
+
+    private void RefreshFeverPurchaseButtonState()
+    {
+        bool canPurchase =
+            _ferverSystem != null
+            && UserInfo.IsFeverTutorialClear
+            && !_ferverSystem.IsFeverStart;
+
+        if (_feverAdButton == null)
+        {
+            return;
+        }
+
+        _feverAdButton.Interactable(canPurchase);
+        _feverAdButton.gameObject.SetActive(canPurchase);
     }
 
 

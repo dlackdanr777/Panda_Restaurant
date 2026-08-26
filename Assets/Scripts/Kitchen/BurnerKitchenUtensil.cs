@@ -14,6 +14,19 @@ public class BurnerKitchenUtensil : KitchenUtensil
     bool _isStaffWorking = false;
 
     public float CookSpeedMul => _isTouch ? 2f : 1f;
+    public bool IsStaffWorking => _isStaffWorking;
+    public float EquipmentCookingBonusPercent
+    {
+        get
+        {
+            if (_data == null || _data.EquipEffectType != EquipEffectType.AddCookSpeed)
+            {
+                return 0f;
+            }
+
+            return _data.EffectValue;
+        }
+    }
 
 
     public override void Init(ERestaurantFloorType floor)

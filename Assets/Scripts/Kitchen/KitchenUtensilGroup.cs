@@ -1,9 +1,12 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 
 public class KitchenUtensilGroup: MonoBehaviour
 {
+    private const float MaximumAssignedCookingBonusPercent = 1000f;
+
     [Header("Option")]
     [SerializeField] private ERestaurantFloorType _floorType;
     public ERestaurantFloorType FloorType => _floorType;
@@ -30,7 +33,6 @@ public class KitchenUtensilGroup: MonoBehaviour
     private UIBurnerTimer[] _burnerTimers;
     private KitchenBurnerData[] _burnerDatas;
     private Dictionary<KitchenUtensilType, List<KitchenUtensil>> _kitchenUtensilDic = new Dictionary<KitchenUtensilType, List<KitchenUtensil>>();
-    private List<BurnerKitchenUtensil> _burnerKitchenUtensils = new List<BurnerKitchenUtensil>();
     private Queue<CookingData> _cookingQueue = new Queue<CookingData>();
     private SinkKitchenUtensil _sinkKitchenUtensil;
 
@@ -48,9 +50,174 @@ public class KitchenUtensilGroup: MonoBehaviour
         return dataList;
     }
 
+    public CookingRemainingTimeReductionBatchResult ApplyRemainingCookingTimeReductionToActiveBurners(
+        float reductionPercent)
+    {
+        if (float.IsNaN(reductionPercent)
+            || float.IsInfinity(reductionPercent)
+            || reductionPercent < 0f
+            || reductionPercent > 100f
+            || _burnerDatas == null
+            || _burnerTimers == null
+            || _burnerDatas.Length != _burnerTimers.Length)
+        {
+            return default;
+        }
+
+        List<KitchenBurnerData> targets = new List<KitchenBurnerData>();
+        List<CookingRemainingTimeReductionResult> previews =
+            new List<CookingRemainingTimeReductionResult>();
+        List<float> originalRemainingTimes = new List<float>();
+        List<float> originalBaselines = new List<float>();
+        double beforeTotal = 0d;
+        double afterTotal = 0d;
+        for (int index = 0; index < _burnerDatas.Length; index++)
+        {
+            KitchenBurnerData burnerData = _burnerDatas[index];
+            if (!burnerData.IsUsable
+                || burnerData.CookingData.IsDefault()
+                || burnerData.Time <= 0f
+                || burnerData.CookingData.TableData == null
+                || burnerData.CookingData.TableData.CurrentCustomer == null)
+            {
+                continue;
+            }
+
+            CookingRemainingTimeReductionResult preview =
+                CookingRuntimePolicyCalculator.ApplyInstantRemainingTimeReduction(
+                    burnerData.CookingData.CookTime,
+                    burnerData.Time,
+                    burnerData.MinimumDurationBaselineCookTime,
+                    burnerData.RealElapsedCookingSeconds,
+                    reductionPercent);
+            if (reductionPercent > 0f && !preview.Applied)
+            {
+                return default;
+            }
+
+            targets.Add(burnerData);
+            previews.Add(preview);
+            originalRemainingTimes.Add(burnerData.Time);
+            originalBaselines.Add(burnerData.MinimumDurationBaselineCookTime);
+            beforeTotal += burnerData.Time;
+            afterTotal += preview.RemainingTime;
+        }
+
+        if (reductionPercent == 0f || targets.Count == 0)
+        {
+            return new CookingRemainingTimeReductionBatchResult(
+                targets.Count,
+                0,
+                ToFiniteRemainingTimeTotal(beforeTotal),
+                ToFiniteRemainingTimeTotal(beforeTotal));
+        }
+
+        int changedCount = 0;
+        try
+        {
+            for (int index = 0; index < targets.Count; index++)
+            {
+                CookingRemainingTimeReductionResult applied;
+                if (!targets[index].TryApplyRemainingCookingTimeReduction(
+                        reductionPercent,
+                        out applied))
+                {
+                    throw new InvalidOperationException(
+                        "A validated Burner rejected the Skill09 remaining-time reduction.");
+                }
+
+                changedCount += applied.Applied ? 1 : 0;
+            }
+
+            for (int index = 0; index < targets.Count; index++)
+            {
+                int burnerIndex = Array.IndexOf(_burnerDatas, targets[index]);
+                if (burnerIndex < 0 || _burnerTimers[burnerIndex] == null)
+                {
+                    throw new InvalidOperationException(
+                        "A validated Burner has no matching timer UI.");
+                }
+
+                _burnerTimers[burnerIndex].SetFillAmount(
+                    1 - (targets[index].Time / targets[index].CookingData.CookTime));
+            }
+        }
+        catch (Exception exception)
+        {
+            for (int index = 0; index < targets.Count; index++)
+            {
+                targets[index].RestoreCookingClockSnapshot(
+                    originalRemainingTimes[index],
+                    originalBaselines[index]);
+            }
+
+            for (int index = 0; index < targets.Count; index++)
+            {
+                try
+                {
+                    int burnerIndex = Array.IndexOf(_burnerDatas, targets[index]);
+                    if (burnerIndex >= 0 && _burnerTimers[burnerIndex] != null)
+                    {
+                        _burnerTimers[burnerIndex].SetFillAmount(
+                            1 - (targets[index].Time / targets[index].CookingData.CookTime));
+                    }
+                }
+                catch (Exception rollbackException)
+                {
+                    Debug.LogError(
+                        "[STAFF_SKILL09_REMAINING_TIME] Timer rollback failed: "
+                        + rollbackException.Message);
+                }
+            }
+
+            Debug.LogError(
+                "[STAFF_SKILL09_REMAINING_TIME] Atomic Burner reduction failed: "
+                + exception.Message);
+            return default;
+        }
+
+        return new CookingRemainingTimeReductionBatchResult(
+            targets.Count,
+            changedCount,
+            ToFiniteRemainingTimeTotal(beforeTotal),
+            ToFiniteRemainingTimeTotal(afterTotal));
+    }
+
+    private static float ToFiniteRemainingTimeTotal(double value)
+    {
+        return value >= float.MaxValue ? float.MaxValue : (float)value;
+    }
+
     public SinkKitchenUtensil GetSinkKitchenUtensil()
     {
         return _sinkKitchenUtensil;
+    }
+
+    private static float CalculateAssignedCookingSpeedMultiplier(
+        bool hasAssignedStaff,
+        bool isStaffWorking,
+        float assignedCookingBonusPercent)
+    {
+        if (!hasAssignedStaff
+            || !isStaffWorking
+            || assignedCookingBonusPercent <= 0f
+            || float.IsNaN(assignedCookingBonusPercent)
+            || float.IsInfinity(assignedCookingBonusPercent)
+            || assignedCookingBonusPercent > MaximumAssignedCookingBonusPercent)
+        {
+            return 1f;
+        }
+
+        float multiplier = 1f + assignedCookingBonusPercent * 0.01f;
+        if (float.IsNaN(multiplier)
+            || float.IsInfinity(multiplier)
+            || multiplier < 1f
+            || multiplier > 11f)
+        {
+            return 1f;
+        }
+
+        return multiplier;
     }
 
 
@@ -119,7 +286,6 @@ public class KitchenUtensilGroup: MonoBehaviour
                 if (burner != null)
                 {
                     int burnerIndex = (int)type; // Burner1=0, Burner2=1, ..., Burner5=4
-                    _burnerKitchenUtensils.Add(burner);
                     _burnerDatas[burnerIndex].SetKitchenUtensil(burner);
                     burner.SetData(_burnerDatas[burnerIndex]);
                 }
@@ -137,6 +303,10 @@ public class KitchenUtensilGroup: MonoBehaviour
     {
         if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, _floorType))
             return;
+
+        GameManager gameManager = GameManager.Instance;
+        float feverCookingMultiplier =
+            gameManager.FeverRuntimeContext.CookingMultiplier;
 
         for (int i = 0, cnt = _burnerDatas.Length; i < cnt; ++i)
         {
@@ -158,21 +328,55 @@ public class KitchenUtensilGroup: MonoBehaviour
                     continue; // return이 아닌 continue로 변경
                 }
 
-                float subTime = Time.deltaTime * GameManager.Instance.GetCookingSpeedMul(_floorType, _burnerDatas[i].CookingData.FoodData.FoodType) * (1 + _burnerDatas[i].AddCookSpeedMul * 0.01f * (_burnerDatas[i].UseStaff != null ? _burnerDatas[i].UseStaff.SpeedMul : 1));
-                
-                // _burnerKitchenUtensils 리스트의 인덱스가 i와 일치하는지 확인
-                if (i < _burnerKitchenUtensils.Count && _burnerKitchenUtensils[i] != null)
-                {
-                    subTime *= _burnerKitchenUtensils[i].CookSpeedMul;
-                }
-                
+                KitchenBurnerData burnerData = _burnerDatas[i];
+                Staff assignedStaff = burnerData.UseStaff;
+                BurnerKitchenUtensil burner = burnerData.KitchenUtensil;
+                float sharedBaseCookingMultiplier =
+                    gameManager.GetCookingSpeedMul(
+                        _floorType,
+                        burnerData.CookingData.FoodData.FoodType);
+                float localEquipmentCookingMultiplier =
+                    CookingRuntimeMultiplierCalculator.CalculateEquipmentCookingMultiplier(
+                        burner != null ? burner.EquipmentCookingBonusPercent : 0f);
+                float chefPassiveCookingMultiplier =
+                    CookingRuntimeMultiplierCalculator.CalculateChefPassiveCookingMultiplier(
+                        assignedStaff != null,
+                        burner != null && burner.IsStaffWorking,
+                        burnerData.AddCookSpeedMul);
+                float assignedCookingSkillMultiplier = CalculateAssignedCookingSpeedMultiplier(
+                    assignedStaff != null,
+                    burner != null && burner.IsStaffWorking,
+                    assignedStaff != null
+                        ? assignedStaff.RuntimeSkillContext.AssignedCookingBonusPercent
+                        : 0f);
+
+                float burnerTouchMultiplier = burner != null ? burner.CookSpeedMul : 1f;
+                float sameFoodTypeMultiplier = 1f;
+
                 if (_burnerDatas[i].FoodType == _burnerDatas[i].CookingData.FoodData.FoodType)
                 {
-                    subTime *= 1.1f; // 같은 음식 타입일 때는 10% 더 빠르게 요리
+                    sameFoodTypeMultiplier = 1.1f; // 같은 음식 타입일 때는 10% 더 빠르게 요리
                 }
-                
-                _burnerDatas[i].Time -= subTime;
-                _burnerTimers[i].SetFillAmount(1 - (_burnerDatas[i].Time / _burnerDatas[i].CookingData.CookTime));
+
+                float finalCookingMultiplier =
+                    FeverRuntimeMultiplierCalculator.CalculateCookingMultiplier(
+                        sharedBaseCookingMultiplier,
+                        localEquipmentCookingMultiplier,
+                        chefPassiveCookingMultiplier,
+                        assignedCookingSkillMultiplier,
+                        feverCookingMultiplier,
+                        burnerTouchMultiplier,
+                        sameFoodTypeMultiplier);
+                float deltaSeconds = Time.deltaTime;
+                burnerData.Time = CookingRuntimePolicyCalculator.CalculateNextRemainingTime(
+                    burnerData.CookingData.CookTime,
+                    burnerData.MinimumDurationBaselineCookTime,
+                    burnerData.Time,
+                    burnerData.RealElapsedCookingSeconds,
+                    deltaSeconds,
+                    finalCookingMultiplier);
+                burnerData.AdvanceCookingClock(deltaSeconds);
+                _burnerTimers[i].SetFillAmount(1 - (burnerData.Time / burnerData.CookingData.CookTime));
             }
         }
     }
@@ -201,6 +405,7 @@ public class KitchenUtensilGroup: MonoBehaviour
         CookingData cookingData = _cookingQueue.Dequeue();
         _burnerDatas[burnerIndex].CookingData = cookingData;
         _burnerDatas[burnerIndex].Time = cookingData.CookTime;
+        _burnerDatas[burnerIndex].InitializeCookingClock(cookingData.CookTime);
         _burnerTimers[burnerIndex].SetActive(true);
         _smokeAnimations[burnerIndex].gameObject.SetActive(true);
         _burnerTimers[burnerIndex].SetFillAmount(0);
@@ -287,6 +492,7 @@ public class KitchenUtensilGroup: MonoBehaviour
     private void ResetBurnerData(int index)
     {
         _burnerDatas[index].Time = 0;
+        _burnerDatas[index].ResetCookingClock();
         _burnerDatas[index].CookingData.SetDefault();
         _burnerTimers[index].SetFillAmount(0);
         _burnerTimers[index].SetActive(false);

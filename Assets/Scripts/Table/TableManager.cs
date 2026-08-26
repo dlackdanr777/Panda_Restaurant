@@ -530,7 +530,21 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        int tip = data.TotalTip;
+        int basePaymentTip = data.TotalTip;
+        EStage paymentStage = UserInfo.CurrentStage;
+        float payoutBonusPercent = 0f;
+        GameManager existingGameManager;
+        if (GameManager.TryGetExistingInstance(out existingGameManager))
+        {
+            payoutBonusPercent =
+                existingGameManager.StaffSkillEffectRegistry.GetHighestPercent(
+                    StaffSkillEffectType.RestaurantTipPayoutPercent);
+        }
+
+        int finalPaymentTip =
+            StaffPaymentTipCalculator.CalculateFoodPaymentTipPayout(
+                basePaymentTip,
+                payoutBonusPercent);
         data.CurrentCustomer.ChangeState(CustomerState.Idle);
         data.CurrentCustomer.HideFood();
         UserInfo.CustomerVisits(data.CurrentCustomer.CustomerData);
@@ -545,7 +559,7 @@ public class TableManager : MonoBehaviour
 
             ExitCustomer(data);
  
-            UserInfo.AddTip(UserInfo.CurrentStage, tip);
+            UserInfo.AddTip(paymentStage, finalPaymentTip);
             UpdateTable();
         });
     }
@@ -568,8 +582,15 @@ public class TableManager : MonoBehaviour
     {
         int sitIndex = data.SitIndex;
 
-        //피버상태일 경우 2배의 가격을 지불한다.
-        int foodPrice = (int)(data.TotalPrice * (_feverSystem.IsFeverStart ? 2f : 1f));
+        float feverFoodPriceMultiplier = 1f;
+        GameManager existingGameManager;
+        if (GameManager.TryGetExistingInstance(out existingGameManager))
+        {
+            feverFoodPriceMultiplier =
+                existingGameManager.FeverRuntimeContext.FoodPriceMultiplier;
+        }
+
+        int foodPrice = (int)(data.TotalPrice * feverFoodPriceMultiplier);
         data.DropCoinAreas[sitIndex].DropCoin(data.ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0), foodPrice);
         data.TotalPrice = 0;
         data.TotalTip = 0;

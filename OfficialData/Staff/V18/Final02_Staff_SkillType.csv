@@ -1,0 +1,11 @@
+스킬 TYPE ID,스킬
+STAFF_SKILL01,스텝 이동 속도 (100%) 증가
+STAFF_SKILL02,예약 스킬 슬롯 A (현재 미사용)
+STAFF_SKILL03,(0.5)초마다 손님 호출 버튼 누름
+STAFF_SKILL04,맡은 주방 음식 제작 속도 (250%) 증가
+STAFF_SKILL05,음식 가격 (50%)증가
+STAFF_SKILL06,팁 (50%)증가
+STAFF_SKILL07,예약 스킬 슬롯 B (현재 미사용)
+STAFF_SKILL08,손님 이동 속도 (100%) 증가
+STAFF_SKILL09,전체 주방 남은 음식 조리시간 50% 감소!
+STAFF_SKILL10,전체 스텝 이동 속도 (50%) 증가

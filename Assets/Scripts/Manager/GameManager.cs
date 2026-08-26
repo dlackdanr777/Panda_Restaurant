@@ -23,10 +23,26 @@ public class GameManager : MonoBehaviour
     }
     private static GameManager _instance;
     public static bool HasInstance => _instance != null;
+
+    public static bool TryGetExistingInstance(out GameManager instance)
+    {
+        instance = _instance;
+        return instance != null;
+    }
+
     public event Action OnChangeTipPerMinuteHandler;
     public event Action OnChangeScoreHandler;
     public event Action OnChangeStaffSkillValueHandler;
     public event Action OnChangeMaxWaitCustomerCountHandler;
+
+    private readonly StaffSkillEffectRegistry _staffSkillEffectRegistry =
+        new StaffSkillEffectRegistry();
+    public StaffSkillEffectRegistry StaffSkillEffectRegistry => _staffSkillEffectRegistry;
+    public int ActiveStaffSkillEffectSourceCount => _staffSkillEffectRegistry.TotalSourceCount;
+
+    private readonly FeverRuntimeContext _feverRuntimeContext =
+        new FeverRuntimeContext();
+    public FeverRuntimeContext FeverRuntimeContext => _feverRuntimeContext;
 
     public Vector2 OutDoorPos => new Vector2(24.6f, 7.64f);
 
@@ -60,7 +76,9 @@ public class GameManager : MonoBehaviour
 
 
     public int AddScore => _addFurnitureScore + _addKitchenUtensilScore + _addGiveGachaItemScore;
-    public float TipMul =>  1 /*Mathf.Clamp(_addEquipStaffTipMul * 0.01f, 0f, 10000f)*/;
+    // FOOD_TIP_POLICY_2026_08_19_V1
+    private const float BaseFoodTipMultiplier = 0.5f;
+    public float TipMul => BaseFoodTipMultiplier;
 
     public int TipPerMinute => _addEquipFurnitureTipPerMinute + _addEquipKitchenUtensilTipPerMinute + _addGiveGachaItemTipPerMinute;
     public int MaxTipVolume => Math.Max(3000, _addEquipFurnitureMaxTipVolume + _addEquipKitchenUtensilTipVolume);
@@ -156,6 +174,21 @@ public class GameManager : MonoBehaviour
 
         DebugLog.LogError("스탭 스피드 증가 효과를 찾을 수 없습니다: " + type);
         return _totalAddSpeedMul;
+    }
+
+    public float GetStaffMoveSpeedMul(StaffGroupType type)
+    {
+        return GetStaffSpeedMul(type);
+    }
+
+    public float GetStaffWorkSpeedMul()
+    {
+        return _totalAddSpeedMul;
+    }
+
+    public float GetGuardEliminationSpeedMul()
+    {
+        return GetStaffSpeedMul(StaffGroupType.Guard);
     }
 
     public float GetStaffSkillTimeMul(StaffGroupType type)
@@ -369,7 +402,7 @@ public class GameManager : MonoBehaviour
 
     public float GetCookingSpeedMul(ERestaurantFloorType floor, FoodType type)
     {
-        float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f) + (_addEquipKitchenUtensilCookSpeedMul * 0.01f);
+        float cookSpeedMul = 1 + _totalAddSpeedMul + (_addSetCookSpeedMul[(int)floor, (int)type] * 0.01f);
         cookSpeedMul += (_addGachaItemAllCookingTimeMul * 0.01f) + _addGachaItemFoodCookingTimeMulDic[type] * 0.01f;
         return cookSpeedMul;
     }
@@ -379,7 +412,10 @@ public class GameManager : MonoBehaviour
         float foodPriceMul = 1 + _foodPriceMul + (_addSetFoodPriceMul[(int)floor, (int)type] * 0.01f);
         foodPriceMul += (_addGachaItemAllFoodPriceMul * 0.01f) + _addGachaItemFoodPriceMulDic[type] * 0.01f;
         foodPriceMul += _foodTypePriceMul[(int)type] * 0.01f;
-        return foodPriceMul;
+        float staffSkillMultiplier =
+            _staffSkillEffectRegistry.GetMultiplier(
+                StaffSkillEffectType.FoodPricePercent);
+        return foodPriceMul * staffSkillMultiplier;
     }
 
     public void AppendPromotionCustomer(int value)
@@ -426,6 +462,8 @@ public class GameManager : MonoBehaviour
 
     public void ChanceScene()
     {
+        _staffSkillEffectRegistry.ClearAll();
+        _feverRuntimeContext.Reset();
         _foodPriceMul = 0;
         _totalAddSpeedMul = 0;
         _addPromotionCustomer = 1;
@@ -500,8 +538,16 @@ public class GameManager : MonoBehaviour
     private void OnChangeFurnitureSetDataEvent(ERestaurantFloorType floor, FurnitureType type) => CheckSetDataEffect(floor);
     private void OnChangeKitchenUtensilSetDataEvent(ERestaurantFloorType floor, KitchenUtensilType type) => CheckSetDataEffect(floor);
 
+    private void OnApplicationQuit()
+    {
+        _staffSkillEffectRegistry.ClearAll();
+        _feverRuntimeContext.Reset();
+    }
+
     private void OnDestroy()
     {
+        _staffSkillEffectRegistry.ClearAll();
+        _feverRuntimeContext.Reset();
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEffectEvent;
         UserInfo.OnChangeKitchenUtensilHandler -= OnChangeKitchenUtensilEffectEvent;
         UserInfo.OnGiveFurnitureHandler -= OnGiveFurnitureEffectCheck;
@@ -597,7 +643,6 @@ public class GameManager : MonoBehaviour
         _addEquipKitchenUtensilCookSpeedMul = 0;
         _addEquipKitchenUtensilTipPerMinute = 0;
         int maxTipVolume = 0;
-        int cookSpeedMul = 0;
         int tipPerMinute = 0;
 
         for(int i = 0, cnt = (int)ERestaurantFloorType.Length; i < cnt; ++i)
@@ -612,9 +657,6 @@ public class GameManager : MonoBehaviour
                 if (data.EquipEffectType == EquipEffectType.AddMaxTip)
                     maxTipVolume += (int)data.EffectValue;
 
-                else if (data.EquipEffectType == EquipEffectType.AddCookSpeed)
-                    cookSpeedMul += (int)data.EffectValue;
-
                 else if (data.EquipEffectType == EquipEffectType.AddTipPerMinute)
                     tipPerMinute += (int)data.EffectValue;
 
@@ -624,7 +666,6 @@ public class GameManager : MonoBehaviour
         }
       
         _addEquipKitchenUtensilTipVolume = maxTipVolume;
-        _addEquipKitchenUtensilCookSpeedMul = cookSpeedMul;
         _addEquipKitchenUtensilTipPerMinute = tipPerMinute;
         OnChangeTipPerMinuteHandler?.Invoke();
     }

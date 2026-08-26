@@ -24,6 +24,21 @@ public class Staff : MonoBehaviour
     protected CustomerController _customerController;
     protected FeverSystem _feverSystem;
 
+    private readonly StaffSkillRuntimeContext _skillRuntimeContext =
+        new StaffSkillRuntimeContext();
+    private GameManager _gameManager;
+    private StaffSkillEffectRegistry _skillEffectRegistry;
+    private SkillBase _activeRuntimeSkill;
+    private StaffSkillSourceToken _activeSkillToken;
+    private TableManager _activeSkillTableManager;
+    private KitchenSystem _activeSkillKitchenSystem;
+    private CustomerController _activeSkillCustomerController;
+    private bool _isApplicationQuitting;
+
+    public StaffSkillRuntimeContext RuntimeSkillContext => _skillRuntimeContext;
+    public StaffSkillEffectRegistry SkillEffectRegistry => _skillEffectRegistry;
+    public StaffSkillSourceToken CurrentSkillSourceToken => _activeSkillToken;
+
     protected StaffData _staffData;
     public StaffData StaffData => _staffData;
 
@@ -50,6 +65,31 @@ public class Staff : MonoBehaviour
     protected float _moveSpeed;
     protected float _speedMul;
     public float SpeedMul => Mathf.Clamp((1 + _speedMul) + (1 * GameManager.Instance.GetStaffSpeedMul(_staffGroupType)), 0.5f, 3f);
+    public float MoveSpeedMul
+    {
+        get
+        {
+            GameManager gameManager = GameManager.Instance;
+            float existingMultiplier =
+                (1f + _speedMul)
+                + gameManager.GetStaffMoveSpeedMul(_staffGroupType);
+            float personalMoveMultiplier =
+                1f + _skillRuntimeContext.PersonalMoveBonusPercent * 0.01f;
+            float allStaffMoveMultiplier =
+                gameManager.StaffSkillEffectRegistry.GetMultiplier(
+                    StaffSkillEffectType.AllStaffMovePercent);
+            float feverMultiplier =
+                gameManager.FeverRuntimeContext.StaffMoveMultiplier;
+
+            return FeverRuntimeMultiplierCalculator.CalculateStaffMoveMultiplier(
+                existingMultiplier,
+                personalMoveMultiplier,
+                allStaffMoveMultiplier,
+                feverMultiplier);
+        }
+    }
+    public float WorkSpeedMul => Mathf.Clamp(1 + GameManager.Instance.GetStaffWorkSpeedMul(), 0.5f, 3f);
+    public float GuardEliminationSpeedMul => Mathf.Clamp(1 + GameManager.Instance.GetGuardEliminationSpeedMul(), 0.5f, 3f);
 
     protected Coroutine _useSkillRoutine;
     protected Coroutine _idleAnimationRoutine;
@@ -58,6 +98,15 @@ public class Staff : MonoBehaviour
 
     public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController, FeverSystem feverSystem)
     {
+        CancelActiveSkill(StaffSkillCancellationReason.ManualCancellation, true);
+        _gameManager = GameManager.Instance;
+        _skillEffectRegistry = _gameManager.StaffSkillEffectRegistry;
+        _skillRuntimeContext.ResetLocalState();
+        _activeRuntimeSkill = null;
+        _activeSkillToken = default;
+        _usingSkill = false;
+        _useSkillRoutine = null;
+        _isApplicationQuitting = false;
         _staffType = type;
         _staffGroupType = StaffDataManager.Instance.GetStaffGroupType(type);
         _tableManager = tableManager;
@@ -66,7 +115,7 @@ public class Staff : MonoBehaviour
         _feverSystem = feverSystem;
         _spriteRenderer.color = Color.white;
         _scaleX = transform.localScale.x;
-        GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+        _gameManager.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
         UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
         UserInfo.OnChangeStaffSkinHandler += OnChangeSkinEvent;
         _feverSystem.OnStartFeverHandler += OnStartFeverEvent;
@@ -101,6 +150,12 @@ public class Staff : MonoBehaviour
 
     public virtual void SetStaffData(StaffData staffData, ERestaurantFloorType equipFloorType)
     {
+        StaffSkillCancellationReason cancellationReason = staffData == null
+            ? StaffSkillCancellationReason.StaffDataCleared
+            : staffData == _staffData
+                ? StaffSkillCancellationReason.SameStaffDataReassigned
+                : StaffSkillCancellationReason.StaffDataChanged;
+        CancelActiveSkill(cancellationReason, true);
         StopAllCoroutines();
         SkillEffectSetActive(false);
         if (staffData == _staffData)
@@ -109,10 +164,6 @@ public class Staff : MonoBehaviour
         if (_staffData != null)
         {
             _staffData.RemoveSlot(this, _tableManager, _kitchenSystem, _customerController);
-
-            if (_usingSkill)
-                _staffData.Skill.Deactivate(this, _tableManager, _kitchenSystem, _customerController);
-
             _staffAction?.Destructor();
         }
 
@@ -241,20 +292,81 @@ public class Staff : MonoBehaviour
         if (_staffData.Skill == null)
             return;
 
-        if (_usingSkill)
+        bool contextActive = _skillRuntimeContext.IsActive;
+        bool tokenValid = _activeSkillToken.IsValid;
+        bool hasRoutine = _useSkillRoutine != null;
+        if (_usingSkill || contextActive || tokenValid || hasRoutine)
         {
-            DebugLog.Log("스킬이 이미 사용중 입니다.");
+            bool synchronized = _usingSkill
+                && contextActive
+                && tokenValid
+                && _skillRuntimeContext.IsCurrentToken(_activeSkillToken);
+            if (synchronized)
+            {
+                DebugLog.Log("스킬이 이미 사용중 입니다.");
+                return;
+            }
+
+            DebugLog.LogError("[Staff Skill] Runtime 상태 불일치를 감지해 현재 스킬을 정리합니다: " + name);
+            CancelActiveSkill(StaffSkillCancellationReason.CoroutineInterrupted, true);
+            _skillTimer = 0;
             return;
         }
 
-        if (_skillCoolTime <= _skillTimer)
+        int cooldown = StaffSkillTimeCalculator.CalculateCooldownSeconds(_skillCoolTime, Level);
+        if (cooldown <= _skillTimer)
         {
+            if (_skillEffectRegistry == null)
+            {
+                DebugLog.LogError("[Staff Skill] Effect Registry가 없어 스킬 발동을 중단합니다: " + name);
+                return;
+            }
+
+            StaffData capturedStaffData = _staffData;
+            SkillBase capturedSkill = capturedStaffData.Skill;
+            TableManager capturedTableManager = tableManager;
+            KitchenSystem capturedKitchenSystem = kitchenSystem;
+            CustomerController capturedCustomerController = customerController;
+            int capturedLevel = Level;
+            string debugId = capturedStaffData.Id + "/" + capturedSkill.GetType().Name;
+
             _skillTimer = 0;
-            _useSkillRoutine = StartCoroutine(UseSkillCoroutine(tableManager, kitchenSystem, customerController));
+            StaffSkillSourceToken sourceToken = _skillRuntimeContext.BeginActivation(debugId);
+            _activeRuntimeSkill = capturedSkill;
+            _activeSkillToken = sourceToken;
+            _activeSkillTableManager = capturedTableManager;
+            _activeSkillKitchenSystem = capturedKitchenSystem;
+            _activeSkillCustomerController = capturedCustomerController;
+            _usingSkill = true;
+
+            try
+            {
+                Coroutine startedRoutine = StartCoroutine(
+                    UseSkillCoroutine(
+                        capturedSkill,
+                        capturedTableManager,
+                        capturedKitchenSystem,
+                        capturedCustomerController,
+                        capturedLevel,
+                        sourceToken));
+                if (_skillRuntimeContext.IsCurrentToken(sourceToken))
+                {
+                    _useSkillRoutine = startedRoutine;
+                }
+                else if (startedRoutine != null)
+                {
+                    StopCoroutine(startedRoutine);
+                }
+            }
+            catch (Exception exception)
+            {
+                CancelActiveSkill(StaffSkillCancellationReason.ActivationFailed, true);
+                DebugLog.LogError("[Staff Skill] Coroutine 시작 실패: " + debugId + "\n" + exception);
+            }
         }
         else
         {
-            _skillTimer += Time.deltaTime * SpeedMul;
+            _skillTimer += Time.deltaTime;
         }
     }
 
@@ -266,6 +378,8 @@ public class Staff : MonoBehaviour
 
     private void OnDisable()
     {
+        CancelActiveSkill(StaffSkillCancellationReason.GameObjectDisabled, true);
+
         if (transform != null)
             transform.TweenStop();
 
@@ -276,27 +390,195 @@ public class Staff : MonoBehaviour
     }
 
 
-    private IEnumerator UseSkillCoroutine(TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController)
+    private IEnumerator UseSkillCoroutine(
+        SkillBase activeSkill,
+        TableManager tableManager,
+        KitchenSystem kitchenSystem,
+        CustomerController customerController,
+        int staffLevel,
+        StaffSkillSourceToken sourceToken)
     {
-        _usingSkill = true;
-        Vibration.Vibrate(500);
-        SkillEffectSetActive(true);
-        EffectType effectType = SoundManager.Instance.GetHallEffectType(_equipFloorType, _restaurantType);
-        SoundManager.Instance.PlayEffectAudio(effectType, _skillActiveSound);
-        _staffData.Skill.Activate(this, tableManager, kitchenSystem, customerController);
+        StaffSkillCancellationReason cancellationReason =
+            StaffSkillCancellationReason.CoroutineInterrupted;
+        Exception executionException = null;
 
-        float multiplier = 1f + GameManager.Instance.GetStaffSkillTimeMul(StaffDataManager.Instance.GetStaffGroupType(_staffType));
-        float duration = _staffData.Skill.Duration * multiplier;
-        float timer = 0;
-        while (timer < duration)
+        try
         {
-            _staffData.Skill.ActivateUpdate(this, tableManager, kitchenSystem, customerController);
-            timer += 0.02f;
-            yield return YieldCache.WaitForSeconds(0.02f);
+            bool activationSucceeded = false;
+            try
+            {
+                Vibration.Vibrate(500);
+                SkillEffectSetActive(true);
+                EffectType effectType = SoundManager.Instance.GetHallEffectType(_equipFloorType, _restaurantType);
+                SoundManager.Instance.PlayEffectAudio(effectType, _skillActiveSound);
+                activeSkill.Activate(this, tableManager, kitchenSystem, customerController);
+                activationSucceeded = true;
+            }
+            catch (Exception exception)
+            {
+                cancellationReason = StaffSkillCancellationReason.ActivationFailed;
+                executionException = exception;
+            }
+
+            bool durationCalculated = false;
+            int duration = 0;
+            if (activationSucceeded)
+            {
+                try
+                {
+                    if (_gameManager == null)
+                    {
+                        throw new InvalidOperationException("Cached GameManager is unavailable.");
+                    }
+
+                    float permanentDurationBonusRate =
+                        _gameManager.GetStaffSkillTimeMul(_staffGroupType);
+                    duration = StaffSkillTimeCalculator.CalculateDurationSeconds(
+                        activeSkill.Duration,
+                        staffLevel,
+                        permanentDurationBonusRate);
+                    durationCalculated = true;
+                }
+                catch (Exception exception)
+                {
+                    cancellationReason = StaffSkillCancellationReason.DurationCalculationFailed;
+                    executionException = exception;
+                }
+            }
+
+            if (durationCalculated)
+            {
+                float timer = 0;
+                bool updateSucceeded = true;
+                while (timer < duration)
+                {
+                    try
+                    {
+                        activeSkill.ActivateUpdate(this, tableManager, kitchenSystem, customerController);
+                    }
+                    catch (Exception exception)
+                    {
+                        cancellationReason = StaffSkillCancellationReason.UpdateFailed;
+                        executionException = exception;
+                        updateSucceeded = false;
+                    }
+
+                    if (!updateSucceeded)
+                    {
+                        break;
+                    }
+
+                    timer += Time.deltaTime;
+                    yield return null;
+                }
+
+                if (updateSucceeded)
+                {
+                    cancellationReason = StaffSkillCancellationReason.NormalDurationCompleted;
+                }
+            }
         }
-        SkillEffectSetActive(_feverSystem.IsFeverStart);
-        _staffData.Skill.Deactivate(this, tableManager, kitchenSystem, customerController);
-        _usingSkill = false;
+        finally
+        {
+            if (_skillRuntimeContext.IsCurrentToken(sourceToken))
+            {
+                CancelActiveSkill(cancellationReason, false);
+            }
+        }
+
+        if (executionException != null)
+        {
+            DebugLog.LogError(
+                "[Staff Skill] 실행 오류 후 안전하게 정리했습니다: "
+                + activeSkill.GetType().Name
+                + " / "
+                + cancellationReason
+                + "\n"
+                + executionException);
+        }
+    }
+
+    private void CancelActiveSkill(
+        StaffSkillCancellationReason reason,
+        bool stopRunningCoroutine)
+    {
+        SkillBase activeSkill = _activeRuntimeSkill;
+        StaffSkillSourceToken activeFieldToken = _activeSkillToken;
+        Coroutine runningCoroutine = _useSkillRoutine;
+        StaffSkillEffectRegistry effectRegistry = _skillEffectRegistry;
+        TableManager tableManager = _activeSkillTableManager;
+        KitchenSystem kitchenSystem = _activeSkillKitchenSystem;
+        CustomerController customerController = _activeSkillCustomerController;
+        StaffSkillSourceToken cancellationToken = _skillRuntimeContext.IsActive
+            ? _skillRuntimeContext.CurrentActivationToken
+            : activeFieldToken;
+        Exception deactivateException = null;
+
+        if (effectRegistry != null)
+        {
+            if (activeFieldToken.IsValid && activeFieldToken != cancellationToken)
+            {
+                effectRegistry.RemoveAllForSource(activeFieldToken);
+            }
+
+            if (cancellationToken.IsValid)
+            {
+                StaffSkillCancellationCoordinator.TryCancel(
+                    _skillRuntimeContext,
+                    effectRegistry,
+                    cancellationToken,
+                    activeSkill == null
+                        ? null
+                        : (Action)(() => activeSkill.Deactivate(
+                            this,
+                            tableManager,
+                            kitchenSystem,
+                            customerController)),
+                    out deactivateException);
+            }
+            else if (_skillRuntimeContext.IsActive)
+            {
+                _skillRuntimeContext.ResetLocalState();
+            }
+        }
+        else if (_skillRuntimeContext.IsActive)
+        {
+            DebugLog.LogError("[Staff Skill] Effect Registry 없이 활성 Context를 정리합니다: " + name);
+            _skillRuntimeContext.ResetLocalState();
+        }
+
+        if (stopRunningCoroutine && runningCoroutine != null)
+        {
+            StopCoroutine(runningCoroutine);
+        }
+
+        if (_activeSkillToken == activeFieldToken)
+        {
+            _activeRuntimeSkill = null;
+            _activeSkillToken = default;
+            _activeSkillTableManager = null;
+            _activeSkillKitchenSystem = null;
+            _activeSkillCustomerController = null;
+            _usingSkill = false;
+            _useSkillRoutine = null;
+        }
+
+        bool keepFeverEffect = reason == StaffSkillCancellationReason.NormalDurationCompleted
+            && !_isApplicationQuitting
+            && gameObject != null
+            && gameObject.activeInHierarchy
+            && _feverSystem != null
+            && _feverSystem.IsFeverStart;
+        SkillEffectSetActive(keepFeverEffect);
+
+        if (deactivateException != null)
+        {
+            DebugLog.LogError(
+                "[Staff Skill] Deactivate 오류 후 Registry와 Context를 정리했습니다: "
+                + reason
+                + "\n"
+                + deactivateException);
+        }
     }
 
 
@@ -455,7 +737,7 @@ public class Staff : MonoBehaviour
                 
                 SetSpriteDir(dirX);
                 
-                step = Time.deltaTime * _moveSpeed * SpeedMul;
+                step = Time.deltaTime * _moveSpeed * MoveSpeedMul;
                 
                 // MoveTowards 직접 구현 (GC 없음)
                 if (distance > step)
@@ -614,27 +896,47 @@ public class Staff : MonoBehaviour
     public void ObjectPoolSpawnEvent()
     {
         LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
-        GameManager.Instance.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+
+        if (_gameManager == null
+            && GameManager.TryGetExistingInstance(out GameManager existingGameManager))
+        {
+            _gameManager = existingGameManager;
+            _skillEffectRegistry = existingGameManager.StaffSkillEffectRegistry;
+        }
+
+        if (_gameManager != null)
+        {
+            _gameManager.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+        }
+        else
+        {
+            DebugLog.LogWarning("[Staff Skill] 기존 GameManager가 없어 Skill 이벤트 구독을 건너뜁니다: " + name);
+        }
+
         UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
     }
 
     public void ObjectPoolDespawnEvent()
     {
+        CancelActiveSkill(StaffSkillCancellationReason.ObjectPoolDespawned, true);
 
         LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
-        GameManager.Instance.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
+        if (_gameManager != null)
+        {
+            _gameManager.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
+        }
+
         UserInfo.OnUpgradeStaffHandler -= OnLevelUpEvent;
     }
 
 
     private void OnChangeSceneEvent()
     {
+        CancelActiveSkill(StaffSkillCancellationReason.SceneChanged, true);
+
         if (_staffData != null)
         {
             _staffData.RemoveSlot(this, _tableManager, _kitchenSystem, _customerController);
-
-            if (_staffData.Skill != null && _usingSkill)
-                _staffData.Skill.Deactivate(this, _tableManager, _kitchenSystem, _customerController);
         }
 
         StopAllCoroutines();
@@ -694,15 +996,32 @@ public class Staff : MonoBehaviour
         SetStaffState(_state);
     }
 
+    private void OnApplicationQuit()
+    {
+        _isApplicationQuitting = true;
+        CancelActiveSkill(StaffSkillCancellationReason.ApplicationQuitting, true);
+    }
+
     protected virtual void OnDestroy()
     {
+        StaffSkillCancellationReason cancellationReason = _isApplicationQuitting
+            ? StaffSkillCancellationReason.ApplicationQuitting
+            : StaffSkillCancellationReason.ComponentDestroyed;
+        CancelActiveSkill(cancellationReason, true);
+
         LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
-        GameManager.Instance.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
+        if (_gameManager != null)
+        {
+            _gameManager.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
+        }
+
         UserInfo.OnUpgradeStaffHandler -= OnLevelUpEvent;
         UserInfo.OnChangeStaffSkinHandler -= OnChangeSkinEvent;
-        _feverSystem.OnStartFeverHandler -= OnStartFeverEvent;
-        _feverSystem.OnEndFeverHandler -= OnEndFeverEvent;
+        if (_feverSystem != null)
+        {
+            _feverSystem.OnStartFeverHandler -= OnStartFeverEvent;
+            _feverSystem.OnEndFeverHandler -= OnEndFeverEvent;
+        }
     }
 
 }
-

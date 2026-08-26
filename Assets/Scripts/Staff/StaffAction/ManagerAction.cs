@@ -24,7 +24,14 @@ public class ManagerAction : IStaffAction
         }
         else
         {
-            _actionCoolTime -= Time.deltaTime * staff.SpeedMul;
+            float existingActionMultiplier = staff.SpeedMul;
+            float feverRoleMultiplier =
+                GameManager.Instance.FeverRuntimeContext.ManagerGuideMultiplier;
+            float finalActionMultiplier =
+                FeverRuntimeMultiplierCalculator.CalculateRoleActionMultiplier(
+                    existingActionMultiplier,
+                    feverRoleMultiplier);
+            _actionCoolTime -= Time.deltaTime * finalActionMultiplier;
         }
     }
 }

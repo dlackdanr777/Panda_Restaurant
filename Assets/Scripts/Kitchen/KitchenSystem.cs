@@ -50,6 +50,38 @@ public class KitchenSystem : MonoBehaviour
         return _kitchenUtensilGroupDic[floorType].GetSinkKitchenUtensil();
     }
 
+    public CookingRemainingTimeReductionBatchResult ApplyGlobalRemainingCookingTimeReduction(
+        float reductionPercent)
+    {
+        CookingRemainingTimeReductionBatchResult result = default;
+        result = ApplyRemainingCookingTimeReductionForFloor(
+            result,
+            ERestaurantFloorType.Floor1,
+            reductionPercent);
+        result = ApplyRemainingCookingTimeReductionForFloor(
+            result,
+            ERestaurantFloorType.Floor2,
+            reductionPercent);
+        return result;
+    }
+
+    private CookingRemainingTimeReductionBatchResult ApplyRemainingCookingTimeReductionForFloor(
+        CookingRemainingTimeReductionBatchResult current,
+        ERestaurantFloorType floorType,
+        float reductionPercent)
+    {
+        KitchenUtensilGroup group;
+        if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, floorType)
+            || !_kitchenUtensilGroupDic.TryGetValue(floorType, out group)
+            || group == null)
+        {
+            return current;
+        }
+
+        return current.Add(
+            group.ApplyRemainingCookingTimeReductionToActiveBurners(reductionPercent));
+    }
+
     public Vector3 GetStaffPos(ERestaurantFloorType floorType, EquipStaffType type)
     {
         return _kitchenUtensilGroupDic[floorType].GetStaffPos(type);

@@ -19,7 +19,7 @@ MonoBehaviour:
   _description: "\uBD80\uB4DC\uB7EC\uC6B4 \uBBF8\uC18C\uB85C \uC8FC\uBC29\uC744 \uC9C0\uD718\uD558\uB294
     \uBCA0\uD14C\uB791 \uC694\uB9AC\uC0AC\n\uACE0\uB4E0 \uD32C\uC9C0!\r"
   _rank: 0
-  _skill: {fileID: 11400000, guid: 4803555ba0e7f7f46af709248b6ac2be, type: 2}
+  _skill: {fileID: 11400000, guid: 040522f5c8de5264aaa3a5a5017002c8, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: be75984608cca8946933d708bbf74dce, type: 3}
   - {fileID: 21300000, guid: 153647d6121adca43a354065a1795653, type: 3}
@@ -42,24 +42,29 @@ MonoBehaviour:
     _upgradeMoneyData:
       _moneyType: 1
       _price: 25
-    _foodSpeedAddPercent: 12
+    _foodSpeedAddPercent: 200
+    _addSpeed: 0
   - _upgradeMinScore: 22000
     _upgradeMoneyData:
       _moneyType: 1
       _price: 50
-    _foodSpeedAddPercent: 13
+    _foodSpeedAddPercent: 200
+    _addSpeed: 0
   - _upgradeMinScore: 27500
     _upgradeMoneyData:
       _moneyType: 1
       _price: 75
-    _foodSpeedAddPercent: 14
+    _foodSpeedAddPercent: 200
+    _addSpeed: 0
   - _upgradeMinScore: 33000
     _upgradeMoneyData:
       _moneyType: 1
       _price: 100
-    _foodSpeedAddPercent: 15
+    _foodSpeedAddPercent: 200
+    _addSpeed: 0
   - _upgradeMinScore: 440
     _upgradeMoneyData:
       _moneyType: 1
       _price: -1
-    _foodSpeedAddPercent: 16
+    _foodSpeedAddPercent: 200
+    _addSpeed: 0
