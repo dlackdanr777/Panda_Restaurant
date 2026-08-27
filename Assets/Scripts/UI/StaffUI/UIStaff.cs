@@ -84,14 +84,24 @@ public class UIStaff : MobileUIView
     {
         for (int i = 0; i < (int)EquipStaffType.Length; i++)
         {
-            List<StaffData> typeDataList = StaffDataManager.Instance.GetSortStaffDataList((EquipStaffType)i);
-            _slots[i] = new List<UIRestaurantAdminStaffSlot>(typeDataList.Count);
+            EquipStaffType staffType = (EquipStaffType)i;
             
-            for (int j = 0; j < typeDataList.Count; j++)
+            // 모든 층의 데이터를 확인하여 최대 슬롯 수 계산
+            int maxSlotCount = 0;
+            for (int f = 0; f < (int)ERestaurantFloorType.Length; f++)
             {
-                int dataIndex = j;
+                ERestaurantFloorType floorType = (ERestaurantFloorType)f;
+                List<StaffData> floorDataList = StaffDataManager.Instance.GetStaffDataList(staffType, floorType);
+                if (floorDataList.Count > maxSlotCount)
+                    maxSlotCount = floorDataList.Count;
+            }
+
+            _slots[i] = new List<UIRestaurantAdminStaffSlot>(maxSlotCount);
+            
+            for (int j = 0; j < maxSlotCount; j++)
+            {
                 UIRestaurantAdminStaffSlot slot = Instantiate(_slotPrefab, _slotParnet);
-                slot.Init(() => OnSlotClicked(typeDataList[dataIndex]));
+                slot.Init(() => { }); // 초기화 시에는 빈 액션
                 slot.SetFrame(Rank.Normal1);
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
@@ -187,7 +197,8 @@ public class UIStaff : MobileUIView
         }
 
         _currentType = type;
-        _currentTypeDataList = StaffDataManager.Instance.GetSortStaffDataList(type);
+        // 층별 필터링된 데이터 가져오기
+        _currentTypeDataList = StaffDataManager.Instance.GetSortStaffDataList(type, _currentFloorType);
         _typeText.text = Utility.StaffTypeStringConverter(type);
 
         // 프리뷰와 UI 업데이트를 함께 처리
@@ -216,12 +227,20 @@ public class UIStaff : MobileUIView
         var currentSlots = _slots[slotsIndex];
         int dataCount = _currentTypeDataList.Count;
         
+        // 모든 슬롯 먼저 비활성화
+        for (int i = 0; i < currentSlots.Count; i++)
+        {
+            currentSlots[i].gameObject.SetActive(false);
+        }
+        
         // 기존 리스트 순서대로 슬롯 처리
         for (int i = 0; i < dataCount; i++)
         {
             var data = _currentTypeDataList[i];
             var slot = currentSlots[i];
             
+            // 슬롯 클릭 이벤트 재설정
+            slot.Init(() => OnSlotClicked(data));
             slot.gameObject.SetActive(true);
             slot.EquipGroupSetActive(false);
             slot.transform.SetSiblingIndex(i);
