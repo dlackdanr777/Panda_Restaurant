@@ -49,6 +49,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private const string Skill09LegacySpeedMetaSha256 =
             "62aa0dfe48bcf573136c6677ac4aacde1bff1282d8eee306259a8957a96766f5";
         private const int ExpectedComparisonFileCount = 164;
+        private const string PreA1InventoryFingerprint =
+            "90c3a56ca032d6542359d392ca014ce29b3c367cb227238165d9eadacf0be15b";
+        private const string PreA1PlanFingerprint =
+            "9a4162af233fdeb6394687cc65d39108655a9b99c079df039177b28d1ea11fc0";
         private const string AllStaffMoveScriptGuid =
             "8c58ec39a18e0964595b700ba01914e9";
         private const string AllStaffMoveScriptPath =
@@ -175,8 +179,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                                               firstSnapshot,
                                               details[5],
                                               errors);
-            bool rankPassed = inventoryPassed
-                              && ValidateCurrentRank(firstSnapshot, details[6], errors);
+            bool officialDataStatePassed = inventoryPassed
+                                           && ValidateExistingV18OfficialDataState(
+                                               firstSnapshot,
+                                               details[6],
+                                               errors);
             bool skillStructurePassed = inventoryPassed
                                         && ValidateSkillStructure(
                                             firstSnapshot,
@@ -235,7 +242,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                           && classDistributionPassed
                           && levelStructurePassed
                           && visualReferencesPassed
-                          && rankPassed
+                          && officialDataStatePassed
                           && skillStructurePassed
                           && graphPassed
                           && fingerprintPassed
@@ -257,7 +264,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             AppendResult(output, 3, "역할 클래스 분포", classDistributionPassed, details[3]);
             AppendResult(output, 4, "레벨 배열 구조", levelStructurePassed, details[4]);
             AppendResult(output, 5, "공통·역할별 시각 참조", visualReferencesPassed, details[5]);
-            AppendResult(output, 6, "현재 Rank 기준 상태", rankPassed, details[6]);
+            AppendResult(
+                output,
+                6,
+                "Existing Staff V18 Official Data 상태",
+                officialDataStatePassed,
+                details[6]);
             AppendResult(output, 7, "Skill 에셋 구조", skillStructurePassed, details[7]);
             AppendResult(output, 8, "Staff-Skill 참조 그래프", graphPassed, details[8]);
             AppendResult(output, 9, "InventoryFingerprint", fingerprintPassed, details[9]);
@@ -482,17 +494,20 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 passed = false;
             }
 
+            bool chefPreA1Values = chefAddSpeedZeroCount == 35
+                                   && chefAddSpeedNonZeroCount == 0;
+            bool chefPostA1Values = chefAddSpeedZeroCount == 7
+                                    && chefAddSpeedNonZeroCount == 28;
             if (chefCount != 7
                 || chefFieldCount != 7
                 || chefFieldGapCount != 0
                 || chefAddSpeedValueCount != 35
-                || chefAddSpeedZeroCount != 35
                 || chefAddSpeedMissingCount != 0
                 || chefAddSpeedInvalidCount != 0
-                || chefAddSpeedNonZeroCount != 0)
+                || (!chefPreA1Values && !chefPostA1Values))
             {
                 errors.Add(
-                    "Chef AddSpeed schema baseline changed. Chef/field/value/zero/missing/invalid/non-zero: "
+                    "Chef AddSpeed가 strict Pre-A1 또는 Post-A1 상태가 아닙니다. Chef/field/value/zero/missing/invalid/non-zero: "
                     + chefCount + "/" + chefFieldCount + "/" + chefAddSpeedValueCount + "/"
                     + chefAddSpeedZeroCount + "/" + chefAddSpeedMissingCount + "/"
                     + chefAddSpeedInvalidCount + "/" + chefAddSpeedNonZeroCount + ".");
@@ -504,7 +519,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             details.Add("- Chef AddSpeed 필드 존재: " + chefFieldCount + "/7");
             details.Add("- Chef AddSpeed 필드 부재: " + chefFieldGapCount);
             details.Add("- Chef AddSpeed 값 존재: " + chefAddSpeedValueCount + "/35");
-            details.Add("- 기존 Chef AddSpeed 기본값 0: " + chefAddSpeedZeroCount + "/35");
+            details.Add("- Chef AddSpeed 상태: "
+                        + (chefPreA1Values
+                            ? StaffDataDryRunPlanner.ExistingStaffV18DataReadyToApplyMarker
+                            : chefPostA1Values
+                                ? StaffDataDryRunPlanner.ExistingStaffV18DataAppliedMarker
+                                : StaffDataDryRunPlanner.ExistingStaffV18DataPartialMarker));
+            details.Add("- Chef AddSpeed 0/비영: "
+                        + chefAddSpeedZeroCount + "/" + chefAddSpeedNonZeroCount);
             details.Add("- Chef AddSpeed Missing/비정상/비영: "
                         + chefAddSpeedMissingCount + "/" + chefAddSpeedInvalidCount + "/"
                         + chefAddSpeedNonZeroCount);
@@ -596,11 +618,39 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             return passed;
         }
 
-        private static bool ValidateCurrentRank(
+        private static bool ValidateExistingV18OfficialDataState(
             StaffDataAssetInventorySnapshot snapshot,
             List<string> details,
             List<string> errors)
         {
+            StaffDataDryRunPlanSnapshot firstPlan;
+            IReadOnlyList<string> firstDiagnostics;
+            if (!StaffDataDryRunPlanner.TryBuildCanonicalV8ReadOnlyPlan(
+                    out firstPlan,
+                    out firstDiagnostics)
+                || firstPlan == null)
+            {
+                AddDiagnostics("Existing V18 first plan", firstDiagnostics, errors);
+                return false;
+            }
+
+            StaffDataDryRunPlanSnapshot secondPlan;
+            IReadOnlyList<string> secondDiagnostics;
+            if (!StaffDataDryRunPlanner.TryBuildCanonicalV8ReadOnlyPlan(
+                    out secondPlan,
+                    out secondDiagnostics)
+                || secondPlan == null)
+            {
+                AddDiagnostics("Existing V18 second plan", secondDiagnostics, errors);
+                return false;
+            }
+
+            string marker;
+            string reason;
+            bool classified = StaffDataDryRunPlanner.TryClassifyExistingV18DataState(
+                firstPlan,
+                out marker,
+                out reason);
             int normal1Count = 0;
             for (int index = 0; index < snapshot.Staff.Count; index++)
             {
@@ -611,14 +661,149 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 }
             }
 
-            details.Add("- CURRENT_BASELINE_ONLY: Rank Normal1 " + normal1Count + "/32");
-            if (normal1Count == 32)
+            int officialStaffMatches = 0;
+            int nameMatches = 0;
+            int descriptionMatches = 0;
+            int rankMatches = 0;
+            int speedMatches = 0;
+            int roleFields = 0;
+            int upgradeFields = 0;
+            int changedA1Fields = 0;
+            int unsupportedFields = 0;
+            bool linksValid = firstPlan.CurrentInventoryFingerprint == snapshot.InventoryFingerprint;
+            for (int planIndex = 0; planIndex < firstPlan.StaffPlans.Count; planIndex++)
             {
-                return true;
+                StaffDataDryRunStaffPlan staff = firstPlan.StaffPlans[planIndex];
+                if (staff.AssetAction != StaffDryRunAssetAction.UPDATE_EXISTING)
+                {
+                    continue;
+                }
+
+                StaffDataAssetSnapshot current;
+                if (!snapshot.TryGetStaff(staff.StaffId, out current) || current == null)
+                {
+                    linksValid = false;
+                    continue;
+                }
+
+                linksValid &= current.AssetPath == staff.ExistingAssetPath
+                              && current.AssetGuid == staff.ExistingAssetGuid
+                              && current.ScriptGuid == staff.ExistingScriptGuid
+                              && current.ConcreteTypeName == staff.TargetConcreteTypeName;
+                int staffDirectFields = 0;
+                int staffRoleFields = 0;
+                int staffUpgradeFields = 0;
+                bool staffMatches = true;
+                for (int fieldIndex = 0; fieldIndex < staff.FieldPlans.Count; fieldIndex++)
+                {
+                    StaffDataDryRunFieldPlan field = staff.FieldPlans[fieldIndex];
+                    if (field.Disposition != StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING)
+                    {
+                        continue;
+                    }
+
+                    if (!StaffDataDryRunPlanner.IsExistingV18A1FieldPath(field.FieldPath))
+                    {
+                        unsupportedFields++;
+                        staffMatches = false;
+                        continue;
+                    }
+
+                    changedA1Fields += field.IsChanged ? 1 : 0;
+                    staffMatches &= !field.IsChanged;
+                    if (field.FieldPath == "StaffData._name")
+                    {
+                        staffDirectFields++;
+                        nameMatches += !field.IsChanged ? 1 : 0;
+                    }
+                    else if (field.FieldPath == "StaffData._description")
+                    {
+                        staffDirectFields++;
+                        descriptionMatches += !field.IsChanged ? 1 : 0;
+                    }
+                    else if (field.FieldPath == "StaffData._rank")
+                    {
+                        staffDirectFields++;
+                        rankMatches += !field.IsChanged ? 1 : 0;
+                    }
+                    else if (field.FieldPath == "StaffData._speed")
+                    {
+                        staffDirectFields++;
+                        speedMatches += !field.IsChanged ? 1 : 0;
+                    }
+                    else if (IsUpgradeA1Field(field.FieldPath))
+                    {
+                        staffUpgradeFields++;
+                        upgradeFields++;
+                    }
+                    else
+                    {
+                        staffRoleFields++;
+                        roleFields++;
+                    }
+                }
+
+                int expectedRoleFields = ExpectedRoleA1FieldCount(staff.RoleKey);
+                staffMatches &= staffDirectFields == 4
+                                && staffRoleFields == expectedRoleFields
+                                && staffUpgradeFields == 14;
+                officialStaffMatches += staffMatches ? 1 : 0;
             }
 
-            errors.Add("현재 Rank Normal1 수가 다릅니다. 예상 32, 실제 " + normal1Count);
-            return false;
+            bool deterministic = firstPlan.PlanFingerprint == secondPlan.PlanFingerprint
+                                 && firstPlan.CurrentInventoryFingerprint
+                                 == secondPlan.CurrentInventoryFingerprint;
+            bool ready = marker
+                         == StaffDataDryRunPlanner.ExistingStaffV18DataReadyToApplyMarker
+                         && snapshot.InventoryFingerprint == PreA1InventoryFingerprint
+                         && firstPlan.PlanFingerprint == PreA1PlanFingerprint
+                         && normal1Count == 32;
+            bool applied = marker
+                           == StaffDataDryRunPlanner.ExistingStaffV18DataAppliedMarker
+                           && officialStaffMatches == 32
+                           && nameMatches == 32
+                           && descriptionMatches == 32
+                           && rankMatches == 32
+                           && speedMatches == 32
+                           && changedA1Fields == 0
+                           && unsupportedFields == 0;
+            bool passed = classified
+                          && (ready || applied)
+                          && linksValid
+                          && deterministic;
+            details.Add("- State Marker: " + marker);
+            details.Add("- InventoryFingerprint: " + snapshot.InventoryFingerprint);
+            details.Add("- PlanFingerprint: " + firstPlan.PlanFingerprint);
+            details.Add("- Official name/description/rank/speed: "
+                        + nameMatches + "/" + descriptionMatches + "/"
+                        + rankMatches + "/" + speedMatches);
+            details.Add("- Official role/upgrade FieldPlans: "
+                        + roleFields + "/" + upgradeFields);
+            details.Add("- Official Staff matches: " + officialStaffMatches + "/32");
+            details.Add("- Changed/unsupported A1 fields: "
+                        + changedA1Fields + "/" + unsupportedFields);
+            details.Add("- Deterministic inventory/plan regeneration: "
+                        + (deterministic ? "PASS" : "FAIL"));
+            if (!passed)
+            {
+                errors.Add(
+                    "Existing Staff V18 데이터가 strict Pre-A1/Post-A1 상태가 아닙니다: "
+                    + marker + " | " + reason);
+            }
+
+            return passed;
+        }
+
+        private static bool IsUpgradeA1Field(string fieldPath)
+        {
+            return fieldPath.EndsWith("._upgradeMinScore", StringComparison.Ordinal)
+                   || fieldPath.EndsWith("._moneyType", StringComparison.Ordinal)
+                   || fieldPath.EndsWith("._price", StringComparison.Ordinal);
+        }
+
+        private static int ExpectedRoleA1FieldCount(string roleKey)
+        {
+            return roleKey == "CLEANER" || roleKey == "CHEF" ? 10 : 5;
         }
 
         private static bool ValidateSkillStructure(

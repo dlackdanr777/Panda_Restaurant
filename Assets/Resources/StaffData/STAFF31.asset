@@ -16,9 +16,9 @@ MonoBehaviour:
   _thumbnailSprite: {fileID: 21300000, guid: 855f7d7c2e4eb7448bf9783b9f94edef, type: 3}
   _name: "\uD638\uB7C9"
   _id: STAFF31
-  _description: "\uC790\uC2E0\uAC10 \uB118\uCE58\uB294 \uC6E8\uC774\uD130 \uD638\uB7C9\n\uC790\uC2E0\uAC10\uC5D0
-    \uBE44\uD574 \uB9CE\uC774 \uB35C\uB801\uAC70\uB9AC\uB294\uB370?\r\n\r"
-  _rank: 0
+  _description: "\uC790\uC2E0\uAC10 \uB118\uCE58\uB294 \uC6E8\uC774\uD130 \uD638\uB7C9.
+    \uC790\uC2E0\uAC10\uC5D0 \uBE44\uD574 \uB9CE\uC774 \uB35C\uB801\uAC70\uB9AC\uB294\uB370?"
+  _rank: 1
   _skill: {fileID: 11400000, guid: f70a543a62181274f94c934036e3f084, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
@@ -26,27 +26,27 @@ MonoBehaviour:
   _moneyType: 0
   _buyScore: 10000
   _buyPrice: 2500000
-  _speed: 10
+  _speed: 6
   _waiterLevelData:
-  - _upgradeMinScore: 13000
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 3950000
+      _price: 30000
     _addSpeed: 0
-  - _upgradeMinScore: 16000
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 5905000
+      _price: 90000
     _addSpeed: 0.5
-  - _upgradeMinScore: 19000
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 9437500
+      _price: 300000
     _addSpeed: 1
-  - _upgradeMinScore: 14056250
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
-      _moneyType: 0
-      _price: 21000
+      _moneyType: 1
+      _price: 10
     _addSpeed: 1.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:

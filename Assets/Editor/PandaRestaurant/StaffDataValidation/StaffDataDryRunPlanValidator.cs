@@ -15,6 +15,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             "Tools/Panda Restaurant/Staff/Validate Staff Data Dry Run Plan";
         private const string ExpectedOfficialPackageFingerprint =
             "be7613e884b5ae18dc94e57abc0c941dccfb09486ae9fc5ff75acf4b0e4703af";
+        private const string PreA1InventoryFingerprint =
+            "90c3a56ca032d6542359d392ca014ce29b3c367cb227238165d9eadacf0be15b";
+        private const string PreA1PlanFingerprint =
+            "9a4162af233fdeb6394687cc65d39108655a9b99c079df039177b28d1ea11fc0";
         private static readonly string[] RoleOrder =
         {
             "WAITER", "MANAGER", "CHEERLEADER", "CHEF", "CLEANER", "GUARD"
@@ -110,6 +114,19 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             StaffDataDryRunPlanSnapshot second)
         {
             ValidationResult result = new ValidationResult();
+            string stateMarker;
+            string stateReason;
+            bool stateClassified = StaffDataDryRunPlanner.TryClassifyExistingV18DataState(
+                first,
+                out stateMarker,
+                out stateReason);
+            result.ExistingDataState = stateMarker;
+            Require(
+                stateClassified
+                && stateMarker != StaffDataDryRunPlanner.ExistingStaffV18DataPartialMarker,
+                "Existing Staff V18 data state is not a strict Pre-A1 or Post-A1 state: "
+                + stateReason,
+                result);
             result.Set(1, ValidateInputSnapshots(first, second, result));
             result.Set(2, ValidateAllStaff(first, result));
             result.Set(3, ValidateRoleAndRank(first, result));
@@ -126,9 +143,15 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             result.Set(14, ValidateDeepImmutability(first, result));
             result.Set(15, ValidateNonDestructiveImplementation(first, second, result));
             CountWarningsAndPrerequisites(first, result);
-            Require(result.WarningCount == 65, "Plan warning baseline changed.", result);
+            Require(
+                ValidateWarningContract(first, result.WarningCount),
+                "Plan warning Issue Code contract changed.",
+                result);
             Require(result.PrerequisiteCount == 1, "Plan prerequisite baseline changed.", result);
-            Require(CountChangedFields(first) == 2111, "Changed-field baseline changed.", result);
+            Require(
+                ValidateChangedFieldContract(first),
+                "Existing Staff V18 changed-field state is partial or inconsistent.",
+                result);
             return result;
         }
 
@@ -535,7 +558,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && CountIssues(plan, "EXISTING_SKILL_CLASS_MISMATCH") == 0
                      && CountIssues(plan, "NEW_SKILL_CLASS_IMPLEMENTATION_REQUIRED") == 0
                      && CountStaffWithSkillPrerequisite(plan) == 0
-                     && CountChangedFields(plan) == 2111
+                     && ValidateChangedFieldContract(plan)
                      && plan.PlanningPolicyVersion == StaffDataDryRunPlanSnapshot.V8PolicyVersion;
             return Require(valid, "Official Skill time post-apply baseline changed.", result);
         }
@@ -740,7 +763,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && CountStaffWithSkillPrerequisite(plan) == 0
                      && CountSkillNumberMismatches(plan, true) == 0
                      && CountSkillNumberMismatches(plan, false) == 0
-                     && CountChangedFields(plan) == 2111
+                     && ValidateChangedFieldContract(plan)
                      && plan.PlanningPolicyVersion == StaffDataDryRunPlanSnapshot.V8PolicyVersion;
             return Require(valid, "Official Skill06 existing migration or new asset plans changed.", result);
         }
@@ -840,7 +863,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && CountStaffWithSkillPrerequisite(plan) == 0
                      && CountSkillNumberMismatches(plan, true) == 0
                      && CountSkillNumberMismatches(plan, false) == 0
-                     && CountChangedFields(plan) == 2111
+                     && ValidateChangedFieldContract(plan)
                      && plan.PlanningPolicyVersion == StaffDataDryRunPlanSnapshot.V8PolicyVersion;
             return Require(valid, "Official Skill05 existing migration or new asset plans changed.", result);
         }
@@ -1128,7 +1151,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && CountStaffWithSkillPrerequisite(plan) == 0
                      && CountSkillNumberMismatches(plan, true) == 0
                      && CountSkillNumberMismatches(plan, false) == 0
-                     && CountChangedFields(plan) == 2111
+                     && ValidateChangedFieldContract(plan)
                      && plan.PlanningPolicyVersion == StaffDataDryRunPlanSnapshot.V8PolicyVersion;
             return Require(
                 valid,
@@ -1148,11 +1171,20 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             int newAddSpeedFieldCount = 0;
             int existingUnchangedLevelOneCount = 0;
             int existingChangedHigherLevelCount = 0;
+            int existingAppliedAddSpeedCount = 0;
             int existingChefPassiveChanges = 0;
             int newChefPassivePlans = 0;
             int repurposedFoodField = 0;
             string[] targets = { "0", "0.5", "1", "1.5", "2" };
             bool valid = true;
+            string existingDataState;
+            string stateReason;
+            valid &= StaffDataDryRunPlanner.TryClassifyExistingV18DataState(
+                         plan,
+                         out existingDataState,
+                         out stateReason)
+                     && existingDataState
+                     != StaffDataDryRunPlanner.ExistingStaffV18DataPartialMarker;
             for (int index = 0; index < plan.StaffPlans.Count; index++)
             {
                 StaffDataDryRunStaffPlan staff = plan.StaffPlans[index];
@@ -1216,10 +1248,24 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     if (staff.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING)
                     {
                         existingAddSpeedFieldCount++;
-                        valid &= field.CurrentValue == "0"
-                                 && field.Disposition
-                                 == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
-                                 && field.IsChanged == (levelIndex > 0);
+                        if (existingDataState
+                            == StaffDataDryRunPlanner.ExistingStaffV18DataReadyToApplyMarker)
+                        {
+                            valid &= field.CurrentValue == "0"
+                                     && field.Disposition
+                                     == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
+                                     && field.IsChanged == (levelIndex > 0);
+                        }
+                        else if (existingDataState
+                                 == StaffDataDryRunPlanner.ExistingStaffV18DataAppliedMarker)
+                        {
+                            valid &= SkillNumbersEqual(field.CurrentValue, field.TargetValue)
+                                     && field.Disposition
+                                     == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
+                                     && !field.IsChanged;
+                            existingAppliedAddSpeedCount += !field.IsChanged ? 1 : 0;
+                        }
+
                         existingUnchangedLevelOneCount += levelIndex == 0 && !field.IsChanged ? 1 : 0;
                         existingChangedHigherLevelCount += levelIndex > 0 && field.IsChanged ? 1 : 0;
                     }
@@ -1242,8 +1288,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && addSpeedFieldCount == 115
                      && existingAddSpeedFieldCount == 35
                      && newAddSpeedFieldCount == 80
-                     && existingUnchangedLevelOneCount == 7
-                     && existingChangedHigherLevelCount == 28
+                     && (existingDataState
+                         == StaffDataDryRunPlanner.ExistingStaffV18DataReadyToApplyMarker
+                             ? existingUnchangedLevelOneCount == 7
+                               && existingChangedHigherLevelCount == 28
+                             : existingAppliedAddSpeedCount == 35
+                               && existingChangedHigherLevelCount == 0)
                      && existingChefPassiveChanges == 0
                      && newChefPassivePlans == 80
                      && repurposedFoodField == 0;
@@ -1665,6 +1715,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             output.AppendLine("[Staff Data Dry Run Plan Validation]");
             output.AppendLine("Active Folder: " + activeFolder);
             output.AppendLine("SourceKind: " + sourceKind);
+            output.AppendLine("Existing Staff V18 Data State: " + result.ExistingDataState);
             if (sourceKind == StaffOfficialDataSourceKind.SessionOverride)
             {
                 output.AppendLine("WARNING: NON_CANONICAL_OVERRIDE");
@@ -2008,6 +2059,84 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             return count;
+        }
+
+        private static bool ValidateChangedFieldContract(StaffDataDryRunPlanSnapshot plan)
+        {
+            string marker;
+            string reason;
+            if (!StaffDataDryRunPlanner.TryClassifyExistingV18DataState(
+                    plan,
+                    out marker,
+                    out reason))
+            {
+                return false;
+            }
+
+            if (marker == StaffDataDryRunPlanner.ExistingStaffV18DataReadyToApplyMarker)
+            {
+                return plan.CurrentInventoryFingerprint == PreA1InventoryFingerprint
+                       && plan.PlanFingerprint == PreA1PlanFingerprint
+                       && CountChangedFields(plan) == 2111;
+            }
+
+            if (marker != StaffDataDryRunPlanner.ExistingStaffV18DataAppliedMarker)
+            {
+                return false;
+            }
+
+            int existingChanged = 0;
+            int newChanged = 0;
+            for (int planIndex = 0; planIndex < plan.StaffPlans.Count; planIndex++)
+            {
+                StaffDataDryRunStaffPlan staff = plan.StaffPlans[planIndex];
+                if (staff.AssetAction == StaffDryRunAssetAction.CREATE_NEW)
+                {
+                    newChanged += staff.ChangedFieldCount;
+                    continue;
+                }
+
+                for (int fieldIndex = 0; fieldIndex < staff.FieldPlans.Count; fieldIndex++)
+                {
+                    StaffDataDryRunFieldPlan field = staff.FieldPlans[fieldIndex];
+                    if (field.Disposition == StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING
+                        && StaffDataDryRunPlanner.IsExistingV18A1FieldPath(field.FieldPath)
+                        && field.IsChanged)
+                    {
+                        existingChanged++;
+                    }
+                }
+            }
+
+            return existingChanged == 0
+                   && CountChangedFields(plan) == newChanged
+                   && CountIssues(plan, "CURRENT_ROLE_VALUE_MISMATCH") == 0
+                   && CountIssues(plan, "CURRENT_UPGRADE_COST_MISMATCH") == 0;
+        }
+
+        private static bool ValidateWarningContract(
+            StaffDataDryRunPlanSnapshot plan,
+            int actualWarnings)
+        {
+            int roleIssues = CountIssues(plan, "CURRENT_ROLE_VALUE_MISMATCH");
+            int costIssues = CountIssues(plan, "CURRENT_UPGRADE_COST_MISMATCH");
+            int expectedWarnings = 65 - (23 - roleIssues) - (32 - costIssues);
+            string marker;
+            string reason;
+            if (!StaffDataDryRunPlanner.TryClassifyExistingV18DataState(
+                    plan,
+                    out marker,
+                    out reason))
+            {
+                return false;
+            }
+
+            bool stateIssuesMatch = marker
+                                    == StaffDataDryRunPlanner.ExistingStaffV18DataReadyToApplyMarker
+                ? roleIssues == 23 && costIssues == 32
+                : marker == StaffDataDryRunPlanner.ExistingStaffV18DataAppliedMarker
+                  && roleIssues == 0 && costIssues == 0;
+            return stateIssuesMatch && actualWarnings == expectedWarnings;
         }
 
         private static int CountChefPassivePlans(
@@ -2516,6 +2645,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         {
             internal readonly bool[] Sections = new bool[16];
             internal readonly List<string> Errors = new List<string>();
+            internal string ExistingDataState =
+                StaffDataDryRunPlanner.ExistingStaffV18DataPartialMarker;
             internal int WarningCount;
             internal int PrerequisiteCount;
             internal bool Passed

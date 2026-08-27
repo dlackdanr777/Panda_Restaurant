@@ -14,7 +14,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
     internal static class StaffDataPackValidator
     {
         private const string MenuPath = "Tools/Panda Restaurant/Staff/Validate Staff Data Pack";
-        private const string ExpectedBranch = "26/08/06_CodexTest_01(Staff-Skill-01)";
+        private const string LegacyV7ExpectedBranch = "26/08/06_CodexTest_01(Staff-Skill-01)";
         private const string ReservedUnusedSlotACode = "RESERVED_UNUSED_SLOT_A";
         private const string ReservedUnusedSlotADescription = "예약 스킬 슬롯 A (현재 미사용)";
         private const string ReservedUnusedSlotBCode = "RESERVED_UNUSED_SLOT_B";
@@ -285,6 +285,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             GitInfo gitInfo = ReadGitInfo();
             output.AppendLine("Git branch: " + gitInfo.Branch);
             output.AppendLine("Git HEAD: " + gitInfo.Head);
+            output.AppendLine(
+                "Git Metadata: "
+                + (gitInfo.BranchAvailable && gitInfo.HeadAvailable ? "PASS" : "FAIL"));
             output.AppendLine();
 
             StaffOfficialDataPackageSnapshot snapshot;
@@ -386,21 +389,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             GitInfo gitInfo = ReadGitInfo();
-            if (!gitInfo.BranchAvailable)
-            {
-                report.Error("현재 Git 브랜치를 읽지 못했습니다: " + gitInfo.ErrorMessage);
-            }
-            else if (!string.Equals(gitInfo.Branch, ExpectedBranch, StringComparison.Ordinal))
-            {
-                report.Error(
-                    "현재 Git 브랜치가 지정 브랜치와 다릅니다. 현재: " + gitInfo.Branch
-                    + ", 지정: " + ExpectedBranch);
-            }
-
-            if (!gitInfo.HeadAvailable)
-            {
-                report.Error("현재 Git HEAD를 읽지 못했습니다: " + gitInfo.ErrorMessage);
-            }
+            ValidateGitMetadata(
+                gitInfo,
+                OfficialDataGitPolicy.LegacyV7ExactBranch,
+                report);
 
             Dictionary<string, MatchedFile> matchedFiles = new Dictionary<string, MatchedFile>(StringComparer.Ordinal);
             MatchOfficialFiles(selectedFolder, matchedFiles, report);
@@ -491,21 +483,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             GitInfo gitInfo = ReadGitInfo();
-            if (!gitInfo.BranchAvailable)
-            {
-                report.Error("현재 Git 브랜치를 읽지 못했습니다: " + gitInfo.ErrorMessage);
-            }
-            else if (!string.Equals(gitInfo.Branch, ExpectedBranch, StringComparison.Ordinal))
-            {
-                report.Error(
-                    "현재 Git 브랜치가 지정 브랜치와 다릅니다. 현재: " + gitInfo.Branch
-                    + ", 지정: " + ExpectedBranch);
-            }
-
-            if (!gitInfo.HeadAvailable)
-            {
-                report.Error("현재 Git HEAD를 읽지 못했습니다: " + gitInfo.ErrorMessage);
-            }
+            ValidateGitMetadata(
+                gitInfo,
+                OfficialDataGitPolicy.CanonicalV8ReadableGitMetadata,
+                report);
 
             Dictionary<string, MatchedFile> matchedFiles =
                 new Dictionary<string, MatchedFile>(StringComparer.Ordinal);
@@ -3161,6 +3142,32 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 error);
         }
 
+        private static void ValidateGitMetadata(
+            GitInfo gitInfo,
+            OfficialDataGitPolicy policy,
+            ValidationReport report)
+        {
+            if (!gitInfo.BranchAvailable)
+            {
+                report.Error("현재 Git 브랜치를 읽지 못했습니다: " + gitInfo.ErrorMessage);
+            }
+            else if (policy == OfficialDataGitPolicy.LegacyV7ExactBranch
+                     && !string.Equals(
+                         gitInfo.Branch,
+                         LegacyV7ExpectedBranch,
+                         StringComparison.Ordinal))
+            {
+                report.Error(
+                    "현재 Git 브랜치가 지정 브랜치와 다릅니다. 현재: " + gitInfo.Branch
+                    + ", 지정: " + LegacyV7ExpectedBranch);
+            }
+
+            if (!gitInfo.HeadAvailable)
+            {
+                report.Error("현재 Git HEAD를 읽지 못했습니다: " + gitInfo.ErrorMessage);
+            }
+        }
+
         private static bool TryRunGit(
             string workingDirectory,
             string arguments,
@@ -3307,6 +3314,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 Head = head;
                 ErrorMessage = errorMessage;
             }
+        }
+
+        private enum OfficialDataGitPolicy
+        {
+            LegacyV7ExactBranch,
+            CanonicalV8ReadableGitMetadata
         }
 
         private sealed class ValidationReport
