@@ -3,7 +3,6 @@
 public static class StaffSkillTimeCalculator
 {
     private const int MinimumStaffLevel = 1;
-    private const int MaximumStaffLevel = 5;
 
     private static readonly LevelRule[] LevelRules =
     {
@@ -42,8 +41,8 @@ public static class StaffSkillTimeCalculator
     {
         int clampedLevel = staffLevel < MinimumStaffLevel
             ? MinimumStaffLevel
-            : staffLevel > MaximumStaffLevel
-                ? MaximumStaffLevel
+            : staffLevel > StaffData.OfficialMaxLevel
+                ? StaffData.OfficialMaxLevel
                 : staffLevel;
 
         return LevelRules[clampedLevel - MinimumStaffLevel];

@@ -412,8 +412,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             List<string> errors)
         {
             bool passed = true;
-            int staff02SixCount = 0;
-            int normalFiveCount = 0;
+            int officialFiveCount = 0;
             int unexpectedLevelCount = 0;
             int chefCount = 0;
             int chefFieldCount = 0;
@@ -432,15 +431,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                     passed = false;
                 }
 
-                if (string.Equals(staff.Id, "STAFF02", StringComparison.Ordinal)
-                    && staff.LevelCount == 6)
+                if (staff.LevelCount == 5)
                 {
-                    staff02SixCount++;
-                }
-                else if (!string.Equals(staff.Id, "STAFF02", StringComparison.Ordinal)
-                         && staff.LevelCount == 5)
-                {
-                    normalFiveCount++;
+                    officialFiveCount++;
                 }
                 else
                 {
@@ -485,11 +478,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 }
             }
 
-            if (staff02SixCount != 1 || normalFiveCount != 31 || unexpectedLevelCount != 0)
+            if (officialFiveCount != 32 || unexpectedLevelCount != 0)
             {
                 errors.Add(
-                    "레벨 배열 기준 상태가 다릅니다. STAFF02 6칸=" + staff02SixCount
-                    + ", 나머지 5칸=" + normalFiveCount
+                    "레벨 배열 기준 상태가 다릅니다. 공식 5칸=" + officialFiveCount
                     + ", 예상 외=" + unexpectedLevelCount);
                 passed = false;
             }
@@ -514,8 +506,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 passed = false;
             }
 
-            details.Add("- KNOWN_MIGRATION_REQUIRED: STAFF02 레벨 배열 6칸");
-            details.Add("- 나머지 StaffData 레벨 배열 5칸: " + normalFiveCount + "명");
+            details.Add("- Save Migration Required: 0");
+            details.Add("- StaffData 공식 레벨 배열 5칸: " + officialFiveCount + "명");
             details.Add("- Chef AddSpeed 필드 존재: " + chefFieldCount + "/7");
             details.Add("- Chef AddSpeed 필드 부재: " + chefFieldGapCount);
             details.Add("- Chef AddSpeed 값 존재: " + chefAddSpeedValueCount + "/35");
@@ -2779,6 +2771,145 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 AssetGuid = assetGuid ?? string.Empty;
                 Sha256 = sha256 ?? string.Empty;
             }
+        }
+    }
+}
+
+namespace PandaRestaurant.Editor.StaffDataValidation
+{
+    public static class StaffSaveMigrationA2Validator
+    {
+        private const string MenuPath =
+            "Tools/Panda Restaurant/Staff/Validate STAFF02 Save Migration A2";
+
+        [MenuItem(MenuPath)]
+        public static void Validate()
+        {
+            try
+            {
+                ValidateLegacyAndIdempotency();
+                ValidatePreservationCases();
+                ValidateRuntimeLevelPolicy();
+                Debug.Log("[STAFF02 Save Migration A2 Validation]\n"
+                          + "Legacy Lv.6 migration: PASS\n"
+                          + "Repeated Load/Save idempotency: PASS\n"
+                          + "Lv.0/missing/invalid/other Staff preservation: PASS\n"
+                          + "Lv.4 -> Lv.5 consecutive-click protection: PASS\n"
+                          + "Lv.5 runtime and upgrade protection: PASS\n"
+                          + "STAFF02 SAVE MIGRATION A2 VALIDATION: PASS");
+            }
+            catch (Exception exception)
+            {
+                Debug.LogError("[STAFF02 Save Migration A2 Validation]\n"
+                               + exception + "\n"
+                               + "STAFF02 SAVE MIGRATION A2 VALIDATION: FAIL");
+            }
+        }
+
+        private static void ValidateLegacyAndIdempotency()
+        {
+            SaveStaffData staff02 = new SaveStaffData("STAFF02", 6);
+            staff02.SetSkinId("STAFF02_SKIN_LEGACY");
+            SaveStaffData other = new SaveStaffData("STAFF03", 4);
+            ServerStageData selected = new ServerStageData
+            {
+                GiveStaffList = new List<SaveStaffData> { staff02, other }
+            };
+
+            Require(StaffSaveMigrationA2.TryApply(selected, EStage.Stage1),
+                "Legacy Lv.6 must report one changed load.");
+            Require(staff02.Level == StaffData.OfficialMaxLevel,
+                "Legacy STAFF02 Lv.6 must migrate to Lv.5.");
+            Require(staff02.SkinId == "STAFF02_SKIN_LEGACY",
+                "STAFF02 skin must be preserved.");
+            Require(other.Level == 4, "Other staff levels must be preserved.");
+            Require(!StaffSaveMigrationA2.TryApply(selected, EStage.Stage1),
+                "A second migration call must be a no-op.");
+
+            ServerStageData reloaded = new ServerStageData
+            {
+                GiveStaffList = new List<SaveStaffData>
+                {
+                    new SaveStaffData(staff02.Id, staff02.Level),
+                    new SaveStaffData(other.Id, other.Level)
+                }
+            };
+            Require(!StaffSaveMigrationA2.TryApply(reloaded, EStage.Stage1),
+                "A saved and reloaded Lv.5 value must remain unchanged.");
+            Require(reloaded.GiveStaffList[0].Level == StaffData.OfficialMaxLevel,
+                "Reloaded STAFF02 must remain Lv.5.");
+        }
+
+        private static void ValidatePreservationCases()
+        {
+            List<SaveStaffData> preserved = new List<SaveStaffData>();
+            for (int level = 1; level <= StaffData.OfficialMaxLevel; level++)
+                preserved.Add(new SaveStaffData("STAFF02", level));
+
+            preserved.Add(new SaveStaffData("STAFF02", 0));
+            preserved.Add(new SaveStaffData("STAFF02", -1));
+            preserved.Add(new SaveStaffData("STAFF02", 7));
+            ServerStageData values = new ServerStageData { GiveStaffList = preserved };
+            Require(!StaffSaveMigrationA2.TryApply(values, EStage.Stage1),
+                "Lv.1~5, Lv.0, negative, and Lv.7 must not be rewritten.");
+            for (int index = 0; index < preserved.Count; index++)
+            {
+                int expected = index < 5 ? index + 1 : index == 5 ? 0 : index == 6 ? -1 : 7;
+                Require(preserved[index].Level == expected,
+                    "A preserved STAFF02 level changed unexpectedly.");
+            }
+
+            ServerStageData missing = new ServerStageData
+            {
+                GiveStaffList = new List<SaveStaffData> { new SaveStaffData("STAFF03", 5) }
+            };
+            Require(!StaffSaveMigrationA2.TryApply(missing, EStage.Stage1),
+                "A missing STAFF02 must not be created.");
+            Require(missing.GiveStaffList.Count == 1
+                    && missing.GiveStaffList[0].Id == "STAFF03",
+                "Missing ownership state must be preserved.");
+        }
+
+        private static void ValidateRuntimeLevelPolicy()
+        {
+            WaiterData staff02 = AssetDatabase.LoadAssetAtPath<WaiterData>(
+                "Assets/Resources/StaffData/STAFF02.asset");
+            Require(staff02 != null, "STAFF02 asset must load as WaiterData.");
+            Require(staff02.MaxLevel == StaffData.OfficialMaxLevel,
+                "STAFF02 role array must contain exactly five levels.");
+            Require(staff02.GetRuntimeLevel(6) == 5 && staff02.GetRuntimeLevel(7) == 5,
+                "Legacy or oversized levels must be runtime-safe at Lv.5.");
+            Require(staff02.GetRuntimeLevel(0) == 1 && staff02.GetRuntimeLevel(-1) == 1,
+                "Zero or negative levels must be runtime-safe without rewriting the save.");
+            Require(staff02.CanUpgradeFromSavedLevel(4),
+                "A valid Lv.4 value must be allowed to upgrade once.");
+            Require(!staff02.CanUpgradeFromSavedLevel(5)
+                    && !staff02.CanUpgradeFromSavedLevel(6)
+                    && !staff02.CanUpgradeFromSavedLevel(0)
+                    && !staff02.CanUpgradeFromSavedLevel(-1)
+                    && !staff02.CanUpgradeFromSavedLevel(7),
+                "Lv.5, legacy, zero, and invalid values must not upgrade.");
+
+            StageInfo stage = new StageInfo();
+            stage.GiveStaff(staff02);
+            for (int level = 1; level < StaffData.OfficialMaxLevel; level++)
+            {
+                Require(stage.CanUpgradeStaff(staff02),
+                    "Each valid level below Lv.5 must pass the execution precheck.");
+                Require(stage.UpgradeStaff(staff02),
+                    "Each valid level below Lv.5 must upgrade exactly once.");
+            }
+
+            Require(stage.GetStaffLevel(staff02) == StaffData.OfficialMaxLevel,
+                "The first Lv.4 click must finish at Lv.5.");
+            Require(!stage.CanUpgradeStaff(staff02),
+                "A second consecutive click must be blocked before execution.");
+        }
+
+        private static void Require(bool condition, string message)
+        {
+            if (!condition)
+                throw new InvalidOperationException(message);
         }
     }
 }

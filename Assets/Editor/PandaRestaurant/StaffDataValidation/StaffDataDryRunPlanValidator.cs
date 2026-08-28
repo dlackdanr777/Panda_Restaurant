@@ -147,7 +147,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 ValidateWarningContract(first, result.WarningCount),
                 "Plan warning Issue Code contract changed.",
                 result);
-            Require(result.PrerequisiteCount == 1, "Plan prerequisite baseline changed.", result);
+            Require(result.PrerequisiteCount == 0, "Plan prerequisite baseline changed.", result);
             Require(
                 ValidateChangedFieldContract(first),
                 "Existing Staff V18 changed-field state is partial or inconsistent.",
@@ -251,10 +251,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                      && guidPreserved == 32
                      && visualPreserved == 32
                       && valueComparisons == 32
-                      && migration == 1
-                      && readyWithWarnings == 31
+                      && migration == 0
+                      && readyWithWarnings == 32
                       && skillRequired == 0
-                      && saveMigrationRequired == 1;
+                      && saveMigrationRequired == 0;
             return Require(valid, "Existing STAFF01~32 preservation/update plan is incomplete.", result);
         }
 
@@ -1350,7 +1350,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 migration += HasIssue(staff, "STAFF02_LEVEL6_SAVE_MIGRATION_REQUIRED") ? 1 : 0;
             }
 
-            valid &= validLevelPlans == 92 && terminalReview == 92 && migration == 1;
+            valid &= validLevelPlans == 92 && terminalReview == 92 && migration == 0;
             return Require(valid, "Five-level upgrade, terminal sentinel, or STAFF02 migration plan is invalid.", result);
         }
 
@@ -1833,7 +1833,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             output.AppendLine(
                 "- Chef 구조 선행 구현 필요: "
                 + CountIssues(plan, "CHEF_ADD_SPEED_SCHEMA_REQUIRED"));
-            output.AppendLine("- Save Migration 필요: 1");
+            output.AppendLine(
+                "- Save Migration 필요: "
+                + CountIssues(plan, "STAFF02_LEVEL6_SAVE_MIGRATION_REQUIRED"));
             output.AppendLine("- PandaToken·획득 후속 시스템 필요: 92");
             for (int index = 0; index < result.Errors.Count; index++)
             {

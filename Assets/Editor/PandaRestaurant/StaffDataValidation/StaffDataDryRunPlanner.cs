@@ -26,7 +26,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private const int V8CurrentSkillDurationMismatch = 0;
         private const int V8CurrentSkillCooldownMismatch = 0;
         private const int V8ExistingSkillClassMismatch = 0;
-        private const int V8ExistingPlanReadyWithWarnings = 31;
+        private const int V8ExistingPlanReadyWithWarnings = 32;
         private const int V8ExistingSkillClassRequired = 0;
         private const int V8ExistingRuntimeSchemaRequired = 0;
         private const int V8ExistingMultiplePrerequisitesRequired = 0;
@@ -37,8 +37,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private const int V8NewRuntimeSchemaRequired = 0;
         private const int V8NewMultiplePrerequisitesRequired = 0;
         private const int V8SkillPrerequisiteStaff = 0;
-        private const int V8TotalPrerequisiteStaff = 1;
-        private const int V8SaveMigrationRequired = 1;
+        private const int V8TotalPrerequisiteStaff = 0;
+        private const int V8SaveMigrationRequired = 0;
         private const int V8StaffWarningCount = 56;
         private const int V8GlobalWarningCount = 9;
         private const int V8FinalWarningCount = 65;
@@ -1321,7 +1321,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             summary.StructuralContractValid = summary.ExistingStaff == ExistingStaffCount
                                               && ids.Count == ExistingStaffCount
-                                              && summary.SaveMigrationIssues == 1
+                                              && summary.SaveMigrationIssues == 0
                                               && summary.UnsupportedAutoFields == 0;
             if (!summary.StructuralContractValid)
             {

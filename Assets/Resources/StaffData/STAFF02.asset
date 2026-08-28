@@ -61,8 +61,3 @@ MonoBehaviour:
       _moneyType: 0
       _price: -1
     _addSpeed: 2
-  - _upgradeMinScore: -1
-    _upgradeMoneyData:
-      _moneyType: 0
-      _price: -1
-    _addSpeed: 2

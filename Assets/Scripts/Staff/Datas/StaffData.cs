@@ -2,6 +2,8 @@ using UnityEngine;
 
 public abstract class StaffData : BasicData,ShopData
 {
+    public const int OfficialMaxLevel = 5;
+
     [Space]
     [Header("StaffData")]
 
@@ -43,6 +45,24 @@ public abstract class StaffData : BasicData,ShopData
     public abstract float GetActionValue(int level);
 
     public abstract bool UpgradeEnable(int level);
+
+    public int GetRuntimeLevel(int savedLevel)
+    {
+        int runtimeMaxLevel = Mathf.Clamp(MaxLevel, 1, OfficialMaxLevel);
+        return Mathf.Clamp(savedLevel, 1, runtimeMaxLevel);
+    }
+
+    public bool IsMaxLevel(int level)
+    {
+        return level >= Mathf.Min(MaxLevel, OfficialMaxLevel);
+    }
+
+    public bool CanUpgradeFromSavedLevel(int savedLevel)
+    {
+        return savedLevel >= 1
+               && !IsMaxLevel(savedLevel)
+               && UpgradeEnable(savedLevel);
+    }
 
     public abstract void AddSlot(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController);
 
