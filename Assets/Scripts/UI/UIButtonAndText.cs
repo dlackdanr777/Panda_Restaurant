@@ -7,6 +7,7 @@ public class UIButtonAndText : MonoBehaviour
 {
     [SerializeField] private Button _button;
     [SerializeField] private TextMeshProUGUI _text;
+    public TextMeshProUGUI Text => _text;
 
     public void AddListener(UnityAction action)
     {

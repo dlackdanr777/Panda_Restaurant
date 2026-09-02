@@ -5,6 +5,9 @@ public class UITextAndText : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI _text1;
     [SerializeField] private TextMeshProUGUI _text2;
+    public TextMeshProUGUI Text1 => _text1;
+    public TextMeshProUGUI Text2 => _text2;
+
     public Color TextColor1
     {
         get { return _text1.color;}

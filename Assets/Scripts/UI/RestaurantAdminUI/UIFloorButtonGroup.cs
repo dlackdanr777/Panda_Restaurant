@@ -82,16 +82,16 @@ public class UIFloorButtonGroup : MonoBehaviour
         }
         else
         {
-            // VIP룸 해금: 현재 층에 따라 스프라이트 전환
+            // VIP룸 해금: 현재 위치가 아니라 누르면 이동할 목적지를 표시
             if (_currentFloor == ERestaurantFloorType.Floor1)
-            {
-                targetSprite = _floor1Sprite;
-                floorText = "1층";
-            }
-            else
             {
                 targetSprite = _vipRoomSprite;
                 floorText = "VIP룸";
+            }
+            else
+            {
+                targetSprite = _floor1Sprite;
+                floorText = "1층";
             }
         }
         

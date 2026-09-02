@@ -569,6 +569,9 @@ public class UIRestaurantAdmin : MobileUIView
         // 탭 Attention 상태 설정
         for (int i = 0; i < _tabs.Length; i++)
         {
+            _tabs[i].gameObject.SetActive(true);
+            SetTabContentActive(_tabs[i], i == activeIndex);
+
             if (i == activeIndex)
             {
                 _tabs[i].SetAttention();
@@ -578,6 +581,20 @@ public class UIRestaurantAdmin : MobileUIView
             {
                 _tabs[i].SetNotAttention();
             }
+        }
+    }
+
+    private static void SetTabContentActive(UIRestaurantAdminTab tab, bool active)
+    {
+        Transform tabTransform = tab.transform;
+        for (int childIndex = 0; childIndex < tabTransform.childCount; childIndex++)
+        {
+            Transform child = tabTransform.GetChild(childIndex);
+            bool isSelectedTabDuplicateTitle = child.name == "Title Text";
+            if (isSelectedTabDuplicateTitle)
+                continue;
+
+            child.gameObject.SetActive(active);
         }
     }
 

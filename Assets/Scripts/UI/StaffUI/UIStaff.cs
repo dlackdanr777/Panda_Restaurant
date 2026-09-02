@@ -64,14 +64,14 @@ public class UIStaff : MobileUIView
         _uiSkin.Init();
         _leftArrowButton.AddListener(() => ChangeStaffData(-1));
         _rightArrowButton.AddListener(() => ChangeStaffData(1));
-        _uiStaffPreview.Init(OnEquipButtonClicked, OnUsingButtonClicked, OnBuyButtonClicked, OnUpgradeButtonClicked);
-        // ½½·Ô ¹Ì¸® »ı¼º ÃÖÀûÈ­
+        _uiStaffPreview.Init(OnEquipButtonClicked, OnUsingButtonClicked, OnUpgradeButtonClicked);
+        // ìŠ¬ë¡¯ ë¯¸ë¦¬ ìƒì„± ìµœì í™”
         InitializeSlots();
 
-        // ÀÌº¥Æ® ±¸µ¶
+        // ì´ë²¤íŠ¸ êµ¬ë…
         SubscribeEvents();
 
-        // ÃÊ±â ¼³Á¤
+        // ì´ˆê¸° ì„¤ì •
         SetStaffDataOptimized(EquipStaffType.Manager);
 
         _showSkinButton.onClick.AddListener(OnShowSkinButtonClicked);
@@ -118,7 +118,7 @@ public class UIStaff : MobileUIView
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
 
-        // µ¥ÀÌÅÍ ¼³Á¤°ú UI ¾÷µ¥ÀÌÆ®¸¦ ÇÑ ¹ø¿¡ Ã³¸®
+        // ë°ì´í„° ì„¤ì •ê³¼ UI ì—…ë°ì´íŠ¸ë¥¼ í•œ ë²ˆì— ì²˜ë¦¬
         SetStaffDataOptimized(EquipStaffType.Manager);
 
         TweenData tween = _animeUI.TweenScale(_tmpScale, _showDuration, _showTweenMode);
@@ -173,10 +173,10 @@ public class UIStaff : MobileUIView
         }
     }
 
-    // ÃÖÀûÈ­µÈ µ¥ÀÌÅÍ ¼³Á¤ ¸Ş¼­µå
+    // ìµœì í™”ëœ ë°ì´í„° ì„¤ì • ë©”ì„œë“œ
     private void SetStaffDataOptimized(EquipStaffType type)
     {
-        // ÀÌÀü Å¸ÀÔÀÇ ½½·Ôµé ºñÈ°¼ºÈ­ (¹èÄ¡ ÃÖÀûÈ­)
+        // ì´ì „ íƒ€ì…ì˜ ìŠ¬ë¡¯ë“¤ ë¹„í™œì„±í™” (ë°°ì¹˜ ìµœì í™”)
         if (_currentType != type && _slots[(int)_currentType] != null)
         {
             var currentSlots = _slots[(int)_currentType];
@@ -190,7 +190,7 @@ public class UIStaff : MobileUIView
         _currentTypeDataList = StaffDataManager.Instance.GetSortStaffDataList(type);
         _typeText.text = Utility.StaffTypeStringConverter(type);
 
-        // ÇÁ¸®ºä¿Í UI ¾÷µ¥ÀÌÆ®¸¦ ÇÔ²² Ã³¸®
+        // í”„ë¦¬ë·°ì™€ UI ì—…ë°ì´íŠ¸ë¥¼ í•¨ê»˜ ì²˜ë¦¬
         SetStaffPreviewOptimized();
         UpdateUIOptimized();
     }
@@ -204,7 +204,7 @@ public class UIStaff : MobileUIView
         _uiStaffPreview.SetData(_currentFloorType, _currentType, previewData);
     }
 
-    // ´ëÆø ÃÖÀûÈ­µÈ UpdateUI (Á¤·Ä ¾øÀÌ ±âÁ¸ ¼ø¼­´ë·Î)
+    // ëŒ€í­ ìµœì í™”ëœ UpdateUI (ì •ë ¬ ì—†ì´ ê¸°ì¡´ ìˆœì„œëŒ€ë¡œ)
     private void UpdateUIOptimized()
     {
         if (!gameObject.activeInHierarchy || _currentTypeDataList == null || _currentTypeDataList.Count == 0)
@@ -216,7 +216,7 @@ public class UIStaff : MobileUIView
         var currentSlots = _slots[slotsIndex];
         int dataCount = _currentTypeDataList.Count;
         
-        // ±âÁ¸ ¸®½ºÆ® ¼ø¼­´ë·Î ½½·Ô Ã³¸®
+        // ê¸°ì¡´ ë¦¬ìŠ¤íŠ¸ ìˆœì„œëŒ€ë¡œ ìŠ¬ë¡¯ ì²˜ë¦¬
         for (int i = 0; i < dataCount; i++)
         {
             var data = _currentTypeDataList[i];
@@ -227,8 +227,7 @@ public class UIStaff : MobileUIView
             slot.transform.SetSiblingIndex(i);
 
             bool isGiven = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data);
-            StaffSkinData equipSkinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, data);
-            slot.SetFrame(equipSkinData != null ? equipSkinData.Rank : Rank.Normal1);
+            slot.SetFrame(data.Rank);
              
             if (isGiven)
             {
@@ -241,14 +240,14 @@ public class UIStaff : MobileUIView
         }
     }
 
-    // °£¼ÒÈ­µÈ ProcessEquippedSlot
+    // ê°„ì†Œí™”ëœ ProcessEquippedSlot
     private void ProcessEquippedSlot(StaffData data, UIRestaurantAdminStaffSlot slot)
     {
         ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
-        StaffSkinData skinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, data);
-        Sprite thumbnailSprite = skinData == null ? (data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite) : skinData.ThumbnailSprite;
-        string name = skinData == null ? data.Name : skinData.Name;
-        // ÀåÂø »óÅÂ Ã³¸®
+        Sprite thumbnailSprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
+        string name = data.Name;
+        slot.SetOwnedVisual();
+        // ì¥ì°© ìƒíƒœ ì²˜ë¦¬
         if (UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
         {
             slot.EquipGroupSetActive(true);
@@ -256,11 +255,11 @@ public class UIStaff : MobileUIView
             slot.SetEquipText(Utility.StaffTypeStringConverter(equipType));
         }
 
-        // ¹èÄ¡ »óÅÂ¿¡ µû¸¥ UI ¼³Á¤
+        // ë°°ì¹˜ ìƒíƒœì— ë”°ë¥¸ UI ì„¤ì •
         string statusText = floorType switch
         {
-            ERestaurantFloorType.Floor1 or ERestaurantFloorType.Floor2 or ERestaurantFloorType.Floor3 => "¹èÄ¡Áß",
-            _ => "¹èÄ¡ÇÏ±â"
+            ERestaurantFloorType.Floor1 or ERestaurantFloorType.Floor2 or ERestaurantFloorType.Floor3 => "ë°°ì¹˜ì¤‘",
+            _ => "ë°°ì¹˜í•˜ê¸°"
         };
 
         if (floorType <= ERestaurantFloorType.Floor3)
@@ -275,35 +274,8 @@ public class UIStaff : MobileUIView
 
     private void ProcessUnequippedSlot(StaffData data, UIRestaurantAdminStaffSlot slot)
     {
-        StaffSkinData skinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, data);
-        Sprite thumbnailSprite = skinData == null ? (data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite) : skinData.ThumbnailSprite;
-        string name = skinData == null ? data.Name : skinData.Name;
-        if (!UserInfo.IsScoreValid(data))
-        {
-            slot.SetLowReputation(thumbnailSprite, name, data.BuyScore.ToString());
-            return;
-        }
-
-        string priceText = data.BuyPrice <= 0 ? "¹«·á" : Utility.ConvertToMoney(data.BuyPrice);
-
-        if (data.MoneyType == MoneyType.Gold)
-        {
-            if (UserInfo.IsMoneyValid(data))
-                slot.SetEnoughPrice(thumbnailSprite, name, priceText, data.MoneyType);
-            else
-                slot.SetNotEnoughMoneyPrice(thumbnailSprite, name, priceText);
-        }
-        else if (data.MoneyType == MoneyType.Dia)
-        {
-            if (UserInfo.IsDiaValid(data))
-                slot.SetEnoughPrice(thumbnailSprite, name, priceText, data.MoneyType);
-            else
-                slot.SetNotEnoughDiaPrice(thumbnailSprite, name, priceText);
-        }
-        else
-        {
-            slot.SetEnoughPrice(thumbnailSprite, name, priceText, data.MoneyType);
-        }
+        Sprite thumbnailSprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
+        slot.SetGacha(thumbnailSprite);
     }
 
     private void ChangeStaffData(int dir)
@@ -320,7 +292,7 @@ public class UIStaff : MobileUIView
         SoundManager.Instance.PlayEffectAudio(EffectType.UI, _equipSound);
         UserInfo.SetEquipStaff(UserInfo.CurrentStage, floorType, type, data);
         
-        // ÀüÃ¼ Àç¼³Á¤ ´ë½Å ¾÷µ¥ÀÌÆ®¸¸
+        // ì „ì²´ ì¬ì„¤ì • ëŒ€ì‹  ì—…ë°ì´íŠ¸ë§Œ
         UpdateUIOptimized();
     }
 
@@ -329,43 +301,8 @@ public class UIStaff : MobileUIView
         SoundManager.Instance.PlayEffectAudio(EffectType.UI, _dequipSound);
         UserInfo.SetNullEquipStaff(UserInfo.CurrentStage, floorType, data);
         
-        // ÀüÃ¼ Àç¼³Á¤ ´ë½Å ¾÷µ¥ÀÌÆ®¸¸
+        // ì „ì²´ ì¬ì„¤ì • ëŒ€ì‹  ì—…ë°ì´íŠ¸ë§Œ
         UpdateUIOptimized();
-    }
-
-    private void OnBuyButtonClicked(StaffData data)
-    {
-        if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data.Id))
-        {
-            PopupManager.Instance.ShowTextError();
-            return;
-        }
-
-        if (!UserInfo.IsScoreValid(data))
-        {
-            PopupManager.Instance.ShowTextLackScore();
-            return;
-        }
-
-        if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
-        {
-            PopupManager.Instance.ShowTextLackMoney();
-            return;
-        }
-
-        if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
-        {
-            PopupManager.Instance.ShowTextLackDia();
-            return;
-        }
-
-        if (data.MoneyType == MoneyType.Gold)
-            UserInfo.AddMoney(-data.BuyPrice);
-        else if (data.MoneyType == MoneyType.Dia)
-            UserInfo.AddDia(-data.BuyPrice);
-
-        UserInfo.GiveStaff(UserInfo.CurrentStage, data);
-        PopupManager.Instance.ShowDisplayText("»õ·Î¿î Á÷¿øÀ» Ã¤¿ëÇß¾î¿ä!");
     }
 
     private void OnUpgradeButtonClicked(StaffData data)
