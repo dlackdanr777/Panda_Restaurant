@@ -91552,7 +91552,7 @@ Transform:
   m_GameObject: {fileID: 292101881}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -28.583, y: 7.559, z: 0}
+  m_LocalPosition: {x: -28.583, y: 7.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -91634,7 +91634,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _type: 8
-  _batchType: 0
+  _batchType: 2
   _spriteRenderer: {fileID: 2080803871}
   _defalutSprite: {fileID: 21300000, guid: 4ee80829084c76a4b935846406826ea6, type: 3}
   _sinkGaugeBar: {fileID: 190106446}
@@ -216388,7 +216388,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &719303176
 RectTransform:
   m_ObjectHideFlags: 0
@@ -409980,7 +409980,7 @@ MonoBehaviour:
   _button: {fileID: 1403246117}
   _buttonText: {fileID: 1867926263}
   _customerController: {fileID: 1917824214}
-  _testId: CUSTOMER78
+  _testId: CUSTOMER81
 --- !u!114 &1403246117
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -431347,7 +431347,7 @@ Transform:
   m_GameObject: {fileID: 1532461504}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -28.583, y: 7.559, z: 0}
+  m_LocalPosition: {x: -28.583, y: 7.5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -431371,7 +431371,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _type: 8
-  _batchType: 0
+  _batchType: 2
   _spriteRenderer: {fileID: 1877466034}
   _defalutSprite: {fileID: 21300000, guid: 4ee80829084c76a4b935846406826ea6, type: 3}
   _sinkGaugeBar: {fileID: 1117697492}

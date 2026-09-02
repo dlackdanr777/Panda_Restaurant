@@ -84,14 +84,24 @@ public class UIStaff : MobileUIView
     {
         for (int i = 0; i < (int)EquipStaffType.Length; i++)
         {
-            List<StaffData> typeDataList = StaffDataManager.Instance.GetSortStaffDataList((EquipStaffType)i);
-            _slots[i] = new List<UIRestaurantAdminStaffSlot>(typeDataList.Count);
+            EquipStaffType staffType = (EquipStaffType)i;
             
-            for (int j = 0; j < typeDataList.Count; j++)
+            // ¸ğµç ÃşÀÇ µ¥ÀÌÅÍ¸¦ È®ÀÎÇÏ¿© ÃÖ´ë ½½·Ô ¼ö °è»ê
+            int maxSlotCount = 0;
+            for (int f = 0; f < (int)ERestaurantFloorType.Length; f++)
             {
-                int dataIndex = j;
+                ERestaurantFloorType floorType = (ERestaurantFloorType)f;
+                List<StaffData> floorDataList = StaffDataManager.Instance.GetStaffDataList(staffType, floorType);
+                if (floorDataList.Count > maxSlotCount)
+                    maxSlotCount = floorDataList.Count;
+            }
+
+            _slots[i] = new List<UIRestaurantAdminStaffSlot>(maxSlotCount);
+            
+            for (int j = 0; j < maxSlotCount; j++)
+            {
                 UIRestaurantAdminStaffSlot slot = Instantiate(_slotPrefab, _slotParnet);
-                slot.Init(() => OnSlotClicked(typeDataList[dataIndex]));
+                slot.Init(() => { }); // ÃÊ±âÈ­ ½Ã¿¡´Â ºó ¾×¼Ç
                 slot.SetFrame(Rank.Normal1);
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
@@ -118,7 +128,7 @@ public class UIStaff : MobileUIView
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
 
-        // ë°ì´í„° ì„¤ì •ê³¼ UI ì—…ë°ì´íŠ¸ë¥¼ í•œ ë²ˆì— ì²˜ë¦¬
+
         SetStaffDataOptimized(EquipStaffType.Manager);
 
         TweenData tween = _animeUI.TweenScale(_tmpScale, _showDuration, _showTweenMode);
@@ -173,10 +183,10 @@ public class UIStaff : MobileUIView
         }
     }
 
-    // ìµœì í™”ëœ ë°ì´í„° ì„¤ì • ë©”ì„œë“œ
+            
     private void SetStaffDataOptimized(EquipStaffType type)
     {
-        // ì´ì „ íƒ€ì…ì˜ ìŠ¬ë¡¯ë“¤ ë¹„í™œì„±í™” (ë°°ì¹˜ ìµœì í™”)
+
         if (_currentType != type && _slots[(int)_currentType] != null)
         {
             var currentSlots = _slots[(int)_currentType];
@@ -187,10 +197,9 @@ public class UIStaff : MobileUIView
         }
 
         _currentType = type;
-        _currentTypeDataList = StaffDataManager.Instance.GetSortStaffDataList(type);
+        _currentTypeDataList = StaffDataManager.Instance.GetSortStaffDataList(type, _currentFloorType);
         _typeText.text = Utility.StaffTypeStringConverter(type);
 
-        // í”„ë¦¬ë·°ì™€ UI ì—…ë°ì´íŠ¸ë¥¼ í•¨ê»˜ ì²˜ë¦¬
         SetStaffPreviewOptimized();
         UpdateUIOptimized();
     }
@@ -216,12 +225,20 @@ public class UIStaff : MobileUIView
         var currentSlots = _slots[slotsIndex];
         int dataCount = _currentTypeDataList.Count;
         
-        // ê¸°ì¡´ ë¦¬ìŠ¤íŠ¸ ìˆœì„œëŒ€ë¡œ ìŠ¬ë¡¯ ì²˜ë¦¬
+
+        r (int i = 0; i < currentSlots.Count; i++)
+        {
+            currentSlots[i].gameObject.SetActive(false);
+        }
+        
+
         for (int i = 0; i < dataCount; i++)
         {
             var data = _currentTypeDataList[i];
             var slot = currentSlots[i];
             
+            // ½½·Ô Å¬¸¯ ÀÌº¥Æ® Àç¼³Á¤
+            slot.Init(() => OnSlotClicked(data));
             slot.gameObject.SetActive(true);
             slot.EquipGroupSetActive(false);
             slot.transform.SetSiblingIndex(i);

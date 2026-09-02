@@ -20,6 +20,9 @@ public abstract class StaffData : BasicData,ShopData
 
     [SerializeField] protected SalesLocationType _salesLocationType;
     public SalesLocationType SalesLocationType => _salesLocationType;
+
+    [SerializeField] protected ERestaurantFloorType _floorType = ERestaurantFloorType.None;
+    public ERestaurantFloorType FloorType => _floorType;
     
     [SerializeField] protected MoneyType _moneyType;
     public MoneyType MoneyType => _moneyType;
@@ -29,6 +32,25 @@ public abstract class StaffData : BasicData,ShopData
 
     [SerializeField] protected int _buyPrice;
     public int BuyPrice => _buyPrice;
+
+    /// <summary>
+    /// 가챠 가중치 (등급 기반 자동 계산)
+    /// </summary>
+    public float GachaWeight
+    {
+        get
+        {
+            return _rank switch
+            {
+                Rank.Normal1 => 0.6f,
+                Rank.Normal2 => 0.6f,
+                Rank.Rare => 0.2f,
+                Rank.Unique => 0.15f,
+                Rank.Special => 0.05f,
+                _ => 0.6f
+            };
+        }
+    }
 
     [Range(1, 30)] [SerializeField] protected float _speed;
 

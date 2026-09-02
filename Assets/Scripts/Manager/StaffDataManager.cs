@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using Muks.WeightedRandom;
 
 
 public class StaffDataManager : MonoBehaviour
@@ -86,6 +87,102 @@ public class StaffDataManager : MonoBehaviour
         }
 
         return _staffTypeSortedCache[typeIndex];
+    }
+
+    /// <summary>
+    /// 특정 층의 스탭 리스트 반환 (None 타입은 모든 층에 포함)
+    /// </summary>
+    public List<StaffData> GetStaffDataListByFloor(ERestaurantFloorType floorType)
+    {
+        return _staffDatas.Where(data => data.FloorType == floorType || data.FloorType == ERestaurantFloorType.None).ToList();
+    }
+
+    /// <summary>
+    /// 특정 층과 타입의 스탭 리스트 반환 (None 타입은 모든 층에 포함)
+    /// </summary>
+    public List<StaffData> GetStaffDataList(EquipStaffType type, ERestaurantFloorType floorType)
+    {
+        int typeIndex = (int)GetStaffGroupType(type);
+        return _staffTypeDataList[typeIndex].Where(data => data.FloorType == floorType || data.FloorType == ERestaurantFloorType.None).ToList();
+    }
+
+    /// <summary>
+    /// 특정 층과 타입의 정렬된 스탭 리스트 반환 (None 타입은 모든 층에 포함)
+    /// </summary>
+    public List<StaffData> GetSortStaffDataList(EquipStaffType type, ERestaurantFloorType floorType)
+    {
+        int typeIndex = (int)GetStaffGroupType(type);
+        var filteredList = _staffTypeDataList[typeIndex].Where(data => data.FloorType == floorType || data.FloorType == ERestaurantFloorType.None).ToList();
+
+        ShopSortType sortType = UserInfo.StaffSortType;
+        return sortType switch
+        {
+            ShopSortType.NameAscending => filteredList.OrderBy(d => d.Name).ToList(),
+            ShopSortType.NameDescending => filteredList.OrderByDescending(d => d.Name).ToList(),
+            ShopSortType.PriceAscending => ShopItemSort.SortByPrice(filteredList, true),
+            ShopSortType.PriceDescending => ShopItemSort.SortByPrice(filteredList, false),
+            _ => filteredList
+        };
+    }
+
+    /// <summary>
+    /// 가챠용 스탭 데이터 리스트 반환 (GachaStaffData로 래핑)
+    /// </summary>
+    public List<GachaStaffData> GetGachaStaffDataList()
+    {
+        return _staffDatas.Select(data => new GachaStaffData(data)).ToList();
+    }
+
+    /// <summary>
+    /// 정렬된 가챠용 스탭 데이터 리스트 반환
+    /// </summary>
+    public List<GachaStaffData> GetSortGachaStaffDataList(GradeSortType sortType)
+    {
+        var gachaStaffList = GetGachaStaffDataList();
+        
+        return sortType switch
+        {
+            GradeSortType.NameAscending => gachaStaffList.OrderBy(data => data.Name).ToList(),
+            GradeSortType.NameDescending => gachaStaffList.OrderByDescending(data => data.Name).ToList(),
+            GradeSortType.GradeAscending => gachaStaffList.OrderBy(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            GradeSortType.GradeDescending => gachaStaffList.OrderByDescending(data => data.Rank).ThenBy(data => data.Name).ToList(),
+            _ => gachaStaffList
+        };
+    }
+
+    /// <summary>
+    /// 랜덤 가챠 스탭 선택 (개별 가중치 적용)
+    /// </summary>
+    public GachaData GetRandomGachaStaffData(List<GachaData> gachaDataList)
+    {
+        if (gachaDataList == null || gachaDataList.Count == 0)
+        {
+            DebugLog.LogError("가챠 스탭 리스트가 비어있습니다.");
+            return null;
+        }
+
+        // WeightedRandom 시스템 생성
+        WeightedRandom<GachaStaffData> weightedRandom = new WeightedRandom<GachaStaffData>();
+
+        // 각 스탭의 가중치를 추가
+        foreach (var data in gachaDataList)
+        {
+            if (data is GachaStaffData staffData)
+            {
+                weightedRandom.Add(staffData, staffData.GachaWeight);
+            }
+        }
+
+        // 가중치 기반 랜덤 선택
+        GachaStaffData selectedStaff = weightedRandom.GetRamdomItem();
+        
+        if (selectedStaff == null)
+        {
+            DebugLog.LogError("가챠 스탭 선택 실패.");
+            return null;
+        }
+
+        return selectedStaff;
     }
 
 

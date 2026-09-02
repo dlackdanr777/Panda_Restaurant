@@ -531,19 +531,22 @@ public class FurnitureDataManager : MonoBehaviour
     private static ERestaurantFloorType ParseFloorType(string floorStr)
     {
         if (string.IsNullOrWhiteSpace(floorStr))
-            return ERestaurantFloorType.Floor1;
+            return ERestaurantFloorType.None; // 빈 값은 전체 층
 
         floorStr = floorStr.Trim();
 
+        // "전체", "all", "none" 형태 처리
+        if (floorStr.Contains("전체") || floorStr.ToLower().Contains("all") || floorStr.ToLower().Contains("none"))
+            return ERestaurantFloorType.None;
         // "1층", "2층", "3층" 형태 처리
-        if (floorStr.Contains("1") || floorStr.Contains("일"))
+        else if (floorStr.Contains("1") || floorStr.Contains("일"))
             return ERestaurantFloorType.Floor1;
         else if (floorStr.Contains("2") || floorStr.Contains("이"))
             return ERestaurantFloorType.Floor2;
         else if (floorStr.Contains("3") || floorStr.Contains("삼"))
             return ERestaurantFloorType.Floor3;
 
-        return ERestaurantFloorType.Floor1; // 기본값
+        return ERestaurantFloorType.None; // 기본값 전체 층
     }
 
     /// <summary>
@@ -559,7 +562,7 @@ public class FurnitureDataManager : MonoBehaviour
     /// </summary>
     public List<FurnitureData> GetFurnitureDataList(FurnitureType type, ERestaurantFloorType floorType)
     {
-        return _furnitureDataListType[(int)type].Where(data => data.FloorType == floorType).ToList();
+        return _furnitureDataListType[(int)type].Where(data => data.FloorType == floorType || data.FloorType == ERestaurantFloorType.None).ToList();
     }
 
     /// <summary>
@@ -567,7 +570,7 @@ public class FurnitureDataManager : MonoBehaviour
     /// </summary>
     public List<FurnitureData> GetSortFurnitureDataList(FurnitureType type, ERestaurantFloorType floorType)
     {
-        var filteredList = _furnitureDataListType[(int)type].Where(data => data.FloorType == floorType).ToList();
+        var filteredList = _furnitureDataListType[(int)type].Where(data => data.FloorType == floorType || data.FloorType == ERestaurantFloorType.None).ToList();
         
         return UserInfo.FurnitureSortType switch
         {
