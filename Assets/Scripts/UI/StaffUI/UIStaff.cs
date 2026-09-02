@@ -1,4 +1,4 @@
-using Muks.MobileUI;
+ï»¿using Muks.MobileUI;
 using Muks.Tween;
 using System;
 using System.Collections.Generic;
@@ -86,7 +86,7 @@ public class UIStaff : MobileUIView
         {
             EquipStaffType staffType = (EquipStaffType)i;
             
-            // ¸ğµç ÃşÀÇ µ¥ÀÌÅÍ¸¦ È®ÀÎÇÏ¿© ÃÖ´ë ½½·Ô ¼ö °è»ê
+            // ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ È®ï¿½ï¿½ï¿½Ï¿ï¿½ ï¿½Ö´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½
             int maxSlotCount = 0;
             for (int f = 0; f < (int)ERestaurantFloorType.Length; f++)
             {
@@ -101,7 +101,7 @@ public class UIStaff : MobileUIView
             for (int j = 0; j < maxSlotCount; j++)
             {
                 UIRestaurantAdminStaffSlot slot = Instantiate(_slotPrefab, _slotParnet);
-                slot.Init(() => { }); // ÃÊ±âÈ­ ½Ã¿¡´Â ºó ¾×¼Ç
+                slot.Init(() => { }); // ï¿½Ê±ï¿½È­ ï¿½Ã¿ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½×¼ï¿½
                 slot.SetFrame(Rank.Normal1);
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
@@ -213,7 +213,6 @@ public class UIStaff : MobileUIView
         _uiStaffPreview.SetData(_currentFloorType, _currentType, previewData);
     }
 
-    // ëŒ€í­ ìµœì í™”ëœ UpdateUI (ì •ë ¬ ì—†ì´ ê¸°ì¡´ ìˆœì„œëŒ€ë¡œ)
     private void UpdateUIOptimized()
     {
         if (!gameObject.activeInHierarchy || _currentTypeDataList == null || _currentTypeDataList.Count == 0)
@@ -226,7 +225,7 @@ public class UIStaff : MobileUIView
         int dataCount = _currentTypeDataList.Count;
         
 
-        r (int i = 0; i < currentSlots.Count; i++)
+        for (int i = 0; i < currentSlots.Count; i++)
         {
             currentSlots[i].gameObject.SetActive(false);
         }
@@ -237,7 +236,7 @@ public class UIStaff : MobileUIView
             var data = _currentTypeDataList[i];
             var slot = currentSlots[i];
             
-            // ½½·Ô Å¬¸¯ ÀÌº¥Æ® Àç¼³Á¤
+            // ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ ï¿½Ìºï¿½Æ® ï¿½ç¼³ï¿½ï¿½
             slot.Init(() => OnSlotClicked(data));
             slot.gameObject.SetActive(true);
             slot.EquipGroupSetActive(false);
