@@ -16,8 +16,9 @@ MonoBehaviour:
   _thumbnailSprite: {fileID: 21300000, guid: 1f28b1b2b1e6f504aa3807bd77aaed6c, type: 3}
   _name: "\uD310\uB2E4 \uB9C8\uC26C"
   _id: STAFF08
-  _description: 
-  _rank: 0
+  _description: "\uBA5C\uB85C\uC758 \uD615 \uB9C8\uC26C. \uB3D9\uC0DD\uC744 \uAC71\uC815\uD55C
+    \uB098\uBA38\uC9C0 \uB9E4\uB2C8\uC800\uB85C \uCDE8\uC9C1\uD558\uACE0 \uB9D0\uC558\uB2E4!"
+  _rank: 1
   _skill: {fileID: 11400000, guid: 0571822f948835242a8609db78b87bba, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
@@ -25,30 +26,30 @@ MonoBehaviour:
   _moneyType: 0
   _buyScore: 650
   _buyPrice: 150000
-  _speed: 6
+  _speed: 0
   _managerLevelData:
-  - _upgradeMinScore: 975
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 225000
-    _customerGuideTime: 2.4
-  - _upgradeMinScore: 1300
-    _upgradeMoneyData:
-      _moneyType: 0
-      _price: 337500
-    _customerGuideTime: 2.2
-  - _upgradeMinScore: 1625
-    _upgradeMoneyData:
-      _moneyType: 0
-      _price: 506250
-    _customerGuideTime: 2
-  - _upgradeMinScore: 1950
-    _upgradeMoneyData:
-      _moneyType: 0
-      _price: 759375
+      _price: 30000
     _customerGuideTime: 1.8
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 90000
+    _customerGuideTime: 1.6
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 300000
+    _customerGuideTime: 1.4
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 10
+    _customerGuideTime: 1.2
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _customerGuideTime: 1.6
+    _customerGuideTime: 1

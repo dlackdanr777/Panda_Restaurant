@@ -81,7 +81,7 @@ public class UIStaffUpgrade : MobileUIView
         _selectGroup.SetText(_currentData.Name);
 
 
-        if(_currentData.UpgradeEnable(level))
+        if(!_currentData.IsMaxLevel(level) && _currentData.UpgradeEnable(level))
         {
             _levelText.text = "Lv." + level;
             _lowerFrame.gameObject.SetActive(true);
@@ -99,6 +99,7 @@ public class UIStaffUpgrade : MobileUIView
             _maxLevelGroup.gameObject.SetActive(true);
             _maxLevelGroup.SetLevelText(level);
             _maxLevelGroup.SetEffectText(Utility.GetStaffEffectDescription(_currentData, level));
+            return;
         }
 
 
@@ -144,6 +145,12 @@ public class UIStaffUpgrade : MobileUIView
             throw new System.Exception("해당 스탭을 고용하지 않았습니다.");
 
         int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, _currentData);
+        if (_currentData.IsMaxLevel(level)
+            || !UserInfo.CanUpgradeStaff(UserInfo.CurrentStage, _currentData))
+        {
+            return;
+        }
+
         if (UserInfo.IsScoreValid(_currentData.GetUpgradeMinScore(level)))
         {
             UpgradeMoneyData upgradeMoneyData = _currentData.GetUpgradeMoneyData(level);

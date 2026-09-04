@@ -1,7 +1,4 @@
-using JetBrains.Annotations;
-using NUnit.Framework;
 using System;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,6 +10,7 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private UIImageAndText _levelGroup;
     [SerializeField] private UITextAndText _staffEffectGroup;
     [SerializeField] private UITextAndText _skillGroup;
+    [SerializeField] private UITextAndText _skillTimeGroup;
     [SerializeField] private UITextAndText _coolTimeGroup;
     [SerializeField] private UITextAndText _equipTextGroup;
     [SerializeField] private TextMeshProUGUI _descriptionText;
@@ -36,24 +34,29 @@ public class UIStaffPreview : MonoBehaviour
     [SerializeField] private Sprite _buyDiaSprite;
     [SerializeField] private Sprite _questionMarkSprite;
 
-    private Action<StaffData> _onBuyButtonClicked;
     private Action<ERestaurantFloorType, EquipStaffType, StaffData> _onEquipButtonClicked;
     private Action<ERestaurantFloorType, StaffData> _onUsingButtonClicked;
     private StaffData _currentData;
     private ERestaurantFloorType _currentFloor;
     private EquipStaffType _equipStaffType;
+    private RectTransform _actionButtonRoot;
 
-    public void Init(Action<ERestaurantFloorType, EquipStaffType, StaffData> onEquipButtonClicked, Action<ERestaurantFloorType, StaffData> onUsingButtonClicked, Action<StaffData> onBuyButtonClicked, Action<StaffData> onUpgradeButtonClicked)
+    private const float UnownedActionButtonX = 70f;
+    private const float OwnedActionButtonX = 200f;
+    private const float UnownedInfoFontSize = 20f;
+    private const float UnownedDescriptionFontSize = 42f;
+    private const float OwnedDescriptionFontSize = 35f;
+    private const float UnownedGachaFontSize = 38f;
+
+    public void Init(Action<ERestaurantFloorType, EquipStaffType, StaffData> onEquipButtonClicked, Action<ERestaurantFloorType, StaffData> onUsingButtonClicked, Action<StaffData> onUpgradeButtonClicked)
     {
         _selectGroup.Init();
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         _onEquipButtonClicked = onEquipButtonClicked;
-        _onBuyButtonClicked = onBuyButtonClicked;
         _onUsingButtonClicked = onUsingButtonClicked;
-        _buyButton.AddListener(OnBuyButtonClicked);
         _usingButton.AddListener(OnUsingButtonClicked);
-        _notEnoughMoneyButton.AddListener(OnBuyButtonClicked);
         _equipButton.AddListener(OnEquipButtonClicked);
+        _actionButtonRoot = _buyButton.transform.parent as RectTransform;
 
         UserInfo.OnUpgradeStaffHandler += UpdateUI;
         UserInfo.OnChangeStaffSkinHandler += UpdateUI;
@@ -76,9 +79,14 @@ public class UIStaffPreview : MonoBehaviour
 
         if (data == null)
         {
+            AlignActionButtons(false);
+            SetTimeIconVisibility(false);
+            _selectGroup.ClearRank();
             _effectGroup.gameObject.SetActive(false);
             _staffEffectGroup.gameObject.SetActive(false);
             _skillGroup.gameObject.SetActive(false);
+            if (_skillTimeGroup != null)
+                _skillTimeGroup.gameObject.SetActive(false);
             _coolTimeGroup.gameObject.SetActive(false);
             _selectGroup.ImageColor = new Color(1, 1, 1, 0);
             _selectGroup.SetText(string.Empty);
@@ -89,29 +97,32 @@ public class UIStaffPreview : MonoBehaviour
         {
             _staffEffectGroup.gameObject.SetActive(true);
             _skillGroup.gameObject.SetActive(true);
+            if (_skillTimeGroup != null)
+                _skillTimeGroup.gameObject.SetActive(true);
             _coolTimeGroup.gameObject.SetActive(true);
             _effectGroup.gameObject.SetActive(true);
             _selectGroup.ImageColor = Color.white;
         }
-        int level = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data) ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
+        bool isOwned = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data);
+        AlignActionButtons(isOwned);
+        int savedLevel = isOwned ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
+        int level = data.GetRuntimeLevel(savedLevel);
+        Sprite thumbnailSprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
 
-        StaffSkinData skinData = UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, data);
-        Sprite thumbnailSprite = skinData == null ? (data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite) : skinData.ThumbnailSprite;
-        string name = skinData == null ? data.Name : skinData.Name;
-        string description = skinData == null ? data.Description : skinData.Description;
-
+        _selectGroup.SetRank(data.Rank);
         _selectGroup.SetSprite(thumbnailSprite);
-        _selectGroup.SetText(name);
 
-        _staffEffectGroup.SetText2(Utility.GetStaffEffectDescription(data));
-        _skillGroup.SetText2(Utility.GetStaffSkillDescription(data));
-        _coolTimeGroup.SetText2(data.Skill.Cooldown + "s");
-        _descriptionText.SetText(description);
-
-        if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
+        if (isOwned)
         {
+            ApplyOwnedTextStyle();
+            SetTimeIconVisibility(true);
+            _selectGroup.SetText(data.Name);
+            _staffEffectGroup.SetText2(Utility.GetStaffEffectDescription(data, level));
+            _skillGroup.SetText2(Utility.GetStaffSkillDescription(data));
+            SetRuntimeSkillTimes(data, level);
+            _descriptionText.SetText(data.Description);
             _levelGroup.gameObject.SetActive(true);
-            _levelGroup.SetText(data.UpgradeEnable(level) ? "Lv." + level : "Lv.Max");
+            _levelGroup.SetText(data.IsMaxLevel(level) ? "Lv.Max" : "Lv." + level);
             ERestaurantFloorType furnitureFloorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data);
 
             if (UserInfo.IsEquipStaff(UserInfo.CurrentStage, data))
@@ -125,7 +136,7 @@ public class UIStaffPreview : MonoBehaviour
             {
                 case ERestaurantFloorType.Floor1:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetCenterText("πËƒ°¡ﬂ");
+                    _usingButton.SetCenterText("Î∞∞ÏπòÏ§ë");
                     _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor1));
                     _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor1));
                     _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor1));
@@ -134,7 +145,7 @@ public class UIStaffPreview : MonoBehaviour
 
                 case ERestaurantFloorType.Floor2:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetCenterText("πËƒ°¡ﬂ");
+                    _usingButton.SetCenterText("Î∞∞ÏπòÏ§ë");
                     _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor2));
                     _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor2));
                     _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor2));
@@ -143,7 +154,7 @@ public class UIStaffPreview : MonoBehaviour
 
                 case ERestaurantFloorType.Floor3:
                     _usingButton.gameObject.SetActive(true);
-                    _usingButton.SetCenterText("πËƒ°¡ﬂ");
+                    _usingButton.SetCenterText("Î∞∞ÏπòÏ§ë");
                     _usingButton.SetLeftText(Utility.GetFloorStrEngByType(ERestaurantFloorType.Floor3));
                     _usingButton.SetBackgroundColor(Utility.GetFloorColor(ERestaurantFloorType.Floor3));
                     _usingButton.SetLeftImageColor(Utility.GetFloorBoldColor(ERestaurantFloorType.Floor3));
@@ -152,57 +163,154 @@ public class UIStaffPreview : MonoBehaviour
 
                 case ERestaurantFloorType.Length:
                     _equipButton.gameObject.SetActive(true);
-                    _equipButton.SetText("πËƒ°«œ±‚");
+                    _equipButton.SetText("Î∞∞ÏπòÌïòÍ∏∞");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
 
                     break;
 
                 case ERestaurantFloorType.Error:
                     _equipButton.gameObject.SetActive(true);
-                    _equipButton.SetText("πËƒ°«œ±‚");
+                    _equipButton.SetText("Î∞∞ÏπòÌïòÍ∏∞");
                     _selectGroup.ImageColor = Utility.GetColor(ColorType.Give);
                     break;
             }
         }
         else
         {
-            if (!UserInfo.IsScoreValid(data))
-            {
-                _selectGroup.ImageColor = Utility.GetColor(ColorType.None);
-                _scoreButton.gameObject.SetActive(true);
-                _scoreButton.SetText(data.BuyScore.ToString());
-                _selectGroup.SetSprite(_questionMarkSprite);
-                _staffEffectGroup.SetText2("???");
-                _skillGroup.SetText2("???");
-                _coolTimeGroup.SetText2("???");
-                _descriptionText.SetText("???");
-                return;
-            }
-
+            ApplyUnownedTextStyle();
+            SetTimeIconVisibility(false);
             _selectGroup.ImageColor = Utility.GetColor(ColorType.NoGive);
-            MoneyType moneyType = data.MoneyType;
-            int price = data.BuyPrice;
-
-            if (moneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(price))
-            {
-                _notEnoughMoneyButton.gameObject.SetActive(true);
-                _notEnoughImage.sprite = _notEnoughMoneySprite;
-                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "π´∑·" : Utility.ConvertToMoney(data.BuyPrice));
-                return;
-            }
-
-            else if (moneyType == MoneyType.Dia && !UserInfo.IsDiaValid(price))
-            {
-                _notEnoughMoneyButton.gameObject.SetActive(true);
-                _notEnoughImage.sprite = _notEnoughDiaSprite;
-                _notEnoughMoneyButton.SetText(data.BuyPrice <= 0 ? "π´∑·" : Utility.ConvertToMoney(data.BuyPrice));
-                return;
-            }
-
-
+            _selectGroup.SetText("???");
+            _staffEffectGroup.SetText2("???");
+            _skillGroup.SetText2("???");
+            if (_skillTimeGroup != null)
+                _skillTimeGroup.SetText2("???");
+            _coolTimeGroup.SetText2("???");
+            _descriptionText.SetText("???");
             _buyButton.gameObject.SetActive(true);
-            _buyButton.SetText(data.BuyPrice <= 0 ? "π´∑·" : Utility.ConvertToMoney(data.BuyPrice));
-            _buyImage.sprite = moneyType == MoneyType.Gold ? _buyMoneySprite : _buyDiaSprite;
+            _buyButton.SetText("ÎΩëÍ∏∞");
+        }
+    }
+
+    private void ApplyUnownedTextStyle()
+    {
+        SetFixedInfoFont(_staffEffectGroup.Text2, UnownedInfoFontSize);
+        SetFixedInfoFont(_skillGroup.Text2, UnownedInfoFontSize);
+        if (_skillTimeGroup != null)
+            SetFixedInfoFont(_skillTimeGroup.Text2, UnownedInfoFontSize);
+        SetFixedInfoFont(_coolTimeGroup.Text2, UnownedInfoFontSize);
+
+        _descriptionText.enableAutoSizing = false;
+        _descriptionText.fontSize = UnownedDescriptionFontSize;
+        _descriptionText.alignment = TextAlignmentOptions.Center;
+
+        if (_buyButton.Text != null)
+        {
+            _buyButton.Text.enableAutoSizing = true;
+            _buyButton.Text.fontSizeMin = 30f;
+            _buyButton.Text.fontSizeMax = UnownedGachaFontSize;
+            _buyButton.Text.fontSize = UnownedGachaFontSize;
+            _buyButton.Text.alignment = TextAlignmentOptions.Center;
+        }
+    }
+
+    private void ApplyOwnedTextStyle()
+    {
+        SetAutoInfoFont(_staffEffectGroup.Text2, 17f, 22f);
+        SetAutoInfoFont(_skillGroup.Text2, 17f, 22f);
+        if (_skillTimeGroup != null)
+            SetAutoInfoFont(_skillTimeGroup.Text2, 15f, 35f);
+        SetAutoInfoFont(_coolTimeGroup.Text2, 15f, 35f);
+
+        _descriptionText.enableAutoSizing = true;
+        _descriptionText.fontSizeMin = 20f;
+        _descriptionText.fontSizeMax = OwnedDescriptionFontSize;
+        _descriptionText.fontSize = OwnedDescriptionFontSize;
+        _descriptionText.alignment = TextAlignmentOptions.Center;
+    }
+
+    private static void SetFixedInfoFont(TextMeshProUGUI text, float fontSize)
+    {
+        if (text == null)
+            return;
+
+        text.enableAutoSizing = false;
+        text.fontSize = fontSize;
+        text.alignment = TextAlignmentOptions.Center;
+    }
+
+    private static void SetAutoInfoFont(TextMeshProUGUI text, float minSize, float maxSize)
+    {
+        if (text == null)
+            return;
+
+        text.enableAutoSizing = true;
+        text.fontSizeMin = minSize;
+        text.fontSizeMax = maxSize;
+        text.fontSize = maxSize;
+        text.alignment = TextAlignmentOptions.Center;
+    }
+
+    private void SetTimeIconVisibility(bool visible)
+    {
+        SetTimeIconVisibility(_skillTimeGroup, visible);
+        SetTimeIconVisibility(_coolTimeGroup, visible);
+    }
+
+    private static void SetTimeIconVisibility(UITextAndText group, bool visible)
+    {
+        if (group == null || group.Text2 == null)
+            return;
+
+        Transform icon = group.Text2.transform.Find("Plus Image");
+        if (icon != null)
+            icon.gameObject.SetActive(visible);
+    }
+
+    private void AlignActionButtons(bool isOwned)
+    {
+        if (_actionButtonRoot == null)
+            return;
+
+        Vector2 position = _actionButtonRoot.anchoredPosition;
+        position.x = isOwned ? OwnedActionButtonX : UnownedActionButtonX;
+        _actionButtonRoot.anchoredPosition = position;
+    }
+
+    private void SetRuntimeSkillTimes(StaffData data, int level)
+    {
+        SkillBase skill = data.Skill;
+        if (skill == null)
+        {
+            if (_skillTimeGroup != null)
+                _skillTimeGroup.SetText2("‚Äî");
+            _coolTimeGroup.SetText2("‚Äî");
+            return;
+        }
+
+        if (_skillTimeGroup != null && skill.Duration > 0f)
+        {
+            StaffGroupType groupType = StaffDataManager.Instance.GetStaffGroupType(data);
+            float permanentDurationBonusRate = GameManager.Instance.GetStaffSkillTimeMul(groupType);
+            int duration = StaffSkillTimeCalculator.CalculateDurationSeconds(
+                skill.Duration,
+                level,
+                permanentDurationBonusRate);
+            _skillTimeGroup.SetText2(duration + "s");
+        }
+        else if (_skillTimeGroup != null)
+        {
+            _skillTimeGroup.SetText2("‚Äî");
+        }
+
+        if (skill.Cooldown > 0f)
+        {
+            int cooldown = StaffSkillTimeCalculator.CalculateCooldownSeconds(skill.Cooldown, level);
+            _coolTimeGroup.SetText2(cooldown + "s");
+        }
+        else
+        {
+            _coolTimeGroup.SetText2("‚Äî");
         }
     }
     
@@ -215,23 +323,11 @@ public class UIStaffPreview : MonoBehaviour
         SetData(_currentFloor, _equipStaffType, _currentData);
     }
 
-    private void OnBuyButtonClicked()
-    {
-        if (_currentData == null)
-        {
-            DebugLog.Log("«ˆ¿Á µ•¿Ã≈Õ∞° ¡∏¿Á«œ¡ˆ æ Ω¿¥œ¥Ÿ.");
-            return;
-        }
-
-        _onBuyButtonClicked?.Invoke(_currentData);
-    }
-
-
     private void OnEquipButtonClicked()
     {
         if (_currentData == null)
         {
-            DebugLog.Log("«ˆ¿Á µ•¿Ã≈Õ∞° ¡∏¿Á«œ¡ˆ æ Ω¿¥œ¥Ÿ.");
+            DebugLog.Log("ÌòÑÏû¨ Îç∞Ïù¥ÌÑ∞Í∞Ä Ï°¥Ïû¨ÌïòÏßÄ ÏïäÏäµÎãàÎã§.");
             return;
         }
 
@@ -250,7 +346,7 @@ public class UIStaffPreview : MonoBehaviour
     {
         if (_currentData == null)
         {
-            DebugLog.Log("«ˆ¿Á µ•¿Ã≈Õ∞° ¡∏¿Á«œ¡ˆ æ Ω¿¥œ¥Ÿ.");
+            DebugLog.Log("ÌòÑÏû¨ Îç∞Ïù¥ÌÑ∞Í∞Ä Ï°¥Ïû¨ÌïòÏßÄ ÏïäÏäµÎãàÎã§.");
             return;
         }
 
@@ -261,5 +357,6 @@ public class UIStaffPreview : MonoBehaviour
     private void OnDestroy()
     {
         UserInfo.OnUpgradeStaffHandler -= UpdateUI;
+        UserInfo.OnChangeStaffSkinHandler -= UpdateUI;
     }
 }

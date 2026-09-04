@@ -575,7 +575,10 @@ public static class UserInfo
 
         ServerStageData data = new ServerStageData();
         data.SetData(json);
-        _stageInfos[(int)stage].LoadData(data);
+        bool migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
+        bool loaded = _stageInfos[(int)stage].LoadData(data);
+        if (loaded && migrationApplied)
+            SaveStageData(stage);
     }
 
     public static void LoadStageDataAsync(EStage stage)
@@ -591,7 +594,10 @@ public static class UserInfo
 
             ServerStageData data = new ServerStageData();
             data.SetData(json);
-            _stageInfos[(int)stage].LoadData(data);
+            bool migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
+            bool loaded = _stageInfos[(int)stage].LoadData(data);
+            if (loaded && migrationApplied)
+                SaveStageDataAsync(stage);
         });
     }
 
@@ -1456,6 +1462,12 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].UpgradeStaff(data);
+    }
+
+    public static bool CanUpgradeStaff(EStage stage, StaffData data)
+    {
+        int stageIndex = (int)stage;
+        return _stageInfos[stageIndex].CanUpgradeStaff(data);
     }
 
 

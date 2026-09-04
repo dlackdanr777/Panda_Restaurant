@@ -17,8 +17,8 @@ MonoBehaviour:
   _name: "\uC288\uC288"
   _id: STAFF32
   _description: "\uC5B4\uB290 \uB0A0 \uB098\uD0C0\uB09C \uBE44\uBC00\uC2A4\uB7EC\uC6B4
-    \uCCAD\uC18C\uBD80 \uC288\uC288\r\n\r"
-  _rank: 0
+    \uCCAD\uC18C\uBD80 \uC288\uC288."
+  _rank: 3
   _skill: {fileID: 11400000, guid: a05a910bbdc41fc4f802f884ec3007e2, type: 2}
   _idleSprites: []
   _animatorController: {fileID: 0}
@@ -26,35 +26,35 @@ MonoBehaviour:
   _moneyType: 0
   _buyScore: 15000
   _buyPrice: 4000000
-  _speed: 12.5
+  _speed: 8.5
   _cleanerLevelData:
-  - _upgradeMinScore: 18000
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 6050000
-    _cleaningTime: 1
+      _price: 180000
+    _cleaningTime: 0.6
     _addSpeed: 0
-  - _upgradeMinScore: 21000
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 6875000
-    _cleaningTime: 1
+      _price: 540000
+    _cleaningTime: 0.6
     _addSpeed: 0.5
-  - _upgradeMinScore: 24000
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 9302500
-    _cleaningTime: 1
+      _price: 1800000
+    _cleaningTime: 0.6
     _addSpeed: 1
-  - _upgradeMinScore: 29000
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
-      _moneyType: 0
-      _price: 15007500
-    _cleaningTime: 1
+      _moneyType: 1
+      _price: 35
+    _cleaningTime: 0.6
     _addSpeed: 1.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
-    _cleaningTime: 1
+    _cleaningTime: 0.6
     _addSpeed: 2

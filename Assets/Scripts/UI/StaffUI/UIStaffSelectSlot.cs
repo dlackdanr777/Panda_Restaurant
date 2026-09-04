@@ -15,6 +15,12 @@ public class UIStaffSelectSlot : MonoBehaviour
     [Space]
     [Header("Images")]
     [SerializeField] private Image _upgradeImage;
+    [SerializeField] private Image _rankFrameImage;
+    [SerializeField] private UIItemStar _itemStar;
+    [SerializeField] private Sprite _normalRankFrameSprite;
+    [SerializeField] private Sprite _rareRankFrameSprite;
+    [SerializeField] private Sprite _uniqueRankFrameSprite;
+    [SerializeField] private Sprite _specialRankFrameSprite;
 
     public Color ImageColor
     {
@@ -50,6 +56,35 @@ public class UIStaffSelectSlot : MonoBehaviour
         _nameText.text = text;
     }
 
+    public void SetRank(Rank rank)
+    {
+        if (_rankFrameImage != null)
+        {
+            _rankFrameImage.sprite = rank switch
+            {
+                Rank.Rare => _rareRankFrameSprite,
+                Rank.Unique => _uniqueRankFrameSprite,
+                Rank.Special => _specialRankFrameSprite,
+                _ => _normalRankFrameSprite
+            };
+        }
+
+        if (_itemStar != null)
+        {
+            _itemStar.Clear();
+            _itemStar.transform.SetAsLastSibling();
+            _itemStar.SetStar(rank, true);
+        }
+    }
+
+    public void ClearRank()
+    {
+        if (_rankFrameImage != null)
+            _rankFrameImage.sprite = null;
+
+        _itemStar?.Clear();
+    }
+
 
     public void SetData(StaffData data)
     {
@@ -70,7 +105,7 @@ public class UIStaffSelectSlot : MonoBehaviour
         if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, data))
         {
             int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, data);
-            if (data.UpgradeEnable(level))
+            if (data.CanUpgradeFromSavedLevel(level))
             {
                 _upgradeImage.gameObject.SetActive(true);
                 _button.interactable = true;

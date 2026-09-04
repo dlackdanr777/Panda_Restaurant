@@ -16,9 +16,9 @@ MonoBehaviour:
   _thumbnailSprite: {fileID: 21300000, guid: cff7d3c45cd0fb04cbd4fa8df991122d, type: 3}
   _name: "\uB3C4\uCE58"
   _id: STAFF16
-  _description: "\uC2EC\uB4DC\uB801\uD55C \uD45C\uC815 \uB4A4\uC5D0\n\uBC24\uB0AE\uC5C6\uC774
-    \uC5F0\uC2B5\uD558\uB294 \uB178\uB825\uD30C \uB3C4\uCE58\r"
-  _rank: 0
+  _description: "\uC2EC\uB4DC\uB801\uD55C \uD45C\uC815 \uB4A4\uC5D0 \uBC24\uB0AE\uC5C6\uC774
+    \uC5F0\uC2B5\uD558\uB294 \uB178\uB825\uD30C \uB3C4\uCE58."
+  _rank: 1
   _skill: {fileID: 11400000, guid: 55429025e47f51e48af3704c79782325, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: 4c813941b6a76704b9a06f6e5f70ca57, type: 3}
@@ -34,38 +34,38 @@ MonoBehaviour:
   _moneyType: 0
   _buyScore: 10
   _buyPrice: 3500
-  _speed: 2
+  _speed: 6
   _backSprite: {fileID: 21300000, guid: 1e0bfc1639a46ba4eae3f915617057c5, type: 3}
   _handSprite: {fileID: 21300000, guid: 6cd7d36e2bda36f4cb5d86f20f96089c, type: 3}
   _handOffset: {x: -0.18, y: 1.43}
   _chefLevelData:
-  - _upgradeMinScore: 100
-    _upgradeMoneyData:
-      _moneyType: 0
-      _price: 20000
-    _foodSpeedAddPercent: 50
-    _addSpeed: 0
-  - _upgradeMinScore: 120
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
       _price: 30000
     _foodSpeedAddPercent: 50
     _addSpeed: 0
-  - _upgradeMinScore: 140
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 45000
+      _price: 90000
     _foodSpeedAddPercent: 50
-    _addSpeed: 0
-  - _upgradeMinScore: 160
+    _addSpeed: 0.5
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 67500
+      _price: 300000
     _foodSpeedAddPercent: 50
-    _addSpeed: 0
+    _addSpeed: 1
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 10
+    _foodSpeedAddPercent: 50
+    _addSpeed: 1.5
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0
       _price: -1
     _foodSpeedAddPercent: 50
-    _addSpeed: 0
+    _addSpeed: 2

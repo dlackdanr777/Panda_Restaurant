@@ -351,7 +351,7 @@ public class StageInfo
     {
         if (_giveStaffDic.TryGetValue(data.Id, out SaveStaffData saveData))
         {
-            return saveData.Level;
+            return data.GetRuntimeLevel(saveData.Level);
         }
 
         throw new Exception("가지고 있지 않은 스태프 입니다: " + data.Id);
@@ -362,7 +362,10 @@ public class StageInfo
     {
         if (_giveStaffDic.TryGetValue(id, out SaveStaffData saveData))
         {
-            return saveData.Level;
+            StaffData data = StaffDataManager.Instance.GetStaffData(id);
+            return data != null
+                ? data.GetRuntimeLevel(saveData.Level)
+                : Mathf.Clamp(saveData.Level, 1, StaffData.OfficialMaxLevel);
         }
 
         throw new Exception("가지고 있지 않은 스태프 입니다: " + id);
@@ -373,7 +376,7 @@ public class StageInfo
     {
         if (_giveStaffDic.TryGetValue(data.Id, out SaveStaffData saveData))
         {
-            if (data.UpgradeEnable(saveData.Level))
+            if (data.CanUpgradeFromSavedLevel(saveData.Level))
             {
                 _giveStaffDic[data.Id].LevelUp();
                 OnUpgradeStaffHandler?.Invoke();
@@ -386,6 +389,13 @@ public class StageInfo
 
         DebugLog.LogError("소유중이지 않음: " + data.Id);
         return false;
+    }
+
+    public bool CanUpgradeStaff(StaffData data)
+    {
+        return data != null
+               && _giveStaffDic.TryGetValue(data.Id, out SaveStaffData saveData)
+               && data.CanUpgradeFromSavedLevel(saveData.Level);
     }
 
 

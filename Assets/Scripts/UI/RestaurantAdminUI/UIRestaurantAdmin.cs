@@ -77,6 +77,11 @@ public class UIRestaurantAdmin : MobileUIView
     private Material _transitionMaterialInstance;
     private Coroutine _transitionCoroutine;
 
+    private bool _isClosingSession;
+    private bool _isFailSafeCloseStarted;
+    private int _sessionVersion;
+    private MobileUIView _nativeHideView;
+
     public override void Init()
     {
         if (_isInitialized) return;
@@ -91,19 +96,14 @@ public class UIRestaurantAdmin : MobileUIView
             if (_vipTransitionImage != null)
                 _vipTransitionImage.material = _transitionMaterialInstance;
             
-            // 오버레이는 켜두되, 자식 이미지들만 끄기
-            _transitionOverlay.SetActive(true);
-            if (_normalTransitionImage != null)
-                _normalTransitionImage.gameObject.SetActive(false);
-            if (_vipTransitionImage != null)
-                _vipTransitionImage.gameObject.SetActive(false);
-            
             _transitionMaterialInstance.SetFloat("_Angle", _transitionAngle);
             _transitionMaterialInstance.SetFloat("_EdgeWidth", _edgeWidth);
             _transitionMaterialInstance.SetColor("_InnerEdgeColor", _innerEdgeColor);
             _transitionMaterialInstance.SetColor("_OuterEdgeColor", _outerEdgeColor);
             _transitionMaterialInstance.SetFloat("_Progress", 0);
         }
+
+        DeactivateTransitionOverlay();
 
         // 배열 캐싱으로 반복 접근 최적화
         _tabs = new UIRestaurantAdminTab[] 
@@ -170,6 +170,13 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Show()
     {
+        int openingSessionVersion = ++_sessionVersion;
+        _isClosingSession = false;
+        _isFailSafeCloseStarted = false;
+        _nativeHideView = null;
+        ClearCanvasAlphaTween();
+        CleanupTransition();
+
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
         gameObject.SetActive(true);
@@ -194,12 +201,18 @@ public class UIRestaurantAdmin : MobileUIView
         TweenData tween = _canvasGroup.TweenAlpha(1, 0.1f);
         tween.OnComplete(() =>
         {
+            if (!IsOpeningSessionCurrent(openingSessionVersion))
+                return;
+
             VisibleState = VisibleState.Appeared;
             _mainUI.SetActive(true);
             _mainUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
             TweenData tween2 = _mainUI.TweenScale(_tmpScale, _showDuration, _showTweenMode);
             tween2.OnComplete(() => 
             {
+                if (!IsOpeningSessionCurrent(openingSessionVersion))
+                    return;
+
                 _canvasGroup.blocksRaycasts = true;
                 _dontTouchArea.gameObject.SetActive(false);
             });
@@ -208,63 +221,283 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Hide()
     {
-        // 진행 중인 전환 애니메이션 정리
+        if (_isClosingSession || !gameObject.activeInHierarchy)
+            return;
+
+        _isClosingSession = true;
+        _isFailSafeCloseStarted = false;
+        int closingSessionVersion = ++_sessionVersion;
+
+        // CleanupTransition 전에 Navigation 최상위 View를 고정한다.
+        MobileUIView currentView = _uiNav != null
+            ? _uiNav.FirstView as MobileUIView
+            : null;
+        bool closeMainShop = currentView == this &&
+                             _mainUI != null &&
+                             _mainUI.activeSelf;
+
+        // 진행 중인 전환 애니메이션과 Overlay만 정리한다.
         CleanupTransition();
-        
-        if(_mainUI.activeSelf)
+
+        _mainScene.PlayMainMusic();
+        _canvasGroup.blocksRaycasts = false;
+        _canvasGroup.alpha = 1;
+        _dontTouchArea.gameObject.SetActive(true);
+
+        if (closeMainShop)
         {
             VisibleState = VisibleState.Disappearing;
-            _mainScene.PlayMainMusic();
-            _canvasGroup.blocksRaycasts = false;
-            _canvasGroup.alpha = 1;
-            _dontTouchArea.gameObject.SetActive(true);
             _mainUI.transform.localScale = _tmpScale;
             TweenData tween = _mainUI.TweenScale(new Vector3(0.3f, 0.3f, 0.3f), _hideDuration, _hideTweenMode);
             tween.OnComplete(() =>
             {
-                _mainUI.SetActive(false);
-                ResetBackgroundImageOffsetOptimized();
-                TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
-                tween2.OnComplete(() => 
-                {
-                    gameObject.SetActive(false);
-                    _dontTouchArea.gameObject.SetActive(false);
-                });
-                VisibleState = VisibleState.Disappeared;
-            });
-        }
-        else
-        {
-            _mainScene.PlayMainMusic();
-            VisibleState = VisibleState.Disappeared;
-            
-            // 최적화된 UI 팝 처리
-            PopActiveUIViews();
+                if (!IsClosingSessionCurrent(closingSessionVersion))
+                    return;
 
-            _mainUI.SetActive(false);
-            Tween.Wait(_hideDuration, () =>
-            {
-                TweenData tween2 = _canvasGroup.TweenAlpha(0, 0.1f);
-                tween2.OnComplete(() => gameObject.SetActive(false));
-                VisibleState = VisibleState.Disappeared;
+                _mainUI.SetActive(false);
+                CompleteAfterExistingHide(closingSessionVersion);
             });
+            return;
+        }
+
+        if (TryGetOwnedViewName(currentView, out string currentViewName))
+        {
+            CloseCurrentViewWithNativeHide(
+                currentView,
+                currentViewName,
+                closingSessionVersion);
+            return;
+        }
+
+        CompleteSessionCloseWithoutNativeHide(
+            closingSessionVersion,
+            "No supported active shop View matched the Navigation top View.");
+    }
+
+    private bool IsOpeningSessionCurrent(int sessionVersion)
+    {
+        return sessionVersion == _sessionVersion &&
+               !_isClosingSession &&
+               gameObject.activeInHierarchy;
+    }
+
+    private bool IsClosingSessionCurrent(int sessionVersion)
+    {
+        return sessionVersion == _sessionVersion &&
+               _isClosingSession &&
+               gameObject.activeInHierarchy;
+    }
+
+    private bool TryGetOwnedViewName(MobileUIView view, out string viewName)
+    {
+        if (view == _staffUI)
+        {
+            viewName = "UIStaff";
+            return true;
+        }
+
+        if (view == _furnitureUI)
+        {
+            viewName = "UIFurniture";
+            return true;
+        }
+
+        if (view == _kitchenUI)
+        {
+            viewName = "UIKitchen";
+            return true;
+        }
+
+        if (view is UIStaffUpgrade)
+        {
+            viewName = "UIStaffUpgrade";
+            return true;
+        }
+
+        if (view is UIRecipeUpgrade)
+        {
+            viewName = "UIRecipeUpgrade";
+            return true;
+        }
+
+        viewName = null;
+        return false;
+    }
+
+    private void CloseCurrentViewWithNativeHide(
+        MobileUIView currentView,
+        string currentViewName,
+        int sessionVersion)
+    {
+        _nativeHideView = currentView;
+
+        // Right Sample과 동일하게 Navigation Pop이 현재 View의 기존 Hide()를 호출한다.
+        _uiNav.Pop(currentViewName);
+
+        bool nativeHideStarted = currentView.VisibleState == VisibleState.Disappearing ||
+                                 currentView.VisibleState == VisibleState.Disappeared;
+        if (!nativeHideStarted)
+        {
+            _nativeHideView = null;
+            CompleteSessionCloseWithoutNativeHide(
+                sessionVersion,
+                $"Native Hide did not start for '{currentViewName}'.");
+            return;
+        }
+
+        VisibleState = VisibleState.Disappearing;
+        _mainUI.SetActive(false);
+
+        // Upgrade Hide는 원래 동기식이다. 애니메이션이 있는 View만 기존 시간만큼 기다린다.
+        if (currentView.VisibleState == VisibleState.Disappeared)
+        {
+            CompleteAfterExistingHide(sessionVersion);
+            return;
+        }
+
+        Tween.Wait(_hideDuration, () =>
+        {
+            if (IsClosingSessionCurrent(sessionVersion))
+                CompleteAfterExistingHide(sessionVersion);
+        });
+    }
+
+    private void CompleteAfterExistingHide(int sessionVersion)
+    {
+        if (!IsClosingSessionCurrent(sessionVersion))
+            return;
+
+        PopActiveUIViews(_nativeHideView);
+        _mainUI.SetActive(false);
+        ResetBackgroundImageOffsetOptimized();
+        BeginBackgroundFade(sessionVersion);
+    }
+
+    private void PopActiveUIViews(MobileUIView alreadyHiddenView)
+    {
+        Transform navigationViewContainer = transform.parent;
+        UIStaffUpgrade staffUpgradeUI = navigationViewContainer != null
+            ? navigationViewContainer.GetComponentInChildren<UIStaffUpgrade>(true)
+            : null;
+        UIRecipeUpgrade recipeUpgradeUI = navigationViewContainer != null
+            ? navigationViewContainer.GetComponentInChildren<UIRecipeUpgrade>(true)
+            : null;
+        UIStaffSkin staffSkinUI = _staffUI != null
+            ? _staffUI.GetComponentInChildren<UIStaffSkin>(true)
+            : null;
+
+        CloseSynchronousOwnedView(staffUpgradeUI, "UIStaffUpgrade", alreadyHiddenView);
+        CloseSynchronousOwnedView(recipeUpgradeUI, "UIRecipeUpgrade", alreadyHiddenView);
+
+        if (staffSkinUI != null && alreadyHiddenView != _staffUI)
+            staffSkinUI.Hide();
+
+        CloseImmediateOwnedView(_staffUI, "UIStaff", alreadyHiddenView);
+        CloseImmediateOwnedView(_furnitureUI, "UIFurniture", alreadyHiddenView);
+        CloseImmediateOwnedView(_kitchenUI, "UIKitchen", alreadyHiddenView);
+    }
+
+    private void CloseSynchronousOwnedView(
+        MobileUIView view,
+        string viewName,
+        MobileUIView alreadyHiddenView)
+    {
+        if (view == null)
+            return;
+
+        if (view != alreadyHiddenView)
+            view.Hide();
+
+        if (_uiNav != null && _uiNav.CheckActiveView(viewName))
+            _uiNav.PopNoAnime(viewName);
+
+        if (view != alreadyHiddenView)
+        {
+            view.VisibleState = VisibleState.Disappeared;
+            view.gameObject.SetActive(false);
         }
     }
 
-    private void PopActiveUIViews()
+    private void CloseImmediateOwnedView(
+        MobileUIView view,
+        string viewName,
+        MobileUIView alreadyHiddenView)
     {
-        // 문자열 배열을 미리 캐시하여 반복 생성 방지
-        string[] uiViewNames = { "UIStaff", "UIFurniture", "UIKitchen" };
-        
-        for (int i = 0; i < uiViewNames.Length; i++)
-        {
-            if (_uiNav.CheckActiveView(uiViewNames[i]))
-                _uiNav.Pop(uiViewNames[i]);
-        }
+        if (view == null || view == alreadyHiddenView)
+            return;
+
+        if (_uiNav != null && _uiNav.CheckActiveView(viewName))
+            _uiNav.PopNoAnime(viewName);
+
+        view.VisibleState = VisibleState.Disappeared;
+        view.gameObject.SetActive(false);
+    }
+
+    private void CompleteSessionCloseWithoutNativeHide(int sessionVersion, string reason)
+    {
+        if (!IsClosingSessionCurrent(sessionVersion) || _isFailSafeCloseStarted)
+            return;
+
+        _isFailSafeCloseStarted = true;
+        _nativeHideView = null;
+        Debug.LogError($"[RestaurantAdmin Exit] {reason} Falling back to immediate View cleanup and background fade.");
+
+        CleanupTransition();
+        _canvasGroup.blocksRaycasts = false;
+        _canvasGroup.alpha = 1;
+        _dontTouchArea.gameObject.SetActive(true);
+        VisibleState = VisibleState.Disappearing;
+
+        PopActiveUIViews(null);
+        _mainUI.SetActive(false);
+        ResetBackgroundImageOffsetOptimized();
+        BeginBackgroundFade(sessionVersion);
+    }
+
+    private void BeginBackgroundFade(int sessionVersion)
+    {
+        ClearCanvasAlphaTween();
+        TweenData fadeTween = _canvasGroup.TweenAlpha(0, 0.1f);
+        fadeTween.OnComplete(() => CompleteSessionClose(sessionVersion));
+    }
+
+    private void CompleteSessionClose(int sessionVersion)
+    {
+        if (!IsClosingSessionCurrent(sessionVersion))
+            return;
+
+        CleanupTransition();
+        _mainUI.SetActive(false);
+
+        _canvasGroup.blocksRaycasts = false;
+        _canvasGroup.alpha = 0;
+        _dontTouchArea.gameObject.SetActive(false);
+        VisibleState = VisibleState.Disappeared;
+        RemoveRestaurantAdminNavigationEntry();
+
+        _nativeHideView = null;
+        _isFailSafeCloseStarted = false;
+        _isClosingSession = false;
+        gameObject.SetActive(false);
+    }
+
+    private void RemoveRestaurantAdminNavigationEntry()
+    {
+        if (_uiNav != null && _uiNav.CheckActiveView("RestaurantAdminUI"))
+            _uiNav.PopNoAnime("RestaurantAdminUI");
+    }
+
+    private void ClearCanvasAlphaTween()
+    {
+        if (_canvasGroup != null && _canvasGroup.TryGetComponent(out TweenCanvasGroupAlpha tween))
+            tween.Clear();
     }
 
     public void MainUISetActive(bool active)
     {
+        if (_isClosingSession || !gameObject.activeInHierarchy)
+            return;
+
         if (VisibleState == VisibleState.Disappeared || VisibleState == VisibleState.Disappearing)
             _uiNav.PushNoAnime("RestaurantAdminUI");
 
@@ -336,6 +569,9 @@ public class UIRestaurantAdmin : MobileUIView
         // 탭 Attention 상태 설정
         for (int i = 0; i < _tabs.Length; i++)
         {
+            _tabs[i].gameObject.SetActive(true);
+            SetTabContentActive(_tabs[i], i == activeIndex);
+
             if (i == activeIndex)
             {
                 _tabs[i].SetAttention();
@@ -345,6 +581,20 @@ public class UIRestaurantAdmin : MobileUIView
             {
                 _tabs[i].SetNotAttention();
             }
+        }
+    }
+
+    private static void SetTabContentActive(UIRestaurantAdminTab tab, bool active)
+    {
+        Transform tabTransform = tab.transform;
+        for (int childIndex = 0; childIndex < tabTransform.childCount; childIndex++)
+        {
+            Transform child = tabTransform.GetChild(childIndex);
+            bool isSelectedTabDuplicateTitle = child.name == "Title Text";
+            if (isSelectedTabDuplicateTitle)
+                continue;
+
+            child.gameObject.SetActive(active);
         }
     }
 
@@ -372,21 +622,8 @@ public class UIRestaurantAdmin : MobileUIView
             StopCoroutine(_transitionCoroutine);
             _transitionCoroutine = null;
         }
-        
-        // 오버레이 비활성화
-        if (_transitionOverlay != null)
-        {
-            if (_normalTransitionImage != null)
-                _normalTransitionImage.gameObject.SetActive(false);
-            if (_vipTransitionImage != null)
-                _vipTransitionImage.gameObject.SetActive(false);
-        }
-        
-        // 메인 UI가 비활성화되어 있다면 다시 활성화
-        if (_mainUI != null && !_mainUI.activeSelf)
-        {
-            _mainUI.SetActive(true);
-        }
+
+        DeactivateTransitionOverlay();
         
         // 모든 ScrollingImage를 비활성화 (정리)
         if (_scrollImages != null)
@@ -410,6 +647,18 @@ public class UIRestaurantAdmin : MobileUIView
         _recipeTab.ChangeFloorType(_floorType);
     }
 
+    private void DeactivateTransitionOverlay()
+    {
+        if (_normalTransitionImage != null)
+            _normalTransitionImage.gameObject.SetActive(false);
+
+        if (_vipTransitionImage != null)
+            _vipTransitionImage.gameObject.SetActive(false);
+
+        if (_transitionOverlay != null)
+            _transitionOverlay.SetActive(false);
+    }
+
     // 최적화된 배경 이미지 설정
     private void SetBackgroundImageOptimized(ERestaurantFloorType floor)
     {
@@ -424,13 +673,18 @@ public class UIRestaurantAdmin : MobileUIView
         {
             // 기존 코루틴 중지
             if (_transitionCoroutine != null)
+            {
                 StopCoroutine(_transitionCoroutine);
-            
+                _transitionCoroutine = null;
+                DeactivateTransitionOverlay();
+            }
+
             _transitionCoroutine = StartCoroutine(TransitionFloorCoroutine(floor));
         }
         else
         {
             // 즉시 전환 (애니메이션 없음)
+            DeactivateTransitionOverlay();
             SetBackgroundImageImmediate(floor);
         }
     }
@@ -468,7 +722,9 @@ public class UIRestaurantAdmin : MobileUIView
             Debug.LogError("ScrollingImage is null!");
             _mainUI.SetActive(mainUIWasActive);
             _canvasGroup.blocksRaycasts = prevBlocksRaycasts;
+            DeactivateTransitionOverlay();
             SetBackgroundImageImmediate(targetFloor);
+            _transitionCoroutine = null;
             yield break;
         }
         
@@ -504,8 +760,10 @@ public class UIRestaurantAdmin : MobileUIView
             vipScrollImage.gameObject.SetActive(vipWasActive);
             _mainUI.SetActive(mainUIWasActive);
             _canvasGroup.blocksRaycasts = prevBlocksRaycasts;
-            
+
+            DeactivateTransitionOverlay();
             SetBackgroundImageImmediate(targetFloor);
+            _transitionCoroutine = null;
             yield break;
         }
         
@@ -537,12 +795,16 @@ public class UIRestaurantAdmin : MobileUIView
         _transitionMaterialInstance.SetVector("_NormalScale", normalScale);
         _transitionMaterialInstance.SetVector("_VipScale", vipScale);
         
-        // 오버레이 활성화 및 위치 설정 (배경 이미지는 활성화 상태 유지하여 스크롤링 계속)
-        if (_normalTransitionImage != null)
-            _normalTransitionImage.gameObject.SetActive(true);
-        if (_vipTransitionImage != null)
-            _vipTransitionImage.gameObject.SetActive(true);
-        _transitionOverlay.transform.SetAsLastSibling();
+        // 텍스처 검증이 끝난 뒤에만 Overlay와 실제 이미지를 활성화한다.
+        if (_transitionOverlay != null)
+        {
+            _transitionOverlay.SetActive(true);
+            if (_normalTransitionImage != null)
+                _normalTransitionImage.gameObject.SetActive(true);
+            if (_vipTransitionImage != null)
+                _vipTransitionImage.gameObject.SetActive(true);
+            _transitionOverlay.transform.SetAsLastSibling();
+        }
         
         float elapsed = 0f;
         float startProgress = toVip ? 0f : 1f;
@@ -594,11 +856,8 @@ public class UIRestaurantAdmin : MobileUIView
             fromScrollImage.gameObject.SetActive(false);
         _currentScrollImage = toScrollImage;
         
-        // 오버레이 비활성화
-        if (_normalTransitionImage != null)
-            _normalTransitionImage.gameObject.SetActive(false);
-        if (_vipTransitionImage != null)
-            _vipTransitionImage.gameObject.SetActive(false);
+        // 정상 완료 시 자식 이미지와 Overlay 컨테이너를 함께 비활성화한다.
+        DeactivateTransitionOverlay();
         
         // 메인 UI 다시 활성화
         _mainUI.SetActive(mainUIWasActive);

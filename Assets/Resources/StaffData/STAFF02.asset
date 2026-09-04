@@ -16,8 +16,9 @@ MonoBehaviour:
   _thumbnailSprite: {fileID: 21300000, guid: 13ecd98e5decc0648b44c3ff8db955d9, type: 3}
   _name: "\uB355\uB355"
   _id: STAFF02
-  _description: 
-  _rank: 0
+  _description: "\uAF3C\uAF3C\uD558\uACE0 \uCC45\uC784\uAC10 \uC788\uB294 \uC6E8\uC774\uD130
+    \uB355\uB355."
+  _rank: 1
   _skill: {fileID: 11400000, guid: 9bd6d0278c021c04680bdded85a56132, type: 2}
   _idleSprites:
   - {fileID: 21300000, guid: 125ed35ffab28dd4390d1e41f10c3ec7, type: 3}
@@ -33,33 +34,28 @@ MonoBehaviour:
   _moneyType: 0
   _buyScore: 50
   _buyPrice: 50000
-  _speed: 4
+  _speed: 6
   _waiterLevelData:
-  - _upgradeMinScore: 80
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 75000
+      _price: 30000
     _addSpeed: 0
-  - _upgradeMinScore: 110
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 100000
+      _price: 90000
     _addSpeed: 0.5
-  - _upgradeMinScore: 140
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
       _moneyType: 0
-      _price: 125000
+      _price: 300000
     _addSpeed: 1
-  - _upgradeMinScore: 170
+  - _upgradeMinScore: 0
     _upgradeMoneyData:
-      _moneyType: 0
-      _price: 150000
+      _moneyType: 1
+      _price: 10
     _addSpeed: 1.5
-  - _upgradeMinScore: -1
-    _upgradeMoneyData:
-      _moneyType: 0
-      _price: -1
-    _addSpeed: 2
   - _upgradeMinScore: -1
     _upgradeMoneyData:
       _moneyType: 0

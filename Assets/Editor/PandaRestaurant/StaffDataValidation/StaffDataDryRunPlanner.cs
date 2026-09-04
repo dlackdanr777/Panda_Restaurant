@@ -13,10 +13,20 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private const int NewStaffStartNumber = 33;
         private const string V8OfficialPackageFingerprint =
             "be7613e884b5ae18dc94e57abc0c941dccfb09486ae9fc5ff75acf4b0e4703af";
+        private const string PreA1InventoryFingerprint =
+            "90c3a56ca032d6542359d392ca014ce29b3c367cb227238165d9eadacf0be15b";
+        private const string PreA1PlanFingerprint =
+            "9a4162af233fdeb6394687cc65d39108655a9b99c079df039177b28d1ea11fc0";
+        internal const string ExistingStaffV18DataReadyToApplyMarker =
+            "EXISTING_STAFF_V18_DATA_READY_TO_APPLY";
+        internal const string ExistingStaffV18DataAppliedMarker =
+            "EXISTING_STAFF_V18_DATA_APPLIED";
+        internal const string ExistingStaffV18DataPartialMarker =
+            "PARTIAL_MIGRATION_STATE";
         private const int V8CurrentSkillDurationMismatch = 0;
         private const int V8CurrentSkillCooldownMismatch = 0;
         private const int V8ExistingSkillClassMismatch = 0;
-        private const int V8ExistingPlanReadyWithWarnings = 31;
+        private const int V8ExistingPlanReadyWithWarnings = 32;
         private const int V8ExistingSkillClassRequired = 0;
         private const int V8ExistingRuntimeSchemaRequired = 0;
         private const int V8ExistingMultiplePrerequisitesRequired = 0;
@@ -27,8 +37,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private const int V8NewRuntimeSchemaRequired = 0;
         private const int V8NewMultiplePrerequisitesRequired = 0;
         private const int V8SkillPrerequisiteStaff = 0;
-        private const int V8TotalPrerequisiteStaff = 1;
-        private const int V8SaveMigrationRequired = 1;
+        private const int V8TotalPrerequisiteStaff = 0;
+        private const int V8SaveMigrationRequired = 0;
         private const int V8StaffWarningCount = 56;
         private const int V8GlobalWarningCount = 9;
         private const int V8FinalWarningCount = 65;
@@ -317,6 +327,55 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 return false;
             }
 
+            return true;
+        }
+
+        internal static bool TryClassifyExistingV18DataState(
+            StaffDataDryRunPlanSnapshot plan,
+            out string marker,
+            out string reason)
+        {
+            marker = ExistingStaffV18DataPartialMarker;
+            reason = string.Empty;
+            if (plan == null)
+            {
+                reason = "Canonical V8 plan is null.";
+                return false;
+            }
+
+            ExistingV18StateSummary summary = BuildExistingV18StateSummary(plan.StaffPlans);
+            if (!summary.StructuralContractValid)
+            {
+                reason = summary.Reason;
+                return true;
+            }
+
+            bool ready = plan.CurrentInventoryFingerprint == PreA1InventoryFingerprint
+                         && plan.PlanFingerprint == PreA1PlanFingerprint
+                         && summary.NameChanges == 2
+                         && summary.DescriptionChanges == 32
+                         && summary.RankChanges == 32
+                         && summary.SpeedChanges == 29
+                         && summary.RoleMismatchIssues == 23
+                         && summary.UpgradeMismatchIssues == 32;
+            if (ready)
+            {
+                marker = ExistingStaffV18DataReadyToApplyMarker;
+                reason = "Locked Pre-A1 InventoryFingerprint and PlanFingerprint match.";
+                return true;
+            }
+
+            bool applied = summary.ChangedA1Fields == 0
+                           && summary.RoleMismatchIssues == 0
+                           && summary.UpgradeMismatchIssues == 0;
+            if (applied)
+            {
+                marker = ExistingStaffV18DataAppliedMarker;
+                reason = "All existing STAFF01~32 A1-managed fields match Official V18.";
+                return true;
+            }
+
+            reason = "Existing STAFF01~32 contain a mixed Pre-A1/Post-A1 field state.";
             return true;
         }
 
@@ -1208,6 +1267,128 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             return compareCurrent && changed;
         }
 
+        private static ExistingV18StateSummary BuildExistingV18StateSummary(
+            IReadOnlyList<StaffDataDryRunStaffPlan> plans)
+        {
+            ExistingV18StateSummary summary = new ExistingV18StateSummary();
+            HashSet<string> ids = new HashSet<string>(StringComparer.Ordinal);
+            for (int planIndex = 0; planIndex < plans.Count; planIndex++)
+            {
+                StaffDataDryRunStaffPlan staff = plans[planIndex];
+                if (staff.AssetAction != StaffDryRunAssetAction.UPDATE_EXISTING)
+                {
+                    continue;
+                }
+
+                summary.ExistingStaff++;
+                ids.Add(staff.StaffId);
+                summary.SaveMigrationIssues += HasIssueCode(
+                    staff,
+                    "STAFF02_LEVEL6_SAVE_MIGRATION_REQUIRED") ? 1 : 0;
+                summary.RoleMismatchIssues += HasIssueCode(
+                    staff,
+                    "CURRENT_ROLE_VALUE_MISMATCH") ? 1 : 0;
+                summary.UpgradeMismatchIssues += HasIssueCode(
+                    staff,
+                    "CURRENT_UPGRADE_COST_MISMATCH") ? 1 : 0;
+
+                for (int fieldIndex = 0; fieldIndex < staff.FieldPlans.Count; fieldIndex++)
+                {
+                    StaffDataDryRunFieldPlan field = staff.FieldPlans[fieldIndex];
+                    if (field.Disposition != StaffDryRunFieldDisposition.AUTO_UPDATE_EXISTING)
+                    {
+                        continue;
+                    }
+
+                    if (!IsExistingV18A1FieldPath(field.FieldPath))
+                    {
+                        summary.UnsupportedAutoFields++;
+                        continue;
+                    }
+
+                    if (!field.IsChanged)
+                    {
+                        continue;
+                    }
+
+                    summary.ChangedA1Fields++;
+                    summary.NameChanges += field.FieldPath == "StaffData._name" ? 1 : 0;
+                    summary.DescriptionChanges += field.FieldPath == "StaffData._description" ? 1 : 0;
+                    summary.RankChanges += field.FieldPath == "StaffData._rank" ? 1 : 0;
+                    summary.SpeedChanges += field.FieldPath == "StaffData._speed" ? 1 : 0;
+                }
+            }
+
+            summary.StructuralContractValid = summary.ExistingStaff == ExistingStaffCount
+                                              && ids.Count == ExistingStaffCount
+                                              && summary.SaveMigrationIssues == 0
+                                              && summary.UnsupportedAutoFields == 0;
+            if (!summary.StructuralContractValid)
+            {
+                summary.Reason = "Existing A1 plan structure changed: staff/id/save/unsupported "
+                                 + summary.ExistingStaff + "/" + ids.Count + "/"
+                                 + summary.SaveMigrationIssues + "/"
+                                 + summary.UnsupportedAutoFields + ".";
+            }
+
+            return summary;
+        }
+
+        internal static bool IsExistingV18A1FieldPath(string fieldPath)
+        {
+            if (fieldPath == "StaffData._name"
+                || fieldPath == "StaffData._description"
+                || fieldPath == "StaffData._rank"
+                || fieldPath == "StaffData._speed")
+            {
+                return true;
+            }
+
+            int close;
+            if (string.IsNullOrEmpty(fieldPath)
+                || !fieldPath.StartsWith("Levels[", StringComparison.Ordinal)
+                || (close = fieldPath.IndexOf(']')) <= 7)
+            {
+                return false;
+            }
+
+            int levelIndex;
+            if (!int.TryParse(
+                    fieldPath.Substring(7, close - 7),
+                    NumberStyles.None,
+                    CultureInfo.InvariantCulture,
+                    out levelIndex)
+                || levelIndex < 0
+                || levelIndex >= 5)
+            {
+                return false;
+            }
+
+            string suffix = fieldPath.Substring(close + 1);
+            return suffix == "._addSpeed"
+                   || suffix == "._cleaningTime"
+                   || suffix == "._foodSpeedAddPercent"
+                   || suffix == "._customerGuideTime"
+                   || suffix == "._marketingTime"
+                   || suffix == "._actionTime"
+                   || suffix == "._upgradeMinScore"
+                   || suffix == "._moneyType"
+                   || suffix == "._price";
+        }
+
+        private static bool HasIssueCode(StaffDataDryRunStaffPlan staff, string code)
+        {
+            for (int index = 0; index < staff.Issues.Count; index++)
+            {
+                if (staff.Issues[index].Code == code)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static StaffDryRunReadiness DetermineReadiness(
             bool isNew,
             List<StaffDataDryRunIssue> issues,
@@ -1359,12 +1540,35 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             List<StaffDataDryRunStaffPlan> created = Filter(plans, StaffDryRunAssetAction.CREATE_NEW);
             RequireCount("existing update plans", existing.Count, 32, errors);
             RequireCount("new create plans", created.Count, 60, errors);
-            RequireChangedFieldCount(existing, "StaffData._name", 2, "current name mismatch", errors);
-            RequireChangedFieldCount(existing, "StaffData._description", 32, "current description mismatch", errors);
-            RequireChangedFieldCount(existing, "StaffData._rank", 32, "current rank mismatch", errors);
-            RequireChangedFieldCount(existing, "StaffData._speed", 29, "current speed mismatch", errors);
-            RequireIssueCount(existing, "CURRENT_ROLE_VALUE_MISMATCH", 23, errors);
-            RequireIssueCount(existing, "CURRENT_UPGRADE_COST_MISMATCH", 32, errors);
+            ExistingV18StateSummary a1State = BuildExistingV18StateSummary(plans);
+            bool readyToApply = context.Current.InventoryFingerprint == PreA1InventoryFingerprint
+                                && a1State.NameChanges == 2
+                                && a1State.DescriptionChanges == 32
+                                && a1State.RankChanges == 32
+                                && a1State.SpeedChanges == 29
+                                && a1State.RoleMismatchIssues == 23
+                                && a1State.UpgradeMismatchIssues == 32;
+            bool applied = a1State.ChangedA1Fields == 0
+                           && a1State.RoleMismatchIssues == 0
+                           && a1State.UpgradeMismatchIssues == 0;
+            if (readyToApply)
+            {
+                RequireChangedFieldCount(existing, "StaffData._name", 2, "current name mismatch", errors);
+                RequireChangedFieldCount(existing, "StaffData._description", 32, "current description mismatch", errors);
+                RequireChangedFieldCount(existing, "StaffData._rank", 32, "current rank mismatch", errors);
+                RequireChangedFieldCount(existing, "StaffData._speed", 29, "current speed mismatch", errors);
+                RequireIssueCount(existing, "CURRENT_ROLE_VALUE_MISMATCH", 23, errors);
+                RequireIssueCount(existing, "CURRENT_UPGRADE_COST_MISMATCH", 32, errors);
+            }
+            else if (applied)
+            {
+                RequireChangedFieldCount(existing, "StaffData._name", 0, "post-A1 name mismatch", errors);
+                RequireChangedFieldCount(existing, "StaffData._description", 0, "post-A1 description mismatch", errors);
+                RequireChangedFieldCount(existing, "StaffData._rank", 0, "post-A1 rank mismatch", errors);
+                RequireChangedFieldCount(existing, "StaffData._speed", 0, "post-A1 speed mismatch", errors);
+                RequireIssueCount(existing, "CURRENT_ROLE_VALUE_MISMATCH", 0, errors);
+                RequireIssueCount(existing, "CURRENT_UPGRADE_COST_MISMATCH", 0, errors);
+            }
             RequireSkillNumberMismatch(
                 existing,
                 true,
@@ -1457,7 +1661,15 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireGlobalIssueCount(globalIssues, "UPGRADE25_RUNTIME_MAPPING_MISMATCH", 1, errors);
             if (context.Profile.IsV8)
             {
-                RequireV8BalancePlans(plans, globalIssues, errors);
+                RequireV8BalancePlans(
+                    plans,
+                    globalIssues,
+                    readyToApply
+                        ? ExistingStaffV18DataReadyToApplyMarker
+                        : applied
+                            ? ExistingStaffV18DataAppliedMarker
+                            : ExistingStaffV18DataPartialMarker,
+                    errors);
             }
         }
 
@@ -1510,6 +1722,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private static void RequireV8BalancePlans(
             IReadOnlyList<StaffDataDryRunStaffPlan> plans,
             IReadOnlyList<StaffDataDryRunIssue> globalIssues,
+            string existingDataState,
             List<string> errors)
         {
             Dictionary<string, int> skillCounts = new Dictionary<string, int>(StringComparer.Ordinal);
@@ -1524,7 +1737,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             int skill09NewAssetPlan = 0;
             int skill09NewPrerequisite = 0;
             int automaticFieldPlans = 0;
+            int existingAutomaticFieldPlans = 0;
+            int newAutomaticFieldPlans = 0;
             int warnings = 0;
+            int roleMismatchIssues = 0;
+            int upgradeMismatchIssues = 0;
             HashSet<string> prerequisiteStaff = new HashSet<string>(StringComparer.Ordinal);
             HashSet<string> skillPrerequisiteStaff = new HashSet<string>(StringComparer.Ordinal);
 
@@ -1536,11 +1753,21 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 skillCounts.TryGetValue(skillId, out skillCount);
                 skillCounts[skillId] = skillCount + 1;
                 automaticFieldPlans += plan.ChangedFieldCount;
+                if (plan.AssetAction == StaffDryRunAssetAction.UPDATE_EXISTING)
+                {
+                    existingAutomaticFieldPlans += plan.ChangedFieldCount;
+                }
+                else
+                {
+                    newAutomaticFieldPlans += plan.ChangedFieldCount;
+                }
 
                 for (int issueIndex = 0; issueIndex < plan.Issues.Count; issueIndex++)
                 {
                     StaffDataDryRunIssue issue = plan.Issues[issueIndex];
                     warnings += issue.IsWarning ? 1 : 0;
+                    roleMismatchIssues += issue.Code == "CURRENT_ROLE_VALUE_MISMATCH" ? 1 : 0;
+                    upgradeMismatchIssues += issue.Code == "CURRENT_UPGRADE_COST_MISMATCH" ? 1 : 0;
                     if (issue.IsPrerequisite)
                     {
                         prerequisiteStaff.Add(plan.StaffId);
@@ -1723,12 +1950,32 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireCount("V8 Skill09 new asset plan", skill09NewAssetPlan, 1, errors);
             RequireCount("V8 Skill09 new prerequisite", skill09NewPrerequisite, 0, errors);
             int globalWarnings = CountWarnings(globalIssues);
-            RequireCount(
-                "V8 automatic StaffData FieldPlans",
-                automaticFieldPlans,
-                V8AutomaticFieldPlans,
-                errors);
-            RequireCount("V8 Staff warning count", warnings, V8StaffWarningCount, errors);
+            if (existingDataState == ExistingStaffV18DataReadyToApplyMarker)
+            {
+                RequireCount(
+                    "V8 automatic StaffData FieldPlans",
+                    automaticFieldPlans,
+                    V8AutomaticFieldPlans,
+                    errors);
+            }
+            else if (existingDataState == ExistingStaffV18DataAppliedMarker)
+            {
+                RequireCount(
+                    "V8 post-A1 existing automatic StaffData FieldPlans",
+                    existingAutomaticFieldPlans,
+                    0,
+                    errors);
+                RequireCount(
+                    "V8 post-A1 total automatic StaffData FieldPlans",
+                    automaticFieldPlans,
+                    newAutomaticFieldPlans,
+                    errors);
+            }
+
+            int expectedStaffWarnings = V8StaffWarningCount
+                                        - (23 - roleMismatchIssues)
+                                        - (32 - upgradeMismatchIssues);
+            RequireCount("V8 Staff warning count", warnings, expectedStaffWarnings, errors);
             RequireCount(
                 "V8 global warning count",
                 globalWarnings,
@@ -1737,7 +1984,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             RequireCount(
                 "V8 final warning count",
                 warnings + globalWarnings,
-                V8FinalWarningCount,
+                expectedStaffWarnings + V8GlobalWarningCount,
                 errors);
             RequireCount(
                 "V8 skill prerequisite Staff",
@@ -2374,6 +2621,22 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             return new ReadOnlyCollection<string>(result);
+        }
+
+        private sealed class ExistingV18StateSummary
+        {
+            internal int ExistingStaff;
+            internal int SaveMigrationIssues;
+            internal int RoleMismatchIssues;
+            internal int UpgradeMismatchIssues;
+            internal int UnsupportedAutoFields;
+            internal int ChangedA1Fields;
+            internal int NameChanges;
+            internal int DescriptionChanges;
+            internal int RankChanges;
+            internal int SpeedChanges;
+            internal bool StructuralContractValid;
+            internal string Reason = string.Empty;
         }
 
         private sealed class PlanningProfile
