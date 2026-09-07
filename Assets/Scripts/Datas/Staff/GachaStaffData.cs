@@ -9,21 +9,33 @@ public class GachaStaffData : GachaData
     private StaffData _staffData;
     public StaffData StaffData => _staffData;
 
-    /// <summary>
-    /// 가챠 가중치 (등급 기반 자동 계산)
-    /// </summary>
-    public float GachaWeight => _staffData.GachaWeight;
+    public static GachaStaffData Create(StaffData staffData)
+    {
+        GachaStaffData data = CreateInstance<GachaStaffData>();
+        data.Initialize(staffData);
+        return data;
+    }
 
-    public GachaStaffData(StaffData staffData)
+    private void Initialize(StaffData staffData)
     {
         _staffData = staffData;
+
+        if (staffData == null)
+        {
+            DebugLog.LogError("가챠 직원 래퍼에 빈 직원 데이터가 전달되었습니다.");
+            _name = string.Empty;
+            _id = string.Empty;
+            _description = string.Empty;
+            _rank = Rank.Normal1;
+            return;
+        }
         
         // StaffData의 속성을 GachaData에 복사
         _id = staffData.Id;
-        _name = staffData.Name;
-        _description = staffData.Description;
+        _name = string.IsNullOrWhiteSpace(staffData.Name) ? staffData.Id : staffData.Name;
+        _description = staffData.Description ?? string.Empty;
         _rank = staffData.Rank;
-        _sprite = staffData.Sprite;
-        _thumbnailSprite = staffData.ThumbnailSprite;
+        _sprite = staffData.Sprite == null ? staffData.ThumbnailSprite : staffData.Sprite;
+        _thumbnailSprite = staffData.ThumbnailSprite == null ? staffData.Sprite : staffData.ThumbnailSprite;
     }
 }

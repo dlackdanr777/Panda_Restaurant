@@ -8,7 +8,20 @@ using UnityEngine.EventSystems;
 
 public class UIGacha : MobileUIView
 {
+#if UNITY_EDITOR
+    public const bool EnableEditorEntryUnlockForTesting = true;
+#else
+    public const bool EnableEditorEntryUnlockForTesting = false;
+#endif
+
     public event Action<int> GachaStepHandler;
+    public event Action HiddenHandler;
+
+    public static bool IsEntryUnlocked()
+    {
+        return EnableEditorEntryUnlockForTesting
+            || UserInfo.GetIsClearChallenge("MainReward12");
+    }
 
     [Header("Components")]
     [SerializeField] private MainScene _mainScene;
@@ -36,17 +49,35 @@ public class UIGacha : MobileUIView
     [SerializeField] private GachaTutorial _miniGameTutorial;
 
     private GachaMachineParent _currentGachaMachine;
+    private GachaMachineParent _requestedInitialMachine;
+    private bool _isInitialized;
 
     private bool _isStartGacha;
     public bool IsStartGacha => _isStartGacha;
     public void SetStartGacha(bool isStart)
     {
         _isStartGacha = isStart;
-        _scrollRect.enabled = !isStart;
+        if (_scrollRect != null)
+            _scrollRect.enabled = !isStart;
+
+        SetNavigationButtonsActive(!isStart);
 
     }
     public override void Init()
     {
+        if (_isInitialized)
+            return;
+
+        _isInitialized = true;
+        RemoveInvalidAndDuplicateMachines();
+
+        if (_gachaMachines.Length == 0)
+        {
+            DebugLog.LogError("가챠 머신이 연결되어 있지 않습니다.");
+            gameObject.SetActive(false);
+            return;
+        }
+
         for (int i = 0; i < _gachaMachines.Length; i++)
         {
             _gachaMachines[i].Init(this);
@@ -64,6 +95,9 @@ public class UIGacha : MobileUIView
         {
             trigger = _scrollRect.gameObject.AddComponent<EventTrigger>();
         }
+
+        if (trigger.triggers == null)
+            trigger.triggers = new List<EventTrigger.Entry>();
 
         // BeginDrag 이벤트
         EventTrigger.Entry beginDragEntry = new EventTrigger.Entry();
@@ -84,6 +118,66 @@ public class UIGacha : MobileUIView
         trigger.triggers.Add(endDragEntry);
     }
 
+    private void RemoveInvalidAndDuplicateMachines()
+    {
+        if (_gachaMachines == null)
+        {
+            _gachaMachines = Array.Empty<GachaMachineParent>();
+            return;
+        }
+
+        List<GachaMachineParent> validMachines = new List<GachaMachineParent>(_gachaMachines.Length);
+        HashSet<GachaMachineParent> seenMachines = new HashSet<GachaMachineParent>();
+
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            GachaMachineParent machine = _gachaMachines[i];
+            if (machine == null)
+            {
+                DebugLog.LogError($"가챠 머신 배열의 {i}번 참조가 비어 있습니다.");
+                continue;
+            }
+
+            if (!seenMachines.Add(machine))
+            {
+                DebugLog.LogError($"동일한 가챠 머신이 중복 연결되어 제외했습니다: {machine.name}");
+                continue;
+            }
+
+            validMachines.Add(machine);
+        }
+
+        _gachaMachines = validMachines.ToArray();
+    }
+
+    public bool PrepareItemMachine()
+    {
+        return PrepareMachine<UIItemGacha>();
+    }
+
+    public bool PrepareStaffMachine()
+    {
+        return PrepareMachine<UIStaffGacha>();
+    }
+
+    private bool PrepareMachine<T>() where T : GachaMachineParent
+    {
+        if (_gachaMachines == null)
+            return false;
+
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            if (_gachaMachines[i] is T)
+            {
+                _requestedInitialMachine = _gachaMachines[i];
+                return true;
+            }
+        }
+
+        DebugLog.LogError($"요청한 가챠 머신을 찾을 수 없습니다: {typeof(T).Name}");
+        return false;
+    }
+
     public void StartGachaStepEvent(int step)
     {
         GachaStepHandler?.Invoke(step);
@@ -92,7 +186,7 @@ public class UIGacha : MobileUIView
 
     private void OnScrollBeginDrag(PointerEventData eventData)
     {
-        if(_isStartGacha)
+        if (VisibleState != VisibleState.Appeared || _isStartGacha || _gachaMachines.Length < 2)
             return;
 
         DebugLog.Log("스크롤 시작");
@@ -109,7 +203,7 @@ public class UIGacha : MobileUIView
 
     private void OnScrollDrag(PointerEventData eventData)
     {
-        if(_isStartGacha)
+        if (VisibleState != VisibleState.Appeared || _isStartGacha || _gachaMachines.Length < 2)
             return;
 
         float currentX = _machineParent.anchoredPosition.x;
@@ -132,7 +226,7 @@ public class UIGacha : MobileUIView
 
     private void OnScrollEndDrag(PointerEventData eventData)
     {
-        if (_isStartGacha)
+        if (VisibleState != VisibleState.Appeared || _isStartGacha || _gachaMachines.Length < 2)
             return;
             
         DebugLog.Log("스크롤 종료");
@@ -171,14 +265,19 @@ public class UIGacha : MobileUIView
         {
             // 이동 완료 후 해당 머신 설정
             SetMachineNoAnime(_gachaMachines[targetIndex]);
-            _rightButton.gameObject.SetActive(true);
-            _leftButton.gameObject.SetActive(true);
+            SetNavigationButtonsActive(true);
         });
     }
 
 
     public override void Show()
     {
+        if (_gachaMachines == null || _gachaMachines.Length == 0)
+        {
+            DebugLog.LogError("표시할 가챠 머신이 없습니다.");
+            return;
+        }
+
         // if(!UserInfo.GetIsClearChallenge("MainReward12"))
         // {
         //     PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
@@ -188,30 +287,86 @@ public class UIGacha : MobileUIView
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
         gameObject.SetActive(true);
-        _canvasGroup.blocksRaycasts = false;
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = true;
+        _animeUI.TweenStop();
         _animeUI.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
         SetStartGacha(false);
-        SetMachine(_gachaMachines[0]);
+        if (_scrollRect != null)
+        {
+            _scrollRect.StopMovement();
+            _scrollRect.enabled = false;
+        }
+        SetNavigationButtonsActive(false);
+        GachaMachineParent initialMachine = _requestedInitialMachine ?? GetDefaultMachine();
+        _requestedInitialMachine = null;
+        SetMachine(initialMachine);
         SetMachineParentPos();
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Appeared;
+            _canvasGroup.interactable = true;
             _canvasGroup.blocksRaycasts = true;
-
-            if(!UserInfo.IsTutorialStart && !UserInfo.IsMiniGameTutorialClear)
-            {
-                _miniGameTutorial.StartTutorial();
-            }
+            if (_scrollRect != null)
+                _scrollRect.enabled = !_isStartGacha;
+            SetNavigationButtonsActive(!_isStartGacha);
+            TryStartItemGachaTutorial();
         });
+    }
+
+    private void TryStartItemGachaTutorial()
+    {
+        if (EnableEditorEntryUnlockForTesting
+            || VisibleState != VisibleState.Appeared
+            || !(_currentGachaMachine is UIItemGacha)
+            || UserInfo.IsTutorialStart
+            || UserInfo.IsMiniGameTutorialClear
+            || _miniGameTutorial == null)
+        {
+            return;
+        }
+
+        _miniGameTutorial.StartTutorial();
+    }
+
+    private GachaMachineParent GetDefaultMachine()
+    {
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            if (_gachaMachines[i] is UIItemGacha)
+                return _gachaMachines[i];
+        }
+
+        return _gachaMachines[0];
     }
 
 
     public override void Hide()
     {
+        if (VisibleState == VisibleState.Disappeared && !gameObject.activeSelf)
+            return;
+
         VisibleState = VisibleState.Disappeared;
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = false;
+        _animeUI.TweenStop();
+        SetStartGacha(false);
+        _requestedInitialMachine = null;
         _mainScene.PlayMainMusic();
         gameObject.SetActive(false);
+        HiddenHandler?.Invoke();
+    }
+
+    private void SetNavigationButtonsActive(bool isActive)
+    {
+        bool showButtons = isActive && _gachaMachines != null && 1 < _gachaMachines.Length;
+
+        if (_leftButton != null)
+            _leftButton.gameObject.SetActive(showButtons);
+
+        if (_rightButton != null)
+            _rightButton.gameObject.SetActive(showButtons);
     }
 
     public void SetActiveUIComponents(bool isActive)
@@ -230,7 +385,13 @@ public class UIGacha : MobileUIView
 
     private void SetMachine(int dir)
     {
+        if (_gachaMachines == null || _gachaMachines.Length == 0)
+            return;
+
         int currentIndex = Array.IndexOf(_gachaMachines, _currentGachaMachine);
+        if (currentIndex < 0)
+            currentIndex = 0;
+
         int nextIndex = currentIndex + dir;
 
         if (nextIndex < 0)
@@ -245,25 +406,32 @@ public class UIGacha : MobileUIView
 
     private void SetMachine(GachaMachineParent gachaMachine)
     {
+        if (gachaMachine == null)
+            return;
+
         for (int i = 0; i < _gachaMachines.Length; i++)
         {
             _gachaMachines[i].Hide();
         }
         _currentGachaMachine = gachaMachine;
-        _gachaItemList.UpdateData(gachaMachine.ItemDataList);
+        _gachaItemList.UpdateMachineData(gachaMachine.ItemDataList);
 
         SetMachineParentPosAnime();
     }
 
     private void SetMachineNoAnime(GachaMachineParent gachaMachine)
     {
+        if (gachaMachine == null)
+            return;
+
         for (int i = 0; i < _gachaMachines.Length; i++)
         {
             _gachaMachines[i].Hide();
         }
         _currentGachaMachine = gachaMachine;
-        _gachaItemList.UpdateData(gachaMachine.ItemDataList);
+        _gachaItemList.UpdateMachineData(gachaMachine.ItemDataList);
         _currentGachaMachine.Show();
+        TryStartItemGachaTutorial();
     }
 
     private void SetMachineParentPosAnime()
@@ -290,6 +458,7 @@ public class UIGacha : MobileUIView
         _machineParent.TweenAnchoredPosition(pos, duration, Ease.Smoothstep).OnComplete(() =>
         {
             _currentGachaMachine.Show();
+            TryStartItemGachaTutorial();
         });
     }
 

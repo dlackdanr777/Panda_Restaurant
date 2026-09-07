@@ -5,13 +5,27 @@ using UnityEngine;
 [RequireComponent(typeof(MobileUINavigation))]
 public class UIMainCanvas : MonoBehaviour
 {
+    private enum GachaEntrySource
+    {
+        None,
+        Main,
+        StaffShop
+    }
+
     private MobileUINavigation _uiNav;
 
     [SerializeField] private UIRestaurantAdmin _uiAdmin;
+    [SerializeField] private UIGacha _uiGacha;
+
+    private GachaEntrySource _gachaEntrySource;
 
     private void Awake()
     {
         _uiNav = GetComponent<MobileUINavigation>();
+        _uiNav.OnHideUIHandler += OnMainNavigationViewHidden;
+
+        if (_uiGacha != null)
+            _uiGacha.HiddenHandler += CompleteGachaSession;
     }
 
 
@@ -68,6 +82,7 @@ public class UIMainCanvas : MonoBehaviour
         DataBind.SetUnityActionValue("HideNoAnimePictorialBookUI", OnHideNoAnimePictorialBookUI);
 
         DataBind.SetUnityActionValue("ShowGachaUI", OnShowGachaUI);
+        DataBind.SetUnityActionValue("ShowStaffGachaUI", OnShowStaffGachaUI);
         DataBind.SetUnityActionValue("HideGachaUI", OnHideGachaUI);
         DataBind.SetUnityActionValue("HideNoAnimeGachaUI", OnHideNoAnimeGachaUI);
 
@@ -332,13 +347,65 @@ public class UIMainCanvas : MonoBehaviour
 
     private void OnShowGachaUI()
     {
-        if (!UserInfo.GetIsClearChallenge("MainReward12"))
+        if (IsGachaOpenOrOpening()
+            || !CanShowGachaUI()
+            || !_uiNav.ViewsVisibleStateCheck())
+            return;
+
+        if (_uiGacha == null || !_uiGacha.PrepareItemMachine())
         {
-            PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
+            DebugLog.LogError("아이템 가챠 머신을 준비할 수 없습니다.");
             return;
         }
-        
+
+        _gachaEntrySource = GachaEntrySource.Main;
         _uiNav.Push("UIGacha");
+        RestoreAfterFailedGachaPush();
+    }
+
+    private void OnShowStaffGachaUI()
+    {
+        if (IsGachaOpenOrOpening()
+            || !CanShowGachaUI()
+            || !_uiNav.ViewsVisibleStateCheck())
+            return;
+
+        if (_uiGacha == null || !_uiGacha.PrepareStaffMachine())
+        {
+            DebugLog.LogError("직원 가챠 머신을 준비할 수 없습니다.");
+            return;
+        }
+
+        if (_uiAdmin == null || !_uiAdmin.TrySuspendStaffViewForGacha())
+        {
+            DebugLog.LogError("상점 직원 화면을 가챠 전환용으로 숨길 수 없습니다.");
+            return;
+        }
+
+        _gachaEntrySource = GachaEntrySource.StaffShop;
+        _uiNav.Push("UIGacha");
+        RestoreAfterFailedGachaPush();
+    }
+
+    private bool IsGachaOpenOrOpening()
+    {
+        return _gachaEntrySource != GachaEntrySource.None
+            || _uiNav.CheckActiveView("UIGacha");
+    }
+
+    private void RestoreAfterFailedGachaPush()
+    {
+        if (!_uiNav.CheckActiveView("UIGacha"))
+            CompleteGachaSession();
+    }
+
+    private static bool CanShowGachaUI()
+    {
+        if (UIGacha.IsEntryUnlocked())
+            return true;
+
+        PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
+        return false;
     }
 
     private void OnHideGachaUI()
@@ -348,7 +415,34 @@ public class UIMainCanvas : MonoBehaviour
 
     private void OnHideNoAnimeGachaUI()
     {
+        if (!_uiNav.CheckActiveView("UIGacha"))
+            return;
+
+        _uiGacha.Hide();
         _uiNav.PopNoAnime("UIGacha");
+    }
+
+    private void OnMainNavigationViewHidden()
+    {
+        if (_gachaEntrySource == GachaEntrySource.None
+            || _uiNav.CheckActiveView("UIGacha"))
+        {
+            return;
+        }
+
+        CompleteGachaSession();
+    }
+
+    private void CompleteGachaSession()
+    {
+        GachaEntrySource completedSource = _gachaEntrySource;
+        _gachaEntrySource = GachaEntrySource.None;
+
+        if (completedSource == GachaEntrySource.StaffShop
+            && (_uiAdmin == null || !_uiAdmin.ResumeStaffViewAfterGacha()))
+        {
+            DebugLog.LogError("가챠 진입 전 상점 직원 화면을 복원할 수 없습니다.");
+        }
     }
 
     private void OnShowSettingUI()
@@ -488,5 +582,14 @@ public class UIMainCanvas : MonoBehaviour
     private void OnHideNoAnimeMailboxUI()
     {
         _uiNav.PopNoAnime("UIMailbox");
+    }
+
+    private void OnDestroy()
+    {
+        if (_uiNav != null)
+            _uiNav.OnHideUIHandler -= OnMainNavigationViewHidden;
+
+        if (_uiGacha != null)
+            _uiGacha.HiddenHandler -= CompleteGachaSession;
     }
 }

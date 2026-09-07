@@ -1,4 +1,5 @@
 using System;
+using Muks.DataBind;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -56,6 +57,7 @@ public class UIStaffPreview : MonoBehaviour
         _onUsingButtonClicked = onUsingButtonClicked;
         _usingButton.AddListener(OnUsingButtonClicked);
         _equipButton.AddListener(OnEquipButtonClicked);
+        _buyButton.AddListener(OnGachaButtonClicked);
         _actionButtonRoot = _buyButton.transform.parent as RectTransform;
 
         UserInfo.OnUpgradeStaffHandler += UpdateUI;
@@ -352,6 +354,11 @@ public class UIStaffPreview : MonoBehaviour
 
         ERestaurantFloorType floorType = UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, _currentData);
         _onUsingButtonClicked?.Invoke(floorType, _currentData);
+    }
+
+    private static void OnGachaButtonClicked()
+    {
+        DataBind.GetUnityActionValue("ShowStaffGachaUI")?.Invoke();
     }
 
     private void OnDestroy()

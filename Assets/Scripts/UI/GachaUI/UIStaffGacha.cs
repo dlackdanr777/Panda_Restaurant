@@ -6,10 +6,13 @@ using UnityEngine.UI;
 using System;
 using System.Linq;
 using System.Collections;
+using TMPro;
 
 
 public class UIStaffGacha : GachaMachineParent
 {
+    private static readonly bool IsGachaExecutionEnabled = false;
+    private const string UnavailableMessage = "직원 뽑기는 준비 중입니다.";
 
     [Header("Components")]
     [SerializeField] private ScrollingImage _scrollImage;
@@ -51,6 +54,7 @@ public class UIStaffGacha : GachaMachineParent
     private bool _isCapsuleColorChanged;
     private bool _isPlayTextAnime;
     private AudioClip _getStaffSound;
+    private bool _isInitialized;
 
 
     public void PlayGetStaffSound()
@@ -70,6 +74,10 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void Init(UIGacha uiGacha)
     {
+        if (_isInitialized)
+            return;
+
+        _isInitialized = true;
         _uiGacha = uiGacha;
         _scrollImage.Init();
         _gachaCard.Init();
@@ -87,9 +95,53 @@ public class UIStaffGacha : GachaMachineParent
         _tenButton.onClick.AddListener(OnTenGachaButtonClicked);
         _skipButton.onClick.AddListener(OnSkipButtonClicked);
 
+        ApplyUnavailableButtonState();
         SetStep(1);
         _gachaCard.gameObject.SetActive(false);
         gameObject.SetActive(false);
+    }
+
+    private void ApplyUnavailableButtonState()
+    {
+        SetButtonUnavailable(_singleButton);
+        SetButtonUnavailable(_tenButton);
+    }
+
+    private static void SetButtonUnavailable(Button button)
+    {
+        if (button == null)
+            return;
+
+        button.interactable = false;
+        ButtonPressEffect pressEffect = button.GetComponent<ButtonPressEffect>();
+        if (pressEffect != null)
+            pressEffect.Interactable = false;
+
+        Transform priceGroup = button.transform.Find("Money Image");
+        if (priceGroup != null)
+            priceGroup.gameObject.SetActive(false);
+
+        Transform description = button.transform.Find("Description Text");
+        if (description != null)
+            description.gameObject.SetActive(false);
+
+        Transform labelTransform = button.transform.Find("Text");
+        TextMeshProUGUI label = labelTransform == null ? null : labelTransform.GetComponent<TextMeshProUGUI>();
+
+        if (label != null)
+        {
+            label.SetText("준비 중");
+            label.rectTransform.anchoredPosition = Vector2.zero;
+        }
+    }
+
+    private static bool BlockUnavailableExecution()
+    {
+        if (IsGachaExecutionEnabled)
+            return false;
+
+        DebugLog.Log(UnavailableMessage);
+        return true;
     }
 
     private void Update()
@@ -102,8 +154,10 @@ public class UIStaffGacha : GachaMachineParent
     public override void Show()
     {
         gameObject.SetActive(true);
+        SetActiveGachaMachine(true);
         _singleButton.gameObject.SetActive(true);
         _tenButton.gameObject.SetActive(true);
+        ApplyUnavailableButtonState();
         _uiGacha.SetActiveUIComponents(true);
         _scrollImage.gameObject.SetActive(true);
         _screenButton.gameObject.SetActive(false);
@@ -122,7 +176,11 @@ public class UIStaffGacha : GachaMachineParent
     public override void Hide()
     {
         gameObject.SetActive(true);
+        StopAllCoroutines();
         _screenTouchWaitTime = 0;
+        if (_gachaSound != null)
+            _gachaSound.Stop();
+        SetStep(1);
         _singleButton.gameObject.SetActive(false);
         _tenButton.gameObject.SetActive(false);
         _uiGacha.SetActiveUIComponents(false);
@@ -130,14 +188,24 @@ public class UIStaffGacha : GachaMachineParent
         _screenButton.gameObject.SetActive(false);
         _gachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
+        _getStaffImage.gameObject.SetActive(false);
+        _getStaffSlotFrame.gameObject.SetActive(false);
         _capsule.gameObject.SetActive(false);
         _gachaMacineAnimator.enabled = false;
-        SetStep(1);
     }
 
 
     public void GetStaff(GachaStaffData data)
     {
+        if (BlockUnavailableExecution())
+            return;
+
+        if (data == null || data.StaffData == null)
+        {
+            DebugLog.LogError("지급할 직원 데이터가 없습니다.");
+            return;
+        }
+
         _getStaffList.Clear();
         _getStaffIndex = 0;
 
@@ -213,6 +281,12 @@ public class UIStaffGacha : GachaMachineParent
 
     public void SetStep(int step)
     {
+        if (!IsGachaExecutionEnabled && step != 1)
+        {
+            DebugLog.Log(UnavailableMessage);
+            step = 1;
+        }
+
         if (_currentStep == step)
             return;
 
@@ -226,6 +300,7 @@ public class UIStaffGacha : GachaMachineParent
                 _uiGacha.SetStartGacha(false);
                 _singleButton.gameObject.SetActive(true);
                 _tenButton.gameObject.SetActive(true);
+                ApplyUnavailableButtonState();
                 _screenButton.gameObject.SetActive(false);
                 _gachaCard.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
@@ -329,6 +404,15 @@ public class UIStaffGacha : GachaMachineParent
 
     public void StartAddStaff(GachaStaffData data)
     {
+        if (BlockUnavailableExecution())
+            return;
+
+        if (data == null || data.StaffData == null)
+        {
+            DebugLog.LogError("지급할 직원 데이터가 없습니다.");
+            return;
+        }
+
         _uiGacha.SetActiveGachaMachine(false);
         SetActiveGachaMachine(true);
 
@@ -343,15 +427,23 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void OnSingleGachaButtonClicked()
     {
+        if (BlockUnavailableExecution())
+            return;
 
         if(UserInfo.IsDiaValid(10))
         {
+            GachaStaffData staff = StaffDataManager.GetRandomGachaStaffData(_itemDataList) as GachaStaffData;
+            if (staff == null || staff.StaffData == null)
+            {
+                DebugLog.LogError("직원 단일 가챠 추첨에 실패했습니다.");
+                return;
+            }
+
             _uiGacha.SetActiveGachaMachine(false);
             SetActiveGachaMachine(true);
         
             _getStaffList.Clear();
             _getStaffIndex = 0;
-            GachaStaffData staff = (GachaStaffData)StaffDataManager.Instance.GetRandomGachaStaffData(_itemDataList);
             _getStaffList.Add(staff);
             UserInfo.GiveStaff(UserInfo.CurrentStage, staff.StaffData);
 
@@ -372,22 +464,31 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void OnTenGachaButtonClicked()
     {
+        if (BlockUnavailableExecution())
+            return;
+
         if(UserInfo.IsDiaValid(100))
         {
+            List<GachaStaffData> selectedStaffList = new List<GachaStaffData>(11);
+            for (int i = 0; i < 11; i++)
+            {
+                GachaStaffData selectedStaff =
+                    StaffDataManager.GetRandomGachaStaffData(_itemDataList) as GachaStaffData;
+                if (selectedStaff == null || selectedStaff.StaffData == null)
+                {
+                    DebugLog.LogError("직원 다회 가챠 추첨에 실패했습니다.");
+                    return;
+                }
+
+                selectedStaffList.Add(selectedStaff);
+            }
+
             _uiGacha.SetActiveGachaMachine(false);
             SetActiveGachaMachine(true);
 
             _getStaffList.Clear();
             _getStaffIndex = 0;
-
-            GachaStaffData staff;
-            int i = 0;
-            while (i < 11)
-            {
-                staff = (GachaStaffData)StaffDataManager.Instance.GetRandomGachaStaffData(_itemDataList);
-                _getStaffList.Add(staff);
-                i++;
-            }
+            _getStaffList.AddRange(selectedStaffList);
 
             foreach (var staffData in _getStaffList)
             {

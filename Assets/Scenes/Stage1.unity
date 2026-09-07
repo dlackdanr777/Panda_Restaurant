@@ -157697,7 +157697,7 @@ GameObject:
   - component: {fileID: 542277588}
   - component: {fileID: 542277587}
   m_Layer: 5
-  m_Name: Skin Gacha UI
+  m_Name: Staff Gacha UI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -157739,7 +157739,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 542277585}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5574f3fd0255a234bb2ae1082a000227, type: 3}
+  m_Script: {fileID: 11500000, guid: 20a31a1456785894b91ac81083441c8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _machineObjects:
@@ -157750,10 +157750,10 @@ MonoBehaviour:
   _singleButton: {fileID: 1917534619}
   _tenButton: {fileID: 1148754770}
   _skipButton: {fileID: 615887717}
-  _getItemImage: {fileID: 278841755}
-  _skinGachaCard: {fileID: 1965755068}
+  _getStaffImage: {fileID: 278841755}
+  _gachaCard: {fileID: 1965755068}
   _capsule: {fileID: 343309261}
-  _getItemSlotFrame: {fileID: 577023664}
+  _getStaffSlotFrame: {fileID: 577023664}
   _slotPrefab: {fileID: 6249354119521406815, guid: aa77ba2d57e949342acd1e972dfb45ed,
     type: 3}
   _capsules: {fileID: 855459904}
@@ -157772,8 +157772,8 @@ MonoBehaviour:
     _lowerCapsule: {fileID: 21300000, guid: 78376d0e8ba4a7c459498cd2ca1a5e85, type: 3}
   - _upperCapsule: {fileID: 21300000, guid: 41d706c2be98e2f48b5372a5373df7bc, type: 3}
     _lowerCapsule: {fileID: 21300000, guid: a66e911b2a74f4f409b33ccad9a0493a, type: 3}
-  _getNormalItemSound: {fileID: 8300000, guid: 06dccc035f9819f4b9d7ae60cc2bedf1, type: 3}
-  _getSpecialItemSound: {fileID: 8300000, guid: 2ccabb9c8ccca144eb61734becda3dea,
+  _getNormalStaffSound: {fileID: 8300000, guid: 06dccc035f9819f4b9d7ae60cc2bedf1, type: 3}
+  _getSpecialStaffSound: {fileID: 8300000, guid: 2ccabb9c8ccca144eb61734becda3dea,
     type: 3}
   _gachaSound: {fileID: 99958656}
   _boomSound: {fileID: 8300000, guid: 8f5971b5e545d704fa079b8c1477d829, type: 3}
@@ -223874,7 +223874,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &778773054
 RectTransform:
   m_ObjectHideFlags: 0
@@ -249985,6 +249985,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _uiAdmin: {fileID: 1224807818}
+  _uiGacha: {fileID: 771534404328290643}
 --- !u!1 &855459903
 GameObject:
   m_ObjectHideFlags: 0
@@ -304516,7 +304517,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1031300026
 RectTransform:
   m_ObjectHideFlags: 0
@@ -621907,7 +621908,7 @@ MonoBehaviour:
   _canvasGroup: {fileID: 3363374212889587582}
   _gachaMachines:
   - {fileID: 110240286}
-  - {fileID: 110240286}
+  - {fileID: 542277587}
   _uiComponents: {fileID: 1428464419}
   _gachaItemList: {fileID: 357858728}
   _leftButton: {fileID: 1031300028}

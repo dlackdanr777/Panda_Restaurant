@@ -56,6 +56,12 @@ public class UIStaff : MobileUIView
     private bool _isInitialized = false;
     private Vector3 _tmpScale;
     private static readonly Vector3 _hideScale = new Vector3(0.3f, 0.3f, 0.3f);
+    private ScrollRect _staffScrollRect;
+    private Vector2 _scrollPositionBeforeGacha;
+    private bool _hasScrollPositionBeforeGacha;
+    private float _canvasAlphaBeforeGacha;
+    private bool _canvasInteractableBeforeGacha;
+    private bool _canvasBlockedRaycastsBeforeGacha;
 
     public override void Init()
     {
@@ -77,6 +83,9 @@ public class UIStaff : MobileUIView
         _showSkinButton.onClick.AddListener(OnShowSkinButtonClicked);
         _isInitialized = true;
         _tmpScale = _animeUI.transform.localScale;
+        _staffScrollRect = _slotParnet != null
+            ? _slotParnet.GetComponentInParent<ScrollRect>(true)
+            : null;
         gameObject.SetActive(false);
     }
 
@@ -155,6 +164,46 @@ public class UIStaff : MobileUIView
             VisibleState = VisibleState.Disappeared;
             gameObject.SetActive(false);
         });
+    }
+
+    public void SuspendForGacha()
+    {
+        _canvasAlphaBeforeGacha = _canvasGroup.alpha;
+        _canvasInteractableBeforeGacha = _canvasGroup.interactable;
+        _canvasBlockedRaycastsBeforeGacha = _canvasGroup.blocksRaycasts;
+
+        if (_staffScrollRect != null)
+        {
+            _scrollPositionBeforeGacha = _staffScrollRect.normalizedPosition;
+            _hasScrollPositionBeforeGacha = true;
+            _staffScrollRect.StopMovement();
+        }
+
+        _canvasGroup.alpha = 0;
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = false;
+    }
+
+    public void ResumeAfterGacha()
+    {
+        _canvasGroup.alpha = _canvasAlphaBeforeGacha;
+        _canvasGroup.interactable = _canvasInteractableBeforeGacha;
+        _canvasGroup.blocksRaycasts = _canvasBlockedRaycastsBeforeGacha;
+
+        if (_staffScrollRect == null || !_hasScrollPositionBeforeGacha)
+            return;
+
+        _staffScrollRect.StopMovement();
+        _staffScrollRect.normalizedPosition = _scrollPositionBeforeGacha;
+        _hasScrollPositionBeforeGacha = false;
+    }
+
+    public void CompleteImmediateHideAfterGachaNavigationClear()
+    {
+        _animeUI.TweenStop();
+        _canvasGroup.blocksRaycasts = false;
+        VisibleState = VisibleState.Disappeared;
+        gameObject.SetActive(false);
     }
 
     public void ShowUIStaff(ERestaurantFloorType floorType, EquipStaffType type)

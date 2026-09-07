@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
-using Muks.WeightedRandom;
 
 
 public class StaffDataManager : MonoBehaviour
@@ -130,7 +129,34 @@ public class StaffDataManager : MonoBehaviour
     /// </summary>
     public List<GachaStaffData> GetGachaStaffDataList()
     {
-        return _staffDatas.Select(data => new GachaStaffData(data)).ToList();
+        List<GachaStaffData> result = new List<GachaStaffData>();
+        if (_staffDatas == null)
+        {
+            DebugLog.LogError("직원 데이터가 아직 초기화되지 않았습니다.");
+            return result;
+        }
+
+        HashSet<string> addedIds = new HashSet<string>();
+        for (int i = 0; i < _staffDatas.Length; i++)
+        {
+            StaffData data = _staffDatas[i];
+            if (!StaffGachaRandomSelector.IsValidStaffData(data))
+            {
+                string invalidId = data == null ? "null" : data.Id;
+                DebugLog.LogError($"표시 정보가 유효하지 않은 직원은 가챠 목록에서 제외합니다: {invalidId}");
+                continue;
+            }
+
+            if (!addedIds.Add(data.Id))
+            {
+                DebugLog.LogError($"중복 직원 ID는 가챠 목록에서 제외합니다: {data.Id}");
+                continue;
+            }
+
+            result.Add(GachaStaffData.Create(data));
+        }
+
+        return result;
     }
 
     /// <summary>
@@ -151,38 +177,11 @@ public class StaffDataManager : MonoBehaviour
     }
 
     /// <summary>
-    /// 랜덤 가챠 스탭 선택 (개별 가중치 적용)
+    /// 등급을 먼저 추첨한 뒤 해당 등급 안에서 균등하게 직원을 선택한다.
     /// </summary>
-    public GachaData GetRandomGachaStaffData(List<GachaData> gachaDataList)
+    public static GachaData GetRandomGachaStaffData(List<GachaData> gachaDataList)
     {
-        if (gachaDataList == null || gachaDataList.Count == 0)
-        {
-            DebugLog.LogError("가챠 스탭 리스트가 비어있습니다.");
-            return null;
-        }
-
-        // WeightedRandom 시스템 생성
-        WeightedRandom<GachaStaffData> weightedRandom = new WeightedRandom<GachaStaffData>();
-
-        // 각 스탭의 가중치를 추가
-        foreach (var data in gachaDataList)
-        {
-            if (data is GachaStaffData staffData)
-            {
-                weightedRandom.Add(staffData, staffData.GachaWeight);
-            }
-        }
-
-        // 가중치 기반 랜덤 선택
-        GachaStaffData selectedStaff = weightedRandom.GetRamdomItem();
-        
-        if (selectedStaff == null)
-        {
-            DebugLog.LogError("가챠 스탭 선택 실패.");
-            return null;
-        }
-
-        return selectedStaff;
+        return StaffGachaRandomSelector.Select(gachaDataList);
     }
 
 

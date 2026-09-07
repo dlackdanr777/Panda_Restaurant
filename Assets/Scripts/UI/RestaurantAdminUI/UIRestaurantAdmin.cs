@@ -81,6 +81,11 @@ public class UIRestaurantAdmin : MobileUIView
     private bool _isFailSafeCloseStarted;
     private int _sessionVersion;
     private MobileUIView _nativeHideView;
+    private bool _isSuspendedForGacha;
+    private bool _staffViewWasActiveBeforeGacha;
+    private float _shopAlphaBeforeGacha;
+    private bool _shopInteractableBeforeGacha;
+    private bool _shopBlockedRaycastsBeforeGacha;
 
     public override void Init()
     {
@@ -232,6 +237,14 @@ public class UIRestaurantAdmin : MobileUIView
         MobileUIView currentView = _uiNav != null
             ? _uiNav.FirstView as MobileUIView
             : null;
+        bool hiddenGachaIsStillNavigationTop = currentView is UIGacha &&
+                                               currentView.VisibleState == VisibleState.Disappeared;
+        if (hiddenGachaIsStillNavigationTop)
+        {
+            CompleteSessionCloseAfterGachaAllPop(closingSessionVersion);
+            return;
+        }
+
         bool closeMainShop = currentView == this &&
                              _mainUI != null &&
                              _mainUI.activeSelf;
@@ -272,6 +285,62 @@ public class UIRestaurantAdmin : MobileUIView
         CompleteSessionCloseWithoutNativeHide(
             closingSessionVersion,
             "No supported active shop View matched the Navigation top View.");
+    }
+
+    public bool TrySuspendStaffViewForGacha()
+    {
+        bool canSuspend = !_isSuspendedForGacha
+                          && !_isClosingSession
+                          && VisibleState == VisibleState.Appeared
+                          && gameObject.activeInHierarchy
+                          && _staffUI != null
+                          && _staffUI.VisibleState == VisibleState.Appeared
+                          && _staffUI.gameObject.activeInHierarchy
+                          && _uiNav != null
+                          && _uiNav.FirstView == _staffUI;
+
+        if (!canSuspend)
+            return false;
+
+        _isSuspendedForGacha = true;
+        _staffViewWasActiveBeforeGacha = _staffUI.gameObject.activeSelf;
+        _shopAlphaBeforeGacha = _canvasGroup.alpha;
+        _shopInteractableBeforeGacha = _canvasGroup.interactable;
+        _shopBlockedRaycastsBeforeGacha = _canvasGroup.blocksRaycasts;
+
+        _canvasGroup.alpha = 0;
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = false;
+        _staffUI.SuspendForGacha();
+        return true;
+    }
+
+    public bool ResumeStaffViewAfterGacha()
+    {
+        if (!_isSuspendedForGacha)
+            return false;
+
+        bool restoreStaffView = _staffViewWasActiveBeforeGacha;
+        float restoreShopAlpha = _shopAlphaBeforeGacha;
+        bool restoreShopInteractable = _shopInteractableBeforeGacha;
+        bool restoreShopRaycasts = _shopBlockedRaycastsBeforeGacha;
+
+        _isSuspendedForGacha = false;
+        _staffViewWasActiveBeforeGacha = false;
+        _shopAlphaBeforeGacha = 0;
+        _shopInteractableBeforeGacha = false;
+        _shopBlockedRaycastsBeforeGacha = false;
+
+        _canvasGroup.alpha = restoreShopAlpha;
+        _canvasGroup.interactable = restoreShopInteractable;
+        _canvasGroup.blocksRaycasts = restoreShopRaycasts;
+        if (restoreStaffView)
+            _staffUI.ResumeAfterGacha();
+        else
+            _staffUI.gameObject.SetActive(false);
+
+        SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
+        return true;
     }
 
     private bool IsOpeningSessionCurrent(int sessionVersion)
@@ -371,6 +440,31 @@ public class UIRestaurantAdmin : MobileUIView
         _mainUI.SetActive(false);
         ResetBackgroundImageOffsetOptimized();
         BeginBackgroundFade(sessionVersion);
+    }
+
+    private void CompleteSessionCloseAfterGachaAllPop(int sessionVersion)
+    {
+        if (!IsClosingSessionCurrent(sessionVersion))
+            return;
+
+        // AllPop keeps the hidden gacha at the Navigation top until its loop ends.
+        // Close the already-hidden shop immediately so it cannot flash for a frame.
+        CleanupTransition();
+        _mainScene.PlayMainMusic();
+        _canvasGroup.blocksRaycasts = false;
+        _canvasGroup.alpha = 0;
+        _dontTouchArea.gameObject.SetActive(false);
+
+        _staffUI.CompleteImmediateHideAfterGachaNavigationClear();
+        PopActiveUIViews(_staffUI);
+        _mainUI.SetActive(false);
+        ResetBackgroundImageOffsetOptimized();
+        VisibleState = VisibleState.Disappeared;
+
+        _nativeHideView = null;
+        _isFailSafeCloseStarted = false;
+        _isClosingSession = false;
+        gameObject.SetActive(false);
     }
 
     private void PopActiveUIViews(MobileUIView alreadyHiddenView)

@@ -50,7 +50,8 @@ public class UIGachaCard : MonoBehaviour
     {
         if (data == null)
         {
-            DebugLog.LogError("스킨 데이터가 없습니다.");
+            DebugLog.LogError("가챠 카드에 표시할 데이터가 없습니다.");
+            ClearData();
             return;
         }
 
@@ -65,25 +66,19 @@ public class UIGachaCard : MonoBehaviour
     
     private void SetImage(GachaData data)
     {
-        if (data == null)
-        {
-            _skinImage.sprite = null;
-            return;
-        }
-
-        _skinImage.sprite = data.ThumbnailSprite;
+        _skinImage.sprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
     }
 
 
     private void SetDescription(GachaData data)
     {
-        _descriptionText.SetText(data.Description);
+        _descriptionText.SetText(data.Description ?? string.Empty);
     }
 
 
     private void SetName(GachaData data)
     {
-        _nameText.SetText(data.Name);
+        _nameText.SetText(string.IsNullOrWhiteSpace(data.Name) ? data.Id : data.Name);
     }
 
     private void SetEffect(GachaData data)
@@ -104,6 +99,10 @@ public class UIGachaCard : MonoBehaviour
         else if (data is GachaItemData itemData)
         {
             _effectText.SetText(Utility.GetGachaItemEffectDescription(itemData));
+        }
+        else if (data is GachaStaffData staffGachaData && staffGachaData.StaffData != null)
+        {
+            _effectText.SetText(Utility.GetStaffEffectDescription(staffGachaData.StaffData));
         }
         else
         {
@@ -148,6 +147,17 @@ public class UIGachaCard : MonoBehaviour
             }
         }
 
+        else if (data is GachaStaffData staffGachaData)
+        {
+            StaffData staffData = staffGachaData.StaffData;
+            if (staffData == null)
+            {
+                _typeText.SetText("직원");
+                return;
+            }
+
+            _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.Instance.GetStaffGroupType(staffData)));
+        }
         else
         {
             _typeText.SetText("아이템");
@@ -192,5 +202,16 @@ public class UIGachaCard : MonoBehaviour
     private void OnCloseButtonClicked()
     {
         gameObject.SetActive(false);
+    }
+
+    private void ClearData()
+    {
+        _skinImage.sprite = null;
+        _nameText.SetText(string.Empty);
+        _descriptionText.SetText(string.Empty);
+        _effectText.SetText(string.Empty);
+        _typeText.SetText(string.Empty);
+        UpdateFrame(null);
+        _itemStar.SetStar(Rank.Normal1);
     }
 }
