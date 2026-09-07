@@ -79,7 +79,7 @@ public class UIStaffPreview : MonoBehaviour
 
         if (data == null)
         {
-            AlignActionButtons(false);
+            //AlignActionButtons(false);
             SetTimeIconVisibility(false);
             _selectGroup.ClearRank();
             _effectGroup.gameObject.SetActive(false);
@@ -104,7 +104,7 @@ public class UIStaffPreview : MonoBehaviour
             _selectGroup.ImageColor = Color.white;
         }
         bool isOwned = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data);
-        AlignActionButtons(isOwned);
+        //AlignActionButtons(isOwned);
         int savedLevel = isOwned ? UserInfo.GetStaffLevel(UserInfo.CurrentStage, data) : 1;
         int level = data.GetRuntimeLevel(savedLevel);
         Sprite thumbnailSprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
@@ -267,15 +267,15 @@ public class UIStaffPreview : MonoBehaviour
             icon.gameObject.SetActive(visible);
     }
 
-    private void AlignActionButtons(bool isOwned)
-    {
-        if (_actionButtonRoot == null)
-            return;
+    // private void AlignActionButtons(bool isOwned)
+    // {
+    //     if (_actionButtonRoot == null)
+    //         return;
 
-        Vector2 position = _actionButtonRoot.anchoredPosition;
-        position.x = isOwned ? OwnedActionButtonX : UnownedActionButtonX;
-        _actionButtonRoot.anchoredPosition = position;
-    }
+    //     Vector2 position = _actionButtonRoot.anchoredPosition;
+    //     position.x = isOwned ? OwnedActionButtonX : UnownedActionButtonX;
+    //     _actionButtonRoot.anchoredPosition = position;
+    // }
 
     private void SetRuntimeSkillTimes(StaffData data, int level)
     {
