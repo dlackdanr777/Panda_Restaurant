@@ -48,6 +48,11 @@ public class UIGachaCard : MonoBehaviour
 
     public void SetData(GachaData data)
     {
+        SetData(data, true);
+    }
+
+    private void SetData(GachaData data, bool showOwnedStaffEffect)
+    {
         if (data == null)
         {
             DebugLog.LogError("가챠 카드에 표시할 데이터가 없습니다.");
@@ -59,9 +64,36 @@ public class UIGachaCard : MonoBehaviour
         UpdateFrame(data);
         SetName(data);
         SetDescription(data);
-        SetEffect(data);
+        SetEffect(data, showOwnedStaffEffect);
         SetType(data);
         _itemStar.SetStar(data.Rank);
+    }
+
+    /// <summary>
+    /// 계산이 완료된 직원 한 항목을 표시한다. 추첨, 지급, 재화 변경 및 저장은 수행하지 않는다.
+    /// 기존 SetData도 설명 전체를 다시 쓰므로 카드 재사용 시 획득 문구가 남지 않는다.
+    /// </summary>
+    public bool TrySetStaffAcquisitionResult(
+        GachaStaffData data, StaffGachaAcquisitionItem item, bool isTestPreview = false)
+    {
+        if (data == null || data.StaffData == null || item == null ||
+            string.IsNullOrWhiteSpace(item.StaffId) ||
+            !string.Equals(data.Id, item.StaffId, System.StringComparison.Ordinal) ||
+            !string.Equals(data.StaffData.Id, item.StaffId, System.StringComparison.Ordinal) ||
+            data.Rank != item.Rank || data.StaffData.Rank != item.Rank)
+        {
+            ClearData();
+            return false;
+        }
+
+        // 획득 결과는 기존 상세 화면의 기본(Lv.1) 능력 문구를 사용한다.
+        // 실제 계정의 보유 레벨을 조회하거나 미보유 정보를 가리지 않는다.
+        SetData(data, false);
+        string previewLabel = isTestPreview ? "[테스트 미리보기]\n" : string.Empty;
+        _descriptionText.SetText(item.IsNew
+            ? previewLabel + "신규 획득"
+            : previewLabel + "중복 획득\n판다토큰 +" + item.PandaTokenReward);
+        return true;
     }
     
     private void SetImage(GachaData data)
@@ -81,7 +113,7 @@ public class UIGachaCard : MonoBehaviour
         _nameText.SetText(string.IsNullOrWhiteSpace(data.Name) ? data.Id : data.Name);
     }
 
-    private void SetEffect(GachaData data)
+    private void SetEffect(GachaData data, bool showOwnedStaffEffect)
     {
         if (data is SkinData)
         {
@@ -102,7 +134,9 @@ public class UIGachaCard : MonoBehaviour
         }
         else if (data is GachaStaffData staffGachaData && staffGachaData.StaffData != null)
         {
-            _effectText.SetText(Utility.GetStaffEffectDescription(staffGachaData.StaffData));
+            _effectText.SetText(showOwnedStaffEffect
+                ? Utility.GetStaffEffectDescription(staffGachaData.StaffData)
+                : Utility.GetStaffEffectDescription(staffGachaData.StaffData, 1));
         }
         else
         {
