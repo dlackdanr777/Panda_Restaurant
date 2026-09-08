@@ -36,6 +36,7 @@ public sealed class StaffGachaAcquisitionPreviewWindow : EditorWindow
     private UIGachaCard _previewCard;
     private StaffGachaAcquisitionPreviewSequence _sequence;
     private StaffGachaSingleAnimationPreview _animationPreview;
+    private Vector2 _scrollPosition;
     private string _singleStaffId;
     private string _message = "Play Mode에서 직원머신을 열고 전환이 끝난 뒤 사용하세요.";
 
@@ -72,12 +73,14 @@ public sealed class StaffGachaAcquisitionPreviewWindow : EditorWindow
         if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
             Event.current.Use();
 
+        _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
         EditorGUILayout.HelpBox("테스트 미리보기입니다. 실제 보유·재화·지급·저장을 변경하지 않습니다.", MessageType.Info);
         bool available = TryGetContext(out UIGacha gacha, out UIStaffGacha staff,
             out _, out _, out string reason) && IsSettled(gacha, staff);
         if (!available && _animationPreview == null)
             EditorGUILayout.HelpBox(reason ?? "직원머신 전환이 끝날 때까지 기다려 주세요.", MessageType.None);
-        using (new EditorGUI.DisabledScope(!available || _animationPreview != null))
+        using (new EditorGUI.DisabledScope(!available || _animationPreview != null ||
+            !StaffGachaMockRequestContext.Shared.CanStartNewRequest))
         {
             // Select existing staff for long-description checks; the fixed eleven fixture is unchanged.
             GachaStaffData[] singleCandidates = StaffGachaAcquisitionPreviewSequence
@@ -114,7 +117,131 @@ public sealed class StaffGachaAcquisitionPreviewWindow : EditorWindow
         }
         using (new EditorGUI.DisabledScope(_overlay == null))
             if (GUILayout.Button("미리보기 닫기")) ClosePreview();
+        DrawMockRequestControls();
         EditorGUILayout.LabelField(_message, EditorStyles.wordWrappedLabel);
+        EditorGUILayout.EndScrollView();
+    }
+
+    private void DrawMockRequestControls()
+    {
+        var context = StaffGachaMockRequestContext.Shared;
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("모의 요청 검증 · 테스트 전용", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("가상 데이터만 사용합니다. 성공 모의 응답은 실제 서버 저장을 뜻하지 않습니다. " +
+            "창·카드를 닫아도 같은 Play 세션의 요청은 유지됩니다.", MessageType.Info);
+        EditorGUILayout.LabelField("가상 다이아", context.Diamonds.ToString());
+        EditorGUILayout.LabelField("가상 판다토큰", context.Account.PandaTokens.ToString());
+        EditorGUILayout.LabelField("가상 보유", string.Join(", ",
+            context.Account.Staff.Select(record => record.Id + " Lv." + record.Level)), EditorStyles.wordWrappedLabel);
+        EditorGUILayout.LabelField("요청 상태", MockStateLabel(context.State));
+        EditorGUILayout.LabelField("현재 요청 ID", context.CurrentRequest?.RequestId ?? "없음",
+            EditorStyles.wordWrappedLabel);
+        if (context.CurrentRequest != null)
+        {
+            StaffGachaPurchasePlan plan = context.CurrentRequest.Plan;
+            EditorGUILayout.LabelField($"계산안: {plan.ResultCount}개 / 가격 {plan.DiamondCost} 다이아 / " +
+                $"다이아 {plan.DiamondsBefore} → {plan.DiamondsAfter}", EditorStyles.wordWrappedLabel);
+        }
+        EditorGUILayout.LabelField("보관된 완료 ID", context.LastCompletedRequest?.RequestId ?? "없음",
+            EditorStyles.wordWrappedLabel);
+        if (!EditorApplication.isPlaying)
+            EditorGUILayout.HelpBox("Play Mode에서 모의 요청을 시작하세요. 직원머신이 없어도 요청·응답 검증은 가능합니다.", MessageType.None);
+
+        // Request controls do not depend on TryGetContext/card availability.
+        using (new EditorGUI.DisabledScope(!EditorApplication.isPlaying))
+        {
+            using (new EditorGUI.DisabledScope(!context.CanStartNewRequest || _animationPreview != null))
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("단일 모의 요청")) StartMockRequest(StaffGachaPurchaseType.Single);
+                if (GUILayout.Button("11회 모의 요청")) StartMockRequest(StaffGachaPurchaseType.Multi);
+            }
+            // Terminal replies remain clickable to check duplicate-response rejection.
+            using (new EditorGUI.DisabledScope(context.CurrentRequest == null))
+            {
+                if (GUILayout.Button("성공 확정 응답")) HandleMockResponse(StaffGachaResponseKind.SuccessConfirmed);
+                if (GUILayout.Button("미반영 확정 실패 응답")) HandleMockResponse(StaffGachaResponseKind.UnappliedFailureConfirmed);
+                if (GUILayout.Button("결과 미확정 응답")) HandleMockResponse(StaffGachaResponseKind.Indeterminate);
+            }
+            using (new EditorGUI.DisabledScope(context.LastCompletedRequest == null ||
+                !context.CanStartNewRequest || _animationPreview != null))
+                if (GUILayout.Button("완료 결과 다시 보기")) TryShowMockCompletedResult(out _message);
+            using (new EditorGUI.DisabledScope(!context.CanReset || _animationPreview != null))
+            {
+                if (GUILayout.Button("가상 데이터 초기화") && context.TryReset(out _message))
+                {
+                    ClosePreview();
+                    _message = "[테스트 전용] 가상 데이터만 초기화했습니다. 과거 요청 ID는 다시 사용하지 않습니다.";
+                }
+            }
+        }
+    }
+
+    private void StartMockRequest(StaffGachaPurchaseType purchaseType)
+    {
+        var context = StaffGachaMockRequestContext.Shared;
+        if (!context.TryStart(purchaseType, out _message)) return;
+        ClosePreview(); // Presentation only: the accepted request is owned by the Editor context.
+        _message = "[테스트 전용] 모의 응답 대기 중 · " + context.CurrentRequest.RequestId;
+    }
+
+    private void HandleMockResponse(StaffGachaResponseKind response)
+    {
+        var context = StaffGachaMockRequestContext.Shared;
+        bool changed = context.TryHandleResponse(context.CurrentRequest?.RequestId, response, out var completed);
+        if (completed != null)
+            TryShowMockCompletedResult(out _message); // Virtual application already finished, even if display fails.
+        else
+            _message = changed ? "[테스트 전용] " + MockStateLabel(context.State) + " · 가상 데이터 변경 없음"
+                : "[테스트 전용] 응답을 무시했습니다. 가상 데이터 변경 없음";
+    }
+
+    internal bool TryShowMockCompletedResult(out string error)
+    {
+        var context = StaffGachaMockRequestContext.Shared;
+        error = "요청이나 연출 진행 중에는 완료 결과를 다시 표시하지 않습니다.";
+        if (!context.CanStartNewRequest || _animationPreview != null) return false;
+        if (context.LastCompletedRequest == null)
+        {
+            error = "아직 성공 확정된 모의 요청 결과가 없습니다.";
+            return false;
+        }
+        if (!TryGetContext(out UIGacha gacha, out UIStaffGacha staff,
+                out UIGachaCard sourceCard, out _, out string reason) || !IsSettled(gacha, staff))
+        {
+            error = (reason ?? "직원머신 전환이 끝난 뒤 사용하세요.") +
+                " 완료 결과는 보관되어 있습니다. 표시 가능한 상태에서 '완료 결과 다시 보기'를 누르세요.";
+            return false;
+        }
+        try
+        {
+            if (!context.TryCreateCompletedSequence(out var sequence, out error)) return false;
+            ClosePreview();
+            CreateOverlay(gacha, staff, sourceCard);
+            _sequence = sequence;
+            DisplayCurrentResult();
+            error = _message;
+            return true;
+        }
+        catch (Exception exception)
+        {
+            ClosePreview();
+            error = exception.Message + " 완료 결과와 가상 데이터는 보관되어 있습니다.";
+            return false;
+        }
+    }
+
+    private static string MockStateLabel(StaffGachaRequestState state)
+    {
+        switch (state)
+        {
+            case StaffGachaRequestState.Idle: return "대기";
+            case StaffGachaRequestState.Processing: return "처리 중";
+            case StaffGachaRequestState.Indeterminate: return "결과 미확정";
+            case StaffGachaRequestState.Succeeded: return "성공 확정 (모의)";
+            case StaffGachaRequestState.FailedUnapplied: return "미반영 확정 실패 (모의)";
+            default: return state.ToString();
+        }
     }
 
     private void Observe()
@@ -693,6 +820,28 @@ internal sealed class StaffGachaAcquisitionPreviewSequence
     {
         _staff = staff;
         Result = result;
+    }
+
+    /// <summary>이미 계산된 결과를 그대로 연결한다. 표시 검증/복사만 하며 획득 계산은 하지 않는다.</summary>
+    public static bool TryCreateFromCalculated(StaffGachaAcquisitionResult result,
+        IReadOnlyList<GachaStaffData> displayStaff, out StaffGachaAcquisitionPreviewSequence sequence, out string error)
+    {
+        sequence = null;
+        error = "완료 결과와 표시 직원의 개수·ID·등급이 일치해야 합니다.";
+        if (result == null || displayStaff == null || (result.Items.Count != 1 && result.Items.Count != 11) ||
+            displayStaff.Count != result.Items.Count) return false;
+        var copy = displayStaff.ToArray();
+        var valid = new HashSet<GachaStaffData>(GetDisplayCandidates(copy));
+        for (int i = 0; i < copy.Length; i++)
+        {
+            StaffGachaAcquisitionItem item = result.Items[i];
+            if (copy[i] == null || !valid.Contains(copy[i]) || item == null ||
+                !string.Equals(copy[i].Id, item.StaffId, StringComparison.Ordinal) || copy[i].Rank != item.Rank)
+                return false;
+        }
+        sequence = new StaffGachaAcquisitionPreviewSequence(copy, result);
+        error = null;
+        return true;
     }
 
     internal static IEnumerable<GachaStaffData> GetDisplayCandidates(IEnumerable<GachaData> candidates)
