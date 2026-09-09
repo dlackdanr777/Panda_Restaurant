@@ -7,6 +7,8 @@ using System.Collections.Generic;
 public class LoadUserData
 {
     public bool IsValid { get; private set; }
+    /// <summary>IsValid가 false일 때 원인 진단용 메시지(민감정보 없음).</summary>
+    public string FailReason { get; private set; }
 
     public bool IsFirstTutorialClear;
     public bool IsMiniGameTutorialClear;
@@ -96,14 +98,53 @@ public class LoadUserData
         if (json == null || json.Count == 0)
             return;
 
+        // 필드가 존재하는데 변환에 실패한 경우("손상")만 검증 실패로 취급합니다.
+        // 필드 자체가 없는 경우(구버전 호환)는 기존 기본값을 그대로 사용합니다.
+        bool hasCorruption = false;
+        string firstCorruptKey = null;
+
+        void MarkCorrupt(string key)
+        {
+            if (!hasCorruption)
+                firstCorruptKey = key;
+            hasCorruption = true;
+        }
+
         try
         {
             JsonData data = json[0];
 
-            // 안전한 데이터 가져오기 헬퍼 함수
-            bool GetBool(string key) => data.ContainsKey(key) && data[key].ToString().ToLower() == "true";
-            int GetInt(string key) => data.ContainsKey(key) && int.TryParse(data[key].ToString(), out int value) ? value : 0;
-            long GetLong(string key) => data.ContainsKey(key) && long.TryParse(data[key].ToString(), out long value) ? value : 0;
+            // 안전한 데이터 가져오기 헬퍼 함수 - 필드 누락은 기본값, 필드 존재+변환 실패는 손상으로 기록
+            bool GetBool(string key)
+            {
+                if (!data.ContainsKey(key))
+                    return false;
+                string s = data[key].ToString();
+                if (string.Equals(s, "true", StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (string.Equals(s, "false", StringComparison.OrdinalIgnoreCase))
+                    return false;
+                MarkCorrupt(key);
+                return false;
+            }
+            int GetInt(string key)
+            {
+                if (!data.ContainsKey(key))
+                    return 0;
+                if (int.TryParse(data[key].ToString(), out int value))
+                    return value;
+                MarkCorrupt(key);
+                return 0;
+            }
+            long GetLong(string key)
+            {
+                if (!data.ContainsKey(key))
+                    return 0;
+                if (long.TryParse(data[key].ToString(), out long value))
+                    return value;
+                MarkCorrupt(key);
+                return 0;
+            }
             string GetString(string key) => data.ContainsKey(key) ? data[key].ToString() : string.Empty;
 
             IsFirstTutorialClear = GetBool("IsFirstTutorialClear");
@@ -147,33 +188,33 @@ public class LoadUserData
             LastAccessTime = GetString("LastAccessTime");
             LastAttendanceTime = GetString("LastAttendanceTime");
 
-            LoadDictionaryData(data, "GiveRecipeList", GiveRecipeLevelDic, "Id", "Level");
-            LoadDictionaryData(data, "RecipeCookCountList", RecipeCookCountDic, "Id", "Count");
-            LoadDictionaryData(data, "GiveGachaItemCountList", GiveGachaItemCountDic, "Id", "Count");
-            LoadDictionaryData(data, "GiveGachaItemLevelList", GiveGachaItemLevelDic, "Id", "Level");
-            LoadDictionaryData(data, "TimeDataList", TimeDataDic, "Id", "Time");
+            if (!LoadDictionaryData(data, "GiveRecipeList", GiveRecipeLevelDic, "Id", "Level")) MarkCorrupt("GiveRecipeList");
+            if (!LoadDictionaryData(data, "RecipeCookCountList", RecipeCookCountDic, "Id", "Count")) MarkCorrupt("RecipeCookCountList");
+            if (!LoadDictionaryData(data, "GiveGachaItemCountList", GiveGachaItemCountDic, "Id", "Count")) MarkCorrupt("GiveGachaItemCountList");
+            if (!LoadDictionaryData(data, "GiveGachaItemLevelList", GiveGachaItemLevelDic, "Id", "Level")) MarkCorrupt("GiveGachaItemLevelList");
+            if (!LoadDictionaryData(data, "TimeDataList", TimeDataDic, "Id", "Time")) MarkCorrupt("TimeDataList");
 
-            LoadCustomerDataList(data);
-            LoadStringSet(data, "GiveCustomerSkinList", GiveCustomerSkinSet);
+            if (!LoadCustomerDataList(data)) MarkCorrupt("EnabledCustomerDataList");
+            if (!LoadStringSet(data, "GiveCustomerSkinList", GiveCustomerSkinSet)) MarkCorrupt("GiveCustomerSkinList");
             SkinToken = GetInt("SkinToken");
-            LoadTimeData(data);
+            if (!LoadTimeData(data)) MarkCorrupt("TimeDataList");
             foreach (var item in TimeDataDic)
             {
                 DebugLog.Log($"TimeDataDic: {item.Key} - {item.Value.Time}");
             }
 
-            LoadStringSet(data, "GiveStaffSkinList", GiveStaffSkinSet);
-            LoadStringSet(data, "DoneMainChallengeList", DoneMainChallengeSet);
-            LoadStringSet(data, "ClearMainChallengeList", ClearMainChallengeSet);
-            LoadStringSet(data, "DoneAllTimeChallengeList", DoneAllTimeChallengeSet);
-            LoadStringSet(data, "ClearAllTimeChallengeList", ClearAllTimeChallengeSet);
-            LoadStringSet(data, "DoneDailyChallengeList", DoneDailyChallengeSet);
-            LoadStringSet(data, "ClearDailyChallengeList", ClearDailyChallengeSet);
-            LoadStringSet(data, "DoneWeeklyChallengeList", DoneWeeklyChallengeSet);
-            LoadStringSet(data, "ClearWeeklyChallengeList", ClearWeeklyChallengeSet);
+            if (!LoadStringSet(data, "GiveStaffSkinList", GiveStaffSkinSet)) MarkCorrupt("GiveStaffSkinList");
+            if (!LoadStringSet(data, "DoneMainChallengeList", DoneMainChallengeSet)) MarkCorrupt("DoneMainChallengeList");
+            if (!LoadStringSet(data, "ClearMainChallengeList", ClearMainChallengeSet)) MarkCorrupt("ClearMainChallengeList");
+            if (!LoadStringSet(data, "DoneAllTimeChallengeList", DoneAllTimeChallengeSet)) MarkCorrupt("DoneAllTimeChallengeList");
+            if (!LoadStringSet(data, "ClearAllTimeChallengeList", ClearAllTimeChallengeSet)) MarkCorrupt("ClearAllTimeChallengeList");
+            if (!LoadStringSet(data, "DoneDailyChallengeList", DoneDailyChallengeSet)) MarkCorrupt("DoneDailyChallengeList");
+            if (!LoadStringSet(data, "ClearDailyChallengeList", ClearDailyChallengeSet)) MarkCorrupt("ClearDailyChallengeList");
+            if (!LoadStringSet(data, "DoneWeeklyChallengeList", DoneWeeklyChallengeSet)) MarkCorrupt("DoneWeeklyChallengeList");
+            if (!LoadStringSet(data, "ClearWeeklyChallengeList", ClearWeeklyChallengeSet)) MarkCorrupt("ClearWeeklyChallengeList");
 
-            LoadStringSet(data, "NotificationMessageList", NotificationMessageSet);
-            LoadStringSet(data, "ClearNotificationMessageList", ClearNotificationMessageSet);
+            if (!LoadStringSet(data, "NotificationMessageList", NotificationMessageSet)) MarkCorrupt("NotificationMessageList");
+            if (!LoadStringSet(data, "ClearNotificationMessageList", ClearNotificationMessageSet)) MarkCorrupt("ClearNotificationMessageList");
 
             AddCustomerAdCount = GetInt("AddCustomerAdCount");
             FeverAdCount = GetInt("FeverAdCount");
@@ -184,115 +225,152 @@ public class LoadUserData
             DailyAdGoldRewardCount = GetInt("DailyAdGoldRewardCount");
             DailyAdDiaRewardCount = GetInt("DailyAdDiaRewardCount");
 
-            IsValid = true;
+            if (hasCorruption)
+            {
+                IsValid = false;
+                FailReason = $"필드 손상: {firstCorruptKey}";
+                DebugLog.LogError($"[LoadUserData] 데이터 손상 감지, 검증 실패 처리: {firstCorruptKey}");
+            }
+            else
+            {
+                IsValid = true;
+            }
         }
         catch (Exception e)
         {
             IsValid = false;
+            FailReason = e.Message;
             DebugLog.LogError($"Failed to load user data: {e.Message}");
         }
     }
 
-    // 문자열 세트를 로드하는 헬퍼 메서드
-    private void LoadStringSet(JsonData data, string key, HashSet<string> targetSet)
+    // 문자열 세트를 로드하는 헬퍼 메서드. 필드가 없으면 정상(빈 세트)으로 true, 존재하는데 항목이 손상되면 false를 반환합니다.
+    private bool LoadStringSet(JsonData data, string key, HashSet<string> targetSet)
     {
         targetSet.Clear();
-        if (data.ContainsKey(key) && data[key].IsArray)
+        if (!data.ContainsKey(key))
+            return true;
+
+        if (!data[key].IsArray)
+            return false;
+
+        foreach (JsonData item in data[key])
         {
-            foreach (JsonData item in data[key])
+            try
             {
-                try
-                {
-                    targetSet.Add(item.ToString());
-                }
-                catch (Exception) { /* 오류 항목 스킵 */ }
+                targetSet.Add(item.ToString());
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
+        return true;
     }
 
-    // 딕셔너리 데이터를 로드하는 헬퍼 메서드
-    private void LoadDictionaryData<T>(JsonData data, string key, Dictionary<string, T> targetDict,
+    // 딕셔너리 데이터를 로드하는 헬퍼 메서드. 필드가 없으면 정상(빈 딕셔너리)으로 true, 항목이 손상되면 false를 반환합니다.
+    private bool LoadDictionaryData<T>(JsonData data, string key, Dictionary<string, T> targetDict,
         string keyField, string valueField)
     {
         targetDict.Clear();
-        if (data.ContainsKey(key) && data[key].IsArray)
+        if (!data.ContainsKey(key))
+            return true;
+
+        if (!data[key].IsArray)
+            return false;
+
+        foreach (JsonData item in data[key])
         {
-            foreach (JsonData item in data[key])
+            if (!item.ContainsKey(keyField) || !item.ContainsKey(valueField))
+                return false;
+
+            try
             {
-                try
+                string dictKey = item[keyField].ToString();
+                if (typeof(T) == typeof(int))
                 {
-                    if (item.ContainsKey(keyField) && item.ContainsKey(valueField))
-                    {
-                        string dictKey = item[keyField].ToString();
-                        if (typeof(T) == typeof(int))
-                        {
-                            int value;
-                            if (int.TryParse(item[valueField].ToString(), out value))
-                                targetDict[dictKey] = (T)(object)value;
-                        }
-                        // 다른 타입이 필요하다면 여기에 추가
-                    }
+                    if (!int.TryParse(item[valueField].ToString(), out int value))
+                        return false;
+                    targetDict[dictKey] = (T)(object)value;
                 }
-                catch (Exception) { /* 오류 항목 스킵 */ }
+                // 다른 타입이 필요하다면 여기에 추가
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
+        return true;
     }
 
-    // 고객 데이터 목록 로드 (특별한 구조를 가진 데이터)
-    private void LoadCustomerDataList(JsonData data)
+    // 고객 데이터 목록 로드 (특별한 구조를 가진 데이터). 필드가 없으면 정상, 항목이 손상되면 false를 반환합니다.
+    private bool LoadCustomerDataList(JsonData data)
     {
         EnabledCustomerDataDic.Clear();
-        if (data.ContainsKey("EnabledCustomerDataList") && data["EnabledCustomerDataList"].IsArray)
+        if (!data.ContainsKey("EnabledCustomerDataList"))
+            return true;
+
+        if (!data["EnabledCustomerDataList"].IsArray)
+            return false;
+
+        foreach (JsonData item in data["EnabledCustomerDataList"])
         {
-            foreach (JsonData item in data["EnabledCustomerDataList"])
+            if (!item.ContainsKey("Id") || !item.ContainsKey("VisitCount"))
+                return false;
+
+            try
             {
-                try
-                {
-                    if (item.ContainsKey("Id") && item.ContainsKey("VisitCount"))
-                    {
-                        string id = item["Id"].ToString();
-                        string skinId = item.ContainsKey("SkinId") ? item["SkinId"].ToString() : string.Empty;
-                        int visitCount;
-                        if (int.TryParse(item["VisitCount"].ToString(), out visitCount))
-                            EnabledCustomerDataDic.Add(id, new SaveCustomerData(id, skinId, visitCount));
-                    }
-                }
-                catch (Exception) { /* 오류 항목 스킵 */ }
+                string id = item["Id"].ToString();
+                string skinId = item.ContainsKey("SkinId") ? item["SkinId"].ToString() : string.Empty;
+                if (!int.TryParse(item["VisitCount"].ToString(), out int visitCount))
+                    return false;
+                if (EnabledCustomerDataDic.ContainsKey(id))
+                    return false;
+                EnabledCustomerDataDic.Add(id, new SaveCustomerData(id, skinId, visitCount));
+            }
+            catch (Exception)
+            {
+                return false;
             }
         }
+        return true;
     }
 
-    // 타이머 데이터 목록 로드 (특별한 구조를 가진 데이터)
-    private void LoadTimeData(JsonData data)
+    // 타이머 데이터 목록 로드 (특별한 구조를 가진 데이터). 필드가 없으면 정상, 항목이 손상되면 false를 반환합니다.
+    private bool LoadTimeData(JsonData data)
     {
         TimeDataDic.Clear();
-        if (data.ContainsKey("TimeDataList") && data["TimeDataList"].IsArray)
+        if (!data.ContainsKey("TimeDataList"))
         {
-            foreach (JsonData item in data["TimeDataList"])
+            DebugLog.Log("TimeDataList 없음 - 구버전 호환으로 간주");
+            return true;
+        }
+
+        if (!data["TimeDataList"].IsArray)
+            return false;
+
+        foreach (JsonData item in data["TimeDataList"])
+        {
+            if (!item.ContainsKey("Id") || !item.ContainsKey("Time"))
+                return false;
+
+            try
             {
-                try
-                {
-                    if (item.ContainsKey("Id") && item.ContainsKey("Time"))
-                    {
-                        string id = item["Id"].ToString();
-                        int time;
-                        if (int.TryParse(item["Time"].ToString(), out time))
-                        {
-                            TimeDataDic.Add(id, new SaveTimeData(id, time));
-                            DebugLog.Log($"타이머 데이터 로드: {id} - {time}초");
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    DebugLog.LogError($"타이머 데이터 로드 오류: {ex.Message}");
-                }
+                string id = item["Id"].ToString();
+                if (!int.TryParse(item["Time"].ToString(), out int time))
+                    return false;
+                if (TimeDataDic.ContainsKey(id))
+                    return false;
+                TimeDataDic.Add(id, new SaveTimeData(id, time));
+                DebugLog.Log($"타이머 데이터 로드: {id} - {time}초");
+            }
+            catch (Exception ex)
+            {
+                DebugLog.LogError($"타이머 데이터 로드 오류: {ex.Message}");
+                return false;
             }
         }
-        else
-        {
-            DebugLog.Log("TimeDataList 없음 또는 배열 형식이 아님");
-        }
+        return true;
     }
 
 

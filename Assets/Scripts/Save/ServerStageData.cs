@@ -1,10 +1,15 @@
 ﻿using BackEnd;
 using LitJson;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 public class ServerStageData
 {
+    public bool IsValid { get; private set; }
+    /// <summary>IsValid가 false일 때 원인 진단용 메시지(민감정보 없음).</summary>
+    public string FailReason { get; private set; }
+
     public ERestaurantFloorType UnlockFloor;
 
     public int Score;
@@ -63,78 +68,140 @@ public class ServerStageData
         if (json == null || json.Count == 0)
             return;
 
-        JsonData data = json[0];
-
-        // 안전한 데이터 가져오기 메서드
-        bool GetBool(string key) => data.ContainsKey(key) && data[key].ToString().ToLower() == "true";
-        int GetInt(string key) => data.ContainsKey(key) && int.TryParse(data[key].ToString(), out int value) ? value : 0;
-        float GetFloat(string key) => data.ContainsKey(key) && float.TryParse(data[key].ToString(), out float value) ? value : 0f;
-        long GetLong(string key) => data.ContainsKey(key) && long.TryParse(data[key].ToString(), out long value) ? value : 0;
-        string GetString(string key) => data.ContainsKey(key) ? data[key].ToString() : string.Empty;
-
-        // 기본 데이터 세팅
-        UnlockFloor = (ERestaurantFloorType)GetInt("UnlockFloor");
-        Score = GetInt("Score");
-        Tip = GetInt("Tip");
-        Satisfaction = GetFloat("Satisfaction");
-        FeverGauge = GetFloat("FeverGauge");
-        WaitingCustomerIdList = ConvertJsonToList(data, "WaitingCustomerIdList");
-
-
-        if (data.ContainsKey("GiveStaffList"))
+        // 필드가 존재하는데 변환에 실패한 경우("손상")만 검증 실패로 취급합니다.
+        // 필드 자체가 없는 경우(구버전 호환)는 기존 기본값을 그대로 사용합니다.
+        bool hasCorruption = false;
+        string firstCorruptKey = null;
+        void MarkCorrupt(string key)
         {
-            JsonData staffListJson = data["GiveStaffList"];
-            GiveStaffList.Clear();
+            if (!hasCorruption)
+                firstCorruptKey = key;
+            hasCorruption = true;
+        }
 
-            foreach (JsonData staffData in staffListJson)
+        try
+        {
+            JsonData data = json[0];
+
+            // 안전한 데이터 가져오기 메서드 - 필드 누락은 기본값, 필드 존재+변환 실패는 손상으로 기록
+            bool GetBool(string key)
             {
-                string id = staffData["Id"].ToString();
-                int level = int.TryParse(staffData["Level"].ToString(), out int parsedLevel) ? parsedLevel : 1;
-                string skinId = staffData.ContainsKey("SkinId") ? staffData["SkinId"].ToString() : string.Empty;
-                SaveStaffData staff = new SaveStaffData(id, level);
-                staff.SetSkinId(skinId);
-                GiveStaffList.Add(staff);
+                if (!data.ContainsKey(key)) return false;
+                string s = data[key].ToString();
+                if (string.Equals(s, "true", System.StringComparison.OrdinalIgnoreCase)) return true;
+                if (string.Equals(s, "false", System.StringComparison.OrdinalIgnoreCase)) return false;
+                MarkCorrupt(key);
+                return false;
+            }
+            int GetInt(string key)
+            {
+                if (!data.ContainsKey(key)) return 0;
+                if (int.TryParse(data[key].ToString(), out int value)) return value;
+                MarkCorrupt(key);
+                return 0;
+            }
+            float GetFloat(string key)
+            {
+                if (!data.ContainsKey(key)) return 0f;
+                if (float.TryParse(data[key].ToString(), out float value) && !float.IsNaN(value) && !float.IsInfinity(value)) return value;
+                MarkCorrupt(key);
+                return 0f;
+            }
+            long GetLong(string key)
+            {
+                if (!data.ContainsKey(key)) return 0;
+                if (long.TryParse(data[key].ToString(), out long value)) return value;
+                MarkCorrupt(key);
+                return 0;
+            }
+            string GetString(string key) => data.ContainsKey(key) ? data[key].ToString() : string.Empty;
+
+            // 기본 데이터 세팅
+            UnlockFloor = (ERestaurantFloorType)GetInt("UnlockFloor");
+            Score = GetInt("Score");
+            Tip = GetInt("Tip");
+            Satisfaction = GetFloat("Satisfaction");
+            FeverGauge = GetFloat("FeverGauge");
+            WaitingCustomerIdList = ConvertJsonToList(data, "WaitingCustomerIdList");
+
+
+            if (data.ContainsKey("GiveStaffList"))
+            {
+                JsonData staffListJson = data["GiveStaffList"];
+                GiveStaffList.Clear();
+
+                foreach (JsonData staffData in staffListJson)
+                {
+                    if (!staffData.ContainsKey("Id"))
+                    {
+                        MarkCorrupt("GiveStaffList");
+                        continue;
+                    }
+                    string id = staffData["Id"].ToString();
+                    int level = int.TryParse(staffData["Level"].ToString(), out int parsedLevel) ? parsedLevel : 1;
+                    string skinId = staffData.ContainsKey("SkinId") ? staffData["SkinId"].ToString() : string.Empty;
+                    SaveStaffData staff = new SaveStaffData(id, level);
+                    staff.SetSkinId(skinId);
+                    GiveStaffList.Add(staff);
+                }
+            }
+
+            // List<List<string>> 데이터 변환
+            if (data.ContainsKey("EquipStaffDataDic"))
+            {
+                // 새로운 딕셔너리 형태로 저장된 데이터 로드
+                EquipStaffDataDic = ConvertJsonToStaffDictionary(data["EquipStaffDataDic"]);
+            }
+            else if (data.ContainsKey("EquipStaffDataList"))
+            {
+                // 기존 리스트 형태에서 딕셔너리로 변환 (하위 호환성)
+                List<List<string>> tempList = ConvertJsonTo2DList(data, "EquipStaffDataList");
+                EquipStaffDataDic = ConvertListToDictionary(tempList);
+            }
+            else
+            {
+                // 기본값으로 빈 딕셔너리 설정
+                EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
+            }
+
+            GiveStaffSkinList = ConvertJsonToList(data, "GiveStaffSkinList");
+
+            EquipFurnitureList = ConvertJsonTo2DList(data, "EquipFurnitureList");
+            EquipKitchenUtensilList = ConvertJsonTo2DList(data, "EquipKitchenUtensilList");
+
+            // List<string> 데이터 변환
+            GiveFurnitureList = ConvertJsonToList(data, "GiveFurnitureList");
+            GiveKitchenUtensilList = ConvertJsonToList(data, "GiveKitchenUtensilList");
+
+            if (data.ContainsKey("DropCoinAreaDataList"))
+                CoinAreaDataList = ConvertJsonToCoinAreaList(data["DropCoinAreaDataList"]);
+
+            if (data.ContainsKey("DropGarbageAreaDataList"))
+                GarbageAreaDataList = ConvertJsonToGarbageAreaList(data["DropGarbageAreaDataList"]);
+
+            if (data.ContainsKey("SaveTableDataList"))
+                SaveTableDataList = ConvertJsonToSaveTableList(data["SaveTableDataList"]);
+
+            if (data.ContainsKey("SaveKitchenDataList"))
+                SaveKitchenDataList = ConvertJsonToKitchenList(data["SaveKitchenDataList"]);
+
+            if (hasCorruption)
+            {
+                IsValid = false;
+                FailReason = $"필드 손상: {firstCorruptKey}";
+                DebugLog.LogError($"[ServerStageData] 데이터 손상 감지, 검증 실패 처리: {firstCorruptKey}");
+            }
+            else
+            {
+                IsValid = true;
             }
         }
-
-        // List<List<string>> 데이터 변환
-        if (data.ContainsKey("EquipStaffDataDic"))
+        catch (Exception e)
         {
-            // 새로운 딕셔너리 형태로 저장된 데이터 로드
-            EquipStaffDataDic = ConvertJsonToStaffDictionary(data["EquipStaffDataDic"]);
+            IsValid = false;
+            FailReason = e.Message;
+            DebugLog.LogError($"[ServerStageData] 스테이지 데이터 로드 실패: {e.Message}");
         }
-        else if (data.ContainsKey("EquipStaffDataList"))
-        {
-            // 기존 리스트 형태에서 딕셔너리로 변환 (하위 호환성)
-            List<List<string>> tempList = ConvertJsonTo2DList(data, "EquipStaffDataList");
-            EquipStaffDataDic = ConvertListToDictionary(tempList);
-        }
-        else
-        {
-            // 기본값으로 빈 딕셔너리 설정
-            EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
-        }
-
-        GiveStaffSkinList = ConvertJsonToList(data, "GiveStaffSkinList");
-
-        EquipFurnitureList = ConvertJsonTo2DList(data, "EquipFurnitureList");
-        EquipKitchenUtensilList = ConvertJsonTo2DList(data, "EquipKitchenUtensilList");
-
-        // List<string> 데이터 변환
-        GiveFurnitureList = ConvertJsonToList(data, "GiveFurnitureList");
-        GiveKitchenUtensilList = ConvertJsonToList(data, "GiveKitchenUtensilList");
-
-        if (data.ContainsKey("DropCoinAreaDataList"))
-            CoinAreaDataList = ConvertJsonToCoinAreaList(data["DropCoinAreaDataList"]);
-
-        if (data.ContainsKey("DropGarbageAreaDataList"))
-            GarbageAreaDataList = ConvertJsonToGarbageAreaList(data["DropGarbageAreaDataList"]);
-
-        if (data.ContainsKey("SaveTableDataList"))
-            SaveTableDataList = ConvertJsonToSaveTableList(data["SaveTableDataList"]);
-
-        if (data.ContainsKey("SaveKitchenDataList"))
-            SaveKitchenDataList = ConvertJsonToKitchenList(data["SaveKitchenDataList"]);
     }
 
     //JSON 데이터를 1차원 리스트로 변환하는 헬퍼 함수

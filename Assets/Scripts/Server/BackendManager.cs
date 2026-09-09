@@ -55,8 +55,30 @@ namespace Muks.BackEnd
         private bool _isLogin = false;
         public bool IsLogin => _isLogin;
 
+        // 조회 성공만으로는 저장을 허용하지 않기 위한 계정/테이블 검증 상태 (DATA-SAVE-GUARD-01)
+        public AccountSaveGuard SaveGuard { get; } = new AccountSaveGuard();
+
+        /// <summary>과거 호환용 표시 플래그. 실제 저장 허용 여부는 더 이상 이 값이 아니라 SaveGuard로 판단합니다.</summary>
         private bool _isLoaded = false;
         public bool IsLoaded => _isLoaded;
+
+        /// <summary>로그인 성공 시 호출합니다. 새 저장 가드 세션을 시작해 이전 계정의 검증 상태와 늦은 콜백을 무효화합니다.</summary>
+        private void BeginAccountSession(BackendReturnObject bro)
+        {
+            SaveGuard.BeginSession(Backend.UserInDate);
+            if (bro != null && bro.GetStatusCode() == "201")
+                SaveGuard.MarkNewAccountSession();
+        }
+
+        /// <summary>저장 차단을 제한된 빈도로 로깅합니다(민감정보 제외, 반복 네트워크 업로드 방지).</summary>
+        private void LogSaveBlocked(string tableId, SaveBlockReason reason)
+        {
+            if (ShouldUploadLog($"SaveBlocked:{tableId}:{reason}", out int suppressed))
+            {
+                Debug.LogWarning($"[BackendManager] 저장 차단됨 - table={tableId}, reason={reason}, generation={SaveGuard.SessionGeneration}"
+                    + (suppressed > 0 ? $" (억제된 반복 {suppressed}회)" : string.Empty));
+            }
+        }
 
         public DateTime LocalTime = DateTime.Now;
 
@@ -499,6 +521,7 @@ namespace Muks.BackEnd
                 (callback) => Backend.BMember.CustomLogin(id, pw, (bro) => callback?.Invoke(bro)),
                 (bro) => {
                     _isLogin = true;
+                    BeginAccountSession(bro);
                     Debug.Log("[BackendManager] 커스텀 로그인 성공");
                     onSuccess?.Invoke(bro);
                 },
@@ -562,6 +585,7 @@ namespace Muks.BackEnd
                 HandleGuestLogin,
                 (bro) => {
                     _isLogin = true;
+                    BeginAccountSession(bro);
                     
                     // 신규 가입 또는 기존 로그인 처리
                     if (bro.GetStatusCode() == "201")
@@ -612,16 +636,21 @@ namespace Muks.BackEnd
         {
             _isSaveEnabled = false;
             _isLogin = false;
+            SaveGuard.EndSession();
         }
 
         /// <summary>
         /// 페더레이션 로그인 성공을 외부에서 통보받아 로그인 상태를 활성화합니다.
         /// GoogleLoginManager 등 외부에서 Backend.BMember.AuthorizeFederation 직접 호출 후 사용합니다.
         /// </summary>
-        public void NotifyFederationLoginSuccess()
+        /// <param name="isNewAccount">이 로그인이 신규 연동 가입(응답 201)인지 여부</param>
+        public void NotifyFederationLoginSuccess(bool isNewAccount = false)
         {
             _isLogin = true;
             _isSaveEnabled = true;
+            SaveGuard.BeginSession(Backend.UserInDate);
+            if (isNewAccount)
+                SaveGuard.MarkNewAccountSession();
             Debug.Log("[BackendManager] 페더레이션 로그인 상태 활성화");
         }
 
@@ -650,12 +679,14 @@ namespace Muks.BackEnd
                         Debug.LogError("[BackendManager] 연동 계정 전환 실패: 201 신규 계정 생성됨. accessToken이 이미 만료되었을 수 있습니다.");
                         _isLogin = false;
                         _isSaveEnabled = false;
+                        SaveGuard.EndSession();
                         Backend.BMember.Logout();
                         onFail?.Invoke(BackendState.Failure);
                         return;
                     }
                     _isLogin = true;
                     _isSaveEnabled = true;
+                    BeginAccountSession(bro);
                     Debug.Log($"[BackendManager] 구글 연동 계정 전환 로그인 성공 (statusCode: {bro.GetStatusCode()})");
                     onSuccess?.Invoke(bro);
                 },
@@ -692,6 +723,7 @@ namespace Muks.BackEnd
                             (bro2) =>
                             {
                                 _isLogin = true;
+                                BeginAccountSession(bro2);
                                 if (bro2.GetStatusCode() == "201")
                                     Debug.Log("[BackendManager] GPGS2 연동 신규 가입 성공");
                                 else
@@ -716,6 +748,7 @@ namespace Muks.BackEnd
                     (bro) =>
                     {
                         _isLogin = true;
+                        BeginAccountSession(bro);
                         if (bro.GetStatusCode() == "201")
                             Debug.Log($"[BackendManager] {federationType} 연동 신규 가입 성공");
                         else
@@ -747,6 +780,7 @@ namespace Muks.BackEnd
                 {
                     _isLogin = true;
                     _isSaveEnabled = true;
+                    BeginAccountSession(bro);
                     Debug.Log("[BackendManager] 토큰 자동 로그인 성공");
                     onSuccess?.Invoke(bro);
                 },
@@ -848,6 +882,7 @@ namespace Muks.BackEnd
             if (bro != null && bro.IsSuccess())
             {
                 _isLogin = true;
+                BeginAccountSession(bro);
                 Debug.Log("[BackendManager] 커스텀 로그인 성공");
                 return true;
             }
@@ -894,6 +929,7 @@ namespace Muks.BackEnd
             if (bro != null && bro.IsSuccess())
             {
                 _isLogin = true;
+                BeginAccountSession(bro);
                 
                 // 신규 가입 또는 기존 로그인 처리
                 if (bro.GetStatusCode() == "201")
@@ -999,13 +1035,22 @@ namespace Muks.BackEnd
             }
 
             // 유저 조건 생성
+            int generation = SaveGuard.SessionGeneration;
+            string ownerInDate = Backend.UserInDate;
             Where where = new Where();
-            where.Equal("owner_inDate", Backend.UserInDate);
+            where.Equal("owner_inDate", ownerInDate);
 
             ProcessBackendAPI(
                 $"{tableId} 데이터 조회",
                 (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
                 (bro) => {
+                    // 계정 전환/로그아웃 등으로 세션이 바뀐 뒤 도착한 늦은 응답은 적용하지 않습니다.
+                    if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                    {
+                        Debug.LogWarning($"[BackendManager] {tableId} 조회 응답이 이전 세션(늦은 콜백)이라 무시합니다.");
+                        onFail?.Invoke(BackendState.Retry);
+                        return;
+                    }
                     Debug.Log($"[BackendManager] {tableId} 데이터 조회 성공");
                     _isLoaded = true;
                     onSuccess?.Invoke(bro);
@@ -1050,46 +1095,79 @@ namespace Muks.BackEnd
                 return;
             }
             
-            if (!IsLogin || !_isLoaded)
+            if (!IsLogin)
             {
-                Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
+                Debug.LogError("[BackendManager] 로그인이 필요합니다");
                 onFail?.Invoke(BackendState.NotLogin);
                 return;
             }
-            
+
+            bool isMasterTable = tableId == "GameData";
+            if (!isMasterTable && !SaveGuard.IsGameDataReady)
+            {
+                LogSaveBlocked(tableId, SaveBlockReason.NotValidated);
+                onFail?.Invoke(BackendState.NotSave);
+                return;
+            }
+
             // 유저 정보 조회를 위한 조건
+            int generation = SaveGuard.SessionGeneration;
+            string ownerInDate = Backend.UserInDate;
             Where where = new Where();
-            where.Equal("owner_inDate", Backend.UserInDate);
+            where.Equal("owner_inDate", ownerInDate);
             
-            // 데이터 존재 확인 후 업데이트 또는 삽입
+            // 데이터 존재 확인 후 검증된 행만 업데이트하거나, 인가된 경우에만 삽입합니다(자동 재생성 금지).
             ProcessBackendAPI(
                 $"{tableId} 데이터 확인",
                 (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
                 (getBro) => {
+                    if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                    {
+                        Debug.LogWarning($"[BackendManager] {tableId} 저장이 이전 세션(늦은 콜백)이라 중단합니다.");
+                        onFail?.Invoke(BackendState.Retry);
+                        return;
+                    }
+
                     var rows = getBro.FlattenRows();
-                    
-                    // 결과에 따라 삽입 또는 업데이트
-                    if (rows != null && rows.Count > 0)
+                    int rowCount = rows != null ? rows.Count : 0;
+
+                    if (rowCount == 1)
                     {
                         string inDate = getBro.GetInDate();
-                        
+
                         // 업데이트 수행
                         ProcessBackendAPI(
                             $"{tableId} 데이터 업데이트",
-                            (callback) => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param, (bro) => callback?.Invoke(bro)),
-                            onSuccess,
+                            (callback) => Backend.GameData.UpdateV2(tableId, inDate, ownerInDate, param, (bro) => callback?.Invoke(bro)),
+                            (bro) => {
+                                if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                                {
+                                    onFail?.Invoke(BackendState.Retry);
+                                    return;
+                                }
+                                SaveGuard.MarkTableVerified(tableId, inDate);
+                                onSuccess?.Invoke(bro);
+                            },
                             onFail,
                             3,
                             true
                         );
+                        return;
                     }
-                    else
+
+                    if (rowCount == 0 && SaveGuard.CanInsert(tableId, out SaveBlockReason insertBlockReason))
                     {
-                        // 삽입 수행
+                        // 신규 계정 또는 이번 세션에서 정상적으로 빈 결과를 확인한 테이블만 최초 삽입을 허용합니다.
                         ProcessBackendAPI(
                             $"{tableId} 데이터 삽입",
                             (callback) => Backend.GameData.Insert(tableId, param, (bro) => callback?.Invoke(bro)),
                             (insertBro) => {
+                                if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                                {
+                                    onFail?.Invoke(BackendState.Retry);
+                                    return;
+                                }
+                                SaveGuard.MarkTableVerified(tableId, insertBro.GetInDate());
                                 OnInsertGameDataHandler?.Invoke(insertBro);
                                 onSuccess?.Invoke(insertBro);
                             },
@@ -1097,7 +1175,13 @@ namespace Muks.BackEnd
                             3,
                             true
                         );
+                        return;
                     }
+
+                    SaveBlockReason reason = rowCount == 0 ? SaveBlockReason.RequiredRowMissing : SaveBlockReason.AmbiguousRows;
+                    SaveGuard.MarkTableBlocked(tableId, reason);
+                    LogSaveBlocked(tableId, reason);
+                    onFail?.Invoke(BackendState.NotSave);
                 },
                 onFail,
                 2,
@@ -1106,7 +1190,7 @@ namespace Muks.BackEnd
         }
         
         /// <summary>
-        /// 게임 데이터를 삽입합니다
+        /// 게임 데이터를 삽입합니다(여러 행이 누적되는 로그/문의성 테이블 전용 - 단일 상태 테이블 보호 정책 대상 아님)
         /// </summary>
         public void InsertGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
@@ -1182,8 +1266,10 @@ namespace Muks.BackEnd
             }
             
             // 유저 조건 생성
+            int generation = SaveGuard.SessionGeneration;
+            string ownerInDate = Backend.UserInDate;
             Where where = new Where();
-            where.Equal("owner_inDate", Backend.UserInDate);
+            where.Equal("owner_inDate", ownerInDate);
             
             BackendReturnObject bro = ProcessBackendAPISync(
                 $"{tableId} 데이터 조회",
@@ -1192,7 +1278,7 @@ namespace Muks.BackEnd
                 true
             );
             
-            if (bro != null && bro.IsSuccess())
+            if (bro != null && bro.IsSuccess() && SaveGuard.IsSessionCurrent(generation, ownerInDate))
             {
                 _isLoaded = true;
             }
@@ -1231,15 +1317,24 @@ namespace Muks.BackEnd
                 return false;
             }
 
-            if (!IsLogin || !_isLoaded)
+            if (!IsLogin)
             {
-                Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
+                Debug.LogError("[BackendManager] 로그인이 필요합니다");
+                return false;
+            }
+
+            bool isMasterTable = tableId == "GameData";
+            if (!isMasterTable && !SaveGuard.IsGameDataReady)
+            {
+                LogSaveBlocked(tableId, SaveBlockReason.NotValidated);
                 return false;
             }
 
             // 유저 정보 조회를 위한 조건
+            int generation = SaveGuard.SessionGeneration;
+            string ownerInDate = Backend.UserInDate;
             Where where = new Where();
-            where.Equal("owner_inDate", Backend.UserInDate);
+            where.Equal("owner_inDate", ownerInDate);
             
             // 데이터 존재 확인
             BackendReturnObject getBro = ProcessBackendAPISync(
@@ -1254,27 +1349,38 @@ namespace Muks.BackEnd
                 Debug.LogError($"[BackendManager] {tableId} 데이터 조회 실패");
                 return false;
             }
+
+            if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+            {
+                Debug.LogWarning($"[BackendManager] {tableId} 저장이 이전 세션(늦은 콜백)이라 중단합니다.");
+                return false;
+            }
             
             var rows = getBro.FlattenRows();
+            int rowCount = rows != null ? rows.Count : 0;
             
-            // 결과에 따라 삽입 또는 업데이트
-            if (rows != null && rows.Count > 0)
+            // 검증된 단일 행만 업데이트하거나, 인가된 경우에만 삽입합니다(자동 재생성 금지).
+            if (rowCount == 1)
             {
                 string inDate = getBro.GetInDate();
                 
-                // 업데이트 수행
                 BackendReturnObject updateBro = ProcessBackendAPISync(
                     $"{tableId} 데이터 업데이트",
-                    () => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param),
+                    () => Backend.GameData.UpdateV2(tableId, inDate, ownerInDate, param),
                     3,
                     true
                 );
                 
-                return updateBro != null && updateBro.IsSuccess();
+                if (updateBro != null && updateBro.IsSuccess() && SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                {
+                    SaveGuard.MarkTableVerified(tableId, inDate);
+                    return true;
+                }
+                return false;
             }
-            else
+
+            if (rowCount == 0 && SaveGuard.CanInsert(tableId, out SaveBlockReason insertBlockReason))
             {
-                // 삽입 수행
                 BackendReturnObject insertBro = ProcessBackendAPISync(
                     $"{tableId} 데이터 삽입",
                     () => Backend.GameData.Insert(tableId, param),
@@ -1282,14 +1388,20 @@ namespace Muks.BackEnd
                     true
                 );
                 
-                if (insertBro != null && insertBro.IsSuccess())
+                if (insertBro != null && insertBro.IsSuccess() && SaveGuard.IsSessionCurrent(generation, ownerInDate))
                 {
+                    SaveGuard.MarkTableVerified(tableId, insertBro.GetInDate());
                     OnInsertGameDataHandler?.Invoke(insertBro);
                     return true;
                 }
                 
                 return false;
             }
+
+            SaveBlockReason reason = rowCount == 0 ? SaveBlockReason.RequiredRowMissing : SaveBlockReason.AmbiguousRows;
+            SaveGuard.MarkTableBlocked(tableId, reason);
+            LogSaveBlocked(tableId, reason);
+            return false;
         }
 
         /// <summary>

@@ -561,67 +561,145 @@ public static class UserInfo
         }
     }
 
+    /// <summary>
+    /// 해당 스테이지 데이터가 이번 세션에서 반드시 존재해야 하는지 여부.
+    /// GameManager.SaveGameData/AsyncSaveGameData는 튜토리얼 클리어 후 매 저장마다
+    /// UserInfo.SaveStageData()/SaveStageDataAsync()로 Stage1~3 데이터를 전부 저장하므로,
+    /// 첫 튜토리얼을 클리어한 계정이라면 스테이지 종류와 무관하게 모두 존재해야 정상입니다.
+    /// (EStage.UnlockStage는 실제로 갱신되지 않아 별도 진행도 판단 근거로 쓸 수 없음)
+    /// </summary>
+    private static bool IsStageDataRequired(EStage stage) => IsFirstTutorialClear;
 
-    public static void LoadStageData(EStage stage)
+    public static bool LoadStageData(EStage stage)
     {
-        BackendReturnObject bro = BackendManager.Instance.GetMyData(stage.ToString() + "Data");
+        string tableId = stage.ToString() + "Data";
+        AccountSaveGuard guard = BackendManager.Instance.SaveGuard;
+        BackendReturnObject bro = BackendManager.Instance.GetMyData(tableId);
+
+        if (bro == null || !bro.IsSuccess())
+        {
+            Debug.LogError($"[UserInfo] {tableId} 조회 실패");
+            return false;
+        }
 
         JsonData json = bro.FlattenRows();
         if (json.Count <= 0)
         {
-            Debug.LogError("저장된 데이터가 없습니다.");
-            return;
+            if (IsStageDataRequired(stage))
+            {
+                guard.MarkTableRequiredButMissing(tableId);
+                Debug.LogError($"[UserInfo] 필수 스테이지 데이터가 없습니다: {tableId}");
+                return false;
+            }
+
+            guard.MarkTableConfirmedAbsent(tableId);
+            DebugLog.Log($"[UserInfo] {tableId} 없음(정상, 아직 생성되지 않음)");
+            return true;
         }
 
         ServerStageData data = new ServerStageData();
         data.SetData(json);
+        if (!data.IsValid)
+        {
+            guard.MarkTableBlocked(tableId, SaveBlockReason.InvalidPayload);
+            Debug.LogError($"[UserInfo] {tableId} 파싱 실패({data.FailReason})");
+            return false;
+        }
+
         bool migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
         bool loaded = _stageInfos[(int)stage].LoadData(data);
+        if (loaded)
+            guard.MarkTableVerified(tableId, bro.GetInDate());
         if (loaded && migrationApplied)
             SaveStageData(stage);
+        return loaded;
     }
 
-    public static void LoadStageDataAsync(EStage stage)
+    public static void LoadStageDataAsync(EStage stage) => LoadStageDataAsync(stage, null);
+
+    /// <summary>스테이지 데이터를 비동기로 로드합니다. onComplete는 검증까지 완료된 성공 여부를 전달합니다.</summary>
+    public static void LoadStageDataAsync(EStage stage, Action<bool> onComplete)
     {
-        BackendManager.Instance.GetMyDataAsync(stage.ToString() + "Data", (bro) =>
+        string tableId = stage.ToString() + "Data";
+        AccountSaveGuard guard = BackendManager.Instance.SaveGuard;
+        BackendManager.Instance.GetMyDataAsync(tableId, (bro) =>
         {
             JsonData json = bro.FlattenRows();
             if (json.Count <= 0)
             {
-                Debug.LogError("저장된 데이터가 없습니다.");
+                if (IsStageDataRequired(stage))
+                {
+                    guard.MarkTableRequiredButMissing(tableId);
+                    Debug.LogError($"[UserInfo] 필수 스테이지 데이터가 없습니다: {tableId}");
+                    onComplete?.Invoke(false);
+                    return;
+                }
+
+                guard.MarkTableConfirmedAbsent(tableId);
+                DebugLog.Log($"[UserInfo] {tableId} 없음(정상, 아직 생성되지 않음)");
+                onComplete?.Invoke(true);
                 return;
             }
 
             ServerStageData data = new ServerStageData();
             data.SetData(json);
+            if (!data.IsValid)
+            {
+                guard.MarkTableBlocked(tableId, SaveBlockReason.InvalidPayload);
+                Debug.LogError($"[UserInfo] {tableId} 파싱 실패({data.FailReason})");
+                onComplete?.Invoke(false);
+                return;
+            }
+
             bool migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
             bool loaded = _stageInfos[(int)stage].LoadData(data);
+            if (loaded)
+                guard.MarkTableVerified(tableId, bro.GetInDate());
             if (loaded && migrationApplied)
                 SaveStageDataAsync(stage);
+            onComplete?.Invoke(loaded);
+        }, (state) =>
+        {
+            Debug.LogError($"[UserInfo] {tableId} 비동기 조회 실패: {state}");
+            onComplete?.Invoke(false);
         });
     }
 
 
-    public static void LoadGameData(BackendReturnObject bro)
+    /// <summary>GameData를 로드하고 검증합니다. 실제로 검증까지 완료된 경우에만 true를 반환합니다.</summary>
+    public static bool LoadGameData(BackendReturnObject bro)
     {
+        AccountSaveGuard guard = BackendManager.Instance.SaveGuard;
+
         if (!bro.IsSuccess())
         {
             Debug.LogError("bro Not Success");
-            return;
+            return false;
         }
 
         JsonData json = bro.FlattenRows();
         if (json.Count <= 0)
         {
-            Debug.LogError("No Server Data");
-            return;
+            if (guard.IsNewAccountSession)
+            {
+                // 신규 가입 계정은 GameData가 아직 없는 것이 정상입니다. 초기값(클래스 기본값) 그대로 유지합니다.
+                guard.MarkTableConfirmedAbsent("GameData");
+                DebugLog.Log("[UserInfo] 신규 가입 계정: GameData 없음(정상)");
+                return true;
+            }
+
+            // 기존 계정인데 GameData가 없다면 데이터 누락입니다. 자동 재생성하지 않고 차단합니다.
+            guard.MarkTableRequiredButMissing("GameData");
+            Debug.LogError("[UserInfo] 기존 계정의 GameData가 없습니다. 저장을 차단합니다.");
+            return false;
         }
 
         LoadUserData loadData = new LoadUserData(json);
         if (loadData == null || !loadData.IsValid)
         {
-            Debug.LogError("[UserInfo] 유저 데이터 파싱 실패. 기본값 적용 중단.");
-            return;
+            guard.MarkTableBlocked("GameData", SaveBlockReason.InvalidPayload);
+            Debug.LogError($"[UserInfo] 유저 데이터 파싱 실패({loadData?.FailReason}). 기본값 적용 중단.");
+            return false;
         }
 
         IsFirstTutorialClear = loadData.IsFirstTutorialClear;
@@ -759,6 +837,9 @@ public static class UserInfo
         OnGiveGachaItemHandler?.Invoke();
         OnUpgradeGachaItemHandler?.Invoke();
         DebugLog.Log("데이터 로드 완료");
+
+        guard.MarkTableVerified("GameData", bro.GetInDate());
+        return true;
     }
 
     public static void SetUserId(string id)

@@ -196,7 +196,7 @@ namespace Muks.BackEnd
             {
                 if (bro.IsSuccess())
                 {
-                    BackendManager.Instance.NotifyFederationLoginSuccess();
+                    BackendManager.Instance.NotifyFederationLoginSuccess(isNewAccount: bro.GetStatusCode() == "201");
                     Debug.Log($"[GoogleLoginManager] 뒤끝 구글 페더레이션 로그인 성공 (statusCode: {bro.GetStatusCode()})");
                     if (isAuto)
                         OnGoogleAutoLoginSuccessHandler?.Invoke();

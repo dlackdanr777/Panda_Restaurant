@@ -8,6 +8,9 @@ public class FirstLoadingScene : MonoBehaviour
     [SerializeField] private UIFirstLoadingScene _uiFirstLoadingScene;
     [SerializeField] private GoogleLoginManager _googleLoginManager;
 
+    // 같은 로그인 세대(generation)에서 중복 진입하는 것을 막습니다(중복 로그인 이벤트/재시도 대응).
+    private int _activeLoadGeneration = -1;
+
     private void Start()
     {
         _uiFirstLoadingScene.Init();
@@ -113,6 +116,12 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void OnLoginCompleted()
     {
+        int myGeneration = BackendManager.Instance.SaveGuard.SessionGeneration;
+        // 중복 로그인 이벤트(자동/자동 로그인 핸들러가 동시에 따로 호출되는 경우)로 같은 세대의 로드가 이미 진행 중이면 무시합니다.
+        if (_activeLoadGeneration == myGeneration)
+            return;
+        _activeLoadGeneration = myGeneration;
+
         // UUID(gamerId) 조회 - 실패해도 게임 진행
         BackendManager.Instance.FetchGamerIdAsync();
 
@@ -124,29 +133,74 @@ public class FirstLoadingScene : MonoBehaviour
 
         BackendManager.Instance.GetMyDataAsync("GameData", (bro) =>
         {
-            UserInfo.LoadGameData(bro);
-            UserInfo.LoadStageDataAsync();
-            PaymentInfo.LoadPaymentData();
-            AssignRandomNicknameIfNeeded(() =>
+            // 이 응답이 도착하는 사이 계정이 전환되었다면(새 세대 시작) 적용하지 않습니다.
+            if (myGeneration != BackendManager.Instance.SaveGuard.SessionGeneration)
+                return;
+
+            bool gameDataOk = UserInfo.LoadGameData(bro);
+            if (!gameDataOk)
             {
-                Tween.Wait(0.7f, () =>
+                ShowLoadFailurePopup();
+                return;
+            }
+
+            // Stage2/3은 아직 도달하지 않았을 수 있어 결과를 기다리지 않고 미리 로드만 합니다.
+            UserInfo.LoadStageDataAsync(EStage.Stage2);
+            UserInfo.LoadStageDataAsync(EStage.Stage3);
+            PaymentInfo.LoadPaymentData();
+
+            // Stage1은 튜토리얼을 클리어한 계정이라면 반드시 존재해야 하는 필수 데이터이므로 검증 완료를 실제로 기다립니다.
+            UserInfo.LoadStageDataAsync(EStage.Stage1, (stage1Ok) =>
+            {
+                if (myGeneration != BackendManager.Instance.SaveGuard.SessionGeneration)
+                    return;
+
+                if (!stage1Ok)
                 {
-                    _uiFirstLoadingScene.HideTitle(() =>
-                    {
-                        if (UserInfo.IsFirstTutorialClear)
-                            Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
-                        else
-                            Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("IntroScene"));
-                    });
-                });
+                    ShowLoadFailurePopup();
+                    return;
+                }
+
+                ProceedAfterValidation();
             });
         }, (state) =>
         {
             Debug.LogError("[FirstLoadingScene] 게임 데이터 로드 실패: " + state);
-            BackendManager.Instance.ShowPopup("데이터 로드 실패", "게임 데이터를 불러오는 데 실패했습니다.\n다시 시도해주세요.");
-            BackendManager.Instance.SetPopupButton1("재시도", () => StartLoadDataAsync());
-            BackendManager.Instance.ShowPopupExitButton();
+            ShowLoadFailurePopup();
         });
+    }
+
+    /// <summary>GameData + 필수 스테이지(Stage1) 검증이 모두 완료된 뒤에만 호출됩니다.</summary>
+    private void ProceedAfterValidation()
+    {
+        AssignRandomNicknameIfNeeded(() =>
+        {
+            Tween.Wait(0.7f, () =>
+            {
+                _uiFirstLoadingScene.HideTitle(() =>
+                {
+                    if (UserInfo.IsFirstTutorialClear)
+                        Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
+                    else
+                        Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("IntroScene"));
+                });
+            });
+        });
+    }
+
+    /// <summary>필수 데이터 검증 실패 시 안내+재조회 팔업을 표시합니다. 재시도는 같은 세대라도 다시 검증을 시도합니다.</summary>
+    private void ShowLoadFailurePopup()
+    {
+        BackendManager.Instance.ShowPopup("데이터 로드 실패", "게임 데이터를 불러오는 데 실패했습니다.\n다시 시도해주세요.");
+        BackendManager.Instance.SetPopupButton1("재시도", () =>
+        {
+            _activeLoadGeneration = -1;
+            if (BackendManager.Instance.IsLogin)
+                OnLoginCompleted();
+            else
+                StartLoadDataAsync();
+        });
+        BackendManager.Instance.ShowPopupExitButton();
     }
 
     private void OnGoogleLoginFailed()

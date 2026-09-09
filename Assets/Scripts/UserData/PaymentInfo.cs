@@ -72,22 +72,44 @@ public static class PaymentInfo
 
     public static void LoadPaymentData()
     {
+        AccountSaveGuard guard = BackendManager.Instance.SaveGuard;
         BackendReturnObject bro = BackendManager.Instance.GetMyData("PaymentData");
-        if (!bro.IsSuccess())
+        if (bro == null || !bro.IsSuccess())
         {
-            DebugLog.LogError("데이터 불러오기 실패: " + bro.GetMessage());
+            DebugLog.LogError("데이터 불러오기 실패: " + (bro != null ? bro.GetMessage() : "null response"));
             return;
         }
 
         JsonData json = bro.FlattenRows();
         if (json.Count <= 0)
         {
-            DebugLog.LogError("저장된 데이터가 없습니다.");
+            // PaymentData는 실제 결제가 발생하기 전까지 없는 것이 정상입니다.
+            guard.MarkTableConfirmedAbsent("PaymentData");
+            DebugLog.Log("저장된 결제 데이터가 없습니다(정상).");
             return;
         }
 
-        string paymentDataJson = json[0]["PaymentDatas"].ToString();
-        _paymentDatas = Newtonsoft.Json.JsonConvert.DeserializeObject<List<PaymentData>>(paymentDataJson);
-        _gachaPaymentDatas = Newtonsoft.Json.JsonConvert.DeserializeObject<List<GachaPaymentData>>(json[0]["GachaDatas"].ToString());
+        try
+        {
+            string paymentDataJson = json[0]["PaymentDatas"].ToString();
+            string gachaDataJson = json[0]["GachaDatas"].ToString();
+            List<PaymentData> paymentList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<PaymentData>>(paymentDataJson);
+            List<GachaPaymentData> gachaList = Newtonsoft.Json.JsonConvert.DeserializeObject<List<GachaPaymentData>>(gachaDataJson);
+            if (paymentList == null || gachaList == null)
+            {
+                guard.MarkTableBlocked("PaymentData", SaveBlockReason.InvalidPayload);
+                DebugLog.LogError("[PaymentInfo] 결제 데이터 파싱 실패(null)");
+                return;
+            }
+
+            _paymentDatas = paymentList;
+            _gachaPaymentDatas = gachaList;
+            guard.MarkTableVerified("PaymentData", bro.GetInDate());
+        }
+        catch (Exception e)
+        {
+            guard.MarkTableBlocked("PaymentData", SaveBlockReason.InvalidPayload);
+            DebugLog.LogError("[PaymentInfo] 결제 데이터 파싱 실패: " + e.Message);
+        }
     }
 }
