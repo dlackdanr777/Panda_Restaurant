@@ -347,13 +347,18 @@ public class CustomerController : MonoBehaviour
 
         foreach (NormalCustomer c in _callCustomers)
         {
-            c.Move(startLinePos, -1, () =>
+            // 목표 줄 위치가 이전과 같다면 이미 이동 중(또는 도착)이므로 재요청하지 않음
+            bool targetChanged = !c.HasMoved || c.TargetPos != startLinePos;
+            if (targetChanged)
             {
-                if (!_waitCustomers.Contains(c))
-                    _waitCustomers.Add(c);
+                c.Move(startLinePos, -1, () =>
+                {
+                    if (!_waitCustomers.Contains(c))
+                        _waitCustomers.Add(c);
 
-                _tableManager.UpdateTable();
-            });
+                    _tableManager.UpdateTable();
+                });
+            }
             c.SetLayer("WaitCustomer", orderLayer--);
             startLinePos.x += _lineSpacingGrid * gridSize;
         }

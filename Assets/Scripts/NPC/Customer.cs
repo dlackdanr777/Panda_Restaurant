@@ -52,6 +52,11 @@ public class Customer : MonoBehaviour
     // Move()가 여러 번 빠르게 호출될 때 오래된 콜백을 무시하기 위함
     private int _moveSequenceId = 0;
 
+    /// <summary>Move()가 한 번이라도 호출됐는지 여부(대기열 등에서 중복 이동 요청 판단용)</summary>
+    public bool HasMoved => _moveSequenceId > 0;
+    /// <summary>마지막으로 Move() 요청한 목표 위치</summary>
+    public Vector2 TargetPos => _targetPos;
+
 
 
     public virtual void Init()

@@ -513,7 +513,8 @@ public class GameManager : MonoBehaviour
         UserInfo.OnGiveGachaItemHandler += OnUpgradeGachaItemCheck;
         UserInfo.OnUpgradeGachaItemHandler += OnUpgradeGachaItemCheck;
         BackendManager.OnExitHandler += SaveGameData;
-        BackendManager.OnPauseHandler += SaveGameData;
+        // pause(광고 전환 등) 시 동기 저장으로 인한 프레임 정지 방지
+        BackendManager.OnPauseHandler += AsyncSaveGameData;
 
         //OnEquipStaffEffectCheck();
         OnEquipFurnitureEffectCheck();
@@ -559,7 +560,7 @@ public class GameManager : MonoBehaviour
         UserInfo.OnGiveGachaItemHandler -= OnUpgradeGachaItemCheck;
         UserInfo.OnUpgradeGachaItemHandler -= OnUpgradeGachaItemCheck;
         BackendManager.OnExitHandler -= SaveGameData;
-        BackendManager.OnPauseHandler -= SaveGameData;
+        BackendManager.OnPauseHandler -= AsyncSaveGameData;
     }
 
     private void OnGiveFurnitureEffectCheck()

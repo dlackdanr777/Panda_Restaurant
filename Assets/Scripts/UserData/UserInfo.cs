@@ -952,6 +952,16 @@ public static class UserInfo
         return _totalAttendanceDays;
     }
 
+    /// <summary>표시·지급이 같은 기준을 쓰도록, 상태를 바꾸지 않고 "오늘 기준 출석 일차"(1-based)를 계산합니다.
+    /// 연속 출석이 끊겼다면 1일차, 이미 오늘 수령했다면 확정된 일차를 그대로 반환합니다.</summary>
+    public static int GetTodayAttendanceDay()
+    {
+        if (!CheckNoAttendance())
+            return _totalAttendanceDays;
+
+        return IsConsecutiveAttendanceBroken() ? 1 : _totalAttendanceDays + 1;
+    }
+
 
     public static ERestaurantFloorType GetUnlockFloor(EStage stage)
     {

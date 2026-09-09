@@ -65,33 +65,61 @@ namespace Muks.BackEnd
         private float _serverTimeCachedAt = -9999f;
         private const float ServerTimeCacheSeconds = 60f;
 
+        // 서버 시간 갱신 요청 상태 (중복 요청/연속 재시도 방지)
+        private bool _isRefreshingServerTime = false;
+        private float _lastServerTimeFetchAttempt = -9999f;
+        private const float ServerTimeRetryBackoffSeconds = 10f;
+
+        /// <summary>캐시된 서버 시간을 즉시 반환합니다. 네트워크 호출은 하지 않으며, 캐시가 만료됐다면 백그라운드로 갱신만 요청합니다.</summary>
         public DateTime ServerTime
         {
             get
             {
-                if (Time.realtimeSinceStartup - _serverTimeCachedAt < ServerTimeCacheSeconds)
-                    return _cachedServerTime;
+                bool cacheExpired = Time.realtimeSinceStartup - _serverTimeCachedAt >= ServerTimeCacheSeconds;
+                if (cacheExpired)
+                    RequestServerTimeRefresh();
 
-                BackendReturnObject bro = Backend.Utils.GetServerTime();
+                // 캐시된 서버 시간이 있으면 경과 시간을 더해 사용, 없으면(최초 조회 전) 로컬 시간 반환
+                if (_serverTimeCachedAt > 0)
+                {
+                    float elapsed = Time.realtimeSinceStartup - _serverTimeCachedAt;
+                    return _cachedServerTime.AddSeconds(elapsed);
+                }
+                return LocalTime;
+            }
+        }
+
+        /// <summary>서버 시간을 실제로 네트워크에서 갱신합니다(비동기, 논블로킹). 이미 요청 중이거나 최근에 실패했다면 다시 요청하지 않습니다.</summary>
+        private void RequestServerTimeRefresh()
+        {
+            if (_isRefreshingServerTime)
+                return;
+
+            float now = Time.realtimeSinceStartup;
+            if (now - _lastServerTimeFetchAttempt < ServerTimeRetryBackoffSeconds)
+                return;
+
+            _isRefreshingServerTime = true;
+            _lastServerTimeFetchAttempt = now;
+
+            Backend.Utils.GetServerTime(bro =>
+            {
+                _isRefreshingServerTime = false;
 
                 if (bro != null && bro.IsSuccess())
                 {
-                    string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
-                    _cachedServerTime = DateTime.Parse(time);
-                    _serverTimeCachedAt = Time.realtimeSinceStartup;
-                    return _cachedServerTime;
-                }
-                else
-                {
-                    // 캐시된 서버 시간이 있으면 사용, 없으면 로컬 시간 반환
-                    if (_serverTimeCachedAt > 0)
+                    try
                     {
-                        float elapsed = Time.realtimeSinceStartup - _serverTimeCachedAt;
-                        return _cachedServerTime.AddSeconds(elapsed);
+                        string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
+                        _cachedServerTime = DateTime.Parse(time);
+                        _serverTimeCachedAt = Time.realtimeSinceStartup;
                     }
-                    return LocalTime;
+                    catch (Exception ex)
+                    {
+                        Debug.LogException(ex);
+                    }
                 }
-            }
+            });
         }
 
         private void Awake()
@@ -240,6 +268,9 @@ namespace Muks.BackEnd
             {
                 Debug.LogError("[BackendManager] 뒤끝 초기화 실패");
             }
+
+            // 최초 저장 전에 캐시가 채워지도록 서버 시간을 미리 백그라운드로 요청
+            RequestServerTimeRefresh();
         }
         
         /// <summary>
@@ -429,7 +460,7 @@ namespace Muks.BackEnd
         {
             ProcessBackendAPI(
                 "서버 시간 조회",
-                cb => cb(Backend.Utils.GetServerTime()), // ← 결과를 cb로 전달
+                cb => Backend.Utils.GetServerTime(bro => cb(bro)), // 실제 비동기 콜백 오버로드 사용(동기 호출 아님)
                 bro =>
                 {
                     try
@@ -1325,8 +1356,42 @@ namespace Muks.BackEnd
 
         #region 로그 및 오류 처리
 
-        // 오류 로그 업로드 재귀 방지 플래그
+        // 오류/일반 로그 업로드 재귀 방지 플래그(비동기 요청이 진행 중인 동안 중복 호출 방지)
         private bool _isUploadingErrorLog;
+        private bool _isUploadingLog;
+
+        // 동일 로그가 짧은 시간 동안 반복되면 업로드를 묶어서 억제하기 위한 상태
+        private class LogThrottleEntry
+        {
+            public int SuppressedCount;
+            public float LastUploadAt;
+        }
+        private readonly Dictionary<string, LogThrottleEntry> _logThrottleMap = new Dictionary<string, LogThrottleEntry>();
+        private const float LogThrottleWindowSeconds = 30f;
+
+        /// <summary>같은 키의 로그가 최근에 업로드됐다면 억제 횟수만 누적하고 false를 반환합니다.</summary>
+        private bool ShouldUploadLog(string key, out int suppressedCount)
+        {
+            float now = Time.realtimeSinceStartup;
+            if (_logThrottleMap.TryGetValue(key, out LogThrottleEntry entry))
+            {
+                if (now - entry.LastUploadAt < LogThrottleWindowSeconds)
+                {
+                    entry.SuppressedCount++;
+                    suppressedCount = 0;
+                    return false;
+                }
+
+                suppressedCount = entry.SuppressedCount;
+                entry.SuppressedCount = 0;
+                entry.LastUploadAt = now;
+                return true;
+            }
+
+            _logThrottleMap[key] = new LogThrottleEntry { SuppressedCount = 0, LastUploadAt = now };
+            suppressedCount = 0;
+            return true;
+        }
 
         /// <summary>
         /// 백엔드 오류를 분류하고 적절한 처리 방향을 결정합니다
@@ -1339,20 +1404,8 @@ namespace Muks.BackEnd
             if (bro.IsSuccess())
                 return BackendState.Success;
             
-            if (!_isUploadingErrorLog)
-            {
-                try
-                {
-                    _isUploadingErrorLog = true;
-                    // 오류 로그 업로드 (실패해도 계속 진행)
-                    ErrorLogUpload(bro);
-                }
-                catch {}
-                finally
-                {
-                    _isUploadingErrorLog = false;
-                }
-            }
+            // 오류 로그 업로드(비동기, 실패해도 계속 진행) - 재진입/중복 방지는 ErrorLogUpload 내부에서 처리
+            try { ErrorLogUpload(bro); } catch {}
             
             // 오류 유형 분석
             string errorCode = bro.GetErrorCode();
@@ -1474,68 +1527,79 @@ namespace Muks.BackEnd
         }
         
         /// <summary>
-        /// 오류 로그를 서버에 업로드합니다 (동기)
+        /// 오류 로그를 서버에 업로드합니다 (비동기, 논블로킹). 동일 오류가 짧은 시간 내 반복되면 억제하여 묶어 보냅니다.
+        /// ProcessBackendAPI를 거치지 않고 직접 호출하여, 업로드 자체의 실패가 HandleError를 재귀 호출하지 않도록 합니다.
         /// </summary>
-        public bool ErrorLogUpload(BackendReturnObject errorBro)
+        public void ErrorLogUpload(BackendReturnObject errorBro)
         {
-            if (!Backend.IsLogin || !_isLogin)
-                return false;
+            if (!Backend.IsLogin || !_isLogin || errorBro == null || _isUploadingErrorLog)
+                return;
+
+            string dedupKey = "Error:" + errorBro.GetErrorCode() + ":" + errorBro.GetStatusCode();
+            if (!ShouldUploadLog(dedupKey, out int suppressedCount))
+                return;
 
             try
             {
+                string errorText = errorBro.ToString();
+                if (suppressedCount > 0)
+                    errorText += $"\n(최근 {LogThrottleWindowSeconds:0}초간 {suppressedCount}회 억제됨)";
+
                 Param logParam = new Param();
-                logParam.Add("ErrorLog", errorBro.ToString());
-                
-                // 오류 발생 시간 추가
+                logParam.Add("ErrorLog", errorText);
                 logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                
-                // 디바이스 정보 추가
                 logParam.Add("Device", SystemInfo.deviceModel);
                 logParam.Add("OS", SystemInfo.operatingSystem);
-                
-                BackendReturnObject bro = ProcessBackendAPISync(
-                    "오류 로그 업로드",
-                    () => Backend.GameLog.InsertLogV2("ErrorLogs", logParam),
-                    1,  // 한 번만 시도
-                    false // 팝업 표시 안 함
-                );
-                
-                return bro != null && bro.IsSuccess();
+
+                _isUploadingErrorLog = true;
+                Backend.GameLog.InsertLogV2("ErrorLogs", logParam, bro =>
+                {
+                    _isUploadingErrorLog = false;
+                    if (bro == null || !bro.IsSuccess())
+                        Debug.LogWarning($"[BackendManager] 오류 로그 업로드 실패(무시): {(bro != null ? bro.GetMessage() : "응답 없음")}");
+                });
             }
             catch (Exception ex)
             {
+                _isUploadingErrorLog = false;
                 Debug.LogError($"[BackendManager] 오류 로그 업로드 중 예외 발생: {ex.Message}");
-                return false;
             }
         }
         
         /// <summary>
-        /// 일반 로그를 서버에 업로드합니다 (동기)
+        /// 일반 로그를 서버에 업로드합니다 (비동기, 논블로킹). 동일 로그가 짧은 시간 내 반복되면 억제하여 묶어 보냅니다.
         /// </summary>
-        public bool LogUpload(string logName, string logDescription)
+        public void LogUpload(string logName, string logDescription)
         {
-            if (!Backend.IsLogin || !_isLogin)
-                return false;
+            if (!Backend.IsLogin || !_isLogin || _isUploadingLog)
+                return;
+
+            string dedupKey = logName + ":" + logDescription;
+            if (!ShouldUploadLog(dedupKey, out int suppressedCount))
+                return;
 
             try
             {
+                string description = suppressedCount > 0
+                    ? $"{logDescription}\n(최근 {LogThrottleWindowSeconds:0}초간 {suppressedCount}회 억제됨)"
+                    : logDescription;
+
                 Param logParam = new Param();
-                logParam.Add(logName, logDescription);
+                logParam.Add(logName, description);
                 logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-                
-                BackendReturnObject bro = ProcessBackendAPISync(
-                    "일반 로그 업로드",
-                    () => Backend.GameLog.InsertLogV2("UserLogs", logParam),
-                    1,  // 한 번만 시도
-                    false // 팝업 표시 안 함
-                );
-                
-                return bro != null && bro.IsSuccess();
+
+                _isUploadingLog = true;
+                Backend.GameLog.InsertLogV2("UserLogs", logParam, bro =>
+                {
+                    _isUploadingLog = false;
+                    if (bro == null || !bro.IsSuccess())
+                        Debug.LogWarning($"[BackendManager] 로그 업로드 실패(무시): {(bro != null ? bro.GetMessage() : "응답 없음")}");
+                });
             }
             catch (Exception ex)
             {
+                _isUploadingLog = false;
                 Debug.LogError($"[BackendManager] 로그 업로드 중 예외 발생: {ex.Message}");
-                return false;
             }
         }
         
@@ -1639,28 +1703,37 @@ namespace Muks.BackEnd
                 return;
             }
 
-            if (_isLogin)
-            {
-                // 토큰 유효성 검사를 위한 API 호출
-                BackendReturnObject bro = ProcessBackendAPISync(
-                    "토큰 유효성 검사",
-                    () => Backend.BMember.GetUserInfo(),
-                    1,  // 한 번만 시도
-                    false // 팝업 표시 안 함
-                );
+            if (!_isLogin)
+                return;
 
-                if (bro == null || !bro.IsSuccess())
+            // 앱 복귀 순간 메인 스레드가 멈추지 않도록 비동기 호출로 검사
+            CheckTokenValidityAsync(1);
+        }
+
+        private void CheckTokenValidityAsync(int retriesLeft)
+        {
+            Backend.BMember.GetUserInfo((bro) =>
+            {
+                BackendState state = HandleError(bro);
+
+                if (state == BackendState.Success)
+                    return;
+
+                if (state == BackendState.Retry && retriesLeft > 0)
                 {
-                    if (bro != null && bro.IsBadAccessTokenError() && !RefreshTheBackendToken(1))
-                    {
-                        // 토큰 갱신 실패 시 로그아웃 처리
-                        Debug.LogWarning("[BackendManager] 세션이 만료되어 로그아웃합니다.");
-                        LogOut();
-                        ShowPopup("세션 만료", "세션이 만료되었습니다. 다시 접속해 주세요.");
-                        ShowPopupExitButton();
-                    }
+                    CheckTokenValidityAsync(retriesLeft - 1);
+                    return;
                 }
-            }
+
+                if (bro != null && bro.IsBadAccessTokenError() && !RefreshTheBackendToken(1))
+                {
+                    // 토큰 갱신 실패 시 로그아웃 처리
+                    Debug.LogWarning("[BackendManager] 세션이 만료되어 로그아웃합니다.");
+                    LogOut();
+                    ShowPopup("세션 만료", "세션이 만료되었습니다. 다시 접속해 주세요.");
+                    ShowPopupExitButton();
+                }
+            });
         }
 
         #endregion

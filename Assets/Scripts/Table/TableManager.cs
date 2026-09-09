@@ -762,6 +762,21 @@ public TableData GetMinDistanceTable( Vector3 startPos, List<TableData> tableDat
     );
 }
 
+// GetTableDataList(floorType, state)처럼 상태별 임시 리스트를 새로 만들지 않고,
+// 기존 층별 테이블 목록을 그대로 순회하며 상태 조건을 검사해 가장 가까운 테이블을 찾음
+public TableData GetMinDistanceTableByState(Vector3 startPos, ERestaurantFloorType floorType, ETableState state)
+{
+    List<TableData> tableDataList = _furnitureSystem.GetTableDataList(floorType);
+    return GetMinDistanceObject(
+        RestaurantType.Hall,
+        startPos,
+        tableDataList,
+        table => table.transform.position,
+        table => table.TableState == state,
+        1f
+    );
+}
+
 public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurnerData> dataList)
 {
     return GetMinDistanceObject(

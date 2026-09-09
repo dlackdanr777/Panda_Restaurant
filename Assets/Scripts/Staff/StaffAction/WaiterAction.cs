@@ -90,11 +90,8 @@ public class WaiterAction : IStaffAction
             return;
         }
 
-        List<TableData> servingTableList = _tableManager.GetTableDataList(staff.EquipFloorType, ETableState.CanServing);
-        List<TableData> orderTableList = _tableManager.GetTableDataList(staff.EquipFloorType, ETableState.Seating);
-
-        TableData servingData = _tableManager.GetMinDistanceTable(_waiter.transform.position, servingTableList);
-        TableData orderData = _tableManager.GetMinDistanceTable(_waiter.transform.position, orderTableList);
+        TableData servingData = _tableManager.GetMinDistanceTableByState(_waiter.transform.position, staff.EquipFloorType, ETableState.CanServing);
+        TableData orderData = _tableManager.GetMinDistanceTableByState(_waiter.transform.position, staff.EquipFloorType, ETableState.Seating);
        
         // 둘 다 없으면 초기화
         if (servingData == null && orderData == null)

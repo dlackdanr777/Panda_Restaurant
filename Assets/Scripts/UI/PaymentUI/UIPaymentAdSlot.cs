@@ -54,7 +54,8 @@ public class UIPaymentAdSlot : MonoBehaviour
             UserInfo.AddDia(1);            
             _uIPayment.StartDiaAnime(1);
         }
-        GameManager.Instance.SaveGameData();
+        // 보상 연출 중 동기 저장으로 인한 끊김 방지 (비동기 저장으로 전환)
+        GameManager.Instance.AsyncSaveGameData();
         Show();
     }
 }

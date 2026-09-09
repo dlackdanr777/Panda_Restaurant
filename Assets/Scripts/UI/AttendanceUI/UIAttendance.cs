@@ -39,37 +39,53 @@ public class UIAttendance : MobileUIView
 
 
     private List<UIAttendanceSlot> _slotList = new List<UIAttendanceSlot>();
-     
+
+    // 마지막으로 슬롯에 채워 넣은 주차의 시작일(1, 8, 15...). 주차가 바뀔 때만 슬롯 보상 데이터를 다시 채움
+    private int _slotDataBaseStartDay = -1;
+
     public override void Init()
     {
-        int startDay = UserInfo.GetAttendanceDays();
-        List<AttendanceData> dataList = AttendanceDataManager.Instance.GetRewardDataList(startDay);
-        int baseStartDay = ((startDay - 1) / 7) * 7 + 1;
         for (int i = 0, cnt = 7; i < cnt; i++)
         {
             UIAttendanceSlot slot = Instantiate(_slotPrefab, _slotParent.transform);
             _slotList.Add(slot);
-
-            if (i >= dataList.Count)
-            {
-                slot.gameObject.SetActive(false);
-                continue;
-            }
-
-            if(i == cnt - 1)
-            {
-                slot.SetDataToSpecial(dataList[i]);
-            }
-            else
-            {
-                slot.SetData(baseStartDay + i, dataList[i]);
-            }
-
         }
+
+        RefreshSlotRewardData(UserInfo.GetTodayAttendanceDay());
 
         _attendanceButton.AddListener(() => OnAttendanceButtonClicked(false));
         _adButton.OnAdRewarded += () => OnAttendanceButtonClicked(true);
         gameObject.SetActive(false);
+    }
+
+    // 오늘의 일차가 속한 주차로 슬롯 보상 데이터를 맞춤 (연속 출석 초기화·주차 전환 시에도 갱신되도록 UpdateUI에서도 호출)
+    private void RefreshSlotRewardData(int todayDay)
+    {
+        int baseStartDay = ((todayDay - 1) / 7) * 7 + 1;
+        if (baseStartDay == _slotDataBaseStartDay)
+            return;
+
+        _slotDataBaseStartDay = baseStartDay;
+        List<AttendanceData> dataList = AttendanceDataManager.Instance.GetRewardDataList(todayDay);
+
+        for (int i = 0, cnt = _slotList.Count; i < cnt; i++)
+        {
+            if (i >= dataList.Count)
+            {
+                _slotList[i].gameObject.SetActive(false);
+                continue;
+            }
+
+            _slotList[i].gameObject.SetActive(true);
+            if (i == cnt - 1)
+            {
+                _slotList[i].SetDataToSpecial(dataList[i]);
+            }
+            else
+            {
+                _slotList[i].SetData(baseStartDay + i, dataList[i]);
+            }
+        }
     }
 
 
@@ -125,15 +141,13 @@ public class UIAttendance : MobileUIView
             return;
         }
 
-        // 현재 출석 일수 계산
-        int days = UserInfo.GetAttendanceDays();
-        int currentWeek = days / 7; // 현재 주차 계산 (0-based index)
-        int currentDay = days % 7; // 해당 주의 몇 번째 날인지 계산
+        // 화면에 표시 중인 일차와 동일한 기준(GetTodayAttendanceDay)으로 지급할 슬롯을 결정
+        int todayDay = UserInfo.GetTodayAttendanceDay();
+        int currentDaySlot = (todayDay - 1) % 7;
 
-        // 보상 아이템 처리
-        if (currentDay < _slotList.Count)
+        if (currentDaySlot < _slotList.Count)
         {
-            _slotList[currentDay].ReceiveItem(isAd);
+            _slotList[currentDaySlot].ReceiveItem(isAd);
         }
 
         UserInfo.UpdateAttendanceData();
@@ -145,19 +159,21 @@ public class UIAttendance : MobileUIView
     private void UpdateUI()
     {
         bool checkAttendance = UserInfo.CheckNoAttendance();
-        int adjustedDays = checkAttendance ? UserInfo.GetAttendanceDays() : UserInfo.GetAttendanceDays() - 1;
+        int todayDay = UserInfo.GetTodayAttendanceDay();
+        int todaySlotIndex = (todayDay - 1) % 7;
+
+        RefreshSlotRewardData(todayDay);
 
         // UI 갱신: 현재 주의 슬롯만 업데이트
         for (int i = 0; i < _slotList.Count; i++)
         {
-            if (i < adjustedDays % 7)
+            if (i < todaySlotIndex)
             {
                 _slotList[i].SetChecked(); // 이미 출석한 슬롯 표시
             }
-
-            else if(i == adjustedDays % 7)
+            else if (i == todaySlotIndex)
             {
-                if(checkAttendance)
+                if (checkAttendance)
                 {
                     _slotList[i].SetTotaySlotUnChecked();
                 }
@@ -174,8 +190,7 @@ public class UIAttendance : MobileUIView
 
         _attendanceButton.interactable = checkAttendance;
         _adButton.Interactable(checkAttendance);
-        float totalDays = UserInfo.GetAttendanceDays();
-        float loadingBarGauge = totalDays <= 0 ? 0 : (totalDays % 7) / 6f; // 6일차에 1.0, 7일차에 0으로 초기화
+        float loadingBarGauge = todaySlotIndex / 6f; // 6일차에 1.0, 7일차에 0으로 초기화
         _loadingBar.SetFillAmount(loadingBarGauge);
     }
 }
