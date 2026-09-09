@@ -77,6 +77,7 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void StartLoginFlow()
     {
+        BackendManager.Instance.InvalidateGameDataRestore();
 #if UNITY_ANDROID
         var pref = GoogleLoginManager.GetLoginPreference();
         if (pref == GoogleLoginManager.LoginPreference.Google)
@@ -113,40 +114,58 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void OnLoginCompleted()
     {
-        // UUID(gamerId) 조회 - 실패해도 게임 진행
-        BackendManager.Instance.FetchGamerIdAsync();
-
         using (new VersionManagement())
         {
             if (!new VersionManagement().UpdateCheck())
                 return;
         }
 
-        BackendManager.Instance.GetMyDataAsync("GameData", (bro) =>
+        BackendManager backend = BackendManager.Instance;
+        backend.GetAndRestoreGameDataAsync((query, result) =>
         {
-            UserInfo.LoadGameData(bro);
-            UserInfo.LoadStageDataAsync();
-            PaymentInfo.LoadPaymentData();
-            AssignRandomNicknameIfNeeded(() =>
+            bool IsCurrent() => this != null && backend.IsCurrentGameDataQuery(query);
+            if (!IsCurrent()) return;
+            if (!result.CanContinueLegacy)
             {
+                ShowGameDataLoadFailure(result.Status + ": " + result.Reason);
+                return;
+            }
+
+            // 공용 필드 부재는 기존 진입만 허용한다. 새 저장 Ready나 Stage 이전 완료를 뜻하지 않는다.
+            backend.FetchGamerIdAsync(canApply: IsCurrent);
+            if (!IsCurrent()) return;
+            UserInfo.LoadStageDataAsync();
+            if (!IsCurrent()) return;
+            PaymentInfo.LoadPaymentData();
+            AssignRandomNicknameIfNeeded(IsCurrent, () =>
+            {
+                if (!IsCurrent()) return;
                 Tween.Wait(0.7f, () =>
                 {
+                    if (!IsCurrent()) return;
                     _uiFirstLoadingScene.HideTitle(() =>
                     {
-                        if (UserInfo.IsFirstTutorialClear)
-                            Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
-                        else
-                            Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("IntroScene"));
+                        if (!IsCurrent()) return;
+                        Tween.Wait(0.1f, () =>
+                        {
+                            if (IsCurrent()) LoadingSceneManager.LoadScene(
+                                UserInfo.IsFirstTutorialClear ? "Stage1" : "IntroScene");
+                        });
                     });
                 });
             });
         }, (state) =>
         {
-            Debug.LogError("[FirstLoadingScene] 게임 데이터 로드 실패: " + state);
-            BackendManager.Instance.ShowPopup("데이터 로드 실패", "게임 데이터를 불러오는 데 실패했습니다.\n다시 시도해주세요.");
-            BackendManager.Instance.SetPopupButton1("재시도", () => StartLoadDataAsync());
-            BackendManager.Instance.ShowPopupExitButton();
+            if (this != null) ShowGameDataLoadFailure(state.ToString());
         });
+    }
+
+    private void ShowGameDataLoadFailure(string reason)
+    {
+        Debug.LogWarning("[FirstLoadingScene] GameData 복원 중단: " + reason);
+        BackendManager.Instance.ShowPopup("데이터 로드 확인 필요", "게임 데이터 원본을 확인하지 못했습니다.\n다시 시도하거나 문의해주세요.");
+        BackendManager.Instance.SetPopupButton1("재시도", () => { if (this != null) OnLoginCompleted(); });
+        BackendManager.Instance.ShowPopupExitButton();
     }
 
     private void OnGoogleLoginFailed()
@@ -157,18 +176,20 @@ public class FirstLoadingScene : MonoBehaviour
         BackendManager.Instance.ShowPopupExitButton();
     }
 
-    private void AssignRandomNicknameIfNeeded(System.Action onComplete)
+    private void AssignRandomNicknameIfNeeded(System.Func<bool> isCurrent, System.Action onComplete)
     {
+        if (!isCurrent()) return;
         if (!string.IsNullOrWhiteSpace(UserInfo.UserId))
         {
             onComplete?.Invoke();
             return;
         }
-        TryCreateRandomNickname(onComplete, 10);
+        TryCreateRandomNickname(isCurrent, onComplete, 10);
     }
 
-    private void TryCreateRandomNickname(System.Action onComplete, int retriesLeft)
+    private void TryCreateRandomNickname(System.Func<bool> isCurrent, System.Action onComplete, int retriesLeft)
     {
+        if (!isCurrent()) return;
         if (retriesLeft <= 0)
         {
             Debug.LogError("[FirstLoadingScene] 닉네임 생성 실패: 최대 재시도 횟수 초과");
@@ -179,54 +200,38 @@ public class FirstLoadingScene : MonoBehaviour
         string candidate = "User" + UnityEngine.Random.Range(10000000, 20000000);
         Backend.BMember.CheckNicknameDuplication(candidate, (checkBro) =>
         {
+            if (!isCurrent()) return;
             if (checkBro.IsSuccess())
             {
                 Backend.BMember.CreateNickname(candidate, (createBro) =>
                 {
+                    if (!isCurrent()) return;
                     if (createBro.IsSuccess())
                     {
                         UserInfo.SetUserId(candidate);
-                        BackendManager.Instance.SaveGameDataAsync("GameData", UserInfo.GetSaveUserData());
+                        if (BackendManager.Instance.CanSaveLegacyGameData)
+                            BackendManager.Instance.SaveGameDataAsync("GameData", UserInfo.GetSaveUserData());
                         Debug.Log($"[FirstLoadingScene] 닉네임 생성 완료: {candidate}");
                         onComplete?.Invoke();
                     }
                     else
                     {
                         Debug.LogError($"[FirstLoadingScene] 닉네임 생성 실패, 재시도: {createBro.GetMessage()}");
-                        TryCreateRandomNickname(onComplete, retriesLeft - 1);
+                        TryCreateRandomNickname(isCurrent, onComplete, retriesLeft - 1);
                     }
                 });
             }
             else
             {
                 Debug.Log($"[FirstLoadingScene] 닉네임 중복 또는 오류, 재시도: {checkBro.GetMessage()}");
-                TryCreateRandomNickname(onComplete, retriesLeft - 1);
+                TryCreateRandomNickname(isCurrent, onComplete, retriesLeft - 1);
             }
         });
     }
 
     private void StartLoadData()
     {
-        _uiFirstLoadingScene.ShowTitle(() =>
-        {
-            BackendManager.Instance.GuestLoginAsync((bro) =>
-            {
-                UserInfo.LoadGameData(BackendManager.Instance.GetMyData("GameData"));
-                UserInfo.LoadStageData();
-                Tween.Wait(0.1f, () =>
-                {
-                    _uiFirstLoadingScene.HideTitle(() =>
-                    {
-                        Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
-                    });
-                });
-            }, (state) =>
-            {
-                Debug.LogError("[FirstLoadingScene] 게스트 로그인 실패: " + state);
-                BackendManager.Instance.ShowPopup("로그인 실패", "게스트 로그인에 실패했습니다. 다시 시도해주세요.");
-                BackendManager.Instance.SetPopupButton1("재시도", () => StartLoadDataAsync());
-                BackendManager.Instance.ShowPopupExitButton();
-            });
-        });
+        // 남아 있는 이전 진입점도 검증된 동일 비동기 흐름을 사용한다.
+        StartLoadDataAsync();
     }
 }

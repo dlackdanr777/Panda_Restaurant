@@ -91,6 +91,54 @@ public class LoadUserData
 
     //###############################
 
+    /// <summary>
+    /// 현재 최초 실행의 정적 기본값을 별도 메모리 자료로 만든다. 기존 계정의 UserInfo/타이머를 읽지 않는다.
+    /// 기존 GetSaveUserData의 컬럼 표현을 유지하며, 호출되지 않던 SetFirstAccessTime 보상은 활성화하지 않는다.
+    /// 인증에서 신규 생성이 확인된 경로에서만 사용한다. 행 부재나 복원 실패의 대체값이 아니다.
+    /// </summary>
+    public static Param CreateInitialGameData(DateTime lastAccessTime)
+    {
+        var param = new Param();
+        foreach (string field in new[]
+        {
+            "IsFirstTutorialClear", "IsMiniGameTutorialClear", "IsFeverTutorialClear",
+            "IsGatecrasher1TutorialClear", "IsGatecrasher2TutorialClear",
+            "IsSpecialCustomer1TutorialClear", "IsSpecialCustomer2TutorialClear",
+            "IsFurnitureTutorialClear", "IsRecipeTutorialClear"
+        })
+            param.Add(field, false);
+
+        foreach (string field in new[]
+        {
+            "UnlockStage", "Dia", "Score", "TotalCookCount", "DailyCookCount", "WeeklyCookCount",
+            "TotalCumulativeCustomerCount", "DailyCumulativeCustomerCount", "WeeklyCumulativeCustomerCount",
+            "PromotionCount", "TotalAdvertisingViewCount", "DailyAdvertisingViewCount",
+            "TotalCleanCount", "DailyCleanCount", "WeeklyCleanCount", "TotalVisitSpecialCustomerCount",
+            "TotalExterminationGatecrasherCustomer1Count", "TotalExterminationGatecrasherCustomer2Count",
+            "WeeklyExterminationGatecrasherCustomerCount", "TotalUseGachaMachineCount", "TotalAttendanceDays",
+            "SkinToken", "AddCustomerAdCount", "DoubleTipCounterAdCount", "FeverAdCount",
+            "AddCustomerDiaCount", "FeverDiaCount", "DailyAdGoldRewardCount", "DailyAdDiaRewardCount"
+        })
+            param.Add(field, 0);
+
+        foreach (string field in new[] { "Money", "TotalAddMoney", "DailyAddMoney", "WeeklyAddMoney" })
+            param.Add(field, 0L);
+        foreach (string field in new[] { "UserId", "FirstAccessTime", "LastAttendanceTime" })
+            param.Add(field, string.Empty);
+        param.Add("LastAccessTime", lastAccessTime.ToString());
+
+        foreach (string field in new[]
+        {
+            "GiveRecipeList", "RecipeCookCountList", "GiveGachaItemCountList", "GiveGachaItemLevelList",
+            "GiveStaffSkinList", "EnabledCustomerDataList", "GiveCustomerSkinList",
+            "DoneMainChallengeList", "ClearMainChallengeList", "DoneAllTimeChallengeList", "ClearAllTimeChallengeList",
+            "DoneDailyChallengeList", "ClearDailyChallengeList", "DoneWeeklyChallengeList", "ClearWeeklyChallengeList",
+            "NotificationMessageList", "ClearNotificationMessageList", "TimeDataList"
+        })
+            param.Add(field, new object[0]);
+        return param;
+    }
+
     public LoadUserData(JsonData json)
     {
         if (json == null || json.Count == 0)

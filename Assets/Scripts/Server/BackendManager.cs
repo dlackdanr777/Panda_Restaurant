@@ -18,6 +18,21 @@ namespace Muks.BackEnd
         Success,
     }
 
+    /// <summary>GameData SDK boundary. Tests inject a memory fake without constructing/initializing a Unity singleton.</summary>
+    public interface IGameDataBackendTransport
+    {
+        bool LoggedIn { get; }
+        bool NativeLoggedIn { get; }
+        string AccountInDate { get; }
+        void Get(string accountInDate, Action<BackendReturnObject> callback);
+        void Insert(Param values, Action<BackendReturnObject> callback);
+        void Update(GameDataSaveTarget target, Param values, Action<BackendReturnObject> callback);
+        BackendReturnObject Update(GameDataSaveTarget target, Param values);
+        IReadOnlyList<StaffData> ReadCatalog();
+        bool Restore(BackendReturnObject response);
+        Param InitialValues();
+    }
+
     /// <summary>뒤끝과 연동할 수 있게 해주는 싱글톤 클래스</summary>
     public class BackendManager : MonoBehaviour
     {
@@ -57,6 +72,81 @@ namespace Muks.BackEnd
 
         private bool _isLoaded = false;
         public bool IsLoaded => _isLoaded;
+
+        // 실제 초기화 경계에서 얻은 증거만 보관한다. Inspector의 현재 값으로 대체하지 않는다.
+        private GameDataSdkInitializationPolicy _gameDataInitializationPolicy;
+
+        // DontDestroyOnLoad 수명: 씬 해제와 계정/조회 세대 무효화는 별개이다.
+        private GameDataRestoreContext _gameDataRestoreContext;
+        private GameDataAuthenticationAttempt _authenticationInFlight;
+        private IGameDataBackendTransport _gameDataTransport;
+        private IGameDataBackendTransport GameDataTransport => _gameDataTransport ??
+            (_gameDataTransport = new SdkGameDataBackendTransport(this));
+
+        private sealed class SdkGameDataBackendTransport : IGameDataBackendTransport
+        {
+            private readonly BackendManager _owner;
+            public SdkGameDataBackendTransport(BackendManager owner) { _owner = owner; }
+            public bool LoggedIn => _owner._isLogin && Backend.IsLogin;
+            public bool NativeLoggedIn => Backend.IsLogin;
+            public string AccountInDate => Backend.UserInDate;
+            public void Get(string accountInDate, Action<BackendReturnObject> callback)
+            {
+                var where = new Where();
+                where.Equal("owner_inDate", accountInDate);
+                Backend.GameData.Get("GameData", where, bro => callback(bro));
+            }
+            public void Insert(Param values, Action<BackendReturnObject> callback) =>
+                Backend.GameData.Insert("GameData", values, bro => callback(bro));
+            public void Update(GameDataSaveTarget target, Param values, Action<BackendReturnObject> callback) =>
+                Backend.GameData.UpdateV2("GameData", target.RowInDate, target.AccountInDate, values, bro => callback(bro));
+            public BackendReturnObject Update(GameDataSaveTarget target, Param values) =>
+                Backend.GameData.UpdateV2("GameData", target.RowInDate, target.AccountInDate, values);
+            public IReadOnlyList<StaffData> ReadCatalog() => Resources.LoadAll<StaffData>("StaffData");
+            public bool Restore(BackendReturnObject response) => UserInfo.TryLoadGameData(response);
+            public Param InitialValues() => LoadUserData.CreateInitialGameData(_owner.ServerTime);
+        }
+        private GameDataRestoreContext GameDataRestore => _gameDataRestoreContext ??
+            (_gameDataRestoreContext = new GameDataRestoreContext(
+                () => GameDataTransport.LoggedIn ? GameDataTransport.AccountInDate : null));
+        public GameDataRestoreEvidence RestoredGameData => GameDataRestore.Evidence;
+        public GameDataRestoreResult GameDataRestoreResult => GameDataRestore.Result;
+
+        // 읽기 증거만 무효화한다. 기존 쓰기 조정기의 미확정/로컬 반영 실패 잠금은 건드리지 않는다.
+        public void InvalidateGameDataRestore() => GameDataRestore.InvalidateAccountSession();
+        public bool IsCurrentGameDataQuery(GameDataRestoreQuery query) => GameDataRestore.IsCurrent(query);
+
+        public GameDataAuthenticationAttempt BeginGameDataAuthentication(GameDataAuthenticationKind kind)
+        {
+            // SDK updates its shared account before callbacks. Do not overlap real authentication calls.
+            if (_authenticationInFlight != null) return null;
+            return _authenticationInFlight = GameDataRestore.BeginAuthentication(kind, GameDataTransport.NativeLoggedIn);
+        }
+        public bool IsCurrentGameDataAuthentication(GameDataAuthenticationAttempt attempt) =>
+            GameDataRestore.IsCurrentAuthentication(attempt);
+        public bool ObserveGameDataAuthenticationResponse(GameDataAuthenticationAttempt attempt)
+        {
+            if (ReferenceEquals(_authenticationInFlight, attempt)) _authenticationInFlight = null;
+            return GameDataRestore.IsCurrentAuthentication(attempt);
+        }
+
+        // SDK 5.15 인증 후처리는 원본 gamerInDate로 UserInDate를 갱신한 뒤,
+        // status/error/message만 복제한 콜백을 준다(ReturnValue는 비어 있음).
+        // 콜백 직후의 SDK 계정 값과 현재 인증 시도를 묶고 인증 원문/토큰은 읽거나 보관하지 않는다.
+        public bool CompleteGameDataAuthentication(GameDataAuthenticationAttempt attempt, BackendReturnObject bro)
+        {
+            if (!ObserveGameDataAuthenticationResponse(attempt)) return false;
+            string account = GameDataTransport.AccountInDate;
+            _isLogin = true;
+            if (!GameDataRestore.CompleteAuthentication(attempt, ToRawResponse(bro), account))
+            {
+                _isLogin = false;
+                return false;
+            }
+            // A fresh authenticated session still cannot save until its own GameData restoration succeeds.
+            _isSaveEnabled = true;
+            return true;
+        }
 
         public DateTime LocalTime = DateTime.Now;
 
@@ -247,17 +337,26 @@ namespace Muks.BackEnd
         /// </summary>
         private bool InitializeBackend()
         {
+            _gameDataInitializationPolicy = null;
             try
             {
-                BackendReturnObject bro = Backend.Initialize();
-                if (bro.IsSuccess())
+                GameDataRawResponse response = GameDataSdkInitializationPolicy.ObserveInitialization(
+                    ReadGameDataSdkRetrySettings, () => Backend.IsInitialized,
+                    () =>
+                    {
+                        // 기본 초기화를 유지해 인증/시간 제한/국가/콜백 등 기존 설정 전체가 적용되게 한다.
+                        BackendReturnObject bro = Backend.Initialize();
+                        return bro == null ? null : new GameDataRawResponse(
+                            bro.IsSuccess(), bro.GetStatusCode(), bro.GetErrorCode(), bro.GetMessage());
+                    }, out _gameDataInitializationPolicy);
+                if (response != null && response.IsSuccess)
                 {
                     Debug.Log("[BackendManager] 뒤끝 초기화 성공");
                     return true;
                 }
                 else
                 {
-                    Debug.LogError($"[BackendManager] 뒤끝 초기화 실패: {bro.GetMessage()}");
+                    Debug.LogError("[BackendManager] 뒤끝 초기화 실패");
                     return false;
                 }
             }
@@ -268,6 +367,14 @@ namespace Muks.BackEnd
             }
         }
         
+        private static GameDataSdkRetrySettings ReadGameDataSdkRetrySettings()
+        {
+            // SDK 5.15.0의 기본 Initialize가 읽는 바로 그 Resource. 민감한 값은 읽거나 출력하지 않는다.
+            var settings = Resources.Load<TheBackendSettings>("TheBackendSettings");
+            return settings == null ? null : new GameDataSdkRetrySettings(typeof(Backend).Assembly.GetName().Version,
+                settings.retryWhenClientRequestFailError, settings.retryWhenServerError, settings.autoRefreshToken);
+        }
+
         #region 비동기/동기 작업 처리를 위한 공통 메서드
 
         /// <summary>
@@ -463,11 +570,18 @@ namespace Muks.BackEnd
                 return;
             }
             
+            GameDataAuthenticationAttempt attempt = null;
             ProcessBackendAPI(
                 "커스텀 로그인",
-                (callback) => Backend.BMember.CustomLogin(id, pw, (bro) => callback?.Invoke(bro)),
+                (callback) => {
+                    var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                    Backend.BMember.CustomLogin(id, pw, bro => {
+                        if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                    });
+                },
                 (bro) => {
-                    _isLogin = true;
+                    if (!CompleteGameDataAuthentication(attempt, bro)) return;
                     Debug.Log("[BackendManager] 커스텀 로그인 성공");
                     onSuccess?.Invoke(bro);
                 },
@@ -488,9 +602,13 @@ namespace Muks.BackEnd
                 return;
             }
 
+            GameDataAuthenticationAttempt attempt = null;
             void HandleGuestLogin(Action<BackendReturnObject> callback)
             {
+                var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Guest);
+                if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
                 Backend.BMember.GuestLogin((bro) => {
+                    if (!ObserveGameDataAuthenticationResponse(started)) return;
                     // 특수 케이스: bro null 또는 실패
                     if (bro == null)
                     {
@@ -530,7 +648,7 @@ namespace Muks.BackEnd
                 "게스트 로그인",
                 HandleGuestLogin,
                 (bro) => {
-                    _isLogin = true;
+                    if (!CompleteGameDataAuthentication(attempt, bro)) return;
                     
                     // 신규 가입 또는 기존 로그인 처리
                     if (bro.GetStatusCode() == "201")
@@ -556,10 +674,12 @@ namespace Muks.BackEnd
         /// 뒤끝 서버에서 유저의 gamerId(UUID)를 조회해 UserInfo.GamerId에 저장합니다.
         /// 로그인 직후 한 번 호출하면 이후 모든 UI에서 재사용할 수 있습니다.
         /// </summary>
-        public void FetchGamerIdAsync(Action onSuccess = null, Action onFail = null)
+        public void FetchGamerIdAsync(Action onSuccess = null, Action onFail = null, Func<bool> canApply = null)
         {
+            if (canApply != null && !canApply()) return;
             Backend.BMember.GetUserInfo((bro) =>
             {
+                if (canApply != null && !canApply()) return;
                 if (bro.IsSuccess())
                 {
                     string gamerId = bro.GetReturnValuetoJSON()["row"]["gamerId"]?.ToString();
@@ -579,6 +699,7 @@ namespace Muks.BackEnd
 
         public void LogOut()
         {
+            InvalidateGameDataRestore();
             _isSaveEnabled = false;
             _isLogin = false;
         }
@@ -587,11 +708,12 @@ namespace Muks.BackEnd
         /// 페더레이션 로그인 성공을 외부에서 통보받아 로그인 상태를 활성화합니다.
         /// GoogleLoginManager 등 외부에서 Backend.BMember.AuthorizeFederation 직접 호출 후 사용합니다.
         /// </summary>
-        public void NotifyFederationLoginSuccess()
+        public bool NotifyFederationLoginSuccess(GameDataAuthenticationAttempt attempt, BackendReturnObject bro)
         {
-            _isLogin = true;
+            if (!CompleteGameDataAuthentication(attempt, bro)) return false;
             _isSaveEnabled = true;
             Debug.Log("[BackendManager] 페더레이션 로그인 상태 활성화");
+            return true;
         }
 
         /// <summary>
@@ -607,9 +729,16 @@ namespace Muks.BackEnd
                 return;
             }
 
+            GameDataAuthenticationAttempt attempt = null;
             ProcessBackendAPI(
                 "구글 연동 계정 전환 로그인",
-                (callback) => Backend.BMember.AuthorizeFederation(accessToken, federationType, (bro) => callback?.Invoke(bro)),
+                (callback) => {
+                    var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                    Backend.BMember.AuthorizeFederation(accessToken, federationType, bro => {
+                        if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                    });
+                },
                 (bro) =>
                 {
                     Debug.Log($"[BackendManager] AuthorizeFederation 응답 statusCode: {bro.GetStatusCode()}, message: {bro.GetMessage()}");
@@ -623,7 +752,7 @@ namespace Muks.BackEnd
                         onFail?.Invoke(BackendState.Failure);
                         return;
                     }
-                    _isLogin = true;
+                    if (!CompleteGameDataAuthentication(attempt, bro)) return;
                     _isSaveEnabled = true;
                     Debug.Log($"[BackendManager] 구글 연동 계정 전환 로그인 성공 (statusCode: {bro.GetStatusCode()})");
                     onSuccess?.Invoke(bro);
@@ -645,22 +774,35 @@ namespace Muks.BackEnd
                 return;
             }
 
+            GameDataAuthenticationAttempt attempt = null;
             if (federationType == FederationType.GPGS2)
             {
                 // GPGS2: authCode → GetGPGS2AccessToken → AuthorizeFederation 2단계
                 ProcessBackendAPI(
                     "GPGS2 로그인 액세스 토큰 획득",
-                    (callback) => Backend.BMember.GetGPGS2AccessToken(authCode, (bro) => callback?.Invoke(bro)),
+                    (callback) => {
+                        var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                        if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                        Backend.BMember.GetGPGS2AccessToken(authCode, bro => {
+                            if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                        });
+                    },
                     (bro) =>
                     {
                         string accessToken = bro.GetReturnValuetoJSON()["access_token"].ToString();
                         Debug.Log("[BackendManager] GetGPGS2AccessToken 성공, 뒤끝 연동 로그인 시도");
                         ProcessBackendAPI(
                             "GPGS2 연동 로그인",
-                            (callback2) => Backend.BMember.AuthorizeFederation(accessToken, federationType, (bro2) => callback2?.Invoke(bro2)),
+                            (callback2) => {
+                                var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Google);
+                                if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                                Backend.BMember.AuthorizeFederation(accessToken, federationType, bro2 => {
+                                    if (ObserveGameDataAuthenticationResponse(started)) callback2?.Invoke(bro2);
+                                });
+                            },
                             (bro2) =>
                             {
-                                _isLogin = true;
+                                if (!CompleteGameDataAuthentication(attempt, bro2)) return;
                                 if (bro2.GetStatusCode() == "201")
                                     Debug.Log("[BackendManager] GPGS2 연동 신규 가입 성공");
                                 else
@@ -681,10 +823,17 @@ namespace Muks.BackEnd
             {
                 ProcessBackendAPI(
                     "구글 연동 로그인",
-                    (callback) => Backend.BMember.AuthorizeFederation(authCode, federationType, (bro) => callback?.Invoke(bro)),
+                    (callback) => {
+                        var started = attempt = BeginGameDataAuthentication(federationType == FederationType.Google
+                            ? GameDataAuthenticationKind.Google : GameDataAuthenticationKind.Other);
+                        if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                        Backend.BMember.AuthorizeFederation(authCode, federationType, bro => {
+                            if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                        });
+                    },
                     (bro) =>
                     {
-                        _isLogin = true;
+                        if (!CompleteGameDataAuthentication(attempt, bro)) return;
                         if (bro.GetStatusCode() == "201")
                             Debug.Log($"[BackendManager] {federationType} 연동 신규 가입 성공");
                         else
@@ -709,12 +858,19 @@ namespace Muks.BackEnd
                 return;
             }
 
+            GameDataAuthenticationAttempt attempt = null;
             ProcessBackendAPI(
                 "토큰 자동 로그인",
-                (callback) => Backend.BMember.LoginWithTheBackendToken((bro) => callback?.Invoke(bro)),
+                (callback) => {
+                    var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                    Backend.BMember.LoginWithTheBackendToken(bro => {
+                        if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                    });
+                },
                 (bro) =>
                 {
-                    _isLogin = true;
+                    if (!CompleteGameDataAuthentication(attempt, bro)) return;
                     _isSaveEnabled = true;
                     Debug.Log("[BackendManager] 토큰 자동 로그인 성공");
                     onSuccess?.Invoke(bro);
@@ -730,10 +886,17 @@ namespace Muks.BackEnd
         /// </summary>
         public void CustomSignupAsync(string id, string pw, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
+            GameDataAuthenticationAttempt attempt = null;
             ProcessBackendAPI(
                 "회원가입",
-                (callback) => Backend.BMember.CustomSignUp(id, pw, (bro) => callback?.Invoke(bro)),
-                onSuccess,
+                callback => {
+                    var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                    Backend.BMember.CustomSignUp(id, pw, bro => {
+                        if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                    });
+                },
+                bro => { if (CompleteGameDataAuthentication(attempt, bro)) onSuccess?.Invoke(bro); },
                 onFail,
                 3,
                 true
@@ -807,16 +970,23 @@ namespace Muks.BackEnd
                 return true;
             }
             
+            GameDataAuthenticationAttempt attempt = null;
             BackendReturnObject bro = ProcessBackendAPISync(
                 "커스텀 로그인",
-                () => Backend.BMember.CustomLogin(id, pw),
+                () => {
+                    attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (attempt == null) return null;
+                    var response = Backend.BMember.CustomLogin(id, pw);
+                    ObserveGameDataAuthenticationResponse(attempt);
+                    return response;
+                },
                 3,
                 true
             );
             
             if (bro != null && bro.IsSuccess())
             {
-                _isLogin = true;
+                if (!CompleteGameDataAuthentication(attempt, bro)) return false;
                 Debug.Log("[BackendManager] 커스텀 로그인 성공");
                 return true;
             }
@@ -836,7 +1006,10 @@ namespace Muks.BackEnd
             }
             
             // 특수 케이스: 게스트 정보가 없는 경우 처리
+            var attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Guest);
+            if (attempt == null) return false;
             BackendReturnObject bro = Backend.BMember.GuestLogin();
+            ObserveGameDataAuthenticationResponse(attempt);
             if (bro.GetStatusCode() == "401")
             {
                 Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
@@ -844,7 +1017,13 @@ namespace Muks.BackEnd
                 
                 bro = ProcessBackendAPISync(
                     "게스트 로그인",
-                    () => Backend.BMember.GuestLogin(),
+                    () => {
+                        attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Guest);
+                        if (attempt == null) return null;
+                        var response = Backend.BMember.GuestLogin();
+                        ObserveGameDataAuthenticationResponse(attempt);
+                        return response;
+                    },
                     3,
                     true
                 );
@@ -862,7 +1041,7 @@ namespace Muks.BackEnd
             
             if (bro != null && bro.IsSuccess())
             {
-                _isLogin = true;
+                if (!CompleteGameDataAuthentication(attempt, bro)) return false;
                 
                 // 신규 가입 또는 기존 로그인 처리
                 if (bro.GetStatusCode() == "201")
@@ -887,14 +1066,21 @@ namespace Muks.BackEnd
         /// </summary>
         public bool CustomSignup(string id, string pw)
         {
+            GameDataAuthenticationAttempt attempt = null;
             BackendReturnObject bro = ProcessBackendAPISync(
                 "회원가입",
-                () => Backend.BMember.CustomSignUp(id, pw),
+                () => {
+                    attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (attempt == null) return null;
+                    var response = Backend.BMember.CustomSignUp(id, pw);
+                    ObserveGameDataAuthenticationResponse(attempt);
+                    return response;
+                },
                 3,
                 true
             );
             
-            return bro != null && bro.IsSuccess();
+            return bro != null && bro.IsSuccess() && CompleteGameDataAuthentication(attempt, bro);
         }
         
         /// <summary>
@@ -954,12 +1140,181 @@ namespace Muks.BackEnd
         #endregion
 
         #region 데이터 관련 메서드 (비동기)
+
+        /// <summary>
+        /// 기존 저장 호출자는 교체하지 않는다. 해당 계정/행의 실제 검증·복원 증거만 사용한다.
+        /// 두 오류 재시도 OFF가 실제 기본 초기화에 적용된 증거가 있어야 전송한다.
+        /// 인증 거절 후 자동 토큰 갱신은 허용하지만, 결과 미확정의 재전송은 허용하지 않는다.
+        /// </summary>
+        public GameDataSingleUpdate CreateGameDataSingleUpdate()
+        {
+            return new GameDataSingleUpdate(() =>
+            {
+                GameDataRestoreEvidence evidence = RestoredGameData;
+                return new GameDataSaveReadiness(
+                    _isSaveEnabled, GameDataTransport.LoggedIn, evidence != null,
+                    UserInfo.IsFirstTutorialClear && !UserInfo.IsTutorialStart,
+                    GameDataTransport.AccountInDate, evidence?.Target,
+                    transportBlockReason: GameDataSaveCoordinator.IsTargetBlocked(evidence?.Target)
+                        ? "이 GameData 행의 기존 저장 결과가 미확정이거나 로컬 반영에 실패했습니다." : null,
+                    initializationPolicy: _gameDataInitializationPolicy);
+            }, new BackendGameDataUpdateTransport());
+        }
+
+        /// <summary>기존 단일 Get을 재사용한다. 공용 필드 부재만 기존 게임 복원을 허용한다.</summary>
+        public void GetAndRestoreGameDataAsync(Action<GameDataRestoreQuery, GameDataRestoreResult> onComplete,
+            Action<BackendState> onFail = null)
+        {
+            GameDataRestoreQuery query = GameDataRestore.BeginQuery();
+            GetMyDataAsyncCore("GameData", bro =>
+            {
+                if (!GameDataRestore.CanHandle(query)) return;
+                GameDataRestoreResult result = GameDataRestore.TryRestore(query, bro != null && bro.IsSuccess(),
+                    bro?.GetReturnValue(), GameDataTransport.ReadCatalog, () => GameDataTransport.Restore(bro));
+                if (result.Status == GameDataRestoreStatus.RowMissing
+                    && TryCreateInitialGameData(query, onComplete, onFail)) return;
+                if (GameDataRestore.IsCurrent(query))
+                {
+                    // Compatibility for other tables; GameData writers never use this flag as restore proof.
+                    if (result.CanContinueLegacy) _isLoaded = true;
+                    onComplete?.Invoke(query, result);
+                }
+            }, state =>
+            {
+                if (!GameDataRestore.CanHandle(query)) return;
+                GameDataRestore.TryRestore(query, false, null, null, null);
+                if (GameDataRestore.IsCurrent(query)) onFail?.Invoke(state);
+            }, query);
+        }
+
+        private bool TryCreateInitialGameData(GameDataRestoreQuery query,
+            Action<GameDataRestoreQuery, GameDataRestoreResult> onComplete, Action<BackendState> onFail)
+        {
+            if (!_isSaveEnabled || !GameDataTransport.LoggedIn
+                || !GameDataRestore.TryBeginInitialCreation(query, _gameDataInitializationPolicy, out _)) return false;
+            try
+            {
+                // Detached initial defaults, never the previous account's UserInfo snapshot.
+                if (!GameDataSavePayload.TryCapture(GameDataTransport.InitialValues(), out var payload, out _))
+                    throw new InvalidOperationException("Initial GameData payload validation failed.");
+                Param values = payload.CreateParamCopy();
+                if (!GameDataRestore.IsCurrent(query) || !GameDataTransport.LoggedIn || !_isSaveEnabled
+                    || _gameDataInitializationPolicy == null || !_gameDataInitializationPolicy.IsSupported) return true;
+                // Exactly one public SDK invocation. No ProcessBackendAPI/automatic/popup retry.
+                GameDataTransport.Insert(values, bro =>
+                {
+                    GameDataRestoreResult result = GameDataRestore.CompleteInitialCreation(query, ToRawResponse(bro));
+                    if (!GameDataRestore.IsCurrent(query)) return;
+                    if (result.Status == GameDataRestoreStatus.InitialCreationConfirmedAwaitingRestore)
+                        GetAndRestoreGameDataAsync(onComplete, onFail);
+                    else if (result.Status == GameDataRestoreStatus.InitialCreationIndeterminate)
+                        onComplete?.Invoke(query, result);
+                });
+            }
+            catch
+            {
+                var result = GameDataRestore.CompleteInitialCreation(query, null);
+                if (GameDataRestore.IsCurrent(query)
+                    && result.Status == GameDataRestoreStatus.InitialCreationIndeterminate)
+                    onComplete?.Invoke(query, result);
+            }
+            return true;
+        }
+
+        private static GameDataRawResponse ToRawResponse(BackendReturnObject bro) => bro == null ? null
+            : new GameDataRawResponse(bro.IsSuccess(), bro.GetStatusCode(), bro.GetErrorCode(), bro.GetMessage());
+
+        public bool CanSaveLegacyGameData => CanWriteLegacyGameData(GameDataRestore.LegacyQuery, GameDataRestore.LegacyTarget);
+
+        private bool CanWriteLegacyGameData(GameDataRestoreQuery query, GameDataSaveTarget target)
+        {
+            return _isSaveEnabled && GameDataTransport.LoggedIn && target != null
+                && GameDataRestore.IsCurrent(query) && ReferenceEquals(query, GameDataRestore.LegacyQuery)
+                && target.Matches(GameDataRestore.LegacyTarget) && !GameDataRestore.IsInitialCreationBlocked
+                && !GameDataSaveCoordinator.IsTargetBlocked(target);
+        }
+
+        private bool TryPrepareLegacyGameData(Param values, string expectedRow, out GameDataRestoreQuery query,
+            out GameDataSaveTarget target, out GameDataSavePayload payload)
+        {
+            query = GameDataRestore.LegacyQuery;
+            target = GameDataRestore.LegacyTarget;
+            payload = null;
+            return CanWriteLegacyGameData(query, target)
+                && (expectedRow == null || string.Equals(expectedRow, target.RowInDate, StringComparison.Ordinal))
+                && GameDataSavePayload.TryCapture(values, out payload, out _)
+                && CanWriteLegacyGameData(query, target);
+        }
+
+        private void SaveLegacyGameDataAsync(Param values, string expectedRow,
+            Action<BackendReturnObject> onSuccess, Action<BackendState> onFail)
+        {
+            if (!TryPrepareLegacyGameData(values, expectedRow, out var query, out var target, out var payload))
+            { onFail?.Invoke(BackendState.NotSave); return; }
+            bool responseHandled = false;
+            try
+            {
+                Param isolated = payload.CreateParamCopy();
+                if (!CanWriteLegacyGameData(query, target)) { onFail?.Invoke(BackendState.NotSave); return; }
+                // Known restored row only. No Get->Insert fallback, captured-data retry, or popup retry closure.
+                GameDataTransport.Update(target, isolated, bro =>
+                {
+                    if (responseHandled) return;
+                    responseHandled = true;
+                    if (!CanWriteLegacyGameData(query, target)) return;
+                    if (bro != null && bro.IsSuccess()) onSuccess?.Invoke(bro);
+                    else onFail?.Invoke(BackendState.Failure);
+                });
+            }
+            catch
+            {
+                if (!responseHandled && CanWriteLegacyGameData(query, target))
+                { responseHandled = true; onFail?.Invoke(BackendState.Failure); }
+            }
+        }
+
+        private bool SaveLegacyGameData(Param values, string expectedRow)
+        {
+            if (!TryPrepareLegacyGameData(values, expectedRow, out var query, out var target, out var payload)) return false;
+            try
+            {
+                Param isolated = payload.CreateParamCopy();
+                if (!CanWriteLegacyGameData(query, target)) return false;
+                var bro = GameDataTransport.Update(target, isolated);
+                return CanWriteLegacyGameData(query, target) && bro != null && bro.IsSuccess();
+            }
+            catch { return false; }
+        }
         
         /// <summary>
         /// 유저 데이터를 조회합니다
         /// </summary>
         public void GetMyDataAsync(string tableId, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
+            // 호환 조회도 새 GameData 조회이면 이전 증거를 폐기한다. Stage 조회와는 수명을 공유하지 않는다.
+            GameDataRestoreQuery query = tableId == "GameData" ? GameDataRestore.BeginQuery() : null;
+            GetMyDataAsyncCore(tableId, onSuccess, onFail, query);
+        }
+
+        private void GetMyDataAsyncCore(string tableId, Action<BackendReturnObject> onSuccess,
+            Action<BackendState> onFail, GameDataRestoreQuery query)
+        {
+            if (tableId == "GameData")
+            {
+                if (!GameDataRestore.CanHandle(query) || !GameDataTransport.LoggedIn) return;
+                try
+                {
+                    // Reuse the same Get; never retain a failed query's old popup retry closure.
+                    GameDataTransport.Get(query.AccountInDate, bro =>
+                    {
+                        if (!GameDataRestore.CanHandle(query)) return;
+                        if (bro != null && bro.IsSuccess()) onSuccess?.Invoke(bro);
+                        else onFail?.Invoke(BackendState.Failure);
+                    });
+                }
+                catch { if (GameDataRestore.CanHandle(query)) onFail?.Invoke(BackendState.Failure); }
+                return;
+            }
             if (!Backend.IsLogin && !_isLogin)
             {
                 Debug.LogError("[BackendManager] 로그인이 되어있지 않아 데이터를 조회할 수 없습니다.");
@@ -969,17 +1324,26 @@ namespace Muks.BackEnd
 
             // 유저 조건 생성
             Where where = new Where();
-            where.Equal("owner_inDate", Backend.UserInDate);
+            where.Equal("owner_inDate", query != null ? query.AccountInDate : Backend.UserInDate);
 
             ProcessBackendAPI(
                 $"{tableId} 데이터 조회",
-                (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
+                (callback) =>
+                {
+                    if (query != null && !GameDataRestore.IsCurrent(query)) return;
+                    Backend.GameData.Get(tableId, where, bro =>
+                    {
+                        // 구세대 응답은 오류 재시도 처리기/메모리 적용/후속 초기화보다 먼저 차단한다.
+                        if (query == null || GameDataRestore.IsCurrent(query)) callback?.Invoke(bro);
+                    });
+                },
                 (bro) => {
+                    if (query != null && !GameDataRestore.IsCurrent(query)) return;
                     Debug.Log($"[BackendManager] {tableId} 데이터 조회 성공");
                     _isLoaded = true;
                     onSuccess?.Invoke(bro);
                 },
-                onFail,
+                state => { if (query == null || GameDataRestore.IsCurrent(query)) onFail?.Invoke(state); },
                 3,
                 true
             );
@@ -1012,6 +1376,7 @@ namespace Muks.BackEnd
         /// </summary>
         public void SaveGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
+            if (tableId == "GameData") { SaveLegacyGameDataAsync(param, null, onSuccess, onFail); return; }
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
@@ -1079,6 +1444,7 @@ namespace Muks.BackEnd
         /// </summary>
         public void InsertGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
+            if (tableId == "GameData") { onFail?.Invoke(BackendState.NotSave); return; }
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
@@ -1111,6 +1477,7 @@ namespace Muks.BackEnd
         /// </summary>
         public void UpdateGameDataAsync(string tableId, string inDate, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
+            if (tableId == "GameData") { SaveLegacyGameDataAsync(param, inDate, onSuccess, onFail); return; }
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
@@ -1144,6 +1511,7 @@ namespace Muks.BackEnd
         /// </summary>
         public BackendReturnObject GetMyData(string tableId)
         {
+            if (tableId == "GameData") InvalidateGameDataRestore();
             if (!Backend.IsLogin && !_isLogin)
             {
                 Debug.LogError("[BackendManager] 로그인이 되어있지 않아 데이터를 조회할 수 없습니다.");
@@ -1193,6 +1561,7 @@ namespace Muks.BackEnd
         /// </summary>
         public bool SaveGameData(string tableId, Param param)
         {
+            if (tableId == "GameData") return SaveLegacyGameData(param, null);
 
             if (!_isSaveEnabled)
             {
@@ -1266,6 +1635,7 @@ namespace Muks.BackEnd
         /// </summary>
         public bool InsertGameData(string tableId, Param param)
         {
+            if (tableId == "GameData") return false;
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
@@ -1299,6 +1669,7 @@ namespace Muks.BackEnd
         /// </summary>
         public bool UpdateGameData(string tableId, string inDate, Param param)
         {
+            if (tableId == "GameData") return SaveLegacyGameData(param, inDate);
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");

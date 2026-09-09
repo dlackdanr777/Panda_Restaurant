@@ -432,6 +432,7 @@ public class GameManager : MonoBehaviour
 
     public void SaveGameData()
     {
+        if (!BackendManager.Instance.CanSaveLegacyGameData) return;
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 
@@ -449,6 +450,7 @@ public class GameManager : MonoBehaviour
 
     public void AsyncSaveGameData()
     {
+        if (!BackendManager.Instance.CanSaveLegacyGameData) return;
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 

@@ -192,11 +192,15 @@ namespace Muks.BackEnd
 
         private void LoginBackendWithGoogleToken(string token, bool isAuto, Action onFail)
         {
+            var backend = BackendManager.Instance;
+            var attempt = backend.BeginGameDataAuthentication(GameDataAuthenticationKind.Google);
+            if (attempt == null) { onFail?.Invoke(); return; }
             Backend.BMember.AuthorizeFederation(token, FederationType.Google, bro =>
             {
+                if (!backend.ObserveGameDataAuthenticationResponse(attempt)) return;
                 if (bro.IsSuccess())
                 {
-                    BackendManager.Instance.NotifyFederationLoginSuccess();
+                    if (!backend.NotifyFederationLoginSuccess(attempt, bro)) return;
                     Debug.Log($"[GoogleLoginManager] 뒤끝 구글 페더레이션 로그인 성공 (statusCode: {bro.GetStatusCode()})");
                     if (isAuto)
                         OnGoogleAutoLoginSuccessHandler?.Invoke();
@@ -312,10 +316,16 @@ namespace Muks.BackEnd
                 if (_originalUserIndate == null)
                     _originalUserIndate = Backend.UserInDate;
                 string indateBefore = _originalUserIndate;
+                var backend = BackendManager.Instance;
+                // Linking/switch UI is never a new-account GameData bootstrap permission.
+                var attempt = backend.BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                if (attempt == null) { onFail?.Invoke(); return; }
                 Backend.BMember.AuthorizeFederation(token, FederationType.Google, bro =>
                 {
+                    if (!backend.ObserveGameDataAuthenticationResponse(attempt)) return;
                     if (bro.IsSuccess())
                     {
+                        if (!backend.CompleteGameDataAuthentication(attempt, bro)) return;
                         if (bro.GetStatusCode() == "201")
                         {
                             // JWT에서 이미 이메일을 추출했으므로 그대로 사용
@@ -333,6 +343,7 @@ namespace Muks.BackEnd
                                 Debug.Log("[GoogleLoginManager] 구글 연동: 이미 현재 계정에 연동됨 (200)");
                                 _pendingToken = null;
                                 onAlreadyLinked?.Invoke();
+                                RequireRestartAfterAccountAuthentication();
                             }
                             else
                             {
@@ -348,6 +359,7 @@ namespace Muks.BackEnd
                         Debug.Log("[GoogleLoginManager] 구글 연동: 에러 — " + bro.GetMessage());
                         _pendingToken = null;
                         onFail?.Invoke();
+                        RequireRestartAfterAccountAuthentication();
                     }
                 });
             });
@@ -366,6 +378,7 @@ namespace Muks.BackEnd
             _pendingDisplayName = null;
             _originalUserIndate = null;
             Debug.Log("[GoogleLoginManager] 구글 연동 확정");
+            RequireRestartAfterAccountAuthentication();
         }
 
         /// <summary>신규 연동 취소.</summary>
@@ -374,6 +387,7 @@ namespace Muks.BackEnd
             _pendingToken = null;
             _originalUserIndate = null;
             Debug.Log("[GoogleLoginManager] 구글 연동 취소");
+            RequireRestartAfterAccountAuthentication();
         }
 
         /// <summary>
@@ -392,13 +406,25 @@ namespace Muks.BackEnd
                 {
                     Debug.Log("[GoogleLoginManager] 계정 전환 취소, 원래 계정 복구 성공");
                     onSuccess?.Invoke();
+                    RequireRestartAfterAccountAuthentication();
                 },
                 onFail: (state) =>
                 {
                     Debug.LogError("[GoogleLoginManager] 계정 전환 취소, 원래 계정 복구 실패: " + state);
                     onFail?.Invoke();
+                    RequireRestartAfterAccountAuthentication();
                 }
             );
+        }
+
+        // Reapplying GameData in a running restaurant would overwrite unsaved progress/timers while Stage stays live.
+        // Keep the invalidated save permission closed; use the normal startup restore on the next application run.
+        private static void RequireRestartAfterAccountAuthentication()
+        {
+            var backend = BackendManager.Instance;
+            backend.LogOut(); // Memory only; do not erase the SDK login token or coordinator locks.
+            backend.ShowPopup("게임 재시작 필요", "계정 인증이 변경되어 저장을 중단했습니다.\n게임을 다시 실행하여 데이터를 복원해 주세요.");
+            backend.ShowPopupExitButton();
         }
 
         /// <summary>연동된 다른 구글 계정으로 전환합니다.</summary>

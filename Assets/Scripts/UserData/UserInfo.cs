@@ -604,24 +604,31 @@ public static class UserInfo
 
     public static void LoadGameData(BackendReturnObject bro)
     {
-        if (!bro.IsSuccess())
+        TryLoadGameData(bro);
+    }
+
+    // Keep the void wrapper for existing callers without duplicating the apply body.
+    // A later exception may leave partial legacy state; the restore context withholds readiness, not rollback.
+    public static bool TryLoadGameData(BackendReturnObject bro)
+    {
+        if (bro == null || !bro.IsSuccess())
         {
             Debug.LogError("bro Not Success");
-            return;
+            return false;
         }
 
         JsonData json = bro.FlattenRows();
-        if (json.Count <= 0)
+        if (json == null || json.Count <= 0)
         {
             Debug.LogError("No Server Data");
-            return;
+            return false;
         }
 
         LoadUserData loadData = new LoadUserData(json);
         if (loadData == null || !loadData.IsValid)
         {
             Debug.LogError("[UserInfo] 유저 데이터 파싱 실패. 기본값 적용 중단.");
-            return;
+            return false;
         }
 
         IsFirstTutorialClear = loadData.IsFirstTutorialClear;
@@ -759,6 +766,7 @@ public static class UserInfo
         OnGiveGachaItemHandler?.Invoke();
         OnUpgradeGachaItemHandler?.Invoke();
         DebugLog.Log("데이터 로드 완료");
+        return true;
     }
 
     public static void SetUserId(string id)
