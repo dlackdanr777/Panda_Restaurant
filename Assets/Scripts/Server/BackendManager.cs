@@ -27,7 +27,8 @@ namespace Muks.BackEnd
         void Get(string accountInDate, Action<BackendReturnObject> callback);
         void Insert(Param values, Action<BackendReturnObject> callback);
         void Update(GameDataSaveTarget target, Param values, Action<BackendReturnObject> callback);
-        BackendReturnObject Update(GameDataSaveTarget target, Param values);
+        Param LatestValues();
+        bool GameplaySaveAllowed { get; }
         IReadOnlyList<StaffData> ReadCatalog();
         bool Restore(BackendReturnObject response);
         Param InitialValues();
@@ -80,6 +81,10 @@ namespace Muks.BackEnd
         private GameDataRestoreContext _gameDataRestoreContext;
         private GameDataAuthenticationAttempt _authenticationInFlight;
         private IGameDataBackendTransport _gameDataTransport;
+        private GameDataSaveCoordinator _gameDataSaveCoordinator;
+        private GameDataRestoreQuery _gameDataSaveQuery;
+        private Func<bool> _gameDataGameplayGate;
+        public GameDataSaveCoordinator CurrentGameDataSaveCoordinator => _gameDataSaveCoordinator;
         private IGameDataBackendTransport GameDataTransport => _gameDataTransport ??
             (_gameDataTransport = new SdkGameDataBackendTransport(this));
 
@@ -100,8 +105,12 @@ namespace Muks.BackEnd
                 Backend.GameData.Insert("GameData", values, bro => callback(bro));
             public void Update(GameDataSaveTarget target, Param values, Action<BackendReturnObject> callback) =>
                 Backend.GameData.UpdateV2("GameData", target.RowInDate, target.AccountInDate, values, bro => callback(bro));
-            public BackendReturnObject Update(GameDataSaveTarget target, Param values) =>
-                Backend.GameData.UpdateV2("GameData", target.RowInDate, target.AccountInDate, values);
+            public Param LatestValues()
+            {
+                UserInfo.ApplyDailyWeeklyResetIfNeeded();
+                return UserInfo.GetSaveUserData();
+            }
+            public bool GameplaySaveAllowed => UserInfo.IsFirstTutorialClear && !UserInfo.IsTutorialStart;
             public IReadOnlyList<StaffData> ReadCatalog() => Resources.LoadAll<StaffData>("StaffData");
             public bool Restore(BackendReturnObject response) => UserInfo.TryLoadGameData(response);
             public Param InitialValues() => LoadUserData.CreateInitialGameData(_owner.ServerTime);
@@ -112,14 +121,30 @@ namespace Muks.BackEnd
         public GameDataRestoreEvidence RestoredGameData => GameDataRestore.Evidence;
         public GameDataRestoreResult GameDataRestoreResult => GameDataRestore.Result;
 
-        // 읽기 증거만 무효화한다. 기존 쓰기 조정기의 미확정/로컬 반영 실패 잠금은 건드리지 않는다.
-        public void InvalidateGameDataRestore() => GameDataRestore.InvalidateAccountSession();
+        // 읽기/대기 세션은 무효화하되 이미 보낸 작업의 대상 소유권과 미해결 기록은 유지한다.
+        public void InvalidateGameDataRestore()
+        {
+            InvalidateGameDataSaveSession();
+            GameDataRestore.InvalidateAccountSession();
+        }
+        private void InvalidateGameDataSaveSession()
+        {
+            _gameDataSaveCoordinator?.InvalidateSession();
+            _gameDataSaveCoordinator = null;
+            _gameDataSaveQuery = null;
+        }
+        private GameDataRestoreQuery BeginGameDataQuery()
+        {
+            InvalidateGameDataSaveSession();
+            return GameDataRestore.BeginQuery();
+        }
         public bool IsCurrentGameDataQuery(GameDataRestoreQuery query) => GameDataRestore.IsCurrent(query);
 
         public GameDataAuthenticationAttempt BeginGameDataAuthentication(GameDataAuthenticationKind kind)
         {
             // SDK updates its shared account before callbacks. Do not overlap real authentication calls.
             if (_authenticationInFlight != null) return null;
+            InvalidateGameDataSaveSession();
             return _authenticationInFlight = GameDataRestore.BeginAuthentication(kind, GameDataTransport.NativeLoggedIn);
         }
         public bool IsCurrentGameDataAuthentication(GameDataAuthenticationAttempt attempt) =>
@@ -1142,30 +1167,45 @@ namespace Muks.BackEnd
         #region 데이터 관련 메서드 (비동기)
 
         /// <summary>
-        /// 기존 저장 호출자는 교체하지 않는다. 해당 계정/행의 실제 검증·복원 증거만 사용한다.
+        /// 생성 당시 계정/행/인증·복원 조회 객체에 고정한다. 같은 계정 재로그인도 재사용할 수 없다.
         /// 두 오류 재시도 OFF가 실제 기본 초기화에 적용된 증거가 있어야 전송한다.
         /// 인증 거절 후 자동 토큰 갱신은 허용하지만, 결과 미확정의 재전송은 허용하지 않는다.
         /// </summary>
         public GameDataSingleUpdate CreateGameDataSingleUpdate()
         {
-            return new GameDataSingleUpdate(() =>
+            return CreateBoundGameDataSingleUpdate(GameDataRestore.LegacyQuery, GameDataRestore.LegacyTarget,
+                () => null, requireStaffReady: true);
+        }
+
+        private GameDataSingleUpdate CreateBoundGameDataSingleUpdate(GameDataRestoreQuery query,
+            GameDataSaveTarget target, Func<GameDataSaveCoordinator> readOwner, bool requireStaffReady)
+        {
+            GameDataSingleUpdate updater = null;
+            updater = new GameDataSingleUpdate(() =>
             {
-                GameDataRestoreEvidence evidence = RestoredGameData;
+                bool current = IsCurrentGameDataSaveSession(query, target);
+                bool staffReady = !requireStaffReady || ReferenceEquals(RestoredGameData?.Query, query);
                 return new GameDataSaveReadiness(
-                    _isSaveEnabled, GameDataTransport.LoggedIn, evidence != null,
-                    UserInfo.IsFirstTutorialClear && !UserInfo.IsTutorialStart,
-                    GameDataTransport.AccountInDate, evidence?.Target,
-                    transportBlockReason: GameDataSaveCoordinator.IsTargetBlocked(evidence?.Target)
-                        ? "이 GameData 행의 기존 저장 결과가 미확정이거나 로컬 반영에 실패했습니다." : null,
+                    _isSaveEnabled, GameDataTransport.LoggedIn, current && staffReady,
+                    !requireStaffReady || GameDataTransport.GameplaySaveAllowed,
+                    GameDataTransport.AccountInDate, target,
+                    transportBlockReason: GameDataSaveCoordinator.IsTargetOwnedByOther(target, readOwner() ?? updater.Owner)
+                        ? "이 GameData 행은 다른 진행 중/미해결 저장이 소유하고 있습니다." : null,
                     initializationPolicy: _gameDataInitializationPolicy);
-            }, new BackendGameDataUpdateTransport());
+            }, new BackendGameDataUpdateTransport((identity, values, response) =>
+            {
+                // Same injected boundary as read/bootstrap. SDK 5.15 default initialization uses
+                // UnityWebRequest + CallbackUpdateManager.Update (main thread); fakes may reply inline.
+                GameDataTransport.Update(identity.Target, values, bro => response(identity, ToRawResponse(bro)));
+            }), isSessionCurrent: () => IsCurrentGameDataSaveSession(query, target));
+            return updater;
         }
 
         /// <summary>기존 단일 Get을 재사용한다. 공용 필드 부재만 기존 게임 복원을 허용한다.</summary>
         public void GetAndRestoreGameDataAsync(Action<GameDataRestoreQuery, GameDataRestoreResult> onComplete,
             Action<BackendState> onFail = null)
         {
-            GameDataRestoreQuery query = GameDataRestore.BeginQuery();
+            GameDataRestoreQuery query = BeginGameDataQuery();
             GetMyDataAsyncCore("GameData", bro =>
             {
                 if (!GameDataRestore.CanHandle(query)) return;
@@ -1222,68 +1262,123 @@ namespace Muks.BackEnd
         }
 
         private static GameDataRawResponse ToRawResponse(BackendReturnObject bro) => bro == null ? null
-            : new GameDataRawResponse(bro.IsSuccess(), bro.GetStatusCode(), bro.GetErrorCode(), bro.GetMessage());
+            : new GameDataRawResponse(bro.IsSuccess(), bro.GetStatusCode(), bro.GetErrorCode(), bro.GetMessage(), bro);
 
-        public bool CanSaveLegacyGameData => CanWriteLegacyGameData(GameDataRestore.LegacyQuery, GameDataRestore.LegacyTarget);
+        public bool CanSaveLegacyGameData
+        {
+            get
+            {
+                var query = GameDataRestore.LegacyQuery;
+                var target = GameDataRestore.LegacyTarget;
+                var owner = ReferenceEquals(_gameDataSaveQuery, query) ? _gameDataSaveCoordinator : null;
+                return IsCurrentGameDataSaveSession(query, target)
+                    && _gameDataInitializationPolicy != null && _gameDataInitializationPolicy.IsSupported
+                    && !GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
+                    && (owner == null || (owner.State != GameDataSaveCoordinatorState.Indeterminate
+                        && owner.State != GameDataSaveCoordinatorState.LocalCompletionFailed
+                        && owner.State != GameDataSaveCoordinatorState.InvalidatedAfterSend));
+            }
+        }
 
-        private bool CanWriteLegacyGameData(GameDataRestoreQuery query, GameDataSaveTarget target)
+        private bool IsCurrentGameDataSaveSession(GameDataRestoreQuery query, GameDataSaveTarget target)
         {
             return _isSaveEnabled && GameDataTransport.LoggedIn && target != null
                 && GameDataRestore.IsCurrent(query) && ReferenceEquals(query, GameDataRestore.LegacyQuery)
-                && target.Matches(GameDataRestore.LegacyTarget) && !GameDataRestore.IsInitialCreationBlocked
-                && !GameDataSaveCoordinator.IsTargetBlocked(target);
+                && target.Matches(GameDataRestore.LegacyTarget) && !GameDataRestore.IsInitialCreationBlocked;
         }
 
-        private bool TryPrepareLegacyGameData(Param values, string expectedRow, out GameDataRestoreQuery query,
-            out GameDataSaveTarget target, out GameDataSavePayload payload)
+        private GameDataSaveCoordinator GetGameDataSaveCoordinator()
         {
-            query = GameDataRestore.LegacyQuery;
-            target = GameDataRestore.LegacyTarget;
-            payload = null;
-            return CanWriteLegacyGameData(query, target)
-                && (expectedRow == null || string.Equals(expectedRow, target.RowInDate, StringComparison.Ordinal))
-                && GameDataSavePayload.TryCapture(values, out payload, out _)
-                && CanWriteLegacyGameData(query, target);
+            if (!CanSaveLegacyGameData) return null;
+            var query = GameDataRestore.LegacyQuery;
+            var target = GameDataRestore.LegacyTarget;
+            if (ReferenceEquals(_gameDataSaveQuery, query) && _gameDataSaveCoordinator != null)
+                return _gameDataSaveCoordinator;
+
+            InvalidateGameDataSaveSession();
+            GameDataSaveCoordinator owner = null;
+            var updater = CreateBoundGameDataSingleUpdate(query, target, () => owner, requireStaffReady: false);
+            owner = new GameDataSaveCoordinator(target, updater, () =>
+            {
+                if (!IsCurrentGameDataSaveSession(query, target))
+                    throw new InvalidOperationException("오래된 세션의 최신 자료를 생성할 수 없습니다.");
+                return GameDataTransport.LatestValues();
+            }, isSessionCurrent: () => IsCurrentGameDataSaveSession(query, target));
+            _gameDataSaveQuery = query;
+            _gameDataSaveCoordinator = owner;
+            return owner;
+        }
+
+        /// <summary>접수/전송/성공은 ticket에서 구분한다. 앞선 완료 후 전체 최신 자료를 생성하며 병합 시 Param을 보관하지 않는다.</summary>
+        public GameDataSaveRequest RequestGameDataAutosave(Action<BackendReturnObject> onSuccess = null,
+            Action<BackendState> onFail = null, bool requireGameplay = false)
+        {
+            var coordinator = GetGameDataSaveCoordinator();
+            if (coordinator == null) return RejectGameDataRequest("현재 복원 세션/정책/대상 소유권으로 저장을 접수할 수 없습니다.", onFail);
+            Func<bool> guard = requireGameplay
+                ? (_gameDataGameplayGate ?? (_gameDataGameplayGate = () => GameDataTransport.GameplaySaveAllowed)) : null;
+            return SubmitGameDataRequest(coordinator, null, true, onSuccess, onFail, guard);
+        }
+
+        /// <summary>명시된 변경값은 고정된 별도 FIFO 작업이다. 부분 필드와 성공 통지를 자동 저장으로 대체하지 않는다.</summary>
+        public GameDataSaveRequest RequestGameDataSave(Param values, string expectedRow = null,
+            Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            var coordinator = GetGameDataSaveCoordinator();
+            var query = _gameDataSaveQuery;
+            var target = GameDataRestore.LegacyTarget;
+            if (coordinator == null || target == null || (expectedRow != null
+                && !string.Equals(expectedRow, target.RowInDate, StringComparison.Ordinal)))
+                return RejectGameDataRequest("현재 복원된 저장 대상과 요청이 일치하지 않습니다.", onFail);
+            if (!GameDataSavePayload.TryCapture(values, out var payload, out string error))
+                return RejectGameDataRequest(error, onFail);
+            if (!IsCurrentGameDataSaveSession(query, target))
+                return GameDataSaveRequest.Rejected("자료 고정 중 저장 세션이 무효화되었습니다.");
+            return SubmitGameDataRequest(coordinator, () => payload.CreateParamCopy(), false, onSuccess, onFail);
+        }
+
+        private static GameDataSaveRequest RejectGameDataRequest(string error, Action<BackendState> onFail)
+        {
+            onFail?.Invoke(BackendState.NotSave);
+            return GameDataSaveRequest.Rejected(error);
+        }
+
+        private GameDataSaveRequest SubmitGameDataRequest(GameDataSaveCoordinator coordinator, Func<Param> createValues,
+            bool autosave, Action<BackendReturnObject> onSuccess, Action<BackendState> onFail,
+            Func<bool> canCreateValues = null)
+        {
+            var query = _gameDataSaveQuery;
+            var target = GameDataRestore.LegacyTarget;
+            bool failureReported = false;
+            Action<GameDataSaveReceipt> confirmed = receipt =>
+            {
+                if (IsCurrentGameDataSaveSession(query, target)) onSuccess?.Invoke(receipt.RawResponse?.NativeResponse);
+            };
+            Action<GameDataSaveRequest> changed = request =>
+            {
+                if (failureReported || !IsCurrentGameDataSaveSession(query, target)) return;
+                if (request.Status == GameDataSaveRequestStatus.RejectedBeforeSend
+                    || request.Status == GameDataSaveRequestStatus.Indeterminate
+                    || request.Status == GameDataSaveRequestStatus.LocalCompletionFailed)
+                {
+                    failureReported = true;
+                    onFail?.Invoke(request.Status == GameDataSaveRequestStatus.RejectedBeforeSend
+                        ? BackendState.NotSave : BackendState.Failure);
+                }
+            };
+            return autosave ? coordinator.RequestAutosave(confirmed, changed, canCreateValues)
+                : coordinator.EnqueueSave(createValues, confirmed, changed);
         }
 
         private void SaveLegacyGameDataAsync(Param values, string expectedRow,
-            Action<BackendReturnObject> onSuccess, Action<BackendState> onFail)
-        {
-            if (!TryPrepareLegacyGameData(values, expectedRow, out var query, out var target, out var payload))
-            { onFail?.Invoke(BackendState.NotSave); return; }
-            bool responseHandled = false;
-            try
-            {
-                Param isolated = payload.CreateParamCopy();
-                if (!CanWriteLegacyGameData(query, target)) { onFail?.Invoke(BackendState.NotSave); return; }
-                // Known restored row only. No Get->Insert fallback, captured-data retry, or popup retry closure.
-                GameDataTransport.Update(target, isolated, bro =>
-                {
-                    if (responseHandled) return;
-                    responseHandled = true;
-                    if (!CanWriteLegacyGameData(query, target)) return;
-                    if (bro != null && bro.IsSuccess()) onSuccess?.Invoke(bro);
-                    else onFail?.Invoke(BackendState.Failure);
-                });
-            }
-            catch
-            {
-                if (!responseHandled && CanWriteLegacyGameData(query, target))
-                { responseHandled = true; onFail?.Invoke(BackendState.Failure); }
-            }
-        }
+            Action<BackendReturnObject> onSuccess, Action<BackendState> onFail) =>
+            RequestGameDataSave(values, expectedRow, onSuccess, onFail);
 
+        // Compatibility only: false may mean accepted but still pending, never an assertion of non-application.
+        // Runtime callers use RequestGameDataAutosave's success callback. No synchronous SDK call/wait is made.
         private bool SaveLegacyGameData(Param values, string expectedRow)
         {
-            if (!TryPrepareLegacyGameData(values, expectedRow, out var query, out var target, out var payload)) return false;
-            try
-            {
-                Param isolated = payload.CreateParamCopy();
-                if (!CanWriteLegacyGameData(query, target)) return false;
-                var bro = GameDataTransport.Update(target, isolated);
-                return CanWriteLegacyGameData(query, target) && bro != null && bro.IsSuccess();
-            }
-            catch { return false; }
+            return RequestGameDataSave(values, expectedRow).Status == GameDataSaveRequestStatus.SuccessConfirmed;
         }
         
         /// <summary>
@@ -1292,7 +1387,7 @@ namespace Muks.BackEnd
         public void GetMyDataAsync(string tableId, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
             // 호환 조회도 새 GameData 조회이면 이전 증거를 폐기한다. Stage 조회와는 수명을 공유하지 않는다.
-            GameDataRestoreQuery query = tableId == "GameData" ? GameDataRestore.BeginQuery() : null;
+            GameDataRestoreQuery query = tableId == "GameData" ? BeginGameDataQuery() : null;
             GetMyDataAsyncCore(tableId, onSuccess, onFail, query);
         }
 
@@ -1558,6 +1653,9 @@ namespace Muks.BackEnd
 
         /// <summary>
         /// 게임 데이터를 안전하게 저장합니다 (동기식)
+        /// GameData만 공통 비동기 큐를 사용한다. true는 반환 전에 성공 확정된 경우뿐이며,
+        /// false는 대기/미확정일 수도 있다. 완료 확인이 필요하면 RequestGameDataSave를 사용한다.
+        /// 다른 테이블의 기존 동기 계약은 유지한다.
         /// </summary>
         public bool SaveGameData(string tableId, Param param)
         {
@@ -1666,6 +1764,8 @@ namespace Muks.BackEnd
 
         /// <summary>
         /// 게임 데이터를 업데이트합니다 (동기식)
+        /// GameData는 공통 비동기 큐에 접수하며, 대기 중이면 false다(미반영 확정의 뜻이 아님).
+        /// 완료 확인이 필요하면 RequestGameDataSave를 사용한다. 다른 테이블은 기존 동기식이다.
         /// </summary>
         public bool UpdateGameData(string tableId, string inDate, Param param)
         {

@@ -20,9 +20,14 @@ public class GameDataRestoreContextTests
     private readonly Dictionary<StaffData, string> _sourceSnapshots = new Dictionary<StaffData, string>();
     private Random.State _randomState;
     private string _gameState;
+    private GameDataSaveCoordinator[] _originalOwners;
 
     [SetUp]
-    public void SetUp() { _randomState = Random.state; _gameState = ReadGameState(); }
+    public void SetUp()
+    {
+        _randomState = Random.state; _gameState = ReadGameState();
+        _originalOwners = Owners().ToArray();
+    }
 
     [TearDown]
     public void TearDown()
@@ -34,7 +39,12 @@ public class GameDataRestoreContextTests
             foreach (var source in _sourceSnapshots)
                 Assert.That(EditorJsonUtility.ToJson(source.Key), Is.EqualTo(source.Value), "Registered staff asset changed");
         }
-        finally { _sourceSnapshots.Clear(); }
+        finally
+        {
+            _sourceSnapshots.Clear();
+            Owners().Clear();
+            foreach (var owner in _originalOwners) Owners().Add(owner);
+        }
     }
 
     [Test]
@@ -278,14 +288,17 @@ public class GameDataRestoreContextTests
     public void RequeryAndSameAccountRelogin_DoNotReleaseExistingUncertainOrLocalFailureSaveLocks()
     {
         var catalog = Catalog();
-        var context = new GameDataRestoreContext(() => AccountId);
-        Assert.That(context.TryRestore(context.BeginQuery(), true, Response(Row()), () => catalog, () => true).Status,
-            Is.EqualTo(GameDataRestoreStatus.Ready));
-        var originalEvidence = context.Evidence;
-        var target = originalEvidence.Target;
         var policy = FakeAppliedSdkPolicy();
         foreach (bool localApplyThrows in new[] { false, true })
         {
+            var context = new GameDataRestoreContext(() => AccountId);
+            var sourceRow = Row();
+            sourceRow["inDate"] = S(RowId + (localApplyThrows ? "-local-failure" : "-unknown"));
+            string response = Response(sourceRow);
+            Assert.That(context.TryRestore(context.BeginQuery(), true, response, () => catalog, () => true).Status,
+                Is.EqualTo(GameDataRestoreStatus.Ready));
+            var originalEvidence = context.Evidence;
+            var target = originalEvidence.Target;
             var transport = new FakeTransport();
             var updater = new GameDataSingleUpdate(() => new GameDataSaveReadiness(true, true,
                 context.Evidence != null, true, AccountId, context.Evidence?.Target, initializationPolicy: policy), transport);
@@ -304,11 +317,11 @@ public class GameDataRestoreContextTests
             var receiptBefore = coordinator.LastReceipt;
             string payloadBefore = coordinator.CurrentPayload.Json;
 
-            var refreshed = context.TryRestore(context.BeginQuery(), true, Response(Row()), () => catalog, () => true);
+            var refreshed = context.TryRestore(context.BeginQuery(), true, response, () => catalog, () => true);
             Assert.That(refreshed.Status, Is.EqualTo(GameDataRestoreStatus.Ready));
             context.InvalidateAccountSession();
             Assert.That(context.Evidence, Is.Null);
-            Assert.That(context.TryRestore(context.BeginQuery(), true, Response(Row()), () => catalog, () => true).Status,
+            Assert.That(context.TryRestore(context.BeginQuery(), true, response, () => catalog, () => true).Status,
                 Is.EqualTo(GameDataRestoreStatus.Ready));
             Assert.That(coordinator.State, Is.EqualTo(expected));
             Assert.That(coordinator.CanStartPurchase, Is.False);
@@ -319,10 +332,13 @@ public class GameDataRestoreContextTests
             Assert.That(coordinator.TryStartPurchase(new GameDataSaveIdentity("blocked-new", target),
                 () => throw new InvalidOperationException("A blocked new factory must not run"), _ => { }, out error), Is.False);
             Assert.That(transport.Count, Is.EqualTo(1));
+            Assert.That(originalEvidence.Diamonds, Is.EqualTo(110));
+            Assert.That(originalEvidence.StaffAccount.PandaTokens, Is.EqualTo(55));
         }
-        Assert.That(originalEvidence.Diamonds, Is.EqualTo(110));
-        Assert.That(originalEvidence.StaffAccount.PandaTokens, Is.EqualTo(55));
     }
+
+    private static HashSet<GameDataSaveCoordinator> Owners() => (HashSet<GameDataSaveCoordinator>)
+        typeof(GameDataSaveCoordinator).GetField("BlockedCoordinators", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
 
     private void AssertBlocked(string raw, GameDataRestoreStatus expected, IReadOnlyList<StaffData> catalog,
         bool querySucceeded = true, bool catalogThrows = false)

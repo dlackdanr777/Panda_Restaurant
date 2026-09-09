@@ -15,11 +15,22 @@ namespace Muks.BackEnd
     {
         private readonly Func<GameDataSaveReadiness> _readReadiness;
         private readonly IGameDataUpdateTransport _transport;
+        private readonly Func<bool> _isSessionCurrent;
+        internal bool IsSessionCurrent() => _isSessionCurrent == null || _isSessionCurrent();
+        internal GameDataSaveCoordinator Owner { get; private set; }
+        internal void BindOwner(GameDataSaveCoordinator owner)
+        {
+            if (Owner != null && !ReferenceEquals(Owner, owner))
+                throw new InvalidOperationException("한 전송 어댑터는 하나의 저장 조정기에만 속합니다.");
+            Owner = owner ?? throw new ArgumentNullException(nameof(owner));
+        }
 
-        public GameDataSingleUpdate(Func<GameDataSaveReadiness> readReadiness, IGameDataUpdateTransport transport)
+        public GameDataSingleUpdate(Func<GameDataSaveReadiness> readReadiness, IGameDataUpdateTransport transport,
+            Func<bool> isSessionCurrent = null)
         {
             _readReadiness = readReadiness ?? throw new ArgumentNullException(nameof(readReadiness));
             _transport = transport ?? throw new ArgumentNullException(nameof(transport));
+            _isSessionCurrent = isSessionCurrent;
         }
 
         public bool CanSend(GameDataSaveIdentity identity, out string error)
@@ -31,6 +42,11 @@ namespace Muks.BackEnd
             {
                 try
                 {
+                    if (!IsSessionCurrent())
+                    {
+                        error = "저장 어댑터를 만든 인증·복원 세션이 무효화되었습니다.";
+                        return false;
+                    }
                     GameDataSaveReadiness ready = _readReadiness();
                     if (ready == null) error = "저장 준비 상태가 없습니다.";
                     else if (!ready.SaveEnabled) error = "저장이 비활성화되어 있습니다.";
@@ -105,12 +121,16 @@ namespace Muks.BackEnd
 
     internal sealed class BackendGameDataUpdateTransport : IGameDataUpdateTransport
     {
+        private readonly Action<GameDataSaveIdentity, Param, Action<GameDataSaveIdentity, GameDataRawResponse>> _update;
+        internal BackendGameDataUpdateTransport(
+            Action<GameDataSaveIdentity, Param, Action<GameDataSaveIdentity, GameDataRawResponse>> update)
+        { _update = update ?? throw new ArgumentNullException(nameof(update)); }
+
         public void UpdateOnce(GameDataSaveIdentity identity, Param values,
             Action<GameDataSaveIdentity, GameDataRawResponse> onResponse)
         {
-            Backend.GameData.UpdateV2("GameData", identity.Target.RowInDate, identity.Target.AccountInDate, values,
-                bro => onResponse(identity, bro == null ? null : new GameDataRawResponse(
-                    bro.IsSuccess(), bro.GetStatusCode(), bro.GetErrorCode(), bro.GetMessage())));
+            // BackendManager supplies the same lowest SDK boundary used by bootstrap/read mocks.
+            _update(identity, values, onResponse);
         }
     }
 
@@ -312,8 +332,11 @@ namespace Muks.BackEnd
         public string StatusCode { get; }
         public string ErrorCode { get; }
         public string Message { get; }
-        public GameDataRawResponse(bool isSuccess, string statusCode, string errorCode, string message)
-        { IsSuccess = isSuccess; StatusCode = statusCode; ErrorCode = errorCode; Message = message; }
+        // Compatibility with existing success callbacks; immutable diagnostic fields above are captured separately.
+        public BackendReturnObject NativeResponse { get; }
+        public GameDataRawResponse(bool isSuccess, string statusCode, string errorCode, string message,
+            BackendReturnObject nativeResponse = null)
+        { IsSuccess = isSuccess; StatusCode = statusCode; ErrorCode = errorCode; Message = message; NativeResponse = nativeResponse; }
     }
 
     public enum GameDataSaveDisposition

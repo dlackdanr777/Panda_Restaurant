@@ -26,6 +26,7 @@ namespace Muks.BackEnd
         private readonly Dictionary<string, InitialCreationRecord> _initialCreations =
             new Dictionary<string, InitialCreationRecord>(StringComparer.Ordinal);
         private long _generation;
+        private long _authenticationGeneration;
         private GameDataRestoreResult _result = new GameDataRestoreResult(GameDataRestoreStatus.Invalidated,
             "검증된 GameData 조회가 없습니다.");
 
@@ -105,7 +106,7 @@ namespace Muks.BackEnd
         {
             // 토큰의 참조 동일성이 기준이며, 표시용 세대 번호의 순환으로 예전 토큰이 유효해지지 않는다.
             _generation = unchecked(_generation + 1);
-            _query = new GameDataRestoreQuery(ReadCurrentAccount(), _generation);
+            _query = new GameDataRestoreQuery(ReadCurrentAccount(), _generation, _authenticationGeneration);
             _legacyQuery = null;
             _legacyTarget = null;
             _result = new GameDataRestoreResult(GameDataRestoreStatus.QueryPending, "GameData 조회 중입니다.");
@@ -114,6 +115,7 @@ namespace Muks.BackEnd
 
         public void InvalidateAccountSession()
         {
+            _authenticationGeneration = unchecked(_authenticationGeneration + 1);
             _query = null;
             _legacyQuery = null;
             _legacyTarget = null;
@@ -429,8 +431,9 @@ namespace Muks.BackEnd
     {
         public string AccountInDate { get; }
         public long Generation { get; }
-        internal GameDataRestoreQuery(string accountInDate, long generation)
-        { AccountInDate = accountInDate; Generation = generation; }
+        public long AuthenticationGeneration { get; }
+        internal GameDataRestoreQuery(string accountInDate, long generation, long authenticationGeneration = 0)
+        { AccountInDate = accountInDate; Generation = generation; AuthenticationGeneration = authenticationGeneration; }
     }
 
     public enum GameDataRestoreStatus

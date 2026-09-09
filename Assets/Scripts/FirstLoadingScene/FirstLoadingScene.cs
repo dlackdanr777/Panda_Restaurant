@@ -210,7 +210,7 @@ public class FirstLoadingScene : MonoBehaviour
                     {
                         UserInfo.SetUserId(candidate);
                         if (BackendManager.Instance.CanSaveLegacyGameData)
-                            BackendManager.Instance.SaveGameDataAsync("GameData", UserInfo.GetSaveUserData());
+                            BackendManager.Instance.RequestGameDataAutosave();
                         Debug.Log($"[FirstLoadingScene] 닉네임 생성 완료: {candidate}");
                         onComplete?.Invoke();
                     }

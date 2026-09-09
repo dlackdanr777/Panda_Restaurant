@@ -21,9 +21,14 @@ public class GameDataSaveCoordinatorTests
     private readonly Dictionary<GachaStaffData, string> _wrapperSnapshots = new Dictionary<GachaStaffData, string>();
     private Random.State _randomState;
     private string _gameState;
+    private GameDataSaveCoordinator[] _originalOwners;
 
     [SetUp]
-    public void SetUp() { _randomState = Random.state; _gameState = ReadGameState(); }
+    public void SetUp()
+    {
+        _randomState = Random.state; _gameState = ReadGameState();
+        _originalOwners = Owners().ToArray();
+    }
 
     [TearDown]
     public void TearDown()
@@ -42,6 +47,9 @@ public class GameDataSaveCoordinatorTests
             foreach (GachaStaffData wrapper in _wrappers)
                 if (wrapper != null) Object.DestroyImmediate(wrapper);
             _wrappers.Clear(); _sources.Clear(); _wrapperSnapshots.Clear();
+            // Test isolation only: production has no unlock/reset API for an unresolved request.
+            Owners().Clear();
+            foreach (var owner in _originalOwners) Owners().Add(owner);
         }
     }
 
@@ -227,7 +235,8 @@ public class GameDataSaveCoordinatorTests
             Assert.That(firstCompletions, Is.Zero);
         }
         // Equivalent identity values are accepted; correlation is not object-reference equality.
-        transport.Reply(0, Identity(first.RequestId, Target()), Success());
+        transport.Reply(0, Identity(first.RequestId,
+            new GameDataSaveTarget(target.AccountInDate, target.RowInDate)), Success());
         Assert.That(firstCompletions, Is.EqualTo(1));
         Assert.That(coordinator.State, Is.EqualTo(GameDataSaveCoordinatorState.Idle));
         var second = Identity("second", target);
@@ -284,6 +293,8 @@ public class GameDataSaveCoordinatorTests
         Assert.That(latestCalls, Is.EqualTo(1));
         Assert.That(transport.Calls.Count, Is.EqualTo(2));
         Assert.That((int)JObject.Parse(Capture(transport.Calls[1].Values).Json)["Dia"], Is.EqualTo(100));
+        transport.Reply(1, transport.Calls[1].Identity, Success());
+        Assert.That(coordinator.State, Is.EqualTo(GameDataSaveCoordinatorState.Idle));
 
         var failingTransport = new FakeTransport();
         int failedCallbacks = 0, staleFactories = 0;
@@ -519,7 +530,9 @@ public class GameDataSaveCoordinatorTests
         Assert.That(receipt.Reason, Is.Not.Null.And.Not.Empty);
     }
 
-    private static GameDataSaveTarget Target() => new GameDataSaveTarget("test-account-inDate", "test-GameData-row-inDate");
+    private static HashSet<GameDataSaveCoordinator> Owners() => (HashSet<GameDataSaveCoordinator>)
+        typeof(GameDataSaveCoordinator).GetField("BlockedCoordinators", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+    private static GameDataSaveTarget Target() => new GameDataSaveTarget("test-account-inDate", "test-row:" + Guid.NewGuid().ToString("N"));
     private static GameDataSaveIdentity Identity(string requestId, GameDataSaveTarget target) => new GameDataSaveIdentity(requestId, target);
     private static GameDataRawResponse Success() => new GameDataRawResponse(true, "204", "", "");
     private static GameDataSingleUpdate Sender(GameDataSaveTarget target, FakeTransport transport)
