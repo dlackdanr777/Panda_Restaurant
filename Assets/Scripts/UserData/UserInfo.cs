@@ -517,8 +517,9 @@ public static class UserInfo
     }
 
 
-    public static void SaveStageData(EStage stage)
+    public static void SaveStageData(EStage stage, Func<bool> isCurrent = null)
     {
+        if (isCurrent != null && !isCurrent()) return;
         int stageIndex = (int)stage;
         if (_stageInfos[stageIndex] == null)
         {
@@ -527,12 +528,13 @@ public static class UserInfo
         }
 
         Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameData(stage.ToString() + "Data", param);
+        BackendManager.Instance.SaveGameData(stage.ToString() + "Data", param, isCurrent);
     }
 
 
-    public static void SaveStageDataAsync(EStage stage)
+    public static void SaveStageDataAsync(EStage stage, Func<bool> isCurrent = null)
     {
+        if (isCurrent != null && !isCurrent()) return;
         int stageIndex = (int)stage;
         if (_stageInfos[stageIndex] == null)
         {
@@ -541,64 +543,67 @@ public static class UserInfo
         }
 
         Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameDataAsync(stage.ToString() + "Data", param);
+        BackendManager.Instance.SaveGameDataAsync(stage.ToString() + "Data", param, isCurrent: isCurrent);
     }
 
 
     public static void LoadStageData()
     {
-        for (int i = 0, cnt = (int)EStage.Length; i < cnt; ++i)
-        {
-            LoadStageData((EStage)i);
-        }
+        BackendManager.Instance.LoadAllStageData(false);
     }
 
     public static void LoadStageDataAsync()
     {
-        for (int i = 0, cnt = (int)EStage.Length; i < cnt; ++i)
-        {
-            LoadStageDataAsync((EStage)i);
-        }
+        BackendManager.Instance.LoadAllStageData(true);
     }
 
 
     public static void LoadStageData(EStage stage)
     {
-        BackendReturnObject bro = BackendManager.Instance.GetMyData(stage.ToString() + "Data");
-
-        JsonData json = bro.FlattenRows();
-        if (json.Count <= 0)
-        {
-            Debug.LogError("저장된 데이터가 없습니다.");
-            return;
-        }
-
-        ServerStageData data = new ServerStageData();
-        data.SetData(json);
-        bool migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
-        bool loaded = _stageInfos[(int)stage].LoadData(data);
-        if (loaded && migrationApplied)
-            SaveStageData(stage);
+        BackendManager.Instance.LoadStageData(stage, false);
     }
 
     public static void LoadStageDataAsync(EStage stage)
     {
-        BackendManager.Instance.GetMyDataAsync(stage.ToString() + "Data", (bro) =>
-        {
-            JsonData json = bro.FlattenRows();
-            if (json.Count <= 0)
-            {
-                Debug.LogError("저장된 데이터가 없습니다.");
-                return;
-            }
+        BackendManager.Instance.LoadStageData(stage, true);
+    }
 
-            ServerStageData data = new ServerStageData();
+    internal static void ApplyLoadedStageData(EStage stage, BackendReturnObject response,
+        Func<bool> isCurrent, bool asynchronous)
+    {
+        TryApplyStageDataResponse(stage, response, isCurrent,
+            data => _stageInfos[(int)stage].LoadData(data),
+            () => { if (asynchronous) SaveStageDataAsync(stage, isCurrent); else SaveStageData(stage, isCurrent); });
+    }
+
+    // Shared legacy response path. Tests supply detached memory sinks, never actual account writes.
+    // Migration originals have already been captured by BackendManager before entering this method.
+    public static bool TryApplyStageDataResponse(EStage stage, BackendReturnObject response,
+        Func<bool> isCurrent, Func<ServerStageData, bool> applyLegacy, Action saveExistingA2)
+    {
+        if (stage < EStage.Stage1 || stage >= EStage.Length || response == null || !response.IsSuccess()
+            || isCurrent == null || applyLegacy == null || !isCurrent()) return false;
+        ServerStageData data;
+        bool migrationApplied;
+        try
+        {
+            JsonData json = response.FlattenRows();
+            if (!isCurrent() || json == null || json.Count != 1) return false;
+            data = new ServerStageData();
             data.SetData(json);
-            bool migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
-            bool loaded = _stageInfos[(int)stage].LoadData(data);
-            if (loaded && migrationApplied)
-                SaveStageDataAsync(stage);
-        });
+            if (!isCurrent()) return false;
+            migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
+        }
+        catch (Exception)
+        {
+            // A broken Stage payload cannot enter memory or trigger the old A2 save.
+            return false;
+        }
+        if (!isCurrent()) return false;
+        bool loaded = applyLegacy(data);
+        if (!isCurrent()) return false;
+        if (loaded && migrationApplied) saveExistingA2?.Invoke();
+        return loaded;
     }
 
 

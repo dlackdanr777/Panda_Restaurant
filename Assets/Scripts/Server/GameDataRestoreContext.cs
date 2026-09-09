@@ -355,6 +355,16 @@ namespace Muks.BackEnd
         private static GameDataRestoreStatus ValidateCatalog(StaffAccountSaveData account,
             Func<IReadOnlyList<StaffData>> readCatalog, out string error)
         {
+            GameDataRestoreStatus status = TryBuildStaffMaximums(readCatalog, out var maximums, out error);
+            return status == GameDataRestoreStatus.Ready
+                ? ValidateStaffLevels(account.Staff, maximums, out error) : status;
+        }
+
+        // Keep the raw catalog checks shared by existing account restore and pre-correction Stage collection.
+        internal static GameDataRestoreStatus TryBuildStaffMaximums(Func<IReadOnlyList<StaffData>> readCatalog,
+            out IReadOnlyDictionary<string, int> maximums, out string error)
+        {
+            maximums = null;
             error = null;
             IReadOnlyList<StaffData> catalog = readCatalog?.Invoke();
             if (catalog == null || catalog.Count == 0)
@@ -363,7 +373,7 @@ namespace Muks.BackEnd
                 return GameDataRestoreStatus.CatalogUnavailable;
             }
 
-            var maximums = new Dictionary<string, int>(StringComparer.Ordinal);
+            var verified = new Dictionary<string, int>(StringComparer.Ordinal);
             foreach (StaffData staff in catalog)
             {
                 if (staff == null || string.IsNullOrWhiteSpace(staff.Id))
@@ -380,18 +390,27 @@ namespace Muks.BackEnd
                     }
                 }
                 int rawMaximum = staff.MaxLevel;
-                if (rawMaximum < 1 || maximums.ContainsKey(staff.Id))
+                if (rawMaximum < 1 || verified.ContainsKey(staff.Id))
                 {
                     error = "등록 직원의 최대 레벨 근거가 없거나 ID가 중복되었습니다.";
                     return GameDataRestoreStatus.InvalidStaffCatalog;
                 }
                 // StaffData.IsMaxLevel의 동일 정책: 역할 레벨 배열과 공식 상한 모두 만족해야 한다.
                 // 원본 보유 레벨에는 GetRuntimeLevel/A2/clamp를 적용하지 않는다.
-                maximums.Add(staff.Id, Math.Min(rawMaximum, StaffData.OfficialMaxLevel));
+                verified.Add(staff.Id, Math.Min(rawMaximum, StaffData.OfficialMaxLevel));
             }
-            foreach (StaffAccountStaffRecord staff in account.Staff)
+            maximums = new System.Collections.ObjectModel.ReadOnlyDictionary<string, int>(verified);
+            return GameDataRestoreStatus.Ready;
+        }
+
+        internal static GameDataRestoreStatus ValidateStaffLevels(IReadOnlyList<StaffAccountStaffRecord> staffRecords,
+            IReadOnlyDictionary<string, int> maximums, out string error)
+        {
+            error = null;
+            foreach (StaffAccountStaffRecord staff in staffRecords)
             {
-                if (!maximums.TryGetValue(staff.Id, out int maximum))
+                if (staff == null || string.IsNullOrWhiteSpace(staff.Id)
+                    || !maximums.TryGetValue(staff.Id, out int maximum))
                 {
                     error = "공용 보유 목록에 현재 등록되지 않은 직원 ID가 있습니다.";
                     return GameDataRestoreStatus.UnregisteredStaff;

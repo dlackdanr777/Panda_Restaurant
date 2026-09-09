@@ -34,6 +34,14 @@ namespace Muks.BackEnd
         Param InitialValues();
     }
 
+    /// <summary>Existing Stage reads and legacy application boundary; no migration writes.</summary>
+    public interface IStageDataLoadTransport
+    {
+        void Get(EStage stage, string accountInDate, Func<bool> isCurrent, Action<BackendReturnObject> callback);
+        BackendReturnObject Get(EStage stage, string accountInDate, Func<bool> isCurrent);
+        void Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous);
+    }
+
     /// <summary>뒤끝과 연동할 수 있게 해주는 싱글톤 클래스</summary>
     public class BackendManager : MonoBehaviour
     {
@@ -84,6 +92,15 @@ namespace Muks.BackEnd
         private GameDataSaveCoordinator _gameDataSaveCoordinator;
         private GameDataRestoreQuery _gameDataSaveQuery;
         private Func<bool> _gameDataGameplayGate;
+        private IStageDataLoadTransport _stageDataTransport;
+        private StaffStageMigrationCollection _stageMigrationCollection;
+        private long _stageRoundSerial;
+        public StaffStageMigrationCollection StageMigrationCollection
+        {
+            get { _stageMigrationCollection?.RefreshValidity(); return _stageMigrationCollection; }
+        }
+        private IStageDataLoadTransport StageDataTransport => _stageDataTransport ??
+            (_stageDataTransport = new SdkStageDataLoadTransport(this));
         public GameDataSaveCoordinator CurrentGameDataSaveCoordinator => _gameDataSaveCoordinator;
         private IGameDataBackendTransport GameDataTransport => _gameDataTransport ??
             (_gameDataTransport = new SdkGameDataBackendTransport(this));
@@ -115,6 +132,118 @@ namespace Muks.BackEnd
             public bool Restore(BackendReturnObject response) => UserInfo.TryLoadGameData(response);
             public Param InitialValues() => LoadUserData.CreateInitialGameData(_owner.ServerTime);
         }
+
+        private sealed class SdkStageDataLoadTransport : IStageDataLoadTransport
+        {
+            private readonly BackendManager _owner;
+            public SdkStageDataLoadTransport(BackendManager owner) { _owner = owner; }
+            public void Get(EStage stage, string accountInDate, Func<bool> isCurrent,
+                Action<BackendReturnObject> callback)
+            {
+                if (!isCurrent()) return;
+                var where = new Where();
+                where.Equal("owner_inDate", accountInDate);
+                BackendReturnObject lastResponse = null;
+                GameDataRestoreQuery query = _owner.GameDataRestore.LegacyQuery;
+                long round = _owner._stageRoundSerial;
+                _owner.ProcessBackendAPI(stage + "Data 데이터 조회", next =>
+                {
+                    if (!isCurrent()) return; // Includes delayed popup/automatic read retries.
+                    Backend.GameData.Get(stage + "Data", where, bro =>
+                    {
+                        if (!isCurrent()) return; // Before HandleError/retry/legacy application.
+                        lastResponse = bro;
+                        next(bro);
+                    });
+                }, bro => { if (isCurrent()) callback(bro); },
+                state =>
+                {
+                    if (!isCurrent()) return;
+                    callback(lastResponse);
+                    // A terminal response cannot be replaced in the same collection. An explicit UI retry
+                    // starts a fresh all-Stage round, retaining the existing read retry affordance.
+                    _owner.SetPopupButton1("재시도", () => _owner.RetryStageCollection(query, round));
+                });
+            }
+            public BackendReturnObject Get(EStage stage, string accountInDate, Func<bool> isCurrent)
+            {
+                if (!isCurrent()) return null;
+                var where = new Where();
+                where.Equal("owner_inDate", accountInDate);
+                return _owner.ProcessBackendAPISync(stage + "Data 데이터 조회",
+                    () => Backend.GameData.Get(stage + "Data", where), isCurrent: isCurrent);
+            }
+            public void Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous) =>
+                UserInfo.ApplyLoadedStageData(stage, response, isCurrent, asynchronous);
+        }
+
+        // The existing initialization creates/queries Stage1, Stage2 and Stage3, regardless of unlock state.
+        // Single-stage reloads start a separate round; they never borrow the other stages from an older round.
+        public void LoadAllStageData(bool asynchronous)
+        {
+            StaffStageMigrationCollection collection = BeginStageCollection();
+            if (collection == null) return;
+            foreach (EStage stage in collection.RequiredStages) LoadStageData(collection, stage, asynchronous);
+        }
+        public void LoadStageData(EStage stage, bool asynchronous)
+        {
+            if (stage < EStage.Stage1 || stage >= EStage.Length) return;
+            StaffStageMigrationCollection collection = BeginStageCollection();
+            if (collection != null) LoadStageData(collection, stage, asynchronous);
+        }
+        internal void RetryStageCollection(GameDataRestoreQuery query, long round)
+        {
+            if (round != _stageRoundSerial || !GameDataRestore.IsCurrent(query)
+                || !ReferenceEquals(GameDataRestore.LegacyQuery, query)) return;
+            LoadAllStageData(true);
+        }
+        private StaffStageMigrationCollection BeginStageCollection()
+        {
+            long round = _stageRoundSerial = unchecked(_stageRoundSerial + 1);
+            _stageMigrationCollection?.RefreshValidity();
+            GameDataRestoreQuery query = GameDataRestore.LegacyQuery;
+            GameDataSaveTarget target = GameDataRestore.LegacyTarget;
+            if (!IsCurrentStageRound(query, target, round)) return null;
+            bool migrationRequired = GameDataRestore.Result.Status == GameDataRestoreStatus.MigrationRequired;
+            var collection = new StaffStageMigrationCollection(query, round, migrationRequired,
+                () => IsCurrentStageRound(query, target, round), () => GameDataTransport.ReadCatalog());
+            if (!IsCurrentStageRound(query, target, round)) return null;
+            _stageMigrationCollection = collection;
+            return collection;
+        }
+        private bool IsCurrentStageRound(GameDataRestoreQuery query, GameDataSaveTarget target, long round) =>
+            round == _stageRoundSerial && query != null && target != null && GameDataTransport.LoggedIn
+            && GameDataRestore.IsCurrent(query) && ReferenceEquals(GameDataRestore.LegacyQuery, query)
+            && ReferenceEquals(GameDataRestore.LegacyTarget, target);
+
+        private void LoadStageData(StaffStageMigrationCollection collection, EStage stage, bool asynchronous)
+        {
+            bool handled = false;
+            Func<bool> current = () => collection.RefreshValidity();
+            Func<bool> canReceive = () => !handled && current();
+            void Receive(BackendReturnObject response)
+            {
+                if (!canReceive()) return;
+                handled = true;
+                // Preserve raw types/values BEFORE FlattenRows, SetData, A2 and StageInfo.LoadData.
+                var raw = collection.Capture(stage, response != null && response.IsSuccess(),
+                    response == null ? null : response.GetReturnValue());
+                if (raw == null || !raw.CanApplyLegacy || !current()) return;
+                _isLoaded = true;
+                StageDataTransport.Apply(stage, response, current, asynchronous);
+            }
+            if (!canReceive()) return;
+            try
+            {
+                if (asynchronous) StageDataTransport.Get(stage, collection.Query.AccountInDate, canReceive, Receive);
+                else Receive(StageDataTransport.Get(stage, collection.Query.AccountInDate, canReceive));
+            }
+            catch (Exception)
+            {
+                // A throwing/failed query is not an empty owned-staff list. No additional lookup/write.
+                if (canReceive()) Receive(null);
+            }
+        }
         private GameDataRestoreContext GameDataRestore => _gameDataRestoreContext ??
             (_gameDataRestoreContext = new GameDataRestoreContext(
                 () => GameDataTransport.LoggedIn ? GameDataTransport.AccountInDate : null));
@@ -124,8 +253,14 @@ namespace Muks.BackEnd
         // 읽기/대기 세션은 무효화하되 이미 보낸 작업의 대상 소유권과 미해결 기록은 유지한다.
         public void InvalidateGameDataRestore()
         {
+            InvalidateStageCollection();
             InvalidateGameDataSaveSession();
             GameDataRestore.InvalidateAccountSession();
+        }
+        private void InvalidateStageCollection()
+        {
+            _stageRoundSerial = unchecked(_stageRoundSerial + 1);
+            _stageMigrationCollection?.RefreshValidity();
         }
         private void InvalidateGameDataSaveSession()
         {
@@ -135,6 +270,7 @@ namespace Muks.BackEnd
         }
         private GameDataRestoreQuery BeginGameDataQuery()
         {
+            InvalidateStageCollection();
             InvalidateGameDataSaveSession();
             return GameDataRestore.BeginQuery();
         }
@@ -144,6 +280,7 @@ namespace Muks.BackEnd
         {
             // SDK updates its shared account before callbacks. Do not overlap real authentication calls.
             if (_authenticationInFlight != null) return null;
+            InvalidateStageCollection();
             InvalidateGameDataSaveSession();
             return _authenticationInFlight = GameDataRestore.BeginAuthentication(kind, GameDataTransport.NativeLoggedIn);
         }
@@ -411,8 +548,10 @@ namespace Muks.BackEnd
             Action<BackendReturnObject> onSuccess = null,
             Action<BackendState> onFail = null, 
             int maxRetries = 3,
-            bool usePopup = true)
+            bool usePopup = true,
+            Func<bool> isCurrent = null)
         {
+            if (isCurrent != null && !isCurrent()) return;
             if (!_isSaveEnabled && operationName.Contains("저장"))
             {
                 Debug.LogWarning($"[BackendManager] 저장이 비활성화되어 있어 {operationName}이 중단되었습니다.");
@@ -430,9 +569,15 @@ namespace Muks.BackEnd
 
             int retryCount = 0;
 
+            void Send(Action<BackendReturnObject> callback)
+            {
+                if (isCurrent == null || isCurrent()) backendFunction(callback);
+            }
+
             // 콜백 처리 함수
             void HandleCallback(BackendReturnObject bro)
             {
+                if (isCurrent != null && !isCurrent()) return;
                 BackendState state = HandleError(bro);
                 
                 if (state == BackendState.Success)
@@ -444,7 +589,7 @@ namespace Muks.BackEnd
                 {
                     retryCount++;
                     Debug.Log($"[BackendManager] {operationName} 재시도({retryCount}/{maxRetries})");
-                    backendFunction(HandleCallback);
+                    Send(HandleCallback);
                 }
                 else
                 {
@@ -456,7 +601,7 @@ namespace Muks.BackEnd
                     {
                         ShowPopup("네트워크 에러", 
                             $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {errorCode}");
-                        SetPopupButton1("재시도", () => backendFunction(HandleCallback));
+                        SetPopupButton1("재시도", () => Send(HandleCallback));
                         ShowPopupExitButton();
                     }
                     
@@ -465,7 +610,7 @@ namespace Muks.BackEnd
             }
             
             // API 호출
-            backendFunction(HandleCallback);
+            Send(HandleCallback);
         }
 
         /// <summary>
@@ -480,8 +625,10 @@ namespace Muks.BackEnd
             string operationName,
             Func<BackendReturnObject> backendFunction,
             int maxRetries = 3,
-            bool usePopup = true)
+            bool usePopup = true,
+            Func<bool> isCurrent = null)
         {
+            if (isCurrent != null && !isCurrent()) return null;
             if (!_isSaveEnabled && operationName.Contains("저장"))
             {
                 Debug.LogWarning($"[BackendManager] 저장이 비활성화되어 있어 {operationName}이 중단되었습니다.");
@@ -503,8 +650,10 @@ namespace Muks.BackEnd
                 
                 do
                 {
+                    if (isCurrent != null && !isCurrent()) return null;
                     // API 호출
                     bro = backendFunction();
+                    if (isCurrent != null && !isCurrent()) return null;
                     state = HandleError(bro);
 
                     if (state == BackendState.Success)
@@ -538,6 +687,7 @@ namespace Muks.BackEnd
             }
             catch (Exception ex)
             {
+                if (isCurrent != null && !isCurrent()) return null;
                 Debug.LogException(ex);
                 Debug.LogError($"[BackendManager] {operationName} 처리 중 예외 발생: {ex.Message}");
                 
@@ -1469,8 +1619,10 @@ namespace Muks.BackEnd
         /// <summary>
         /// 게임 데이터를 안전하게 저장합니다
         /// </summary>
-        public void SaveGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        public void SaveGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null,
+            Action<BackendState> onFail = null, Func<bool> isCurrent = null)
         {
+            if (isCurrent != null && !isCurrent()) return;
             if (tableId == "GameData") { SaveLegacyGameDataAsync(param, null, onSuccess, onFail); return; }
             if (!_isSaveEnabled)
             {
@@ -1495,6 +1647,7 @@ namespace Muks.BackEnd
                 $"{tableId} 데이터 확인",
                 (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
                 (getBro) => {
+                    if (isCurrent != null && !isCurrent()) return;
                     var rows = getBro.FlattenRows();
                     
                     // 결과에 따라 삽입 또는 업데이트
@@ -1509,7 +1662,8 @@ namespace Muks.BackEnd
                             onSuccess,
                             onFail,
                             3,
-                            true
+                            true,
+                            isCurrent
                         );
                     }
                     else
@@ -1524,13 +1678,15 @@ namespace Muks.BackEnd
                             },
                             onFail,
                             3,
-                            true
+                            true,
+                            isCurrent
                         );
                     }
                 },
                 onFail,
                 2,
-                true
+                true,
+                isCurrent
             );
         }
         
@@ -1657,8 +1813,9 @@ namespace Muks.BackEnd
         /// false는 대기/미확정일 수도 있다. 완료 확인이 필요하면 RequestGameDataSave를 사용한다.
         /// 다른 테이블의 기존 동기 계약은 유지한다.
         /// </summary>
-        public bool SaveGameData(string tableId, Param param)
+        public bool SaveGameData(string tableId, Param param, Func<bool> isCurrent = null)
         {
+            if (isCurrent != null && !isCurrent()) return false;
             if (tableId == "GameData") return SaveLegacyGameData(param, null);
 
             if (!_isSaveEnabled)
@@ -1682,8 +1839,11 @@ namespace Muks.BackEnd
                 $"{tableId} 데이터 확인",
                 () => Backend.GameData.Get(tableId, where),
                 2,
-                true
+                true,
+                isCurrent
             );
+
+            if (isCurrent != null && !isCurrent()) return false;
             
             if (getBro == null || !getBro.IsSuccess())
             {
@@ -1703,7 +1863,8 @@ namespace Muks.BackEnd
                     $"{tableId} 데이터 업데이트",
                     () => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param),
                     3,
-                    true
+                    true,
+                    isCurrent
                 );
                 
                 return updateBro != null && updateBro.IsSuccess();
@@ -1715,7 +1876,8 @@ namespace Muks.BackEnd
                     $"{tableId} 데이터 삽입",
                     () => Backend.GameData.Insert(tableId, param),
                     3,
-                    true
+                    true,
+                    isCurrent
                 );
                 
                 if (insertBro != null && insertBro.IsSuccess())
