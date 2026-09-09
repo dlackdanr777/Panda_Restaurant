@@ -72,6 +72,10 @@ public static class PaymentInfo
 
     public static void LoadPaymentData()
     {
+        // 같은 프로세스에서 계정이 전환됐을 경우 이전 계정의 결제/가챠 이력이 새 계정에 남지 않도록 먼저 비웁니다.
+        _paymentDatas = new List<PaymentData>();
+        _gachaPaymentDatas = new List<GachaPaymentData>();
+
         AccountSaveGuard guard = BackendManager.Instance.SaveGuard;
         BackendReturnObject bro = BackendManager.Instance.GetMyData("PaymentData");
         if (bro == null || !bro.IsSuccess())

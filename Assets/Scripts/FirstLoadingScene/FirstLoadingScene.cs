@@ -144,25 +144,8 @@ public class FirstLoadingScene : MonoBehaviour
                 return;
             }
 
-            // Stage2/3은 아직 도달하지 않았을 수 있어 결과를 기다리지 않고 미리 로드만 합니다.
-            UserInfo.LoadStageDataAsync(EStage.Stage2);
-            UserInfo.LoadStageDataAsync(EStage.Stage3);
             PaymentInfo.LoadPaymentData();
-
-            // Stage1은 튜토리얼을 클리어한 계정이라면 반드시 존재해야 하는 필수 데이터이므로 검증 완료를 실제로 기다립니다.
-            UserInfo.LoadStageDataAsync(EStage.Stage1, (stage1Ok) =>
-            {
-                if (myGeneration != BackendManager.Instance.SaveGuard.SessionGeneration)
-                    return;
-
-                if (!stage1Ok)
-                {
-                    ShowLoadFailurePopup();
-                    return;
-                }
-
-                ProceedAfterValidation();
-            });
+            WaitForRequiredStagesThenProceed(myGeneration);
         }, (state) =>
         {
             Debug.LogError("[FirstLoadingScene] 게임 데이터 로드 실패: " + state);
@@ -170,7 +153,43 @@ public class FirstLoadingScene : MonoBehaviour
         });
     }
 
-    /// <summary>GameData + 필수 스테이지(Stage1) 검증이 모두 완료된 뒤에만 호출됩니다.</summary>
+    /// <summary>
+    /// 튜토리얼 클리어 계정이라면 Stage1~3 모두 실제로 존재해야 하는 필수 데이터이므로
+    /// GameManager.SaveStageData()가 항상 3개 스테이지를 함께 저장하는 것과 동일한 기준으로
+    /// 셋 다 검증 완료를 기다립니다(하나라도 실패하면 진행/저장을 차단).
+    /// </summary>
+    private void WaitForRequiredStagesThenProceed(int myGeneration)
+    {
+        int pendingCount = 3;
+        bool anyFailed = false;
+
+        void OnStageResult(bool ok)
+        {
+            if (myGeneration != BackendManager.Instance.SaveGuard.SessionGeneration)
+                return;
+
+            if (!ok)
+                anyFailed = true;
+
+            pendingCount--;
+            if (pendingCount > 0)
+                return;
+
+            if (anyFailed)
+            {
+                ShowLoadFailurePopup();
+                return;
+            }
+
+            ProceedAfterValidation();
+        }
+
+        UserInfo.LoadStageDataAsync(EStage.Stage1, OnStageResult);
+        UserInfo.LoadStageDataAsync(EStage.Stage2, OnStageResult);
+        UserInfo.LoadStageDataAsync(EStage.Stage3, OnStageResult);
+    }
+
+    /// <summary>GameData + 필수 스테이지(Stage1~3) 검증이 모두 완료된 뒤에만 호출됩니다.</summary>
     private void ProceedAfterValidation()
     {
         AssignRandomNicknameIfNeeded(() =>

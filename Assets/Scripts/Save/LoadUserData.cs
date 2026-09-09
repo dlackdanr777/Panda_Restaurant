@@ -147,30 +147,62 @@ public class LoadUserData
             }
             string GetString(string key) => data.ContainsKey(key) ? data[key].ToString() : string.Empty;
 
-            IsFirstTutorialClear = GetBool("IsFirstTutorialClear");
-            IsMiniGameTutorialClear = GetBool("IsMiniGameTutorialClear");
+            // 아래 Required 헬퍼는 git 이력상(a6af9c7 최초 커밋) 저장 스키마 도입 시점부터 항상 존재했던
+            // 필드에만 사용합니다. 필드 자체가 없으면 구버전 호환이 아니라 데이터 누락(손상)으로 처리합니다.
+            bool GetRequiredBool(string key)
+            {
+                if (!data.ContainsKey(key))
+                {
+                    MarkCorrupt(key);
+                    return false;
+                }
+                return GetBool(key);
+            }
+            int GetRequiredInt(string key)
+            {
+                if (!data.ContainsKey(key))
+                {
+                    MarkCorrupt(key);
+                    return 0;
+                }
+                return GetInt(key);
+            }
+            long GetRequiredLong(string key)
+            {
+                if (!data.ContainsKey(key))
+                {
+                    MarkCorrupt(key);
+                    return 0;
+                }
+                return GetLong(key);
+            }
+
+            IsFirstTutorialClear = GetRequiredBool("IsFirstTutorialClear");
+            IsMiniGameTutorialClear = GetRequiredBool("IsMiniGameTutorialClear");
             IsFeverTutorialClear = GetBool("IsFeverTutorialClear");
-            IsGatecrasher1TutorialClear = GetBool("IsGatecrasher1TutorialClear");
-            IsGatecrasher2TutorialClear = GetBool("IsGatecrasher2TutorialClear");
-            IsSpecialCustomer1TutorialClear = GetBool("IsSpecialCustomer1TutorialClear");
-            IsSpecialCustomer2TutorialClear = GetBool("IsSpecialCustomer2TutorialClear");
+            IsGatecrasher1TutorialClear = GetRequiredBool("IsGatecrasher1TutorialClear");
+            IsGatecrasher2TutorialClear = GetRequiredBool("IsGatecrasher2TutorialClear");
+            IsSpecialCustomer1TutorialClear = GetRequiredBool("IsSpecialCustomer1TutorialClear");
+            IsSpecialCustomer2TutorialClear = GetRequiredBool("IsSpecialCustomer2TutorialClear");
             IsFurnitureTutorialClear = GetBool("IsFurnitureTutorialClear");
             IsRecipeTutorialClear = GetBool("IsRecipeTutorialClear");
 
+            // Dia는 최초 스키마에 없던(이후 추가된) 확인된 선택 필드 - 누락 시 기본값 0 허용
             Dia = GetInt("Dia");
-            Money = GetLong("Money");
-            TotalAddMoney = GetLong("TotalAddMoney");
-            DailyAddMoney = GetLong("DailyAddMoney");
-            Score = GetInt("Score");
-            TotalCookCount = GetInt("TotalCookCount");
-            DailyCookCount = GetInt("DailyCookCount");
-            TotalCumulativeCustomerCount = GetInt("TotalCumulativeCustomerCount");
-            DailyCumulativeCustomerCount = GetInt("DailyCumulativeCustomerCount");
-            PromotionCount = GetInt("PromotionCount");
-            TotalAdvertisingViewCount = GetInt("TotalAdvertisingViewCount");
-            DailyAdvertisingViewCount = GetInt("DailyAdvertisingViewCount");
-            TotalCleanCount = GetInt("TotalCleanCount");
-            DailyCleanCount = GetInt("DailyCleanCount");
+            Money = GetRequiredLong("Money");
+            TotalAddMoney = GetRequiredLong("TotalAddMoney");
+            DailyAddMoney = GetRequiredLong("DailyAddMoney");
+            Score = GetRequiredInt("Score");
+            TotalCookCount = GetRequiredInt("TotalCookCount");
+            DailyCookCount = GetRequiredInt("DailyCookCount");
+            TotalCumulativeCustomerCount = GetRequiredInt("TotalCumulativeCustomerCount");
+            DailyCumulativeCustomerCount = GetRequiredInt("DailyCumulativeCustomerCount");
+            PromotionCount = GetRequiredInt("PromotionCount");
+            TotalAdvertisingViewCount = GetRequiredInt("TotalAdvertisingViewCount");
+            DailyAdvertisingViewCount = GetRequiredInt("DailyAdvertisingViewCount");
+            TotalCleanCount = GetRequiredInt("TotalCleanCount");
+            DailyCleanCount = GetRequiredInt("DailyCleanCount");
+            // 아래부터는 최초 스키마(a6af9c7)에 없던, 이후 버전에서 추가된 것으로 확인된 선택 필드입니다.
             TotalVisitSpecialCustomerCount = GetInt("TotalVisitSpecialCustomerCount");
             TotalExterminationGatecrasherCustomer1Count = GetInt("TotalExterminationGatecrasherCustomer1Count");
             TotalExterminationGatecrasherCustomer2Count = GetInt("TotalExterminationGatecrasherCustomer2Count");

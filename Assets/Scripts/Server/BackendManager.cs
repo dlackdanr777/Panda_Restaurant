@@ -80,6 +80,53 @@ namespace Muks.BackEnd
             }
         }
 
+        // AccountSaveGuard의 단일 상태 테이블 보호 정책을 적용해야 하는 테이블 목록.
+        // Inquiry 등 여러 행이 계속 추가되는 테이블은 이 목록에 포함하지 않습니다.
+        private static readonly HashSet<string> _protectedTableIds = new HashSet<string>
+        {
+            "GameData", "Stage1Data", "Stage2Data", "Stage3Data", "PaymentData",
+        };
+        private static bool IsProtectedTable(string tableId) => _protectedTableIds.Contains(tableId);
+
+        // 한 클라이언트 안에서 같은 테이블에 대한 저장 요청 순서를 추적합니다.
+        // pause(비동기)와 quit(동기) 저장이 겹칠 때, 먼저 시작했지만 늦게 도착한 쓰기가
+        // 나중에 시작된(더 최신 데이터를 담은) 쓰기를 덮어쓰지 못하도록 막습니다.
+        private long _saveVersionCounter;
+        private readonly Dictionary<string, long> _tableLatestSaveVersion = new Dictionary<string, long>();
+
+        /// <summary>이 저장 시도의 버전을 발급하고, 해당 테이블의 "가장 최신 시도"로 등록합니다.</summary>
+        private long BeginSaveVersion(string tableId)
+        {
+            long version = ++_saveVersionCounter;
+            _tableLatestSaveVersion[tableId] = version;
+            return version;
+        }
+
+        /// <summary>이 버전이 여전히 해당 테이블의 가장 최신 저장 시도인지 확인합니다(더 최신 시도가 있으면 false).</summary>
+        private bool IsLatestSaveVersion(string tableId, long version)
+        {
+            return _tableLatestSaveVersion.TryGetValue(tableId, out long latest) && latest == version;
+        }
+
+        /// <summary>
+        /// 실제 SDK 쓰기 함수 호출 직전에 세션이 여전히 유효한지 재검증합니다.
+        /// ProcessBackendAPI의 자동 재시도와 팝업 "재시도" 버튼 모두 이 델리게이트를 그대로 재실행하므로,
+        /// 재시도 시점마다 최신 세션인지 다시 확인해야 늦게 재시도된 쓰기가 다른 계정에 적용되지 않습니다.
+        /// </summary>
+        private Action<Action<BackendReturnObject>> GuardedWrite(int generation, string ownerInDate, Action<Action<BackendReturnObject>> writeFunction)
+        {
+            return (callback) =>
+            {
+                if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                {
+                    Debug.LogWarning("[BackendManager] 재시도 직전 세션이 바뀌어 쓰기를 중단합니다.");
+                    callback?.Invoke(null);
+                    return;
+                }
+                writeFunction(callback);
+            };
+        }
+
         public DateTime LocalTime = DateTime.Now;
 
         // ServerTime 캐시 (동기 네트워크 호출 빈도 제한)
@@ -1113,10 +1160,12 @@ namespace Muks.BackEnd
             // 유저 정보 조회를 위한 조건
             int generation = SaveGuard.SessionGeneration;
             string ownerInDate = Backend.UserInDate;
+            long saveVersion = BeginSaveVersion(tableId);
             Where where = new Where();
             where.Equal("owner_inDate", ownerInDate);
             
-            // 데이터 존재 확인 후 검증된 행만 업데이트하거나, 인가된 경우에만 삽입합니다(자동 재생성 금지).
+            // 데이터 존재 확인 후, GameDataSaveDecider가 결정한 동작(Update/Insert/Block)만 실행합니다.
+            // 행이 조회됐다는 사실만으로 CanUpdate 검증을 우회해 Update를 호출하지 않습니다.
             ProcessBackendAPI(
                 $"{tableId} 데이터 확인",
                 (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
@@ -1127,25 +1176,31 @@ namespace Muks.BackEnd
                         onFail?.Invoke(BackendState.Retry);
                         return;
                     }
+                    if (!IsLatestSaveVersion(tableId, saveVersion))
+                    {
+                        Debug.LogWarning($"[BackendManager] {tableId} 저장이 더 최신 저장 시도로 대체되어 중단합니다(순서 역전 방지).");
+                        onFail?.Invoke(BackendState.Retry);
+                        return;
+                    }
 
                     var rows = getBro.FlattenRows();
                     int rowCount = rows != null ? rows.Count : 0;
+                    string fetchedInDate = rowCount >= 1 ? getBro.GetInDate() : null;
 
-                    if (rowCount == 1)
+                    SaveDecision decision = GameDataSaveDecider.Decide(SaveGuard, tableId, rowCount, fetchedInDate);
+
+                    if (decision.Action == SaveDecisionAction.Update)
                     {
-                        string inDate = getBro.GetInDate();
-
-                        // 업데이트 수행
                         ProcessBackendAPI(
                             $"{tableId} 데이터 업데이트",
-                            (callback) => Backend.GameData.UpdateV2(tableId, inDate, ownerInDate, param, (bro) => callback?.Invoke(bro)),
+                            GuardedWrite(generation, ownerInDate, (callback) => Backend.GameData.UpdateV2(tableId, decision.TargetInDate, ownerInDate, param, (bro) => callback?.Invoke(bro))),
                             (bro) => {
-                                if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                                if (!SaveGuard.IsSessionCurrent(generation, ownerInDate) || !IsLatestSaveVersion(tableId, saveVersion))
                                 {
                                     onFail?.Invoke(BackendState.Retry);
                                     return;
                                 }
-                                SaveGuard.MarkTableVerified(tableId, inDate);
+                                // 쓰기 성공은 로드 검증 성공이 아니므로 검증 상태를 다시 승격시키지 않습니다(이미 Verified 유지).
                                 onSuccess?.Invoke(bro);
                             },
                             onFail,
@@ -1155,14 +1210,14 @@ namespace Muks.BackEnd
                         return;
                     }
 
-                    if (rowCount == 0 && SaveGuard.CanInsert(tableId, out SaveBlockReason insertBlockReason))
+                    if (decision.Action == SaveDecisionAction.Insert)
                     {
                         // 신규 계정 또는 이번 세션에서 정상적으로 빈 결과를 확인한 테이블만 최초 삽입을 허용합니다.
                         ProcessBackendAPI(
                             $"{tableId} 데이터 삽입",
-                            (callback) => Backend.GameData.Insert(tableId, param, (bro) => callback?.Invoke(bro)),
+                            GuardedWrite(generation, ownerInDate, (callback) => Backend.GameData.Insert(tableId, param, (bro) => callback?.Invoke(bro))),
                             (insertBro) => {
-                                if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                                if (!SaveGuard.IsSessionCurrent(generation, ownerInDate) || !IsLatestSaveVersion(tableId, saveVersion))
                                 {
                                     onFail?.Invoke(BackendState.Retry);
                                     return;
@@ -1171,16 +1226,16 @@ namespace Muks.BackEnd
                                 OnInsertGameDataHandler?.Invoke(insertBro);
                                 onSuccess?.Invoke(insertBro);
                             },
-                            onFail,
-                            3,
+                            // 삽입 응답이 유실된 것일 수 있으므로, 무조건 재삽입하지 않고 read-back으로 실제 반영 여부를 확인합니다.
+                            (state) => HandleInsertFailureWithReadBack(tableId, where, generation, ownerInDate, onSuccess, onFail),
+                            1,
                             true
                         );
                         return;
                     }
 
-                    SaveBlockReason reason = rowCount == 0 ? SaveBlockReason.RequiredRowMissing : SaveBlockReason.AmbiguousRows;
-                    SaveGuard.MarkTableBlocked(tableId, reason);
-                    LogSaveBlocked(tableId, reason);
+                    SaveGuard.MarkTableBlocked(tableId, decision.BlockReason);
+                    LogSaveBlocked(tableId, decision.BlockReason);
                     onFail?.Invoke(BackendState.NotSave);
                 },
                 onFail,
@@ -1188,9 +1243,40 @@ namespace Muks.BackEnd
                 true
             );
         }
+
+        /// <summary>Insert 응답 유실 가능성을 고려해, 실패로 확정하기 전에 실제로 행이 생성됐는지 한 번 재조회합니다.</summary>
+        private void HandleInsertFailureWithReadBack(string tableId, Where where, int generation, string ownerInDate, Action<BackendReturnObject> onSuccess, Action<BackendState> onFail)
+        {
+            if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+            {
+                onFail?.Invoke(BackendState.Retry);
+                return;
+            }
+
+            Backend.GameData.Get(tableId, where, (getBro) =>
+            {
+                if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                {
+                    onFail?.Invoke(BackendState.Retry);
+                    return;
+                }
+
+                var rows = getBro != null ? getBro.FlattenRows() : null;
+                if (rows != null && rows.Count == 1)
+                {
+                    Debug.LogWarning($"[BackendManager] {tableId} 삽입 응답 유실 감지, read-back으로 반영 여부를 확인해 복구합니다.");
+                    SaveGuard.MarkTableVerified(tableId, getBro.GetInDate());
+                    onSuccess?.Invoke(getBro);
+                    return;
+                }
+
+                onFail?.Invoke(BackendState.Failure);
+            });
+        }
         
         /// <summary>
-        /// 게임 데이터를 삽입합니다(여러 행이 누적되는 로그/문의성 테이블 전용 - 단일 상태 테이블 보호 정책 대상 아님)
+        /// 게임 데이터를 삽입합니다(여러 행이 누적되는 로그/문의성 테이블 전용 - 단일 상태 테이블 보호 정책 대상 아님).
+        /// 단, 보호 테이블 문자열이 실수로 전달되면 동일한 가드 정책을 적용합니다.
         /// </summary>
         public void InsertGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
@@ -1207,11 +1293,33 @@ namespace Muks.BackEnd
                 onFail?.Invoke(BackendState.NotLogin);
                 return;
             }
+
+            int generation = SaveGuard.SessionGeneration;
+            string ownerInDate = Backend.UserInDate;
+
+            if (IsProtectedTable(tableId))
+            {
+                if (!SaveGuard.CanInsert(tableId, out SaveBlockReason reason))
+                {
+                    LogSaveBlocked(tableId, reason);
+                    onFail?.Invoke(BackendState.NotSave);
+                    return;
+                }
+            }
             
             ProcessBackendAPI(
                 $"{tableId} 데이터 삽입",
-                (callback) => Backend.GameData.Insert(tableId, param, (bro) => callback?.Invoke(bro)),
+                GuardedWrite(generation, ownerInDate, (callback) => Backend.GameData.Insert(tableId, param, (bro) => callback?.Invoke(bro))),
                 (insertBro) => {
+                    if (IsProtectedTable(tableId))
+                    {
+                        if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                        {
+                            onFail?.Invoke(BackendState.Retry);
+                            return;
+                        }
+                        SaveGuard.MarkTableVerified(tableId, insertBro.GetInDate());
+                    }
                     OnInsertGameDataHandler?.Invoke(insertBro);
                     onSuccess?.Invoke(insertBro);
                 },
@@ -1222,7 +1330,8 @@ namespace Muks.BackEnd
         }
         
         /// <summary>
-        /// 게임 데이터를 업데이트합니다
+        /// 게임 데이터를 업데이트합니다. 보호 테이블은 호출자가 넘긴 inDate를 그대로 신뢰하지 않고
+        /// SaveGuard가 검증한 row에 대해서만 실행합니다(래퍼를 통한 가드 우회 방지).
         /// </summary>
         public void UpdateGameDataAsync(string tableId, string inDate, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
@@ -1239,10 +1348,26 @@ namespace Muks.BackEnd
                 onFail?.Invoke(BackendState.NotLogin);
                 return;
             }
+
+            int generation = SaveGuard.SessionGeneration;
+            string ownerInDate = Backend.UserInDate;
+            string targetInDate = inDate;
+
+            if (IsProtectedTable(tableId))
+            {
+                // 호출자가 넘긴 inDate를 그대로 신뢰하지 않고, 이번 세션에서 실제로 검증된 row에 대해서만 실행합니다.
+                if (!SaveGuard.CanUpdate(tableId, out string verifiedRowInDate, out SaveBlockReason reason))
+                {
+                    LogSaveBlocked(tableId, reason);
+                    onFail?.Invoke(BackendState.NotSave);
+                    return;
+                }
+                targetInDate = verifiedRowInDate;
+            }
             
             ProcessBackendAPI(
                 $"{tableId} 데이터 업데이트",
-                (callback) => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param, (bro) => callback?.Invoke(bro)),
+                GuardedWrite(generation, ownerInDate, (callback) => Backend.GameData.UpdateV2(tableId, targetInDate, ownerInDate, param, (bro) => callback?.Invoke(bro))),
                 onSuccess,
                 onFail,
                 3,
@@ -1333,6 +1458,7 @@ namespace Muks.BackEnd
             // 유저 정보 조회를 위한 조건
             int generation = SaveGuard.SessionGeneration;
             string ownerInDate = Backend.UserInDate;
+            long saveVersion = BeginSaveVersion(tableId);
             Where where = new Where();
             where.Equal("owner_inDate", ownerInDate);
             
@@ -1350,45 +1476,65 @@ namespace Muks.BackEnd
                 return false;
             }
 
-            if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+            if (!SaveGuard.IsSessionCurrent(generation, ownerInDate) || !IsLatestSaveVersion(tableId, saveVersion))
             {
-                Debug.LogWarning($"[BackendManager] {tableId} 저장이 이전 세션(늦은 콜백)이라 중단합니다.");
+                Debug.LogWarning($"[BackendManager] {tableId} 저장이 이전 세션/이전 저장 시도라 중단합니다.");
                 return false;
             }
             
             var rows = getBro.FlattenRows();
             int rowCount = rows != null ? rows.Count : 0;
-            
-            // 검증된 단일 행만 업데이트하거나, 인가된 경우에만 삽입합니다(자동 재생성 금지).
-            if (rowCount == 1)
+            string fetchedInDate = rowCount >= 1 ? getBro.GetInDate() : null;
+
+            // GameDataSaveDecider가 결정한 동작(Update/Insert/Block)만 실행합니다.
+            // 행이 조회됐다는 사실만으로 CanUpdate 검증을 우회해 Update를 호출하지 않습니다.
+            SaveDecision decision = GameDataSaveDecider.Decide(SaveGuard, tableId, rowCount, fetchedInDate);
+
+            if (decision.Action == SaveDecisionAction.Update)
             {
-                string inDate = getBro.GetInDate();
-                
                 BackendReturnObject updateBro = ProcessBackendAPISync(
                     $"{tableId} 데이터 업데이트",
-                    () => Backend.GameData.UpdateV2(tableId, inDate, ownerInDate, param),
+                    GuardedWriteSync(generation, ownerInDate, () => Backend.GameData.UpdateV2(tableId, decision.TargetInDate, ownerInDate, param)),
                     3,
                     true
                 );
                 
-                if (updateBro != null && updateBro.IsSuccess() && SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                if (updateBro != null && updateBro.IsSuccess() && SaveGuard.IsSessionCurrent(generation, ownerInDate) && IsLatestSaveVersion(tableId, saveVersion))
                 {
-                    SaveGuard.MarkTableVerified(tableId, inDate);
+                    // 쓰기 성공은 로드 검증 성공이 아니므로 검증 상태를 다시 승격시키지 않습니다(이미 Verified 유지).
                     return true;
                 }
                 return false;
             }
 
-            if (rowCount == 0 && SaveGuard.CanInsert(tableId, out SaveBlockReason insertBlockReason))
+            if (decision.Action == SaveDecisionAction.Insert)
             {
                 BackendReturnObject insertBro = ProcessBackendAPISync(
                     $"{tableId} 데이터 삽입",
-                    () => Backend.GameData.Insert(tableId, param),
-                    3,
+                    GuardedWriteSync(generation, ownerInDate, () => Backend.GameData.Insert(tableId, param)),
+                    1,
                     true
                 );
+
+                // 삽입 응답이 유실됐을 수 있으므로, 실패로 보이면 read-back으로 실제 반영 여부를 한 번 더 확인합니다.
+                if (insertBro == null || !insertBro.IsSuccess())
+                {
+                    if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                        return false;
+
+                    BackendReturnObject readBackBro = ProcessBackendAPISync($"{tableId} 삽입 read-back", () => Backend.GameData.Get(tableId, where), 0, false);
+                    var readBackRows = readBackBro != null ? readBackBro.FlattenRows() : null;
+                    if (readBackRows != null && readBackRows.Count == 1 && SaveGuard.IsSessionCurrent(generation, ownerInDate) && IsLatestSaveVersion(tableId, saveVersion))
+                    {
+                        Debug.LogWarning($"[BackendManager] {tableId} 삽입 응답 유실 감지, read-back으로 반영 여부를 확인해 복구합니다.");
+                        SaveGuard.MarkTableVerified(tableId, readBackBro.GetInDate());
+                        OnInsertGameDataHandler?.Invoke(readBackBro);
+                        return true;
+                    }
+                    return false;
+                }
                 
-                if (insertBro != null && insertBro.IsSuccess() && SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                if (SaveGuard.IsSessionCurrent(generation, ownerInDate) && IsLatestSaveVersion(tableId, saveVersion))
                 {
                     SaveGuard.MarkTableVerified(tableId, insertBro.GetInDate());
                     OnInsertGameDataHandler?.Invoke(insertBro);
@@ -1398,14 +1544,27 @@ namespace Muks.BackEnd
                 return false;
             }
 
-            SaveBlockReason reason = rowCount == 0 ? SaveBlockReason.RequiredRowMissing : SaveBlockReason.AmbiguousRows;
-            SaveGuard.MarkTableBlocked(tableId, reason);
-            LogSaveBlocked(tableId, reason);
+            SaveGuard.MarkTableBlocked(tableId, decision.BlockReason);
+            LogSaveBlocked(tableId, decision.BlockReason);
             return false;
         }
 
+        /// <summary>실제 SDK 동기 쓰기 함수 호출 직전에 세션이 여전히 유효한지 재검증합니다(동기 재시도용).</summary>
+        private Func<BackendReturnObject> GuardedWriteSync(int generation, string ownerInDate, Func<BackendReturnObject> writeFunction)
+        {
+            return () =>
+            {
+                if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                {
+                    Debug.LogWarning("[BackendManager] 재시도 직전 세션이 바뀌어 쓰기를 중단합니다.");
+                    return null;
+                }
+                return writeFunction();
+            };
+        }
+
         /// <summary>
-        /// 게임 데이터를 삽입합니다 (동기식)
+        /// 게임 데이터를 삽입합니다 (동기식). 보호 테이블 문자열이 실수로 전달되면 동일한 가드 정책을 적용합니다.
         /// </summary>
         public bool InsertGameData(string tableId, Param param)
         {
@@ -1420,16 +1579,31 @@ namespace Muks.BackEnd
                 Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
                 return false;
             }
+
+            int generation = SaveGuard.SessionGeneration;
+            string ownerInDate = Backend.UserInDate;
+
+            if (IsProtectedTable(tableId) && !SaveGuard.CanInsert(tableId, out SaveBlockReason reason))
+            {
+                LogSaveBlocked(tableId, reason);
+                return false;
+            }
             
             BackendReturnObject insertBro = ProcessBackendAPISync(
                 $"{tableId} 데이터 삽입",
-                () => Backend.GameData.Insert(tableId, param),
+                GuardedWriteSync(generation, ownerInDate, () => Backend.GameData.Insert(tableId, param)),
                 3,
                 true
             );
             
             if (insertBro != null && insertBro.IsSuccess())
             {
+                if (IsProtectedTable(tableId))
+                {
+                    if (!SaveGuard.IsSessionCurrent(generation, ownerInDate))
+                        return false;
+                    SaveGuard.MarkTableVerified(tableId, insertBro.GetInDate());
+                }
                 OnInsertGameDataHandler?.Invoke(insertBro);
                 return true;
             }
@@ -1438,7 +1612,7 @@ namespace Muks.BackEnd
         }
 
         /// <summary>
-        /// 게임 데이터를 업데이트합니다 (동기식)
+        /// 게임 데이터를 업데이트합니다 (동기식). 보호 테이블은 호출자가 넘긴 inDate 대신 SaveGuard가 검증한 row를 사용합니다.
         /// </summary>
         public bool UpdateGameData(string tableId, string inDate, Param param)
         {
@@ -1453,10 +1627,24 @@ namespace Muks.BackEnd
                 Debug.LogError("[BackendManager] 로그인 또는 데이터 로드가 필요합니다");
                 return false;
             }
+
+            int generation = SaveGuard.SessionGeneration;
+            string ownerInDate = Backend.UserInDate;
+            string targetInDate = inDate;
+
+            if (IsProtectedTable(tableId))
+            {
+                if (!SaveGuard.CanUpdate(tableId, out string verifiedRowInDate, out SaveBlockReason reason))
+                {
+                    LogSaveBlocked(tableId, reason);
+                    return false;
+                }
+                targetInDate = verifiedRowInDate;
+            }
             
             BackendReturnObject updateBro = ProcessBackendAPISync(
                 $"{tableId} 데이터 업데이트",
-                () => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param),
+                GuardedWriteSync(generation, ownerInDate, () => Backend.GameData.UpdateV2(tableId, targetInDate, ownerInDate, param)),
                 3,
                 true
             );

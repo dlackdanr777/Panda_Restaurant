@@ -41,6 +41,19 @@ namespace DataSaveGuardTests
         }
 
         [Test]
+        public void R1_신규가입이라도GameData가Blocked면_삽입을재시도허용하지않는다()
+        {
+            var guard = new AccountSaveGuard();
+            guard.BeginSession("owner-new");
+            guard.MarkNewAccountSession();
+            // 최초 삽입 시도 후 응답이 손상되어 Blocked로 기록된 상태를 가정
+            guard.MarkTableBlocked("GameData", SaveBlockReason.InvalidPayload);
+
+            Assert.IsFalse(guard.CanInsert("GameData", out SaveBlockReason reason));
+            Assert.AreEqual(SaveBlockReason.InvalidPayload, reason);
+        }
+
+        [Test]
         public void 신규가입_GameData없음이면_최초삽입허용_이후검증되면삽입권한소모()
         {
             var guard = new AccountSaveGuard();

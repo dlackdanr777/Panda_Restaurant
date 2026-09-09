@@ -667,6 +667,88 @@ public static class UserInfo
 
 
     /// <summary>GameData를 로드하고 검증합니다. 실제로 검증까지 완료된 경우에만 true를 반환합니다.</summary>
+    /// <summary>
+    /// 새 계정(신규 가입) 세션 진입 시 호출합니다. 같은 프로세스에서 이전 계정으로 로그인한 적이 있어도
+    /// 그 메모리가 새 계정의 초기값이나 저장 입력으로 쓰이지 않도록, LoadGameData가 채우는 필드만
+    /// 명시적으로 기본값으로 되돌립니다(스테이지/타이머 등 다른 시스템은 대상이 아닙니다).
+    /// </summary>
+    private static void ResetCoreDataToDefaults()
+    {
+        IsFirstTutorialClear = false;
+        IsMiniGameTutorialClear = false;
+        IsFeverTutorialClear = false;
+        IsGatecrasher1TutorialClear = false;
+        IsGatecrasher2TutorialClear = false;
+        IsSpecialCustomer1TutorialClear = false;
+        IsSpecialCustomer2TutorialClear = false;
+        IsFurnitureTutorialClear = false;
+        IsRecipeTutorialClear = false;
+
+        _dia = 0;
+        _money = 0;
+        _totalAddMoney = 0;
+        _dailyAddMoney = 0;
+        _score = 0;
+        _totalCookCount = 0;
+        _dailyCookCount = 0;
+        _totalCumulativeCustomerCount = 0;
+        _dailyCumulativeCustomerCount = 0;
+        _promotionCount = 0;
+        _totalAdvertisingViewCount = 0;
+        _dailyAdvertisingViewCount = 0;
+        _totalCleanCount = 0;
+        _dailyCleanCount = 0;
+        _totalVisitSpecialCustomerCount = 0;
+        _totalExterminationGatecrasherCustomer1Count = 0;
+        _totalExterminationGatecrasherCustomer2Count = 0;
+
+        _weeklyAddMoney = 0;
+        _weeklyCookCount = 0;
+        _weeklyCumulativeCustomerCount = 0;
+        _weeklyCleanCount = 0;
+        _weeklyExterminationGatecrasherCustomerCount = 0;
+
+        _userId = string.Empty;
+        _firstAccessTime = string.Empty;
+        _lastAccessTime = string.Empty;
+        _lastAttendanceTime = string.Empty;
+        _totalAttendanceDays = 0;
+
+        _giveCustomerSkinSet = new HashSet<string>();
+        _giveStaffSkinSet = new HashSet<string>();
+
+        _giveRecipeLevelDic = new Dictionary<string, int>();
+        _recipeCookCountDic = new Dictionary<string, int>();
+
+        _giveGachaItemCountDic = new Dictionary<string, int>();
+        _giveGachaItemLevelDic = new Dictionary<string, int>();
+
+        _doneMainChallengeSet = new HashSet<string>();
+        _clearMainChallengeSet = new HashSet<string>();
+        _doneAllTimeChallengeSet = new HashSet<string>();
+        _clearAllTimeChallengeSet = new HashSet<string>();
+        _doneDailyChallengeSet = new HashSet<string>();
+        _clearDailyChallengeSet = new HashSet<string>();
+        _doneWeeklyChallengeSet = new HashSet<string>();
+        _clearWeeklyChallengeSet = new HashSet<string>();
+
+        _enabledCustomerDic = new Dictionary<string, SaveCustomerData>();
+
+        _notificationMessageSet = new HashSet<string>();
+        _clearNotificationMessageSet = new HashSet<string>();
+
+        _skinToken = 0;
+
+        _addCustomerAdCount = 0;
+        _addCustomerDiaCount = 0;
+        _doubleTipCounterAdCount = 0;
+        _feverAdCount = 0;
+        _feverDiaCount = 0;
+
+        _dailyAdGoldRewardCount = 0;
+        _dailyAdDiaRewardCount = 0;
+    }
+
     public static bool LoadGameData(BackendReturnObject bro)
     {
         AccountSaveGuard guard = BackendManager.Instance.SaveGuard;
@@ -682,9 +764,10 @@ public static class UserInfo
         {
             if (guard.IsNewAccountSession)
             {
-                // 신규 가입 계정은 GameData가 아직 없는 것이 정상입니다. 초기값(클래스 기본값) 그대로 유지합니다.
+                // 신규 가입 계정: 같은 프로세스에서 이전 계정의 메모리가 남아있지 않도록 명시적으로 초기화합니다.
+                ResetCoreDataToDefaults();
                 guard.MarkTableConfirmedAbsent("GameData");
-                DebugLog.Log("[UserInfo] 신규 가입 계정: GameData 없음(정상)");
+                DebugLog.Log("[UserInfo] 신규 가입 계정: GameData 없음(정상), 초기값으로 재설정");
                 return true;
             }
 

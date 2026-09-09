@@ -161,7 +161,11 @@ namespace Muks.BackEnd
 
             if (tableId == MasterTableId)
             {
-                if (IsNewAccountSession && GetState(tableId) != TableVerifyState.Verified)
+                // Blocked 상태(손상/행 불일치 등으로 이미 차단됨)는 신규 세션이어도 생성 재시도를 허용하지 않습니다.
+                // 전체 재검증(BeginSession 이후 새 로드 성공)을 통해서만 다시 생성 가능해집니다.
+                TableVerifyState state = GetState(tableId);
+                bool isNewInsertable = state == TableVerifyState.Unknown || state == TableVerifyState.ConfirmedAbsent;
+                if (IsNewAccountSession && isNewInsertable)
                 {
                     blockReason = SaveBlockReason.None;
                     return true;
