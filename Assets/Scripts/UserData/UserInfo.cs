@@ -681,6 +681,7 @@ public static class UserInfo
         _totalVisitSpecialCustomerCount = loadData.TotalVisitSpecialCustomerCount;
         _totalExterminationGatecrasherCustomer1Count = loadData.TotalExterminationGatecrasherCustomer1Count;
         _totalExterminationGatecrasherCustomer2Count = loadData.TotalExterminationGatecrasherCustomer2Count;
+        _totalUseGachaMachineCount = loadData.TotalUseGachaMachineCount;
 
         _weeklyAddMoney = loadData.WeeklyAddMoney;
         _weeklyCookCount = loadData.WeeklyCookCount;
