@@ -288,6 +288,11 @@ public partial class StaffStageMigrationCollectionTests
             Assert.That(legacy.Stage.Runtime[EStage.Stage1].GetStaffLevel("STAFF01"), Is.EqualTo(2));
             Assert.That(legacy.Stage.Runtime[EStage.Stage2].IsGiveStaff("STAFF01"), Is.False);
             AssertPreparation(legacy.Manager.PrepareStaffMigration(), StaffMigrationPreparationStatus.Valid);
+            Assert.That(legacy.Game.Writes, Is.EqualTo(1), "All required Stage applications now automatically send one migration request");
+            Assert.That(legacy.Manager.CurrentStaffMigrationExecution.Status, Is.EqualTo(StaffMigrationExecutionStatus.Sending));
+            Assert.That(legacy.Manager.CurrentStaffMigrationExecution.CompletionCount, Is.Zero,
+                "Legacy authority remains until the actual original request reports a confirmed success");
+            CollectionAssert.AreEqual(new[] { "StaffAccount" }, JObject.Parse(legacy.Game.WriteValues[0].GetJson()).Properties().Select(field => field.Name));
             foreach (string invalid in new[] { "{broken", "{\"Version\":77,\"Staff\":[],\"PandaTokens\":0}" })
             {
                 var fixture = CreateAccountRuntimeFixture(out var wallet);

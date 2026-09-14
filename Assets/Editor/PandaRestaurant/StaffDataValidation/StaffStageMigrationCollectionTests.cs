@@ -558,10 +558,11 @@ public partial class StaffStageMigrationCollectionTests
         public readonly List<Action<BackendReturnObject>> WriteReplies = new List<Action<BackendReturnObject>>();
         public readonly List<Param> WriteValues = new List<Param>();
         public readonly List<GameDataSaveTarget> WriteTargets = new List<GameDataSaveTarget>();
+        public Action<GameDataSaveTarget, Param, Action<BackendReturnObject>> OnUpdate;
         public void Get(string account, Action<BackendReturnObject> callback) => GetReplies.Add(callback);
         public void Insert(Param values, Action<BackendReturnObject> callback) { Inserts++; Assert.Fail("Stage collection must not insert GameData"); }
         public void Update(GameDataSaveTarget target, Param values, Action<BackendReturnObject> callback)
-        { Writes++; WriteValues.Add(values); WriteTargets.Add(target); WriteReplies.Add(callback); }
+        { Writes++; WriteValues.Add(values); WriteTargets.Add(target); WriteReplies.Add(callback); OnUpdate?.Invoke(target, values, callback); }
         public Param LatestValues()
         { LatestCalls++; if (LatestFactory != null) return LatestFactory(); var values = new Param(); values.Add("Dia", 110); return values; }
         public IReadOnlyList<StaffData> ReadCatalog() { CatalogCalls++; return CatalogReader == null ? Catalog : CatalogReader(); }

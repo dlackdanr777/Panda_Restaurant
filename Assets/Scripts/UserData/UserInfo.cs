@@ -581,8 +581,9 @@ public static class UserInfo
         if (stage < EStage.Stage1 || stage >= EStage.Length || _stageInfos == null || isCurrent == null)
             return false;
         StageInfo destination = _stageInfos[(int)stage];
-        if (destination == null) return false;
+        if (destination == null || BackendManager.Instance.IsStaffMigrationProtected) return false;
         Func<bool> sameDestination = () => isCurrent() && _stageInfos != null
+            && !BackendManager.Instance.IsStaffMigrationProtected
             && ReferenceEquals(_stageInfos[(int)stage], destination);
         return TryApplyStageDataResponse(stage, response, sameDestination, destination.LoadData,
             () => { if (asynchronous) SaveStageDataAsync(stage, sameDestination); else SaveStageData(stage, sameDestination); });

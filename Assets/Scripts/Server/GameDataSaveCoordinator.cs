@@ -30,17 +30,19 @@ namespace Muks.BackEnd
         private bool _sendInvoked;
         private SaveBatch _active;
         private GameDataMailSaveLease _mailLease;
+        internal StaffMigrationExecution ActiveStaffMigration => _active?.Migration;
 
         private sealed class SaveBatch
         {
             public readonly GameDataSaveIdentity Identity;
             public readonly bool IsAutosave;
             public readonly Func<bool> AutosaveGuard;
+            public readonly StaffMigrationExecution Migration;
             public Func<Param> Factory;
             public readonly List<GameDataSaveRequest> Requests = new List<GameDataSaveRequest>();
             public SaveBatch(GameDataSaveIdentity identity, bool isAutosave, Func<Param> factory,
-                Func<bool> autosaveGuard = null)
-            { Identity = identity; IsAutosave = isAutosave; Factory = factory; AutosaveGuard = autosaveGuard; }
+                Func<bool> autosaveGuard = null, StaffMigrationExecution migration = null)
+            { Identity = identity; IsAutosave = isAutosave; Factory = factory; AutosaveGuard = autosaveGuard; Migration = migration; }
         }
 
         private GameDataSaveCoordinatorState _state = GameDataSaveCoordinatorState.Idle;
@@ -82,6 +84,14 @@ namespace Muks.BackEnd
             if (target == null) return false;
             foreach (GameDataSaveCoordinator coordinator in BlockedCoordinators)
                 if (!ReferenceEquals(coordinator, owner) && coordinator._target.Matches(target)) return true;
+            return false;
+        }
+
+        internal static bool IsStaffMigrationTargetProtected(GameDataSaveTarget target)
+        {
+            if (target == null) return false;
+            foreach (GameDataSaveCoordinator coordinator in BlockedCoordinators)
+                if (coordinator.ActiveStaffMigration != null && coordinator._target.Matches(target)) return true;
             return false;
         }
 
@@ -173,6 +183,10 @@ namespace Muks.BackEnd
             return Enqueue(factory, false, onConfirmed, onStateChanged, null);
         }
 
+        // Only a validated Backend migration intent can obtain this protected FIFO slot.
+        internal GameDataSaveRequest EnqueueStaffMigration(StaffMigrationExecution migration) =>
+            Enqueue(migration.CreateValuesUnderProtection, false, migration.Confirm, null, null, migration);
+
         /// <summary>맨 뒤의 미전송 자동 저장만 병합한다. 중간의 부분 갱신을 앞지르지 않는다.</summary>
         public GameDataSaveRequest RequestAutosave(Action<GameDataSaveReceipt> onConfirmed = null,
             Action<GameDataSaveRequest> onStateChanged = null, Func<bool> canCreateValues = null)
@@ -182,7 +196,7 @@ namespace Muks.BackEnd
 
         private GameDataSaveRequest Enqueue(Func<Param> factory, bool autosave,
             Action<GameDataSaveReceipt> onConfirmed, Action<GameDataSaveRequest> onStateChanged,
-            Func<bool> autosaveGuard)
+            Func<bool> autosaveGuard, StaffMigrationExecution migration = null)
         {
             if (!EnsureSession()) return GameDataSaveRequest.Rejected("인증·복원 세션이 무효화되었습니다.");
             string error = factory == null ? "저장 자료 생성 함수가 필요합니다."
@@ -203,7 +217,7 @@ namespace Muks.BackEnd
                 ? _pending.Last.Value : null;
             if (batch == null)
             {
-                batch = new SaveBatch(NextIdentity(), autosave, factory, autosaveGuard);
+                batch = new SaveBatch(migration?.Identity ?? NextIdentity(), autosave, factory, autosaveGuard, migration);
                 _pending.AddLast(batch);
             }
             var request = new GameDataSaveRequest(batch.Identity, onConfirmed, onStateChanged);
@@ -325,6 +339,17 @@ namespace Muks.BackEnd
             if (!EnsureSession()) { AbandonBeforeSend(batch, "이전 세션의 저장입니다."); return false; }
             if (IsTargetOwnedByOther(_target, this))
             { RejectBeforeSend(batch, "다른 저장 작업이 같은 GameData 행을 소유하고 있습니다."); return false; }
+            if (batch.Migration != null)
+            {
+                try
+                {
+                    if (!batch.Migration.PrepareBeforeProtection(out string preparationError))
+                    { RejectBeforeSend(batch, preparationError); return false; }
+                }
+                catch (Exception ex)
+                { RejectBeforeSend(batch, "이전 준비 확인 실패: " + ex.GetType().Name); return false; }
+            }
+            if (!EnsureSession()) { AbandonBeforeSend(batch, "이전 준비 중 세션이 무효화되었습니다."); return false; }
             _active = batch;
             _sendInvoked = false;
             CurrentIdentity = batch.Identity;

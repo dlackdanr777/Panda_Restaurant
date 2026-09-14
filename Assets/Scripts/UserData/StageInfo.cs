@@ -77,6 +77,14 @@ public class StageInfo
         _staffRuntimeChangeToken = new object();
     }
 
+    private static SaveStaffData CopyStaffRecord(SaveStaffData source)
+    {
+        if (source == null) return null;
+        var copy = new SaveStaffData(source.Id, source.Level);
+        copy.SetSkinId(source.SkinId);
+        return copy;
+    }
+
     private StaffAccountRuntime ReadStaffAccountRuntime()
     {
         try { return _staffAccountRuntime?.Invoke(); }
@@ -1324,7 +1332,7 @@ public class StageInfo
         }
 
         // 직원 정보 복사
-        data.GiveStaffList = _giveStaffDic.Values.ToList();
+        data.GiveStaffList = _giveStaffDic.Values.Select(CopyStaffRecord).ToList();
 
         // 획득한 가구 정보 (List 그대로 할당)
         data.GiveFurnitureList = new List<string>(_giveFurnitureList);
@@ -1363,6 +1371,11 @@ public bool LoadData(ServerStageData loadData)
 {
     if (loadData == null)
         return false;
+    if (_staffAccountRuntime != null)
+    {
+        StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+        if (runtime == null || runtime.IsMigrationProtected) return false;
+    }
 
     // Reapplying even identical data invalidates an older baseline. Keep the guard until all legacy callbacks return.
     MarkStaffRuntimeChanged();
@@ -1383,7 +1396,7 @@ public bool LoadData(ServerStageData loadData)
             if (string.IsNullOrWhiteSpace(loadData.GiveStaffList[i].Id))
                 throw new Exception("아이디 값이 이상합니다: " + loadData.GiveStaffList[i].Id);
 
-            _giveStaffDic.Add(loadData.GiveStaffList[i].Id, loadData.GiveStaffList[i]);
+            _giveStaffDic.Add(loadData.GiveStaffList[i].Id, CopyStaffRecord(loadData.GiveStaffList[i]));
     }
 
     // ✅ 딕셔너리에서 로드 (하위 호환성 포함)

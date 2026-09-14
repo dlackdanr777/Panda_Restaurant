@@ -2,6 +2,7 @@ using BackEnd;
 using LitJson;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Data;
 using UnityEngine;
 
@@ -97,6 +98,13 @@ namespace Muks.BackEnd
         private IStageDataLoadTransport _stageDataTransport;
         private StaffStageMigrationCollection _stageMigrationCollection;
         private long _stageRoundSerial;
+        private List<StaffMigrationExecution> _staffMigrationExecutions;
+        public StaffMigrationExecution CurrentStaffMigrationExecution { get; private set; }
+        public IReadOnlyList<StaffMigrationExecution> StaffMigrationExecutions =>
+            (_staffMigrationExecutions ?? (_staffMigrationExecutions = new List<StaffMigrationExecution>())).AsReadOnly();
+        public event Action<StaffMigrationExecution> StaffMigrationCompleted;
+        public bool IsStaffMigrationProtected =>
+            GameDataSaveCoordinator.IsStaffMigrationTargetProtected(GameDataRestore.LegacyTarget);
         public StaffStageMigrationCollection StageMigrationCollection
         {
             get { _stageMigrationCollection?.RefreshValidity(); return _stageMigrationCollection; }
@@ -117,7 +125,8 @@ namespace Muks.BackEnd
         // The runtime rechecks the current restore/query on every access; old account values are not reused.
         public StaffAccountRuntime StaffRuntime => _staffAccountRuntime ??
             (_staffAccountRuntime = new StaffAccountRuntime(() => GameDataRestore.Result,
-                () => GameDataRestore.LegacyQuery, CanChangeStaffRuntime, () => GameDataTransport.ReadCatalog()));
+                () => GameDataRestore.LegacyQuery, CanChangeStaffRuntime, () => GameDataTransport.ReadCatalog(),
+                () => IsStaffMigrationProtected));
         private IGameDataBackendTransport GameDataTransport => _gameDataTransport ??
             (_gameDataTransport = new SdkGameDataBackendTransport(this));
 
@@ -221,7 +230,8 @@ namespace Muks.BackEnd
             GameDataRestoreQuery query = GameDataRestore.LegacyQuery;
             GameDataSaveTarget target = GameDataRestore.LegacyTarget;
             if (!IsCurrentStageRound(query, target, round)) return null;
-            bool migrationRequired = GameDataRestore.Result.Status == GameDataRestoreStatus.MigrationRequired;
+            bool migrationRequired = GameDataRestore.Result.Status == GameDataRestoreStatus.MigrationRequired
+                && StaffRuntime.Mode != StaffAccountRuntimeMode.Common;
             var collection = new StaffStageMigrationCollection(query, round, migrationRequired,
                 () => IsCurrentStageRound(query, target, round), () => GameDataTransport.ReadCatalog());
             if (!IsCurrentStageRound(query, target, round)) return null;
@@ -255,6 +265,7 @@ namespace Muks.BackEnd
                 try { applied = StageDataTransport.Apply(stage, response, current, asynchronous); }
                 catch (Exception) { applicationError = "기존 Stage 메모리 적용 중 예외가 발생했습니다."; }
                 finally { collection.CompleteApplication(stage, applied, applicationError); }
+                if (current() && ReferenceEquals(_stageMigrationCollection, collection)) TryStartStaffMigration();
             }
             if (!canReceive()) return;
             try
@@ -273,6 +284,49 @@ namespace Muks.BackEnd
                 () => GameDataTransport.LoggedIn ? GameDataTransport.AccountInDate : null));
         public GameDataRestoreEvidence RestoredGameData => GameDataRestore.Evidence;
         public GameDataRestoreResult GameDataRestoreResult => GameDataRestore.Result;
+
+        /// <summary>
+        /// Actual Stage completion invokes this entry. A queued operation stores only intent, not a prepared payload.
+        /// The same round is never enqueued again, even after a rejected/unknown transmission.
+        /// </summary>
+        public bool TryStartStaffMigration()
+        {
+            StaffStageMigrationCollection collection = StageMigrationCollection;
+            if (collection == null || !collection.RefreshValidity()
+                || StaffRuntime.Mode != StaffAccountRuntimeMode.Legacy
+                || GameDataRestore.Result.Status != GameDataRestoreStatus.MigrationRequired
+                || collection.CompletedStageCount != collection.RequiredStages.Count
+                || collection.Applications.Any(item => item.Status != StaffStageApplicationStatus.Succeeded)) return false;
+            if (_staffMigrationExecutions == null) _staffMigrationExecutions = new List<StaffMigrationExecution>();
+            var existing = _staffMigrationExecutions.FirstOrDefault(item => ReferenceEquals(item.Collection, collection));
+            if (existing != null) { CurrentStaffMigrationExecution = existing; return existing.Request?.Accepted == true; }
+            GameDataSaveCoordinator coordinator = GetGameDataSaveCoordinator();
+            if (coordinator == null || !ReferenceEquals(collection, _stageMigrationCollection)
+                || !collection.RefreshValidity()) return false;
+            var operation = new StaffMigrationExecution(this, collection, coordinator, GameDataRestore.LegacyTarget);
+            _staffMigrationExecutions.Add(operation); // fence before synchronous validation/SDK/observers may reenter
+            CurrentStaffMigrationExecution = operation;
+            operation.Enqueue();
+            return operation.Request?.Accepted == true;
+        }
+
+        internal bool IsCurrentStaffMigration(StaffMigrationExecution operation) => operation != null
+            && ReferenceEquals(operation.Collection, _stageMigrationCollection)
+            && ReferenceEquals(operation.Query, _gameDataSaveQuery)
+            && IsCurrentGameDataSaveSession(operation.Query, operation.Identity.Target)
+            && operation.Collection.RefreshValidity()
+            && StaffRuntime.Mode == StaffAccountRuntimeMode.Legacy;
+
+        internal void NotifyStaffMigrationCompleted(StaffMigrationExecution operation)
+        {
+            if (StaffMigrationCompleted == null) return;
+            foreach (Action<StaffMigrationExecution> observer in StaffMigrationCompleted.GetInvocationList())
+            {
+                if (!operation.IsCompleted || !IsCurrentGameDataSaveSession(operation.Query, operation.Identity.Target)) return;
+                try { observer(operation); }
+                catch (Exception ex) { Debug.LogWarning("[StaffMigration] Completion observer failed: " + ex.GetType().Name); }
+            }
+        }
 
         // 읽기/대기 세션은 무효화하되 이미 보낸 작업의 대상 소유권과 미해결 기록은 유지한다.
         public void InvalidateGameDataRestore()
@@ -1376,8 +1430,15 @@ namespace Muks.BackEnd
                 // UnityWebRequest + CallbackUpdateManager.Update (main thread); fakes may reply inline.
                 GameDataTransport.Update(identity.Target, values, bro => response(identity, ToRawResponse(bro)));
             }), isSessionCurrent: () => IsCurrentGameDataSaveSession(query, target),
-                validatePayload: payload => StaffRuntime.ValidateSaveField(payload, out string error)
-                    ? null : error ?? "현재 공용 직원 상태와 저장 자료가 일치하지 않습니다.");
+                validateRequest: (identity, payload) =>
+                {
+                    var owner = readOwner() ?? updater.Owner;
+                    var migration = owner?.ActiveStaffMigration;
+                    if (migration != null) return migration.ValidateTransmission(identity, payload);
+                    if (!StaffRuntime.ValidateSaveField(payload, out string error))
+                        return error ?? "현재 공용 직원 상태와 저장 자료가 일치하지 않습니다.";
+                    return IsCurrentGameDataSaveSession(query, target) ? null : "저장 필드 확인 중 세션이 무효화되었습니다.";
+                });
             return updater;
         }
 
@@ -1506,6 +1567,7 @@ namespace Muks.BackEnd
             // Own ReservedForMail also permits the protected reward; its queued autosave starts after release.
             // Unresolved completion and another writer's ownership still block changes; no tutorial UI gate here.
             return IsCurrentGameDataSaveSession(query, target)
+                && !IsStaffMigrationProtected
                 && !GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
                 && (owner == null || (owner.State != GameDataSaveCoordinatorState.Indeterminate
                     && owner.State != GameDataSaveCoordinatorState.LocalCompletionFailed

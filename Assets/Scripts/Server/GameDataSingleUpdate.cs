@@ -17,6 +17,7 @@ namespace Muks.BackEnd
         private readonly IGameDataUpdateTransport _transport;
         private readonly Func<bool> _isSessionCurrent;
         private readonly Func<GameDataSavePayload, string> _validatePayload;
+        private readonly Func<GameDataSaveIdentity, GameDataSavePayload, string> _validateRequest;
         internal bool IsSessionCurrent() => _isSessionCurrent == null || _isSessionCurrent();
         internal GameDataSaveCoordinator Owner { get; private set; }
         internal void BindOwner(GameDataSaveCoordinator owner)
@@ -27,12 +28,14 @@ namespace Muks.BackEnd
         }
 
         public GameDataSingleUpdate(Func<GameDataSaveReadiness> readReadiness, IGameDataUpdateTransport transport,
-            Func<bool> isSessionCurrent = null, Func<GameDataSavePayload, string> validatePayload = null)
+            Func<bool> isSessionCurrent = null, Func<GameDataSavePayload, string> validatePayload = null,
+            Func<GameDataSaveIdentity, GameDataSavePayload, string> validateRequest = null)
         {
             _readReadiness = readReadiness ?? throw new ArgumentNullException(nameof(readReadiness));
             _transport = transport ?? throw new ArgumentNullException(nameof(transport));
             _isSessionCurrent = isSessionCurrent;
             _validatePayload = validatePayload;
+            _validateRequest = validateRequest;
         }
 
         public bool CanSend(GameDataSaveIdentity identity, out string error)
@@ -97,6 +100,15 @@ namespace Muks.BackEnd
 
             // 복사와 필드 검증 이후에도 gate를 확인한다. 이 객체와 콜백은 메인 스레드에서 사용한다.
             if (!CanSend(identity, out error))
+            {
+                onResponse(GameDataSaveReceipt.Rejected(identity, payload, error));
+                return;
+            }
+
+            // An identity-bound authority is checked after the last readiness callback, not an external bypass bool.
+            try { error = _validateRequest?.Invoke(identity, payload); }
+            catch { error = "전송 직전 요청 권한·원본 재검증을 완료하지 못했습니다."; }
+            if (error != null)
             {
                 onResponse(GameDataSaveReceipt.Rejected(identity, payload, error));
                 return;

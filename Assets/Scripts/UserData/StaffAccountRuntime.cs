@@ -27,7 +27,12 @@ public sealed class StaffAccountRuntime
     private readonly Func<GameDataRestoreQuery> _readLegacyQuery;
     private readonly Func<bool> _canChange;
     private readonly Func<IReadOnlyList<StaffData>> _readCatalog;
+    private readonly Func<bool> _isMigrationProtected;
     private GameDataRestoreEvidence _source;
+    // A confirmed migration is not a replacement GameData query or a fabricated restore response.
+    private StaffMigrationExecution _migrationSource;
+    private GameDataSaveReceipt _migrationReceipt;
+    private GameDataRestoreQuery _migrationQuery;
     private GameDataRestoreQuery _query;
     private StaffAccountSaveData _current;
     private StaffAccountRuntimeMode _mode;
@@ -35,17 +40,26 @@ public sealed class StaffAccountRuntime
     public string LastNotificationError { get; private set; }
 
     public StaffAccountRuntime(Func<GameDataRestoreResult> readRestore, Func<GameDataRestoreQuery> readLegacyQuery,
-        Func<bool> canChange, Func<IReadOnlyList<StaffData>> readCatalog)
+        Func<bool> canChange, Func<IReadOnlyList<StaffData>> readCatalog, Func<bool> isMigrationProtected = null)
     {
         _readRestore = readRestore ?? throw new ArgumentNullException(nameof(readRestore));
         _readLegacyQuery = readLegacyQuery ?? throw new ArgumentNullException(nameof(readLegacyQuery));
         _canChange = canChange ?? throw new ArgumentNullException(nameof(canChange));
         _readCatalog = readCatalog ?? throw new ArgumentNullException(nameof(readCatalog));
+        _isMigrationProtected = isMigrationProtected;
     }
 
     public StaffAccountRuntimeMode Mode { get { Refresh(); return _mode; } }
     public StaffAccountSaveData Snapshot { get { Refresh(); return _mode == StaffAccountRuntimeMode.Common ? _current : null; } }
     public bool CanMutate => !_changing && Authorized();
+    public bool IsMigrationProtected
+    {
+        get
+        {
+            try { return _isMigrationProtected != null && _isMigrationProtected(); }
+            catch { return true; } // A failed protection check must not permit a Stage reapplication.
+        }
+    }
 
     public void Refresh()
     {
@@ -54,16 +68,28 @@ public sealed class StaffAccountRuntime
             GameDataRestoreResult result = _readRestore();
             GameDataRestoreQuery query = _readLegacyQuery();
             // Read twice: query validation may invalidate the account while observing its identity.
-            if (query == null || !ReferenceEquals(result, _readRestore())) { _mode = StaffAccountRuntimeMode.Unavailable; return; }
+            if (query == null)
+            {
+                ClearMigrationSource();
+                _mode = StaffAccountRuntimeMode.Unavailable;
+                return;
+            }
+            if (_migrationQuery != null && !ReferenceEquals(_migrationQuery, query)) ClearMigrationSource();
+            if (!ReferenceEquals(result, _readRestore())) { _mode = StaffAccountRuntimeMode.Unavailable; return; }
             if (result.Status == GameDataRestoreStatus.MigrationRequired)
             {
                 _query = query;
-                _mode = StaffAccountRuntimeMode.Legacy;
+                // The old absence response stays unchanged. Re-reading it must not discard a confirmed install
+                // or replace the subsequently grown current snapshot with the original migration candidate.
+                _mode = _migrationSource != null && ReferenceEquals(_migrationQuery, query)
+                    ? (_current != null ? StaffAccountRuntimeMode.Common : StaffAccountRuntimeMode.Unavailable)
+                    : StaffAccountRuntimeMode.Legacy;
                 return;
             }
             GameDataRestoreEvidence evidence = result.Evidence;
             if (result.Status != GameDataRestoreStatus.Ready || evidence == null || evidence.StaffAccount == null
                 || !ReferenceEquals(evidence.Query, query)) { _mode = StaffAccountRuntimeMode.Unavailable; return; }
+            ClearMigrationSource();
             if (!ReferenceEquals(_source, evidence))
             {
                 _source = evidence;
@@ -73,6 +99,55 @@ public sealed class StaffAccountRuntime
             _mode = StaffAccountRuntimeMode.Common;
         }
         catch { _mode = StaffAccountRuntimeMode.Unavailable; }
+    }
+
+    private void ClearMigrationSource()
+    {
+        _migrationSource = null;
+        _migrationReceipt = null;
+        _migrationQuery = null;
+    }
+
+    /// <summary>
+    /// Only the current coordinator-owned, successful migration execution can install its frozen candidate.
+    /// No UserInfo restore, Stage rewrite, currency change or notification is performed here.
+    /// </summary>
+    internal bool TryInstallMigration(StaffMigrationExecution execution, GameDataSaveReceipt receipt, out string error)
+    {
+        error = null;
+        Refresh();
+        if (_changing || execution == null || receipt == null || execution.Preparation == null)
+        { error = "이전 성공 근거가 없거나 직원 변경 처리 중입니다."; return false; }
+        GameDataRestoreQuery query = execution.Preparation.Query;
+        StaffAccountSaveData candidate = execution.Preparation.Candidate;
+        if (_mode == StaffAccountRuntimeMode.Common && ReferenceEquals(_query, query)
+            && ReferenceEquals(_migrationSource, execution) && ReferenceEquals(_migrationReceipt, receipt))
+            return true; // Exactly the installed proof: preserve all later growth, do not reapply the candidate.
+        if (_mode != StaffAccountRuntimeMode.Legacy || query == null || !ReferenceEquals(_query, query))
+        { error = "현재 조회의 기존 직원 상태에만 이전 결과를 설치할 수 있습니다."; return false; }
+
+        _changing = true;
+        try
+        {
+            if (!execution.ValidateInstallation(this, receipt, out error)
+                || !StaffAccountSaveConverter.Validate(candidate, out error)) return false;
+            if (_mode != StaffAccountRuntimeMode.Legacy || !ReferenceEquals(_query, query))
+            { error = "이전 성공 확인 중 계정·조회·직원 기준이 변경되었습니다."; return false; }
+            // All external validation has finished. These assignments form a non-notifying memory commit.
+            _source = null;
+            _migrationSource = execution;
+            _migrationReceipt = receipt;
+            _migrationQuery = query;
+            _current = candidate;
+            _mode = StaffAccountRuntimeMode.Common;
+            return true;
+        }
+        catch
+        {
+            error = "이전 성공 후 공용 직원 설치를 확인할 수 없습니다.";
+            return false;
+        }
+        finally { _changing = false; }
     }
 
     private bool Authorized()

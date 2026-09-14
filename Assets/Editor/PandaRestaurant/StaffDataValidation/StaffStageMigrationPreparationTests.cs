@@ -20,6 +20,7 @@ public partial class StaffStageMigrationCollectionTests
         using (var scope = new RuntimeStaffScope(Catalog()))
         {
             var fixture = CreateRuntimeFixture();
+            HoldMigrationForPreparationObservation(fixture);
             AssertPreparation(fixture.Manager.PrepareStaffMigration(), StaffMigrationPreparationStatus.NotStarted);
             fixture.Manager.LoadAllStageData(true);
             AssertPreparation(fixture.Manager.PrepareStaffMigration(), StaffMigrationPreparationStatus.RawNotReady);
@@ -98,6 +99,7 @@ public partial class StaffStageMigrationCollectionTests
 
             // Observe the actual StageInfo.IsApplying fence from an event emitted inside its real LoadData body.
             var applying = CreateRuntimeFixture();
+            HoldMigrationForPreparationObservation(applying);
             int insideLoad = 0;
             applying.Stage.Runtime[EStage.Stage3].OnChangeFurnitureHandler += (_, __) =>
             {
@@ -171,7 +173,7 @@ public partial class StaffStageMigrationCollectionTests
     }
 
     [Test]
-    public void MigrationPreparation_ShallowSaveAliasesAreDetectedWhileNoOpsAndUnrelatedStateRemainValid()
+    public void MigrationPreparation_SaveCopiesPreserveSourcesWhileNoOpsAndUnrelatedStateRemainValid()
     {
         using (var scope = new RuntimeStaffScope(Catalog()))
         {
@@ -182,7 +184,10 @@ public partial class StaffStageMigrationCollectionTests
                 string original = DescribePreparation(preparation);
                 var alias = fixture.Stage.Runtime[EStage.Stage1].SaveData().GiveStaffList.Single();
                 if (changeLevel) alias.LevelUp(); else alias.SetSkinId("ALIAS_CHANGED_SKIN");
-                AssertPreparation(fixture.Manager.RevalidateStaffMigration(preparation), StaffMigrationPreparationStatus.RuntimeChanged);
+                AssertPreparation(fixture.Manager.RevalidateStaffMigration(preparation), StaffMigrationPreparationStatus.Valid);
+                Assert.That(fixture.Stage.Runtime[EStage.Stage1].GetStaffLevel("STAFF01"), Is.EqualTo(2));
+                Assert.That(fixture.Stage.Runtime[EStage.Stage1].SaveData().GiveStaffList.Single().SkinId, Is.EqualTo("ORIGINAL_SKIN"),
+                    "SaveData returns detached records: changing the exported copy must not mutate protected Stage ownership");
                 Assert.That(DescribePreparation(preparation), Is.EqualTo(original));
                 Assert.That(preparation.Stages[0].Snapshot.Staff.Single().Level, Is.EqualTo(2));
                 Assert.That(preparation.Stages[0].Snapshot.Staff.Single().SkinId, Is.EqualTo("ORIGINAL_SKIN"));
@@ -270,6 +275,7 @@ public partial class StaffStageMigrationCollectionTests
         using (var scope = new RuntimeStaffScope(Catalog()))
         {
             var empty = CreateRuntimeFixture();
+            HoldMigrationForPreparationObservation(empty);
             empty.Manager.LoadAllStageData(true);
             foreach (EStage stage in new[] { EStage.Stage1, EStage.Stage2, EStage.Stage3 }) Reply(empty, stage, StageResponse(empty, stage));
             var emptyResult = empty.Manager.PrepareStaffMigration();
@@ -335,9 +341,20 @@ public partial class StaffStageMigrationCollectionTests
     private Fixture CompletedRuntimeFixture(int level1 = 2, string skin = "")
     {
         var fixture = CreateRuntimeFixture();
+        HoldMigrationForPreparationObservation(fixture);
         fixture.Manager.LoadAllStageData(true);
         ReplyRuntimeRows(fixture, level1, skin);
+        Assert.That(fixture.Manager.CurrentStaffMigrationExecution.Status, Is.EqualTo(StaffMigrationExecutionStatus.Waiting));
+        Assert.That(fixture.Game.Writes, Is.Zero);
         return fixture;
+    }
+    private static void HoldMigrationForPreparationObservation(Fixture fixture)
+    {
+        // Preparation diagnostics remain independently testable under a real preceding mail reservation.
+        // Execution tests separately prove that releasing this reservation revalidates and transmits the one queued intent.
+        Assert.That(fixture.Manager.TryAcquireMailSaveLease(out var lease, out var error), Is.True, error);
+        Assert.That(lease.IsCurrent, Is.True);
+        Assert.That(fixture.Manager.CurrentGameDataSaveCoordinator.State, Is.EqualTo(GameDataSaveCoordinatorState.ReservedForMail));
     }
     private void ReplyRuntimeRows(Fixture fixture, int level1 = 2, string skin = "")
     {

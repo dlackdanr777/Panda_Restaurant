@@ -165,7 +165,10 @@ public partial class StaffStageMigrationCollectionTests
                 Assert.That(newer.Query, Is.SameAs(source.Query));
                 Assert.That(hasEvidence(applied, newer, stageInfo.CaptureStaffRuntimeSnapshot()), Is.False,
                     "A new Stage round under the same GameData query must not reuse previous application evidence");
-                Assert.That(stages.Game.Writes, Is.Zero);
+                Assert.That(stages.Game.Writes, Is.EqualTo(common ? 0 : 1),
+                    "Legacy completion now sends one migration; already-common accounts retain the zero-migration contract");
+                if (!common)
+                    CollectionAssert.AreEqual(new[] { "StaffAccount" }, JObject.Parse(stages.Game.WriteValues.Single().GetJson()).Properties().Select(field => field.Name));
             }
         }
     }
