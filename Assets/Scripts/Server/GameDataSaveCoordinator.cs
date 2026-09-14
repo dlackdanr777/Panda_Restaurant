@@ -29,6 +29,7 @@ namespace Muks.BackEnd
         private bool _autosaveNeeded;
         private bool _sendInvoked;
         private SaveBatch _active;
+        private GameDataMailSaveLease _mailLease;
 
         private sealed class SaveBatch
         {
@@ -94,6 +95,75 @@ namespace Muks.BackEnd
             _onAutosaveConfirmed = onAutosaveConfirmed;
             _isSessionCurrent = isSessionCurrent;
             _updater.BindOwner(this);
+        }
+
+        /// <summary>
+        /// 우편 SDK 호출보다 먼저 같은 복원 세션/행의 저장 순서를 예약한다.
+        /// 예약 중 접수된 저장은 기존 FIFO에 남고, 확정 종료 후에만 자료를 생성/전송한다.
+        /// </summary>
+        internal bool TryReserveForMail(GameDataRestoreQuery query, Func<bool> isQueryCurrent,
+            out GameDataMailSaveLease lease, out string error)
+        {
+            lease = null;
+            error = null;
+            if (query == null || isQueryCurrent == null || !_target.IsValid
+                || !string.Equals(query.AccountInDate, _target.AccountInDate, StringComparison.Ordinal))
+            { error = "우편 수령에 필요한 현재 계정·복원 행 근거가 없습니다."; return false; }
+            if (!EnsureSession() || !ReadCurrent(isQueryCurrent) || !EnsureSession())
+            { error = "우편 수령 전 인증·복원 세션이 변경되었습니다."; return false; }
+            if (!CanStartPurchase || _mailLease != null)
+            { error = "진행 중이거나 미해결인 저장이 있어 우편을 수령할 수 없습니다."; return false; }
+            _mailLease = new GameDataMailSaveLease(this, query, _target, isQueryCurrent);
+            State = GameDataSaveCoordinatorState.ReservedForMail;
+            LastError = null;
+            lease = _mailLease;
+            return true;
+        }
+
+        internal bool IsMailLeaseCurrent(GameDataMailSaveLease lease)
+        {
+            if (lease == null || !ReferenceEquals(_mailLease, lease)
+                || State != GameDataSaveCoordinatorState.ReservedForMail || !EnsureSession()) return false;
+            if (!ReadCurrent(lease.IsQueryCurrent))
+            {
+                InvalidateSession();
+                return false;
+            }
+            return EnsureSession() && ReferenceEquals(_mailLease, lease)
+                && State == GameDataSaveCoordinatorState.ReservedForMail;
+        }
+
+        internal bool TryMarkMailRequestStarted(GameDataMailSaveLease lease)
+        {
+            if (!IsMailLeaseCurrent(lease) || lease.IsIndeterminate) return false;
+            // 동일 고정 ID batch의 다음 우편은 호출자가 순차 응답을 확인한 뒤 시작한다.
+            lease.HasRequestStarted = true;
+            return true;
+        }
+
+        internal void MarkMailIndeterminate(GameDataMailSaveLease lease, string reason)
+        {
+            if (!IsMailLeaseCurrent(lease) || !lease.HasRequestStarted) return;
+            lease.IsIndeterminate = true;
+            lease.Error = reason ?? "우편 수령 결과를 확인하지 못했습니다. 저장 예약을 유지합니다.";
+            LastError = lease.Error;
+            // 미확정은 미반영 실패가 아니다. FIFO도 소유권도 해제하지 않는다.
+        }
+
+        internal bool TryReleaseMail(GameDataMailSaveLease lease, bool knownOutcome)
+        {
+            if (!IsMailLeaseCurrent(lease) || knownOutcome != lease.HasRequestStarted) return false;
+            _mailLease = null; // 후속 factory/콜백 재진입보다 먼저 이전 lease를 종료한다.
+            LastError = null;
+            State = GameDataSaveCoordinatorState.Idle;
+            Pump();
+            return true;
+        }
+
+        private static bool ReadCurrent(Func<bool> predicate)
+        {
+            try { return predicate(); }
+            catch { return false; }
         }
 
         /// <summary>일반 값 저장. 순서가 왔을 때만 factory를 실행하며 구매를 재계산하지 않는다.</summary>
@@ -183,6 +253,23 @@ namespace Muks.BackEnd
             _autosaveNeeded = false;
             foreach (SaveBatch batch in _pending) AbandonBeforeSend(batch, "이전 인증·복원 세션의 대기 작업입니다.");
             _pending.Clear();
+            if (_mailLease != null)
+            {
+                if (_mailLease.HasRequestStarted)
+                {
+                    _mailLease.IsIndeterminate = true;
+                    _mailLease.Error = "우편 요청 후 인증·복원 세션이 변경되었습니다. 이전 수령의 저장 소유권을 유지합니다.";
+                    LastError = _mailLease.Error;
+                    State = GameDataSaveCoordinatorState.InvalidatedAfterSend;
+                }
+                else
+                {
+                    // SDK 호출이 없었던 예약만 안전하게 폐기한다. 전송된 예약은 이 경로로 해제하지 않는다.
+                    _mailLease = null;
+                    State = GameDataSaveCoordinatorState.Idle;
+                }
+                return;
+            }
             if (_active == null) return;
             if (!_sendInvoked)
             {
@@ -478,7 +565,33 @@ namespace Muks.BackEnd
         ApplyingConfirmedState,
         Indeterminate,
         LocalCompletionFailed,
-        InvalidatedAfterSend
+        InvalidatedAfterSend,
+        ReservedForMail
+    }
+
+    /// <summary>
+    /// 메모리상의 우편 수령/저장 보호권. 요청의 ID·응답 신뢰 판단은 우편 처리자가 담당한다.
+    /// 전송 후 미확정 또는 이전 세션의 보호권은 화면 닫기/Reset으로 해제할 수 없다.
+    /// </summary>
+    public sealed class GameDataMailSaveLease : IMailReceiveProtection
+    {
+        private readonly GameDataSaveCoordinator _owner;
+        internal readonly Func<bool> IsQueryCurrent;
+        internal bool HasRequestStarted;
+        public GameDataRestoreQuery Query { get; }
+        public GameDataSaveTarget Target { get; }
+        public bool IsCurrent => _owner.IsMailLeaseCurrent(this);
+        public bool IsIndeterminate { get; internal set; }
+        public string Error { get; internal set; }
+
+        internal GameDataMailSaveLease(GameDataSaveCoordinator owner, GameDataRestoreQuery query,
+            GameDataSaveTarget target, Func<bool> isQueryCurrent)
+        { _owner = owner; Query = query; Target = target; IsQueryCurrent = isQueryCurrent; }
+
+        public bool TryMarkRequestStarted() => _owner.TryMarkMailRequestStarted(this);
+        public void MarkIndeterminate(string reason) => _owner.MarkMailIndeterminate(this, reason);
+        public bool TryCompleteKnownOutcome() => _owner.TryReleaseMail(this, true);
+        public bool TryCancelBeforeRequest() => _owner.TryReleaseMail(this, false);
     }
 
     public enum GameDataSaveRequestStatus

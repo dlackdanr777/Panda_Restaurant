@@ -15,7 +15,7 @@ using UnityEngine;
 using Random = UnityEngine.Random;
 
 /// <summary>Actual load/parse/A2 entry methods, with memory-only SDK boundaries and a detached legacy application sink.</summary>
-public class StaffStageMigrationCollectionTests
+public partial class StaffStageMigrationCollectionTests
 {
     private readonly Dictionary<StaffData, string> _assets = new Dictionary<StaffData, string>();
     private readonly Dictionary<BackendReturnObject, string> _responses = new Dictionary<BackendReturnObject, string>();
@@ -550,14 +550,21 @@ public class StaffStageMigrationCollectionTests
         public string AccountInDate { get; set; }
         public bool GameplaySaveAllowed => true;
         public IReadOnlyList<StaffData> Catalog;
+        public Func<IReadOnlyList<StaffData>> CatalogReader;
         public int CatalogCalls, Writes, Inserts;
+        public int LatestCalls;
+        public Func<Param> LatestFactory;
         public readonly List<Action<BackendReturnObject>> GetReplies = new List<Action<BackendReturnObject>>();
         public readonly List<Action<BackendReturnObject>> WriteReplies = new List<Action<BackendReturnObject>>();
+        public readonly List<Param> WriteValues = new List<Param>();
+        public readonly List<GameDataSaveTarget> WriteTargets = new List<GameDataSaveTarget>();
         public void Get(string account, Action<BackendReturnObject> callback) => GetReplies.Add(callback);
         public void Insert(Param values, Action<BackendReturnObject> callback) { Inserts++; Assert.Fail("Stage collection must not insert GameData"); }
-        public void Update(GameDataSaveTarget target, Param values, Action<BackendReturnObject> callback) { Writes++; WriteReplies.Add(callback); }
-        public Param LatestValues() { var values = new Param(); values.Add("Dia", 110); return values; }
-        public IReadOnlyList<StaffData> ReadCatalog() { CatalogCalls++; return Catalog; }
+        public void Update(GameDataSaveTarget target, Param values, Action<BackendReturnObject> callback)
+        { Writes++; WriteValues.Add(values); WriteTargets.Add(target); WriteReplies.Add(callback); }
+        public Param LatestValues()
+        { LatestCalls++; if (LatestFactory != null) return LatestFactory(); var values = new Param(); values.Add("Dia", 110); return values; }
+        public IReadOnlyList<StaffData> ReadCatalog() { CatalogCalls++; return CatalogReader == null ? Catalog : CatalogReader(); }
         public bool Restore(BackendReturnObject response) => true;
         public Param InitialValues() => throw new InvalidOperationException("No initial account creation in Stage collection tests");
     }
@@ -567,6 +574,11 @@ public class StaffStageMigrationCollectionTests
         public readonly Dictionary<EStage, ServerStageData> Applied = new Dictionary<EStage, ServerStageData>();
         public Func<EStage, BackendReturnObject> SyncResponse;
         public Func<ServerStageData, bool> MemoryApply;
+        public bool UseRuntimeStages;
+        public readonly Dictionary<EStage, StageInfo> Runtime = new Dictionary<EStage, StageInfo>();
+        public Func<EStage, ServerStageData, bool> RuntimeApply;
+        public Func<EStage, StaffStageRuntimeSnapshot> RuntimeReader;
+        public Action<EStage> BeforeApply;
         public Action<int> Checkpoint;
         public int ApplyCalls, MemoryCalls, A2Saves;
         public void Get(EStage stage, string account, Func<bool> isCurrent, Action<BackendReturnObject> callback) =>
@@ -576,11 +588,12 @@ public class StaffStageMigrationCollectionTests
             Gets.Add(new GetCall { Stage = stage, Account = account, IsCurrent = isCurrent });
             return isCurrent() ? SyncResponse(stage) : null;
         }
-        public void Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous)
+        public bool Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous)
         {
             ApplyCalls++;
+            BeforeApply?.Invoke(stage);
             int checks = 0;
-            UserInfo.TryApplyStageDataResponse(stage, response, () =>
+            return UserInfo.TryApplyStageDataResponse(stage, response, () =>
             {
                 Checkpoint?.Invoke(++checks);
                 return isCurrent();
@@ -588,9 +601,13 @@ public class StaffStageMigrationCollectionTests
             {
                 MemoryCalls++;
                 Applied[stage] = data;
+                if (UseRuntimeStages && !(RuntimeApply == null ? Runtime[stage].LoadData(data) : RuntimeApply(stage, data)))
+                    return false;
                 return MemoryApply == null || MemoryApply(data);
             }, () => A2Saves++);
         }
+        public StaffStageRuntimeSnapshot ReadStaff(EStage stage) => RuntimeReader != null ? RuntimeReader(stage)
+            : UseRuntimeStages && Runtime.TryGetValue(stage, out StageInfo runtime) ? runtime.CaptureStaffRuntimeSnapshot() : null;
         public sealed class GetCall { public EStage Stage; public string Account; public Func<bool> IsCurrent; public Action<BackendReturnObject> Reply; }
     }
     private static string GameState()

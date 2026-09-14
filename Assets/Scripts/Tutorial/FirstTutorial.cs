@@ -43,11 +43,21 @@ public class FirstTutorial : MonoBehaviour
             return;
         }
 
+        // Do not populate a verified (possibly empty) common account with a legacy tutorial default.
+        var staffRuntime = Muks.BackEnd.BackendManager.Instance.StaffRuntime;
+        bool staffReady = staffRuntime.Mode == StaffAccountRuntimeMode.Common
+            ? staffRuntime.CanMutate && UserInfo.IsGiveStaff(EStage.Stage1, "STAFF11")
+            : UserInfo.GiveStaff(EStage.Stage1, "STAFF11");
+        if (!staffReady)
+        {
+            Debug.LogWarning("[FirstTutorial] Staff state is unavailable; tutorial setup was not completed.");
+            return;
+        }
+
         _mainSceneUI.gameObject.SetActive(false);
         _punchHole.gameObject.SetActive(false);
         UserInfo.IsTutorialStart = true;
 
-        UserInfo.GiveStaff(EStage.Stage1, "STAFF11");
         UserInfo.SetEquipStaff(EStage.Stage1, ERestaurantFloorType.Floor1, EquipStaffType.Marketer, "STAFF11");
         UserInfo.AddMoney(5000);
         SequentialCommandManager.Instance.EnqueueCommand(StartTutorial, () => true, () => UserInfo.IsFirstTutorialClear, 0, 0.3f);

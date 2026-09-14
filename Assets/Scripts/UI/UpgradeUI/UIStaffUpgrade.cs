@@ -65,16 +65,18 @@ public class UIStaffUpgrade : MobileUIView
 
     private void UpdateData()
     {
-        if (_currentData == null)
-            throw new System.Exception("스탭 데이터가 NULL입니다.");
-
-        if(!UserInfo.IsGiveStaff(UserInfo.CurrentStage, _currentData))
-            throw new System.Exception("해당 스탭을 고용하지 않았습니다.");
-
         _upgradeButton.gameObject.SetActive(false);
         _notEnoughMoneyButton.gameObject.SetActive(false);
         _notEnoughDiaButton.gameObject.SetActive(false);
         _scoreButton.gameObject.SetActive(false);
+
+        if (_currentData == null || !UserInfo.IsGiveStaff(UserInfo.CurrentStage, _currentData))
+        {
+            _levelText.text = "확인 필요";
+            _lowerFrame.gameObject.SetActive(false);
+            _maxLevelGroup.gameObject.SetActive(false);
+            return;
+        }
 
         int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, _currentData);
         _selectGroup.SetSprite(_currentData.ThumbnailSprite);
@@ -138,11 +140,12 @@ public class UIStaffUpgrade : MobileUIView
 
     private void OnUpgradeButtonClicked()
     {
-        if (_currentData == null)
-            throw new System.Exception("스태프 데이터가 NULL입니다.");
-
-        if (!UserInfo.IsGiveStaff(UserInfo.CurrentStage, _currentData))
-            throw new System.Exception("해당 스탭을 고용하지 않았습니다.");
+        if (_currentData == null || !UserInfo.IsGiveStaff(UserInfo.CurrentStage, _currentData))
+        {
+            PopupManager.Instance.ShowDisplayText("현재 직원 정보를 확인할 수 없습니다.");
+            UpdateData();
+            return;
+        }
 
         int level = UserInfo.GetStaffLevel(UserInfo.CurrentStage, _currentData);
         if (_currentData.IsMaxLevel(level)
@@ -167,13 +170,13 @@ public class UIStaffUpgrade : MobileUIView
                 return;
             }
 
-            if(upgradeMoneyData.MoneyType == MoneyType.Gold)
-                UserInfo.AddMoney(-upgradeMoneyData.Price);
-
-            else if (upgradeMoneyData.MoneyType == MoneyType.Dia)
-                UserInfo.AddDia(-upgradeMoneyData.Price);
-
-            UserInfo.UpgradeStaff(UserInfo.CurrentStage, _currentData);
+            // The runtime rechecks the account, saved level and cost, commits both values, then publishes events.
+            if (!UserInfo.UpgradeStaff(UserInfo.CurrentStage, _currentData))
+            {
+                PopupManager.Instance.ShowDisplayText("현재 직원 상태에서는 업그레이드할 수 없습니다.");
+                UpdateData();
+                return;
+            }
             PopupManager.Instance.ShowDisplayText("직원 업그레이드를 완료했어요!");
             SoundManager.Instance.PlayEffectAudio(EffectType.UI, _upgradeSound);
             _flashEffect.Emit(1);

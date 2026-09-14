@@ -39,7 +39,8 @@ namespace Muks.BackEnd
     {
         void Get(EStage stage, string accountInDate, Func<bool> isCurrent, Action<BackendReturnObject> callback);
         BackendReturnObject Get(EStage stage, string accountInDate, Func<bool> isCurrent);
-        void Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous);
+        bool Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous);
+        StaffStageRuntimeSnapshot ReadStaff(EStage stage);
     }
 
     /// <summary>뒤끝과 연동할 수 있게 해주는 싱글톤 클래스</summary>
@@ -91,6 +92,7 @@ namespace Muks.BackEnd
         private IGameDataBackendTransport _gameDataTransport;
         private GameDataSaveCoordinator _gameDataSaveCoordinator;
         private GameDataRestoreQuery _gameDataSaveQuery;
+        private StaffAccountRuntime _staffAccountRuntime;
         private Func<bool> _gameDataGameplayGate;
         private IStageDataLoadTransport _stageDataTransport;
         private StaffStageMigrationCollection _stageMigrationCollection;
@@ -99,9 +101,23 @@ namespace Muks.BackEnd
         {
             get { _stageMigrationCollection?.RefreshValidity(); return _stageMigrationCollection; }
         }
+        // Point-in-time validation only. Neither method saves, re-queries nor switches staff ownership.
+        public StaffMigrationPreparationResult PrepareStaffMigration() => _stageMigrationCollection == null
+            ? new StaffMigrationPreparationResult(StaffMigrationPreparationStatus.NotStarted,
+                error: "현재 Stage 수집 회차가 없습니다.")
+            : _stageMigrationCollection.PrepareMigration();
+        public StaffMigrationPreparationResult RevalidateStaffMigration(StaffMigrationPreparation preparation) =>
+            _stageMigrationCollection == null
+                ? new StaffMigrationPreparationResult(StaffMigrationPreparationStatus.NotStarted,
+                    error: "현재 Stage 수집 회차가 없습니다.")
+                : _stageMigrationCollection.RevalidateMigration(preparation);
         private IStageDataLoadTransport StageDataTransport => _stageDataTransport ??
             (_stageDataTransport = new SdkStageDataLoadTransport(this));
         public GameDataSaveCoordinator CurrentGameDataSaveCoordinator => _gameDataSaveCoordinator;
+        // The runtime rechecks the current restore/query on every access; old account values are not reused.
+        public StaffAccountRuntime StaffRuntime => _staffAccountRuntime ??
+            (_staffAccountRuntime = new StaffAccountRuntime(() => GameDataRestore.Result,
+                () => GameDataRestore.LegacyQuery, CanChangeStaffRuntime, () => GameDataTransport.ReadCatalog()));
         private IGameDataBackendTransport GameDataTransport => _gameDataTransport ??
             (_gameDataTransport = new SdkGameDataBackendTransport(this));
 
@@ -173,8 +189,9 @@ namespace Muks.BackEnd
                 return _owner.ProcessBackendAPISync(stage + "Data 데이터 조회",
                     () => Backend.GameData.Get(stage + "Data", where), isCurrent: isCurrent);
             }
-            public void Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous) =>
+            public bool Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous) =>
                 UserInfo.ApplyLoadedStageData(stage, response, isCurrent, asynchronous);
+            public StaffStageRuntimeSnapshot ReadStaff(EStage stage) => UserInfo.CaptureStageStaffRuntimeSnapshot(stage);
         }
 
         // The existing initialization creates/queries Stage1, Stage2 and Stage3, regardless of unlock state.
@@ -208,6 +225,8 @@ namespace Muks.BackEnd
             var collection = new StaffStageMigrationCollection(query, round, migrationRequired,
                 () => IsCurrentStageRound(query, target, round), () => GameDataTransport.ReadCatalog());
             if (!IsCurrentStageRound(query, target, round)) return null;
+            collection.ConfigureRuntime(target, stage => StageDataTransport.ReadStaff(stage),
+                () => GameDataTransport.ReadCatalog());
             _stageMigrationCollection = collection;
             return collection;
         }
@@ -229,8 +248,13 @@ namespace Muks.BackEnd
                 var raw = collection.Capture(stage, response != null && response.IsSuccess(),
                     response == null ? null : response.GetReturnValue());
                 if (raw == null || !raw.CanApplyLegacy || !current()) return;
+                if (!collection.BeginApplication(stage)) return;
                 _isLoaded = true;
-                StageDataTransport.Apply(stage, response, current, asynchronous);
+                bool applied = false;
+                string applicationError = null;
+                try { applied = StageDataTransport.Apply(stage, response, current, asynchronous); }
+                catch (Exception) { applicationError = "기존 Stage 메모리 적용 중 예외가 발생했습니다."; }
+                finally { collection.CompleteApplication(stage, applied, applicationError); }
             }
             if (!canReceive()) return;
             try
@@ -1335,19 +1359,25 @@ namespace Muks.BackEnd
             {
                 bool current = IsCurrentGameDataSaveSession(query, target);
                 bool staffReady = !requireStaffReady || ReferenceEquals(RestoredGameData?.Query, query);
+                var owner = readOwner() ?? updater.Owner;
+                string transportBlock = owner?.State == GameDataSaveCoordinatorState.ReservedForMail
+                    ? "우편 수령 보호 중에는 GameData를 전송하지 않습니다."
+                    : GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
+                        ? "이 GameData 행은 다른 진행 중/미해결 저장이 소유하고 있습니다." : null;
                 return new GameDataSaveReadiness(
                     _isSaveEnabled, GameDataTransport.LoggedIn, current && staffReady,
                     !requireStaffReady || GameDataTransport.GameplaySaveAllowed,
                     GameDataTransport.AccountInDate, target,
-                    transportBlockReason: GameDataSaveCoordinator.IsTargetOwnedByOther(target, readOwner() ?? updater.Owner)
-                        ? "이 GameData 행은 다른 진행 중/미해결 저장이 소유하고 있습니다." : null,
+                    transportBlockReason: transportBlock,
                     initializationPolicy: _gameDataInitializationPolicy);
             }, new BackendGameDataUpdateTransport((identity, values, response) =>
             {
                 // Same injected boundary as read/bootstrap. SDK 5.15 default initialization uses
                 // UnityWebRequest + CallbackUpdateManager.Update (main thread); fakes may reply inline.
                 GameDataTransport.Update(identity.Target, values, bro => response(identity, ToRawResponse(bro)));
-            }), isSessionCurrent: () => IsCurrentGameDataSaveSession(query, target));
+            }), isSessionCurrent: () => IsCurrentGameDataSaveSession(query, target),
+                validatePayload: payload => StaffRuntime.ValidateSaveField(payload, out string error)
+                    ? null : error ?? "현재 공용 직원 상태와 저장 자료가 일치하지 않습니다.");
             return updater;
         }
 
@@ -1365,6 +1395,10 @@ namespace Muks.BackEnd
                     && TryCreateInitialGameData(query, onComplete, onFail)) return;
                 if (GameDataRestore.IsCurrent(query))
                 {
+                    // Install only this query's validated common data before caller/UI continuation.
+                    // MigrationRequired stays legacy; damaged or unfinished data never becomes an empty account.
+                    StaffRuntime.Refresh();
+                    if (!GameDataRestore.IsCurrent(query)) return;
                     // Compatibility for other tables; GameData writers never use this flag as restore proof.
                     if (result.CanContinueLegacy) _isLoaded = true;
                     onComplete?.Invoke(query, result);
@@ -1414,6 +1448,32 @@ namespace Muks.BackEnd
         private static GameDataRawResponse ToRawResponse(BackendReturnObject bro) => bro == null ? null
             : new GameDataRawResponse(bro.IsSuccess(), bro.GetStatusCode(), bro.GetErrorCode(), bro.GetMessage(), bro);
 
+        /// <summary>우편 목록도 현재 복원이 끝난 같은 조회 세대에 고정한다. 미완료/무효화 때는 null이다.</summary>
+        public GameDataRestoreQuery CurrentMailReceiveQuery => GameDataRestore.LegacyQuery;
+
+        /// <summary>
+        /// 우편 소비 전에 현재 계정·행·SDK 정책과 저장 유휴 상태를 확인한다.
+        /// 보호 중 일반/자동 저장 접수는 허용하되 확정 종료 전에는 SDK로 보내지 않는다.
+        /// </summary>
+        public bool TryAcquireMailSaveLease(out GameDataMailSaveLease lease, out string error)
+        {
+            lease = null;
+            error = null;
+            var query = GameDataRestore.LegacyQuery;
+            var target = GameDataRestore.LegacyTarget;
+            if (query == null || target == null || !CanSaveLegacyGameData)
+            { error = "현재 복원·SDK 정책·저장 상태로 우편 수령을 보호할 수 없습니다."; return false; }
+            var coordinator = GetGameDataSaveCoordinator();
+            if (coordinator == null || !ReferenceEquals(_gameDataSaveQuery, query)
+                || !IsCurrentGameDataSaveSession(query, target))
+            { error = "우편 수령 준비 중 인증·복원 세션이 변경되었습니다."; return false; }
+            return coordinator.TryReserveForMail(query, () =>
+                ReferenceEquals(_gameDataSaveCoordinator, coordinator)
+                && ReferenceEquals(_gameDataSaveQuery, query)
+                && _gameDataInitializationPolicy != null && _gameDataInitializationPolicy.IsSupported
+                && IsCurrentGameDataSaveSession(query, target), out lease, out error);
+        }
+
         public bool CanSaveLegacyGameData
         {
             get
@@ -1437,6 +1497,21 @@ namespace Muks.BackEnd
                 && target.Matches(GameDataRestore.LegacyTarget) && !GameDataRestore.IsInitialCreationBlocked;
         }
 
+        private bool CanChangeStaffRuntime()
+        {
+            var query = GameDataRestore.LegacyQuery;
+            var target = GameDataRestore.LegacyTarget;
+            var owner = ReferenceEquals(_gameDataSaveQuery, query) ? _gameDataSaveCoordinator : null;
+            // Own in-flight saves do not freeze growth: a later autosave must include the latest values.
+            // Own ReservedForMail also permits the protected reward; its queued autosave starts after release.
+            // Unresolved completion and another writer's ownership still block changes; no tutorial UI gate here.
+            return IsCurrentGameDataSaveSession(query, target)
+                && !GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
+                && (owner == null || (owner.State != GameDataSaveCoordinatorState.Indeterminate
+                    && owner.State != GameDataSaveCoordinatorState.LocalCompletionFailed
+                    && owner.State != GameDataSaveCoordinatorState.InvalidatedAfterSend));
+        }
+
         private GameDataSaveCoordinator GetGameDataSaveCoordinator()
         {
             if (!CanSaveLegacyGameData) return null;
@@ -1452,7 +1527,12 @@ namespace Muks.BackEnd
             {
                 if (!IsCurrentGameDataSaveSession(query, target))
                     throw new InvalidOperationException("오래된 세션의 최신 자료를 생성할 수 없습니다.");
-                return GameDataTransport.LatestValues();
+                Param values = GameDataTransport.LatestValues();
+                if (!IsCurrentGameDataSaveSession(query, target))
+                    throw new InvalidOperationException("자료 생성 중 저장 세션이 무효화되었습니다.");
+                if (!StaffRuntime.TryAddSaveField(values, out string error))
+                    throw new InvalidOperationException(error ?? "현재 공용 직원 저장 자료를 생성할 수 없습니다.");
+                return values;
             }, isSessionCurrent: () => IsCurrentGameDataSaveSession(query, target));
             _gameDataSaveQuery = query;
             _gameDataSaveCoordinator = owner;

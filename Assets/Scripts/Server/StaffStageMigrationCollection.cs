@@ -12,7 +12,7 @@ namespace Muks.BackEnd
     /// This object neither loads legacy state nor saves/applies its migration candidate.
     /// Main-thread only; the caller must check the fixed query again before applying legacy data.
     /// </summary>
-    public sealed class StaffStageMigrationCollection
+    public sealed partial class StaffStageMigrationCollection
     {
         private static readonly EStage[] Scope = { EStage.Stage1, EStage.Stage2, EStage.Stage3 };
         private readonly bool _migrationRequired;

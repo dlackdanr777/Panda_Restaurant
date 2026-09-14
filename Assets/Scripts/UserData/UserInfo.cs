@@ -262,7 +262,7 @@ public static class UserInfo
     {
         for (int i = 0, cnt = _stageInfos.Length; i < cnt; ++i)
         {
-            _stageInfos[i] = new StageInfo();
+            _stageInfos[i] = new StageInfo(() => BackendManager.Instance.StaffRuntime, StaffUpgradeWallet);
 
             _stageInfos[i].OnChangeFloorHandler += OnChangeFloorEvent;
             _stageInfos[i].OnChangeTipHandler += OnChangeTipEvent;
@@ -568,12 +568,24 @@ public static class UserInfo
         BackendManager.Instance.LoadStageData(stage, true);
     }
 
-    internal static void ApplyLoadedStageData(EStage stage, BackendReturnObject response,
+    public static StaffStageRuntimeSnapshot CaptureStageStaffRuntimeSnapshot(EStage stage)
+    {
+        if (stage < EStage.Stage1 || stage >= EStage.Length || _stageInfos == null)
+            return null;
+        return _stageInfos[(int)stage]?.CaptureStaffRuntimeSnapshot();
+    }
+
+    internal static bool ApplyLoadedStageData(EStage stage, BackendReturnObject response,
         Func<bool> isCurrent, bool asynchronous)
     {
-        TryApplyStageDataResponse(stage, response, isCurrent,
-            data => _stageInfos[(int)stage].LoadData(data),
-            () => { if (asynchronous) SaveStageDataAsync(stage, isCurrent); else SaveStageData(stage, isCurrent); });
+        if (stage < EStage.Stage1 || stage >= EStage.Length || _stageInfos == null || isCurrent == null)
+            return false;
+        StageInfo destination = _stageInfos[(int)stage];
+        if (destination == null) return false;
+        Func<bool> sameDestination = () => isCurrent() && _stageInfos != null
+            && ReferenceEquals(_stageInfos[(int)stage], destination);
+        return TryApplyStageDataResponse(stage, response, sameDestination, destination.LoadData,
+            () => { if (asynchronous) SaveStageDataAsync(stage, sameDestination); else SaveStageData(stage, sameDestination); });
     }
 
     // Shared legacy response path. Tests supply detached memory sinks, never actual account writes.
@@ -1025,8 +1037,11 @@ public static class UserInfo
     {
         _dia += value;
         _dia = Math.Max(0, _dia);
-        DataBindDia();
-        OnChangeDiaHandler?.Invoke();
+        if (_staffCostCommitDepth == 0)
+        {
+            DataBindDia();
+            OnChangeDiaHandler?.Invoke();
+        }
     }
 
 
@@ -1037,8 +1052,11 @@ public static class UserInfo
         _totalAddMoney += value;
         _dailyAddMoney += value;
         _weeklyAddMoney += value;
-        DataBindMoney();
-        OnChangeMoneyHandler?.Invoke();
+        if (_staffCostCommitDepth == 0)
+        {
+            DataBindMoney();
+            OnChangeMoneyHandler?.Invoke();
+        }
     }
 
     public static void AddScore(int score)
@@ -1338,17 +1356,57 @@ public static class UserInfo
 
     #region StaffData
 
-    public static void GiveStaff(EStage stage, StaffData data)
+    private static int _staffCostCommitDepth;
+    private static readonly IStaffUpgradeWallet StaffUpgradeWallet = new UserStaffUpgradeWallet();
+    public static StaffAccountSaveData CurrentStaffAccount => BackendManager.Instance.StaffRuntime.Snapshot;
+    public static long? PandaTokens => CurrentStaffAccount?.PandaTokens;
+
+    // Retain AddMoney/AddDia arithmetic and statistics, deferring only their binding/event publication.
+    private sealed class UserStaffUpgradeWallet : IStaffUpgradeWallet
+    {
+        public int Score => _score;
+        public long Gold => _money;
+        public int Diamonds => _dia;
+        public bool TryApplyCost(UpgradeMoneyData cost, long expectedGold, int expectedDiamonds)
+        {
+            if (cost == null || cost.Price < 0 || _money != expectedGold || _dia != expectedDiamonds
+                || (cost.MoneyType == MoneyType.Gold ? _money < cost.Price
+                    : cost.MoneyType != MoneyType.Dia || _dia < cost.Price)) return false;
+            _staffCostCommitDepth++;
+            try
+            {
+                if (cost.MoneyType == MoneyType.Gold) AddMoney(-cost.Price);
+                else AddDia(-cost.Price);
+                return true;
+            }
+            finally { _staffCostCommitDepth--; }
+        }
+        public void NotifyCost(UpgradeMoneyData cost)
+        {
+            if (cost.MoneyType == MoneyType.Gold)
+            {
+                DataBindMoney();
+                OnChangeMoneyHandler?.Invoke();
+            }
+            else
+            {
+                DataBindDia();
+                OnChangeDiaHandler?.Invoke();
+            }
+        }
+    }
+
+    public static bool GiveStaff(EStage stage, StaffData data)
     {
         int stageIndex = (int)stage;
-        _stageInfos[stageIndex].GiveStaff(data);
+        return _stageInfos[stageIndex].GiveStaff(data);
     }
 
 
-    public static void GiveStaff(EStage stage, string id)
+    public static bool GiveStaff(EStage stage, string id)
     {
         int stageIndex = (int)stage;
-        _stageInfos[stageIndex].GiveStaff(id);
+        return _stageInfos[stageIndex].GiveStaff(id);
     }
 
 
@@ -1525,6 +1583,11 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         _stageInfos[stageIndex].SetStaffSkin(staff, skinData);
+    }
+
+    public static bool TrySetStaffSkin(EStage stage, StaffData staff, StaffSkinData skinData)
+    {
+        return _stageInfos[(int)stage].TrySetStaffSkin(staff, skinData);
     }
 
 

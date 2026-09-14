@@ -56,6 +56,47 @@ public class StageInfo
 
     private Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>> _equipStaffTypeDic = new Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>>();
     private Dictionary<string, SaveStaffData> _giveStaffDic = new Dictionary<string, SaveStaffData>();
+    private readonly object _staffRuntimeOwnerToken = new object();
+    private object _staffRuntimeChangeToken = new object();
+    private int _staffRuntimeApplyDepth;
+    private readonly Func<StaffAccountRuntime> _staffAccountRuntime;
+    private readonly IStaffUpgradeWallet _staffUpgradeWallet;
+    public bool IsApplying => _staffRuntimeApplyDepth != 0;
+
+    // Capture actual dictionary values, including invalid/null records, without SaveData or runtime correction.
+    public StaffStageRuntimeSnapshot CaptureStaffRuntimeSnapshot()
+    {
+        var records = new List<StaffStageRuntimeRecord>(_giveStaffDic.Count);
+        foreach (var entry in _giveStaffDic)
+            records.Add(new StaffStageRuntimeRecord(entry.Key, entry.Value?.Id, entry.Value?.Level, entry.Value?.SkinId));
+        return new StaffStageRuntimeSnapshot(_staffRuntimeOwnerToken, _staffRuntimeChangeToken, IsApplying, records);
+    }
+
+    private void MarkStaffRuntimeChanged()
+    {
+        _staffRuntimeChangeToken = new object();
+    }
+
+    private StaffAccountRuntime ReadStaffAccountRuntime()
+    {
+        try { return _staffAccountRuntime?.Invoke(); }
+        catch { return null; }
+    }
+
+    private bool CanMutateStaffState()
+    {
+        if (_staffAccountRuntime == null) return true;
+        StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+        return runtime != null && runtime.Mode != StaffAccountRuntimeMode.Unavailable && runtime.CanMutate;
+    }
+
+    private bool CanExposeStaff(StaffData data)
+    {
+        if (_staffAccountRuntime == null) return true;
+        StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+        if (runtime == null || runtime.Mode == StaffAccountRuntimeMode.Unavailable) return false;
+        return runtime.Mode == StaffAccountRuntimeMode.Legacy || (data != null && runtime.IsOwned(data.Id));
+    }
 
 
     private List<string> _giveFurnitureList = new List<string>();
@@ -81,6 +122,12 @@ public class StageInfo
     private List<KitchenUtensilData> _giveKitchenUtensilDataList = new List<KitchenUtensilData>();
     private List<StaffData> _giveStaffDataList = new List<StaffData>();
 
+
+    public StageInfo(Func<StaffAccountRuntime> runtime, IStaffUpgradeWallet wallet) : this()
+    {
+        _staffAccountRuntime = runtime ?? throw new ArgumentNullException(nameof(runtime));
+        _staffUpgradeWallet = wallet;
+    }
 
     public StageInfo()
     {
@@ -170,53 +217,80 @@ public class StageInfo
 
     #region StaffData
 
-    public void GiveStaff(StaffData data)
+    public bool GiveStaff(StaffData data)
     {
+        if (_staffAccountRuntime != null)
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            if (runtime == null || runtime.Mode == StaffAccountRuntimeMode.Unavailable || !runtime.CanMutate)
+                return false;
+            if (runtime.Mode == StaffAccountRuntimeMode.Common)
+                return runtime.TryGive(data, () => OnGiveStaffHandler?.Invoke(), out _);
+        }
         if (_giveStaffDic.ContainsKey(data.Id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
-            return;
+            return true;
         }
 
         SaveStaffData saveData = new SaveStaffData(data.Id, 1);
         _giveStaffDic.Add(data.Id, saveData);
+        MarkStaffRuntimeChanged();
         _giveStaffDataList.Add(data);
         OnGiveStaffHandler?.Invoke();
+        return true;
     }
 
-    public void GiveStaff(string id)
+    public bool GiveStaff(string id)
     {
+        if (_staffAccountRuntime != null)
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            if (runtime == null || runtime.Mode == StaffAccountRuntimeMode.Unavailable || !runtime.CanMutate) return false;
+            if (runtime.Mode == StaffAccountRuntimeMode.Common)
+            {
+                StaffData commonData = StaffDataManager.Instance.GetStaffData(id);
+                return commonData != null && GiveStaff(commonData);
+            }
+        }
         if (_giveStaffDic.ContainsKey(id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
-            return;
+            return true;
         }
 
         StaffData data = StaffDataManager.Instance.GetStaffData(id);
         if (data == null)
         {
             DebugLog.Log("존재하지 않는 ID입니다: " + id);
-            return;
+            return false;
         }
 
-        GiveStaff(data);
+        return GiveStaff(data);
     }
 
 
     public bool IsGiveStaff(string id)
     {
+        if (_staffAccountRuntime != null)
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            if (runtime == null || runtime.Mode == StaffAccountRuntimeMode.Unavailable) return false;
+            if (runtime.Mode == StaffAccountRuntimeMode.Common) return runtime.IsOwned(id);
+        }
         return _giveStaffDic.ContainsKey(id);
     }
 
 
     public bool IsGiveStaff(StaffData data)
     {
-        return _giveStaffDic.ContainsKey(data.Id);
+        return data != null && IsGiveStaff(data.Id);
     }
 
 
     public bool IsEquipStaff(ERestaurantFloorType floor, StaffData data)
     {
+        if (!CanExposeStaff(data)) return false;
         foreach (var kvp in _equipStaffTypeDic[floor])
         {
             if (kvp.Value == data)
@@ -228,7 +302,8 @@ public class StageInfo
 
     public bool IsEquipStaff(ERestaurantFloorType floor, EquipStaffType type)
     {
-        return _equipStaffTypeDic[floor][type] != null;
+        StaffData data = _equipStaffTypeDic[floor][type];
+        return data != null && CanExposeStaff(data);
     }
 
     public bool IsEquipStaff(StaffData data)
@@ -244,6 +319,7 @@ public class StageInfo
 
     public EquipStaffType GetEquipStaffType(StaffData data)
     {
+        if (!CanExposeStaff(data)) return EquipStaffType.Length;
         foreach (var floorKvp in _equipStaffTypeDic)
         {
             foreach (var typeKvp in floorKvp.Value)
@@ -261,6 +337,7 @@ public class StageInfo
 
     public ERestaurantFloorType GetEquipStaffFloorType(StaffData data)
     {
+        if (!CanExposeStaff(data)) return ERestaurantFloorType.Error;
         foreach (var floorKvp in _equipStaffTypeDic)
         {
             foreach (var typeKvp in floorKvp.Value)
@@ -277,13 +354,20 @@ public class StageInfo
     
     public List<StaffData> GetGiveStaffDataList()
     {
+        if (_staffAccountRuntime != null)
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            if (runtime == null || runtime.Mode == StaffAccountRuntimeMode.Unavailable) return new List<StaffData>();
+            if (runtime.Mode == StaffAccountRuntimeMode.Common) return runtime.GetOwnedStaff();
+        }
         return _giveStaffDataList;
     }
 
 
     public void SetEquipStaff(ERestaurantFloorType floorType, EquipStaffType equipType, StaffData data)
     {
-        if (!_giveStaffDic.ContainsKey(data.Id))
+        if (!CanMutateStaffState()) return;
+        if (!IsGiveStaff(data))
         {
             DebugLog.LogError("해당 스탭은 현재 가지고 있지 않습니다: " + data.Id);
             return;
@@ -302,6 +386,7 @@ public class StageInfo
 
     public void SetEquipStaff(ERestaurantFloorType floorType, EquipStaffType equipType, string id)
     {
+        if (!CanMutateStaffState()) return;
         StaffData data = StaffDataManager.Instance.GetStaffData(id);
         if (data == null)
             throw new Exception("해당 Id를 가진 스탭이 없습니다: " + id);
@@ -312,12 +397,14 @@ public class StageInfo
 
     public void SetNullEquipStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
+        if (!CanMutateStaffState()) return;
         _equipStaffTypeDic[floorType][type] = null;
         OnChangeStaffHandler?.Invoke(floorType, type);
     }
 
     public void SetNullEquipStaff(ERestaurantFloorType floorType, StaffData data)
     {
+        if (!CanMutateStaffState()) return;
         if(data == null)
         {
             DebugLog.LogError("Null이 들어왔습니다.");
@@ -343,12 +430,19 @@ public class StageInfo
 
     public StaffData GetEquipStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
-        return _equipStaffTypeDic[floorType][type];
+        StaffData data = _equipStaffTypeDic[floorType][type];
+        return CanExposeStaff(data) ? data : null;
     }
 
 
     public int GetStaffLevel(StaffData data)
     {
+        if (_staffAccountRuntime != null)
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            if (runtime == null || runtime.Mode == StaffAccountRuntimeMode.Unavailable) return 0;
+            if (runtime.Mode == StaffAccountRuntimeMode.Common) return data == null ? 0 : runtime.GetLevel(data.Id) ?? 0;
+        }
         if (_giveStaffDic.TryGetValue(data.Id, out SaveStaffData saveData))
         {
             return data.GetRuntimeLevel(saveData.Level);
@@ -360,6 +454,12 @@ public class StageInfo
 
     public int GetStaffLevel(string id)
     {
+        if (_staffAccountRuntime != null)
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            if (runtime == null || runtime.Mode == StaffAccountRuntimeMode.Unavailable) return 0;
+            if (runtime.Mode == StaffAccountRuntimeMode.Common) return runtime.GetLevel(id) ?? 0;
+        }
         if (_giveStaffDic.TryGetValue(id, out SaveStaffData saveData))
         {
             StaffData data = StaffDataManager.Instance.GetStaffData(id);
@@ -374,11 +474,18 @@ public class StageInfo
 
     public bool UpgradeStaff(StaffData data)
     {
+        if (_staffAccountRuntime != null)
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            return runtime != null && runtime.TryUpgrade(this, data, _staffUpgradeWallet,
+                () => OnUpgradeStaffHandler?.Invoke(), out _);
+        }
         if (_giveStaffDic.TryGetValue(data.Id, out SaveStaffData saveData))
         {
             if (data.CanUpgradeFromSavedLevel(saveData.Level))
             {
                 _giveStaffDic[data.Id].LevelUp();
+                MarkStaffRuntimeChanged();
                 OnUpgradeStaffHandler?.Invoke();
                 return true;
             }
@@ -393,6 +500,12 @@ public class StageInfo
 
     public bool CanUpgradeStaff(StaffData data)
     {
+        if (_staffAccountRuntime != null)
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            if (runtime == null || runtime.Mode == StaffAccountRuntimeMode.Unavailable || !runtime.CanMutate) return false;
+            if (runtime.Mode == StaffAccountRuntimeMode.Common) return runtime.CanUpgrade(data);
+        }
         return data != null
                && _giveStaffDic.TryGetValue(data.Id, out SaveStaffData saveData)
                && data.CanUpgradeFromSavedLevel(saveData.Level);
@@ -401,48 +514,92 @@ public class StageInfo
 
     public bool UpgradeStaff(string id)
     {
+        if (!CanMutateStaffState()) return false;
         StaffData data = StaffDataManager.Instance.GetStaffData(id);
         return UpgradeStaff(data);
+    }
+
+    internal bool TryGetLegacyStaffLevel(string id, out int level)
+    {
+        level = 0;
+        if (id == null || !_giveStaffDic.TryGetValue(id, out SaveStaffData staff) || staff == null) return false;
+        level = staff.Level;
+        return true;
+    }
+
+    internal void CommitLegacyStaffUpgrade(string id)
+    {
+        _giveStaffDic[id].LevelUp();
+        MarkStaffRuntimeChanged();
     }
 
     
     public void SetStaffSkin(StaffData staff, StaffSkinData skinData)
     {
+        TrySetStaffSkin(staff, skinData);
+    }
+
+    public bool TrySetStaffSkin(StaffData staff, StaffSkinData skinData)
+    {
+        if (!CanMutateStaffState()) return false;
         if (staff == null)
         {
             DebugLog.LogError("직원 데이터가 null입니다.");
-            return;
+            return false;
         }
 
-        if(!_giveStaffDic.TryGetValue(staff.Id, out SaveStaffData saveData))
+        if (!IsGiveStaff(staff))
         {
             DebugLog.LogError("해당 직원이 활성화되지 않았습니다: " + staff.Id);
-            return;
+            return false;
         }
-        saveData.SetSkinId(skinData == null ? string.Empty : skinData.Id);
+        if (!_giveStaffDic.TryGetValue(staff.Id, out SaveStaffData saveData))
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            int? commonLevel = runtime != null && runtime.Mode == StaffAccountRuntimeMode.Common
+                ? runtime.GetLevel(staff.Id) : null;
+            if (!commonLevel.HasValue || !runtime.CanMutate) return false;
+            // A local record is created only for an explicit skin selection, never by copying common ownership.
+            saveData = new SaveStaffData(staff.Id, commonLevel.Value);
+            _giveStaffDic.Add(staff.Id, saveData);
+            MarkStaffRuntimeChanged();
+        }
+        if (saveData == null) return false;
+        string skinId = skinData == null ? string.Empty : skinData.Id;
+        bool changed = !string.Equals(saveData.SkinId, skinId, StringComparison.Ordinal);
+        saveData.SetSkinId(skinId);
+        if (changed) MarkStaffRuntimeChanged();
         OnChangeStaffSkinHandler?.Invoke();
+        return true;
     }
 
 
     public void SetStaffSkin(StaffData staff, string skinId)
     {
+        TrySetStaffSkin(staff, skinId);
+    }
+
+    public bool TrySetStaffSkin(StaffData staff, string skinId)
+    {
+        if (!CanMutateStaffState()) return false;
         if (staff == null)
         {
             DebugLog.LogError("직원 데이터가 null입니다.");
-            return;
+            return false;
         }
 
         StaffSkinData skinData = SkinDataManager.Instance.GetStaffSkinData(skinId);
         if (skinData == null)
         {
             DebugLog.LogError("해당 스킨 아이디가 존재하지 않습니다: " + skinId);
-            return;
+            return false;
         }
-        SetStaffSkin(staff, skinData);
+        return TrySetStaffSkin(staff, skinData);
     }
 
     public StaffSkinData GetEquipStaffSkin(StaffData staff)
     {
+        if (!CanExposeStaff(staff)) return null;
         if (staff == null)
         {
             DebugLog.LogError("직원 데이터가 null입니다.");
@@ -451,6 +608,8 @@ public class StageInfo
 
         if (!_giveStaffDic.TryGetValue(staff.Id, out SaveStaffData saveData))
         {
+            if (_staffAccountRuntime != null && ReadStaffAccountRuntime()?.Mode == StaffAccountRuntimeMode.Common)
+                return null;
             DebugLog.LogError("해당 직원이 활성화되지 않았습니다: " + staff.Id);
             return null;
         }
@@ -475,6 +634,11 @@ public class StageInfo
 
     public StaffSkinData GetEquipStaffSkin(string staffId)
     {
+        if (_staffAccountRuntime != null)
+        {
+            StaffAccountRuntime runtime = ReadStaffAccountRuntime();
+            if (runtime == null || runtime.Mode == StaffAccountRuntimeMode.Unavailable) return null;
+        }
         if (string.IsNullOrWhiteSpace(staffId))
         {
             DebugLog.LogError("직원 ID가 비어있습니다.");
@@ -1200,6 +1364,11 @@ public bool LoadData(ServerStageData loadData)
     if (loadData == null)
         return false;
 
+    // Reapplying even identical data invalidates an older baseline. Keep the guard until all legacy callbacks return.
+    MarkStaffRuntimeChanged();
+    _staffRuntimeApplyDepth++;
+    try
+    {
     _unlockFloor = loadData.UnlockFloor;
     _score = loadData.Score;
     _tip = loadData.Tip;
@@ -1404,6 +1573,11 @@ public bool LoadData(ServerStageData loadData)
     CheckCollectFurnitureSetData();
 
     return true;
+    }
+    finally
+    {
+        _staffRuntimeApplyDepth--;
+    }
 }
 
 

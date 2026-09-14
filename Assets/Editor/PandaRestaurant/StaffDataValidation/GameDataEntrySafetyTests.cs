@@ -524,7 +524,7 @@ public class GameDataEntrySafetyTests
         string memoryUserId = "old-name";
         fixture.Transport.LatestFactory = () =>
         {
-            // Same source contract as GetSaveUserData: current Dia/UserId, no StaffAccount field.
+            // Legacy values factory supplies Dia/UserId; Backend adds the current verified common staff snapshot.
             var latest = new Param();
             latest.Add("Dia", memoryDiamonds); latest.Add("UserId", memoryUserId);
             return latest;
@@ -579,7 +579,8 @@ public class GameDataEntrySafetyTests
             {
                 Assert.That((int)sent["Dia"], Is.EqualTo(i == 0 ? 110 : 150));
                 Assert.That((string)sent["UserId"], Is.EqualTo(expectedNames[i]));
-                Assert.That(sent.Property(GameDataRestoreContext.StaffAccountFieldName), Is.Null);
+                Assert.That((string)sent[GameDataRestoreContext.StaffAccountFieldName], Is.EqualTo(originalCommon),
+                    "Common-account autosaves carry the current canonical snapshot; only P remains a partial update");
             }
             fixture.Transport.Updates[i].Reply(Bro("204", ""));
             Assert.That(fixture.Transport.AppliedUpdates, Is.EqualTo(i + 1));
