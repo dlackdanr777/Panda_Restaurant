@@ -190,7 +190,7 @@ public class UIGachaCard : MonoBehaviour
                 return;
             }
 
-            _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.Instance.GetStaffGroupType(staffData)));
+            _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.GetStaffGroupTypeFromData(staffData)));
         }
         else
         {

@@ -52,13 +52,85 @@ public class UIGacha : MobileUIView
     private GachaMachineParent _requestedInitialMachine;
     private bool _isInitialized;
 
+#if UNITY_EDITOR
+    private bool _editorOfflineConfigured;
+    private int _editorOfflineMachineIndex;
+    private Button _editorOfflineCloseButton;
+
+    public void ConfigureEditorOfflineView(UIStaffGacha staff)
+    {
+        if (gameObject.activeInHierarchy || staff == null || !staff.transform.IsChildOf(transform))
+            throw new InvalidOperationException("오프라인 가챠 표시는 비활성 복사본에 연결해야 합니다.");
+        if (!_editorOfflineConfigured)
+            _editorOfflineMachineIndex = _gachaMachines == null ? 0 : Math.Max(0, Array.IndexOf(_gachaMachines, staff));
+        _editorOfflineConfigured = true;
+        _isInitialized = true; // Do not initialize other machines, gameplay lists, tutorials or navigation.
+        _currentGachaMachine = staff;
+        _requestedInitialMachine = null;
+        _gachaMachines = new GachaMachineParent[] { staff };
+        _mainScene = null;
+        _miniGameTutorial = null;
+        if (_leftButton != null) _leftButton.gameObject.SetActive(false);
+        if (_rightButton != null) _rightButton.gameObject.SetActive(false);
+        if (_gachaItemList != null) _gachaItemList.gameObject.SetActive(false);
+        if (_scrollRect != null) _scrollRect.enabled = false;
+        // This is the existing view X, not the result card's own close button.
+        _editorOfflineCloseButton = transform.Find("Anime UI/UI Components/Exit Button")?.GetComponent<Button>();
+        if (_editorOfflineCloseButton != null)
+        {
+            _editorOfflineCloseButton.onClick.RemoveListener(CloseEditorOfflineView);
+            _editorOfflineCloseButton.onClick.AddListener(CloseEditorOfflineView);
+        }
+        VisibleState = VisibleState.Disappeared;
+    }
+
+    private void CloseEditorOfflineView() => SetEditorOfflineVisible(false);
+
+    public void SetEditorOfflineVisible(bool visible)
+    {
+        if (!_editorOfflineConfigured) throw new InvalidOperationException("오프라인 가챠 표시가 연결되지 않았습니다.");
+        if (visible && VisibleState == VisibleState.Appeared && gameObject.activeInHierarchy) return;
+        if (!visible && VisibleState == VisibleState.Disappeared && !gameObject.activeSelf) return;
+        if (visible)
+        {
+            gameObject.SetActive(true);
+            VisibleState = VisibleState.Appeared;
+            _canvasGroup.interactable = _canvasGroup.blocksRaycasts = true;
+            _animeUI.TweenStop();
+            _animeUI.transform.localScale = Vector3.one;
+            SetStartGacha(false);
+            if (_scrollRect != null) _scrollRect.StopMovement();
+            // Keep the existing selected-machine coordinates; no new layout or tween is introduced.
+            _machineParent.TweenStop();
+            Vector2 position = _machineParent.anchoredPosition;
+            position.x = _editorOfflineMachineIndex == 1 ? -1130f : -440f;
+            _machineParent.anchoredPosition = position;
+            _currentGachaMachine.transform.localScale = Vector3.one;
+            _currentGachaMachine.Show();
+        }
+        else
+        {
+            VisibleState = VisibleState.Disappeared;
+            _currentGachaMachine.Hide();
+            SetStartGacha(false);
+            _canvasGroup.interactable = _canvasGroup.blocksRaycasts = false;
+            gameObject.SetActive(false);
+        }
+    }
+#endif
+
     private bool _isStartGacha;
     public bool IsStartGacha => _isStartGacha;
     public void SetStartGacha(bool isStart)
     {
         _isStartGacha = isStart;
         if (_scrollRect != null)
+        {
             _scrollRect.enabled = !isStart;
+#if UNITY_EDITOR
+            if (_editorOfflineConfigured) _scrollRect.enabled = false;
+#endif
+        }
 
         SetNavigationButtonsActive(!isStart);
 
@@ -272,6 +344,9 @@ public class UIGacha : MobileUIView
 
     public override void Show()
     {
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured) { SetEditorOfflineVisible(true); return; }
+#endif
         if (_gachaMachines == null || _gachaMachines.Length == 0)
         {
             DebugLog.LogError("표시할 가챠 머신이 없습니다.");
@@ -344,6 +419,9 @@ public class UIGacha : MobileUIView
 
     public override void Hide()
     {
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured) { SetEditorOfflineVisible(false); return; }
+#endif
         if (VisibleState == VisibleState.Disappeared && !gameObject.activeSelf)
             return;
 

@@ -56,6 +56,41 @@ public class UIStaffGacha : GachaMachineParent
     private AudioClip _getStaffSound;
     private bool _isInitialized;
     private StaffGachaPurchaseDisplay _purchaseDisplay;
+    private Muks.BackEnd.BackendManager _purchaseDisplayOwner;
+    private bool _hasExplicitPurchaseDisplayOwner;
+
+    /// <summary>Bind a detached owner before this scene display is activated. No singleton is resolved.</summary>
+    public void BindPurchaseDisplayOwner(UIGacha view, Muks.BackEnd.BackendManager owner)
+    {
+        if (gameObject.activeInHierarchy)
+            throw new InvalidOperationException("직원 결과 표시의 소유자는 활성화 전에 연결해야 합니다.");
+        if (view == null || owner == null) throw new ArgumentNullException(view == null ? nameof(view) : nameof(owner));
+        _purchaseDisplay?.Dispose();
+        _hasExplicitPurchaseDisplayOwner = true;
+        _purchaseDisplayOwner = owner;
+        _uiGacha = view;
+        _purchaseDisplay = new StaffGachaPurchaseDisplay(this, view, owner);
+    }
+
+#if UNITY_EDITOR
+    /// <summary>Initialize only the existing display bindings on an inactive, disposable scene copy.</summary>
+    public void ConfigureEditorOffline(Muks.BackEnd.BackendManager owner, UIGacha view)
+    {
+        if (owner == null || !owner.IsEditorOfflineOwner)
+            throw new InvalidOperationException("오프라인 전용 결과 소유자가 필요합니다.");
+        BindPurchaseDisplayOwner(view, owner);
+        // fireEvents is native runtime state and is not retained across entering Play.
+        // Suppress the copied staff machine before its first activation, not just at extraction.
+        _gachaMacineAnimator.fireEvents = false;
+        _isInitialized = true;
+        _itemDataList = new List<GachaData>();
+        _scrollImage.Init();
+        _gachaCard.Init();
+        ApplyUnavailableButtonState();
+    }
+
+    public StaffGachaPurchaseDisplay EditorOfflinePurchaseDisplay => _hasExplicitPurchaseDisplayOwner ? _purchaseDisplay : null;
+#endif
 
     // Explicit display-only bindings; no runtime UnityEditor/reflection dependency.
     internal Animator ResultAnimator => _gachaMacineAnimator;
@@ -168,7 +203,11 @@ public class UIStaffGacha : GachaMachineParent
     public override void Show()
     {
         if (_purchaseDisplay == null)
-            _purchaseDisplay = new StaffGachaPurchaseDisplay(this, _uiGacha, Muks.BackEnd.BackendManager.Instance);
+        {
+            var owner = _hasExplicitPurchaseDisplayOwner ? _purchaseDisplayOwner : Muks.BackEnd.BackendManager.Instance;
+            if (owner == null) return; // An invalid detached owner never falls back to the live account.
+            _purchaseDisplay = new StaffGachaPurchaseDisplay(this, _uiGacha, owner);
+        }
         gameObject.SetActive(true);
         SetActiveGachaMachine(true);
         _singleButton.gameObject.SetActive(true);
@@ -191,7 +230,7 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void Hide()
     {
-        _purchaseDisplay?.Close();
+        _purchaseDisplay?.Suspend();
         gameObject.SetActive(true);
         StopAllCoroutines();
         _screenTouchWaitTime = 0;
@@ -211,7 +250,7 @@ public class UIStaffGacha : GachaMachineParent
         _gachaMacineAnimator.enabled = false;
     }
 
-    private void OnDisable() => _purchaseDisplay?.Close();
+    private void OnDisable() => _purchaseDisplay?.Suspend();
 
     private void OnDestroy() => _purchaseDisplay?.Dispose();
 
@@ -461,7 +500,9 @@ public class UIStaffGacha : GachaMachineParent
     private void StartStaffPurchase(StaffGachaPurchaseType type)
     {
         // The owner keeps pending/completed requests independently from this scene object.
-        if (!Muks.BackEnd.BackendManager.Instance.TryStartStaffPurchase(type, out _, out string error))
+        var owner = _hasExplicitPurchaseDisplayOwner ? _purchaseDisplayOwner : Muks.BackEnd.BackendManager.Instance;
+        if (owner == null) return;
+        if (!owner.TryStartStaffPurchase(type, out _, out string error))
         {
             DebugLog.Log(error);
             PopupManager.Instance.ShowDisplayText("직원 뽑기를 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.");

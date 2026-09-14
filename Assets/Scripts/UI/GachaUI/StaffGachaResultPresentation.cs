@@ -31,6 +31,16 @@ public sealed class StaffGachaPurchaseDisplay
     private EventSystem _eventSystem;
     private GameObject _previousSelection;
 
+#if UNITY_EDITOR
+    public bool EditorIsAnimating => _animation != null && _animation.IsActive && !_animation.IsComplete;
+    public bool EditorIsResultVisible => _overlay != null && _overlay.activeInHierarchy;
+    public int EditorResultIndex => _sequence?.Index ?? -1;
+    public int EditorResultCount => _sequence?.Count ?? 0;
+    public StaffGachaAcquisitionItem EditorCurrentItem => _sequence?.CurrentItem;
+    public int EditorAnimationStartCount { get; private set; }
+    public string EditorAnimationError { get; private set; }
+#endif
+
     public StaffGachaPurchaseDisplay(UIStaffGacha staff, UIGacha view, BackendManager backend)
     {
         _staff = staff;
@@ -45,7 +55,7 @@ public sealed class StaffGachaPurchaseDisplay
 
     public void Tick()
     {
-        if (!IsVisible) { Close(); return; }
+        if (!IsVisible || _backend == null) { Suspend(); return; }
         if (_displayed != null && !_backend.CanPresentStaffPurchase(_displayed))
             Close();
         if (_animation != null)
@@ -63,19 +73,20 @@ public sealed class StaffGachaPurchaseDisplay
         {
             TextMeshProUGUI source = _staff.ResultCard.GetComponentInChildren<TextMeshProUGUI>(true);
             if (source != null)
-                _replay = CreateButton(_staff.transform, source, "획득 결과", new Vector2(0, -540),
-                    () => TryShowCompleted(false, out _));
+                _replay = CreateReplayButton(_staff.transform, source);
         }
         if (_replay != null) _replay.gameObject.SetActive(canShow && _displayed == null);
         if (!canShow || ReferenceEquals(_observed, completed)) return;
         _observed = completed; // Display failure is not a purchase failure/retry.
-        if (!Shown.TryGetValue(completed, out _))
-            TryShowCompleted(true, out _);
+        // A view recreated/reopened after an interrupted animation reads its fixed card;
+        // only the first observation may run the machine animation.
+        TryShowCompleted(!Shown.TryGetValue(completed, out _), out _);
     }
 
     public bool TryShowCompleted(bool animate, out string error)
     {
         error = "획득 결과를 표시할 수 없습니다. 다시 열어 주세요.";
+        if (_backend == null) return false;
         StaffGachaPurchaseExecution completed = _backend.LastCompletedStaffPurchaseExecution;
         if (!IsVisible || !_backend.CanPresentStaffPurchase(completed) ||
             (_animation != null && !_animation.IsComplete)) return false;
@@ -93,6 +104,9 @@ public sealed class StaffGachaPurchaseDisplay
         {
             if (animate && !Shown.TryGetValue(completed, out _))
             {
+#if UNITY_EDITOR
+                EditorAnimationError = null;
+#endif
                 var animation = new StaffGachaResultAnimation();
                 _animation = animation;
                 if (animation.TryStart(_staff, sequence, finished =>
@@ -102,9 +116,15 @@ public sealed class StaffGachaPurchaseDisplay
                             ShowCards();
                     }, out error))
                 {
+#if UNITY_EDITOR
+                    EditorAnimationStartCount++;
+#endif
                     Shown.Add(completed, new object());
                     return true;
                 }
+#if UNITY_EDITOR
+                EditorAnimationError = error;
+#endif
                 _animation = null;
             }
             ShowCards(); // An unavailable machine animation never discards or re-executes a purchase.
@@ -115,6 +135,9 @@ public sealed class StaffGachaPurchaseDisplay
         catch (Exception exception)
         {
             error = exception.Message;
+#if UNITY_EDITOR
+            EditorAnimationError = error;
+#endif
             DebugLog.LogError(exception.ToString());
             Close();
             return false;
@@ -161,12 +184,7 @@ public sealed class StaffGachaPurchaseDisplay
             rect.anchoredPosition = Vector2.zero;
             TextMeshProUGUI source = _card.GetComponentInChildren<TextMeshProUGUI>(true);
             if (source == null) throw new InvalidOperationException("획득 카드 글꼴 참조가 없습니다.");
-            _previous = CreateButton(_overlay.transform, source, "이전", new Vector2(-250, -470),
-                () => Move(-1));
-            _next = CreateButton(_overlay.transform, source, "다음", new Vector2(250, -470),
-                () => Move(1));
-            Button close = CreateButton(_overlay.transform, source, "닫기", new Vector2(0, -550), Close);
-            _position = CreateLabel(_overlay.transform, source, new Vector2(0, -450), new Vector2(200, 55));
+            Button close = CreateResultControls(_overlay.transform, source);
             _eventSystem = EventSystem.current;
             _previousSelection = _eventSystem == null ? null : _eventSystem.currentSelectedGameObject;
             if (_eventSystem != null) _eventSystem.SetSelectedGameObject(close.gameObject);
@@ -188,6 +206,19 @@ public sealed class StaffGachaPurchaseDisplay
             !_sequence.TryMove(direction)) return false;
         ShowCards();
         return true;
+    }
+
+    private Button CreateReplayButton(Transform parent, TextMeshProUGUI source)
+        => CreateButton(parent, source, "획득 결과", new Vector2(0, -490),
+            () => TryShowCompleted(false, out _));
+
+    private Button CreateResultControls(Transform parent, TextMeshProUGUI source)
+    {
+        _previous = CreateButton(parent, source, "이전", new Vector2(-250, -500), () => Move(-1));
+        _next = CreateButton(parent, source, "다음", new Vector2(250, -500), () => Move(1));
+        Button close = CreateButton(parent, source, "닫기", new Vector2(0, -500), Close);
+        _position = CreateLabel(parent, source, new Vector2(0, -440), new Vector2(200, 42));
+        return close;
     }
 
     public void Close()
@@ -213,6 +244,12 @@ public sealed class StaffGachaPurchaseDisplay
                 ? _previousSelection : null);
         _eventSystem = null;
         _previousSelection = null;
+    }
+
+    public void Suspend()
+    {
+        Close();
+        _observed = null; // A hidden view may observe the same retained completion on its next opening.
     }
 
     public void Dispose()
@@ -246,18 +283,21 @@ public sealed class StaffGachaPurchaseDisplay
     private static TextMeshProUGUI CreateLabel(Transform parent, TextMeshProUGUI source,
         Vector2 position, Vector2 size)
     {
-        var obj = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+        var obj = new GameObject("Label", typeof(RectTransform));
+        // Bind the supplied font before TMP Awake can resolve a global/default resource.
+        obj.SetActive(false);
         obj.transform.SetParent(parent, false);
         var rect = (RectTransform)obj.transform;
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = position;
         rect.sizeDelta = size;
-        TextMeshProUGUI label = obj.GetComponent<TextMeshProUGUI>();
+        TextMeshProUGUI label = obj.AddComponent<TextMeshProUGUI>();
         label.font = source.font;
         label.fontSharedMaterial = source.fontSharedMaterial;
         label.fontSize = 28;
         label.alignment = TextAlignmentOptions.Center;
         label.raycastTarget = false;
+        obj.SetActive(true);
         return label;
     }
 

@@ -699,6 +699,55 @@ public class StaffGachaAcquisitionCardTests
             BindingFlags.Static | BindingFlags.NonPublic).GetValue(null), Is.False);
     }
 
+    [Test]
+    public void RuntimePresentation_ResultControlsFitReferenceCanvasWithoutLabelOverlap()
+    {
+        GameObject root = Track(new GameObject("1080 result controls", typeof(RectTransform)));
+        root.SetActive(false);
+        var canvas = (RectTransform)root.transform;
+        canvas.sizeDelta = new Vector2(1920, 1080);
+        var display = new StaffGachaPurchaseDisplay(null, null, null);
+        Type displayType = typeof(StaffGachaPurchaseDisplay);
+        var close = (Button)displayType.GetMethod("CreateResultControls", PrivateInstance)
+            .Invoke(display, new object[] { canvas, _nameText });
+        var replay = (Button)displayType.GetMethod("CreateReplayButton", PrivateInstance)
+            .Invoke(display, new object[] { canvas, _nameText });
+        var previous = (Button)displayType.GetField("_previous", PrivateInstance).GetValue(display);
+        var next = (Button)displayType.GetField("_next", PrivateInstance).GetValue(display);
+        var position = (TextMeshProUGUI)displayType.GetField("_position", PrivateInstance).GetValue(display);
+        var controls = new RectTransform[]
+        {
+            (RectTransform)previous.transform, (RectTransform)next.transform,
+            (RectTransform)close.transform, position.rectTransform, (RectTransform)replay.transform
+        };
+        var bounds = new Rect[controls.Length];
+        for (int i = 0; i < controls.Length; i++)
+        {
+            // Measure the controls made by the real presentation code, not duplicated layout values.
+            var corners = new Vector3[4];
+            controls[i].GetWorldCorners(corners);
+            Vector3 lower = canvas.InverseTransformPoint(corners[0]);
+            Vector3 upper = canvas.InverseTransformPoint(corners[2]);
+            bounds[i] = Rect.MinMaxRect(lower.x, lower.y, upper.x, upper.y);
+            Assert.That(bounds[i].xMin, Is.GreaterThanOrEqualTo(canvas.rect.xMin), controls[i].name);
+            Assert.That(bounds[i].xMax, Is.LessThanOrEqualTo(canvas.rect.xMax), controls[i].name);
+            Assert.That(bounds[i].yMin, Is.GreaterThanOrEqualTo(canvas.rect.yMin), controls[i].name);
+            Assert.That(bounds[i].yMax, Is.LessThanOrEqualTo(canvas.rect.yMax), controls[i].name);
+        }
+        for (int i = 0; i < 3; i++)
+        {
+            Assert.That(bounds[3].Overlaps(bounds[i]), Is.False,
+                "The result position label overlaps " + controls[i].name);
+            Assert.That(bounds[3].yMin, Is.GreaterThan(bounds[i].yMax),
+                "The result position label needs a visible gap above the buttons");
+            for (int j = i + 1; j < 3; j++)
+                Assert.That(bounds[i].Overlaps(bounds[j]), Is.False,
+                    controls[i].name + " overlaps " + controls[j].name);
+        }
+        // Replay is shown only while the result overlay is closed; it needs its own viewport check,
+        // not a non-overlap assertion against controls that are never visible alongside it.
+    }
+
     private StaffGachaAcquisitionPreviewSequence CreateElevenSequence()
     {
         Assert.That(StaffGachaAcquisitionPreviewSequence.TryCreateFixedEleven(

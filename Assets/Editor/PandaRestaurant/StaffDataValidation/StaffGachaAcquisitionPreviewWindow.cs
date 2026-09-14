@@ -118,6 +118,8 @@ public sealed class StaffGachaAcquisitionPreviewWindow : EditorWindow
         using (new EditorGUI.DisabledScope(_overlay == null))
             if (GUILayout.Button("미리보기 닫기")) ClosePreview();
         DrawMockRequestControls();
+        EditorGUILayout.Space();
+        if (GUILayout.Button("런타임 구매 화면 검증 (독립 오프라인 환경)")) StaffGachaOfflineWindow.Open();
         EditorGUILayout.LabelField(_message, EditorStyles.wordWrappedLabel);
         EditorGUILayout.EndScrollView();
     }

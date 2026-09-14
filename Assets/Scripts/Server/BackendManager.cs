@@ -73,6 +73,85 @@ namespace Muks.BackEnd
 
         private static BackendManager _instance;
 
+#if UNITY_EDITOR
+        // Never serialized into a Scene/Prefab or available in a player build. This owner is not Instance.
+        [NonSerialized] private bool _editorOfflineOwner;
+        private static bool _creatingEditorOfflineOwner;
+        private static GameObject _editorOfflineHostBeingCreated;
+        public bool IsEditorOfflineOwner => _editorOfflineOwner;
+
+        /// <summary>
+        /// A real detached owner, fully injected before activation/Awake. Its synthetic memory-transport
+        /// policy is not evidence of actual SDK initialization. Production singleton/settings are untouched.
+        /// </summary>
+        public static BackendManager CreateEditorOfflineOwner(IGameDataBackendTransport game,
+            IStageDataLoadTransport stage, IStaffPurchaseWallet wallet,
+            Func<IReadOnlyList<GachaData>, GachaStaffData> draw,
+            Action<StaffGachaPurchaseExecution> effects)
+        {
+            if (game == null || stage == null || wallet == null || draw == null || effects == null)
+                throw new ArgumentNullException("All offline owner dependencies must be provided.");
+            if (_creatingEditorOfflineOwner) throw new InvalidOperationException("Offline owner creation is already in progress.");
+            var host = new GameObject("StaffGacha Offline Backend") { hideFlags = HideFlags.HideAndDontSave };
+            host.SetActive(false);
+            _creatingEditorOfflineOwner = true;
+            _editorOfflineHostBeingCreated = host;
+            try
+            {
+                var owner = host.AddComponent<BackendManager>();
+                owner._editorOfflineOwner = true;
+                owner._gameDataTransport = game;
+                owner._stageDataTransport = stage;
+                owner._staffPurchaseWallet = wallet;
+                owner.StaffPurchaseDraw = draw;
+                owner.StaffPurchaseCommittedEffects = effects;
+                bool memoryTransportInitialized = false;
+                var settings = new GameDataSdkRetrySettings(typeof(Backend).Assembly.GetName().Version, false, false, true);
+                GameDataSdkInitializationPolicy.ObserveInitialization(() => settings, () => memoryTransportInitialized,
+                    () => { memoryTransportInitialized = true; return new GameDataRawResponse(true, "200", null, "Offline memory transport"); },
+                    out owner._gameDataInitializationPolicy);
+                if (owner._gameDataInitializationPolicy == null || !owner._gameDataInitializationPolicy.IsSupported)
+                    throw new InvalidOperationException("The installed SDK version is unsupported by this offline exercise.");
+                host.SetActive(true);
+                return owner;
+            }
+            catch
+            {
+                // This host belongs solely to this factory, never to the production scene or singleton.
+                if (Application.isPlaying) Destroy(host); else DestroyImmediate(host);
+                throw;
+            }
+            finally { _editorOfflineHostBeingCreated = null; _creatingEditorOfflineOwner = false; }
+        }
+
+        /// <summary>Owner-lifetime cleanup only. EditMode may not invoke MonoBehaviour.OnDestroy.</summary>
+        public void DestroyEditorOfflineOwner()
+        {
+            if (!_editorOfflineOwner) throw new InvalidOperationException("Only a detached offline Editor owner can be disposed here.");
+            if (this == null || _destroyCleanupDone) return;
+            GameObject host = gameObject;
+            OnDestroy(); // Invalidates evidence and releases owned display data; never clears target locks.
+            if (Application.isPlaying) Destroy(host); else DestroyImmediate(host);
+        }
+#endif
+
+        private bool IsOfflineOwner
+        {
+            get
+            {
+#if UNITY_EDITOR
+                return _editorOfflineOwner;
+#else
+                return false;
+#endif
+            }
+        }
+        private bool SavingEnabledForOwner => IsOfflineOwner || _isSaveEnabled;
+        private void RequireLiveBackendOwner()
+        {
+            if (IsOfflineOwner) throw new InvalidOperationException("This Editor owner permits injected memory transport only.");
+        }
+
         // 저장 가능 상태를 추적하는 플래그
         private static bool _isSaveEnabled = true;
         public static bool IsSaveEnabled => _isSaveEnabled;
@@ -113,7 +192,8 @@ namespace Muks.BackEnd
         private IStaffPurchaseWallet _staffPurchaseWallet;
         public IStaffPurchaseWallet StaffPurchaseWallet
         {
-            get => _staffPurchaseWallet ?? UserInfo.StaffPurchaseWallet;
+            get => _staffPurchaseWallet ?? (IsOfflineOwner
+                ? throw new InvalidOperationException("Offline purchase wallet is missing.") : UserInfo.StaffPurchaseWallet);
             set => _staffPurchaseWallet = value;
         }
         // Same runtime boundary, deterministic selector injection only for isolated tests. No test UI bypass.
@@ -137,7 +217,8 @@ namespace Muks.BackEnd
                     error: "현재 Stage 수집 회차가 없습니다.")
                 : _stageMigrationCollection.RevalidateMigration(preparation);
         private IStageDataLoadTransport StageDataTransport => _stageDataTransport ??
-            (_stageDataTransport = new SdkStageDataLoadTransport(this));
+            (IsOfflineOwner ? throw new InvalidOperationException("Offline Stage transport is missing.")
+                : (_stageDataTransport = new SdkStageDataLoadTransport(this)));
         public GameDataSaveCoordinator CurrentGameDataSaveCoordinator => _gameDataSaveCoordinator;
         // The runtime rechecks the current restore/query on every access; old account values are not reused.
         public StaffAccountRuntime StaffRuntime => _staffAccountRuntime ??
@@ -145,7 +226,8 @@ namespace Muks.BackEnd
                 () => GameDataRestore.LegacyQuery, CanChangeStaffRuntime, () => GameDataTransport.ReadCatalog(),
                 () => IsStaffMutationProtected));
         private IGameDataBackendTransport GameDataTransport => _gameDataTransport ??
-            (_gameDataTransport = new SdkGameDataBackendTransport(this));
+            (IsOfflineOwner ? throw new InvalidOperationException("Offline GameData transport is missing.")
+                : (_gameDataTransport = new SdkGameDataBackendTransport(this)));
 
         private sealed class SdkGameDataBackendTransport : IGameDataBackendTransport
         {
@@ -356,6 +438,9 @@ namespace Muks.BackEnd
             _startingStaffPurchase = true;
             try
             {
+                if (IsOfflineOwner && (StaffPurchaseDraw == null || StaffPurchaseCommittedEffects == null
+                    || _staffPurchaseWallet == null || _gameDataTransport == null || _stageDataTransport == null))
+                { error = "Offline purchase dependencies are incomplete."; return false; }
                 if (!StaffGachaPurchasePlanCalculator.TryGetPolicy(type, out int cost, out _))
                 { error = "구매 종류가 잘못되었습니다."; return false; }
                 var query = GameDataRestore.LegacyQuery;
@@ -411,6 +496,7 @@ namespace Muks.BackEnd
             if (StaffPurchaseCommittedEffects != null) Notify(() => StaffPurchaseCommittedEffects(operation));
             else
             {
+                RequireLiveBackendOwner(); // Missing offline effects must never fall back to UserInfo/PaymentInfo.
                 if (operation.Plan.AccountResult.Acquisition.NewStaffIds.Count > 0) Notify(UserInfo.OnGiveStaffEvent);
                 Notify(() => UserInfo.AddUserGachaMachineCount(operation.Plan.ResultCount));
                 Notify(() => PaymentInfo.AddGachaData("Normal Staff Gacha " + operation.Plan.ResultCount));
@@ -479,7 +565,7 @@ namespace Muks.BackEnd
                 return false;
             }
             // A fresh authenticated session still cannot save until its own GameData restoration succeeds.
-            _isSaveEnabled = true;
+            if (!IsOfflineOwner) _isSaveEnabled = true;
             return true;
         }
 
@@ -494,6 +580,7 @@ namespace Muks.BackEnd
         {
             get
             {
+                RequireLiveBackendOwner();
                 if (Time.realtimeSinceStartup - _serverTimeCachedAt < ServerTimeCacheSeconds)
                     return _cachedServerTime;
 
@@ -521,6 +608,11 @@ namespace Muks.BackEnd
 
         private void Awake()
         {
+#if UNITY_EDITOR
+            // Inactive AddComponent defers Awake; this fence also fails closed if Unity invokes it early.
+            if (_editorOfflineOwner || ReferenceEquals(gameObject, _editorOfflineHostBeingCreated))
+            { _editorOfflineOwner = true; return; }
+#endif
             if (_instance != null)
             {
                 Destroy(gameObject);
@@ -544,8 +636,11 @@ namespace Muks.BackEnd
             Debug.Log("[BackendManager] 전역 오류 감지 시스템이 활성화되었습니다.");
         }
         
+        private bool _destroyCleanupDone;
         private void OnDestroy()
         {
+            if (_destroyCleanupDone) return;
+            _destroyCleanupDone = true;
             // 이벤트 구독 해제
             Application.logMessageReceived -= HandleLog;
             // This owner is DontDestroyOnLoad. Ordinary screen/scene closure never reaches this cleanup.
@@ -665,6 +760,7 @@ namespace Muks.BackEnd
         
         private void Init()
         {
+            if (IsOfflineOwner) return;
             // 동기식 초기화 호출
             bool isSuccess = InitializeBackend();
             if (!isSuccess)
@@ -678,6 +774,7 @@ namespace Muks.BackEnd
         /// </summary>
         private bool InitializeBackend()
         {
+            RequireLiveBackendOwner();
             _gameDataInitializationPolicy = null;
             try
             {
@@ -730,6 +827,7 @@ namespace Muks.BackEnd
             bool usePopup = true,
             Func<bool> isCurrent = null)
         {
+            RequireLiveBackendOwner();
             if (isCurrent != null && !isCurrent()) return;
             if (!_isSaveEnabled && operationName.Contains("저장"))
             {
@@ -807,6 +905,7 @@ namespace Muks.BackEnd
             bool usePopup = true,
             Func<bool> isCurrent = null)
         {
+            RequireLiveBackendOwner();
             if (isCurrent != null && !isCurrent()) return null;
             if (!_isSaveEnabled && operationName.Contains("저장"))
             {
@@ -1030,6 +1129,7 @@ namespace Muks.BackEnd
         /// </summary>
         public void FetchGamerIdAsync(Action onSuccess = null, Action onFail = null, Func<bool> canApply = null)
         {
+            RequireLiveBackendOwner();
             if (canApply != null && !canApply()) return;
             Backend.BMember.GetUserInfo((bro) =>
             {
@@ -1054,7 +1154,7 @@ namespace Muks.BackEnd
         public void LogOut()
         {
             InvalidateGameDataRestore();
-            _isSaveEnabled = false;
+            if (!IsOfflineOwner) _isSaveEnabled = false;
             _isLogin = false;
         }
 
@@ -1065,7 +1165,7 @@ namespace Muks.BackEnd
         public bool NotifyFederationLoginSuccess(GameDataAuthenticationAttempt attempt, BackendReturnObject bro)
         {
             if (!CompleteGameDataAuthentication(attempt, bro)) return false;
-            _isSaveEnabled = true;
+            if (!IsOfflineOwner) _isSaveEnabled = true;
             Debug.Log("[BackendManager] 페더레이션 로그인 상태 활성화");
             return true;
         }
@@ -1353,6 +1453,7 @@ namespace Muks.BackEnd
         /// </summary>
         public bool GuestLogin()
         {
+            RequireLiveBackendOwner();
             if (IsLogin)
             {
                 Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
@@ -1520,7 +1621,7 @@ namespace Muks.BackEnd
                     : GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
                         ? "이 GameData 행은 다른 진행 중/미해결 저장이 소유하고 있습니다." : null;
                 return new GameDataSaveReadiness(
-                    _isSaveEnabled, GameDataTransport.LoggedIn, current && staffReady,
+                    SavingEnabledForOwner, GameDataTransport.LoggedIn, current && staffReady,
                     !requireStaffReady || GameDataTransport.GameplaySaveAllowed,
                     GameDataTransport.AccountInDate, target,
                     transportBlockReason: transportBlock,
@@ -1586,7 +1687,7 @@ namespace Muks.BackEnd
         private bool TryCreateInitialGameData(GameDataRestoreQuery query,
             Action<GameDataRestoreQuery, GameDataRestoreResult> onComplete, Action<BackendState> onFail)
         {
-            if (!_isSaveEnabled || !GameDataTransport.LoggedIn
+            if (!SavingEnabledForOwner || !GameDataTransport.LoggedIn
                 || !GameDataRestore.TryBeginInitialCreation(query, _gameDataInitializationPolicy, out _)) return false;
             try
             {
@@ -1594,7 +1695,7 @@ namespace Muks.BackEnd
                 if (!GameDataSavePayload.TryCapture(GameDataTransport.InitialValues(), out var payload, out _))
                     throw new InvalidOperationException("Initial GameData payload validation failed.");
                 Param values = payload.CreateParamCopy();
-                if (!GameDataRestore.IsCurrent(query) || !GameDataTransport.LoggedIn || !_isSaveEnabled
+                if (!GameDataRestore.IsCurrent(query) || !GameDataTransport.LoggedIn || !SavingEnabledForOwner
                     || _gameDataInitializationPolicy == null || !_gameDataInitializationPolicy.IsSupported) return true;
                 // Exactly one public SDK invocation. No ProcessBackendAPI/automatic/popup retry.
                 GameDataTransport.Insert(values, bro =>
@@ -1664,7 +1765,7 @@ namespace Muks.BackEnd
 
         private bool IsCurrentGameDataSaveSession(GameDataRestoreQuery query, GameDataSaveTarget target)
         {
-            return _isSaveEnabled && GameDataTransport.LoggedIn && target != null
+            return SavingEnabledForOwner && GameDataTransport.LoggedIn && target != null
                 && GameDataRestore.IsCurrent(query) && ReferenceEquals(query, GameDataRestore.LegacyQuery)
                 && target.Matches(GameDataRestore.LegacyTarget) && !GameDataRestore.IsInitialCreationBlocked;
         }
@@ -2329,6 +2430,7 @@ namespace Muks.BackEnd
         /// </summary>
         public bool RefreshTheBackendToken(int maxRetries)
         {
+            RequireLiveBackendOwner();
             if (maxRetries <= 0)
             {
                 Debug.Log("[BackendManager] 토큰 갱신 실패");
@@ -2486,6 +2588,7 @@ namespace Muks.BackEnd
 
         private void OnApplicationPause(bool isPaused)
         {
+            if (IsOfflineOwner) return;
             if (isPaused)
             {
                 // 앱이 백그라운드로 전환될 때
@@ -2509,6 +2612,7 @@ namespace Muks.BackEnd
         
         private void OnApplicationQuit()
         {
+            if (IsOfflineOwner) return;
             // 앱 종료 시
             if (_isLogin && _isSaveEnabled)
             {
@@ -2519,6 +2623,7 @@ namespace Muks.BackEnd
 
         private void CheckTokenValidity()
         {
+            if (IsOfflineOwner) return;
             // 광고 재생 중에는 토큰 검사 생략 (ad 오버레이로 인한 일시적 네트워크 실패 → 오탐 방지)
             if (AdManager.HasInstance && AdManager.IsAdPlaying)
             {

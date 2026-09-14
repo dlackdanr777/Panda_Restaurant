@@ -186,6 +186,9 @@ public class StaffDataManager : MonoBehaviour
 
 
     public StaffGroupType GetStaffGroupType(StaffData data)
+        => GetStaffGroupTypeFromData(data);
+
+    public static StaffGroupType GetStaffGroupTypeFromData(StaffData data)
     {
         if (data is ManagerData)
             return StaffGroupType.Manager;
