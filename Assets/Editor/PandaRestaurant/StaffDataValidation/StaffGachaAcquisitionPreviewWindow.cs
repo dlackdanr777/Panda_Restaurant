@@ -578,269 +578,35 @@ public sealed class StaffGachaAcquisitionPreviewWindow : EditorWindow
     }
 }
 
-/// <summary>
-/// One existing machine animation for a stored single/eleven result list, without gameplay AnimationEvents.
-/// No coroutines/delayed delegates are scheduled: close invalidates the owner and stops the Animator.
-/// </summary>
+/// <summary>Editor wrapper uses the same runtime display driver; test input creation stays Editor-only.</summary>
 internal sealed class StaffGachaSingleAnimationPreview
 {
-    private static readonly int Idle = Animator.StringToHash("Base Layer.Idle");
-    private static readonly int Start = Animator.StringToHash("Base Layer.Start_Gacha");
-    private static readonly int Wait = Animator.StringToHash("Base Layer.Wait_Gacha");
-    private static readonly int Open = Animator.StringToHash("Base Layer.Open_Gacha");
-    private static readonly int Result = Animator.StringToHash("Base Layer.ZoomIn Item");
-    private readonly List<Action> _restore = new List<Action>();
-    private Animator _animator;
-    private AudioSource _audio;
-    private AudioClip _boom;
-    private AudioClip _resultSound;
-    private RectTransform _capsules;
-    private Image _staffImage;
-    private StaffGachaAcquisitionPreviewSequence _sequence;
-    private Action<StaffGachaAcquisitionPreviewSequence> _completed;
-    private bool _fireEvents, _enabled, _raised, _opening, _boomPlayed;
-    private int _originalState;
-    private float _originalTime, _raiseTime, _startLength;
-    public bool IsActive { get; private set; }
-    public bool IsComplete { get; private set; }
-
+    private readonly StaffGachaResultAnimation _animation = new StaffGachaResultAnimation();
+    public bool IsActive => _animation.IsActive;
+    public bool IsComplete => _animation.IsComplete;
     public bool TryStart(UIStaffGacha staff, StaffGachaAcquisitionPreviewSequence sequence,
         Action<StaffGachaAcquisitionPreviewSequence> completed, out string error)
     {
-        error = "현재 직원머신에서 보관된 결과의 연출을 시작할 수 없습니다.";
-        if (IsActive || staff == null || !staff.gameObject.activeInHierarchy || sequence == null ||
-            (sequence.Count != 1 && sequence.Count != 11) || sequence.Index != 0 ||
-            sequence.IsNavigationLocked || !sequence.CurrentItem.IsNew || completed == null)
-            return false;
-        Animator animator = Read<Animator>(staff, "_gachaMacineAnimator");
-        UIGachaCard card = Read<UIGachaCard>(staff, "_gachaCard");
-        Image staffImage = Read<Image>(staff, "_getStaffImage");
-        RectTransform capsules = Read<RectTransform>(staff, "_capsules");
-        Button single = Read<Button>(staff, "_singleButton");
-        AudioSource audio = Read<AudioSource>(staff, "_gachaSound");
-        if (animator == null || animator.runtimeAnimatorController == null || card == null ||
-            card.gameObject.activeSelf || staffImage == null || capsules == null || single == null ||
-            !single.gameObject.activeInHierarchy || audio == null || audio.isPlaying ||
-            !animator.enabled || animator.IsInTransition(0) ||
-            !new[] { Idle, Start, Wait, Open, Result }.All(hash => animator.HasState(0, hash)))
-            return false;
-        var original = animator.GetCurrentAnimatorStateInfo(0);
-        if (original.fullPathHash != Idle) return false;
-        AnimationClip startClip = animator.runtimeAnimatorController.animationClips
-            .FirstOrDefault(clip => clip.name == "Start_Gacha");
-        AnimationEvent raise = startClip == null ? null : AnimationUtility.GetAnimationEvents(startClip)
-            .FirstOrDefault(evt => evt.functionName == "CapsuleSetSibilingIndex" && evt.intParameter == 6);
-        if (raise == null) { error = "기존 머신 캡슐 연출 이벤트 정보를 찾지 못했습니다."; return false; }
-
-        _animator = animator;
-        _audio = audio;
-        _capsules = capsules;
-        _staffImage = staffImage;
-        _sequence = sequence;
-        _completed = completed;
-        _fireEvents = animator.fireEvents;
-        _enabled = animator.enabled;
-        _originalState = original.fullPathHash;
-        _originalTime = original.normalizedTime;
-        _raiseTime = raise.time;
-        _startLength = startClip.length;
-        _boom = Read<AudioClip>(staff, "_boomSound");
-        _resultSound = Read<AudioClip>(staff, sequence.CurrentStaff.Rank == Rank.Unique ||
-            sequence.CurrentStaff.Rank == Rank.Special ? "_getSpecialStaffSound" : "_getNormalStaffSound");
-        CapturePresentation(staff.transform);
-        IsActive = true;
-        IsComplete = _raised = _opening = _boomPlayed = false;
-        sequence.LockNavigation();
-        try
-        {
-            // Never enter UIStaffGacha.SetStep/GetStaff/StartAddStaff or their tutorial/grant hooks.
-            animator.fireEvents = false;
-            ResetTriggers();
-            foreach (string field in new[] { "_singleButton", "_tenButton", "_screenButton", "_skipButton" })
-            {
-                Button button = Read<Button>(staff, field);
-                if (button != null) button.gameObject.SetActive(false);
-            }
-            card.gameObject.SetActive(false);
-            Transform slots = Read<Transform>(staff, "_getStaffSlotFrame");
-            if (slots != null) slots.gameObject.SetActive(false);
-            _staffImage.sprite = sequence.CurrentStaff.ThumbnailSprite ?? sequence.CurrentStaff.Sprite;
-            _staffImage.gameObject.SetActive(false);
-            // Preserve the current capsule sprites. Cosmetic randomness is not needed for a fixed preview.
-            _capsules.SetSiblingIndex(1);
-            animator.SetTrigger("Start");
-            if (Application.isPlaying) _audio.Play();
-            error = null;
-            return true;
-        }
-        catch
-        {
-            Close();
-            throw;
-        }
+        return _animation.TryStart(staff, sequence,
+            completed == null ? (Action<StaffGachaResultSequence>)null : result => completed(sequence), out error);
     }
-
-    public void Tick()
-    {
-        if (!IsActive || IsComplete || _animator == null) return;
-        AnimatorStateInfo state = _animator.GetCurrentAnimatorStateInfo(0);
-        if (!_raised && state.fullPathHash == Start && state.normalizedTime * _startLength >= _raiseTime)
-        {
-            _raised = true;
-            _capsules.SetSiblingIndex(6);
-        }
-        if (!_opening && state.fullPathHash == Wait && !_animator.IsInTransition(0))
-        {
-            _opening = true;
-            _audio.Stop();
-            _staffImage.gameObject.SetActive(true);
-            _capsules.SetSiblingIndex(11);
-            _animator.SetTrigger("CapsuleOpen");
-        }
-        if (!_boomPlayed && state.fullPathHash == Open)
-        {
-            _boomPlayed = true;
-            if (Application.isPlaying && _boom != null) _audio.PlayOneShot(_boom);
-        }
-        if (state.fullPathHash != Result) return;
-        IsComplete = true; // Latch before calling the owner; repeated ticks cannot display again.
-        _sequence.UnlockNavigation();
-        _staffImage.gameObject.SetActive(false);
-        if (Application.isPlaying && _resultSound != null) _audio.PlayOneShot(_resultSound);
-        var completed = _completed;
-        _completed = null;
-        completed?.Invoke(_sequence);
-    }
-
-    public void Close(bool restorePresentation = true)
-    {
-        if (!IsActive) return;
-        IsActive = false;
-        _completed = null;
-        _sequence?.UnlockNavigation();
-        _sequence = null;
-        if (_audio != null) _audio.Stop();
-        if (_animator != null)
-        {
-            _animator.fireEvents = false;
-            ResetTriggers();
-            _animator.Play(_originalState, 0, _originalTime);
-            if (restorePresentation && _animator.gameObject.activeInHierarchy)
-            {
-                _animator.Update(0f);
-            }
-            if (restorePresentation) _animator.enabled = false;
-        }
-        // A navigation Hide wins over our old visible snapshot; never reactivate a departed machine.
-        if (restorePresentation)
-            foreach (Action restore in _restore) restore();
-        _restore.Clear();
-        if (_animator != null)
-        {
-            _animator.fireEvents = _fireEvents;
-            if (restorePresentation) _animator.enabled = _enabled;
-        }
-    }
-
-    private void ResetTriggers()
-    {
-        foreach (AnimatorControllerParameter parameter in _animator.parameters)
-            if (parameter.type == AnimatorControllerParameterType.Trigger)
-                _animator.ResetTrigger(parameter.nameHash);
-    }
-
-    private void CapturePresentation(Transform root)
-    {
-        // The existing clips animate transforms, active flags, Image sprites and alpha.
-        // Restore exact pre-preview values, not an assumed default Idle layout.
-        foreach (Transform transform in root.GetComponentsInChildren<Transform>(true))
-        {
-            Vector3 position = transform.localPosition, scale = transform.localScale;
-            Quaternion rotation = transform.localRotation;
-            int sibling = transform.GetSiblingIndex();
-            bool active = transform.gameObject.activeSelf;
-            _restore.Add(() =>
-            {
-                if (transform == null) return;
-                transform.localPosition = position;
-                transform.localRotation = rotation;
-                transform.localScale = scale;
-                transform.SetSiblingIndex(sibling);
-            });
-            if (transform is RectTransform rect)
-            {
-                Vector2 min = rect.anchorMin, max = rect.anchorMax, pivot = rect.pivot, size = rect.sizeDelta;
-                Vector3 anchored = rect.anchoredPosition3D;
-                _restore.Add(() =>
-                {
-                    if (rect == null) return;
-                    rect.anchorMin = min; rect.anchorMax = max; rect.pivot = pivot;
-                    rect.sizeDelta = size; rect.anchoredPosition3D = anchored;
-                });
-            }
-            foreach (Graphic graphic in transform.GetComponents<Graphic>())
-            {
-                Color color = graphic.color;
-                _restore.Add(() => { if (graphic != null) graphic.color = color; });
-                if (graphic is Image image)
-                {
-                    Sprite sprite = image.sprite;
-                    _restore.Add(() => { if (image != null) image.sprite = sprite; });
-                }
-            }
-            _restore.Add(() => { if (transform != null && transform.gameObject.activeSelf != active)
-                transform.gameObject.SetActive(active); });
-        }
-    }
-
-    private static T Read<T>(Object owner, string field) where T : Object
-    {
-        using (var serialized = new SerializedObject(owner))
-            return serialized.FindProperty(field)?.objectReferenceValue as T;
-    }
+    public void Tick() => _animation.Tick();
+    public void Close(bool restorePresentation = true) => _animation.Close(restorePresentation);
 }
 
 /// <summary>Editor 표시용 고정 입력과 계산 결과. 이동은 인덱스만 바꾸며 다시 계산하지 않는다.</summary>
-internal sealed class StaffGachaAcquisitionPreviewSequence
+internal sealed class StaffGachaAcquisitionPreviewSequence : StaffGachaResultSequence
 {
-    private readonly GachaStaffData[] _staff;
-    public StaffGachaAcquisitionResult Result { get; }
-    public int Index { get; private set; }
-    public int Count => Result.Items.Count;
-    public GachaStaffData CurrentStaff => _staff[Index];
-    public StaffGachaAcquisitionItem CurrentItem => Result.Items[Index];
-    internal bool IsNavigationLocked { get; private set; }
-    public bool CanMovePrevious => !IsNavigationLocked && Index > 0;
-    public bool CanMoveNext => !IsNavigationLocked && Index + 1 < Count;
-
-    internal void LockNavigation() => IsNavigationLocked = true;
-    internal void UnlockNavigation() => IsNavigationLocked = false;
-
     private StaffGachaAcquisitionPreviewSequence(GachaStaffData[] staff, StaffGachaAcquisitionResult result)
-    {
-        _staff = staff;
-        Result = result;
-    }
+        : base(staff, result) { }
 
-    /// <summary>이미 계산된 결과를 그대로 연결한다. 표시 검증/복사만 하며 획득 계산은 하지 않는다.</summary>
     public static bool TryCreateFromCalculated(StaffGachaAcquisitionResult result,
         IReadOnlyList<GachaStaffData> displayStaff, out StaffGachaAcquisitionPreviewSequence sequence, out string error)
     {
         sequence = null;
-        error = "완료 결과와 표시 직원의 개수·ID·등급이 일치해야 합니다.";
-        if (result == null || displayStaff == null || (result.Items.Count != 1 && result.Items.Count != 11) ||
-            displayStaff.Count != result.Items.Count) return false;
-        var copy = displayStaff.ToArray();
-        var valid = new HashSet<GachaStaffData>(GetDisplayCandidates(copy));
-        for (int i = 0; i < copy.Length; i++)
-        {
-            StaffGachaAcquisitionItem item = result.Items[i];
-            if (copy[i] == null || !valid.Contains(copy[i]) || item == null ||
-                !string.Equals(copy[i].Id, item.StaffId, StringComparison.Ordinal) || copy[i].Rank != item.Rank)
-                return false;
-        }
-        sequence = new StaffGachaAcquisitionPreviewSequence(copy, result);
-        error = null;
+        if (!StaffGachaResultSequence.TryCreateFromCalculated(result, displayStaff, out var verified, out error))
+            return false;
+        sequence = new StaffGachaAcquisitionPreviewSequence(displayStaff.ToArray(), verified.Result);
         return true;
     }
 
@@ -894,13 +660,5 @@ internal sealed class StaffGachaAcquisitionPreviewSequence
         return true;
     }
 
-    public bool TryMove(int offset)
-    {
-        if (IsNavigationLocked || (offset != -1 && offset != 1) || (offset == -1 && !CanMovePrevious) ||
-            (offset == 1 && !CanMoveNext))
-            return false;
-        Index += offset;
-        return true;
-    }
 }
 #endif

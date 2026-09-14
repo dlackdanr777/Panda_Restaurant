@@ -31,6 +31,7 @@ namespace Muks.BackEnd
         private SaveBatch _active;
         private GameDataMailSaveLease _mailLease;
         internal StaffMigrationExecution ActiveStaffMigration => _active?.Migration;
+        internal StaffGachaPurchaseExecution ActiveStaffPurchase => _active?.Purchase;
 
         private sealed class SaveBatch
         {
@@ -38,11 +39,12 @@ namespace Muks.BackEnd
             public readonly bool IsAutosave;
             public readonly Func<bool> AutosaveGuard;
             public readonly StaffMigrationExecution Migration;
+            public readonly StaffGachaPurchaseExecution Purchase;
             public Func<Param> Factory;
             public readonly List<GameDataSaveRequest> Requests = new List<GameDataSaveRequest>();
             public SaveBatch(GameDataSaveIdentity identity, bool isAutosave, Func<Param> factory,
-                Func<bool> autosaveGuard = null, StaffMigrationExecution migration = null)
-            { Identity = identity; IsAutosave = isAutosave; Factory = factory; AutosaveGuard = autosaveGuard; Migration = migration; }
+                Func<bool> autosaveGuard = null, StaffMigrationExecution migration = null, StaffGachaPurchaseExecution purchase = null)
+            { Identity = identity; IsAutosave = isAutosave; Factory = factory; AutosaveGuard = autosaveGuard; Migration = migration; Purchase = purchase; }
         }
 
         private GameDataSaveCoordinatorState _state = GameDataSaveCoordinatorState.Idle;
@@ -93,6 +95,28 @@ namespace Muks.BackEnd
             foreach (GameDataSaveCoordinator coordinator in BlockedCoordinators)
                 if (coordinator.ActiveStaffMigration != null && coordinator._target.Matches(target)) return true;
             return false;
+        }
+
+        internal static bool IsStaffPurchaseTargetProtected(GameDataSaveTarget target)
+        {
+            if (target == null) return false;
+            foreach (GameDataSaveCoordinator coordinator in BlockedCoordinators)
+                if (coordinator.ActiveStaffPurchase != null && coordinator._target.Matches(target)) return true;
+            return false;
+        }
+
+        // Unlike ordinary saves/migrations, purchases never wait for a FIFO slot. Protection precedes RNG.
+        internal GameDataSaveRequest StartStaffPurchase(StaffGachaPurchaseExecution purchase)
+        {
+            if (!EnsureSession() || !CanStartPurchase)
+                return GameDataSaveRequest.Rejected("다른 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요.");
+            var batch = new SaveBatch(purchase.Identity, false, purchase.CreateValuesUnderProtection, purchase: purchase);
+            var request = new GameDataSaveRequest(purchase.Identity, purchase.Confirm, purchase.OnSaveStateChanged);
+            purchase.AttachRequest(request);
+            batch.Requests.Add(request);
+            _pending.AddLast(batch);
+            Pump();
+            return request;
         }
 
         public GameDataSaveCoordinator(GameDataSaveTarget target, GameDataSingleUpdate updater,
@@ -496,6 +520,7 @@ namespace Muks.BackEnd
 
         private void RejectBeforeSend(SaveBatch batch, string error)
         {
+            batch.Purchase?.ReleaseUnsent();
             LastError = error;
             LastReceipt = GameDataSaveReceipt.Rejected(batch.Identity,
                 batch.Identity.Matches(CurrentIdentity) ? CurrentPayload : null, error);
@@ -524,6 +549,7 @@ namespace Muks.BackEnd
 
         private static void AbandonBeforeSend(SaveBatch batch, string error)
         {
+            batch.Purchase?.ReleaseUnsent();
             batch.Factory = null;
             foreach (GameDataSaveRequest request in batch.Requests)
             {

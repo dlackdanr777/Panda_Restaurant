@@ -592,6 +592,113 @@ public class StaffGachaAcquisitionCardTests
         Assert.That(next.CurrentItem.IsNew, Is.True);
     }
 
+
+    [TestCase(1)]
+    [TestCase(11)]
+    public void RuntimePresentation_DuplicateFirstAndAllDuplicateUseTheStoredResultsOnly(int count)
+    {
+        MachineAnimationFixture machine = CreateMachineAnimationFixture();
+        AudioClip originalClip = Track(AudioClip.Create("Staff source seek fixture", 128, 1, 1000, false));
+        machine.Audio.clip = originalClip;
+        machine.Audio.timeSamples = 64;
+        int originalSamples = machine.Audio.timeSamples;
+        machine.Audio.volume = 0.37f;
+        machine.Audio.pitch = 0.8f;
+        machine.Audio.loop = true;
+        machine.Audio.mute = true;
+        GachaStaffData staff = LoadStaff("STAFF01");
+        var drawn = Enumerable.Repeat(staff, count).ToArray();
+        Assert.That(StaffGachaAcquisitionCalculator.TryCalculate(new[] { staff.Id }, drawn,
+            out var calculated, out string error), Is.True, error);
+        Assert.That(StaffGachaResultSequence.TryCreateFromCalculated(calculated, drawn,
+            out var sequence, out error), Is.True, error);
+        Assert.That(sequence.Result, Is.SameAs(calculated));
+        Assert.That(sequence.CurrentItem.IsDuplicate, Is.True);
+        Assert.That(calculated.Items.All(item => item.IsDuplicate && item.PandaTokenReward == 5), Is.True);
+        var driver = new StaffGachaResultAnimation();
+        int completions = 0;
+        try
+        {
+            Assert.That(driver.TryStart(machine.Staff, sequence, completed =>
+            {
+                completions++;
+                Assert.That(completed, Is.SameAs(sequence));
+                Assert.That(completed.Result, Is.SameAs(calculated));
+                Assert.That(_card.TrySetStaffAcquisitionResult(completed.CurrentStaff,
+                    completed.CurrentItem), Is.True);
+            }, out error), Is.True, error);
+            Assert.That(sequence.TryMove(1), Is.False);
+            for (int step = 0; step < 150 && !driver.IsComplete; step++)
+            {
+                Assert.That(machine.Animator.fireEvents, Is.False);
+                machine.Animator.Update(0.1f);
+                driver.Tick();
+            }
+            Assert.That(driver.IsComplete, Is.True);
+            Assert.That(completions, Is.EqualTo(1));
+            Assert.That(_descriptionText.text, Is.EqualTo("중복 획득\n판다토큰 +5"));
+            for (int i = 1; i < count; i++)
+            {
+                Assert.That(sequence.TryMove(1), Is.True);
+                Assert.That(_card.TrySetStaffAcquisitionResult(sequence.CurrentStaff, sequence.CurrentItem), Is.True);
+                Assert.That(sequence.CurrentItem, Is.SameAs(calculated.Items[i]));
+                driver.Tick();
+            }
+            Assert.That(sequence.TryMove(1), Is.False);
+            while (sequence.TryMove(-1)) { }
+            Assert.That(sequence.Index, Is.Zero);
+            Assert.That(sequence.Result.TotalPandaTokens, Is.EqualTo(count * 5));
+            driver.Tick();
+            Assert.That(completions, Is.EqualTo(1));
+        }
+        finally { driver.Close(); }
+        AssertMachineRestored(machine);
+        Assert.That(machine.Audio.clip, Is.SameAs(originalClip));
+        Assert.That(machine.Audio.timeSamples, Is.EqualTo(originalSamples));
+        Assert.That(machine.Audio.volume, Is.EqualTo(0.37f));
+        Assert.That(machine.Audio.pitch, Is.EqualTo(0.8f));
+        Assert.That(machine.Audio.loop && machine.Audio.mute, Is.True);
+
+        // Reopening reads the very same calculated result, without the calculation/animation owner.
+        Assert.That(StaffGachaResultSequence.TryCreateFromCalculated(calculated, drawn,
+            out var reopened, out error), Is.True, error);
+        Assert.That(reopened.Result, Is.SameAs(calculated));
+        Assert.That(reopened.Index, Is.Zero);
+        Assert.That(_card.TrySetStaffAcquisitionResult(reopened.CurrentStaff, reopened.CurrentItem), Is.True);
+        Assert.That(_descriptionText.text, Is.EqualTo("중복 획득\n판다토큰 +5"));
+    }
+
+    [Test]
+    public void RuntimePresentation_CopiesBindingsRejectsMismatchAndKeepsExecutionButtonsBlocked()
+    {
+        GachaStaffData staff = LoadStaff("STAFF23");
+        var drawn = new[] { staff };
+        Assert.That(StaffGachaAcquisitionCalculator.TryCalculate(Array.Empty<string>(), drawn,
+            out var result, out string error), Is.True, error);
+        Assert.That(StaffGachaResultSequence.TryCreateFromCalculated(result, drawn,
+            out var sequence, out error), Is.True, error);
+        drawn[0] = LoadStaff("STAFF01");
+        Assert.That(sequence.CurrentStaff, Is.SameAs(staff), "The display list retained a mutable array alias");
+        Assert.That(StaffGachaResultSequence.TryCreateFromCalculated(result, drawn,
+            out var rejected, out error), Is.False);
+        Assert.That(rejected, Is.Null);
+        Assert.That(StaffGachaResultSequence.TryCreateFromCalculated(null, drawn, out rejected, out error), Is.False);
+        Assert.That(rejected, Is.Null);
+
+        var blockedObject = Track(new GameObject("Disabled staff purchase handler"));
+        blockedObject.SetActive(false);
+        var blocked = blockedObject.AddComponent<UIStaffGacha>();
+        var backendField = typeof(Muks.BackEnd.BackendManager).GetField("_instance",
+            BindingFlags.Static | BindingFlags.NonPublic);
+        object previousBackend = backendField.GetValue(null);
+        blocked.OnSingleGachaButtonClicked();
+        blocked.OnTenGachaButtonClicked();
+        Assert.That(backendField.GetValue(null), Is.SameAs(previousBackend),
+            "Blocked purchase handlers must return before touching the Backend owner");
+        Assert.That(typeof(UIStaffGacha).GetField("IsGachaExecutionEnabled",
+            BindingFlags.Static | BindingFlags.NonPublic).GetValue(null), Is.False);
+    }
+
     private StaffGachaAcquisitionPreviewSequence CreateElevenSequence()
     {
         Assert.That(StaffGachaAcquisitionPreviewSequence.TryCreateFixedEleven(

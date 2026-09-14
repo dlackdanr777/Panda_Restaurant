@@ -98,6 +98,10 @@ public static class UserInfo
 
     private static int _dia;
     public static int Dia => _dia;
+    private static long _diamondDataGeneration;
+    private static readonly StaffPurchaseDiamondWallet DiamondWallet = new StaffPurchaseDiamondWallet(
+        () => _dia, value => _dia = value, NotifyDiamondChange, () => _diamondDataGeneration);
+    public static IStaffPurchaseWallet StaffPurchaseWallet => DiamondWallet;
 
     private static long _money;
     public static long Money => _money;
@@ -581,9 +585,9 @@ public static class UserInfo
         if (stage < EStage.Stage1 || stage >= EStage.Length || _stageInfos == null || isCurrent == null)
             return false;
         StageInfo destination = _stageInfos[(int)stage];
-        if (destination == null || BackendManager.Instance.IsStaffMigrationProtected) return false;
+        if (destination == null || BackendManager.Instance.IsStaffMutationProtected) return false;
         Func<bool> sameDestination = () => isCurrent() && _stageInfos != null
-            && !BackendManager.Instance.IsStaffMigrationProtected
+            && !BackendManager.Instance.IsStaffMutationProtected
             && ReferenceEquals(_stageInfos[(int)stage], destination);
         return TryApplyStageDataResponse(stage, response, sameDestination, destination.LoadData,
             () => { if (asynchronous) SaveStageDataAsync(stage, sameDestination); else SaveStageData(stage, sameDestination); });
@@ -659,6 +663,7 @@ public static class UserInfo
         IsFurnitureTutorialClear = loadData.IsFurnitureTutorialClear;
         IsRecipeTutorialClear = loadData.IsRecipeTutorialClear;
 
+        _diamondDataGeneration = checked(_diamondDataGeneration + 1);
         _dia = loadData.Dia;
         _money = loadData.Money;
         _totalAddMoney = loadData.TotalAddMoney;
@@ -1036,12 +1041,36 @@ public static class UserInfo
 
     public static void AddDia(int value)
     {
-        _dia += value;
-        _dia = Math.Max(0, _dia);
+        // Void reward callers must not silently lose a reward or consume reserved purchase funds.
+        // Negative production callers use TrySpendDia before granting their product/animation.
+        if (value < 0)
+        {
+            if (value == int.MinValue || !TrySpendDia(-value, out string spendError))
+                throw new InvalidOperationException("다이아 차감이 거절되었습니다. TrySpendDia 결과를 확인해야 합니다.");
+            return;
+        }
+        if (!DiamondWallet.TryAddReward(value, out string error))
+            throw new OverflowException(error);
+    }
+
+    public static bool TrySpendDia(int cost, out string error)
+    {
+        return DiamondWallet.TrySpend(cost, out error);
+    }
+
+    private static void NotifyDiamondChange()
+    {
         if (_staffCostCommitDepth == 0)
         {
-            DataBindDia();
-            OnChangeDiaHandler?.Invoke();
+            var errors = new List<Exception>();
+            try { DataBindDia(); }
+            catch (Exception exception) { errors.Add(exception); }
+            var handlers = OnChangeDiaHandler;
+            if (handlers != null)
+                foreach (Action handler in handlers.GetInvocationList())
+                    try { handler(); }
+                    catch (Exception exception) { errors.Add(exception); }
+            if (errors.Count != 0) throw new AggregateException(errors);
         }
     }
 
@@ -1324,18 +1353,12 @@ public static class UserInfo
 
     public static bool IsDiaValid(ShopData data)
     {
-        if (Dia < data.BuyPrice)
-            return false;
-
-        return true;
+        return data != null && DiamondWallet.CanSpend(data.BuyPrice);
     }
 
     public static bool IsDiaValid(int dia)
     {
-        if (Dia < dia)
-            return false;
-
-        return true;
+        return DiamondWallet.CanSpend(dia);
     }
 
     public static bool IsSkinTokenValid(int skinToken)
@@ -1377,7 +1400,7 @@ public static class UserInfo
             try
             {
                 if (cost.MoneyType == MoneyType.Gold) AddMoney(-cost.Price);
-                else AddDia(-cost.Price);
+                else if (!TrySpendDia(cost.Price, out _)) return false;
                 return true;
             }
             finally { _staffCostCommitDepth--; }
@@ -1391,8 +1414,7 @@ public static class UserInfo
             }
             else
             {
-                DataBindDia();
-                OnChangeDiaHandler?.Invoke();
+                NotifyDiamondChange();
             }
         }
     }

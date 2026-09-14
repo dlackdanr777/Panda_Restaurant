@@ -105,6 +105,23 @@ namespace Muks.BackEnd
         public event Action<StaffMigrationExecution> StaffMigrationCompleted;
         public bool IsStaffMigrationProtected =>
             GameDataSaveCoordinator.IsStaffMigrationTargetProtected(GameDataRestore.LegacyTarget);
+        public bool IsStaffPurchaseProtected =>
+            GameDataSaveCoordinator.IsStaffPurchaseTargetProtected(GameDataRestore.LegacyTarget);
+        public bool IsStaffMutationProtected => IsStaffMigrationProtected || IsStaffPurchaseProtected;
+        private bool _startingStaffPurchase;
+        private List<StaffGachaPurchaseExecution> _staffPurchaseExecutions;
+        private IStaffPurchaseWallet _staffPurchaseWallet;
+        public IStaffPurchaseWallet StaffPurchaseWallet
+        {
+            get => _staffPurchaseWallet ?? UserInfo.StaffPurchaseWallet;
+            set => _staffPurchaseWallet = value;
+        }
+        // Same runtime boundary, deterministic selector injection only for isolated tests. No test UI bypass.
+        public Func<IReadOnlyList<GachaData>, GachaStaffData> StaffPurchaseDraw { get; set; }
+        public Action<StaffGachaPurchaseExecution> StaffPurchaseCommittedEffects { get; set; }
+        public StaffGachaPurchaseExecution CurrentStaffPurchaseExecution { get; private set; }
+        public StaffGachaPurchaseExecution LastCompletedStaffPurchaseExecution { get; private set; }
+        public event Action<StaffGachaPurchaseExecution> StaffPurchaseCompleted;
         public StaffStageMigrationCollection StageMigrationCollection
         {
             get { _stageMigrationCollection?.RefreshValidity(); return _stageMigrationCollection; }
@@ -126,7 +143,7 @@ namespace Muks.BackEnd
         public StaffAccountRuntime StaffRuntime => _staffAccountRuntime ??
             (_staffAccountRuntime = new StaffAccountRuntime(() => GameDataRestore.Result,
                 () => GameDataRestore.LegacyQuery, CanChangeStaffRuntime, () => GameDataTransport.ReadCatalog(),
-                () => IsStaffMigrationProtected));
+                () => IsStaffMutationProtected));
         private IGameDataBackendTransport GameDataTransport => _gameDataTransport ??
             (_gameDataTransport = new SdkGameDataBackendTransport(this));
 
@@ -328,6 +345,84 @@ namespace Muks.BackEnd
             }
         }
 
+        internal IReadOnlyList<StaffData> ReadStaffPurchaseCatalog() => GameDataTransport.ReadCatalog();
+
+        public bool TryStartStaffPurchase(StaffGachaPurchaseType type,
+            out StaffGachaPurchaseExecution execution, out string error)
+        {
+            execution = null;
+            error = null;
+            if (_startingStaffPurchase) { error = "직원 뽑기를 준비하고 있습니다."; return false; }
+            _startingStaffPurchase = true;
+            try
+            {
+                if (!StaffGachaPurchasePlanCalculator.TryGetPolicy(type, out int cost, out _))
+                { error = "구매 종류가 잘못되었습니다."; return false; }
+                var query = GameDataRestore.LegacyQuery;
+                var target = GameDataRestore.LegacyTarget;
+                var runtime = StaffRuntime;
+                var source = runtime.Snapshot;
+                IStaffPurchaseWallet wallet = StaffPurchaseWallet;
+                if (source == null || runtime.Mode != StaffAccountRuntimeMode.Common || !runtime.CanMutate
+                    || !CanSaveLegacyGameData || wallet.Diamonds < cost)
+                { error = "현재 직원 뽑기를 진행할 수 없습니다. 상태와 다이아를 확인해 주세요."; return false; }
+                var coordinator = GetGameDataSaveCoordinator();
+                if (coordinator == null || !coordinator.CanStartPurchase
+                    || !IsCurrentGameDataSaveSession(query, target))
+                { error = "다른 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."; return false; }
+                if (!StaffGachaPurchaseExecution.TryReadCandidates(ReadStaffPurchaseCatalog(), source, out _, out error)) return false;
+                if (!IsCurrentGameDataSaveSession(query, target) || !ReferenceEquals(source, runtime.Snapshot)
+                    || !runtime.CanMutate || !coordinator.CanStartPurchase)
+                { error = "구매 확인 중 계정 또는 직원 상태가 변경되었습니다."; return false; }
+                execution = new StaffGachaPurchaseExecution(this, coordinator, query, target, wallet, type);
+                if (_staffPurchaseExecutions == null) _staffPurchaseExecutions = new List<StaffGachaPurchaseExecution>();
+                _staffPurchaseExecutions.Add(execution);
+                CurrentStaffPurchaseExecution = execution; // Before synchronous fake responses or callbacks.
+                execution.Start();
+                error = execution.Error;
+                return execution.Request != null && execution.Request.Accepted
+                    && execution.Request.Status != GameDataSaveRequestStatus.RejectedBeforeSend;
+            }
+            catch (Exception ex)
+            { error = "구매 준비 확인 실패: " + ex.GetType().Name; return false; }
+            finally { _startingStaffPurchase = false; }
+        }
+
+        internal bool IsCurrentStaffPurchase(StaffGachaPurchaseExecution operation) => operation != null
+            && ReferenceEquals(CurrentStaffPurchaseExecution, operation)
+            && ReferenceEquals(_gameDataSaveQuery, operation.Query)
+            && IsCurrentGameDataSaveSession(operation.Query, operation.Identity.Target)
+            && StaffRuntime.Mode == StaffAccountRuntimeMode.Common;
+
+        public bool CanPresentStaffPurchase(StaffGachaPurchaseExecution operation) => operation != null
+            && operation.IsCompleted && IsCurrentGameDataSaveSession(operation.Query, operation.Identity.Target)
+            && StaffRuntime.Mode == StaffAccountRuntimeMode.Common;
+
+        internal void NotifyStaffPurchaseCompleted(StaffGachaPurchaseExecution operation, IStaffPurchaseWallet wallet)
+        {
+            LastCompletedStaffPurchaseExecution = operation;
+            void Notify(Action action)
+            {
+                if (!CanPresentStaffPurchase(operation)) return;
+                try { action(); }
+                catch (Exception ex) { operation.NotificationError = ex.GetType().Name; }
+            }
+            Notify(wallet.NotifyCommittedCost);
+            if (StaffPurchaseCommittedEffects != null) Notify(() => StaffPurchaseCommittedEffects(operation));
+            else
+            {
+                if (operation.Plan.AccountResult.Acquisition.NewStaffIds.Count > 0) Notify(UserInfo.OnGiveStaffEvent);
+                Notify(() => UserInfo.AddUserGachaMachineCount(operation.Plan.ResultCount));
+                Notify(() => PaymentInfo.AddGachaData("Normal Staff Gacha " + operation.Plan.ResultCount));
+                Notify(PaymentInfo.SavePaymentData); // Separate record, not part of the GameData transaction.
+            }
+            // Count/reward deltas received during the request must be saved from current values, never old payloads.
+            Notify(() => RequestGameDataAutosave());
+            if (StaffPurchaseCompleted != null)
+                foreach (Action<StaffGachaPurchaseExecution> observer in StaffPurchaseCompleted.GetInvocationList())
+                    Notify(() => observer(operation));
+        }
+
         // 읽기/대기 세션은 무효화하되 이미 보낸 작업의 대상 소유권과 미해결 기록은 유지한다.
         public void InvalidateGameDataRestore()
         {
@@ -453,6 +548,12 @@ namespace Muks.BackEnd
         {
             // 이벤트 구독 해제
             Application.logMessageReceived -= HandleLog;
+            // This owner is DontDestroyOnLoad. Ordinary screen/scene closure never reaches this cleanup.
+            // Keep sent financial evidence/target locks, but a destroyed owner cannot apply a late response.
+            _gameDataSaveCoordinator?.InvalidateSession();
+            _gameDataRestoreContext?.InvalidateAccountSession();
+            if (_staffPurchaseExecutions != null)
+                foreach (var purchase in _staffPurchaseExecutions) purchase.ReleaseOwnedDisplayData();
         }
 
         private void HandleLog(string logString, string stackTrace, LogType type)
@@ -1435,8 +1536,18 @@ namespace Muks.BackEnd
                     var owner = readOwner() ?? updater.Owner;
                     var migration = owner?.ActiveStaffMigration;
                     if (migration != null) return migration.ValidateTransmission(identity, payload);
+                    var purchase = owner?.ActiveStaffPurchase;
+                    if (purchase != null) return purchase.ValidateTransmission(identity, payload);
                     if (!StaffRuntime.ValidateSaveField(payload, out string error))
                         return error ?? "현재 공용 직원 상태와 저장 자료가 일치하지 않습니다.";
+                    // A previously queued explicit partial balance must not overwrite purchase/reward deltas.
+                    if (ReferenceEquals(CurrentStaffPurchaseExecution?.Query, query))
+                    {
+                        var dia = Newtonsoft.Json.Linq.JObject.Parse(payload.Json)["Dia"];
+                        if (dia != null && (dia.Type != Newtonsoft.Json.Linq.JTokenType.Integer
+                            || (long)dia != StaffPurchaseWallet.Diamonds))
+                            return "명시된 다이아가 현재 확정된 잔액과 다릅니다.";
+                    }
                     return IsCurrentGameDataSaveSession(query, target) ? null : "저장 필드 확인 중 세션이 무효화되었습니다.";
                 });
             return updater;
@@ -1568,6 +1679,7 @@ namespace Muks.BackEnd
             // Unresolved completion and another writer's ownership still block changes; no tutorial UI gate here.
             return IsCurrentGameDataSaveSession(query, target)
                 && !IsStaffMigrationProtected
+                && !IsStaffPurchaseProtected
                 && !GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
                 && (owner == null || (owner.State != GameDataSaveCoordinatorState.Indeterminate
                     && owner.State != GameDataSaveCoordinatorState.LocalCompletionFailed

@@ -94,7 +94,18 @@ public class UIPayment : MobileUIView
     }
 
 
+    private bool _goldPurchaseInProgress;
+
     public void OnSlotButtonClicked(MoneyType moneyType, int value, int price)
+    {
+        if (_goldPurchaseInProgress || moneyType != MoneyType.Gold || value <= 0 || price <= 0
+            || UserInfo.Money < 0 || UserInfo.Money > long.MaxValue - value) return;
+        _goldPurchaseInProgress = true;
+        try { BuyGold(moneyType, value, price); }
+        finally { _goldPurchaseInProgress = false; }
+    }
+
+    private void BuyGold(MoneyType moneyType, int value, int price)
     {
         if (moneyType == MoneyType.Dia)
         {
@@ -105,15 +116,26 @@ public class UIPayment : MobileUIView
             if (!UserInfo.IsDiaValid(price))
             {
                 //골드가 부족할때
-                PopupManager.Instance.ShowTextLackDia();
+                ShowPurchaseRejected("다이아가 부족합니다...");
                 return;
             }
             else
             {
-                UserInfo.AddDia(-price);
+                if (!UserInfo.TrySpendDia(price, out string error))
+                {
+                    ShowPurchaseRejected(error);
+                    return;
+                }
                 UserInfo.AddMoney(value);
             }
         }
+        CompleteGoldPurchasePresentationAndSave(moneyType, value, price);
+    }
+
+    protected virtual void ShowPurchaseRejected(string error) => PopupManager.Instance.ShowDisplayText(error);
+
+    protected virtual void CompleteGoldPurchasePresentationAndSave(MoneyType moneyType, int value, int price)
+    {
         GameManager.Instance.SaveGameData();
 
         PaymentInfo.AddPaymentData($"MoenyType: {moneyType} | Value: {value} | Price: {price}");

@@ -38,6 +38,35 @@ public static class StaffGachaRandomSelector
 
     public static float TotalGradeProbability => (float)GetTotalGradeWeight() / ProbabilityScale;
 
+    // Purchase input is the unfiltered registration source, not the display list. No RNG is consumed here.
+    public static bool TryValidatePurchaseCandidates(IReadOnlyList<GachaData> candidates, out string error)
+        => TryValidatePurchaseSource(candidates?.Count ?? 0, index => (candidates[index] as GachaStaffData)?.StaffData, out error);
+
+    // Preflight and response-time checks must not allocate native ScriptableObject wrappers.
+    public static bool TryValidatePurchaseCatalog(IReadOnlyList<StaffData> catalog, out string error)
+        => TryValidatePurchaseSource(catalog?.Count ?? 0, index => catalog[index], out error);
+
+    private static bool TryValidatePurchaseSource(int count, Func<int, StaffData> staffAt, out string error)
+    {
+        error = null;
+        if (count == 0 || GetTotalGradeWeight() != ProbabilityScale)
+        { error = "직원 추첨 등록 자료가 준비되지 않았습니다."; return false; }
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        var groups = new HashSet<GradeGroup>();
+        for (int index = 0; index < count; index++)
+        {
+            StaffData staff = staffAt(index);
+            if (!IsValidStaffData(staff)
+                || !TryGetGradeGroup(staff.Rank, out GradeGroup group) || !ids.Add(staff.Id))
+            { error = "직원 추첨 원본에 무효 또는 중복 등록 자료가 있습니다."; return false; }
+            groups.Add(group);
+        }
+        foreach (GradeProbability probability in GradeProbabilities)
+            if (!groups.Contains(probability.Group))
+            { error = "직원 추첨 원본에 필요한 등급이 없습니다."; return false; }
+        return true;
+    }
+
     public static GachaStaffData Select(IReadOnlyList<GachaData> candidates)
     {
         return Select(

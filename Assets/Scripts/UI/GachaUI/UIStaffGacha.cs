@@ -55,6 +55,19 @@ public class UIStaffGacha : GachaMachineParent
     private bool _isPlayTextAnime;
     private AudioClip _getStaffSound;
     private bool _isInitialized;
+    private StaffGachaPurchaseDisplay _purchaseDisplay;
+
+    // Explicit display-only bindings; no runtime UnityEditor/reflection dependency.
+    internal Animator ResultAnimator => _gachaMacineAnimator;
+    internal UIGachaCard ResultCard => _gachaCard;
+    internal Image ResultImage => _getStaffImage;
+    internal RectTransform ResultCapsules => _capsules;
+    internal AudioSource ResultAudio => _gachaSound;
+    internal AudioClip ResultBoom => _boomSound;
+    internal Transform ResultSlots => _getStaffSlotFrame;
+    internal Button[] ResultControlButtons => new[] { _singleButton, _tenButton, _screenButton, _skipButton };
+    internal AudioClip GetResultSound(Rank rank) => rank == Rank.Unique || rank == Rank.Special
+        ? _getSpecialStaffSound : _getNormalStaffSound;
 
 
     public void PlayGetStaffSound()
@@ -146,6 +159,7 @@ public class UIStaffGacha : GachaMachineParent
 
     private void Update()
     {
+        _purchaseDisplay?.Tick();
         if( 0 < _screenTouchWaitTime)
             _screenTouchWaitTime -= Time.deltaTime;
     }
@@ -153,6 +167,8 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void Show()
     {
+        if (_purchaseDisplay == null)
+            _purchaseDisplay = new StaffGachaPurchaseDisplay(this, _uiGacha, Muks.BackEnd.BackendManager.Instance);
         gameObject.SetActive(true);
         SetActiveGachaMachine(true);
         _singleButton.gameObject.SetActive(true);
@@ -175,6 +191,7 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void Hide()
     {
+        _purchaseDisplay?.Close();
         gameObject.SetActive(true);
         StopAllCoroutines();
         _screenTouchWaitTime = 0;
@@ -193,6 +210,10 @@ public class UIStaffGacha : GachaMachineParent
         _capsule.gameObject.SetActive(false);
         _gachaMacineAnimator.enabled = false;
     }
+
+    private void OnDisable() => _purchaseDisplay?.Close();
+
+    private void OnDestroy() => _purchaseDisplay?.Dispose();
 
 
     public void GetStaff(GachaStaffData data)
@@ -427,86 +448,26 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void OnSingleGachaButtonClicked()
     {
-        if (BlockUnavailableExecution())
-            return;
-
-        if(UserInfo.IsDiaValid(10))
-        {
-            GachaStaffData staff = StaffDataManager.GetRandomGachaStaffData(_itemDataList) as GachaStaffData;
-            if (staff == null || staff.StaffData == null)
-            {
-                DebugLog.LogError("직원 단일 가챠 추첨에 실패했습니다.");
-                return;
-            }
-
-            _uiGacha.SetActiveGachaMachine(false);
-            SetActiveGachaMachine(true);
-        
-            _getStaffList.Clear();
-            _getStaffIndex = 0;
-            _getStaffList.Add(staff);
-            UserInfo.GiveStaff(UserInfo.CurrentStage, staff.StaffData);
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-10);
-            UserInfo.AddUserGachaMachineCount();
-            GameManager.Instance.AsyncSaveGameData();
-            PaymentInfo.AddGachaData($"Normal Staff Gacha 1");
-            PaymentInfo.SavePaymentData();
-        }
-
-        else
-        {
-            PopupManager.Instance.ShowTextLackDia();
-        }
+        if (BlockUnavailableExecution()) return;
+        StartStaffPurchase(StaffGachaPurchaseType.Single);
     }
-
 
     public override void OnTenGachaButtonClicked()
     {
-        if (BlockUnavailableExecution())
+        if (BlockUnavailableExecution()) return;
+        StartStaffPurchase(StaffGachaPurchaseType.Multi);
+    }
+
+    private void StartStaffPurchase(StaffGachaPurchaseType type)
+    {
+        // The owner keeps pending/completed requests independently from this scene object.
+        if (!Muks.BackEnd.BackendManager.Instance.TryStartStaffPurchase(type, out _, out string error))
+        {
+            DebugLog.Log(error);
+            PopupManager.Instance.ShowDisplayText("직원 뽑기를 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.");
             return;
-
-        if(UserInfo.IsDiaValid(100))
-        {
-            List<GachaStaffData> selectedStaffList = new List<GachaStaffData>(11);
-            for (int i = 0; i < 11; i++)
-            {
-                GachaStaffData selectedStaff =
-                    StaffDataManager.GetRandomGachaStaffData(_itemDataList) as GachaStaffData;
-                if (selectedStaff == null || selectedStaff.StaffData == null)
-                {
-                    DebugLog.LogError("직원 다회 가챠 추첨에 실패했습니다.");
-                    return;
-                }
-
-                selectedStaffList.Add(selectedStaff);
-            }
-
-            _uiGacha.SetActiveGachaMachine(false);
-            SetActiveGachaMachine(true);
-
-            _getStaffList.Clear();
-            _getStaffIndex = 0;
-            _getStaffList.AddRange(selectedStaffList);
-
-            foreach (var staffData in _getStaffList)
-            {
-                UserInfo.GiveStaff(UserInfo.CurrentStage, staffData.StaffData);
-            }
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-100);
-            UserInfo.AddUserGachaMachineCount(11);
-            GameManager.Instance.AsyncSaveGameData();
-            PaymentInfo.AddGachaData($"Normal Staff Gacha 11");
-            PaymentInfo.SavePaymentData();
         }
-        else
-        {
-            PopupManager.Instance.ShowTextLackDia();
-        }
-
+        _purchaseDisplay?.Close(); // Presentation only. No charge, grant, save or cancellation here.
     }
 
 

@@ -160,38 +160,64 @@ public class UIRecipeTab : UIRestaurantAdminTab
         // 필요시 구현
     }
 
+    private bool _buyInProgress;
+
     private void OnBuyButtonClicked(FoodData data)
     {
+        if (_buyInProgress) return;
+        _buyInProgress = true;
+        try { BuyRecipe(data); }
+        finally { _buyInProgress = false; }
+    }
+
+    private void BuyRecipe(FoodData data)
+    {
+        if (data == null || string.IsNullOrWhiteSpace(data.Id) || data.BuyPrice < 0
+            || (data.MoneyType != MoneyType.Gold && data.MoneyType != MoneyType.Dia)
+            || !FoodDataManager.Instance.GetFoodDataList().Contains(data)) return;
         if (UserInfo.IsGiveRecipe(data.Id))
         {
-            PopupManager.Instance.ShowTextError();
+            ShowPurchaseRejected("다시 시도해 주세요.");
             return;
         }
 
         if (!UserInfo.IsScoreValid(data))
         {
-            PopupManager.Instance.ShowTextLackScore();
+            ShowPurchaseRejected("평점이 부족합니다...");
             return;
         }
 
         if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
         {
-            PopupManager.Instance.ShowTextLackMoney();
+            ShowPurchaseRejected("골드가 부족합니다...");
             return;
         }
 
         if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
         {
-            PopupManager.Instance.ShowTextLackDia();
+            ShowPurchaseRejected("다이아가 부족합니다...");
             return;
         }
 
         if (data.MoneyType == MoneyType.Gold)
             UserInfo.AddMoney(-data.BuyPrice);
         else if (data.MoneyType == MoneyType.Dia)
-            UserInfo.AddDia(-data.BuyPrice);
+        {
+            if (!UserInfo.TrySpendDia(data.BuyPrice, out string error))
+            {
+                ShowPurchaseRejected(error);
+                return;
+            }
+        }
 
         UserInfo.GiveRecipe(data);
+        CompletePurchasePresentation();
+    }
+
+    protected virtual void ShowPurchaseRejected(string error) => PopupManager.Instance.ShowDisplayText(error);
+
+    protected virtual void CompletePurchasePresentation()
+    {
         PopupManager.Instance.ShowDisplayText("새로운 레시피를 배웠어요!");
         OnBuyEvent?.Invoke();
     }

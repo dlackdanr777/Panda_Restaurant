@@ -315,38 +315,65 @@ public class UIKitchen : MobileUIView
         UpdateUIOptimized();
     }
 
+    private bool _buyInProgress;
+
     private void OnBuyButtonClicked(ShopData data)
     {
-        if (UserInfo.IsGiveKitchenUtensil(UserInfo.CurrentStage, data.Id))
+        if (_buyInProgress) return;
+        _buyInProgress = true;
+        try { BuyKitchen(data); }
+        finally { _buyInProgress = false; }
+    }
+
+    private void BuyKitchen(ShopData data)
+    {
+        if (!(data is KitchenUtensilData kitchen) || string.IsNullOrWhiteSpace(data.Id) || data.BuyPrice < 0
+            || (data.MoneyType != MoneyType.Gold && data.MoneyType != MoneyType.Dia)
+            || !KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList().Contains(kitchen)) return;
+        EStage stage = UserInfo.CurrentStage;
+        if (UserInfo.IsGiveKitchenUtensil(stage, data.Id))
         {
-            PopupManager.Instance.ShowTextError();
+            ShowPurchaseRejected("다시 시도해 주세요.");
             return;
         }
 
         if (!UserInfo.IsScoreValid(data))
         {
-            PopupManager.Instance.ShowTextLackScore();
+            ShowPurchaseRejected("평점이 부족합니다...");
             return;
         }
 
         if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
         {
-            PopupManager.Instance.ShowTextLackMoney();
+            ShowPurchaseRejected("골드가 부족합니다...");
             return;
         }
 
         if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
         {
-            PopupManager.Instance.ShowTextLackDia();
+            ShowPurchaseRejected("다이아가 부족합니다...");
             return;
         }
 
         if (data.MoneyType == MoneyType.Gold)
             UserInfo.AddMoney(-data.BuyPrice);
         else if (data.MoneyType == MoneyType.Dia)
-            UserInfo.AddDia(-data.BuyPrice);
+        {
+            if (!UserInfo.TrySpendDia(data.BuyPrice, out string error))
+            {
+                ShowPurchaseRejected(error);
+                return;
+            }
+        }
 
-        UserInfo.GiveKitchenUtensil(UserInfo.CurrentStage, data.Id);
+        UserInfo.GiveKitchenUtensil(stage, kitchen);
+        CompletePurchasePresentation();
+    }
+
+    protected virtual void ShowPurchaseRejected(string error) => PopupManager.Instance.ShowDisplayText(error);
+
+    protected virtual void CompletePurchasePresentation()
+    {
         PopupManager.Instance.ShowDisplayText("새로운 주방 기구를 구매했어요!");
     }
 

@@ -6,20 +6,27 @@ using System.Collections.Generic;
 /// </summary>
 public static class StaffGachaPurchasePlanCalculator
 {
+    public static bool TryGetPolicy(StaffGachaPurchaseType purchaseType, out int diamondCost, out int resultCount)
+    {
+        diamondCost = resultCount = 0;
+        switch (purchaseType)
+        {
+            case StaffGachaPurchaseType.Single: diamondCost = 10; resultCount = 1; return true;
+            case StaffGachaPurchaseType.Multi: diamondCost = 100; resultCount = 11; return true;
+            default: return false;
+        }
+    }
+
     public static bool TryCalculate(
         StaffAccountSaveData snapshot, int diamondBalance, StaffGachaPurchaseType purchaseType,
         IReadOnlyList<GachaStaffData> drawnStaff, out StaffGachaPurchasePlan result, out string error)
     {
         result = null;
         error = null;
-        int diamondCost, resultCount;
-        switch (purchaseType)
+        if (!TryGetPolicy(purchaseType, out int diamondCost, out int resultCount))
         {
-            case StaffGachaPurchaseType.Single: diamondCost = 10; resultCount = 1; break;
-            case StaffGachaPurchaseType.Multi: diamondCost = 100; resultCount = 11; break;
-            default:
-                error = "유효하지 않은 직원 뽑기 종류입니다.";
-                return false;
+            error = "유효하지 않은 직원 뽑기 종류입니다.";
+            return false;
         }
         if (diamondBalance < 0)
         {

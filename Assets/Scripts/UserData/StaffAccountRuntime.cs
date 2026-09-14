@@ -161,6 +161,31 @@ public sealed class StaffAccountRuntime
         return _mode != StaffAccountRuntimeMode.Unavailable && ReferenceEquals(query, _query);
     }
 
+    // The purchase owns the staff mutation fence; ordinary mutation authorization intentionally rejects it.
+    // No callback is invoked between the non-notifying currency commit and immutable snapshot assignment.
+    internal bool TryCommitPurchase(StaffGachaPurchaseExecution execution, GameDataSaveReceipt receipt,
+        IStaffPurchaseWallet wallet, out string error)
+    {
+        error = null;
+        Refresh();
+        if (_changing || execution == null || wallet == null || _mode != StaffAccountRuntimeMode.Common
+            || !ReferenceEquals(_query, execution.Query) || !ReferenceEquals(_current, execution.Source))
+        { error = "구매 확정에 필요한 현재 공용 상태가 아닙니다."; return false; }
+        _changing = true;
+        try
+        {
+            if (!execution.ValidateConfirmation(this, receipt, out error)
+                || !StaffAccountSaveConverter.Validate(execution.Plan.AccountResult.UpdatedAccount, out error)) return false;
+            if (_mode != StaffAccountRuntimeMode.Common || !ReferenceEquals(_query, execution.Query)
+                || !ReferenceEquals(_current, execution.Source))
+            { error = "구매 성공 확인 중 공용 상태가 변경되었습니다."; return false; }
+            if (!wallet.TryCommitReservedCost(execution, out error)) return false;
+            _current = execution.Plan.AccountResult.UpdatedAccount;
+            return true;
+        }
+        finally { _changing = false; }
+    }
+
     public bool IsOwned(string id) => GetLevel(id).HasValue;
     public int? GetLevel(string id)
     {

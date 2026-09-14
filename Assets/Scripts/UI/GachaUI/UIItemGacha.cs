@@ -55,6 +55,7 @@ public class UIItemGacha : GachaMachineParent
     private bool _isCapsuleColorChanged;
     private bool _isPlayTextAnime;
     private AudioClip _getItemSound;
+    private bool _purchaseInProgress;
 
 
     public void PlayLeverSound()
@@ -376,68 +377,96 @@ public class UIItemGacha : GachaMachineParent
 
     public override void OnSingleGachaButtonClicked()
     {
-
-        if(UserInfo.IsDiaValid(10))
-        {
-            _uiGacha.SetActiveGachaMachine(false);
-            SetActiveGachaMachine(true);
-        
-            _getItemList.Clear();
-            _getItemIndex = 0;
-            GachaItemData item = (GachaItemData)ItemManager.Instance.GetRandomGachaData(_itemDataList);
-            _getItemList.Add(item);
-            UserInfo.GiveGachaItem(item);
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-10);
-            UserInfo.AddUserGachaMachineCount();
-            GameManager.Instance.AsyncSaveGameData();
-            PaymentInfo.AddGachaData($"Normal Item Gacha 1");
-            PaymentInfo.SavePaymentData();
-        }
-
-        else
-        {
-            PopupManager.Instance.ShowTextLackDia();
-        }
+        Purchase(1, 10);
     }
 
 
     public override void OnTenGachaButtonClicked()
     {
-        if(UserInfo.IsDiaValid(100))
-        {
-            _uiGacha.SetActiveGachaMachine(false);
-            SetActiveGachaMachine(true);
-
-            _getItemList.Clear();
-            _getItemIndex = 0;
-
-            GachaItemData item;
-            int i = 0;
-            while (i < 11)
-            {
-                item = (GachaItemData)ItemManager.Instance.GetRandomGachaData(_itemDataList);
-                _getItemList.Add(item);
-                i++;
-            }
-
-            UserInfo.GiveGachaItem(_getItemList);
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-100);
-            UserInfo.AddUserGachaMachineCount(11);
-            GameManager.Instance.AsyncSaveGameData();
-            PaymentInfo.AddGachaData($"Normal Item Gacha 11");
-            PaymentInfo.SavePaymentData();
-        }
-        else
-        {
-            PopupManager.Instance.ShowTextLackDia();
-        }
-
+        Purchase(11, 100);
     }
 
+    private void Purchase(int count, int cost)
+    {
+        if (_purchaseInProgress) return;
+        _purchaseInProgress = true;
+        try
+        {
+            if (!UserInfo.IsDiaValid(cost))
+            { ReportPurchaseError("현재 다이아를 사용할 수 없습니다."); return; }
+            // Resolve the whole batch before deduction. Never charge for a null, unregistered,
+            // wrong-type or partially selected result; retain the previous presentation on rejection.
+            List<GachaItemData> results;
+            try
+            {
+                var source = _itemDataList == null ? null : new List<GachaData>(_itemDataList);
+                if (source == null || source.Count == 0 || source.Any(item => !IsRegisteredPurchaseItem(item)))
+                { ReportPurchaseError("아이템 뽑기 자료를 확인할 수 없습니다."); return; }
+                results = new List<GachaItemData>(count);
+                for (int index = 0; index < count; index++)
+                {
+                    GachaData selected = DrawPurchaseResult(source);
+                    if (!source.Any(item => ReferenceEquals(item, selected)) || !IsRegisteredPurchaseItem(selected))
+                    { ReportPurchaseError("아이템 뽑기 결과를 확인할 수 없습니다."); return; }
+                    results.Add((GachaItemData)selected);
+                }
+                if (results.Any(item => !IsRegisteredPurchaseItem(item)))
+                { ReportPurchaseError("아이템 뽑기 자료가 변경되었습니다."); return; }
+            }
+            catch (Exception exception)
+            {
+                DebugLog.Log(exception.Message);
+                ReportPurchaseError("아이템 뽑기 자료를 확인할 수 없습니다.");
+                return;
+            }
+            if (!UserInfo.TrySpendDia(cost, out string error))
+            { ReportPurchaseError(error); return; }
+            ApplyPurchaseResults(results);
+        }
+        finally { _purchaseInProgress = false; }
+    }
+
+    private static bool IsRegisteredPurchaseItem(GachaData value)
+    {
+        if (!(value is GachaItemData item) || string.IsNullOrWhiteSpace(item.Id)
+            || item.Rank < Rank.Normal1 || item.Rank >= Rank.Length) return false;
+        return ReferenceEquals(ItemManager.Instance.GetGachaItemData(item.Id), item);
+    }
+
+    protected virtual GachaData DrawPurchaseResult(List<GachaData> source)
+        => ItemManager.Instance.GetRandomGachaData(source);
+
+    private void ApplyPurchaseResults(List<GachaItemData> results)
+    {
+        PreparePurchasePresentation();
+        _getItemList.Clear();
+        _getItemIndex = 0;
+        _getItemList.AddRange(results);
+        if (results.Count == 1)
+        {
+            if (!UserInfo.GiveGachaItem(results[0]))
+            { ReportPurchaseError("아이템 지급 결과를 확인할 수 없습니다."); return; }
+        }
+        else UserInfo.GiveGachaItem(_getItemList);
+        CompletePurchasePresentationAndSave(results.Count);
+    }
+
+    protected virtual void PreparePurchasePresentation()
+    {
+        _uiGacha.SetActiveGachaMachine(false);
+        SetActiveGachaMachine(true);
+    }
+
+    protected virtual void CompletePurchasePresentationAndSave(int count)
+    {
+        _gachaMacineAnimator.SetTrigger("Start");
+        UserInfo.AddUserGachaMachineCount(count);
+        GameManager.Instance.AsyncSaveGameData();
+        PaymentInfo.AddGachaData($"Normal Item Gacha {count}");
+        PaymentInfo.SavePaymentData();
+    }
+
+    protected virtual void ReportPurchaseError(string error) => PopupManager.Instance.ShowDisplayText(error);
 
     private void CapsuleColorChange()
     {
