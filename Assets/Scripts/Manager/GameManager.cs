@@ -8,7 +8,11 @@ using Unity.Profiling;
 
 public class GameManager : MonoBehaviour
 {
+#if UNITY_ANDROID && !UNITY_EDITOR
+    private const int TargetFrameRate = 60;
+#else
     private const int TargetFrameRate = 120;
+#endif
 
     private static readonly ProfilerMarker SaveDataPreparationMarker =
         new ProfilerMarker("Panda.Backend.GameDataPreparation");
