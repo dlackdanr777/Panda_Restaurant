@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using UnityEngine;
+using Unity.Profiling;
 
 namespace Muks.BackEnd
 {
@@ -21,6 +22,23 @@ namespace Muks.BackEnd
     /// <summary>뒤끝과 연동할 수 있게 해주는 싱글톤 클래스</summary>
     public class BackendManager : MonoBehaviour
     {
+        private static readonly ProfilerMarker BackendRequestDispatchMarker =
+            new ProfilerMarker("Panda.Backend.RequestDispatch");
+        private static readonly ProfilerMarker BackendResponseClassificationMarker =
+            new ProfilerMarker("Panda.Backend.ResponseClassification");
+        private static readonly ProfilerMarker BackendResponseRowsConversionMarker =
+            new ProfilerMarker("Panda.Backend.ResponseRowsConversion");
+        private static readonly ProfilerMarker BackendCallbackApplyMarker =
+            new ProfilerMarker("Panda.Backend.CallbackApply");
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static readonly Dictionary<string, int> ActiveRequestCounts =
+            new Dictionary<string, int>();
+        private static int _callbackFrame = -1;
+        private static int _callbacksInFrame;
+        private static long _nextDiagnosticRequestId;
+#endif
+
         public static event Action OnGuestSignupHandler;
         public static event Action OnGuestLoginHandler;
         public static event Action<BackendReturnObject> OnInsertGameDataHandler;
@@ -328,44 +346,155 @@ namespace Muks.BackEnd
             }
 
             int retryCount = 0;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            long diagnosticRequestId = ++_nextDiagnosticRequestId;
+            long callbackWaitStarted = 0;
+#endif
+
+            void DispatchRequest()
+            {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                long dispatchStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                int requestFrame = Time.frameCount;
+                int concurrentRequestCount = IncrementActiveRequestCount(operationName);
+#endif
+
+                using (BackendRequestDispatchMarker.Auto())
+                {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    callbackWaitStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
+                    backendFunction(HandleCallback);
+                }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                double dispatchMilliseconds = GetElapsedMilliseconds(dispatchStarted);
+                Debug.Log(
+                    $"[PERF-01A] Request #{diagnosticRequestId} dispatched: {operationName}, "
+                    + $"attempt={retryCount + 1}, frame={requestFrame}, "
+                    + $"dispatchCpu={dispatchMilliseconds:F3}ms, concurrentSameOperation={concurrentRequestCount}");
+#endif
+            }
 
             // 콜백 처리 함수
             void HandleCallback(BackendReturnObject bro)
             {
-                BackendState state = HandleError(bro);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                long callbackStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+                double networkAndSdkWaitMilliseconds =
+                    GetElapsedMilliseconds(callbackWaitStarted, callbackStarted);
+                int callbacksInFrame = IncrementCallbacksInCurrentFrame();
+                int remainingRequestCount = DecrementActiveRequestCount(operationName);
+#endif
+
+                BackendState state;
+                using (BackendResponseClassificationMarker.Auto())
+                {
+                    state = HandleError(bro);
+                }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                double responseConversionMilliseconds = GetElapsedMilliseconds(callbackStarted);
+                long callbackApplyStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+#endif
                 
-                if (state == BackendState.Success)
+                using (BackendCallbackApplyMarker.Auto())
                 {
-                    Debug.Log($"[BackendManager] {operationName} 성공");
-                    onSuccess?.Invoke(bro);
-                }
-                else if (state == BackendState.Retry && retryCount < maxRetries)
-                {
-                    retryCount++;
-                    Debug.Log($"[BackendManager] {operationName} 재시도({retryCount}/{maxRetries})");
-                    backendFunction(HandleCallback);
-                }
-                else
-                {
-                    string errorMessage = bro != null ? bro.GetMessage() : "BackendReturnObject is null";
-                    string errorCode = bro != null ? bro.GetErrorCode() : "NULL_RESPONSE";
-                    Debug.LogError($"[BackendManager] {operationName} 실패: {errorMessage}");
-                    
-                    if (usePopup)
+                    if (state == BackendState.Success)
                     {
-                        ShowPopup("네트워크 에러", 
-                            $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {errorCode}");
-                        SetPopupButton1("재시도", () => backendFunction(HandleCallback));
-                        ShowPopupExitButton();
+                        Debug.Log($"[BackendManager] {operationName} 성공");
+                        onSuccess?.Invoke(bro);
                     }
-                    
-                    onFail?.Invoke(state);
+                    else if (state == BackendState.Retry && retryCount < maxRetries)
+                    {
+                        retryCount++;
+                        Debug.Log($"[BackendManager] {operationName} 재시도({retryCount}/{maxRetries})");
+                        DispatchRequest();
+                    }
+                    else
+                    {
+                        string errorMessage = bro != null ? bro.GetMessage() : "BackendReturnObject is null";
+                        string errorCode = bro != null ? bro.GetErrorCode() : "NULL_RESPONSE";
+                        Debug.LogError($"[BackendManager] {operationName} 실패: {errorMessage}");
+                        
+                        if (usePopup)
+                        {
+                            ShowPopup("네트워크 에러", 
+                                $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {errorCode}");
+                            SetPopupButton1("재시도", DispatchRequest);
+                            ShowPopupExitButton();
+                        }
+                        
+                        onFail?.Invoke(state);
+                    }
                 }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                double callbackApplyMilliseconds = GetElapsedMilliseconds(callbackApplyStarted);
+                Debug.Log(
+                    $"[PERF-01A] Request #{diagnosticRequestId} callback: {operationName}, "
+                    + $"frame={Time.frameCount}, callbacksInFrame={callbacksInFrame}, "
+                    + $"networkAndSdkWait={networkAndSdkWaitMilliseconds:F3}ms, "
+                    + $"responseConversionCpu={responseConversionMilliseconds:F3}ms, "
+                    + $"callbackApplyCpu={callbackApplyMilliseconds:F3}ms, "
+                    + $"remainingSameOperation={remainingRequestCount}");
+#endif
             }
             
             // API 호출
-            backendFunction(HandleCallback);
+            DispatchRequest();
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private static int IncrementActiveRequestCount(string operationName)
+        {
+            ActiveRequestCounts.TryGetValue(operationName, out int count);
+            count++;
+            ActiveRequestCounts[operationName] = count;
+            return count;
+        }
+
+        private static int DecrementActiveRequestCount(string operationName)
+        {
+            if (!ActiveRequestCounts.TryGetValue(operationName, out int count))
+                return 0;
+
+            count--;
+            if (count <= 0)
+            {
+                ActiveRequestCounts.Remove(operationName);
+                return 0;
+            }
+
+            ActiveRequestCounts[operationName] = count;
+            return count;
+        }
+
+        private static int IncrementCallbacksInCurrentFrame()
+        {
+            int currentFrame = Time.frameCount;
+            if (_callbackFrame != currentFrame)
+            {
+                _callbackFrame = currentFrame;
+                _callbacksInFrame = 0;
+            }
+
+            return ++_callbacksInFrame;
+        }
+
+        private static double GetElapsedMilliseconds(long startedTimestamp)
+        {
+            return GetElapsedMilliseconds(
+                startedTimestamp,
+                System.Diagnostics.Stopwatch.GetTimestamp());
+        }
+
+        private static double GetElapsedMilliseconds(long startedTimestamp, long endedTimestamp)
+        {
+            long elapsedTicks = endedTimestamp - startedTimestamp;
+            return elapsedTicks * 1000d / System.Diagnostics.Stopwatch.Frequency;
+        }
+#endif
 
         /// <summary>
         /// 백엔드 API 호출을 처리하는 중앙 함수 (동기)
@@ -1066,7 +1195,11 @@ namespace Muks.BackEnd
                 $"{tableId} 데이터 확인",
                 (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
                 (getBro) => {
-                    var rows = getBro.FlattenRows();
+                    JsonData rows;
+                    using (BackendResponseRowsConversionMarker.Auto())
+                    {
+                        rows = getBro.FlattenRows();
+                    }
                     
                     // 결과에 따라 삽입 또는 업데이트
                     if (rows != null && rows.Count > 0)

@@ -117,17 +117,17 @@ public class AttendanceDataManager : MonoBehaviour
 
             string rewardType = string.Concat(row[1].Where(c => !Char.IsWhiteSpace(c)));
             MoneyType moneyType;
-            if (rewardType == "??" || rewardType == "Gold")
+            if (rewardType == "코인" || rewardType == "Gold")
             {
                 moneyType = MoneyType.Gold;
             }
-            else if (rewardType == "???" || rewardType == "Dia")
+            else if (rewardType == "다이아" || rewardType == "Dia")
             {
                 moneyType = MoneyType.Dia;
             }
             else
             {
-                Debug.LogError($"[AttendanceDataManager] ? ? ?? ?? ?? at line {i}: '{row[1]}'. ?? ?? ?????.");
+                Debug.LogError($"[AttendanceDataManager] 알 수 없는 보상 타입 (line {i}): '{row[1]}'");
                 continue;
             }
 

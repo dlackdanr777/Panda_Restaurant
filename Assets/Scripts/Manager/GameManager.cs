@@ -4,9 +4,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Unity.Profiling;
 
 public class GameManager : MonoBehaviour
 {
+    private static readonly ProfilerMarker SaveDataPreparationMarker =
+        new ProfilerMarker("Panda.Backend.GameDataPreparation");
+
     public static GameManager Instance
     {
         get
@@ -452,8 +456,12 @@ public class GameManager : MonoBehaviour
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 
-        UserInfo.ApplyDailyWeeklyResetIfNeeded();
-        Param param = UserInfo.GetSaveUserData();
+        Param param;
+        using (SaveDataPreparationMarker.Auto())
+        {
+            UserInfo.ApplyDailyWeeklyResetIfNeeded();
+            param = UserInfo.GetSaveUserData();
+        }
         BackendManager.Instance.SaveGameDataAsync("GameData", param, (bro) =>{
             UserInfo.SaveStageDataAsync();
             DebugLog.Log("비동기 저장");

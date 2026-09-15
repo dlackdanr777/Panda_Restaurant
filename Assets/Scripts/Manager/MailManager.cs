@@ -439,11 +439,9 @@ public class MailManager : MonoBehaviour
     /// <summary>만료일이 지난 MailHistory 레코드를 서버에서 삭제합니다.</summary>
     private void DeleteHistoryRecord(string histInDate)
     {
-        Where where = new Where();
-        where.Equal("inDate", histInDate);
         BackendManager.Instance.ProcessBackendAPI(
             "만료 이력 서버 삭제",
-            callback => Backend.GameData.Delete(HISTORY_TABLE, where, bro => callback(bro)),
+            callback => Backend.GameData.DeleteV2(HISTORY_TABLE, histInDate, Backend.UserInDate, bro => callback(bro)),
             bro => Debug.Log($"[MailManager] 만료 이력 삭제 완료: {histInDate}"),
             state => Debug.LogWarning($"[MailManager] 만료 이력 삭제 실패: {state}"),
             maxRetries: 1,
