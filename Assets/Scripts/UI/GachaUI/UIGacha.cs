@@ -20,8 +20,11 @@ public class UIGacha : MobileUIView
     public static bool IsEntryUnlocked()
     {
         return EnableEditorEntryUnlockForTesting
-            || UserInfo.GetIsClearChallenge("MainReward12");
+            || IsProgressionEntryUnlocked();
     }
+
+    public static bool IsProgressionEntryUnlocked() => UserInfo.GetIsClearChallenge("MainReward12")
+        || GachaTutorial.IsCurrentItemTutorialQuest();
 
     [Header("Components")]
     [SerializeField] private MainScene _mainScene;
@@ -52,6 +55,18 @@ public class UIGacha : MobileUIView
     private GachaMachineParent _requestedInitialMachine;
     private bool _isInitialized;
     private bool _questStaffEntry;
+    private float _nextItemTutorialCheck;
+
+    private void Update()
+    {
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured) return;
+#endif
+        if (Time.unscaledTime < _nextItemTutorialCheck) return;
+        _nextItemTutorialCheck = Time.unscaledTime + 0.25f;
+        // A preceding normal save may still be finishing when Show completes.
+        TryStartItemGachaTutorial();
+    }
 
     /// <summary>Dedicated quest entry never relies on the Editor unlock or the paid entry gate.</summary>
     public bool PrepareQuestStaffMachine(Muks.BackEnd.BackendManager owner)
@@ -426,12 +441,12 @@ public class UIGacha : MobileUIView
 
     private void TryStartItemGachaTutorial()
     {
-        if (EnableEditorEntryUnlockForTesting
-            || _questStaffEntry
+        if (_questStaffEntry
             || VisibleState != VisibleState.Appeared
             || !(_currentGachaMachine is UIItemGacha)
             || UserInfo.IsTutorialStart
             || UserInfo.IsMiniGameTutorialClear
+            || !GachaTutorial.IsCurrentItemTutorialQuest()
             || _miniGameTutorial == null)
         {
             return;

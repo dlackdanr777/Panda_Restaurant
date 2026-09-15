@@ -360,20 +360,31 @@ public class UIItemGacha : GachaMachineParent
         }
     }
 
-    public void StartAddItem(GachaItemData data)
+    public bool StartAddItem(GachaItemData data)
     {
+        // Only the current item tutorial may use this free, fixed result path. The
+        // existing count/ownership is also a replay fence after a view is recreated.
+        if (_purchaseInProgress || !GachaTutorial.IsCurrentItemTutorialQuest()
+            || data == null || data.Id != "GOTCHA91" || !IsRegisteredPurchaseItem(data)
+            || UserInfo.IsGiveGachaItem(data) || UserInfo.TotalUseGachaMachineCount == int.MaxValue)
+            return false;
 
-        _uiGacha.SetActiveGachaMachine(false);
-        SetActiveGachaMachine(true);
-
-        _getItemList.Clear();
-        _getItemIndex = 0;
-        GachaItemData item = data;
-        _getItemList.Add(item);
-        UserInfo.GiveGachaItem(item);
-        _gachaMacineAnimator.SetTrigger("Start");
-        UserInfo.AddUserGachaMachineCount();
+        _purchaseInProgress = true;
+        try
+        {
+            if (!UserInfo.GiveGachaItem(data)) return false;
+            UserInfo.AddUserGachaMachineCount();
+            PreparePurchasePresentation();
+            _getItemList.Clear();
+            _getItemIndex = 0;
+            _getItemList.Add(data);
+            StartTutorialPresentation();
+            return true;
+        }
+        finally { _purchaseInProgress = false; }
     }
+
+    protected virtual void StartTutorialPresentation() => _gachaMacineAnimator.SetTrigger("Start");
 
     public override void OnSingleGachaButtonClicked()
     {

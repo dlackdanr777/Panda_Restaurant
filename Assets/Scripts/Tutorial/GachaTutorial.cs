@@ -1,5 +1,6 @@
 using Muks.DataBind;
 using Muks.UI;
+using Muks.BackEnd;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -21,6 +22,113 @@ public class GachaTutorial : MonoBehaviour
     private Coroutine _coroutine;
     private bool _gachaCompleted;
     private FoodData _foodData;
+    private bool _tutorialRunActive;
+    private bool _itemInputAccepted;
+    private bool _saveErrorShown;
+    private BackendManager _saveOwner;
+    private GameDataRestoreQuery _saveQuery;
+    private GameDataSaveRequest _itemSave;
+    private GameDataSaveRequest _completionSave;
+
+    // MainReward12 is the item-machine tutorial, not an employment/paid-machine
+    // unlock. Check the actual current CSV quest and predecessor claims.
+    public static bool IsCurrentItemTutorialQuest()
+    {
+        if (UserInfo.CurrentStage != EStage.Stage1 || !UserInfo.IsFirstTutorialClear
+            || UserInfo.IsMiniGameTutorialClear || UserInfo.GetIsClearChallenge("MainReward12")) return false;
+        var current = ChallengeManager.Instance.GetCurrentMainChallengeData();
+        if (current == null || current.Id != "MainReward12" || current.Type != ChallengeType.TYPE25) return false;
+        for (int i = 1; i < 12; i++)
+            if (!UserInfo.GetIsClearChallenge("MainReward" + i.ToString("D2"))) return false;
+        return true;
+    }
+
+    protected virtual bool CaptureSaveSession()
+    {
+        _saveOwner = BackendManager.Instance;
+        _saveQuery = _saveOwner.CurrentMailReceiveQuery;
+        return IsCapturedSessionCurrent() && CanBeginItemMutation();
+    }
+
+    protected virtual bool IsCapturedSessionCurrent() => _saveOwner != null && _saveQuery != null
+        && _saveOwner.IsCurrentGameDataQuery(_saveQuery);
+
+    protected virtual bool CanBeginItemMutation() => IsCapturedSessionCurrent()
+        && _saveOwner.StaffRuntime.CanMutate
+        && _saveOwner.CanSaveLegacyGameData
+        && (_saveOwner.CurrentGameDataSaveCoordinator == null
+            || _saveOwner.CurrentGameDataSaveCoordinator.CanStartPurchase);
+
+    protected virtual GameDataSaveRequest SaveTutorialProgress() =>
+        _saveOwner.RequestGameDataAutosave(requireGameplay: false);
+
+    protected virtual void ReportProgressError(string message) => PopupManager.Instance.ShowDisplayText(message);
+
+    private bool TryAcceptTutorialItem()
+    {
+        if (!_tutorialRunActive || _itemInputAccepted || !IsCurrentItemTutorialQuest()
+            || !IsCapturedSessionCurrent() || !CanBeginItemMutation()) return false;
+        _itemInputAccepted = true; // HoleClickHandler can dispatch the same pointer-up twice.
+        bool saveRequested = false;
+        bool applyAttempted = false;
+        try
+        {
+            GachaItemData item = ItemManager.Instance.GetGachaItemData("GOTCHA91");
+            applyAttempted = true;
+            if (!_itemGacha.StartAddItem(item))
+            {
+                ReportProgressError("ì•„ì´í…œ ì•ˆë‚´ë¥¼ ì§„í–‰í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤. í˜„ì¬ ìƒíƒœë¥¼ í™•ì¸í•´ ì£¼ì„¸ìš”.");
+                return false;
+            }
+            saveRequested = true;
+            _itemSave = SaveTutorialProgress();
+            return true;
+        }
+        catch (System.Exception exception)
+        {
+            DebugLog.LogError("ì•„ì´í…œ ì•ˆë‚´ ì²˜ë¦¬ í™•ì¸ í•„ìš”: " + exception.Message);
+            // Never replay a partially applied result. Preserve it through the normal
+            // guarded path if possible; neither this catch nor its view is a receipt.
+            if (applyAttempted && UserInfo.IsGiveGachaItem("GOTCHA91")
+                && !saveRequested && IsCapturedSessionCurrent())
+            {
+                try { _itemSave = SaveTutorialProgress(); }
+                catch (System.Exception saveException) { DebugLog.LogError(saveException.Message); }
+            }
+            ReportProgressError("ì²˜ë¦¬ ìƒíƒœë¥¼ í™•ì¸í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤. ì¶”ê°€ ì¡°ì‘ì„ ë©ˆì¶° ì£¼ì„¸ìš”.");
+            _saveErrorShown = true;
+            return false;
+        }
+    }
+
+    private bool IsSaveConfirmed(GameDataSaveRequest request) => !_saveErrorShown
+        && IsCapturedSessionCurrent() && request != null
+        && request.Status == GameDataSaveRequestStatus.SuccessConfirmed && request.Receipt != null;
+
+    private GameDataSaveRequest BeginCompletionSave()
+    {
+        if (_completionSave != null) return _completionSave;
+        if (!_tutorialRunActive || !_itemInputAccepted || !IsSaveConfirmed(_itemSave)) return null;
+        UserInfo.IsMiniGameTutorialClear = true; // serialized intent; UI waits for the receipt below
+        _completionSave = SaveTutorialProgress();
+        return _completionSave;
+    }
+
+    private IEnumerator WaitForSave(GameDataSaveRequest request)
+    {
+        while (!IsSaveConfirmed(request))
+        {
+            bool failed = !IsCapturedSessionCurrent() || request == null
+                || (request.Status != GameDataSaveRequestStatus.Accepted
+                    && request.Status != GameDataSaveRequestStatus.Sending);
+            if (failed && !_saveErrorShown)
+            {
+                _saveErrorShown = true;
+                ReportProgressError("ì €ì¥ ìƒíƒœë¥¼ í™•ì¸í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤. ì¶”ê°€ ì¡°ì‘ì„ ë©ˆì¶° ì£¼ì„¸ìš”.");
+            }
+            yield return null; // Unknown/failed requests are not reset or retransmitted.
+        }
+    }
 
     private void Awake()
     {
@@ -29,9 +137,14 @@ public class GachaTutorial : MonoBehaviour
 
     public void StartTutorial()
     {
-        if (UserInfo.IsTutorialStart)
+        if (_tutorialRunActive || UserInfo.IsTutorialStart || !IsCurrentItemTutorialQuest()
+            || !CaptureSaveSession())
             return;
 
+        _tutorialRunActive = true;
+        _itemInputAccepted = false;
+        _saveErrorShown = false;
+        _gachaCompleted = false;
         gameObject.SetActive(true);
         if (_coroutine != null)
             StopCoroutine(_coroutine);
@@ -49,28 +162,40 @@ public class GachaTutorial : MonoBehaviour
         _descriptionNPC.SkipButtonSetActive(false);
         yield return YieldCache.WaitForSeconds(1f);
 
-        yield return _descriptionNPC.ShowDescription1Text("°¡Ã­¼¥¿¡ ¿À½Å °É È¯¿µÇÕ´Ï´Ù!");
-        yield return _descriptionNPC.ShowDescription1Text("´ÙÀÌ¾Æ¸¦ »ç¿ëÇØ¼­ Æò¼Ò¿¡ ¾ò±â Èûµç\n¾ÆÀÌÅÛÀ» È¹µæÇÒ ¼ö ÀÖ¾î¿ä.");
-        yield return _descriptionNPC.ShowDescription1Text("·¹½ÃÇÇ, ½ºÅ² ±×¸®°í °¡°Ô ½ºÅÈÀ»\n°­È­ÇÏ´Â ¾ÆÀÌÅÛÀ» ¾òÀ» ¼ö ÀÖ¾î¿ä.");
-        yield return _descriptionNPC.ShowDescription1Text("°¡Ã­¸¦ ÇÑ¹ø »Ì¾Æº¼±î¿ä?");
+        // A persisted tutorial item resumes guidance without another item/count grant.
+        if (UserInfo.IsGiveGachaItem("GOTCHA91") && UserInfo.TotalUseGachaMachineCount > 0)
+        {
+            _itemInputAccepted = true;
+            _gachaCompleted = true;
+            _itemSave = SaveTutorialProgress();
+        }
+        else
+        {
+
+        yield return _descriptionNPC.ShowDescription1Text("ê°€ì± ìƒµì— ì˜¤ì‹  ê±¸ í™˜ì˜í•©ë‹ˆë‹¤!");
+        yield return _descriptionNPC.ShowDescription1Text("ë‹¤ì´ì•„ë¥¼ ì‚¬ìš©í•´ì„œ í‰ì†Œì— ì–»ê¸° í˜ë“ \nì•„ì´í…œì„ íšë“í•  ìˆ˜ ìˆì–´ìš”.");
+        yield return _descriptionNPC.ShowDescription1Text("ë ˆì‹œí”¼, ìŠ¤í‚¨ ê·¸ë¦¬ê³  ê°€ê²Œ ìŠ¤íƒ¯ì„\nê°•í™”í•˜ëŠ” ì•„ì´í…œì„ ì–»ì„ ìˆ˜ ìˆì–´ìš”.");
+        yield return _descriptionNPC.ShowDescription1Text("ê°€ì± ë¥¼ í•œë²ˆ ë½‘ì•„ë³¼ê¹Œìš”?");
         yield return YieldCache.WaitForSeconds(1f);
         _uiTutorial.PunchHoleSetActive(true);
         _uiTutorial.Gacha1ButtonSetActive(true);
         _uiTutorial.CustomHoleSetActive(true, 350, "Tutorial Gacha1 Button", _uiTutorial.Gacha1Button.transform);
-        _uiTutorial.Gacha1Button.AddListener(() => _itemGacha.StartAddItem(ItemManager.Instance.GetGachaItemData("GOTCHA91")));
+        _uiGacha.GachaStepHandler += OnGachaCompletedEvent;
+        _uiTutorial.Gacha1Button.AddListener(() => TryAcceptTutorialItem());
         _itemGacha.SingleButton.gameObject.SetActive(false);
         _tutorialNav.Push("UITutorial");
-        while (!_uiTutorial.IsButtonClicked)
+        while (!_itemInputAccepted)
             yield return YieldCache.WaitForSeconds(0.01f);
 
         _uiTutorial.Gacha1ButtonSetActive(false);
+        }
+        yield return WaitForSave(_itemSave);
         _descriptionNPC.PopEnabled = true;
         _uiTutorial.PopEnabled = true;
         yield return YieldCache.WaitForSeconds(0.02f);
         _tutorialNav.Pop("UITutorialDescription");
         _tutorialNav.Pop("UITutorial");
         _mainNav.Push("UIGacha");
-        _uiGacha.GachaStepHandler += OnGachaCompletedEvent;
         while (!_gachaCompleted)
             yield return YieldCache.WaitForSeconds(0.01f);
 
@@ -83,8 +208,8 @@ public class GachaTutorial : MonoBehaviour
         _descriptionNPC.SkipButtonSetActive(false);
         _uiTutorial.ScreenButtonSetActive(true);
         yield return YieldCache.WaitForSeconds(1);
-        yield return _descriptionNPC.ShowDescription1Text("ÀÌÁ¦ ·¹½ÃÇÇ¸¦ ÅëÇØ¼­ »õ·Î¿î ¸Ş´º¸¦ Á¦ÀÛÇÒ ¼ö ÀÖ¾î¿ä.");
-        yield return _descriptionNPC.ShowDescription1Text("»õ ¼Õ´ÔÀ» À§ÇØ ¹Ù·Î À½½ÄÀ» ¸¸µé·¯ °¡ºÁ¿ä!");
+        yield return _descriptionNPC.ShowDescription1Text("ì´ì œ ë ˆì‹œí”¼ë¥¼ í†µí•´ì„œ ìƒˆë¡œìš´ ë©”ë‰´ë¥¼ ì œì‘í•  ìˆ˜ ìˆì–´ìš”.");
+        yield return _descriptionNPC.ShowDescription1Text("ìƒˆ ì†ë‹˜ì„ ìœ„í•´ ë°”ë¡œ ìŒì‹ì„ ë§Œë“¤ëŸ¬ ê°€ë´ìš”!");
         _mainNav.AllPop();
         yield return YieldCache.WaitForSeconds(1f);
         _uiTutorial.PunchHoleSetActive(true);
@@ -99,9 +224,10 @@ public class GachaTutorial : MonoBehaviour
             yield return YieldCache.WaitForSeconds(0.01f);
             
         yield return YieldCache.WaitForSeconds(1f);
-        yield return _descriptionNPC.ShowDescription1Text("°¡Ã­·Î ¾òÀº ·¹½ÃÇÇ´Â\n¹Ì´Ï°ÔÀÓÀ» ÅëÇØ¼­ ¾òÀ» ¼ö ÀÖ½À´Ï´Ù.");
-        yield return _descriptionNPC.ShowDescription1Text("ÇÑ¹ø ±èÄ¡Âî°³¸¦ ¸¸µé¾î º¼±î¿ä?");
+        yield return _descriptionNPC.ShowDescription1Text("ê°€ì± ë¡œ ì–»ì€ ë ˆì‹œí”¼ëŠ”\në¯¸ë‹ˆê²Œì„ì„ í†µí•´ì„œ ì–»ì„ ìˆ˜ ìˆìŠµë‹ˆë‹¤.");
+        yield return _descriptionNPC.ShowDescription1Text("í•œë²ˆ ê¹€ì¹˜ì°Œê°œë¥¼ ë§Œë“¤ì–´ ë³¼ê¹Œìš”?");
 
+        yield return WaitForSave(BeginCompletionSave());
         _descriptionNPC.PopEnabled = true;
         _uiTutorial.PopEnabled = true;
         yield return YieldCache.WaitForSeconds(0.02f);
@@ -110,7 +236,8 @@ public class GachaTutorial : MonoBehaviour
         _descriptionNPC.PopEnabled = false;
         _uiTutorial.PopEnabled = false;
         UserInfo.IsTutorialStart = false;
-        UserInfo.IsMiniGameTutorialClear = true;
+        _tutorialRunActive = false;
+        _coroutine = null;
         gameObject.SetActive(false);
 
     }
@@ -118,7 +245,7 @@ public class GachaTutorial : MonoBehaviour
 
     private void OnGachaCompletedEvent(int step)
     {
-        if (step < 4)
+        if (!_tutorialRunActive || !_itemInputAccepted || _saveErrorShown || step < 4)
             return;
 
         _gachaCompleted = true;
@@ -146,10 +273,18 @@ public class GachaTutorial : MonoBehaviour
 
     private void OnShortCut10ButtonClicked()
     {
+        if (_tutorialRunActive || UserInfo.IsTutorialStart || !UIGacha.IsProgressionEntryUnlocked()) return;
         if (_coroutine != null)
             StopCoroutine(_coroutine);
 
+        gameObject.SetActive(true);
         _coroutine = StartCoroutine(ShortCut10Func());
+    }
+
+    private void OnDestroy()
+    {
+        if (_uiGacha != null) _uiGacha.GachaStepHandler -= OnGachaCompletedEvent;
+        if (_tutorialRunActive && IsCapturedSessionCurrent()) UserInfo.IsTutorialStart = false;
     }
 
 
