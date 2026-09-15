@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class WorldToSceenPosition : MonoBehaviour
@@ -12,6 +10,7 @@ public class WorldToSceenPosition : MonoBehaviour
     public void SetWorldTransform(Transform tr)
     {
         _worldTransform = tr;
+        UpdateScreenPosition();
     }
 
     private void Awake()
@@ -21,25 +20,21 @@ public class WorldToSceenPosition : MonoBehaviour
 
     private void OnEnable()
     {
-        if (_worldTransform == null || _camera == null)
-            return;
-
-        transform.position = _camera.WorldToScreenPoint(_worldTransform.position + _offset);
-    }
-
-    private void OnDisable()
-    {
-        if (_worldTransform == null || _camera == null)
-            return;
-
-        transform.position = _camera.WorldToScreenPoint(_worldTransform.position + _offset);
+        UpdateScreenPosition();
     }
 
     private void Update()
     {
-        if (_worldTransform == null)
+        UpdateScreenPosition();
+    }
+
+    private void UpdateScreenPosition()
+    {
+        if (_worldTransform == null || _camera == null)
             return;
 
-        transform.position = _camera.WorldToScreenPoint(_worldTransform.position + _offset);
+        Vector3 screenPosition = _camera.WorldToScreenPoint(_worldTransform.position + _offset);
+        if (transform.position != screenPosition)
+            transform.position = screenPosition;
     }
 }
