@@ -1,4 +1,5 @@
 using Coffee.UIExtensions;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -25,6 +26,135 @@ public class UIMarketerImage : MonoBehaviour
     private int _particleCount;
     private ERestaurantFloorType _currentFloor;
     private MarketerLightStickData _lightStickData;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private bool _excludePresentationParticleForDiagnostics;
+
+    internal PresentationParticleState CapturePresentationParticleState()
+    {
+        ParticleSystem[] particles = _uiParticle.GetComponentsInChildren<ParticleSystem>(true);
+        ParticleSimulationState[] simulationStates = new ParticleSimulationState[particles.Length];
+        for (int i = 0; i < particles.Length; i++)
+        {
+            ParticleSystem particle = particles[i];
+            ParticleSystem.MainModule main = particle.main;
+            simulationStates[i] = new ParticleSimulationState(
+                particle,
+                particle.gameObject.activeInHierarchy,
+                particle.isPlaying,
+                particle.isPaused,
+                particle.time,
+                main.cullingMode);
+        }
+
+        return new PresentationParticleState(
+            this,
+            _uiParticle,
+            _uiParticle.activeSelf,
+            simulationStates);
+    }
+
+    internal sealed class PresentationParticleState
+    {
+        private readonly UIMarketerImage _owner;
+        private readonly GameObject _root;
+        private readonly bool _wasActive;
+        private readonly ParticleSimulationState[] _simulationStates;
+
+        internal int ParticleSystemCount => _simulationStates.Length;
+        internal bool WasActive => _wasActive;
+
+        internal PresentationParticleState(
+            UIMarketerImage owner,
+            GameObject root,
+            bool wasActive,
+            ParticleSimulationState[] simulationStates)
+        {
+            _owner = owner;
+            _root = root;
+            _wasActive = wasActive;
+            _simulationStates = simulationStates;
+        }
+
+        internal string Describe()
+        {
+            List<string> descriptions = new List<string>(_simulationStates.Length);
+            for (int i = 0; i < _simulationStates.Length; i++)
+            {
+                ParticleSimulationState state = _simulationStates[i];
+                descriptions.Add(
+                    state.Particle.name
+                    + "(active=" + state.Particle.gameObject.activeInHierarchy
+                    + ", playing=" + state.WasPlaying
+                    + ", paused=" + state.WasPaused
+                    + ", time=" + state.Time.ToString("F2")
+                    + ", culling=" + state.CullingMode + ")");
+            }
+
+            return _root.name
+                + "(activeSelf=" + _wasActive
+                + ", systems=" + string.Join(", ", descriptions) + ")";
+        }
+
+        internal void Exclude()
+        {
+            _owner._excludePresentationParticleForDiagnostics = true;
+            _root.SetActive(false);
+        }
+
+        internal void Restore()
+        {
+            _owner._excludePresentationParticleForDiagnostics = false;
+            _root.SetActive(_wasActive);
+            if (!_wasActive)
+                return;
+
+            for (int i = 0; i < _simulationStates.Length; i++)
+            {
+                ParticleSimulationState state = _simulationStates[i];
+                if (state.Particle == null)
+                    continue;
+
+                if (!state.WasActiveInHierarchy || !state.Particle.gameObject.activeInHierarchy)
+                    continue;
+
+                state.Particle.Simulate(state.Time, true, true, true);
+                if (state.WasPaused)
+                    state.Particle.Pause(true);
+                else if (state.WasPlaying)
+                    state.Particle.Play(true);
+                else
+                    state.Particle.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            }
+        }
+    }
+
+    internal readonly struct ParticleSimulationState
+    {
+        internal readonly ParticleSystem Particle;
+        internal readonly bool WasActiveInHierarchy;
+        internal readonly bool WasPlaying;
+        internal readonly bool WasPaused;
+        internal readonly float Time;
+        internal readonly ParticleSystemCullingMode CullingMode;
+
+        internal ParticleSimulationState(
+            ParticleSystem particle,
+            bool wasActiveInHierarchy,
+            bool wasPlaying,
+            bool wasPaused,
+            float time,
+            ParticleSystemCullingMode cullingMode)
+        {
+            Particle = particle;
+            WasActiveInHierarchy = wasActiveInHierarchy;
+            WasPlaying = wasPlaying;
+            WasPaused = wasPaused;
+            Time = time;
+            CullingMode = cullingMode;
+        }
+    }
+#endif
 
     private void OnEnable()
     {
@@ -111,7 +241,7 @@ public class UIMarketerImage : MonoBehaviour
                 _particleSystem.textureSheetAnimation.AddSprite(_emptySprites[i]);
             }
             _particleSystem.gameObject.SetActive(true);
-            _uiParticle.SetActive(true);
+            SetPresentationParticleActive(true);
             return;
         }
 
@@ -189,6 +319,18 @@ public class UIMarketerImage : MonoBehaviour
         }
 
         _particleSystem.gameObject.SetActive(true);
-        _uiParticle.SetActive(true);
+        SetPresentationParticleActive(true);
+    }
+
+    private void SetPresentationParticleActive(bool active)
+    {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (_excludePresentationParticleForDiagnostics)
+        {
+            _uiParticle.SetActive(false);
+            return;
+        }
+#endif
+        _uiParticle.SetActive(active);
     }
 }

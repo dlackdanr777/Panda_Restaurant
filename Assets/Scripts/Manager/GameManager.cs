@@ -8,6 +8,8 @@ using Unity.Profiling;
 
 public class GameManager : MonoBehaviour
 {
+    private const int TargetFrameRate = 120;
+
     private static readonly ProfilerMarker SaveDataPreparationMarker =
         new ProfilerMarker("Panda.Backend.GameDataPreparation");
 
@@ -502,7 +504,12 @@ public class GameManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = 120;
+        Application.targetFrameRate = TargetFrameRate;
+        UnityEngine.Rendering.OnDemandRendering.renderFrameInterval = 1;
+        Debug.Log(
+            "[FRAME-PACING] targetFPS=" + Application.targetFrameRate
+            + ", renderInterval=" + UnityEngine.Rendering.OnDemandRendering.renderFrameInterval
+            + ", refreshHz=" + Screen.currentResolution.refreshRateRatio.value.ToString("F2"));
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         UserInfo.DataBindTip(UserInfo.CurrentStage);
         UserInfo.DataBindMoney();
