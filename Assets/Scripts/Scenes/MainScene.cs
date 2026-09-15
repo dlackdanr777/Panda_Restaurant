@@ -7,6 +7,11 @@ using UnityEngine;
 
 public class MainScene : MonoBehaviour
 {
+#if UNITY_EDITOR
+    // Set before loading the scene for an isolated real-account QA run. Normal Editor defaults are unchanged.
+    public static bool SuppressEditorDebugGrantsForTesting = false;
+#endif
+
     [Serializable]
     private struct BackgroundData
     {
@@ -106,6 +111,8 @@ public class MainScene : MonoBehaviour
         GameManager.Instance.SetMiniGameStart(false);
 
 #if UNITY_EDITOR
+        if (!SuppressEditorDebugGrantsForTesting)
+        {
         UserInfo.AddDia(1000);
         UserInfo.AddMoney(10000000);
 
@@ -152,6 +159,7 @@ public class MainScene : MonoBehaviour
             UserInfo.GiveSkin(list[i]);
         }
         //
+        }
 #endif
 
         GameManager.Instance.ChanceScene();

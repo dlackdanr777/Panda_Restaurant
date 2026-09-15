@@ -642,7 +642,8 @@ public class UITutorial : MobileUIView
 
     private void OnCustomerGuideButtonClicked()
     {
-        _tableManager.OnCustomerGuideEventPlayUISound(0);
+        if (!_tableManager.OnCustomerGuideEventPlayUISound(0))
+            return;
 
         _customerGuideHole.SetActive(false);
         _customerGuideButton.gameObject.SetActive(false);

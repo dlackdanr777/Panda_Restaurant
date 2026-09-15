@@ -75,7 +75,9 @@ public class GameDataEntrySafetyTests
             Assert.That(fixture.Manager.CanSaveLegacyGameData, Is.False);
             Assert.That(fixture.Manager.RestoredGameData, Is.Null);
             JObject initial = JObject.Parse(fixture.Transport.Inserts[0].Values.GetJson());
-            Assert.That(initial.Count, Is.EqualTo(64));
+            Assert.That(initial.Count, Is.EqualTo(65));
+            Assert.That(initial["FirstTutorialStartRewardGranted"].Type, Is.EqualTo(JTokenType.Boolean));
+            Assert.That((bool)initial["FirstTutorialStartRewardGranted"], Is.False);
             Assert.That((int)initial["Dia"], Is.Zero);
             Assert.That((long)initial["Money"], Is.Zero);
             Assert.That((int)initial["SkinToken"], Is.Zero);

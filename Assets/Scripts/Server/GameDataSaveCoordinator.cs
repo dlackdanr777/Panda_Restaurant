@@ -32,6 +32,7 @@ namespace Muks.BackEnd
         private GameDataMailSaveLease _mailLease;
         internal StaffMigrationExecution ActiveStaffMigration => _active?.Migration;
         internal StaffGachaPurchaseExecution ActiveStaffPurchase => _active?.Purchase;
+        internal FirstTutorialExecution ActiveFirstTutorial => _active?.Tutorial;
 
         private sealed class SaveBatch
         {
@@ -40,11 +41,12 @@ namespace Muks.BackEnd
             public readonly Func<bool> AutosaveGuard;
             public readonly StaffMigrationExecution Migration;
             public readonly StaffGachaPurchaseExecution Purchase;
+            public readonly FirstTutorialExecution Tutorial;
             public Func<Param> Factory;
             public readonly List<GameDataSaveRequest> Requests = new List<GameDataSaveRequest>();
             public SaveBatch(GameDataSaveIdentity identity, bool isAutosave, Func<Param> factory,
-                Func<bool> autosaveGuard = null, StaffMigrationExecution migration = null, StaffGachaPurchaseExecution purchase = null)
-            { Identity = identity; IsAutosave = isAutosave; Factory = factory; AutosaveGuard = autosaveGuard; Migration = migration; Purchase = purchase; }
+                Func<bool> autosaveGuard = null, StaffMigrationExecution migration = null, StaffGachaPurchaseExecution purchase = null, FirstTutorialExecution tutorial = null)
+            { Identity = identity; IsAutosave = isAutosave; Factory = factory; AutosaveGuard = autosaveGuard; Migration = migration; Purchase = purchase; Tutorial = tutorial; }
         }
 
         private GameDataSaveCoordinatorState _state = GameDataSaveCoordinatorState.Idle;
@@ -103,6 +105,29 @@ namespace Muks.BackEnd
             foreach (GameDataSaveCoordinator coordinator in BlockedCoordinators)
                 if (coordinator.ActiveStaffPurchase != null && coordinator._target.Matches(target)) return true;
             return false;
+        }
+
+        internal static bool IsFirstTutorialTargetProtected(GameDataSaveTarget target)
+        {
+            if (target == null) return false;
+            foreach (var owner in BlockedCoordinators)
+                if (owner.ActiveFirstTutorial != null && owner._target.Matches(target)) return true;
+            return false;
+        }
+
+        internal GameDataSaveRequest StartFirstTutorial(FirstTutorialExecution tutorial)
+        {
+            if (!EnsureSession() || !CanStartPurchase) return GameDataSaveRequest.Rejected("저장 작업 완료를 기다려 주세요.");
+            var batch = new SaveBatch(tutorial.Identity, false, tutorial.CreateValuesUnderProtection, tutorial: tutorial);
+            var request = new GameDataSaveRequest(tutorial.Identity, tutorial.ConfirmGameData, null);
+            tutorial.AttachRequest(request); batch.Requests.Add(request); _pending.AddLast(batch); Pump(); return request;
+        }
+
+        internal void FinishFirstTutorialStage(FirstTutorialExecution tutorial, bool success, string error)
+        {
+            if (!ReferenceEquals(ActiveFirstTutorial, tutorial) || State != GameDataSaveCoordinatorState.WaitingForTutorialStage || !EnsureSession()) return;
+            if (!success) { LastError = error; State = GameDataSaveCoordinatorState.Indeterminate; return; }
+            _active = null; _sendInvoked = false; LastError = null; State = GameDataSaveCoordinatorState.Idle; Pump();
         }
 
         // Unlike ordinary saves/migrations, purchases never wait for a FIFO slot. Protection precedes RNG.
@@ -418,6 +443,8 @@ namespace Muks.BackEnd
 
         private void HandleReceipt(GameDataSaveReceipt receipt)
         {
+            // A later Stage failure does not reopen the already committed GameData phase.
+            if (_active?.Tutorial?.CoreCommitted == true) return;
             if (receipt == null || _active == null || !MatchesCurrent(receipt.Identity) ||
                 (State != GameDataSaveCoordinatorState.Sending && State != GameDataSaveCoordinatorState.Indeterminate
                     && State != GameDataSaveCoordinatorState.InvalidatedAfterSend)) return;
@@ -473,6 +500,12 @@ namespace Muks.BackEnd
                 }
             }
             catch (Exception ex) { FailLocalCompletion(receipt, ex); return; }
+            if (completed.Tutorial != null)
+            {
+                State = GameDataSaveCoordinatorState.WaitingForTutorialStage;
+                completed.Tutorial.AfterGameDataConfirmed();
+                return;
+            }
             _active = null;
             _sendInvoked = false;
             LastError = null;
@@ -617,7 +650,8 @@ namespace Muks.BackEnd
         Indeterminate,
         LocalCompletionFailed,
         InvalidatedAfterSend,
-        ReservedForMail
+        ReservedForMail,
+        WaitingForTutorialStage
     }
 
     /// <summary>

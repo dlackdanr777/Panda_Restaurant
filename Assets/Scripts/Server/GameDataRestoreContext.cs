@@ -14,6 +14,7 @@ namespace Muks.BackEnd
     public sealed class GameDataRestoreContext
     {
         public const string StaffAccountFieldName = "StaffAccount";
+        public const string FirstTutorialStartRewardGrantedFieldName = "FirstTutorialStartRewardGranted";
 
         private readonly Func<string> _readCurrentAccount;
         private GameDataRestoreQuery _query;
@@ -68,6 +69,17 @@ namespace Muks.BackEnd
                     && !creation.Confirmed;
             }
         }
+
+        /// <summary>
+        /// Narrow bootstrap provenance for a current query in the same confirmed new-signup session.
+        /// A missing row, login 200, an earlier authentication or an unknown Insert is not this proof.
+        /// Callers must still validate the current restored GameData and the individual missing Stage row.
+        /// </summary>
+        public bool HasConfirmedInitialCreation(GameDataRestoreQuery query) => IsCurrent(query)
+            && _newAccountAuthentication != null && ReferenceEquals(_newAccountAuthentication, _authentication)
+            && string.Equals(_newAccountInDate, query.AccountInDate, StringComparison.Ordinal)
+            && _initialCreations.TryGetValue(query.AccountInDate, out var creation) && creation.Confirmed
+            && creation.Query.AuthenticationGeneration == query.AuthenticationGeneration;
 
         public GameDataAuthenticationAttempt BeginAuthentication(GameDataAuthenticationKind kind, bool wasLoggedIn)
         {
@@ -223,6 +235,14 @@ namespace Muks.BackEnd
                 return Publish(query, GameDataRestoreStatus.InvalidResponse, "행의 inDate 원본 형식이 잘못되었습니다.");
             if (!TryReadDiamonds(row, out int diamonds, out string diamondError))
                 return Publish(query, GameDataRestoreStatus.InvalidDiamonds, diamondError);
+
+            // Missing is legacy/unknown evidence. A present marker must be exactly a Dynamo BOOL,
+            // checked before FlattenRows/legacy restoration could coerce a damaged value.
+            JProperty tutorialReward = row.Property(FirstTutorialStartRewardGrantedFieldName, StringComparison.Ordinal);
+            if (tutorialReward != null && (!(tutorialReward.Value is JObject marker) || marker.Count != 1
+                || marker["BOOL"] == null || marker["BOOL"].Type != JTokenType.Boolean))
+                return Publish(query, GameDataRestoreStatus.InvalidResponse,
+                    "존재하는 최초 튜토리얼 보상 기록은 BOOL 원본이어야 합니다. 손상된 기록을 미지급으로 처리하지 않습니다.");
 
             bool migrationRequired = row.Property(StaffAccountFieldName, StringComparison.Ordinal) == null;
             StaffAccountSaveData staffAccount = null;

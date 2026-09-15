@@ -442,6 +442,26 @@ public class StageInfo
         return CanExposeStaff(data) ? data : null;
     }
 
+    internal string CaptureTutorialPlacement()
+    {
+        var values = new Dictionary<string, Dictionary<string, string>>();
+        foreach (var floor in _equipStaffTypeDic)
+            values.Add(floor.Key.ToString(), floor.Value.ToDictionary(p => p.Key.ToString(), p => p.Value?.Id ?? string.Empty));
+        return Newtonsoft.Json.JsonConvert.SerializeObject(values);
+    }
+
+    internal bool TryCommitTutorialPlacement(Muks.BackEnd.FirstTutorialExecution operation, StaffData staff, string before, out string error)
+    {
+        error = null;
+        if (operation == null || !operation.CanCommitPlacement(this) || staff == null || staff.Id != "STAFF11"
+            || StaffDataManager.GetStaffGroupTypeFromData(staff) != StaffGroupType.Marketer || CaptureTutorialPlacement() != before
+            || !IsGiveStaff(staff) || !_equipStaffTypeDic.ContainsKey(ERestaurantFloorType.Floor1))
+        { error = "직원 배치 저장 후 현재 배치를 적용할 수 없습니다."; return false; }
+        _equipStaffTypeDic[ERestaurantFloorType.Floor1][EquipStaffType.Marketer] = staff;
+        return true;
+    }
+    internal void NotifyTutorialPlacement() => OnChangeStaffHandler?.Invoke(ERestaurantFloorType.Floor1, EquipStaffType.Marketer);
+
 
     public int GetStaffLevel(StaffData data)
     {

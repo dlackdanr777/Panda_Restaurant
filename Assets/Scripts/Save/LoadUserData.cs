@@ -9,6 +9,8 @@ public class LoadUserData
     public bool IsValid { get; private set; }
 
     public bool IsFirstTutorialClear;
+    // null means an older row has no payment evidence; it is not permission to grant retroactive gold.
+    public bool? FirstTutorialStartRewardGranted;
     public bool IsMiniGameTutorialClear;
     public bool IsFeverTutorialClear;
     public bool IsGatecrasher1TutorialClear;
@@ -99,6 +101,7 @@ public class LoadUserData
     public static Param CreateInitialGameData(DateTime lastAccessTime)
     {
         var param = new Param();
+        param.Add(GameDataRestoreContext.FirstTutorialStartRewardGrantedFieldName, false);
         foreach (string field in new[]
         {
             "IsFirstTutorialClear", "IsMiniGameTutorialClear", "IsFeverTutorialClear",
@@ -147,6 +150,14 @@ public class LoadUserData
         try
         {
             JsonData data = json[0];
+
+            // The grant marker is evidence, unlike optional legacy convenience fields. Never coerce it.
+            if (data.ContainsKey(GameDataRestoreContext.FirstTutorialStartRewardGrantedFieldName))
+            {
+                JsonData granted = data[GameDataRestoreContext.FirstTutorialStartRewardGrantedFieldName];
+                if (granted == null || !granted.IsBoolean) return;
+                FirstTutorialStartRewardGranted = (bool)granted;
+            }
 
             // 안전한 데이터 가져오기 헬퍼 함수
             bool GetBool(string key) => data.ContainsKey(key) && data[key].ToString().ToLower() == "true";

@@ -45,7 +45,7 @@ namespace Muks.BackEnd
     }
 
     /// <summary>뒤끝과 연동할 수 있게 해주는 싱글톤 클래스</summary>
-    public class BackendManager : MonoBehaviour
+    public partial class BackendManager : MonoBehaviour
     {
         public static event Action OnGuestSignupHandler;
         public static event Action OnGuestLoginHandler;
@@ -186,7 +186,7 @@ namespace Muks.BackEnd
             GameDataSaveCoordinator.IsStaffMigrationTargetProtected(GameDataRestore.LegacyTarget);
         public bool IsStaffPurchaseProtected =>
             GameDataSaveCoordinator.IsStaffPurchaseTargetProtected(GameDataRestore.LegacyTarget);
-        public bool IsStaffMutationProtected => IsStaffMigrationProtected || IsStaffPurchaseProtected;
+        public bool IsStaffMutationProtected => IsStaffMigrationProtected || IsStaffPurchaseProtected || IsFirstTutorialProtected;
         private bool _startingStaffPurchase;
         private List<StaffGachaPurchaseExecution> _staffPurchaseExecutions;
         private IStaffPurchaseWallet _staffPurchaseWallet;
@@ -347,11 +347,15 @@ namespace Muks.BackEnd
         private void LoadStageData(StaffStageMigrationCollection collection, EStage stage, bool asynchronous)
         {
             bool handled = false;
+            bool initializing = false;
             Func<bool> current = () => collection.RefreshValidity();
-            Func<bool> canReceive = () => !handled && current();
+            Func<bool> canReceive = () => !handled && !initializing && current();
             void Receive(BackendReturnObject response)
             {
                 if (!canReceive()) return;
+                initializing = true;
+                if (TryInitializeNewTutorialStage(collection, stage, response, restored => { initializing = false; Receive(restored); })) return;
+                initializing = false;
                 handled = true;
                 // Preserve raw types/values BEFORE FlattenRows, SetData, A2 and StageInfo.LoadData.
                 var raw = collection.Capture(stage, response != null && response.IsSuccess(),
@@ -1639,8 +1643,11 @@ namespace Muks.BackEnd
                     if (migration != null) return migration.ValidateTransmission(identity, payload);
                     var purchase = owner?.ActiveStaffPurchase;
                     if (purchase != null) return purchase.ValidateTransmission(identity, payload);
+                    var tutorial = owner?.ActiveFirstTutorial;
+                    if (tutorial != null) return tutorial.ValidateTransmission(identity, payload);
                     if (!StaffRuntime.ValidateSaveField(payload, out string error))
                         return error ?? "현재 공용 직원 상태와 저장 자료가 일치하지 않습니다.";
+                    if (!ValidateFirstTutorialSave(payload, out error)) return error;
                     // A previously queued explicit partial balance must not overwrite purchase/reward deltas.
                     if (ReferenceEquals(CurrentStaffPurchaseExecution?.Query, query))
                     {
@@ -1781,6 +1788,7 @@ namespace Muks.BackEnd
             return IsCurrentGameDataSaveSession(query, target)
                 && !IsStaffMigrationProtected
                 && !IsStaffPurchaseProtected
+                && !IsFirstTutorialProtected
                 && !GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
                 && (owner == null || (owner.State != GameDataSaveCoordinatorState.Indeterminate
                     && owner.State != GameDataSaveCoordinatorState.LocalCompletionFailed
@@ -1977,6 +1985,7 @@ namespace Muks.BackEnd
         public void SaveGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null,
             Action<BackendState> onFail = null, Func<bool> isCurrent = null)
         {
+            isCurrent = BindFirstTutorialStageSaveGuard(tableId, param, isCurrent);
             if (isCurrent != null && !isCurrent()) return;
             if (tableId == "GameData") { SaveLegacyGameDataAsync(param, null, onSuccess, onFail); return; }
             if (!_isSaveEnabled)
@@ -2013,7 +2022,7 @@ namespace Muks.BackEnd
                         // 업데이트 수행
                         ProcessBackendAPI(
                             $"{tableId} 데이터 업데이트",
-                            (callback) => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param, (bro) => callback?.Invoke(bro)),
+                            (callback) => ObserveOrdinaryStageWrite(tableId, reply => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param, bro => reply(bro)), callback),
                             onSuccess,
                             onFail,
                             3,
@@ -2026,7 +2035,7 @@ namespace Muks.BackEnd
                         // 삽입 수행
                         ProcessBackendAPI(
                             $"{tableId} 데이터 삽입",
-                            (callback) => Backend.GameData.Insert(tableId, param, (bro) => callback?.Invoke(bro)),
+                            (callback) => ObserveOrdinaryStageWrite(tableId, reply => Backend.GameData.Insert(tableId, param, bro => reply(bro)), callback),
                             (insertBro) => {
                                 OnInsertGameDataHandler?.Invoke(insertBro);
                                 onSuccess?.Invoke(insertBro);
@@ -2170,6 +2179,7 @@ namespace Muks.BackEnd
         /// </summary>
         public bool SaveGameData(string tableId, Param param, Func<bool> isCurrent = null)
         {
+            isCurrent = BindFirstTutorialStageSaveGuard(tableId, param, isCurrent);
             if (isCurrent != null && !isCurrent()) return false;
             if (tableId == "GameData") return SaveLegacyGameData(param, null);
 
@@ -2216,7 +2226,7 @@ namespace Muks.BackEnd
                 // 업데이트 수행
                 BackendReturnObject updateBro = ProcessBackendAPISync(
                     $"{tableId} 데이터 업데이트",
-                    () => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param),
+                    () => ObserveOrdinaryStageWrite(tableId, () => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param)),
                     3,
                     true,
                     isCurrent
@@ -2229,7 +2239,7 @@ namespace Muks.BackEnd
                 // 삽입 수행
                 BackendReturnObject insertBro = ProcessBackendAPISync(
                     $"{tableId} 데이터 삽입",
-                    () => Backend.GameData.Insert(tableId, param),
+                    () => ObserveOrdinaryStageWrite(tableId, () => Backend.GameData.Insert(tableId, param)),
                     3,
                     true,
                     isCurrent

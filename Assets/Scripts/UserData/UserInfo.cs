@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public static class UserInfo
+public static partial class UserInfo
 {
     public static event Action OnChangeFloorHandler;
     public static event Action OnChangeDiaHandler;
@@ -65,6 +65,7 @@ public static class UserInfo
 
     public static bool IsTutorialStart = false;
     public static bool IsFirstTutorialClear = false;
+    public static bool? FirstTutorialStartRewardGranted { get; private set; }
     public static bool IsMiniGameTutorialClear = false;
     public static bool IsFeverTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
@@ -388,6 +389,7 @@ public static class UserInfo
         Param param = new Param();
 
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
+        if (FirstTutorialStartRewardGranted.HasValue) param.Add("FirstTutorialStartRewardGranted", FirstTutorialStartRewardGranted.Value);
         param.Add("IsMiniGameTutorialClear", IsMiniGameTutorialClear);
         param.Add("IsFeverTutorialClear", IsFeverTutorialClear);
         param.Add("IsGatecrasher1TutorialClear", IsGatecrasher1TutorialClear);
@@ -654,6 +656,7 @@ public static class UserInfo
         }
 
         IsFirstTutorialClear = loadData.IsFirstTutorialClear;
+        FirstTutorialStartRewardGranted = loadData.FirstTutorialStartRewardGranted;
         IsMiniGameTutorialClear = loadData.IsMiniGameTutorialClear;
         IsFeverTutorialClear = loadData.IsFeverTutorialClear;
         IsGatecrasher1TutorialClear = loadData.IsGatecrasher1TutorialClear;

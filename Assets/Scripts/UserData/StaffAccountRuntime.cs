@@ -187,6 +187,23 @@ public sealed class StaffAccountRuntime
     }
 
     public bool IsOwned(string id) => GetLevel(id).HasValue;
+    internal bool TryCommitFirstTutorial(FirstTutorialExecution operation, GameDataSaveReceipt receipt,
+        IFirstTutorialState state, out string error)
+    {
+        error = null; Refresh();
+        if (_changing || operation == null || state == null || _mode != StaffAccountRuntimeMode.Common
+            || !ReferenceEquals(_query, operation.Query) || !ReferenceEquals(_current, operation.Source))
+        { error = "현재 튜토리얼 공용 직원 상태가 아닙니다."; return false; }
+        _changing = true;
+        try
+        {
+            if (!operation.ValidateCoreCommit(receipt, out error) || !StaffAccountSaveConverter.Validate(operation.Result, out error)) return false;
+            if (!state.TryCommit(operation, out error)) return false;
+            _current = operation.Result; // Same level for owned STAFF11; no duplicate reward or token mutation.
+            return true;
+        }
+        finally { _changing = false; }
+    }
     public int? GetLevel(string id)
     {
         StaffAccountSaveData current = Snapshot;
