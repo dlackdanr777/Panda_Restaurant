@@ -33,7 +33,8 @@ public sealed class ItemGachaTutorialConnectionTests
             UserInfo.IsMiniGameTutorialClear = false; f.At(13);
             Assert.That(GachaTutorial.IsCurrentItemTutorialQuest(), Is.False);
             Assert.That(UIGacha.IsProgressionEntryUnlocked(), Is.True, "Claimed Main12 keeps the established general entry policy");
-            Assert.That((bool)Field(typeof(UIStaffGacha), "IsGachaExecutionEnabled").GetValue(null), Is.False);
+            Assert.That((bool)Field(typeof(UIStaffGacha), "IsGachaExecutionEnabled").GetValue(null), Is.True,
+                "Paid execution is enabled independently; Main12 still uses only its verified item tutorial entry");
         }
 
         string scene = File.ReadAllText(Path.Combine(Application.dataPath, "Scenes/Stage1.unity"));

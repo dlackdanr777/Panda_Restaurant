@@ -199,6 +199,11 @@ namespace Muks.BackEnd
         // Same runtime boundary, deterministic selector injection only for isolated tests. No test UI bypass.
         public Func<IReadOnlyList<GachaData>, GachaStaffData> StaffPurchaseDraw { get; set; }
         public Action<StaffGachaPurchaseExecution> StaffPurchaseCommittedEffects { get; set; }
+#if UNITY_EDITOR
+        // Optional isolated QA restriction only. True still requires every production check below.
+        // Read-only/idempotent: both button readiness and actual acceptance consult this before reserving/drawing.
+        public Func<StaffGachaPurchaseType, bool> EditorStaffPurchaseAdmission { get; set; }
+#endif
         public StaffGachaPurchaseExecution CurrentStaffPurchaseExecution { get; private set; }
         public StaffGachaPurchaseExecution LastCompletedStaffPurchaseExecution { get; private set; }
         public event Action<StaffGachaPurchaseExecution> StaffPurchaseCompleted;
@@ -433,6 +438,43 @@ namespace Muks.BackEnd
 
         internal IReadOnlyList<StaffData> ReadStaffPurchaseCatalog() => GameDataTransport.ReadCatalog();
 
+        /// <summary>Button readiness only; no draw, reservation or transmission. Start revalidates this state.</summary>
+        public bool CanStartStaffPurchase(StaffGachaPurchaseType type, out string error)
+        {
+            error = null;
+            if (_startingStaffPurchase) { error = "직원 뽑기를 준비하고 있습니다."; return false; }
+            try { return TryGetStaffPurchaseState(type, out _, out _, out _, out _, out _, out error); }
+            catch (Exception ex) { error = "구매 준비 확인 실패: " + ex.GetType().Name; return false; }
+        }
+
+        private bool TryGetStaffPurchaseState(StaffGachaPurchaseType type,
+            out GameDataRestoreQuery query, out GameDataSaveTarget target, out StaffAccountSaveData source,
+            out IStaffPurchaseWallet wallet, out GameDataSaveCoordinator coordinator, out string error)
+        {
+            query = null; target = null; source = null; wallet = null; coordinator = null; error = null;
+            if (IsOfflineOwner && (StaffPurchaseDraw == null || StaffPurchaseCommittedEffects == null
+                || _staffPurchaseWallet == null || _gameDataTransport == null || _stageDataTransport == null))
+            { error = "Offline purchase dependencies are incomplete."; return false; }
+            if (!StaffGachaPurchasePlanCalculator.TryGetPolicy(type, out int cost, out _))
+            { error = "구매 종류가 잘못되었습니다."; return false; }
+#if UNITY_EDITOR
+            if (EditorStaffPurchaseAdmission != null && !EditorStaffPurchaseAdmission(type))
+            { error = "검증 세션에서 아직 허용하지 않은 구매입니다."; return false; }
+#endif
+            query = GameDataRestore.LegacyQuery;
+            target = GameDataRestore.LegacyTarget;
+            var runtime = StaffRuntime;
+            source = runtime.Snapshot;
+            wallet = StaffPurchaseWallet;
+            if (source == null || runtime.Mode != StaffAccountRuntimeMode.Common || !runtime.CanMutate
+                || !CanSaveLegacyGameData || wallet.Diamonds < cost)
+            { error = "현재 직원 뽑기를 진행할 수 없습니다. 상태와 다이아를 확인해 주세요."; return false; }
+            coordinator = GetGameDataSaveCoordinator();
+            if (coordinator == null || !coordinator.CanStartPurchase || !IsCurrentGameDataSaveSession(query, target))
+            { error = "다른 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."; return false; }
+            return true;
+        }
+
         public bool TryStartStaffPurchase(StaffGachaPurchaseType type,
             out StaffGachaPurchaseExecution execution, out string error)
         {
@@ -442,23 +484,9 @@ namespace Muks.BackEnd
             _startingStaffPurchase = true;
             try
             {
-                if (IsOfflineOwner && (StaffPurchaseDraw == null || StaffPurchaseCommittedEffects == null
-                    || _staffPurchaseWallet == null || _gameDataTransport == null || _stageDataTransport == null))
-                { error = "Offline purchase dependencies are incomplete."; return false; }
-                if (!StaffGachaPurchasePlanCalculator.TryGetPolicy(type, out int cost, out _))
-                { error = "구매 종류가 잘못되었습니다."; return false; }
-                var query = GameDataRestore.LegacyQuery;
-                var target = GameDataRestore.LegacyTarget;
+                if (!TryGetStaffPurchaseState(type, out var query, out var target, out var source,
+                    out var wallet, out var coordinator, out error)) return false;
                 var runtime = StaffRuntime;
-                var source = runtime.Snapshot;
-                IStaffPurchaseWallet wallet = StaffPurchaseWallet;
-                if (source == null || runtime.Mode != StaffAccountRuntimeMode.Common || !runtime.CanMutate
-                    || !CanSaveLegacyGameData || wallet.Diamonds < cost)
-                { error = "현재 직원 뽑기를 진행할 수 없습니다. 상태와 다이아를 확인해 주세요."; return false; }
-                var coordinator = GetGameDataSaveCoordinator();
-                if (coordinator == null || !coordinator.CanStartPurchase
-                    || !IsCurrentGameDataSaveSession(query, target))
-                { error = "다른 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."; return false; }
                 if (!StaffGachaPurchaseExecution.TryReadCandidates(ReadStaffPurchaseCatalog(), source, out _, out error)) return false;
                 if (!IsCurrentGameDataSaveSession(query, target) || !ReferenceEquals(source, runtime.Snapshot)
                     || !runtime.CanMutate || !coordinator.CanStartPurchase)

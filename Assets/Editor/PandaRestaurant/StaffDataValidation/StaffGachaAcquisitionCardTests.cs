@@ -669,7 +669,7 @@ public class StaffGachaAcquisitionCardTests
     }
 
     [Test]
-    public void RuntimePresentation_CopiesBindingsRejectsMismatchAndKeepsExecutionButtonsBlocked()
+    public void RuntimePresentation_CopiesBindingsRejectsMismatchAndKeepsLegacyGrantCallbacksBlocked()
     {
         GachaStaffData staff = LoadStaff("STAFF23");
         var drawn = new[] { staff };
@@ -685,18 +685,20 @@ public class StaffGachaAcquisitionCardTests
         Assert.That(StaffGachaResultSequence.TryCreateFromCalculated(null, drawn, out rejected, out error), Is.False);
         Assert.That(rejected, Is.Null);
 
-        var blockedObject = Track(new GameObject("Disabled staff purchase handler"));
+        var blockedObject = Track(new GameObject("Disabled legacy staff callbacks"));
         blockedObject.SetActive(false);
         var blocked = blockedObject.AddComponent<UIStaffGacha>();
         var backendField = typeof(Muks.BackEnd.BackendManager).GetField("_instance",
             BindingFlags.Static | BindingFlags.NonPublic);
         object previousBackend = backendField.GetValue(null);
-        blocked.OnSingleGachaButtonClicked();
-        blocked.OnTenGachaButtonClicked();
+        blocked.GetStaff(staff);
+        blocked.StartAddStaff(staff);
+        for (int step = 2; step <= 5; step++) blocked.SetStep(step);
         Assert.That(backendField.GetValue(null), Is.SameAs(previousBackend),
-            "Blocked purchase handlers must return before touching the Backend owner");
+            "Retired direct grants and Animator callbacks must not resolve an account owner");
         Assert.That(typeof(UIStaffGacha).GetField("IsGachaExecutionEnabled",
-            BindingFlags.Static | BindingFlags.NonPublic).GetValue(null), Is.False);
+            BindingFlags.Static | BindingFlags.NonPublic).GetValue(null), Is.True,
+            "Normal paid buttons must not reopen the retired direct-grant path");
     }
 
     [Test]
@@ -926,7 +928,7 @@ public class StaffGachaAcquisitionCardTests
             "Close did not restore the original machine presentation");
         Assert.That(ReadPaymentState(), Is.EqualTo(machine.PaymentState), "Payment records changed");
         Assert.That((bool)typeof(UIStaffGacha).GetField("IsGachaExecutionEnabled",
-            BindingFlags.NonPublic | BindingFlags.Static).GetValue(null), Is.False);
+            BindingFlags.NonPublic | BindingFlags.Static).GetValue(null), Is.True);
         foreach (Button button in machine.Staff.GetComponentsInChildren<Button>(true))
             Assert.That(button.interactable, Is.False, "Preview enabled an execution/input button");
     }

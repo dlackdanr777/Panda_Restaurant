@@ -11,8 +11,9 @@ using TMPro;
 
 public class UIStaffGacha : GachaMachineParent
 {
-    private static readonly bool IsGachaExecutionEnabled = false;
-    private const string UnavailableMessage = "직원 뽑기는 준비 중입니다.";
+    // Only the confirmed purchase service is enabled. Legacy grant/AnimationEvent entry points remain closed.
+    private static readonly bool IsGachaExecutionEnabled = true;
+    private const string UnavailableMessage = "이전 직원 지급 경로는 사용할 수 없습니다.";
 
     [Header("Components")]
     [SerializeField] private ScrollingImage _scrollImage;
@@ -63,6 +64,8 @@ public class UIStaffGacha : GachaMachineParent
     private string _questId;
     private Button _questButton;
     private TextMeshProUGUI _questLabel;
+    private bool _purchaseButtonsBound;
+    private bool _startingPurchaseFromInput;
 
     internal bool IsQuestEntry => !string.IsNullOrEmpty(_questId);
 
@@ -157,7 +160,7 @@ public class UIStaffGacha : GachaMachineParent
         _itemDataList = new List<GachaData>();
         _scrollImage.Init();
         _gachaCard.Init();
-        ApplyUnavailableButtonState();
+        ConfigurePurchaseButtons();
     }
 
     public StaffGachaPurchaseDisplay EditorOfflinePurchaseDisplay => _hasExplicitPurchaseDisplayOwner ? _purchaseDisplay : null;
@@ -213,20 +216,81 @@ public class UIStaffGacha : GachaMachineParent
         }
 
         _screenButton.onClick.AddListener(OnScreenButtonClicked);
-        _singleButton.onClick.AddListener(OnSingleGachaButtonClicked);
-        _tenButton.onClick.AddListener(OnTenGachaButtonClicked);
+        BindPurchaseButtons();
         _skipButton.onClick.AddListener(OnSkipButtonClicked);
 
-        ApplyUnavailableButtonState();
+        ConfigurePurchaseButtons();
         SetStep(1);
         _gachaCard.gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
-    private void ApplyUnavailableButtonState()
+    private void BindPurchaseButtons()
     {
-        SetButtonUnavailable(_singleButton);
-        SetButtonUnavailable(_tenButton);
+        if (_purchaseButtonsBound) return;
+        _singleButton.onClick.AddListener(OnSingleGachaButtonClicked);
+        _tenButton.onClick.AddListener(OnTenGachaButtonClicked);
+        _purchaseButtonsBound = true;
+    }
+
+    private void ConfigurePurchaseButtons()
+    {
+        ConfigurePurchaseButton(_singleButton, StaffGachaPurchaseType.Single, "1회");
+        ConfigurePurchaseButton(_tenButton, StaffGachaPurchaseType.Multi, "10+1회");
+        RefreshPurchaseButtonState();
+    }
+
+    private static void ConfigurePurchaseButton(Button button, StaffGachaPurchaseType type, string text)
+    {
+        if (button == null) return;
+        var label = button.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+        if (label != null) label.SetText(text); // Preserve the original icon/text RectTransforms.
+        Transform priceGroup = button.transform.Find("Money Image");
+        if (priceGroup != null)
+        {
+            priceGroup.gameObject.SetActive(true);
+            var price = priceGroup.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (price != null && StaffGachaPurchasePlanCalculator.TryGetPolicy(type, out int cost, out _))
+                price.SetText(cost.ToString());
+        }
+        var description = button.transform.Find("Description Text")?.GetComponent<TextMeshProUGUI>();
+        if (description != null)
+        {
+            description.gameObject.SetActive(true);
+            description.SetText(type == StaffGachaPurchaseType.Multi ? "1회 추가" : "1회");
+        }
+    }
+
+    private bool CanUsePaidInput()
+    {
+        if (!IsGachaExecutionEnabled || !_isInitialized || _startingPurchaseFromInput || IsQuestEntry
+            || !gameObject.activeInHierarchy || _uiGacha == null || _uiGacha.IsStartGacha
+            || _uiGacha.VisibleState != VisibleState.Appeared || _gachaMacineAnimator == null
+            || !_gachaMacineAnimator.enabled || _purchaseDisplayOwner == null) return false;
+        // A current free offer is not bypassed by entering the ordinary machine from another shortcut.
+        return !_purchaseDisplayOwner.TryGetCurrentQuestStaffOffer(out _, out _);
+    }
+
+    private void RefreshPurchaseButtonState()
+    {
+        // The result animation owns active/input presentation until Close restores it.
+        if (_uiGacha != null && _uiGacha.IsStartGacha) return;
+        bool visible = CanUsePaidInput();
+        SetPaidInteractable(_singleButton, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Single, out _));
+        SetPaidInteractable(_tenButton, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Multi, out _));
+    }
+
+    private static void SetPaidInteractable(Button button, bool value)
+    {
+        if (button == null) return;
+        button.interactable = value;
+        var press = button.GetComponent<ButtonPressEffect>();
+        if (press != null)
+        {
+            if (Application.isPlaying && press.Interactable && !value && button.gameObject.activeInHierarchy)
+                press.ResetScale(); // A reservation may disable input between pointer-down and pointer-up.
+            press.Interactable = value;
+        }
     }
 
     private static void SetButtonUnavailable(Button button)
@@ -257,15 +321,6 @@ public class UIStaffGacha : GachaMachineParent
         }
     }
 
-    private static bool BlockUnavailableExecution()
-    {
-        if (IsGachaExecutionEnabled)
-            return false;
-
-        DebugLog.Log(UnavailableMessage);
-        return true;
-    }
-
     private void Update()
     {
         if (IsQuestEntry)
@@ -273,7 +328,11 @@ public class UIStaffGacha : GachaMachineParent
             UpdateQuestButton();
             _questDisplay?.Tick();
         }
-        else _purchaseDisplay?.Tick();
+        else
+        {
+            _purchaseDisplay?.Tick();
+            RefreshPurchaseButtonState();
+        }
         if( 0 < _screenTouchWaitTime)
             _screenTouchWaitTime -= Time.deltaTime;
     }
@@ -285,13 +344,14 @@ public class UIStaffGacha : GachaMachineParent
         {
             var owner = _hasExplicitPurchaseDisplayOwner ? _purchaseDisplayOwner : Muks.BackEnd.BackendManager.Instance;
             if (owner == null) return; // An invalid detached owner never falls back to the live account.
+            _purchaseDisplayOwner = owner;
             _purchaseDisplay = new StaffGachaPurchaseDisplay(this, _uiGacha, owner);
         }
         gameObject.SetActive(true);
         SetActiveGachaMachine(true);
         _singleButton.gameObject.SetActive(true);
         _tenButton.gameObject.SetActive(true);
-        ApplyUnavailableButtonState();
+        ConfigurePurchaseButtons();
         _uiGacha.SetActiveUIComponents(true);
         _scrollImage.gameObject.SetActive(true);
         _screenButton.gameObject.SetActive(false);
@@ -305,6 +365,7 @@ public class UIStaffGacha : GachaMachineParent
         _gachaMacineAnimator.enabled = true;
         OnScreenButtonClicked();
         UpdateQuestButton();
+        RefreshPurchaseButtonState();
     }
 
 
@@ -347,22 +408,8 @@ public class UIStaffGacha : GachaMachineParent
 
     public void GetStaff(GachaStaffData data)
     {
-        if (BlockUnavailableExecution())
-            return;
-
-        if (data == null || data.StaffData == null)
-        {
-            DebugLog.LogError("지급할 직원 데이터가 없습니다.");
-            return;
-        }
-
-        _getStaffList.Clear();
-        _getStaffIndex = 0;
-
-        _getStaffList.Add(data);
-        UserInfo.GiveStaff(UserInfo.CurrentStage, data.StaffData);
-
-        _gachaMacineAnimator.SetTrigger("Start");
+        // Retained for serialized/old callers, never an alternative to a save-confirmed result.
+        DebugLog.Log(UnavailableMessage);
     }
 
     public void CapsuleSetSibilingIndex(int index)
@@ -373,6 +420,7 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void OnScreenButtonClicked()
     {
+        if (_uiGacha != null && _uiGacha.IsStartGacha) return;
         if (0 < _screenTouchWaitTime)
         {
             DebugLog.Log("아직 터치할 수 없습니다.");
@@ -431,11 +479,13 @@ public class UIStaffGacha : GachaMachineParent
 
     public void SetStep(int step)
     {
-        if (!IsGachaExecutionEnabled && step != 1)
+        if (step != 1)
         {
             DebugLog.Log(UnavailableMessage);
-            step = 1;
+            return; // A stale animation event must not reset/unlock a current confirmed presentation either.
         }
+
+        if (_uiGacha != null && _uiGacha.IsStartGacha) return;
 
         if (_currentStep == step)
             return;
@@ -450,7 +500,7 @@ public class UIStaffGacha : GachaMachineParent
                 _uiGacha.SetStartGacha(false);
                 _singleButton.gameObject.SetActive(true);
                 _tenButton.gameObject.SetActive(true);
-                ApplyUnavailableButtonState();
+                ConfigurePurchaseButtons();
                 _screenButton.gameObject.SetActive(false);
                 _gachaCard.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
@@ -554,51 +604,38 @@ public class UIStaffGacha : GachaMachineParent
 
     public void StartAddStaff(GachaStaffData data)
     {
-        if (BlockUnavailableExecution())
-            return;
-
-        if (data == null || data.StaffData == null)
-        {
-            DebugLog.LogError("지급할 직원 데이터가 없습니다.");
-            return;
-        }
-
-        _uiGacha.SetActiveGachaMachine(false);
-        SetActiveGachaMachine(true);
-
-        _getStaffList.Clear();
-        _getStaffIndex = 0;
-        GachaStaffData staff = data;
-        _getStaffList.Add(staff);
-        UserInfo.GiveStaff(UserInfo.CurrentStage, staff.StaffData);
-        _gachaMacineAnimator.SetTrigger("Start");
-        UserInfo.AddUserGachaMachineCount();
+        DebugLog.Log(UnavailableMessage);
     }
 
     public override void OnSingleGachaButtonClicked()
     {
-        if (BlockUnavailableExecution()) return;
         StartStaffPurchase(StaffGachaPurchaseType.Single);
     }
 
     public override void OnTenGachaButtonClicked()
     {
-        if (BlockUnavailableExecution()) return;
         StartStaffPurchase(StaffGachaPurchaseType.Multi);
     }
 
     private void StartStaffPurchase(StaffGachaPurchaseType type)
     {
-        // The owner keeps pending/completed requests independently from this scene object.
-        var owner = _hasExplicitPurchaseDisplayOwner ? _purchaseDisplayOwner : Muks.BackEnd.BackendManager.Instance;
-        if (owner == null) return;
-        if (!owner.TryStartStaffPurchase(type, out _, out string error))
+        if (!CanUsePaidInput() || !_purchaseDisplayOwner.CanStartStaffPurchase(type, out _))
         {
-            DebugLog.Log(error);
-            PopupManager.Instance.ShowDisplayText("직원 뽑기를 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+            RefreshPurchaseButtonState();
             return;
         }
-        _purchaseDisplay?.Close(); // Presentation only. No charge, grant, save or cancellation here.
+        _startingPurchaseFromInput = true; // Includes synchronous completion/notification reentry.
+        try
+        {
+            _purchaseDisplay?.Close(); // Close only the old display before a possibly synchronous response.
+            if (!_purchaseDisplayOwner.TryStartStaffPurchase(type, out _, out string error))
+            {
+                DebugLog.Log(error);
+                if (!_hasExplicitPurchaseDisplayOwner)
+                    PopupManager.Instance.ShowDisplayText("직원 뽑기를 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+            }
+        }
+        finally { _startingPurchaseFromInput = false; RefreshPurchaseButtonState(); }
     }
 
 
@@ -616,10 +653,8 @@ public class UIStaffGacha : GachaMachineParent
 
     private void OnSkipButtonClicked()
     {
-        _screenTouchWaitTime = 5f;
-        _getStaffIndex = _getStaffList.Count - 1;
-        StopAllCoroutines();
-        StartCoroutine(SkipRoutine());
+        // Legacy skip is not the save-confirmed result-card navigation.
+        DebugLog.Log(UnavailableMessage);
     }
     
 

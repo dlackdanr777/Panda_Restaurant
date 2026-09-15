@@ -17,6 +17,10 @@ public sealed class StaffGachaPurchaseDisplay
 {
     private static readonly ConditionalWeakTable<object, object> Shown
         = new ConditionalWeakTable<object, object>();
+    // Explicit result acknowledgement survives scene-view recreation, not account/request lifetime.
+    // Hidden or interrupted results are not acknowledged by presentation cleanup.
+    private static readonly ConditionalWeakTable<object, object> Acknowledged
+        = new ConditionalWeakTable<object, object>();
     private readonly UIStaffGacha _staff;
     private readonly UIGacha _view;
     private readonly Func<object> _getCompleted;
@@ -107,6 +111,7 @@ public sealed class StaffGachaPurchaseDisplay
         if (_replay != null) _replay.gameObject.SetActive(canShow && _displayed == null);
         if (!canShow || ReferenceEquals(_observed, completed)) return;
         _observed = completed; // Display failure is not a purchase failure/retry.
+        if (Acknowledged.TryGetValue(completed, out _)) return; // Only explicit replay may reopen a closed result.
         // A view recreated/reopened after an interrupted animation reads its fixed card;
         // only the first observation may run the machine animation.
         TryShowCompleted(!Shown.TryGetValue(completed, out _), out _);
@@ -244,13 +249,19 @@ public sealed class StaffGachaPurchaseDisplay
     {
         _previous = CreateButton(parent, source, "이전", new Vector2(-250, -500), () => Move(-1));
         _next = CreateButton(parent, source, "다음", new Vector2(250, -500), () => Move(1));
-        Button close = CreateButton(parent, source, "닫기", new Vector2(0, -500), () =>
-        {
-            Close();
-            _resultClosed?.Invoke();
-        });
+        Button close = CreateButton(parent, source, "닫기", new Vector2(0, -500), AcknowledgeResult);
         _position = CreateLabel(parent, source, new Vector2(0, -440), new Vector2(200, 42));
         return close;
+    }
+
+    private void AcknowledgeResult()
+    {
+        // Mark before cleanup/callbacks: a navigation callback may immediately reopen this machine.
+        // Do not mark Close/Suspend/Dispose; an unseen or interrupted completion must remain available.
+        if (_displayed == null || _overlay == null || !_overlay.activeSelf) return;
+        if (!Acknowledged.TryGetValue(_displayed, out _)) Acknowledged.Add(_displayed, new object());
+        Close();
+        _resultClosed?.Invoke();
     }
 
     public void Close()
