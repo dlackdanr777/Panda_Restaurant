@@ -58,6 +58,77 @@ public class UIStaffGacha : GachaMachineParent
     private StaffGachaPurchaseDisplay _purchaseDisplay;
     private Muks.BackEnd.BackendManager _purchaseDisplayOwner;
     private bool _hasExplicitPurchaseDisplayOwner;
+    private StaffGachaPurchaseDisplay _questDisplay;
+    private Muks.BackEnd.BackendManager _questOwner;
+    private string _questId;
+    private Button _questButton;
+    private TextMeshProUGUI _questLabel;
+
+    internal bool IsQuestEntry => !string.IsNullOrEmpty(_questId);
+
+    internal void PrepareQuestEntry(Muks.BackEnd.BackendManager owner, string questId)
+    {
+        if (owner == null || string.IsNullOrEmpty(questId))
+            throw new ArgumentException("유효한 직원 안내가 필요합니다.");
+        _purchaseDisplay?.Suspend();
+        _questDisplay?.Dispose();
+        _questOwner = owner;
+        _questId = questId;
+        _questDisplay = StaffGachaPurchaseDisplay.ForQuestGrant(this, _uiGacha, owner, questId,
+            () => Muks.DataBind.DataBind.GetUnityActionBindData("HideGachaUI").Item?.Invoke());
+    }
+
+    internal void ClearQuestEntry()
+    {
+        _questDisplay?.Dispose();
+        _questDisplay = null;
+        _questOwner = null;
+        _questId = null;
+        if (_questButton != null) _questButton.gameObject.SetActive(false);
+    }
+
+    private void UpdateQuestButton()
+    {
+        if (!IsQuestEntry || _questOwner == null) return;
+        if (_questButton == null)
+        {
+            // A separate tutorial input reuses the existing button art; paid listeners/state stay untouched.
+            _questButton = Instantiate(_singleButton, _singleButton.transform.parent, false);
+            _questButton.name = "Quest Staff Claim";
+            _questButton.onClick = new Button.ButtonClickedEvent();
+            _questButton.onClick.AddListener(OnQuestStaffButtonClicked);
+            SetButtonUnavailable(_questButton);
+            var rect = (RectTransform)_questButton.transform;
+            rect.anchoredPosition = (((RectTransform)_singleButton.transform).anchoredPosition +
+                ((RectTransform)_tenButton.transform).anchoredPosition) * 0.5f;
+            _questLabel = _questButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+        }
+        _singleButton.gameObject.SetActive(false);
+        _tenButton.gameObject.SetActive(false);
+        if (_uiGacha.IsStartGacha) return; // The animation owns its captured input state until close.
+        _questButton.gameObject.SetActive(true);
+        bool available = _questOwner.TryGetCurrentQuestStaffOffer(out var offer, out _) && offer.QuestId == _questId;
+        _questButton.interactable = available;
+        var press = _questButton.GetComponent<ButtonPressEffect>();
+        if (press != null) press.Interactable = available;
+        if (_questLabel != null)
+            _questLabel.text = available ? "무료 직원 뽑기" :
+                (_questOwner.LastCompletedQuestStaffGrant?.QuestId == _questId ? "획득 완료" : "확인 중");
+    }
+
+    private void OnQuestStaffButtonClicked()
+    {
+        // The open view is not an entitlement; check the current quest again at the input boundary.
+        if (!IsQuestEntry || _questOwner == null || _uiGacha.IsStartGacha ||
+            !_questOwner.TryGetCurrentQuestStaffOffer(out var offer, out _) || offer.QuestId != _questId)
+            return;
+        if (!_questOwner.TryStartQuestStaffGrant(out _, out string error))
+        {
+            DebugLog.Log(error);
+            PopupManager.Instance.ShowDisplayText("직원을 받을 수 없습니다. 현재 진행 상태를 확인해 주세요.");
+        }
+        UpdateQuestButton();
+    }
 
     /// <summary>Bind a detached owner before this scene display is activated. No singleton is resolved.</summary>
     public void BindPurchaseDisplayOwner(UIGacha view, Muks.BackEnd.BackendManager owner)
@@ -100,7 +171,10 @@ public class UIStaffGacha : GachaMachineParent
     internal AudioSource ResultAudio => _gachaSound;
     internal AudioClip ResultBoom => _boomSound;
     internal Transform ResultSlots => _getStaffSlotFrame;
-    internal Button[] ResultControlButtons => new[] { _singleButton, _tenButton, _screenButton, _skipButton };
+    internal Button ResultEntryButton => IsQuestEntry ? _questButton : _singleButton;
+    internal Button[] ResultControlButtons => _questButton == null
+        ? new[] { _singleButton, _tenButton, _screenButton, _skipButton }
+        : new[] { _singleButton, _tenButton, _screenButton, _skipButton, _questButton };
     internal AudioClip GetResultSound(Rank rank) => rank == Rank.Unique || rank == Rank.Special
         ? _getSpecialStaffSound : _getNormalStaffSound;
 
@@ -194,7 +268,12 @@ public class UIStaffGacha : GachaMachineParent
 
     private void Update()
     {
-        _purchaseDisplay?.Tick();
+        if (IsQuestEntry)
+        {
+            UpdateQuestButton();
+            _questDisplay?.Tick();
+        }
+        else _purchaseDisplay?.Tick();
         if( 0 < _screenTouchWaitTime)
             _screenTouchWaitTime -= Time.deltaTime;
     }
@@ -202,7 +281,7 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void Show()
     {
-        if (_purchaseDisplay == null)
+        if (!IsQuestEntry && _purchaseDisplay == null)
         {
             var owner = _hasExplicitPurchaseDisplayOwner ? _purchaseDisplayOwner : Muks.BackEnd.BackendManager.Instance;
             if (owner == null) return; // An invalid detached owner never falls back to the live account.
@@ -225,11 +304,14 @@ public class UIStaffGacha : GachaMachineParent
         _screenTouchWaitTime = 0;
         _gachaMacineAnimator.enabled = true;
         OnScreenButtonClicked();
+        UpdateQuestButton();
     }
 
 
     public override void Hide()
     {
+        _questDisplay?.Suspend();
+        if (_questButton != null) _questButton.gameObject.SetActive(false);
         _purchaseDisplay?.Suspend();
         gameObject.SetActive(true);
         StopAllCoroutines();
@@ -250,9 +332,17 @@ public class UIStaffGacha : GachaMachineParent
         _gachaMacineAnimator.enabled = false;
     }
 
-    private void OnDisable() => _purchaseDisplay?.Suspend();
+    private void OnDisable()
+    {
+        _questDisplay?.Suspend();
+        _purchaseDisplay?.Suspend();
+    }
 
-    private void OnDestroy() => _purchaseDisplay?.Dispose();
+    private void OnDestroy()
+    {
+        _questDisplay?.Dispose();
+        _purchaseDisplay?.Dispose();
+    }
 
 
     public void GetStaff(GachaStaffData data)

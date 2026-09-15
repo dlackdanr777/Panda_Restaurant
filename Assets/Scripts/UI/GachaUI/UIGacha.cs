@@ -51,6 +51,38 @@ public class UIGacha : MobileUIView
     private GachaMachineParent _currentGachaMachine;
     private GachaMachineParent _requestedInitialMachine;
     private bool _isInitialized;
+    private bool _questStaffEntry;
+
+    /// <summary>Dedicated quest entry never relies on the Editor unlock or the paid entry gate.</summary>
+    public bool PrepareQuestStaffMachine(Muks.BackEnd.BackendManager owner)
+    {
+        if (owner == null) return false;
+        string questId = null;
+        if (owner.TryGetCurrentQuestStaffOffer(out var offer, out _)) questId = offer.QuestId;
+        else
+        {
+            var request = owner.CurrentQuestStaffGrant;
+            if (request != null && owner.IsCurrentQuestStaffGrant(request)) questId = request.QuestId;
+        }
+        if (string.IsNullOrEmpty(questId) || _gachaMachines == null) return false;
+        foreach (var machine in _gachaMachines)
+        {
+            if (!(machine is UIStaffGacha staff)) continue;
+            _questStaffEntry = true;
+            _requestedInitialMachine = staff;
+            staff.PrepareQuestEntry(owner, questId);
+            return true;
+        }
+        return false;
+    }
+
+    private void ClearQuestStaffEntry()
+    {
+        _questStaffEntry = false;
+        if (_gachaMachines != null)
+            foreach (var machine in _gachaMachines)
+                if (machine is UIStaffGacha staff) staff.ClearQuestEntry();
+    }
 
 #if UNITY_EDITOR
     private bool _editorOfflineConfigured;
@@ -126,7 +158,7 @@ public class UIGacha : MobileUIView
         _isStartGacha = isStart;
         if (_scrollRect != null)
         {
-            _scrollRect.enabled = !isStart;
+            _scrollRect.enabled = !isStart && !_questStaffEntry;
 #if UNITY_EDITOR
             if (_editorOfflineConfigured) _scrollRect.enabled = false;
 #endif
@@ -224,11 +256,13 @@ public class UIGacha : MobileUIView
 
     public bool PrepareItemMachine()
     {
+        ClearQuestStaffEntry();
         return PrepareMachine<UIItemGacha>();
     }
 
     public bool PrepareStaffMachine()
     {
+        ClearQuestStaffEntry();
         return PrepareMachine<UIStaffGacha>();
     }
 
@@ -258,7 +292,7 @@ public class UIGacha : MobileUIView
 
     private void OnScrollBeginDrag(PointerEventData eventData)
     {
-        if (VisibleState != VisibleState.Appeared || _isStartGacha || _gachaMachines.Length < 2)
+        if (VisibleState != VisibleState.Appeared || _isStartGacha || _questStaffEntry || _gachaMachines.Length < 2)
             return;
 
         DebugLog.Log("스크롤 시작");
@@ -275,7 +309,7 @@ public class UIGacha : MobileUIView
 
     private void OnScrollDrag(PointerEventData eventData)
     {
-        if (VisibleState != VisibleState.Appeared || _isStartGacha || _gachaMachines.Length < 2)
+        if (VisibleState != VisibleState.Appeared || _isStartGacha || _questStaffEntry || _gachaMachines.Length < 2)
             return;
 
         float currentX = _machineParent.anchoredPosition.x;
@@ -298,7 +332,7 @@ public class UIGacha : MobileUIView
 
     private void OnScrollEndDrag(PointerEventData eventData)
     {
-        if (VisibleState != VisibleState.Appeared || _isStartGacha || _gachaMachines.Length < 2)
+        if (VisibleState != VisibleState.Appeared || _isStartGacha || _questStaffEntry || _gachaMachines.Length < 2)
             return;
             
         DebugLog.Log("스크롤 종료");
@@ -384,7 +418,7 @@ public class UIGacha : MobileUIView
             _canvasGroup.interactable = true;
             _canvasGroup.blocksRaycasts = true;
             if (_scrollRect != null)
-                _scrollRect.enabled = !_isStartGacha;
+                _scrollRect.enabled = !_isStartGacha && !_questStaffEntry;
             SetNavigationButtonsActive(!_isStartGacha);
             TryStartItemGachaTutorial();
         });
@@ -393,6 +427,7 @@ public class UIGacha : MobileUIView
     private void TryStartItemGachaTutorial()
     {
         if (EnableEditorEntryUnlockForTesting
+            || _questStaffEntry
             || VisibleState != VisibleState.Appeared
             || !(_currentGachaMachine is UIItemGacha)
             || UserInfo.IsTutorialStart
@@ -433,12 +468,13 @@ public class UIGacha : MobileUIView
         _requestedInitialMachine = null;
         _mainScene.PlayMainMusic();
         gameObject.SetActive(false);
+        ClearQuestStaffEntry();
         HiddenHandler?.Invoke();
     }
 
     private void SetNavigationButtonsActive(bool isActive)
     {
-        bool showButtons = isActive && _gachaMachines != null && 1 < _gachaMachines.Length;
+        bool showButtons = isActive && !_questStaffEntry && _gachaMachines != null && 1 < _gachaMachines.Length;
 
         if (_leftButton != null)
             _leftButton.gameObject.SetActive(showButtons);

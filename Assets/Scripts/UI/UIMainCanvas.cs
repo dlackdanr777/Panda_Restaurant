@@ -9,7 +9,8 @@ public class UIMainCanvas : MonoBehaviour
     {
         None,
         Main,
-        StaffShop
+        StaffShop,
+        QuestStaff
     }
 
     private MobileUINavigation _uiNav;
@@ -18,6 +19,9 @@ public class UIMainCanvas : MonoBehaviour
     [SerializeField] private UIGacha _uiGacha;
 
     private GachaEntrySource _gachaEntrySource;
+    private string _automaticallyGuidedQuest;
+    private bool _restoreQuestPanel;
+    private float _nextQuestGuideCheck;
 
     private void Awake()
     {
@@ -83,6 +87,7 @@ public class UIMainCanvas : MonoBehaviour
 
         DataBind.SetUnityActionValue("ShowGachaUI", OnShowGachaUI);
         DataBind.SetUnityActionValue("ShowStaffGachaUI", OnShowStaffGachaUI);
+        DataBind.SetUnityActionValue("ShowQuestStaffGachaUI", OnShowQuestStaffGachaUI);
         DataBind.SetUnityActionValue("HideGachaUI", OnHideGachaUI);
         DataBind.SetUnityActionValue("HideNoAnimeGachaUI", OnHideNoAnimeGachaUI);
 
@@ -347,6 +352,8 @@ public class UIMainCanvas : MonoBehaviour
 
     private void OnShowGachaUI()
     {
+        // The same verified entry is used by the early-quest guide and manual re-entry.
+        if (TryShowQuestStaffGachaUI()) return;
         if (IsGachaOpenOrOpening()
             || !CanShowGachaUI()
             || !_uiNav.ViewsVisibleStateCheck())
@@ -361,6 +368,47 @@ public class UIMainCanvas : MonoBehaviour
         _gachaEntrySource = GachaEntrySource.Main;
         _uiNav.Push("UIGacha");
         RestoreAfterFailedGachaPush();
+    }
+
+    private void Update()
+    {
+        if (_uiNav == null) return;
+        if (_restoreQuestPanel)
+        {
+            if (_uiNav.CheckActiveView("UIGacha") || !_uiNav.ViewsVisibleStateCheck()) return;
+            _restoreQuestPanel = false;
+            if (!_uiNav.CheckActiveView("UIMainChallenge")) _uiNav.Push("UIMainChallenge");
+            return;
+        }
+        if (Time.unscaledTime < _nextQuestGuideCheck) return;
+        _nextQuestGuideCheck = Time.unscaledTime + 0.5f;
+        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart || _uiNav.Count != 0 || IsGachaOpenOrOpening())
+            return;
+        var owner = Muks.BackEnd.BackendManager.Instance;
+        if (!owner.TryGetCurrentQuestStaffOffer(out var offer, out _) || offer.QuestId == _automaticallyGuidedQuest)
+            return;
+        if (TryShowQuestStaffGachaUI()) _automaticallyGuidedQuest = offer.QuestId;
+    }
+
+    private void OnShowQuestStaffGachaUI()
+    {
+        if (!TryShowQuestStaffGachaUI())
+            PopupManager.Instance.ShowDisplayText("현재 직원 안내를 시작할 수 없습니다. 진행 상태를 확인해 주세요.");
+    }
+
+    private bool TryShowQuestStaffGachaUI()
+    {
+        if (UserInfo.IsTutorialStart || !UserInfo.IsFirstTutorialClear || IsGachaOpenOrOpening() ||
+            _uiNav == null || !_uiNav.ViewsVisibleStateCheck() || _uiGacha == null)
+            return false;
+        var current = ChallengeManager.Instance.GetCurrentMainChallengeData();
+        if (current == null || !QuestStaffTutorialPolicy.TryGetMapping(current.Id, out _, out _)) return false;
+        var owner = Muks.BackEnd.BackendManager.Instance;
+        if (!_uiGacha.PrepareQuestStaffMachine(owner)) return false;
+        _gachaEntrySource = GachaEntrySource.QuestStaff;
+        _uiNav.Push("UIGacha");
+        RestoreAfterFailedGachaPush();
+        return _gachaEntrySource == GachaEntrySource.QuestStaff;
     }
 
     private void OnShowStaffGachaUI()
@@ -437,6 +485,9 @@ public class UIMainCanvas : MonoBehaviour
     {
         GachaEntrySource completedSource = _gachaEntrySource;
         _gachaEntrySource = GachaEntrySource.None;
+
+        if (completedSource == GachaEntrySource.QuestStaff)
+            _restoreQuestPanel = true; // Navigation finishes its own Pop before we resume the quest UI.
 
         if (completedSource == GachaEntrySource.StaffShop
             && (_uiAdmin == null || !_uiAdmin.ResumeStaffViewAfterGacha()))

@@ -33,6 +33,7 @@ namespace Muks.BackEnd
         internal StaffMigrationExecution ActiveStaffMigration => _active?.Migration;
         internal StaffGachaPurchaseExecution ActiveStaffPurchase => _active?.Purchase;
         internal FirstTutorialExecution ActiveFirstTutorial => _active?.Tutorial;
+        internal QuestStaffGrantExecution ActiveQuestStaffGrant => _active?.QuestStaffGrant;
 
         private sealed class SaveBatch
         {
@@ -42,11 +43,13 @@ namespace Muks.BackEnd
             public readonly StaffMigrationExecution Migration;
             public readonly StaffGachaPurchaseExecution Purchase;
             public readonly FirstTutorialExecution Tutorial;
+            public readonly QuestStaffGrantExecution QuestStaffGrant;
             public Func<Param> Factory;
             public readonly List<GameDataSaveRequest> Requests = new List<GameDataSaveRequest>();
             public SaveBatch(GameDataSaveIdentity identity, bool isAutosave, Func<Param> factory,
-                Func<bool> autosaveGuard = null, StaffMigrationExecution migration = null, StaffGachaPurchaseExecution purchase = null, FirstTutorialExecution tutorial = null)
-            { Identity = identity; IsAutosave = isAutosave; Factory = factory; AutosaveGuard = autosaveGuard; Migration = migration; Purchase = purchase; Tutorial = tutorial; }
+                Func<bool> autosaveGuard = null, StaffMigrationExecution migration = null, StaffGachaPurchaseExecution purchase = null, FirstTutorialExecution tutorial = null,
+                QuestStaffGrantExecution questStaffGrant = null)
+            { Identity = identity; IsAutosave = isAutosave; Factory = factory; AutosaveGuard = autosaveGuard; Migration = migration; Purchase = purchase; Tutorial = tutorial; QuestStaffGrant = questStaffGrant; }
         }
 
         private GameDataSaveCoordinatorState _state = GameDataSaveCoordinatorState.Idle;
@@ -121,6 +124,21 @@ namespace Muks.BackEnd
             var batch = new SaveBatch(tutorial.Identity, false, tutorial.CreateValuesUnderProtection, tutorial: tutorial);
             var request = new GameDataSaveRequest(tutorial.Identity, tutorial.ConfirmGameData, null);
             tutorial.AttachRequest(request); batch.Requests.Add(request); _pending.AddLast(batch); Pump(); return request;
+        }
+
+        internal static bool IsQuestStaffGrantTargetProtected(GameDataSaveTarget target)
+        {
+            if (target == null) return false;
+            foreach (var owner in BlockedCoordinators)
+                if (owner.ActiveQuestStaffGrant != null && owner._target.Matches(target)) return true;
+            return false;
+        }
+        internal GameDataSaveRequest StartQuestStaffGrant(QuestStaffGrantExecution operation)
+        {
+            if (!EnsureSession() || !CanStartPurchase) return GameDataSaveRequest.Rejected("다른 작업의 완료를 기다려 주세요.");
+            var batch = new SaveBatch(operation.Identity, false, operation.CreateValuesUnderProtection, questStaffGrant: operation);
+            var request = new GameDataSaveRequest(operation.Identity, operation.Confirm, null);
+            operation.AttachRequest(request); batch.Requests.Add(request); _pending.AddLast(batch); Pump(); return request;
         }
 
         internal void FinishFirstTutorialStage(FirstTutorialExecution tutorial, bool success, string error)
@@ -554,6 +572,7 @@ namespace Muks.BackEnd
         private void RejectBeforeSend(SaveBatch batch, string error)
         {
             batch.Purchase?.ReleaseUnsent();
+            batch.QuestStaffGrant?.ReleaseDisplayData();
             LastError = error;
             LastReceipt = GameDataSaveReceipt.Rejected(batch.Identity,
                 batch.Identity.Matches(CurrentIdentity) ? CurrentPayload : null, error);
@@ -583,6 +602,7 @@ namespace Muks.BackEnd
         private static void AbandonBeforeSend(SaveBatch batch, string error)
         {
             batch.Purchase?.ReleaseUnsent();
+            batch.QuestStaffGrant?.ReleaseDisplayData();
             batch.Factory = null;
             foreach (GameDataSaveRequest request in batch.Requests)
             {

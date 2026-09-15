@@ -15,12 +15,16 @@ using Muks.MobileUI;
 /// </summary>
 public sealed class StaffGachaPurchaseDisplay
 {
-    private static readonly ConditionalWeakTable<StaffGachaPurchaseExecution, object> Shown
-        = new ConditionalWeakTable<StaffGachaPurchaseExecution, object>();
+    private static readonly ConditionalWeakTable<object, object> Shown
+        = new ConditionalWeakTable<object, object>();
     private readonly UIStaffGacha _staff;
     private readonly UIGacha _view;
-    private readonly BackendManager _backend;
-    private StaffGachaPurchaseExecution _observed, _displayed;
+    private readonly Func<object> _getCompleted;
+    private readonly Func<object, bool> _canPresent;
+    private readonly Func<object, StaffGachaAcquisitionResult> _getAcquisition;
+    private readonly Func<object, IReadOnlyList<GachaStaffData>> _getDisplayStaff;
+    private readonly Action _resultClosed;
+    private object _observed, _displayed;
     private StaffGachaResultSequence _sequence;
     private StaffGachaResultAnimation _animation;
     private GameObject _overlay;
@@ -42,21 +46,46 @@ public sealed class StaffGachaPurchaseDisplay
 #endif
 
     public StaffGachaPurchaseDisplay(UIStaffGacha staff, UIGacha view, BackendManager backend)
+        : this(staff, view,
+            () => backend == null ? null : backend.LastCompletedStaffPurchaseExecution,
+            value => backend != null && backend.CanPresentStaffPurchase(value as StaffGachaPurchaseExecution),
+            value => ((StaffGachaPurchaseExecution)value).Plan.AccountResult.Acquisition,
+            value => ((StaffGachaPurchaseExecution)value).DrawnStaff, null)
+    {
+    }
+
+    public static StaffGachaPurchaseDisplay ForQuestGrant(UIStaffGacha staff, UIGacha view,
+        BackendManager backend, string questId, Action resultClosed)
+        => new StaffGachaPurchaseDisplay(staff, view,
+            () => backend == null ? null : backend.LastCompletedQuestStaffGrant,
+            value => value is QuestStaffGrantExecution grant && grant.QuestId == questId &&
+                backend != null && backend.CanPresentQuestStaffGrant(grant),
+            value => ((QuestStaffGrantExecution)value).Acquisition,
+            value => ((QuestStaffGrantExecution)value).DisplayStaff, resultClosed);
+
+    private StaffGachaPurchaseDisplay(UIStaffGacha staff, UIGacha view,
+        Func<object> getCompleted, Func<object, bool> canPresent,
+        Func<object, StaffGachaAcquisitionResult> getAcquisition,
+        Func<object, IReadOnlyList<GachaStaffData>> getDisplayStaff, Action resultClosed)
     {
         _staff = staff;
         _view = view;
-        _backend = backend;
+        _getCompleted = getCompleted;
+        _canPresent = canPresent;
+        _getAcquisition = getAcquisition;
+        _getDisplayStaff = getDisplayStaff;
+        _resultClosed = resultClosed;
     }
 
     private bool IsVisible => _staff != null && _view != null &&
-        _staff.gameObject.activeInHierarchy && _staff.SingleButton != null &&
+        _staff.gameObject.activeInHierarchy && _staff.ResultEntryButton != null &&
         _staff.ResultAnimator != null && _staff.ResultAnimator.enabled &&
         _view.VisibleState == VisibleState.Appeared;
 
     public void Tick()
     {
-        if (!IsVisible || _backend == null) { Suspend(); return; }
-        if (_displayed != null && !_backend.CanPresentStaffPurchase(_displayed))
+        if (!IsVisible) { Suspend(); return; }
+        if (_displayed != null && !_canPresent(_displayed))
             Close();
         if (_animation != null)
         {
@@ -67,8 +96,8 @@ public sealed class StaffGachaPurchaseDisplay
                 Close(); // Saved result stays in BackendManager, independently of this display.
             }
         }
-        StaffGachaPurchaseExecution completed = _backend.LastCompletedStaffPurchaseExecution;
-        bool canShow = _backend.CanPresentStaffPurchase(completed);
+        object completed = _getCompleted();
+        bool canShow = _canPresent(completed);
         if (canShow && _replay == null)
         {
             TextMeshProUGUI source = _staff.ResultCard.GetComponentInChildren<TextMeshProUGUI>(true);
@@ -86,12 +115,11 @@ public sealed class StaffGachaPurchaseDisplay
     public bool TryShowCompleted(bool animate, out string error)
     {
         error = "획득 결과를 표시할 수 없습니다. 다시 열어 주세요.";
-        if (_backend == null) return false;
-        StaffGachaPurchaseExecution completed = _backend.LastCompletedStaffPurchaseExecution;
-        if (!IsVisible || !_backend.CanPresentStaffPurchase(completed) ||
+        object completed = _getCompleted();
+        if (!IsVisible || !_canPresent(completed) ||
             (_animation != null && !_animation.IsComplete)) return false;
         if (!StaffGachaResultSequence.TryCreateFromCalculated(
-            completed.Plan.AccountResult.Acquisition, completed.DrawnStaff, out var sequence, out error))
+            _getAcquisition(completed), _getDisplayStaff(completed), out var sequence, out error))
             return false;
         Close();
         _observed = _displayed = completed;
@@ -112,7 +140,7 @@ public sealed class StaffGachaPurchaseDisplay
                 if (animation.TryStart(_staff, sequence, finished =>
                     {
                         if (ReferenceEquals(_animation, animation) &&
-                            ReferenceEquals(_sequence, finished) && _backend.CanPresentStaffPurchase(completed))
+                            ReferenceEquals(_sequence, finished) && _canPresent(completed))
                             ShowCards();
                     }, out error))
                 {
@@ -146,7 +174,7 @@ public sealed class StaffGachaPurchaseDisplay
 
     private void ShowCards()
     {
-        if (_sequence == null || !_backend.CanPresentStaffPurchase(_displayed)) return;
+        if (_sequence == null || !_canPresent(_displayed)) return;
         if (_overlay == null)
         {
             Canvas canvas = _view.GetComponentInParent<Canvas>();
@@ -202,7 +230,7 @@ public sealed class StaffGachaPurchaseDisplay
 
     public bool Move(int direction)
     {
-        if (_sequence == null || !_backend.CanPresentStaffPurchase(_displayed) ||
+        if (_sequence == null || !_canPresent(_displayed) ||
             !_sequence.TryMove(direction)) return false;
         ShowCards();
         return true;
@@ -216,7 +244,11 @@ public sealed class StaffGachaPurchaseDisplay
     {
         _previous = CreateButton(parent, source, "이전", new Vector2(-250, -500), () => Move(-1));
         _next = CreateButton(parent, source, "다음", new Vector2(250, -500), () => Move(1));
-        Button close = CreateButton(parent, source, "닫기", new Vector2(0, -500), Close);
+        Button close = CreateButton(parent, source, "닫기", new Vector2(0, -500), () =>
+        {
+            Close();
+            _resultClosed?.Invoke();
+        });
         _position = CreateLabel(parent, source, new Vector2(0, -440), new Vector2(200, 42));
         return close;
     }
@@ -402,7 +434,7 @@ public sealed class StaffGachaResultAnimation
         UIGachaCard card = staff.ResultCard;
         Image staffImage = staff.ResultImage;
         RectTransform capsules = staff.ResultCapsules;
-        Button single = staff.SingleButton;
+        Button single = staff.ResultEntryButton;
         AudioSource audio = staff.ResultAudio;
         if (animator == null || animator.runtimeAnimatorController == null || card == null ||
             card.gameObject.activeSelf || staffImage == null || capsules == null || single == null ||

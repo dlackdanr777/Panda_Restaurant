@@ -11,6 +11,7 @@ public class LoadUserData
     public bool IsFirstTutorialClear;
     // null means an older row has no payment evidence; it is not permission to grant retroactive gold.
     public bool? FirstTutorialStartRewardGranted;
+    public int? QuestStaffGrantMask;
     public bool IsMiniGameTutorialClear;
     public bool IsFeverTutorialClear;
     public bool IsGatecrasher1TutorialClear;
@@ -102,6 +103,7 @@ public class LoadUserData
     {
         var param = new Param();
         param.Add(GameDataRestoreContext.FirstTutorialStartRewardGrantedFieldName, false);
+        param.Add(QuestStaffTutorialPolicy.GrantFieldName, 0);
         foreach (string field in new[]
         {
             "IsFirstTutorialClear", "IsMiniGameTutorialClear", "IsFeverTutorialClear",
@@ -157,6 +159,14 @@ public class LoadUserData
                 JsonData granted = data[GameDataRestoreContext.FirstTutorialStartRewardGrantedFieldName];
                 if (granted == null || !granted.IsBoolean) return;
                 FirstTutorialStartRewardGranted = (bool)granted;
+            }
+
+            if (data.ContainsKey(QuestStaffTutorialPolicy.GrantFieldName))
+            {
+                JsonData grants = data[QuestStaffTutorialPolicy.GrantFieldName];
+                if (grants == null || (!grants.IsInt && !grants.IsLong)
+                    || !QuestStaffTutorialPolicy.TryParseGrantMask(grants.ToString(), out int mask)) return;
+                QuestStaffGrantMask = mask;
             }
 
             // 안전한 데이터 가져오기 헬퍼 함수

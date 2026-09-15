@@ -244,6 +244,16 @@ namespace Muks.BackEnd
                 return Publish(query, GameDataRestoreStatus.InvalidResponse,
                     "존재하는 최초 튜토리얼 보상 기록은 BOOL 원본이어야 합니다. 손상된 기록을 미지급으로 처리하지 않습니다.");
 
+            int? questStaffGrantMask = null;
+            if (row.Property(QuestStaffTutorialPolicy.GrantFieldName, StringComparison.Ordinal) != null)
+            {
+                if (!TryWrappedString(row[QuestStaffTutorialPolicy.GrantFieldName], "N", out string grantText)
+                    || !QuestStaffTutorialPolicy.TryParseGrantMask(grantText, out int mask))
+                    return Publish(query, GameDataRestoreStatus.InvalidResponse,
+                        "직원 퀘스트 지급 근거는 지원하는 정수 기록이어야 합니다. 손상을 미지급으로 처리하지 않습니다.");
+                questStaffGrantMask = mask;
+            }
+
             bool migrationRequired = row.Property(StaffAccountFieldName, StringComparison.Ordinal) == null;
             StaffAccountSaveData staffAccount = null;
             if (!migrationRequired)
@@ -297,7 +307,7 @@ namespace Muks.BackEnd
                     canContinueLegacy: true);
 
             var evidence = new GameDataRestoreEvidence(query, new GameDataSaveTarget(owner, rowInDate), diamonds,
-                staffAccount, rawJson);
+                staffAccount, rawJson, questStaffGrantMask);
             return Publish(query, GameDataRestoreStatus.Ready, null, true, evidence);
         }
 
@@ -505,9 +515,10 @@ namespace Muks.BackEnd
         public GameDataSaveTarget Target { get; }
         public int Diamonds { get; }
         public StaffAccountSaveData StaffAccount { get; }
+        public int? QuestStaffGrantMask { get; }
         public string RawJson { get; }
         internal GameDataRestoreEvidence(GameDataRestoreQuery query, GameDataSaveTarget target, int diamonds,
-            StaffAccountSaveData staffAccount, string rawJson)
-        { Query = query; Target = target; Diamonds = diamonds; StaffAccount = staffAccount; RawJson = rawJson; }
+            StaffAccountSaveData staffAccount, string rawJson, int? questStaffGrantMask = null)
+        { Query = query; Target = target; Diamonds = diamonds; StaffAccount = staffAccount; RawJson = rawJson; QuestStaffGrantMask = questStaffGrantMask; }
     }
 }

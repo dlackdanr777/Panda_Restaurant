@@ -700,6 +700,57 @@ public class StaffGachaAcquisitionCardTests
     }
 
     [Test]
+    public void QuestPresentation_DedicatedInputUsesExistingAnimationAndRestoresPaidBlock()
+    {
+        MachineAnimationFixture machine = CreateMachineAnimationFixture();
+        Button questInput = CreateChild<Button>(machine.Staff.transform, "Quest Staff Claim");
+        questInput.interactable = false; // The fixed grant is already saved when its presentation starts.
+        questInput.gameObject.SetActive(true);
+        SetField(machine.Staff, "_questId", "MainReward01");
+        SetField(machine.Staff, "_questButton", questInput);
+        machine.Staff.SingleButton.gameObject.SetActive(false);
+        ((Button)typeof(UIStaffGacha).GetField("_tenButton", PrivateInstance).GetValue(machine.Staff))
+            .gameObject.SetActive(false);
+        machine.Presentation = ReadMachinePresentation(machine.Staff.transform);
+        GachaStaffData staff = LoadStaff("STAFF06");
+        Assert.That(StaffGachaAcquisitionCalculator.TryCalculate(Array.Empty<string>(), new[] { staff },
+            out var stored, out var error), Is.True, error);
+        Assert.That(StaffGachaResultSequence.TryCreateFromCalculated(stored, new[] { staff },
+            out var sequence, out error), Is.True, error);
+        var random = Random.state;
+        int completed = 0;
+        var animation = new StaffGachaResultAnimation();
+        try
+        {
+            Assert.That(animation.TryStart(machine.Staff, sequence, result =>
+            {
+                completed++;
+                Assert.That(result.Result, Is.SameAs(stored));
+                Assert.That(_card.TrySetStaffAcquisitionResult(result.CurrentStaff, result.CurrentItem), Is.True);
+            }, out error), Is.True, error);
+            Assert.That(questInput.gameObject.activeSelf, Is.False);
+            for (int i = 0; i < 150 && !animation.IsComplete; i++)
+            {
+                Assert.That(machine.Animator.fireEvents, Is.False);
+                machine.Animator.Update(0.1f);
+                animation.Tick();
+            }
+            Assert.That(animation.IsComplete, Is.True);
+            Assert.That(completed, Is.EqualTo(1));
+            Assert.That(_descriptionText.text, Is.EqualTo("신규 획득"));
+            Assert.That(sequence.CurrentItem.StaffId, Is.EqualTo("STAFF06"));
+            Assert.That(sequence.Result.TotalPandaTokens, Is.Zero);
+            animation.Tick();
+            Assert.That(completed, Is.EqualTo(1));
+        }
+        finally { animation.Close(); }
+        AssertMachineRestored(machine);
+        Assert.That(questInput.gameObject.activeSelf, Is.True);
+        Assert.That(machine.Staff.SingleButton.gameObject.activeSelf, Is.False);
+        Assert.That(Random.state, Is.EqualTo(random));
+    }
+
+    [Test]
     public void RuntimePresentation_ResultControlsFitReferenceCanvasWithoutLabelOverlap()
     {
         GameObject root = Track(new GameObject("1080 result controls", typeof(RectTransform)));

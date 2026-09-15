@@ -390,6 +390,7 @@ public static partial class UserInfo
 
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
         if (FirstTutorialStartRewardGranted.HasValue) param.Add("FirstTutorialStartRewardGranted", FirstTutorialStartRewardGranted.Value);
+        if (QuestStaffGrantMask.HasValue) param.Add(QuestStaffTutorialPolicy.GrantFieldName, QuestStaffGrantMask.Value);
         param.Add("IsMiniGameTutorialClear", IsMiniGameTutorialClear);
         param.Add("IsFeverTutorialClear", IsFeverTutorialClear);
         param.Add("IsGatecrasher1TutorialClear", IsGatecrasher1TutorialClear);
@@ -657,6 +658,7 @@ public static partial class UserInfo
 
         IsFirstTutorialClear = loadData.IsFirstTutorialClear;
         FirstTutorialStartRewardGranted = loadData.FirstTutorialStartRewardGranted;
+        QuestStaffGrantMask = loadData.QuestStaffGrantMask;
         IsMiniGameTutorialClear = loadData.IsMiniGameTutorialClear;
         IsFeverTutorialClear = loadData.IsFeverTutorialClear;
         IsGatecrasher1TutorialClear = loadData.IsGatecrasher1TutorialClear;

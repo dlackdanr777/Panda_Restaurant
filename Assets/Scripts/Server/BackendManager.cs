@@ -186,7 +186,7 @@ namespace Muks.BackEnd
             GameDataSaveCoordinator.IsStaffMigrationTargetProtected(GameDataRestore.LegacyTarget);
         public bool IsStaffPurchaseProtected =>
             GameDataSaveCoordinator.IsStaffPurchaseTargetProtected(GameDataRestore.LegacyTarget);
-        public bool IsStaffMutationProtected => IsStaffMigrationProtected || IsStaffPurchaseProtected || IsFirstTutorialProtected;
+        public bool IsStaffMutationProtected => IsStaffMigrationProtected || IsStaffPurchaseProtected || IsFirstTutorialProtected || IsQuestStaffGrantProtected;
         private bool _startingStaffPurchase;
         private List<StaffGachaPurchaseExecution> _staffPurchaseExecutions;
         private IStaffPurchaseWallet _staffPurchaseWallet;
@@ -653,6 +653,8 @@ namespace Muks.BackEnd
             _gameDataRestoreContext?.InvalidateAccountSession();
             if (_staffPurchaseExecutions != null)
                 foreach (var purchase in _staffPurchaseExecutions) purchase.ReleaseOwnedDisplayData();
+            if (_questStaffGrants != null)
+                foreach (var grant in _questStaffGrants) grant.ReleaseDisplayData();
         }
 
         private void HandleLog(string logString, string stackTrace, LogType type)
@@ -1645,9 +1647,12 @@ namespace Muks.BackEnd
                     if (purchase != null) return purchase.ValidateTransmission(identity, payload);
                     var tutorial = owner?.ActiveFirstTutorial;
                     if (tutorial != null) return tutorial.ValidateTransmission(identity, payload);
+                    var questGrant = owner?.ActiveQuestStaffGrant;
+                    if (questGrant != null) return questGrant.ValidateTransmission(identity, payload);
                     if (!StaffRuntime.ValidateSaveField(payload, out string error))
                         return error ?? "현재 공용 직원 상태와 저장 자료가 일치하지 않습니다.";
                     if (!ValidateFirstTutorialSave(payload, out error)) return error;
+                    if (!ValidateQuestStaffGrantSave(payload, out error)) return error;
                     // A previously queued explicit partial balance must not overwrite purchase/reward deltas.
                     if (ReferenceEquals(CurrentStaffPurchaseExecution?.Query, query))
                     {
@@ -1789,6 +1794,7 @@ namespace Muks.BackEnd
                 && !IsStaffMigrationProtected
                 && !IsStaffPurchaseProtected
                 && !IsFirstTutorialProtected
+                && !IsQuestStaffGrantProtected
                 && !GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
                 && (owner == null || (owner.State != GameDataSaveCoordinatorState.Indeterminate
                     && owner.State != GameDataSaveCoordinatorState.LocalCompletionFailed
@@ -1815,6 +1821,7 @@ namespace Muks.BackEnd
                     throw new InvalidOperationException("자료 생성 중 저장 세션이 무효화되었습니다.");
                 if (!StaffRuntime.TryAddSaveField(values, out string error))
                     throw new InvalidOperationException(error ?? "현재 공용 직원 저장 자료를 생성할 수 없습니다.");
+                if (!TryAddQuestStaffGrantSaveField(values, out error)) throw new InvalidOperationException(error);
                 return values;
             }, isSessionCurrent: () => IsCurrentGameDataSaveSession(query, target));
             _gameDataSaveQuery = query;

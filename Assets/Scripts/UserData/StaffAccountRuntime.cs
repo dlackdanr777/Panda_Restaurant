@@ -187,6 +187,24 @@ public sealed class StaffAccountRuntime
     }
 
     public bool IsOwned(string id) => GetLevel(id).HasValue;
+    internal bool TryCommitQuestStaffGrant(QuestStaffGrantExecution operation, GameDataSaveReceipt receipt,
+        IQuestStaffTutorialState state, out string error)
+    {
+        error = null; Refresh();
+        if (_changing || operation == null || state == null || _mode != StaffAccountRuntimeMode.Common
+            || !ReferenceEquals(_query, operation.Query) || !ReferenceEquals(_current, operation.Source))
+        { error = "현재 무료 직원 획득의 공용 상태가 아닙니다."; return false; }
+        _changing = true;
+        try
+        {
+            if (!operation.ValidateCommit(receipt, out error) || !StaffAccountSaveConverter.Validate(operation.Result, out error)) return false;
+            // The state contract validates first and commits the mask without callbacks; neither assignment throws.
+            if (!state.TryCommit(operation.Before, operation.GrantedMask, out error)) return false;
+            _current = operation.Result;
+            return true;
+        }
+        finally { _changing = false; }
+    }
     internal bool TryCommitFirstTutorial(FirstTutorialExecution operation, GameDataSaveReceipt receipt,
         IFirstTutorialState state, out string error)
     {
