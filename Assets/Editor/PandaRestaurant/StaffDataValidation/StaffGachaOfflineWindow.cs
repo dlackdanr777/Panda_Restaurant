@@ -3,6 +3,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Collections;
 using Muks.BackEnd;
 using Newtonsoft.Json.Linq;
 using UnityEditor;
@@ -16,10 +17,13 @@ public static class StaffGachaOfflineHost
 {
     private const string ActiveKey = "Panda.StaffPurchaseOffline.Active";
     private const string ScenesKey = "Panda.StaffPurchaseOffline.SceneSetup";
+    private const string NavigationKey = "Panda.StaffPurchaseOffline.Navigation";
     private const string SceneName = "Staff Purchase Offline (Unsaved)";
     private const string TemplateName = "Staff Purchase Offline Inactive Template";
     private static GameObject _template;
     private static StaffGachaOfflineFonts _fonts;
+    private static string _lastNavigationObservation;
+    private static double _nextObservation;
     public static StaffGachaOfflineSession Session { get; private set; }
     public static UIGacha View { get; private set; }
     public static UIStaffGacha Staff { get; private set; }
@@ -27,6 +31,7 @@ public static class StaffGachaOfflineHost
     public static bool IsActive => Application.isPlaying && SessionState.GetBool(ActiveKey, false) &&
         ((View != null && View.gameObject.scene == SceneManager.GetActiveScene()) ||
          (_template != null && _template.scene == SceneManager.GetActiveScene()));
+    public static bool IsNavigationCase => SessionState.GetBool(NavigationKey, false);
 
     [Serializable] private sealed class SavedScenes { public SavedScene[] Scenes; }
     [Serializable] private sealed class SavedScene { public string Path; public bool Loaded; public bool Active; }
@@ -35,10 +40,14 @@ public static class StaffGachaOfflineHost
     {
         EditorApplication.playModeStateChanged += OnPlayModeChanged;
         AssemblyReloadEvents.beforeAssemblyReload += BeforeReload;
+        EditorApplication.update += ObserveNavigation;
         EditorApplication.delayCall += () => { if (EditorApplication.isPlaying && SessionState.GetBool(ActiveKey, false)) AttachView(); };
     }
 
-    public static void PrepareAndEnter()
+    public static void PrepareAndEnter() => PrepareAndEnter(false);
+    public static void PrepareNavigationAndEnter() => PrepareAndEnter(true);
+
+    private static void PrepareAndEnter(bool navigation)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) { Message = "기존 Play Mode에서는 시작하지 않습니다. 먼저 종료해 주세요."; return; }
         if (EditorSettings.enterPlayModeOptionsEnabled &&
@@ -59,13 +68,14 @@ public static class StaffGachaOfflineHost
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             scene.name = SceneName;
-            GameObject root = StaffGachaOfflineViewFactory.BuildInEmptyEditorScene(out var view, out var staff);
+            GameObject root = StaffGachaOfflineViewFactory.BuildInEmptyEditorScene(scene, out var view, out var staff, navigation);
             // A sanitized, never-activated template permits display recreation without loading a gameplay scene in Play.
             _template = UnityEngine.Object.Instantiate(root);
             _template.name = TemplateName;
             View = view; Staff = staff;
             SetGameViewResolution();
             SessionState.SetBool(ActiveKey, true);
+            SessionState.SetBool(NavigationKey, navigation);
             Message = "빈 임시 씬에서 Play Mode를 시작합니다. 실제 계정·SDK는 연결하지 않습니다.";
             EditorApplication.EnterPlaymode();
         }
@@ -73,6 +83,7 @@ public static class StaffGachaOfflineHost
         {
             Message = exception.Message;
             SessionState.SetBool(ActiveKey, false);
+            SessionState.SetBool(NavigationKey, false);
             RestoreEditorScenes();
         }
     }
@@ -85,6 +96,7 @@ public static class StaffGachaOfflineHost
         else if (state == PlayModeStateChange.EnteredEditMode)
         {
             SessionState.SetBool(ActiveKey, false);
+            SessionState.SetBool(NavigationKey, false);
             ReleaseMemory();
             RestoreEditorScenes();
             Message = "독립 검증 세션을 종료했습니다. 메모리 자료는 보존하지 않습니다.";
@@ -112,6 +124,19 @@ public static class StaffGachaOfflineHost
             _fonts.BindBeforeActivation(views[0].transform.root.gameObject, _template);
             View = views[0];
             Staff = View.GetComponentInChildren<UIStaffGacha>(true);
+            if (IsNavigationCase)
+            {
+                Session = new StaffGachaOfflineSession(Resources.LoadAll<StaffData>("StaffData"));
+                StaffGachaOfflineViewFactory.ConfigureNavigation(View, Staff, Session.Owner);
+                if (!Session.TryStart(StaffGachaOfflineCase.Eleven, out string error))
+                    throw new InvalidOperationException(error);
+                Session.ReplySuccess();
+                if (!Session.Request.IsCompleted) throw new InvalidOperationException("Mock completion was not confirmed.");
+                // A single authorized memory fixture; all subsequent input is display/navigation only.
+                Session.Owner.EditorStaffPurchaseAdmission = _ => false;
+                View.transform.root.gameObject.SetActive(true);
+                Session.Owner.StartCoroutine(BeginNavigationWhenStarted());
+            }
         }
         catch (Exception exception)
         {
@@ -120,11 +145,54 @@ public static class StaffGachaOfflineHost
             EditorApplication.ExitPlaymode();
             return;
         }
-        Message = "오프라인 환경 준비 완료. 아래 독립 시험을 선택하세요.";
+        Message = IsNavigationCase ? "상점·머신 내비게이션 준비 중입니다." : "오프라인 환경 준비 완료. 아래 독립 시험을 선택하세요.";
+    }
+
+    private static IEnumerator BeginNavigationWhenStarted()
+    {
+        yield return null; // Native MobileUINavigation.Start initializes the copied three-view stack.
+        StaffGachaOfflineViewFactory.BeginNavigation(View);
+        Message = "상점의 가챠 진입 버튼을 누르세요. 준비된 모의 결과 1건만 사용하며 추가 구매는 차단됩니다.";
+        Debug.Log("STAFF_OFFLINE_NAVIGATION_READY: mock completion=1; real SDK/login/server=0; user input only.");
+    }
+
+    private static void ObserveNavigation()
+    {
+        if (!IsActive || !IsNavigationCase || Session == null || Staff == null ||
+            EditorApplication.timeSinceStartup < _nextObservation) return;
+        _nextObservation = EditorApplication.timeSinceStartup + 0.25;
+        // Observation is outside product callbacks; file/QA errors never block completion or navigation.
+        try
+        {
+            var display = Staff.EditorOfflinePurchaseDisplay;
+            var nav = View.transform.root.GetComponent<Muks.MobileUI.MobileUINavigation>();
+            var state = new JObject
+            {
+                ["requestId"] = Session.Request?.Identity.RequestId,
+                ["completionCount"] = Session.Request?.CompletionCount,
+                ["draws"] = Session.DrawCount, ["mockPurchaseWrites"] = Session.PurchaseWrites,
+                ["mockFollowupWrites"] = Session.FollowupWrites, ["notifications"] = Session.RecordNotifications,
+                ["diamonds"] = Session.Diamonds, ["pandaTokens"] = Session.Account.PandaTokens,
+                ["navigationTop"] = nav?.FirstView?.GetType().Name, ["navigationCount"] = nav?.Count,
+                ["viewVisible"] = View.VisibleState.ToString(),
+                ["resultVisible"] = display?.EditorIsResultVisible, ["resultIndex"] = display?.EditorResultIndex,
+                ["animating"] = display?.EditorIsAnimating, ["animationStarts"] = display?.EditorAnimationStartCount,
+                ["sdkInitialized"] = BackEnd.Backend.IsInitialized, ["sdkLoggedIn"] = BackEnd.Backend.IsLogin
+            };
+            string json = state.ToString(Newtonsoft.Json.Formatting.None);
+            if (json == _lastNavigationObservation) return;
+            string path = Path.GetFullPath("Logs/StaffOfflineNavigation_Manual.jsonl");
+            Directory.CreateDirectory(Path.GetDirectoryName(path));
+            state["utc"] = DateTime.UtcNow.ToString("O");
+            File.AppendAllText(path, state.ToString(Newtonsoft.Json.Formatting.None) + Environment.NewLine);
+            _lastNavigationObservation = json;
+        }
+        catch (Exception exception) { Debug.LogWarning("Offline navigation observation only: " + exception.Message); }
     }
 
     public static void StartCase(StaffGachaOfflineCase scenario)
     {
+        if (IsNavigationCase) { Message = "이 세션은 보관된 결과의 표시·이동만 검증합니다."; return; }
         if (!IsActive || Staff == null) { Message = "먼저 독립 검증 환경을 시작하세요."; return; }
         if (Session != null && Session.HasUnresolvedRequest)
         { Message = "처리 중·미확정 요청은 새 시험으로 지울 수 없습니다. 응답을 처리하거나 독립 Play 세션을 종료하세요."; return; }
@@ -146,6 +214,7 @@ public static class StaffGachaOfflineHost
 
     public static void SetScreenVisible(bool visible)
     {
+        if (IsNavigationCase) return; // Only the actual product buttons alter the navigation stack.
         if (!IsActive || Session == null) return;
         if (visible && View == null) RecreateScreen();
         if (View == null) return;
@@ -155,6 +224,7 @@ public static class StaffGachaOfflineHost
 
     public static void ShowResult()
     {
+        if (IsNavigationCase) return;
         if (Session == null || !IsActive) return;
         SetScreenVisible(true);
         if (Staff == null) return;
@@ -164,6 +234,7 @@ public static class StaffGachaOfflineHost
 
     public static void RecreateScreen()
     {
+        if (IsNavigationCase) return;
         if (!IsActive || Session == null || _template == null)
         { Message = "독립 검증 화면의 비활성 원본이 없습니다. 요청은 그대로 보존합니다."; return; }
         if (View != null)
@@ -196,7 +267,7 @@ public static class StaffGachaOfflineHost
 
     private static void ReleaseMemory()
     {
-        if (View != null && Staff != null && Session != null) View.SetEditorOfflineVisible(false);
+        if (View != null && Staff != null && Session != null && !IsNavigationCase) View.SetEditorOfflineVisible(false);
         if (View != null) View.transform.root.gameObject.SetActive(false);
         if (_template != null) _template.SetActive(false);
         Session?.Dispose(); Session = null; View = null; Staff = null; _template = null;
@@ -273,10 +344,16 @@ public sealed class StaffGachaOfflineWindow : EditorWindow
         _scroll = EditorGUILayout.BeginScrollView(_scroll);
         EditorGUILayout.HelpBox("런타임 구매 화면 검증 · 테스트 전용\n실제 계정/SDK 대신 독립 메모리 소유자와 모의 전송을 사용합니다. 기존 모의 요청 미리보기와 다른 경로입니다.", MessageType.Info);
         using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
+        {
             if (GUILayout.Button("독립 오프라인 Play 환경 시작"))
                 EditorApplication.delayCall += StaffGachaOfflineHost.PrepareAndEnter;
+            if (GUILayout.Button("최종 화면 확인 · 머신 이동 / 상점 복귀"))
+                EditorApplication.delayCall += StaffGachaOfflineHost.PrepareNavigationAndEnter;
+        }
         using (new EditorGUI.DisabledScope(!StaffGachaOfflineHost.IsActive))
         {
+            using (new EditorGUI.DisabledScope(StaffGachaOfflineHost.IsNavigationCase))
+            {
             using (new EditorGUILayout.HorizontalScope())
             {
                 if (GUILayout.Button("단일 신규 시험")) StaffGachaOfflineHost.StartCase(StaffGachaOfflineCase.SingleNew);
@@ -315,8 +392,9 @@ public sealed class StaffGachaOfflineWindow : EditorWindow
                 if (GUILayout.Button("현재 Game View 캡처")) StaffGachaOfflineHost.CaptureScreen();
                 if (GUILayout.Button("표시 객체만 재생성 (요청 유지)")) StaffGachaOfflineHost.RecreateScreen();
             }
+            }
             if (GUILayout.Button("독립 검증 세션 종료 (Play 종료)")) StaffGachaOfflineHost.EndSession();
-            DrawDiagnostics(session);
+            DrawDiagnostics(StaffGachaOfflineHost.Session);
         }
         EditorGUILayout.HelpBox(StaffGachaOfflineHost.Message, MessageType.None);
         EditorGUILayout.EndScrollView();

@@ -63,6 +63,32 @@ public class UIStaff : MobileUIView
     private bool _canvasInteractableBeforeGacha;
     private bool _canvasBlockedRaycastsBeforeGacha;
 
+#if UNITY_EDITOR
+    private bool _editorOfflineNavigation;
+
+    /// <summary>Keep the copied staff view and scroll position available to native shop navigation.</summary>
+    public void ConfigureEditorOfflineNavigation(UIRestaurantAdmin shop)
+    {
+        if (gameObject.activeInHierarchy || shop == null || shop.gameObject.activeInHierarchy || _canvasGroup == null)
+            throw new InvalidOperationException("Offline staff navigation requires inactive copied staff and shop views.");
+        _editorOfflineNavigation = true;
+        _isInitialized = true;
+        _uiRestaurantAdmin = shop;
+        _staffScrollRect = _slotParnet != null ? _slotParnet.GetComponentInParent<ScrollRect>(true) : null;
+        _hasScrollPositionBeforeGacha = false;
+        VisibleState = VisibleState.Disappeared;
+        _canvasGroup.alpha = 1f;
+        _canvasGroup.interactable = _canvasGroup.blocksRaycasts = true;
+        if (_animeUI != null)
+        {
+            _animeUI.SetActive(true);
+            _animeUI.transform.localScale = Vector3.one;
+        }
+        _currentFloorType = ERestaurantFloorType.Floor1;
+        UpdateFloorUI();
+    }
+#endif
+
     public override void Init()
     {
         if (_isInitialized) return;
@@ -400,6 +426,9 @@ public class UIStaff : MobileUIView
 
     private void OnDestroy()
     {
+#if UNITY_EDITOR
+        if (_editorOfflineNavigation) return;
+#endif
         UserInfo.OnChangeStaffHandler -= OnChangeStaffEvent;
         UserInfo.OnGiveStaffHandler -= UpdateUIOptimized;
         UserInfo.OnChangeMoneyHandler -= UpdateUIOptimized;

@@ -101,6 +101,7 @@ public class UIGacha : MobileUIView
 
 #if UNITY_EDITOR
     private bool _editorOfflineConfigured;
+    private bool _editorOfflineNavigation;
     private int _editorOfflineMachineIndex;
     private Button _editorOfflineCloseButton;
 
@@ -132,6 +133,30 @@ public class UIGacha : MobileUIView
     }
 
     private void CloseEditorOfflineView() => SetEditorOfflineVisible(false);
+
+    // Keeps the production Show/Hide, machine tween and navigation stack paths. Only
+    // account-dependent catalog/tutorial/audio services are absent in the disposable copy.
+    public void ConfigureEditorOfflineNavigation(UIStaffGacha staff, UIItemGacha item)
+    {
+        if (gameObject.activeInHierarchy || staff == null || item == null ||
+            !staff.transform.IsChildOf(transform) || !item.transform.IsChildOf(transform))
+            throw new InvalidOperationException("Inactive copied machines are required.");
+        _editorOfflineConfigured = _editorOfflineNavigation = true;
+        _isInitialized = true;
+        _mainScene = null;
+        _miniGameTutorial = null;
+        _gachaMachines = new GachaMachineParent[] { item, staff };
+        _currentGachaMachine = staff;
+        _requestedInitialMachine = staff;
+        _leftButton.onClick.RemoveAllListeners();
+        _rightButton.onClick.RemoveAllListeners();
+        _leftButton.onClick.AddListener(() => SetMachine(-1));
+        _rightButton.onClick.AddListener(() => SetMachine(1));
+        _leftButton.interactable = _rightButton.interactable = true;
+        if (_gachaItemList != null) _gachaItemList.gameObject.SetActive(false);
+        if (_scrollRect != null) _scrollRect.enabled = false;
+        VisibleState = VisibleState.Disappeared;
+    }
 
     public void SetEditorOfflineVisible(bool visible)
     {
@@ -394,7 +419,7 @@ public class UIGacha : MobileUIView
     public override void Show()
     {
 #if UNITY_EDITOR
-        if (_editorOfflineConfigured) { SetEditorOfflineVisible(true); return; }
+        if (_editorOfflineConfigured && !_editorOfflineNavigation) { SetEditorOfflineVisible(true); return; }
 #endif
         if (_gachaMachines == null || _gachaMachines.Length == 0)
         {
@@ -409,7 +434,10 @@ public class UIGacha : MobileUIView
         // }
 
         VisibleState = VisibleState.Appearing;
-        SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
+#if UNITY_EDITOR
+        if (!_editorOfflineConfigured)
+#endif
+            SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
         gameObject.SetActive(true);
         _canvasGroup.interactable = false;
         _canvasGroup.blocksRaycasts = true;
@@ -441,6 +469,9 @@ public class UIGacha : MobileUIView
 
     private void TryStartItemGachaTutorial()
     {
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured) return;
+#endif
         if (_questStaffEntry
             || VisibleState != VisibleState.Appeared
             || !(_currentGachaMachine is UIItemGacha)
@@ -470,7 +501,7 @@ public class UIGacha : MobileUIView
     public override void Hide()
     {
 #if UNITY_EDITOR
-        if (_editorOfflineConfigured) { SetEditorOfflineVisible(false); return; }
+        if (_editorOfflineConfigured && !_editorOfflineNavigation) { SetEditorOfflineVisible(false); return; }
 #endif
         if (VisibleState == VisibleState.Disappeared && !gameObject.activeSelf)
             return;
@@ -481,7 +512,10 @@ public class UIGacha : MobileUIView
         _animeUI.TweenStop();
         SetStartGacha(false);
         _requestedInitialMachine = null;
-        _mainScene.PlayMainMusic();
+#if UNITY_EDITOR
+        if (!_editorOfflineConfigured)
+#endif
+            _mainScene.PlayMainMusic();
         gameObject.SetActive(false);
         ClearQuestStaffEntry();
         HiddenHandler?.Invoke();
@@ -543,7 +577,7 @@ public class UIGacha : MobileUIView
             _gachaMachines[i].Hide();
         }
         _currentGachaMachine = gachaMachine;
-        _gachaItemList.UpdateMachineData(gachaMachine.ItemDataList);
+        UpdateMachineItemList(gachaMachine);
 
         SetMachineParentPosAnime();
     }
@@ -558,7 +592,7 @@ public class UIGacha : MobileUIView
             _gachaMachines[i].Hide();
         }
         _currentGachaMachine = gachaMachine;
-        _gachaItemList.UpdateMachineData(gachaMachine.ItemDataList);
+        UpdateMachineItemList(gachaMachine);
         _currentGachaMachine.Show();
         TryStartItemGachaTutorial();
     }
@@ -589,6 +623,14 @@ public class UIGacha : MobileUIView
             _currentGachaMachine.Show();
             TryStartItemGachaTutorial();
         });
+    }
+
+    private void UpdateMachineItemList(GachaMachineParent machine)
+    {
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured) return;
+#endif
+        _gachaItemList.UpdateMachineData(machine.ItemDataList);
     }
 
     private void SetMachineParentPos()

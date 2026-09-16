@@ -57,6 +57,25 @@ public class UIItemGacha : GachaMachineParent
     private AudioClip _getItemSound;
     private bool _purchaseInProgress;
 
+#if UNITY_EDITOR
+    private bool _editorOfflineNavigation;
+    public void ConfigureEditorOfflineNavigation(UIGacha view)
+    {
+        if (gameObject.activeInHierarchy || view == null)
+            throw new InvalidOperationException("Inactive copied item machine required.");
+        _editorOfflineNavigation = true;
+        _uiGacha = view;
+        _itemDataList = new List<GachaData>();
+        _scrollImage.Init();
+        _skinGachaCard.Init();
+        _gachaMacineAnimator.fireEvents = false;
+        // This machine is a navigation destination, never an offline item purchase fixture.
+        _singleButton.onClick.RemoveAllListeners();
+        _tenButton.onClick.RemoveAllListeners();
+        _singleButton.interactable = _tenButton.interactable = false;
+    }
+#endif
+
 
     public void PlayLeverSound()
     {
@@ -130,7 +149,10 @@ public class UIItemGacha : GachaMachineParent
         _skinGachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
         _capsule.gameObject.SetActive(false);
-        _bouncingBall.ResetBalls();
+#if UNITY_EDITOR
+        if (!_editorOfflineNavigation)
+#endif
+            _bouncingBall.ResetBalls();
         CapsuleSetSibilingIndex(1);
 
         SetStep(1);

@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Muks.BackEnd;
+using Muks.MobileUI;
+using Muks.Tween;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
@@ -351,6 +353,265 @@ public sealed class StaffGachaOfflineSessionTests
             witness.AssertUnchanged();
         }
     }
+
+    [Test]
+    public void OfflineNavigationFactory_KeepsOnlyCopiedViewsAndTwoMachinesWithoutGameplayBindings()
+    {
+        StaffData[] catalog = Catalog();
+        using (var witness = new GlobalWitness(catalog))
+        using (var session = new StaffGachaOfflineSession(catalog))
+        using (var ui = new OfflineNavigationView(session.Owner, false))
+        {
+            Assert.That(ui.Root.activeSelf, Is.False);
+            Assert.That(ui.Navigation.Count, Is.Zero);
+            Assert.That(ui.Root.GetComponentsInChildren<UIMainCanvas>(true).Length, Is.EqualTo(1));
+            Assert.That(ui.Root.GetComponentsInChildren<MobileUINavigation>(true), Is.EqualTo(new[] { ui.Navigation }));
+            Assert.That(ui.Root.GetComponentsInChildren<MobileUIView>(true), Is.EquivalentTo(new MobileUIView[]
+                { ui.Shop, ui.ShopStaff, ui.View }));
+            Assert.That(ui.Root.GetComponentsInChildren<GachaMachineParent>(true), Is.EquivalentTo(new GachaMachineParent[]
+                { ui.Item, ui.Staff }));
+            Assert.That(ui.Root.GetComponentsInChildren<BackendManager>(true), Is.Empty);
+            Assert.That(ui.Root.GetComponentsInChildren<MainScene>(true), Is.Empty);
+            Assert.That(ui.Root.GetComponentsInChildren<UIStaffPreview>(true), Is.Empty);
+            Assert.That(ui.Root.GetComponentsInChildren<Muks.DataBind.ButtonGetter>(true), Is.Empty);
+            Assert.That(ui.Root.GetComponentsInChildren<UIBouncingBall>(true), Is.Empty);
+            foreach (Button button in ui.Root.GetComponentsInChildren<Button>(true))
+                Assert.That(button.onClick.GetPersistentEventCount(), Is.Zero, button.name);
+            foreach (Component component in ui.Root.GetComponentsInChildren<Component>(true))
+            using (var serialized = new SerializedObject(component))
+            {
+                var property = serialized.GetIterator();
+                while (property.Next(true))
+                {
+                    if (property.propertyType != SerializedPropertyType.ObjectReference) continue;
+                    Object reference = property.objectReferenceValue;
+                    Transform target = reference is GameObject gameObject ? gameObject.transform : (reference as Component)?.transform;
+                    Assert.That(target == null || EditorUtility.IsPersistent(reference) || target == ui.Root.transform ||
+                        target.IsChildOf(ui.Root.transform), Is.True, component.name + "." + property.propertyPath);
+                }
+            }
+            Assert.That(session.PurchaseWrites, Is.Zero);
+            Assert.That(session.DrawCount, Is.Zero);
+            witness.AssertUnchanged();
+        }
+    }
+
+    [Test]
+    public void OfflineNavigation_NativeArrowsExitAndShopReentryKeepOneAcknowledgedCompletionAndReplayItsFixedResult()
+    {
+        StaffData[] catalog = Catalog();
+        using (var witness = new GlobalWitness(catalog))
+        using (var session = new StaffGachaOfflineSession(catalog))
+        using (var ui = new OfflineNavigationView(session.Owner, true))
+        {
+            Assert.That(ui.Navigation.Count, Is.EqualTo(2));
+            Assert.That(ui.Navigation.FirstView, Is.SameAs(ui.ShopStaff));
+            Assert.That(ui.Navigation.CheckActiveView("UIGacha"), Is.False);
+            CanvasGroup shopGroup = Reference<CanvasGroup>(ui.Shop, "_canvasGroup");
+            CanvasGroup staffGroup = Reference<CanvasGroup>(ui.ShopStaff, "_canvasGroup");
+            ScrollRect scroll = RuntimeReference<ScrollRect>(ui.ShopStaff, "_staffScrollRect");
+            Assert.That(scroll, Is.Not.Null, "The original staff scroll belongs to the preserved shop view");
+            scroll.normalizedPosition = new Vector2(0.25f, 0.65f);
+            Vector2 beforeScroll = scroll.normalizedPosition;
+            object beforeFloor = RuntimeReference<object>(ui.ShopStaff, "_currentFloorType");
+            object beforeType = RuntimeReference<object>(ui.ShopStaff, "_currentType");
+            shopGroup.alpha = 0.85f;
+            staffGroup.alpha = 0.75f;
+            ui.ClickEntry();
+            Assert.That(ui.Navigation.Count, Is.EqualTo(3));
+            Assert.That(ui.Navigation.FirstView, Is.SameAs(ui.View));
+            Assert.That(shopGroup.alpha, Is.Zero);
+            Assert.That(staffGroup.alpha, Is.Zero);
+            Assert.That(shopGroup.interactable || shopGroup.blocksRaycasts || staffGroup.interactable || staffGroup.blocksRaycasts, Is.False);
+            Assert.That(ui.CurrentMachine, Is.SameAs(ui.Staff));
+            Assert.That(session.TryStart(StaffGachaOfflineCase.Eleven, out string error), Is.True, error);
+            session.Owner.EditorStaffPurchaseAdmission = _ => false;
+            Assert.That(session.ReplySuccess(), Is.True);
+            // The real completion callback requests one latest-value autosave. The memory
+            // transport acknowledges it immediately; navigation must add no further writes.
+            int completedFollowupWrites = session.FollowupWrites;
+            Assert.That(completedFollowupWrites, Is.EqualTo(1), "NotifyStaffPurchaseCompleted requests the latest-value autosave");
+            string completedFollowupPayload = session.FollowupPayload;
+            StaffGachaPurchaseExecution request = session.Request;
+            object acquisition = request.Plan.AccountResult.Acquisition;
+            object account = session.Account;
+            string fixedPlan = JsonConvert.SerializeObject(request.Plan);
+            Assert.That(ui.Display.TryShowCompleted(false, out error), Is.True, error);
+            Assert.That(ui.Display.EditorIsResultVisible, Is.True);
+            Assert.That(ui.Display.EditorResultCount, Is.EqualTo(11));
+            Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(request.Plan.AccountResult.Acquisition.Items[0]));
+            ui.ClickResultClose();
+
+            for (int pass = 0; pass < 2; pass++)
+            {
+                ui.ClickArrow("_leftButton");
+                Assert.That(ui.CurrentMachine, Is.SameAs(ui.Item));
+                Assert.That(ui.Navigation.FirstView, Is.SameAs(ui.View));
+                Assert.That(ui.Display.EditorIsResultVisible || ui.Display.EditorIsAnimating, Is.False);
+                ui.ClickArrow("_rightButton");
+                Assert.That(ui.CurrentMachine, Is.SameAs(ui.Staff));
+                ui.Display.Tick();
+                Assert.That(ui.Display.EditorIsResultVisible || ui.Display.EditorIsAnimating, Is.False,
+                    "Acknowledged results must stay closed after the real machine arrow round trip");
+                Assert.That(ui.View.IsStartGacha, Is.False);
+                ui.ClickExit();
+                Assert.That(ui.Navigation.Count, Is.EqualTo(2));
+                Assert.That(ui.Navigation.FirstView, Is.SameAs(ui.ShopStaff));
+                Assert.That(ui.Navigation.CheckActiveView("UIGacha"), Is.False);
+                Assert.That(ui.View.gameObject.activeSelf, Is.False);
+                Assert.That(shopGroup.alpha, Is.EqualTo(0.85f));
+                Assert.That(staffGroup.alpha, Is.EqualTo(0.75f));
+                Assert.That(shopGroup.interactable && shopGroup.blocksRaycasts && staffGroup.interactable && staffGroup.blocksRaycasts, Is.True);
+                Assert.That(scroll.normalizedPosition, Is.EqualTo(beforeScroll));
+                Assert.That(RuntimeReference<object>(ui.ShopStaff, "_currentFloorType"), Is.EqualTo(beforeFloor));
+                Assert.That(RuntimeReference<object>(ui.ShopStaff, "_currentType"), Is.EqualTo(beforeType));
+                ui.ClickEntry();
+                ui.Display.Tick();
+                Assert.That(ui.Navigation.Count, Is.EqualTo(3));
+                Assert.That(ui.CurrentMachine, Is.SameAs(ui.Staff));
+                Assert.That(ui.Display.EditorIsResultVisible || ui.Display.EditorIsAnimating, Is.False);
+                Assert.That(ui.View.IsStartGacha, Is.False);
+                Button replay = ui.Staff.GetComponentsInChildren<Button>(true).Single(button => button.name == "획득 결과");
+                Assert.That(replay.gameObject.activeInHierarchy && replay.interactable, Is.True);
+                replay.onClick.Invoke();
+                Assert.That(ui.Display.EditorIsResultVisible, Is.True);
+                Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(request.Plan.AccountResult.Acquisition.Items[0]));
+                Assert.That(ui.Display.EditorResultCount, Is.EqualTo(11));
+                ui.ClickResultClose();
+                Assert.That(session.Request, Is.SameAs(request));
+                Assert.That(session.Owner.LastCompletedStaffPurchaseExecution, Is.SameAs(request));
+                Assert.That(request.Plan.AccountResult.Acquisition, Is.SameAs(acquisition));
+                Assert.That(session.Account, Is.SameAs(account));
+                Assert.That(request.CompletionCount, Is.EqualTo(1));
+                Assert.That(session.Diamonds, Is.EqualTo(10));
+                Assert.That(session.Account.PandaTokens, Is.EqualTo(110));
+                Assert.That(session.DrawCount, Is.EqualTo(11));
+                Assert.That(session.PurchaseWrites, Is.EqualTo(1));
+                Assert.That(session.FollowupWrites, Is.EqualTo(completedFollowupWrites), "Navigation and result replay must not enqueue another save");
+                Assert.That(session.FollowupPayload, Is.EqualTo(completedFollowupPayload));
+                Assert.That(session.RecordNotifications, Is.EqualTo(1));
+                Assert.That(session.WalletNotifications, Is.EqualTo(1));
+                Assert.That(JsonConvert.SerializeObject(request.Plan), Is.EqualTo(fixedPlan));
+                witness.AssertUnchanged();
+            }
+        }
+    }
+
+    private sealed class OfflineNavigationView : IDisposable
+    {
+        private readonly Scene _scene;
+        private readonly Hash128 _sourceHash;
+        private readonly StaffGachaOfflineFonts _fonts;
+        public readonly GameObject Root;
+        public readonly UIGacha View;
+        public readonly UIStaffGacha Staff;
+        public readonly UIItemGacha Item;
+        public readonly UIRestaurantAdmin Shop;
+        public readonly UIStaff ShopStaff;
+        public readonly MobileUINavigation Navigation;
+        public StaffGachaPurchaseDisplay Display => Staff == null ? null : Staff.EditorOfflinePurchaseDisplay;
+        public GachaMachineParent CurrentMachine => RuntimeReference<GachaMachineParent>(View, "_currentGachaMachine");
+
+        public OfflineNavigationView(BackendManager owner, bool activate)
+        {
+            _sourceHash = AssetDatabase.GetAssetDependencyHash(StaffGachaOfflineViewFactory.SourceScenePath);
+            _scene = EditorSceneManager.NewPreviewScene();
+            try
+            {
+                Root = StaffGachaOfflineViewFactory.BuildInEmptyEditorScene(_scene, out View, out Staff, includeNavigation: true);
+                _fonts = new StaffGachaOfflineFonts();
+                _fonts.BindBeforeActivation(Root);
+                StaffGachaOfflineViewFactory.ConfigureNavigation(View, Staff, owner);
+                Navigation = Root.GetComponent<MobileUINavigation>();
+                Shop = Root.GetComponentInChildren<UIRestaurantAdmin>(true);
+                ShopStaff = Root.GetComponentInChildren<UIStaff>(true);
+                Item = View.GetComponentInChildren<UIItemGacha>(true);
+                if (!activate) return;
+                // EditMode has no normal Awake/Start loop. Invoke only the copied native
+                // navigation lifecycle; all account-dependent Start/Init routes stay guarded.
+                InvokePrivate(Root.GetComponent<UIMainCanvas>(), "Awake");
+                InvokePrivate(Navigation, "Start");
+                Root.SetActive(true);
+                StaffGachaOfflineViewFactory.BeginNavigation(View);
+            }
+            catch { Dispose(); throw; }
+        }
+
+        public void ClickEntry()
+        {
+            Button button = StaffGachaOfflineViewFactory.NavigationEntry(View);
+            Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
+            button.onClick.Invoke();
+            CompleteNavigationTweens();
+        }
+
+        public void ClickArrow(string field)
+        {
+            Button button = Reference<Button>(View, field);
+            Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True, field);
+            button.onClick.Invoke();
+            CompleteNavigationTweens();
+        }
+
+        public void ClickExit()
+        {
+            Button button = View.transform.Find("Anime UI/UI Components/Exit Button").GetComponent<Button>();
+            Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
+            button.onClick.Invoke();
+        }
+
+        public void ClickResultClose()
+        {
+            Button button = View.transform.Find("Staff Acquisition Results").GetComponentsInChildren<Button>(true)
+                .Single(candidate => candidate.name == "닫기");
+            Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
+            button.onClick.Invoke();
+            Assert.That(Display.EditorIsResultVisible, Is.False);
+        }
+
+        private void CompleteNavigationTweens()
+        {
+            // Exercise the actual queued tween callbacks without waiting for an Editor frame.
+            // The tested actions above always originate from the original source buttons.
+            const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            foreach (TweenData tween in Root.GetComponentsInChildren<TweenData>(true))
+            {
+                if (!tween.enabled) continue;
+                if (typeof(TweenData).GetField("_percentHandler", flags).GetValue(tween) == null)
+                    typeof(TweenData).GetMethod("Awake", flags).Invoke(tween, null);
+                MethodInfo update = tween.GetType().GetMethod("Update", flags);
+                update.Invoke(tween, null);
+                typeof(TweenData).GetField("ElapsedDuration", flags).SetValue(tween, float.MaxValue);
+                update.Invoke(tween, null);
+            }
+        }
+
+        public void Dispose()
+        {
+            try
+            {
+                if (Root != null)
+                {
+                    Display?.Dispose();
+                    foreach (ScrollingImage image in Root.GetComponentsInChildren<ScrollingImage>(true))
+                    {
+                        Material material = RuntimeReference<Material>(image, "_material");
+                        if (material != null && !EditorUtility.IsPersistent(material)) Object.DestroyImmediate(material);
+                    }
+                    Object.DestroyImmediate(Root);
+                }
+                _fonts?.Dispose();
+                Assert.That(AssetDatabase.GetAssetDependencyHash(StaffGachaOfflineViewFactory.SourceScenePath), Is.EqualTo(_sourceHash));
+            }
+            finally { if (_scene.IsValid()) EditorSceneManager.ClosePreviewScene(_scene); }
+        }
+    }
+
+    private static T RuntimeReference<T>(object owner, string name) =>
+        (T)owner.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(owner);
+
+    private static void InvokePrivate(object owner, string name) =>
+        owner.GetType().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(owner, null);
 
     private static StaffData[] Catalog()
     {

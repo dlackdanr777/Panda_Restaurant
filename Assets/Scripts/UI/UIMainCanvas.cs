@@ -23,6 +23,31 @@ public class UIMainCanvas : MonoBehaviour
     private bool _restoreQuestPanel;
     private float _nextQuestGuideCheck;
 
+#if UNITY_EDITOR
+    private bool _editorOfflineNavigation;
+
+    /// <summary>Bind only the copied shop entry and gacha exit before an isolated scene is activated.</summary>
+    public void ConfigureEditorOfflineNavigation(UIGacha view, UIRestaurantAdmin shop,
+        UnityEngine.UI.Button enter, UnityEngine.UI.Button exit)
+    {
+        if (gameObject.activeInHierarchy || view == null || shop == null || enter == null || exit == null ||
+            view.gameObject.activeInHierarchy || shop.gameObject.activeInHierarchy)
+            throw new System.InvalidOperationException("Offline navigation requires inactive copied views and their buttons.");
+        _uiNav = GetComponent<MobileUINavigation>();
+        if (_uiNav == null)
+            throw new System.InvalidOperationException("The copied main canvas has no native mobile navigation.");
+        _editorOfflineNavigation = true;
+        _uiGacha = view;
+        _uiAdmin = shop;
+        _gachaEntrySource = GachaEntrySource.None;
+        _restoreQuestPanel = false;
+        enter.onClick.RemoveListener(OnShowStaffGachaUI);
+        enter.onClick.AddListener(OnShowStaffGachaUI);
+        exit.onClick.RemoveListener(OnHideGachaUI);
+        exit.onClick.AddListener(OnHideGachaUI);
+    }
+#endif
+
     private void Awake()
     {
         _uiNav = GetComponent<MobileUINavigation>();
@@ -36,6 +61,9 @@ public class UIMainCanvas : MonoBehaviour
 
     void Start()
     {
+#if UNITY_EDITOR
+        if (_editorOfflineNavigation) return;
+#endif
         DataBind.SetUnityActionValue("PopUI", OnPopUI);
 
         DataBind.SetUnityActionValue("ShowFurnitureTab", OnShowFurnitureTab);
@@ -372,6 +400,9 @@ public class UIMainCanvas : MonoBehaviour
 
     private void Update()
     {
+#if UNITY_EDITOR
+        if (_editorOfflineNavigation) return;
+#endif
         if (_uiNav == null) return;
         if (_restoreQuestPanel)
         {

@@ -87,6 +87,29 @@ public class UIRestaurantAdmin : MobileUIView
     private bool _shopInteractableBeforeGacha;
     private bool _shopBlockedRaycastsBeforeGacha;
 
+#if UNITY_EDITOR
+    private bool _editorOfflineNavigation;
+
+    /// <summary>Prepare the copied shop for the native staff suspend/resume path without gameplay initialization.</summary>
+    public void ConfigureEditorOfflineNavigation(UIStaff staff)
+    {
+        if (gameObject.activeInHierarchy || staff == null || staff.gameObject.activeInHierarchy || _canvasGroup == null)
+            throw new System.InvalidOperationException("Offline shop navigation requires inactive copied shop and staff views.");
+        _editorOfflineNavigation = true;
+        _isInitialized = true;
+        _staffUI = staff;
+        _isClosingSession = false;
+        _isSuspendedForGacha = false;
+        _staffViewWasActiveBeforeGacha = false;
+        VisibleState = VisibleState.Disappeared;
+        _canvasGroup.alpha = 1f;
+        _canvasGroup.interactable = _canvasGroup.blocksRaycasts = true;
+        if (_mainUI != null) _mainUI.SetActive(false);
+        if (_dontTouchArea != null) _dontTouchArea.gameObject.SetActive(false);
+        DeactivateTransitionOverlay();
+    }
+#endif
+
     public override void Init()
     {
         if (_isInitialized) return;
@@ -339,7 +362,10 @@ public class UIRestaurantAdmin : MobileUIView
         else
             _staffUI.gameObject.SetActive(false);
 
-        SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
+#if UNITY_EDITOR
+        if (!_editorOfflineNavigation)
+#endif
+            SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
         return true;
     }
 

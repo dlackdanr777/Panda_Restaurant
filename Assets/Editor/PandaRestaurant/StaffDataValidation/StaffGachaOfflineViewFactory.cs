@@ -9,6 +9,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Muks.MobileUI;
+using Muks.BackEnd;
 using Object = UnityEngine.Object;
 
 /// <summary>
@@ -26,7 +28,7 @@ public static class StaffGachaOfflineViewFactory
 
     // An explicit empty preview destination lets EditMode tests exercise the same copy path
     // without changing, saving or closing the runner's or user's current untitled scene.
-    public static GameObject BuildInEmptyEditorScene(Scene destination, out UIGacha view, out UIStaffGacha staff)
+    public static GameObject BuildInEmptyEditorScene(Scene destination, out UIGacha view, out UIStaffGacha staff, bool includeNavigation = false)
     {
         view = null;
         staff = null;
@@ -67,17 +69,39 @@ public static class StaffGachaOfflineViewFactory
             view = clone.GetComponent<UIGacha>();
             staff = clone.GetComponentsInChildren<UIStaffGacha>(true).Single();
 
+            if (includeNavigation)
+            {
+                // Only the three original views needed by the shop -> machine -> shop route.
+                // The preview scene never runs; all copies remain below an inactive root.
+                Transform main = group.Find("Main Canvas");
+                var sourceShop = main.GetComponentsInChildren<UIRestaurantAdmin>(true).Single();
+                var sourceStaff = main.GetComponentsInChildren<UIStaff>(true).Single();
+                var shop = Object.Instantiate(sourceShop.gameObject, root.transform, false).GetComponent<UIRestaurantAdmin>();
+                var shopStaff = Object.Instantiate(sourceStaff.gameObject, root.transform, false).GetComponent<UIStaff>();
+                shop.name = sourceShop.name;
+                shopStaff.name = sourceStaff.name;
+                shop.gameObject.SetActive(false);
+                shopStaff.gameObject.SetActive(false);
+                NormalizeViewRect(shop.transform as RectTransform);
+                NormalizeViewRect(shopStaff.transform as RectTransform);
+                shop.ConfigureEditorOfflineNavigation(shopStaff);
+                shopStaff.ConfigureEditorOfflineNavigation(shop);
+                var previewStaff = shopStaff.GetComponentInChildren<UIStaffPreview>(true);
+                using (var serialized = new SerializedObject(previewStaff))
+                {
+                    var control = (UIButtonAndText)serialized.FindProperty("_buyButton").objectReferenceValue;
+                    control.GetComponentInChildren<Button>(true).name = "Offline Original Staff Gacha Entry";
+                }
+                root.AddComponent<MobileUINavigation>();
+                root.AddComponent<UIMainCanvas>();
+            }
+
             // UINavigation normally supplies the full-screen view rect. Reproduce that container,
             // retaining all existing machine/card child dimensions, placement and art.
-            RectTransform viewRect = (RectTransform)clone.transform;
-            viewRect.anchorMin = Vector2.zero;
-            viewRect.anchorMax = Vector2.one;
-            viewRect.pivot = new Vector2(0.5f, 0.5f);
-            viewRect.offsetMin = viewRect.offsetMax = Vector2.zero;
-            viewRect.localScale = Vector3.one;
+            NormalizeViewRect((RectTransform)clone.transform);
 
             foreach (GachaMachineParent machine in clone.GetComponentsInChildren<GachaMachineParent>(true))
-                if (machine != staff) machine.gameObject.SetActive(false);
+                if (machine != staff && !includeNavigation) machine.gameObject.SetActive(false);
             foreach (UIGachaSlotList list in clone.GetComponentsInChildren<UIGachaSlotList>(true))
                 list.gameObject.SetActive(false);
             // The scene also stores a populated generic sample card directly under UI Components,
@@ -88,32 +112,37 @@ public static class StaffGachaOfflineViewFactory
 
             // Disabled custom behaviours still receive Awake on later activation. Remove them from
             // this disposable copy instead of allowing DataBind, pools, tutorials or decorative RNG.
-            foreach (MonoBehaviour component in clone.GetComponentsInChildren<MonoBehaviour>(true).Reverse())
+            foreach (MonoBehaviour component in root.GetComponentsInChildren<MonoBehaviour>(true).Reverse())
             {
                 if (component == null) throw new InvalidOperationException("The source view contains a missing script.");
-                if (!IsDisplayBehaviour(component, view, staff)) Object.DestroyImmediate(component);
+                if (!IsDisplayBehaviour(component, view, staff) && !(includeNavigation &&
+                    (component is UIItemGacha || component is UIStaff || component is UIRestaurantAdmin ||
+                     component is UIMainCanvas || component is MobileUINavigation))) Object.DestroyImmediate(component);
             }
-            foreach (ScrollingImage image in clone.GetComponentsInChildren<ScrollingImage>(true)) image.enabled = false;
-            foreach (Button button in clone.GetComponentsInChildren<Button>(true))
+            foreach (ScrollingImage image in root.GetComponentsInChildren<ScrollingImage>(true)) image.enabled = false;
+            foreach (Button button in root.GetComponentsInChildren<Button>(true))
+            {
                 button.onClick = new Button.ButtonClickedEvent();
-            foreach (ScrollRect scroll in clone.GetComponentsInChildren<ScrollRect>(true))
+                if (includeNavigation) button.interactable = false;
+            }
+            foreach (ScrollRect scroll in root.GetComponentsInChildren<ScrollRect>(true))
             {
                 scroll.onValueChanged = new ScrollRect.ScrollRectEvent();
                 scroll.enabled = false;
             }
-            foreach (Scrollbar scrollbar in clone.GetComponentsInChildren<Scrollbar>(true))
+            foreach (Scrollbar scrollbar in root.GetComponentsInChildren<Scrollbar>(true))
                 scrollbar.onValueChanged = new Scrollbar.ScrollEvent();
-            foreach (Animator animator in clone.GetComponentsInChildren<Animator>(true))
+            foreach (Animator animator in root.GetComponentsInChildren<Animator>(true))
             {
                 animator.fireEvents = false;
                 animator.enabled = animator.gameObject == staff.gameObject;
             }
-            foreach (AudioSource audio in clone.GetComponentsInChildren<AudioSource>(true))
+            foreach (AudioSource audio in root.GetComponentsInChildren<AudioSource>(true))
             {
                 audio.playOnAwake = false;
                 audio.Stop();
             }
-            foreach (ParticleSystem particle in clone.GetComponentsInChildren<ParticleSystem>(true))
+            foreach (ParticleSystem particle in root.GetComponentsInChildren<ParticleSystem>(true))
             {
                 var main = particle.main;
                 main.playOnAwake = false;
@@ -122,7 +151,7 @@ public static class StaffGachaOfflineViewFactory
 
             // Instantiate remaps references within the subtree. Any remaining scene reference is
             // outside it (MainScene/tutorial/camera); do not retain the temporary source scene.
-            foreach (Component component in clone.GetComponentsInChildren<Component>(true))
+            foreach (Component component in root.GetComponentsInChildren<Component>(true))
             {
                 if (component == null) throw new InvalidOperationException("The copy contains a missing component.");
                 using (var serialized = new SerializedObject(component))
@@ -167,6 +196,69 @@ public static class StaffGachaOfflineViewFactory
             if (destination.IsValid() && destination.isLoaded && !EditorSceneManager.IsPreviewScene(destination))
                 SceneManager.SetActiveScene(destination);
         }
+    }
+
+    public static bool HasNavigation(UIGacha view) => view != null &&
+        view.transform.root.GetComponent<UIMainCanvas>() != null;
+
+    private static void NormalizeViewRect(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+        rect.localScale = Vector3.one;
+    }
+
+    public static Button NavigationEntry(UIGacha view) => view.transform.root.GetComponentsInChildren<Button>(true)
+        .Single(button => button.name == "Offline Original Staff Gacha Entry");
+
+    public static void ConfigureNavigation(UIGacha view, UIStaffGacha staff, BackendManager owner)
+    {
+        if (view == null || staff == null || owner == null || !owner.IsEditorOfflineOwner ||
+            view.transform.root.gameObject.activeInHierarchy || !HasNavigation(view))
+            throw new InvalidOperationException("Inactive navigation copy and detached owner required.");
+        GameObject root = view.transform.root.gameObject;
+        UIItemGacha item = view.GetComponentInChildren<UIItemGacha>(true);
+        var shop = root.GetComponentInChildren<UIRestaurantAdmin>(true);
+        var shopStaff = root.GetComponentInChildren<UIStaff>(true);
+        staff.ConfigureEditorOffline(owner, view);
+        item.ConfigureEditorOfflineNavigation(view);
+        view.ConfigureEditorOfflineNavigation(staff, item);
+        shop.ConfigureEditorOfflineNavigation(shopStaff);
+        shopStaff.ConfigureEditorOfflineNavigation(shop);
+        Button entry = NavigationEntry(view);
+        Button exit = view.transform.Find("Anime UI/UI Components/Exit Button").GetComponent<Button>();
+        root.GetComponent<UIMainCanvas>().ConfigureEditorOfflineNavigation(view, shop, entry, exit);
+        entry.interactable = exit.interactable = true;
+        // Unhide only the source staff preview/entry; other shop transactions have no listeners.
+        for (Transform parent = entry.transform; parent != shopStaff.transform; parent = parent.parent)
+            parent.gameObject.SetActive(true);
+        using (var serialized = new SerializedObject(root.GetComponent<MobileUINavigation>()))
+        {
+            serialized.FindProperty("_rootUiView").FindPropertyRelative("UIView").objectReferenceValue = null;
+            var views = serialized.FindProperty("_uiViews");
+            views.arraySize = 3;
+            string[] names = { "RestaurantAdminUI", "UIStaff", "UIGacha" };
+            MobileUIView[] values = { shop, shopStaff, view };
+            for (int index = 0; index < names.Length; index++)
+            {
+                var record = views.GetArrayElementAtIndex(index);
+                record.FindPropertyRelative("Name").stringValue = names[index];
+                record.FindPropertyRelative("UIView").objectReferenceValue = values[index];
+            }
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+        }
+    }
+
+    // Initial static shop setup only. Subsequent entry/exit and restoration are native UI events.
+    // Call after MobileUINavigation.Start (or its Init in an EditMode test).
+    public static void BeginNavigation(UIGacha view)
+    {
+        var nav = view.transform.root.GetComponent<MobileUINavigation>();
+        if (nav == null || nav.Count != 0) throw new InvalidOperationException("Empty copied navigation required.");
+        nav.PushNoAnime("RestaurantAdminUI");
+        nav.PushNoAnime("UIStaff");
     }
 
     private static bool IsDisplayBehaviour(MonoBehaviour component, UIGacha view, UIStaffGacha staff)
