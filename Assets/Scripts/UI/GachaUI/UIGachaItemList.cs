@@ -19,6 +19,7 @@ public class UIGachaSlotList : RecyclableVerticalScrollView<GachaData>
 
     public override void AddInit()
     {
+        HidePreviewCard();
         foreach (var slot in _slotList)
         {
             if (slot is UIGachaItemSlot itemSlot)
@@ -31,6 +32,16 @@ public class UIGachaSlotList : RecyclableVerticalScrollView<GachaData>
 
     private void OnEnable()
     {
-        _card.gameObject.SetActive(false);
+        HidePreviewCard();
+    }
+
+    private void OnDisable() => HidePreviewCard();
+
+    // The catalog's detail card is a sibling, not a child of this list. Hiding
+    // the list while its parent is inactive does not run OnEnable/OnDisable,
+    // so entry owners must also close the preview explicitly.
+    public void HidePreviewCard()
+    {
+        if (_card != null) _card.gameObject.SetActive(false);
     }
 }

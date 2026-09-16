@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Muks.BackEnd;
+using Muks.Tween;
 using Newtonsoft.Json;
 using NUnit.Framework;
 using TMPro;
@@ -134,6 +135,57 @@ public partial class StaffStageMigrationCollectionTests
                 Assert.That(fixture.Manager.StaffRuntime.Snapshot, Is.SameAs(account), reason);
                 if (reason == "response-unknown")
                     Assert.That(fixture.Manager.CurrentStaffPurchaseExecution.IsCompleted, Is.False);
+            }
+        }
+    }
+
+    [Test]
+    public void PaidButtons_FreeQuestLabelFitsOneLineInsideExistingButtonWithoutStartingGrant()
+    {
+        using (var resources = new RuntimeStaffScope(Catalog()))
+        {
+            var fixture = CreateNativePaidButtonFixture(out var wallet);
+            Func<int> draws = UsePurchaseSelection(fixture, "STAFF23");
+            Field(typeof(BackendManager), "_questStaffTutorialState").SetValue(fixture.Manager,
+                new MemoryQuestStaffState { Quest = "MainReward01" });
+            Assert.That(fixture.Manager.TryGetCurrentQuestStaffOffer(out _, out _), Is.True);
+            var account = fixture.Manager.StaffRuntime.Snapshot;
+            using (var ui = new PaidButtonView(fixture.Manager))
+            {
+                Vector2 originalSize = ((RectTransform)ui.Single.transform).sizeDelta;
+                typeof(UIStaffGacha).GetMethod("PrepareQuestEntry", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .Invoke(ui.Staff, new object[] { fixture.Manager, "MainReward01", null });
+                ui.Staff.Show();
+                var button = PaidField<Button>(ui.Staff, "_questButton");
+                var label = PaidField<TextMeshProUGUI>(ui.Staff, "_questLabel");
+                for (int entry = 0; entry < 2; entry++)
+                {
+                    Canvas.ForceUpdateCanvases();
+                    label.ForceMeshUpdate(true, true);
+                    Assert.That(label.text, Is.EqualTo("무료 뽑기"));
+                    Assert.That(label.enableWordWrapping, Is.False);
+                    Assert.That(label.enableAutoSizing, Is.True);
+                    Assert.That(label.textInfo.lineCount, Is.EqualTo(1));
+                    Assert.That(label.isTextOverflowing, Is.False);
+                    RectTransform rect = (RectTransform)button.transform;
+                    Assert.That(rect.sizeDelta, Is.EqualTo(originalSize), "Keep the existing button art dimensions");
+                    var corners = new Vector3[4];
+                    label.rectTransform.GetWorldCorners(corners);
+                    foreach (Vector3 corner in corners)
+                        Assert.That(rect.rect.Contains(rect.InverseTransformPoint(corner)), Is.True,
+                            "The free label must remain inside its existing button, not below its art");
+                    Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
+                    Assert.That(button.GetComponent<ButtonPressEffect>().Interactable, Is.True);
+                    Assert.That(ui.Single.gameObject.activeSelf || ui.Multi.gameObject.activeSelf, Is.False);
+                    ui.Staff.Hide(); ui.Staff.Show();
+                    Assert.That(PaidField<Button>(ui.Staff, "_questButton"), Is.SameAs(button));
+                }
+                Assert.That(fixture.Game.Writes, Is.Zero);
+                Assert.That(draws(), Is.Zero);
+                Assert.That(wallet.DiamondValue, Is.EqualTo(110));
+                Assert.That(fixture.Manager.StaffRuntime.Snapshot, Is.SameAs(account));
+                Assert.That(fixture.Manager.CurrentStaffPurchaseExecution, Is.Null);
+                Assert.That(fixture.Manager.LastCompletedQuestStaffGrant, Is.Null);
             }
         }
     }
@@ -364,7 +416,7 @@ public partial class StaffStageMigrationCollectionTests
                 Assert.That(ui.Display.EditorIsAnimating, Is.False);
                 Assert.That(ui.Display.EditorAnimationStartCount, Is.Zero);
                 ui.ClickReplay();
-                Assert.That(ui.Display.EditorIsResultVisible, Is.True, "Explicit 획득 결과 still reads the retained completion");
+                Assert.That(ui.Display.EditorIsResultVisible, Is.True, "Native 결과 확인 still reads the retained completion");
                 Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(single.Plan.AccountResult.Acquisition.Items[0]));
                 Assert.That(ui.Display.EditorAnimationStartCount, Is.Zero);
                 ui.ClickResultClose();
@@ -393,7 +445,14 @@ public partial class StaffStageMigrationCollectionTests
                 Assert.That(draws(), Is.EqualTo(12));
                 Assert.That(fixture.Game.Writes, Is.EqualTo(4));
                 Assert.That(completions, Is.EqualTo(2));
+                // The first reveal is not the multi-result close boundary. Use the
+                // native skip/cascade/+1 path, then the completed summary background.
+                ui.AdvanceMultiToSummary();
                 ui.ClickResultClose();
+                Assert.That(ui.Display.EditorIsResultVisible, Is.False);
+                Assert.That(fixture.Game.Writes, Is.EqualTo(4));
+                Assert.That(draws(), Is.EqualTo(12));
+                Assert.That(completions, Is.EqualTo(2));
             }
         }
     }
@@ -425,7 +484,11 @@ public partial class StaffStageMigrationCollectionTests
                 Assert.That(ui.Display.EditorAnimationStartCount, Is.EqualTo(1));
                 Assert.That(ui.Display.EditorIsResultVisible, Is.False);
                 Assert.That(ui.Animator.fireEvents, Is.False);
-                ui.ClickViewClose(); // Interrupted animation, still no explicit card acknowledgment.
+                // Native item-style playback hides the global chrome, including X.
+                // Exercise a lifecycle interruption instead of clicking an unavailable control.
+                Assert.That(ui.View.transform.Find("Anime UI/UI Components/Exit Button")
+                    .gameObject.activeInHierarchy, Is.False);
+                ui.View.Hide(); // Interrupted animation, still no explicit card acknowledgment.
                 ui.Display.Tick();
                 Assert.That(ui.Display.EditorIsAnimating, Is.False);
                 Assert.That(ui.Display.EditorIsResultVisible, Is.False);
@@ -494,11 +557,12 @@ public partial class StaffStageMigrationCollectionTests
                 .GetComponent<Image>().sprite).ToArray();
             foreach (Button button in new[] { Single, Multi })
                 if (button.GetComponent<ButtonPressEffect>() == null) button.gameObject.AddComponent<ButtonPressEffect>();
-            // The safe copier strips non-display behaviours. Init's unused legacy slot template is inert.
-            var slot = new GameObject("Inactive legacy slot template", typeof(RectTransform), typeof(UIGachaCardSlot));
-            slot.transform.SetParent(_root.transform, false);
-            slot.SetActive(false);
-            PaidSet(Staff, "_slotPrefab", slot.GetComponent<UIGachaCardSlot>());
+            // Native results now use the actual product slot template. Clone only that
+            // subtree so its fonts can be isolated before Init creates the ten cards.
+            var slot = Object.Instantiate(PaidField<UIGachaCardSlot>(Staff, "_slotPrefab"), _root.transform, false);
+            slot.gameObject.SetActive(false);
+            PaidSet(Staff, "_slotPrefab", slot);
+            _fonts.BindBeforeActivation(_root);
             Staff.BindPurchaseDisplayOwner(View, owner);
             // RuntimeStaffScope supplies the registered ID dictionary for mutation tests. The real
             // machine Init additionally reads the loader's array, so supply the same resource set
@@ -566,30 +630,105 @@ public partial class StaffStageMigrationCollectionTests
         {
             Display.Tick();
             Assert.That(Display.EditorIsAnimating, Is.True, Display.EditorAnimationError);
-            for (int frame = 0; frame < 180 && !Display.EditorIsResultVisible; frame++)
+            int wait = UnityEngine.Animator.StringToHash("Base Layer.Wait_Gacha");
+            int open = UnityEngine.Animator.StringToHash("Base Layer.Open_Gacha");
+            for (int frame = 0; frame < 1200; frame++)
             {
                 Assert.That(Animator.fireEvents, Is.False);
-                Animator.Update(0.1f);
+                Animator.Update(0.05f);
+                Display.Tick();
+                if (Animator.GetCurrentAnimatorStateInfo(0).fullPathHash == wait && !Animator.IsInTransition(0)) break;
+            }
+            Assert.That(Animator.GetCurrentAnimatorStateInfo(0).fullPathHash, Is.EqualTo(wait));
+            Assert.That(Animator.IsInTransition(0), Is.False);
+            Assert.That(Display.EditorIsResultVisible, Is.False, "The closed capsule waits for the user's native input");
+            Animator.Update(0.5f);
+            Display.Tick();
+            Assert.That(Animator.GetCurrentAnimatorStateInfo(0).fullPathHash, Is.EqualTo(wait));
+            // EditMode samples Animator time, not Time.unscaledTime. Expire only
+            // the input debounce; do not write phase, result index or Animator state.
+            PaidSet(Display, "_nextInput", 0f);
+            var screen = PaidField<Button>(Staff, "_screenButton");
+            Assert.That(screen.gameObject.activeInHierarchy && screen.interactable, Is.True);
+            screen.onClick.Invoke();
+            bool sawOpen = false;
+            for (int frame = 0; frame < 1200 && !Display.EditorIsResultVisible; frame++)
+            {
+                Animator.Update(0.05f);
+                sawOpen |= Animator.GetCurrentAnimatorStateInfo(0).fullPathHash == open;
                 Display.Tick();
             }
+            Assert.That(sawOpen, Is.True, "Native input must pass through the authored capsule-open clip");
             Assert.That(Display.EditorIsResultVisible, Is.True, "The actual machine controller did not reach its result card");
             Assert.That(Display.EditorIsAnimating, Is.False);
         }
 
+        public void AdvanceMultiToSummary()
+        {
+            Assert.That(Display.EditorResultCount, Is.EqualTo(11));
+            Assert.That(Display.EditorPresentationPhase, Is.EqualTo("Card"));
+            var skip = PaidField<Button>(Staff, "_skipButton");
+            Assert.That(skip.gameObject.activeInHierarchy && skip.interactable, Is.True);
+            Assert.That(skip.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("건너뛰기"));
+            skip.onClick.Invoke();
+            Assert.That(Display.EditorPresentationPhase, Is.EqualTo("Accumulating"));
+            for (int index = 0; index < 10; index++)
+            {
+                PaidSet(Display, "_nextSlot", 0f);
+                Display.Tick();
+                Assert.That(Display.EditorVisibleSlotCount, Is.EqualTo(index + 1));
+            }
+            PaidSet(Display, "_nextSlot", 0f);
+            Display.Tick();
+            Assert.That(Display.EditorPresentationPhase, Is.EqualTo("CapsuleMoving"));
+            var capsule = PaidField<GachaCapsule>(Staff, "_capsule");
+            // Complete the real capsule movement tween using its own callbacks.
+            foreach (TweenData tween in PaidField<RectTransform>(capsule, "_rectTransform").GetComponents<TweenData>())
+            {
+                if (!tween.enabled) continue;
+                if (typeof(TweenData).GetField("_percentHandler", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(tween) == null)
+                    typeof(TweenData).GetMethod("Awake", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(tween, null);
+                MethodInfo update = tween.GetType().GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic);
+                update.Invoke(tween, null);
+                typeof(TweenData).GetField("ElapsedDuration", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(tween, float.MaxValue);
+                update.Invoke(tween, null);
+            }
+            Assert.That(capsule.IsMoving, Is.False);
+            Display.Tick();
+            Assert.That(Display.EditorPresentationPhase, Is.EqualTo("CapsuleOpening"));
+            PaidField<Animator>(capsule, "_animator").Update(0.71f);
+            Display.Tick();
+            Assert.That(Display.EditorPresentationPhase, Is.EqualTo("Summary"));
+            Assert.That(Display.EditorResultIndex, Is.EqualTo(10));
+            Assert.That(Display.EditorVisibleSlotCount, Is.EqualTo(10));
+        }
+
         public void ClickResultClose()
         {
-            var overlay = View.transform.Find("Staff Acquisition Results");
-            Assert.That(overlay, Is.Not.Null, "The actual runtime result overlay is missing");
-            var button = overlay.GetComponentsInChildren<Button>(true).Single(candidate => candidate.name == "닫기");
-            Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
-            button.onClick.Invoke();
+            var button = PaidField<Button>(Staff, "_skipButton");
+            if (Display.EditorResultCount == 11)
+            {
+                Assert.That(Display.EditorPresentationPhase, Is.EqualTo("Summary"));
+                Assert.That(button.gameObject.activeSelf, Is.False, "The completed eleven-card summary has no close button");
+                var screen = PaidField<Button>(Staff, "_screenButton");
+                Assert.That(screen.gameObject.activeInHierarchy && screen.interactable, Is.True);
+                PaidSet(Display, "_nextInput", 0f);
+                screen.onClick.Invoke();
+            }
+            else
+            {
+                Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
+                Assert.That(button.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("닫기"));
+                button.onClick.Invoke();
+            }
             Assert.That(Display.EditorIsResultVisible, Is.False);
         }
 
         public void ClickReplay()
         {
-            var button = Staff.GetComponentsInChildren<Button>(true).Single(candidate => candidate.name == "획득 결과");
+            var button = PaidField<Button>(Staff, "_skipButton");
             Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
+            Assert.That(button.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("결과 확인"));
             button.onClick.Invoke();
         }
 

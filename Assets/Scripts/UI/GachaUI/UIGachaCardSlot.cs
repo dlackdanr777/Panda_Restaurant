@@ -16,6 +16,27 @@ public class UIGachaCardSlot : MonoBehaviour
 
     [SerializeField] private UIItemStar _itemStar;
 
+    // The slot reads only the saved acquisition output, never the current account or item grant path.
+    public bool TrySetStaffAcquisitionResult(GachaStaffData data, StaffGachaAcquisitionItem item)
+    {
+        if (data == null || data.StaffData == null || item == null ||
+            !string.Equals(data.Id, item.StaffId, System.StringComparison.Ordinal) ||
+            !string.Equals(data.StaffData.Id, item.StaffId, System.StringComparison.Ordinal) ||
+            data.Rank != item.Rank || data.StaffData.Rank != item.Rank)
+        {
+            ClearData();
+            return false;
+        }
+        SetImage(data);
+        UpdateFrame(data);
+        SetName(data);
+        _descriptionText.SetText(item.IsNew ? "신규 획득" : "중복 획득\n판다토큰 +" + item.PandaTokenReward);
+        _effectText.SetText(Utility.GetStaffEffectDescription(data.StaffData, 1));
+        _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.GetStaffGroupTypeFromData(data.StaffData)));
+        _itemStar.SetStar(data.Rank);
+        return true;
+    }
+
 
 
     public void SetData(GachaData data)

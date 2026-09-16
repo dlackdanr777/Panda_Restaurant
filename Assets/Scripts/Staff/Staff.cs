@@ -99,6 +99,12 @@ public class Staff : MonoBehaviour
     public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController, FeverSystem feverSystem)
     {
         CancelActiveSkill(StaffSkillCancellationReason.ManualCancellation, true);
+        if (_feverSystem != null)
+        {
+            _feverSystem.OnStartFeverHandler -= OnStartFeverEvent;
+            _feverSystem.OnEndFeverHandler -= OnEndFeverEvent;
+        }
+        if (_gameManager != null) _gameManager.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
         _gameManager = GameManager.Instance;
         _skillEffectRegistry = _gameManager.StaffSkillEffectRegistry;
         _skillRuntimeContext.ResetLocalState();
@@ -115,8 +121,11 @@ public class Staff : MonoBehaviour
         _feverSystem = feverSystem;
         _spriteRenderer.color = Color.white;
         _scaleX = transform.localScale.x;
+        _gameManager.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
         _gameManager.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
+        UserInfo.OnUpgradeStaffHandler -= OnLevelUpEvent;
         UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
+        UserInfo.OnChangeStaffSkinHandler -= OnChangeSkinEvent;
         UserInfo.OnChangeStaffSkinHandler += OnChangeSkinEvent;
         _feverSystem.OnStartFeverHandler += OnStartFeverEvent;
         _feverSystem.OnEndFeverHandler += OnEndFeverEvent;
@@ -159,7 +168,10 @@ public class Staff : MonoBehaviour
         StopAllCoroutines();
         SkillEffectSetActive(false);
         if (staffData == _staffData)
+        {
+            RefreshFeverEffect();
             return;
+        }
 
         if (_staffData != null)
         {
@@ -203,6 +215,13 @@ public class Staff : MonoBehaviour
         OnChangeSkillValueEvent();
         // 스탭 데이터 설정 완료 후 기본적으로 Idle 상태로 설정하여 Idle 애니메이션 시작
         SetStaffState(EStaffState.None);
+        RefreshFeverEffect();
+    }
+
+    private void RefreshFeverEffect()
+    {
+        SkillEffectSetActive(_staffData != null && gameObject.activeInHierarchy
+            && (_usingSkill || (_feverSystem != null && _feverSystem.IsFeverStart)));
     }
 
     public virtual void SetAlpha(float alpha)
@@ -895,6 +914,7 @@ public class Staff : MonoBehaviour
 
     public void ObjectPoolSpawnEvent()
     {
+        LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
         LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
 
         if (_gameManager == null
@@ -906,6 +926,7 @@ public class Staff : MonoBehaviour
 
         if (_gameManager != null)
         {
+            _gameManager.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
             _gameManager.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
         }
         else
@@ -913,6 +934,7 @@ public class Staff : MonoBehaviour
             DebugLog.LogWarning("[Staff Skill] 기존 GameManager가 없어 Skill 이벤트 구독을 건너뜁니다: " + name);
         }
 
+        UserInfo.OnUpgradeStaffHandler -= OnLevelUpEvent;
         UserInfo.OnUpgradeStaffHandler += OnLevelUpEvent;
     }
 
@@ -927,6 +949,12 @@ public class Staff : MonoBehaviour
         }
 
         UserInfo.OnUpgradeStaffHandler -= OnLevelUpEvent;
+        UserInfo.OnChangeStaffSkinHandler -= OnChangeSkinEvent;
+        if (_feverSystem != null)
+        {
+            _feverSystem.OnStartFeverHandler -= OnStartFeverEvent;
+            _feverSystem.OnEndFeverHandler -= OnEndFeverEvent;
+        }
     }
 
 

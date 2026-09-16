@@ -1,6 +1,9 @@
 using Muks.DataBind;
 using Muks.MobileUI;
 using UnityEngine;
+using System;
+using System.Collections;
+using Muks.BackEnd;
 
 [RequireComponent(typeof(MobileUINavigation))]
 public class UIMainCanvas : MonoBehaviour
@@ -19,9 +22,11 @@ public class UIMainCanvas : MonoBehaviour
     [SerializeField] private UIGacha _uiGacha;
 
     private GachaEntrySource _gachaEntrySource;
-    private string _automaticallyGuidedQuest;
-    private bool _restoreQuestPanel;
-    private float _nextQuestGuideCheck;
+    private Coroutine _shopShortcut;
+    private BackendManager _questShopOwner;
+    private QuestStaffOffer _questShopOffer;
+    private QuestOwnedStaffDetail _questOwnedStaffDetail;
+    private int _questShopSelectionRevision;
 
 #if UNITY_EDITOR
     private bool _editorOfflineNavigation;
@@ -40,7 +45,7 @@ public class UIMainCanvas : MonoBehaviour
         _uiGacha = view;
         _uiAdmin = shop;
         _gachaEntrySource = GachaEntrySource.None;
-        _restoreQuestPanel = false;
+        ClearQuestShopContext();
         enter.onClick.RemoveListener(OnShowStaffGachaUI);
         enter.onClick.AddListener(OnShowStaffGachaUI);
         exit.onClick.RemoveListener(OnHideGachaUI);
@@ -64,6 +69,7 @@ public class UIMainCanvas : MonoBehaviour
 #if UNITY_EDITOR
         if (_editorOfflineNavigation) return;
 #endif
+        QuestProgressGuidance.Install(this);
         DataBind.SetUnityActionValue("PopUI", OnPopUI);
 
         DataBind.SetUnityActionValue("ShowFurnitureTab", OnShowFurnitureTab);
@@ -156,36 +162,36 @@ public class UIMainCanvas : MonoBehaviour
         DataBind.SetUnityActionValue("HideNoAnimeMailboxUI", OnHideNoAnimeMailboxUI);
 
 
-        DataBind.SetUnityActionValue("ShowFurnitureTable1", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table1));
-        DataBind.SetUnityActionValue("ShowFurnitureTable2", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table2));
-        DataBind.SetUnityActionValue("ShowFurnitureTable3", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table3));
-        DataBind.SetUnityActionValue("ShowFurnitureTable4", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table4));
-        DataBind.SetUnityActionValue("ShowFurnitureTable5", () => _uiAdmin.ShowUIFurniture(FurnitureType.Table5));
-        DataBind.SetUnityActionValue("ShowFurnitureCounter", () => _uiAdmin.ShowUIFurniture(FurnitureType.Counter));
-        DataBind.SetUnityActionValue("ShowFurnitureRack", () => _uiAdmin.ShowUIFurniture(FurnitureType.Rack));
-        DataBind.SetUnityActionValue("ShowFurnitureFrame", () => _uiAdmin.ShowUIFurniture(FurnitureType.Frame));
-        DataBind.SetUnityActionValue("ShowFurnitureFlower", () => _uiAdmin.ShowUIFurniture(FurnitureType.Flower));
-        DataBind.SetUnityActionValue("ShowFurnitureAcc", () => _uiAdmin.ShowUIFurniture(FurnitureType.Acc));
-        DataBind.SetUnityActionValue("ShowFurnitureWallpaper", () => _uiAdmin.ShowUIFurniture(FurnitureType.Wallpaper));
+        DataBind.SetUnityActionValue("ShowFurnitureTable1", () => ShowFurnitureShortcut(FurnitureType.Table1));
+        DataBind.SetUnityActionValue("ShowFurnitureTable2", () => ShowFurnitureShortcut(FurnitureType.Table2));
+        DataBind.SetUnityActionValue("ShowFurnitureTable3", () => ShowFurnitureShortcut(FurnitureType.Table3));
+        DataBind.SetUnityActionValue("ShowFurnitureTable4", () => ShowFurnitureShortcut(FurnitureType.Table4));
+        DataBind.SetUnityActionValue("ShowFurnitureTable5", () => ShowFurnitureShortcut(FurnitureType.Table5));
+        DataBind.SetUnityActionValue("ShowFurnitureCounter", () => ShowFurnitureShortcut(FurnitureType.Counter));
+        DataBind.SetUnityActionValue("ShowFurnitureRack", () => ShowFurnitureShortcut(FurnitureType.Rack));
+        DataBind.SetUnityActionValue("ShowFurnitureFrame", () => ShowFurnitureShortcut(FurnitureType.Frame));
+        DataBind.SetUnityActionValue("ShowFurnitureFlower", () => ShowFurnitureShortcut(FurnitureType.Flower));
+        DataBind.SetUnityActionValue("ShowFurnitureAcc", () => ShowFurnitureShortcut(FurnitureType.Acc));
+        DataBind.SetUnityActionValue("ShowFurnitureWallpaper", () => ShowFurnitureShortcut(FurnitureType.Wallpaper));
 
-        DataBind.SetUnityActionValue("ShowKitchenBurner1", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner1));
-        DataBind.SetUnityActionValue("ShowKitchenBurner2", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner2));
-        DataBind.SetUnityActionValue("ShowKitchenBurner3", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner3));
-        DataBind.SetUnityActionValue("ShowKitchenBurner4", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner4));
-        DataBind.SetUnityActionValue("ShowKitchenBurner5", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Burner5));
-        DataBind.SetUnityActionValue("ShowKitchenFridge", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Fridge));
-        DataBind.SetUnityActionValue("ShowKitchenCabinet", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Cabinet));
-        DataBind.SetUnityActionValue("ShowKitchenWindow", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Window));
-        DataBind.SetUnityActionValue("ShowKitchenSink", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Sink));
-        DataBind.SetUnityActionValue("ShowKitchenKitchenrack", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.Kitchenrack));
-        DataBind.SetUnityActionValue("ShowKitchenCookingTools", () => _uiAdmin.ShowUIKitchen(KitchenUtensilType.CookingTools));
+        DataBind.SetUnityActionValue("ShowKitchenBurner1", () => ShowKitchenShortcut(KitchenUtensilType.Burner1));
+        DataBind.SetUnityActionValue("ShowKitchenBurner2", () => ShowKitchenShortcut(KitchenUtensilType.Burner2));
+        DataBind.SetUnityActionValue("ShowKitchenBurner3", () => ShowKitchenShortcut(KitchenUtensilType.Burner3));
+        DataBind.SetUnityActionValue("ShowKitchenBurner4", () => ShowKitchenShortcut(KitchenUtensilType.Burner4));
+        DataBind.SetUnityActionValue("ShowKitchenBurner5", () => ShowKitchenShortcut(KitchenUtensilType.Burner5));
+        DataBind.SetUnityActionValue("ShowKitchenFridge", () => ShowKitchenShortcut(KitchenUtensilType.Fridge));
+        DataBind.SetUnityActionValue("ShowKitchenCabinet", () => ShowKitchenShortcut(KitchenUtensilType.Cabinet));
+        DataBind.SetUnityActionValue("ShowKitchenWindow", () => ShowKitchenShortcut(KitchenUtensilType.Window));
+        DataBind.SetUnityActionValue("ShowKitchenSink", () => ShowKitchenShortcut(KitchenUtensilType.Sink));
+        DataBind.SetUnityActionValue("ShowKitchenKitchenrack", () => ShowKitchenShortcut(KitchenUtensilType.Kitchenrack));
+        DataBind.SetUnityActionValue("ShowKitchenCookingTools", () => ShowKitchenShortcut(KitchenUtensilType.CookingTools));
 
-        DataBind.SetUnityActionValue("ShowStaffManager", () => _uiAdmin.ShowUIStaff(EquipStaffType.Manager));
-        DataBind.SetUnityActionValue("ShowStaffMarketer", () => _uiAdmin.ShowUIStaff(EquipStaffType.Marketer));
-        DataBind.SetUnityActionValue("ShowStaffWaiter", () => _uiAdmin.ShowUIStaff(EquipStaffType.Waiter));
-        DataBind.SetUnityActionValue("ShowStaffCleaner", () => _uiAdmin.ShowUIStaff(EquipStaffType.Cleaner));
-        DataBind.SetUnityActionValue("ShowStaffGuard", () => _uiAdmin.ShowUIStaff(EquipStaffType.Guard));
-        DataBind.SetUnityActionValue("ShowStaffChef", () => _uiAdmin.ShowUIStaff(EquipStaffType.Chef));
+        DataBind.SetUnityActionValue("ShowStaffManager", () => ShowStaffShortcut(EquipStaffType.Manager));
+        DataBind.SetUnityActionValue("ShowStaffMarketer", () => ShowStaffShortcut(EquipStaffType.Marketer));
+        DataBind.SetUnityActionValue("ShowStaffWaiter", () => ShowStaffShortcut(EquipStaffType.Waiter));
+        DataBind.SetUnityActionValue("ShowStaffCleaner", () => ShowStaffShortcut(EquipStaffType.Cleaner));
+        DataBind.SetUnityActionValue("ShowStaffGuard", () => ShowStaffShortcut(EquipStaffType.Guard));
+        DataBind.SetUnityActionValue("ShowStaffChef", () => ShowStaffShortcut(EquipStaffType.Chef));
     }
 
 
@@ -196,37 +202,113 @@ public class UIMainCanvas : MonoBehaviour
 
     private void OnShowRecipeTab()
     {
-        _uiNav.Push("RestaurantAdminUI");
-        _uiAdmin.ShowRecipeTab();
+        var quest = CaptureProductShortcut(ChallengeType.TYPE03);
+        var stage = UserInfo.CurrentStage;
+        string id = GetQuestProductId(quest);
+        OpenShopShortcut(() =>
+        {
+            if (quest == null) _uiAdmin.ShowRecipeTab();
+            else if (IsProductShortcutCurrent(quest, stage, id)) _uiAdmin.ShowQuestRecipe(id);
+        });
     }
 
     private void OnShowFurnitureTab()
     {
-        _uiNav.Push("RestaurantAdminUI");
-        _uiAdmin.ShowFurnitureTab();
+        OpenShopShortcut(() => _uiAdmin.ShowFurnitureTab());
     }
 
     private void OnShowStaffTab()
     {
-        _uiNav.Push("RestaurantAdminUI");
-        _uiAdmin.ShowStaffTab();
+        OpenShopShortcut(() => _uiAdmin.ShowStaffTab());
     }
 
     private void OnShowKitchenTab()
     {
-        _uiNav.Push("RestaurantAdminUI");
-        _uiAdmin.ShowKitchenTab();
+        OpenShopShortcut(() => _uiAdmin.ShowKitchenTab());
     }
 
 
     private void OnShowRestaurantAdminUI()
     {
-        _uiNav.Push("RestaurantAdminUI");
+        OpenShopShortcut(null);
     }
 
     private void OnHideRestaurantAdminUI()
     {
+        ClearQuestShopContext();
         _uiNav.Pop("RestaurantAdminUI");
+    }
+
+    private void ShowFurnitureShortcut(FurnitureType type)
+    {
+        var quest = CaptureProductShortcut(ChallengeType.TYPE01);
+        var stage = UserInfo.CurrentStage;
+        string id = GetQuestProductId(quest);
+        OpenShopShortcut(() =>
+        {
+            if (quest == null) _uiAdmin.ShowUIFurniture(type);
+            else if (IsProductShortcutCurrent(quest, stage, id)) _uiAdmin.ShowQuestFurniture(id);
+        });
+    }
+
+    private void ShowKitchenShortcut(KitchenUtensilType type)
+    {
+        var quest = CaptureProductShortcut(ChallengeType.TYPE02);
+        var stage = UserInfo.CurrentStage;
+        string id = GetQuestProductId(quest);
+        OpenShopShortcut(() =>
+        {
+            if (quest == null) _uiAdmin.ShowUIKitchen(type);
+            else if (IsProductShortcutCurrent(quest, stage, id)) _uiAdmin.ShowQuestKitchen(id);
+        });
+    }
+
+    private ChallengeData CaptureProductShortcut(ChallengeType type)
+    {
+        // Shared category bindings also serve ordinary shop/daily UI. Only a main-quest
+        // button may borrow the current main goal; capture it before the panel closes.
+        if (_uiNav == null || !_uiNav.CheckActiveView("UIMainChallenge")) return null;
+        var quest = ChallengeManager.Instance.GetCurrentMainChallengeData();
+        return quest != null && quest.Type == type ? quest : null;
+    }
+
+    internal static string GetQuestProductId(ChallengeData quest)
+    {
+        if (quest is Type01ChallengeData furniture && furniture.NeedFurnitureIds?.Length == 1)
+            return furniture.NeedFurnitureIds[0];
+        if (quest is Type02ChallengeData kitchen && kitchen.NeedKitchenUtensilId?.Length == 1)
+            return kitchen.NeedKitchenUtensilId[0];
+        return (quest as Type03ChallengeData)?.BuyRecipeId;
+    }
+
+    private static bool IsProductShortcutCurrent(ChallengeData quest, EStage stage, string id)
+        => quest != null && !string.IsNullOrEmpty(id) && UserInfo.CurrentStage == stage
+            && ReferenceEquals(ChallengeManager.Instance.GetCurrentMainChallengeData(), quest)
+            && GetQuestProductId(quest) == id;
+
+    private void ShowStaffShortcut(EquipStaffType type) => OpenShopShortcut(() => _uiAdmin.ShowUIStaff(type));
+
+    private bool OpenShopShortcut(Action openDetail, bool preserveQuestContext = false)
+    {
+        if (_shopShortcut != null || _uiNav == null || _uiAdmin == null || !_uiNav.ViewsVisibleStateCheck()
+            || IsGachaOpenOrOpening()) return false;
+        if (!preserveQuestContext) ClearQuestShopContext();
+        _shopShortcut = StartCoroutine(OpenShopShortcutRoutine(openDetail));
+        return true;
+    }
+
+    private IEnumerator OpenShopShortcutRoutine(Action openDetail)
+    {
+        // Close only the originating quest panel. Do not clear unrelated UI or skip the shop's Show lifecycle.
+        if (_uiNav.CheckActiveView("UIMainChallenge")) _uiNav.Pop("UIMainChallenge");
+        yield return null;
+        while (!_uiNav.ViewsVisibleStateCheck()) yield return null;
+        if (!_uiNav.CheckActiveView("RestaurantAdminUI")) _uiNav.Push("RestaurantAdminUI");
+        if (!_uiNav.CheckActiveView("RestaurantAdminUI")) { _shopShortcut = null; yield break; }
+        while (_uiNav.CheckActiveView("RestaurantAdminUI") &&
+            (!_uiNav.ViewsVisibleStateCheck() || !_uiAdmin.IsReadyForDetail)) yield return null;
+        _shopShortcut = null;
+        if (_uiNav.CheckActiveView("RestaurantAdminUI") && _uiAdmin.IsReadyForDetail) openDetail?.Invoke();
     }
 
     private void OnShowStaffUI()
@@ -380,8 +462,6 @@ public class UIMainCanvas : MonoBehaviour
 
     private void OnShowGachaUI()
     {
-        // The same verified entry is used by the early-quest guide and manual re-entry.
-        if (TryShowQuestStaffGachaUI()) return;
         if (IsGachaOpenOrOpening()
             || !CanShowGachaUI()
             || !_uiNav.ViewsVisibleStateCheck())
@@ -398,52 +478,110 @@ public class UIMainCanvas : MonoBehaviour
         RestoreAfterFailedGachaPush();
     }
 
-    private void Update()
-    {
-#if UNITY_EDITOR
-        if (_editorOfflineNavigation) return;
-#endif
-        if (_uiNav == null) return;
-        if (_restoreQuestPanel)
-        {
-            if (_uiNav.CheckActiveView("UIGacha") || !_uiNav.ViewsVisibleStateCheck()) return;
-            _restoreQuestPanel = false;
-            if (!_uiNav.CheckActiveView("UIMainChallenge")) _uiNav.Push("UIMainChallenge");
-            return;
-        }
-        if (Time.unscaledTime < _nextQuestGuideCheck) return;
-        _nextQuestGuideCheck = Time.unscaledTime + 0.5f;
-        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart || _uiNav.Count != 0 || IsGachaOpenOrOpening())
-            return;
-        var owner = Muks.BackEnd.BackendManager.Instance;
-        if (!owner.TryGetCurrentQuestStaffOffer(out var offer, out _) || offer.QuestId == _automaticallyGuidedQuest)
-            return;
-        if (TryShowQuestStaffGachaUI()) _automaticallyGuidedQuest = offer.QuestId;
-    }
-
     private void OnShowQuestStaffGachaUI()
     {
-        if (!TryShowQuestStaffGachaUI())
+        // Retain the existing shortcut binding, but enter the product shop detail instead of the machine.
+        if (!TryShowQuestStaffShop())
             PopupManager.Instance.ShowDisplayText("현재 직원 안내를 시작할 수 없습니다. 진행 상태를 확인해 주세요.");
     }
 
-    private bool TryShowQuestStaffGachaUI()
+    private bool TryShowQuestStaffShop()
     {
         if (UserInfo.IsTutorialStart || !UserInfo.IsFirstTutorialClear || IsGachaOpenOrOpening() ||
-            _uiNav == null || !_uiNav.ViewsVisibleStateCheck() || _uiGacha == null)
+            _uiNav == null || !_uiNav.ViewsVisibleStateCheck() || _uiAdmin == null || _shopShortcut != null)
             return false;
-        var current = ChallengeManager.Instance.GetCurrentMainChallengeData();
-        if (current == null || !QuestStaffTutorialPolicy.TryGetMapping(current.Id, out _, out _)) return false;
-        var owner = Muks.BackEnd.BackendManager.Instance;
-        if (!_uiGacha.PrepareQuestStaffMachine(owner)) return false;
-        _gachaEntrySource = GachaEntrySource.QuestStaff;
-        _uiNav.Push("UIGacha");
-        RestoreAfterFailedGachaPush();
-        return _gachaEntrySource == GachaEntrySource.QuestStaff;
+        var owner = BackendManager.Instance;
+        if (!TryGetQuestShopEntry(owner, out var offer, out var retained))
+        {
+            if (!owner.TryGetCurrentQuestOwnedStaffDetail(out var owned)) return false;
+            return OpenShopShortcut(() =>
+            {
+                if (!IsOwnedQuestStaffDetailCurrent(owner, owned) || !_uiAdmin.ShowQuestStaff(owned.StaffData)) return;
+                _questOwnedStaffDetail = owned;
+            });
+        }
+        _questShopOwner = owner;
+        _questShopOffer = offer;
+        _questShopSelectionRevision = -1;
+        return OpenShopShortcut(() =>
+        {
+            if (!IsQuestShopOfferCurrent(owner, offer) || !_uiAdmin.ShowQuestStaff(offer.StaffData))
+            {
+                ClearQuestShopContext();
+                return;
+            }
+            _questShopSelectionRevision = _uiAdmin.StaffSelectionRevision;
+            // This is a continuation of the user's explicit shortcut, not polling or
+            // a completion callback. Owned staff have no purchase button to reopen a result.
+            if (retained != null && !StaffGachaPurchaseDisplay.IsAcknowledged(retained))
+                StartCoroutine(ResumeQuestStaffRequestWhenReady(owner, retained));
+        }, true);
+    }
+
+    private static bool TryGetQuestShopEntry(BackendManager owner, out QuestStaffOffer entry,
+        out QuestStaffGrantExecution retained)
+    {
+        entry = null;
+        retained = null;
+        if (owner == null) return false;
+        return owner.TryGetRetainedQuestStaffEntry(out entry, out retained)
+            || owner.TryGetCurrentQuestStaffOffer(out entry, out _);
+    }
+
+    private static bool IsOwnedQuestStaffDetailCurrent(BackendManager owner, QuestOwnedStaffDetail expected)
+        => owner != null && expected != null && owner.IsCurrentGameDataQuery(expected.Query)
+            && owner.TryGetCurrentQuestOwnedStaffDetail(out var live) && ReferenceEquals(live.Query, expected.Query)
+            && live.QuestId == expected.QuestId && live.StaffData.Id == expected.StaffData.Id;
+
+    private IEnumerator ResumeQuestStaffRequestWhenReady(BackendManager owner, QuestStaffGrantExecution retained)
+    {
+        while (_uiNav != null && _uiNav.CheckActiveView("RestaurantAdminUI")
+            && _uiNav.CheckActiveView("UIStaff") && !_uiNav.ViewsVisibleStateCheck()) yield return null;
+        if (_uiNav == null || !_uiNav.CheckActiveView("RestaurantAdminUI") || !_uiNav.CheckActiveView("UIStaff")
+            || !ReferenceEquals(_questShopOwner, owner) || !IsQuestShopEntryCurrent()
+            || !owner.TryGetRetainedQuestStaffEntry(out _, out var current) || !ReferenceEquals(current, retained)
+            || StaffGachaPurchaseDisplay.IsAcknowledged(retained)) yield break;
+        OnShowStaffGachaUI(); // Rebind the same request; the actual claim button still checks fresh eligibility.
+    }
+
+    private static bool IsQuestShopOfferCurrent(BackendManager owner, QuestStaffOffer expected)
+        => owner != null && expected != null && owner.IsCurrentGameDataQuery(expected.Query)
+            && TryGetQuestShopEntry(owner, out var live, out _)
+            && ReferenceEquals(live.Query, expected.Query) && live.QuestId == expected.QuestId
+            && live.StaffId == expected.StaffId;
+
+    private bool IsQuestShopEntryCurrent()
+        => _uiAdmin != null && _questShopSelectionRevision == _uiAdmin.StaffSelectionRevision
+            && _uiAdmin.SelectedStaff != null && _uiAdmin.SelectedStaff.Id == _questShopOffer?.StaffId
+            && IsQuestShopOfferCurrent(_questShopOwner, _questShopOffer);
+
+    private void ClearQuestShopContext()
+    {
+        _questOwnedStaffDetail = null;
+        _questShopOwner = null;
+        _questShopOffer = null;
+        _questShopSelectionRevision = -1;
     }
 
     private void OnShowStaffGachaUI()
     {
+        // An owned-only detail never creates an offer or falls through into a paid draw.
+        if (_questOwnedStaffDetail != null) return;
+        if (_questShopOffer != null)
+        {
+            if (IsGachaOpenOrOpening() || _uiNav == null || !_uiNav.ViewsVisibleStateCheck()
+                || !IsQuestShopEntryCurrent() || _uiGacha == null
+                || !_uiGacha.PrepareQuestStaffMachine(_questShopOwner, _questShopOffer.QuestId, IsQuestShopEntryCurrent)
+                || !_uiAdmin.TrySuspendStaffViewForGacha())
+            {
+                PopupManager.Instance.ShowDisplayText("직원 안내가 변경되었습니다. 할일 목록의 바로가기를 다시 선택해 주세요.");
+                return; // An expired free entry never becomes a paid purchase entry.
+            }
+            _gachaEntrySource = GachaEntrySource.QuestStaff;
+            _uiNav.Push("UIGacha");
+            RestoreAfterFailedGachaPush();
+            return;
+        }
         if (IsGachaOpenOrOpening()
             || !CanShowGachaUI()
             || !_uiNav.ViewsVisibleStateCheck())
@@ -517,10 +655,7 @@ public class UIMainCanvas : MonoBehaviour
         GachaEntrySource completedSource = _gachaEntrySource;
         _gachaEntrySource = GachaEntrySource.None;
 
-        if (completedSource == GachaEntrySource.QuestStaff)
-            _restoreQuestPanel = true; // Navigation finishes its own Pop before we resume the quest UI.
-
-        if (completedSource == GachaEntrySource.StaffShop
+        if ((completedSource == GachaEntrySource.StaffShop || completedSource == GachaEntrySource.QuestStaff)
             && (_uiAdmin == null || !_uiAdmin.ResumeStaffViewAfterGacha()))
         {
             DebugLog.LogError("가챠 진입 전 상점 직원 화면을 복원할 수 없습니다.");

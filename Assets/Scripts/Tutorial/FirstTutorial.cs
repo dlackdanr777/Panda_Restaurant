@@ -333,6 +333,7 @@ yield return YieldCache.WaitForSeconds(1);
         UserInfo.GiveRecipe("FOOD01");
         StopAllCoroutines();
         StopTouchObservation();
+        _uiDescriptionNPC.HideGuidanceCard();
         StartCoroutine(CompleteTutorialRoutine(true));
     }
 
@@ -382,15 +383,7 @@ yield return YieldCache.WaitForSeconds(1);
         {
             StopTouchObservation();
             if (_uiTutorial != null) _uiTutorial.PunchHoleSetActive(false);
-            if (_viewsOpened && _uiNav != null && _uiTutorial != null && _uiDescriptionNPC != null)
-            {
-                _uiTutorial.PopEnabled = true;
-                _uiDescriptionNPC.PopEnabled = true;
-                _uiNav.Pop("UITutorial");
-                _uiNav.Pop("UITutorialDescription");
-                _uiTutorial.PopEnabled = false;
-                _uiDescriptionNPC.PopEnabled = false;
-            }
+            CloseTutorialViews();
             if (_mainSceneUI != null) _mainSceneUI.gameObject.SetActive(true);
             if (skipped)
             {
@@ -403,6 +396,20 @@ yield return YieldCache.WaitForSeconds(1);
             _viewsOpened = false;
             UserInfo.IsTutorialStart = false;
             _preparation?.ReleasePresentation(this);
+        }
+    }
+
+    private void CloseTutorialViews()
+    {
+        if (!_viewsOpened) return;
+        // Only this tutorial's registered views are removed. Animated Pop can
+        // reject cleanup while the Skip confirmation is still disappearing.
+        if (_uiDescriptionNPC != null) _uiDescriptionNPC.Hide();
+        if (_uiTutorial != null) _uiTutorial.Hide();
+        if (_uiNav != null)
+        {
+            _uiNav.PopNoAnime("UITutorialDescription");
+            _uiNav.PopNoAnime("UITutorial");
         }
     }
 

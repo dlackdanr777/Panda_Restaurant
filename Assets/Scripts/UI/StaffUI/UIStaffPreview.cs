@@ -41,9 +41,11 @@ public class UIStaffPreview : MonoBehaviour
     private ERestaurantFloorType _currentFloor;
     private EquipStaffType _equipStaffType;
     private RectTransform _actionButtonRoot;
+    public RectTransform BuyButtonRect => _buyButton != null ? _buyButton.transform as RectTransform : null;
+    public RectTransform EquipButtonRect => _equipButton != null ? _equipButton.transform as RectTransform : null;
 
     private const float UnownedActionButtonX = 70f;
-    private const float OwnedActionButtonX = 200f;
+    private const float OwnedActionSpacing = 130f;
     private const float UnownedInfoFontSize = 20f;
     private const float UnownedDescriptionFontSize = 42f;
     private const float OwnedDescriptionFontSize = 35f;
@@ -275,8 +277,21 @@ public class UIStaffPreview : MonoBehaviour
             return;
 
         Vector2 position = _actionButtonRoot.anchoredPosition;
-        position.x = isOwned ? OwnedActionButtonX : UnownedActionButtonX;
+        position.x = UnownedActionButtonX;
         _actionButtonRoot.anchoredPosition = position;
+        // Upgrade Image is a later, raycastable sibling of Equip/Using in the product scene.
+        // Moving their shared parent had placed both controls on the same footprint.
+        SetActionOffset(_equipButton.transform as RectTransform, isOwned ? -OwnedActionSpacing : 0f);
+        SetActionOffset(_usingButton.transform as RectTransform, isOwned ? -OwnedActionSpacing : 0f);
+        _selectGroup.SetUpgradeButtonHorizontalOffset(isOwned ? OwnedActionSpacing : 0f);
+    }
+
+    private static void SetActionOffset(RectTransform button, float x)
+    {
+        if (button == null) return;
+        Vector2 position = button.anchoredPosition;
+        position.x = x;
+        button.anchoredPosition = position;
     }
 
     private void SetRuntimeSkillTimes(StaffData data, int level)

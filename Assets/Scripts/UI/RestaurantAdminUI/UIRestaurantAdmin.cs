@@ -86,6 +86,15 @@ public class UIRestaurantAdmin : MobileUIView
     private float _shopAlphaBeforeGacha;
     private bool _shopInteractableBeforeGacha;
     private bool _shopBlockedRaycastsBeforeGacha;
+    public StaffData SelectedStaff => _staffUI != null ? _staffUI.SelectedStaff : null;
+    public UIFurniture FurnitureView => _furnitureUI;
+    public UIKitchen KitchenView => _kitchenUI;
+    public UIRecipeTab RecipeView => _recipeTab;
+    public int StaffSelectionRevision => _staffUI != null ? _staffUI.SelectionRevision : -1;
+    public bool IsReadyForDetail => !_isClosingSession && !_isSuspendedForGacha && gameObject.activeInHierarchy
+        && VisibleState == VisibleState.Appeared && _canvasGroup.alpha > 0f
+        && _canvasGroup.interactable && _canvasGroup.blocksRaycasts
+        && (_dontTouchArea == null || !_dontTouchArea.gameObject.activeSelf);
 
 #if UNITY_EDITOR
     private bool _editorOfflineNavigation;
@@ -208,6 +217,7 @@ public class UIRestaurantAdmin : MobileUIView
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
         gameObject.SetActive(true);
+        _canvasGroup.interactable = true;
         _mainUI.SetActive(false);
         
         ShowFurnitureTabOptimized();
@@ -723,9 +733,54 @@ public class UIRestaurantAdmin : MobileUIView
         _furnitureTab.ShowUIFurniture(type);
     }
 
+    // Navigation/selection only. Purchases and placement keep their native validity checks.
+    public bool ShowQuestFurniture(string id)
+    {
+        if (!CanOpenQuestProduct(_furnitureUI) || string.IsNullOrEmpty(id)) return false;
+        var data = FurnitureDataManager.Instance.GetFurnitureDataList().Find(item => item.Id == id);
+        if (data == null || !UserInfo.IsFloorValid(UserInfo.CurrentStage, data.FloorType)) return false;
+        ChangeFloorTypeOptimized(data.FloorType);
+        _furnitureUI.ShowUIFurniture(data.FloorType, data.Type);
+        return _furnitureUI.TrySelectFurniture(id);
+    }
+
+    public bool ShowQuestKitchen(string id)
+    {
+        if (!CanOpenQuestProduct(_kitchenUI) || string.IsNullOrEmpty(id)) return false;
+        var data = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList().Find(item => item.Id == id);
+        if (data == null || !UserInfo.IsFloorValid(UserInfo.CurrentStage, data.FloorType)) return false;
+        ChangeFloorTypeOptimized(data.FloorType);
+        _kitchenUI.ShowUIKitchen(data.FloorType, data.Type);
+        return _kitchenUI.TrySelectKitchen(id);
+    }
+
+    public bool ShowQuestRecipe(string id)
+    {
+        if (_recipeTab == null || !CanOpenQuestProduct(this) || string.IsNullOrEmpty(id)) return false;
+        if (!FoodDataManager.Instance.GetFoodDataList().Exists(item => item.Id == id)) return false;
+        ShowRecipeTab();
+        return _recipeTab.TrySelectRecipe(id);
+    }
+
+    private bool CanOpenQuestProduct(MobileUIView detail)
+        => detail != null && IsReadyForDetail && _uiNav != null && _uiNav.ViewsVisibleStateCheck()
+            && _uiNav.CheckActiveView("RestaurantAdminUI")
+            && (_uiNav.FirstView == this || _uiNav.FirstView == detail);
+
     public void ShowUIStaff(EquipStaffType type)
     {
         _staffTab.ShowUIStaff(type);
+    }
+
+    public bool ShowQuestStaff(StaffData staff)
+    {
+        if (!IsReadyForDetail || staff == null || _staffUI == null) return false;
+        var roles = StaffDataManager.Instance.GetEquipStaffTypeList(staff);
+        if (roles == null || roles.Count == 0) return false;
+        // The four main employment quests are Stage1/Floor1 staff, not a VIP tab's first entry.
+        ChangeFloorTypeOptimized(ERestaurantFloorType.Floor1);
+        _staffUI.ShowUIStaff(ERestaurantFloorType.Floor1, roles[0]);
+        return _staffUI.TrySelectStaff(staff.Id);
     }
 
     public void ShowUIKitchen(KitchenUtensilType type)

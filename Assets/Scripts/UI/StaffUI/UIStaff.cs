@@ -62,6 +62,12 @@ public class UIStaff : MobileUIView
     private float _canvasAlphaBeforeGacha;
     private bool _canvasInteractableBeforeGacha;
     private bool _canvasBlockedRaycastsBeforeGacha;
+    public StaffData SelectedStaff => _previewStaffData;
+    public int SelectionRevision { get; private set; }
+    public RectTransform BuyButtonRect => _uiStaffPreview != null ? _uiStaffPreview.BuyButtonRect : null;
+    public RectTransform EquipButtonRect => _uiStaffPreview != null ? _uiStaffPreview.EquipButtonRect : null;
+    public bool IsReadyForGuidance => gameObject.activeInHierarchy && VisibleState == VisibleState.Appeared
+        && _canvasGroup != null && _canvasGroup.alpha > 0f && _canvasGroup.interactable && _canvasGroup.blocksRaycasts;
 
 #if UNITY_EDITOR
     private bool _editorOfflineNavigation;
@@ -158,6 +164,8 @@ public class UIStaff : MobileUIView
     {
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
+        _canvasGroup.alpha = 1f;
+        _canvasGroup.interactable = true;
         _uiSkin.Hide();
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
@@ -216,6 +224,11 @@ public class UIStaff : MobileUIView
         _canvasGroup.interactable = _canvasInteractableBeforeGacha;
         _canvasGroup.blocksRaycasts = _canvasBlockedRaycastsBeforeGacha;
 
+#if UNITY_EDITOR
+        if (!_editorOfflineNavigation)
+#endif
+            UpdateUIOptimized(); // Read committed ownership without changing the selected staff.
+
         if (_staffScrollRect == null || !_hasScrollPositionBeforeGacha)
             return;
 
@@ -234,12 +247,21 @@ public class UIStaff : MobileUIView
 
     public void ShowUIStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
+        SelectionRevision++;
         _uiRestaurantAdmin.MainUISetActive(false);
         _uiRestaurantAdmin.ShowStaffTab();
         _uiNav.Push("UIStaff");
         _currentFloorType = floorType;
         UpdateFloorUI();
         SetStaffDataOptimized(type);
+    }
+
+    public bool TrySelectStaff(string staffId)
+    {
+        StaffData target = _currentTypeDataList?.Find(item => item != null && item.Id == staffId);
+        if (target == null) return false;
+        OnSlotClicked(target);
+        return true;
     }
 
     private void UpdateFloorUI()
@@ -283,6 +305,7 @@ public class UIStaff : MobileUIView
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _currentFloorType, _currentType);
         StaffData previewData = equipStaffData ?? (_currentTypeDataList.Count > 0 ? _currentTypeDataList[0] : null);
+        if (_previewStaffData != previewData) SelectionRevision++;
         _previewStaffData = previewData;
         
         _uiStaffPreview.SetData(_currentFloorType, _currentType, previewData);
@@ -412,6 +435,7 @@ public class UIStaff : MobileUIView
 
     private void OnSlotClicked(StaffData data)
     {
+        if (_previewStaffData != data) SelectionRevision++;
         _previewStaffData = data;
         _uiStaffPreview.SetData(_currentFloorType, _currentType, data);
     }

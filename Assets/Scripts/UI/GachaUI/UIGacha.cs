@@ -55,6 +55,10 @@ public class UIGacha : MobileUIView
     private GachaMachineParent _requestedInitialMachine;
     private bool _isInitialized;
     private bool _questStaffEntry;
+    private UIStaffGacha _questPresentationMachine;
+    private readonly Dictionary<GameObject, bool> _questHiddenObjects = new Dictionary<GameObject, bool>();
+    private bool _questPresentationCaptured;
+    private bool _questScrollWasEnabled;
     private float _nextItemTutorialCheck;
 
     private void Update()
@@ -70,8 +74,12 @@ public class UIGacha : MobileUIView
 
     /// <summary>Dedicated quest entry never relies on the Editor unlock or the paid entry gate.</summary>
     public bool PrepareQuestStaffMachine(Muks.BackEnd.BackendManager owner)
+        => PrepareQuestStaffMachine(owner, null, null);
+
+    public bool PrepareQuestStaffMachine(Muks.BackEnd.BackendManager owner, string expectedQuestId,
+        Func<bool> isEntryCurrent)
     {
-        if (owner == null) return false;
+        if (owner == null || (isEntryCurrent != null && !isEntryCurrent())) return false;
         string questId = null;
         if (owner.TryGetCurrentQuestStaffOffer(out var offer, out _)) questId = offer.QuestId;
         else
@@ -79,13 +87,18 @@ public class UIGacha : MobileUIView
             var request = owner.CurrentQuestStaffGrant;
             if (request != null && owner.IsCurrentQuestStaffGrant(request)) questId = request.QuestId;
         }
-        if (string.IsNullOrEmpty(questId) || _gachaMachines == null) return false;
+        if (string.IsNullOrEmpty(questId) || _gachaMachines == null ||
+            (expectedQuestId != null && questId != expectedQuestId)) return false;
         foreach (var machine in _gachaMachines)
         {
             if (!(machine is UIStaffGacha staff)) continue;
             _questStaffEntry = true;
             _requestedInitialMachine = staff;
-            staff.PrepareQuestEntry(owner, questId);
+            staff.PrepareQuestEntry(owner, questId, isEntryCurrent);
+            // Only the four fixed quest gifts use this presentation shell. The
+            // existing owner remains solely responsible for grant admission.
+            _questPresentationMachine = QuestStaffTutorialPolicy.TryGetMapping(questId, out _, out _) ? staff : null;
+            ApplyQuestStaffPresentation();
             return true;
         }
         return false;
@@ -97,6 +110,59 @@ public class UIGacha : MobileUIView
         if (_gachaMachines != null)
             foreach (var machine in _gachaMachines)
                 if (machine is UIStaffGacha staff) staff.ClearQuestEntry();
+        RestoreQuestStaffPresentation();
+    }
+
+    private void ApplyQuestStaffPresentation()
+    {
+        if (!_questStaffEntry || _questPresentationMachine == null) return;
+        if (!_questPresentationCaptured)
+        {
+            _questPresentationCaptured = true;
+            _questScrollWasEnabled = _scrollRect != null && _scrollRect.enabled;
+        }
+        // Keep the selected machine in the native central slot, with its own
+        // free button and the existing view exit. Do not mask the whole view.
+        if (_gachaMachines != null)
+            foreach (var machine in _gachaMachines)
+                if (machine != null && machine != _questPresentationMachine)
+                    HideQuestSurroundingObject(machine.gameObject);
+        if (_gachaItemList != null)
+        {
+            // The authored catalog preview is a separate sibling and may still
+            // contain editor placeholder text. It is never an acquired result
+            // and must not be restored with the surrounding machine shell.
+            _gachaItemList.HidePreviewCard();
+            HideQuestSurroundingObject(_gachaItemList.gameObject);
+        }
+        if (_leftButton != null) HideQuestSurroundingObject(_leftButton.gameObject);
+        if (_rightButton != null) HideQuestSurroundingObject(_rightButton.gameObject);
+        if (_scrollRect != null) { _scrollRect.StopMovement(); _scrollRect.enabled = false; }
+    }
+
+    private void HideQuestSurroundingObject(GameObject target)
+    {
+        if (!_questHiddenObjects.ContainsKey(target)) _questHiddenObjects.Add(target, target.activeSelf);
+        if (target.activeSelf) target.SetActive(false);
+    }
+
+    private void RestoreQuestStaffPresentation()
+    {
+        // Dispose the quest/result presentation before this method is called:
+        // its own animation snapshot must not restore our hidden states later.
+        foreach (var entry in _questHiddenObjects)
+            if (entry.Key != null) entry.Key.SetActive(entry.Value);
+        _questHiddenObjects.Clear();
+        if (_questPresentationCaptured && _scrollRect != null) _scrollRect.enabled = _questScrollWasEnabled;
+        _questPresentationCaptured = false;
+        _questPresentationMachine = null;
+    }
+
+    private void OnDisable()
+    {
+        if (!_questStaffEntry && !_questPresentationCaptured) return;
+        _requestedInitialMachine = null;
+        ClearQuestStaffEntry();
     }
 
 #if UNITY_EDITOR
@@ -104,6 +170,7 @@ public class UIGacha : MobileUIView
     private bool _editorOfflineNavigation;
     private int _editorOfflineMachineIndex;
     private Button _editorOfflineCloseButton;
+    public GachaMachineParent EditorOfflineCurrentMachine => _editorOfflineNavigation ? _currentGachaMachine : null;
 
     public void ConfigureEditorOfflineView(UIStaffGacha staff)
     {
@@ -193,6 +260,24 @@ public class UIGacha : MobileUIView
 
     private bool _isStartGacha;
     public bool IsStartGacha => _isStartGacha;
+    internal bool IsCurrentMachine(GachaMachineParent machine) => ReferenceEquals(_currentGachaMachine, machine);
+    internal bool AreUIComponentsActive => _uiComponents != null && _uiComponents.activeSelf;
+    internal Action IsolateMachineArt(GachaMachineParent selected)
+    {
+        var restore = new List<Action>();
+        foreach (var machine in _gachaMachines)
+        {
+            if (machine == null || machine.MachineObjects == null) continue;
+            foreach (var part in machine.MachineObjects)
+            {
+                if (part == null) continue;
+                bool active = part.activeSelf;
+                restore.Add(() => { if (part != null) part.SetActive(active); });
+            }
+            machine.SetActiveGachaMachine(machine == selected);
+        }
+        return () => { foreach (var action in restore) action(); };
+    }
     public void SetStartGacha(bool isStart)
     {
         _isStartGacha = isStart;
@@ -454,6 +539,7 @@ public class UIGacha : MobileUIView
         _requestedInitialMachine = null;
         SetMachine(initialMachine);
         SetMachineParentPos();
+        ApplyQuestStaffPresentation();
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
@@ -506,6 +592,7 @@ public class UIGacha : MobileUIView
         if (VisibleState == VisibleState.Disappeared && !gameObject.activeSelf)
             return;
 
+        if (_currentGachaMachine is UIStaffGacha staff) staff.AcknowledgeVisibleResultBeforeExit();
         VisibleState = VisibleState.Disappeared;
         _canvasGroup.interactable = false;
         _canvasGroup.blocksRaycasts = false;
@@ -535,6 +622,7 @@ public class UIGacha : MobileUIView
     public void SetActiveUIComponents(bool isActive)
     {
         _uiComponents.SetActive(isActive);
+        ApplyQuestStaffPresentation();
     }
 
     public void SetActiveGachaMachine(bool isActive)
@@ -543,7 +631,7 @@ public class UIGacha : MobileUIView
         {
             _gachaMachines[i].SetActiveGachaMachine(isActive);
         }
-
+        ApplyQuestStaffPresentation();
     }
 
     private void SetMachine(int dir)
@@ -580,6 +668,7 @@ public class UIGacha : MobileUIView
         UpdateMachineItemList(gachaMachine);
 
         SetMachineParentPosAnime();
+        ApplyQuestStaffPresentation();
     }
 
     private void SetMachineNoAnime(GachaMachineParent gachaMachine)
@@ -594,6 +683,7 @@ public class UIGacha : MobileUIView
         _currentGachaMachine = gachaMachine;
         UpdateMachineItemList(gachaMachine);
         _currentGachaMachine.Show();
+        ApplyQuestStaffPresentation();
         TryStartItemGachaTutorial();
     }
 
@@ -621,6 +711,7 @@ public class UIGacha : MobileUIView
         _machineParent.TweenAnchoredPosition(pos, duration, Ease.Smoothstep).OnComplete(() =>
         {
             _currentGachaMachine.Show();
+            ApplyQuestStaffPresentation();
             TryStartItemGachaTutorial();
         });
     }

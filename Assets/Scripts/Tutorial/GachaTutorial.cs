@@ -29,6 +29,8 @@ public class GachaTutorial : MonoBehaviour
     private GameDataRestoreQuery _saveQuery;
     private GameDataSaveRequest _itemSave;
     private GameDataSaveRequest _completionSave;
+    private UIRecipeTab _guidedRecipe;
+    private bool _recipeGuidanceActive;
 
     // MainReward12 is the item-machine tutorial, not an employment/paid-machine
     // unlock. Check the actual current CSV quest and predecessor claims.
@@ -178,7 +180,7 @@ public class GachaTutorial : MonoBehaviour
         yield return _descriptionNPC.ShowDescription1Text("가챠를 한번 뽑아볼까요?");
         yield return YieldCache.WaitForSeconds(1f);
         _uiTutorial.PunchHoleSetActive(true);
-        _uiTutorial.Gacha1ButtonSetActive(true);
+        _uiTutorial.Gacha1ButtonSetActive(true, _itemGacha.SingleButton.transform as RectTransform);
         _uiTutorial.CustomHoleSetActive(true, 350, "Tutorial Gacha1 Button", _uiTutorial.Gacha1Button.transform);
         _uiGacha.GachaStepHandler += OnGachaCompletedEvent;
         _uiTutorial.Gacha1Button.AddListener(() => TryAcceptTutorialItem());
@@ -228,6 +230,11 @@ public class GachaTutorial : MonoBehaviour
         yield return _descriptionNPC.ShowDescription1Text("한번 김치찌개를 만들어 볼까요?");
 
         yield return WaitForSave(BeginCompletionSave());
+        // The saved tutorial is complete. Leave the real recipe control to the
+        // player; the guide must neither cover it nor start the mini-game itself.
+        UserInfo.IsTutorialStart = false;
+        _descriptionNPC.BeginGuidancePassthrough();
+        yield return GuideKimchiRecipeInput();
         _descriptionNPC.PopEnabled = true;
         _uiTutorial.PopEnabled = true;
         yield return YieldCache.WaitForSeconds(0.02f);
@@ -240,6 +247,54 @@ public class GachaTutorial : MonoBehaviour
         _coroutine = null;
         gameObject.SetActive(false);
 
+    }
+
+    private IEnumerator GuideKimchiRecipeInput()
+    {
+        var shop = _mainNav.FirstView as UIRestaurantAdmin;
+        var recipe = shop != null ? shop.RecipeView : null;
+        if (recipe == null || !recipe.gameObject.activeInHierarchy || !recipe.FocusRecipe("FOOD04"))
+            yield break;
+
+        var target = recipe.MiniGameButtonRect;
+        if (target == null || !target.gameObject.activeInHierarchy)
+            yield break;
+
+        ClearRecipeGuidance();
+        _guidedRecipe = recipe;
+        _recipeGuidanceActive = true;
+        recipe.BeforeMiniGameNavigation += ClearRecipeGuidance;
+        try
+        {
+            _uiTutorial.BeginGuidancePassthrough(target);
+            // The mini-game uses a separate navigator: the underlying shop does
+            // not leave MainNav. Its native button therefore closes this hint
+            // synchronously before opening the mini-game or cooldown popup.
+            while (_recipeGuidanceActive && IsCapturedSessionCurrent() && _mainNav.FirstView == shop && shop.IsReadyForDetail
+                && recipe.gameObject.activeInHierarchy && recipe.SelectedData != null
+                && recipe.SelectedData.Id == "FOOD04" && target.gameObject.activeInHierarchy)
+                yield return null;
+        }
+        finally { ClearRecipeGuidance(); }
+    }
+
+    private void ClearRecipeGuidance()
+    {
+        if (_guidedRecipe != null)
+            _guidedRecipe.BeforeMiniGameNavigation -= ClearRecipeGuidance;
+        _guidedRecipe = null;
+        if (!_recipeGuidanceActive) return;
+        _recipeGuidanceActive = false;
+        if (_uiTutorial == null) return;
+        _uiTutorial.EndGuidancePassthrough();
+        _uiTutorial.PunchHoleSetActive(false);
+    }
+
+    private void OnDisable()
+    {
+        // Unity can stop a coroutine when its host is deactivated without
+        // advancing its final yield. Remove the subscription and pointer here.
+        ClearRecipeGuidance();
     }
 
 
@@ -283,6 +338,7 @@ public class GachaTutorial : MonoBehaviour
 
     private void OnDestroy()
     {
+        ClearRecipeGuidance();
         if (_uiGacha != null) _uiGacha.GachaStepHandler -= OnGachaCompletedEvent;
         if (_tutorialRunActive && IsCapturedSessionCurrent()) UserInfo.IsTutorialStart = false;
     }

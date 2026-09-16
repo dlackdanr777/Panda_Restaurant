@@ -50,6 +50,18 @@ public class UIKitchen : MobileUIView
     private bool _isInitialized = false;
     private Vector3 _tmpScale;
 
+    public KitchenUtensilData SelectedData => _uikitchenPreview != null ? _uikitchenPreview.SelectedData : null;
+    public RectTransform BuyButtonRect => _uikitchenPreview != null ? _uikitchenPreview.BuyButtonRect : null;
+
+    public bool TrySelectKitchen(string id)
+    {
+        if (!_isInitialized || string.IsNullOrEmpty(id) || _currentTypeDataList == null) return false;
+        var data = _currentTypeDataList.Find(item => item.Id == id);
+        if (data == null || data.Type != _currentType || data.FloorType != _currentFloorType) return false;
+        OnSlotClicked(data);
+        return true;
+    }
+
     public override void Init()
     {
         if (_isInitialized) return;
@@ -128,7 +140,7 @@ public class UIKitchen : MobileUIView
     {
         _uiRestaurantAdmin.MainUISetActive(false);
         _uiRestaurantAdmin.ShowKitchenTab();
-        _uiNav.Push("UIKitchen");
+        if (!_uiNav.CheckActiveView("UIKitchen")) _uiNav.Push("UIKitchen");
         _currentFloorType = floorType;
         UpdateFloorUI();
         SetKitchenUtensilDataDataOptimized(type);

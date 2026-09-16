@@ -11,7 +11,19 @@ namespace Muks.BackEnd
         public string QuestId { get; }
         public string StaffId { get; }
         public StaffData StaffData { get; }
-        internal QuestStaffOffer(string questId, StaffData staff) { QuestId = questId; StaffData = staff; StaffId = staff.Id; }
+        internal GameDataRestoreQuery Query { get; }
+        internal QuestStaffOffer(string questId, StaffData staff, GameDataRestoreQuery query)
+        { QuestId = questId; StaffData = staff; StaffId = staff.Id; Query = query; }
+    }
+
+    // An owned employee's shop detail is not a free-grant offer or a retained result.
+    public sealed class QuestOwnedStaffDetail
+    {
+        public string QuestId { get; }
+        public StaffData StaffData { get; }
+        internal GameDataRestoreQuery Query { get; }
+        internal QuestOwnedStaffDetail(string questId, StaffData staff, GameDataRestoreQuery query)
+        { QuestId = questId; StaffData = staff; Query = query; }
     }
 
     public partial class BackendManager
@@ -51,10 +63,64 @@ namespace Muks.BackEnd
                     || !ReferenceEquals(source, StaffRuntime.Snapshot) || !before.Matches(QuestStaffState.Read())
                     || !StaffRuntime.CanMutate)
                 { error = "직원 획득 준비 중 상태가 변경됐거나 다른 저장이 진행 중입니다."; return false; }
-                offer = new QuestStaffOffer(before.CurrentQuestId, staff);
+                offer = new QuestStaffOffer(before.CurrentQuestId, staff, query);
                 return true;
             }
             catch (Exception ex) { error = "고용 퀘스트 확인 실패: " + ex.GetType().Name; return false; }
+        }
+
+        // Navigation only: an accepted request remains viewable while sending and after
+        // ownership is committed. This does not relax TryGetCurrentQuestStaffOffer or grant admission.
+        public bool TryGetRetainedQuestStaffEntry(out QuestStaffOffer entry, out QuestStaffGrantExecution operation)
+        {
+            entry = null;
+            operation = null;
+            try
+            {
+                var retained = CurrentQuestStaffGrant;
+                if (!IsCurrentQuestStaffGrant(retained)
+                    || retained.Request.Status == GameDataSaveRequestStatus.InvalidatedAfterSend) return false;
+                var current = QuestStaffState.Read();
+                if (current == null || current.Stage != EStage.Stage1 || !current.FirstTutorialClear
+                    || !current.DefinitionMatches || !current.PrerequisitesCleared || current.IsRewardClaimed
+                    || current.CurrentQuestId != retained.QuestId
+                    || current.RequiredStaffId != retained.Before.RequiredStaffId
+                    || (current.GrantMask.HasValue && !QuestStaffTutorialPolicy.IsValidGrantMask(current.GrantMask.Value)))
+                    return false;
+                if (!QuestStaffGrantExecution.ValidateCatalog(ReadQuestStaffCatalog(), StaffRuntime.Snapshot,
+                    current.RequiredStaffId, out var staff, out _)) return false;
+                if (!IsCurrentQuestStaffGrant(retained) || !current.Matches(QuestStaffState.Read())) return false;
+                entry = new QuestStaffOffer(retained.QuestId, staff, retained.Query);
+                operation = retained;
+                return true;
+            }
+            catch { return false; }
+        }
+
+        public bool TryGetCurrentQuestOwnedStaffDetail(out QuestOwnedStaffDetail detail)
+        {
+            detail = null;
+            try
+            {
+                var query = GameDataRestore.LegacyQuery;
+                var target = GameDataRestore.LegacyTarget;
+                var source = StaffRuntime.Snapshot;
+                var current = QuestStaffState.Read();
+                if (StaffRuntime.Mode != StaffAccountRuntimeMode.Common || source == null
+                    || !IsCurrentGameDataSaveSession(query, target) || current == null
+                    || current.Stage != EStage.Stage1 || !current.FirstTutorialClear
+                    || !current.DefinitionMatches || !current.PrerequisitesCleared || current.IsRewardClaimed
+                    || !QuestStaffTutorialPolicy.TryGetMapping(current.CurrentQuestId, out var id, out _)
+                    || current.RequiredStaffId != id || !source.Staff.Any(item => item.Id == id)
+                    || (current.GrantMask.HasValue && !QuestStaffTutorialPolicy.IsValidGrantMask(current.GrantMask.Value)))
+                    return false;
+                if (!QuestStaffGrantExecution.ValidateCatalog(ReadQuestStaffCatalog(), source, id, out var staff, out _)
+                    || !IsCurrentGameDataSaveSession(query, target) || !ReferenceEquals(source, StaffRuntime.Snapshot)
+                    || !current.Matches(QuestStaffState.Read())) return false;
+                detail = new QuestOwnedStaffDetail(current.CurrentQuestId, staff, query);
+                return true;
+            }
+            catch { return false; }
         }
 
         public bool TryStartQuestStaffGrant(out QuestStaffGrantExecution execution, out string error)

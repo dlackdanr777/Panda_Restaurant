@@ -322563,6 +322563,7 @@ MonoBehaviour:
   _stage: 0
   _uiNavCoordinator: {fileID: 1519436192}
   _uiMainNav: {fileID: 853526496}
+  _uiTutorialNav: {fileID: 202788801}
   _feverSystem: {fileID: 1860627827}
   _mainSceneMusic: {fileID: 8300000, guid: 4289436a5db3ce44ea6041eb65d406ee, type: 3}
   _feverMusic: {fileID: 8300000, guid: c82c4f8fa52b02b4e8d2c053f3246a02, type: 3}

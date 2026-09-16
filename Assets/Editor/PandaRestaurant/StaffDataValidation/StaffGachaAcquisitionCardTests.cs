@@ -8,6 +8,7 @@ using NUnit.Framework;
 using TMPro;
 using UnityEditor;
 using UnityEditor.Animations;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
@@ -753,52 +754,113 @@ public class StaffGachaAcquisitionCardTests
     }
 
     [Test]
-    public void RuntimePresentation_ResultControlsFitReferenceCanvasWithoutLabelOverlap()
+    public void RuntimePresentation_ReusesNativeSummaryAndSingleReadOnlyInspectionOverlay()
     {
-        GameObject root = Track(new GameObject("1080 result controls", typeof(RectTransform)));
-        root.SetActive(false);
-        var canvas = (RectTransform)root.transform;
-        canvas.sizeDelta = new Vector2(1920, 1080);
-        var display = new StaffGachaPurchaseDisplay(null, null, null);
-        Type displayType = typeof(StaffGachaPurchaseDisplay);
-        var close = (Button)displayType.GetMethod("CreateResultControls", PrivateInstance)
-            .Invoke(display, new object[] { canvas, _nameText });
-        var replay = (Button)displayType.GetMethod("CreateReplayButton", PrivateInstance)
-            .Invoke(display, new object[] { canvas, _nameText });
-        var previous = (Button)displayType.GetField("_previous", PrivateInstance).GetValue(display);
-        var next = (Button)displayType.GetField("_next", PrivateInstance).GetValue(display);
-        var position = (TextMeshProUGUI)displayType.GetField("_position", PrivateInstance).GetValue(display);
-        var controls = new RectTransform[]
+        var previousScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+        var scene = EditorSceneManager.NewPreviewScene();
+        GameObject root = null;
+        StaffGachaPurchaseDisplay display = null;
+        var fonts = new StaffGachaOfflineFonts();
+        Hash128 sourceHash = AssetDatabase.GetAssetDependencyHash(StaffGachaOfflineViewFactory.SourceScenePath);
+        using (var session = new StaffGachaOfflineSession(Resources.LoadAll<StaffData>("StaffData")))
+        try
         {
-            (RectTransform)previous.transform, (RectTransform)next.transform,
-            (RectTransform)close.transform, position.rectTransform, (RectTransform)replay.transform
-        };
-        var bounds = new Rect[controls.Length];
-        for (int i = 0; i < controls.Length; i++)
-        {
-            // Measure the controls made by the real presentation code, not duplicated layout values.
-            var corners = new Vector3[4];
-            controls[i].GetWorldCorners(corners);
-            Vector3 lower = canvas.InverseTransformPoint(corners[0]);
-            Vector3 upper = canvas.InverseTransformPoint(corners[2]);
-            bounds[i] = Rect.MinMaxRect(lower.x, lower.y, upper.x, upper.y);
-            Assert.That(bounds[i].xMin, Is.GreaterThanOrEqualTo(canvas.rect.xMin), controls[i].name);
-            Assert.That(bounds[i].xMax, Is.LessThanOrEqualTo(canvas.rect.xMax), controls[i].name);
-            Assert.That(bounds[i].yMin, Is.GreaterThanOrEqualTo(canvas.rect.yMin), controls[i].name);
-            Assert.That(bounds[i].yMax, Is.LessThanOrEqualTo(canvas.rect.yMax), controls[i].name);
+            root = StaffGachaOfflineViewFactory.BuildInEmptyEditorScene(scene, out var view, out var staff);
+            view.ConfigureEditorOfflineView(staff);
+            staff.ConfigureEditorOffline(session.Owner, view);
+            fonts.BindBeforeActivation(root); // Includes the original prefab's ten result slots.
+            var nativeCard = (UIGachaCard)typeof(UIStaffGacha).GetField("_gachaCard", PrivateInstance).GetValue(staff);
+            var nativeButton = (Button)typeof(UIStaffGacha).GetField("_skipButton", PrivateInstance).GetValue(staff);
+            var nativeFrame = (Transform)typeof(UIStaffGacha).GetField("_getStaffSlotFrame", PrivateInstance).GetValue(staff);
+            UIGachaCardSlot[] slots = nativeFrame.GetComponentsInChildren<UIGachaCardSlot>(true);
+            Assert.That(slots.Length, Is.EqualTo(10));
+            int[] originalObjects = root.GetComponentsInChildren<Transform>(true)
+                .Where(t => t.GetComponent<TMP_SubMeshUI>() == null).Select(t => t.GetInstanceID()).ToArray();
+            int[] originalCanvases = root.GetComponentsInChildren<Canvas>(true).Select(c => c.GetInstanceID()).ToArray();
+            root.SetActive(true);
+            view.SetEditorOfflineVisible(true);
+            var animator = (Animator)typeof(UIStaffGacha).GetField("_gachaMacineAnimator", PrivateInstance).GetValue(staff);
+            animator.fireEvents = false;
+            animator.Rebind(); animator.Play("Base Layer.Idle", 0, 0f); animator.Update(0f);
+            Assert.That(session.TryStart(StaffGachaOfflineCase.Eleven, out string error), Is.True, error);
+            Assert.That(session.ReplySuccess(), Is.True);
+            var request = session.Request;
+            var acquisition = request.Plan.AccountResult.Acquisition;
+            string plan = JsonConvert.SerializeObject(request.Plan);
+            display = staff.EditorOfflinePurchaseDisplay;
+            Assert.That(display.TryShowCompleted(false, out error), Is.True, error);
+            Assert.That(display.EditorVisibleSlotCount, Is.EqualTo(10));
+            Assert.That(display.EditorResultIndex, Is.EqualTo(10), "Summary selects the final +1 result");
+            Assert.That(display.EditorCurrentItem, Is.SameAs(acquisition.Items[10]));
+            Assert.That(nativeCard.gameObject.activeInHierarchy, Is.True);
+            Assert.That(nativeCard.transform.parent, Is.SameAs(staff.transform));
+            Assert.That(nativeButton.gameObject.activeInHierarchy, Is.False,
+                "11-result summary closes through its background; single/quest retains its close button");
+            Assert.That(display.SelectCard(0), Is.True);
+            Assert.That(display.EditorCurrentItem, Is.SameAs(acquisition.Items[0]));
+            slots[9].GetComponent<Button>().onClick.Invoke();
+            Assert.That(display.EditorResultIndex, Is.EqualTo(9));
+            Assert.That(display.EditorCurrentItem, Is.SameAs(acquisition.Items[9]));
+            var popup = (GachaResultCardPopup)typeof(StaffGachaPurchaseDisplay).GetField("_popup", PrivateInstance).GetValue(display);
+            Assert.That(popup.IsOpen, Is.True);
+            Assert.That(display.SelectCard(10), Is.True, "The native +1 is also inspectable without replacing its summary card");
+            Assert.That(display.EditorCurrentItem, Is.SameAs(acquisition.Items[10]));
+            var popupRoot = (GameObject)typeof(GachaResultCardPopup).GetField("_root", PrivateInstance).GetValue(popup);
+            int[] inspectionObjects = popupRoot.GetComponentsInChildren<Transform>(true)
+                .Where(t => t.GetComponent<TMP_SubMeshUI>() == null).Select(t => t.GetInstanceID()).ToArray();
+            StaffGachaOfflineSessionTests.ResultPopupStateClick(
+                (Button)typeof(GachaResultCardPopup).GetField("_background", PrivateInstance).GetValue(popup));
+            Assert.That(display.EditorIsResultVisible, Is.True, "Dismissing inspection preserves the native summary");
+            typeof(StaffGachaPurchaseDisplay).GetField("_nextInput", PrivateInstance).SetValue(display, float.MinValue);
+            StaffGachaOfflineSessionTests.ResultPopupStateClick(
+                (Button)typeof(UIStaffGacha).GetField("_screenButton", PrivateInstance).GetValue(staff));
+            Assert.That(display.EditorIsResultVisible, Is.False);
+            Assert.That(popup.IsOpen, Is.False);
+            display.Tick();
+            Assert.That(nativeButton.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("결과 확인"));
+            nativeButton.onClick.Invoke();
+            Assert.That(display.EditorVisibleSlotCount, Is.EqualTo(10));
+            Assert.That(display.EditorResultIndex, Is.EqualTo(10));
+            Assert.That(display.EditorAnimationStartCount, Is.Zero);
+            Assert.That(root.GetComponentsInChildren<Transform>(true)
+                    .Where(t => t.GetComponent<TMP_SubMeshUI>() == null && !inspectionObjects.Contains(t.GetInstanceID())
+                        && t.name != "Result Card Hit Area")
+                    .Select(t => t.GetInstanceID()),
+                Is.EquivalentTo(originalObjects), "Inspection preserves every original summary object");
+            Assert.That(root.GetComponentsInChildren<Transform>(true)
+                .Count(t => t.name == "Result Card Inspection"), Is.Zero,
+                "Closing disposes the inspection; replaying the summary alone must not open another");
+            Assert.That(root.GetComponentsInChildren<Canvas>(true).Select(c => c.GetInstanceID()),
+                Is.EquivalentTo(originalCanvases));
+            Assert.That(view.transform.Find("Staff Acquisition Results"), Is.Null);
+            Assert.That(staff.GetComponentsInChildren<Button>(true).Any(button =>
+                button.name == "획득 결과" || button.name == "이전" || button.name == "다음"), Is.False);
+            Assert.That(session.Request, Is.SameAs(request));
+            Assert.That(request.CompletionCount, Is.EqualTo(1));
+            Assert.That(session.DrawCount, Is.EqualTo(11));
+            Assert.That(session.PurchaseWrites, Is.EqualTo(1));
+            Assert.That(session.Diamonds, Is.EqualTo(10));
+            Assert.That(session.Account.PandaTokens, Is.EqualTo(110));
+            Assert.That(JsonConvert.SerializeObject(request.Plan), Is.EqualTo(plan));
         }
-        for (int i = 0; i < 3; i++)
+        finally
         {
-            Assert.That(bounds[3].Overlaps(bounds[i]), Is.False,
-                "The result position label overlaps " + controls[i].name);
-            Assert.That(bounds[3].yMin, Is.GreaterThan(bounds[i].yMax),
-                "The result position label needs a visible gap above the buttons");
-            for (int j = i + 1; j < 3; j++)
-                Assert.That(bounds[i].Overlaps(bounds[j]), Is.False,
-                    controls[i].name + " overlaps " + controls[j].name);
+            display?.Dispose();
+            if (root != null)
+            {
+                foreach (ScrollingImage image in root.GetComponentsInChildren<ScrollingImage>(true))
+                {
+                    var material = (Material)typeof(ScrollingImage).GetField("_material", PrivateInstance).GetValue(image);
+                    if (material != null && !EditorUtility.IsPersistent(material)) Object.DestroyImmediate(material);
+                }
+                Object.DestroyImmediate(root);
+            }
+            fonts.Dispose();
+            if (previousScene.IsValid() && previousScene.isLoaded)
+                UnityEngine.SceneManagement.SceneManager.SetActiveScene(previousScene);
+            if (scene.IsValid()) EditorSceneManager.ClosePreviewScene(scene);
+            Assert.That(AssetDatabase.GetAssetDependencyHash(StaffGachaOfflineViewFactory.SourceScenePath), Is.EqualTo(sourceHash));
         }
-        // Replay is shown only while the result overlay is closed; it needs its own viewport check,
-        // not a non-overlap assertion against controls that are never visible alongside it.
     }
 
     private StaffGachaAcquisitionPreviewSequence CreateElevenSequence()
@@ -881,6 +943,28 @@ public class StaffGachaAcquisitionCardTests
         SetField(staff, "_capsules", FindOrCreateAnimationPath(root.transform, "Gacha Machine/CapSules"));
         SetField(staff, "_upperCapsule", root.transform.Find("Gacha Machine/CapSules/Upper Capsule").GetComponent<Image>());
         SetField(staff, "_lowerCapsule", root.transform.Find("Gacha Machine/CapSules/Lower Capsule ").GetComponent<Image>());
+        // Clip bindings alone create empty Images. The staff content fitter also
+        // needs the actual capsule's authored visual bounds; load those read-only
+        // from Stage1 instead of relaxing the product's missing-resource guard.
+        var sourceScene = EditorSceneManager.OpenPreviewScene(StaffGachaOfflineViewFactory.SourceScenePath);
+        try
+        {
+            var sourceStaff = sourceScene.GetRootGameObjects()
+                .SelectMany(item => item.GetComponentsInChildren<UIStaffGacha>(true)).Single();
+            foreach (string field in new[] { "_upperCapsule", "_lowerCapsule" })
+            {
+                var source = (Image)typeof(UIStaffGacha).GetField(field, PrivateInstance).GetValue(sourceStaff);
+                var destination = (Image)typeof(UIStaffGacha).GetField(field, PrivateInstance).GetValue(staff);
+                Assert.That(source.sprite, Is.Not.Null, "Original Stage1 capsule binding " + field);
+                destination.sprite = source.sprite;
+                destination.preserveAspect = source.preserveAspect;
+                RectTransform from = source.rectTransform, to = destination.rectTransform;
+                to.anchorMin = from.anchorMin; to.anchorMax = from.anchorMax;
+                to.pivot = from.pivot; to.sizeDelta = from.sizeDelta;
+                to.anchoredPosition = from.anchoredPosition; to.localScale = from.localScale;
+            }
+        }
+        finally { EditorSceneManager.ClosePreviewScene(sourceScene); }
         AudioSource audio = root.AddComponent<AudioSource>();
         audio.playOnAwake = false;
         SetField(staff, "_gachaSound", audio);

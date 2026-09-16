@@ -57,6 +57,20 @@ public class UIFurniture : MobileUIView
     private bool _isInitialized = false;
     private Vector3 _tmpScale;
 
+    public FurnitureData SelectedData => _uiFurniturePreview != null ? _uiFurniturePreview.SelectedData : null;
+    public RectTransform BuyButtonRect => _uiFurniturePreview != null ? _uiFurniturePreview.BuyButtonRect : null;
+    public RectTransform EquipButtonRect => _uiFurniturePreview != null ? _uiFurniturePreview.EquipButtonRect : null;
+    public RectTransform ScoreButtonRect => _uiFurniturePreview != null ? _uiFurniturePreview.ScoreButtonRect : null;
+
+    public bool TrySelectFurniture(string id)
+    {
+        if (!_isInitialized || string.IsNullOrEmpty(id) || _currentTypeDataList == null) return false;
+        var data = _currentTypeDataList.Find(item => item.Id == id);
+        if (data == null || data.Type != _currentType || data.FloorType != _currentFloorType) return false;
+        OnSlotClicked(data);
+        return true;
+    }
+
     public override void Init()
     {
         if (_isInitialized) return;
@@ -156,7 +170,7 @@ public class UIFurniture : MobileUIView
     {
         _uiRestaurantAdmin.MainUISetActive(false);
         _uiRestaurantAdmin.ShowFurnitureTab();
-        _uiNav.Push("UIFurniture");
+        if (!_uiNav.CheckActiveView("UIFurniture")) _uiNav.Push("UIFurniture");
         _currentFloorType = floorType;
         UpdateFloorUI();
         SetFurnitureDataOptimized(type);

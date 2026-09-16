@@ -2,6 +2,7 @@ using Muks.MobileUI;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UIRecipeTab : UIRestaurantAdminTab
 {
@@ -22,6 +23,56 @@ public class UIRecipeTab : UIRestaurantAdminTab
     private List<FoodData> _foodDataList;
     private bool _isInitialized = false;
 
+    public FoodData SelectedData => _uiRecipePreview != null ? _uiRecipePreview.SelectedData : null;
+    public RectTransform BuyButtonRect => _uiRecipePreview != null ? _uiRecipePreview.BuyButtonRect : null;
+    public RectTransform MiniGameButtonRect => _uiRecipePreview != null ? _uiRecipePreview.MiniGameButtonRect : null;
+    public event Action BeforeMiniGameNavigation
+    {
+        add { if (_uiRecipePreview != null) _uiRecipePreview.BeforeMiniGameNavigation += value; }
+        remove { if (_uiRecipePreview != null) _uiRecipePreview.BeforeMiniGameNavigation -= value; }
+    }
+
+    public bool TrySelectRecipe(string id)
+    {
+        if (!_isInitialized || string.IsNullOrEmpty(id) || _foodDataList == null) return false;
+        var data = _foodDataList.Find(item => item.Id == id);
+        if (data == null) return false;
+        OnSlotClicked(data);
+        return true;
+    }
+
+
+    /// <summary>Focuses a recipe in the native list without purchasing it.</summary>
+    public bool FocusRecipe(string id)
+    {
+        if (!_isInitialized || string.IsNullOrEmpty(id) || _foodDataList == null) return false;
+        int index = _foodDataList.FindIndex(item => item.Id == id);
+        if (index < 0) return false;
+        if (!TrySelectRecipe(id)) return false;
+        if (_slots != null && index < _slots.Length && _slots[index] != null)
+        {
+            var scroll = _slots[index].GetComponentInParent<ScrollRect>(true);
+            if (scroll != null)
+            {
+                Canvas.ForceUpdateCanvases();
+                scroll.StopMovement();
+                var viewport = scroll.viewport != null ? scroll.viewport : scroll.transform as RectTransform;
+                var target = _slots[index].transform as RectTransform;
+                if (viewport != null && target != null && scroll.content != null && scroll.vertical)
+                {
+                    // Recipes use a grid. Item index is not a vertical row, so
+                    // resolve the actual laid-out slot bounds in viewport space.
+                    var contentBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(viewport, scroll.content);
+                    var targetBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(viewport, target);
+                    float scrollableHeight = contentBounds.size.y - viewport.rect.height;
+                    if (scrollableHeight > 0.01f)
+                        scroll.verticalNormalizedPosition = Mathf.Clamp01(scroll.verticalNormalizedPosition
+                            + (targetBounds.center.y - viewport.rect.center.y) / scrollableHeight);
+                }
+            }
+        }
+        return true;
+    }
 
     public override void Init()
     {
@@ -69,7 +120,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
     public void SetView(FoodData data)
     {
-        _uiRecipePreview.SetData(data);
+        if (data != null) TrySelectRecipe(data.Id);
     }
 
     public override void UpdateUI()

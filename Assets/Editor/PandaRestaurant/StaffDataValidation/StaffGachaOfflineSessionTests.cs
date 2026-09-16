@@ -18,7 +18,7 @@ using UnityEngine.UI;
 using Object = UnityEngine.Object;
 using Random = UnityEngine.Random;
 
-public sealed class StaffGachaOfflineSessionTests
+public sealed partial class StaffGachaOfflineSessionTests
 {
     [Test]
     public void OfflineSession_RegisteredSingleElevenDuplicatesAndUpperRanksCommitOnceAndReuseCalculatedResults()
@@ -439,7 +439,9 @@ public sealed class StaffGachaOfflineSessionTests
             Assert.That(ui.Display.TryShowCompleted(false, out error), Is.True, error);
             Assert.That(ui.Display.EditorIsResultVisible, Is.True);
             Assert.That(ui.Display.EditorResultCount, Is.EqualTo(11));
-            Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(request.Plan.AccountResult.Acquisition.Items[0]));
+            Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(request.Plan.AccountResult.Acquisition.Items[10]));
+            Assert.That(ui.Display.EditorResultIndex, Is.EqualTo(10));
+            Assert.That(ui.Display.EditorVisibleSlotCount, Is.EqualTo(10));
             ui.ClickResultClose();
 
             for (int pass = 0; pass < 2; pass++)
@@ -448,6 +450,8 @@ public sealed class StaffGachaOfflineSessionTests
                 Assert.That(ui.CurrentMachine, Is.SameAs(ui.Item));
                 Assert.That(ui.Navigation.FirstView, Is.SameAs(ui.View));
                 Assert.That(ui.Display.EditorIsResultVisible || ui.Display.EditorIsAnimating, Is.False);
+                Assert.That(Reference<Button>(ui.Staff, "_skipButton").gameObject.activeInHierarchy, Is.False,
+                    "The staff result control cannot remain visible over the item machine");
                 ui.ClickArrow("_rightButton");
                 Assert.That(ui.CurrentMachine, Is.SameAs(ui.Staff));
                 ui.Display.Tick();
@@ -471,10 +475,15 @@ public sealed class StaffGachaOfflineSessionTests
                 Assert.That(ui.CurrentMachine, Is.SameAs(ui.Staff));
                 Assert.That(ui.Display.EditorIsResultVisible || ui.Display.EditorIsAnimating, Is.False);
                 Assert.That(ui.View.IsStartGacha, Is.False);
-                Button replay = ui.Staff.GetComponentsInChildren<Button>(true).Single(button => button.name == "획득 결과");
+                Button replay = Reference<Button>(ui.Staff, "_skipButton");
                 Assert.That(replay.gameObject.activeInHierarchy && replay.interactable, Is.True);
+                Assert.That(replay.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("결과 확인"));
                 replay.onClick.Invoke();
                 Assert.That(ui.Display.EditorIsResultVisible, Is.True);
+                Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(request.Plan.AccountResult.Acquisition.Items[10]));
+                Assert.That(ui.Display.EditorResultIndex, Is.EqualTo(10));
+                Assert.That(ui.Display.EditorVisibleSlotCount, Is.EqualTo(10));
+                Assert.That(ui.Display.SelectCard(0), Is.True);
                 Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(request.Plan.AccountResult.Acquisition.Items[0]));
                 Assert.That(ui.Display.EditorResultCount, Is.EqualTo(11));
                 ui.ClickResultClose();
@@ -500,6 +509,8 @@ public sealed class StaffGachaOfflineSessionTests
     private sealed class OfflineNavigationView : IDisposable
     {
         private readonly Scene _scene;
+        private readonly Scene _previousScene;
+        private readonly ResultRaycastSceneScope _renderScene;
         private readonly Hash128 _sourceHash;
         private readonly StaffGachaOfflineFonts _fonts;
         public readonly GameObject Root;
@@ -512,20 +523,32 @@ public sealed class StaffGachaOfflineSessionTests
         public StaffGachaPurchaseDisplay Display => Staff == null ? null : Staff.EditorOfflinePurchaseDisplay;
         public GachaMachineParent CurrentMachine => RuntimeReference<GachaMachineParent>(View, "_currentGachaMachine");
 
-        public OfflineNavigationView(BackendManager owner, bool activate)
+        public OfflineNavigationView(BackendManager owner, bool activate, bool includeItemPresentation = false,
+            bool playerLoop = false)
         {
             _sourceHash = AssetDatabase.GetAssetDependencyHash(StaffGachaOfflineViewFactory.SourceScenePath);
-            _scene = EditorSceneManager.NewPreviewScene();
+            _previousScene = SceneManager.GetActiveScene();
+            // Synchronous state tests keep their preview isolation. Only the explicit
+            // batch PlayerLoop test uses the runner's empty regular scene for rendering.
+            if (playerLoop) _renderScene = new ResultRaycastSceneScope(owner.gameObject);
+            _scene = playerLoop ? _renderScene.Scene : EditorSceneManager.NewPreviewScene();
             try
             {
-                Root = StaffGachaOfflineViewFactory.BuildInEmptyEditorScene(_scene, out View, out Staff, includeNavigation: true);
+                Root = StaffGachaOfflineViewFactory.BuildInEmptyEditorScene(_scene, out View, out Staff,
+                    includeNavigation: true, includeItemPresentation: includeItemPresentation);
                 _fonts = new StaffGachaOfflineFonts();
                 _fonts.BindBeforeActivation(Root);
                 StaffGachaOfflineViewFactory.ConfigureNavigation(View, Staff, owner);
+                _fonts.BindBeforeActivation(Root); // Include slots instantiated by the native staff configuration.
                 Navigation = Root.GetComponent<MobileUINavigation>();
                 Shop = Root.GetComponentInChildren<UIRestaurantAdmin>(true);
                 ShopStaff = Root.GetComponentInChildren<UIStaff>(true);
                 Item = View.GetComponentInChildren<UIItemGacha>(true);
+                if (includeItemPresentation)
+                {
+                    Item.ConfigureEditorOfflinePresentation(View);
+                    _fonts.BindBeforeActivation(Root);
+                }
                 if (!activate) return;
                 // EditMode has no normal Awake/Start loop. Invoke only the copied native
                 // navigation lifecycle; all account-dependent Start/Init routes stay guarded.
@@ -535,6 +558,10 @@ public sealed class StaffGachaOfflineSessionTests
                 StaffGachaOfflineViewFactory.BeginNavigation(View);
             }
             catch { Dispose(); throw; }
+            finally
+            {
+                if (_previousScene.IsValid() && _previousScene.isLoaded) SceneManager.SetActiveScene(_previousScene);
+            }
         }
 
         public void ClickEntry()
@@ -562,10 +589,21 @@ public sealed class StaffGachaOfflineSessionTests
 
         public void ClickResultClose()
         {
-            Button button = View.transform.Find("Staff Acquisition Results").GetComponentsInChildren<Button>(true)
-                .Single(candidate => candidate.name == "닫기");
-            Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
-            button.onClick.Invoke();
+            Button button = Reference<Button>(Staff, "_skipButton");
+            if (Display.EditorResultCount == 11)
+            {
+                Assert.That(button.gameObject.activeInHierarchy, Is.False, "11-result summary uses backdrop close only");
+                var popup = RuntimeReference<GachaResultCardPopup>(Display, "_popup");
+                if (popup != null && popup.IsOpen) DismissPopup(popup, View.transform);
+                NativeResultClock(Display, "_nextInput");
+                ResultPopupStateClick(Reference<Button>(Staff, "_screenButton"));
+            }
+            else
+            {
+                Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
+                Assert.That(button.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("닫기"));
+                button.onClick.Invoke();
+            }
             Assert.That(Display.EditorIsResultVisible, Is.False);
         }
 
@@ -603,7 +641,12 @@ public sealed class StaffGachaOfflineSessionTests
                 _fonts?.Dispose();
                 Assert.That(AssetDatabase.GetAssetDependencyHash(StaffGachaOfflineViewFactory.SourceScenePath), Is.EqualTo(_sourceHash));
             }
-            finally { if (_scene.IsValid()) EditorSceneManager.ClosePreviewScene(_scene); }
+            finally
+            {
+                if (_previousScene.IsValid() && _previousScene.isLoaded) SceneManager.SetActiveScene(_previousScene);
+                if (_renderScene != null) _renderScene.Dispose();
+                else if (_scene.IsValid()) EditorSceneManager.ClosePreviewScene(_scene);
+            }
         }
     }
 

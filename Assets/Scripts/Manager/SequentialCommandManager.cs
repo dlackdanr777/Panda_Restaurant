@@ -101,6 +101,7 @@ public class SequentialCommandManager : MonoBehaviour
     {
         _commandQueue.Clear();
         StopAllCoroutines();
+        _isExecuting = false;
         _dontTouchCanvas.gameObject.SetActive(false);
     }
 

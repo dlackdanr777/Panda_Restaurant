@@ -18,20 +18,30 @@ public static class StaffGachaOfflineHost
     private const string ActiveKey = "Panda.StaffPurchaseOffline.Active";
     private const string ScenesKey = "Panda.StaffPurchaseOffline.SceneSetup";
     private const string NavigationKey = "Panda.StaffPurchaseOffline.Navigation";
+    private const string ItemPresentationKey = "Panda.StaffPurchaseOffline.ItemPresentation";
+    private const string StartSceneKey = "Panda.StaffPurchaseOffline.PreviousPlayStartScene";
     private const string SceneName = "Staff Purchase Offline (Unsaved)";
     private const string TemplateName = "Staff Purchase Offline Inactive Template";
     private static GameObject _template;
     private static StaffGachaOfflineFonts _fonts;
     private static string _lastNavigationObservation;
     private static double _nextObservation;
+    private static string _itemUserInfoBaseline;
+    private static GachaItemData[] _itemPresentationResults;
+    private static ItemManager _itemPresentationManager;
+    private static int _itemPresentationStarts;
     public static StaffGachaOfflineSession Session { get; private set; }
     public static UIGacha View { get; private set; }
     public static UIStaffGacha Staff { get; private set; }
+    public static UIItemGacha Item { get; private set; }
     public static string Message { get; private set; } = "편집 모드에서 독립 검증 환경을 시작하세요.";
     public static bool IsActive => Application.isPlaying && SessionState.GetBool(ActiveKey, false) &&
         ((View != null && View.gameObject.scene == SceneManager.GetActiveScene()) ||
          (_template != null && _template.scene == SceneManager.GetActiveScene()));
     public static bool IsNavigationCase => SessionState.GetBool(NavigationKey, false);
+    public static bool IsItemPresentationCase => SessionState.GetBool(ItemPresentationKey, false);
+    public static bool CanStartItemPresentation => IsActive && IsItemPresentationCase && Item != null &&
+        Item.gameObject.activeInHierarchy && View.EditorOfflineCurrentMachine == Item && Item.EditorPresentationIsIdle;
 
     [Serializable] private sealed class SavedScenes { public SavedScene[] Scenes; }
     [Serializable] private sealed class SavedScene { public string Path; public bool Loaded; public bool Active; }
@@ -46,8 +56,9 @@ public static class StaffGachaOfflineHost
 
     public static void PrepareAndEnter() => PrepareAndEnter(false);
     public static void PrepareNavigationAndEnter() => PrepareAndEnter(true);
+    public static void PrepareItemPresentationAndEnter() => PrepareAndEnter(true, true);
 
-    private static void PrepareAndEnter(bool navigation)
+    private static void PrepareAndEnter(bool navigation, bool itemPresentation = false)
     {
         if (EditorApplication.isPlayingOrWillChangePlaymode) { Message = "기존 Play Mode에서는 시작하지 않습니다. 먼저 종료해 주세요."; return; }
         if (EditorSettings.enterPlayModeOptionsEnabled &&
@@ -64,11 +75,14 @@ public static class StaffGachaOfflineHost
         { Message = "실제 Backend 객체가 있는 편집 씬에서는 시작하지 않습니다. 빈 씬을 열고 실행해 주세요."; return; }
         var saved = new SavedScenes { Scenes = setup.Select(item => new SavedScene { Path = item.path, Loaded = item.isLoaded, Active = item.isActive }).ToArray() };
         SessionState.SetString(ScenesKey, JsonUtility.ToJson(saved));
+        SessionState.SetString(StartSceneKey, EditorSceneManager.playModeStartScene == null
+            ? string.Empty : AssetDatabase.GetAssetPath(EditorSceneManager.playModeStartScene));
         try
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             scene.name = SceneName;
-            GameObject root = StaffGachaOfflineViewFactory.BuildInEmptyEditorScene(scene, out var view, out var staff, navigation);
+            GameObject root = StaffGachaOfflineViewFactory.BuildInEmptyEditorScene(scene, out var view, out var staff,
+                navigation, itemPresentation);
             // A sanitized, never-activated template permits display recreation without loading a gameplay scene in Play.
             _template = UnityEngine.Object.Instantiate(root);
             _template.name = TemplateName;
@@ -76,7 +90,11 @@ public static class StaffGachaOfflineHost
             SetGameViewResolution();
             SessionState.SetBool(ActiveKey, true);
             SessionState.SetBool(NavigationKey, navigation);
+            SessionState.SetBool(ItemPresentationKey, itemPresentation);
             Message = "빈 임시 씬에서 Play Mode를 시작합니다. 실제 계정·SDK는 연결하지 않습니다.";
+            // A normal-play launcher may have pinned FirstLoadingScene. This disposable
+            // scene must never be replaced with a login scene when EnterPlaymode is called.
+            EditorSceneManager.playModeStartScene = null;
             EditorApplication.EnterPlaymode();
         }
         catch (Exception exception)
@@ -84,6 +102,7 @@ public static class StaffGachaOfflineHost
             Message = exception.Message;
             SessionState.SetBool(ActiveKey, false);
             SessionState.SetBool(NavigationKey, false);
+            SessionState.SetBool(ItemPresentationKey, false);
             RestoreEditorScenes();
         }
     }
@@ -97,6 +116,7 @@ public static class StaffGachaOfflineHost
         {
             SessionState.SetBool(ActiveKey, false);
             SessionState.SetBool(NavigationKey, false);
+            SessionState.SetBool(ItemPresentationKey, false);
             ReleaseMemory();
             RestoreEditorScenes();
             Message = "독립 검증 세션을 종료했습니다. 메모리 자료는 보존하지 않습니다.";
@@ -128,10 +148,31 @@ public static class StaffGachaOfflineHost
             {
                 Session = new StaffGachaOfflineSession(Resources.LoadAll<StaffData>("StaffData"));
                 StaffGachaOfflineViewFactory.ConfigureNavigation(View, Staff, Session.Owner);
-                if (!Session.TryStart(StaffGachaOfflineCase.Eleven, out string error))
-                    throw new InvalidOperationException(error);
-                Session.ReplySuccess();
-                if (!Session.Request.IsCompleted) throw new InvalidOperationException("Mock completion was not confirmed.");
+                if (IsItemPresentationCase)
+                {
+                    // The detached owner provides the same safe navigation bindings, but this mode
+                    // deliberately prepares no staff purchase, reward or mock success response.
+                    Session.Owner.EditorStaffPurchaseAdmission = _ => false;
+                    Item = View.GetComponentInChildren<UIItemGacha>(true);
+                    Item.ConfigureEditorOfflinePresentation(View);
+                    _itemUserInfoBaseline = ReadItemUserInfoState().ToString(Newtonsoft.Json.Formatting.None);
+                    if (Resources.FindObjectsOfTypeAll<ItemManager>().Any(item => item != null && item.gameObject.scene.IsValid()))
+                        throw new InvalidOperationException("Item presentation requires a fresh resource-only item registry.");
+                    // Reuse the product CSV/Sprite registry without calling its random selector.
+                    _itemPresentationManager = ItemManager.Instance;
+                    string[] ids = { "GOTCHA01", "GOTCHA02", "GOTCHA03", "GOTCHA04", "GOTCHA05",
+                        "GOTCHA06", "GOTCHA07", "GOTCHA08", "GOTCHA09", "GOTCHA10", "GOTCHA64" };
+                    _itemPresentationResults = ids.Select(_itemPresentationManager.GetGachaItemData).ToArray();
+                    _itemPresentationStarts = 0;
+                }
+                _fonts.BindBeforeActivation(View.transform.root.gameObject); // Native ten-slot instances are now present.
+                if (!IsItemPresentationCase)
+                {
+                    if (!Session.TryStart(StaffGachaOfflineCase.Eleven, out string error))
+                        throw new InvalidOperationException(error);
+                    Session.ReplySuccess();
+                    if (!Session.Request.IsCompleted) throw new InvalidOperationException("Mock completion was not confirmed.");
+                }
                 // A single authorized memory fixture; all subsequent input is display/navigation only.
                 Session.Owner.EditorStaffPurchaseAdmission = _ => false;
                 View.transform.root.gameObject.SetActive(true);
@@ -152,13 +193,53 @@ public static class StaffGachaOfflineHost
     {
         yield return null; // Native MobileUINavigation.Start initializes the copied three-view stack.
         StaffGachaOfflineViewFactory.BeginNavigation(View);
-        Message = "상점의 가챠 진입 버튼을 누르세요. 준비된 모의 결과 1건만 사용하며 추가 구매는 차단됩니다.";
-        Debug.Log("STAFF_OFFLINE_NAVIGATION_READY: mock completion=1; real SDK/login/server=0; user input only.");
+        Message = IsItemPresentationCase
+            ? "상점의 뽑기 → 직원 머신의 왼쪽 화살표로 아이템 머신에 이동한 뒤 무지급 연출을 선택하세요. 구매 버튼은 차단됩니다."
+            : "상점의 가챠 진입 버튼을 누르세요. 준비된 모의 결과 1건만 사용하며 추가 구매는 차단됩니다.";
+        Debug.Log(IsItemPresentationCase
+            ? "ITEM_OFFLINE_PRESENTATION_READY: mock purchase/completion=0; real SDK/login/server=0; presentation only."
+            : "STAFF_OFFLINE_NAVIGATION_READY: mock completion=1; real SDK/login/server=0; user input only.");
+    }
+
+    public static void StartItemPresentation(int count)
+    {
+        if (!CanStartItemPresentation || _itemPresentationResults == null || (count != 1 && count != 11))
+        { Message = "아이템 머신의 대기 화면에서만 단일 또는 11회 무지급 연출을 시작할 수 있습니다."; return; }
+        try
+        {
+            if (BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin || Session.Request != null ||
+                Session.PurchaseWrites != 0 || Session.FollowupWrites != 0 || Session.DrawCount != 0 ||
+                ReadItemUserInfoState().ToString(Newtonsoft.Json.Formatting.None) != _itemUserInfoBaseline)
+                throw new InvalidOperationException("오프라인 무지급 조건이 유지되지 않아 추가 연출을 거절합니다.");
+            Item.BeginEditorOfflinePresentation(_itemPresentationResults.Take(count).ToArray());
+            _itemPresentationStarts++;
+            Message = $"등록 자료 {count}개의 실제 아이템 연출만 시작했습니다. 화면 클릭·Skip·닫기를 확인하세요. 구매·지급·저장은 실행하지 않습니다.";
+        }
+        catch (Exception exception) { Message = "아이템 무지급 연출 시작 거절: " + exception.Message; }
+    }
+
+    private static JObject ReadItemUserInfoState()
+    {
+        // Read-only financial/inventory snapshot: never bind, restore or grant UserInfo data.
+        return new JObject
+        {
+            ["money"] = UserInfo.Money, ["diamonds"] = UserInfo.Dia,
+            ["gachaCount"] = UserInfo.TotalUseGachaMachineCount,
+            ["paymentCount"] = PaymentInfo.PaymentDatas.Count,
+            ["gachaPaymentCount"] = PaymentInfo.GachaPaymentDatas.Count,
+            ["gachaPaymentRecords"] = JArray.FromObject(PaymentInfo.GachaPaymentDatas),
+            ["itemCounts"] = JObject.FromObject(UserInfo.GetGiveGachaItemCountDic().OrderBy(item => item.Key)
+                .ToDictionary(item => item.Key, item => item.Value)),
+            ["ownedItems"] = JObject.FromObject(UserInfo.GetGiveGachaItemDic().OrderBy(item => item.Key)
+                .ToDictionary(item => item.Key, item => item.Value)),
+            ["itemLevels"] = JObject.FromObject(UserInfo.GetGiveGachaItemLevelDic().OrderBy(item => item.Key)
+                .ToDictionary(item => item.Key, item => item.Value))
+        };
     }
 
     private static void ObserveNavigation()
     {
-        if (!IsActive || !IsNavigationCase || Session == null || Staff == null ||
+        if (!IsActive || Session == null || Staff == null ||
             EditorApplication.timeSinceStartup < _nextObservation) return;
         _nextObservation = EditorApplication.timeSinceStartup + 0.25;
         // Observation is outside product callbacks; file/QA errors never block completion or navigation.
@@ -168,6 +249,7 @@ public static class StaffGachaOfflineHost
             var nav = View.transform.root.GetComponent<Muks.MobileUI.MobileUINavigation>();
             var state = new JObject
             {
+                ["mode"] = IsItemPresentationCase ? "item-presentation-only" : "staff",
                 ["requestId"] = Session.Request?.Identity.RequestId,
                 ["completionCount"] = Session.Request?.CompletionCount,
                 ["draws"] = Session.DrawCount, ["mockPurchaseWrites"] = Session.PurchaseWrites,
@@ -177,8 +259,33 @@ public static class StaffGachaOfflineHost
                 ["viewVisible"] = View.VisibleState.ToString(),
                 ["resultVisible"] = display?.EditorIsResultVisible, ["resultIndex"] = display?.EditorResultIndex,
                 ["animating"] = display?.EditorIsAnimating, ["animationStarts"] = display?.EditorAnimationStartCount,
+                ["presentationPhase"] = display?.EditorPresentationPhase,
+                ["visibleResultSlots"] = display?.EditorVisibleSlotCount,
                 ["sdkInitialized"] = BackEnd.Backend.IsInitialized, ["sdkLoggedIn"] = BackEnd.Backend.IsLogin
             };
+            if (IsItemPresentationCase && Item != null)
+            {
+                JObject userState = ReadItemUserInfoState();
+                state["itemPresentationStarts"] = _itemPresentationStarts;
+                state["itemStep"] = Item.EditorPresentationStep;
+                state["itemIndex"] = Item.EditorResultIndex;
+                state["itemSummary"] = Item.EditorIsSummary;
+                state["itemSummaryComplete"] = Item.EditorSummaryComplete;
+                state["itemVisibleSlots"] = Item.EditorVisibleSlotCount;
+                state["itemIdle"] = Item.EditorPresentationIsIdle;
+                state["itemCurrentMachine"] = View.EditorOfflineCurrentMachine == Item;
+                state["itemFixedResults"] = new JArray(Item.EditorFixedResultIds);
+                state["itemAudioPlaying"] = Item.EditorNativeSoundSource != null && Item.EditorNativeSoundSource.isPlaying;
+                state["userInfo"] = userState;
+                state["userInfoUnchanged"] = userState.ToString(Newtonsoft.Json.Formatting.None) == _itemUserInfoBaseline;
+                using (var bindings = new SerializedObject(Item))
+                {
+                    var capsule = bindings.FindProperty("_capsule").objectReferenceValue as GachaCapsule;
+                    state["itemCapsuleVisible"] = capsule != null && capsule.gameObject.activeInHierarchy;
+                    state["itemCapsuleMoving"] = capsule != null && capsule.IsMoving;
+                    state["itemCapsuleOpenComplete"] = capsule != null && capsule.IsOpenComplete;
+                }
+            }
             string json = state.ToString(Newtonsoft.Json.Formatting.None);
             if (json == _lastNavigationObservation) return;
             string path = Path.GetFullPath("Logs/StaffOfflineNavigation_Manual.jsonl");
@@ -203,6 +310,7 @@ public static class StaffGachaOfflineHost
             Session = new StaffGachaOfflineSession(Resources.LoadAll<StaffData>("StaffData"));
             // Owner is configured before enabling the cloned view. The only display Tick is UIStaffGacha.Update.
             Staff.ConfigureEditorOffline(Session.Owner, View);
+            _fonts.BindBeforeActivation(View.gameObject);
             View.ConfigureEditorOfflineView(Staff);
             View.transform.root.gameObject.SetActive(true);
             View.SetEditorOfflineVisible(true);
@@ -247,6 +355,7 @@ public static class StaffGachaOfflineHost
         View = root.GetComponentInChildren<UIGacha>(true);
         Staff = root.GetComponentInChildren<UIStaffGacha>(true);
         Staff.ConfigureEditorOffline(Session.Owner, View);
+        _fonts.BindBeforeActivation(View.gameObject);
         View.ConfigureEditorOfflineView(Staff);
         root.SetActive(true);
         View.SetEditorOfflineVisible(true);
@@ -271,11 +380,18 @@ public static class StaffGachaOfflineHost
         if (View != null) View.transform.root.gameObject.SetActive(false);
         if (_template != null) _template.SetActive(false);
         Session?.Dispose(); Session = null; View = null; Staff = null; _template = null;
+        Item = null; _itemPresentationResults = null; _itemUserInfoBaseline = null; _itemPresentationStarts = 0;
+        if (_itemPresentationManager != null) UnityEngine.Object.Destroy(_itemPresentationManager.gameObject);
+        _itemPresentationManager = null;
+        _lastNavigationObservation = null; _nextObservation = 0;
         _fonts?.Dispose(); _fonts = null;
     }
 
     private static void RestoreEditorScenes()
     {
+        string startScene = SessionState.GetString(StartSceneKey, "");
+        SessionState.EraseString(StartSceneKey);
+        EditorSceneManager.playModeStartScene = string.IsNullOrEmpty(startScene) ? null : AssetDatabase.LoadAssetAtPath<SceneAsset>(startScene);
         string json = SessionState.GetString(ScenesKey, "");
         SessionState.EraseString(ScenesKey);
         if (string.IsNullOrEmpty(json)) return;
@@ -349,9 +465,22 @@ public sealed class StaffGachaOfflineWindow : EditorWindow
                 EditorApplication.delayCall += StaffGachaOfflineHost.PrepareAndEnter;
             if (GUILayout.Button("최종 화면 확인 · 머신 이동 / 상점 복귀"))
                 EditorApplication.delayCall += StaffGachaOfflineHost.PrepareNavigationAndEnter;
+            if (GUILayout.Button("아이템 실제 연출 · 무지급 오프라인 환경 시작"))
+                EditorApplication.delayCall += StaffGachaOfflineHost.PrepareItemPresentationAndEnter;
         }
         using (new EditorGUI.DisabledScope(!StaffGachaOfflineHost.IsActive))
         {
+            if (StaffGachaOfflineHost.IsItemPresentationCase)
+            {
+                EditorGUILayout.HelpBox("상점 뽑기 → 직원 머신 왼쪽 화살표 → 아이템 머신에서 아래 연출을 시작합니다. 실제 화면 넘기기/Skip/닫기를 사용하며 아이템 구매·지급·저장은 하지 않습니다.", MessageType.Info);
+                using (new EditorGUI.DisabledScope(!StaffGachaOfflineHost.CanStartItemPresentation))
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("아이템 단일 연출(무지급)")) StaffGachaOfflineHost.StartItemPresentation(1);
+                    if (GUILayout.Button("아이템 11회 연출(무지급)")) StaffGachaOfflineHost.StartItemPresentation(11);
+                }
+                if (GUILayout.Button("현재 Game View 캡처")) StaffGachaOfflineHost.CaptureScreen();
+            }
             using (new EditorGUI.DisabledScope(StaffGachaOfflineHost.IsNavigationCase))
             {
             using (new EditorGUILayout.HorizontalScope())
@@ -411,6 +540,14 @@ public sealed class StaffGachaOfflineWindow : EditorWindow
         EditorGUILayout.LabelField("모의 전송", $"구매 {session.PurchaseWrites} / 후속 저장 {session.FollowupWrites} / 추첨 {session.DrawCount}");
         EditorGUILayout.LabelField("확정 알림", $"지갑 {session.WalletNotifications} / 기록 수신 {session.RecordNotifications}");
         EditorGUILayout.LabelField("payload Dia", $"구매 {ReadDia(session.PurchasePayload)} / 후속 {ReadDia(session.FollowupPayload)}");
+        var item = StaffGachaOfflineHost.Item;
+        if (StaffGachaOfflineHost.IsItemPresentationCase && item != null)
+        {
+            EditorGUILayout.LabelField("무지급 아이템 표시", $"Step {item.EditorPresentationStep} / Index {item.EditorResultIndex} / 요약 {item.EditorIsSummary} / 완료 {item.EditorSummaryComplete}");
+            EditorGUILayout.LabelField("아이템 슬롯 / 입력", $"{item.EditorVisibleSlotCount} / 잠금 {StaffGachaOfflineHost.View.IsStartGacha} / Audio {item.EditorNativeSoundSource?.isPlaying}");
+            EditorGUILayout.LabelField("고정 표시 ID", string.Join(", ", item.EditorFixedResultIds), EditorStyles.wordWrappedLabel);
+            EditorGUILayout.LabelField("UserInfo 읽기 전용", $"골드 {UserInfo.Money} / 다이아 {UserInfo.Dia} / 가챠 횟수 {UserInfo.TotalUseGachaMachineCount}");
+        }
         var acquisition = session.Request?.Plan?.AccountResult.Acquisition;
         if (acquisition != null) EditorGUILayout.LabelField("고정 결과", $"신규 {acquisition.NewStaffIds.Count} / 중복 {acquisition.Items.Count - acquisition.NewStaffIds.Count} / 추가 토큰 {acquisition.TotalPandaTokens}");
         var staff = StaffGachaOfflineHost.Staff;

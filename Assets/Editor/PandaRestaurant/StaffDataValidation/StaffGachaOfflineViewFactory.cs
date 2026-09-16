@@ -28,13 +28,16 @@ public static class StaffGachaOfflineViewFactory
 
     // An explicit empty preview destination lets EditMode tests exercise the same copy path
     // without changing, saving or closing the runner's or user's current untitled scene.
-    public static GameObject BuildInEmptyEditorScene(Scene destination, out UIGacha view, out UIStaffGacha staff, bool includeNavigation = false)
+    public static GameObject BuildInEmptyEditorScene(Scene destination, out UIGacha view, out UIStaffGacha staff,
+        bool includeNavigation = false, bool includeItemPresentation = false)
     {
         view = null;
         staff = null;
         if (EditorApplication.isPlayingOrWillChangePlaymode || !destination.IsValid() ||
             !destination.isLoaded || !string.IsNullOrEmpty(destination.path) || destination.rootCount != 0)
             throw new InvalidOperationException("Create the offline view only in a new, empty unsaved scene before Play.");
+        if (includeItemPresentation && !includeNavigation)
+            throw new InvalidOperationException("Item presentation requires the existing offline navigation copy.");
 
         Scene preview = default;
         GameObject root = null;
@@ -68,6 +71,8 @@ public static class StaffGachaOfflineViewFactory
             clone.SetActive(false);
             view = clone.GetComponent<UIGacha>();
             staff = clone.GetComponentsInChildren<UIStaffGacha>(true).Single();
+            UIItemGacha presentationItem = includeItemPresentation
+                ? clone.GetComponentsInChildren<UIItemGacha>(true).Single() : null;
 
             if (includeNavigation)
             {
@@ -115,7 +120,9 @@ public static class StaffGachaOfflineViewFactory
             foreach (MonoBehaviour component in root.GetComponentsInChildren<MonoBehaviour>(true).Reverse())
             {
                 if (component == null) throw new InvalidOperationException("The source view contains a missing script.");
-                if (!IsDisplayBehaviour(component, view, staff) && !(includeNavigation &&
+                bool itemDecoration = includeItemPresentation && component is UIBouncingBall &&
+                    component.transform.IsChildOf(presentationItem.transform);
+                if (!IsDisplayBehaviour(component, view, staff) && !itemDecoration && !(includeNavigation &&
                     (component is UIItemGacha || component is UIStaff || component is UIRestaurantAdmin ||
                      component is UIMainCanvas || component is MobileUINavigation))) Object.DestroyImmediate(component);
             }
@@ -135,7 +142,8 @@ public static class StaffGachaOfflineViewFactory
             foreach (Animator animator in root.GetComponentsInChildren<Animator>(true))
             {
                 animator.fireEvents = false;
-                animator.enabled = animator.gameObject == staff.gameObject;
+                animator.enabled = animator.gameObject == staff.gameObject ||
+                    (includeItemPresentation && animator.gameObject == presentationItem.gameObject);
             }
             foreach (AudioSource audio in root.GetComponentsInChildren<AudioSource>(true))
             {
