@@ -69,15 +69,18 @@ public class TouchManager : MonoBehaviour
 
     private void HandleTouchInput()
     {
+        int touchCount = Input.touchCount;
+
         // 모바일 터치 처리 (멀티터치 지원)
-        if (Input.touchCount > 0)
+        if (touchCount > 0)
         {
             // 가장 마지막 터치(가장 큰 fingerId) 찾기
-            Touch lastTouch = Input.touches[0];
-            for (int i = 1; i < Input.touchCount; i++)
+            Touch lastTouch = Input.GetTouch(0);
+            for (int i = 1; i < touchCount; i++)
             {
-                if (Input.touches[i].fingerId > lastTouch.fingerId)
-                    lastTouch = Input.touches[i];
+                Touch currentTouch = Input.GetTouch(i);
+                if (currentTouch.fingerId > lastTouch.fingerId)
+                    lastTouch = currentTouch;
             }
             Vector2 touchPosition = lastTouch.position;
 
@@ -127,7 +130,7 @@ public class TouchManager : MonoBehaviour
 
         }
 
-        if (Input.touchCount == 0 && _isTouching)
+        if (touchCount == 0 && _isTouching)
         {
             _touchImage.SetTouch(false);
             _isTouching = false;

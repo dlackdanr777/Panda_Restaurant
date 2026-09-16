@@ -57,7 +57,6 @@ public class TableManager : MonoBehaviour
 
         UpdateTable();
         _customerController.OnChangeCustomerHandler += UpdateTable;
-        _customerController.OnGuideCustomerHandler += UpdateTable;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
         UserInfo.OnChangeFurnitureHandler += OnChangeTableEvent;
         UserInfo.OnChangeFloorHandler += UpdateTable;
@@ -184,7 +183,6 @@ public class TableManager : MonoBehaviour
 
         Vector3 targetPos = data.ChairTrs[data.SitIndex].position;
         targetPos.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
-        UpdateTable();
 
         _customerController.GuideCustomer(targetPos, 0, () =>
         {
@@ -907,7 +905,6 @@ public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurn
     private void OnDestroy()
     {
         _customerController.OnChangeCustomerHandler -= UpdateTable;
-        _customerController.OnGuideCustomerHandler -= UpdateTable;
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEvent;
         UserInfo.OnChangeFurnitureHandler -= OnChangeTableEvent;
         UserInfo.OnChangeFloorHandler -= UpdateTable;

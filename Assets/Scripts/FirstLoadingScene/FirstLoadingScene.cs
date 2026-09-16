@@ -1,12 +1,21 @@
 using BackEnd;
 using Muks.BackEnd;
+using Muks.PathFinding;
 using Muks.Tween;
+using System;
+using System.Threading;
 using UnityEngine;
 
 public class FirstLoadingScene : MonoBehaviour
 {
+    private const float PaymentDataLoadTimeoutSeconds = 30f;
+
     [SerializeField] private UIFirstLoadingScene _uiFirstLoadingScene;
     [SerializeField] private GoogleLoginManager _googleLoginManager;
+
+    private int _loadAttemptId;
+    private int _loginCompletionVersion;
+    private bool _sceneTransitionStarted;
 
     private void Start()
     {
@@ -23,6 +32,9 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void OnDestroy()
     {
+        ++_loadAttemptId;
+        PaymentInfo.CancelPendingLoad();
+
 #if UNITY_ANDROID
         GoogleLoginManager.OnGoogleLoginSuccessHandler -= OnLoginCompleted;
         GoogleLoginManager.OnGoogleAutoLoginSuccessHandler -= OnLoginCompleted;
@@ -32,10 +44,20 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void StartLoadDataAsync()
     {
+        int loadAttemptId = ++_loadAttemptId;
+        _sceneTransitionStarted = false;
+        PaymentInfo.CancelPendingLoad();
+
         _uiFirstLoadingScene.ShowTitle(() =>
         {
+            if (!IsCurrentLoadAttempt(loadAttemptId))
+                return;
+
             Backend.Utils.GetServerStatus((callback) =>
             {
+                if (!IsCurrentLoadAttempt(loadAttemptId))
+                    return;
+
                 if (callback.IsSuccess())
                 {
                     int serverStatus = (int)callback.GetReturnValuetoJSON()["serverStatus"];
@@ -70,39 +92,45 @@ public class FirstLoadingScene : MonoBehaviour
                 }
 
 
-                StartLoginFlow();
+                StartLoginFlow(loadAttemptId);
             });
         });
     }
 
-    private void StartLoginFlow()
+    private void StartLoginFlow(int loadAttemptId)
     {
 #if UNITY_ANDROID
         var pref = GoogleLoginManager.GetLoginPreference();
         if (pref == GoogleLoginManager.LoginPreference.Google)
         {
             // Google 선호: 자동 로그인 시도, 실패 시 게스트
-            _googleLoginManager.TryAutoLogin(onFail: () => DoGuestLogin());
+            _googleLoginManager.TryAutoLogin(onFail: () => DoGuestLogin(loadAttemptId));
         }
         else
         {
             // 게스트 또는 최초 실행: 토큰 재로그인 시도, 실패 시 게스트
             _googleLoginManager.TryTokenLogin(
-                onSuccess: () => OnLoginCompleted(),
-                onFail: () => DoGuestLogin()
+                onSuccess: () => OnLoginCompleted(loadAttemptId),
+                onFail: () => DoGuestLogin(loadAttemptId)
             );
         }
 #else
-        DoGuestLogin();
+        DoGuestLogin(loadAttemptId);
 #endif
     }
 
-    private void DoGuestLogin()
+    private void DoGuestLogin(int loadAttemptId)
     {
+        if (!IsCurrentLoadAttempt(loadAttemptId))
+            return;
+
         BackendManager.Instance.GuestLoginAsync(
-            onSuccess: (bro) => OnLoginCompleted(),
+            onSuccess: (bro) => OnLoginCompleted(loadAttemptId),
             onFail: (state) =>
             {
+                if (!IsCurrentLoadAttempt(loadAttemptId))
+                    return;
+
                 Debug.LogError("[FirstLoadingScene] 게스트 로그인 실패: " + state);
                 BackendManager.Instance.ShowPopup("로그인 실패", "게스트 로그인에 실패했습니다.\n다시 시도해주세요.");
                 BackendManager.Instance.SetPopupButton1("재시도", () => StartLoadDataAsync());
@@ -113,6 +141,16 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void OnLoginCompleted()
     {
+        OnLoginCompleted(_loadAttemptId);
+    }
+
+    private void OnLoginCompleted(int loadAttemptId)
+    {
+        if (!IsCurrentLoadAttempt(loadAttemptId))
+            return;
+
+        int loginCompletionVersion = ++_loginCompletionVersion;
+
         // UUID(gamerId) 조회 - 실패해도 게임 진행
         BackendManager.Instance.FetchGamerIdAsync();
 
@@ -122,35 +160,130 @@ public class FirstLoadingScene : MonoBehaviour
                 return;
         }
 
-        BackendManager.Instance.GetMyDataAsync("GameData", (bro) =>
+        BackendManager.Instance.GetMyDataAsync("GameData", (bro) => MainThreadDispatcher.Instance.Enqueue(() =>
         {
+            if (!IsCurrentLoginCompletion(loadAttemptId, loginCompletionVersion))
+                return;
+
             UserInfo.LoadGameData(bro);
             UserInfo.LoadStageDataAsync();
-            PaymentInfo.LoadPaymentData();
-            AssignRandomNicknameIfNeeded(() =>
+            LoadPaymentDataAsync(loadAttemptId, loginCompletionVersion);
+        }), (state) => MainThreadDispatcher.Instance.Enqueue(() =>
+        {
+            if (!IsCurrentLoginCompletion(loadAttemptId, loginCompletionVersion))
+                return;
+
+            ShowDataLoadFailure(loadAttemptId, "게임 데이터 로드 실패: " + state);
+        }));
+    }
+
+    private void LoadPaymentDataAsync(int loadAttemptId, int loginCompletionVersion)
+    {
+        string expectedOwnerInDate = Backend.UserInDate;
+        int completionState = 0;
+
+        Tween.Wait(PaymentDataLoadTimeoutSeconds, () =>
+        {
+            if (!IsCurrentLoginCompletion(loadAttemptId, loginCompletionVersion)
+                || Interlocked.Exchange(ref completionState, 1) != 0)
             {
-                Tween.Wait(0.7f, () =>
+                return;
+            }
+
+            PaymentInfo.CancelPendingLoad();
+            if (!string.Equals(expectedOwnerInDate, Backend.UserInDate, StringComparison.Ordinal))
+                return;
+
+            ShowDataLoadFailure(loadAttemptId, "PaymentData 로드 시간 초과");
+        });
+
+        PaymentInfo.LoadPaymentDataAsync(expectedOwnerInDate, (result) =>
+        {
+            if (!IsCurrentLoginCompletion(loadAttemptId, loginCompletionVersion)
+                || !string.Equals(expectedOwnerInDate, Backend.UserInDate, StringComparison.Ordinal)
+                || Interlocked.Exchange(ref completionState, 1) != 0)
+            {
+                return;
+            }
+
+            ContinueAfterPaymentDataLoaded(loadAttemptId, loginCompletionVersion);
+        }, (failure) =>
+        {
+            if (!IsCurrentLoginCompletion(loadAttemptId, loginCompletionVersion)
+                || !string.Equals(expectedOwnerInDate, Backend.UserInDate, StringComparison.Ordinal)
+                || Interlocked.Exchange(ref completionState, 1) != 0)
+            {
+                return;
+            }
+
+            ShowDataLoadFailure(loadAttemptId, "PaymentData 로드 실패: " + failure);
+        });
+    }
+
+    private void ContinueAfterPaymentDataLoaded(int loadAttemptId, int loginCompletionVersion)
+    {
+        AssignRandomNicknameIfNeeded(() =>
+        {
+            if (!IsCurrentLoginCompletion(loadAttemptId, loginCompletionVersion))
+                return;
+
+            Tween.Wait(0.7f, () =>
+            {
+                if (!IsCurrentLoginCompletion(loadAttemptId, loginCompletionVersion)
+                    || _sceneTransitionStarted)
                 {
-                    _uiFirstLoadingScene.HideTitle(() =>
-                    {
-                        if (UserInfo.IsFirstTutorialClear)
-                            Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("Stage1"));
-                        else
-                            Tween.Wait(0.1f, () => LoadingSceneManager.LoadScene("IntroScene"));
-                    });
+                    return;
+                }
+
+                _sceneTransitionStarted = true;
+                _uiFirstLoadingScene.HideTitle(() =>
+                {
+                    if (!IsCurrentLoginCompletion(loadAttemptId, loginCompletionVersion))
+                        return;
+
+                    if (UserInfo.IsFirstTutorialClear)
+                        Tween.Wait(0.1f, () => LoadSceneIfCurrent(loadAttemptId, loginCompletionVersion, "Stage1"));
+                    else
+                        Tween.Wait(0.1f, () => LoadSceneIfCurrent(loadAttemptId, loginCompletionVersion, "IntroScene"));
                 });
             });
-        }, (state) =>
-        {
-            Debug.LogError("[FirstLoadingScene] 게임 데이터 로드 실패: " + state);
-            BackendManager.Instance.ShowPopup("데이터 로드 실패", "게임 데이터를 불러오는 데 실패했습니다.\n다시 시도해주세요.");
-            BackendManager.Instance.SetPopupButton1("재시도", () => StartLoadDataAsync());
-            BackendManager.Instance.ShowPopupExitButton();
         });
+    }
+
+    private void LoadSceneIfCurrent(int loadAttemptId, int loginCompletionVersion, string sceneName)
+    {
+        if (IsCurrentLoginCompletion(loadAttemptId, loginCompletionVersion))
+            LoadingSceneManager.LoadScene(sceneName);
+    }
+
+    private bool IsCurrentLoadAttempt(int loadAttemptId)
+    {
+        return this != null && loadAttemptId == _loadAttemptId;
+    }
+
+    private bool IsCurrentLoginCompletion(int loadAttemptId, int loginCompletionVersion)
+    {
+        return IsCurrentLoadAttempt(loadAttemptId)
+            && loginCompletionVersion == _loginCompletionVersion;
+    }
+
+    private void ShowDataLoadFailure(int loadAttemptId, string reason)
+    {
+        if (!IsCurrentLoadAttempt(loadAttemptId))
+            return;
+
+        Debug.LogError("[FirstLoadingScene] " + reason);
+        BackendManager.Instance.ShowPopup("데이터 로드 실패", "게임 데이터를 불러오는 데 실패했습니다.\n다시 시도해주세요.");
+        BackendManager.Instance.SetPopupButton1("재시도", () => StartLoadDataAsync());
+        BackendManager.Instance.ShowPopupExitButton();
     }
 
     private void OnGoogleLoginFailed()
     {
+        int loadAttemptId = _loadAttemptId;
+        if (!IsCurrentLoadAttempt(loadAttemptId))
+            return;
+
         Debug.LogError("[FirstLoadingScene] 구글 로그인 실패");
         BackendManager.Instance.ShowPopup("로그인 실패", "구글 로그인에 실패했습니다.\n다시 시도해주세요.");
         BackendManager.Instance.SetPopupButton1("재시도", () => StartLoadDataAsync());
