@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 /// </summary>
 public static class StaffAccountSaveConverter
 {
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     public static bool TrySerialize(StaffAccountSaveData data, out string json, out string error)
     {
@@ -31,6 +31,7 @@ public static class StaffAccountSaveConverter
             ["Staff"] = staff,
             ["PandaTokens"] = data.PandaTokens
         };
+        if (data.Version >= 2) root["GachaEconomy"] = data.GachaEconomy.ToJson();
         json = root.ToString(Formatting.None);
         return true;
     }
@@ -68,10 +69,11 @@ public static class StaffAccountSaveConverter
 
         if (!TryInteger(root["Version"], int.MinValue, int.MaxValue, out long version))
             return Invalid("Version은 필수 32비트 정수입니다.");
-        if (version != CurrentVersion)
+        if (version != 1 && version != CurrentVersion)
             return new StaffAccountSaveReadResult(StaffAccountSaveReadStatus.UnsupportedVersion, null,
                 "지원하지 않는 공용 데이터 형식 버전입니다: " + version);
-        if (!HasOnlyFields(root, "Version", "Staff", "PandaTokens"))
+        if (!(version == 1 ? HasOnlyFields(root, "Version", "Staff", "PandaTokens")
+            : HasOnlyFields(root, "Version", "Staff", "PandaTokens", "GachaEconomy")))
             return Invalid("Version 1의 필수 필드가 누락되었거나 알 수 없는 필드가 있습니다.");
         if (!(root["Staff"] is JArray staff))
             return Invalid("Staff는 필수 배열입니다. null은 빈 보유 목록이 아닙니다.");
@@ -90,7 +92,10 @@ public static class StaffAccountSaveConverter
             records.Add(new StaffAccountStaffRecord((string)record["Id"], (int)level));
         }
 
-        var data = new StaffAccountSaveData((int)version, records, pandaTokens);
+        GachaEconomySaveData economy = GachaEconomySaveData.Empty;
+        if (version >= 2 && !GachaEconomySaveData.TryRead(root["GachaEconomy"], out economy, out string economyError))
+            return Invalid(economyError);
+        var data = new StaffAccountSaveData((int)version, records, pandaTokens, economy);
         if (!Validate(data, out string error))
             return Invalid(error);
         return new StaffAccountSaveReadResult(StaffAccountSaveReadStatus.Success, data, null);
@@ -102,7 +107,7 @@ public static class StaffAccountSaveConverter
         error = null;
         if (data == null)
             error = "공용 스냅샷이 null입니다.";
-        else if (data.Version != CurrentVersion)
+        else if (data.Version != 1 && data.Version != CurrentVersion)
             error = "지원하지 않는 공용 데이터 형식 버전입니다: " + data.Version;
         else if (data.Staff == null)
             error = "보유 목록이 null입니다. 명시적인 빈 목록과 구분해야 합니다.";
@@ -111,6 +116,7 @@ public static class StaffAccountSaveConverter
         if (error != null)
             return false;
 
+        if (data.GachaEconomy == null || !data.GachaEconomy.Validate(out error)) return false;
         var ids = new HashSet<string>(StringComparer.Ordinal);
         for (int index = 0; index < data.Staff.Count; index++)
         {
@@ -190,11 +196,13 @@ public sealed class StaffAccountSaveData
     public int Version { get; }
     public IReadOnlyList<StaffAccountStaffRecord> Staff { get; }
     public long PandaTokens { get; }
+    public GachaEconomySaveData GachaEconomy { get; }
 
-    public StaffAccountSaveData(int version, IReadOnlyList<StaffAccountStaffRecord> staff, long pandaTokens)
+    public StaffAccountSaveData(int version, IReadOnlyList<StaffAccountStaffRecord> staff, long pandaTokens, GachaEconomySaveData gachaEconomy = null)
     {
         Version = version;
         PandaTokens = pandaTokens;
+        GachaEconomy = gachaEconomy ?? GachaEconomySaveData.Empty;
         if (staff != null)
         {
             var copy = new StaffAccountStaffRecord[staff.Count];

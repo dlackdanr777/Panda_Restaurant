@@ -463,13 +463,15 @@ public partial class StaffStageMigrationCollectionTests
         Assert.That(purchase.Plan.DiamondsAfter, Is.EqualTo(dia));
         Assert.That(fixture.Game.WriteTargets[index].AccountInDate, Is.EqualTo(fixture.Account));
         Assert.That(fixture.Game.WriteTargets[index].RowInDate, Is.EqualTo(fixture.Row));
-        AssertPurchaseStoredAccount((string)fields["StaffAccount"], tokens);
+        AssertPurchaseStoredAccount((string)fields["StaffAccount"], tokens, purchase.Plan.AccountResult.UpdatedAccount.Version);
     }
-    private static void AssertPurchaseStoredAccount(string json, long tokens)
+    private static void AssertPurchaseStoredAccount(string json, long tokens, int expectedVersion = 1)
     {
         var read = StaffAccountSaveConverter.Read(json);
         Assert.That(read.Status, Is.EqualTo(StaffAccountSaveReadStatus.Success), read.Error);
-        Assert.That(read.Data.Version, Is.EqualTo(1)); Assert.That(read.Data.PandaTokens, Is.EqualTo(tokens));
+        Assert.That(read.Data.Version, Is.EqualTo(expectedVersion), "Purchasing preserves the restored or migrated schema version");
+        Assert.That(read.Data.GachaEconomy.ItemCounter, Is.Zero); Assert.That(read.Data.GachaEconomy.StaffCounter, Is.Zero);
+        Assert.That(read.Data.PandaTokens, Is.EqualTo(tokens));
         CollectionAssert.AreEqual(new[] { "STAFF01", "STAFF03", "STAFF23" }, read.Data.Staff.Select(staff => staff.Id));
         CollectionAssert.AreEqual(new[] { 2, 4, 1 }, read.Data.Staff.Select(staff => staff.Level));
     }

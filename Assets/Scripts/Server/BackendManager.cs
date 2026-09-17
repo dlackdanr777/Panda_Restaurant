@@ -186,7 +186,7 @@ namespace Muks.BackEnd
             GameDataSaveCoordinator.IsStaffMigrationTargetProtected(GameDataRestore.LegacyTarget);
         public bool IsStaffPurchaseProtected =>
             GameDataSaveCoordinator.IsStaffPurchaseTargetProtected(GameDataRestore.LegacyTarget);
-        public bool IsStaffMutationProtected => IsStaffMigrationProtected || IsStaffPurchaseProtected || IsFirstTutorialProtected || IsQuestStaffGrantProtected;
+        public bool IsStaffMutationProtected => IsStaffMigrationProtected || IsStaffPurchaseProtected || IsFirstTutorialProtected || IsQuestStaffGrantProtected || IsGachaEconomyProtected;
         private bool _startingStaffPurchase;
         private List<StaffGachaPurchaseExecution> _staffPurchaseExecutions;
         private IStaffPurchaseWallet _staffPurchaseWallet;
@@ -555,6 +555,7 @@ namespace Muks.BackEnd
         }
         private void InvalidateGameDataSaveSession()
         {
+            if (_gameDataSaveQuery != null) ClearEconomySession();
             _gameDataSaveCoordinator?.InvalidateSession();
             _gameDataSaveCoordinator = null;
             _gameDataSaveQuery = null;
@@ -623,6 +624,8 @@ namespace Muks.BackEnd
                     string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
                     _cachedServerTime = DateTime.Parse(time);
                     _serverTimeCachedAt = Time.realtimeSinceStartup;
+                    RecordGachaEconomyServerUtc(DateTime.Parse(time, null,
+                        System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal));
                     return _cachedServerTime;
                 }
                 else
@@ -679,6 +682,7 @@ namespace Muks.BackEnd
             // Keep sent financial evidence/target locks, but a destroyed owner cannot apply a late response.
             _gameDataSaveCoordinator?.InvalidateSession();
             _gameDataRestoreContext?.InvalidateAccountSession();
+            DisposeEconomy();
             if (_staffPurchaseExecutions != null)
                 foreach (var purchase in _staffPurchaseExecutions) purchase.ReleaseOwnedDisplayData();
             if (_questStaffGrants != null)
@@ -1032,6 +1036,7 @@ namespace Muks.BackEnd
                         var dt = DateTime.Parse(time, null,
                             System.Globalization.DateTimeStyles.AssumeUniversal |
                             System.Globalization.DateTimeStyles.AdjustToUniversal);
+                        RecordGachaEconomyServerUtc(dt);
                         onSuccess?.Invoke(dt);
                     }
                     catch (Exception ex)
@@ -1669,6 +1674,7 @@ namespace Muks.BackEnd
                 validateRequest: (identity, payload) =>
                 {
                     var owner = readOwner() ?? updater.Owner;
+                    if (IsGachaEconomyProtected) return _gachaEconomyStore.ValidateTransmission(identity, payload);
                     var migration = owner?.ActiveStaffMigration;
                     if (migration != null) return migration.ValidateTransmission(identity, payload);
                     var purchase = owner?.ActiveStaffPurchase;
@@ -1823,6 +1829,7 @@ namespace Muks.BackEnd
                 && !IsStaffPurchaseProtected
                 && !IsFirstTutorialProtected
                 && !IsQuestStaffGrantProtected
+                && !IsGachaEconomyProtected
                 && !GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
                 && (owner == null || (owner.State != GameDataSaveCoordinatorState.Indeterminate
                     && owner.State != GameDataSaveCoordinatorState.LocalCompletionFailed

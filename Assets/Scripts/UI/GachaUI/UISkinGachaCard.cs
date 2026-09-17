@@ -24,10 +24,17 @@ public class UIGachaCard : MonoBehaviour
     public void Init()
     {
         _tmpScale = _rectTransform.localScale;
+        InitPresentation();
         if (_closeButton != null)
         {
             _closeButton.onClick.AddListener(OnCloseButtonClicked);
         }
+    }
+
+    public void InitPresentation()
+    {
+        if (GetComponentInChildren<GachaAcquisitionBadge>(true) == null)
+            GachaAcquisitionBadge.Bind(transform, _nameText.font, false);
     }
 
     public void SetScale(float scale)
@@ -48,10 +55,16 @@ public class UIGachaCard : MonoBehaviour
 
     public void SetData(GachaData data)
     {
-        SetData(data, true);
+        BindData(data, true);
     }
 
-    private void SetData(GachaData data, bool showOwnedStaffEffect)
+    public void SetData(GachaData data, bool isNew)
+    {
+        BindData(data, true);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, data != null && isNew);
+    }
+
+    private void BindData(GachaData data, bool showOwnedStaffEffect)
     {
         if (data == null)
         {
@@ -67,6 +80,7 @@ public class UIGachaCard : MonoBehaviour
         SetEffect(data, showOwnedStaffEffect);
         SetType(data);
         _itemStar.SetStar(data.Rank);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, false);
     }
 
     /// <summary>
@@ -88,7 +102,8 @@ public class UIGachaCard : MonoBehaviour
 
         // 획득 결과는 기존 상세 화면의 기본(Lv.1) 능력 문구를 사용한다.
         // 실제 계정의 보유 레벨을 조회하거나 미보유 정보를 가리지 않는다.
-        SetData(data, false);
+        BindData(data, false);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, item.IsNew);
         string previewLabel = isTestPreview ? "[테스트 미리보기]\n" : string.Empty;
         _descriptionText.SetText(item.IsNew
             ? previewLabel + "신규 획득"
@@ -202,6 +217,7 @@ public class UIGachaCard : MonoBehaviour
 
     private void UpdateFrame(GachaData data)
     {
+        GachaCardHaloPolicy.Apply(_star4Frame, _star5Frame, data == null ? Rank.Normal1 : data.Rank);
         _star1Frame.gameObject.SetActive(false);
         _star3Frame.gameObject.SetActive(false);
         _star4Frame.gameObject.SetActive(false);
@@ -240,6 +256,7 @@ public class UIGachaCard : MonoBehaviour
 
     private void ClearData()
     {
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, false);
         _skinImage.sprite = null;
         _nameText.SetText(string.Empty);
         _descriptionText.SetText(string.Empty);

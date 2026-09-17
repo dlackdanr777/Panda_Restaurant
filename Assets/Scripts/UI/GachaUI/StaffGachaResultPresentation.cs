@@ -25,6 +25,7 @@ public sealed class StaffGachaPurchaseDisplay
     private readonly Func<object, StaffGachaAcquisitionResult> _getAcquisition;
     private readonly Func<object, IReadOnlyList<GachaStaffData>> _getDisplayStaff;
     private readonly Action _resultClosed;
+    private readonly Action<object, int> _resultRevealed;
     private object _observed, _displayed;
     private StaffGachaResultSequence _sequence;
     private StaffGachaResultAnimation _animation;
@@ -76,12 +77,36 @@ public sealed class StaffGachaPurchaseDisplay
             value => ((QuestStaffGrantExecution)value).Acquisition,
             value => ((QuestStaffGrantExecution)value).DisplayStaff, resultClosed);
 
+    public static StaffGachaPurchaseDisplay ForEconomy(UIStaffGacha staff, UIGacha view, GachaEconomyService service)
+    {
+        if (service == null) throw new ArgumentNullException(nameof(service));
+        return new StaffGachaPurchaseDisplay(staff, view,
+            () => service.LastTransaction,
+            value => value is GachaEconomyTransaction transaction && transaction.IsCompleted &&
+                transaction.IsDraw && transaction.Machine == GachaMachineKind.Staff &&
+                service.Snapshot?.AccountId == transaction.After.AccountId,
+            value => ConvertEconomyResult((GachaEconomyTransaction)value),
+            value => ((GachaEconomyTransaction)value).Results.Select(result => result.Data as GachaStaffData).ToArray(),
+            null,
+            (value, index) => view.NotifyCollectionReveal(((GachaEconomyTransaction)value).Results[index]));
+    }
+
+    private static StaffGachaAcquisitionResult ConvertEconomyResult(GachaEconomyTransaction transaction)
+    {
+        // IsNew and refunds were decided before commit. Presentation must not query present-day ownership.
+        var items = transaction.Results.Select(result => new StaffGachaAcquisitionItem(
+            result.Id, result.Rank, result.IsNew, result.PandaTokenReward)).ToList();
+        return new StaffGachaAcquisitionResult(items, items.Where(item => item.IsNew).Select(item => item.StaffId).ToList(),
+            items.Sum(item => item.PandaTokenReward));
+    }
+
     private StaffGachaPurchaseDisplay(UIStaffGacha staff, UIGacha view, Func<object> getCompleted,
         Func<object, bool> canPresent, Func<object, StaffGachaAcquisitionResult> getAcquisition,
-        Func<object, IReadOnlyList<GachaStaffData>> getDisplayStaff, Action resultClosed)
+        Func<object, IReadOnlyList<GachaStaffData>> getDisplayStaff, Action resultClosed, Action<object, int> resultRevealed = null)
     {
         _staff = staff; _view = view; _getCompleted = getCompleted; _canPresent = canPresent;
         _getAcquisition = getAcquisition; _getDisplayStaff = getDisplayStaff; _resultClosed = resultClosed;
+        _resultRevealed = resultRevealed;
     }
 
     private bool IsVisible => _staff != null && _view != null && _staff.gameObject.activeInHierarchy &&
@@ -126,6 +151,13 @@ public sealed class StaffGachaPurchaseDisplay
             Close(); // The owner retains the confirmed result; a display error never retries a purchase.
         }
         object completed = _getCompleted();
+        // Once closed, the same observed result cannot change its confirmed acquisition.
+        // Avoid repeatedly capturing a full account just to keep an already hidden button hidden.
+        if (_displayed == null && ReferenceEquals(_observed, completed))
+        {
+            UpdateNativeResultButton(false);
+            return;
+        }
         bool canShow = completed != null && _canPresent(completed);
         UpdateNativeResultButton(canShow);
         _popup?.BringToFront();
@@ -224,6 +256,7 @@ public sealed class StaffGachaPurchaseDisplay
         if (animate) slot.TweenScale(Vector3.one, 0.2f, Ease.OutBack);
         slot.ChangeImagePivot();
         _staff.ResultSlots.gameObject.SetActive(true);
+        _resultRevealed?.Invoke(_displayed, index);
     }
 
     private void ShowCurrentCard(bool animateFinal = false)
@@ -231,6 +264,7 @@ public sealed class StaffGachaPurchaseDisplay
         _selected = _sequence.Index;
         if (!_staff.ResultCard.TrySetStaffAcquisitionResult(_sequence.CurrentStaff, _sequence.CurrentItem))
             throw new InvalidOperationException("직원 결과와 카드가 일치하지 않습니다.");
+        _resultRevealed?.Invoke(_displayed, _selected);
         _staff.ResultImage.gameObject.SetActive(false);
         _staff.ResultCard.TweenStop();
         bool summary = _sequence.Count == 11 && _sequence.Index == 10;
@@ -431,7 +465,11 @@ public sealed class StaffGachaPurchaseDisplay
         }
         _captured = false; _phase = Phase.Closed;
         _sequence = null; _displayed = null;
-        if (_staff != null && _staff.ResultSkipButton != null) _staff.ResultSkipButton.gameObject.SetActive(false);
+        if (_staff != null && _staff.ResultSkipButton != null)
+        {
+            _staff.ResultSkipButton.interactable = false;
+            _staff.ResultSkipButton.gameObject.SetActive(false);
+        }
     }
 
     public void Suspend() { Close(); _observed = null; }

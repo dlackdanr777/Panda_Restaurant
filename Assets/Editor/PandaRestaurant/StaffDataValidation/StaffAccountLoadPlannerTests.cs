@@ -52,7 +52,7 @@ public class StaffAccountLoadPlannerTests
         foreach (string corrupt in new[] { "", "null", "{", "{}" })
             AssertState(Plan(StaffAccountQueryStatus.SucceededFieldPresent, corrupt,
                 new[] { EStage.Stage1 }, validSources, Definitions()), StaffAccountLoadStatus.InvalidExistingData);
-        AssertState(Plan(StaffAccountQueryStatus.SucceededFieldPresent, Empty.Replace("\"Version\":1", "\"Version\":2"),
+        AssertState(Plan(StaffAccountQueryStatus.SucceededFieldPresent, Empty.Replace("\"Version\":1", "\"Version\":3"),
             new[] { EStage.Stage1 }, validSources, Definitions()), StaffAccountLoadStatus.UnsupportedVersion);
     }
 
@@ -138,7 +138,7 @@ public class StaffAccountLoadPlannerTests
         AssertState(WithoutMigration(StaffAccountQueryStatus.SucceededFieldPresent, Existing), StaffAccountLoadStatus.ExistingDataLoaded);
         AssertState(WithoutMigration(StaffAccountQueryStatus.SucceededFieldPresent, "{corrupt"), StaffAccountLoadStatus.InvalidExistingData);
         AssertState(WithoutMigration(StaffAccountQueryStatus.SucceededFieldPresent,
-            Empty.Replace("\"Version\":1", "\"Version\":2")), StaffAccountLoadStatus.UnsupportedVersion);
+            Empty.Replace("\"Version\":1", "\"Version\":3")), StaffAccountLoadStatus.UnsupportedVersion);
     }
 
     private static StaffAccountLoadResult Plan(StaffAccountQueryStatus query, string json,

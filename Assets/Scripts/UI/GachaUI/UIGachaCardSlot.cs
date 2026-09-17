@@ -16,6 +16,12 @@ public class UIGachaCardSlot : MonoBehaviour
 
     [SerializeField] private UIItemStar _itemStar;
 
+    public void InitPresentation()
+    {
+        if (GetComponentInChildren<GachaAcquisitionBadge>(true) == null)
+            GachaAcquisitionBadge.Bind(transform, _nameText.font, false, _star1Frame.rectTransform);
+    }
+
     // The slot reads only the saved acquisition output, never the current account or item grant path.
     public bool TrySetStaffAcquisitionResult(GachaStaffData data, StaffGachaAcquisitionItem item)
     {
@@ -34,12 +40,18 @@ public class UIGachaCardSlot : MonoBehaviour
         _effectText.SetText(Utility.GetStaffEffectDescription(data.StaffData, 1));
         _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.GetStaffGroupTypeFromData(data.StaffData)));
         _itemStar.SetStar(data.Rank);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, item.IsNew, _star1Frame.rectTransform);
         return true;
     }
 
 
 
     public void SetData(GachaData data)
+    {
+        SetData(data, false);
+    }
+
+    public void SetData(GachaData data, bool isNew)
     {
         if (data == null)
         {
@@ -55,6 +67,7 @@ public class UIGachaCardSlot : MonoBehaviour
         SetEffect(data);
         SetType(data);
         _itemStar.SetStar(data.Rank);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, isNew, _star1Frame.rectTransform);
     }
     
     private void SetImage(GachaData data)
@@ -150,7 +163,7 @@ public class UIGachaCardSlot : MonoBehaviour
                 return;
             }
 
-            _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.Instance.GetStaffGroupType(staffData)));
+            _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.GetStaffGroupTypeFromData(staffData)));
         }
         else
         {
@@ -162,6 +175,7 @@ public class UIGachaCardSlot : MonoBehaviour
 
     private void UpdateFrame(GachaData data)
     {
+        GachaCardHaloPolicy.Apply(_star4Frame, _star5Frame, data == null ? Rank.Normal1 : data.Rank);
         _star1Frame.gameObject.SetActive(false);
         _star3Frame.gameObject.SetActive(false);
         _star4Frame.gameObject.SetActive(false);
@@ -200,6 +214,7 @@ public class UIGachaCardSlot : MonoBehaviour
 
     private void ClearData()
     {
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, false, _star1Frame.rectTransform);
         _skinImage.sprite = null;
         _nameText.SetText(string.Empty);
         _descriptionText.SetText(string.Empty);

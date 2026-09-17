@@ -124,7 +124,7 @@ public class StaffAccountMemoryFlowTests
         Assert.That(planned.Status, Is.EqualTo(StaffAccountLoadStatus.UnsavedMigrationCandidate), planned.Error);
         Assert.That(planned.ExistingData, Is.Null);
         Assert.That(planned.MigrationIssues, Is.Empty);
-        AssertAccount(planned.MigrationCandidate, new[] { "STAFF01", "STAFF23", "STAFF03" }, new[] { 2, 1, 4 }, 0);
+        AssertAccount(planned.MigrationCandidate, new[] { "STAFF01", "STAFF23", "STAFF03" }, new[] { 2, 1, 4 }, 0, StaffAccountSaveConverter.CurrentVersion);
         Assert.That(planned.MigrationCandidate.Staff.Count(item => item.Id == "STAFF01"), Is.EqualTo(1));
         string plannedBefore = JsonConvert.SerializeObject(planned);
 
@@ -132,7 +132,7 @@ public class StaffAccountMemoryFlowTests
             out string candidateJson, out string error), Is.True, error);
         StaffAccountSaveReadResult decoded = StaffAccountSaveConverter.Read(candidateJson);
         Assert.That(decoded.Status, Is.EqualTo(StaffAccountSaveReadStatus.Success), decoded.Error);
-        AssertAccount(decoded.Data, new[] { "STAFF01", "STAFF23", "STAFF03" }, new[] { 2, 1, 4 }, 0);
+        AssertAccount(decoded.Data, new[] { "STAFF01", "STAFF23", "STAFF03" }, new[] { 2, 1, 4 }, 0, StaffAccountSaveConverter.CurrentVersion);
         Assert.That(StaffAccountSaveConverter.TrySerialize(decoded.Data,
             out string roundTripJson, out error), Is.True, error);
         Assert.That(roundTripJson, Is.EqualTo(candidateJson));
@@ -149,10 +149,10 @@ public class StaffAccountMemoryFlowTests
         Assert.That(typeof(StaffAccountStaffRecord).GetProperty("SkinId"), Is.Null);
     }
 
-    private static void AssertAccount(StaffAccountSaveData account, string[] ids, int[] levels, long tokens)
+    private static void AssertAccount(StaffAccountSaveData account, string[] ids, int[] levels, long tokens, int expectedVersion = 1)
     {
         Assert.That(account, Is.Not.Null);
-        Assert.That(account.Version, Is.EqualTo(StaffAccountSaveConverter.CurrentVersion));
+        Assert.That(account.Version, Is.EqualTo(expectedVersion));
         CollectionAssert.AreEqual(ids, account.Staff.Select(item => item.Id));
         CollectionAssert.AreEqual(levels, account.Staff.Select(item => item.Level));
         Assert.That(account.PandaTokens, Is.EqualTo(tokens));

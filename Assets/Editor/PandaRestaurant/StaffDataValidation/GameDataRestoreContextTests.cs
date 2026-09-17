@@ -152,7 +152,7 @@ public class GameDataRestoreContextTests
             row[GameDataRestoreContext.StaffAccountFieldName] = malformed;
             AssertBlocked(Response(row), GameDataRestoreStatus.InvalidStaffData, catalog);
         }
-        JObject unsupported = Row(commonJson: "{\"Version\":2,\"Staff\":[],\"PandaTokens\":55}");
+        JObject unsupported = Row(commonJson: "{\"Version\":3,\"Staff\":[],\"PandaTokens\":55}");
         AssertBlocked(Response(unsupported), GameDataRestoreStatus.UnsupportedStaffVersion, catalog);
     }
 

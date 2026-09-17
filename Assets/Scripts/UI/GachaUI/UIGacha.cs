@@ -6,7 +6,7 @@ using UnityEngine.UI;
 using System;
 using UnityEngine.EventSystems;
 
-public class UIGacha : MobileUIView
+public partial class UIGacha : MobileUIView
 {
 #if UNITY_EDITOR
     public const bool EnableEditorEntryUnlockForTesting = true;
@@ -63,6 +63,7 @@ public class UIGacha : MobileUIView
 
     private void Update()
     {
+        UpdateCollectionUI();
 #if UNITY_EDITOR
         if (_editorOfflineConfigured) return;
 #endif
@@ -160,6 +161,7 @@ public class UIGacha : MobileUIView
 
     private void OnDisable()
     {
+        HideCollectionUI();
         if (!_questStaffEntry && !_questPresentationCaptured) return;
         _requestedInitialMachine = null;
         ClearQuestStaffEntry();
@@ -312,6 +314,7 @@ public class UIGacha : MobileUIView
             _gachaMachines[i].Init(this);
             _gachaMachines[i].Hide();
         }
+        BindCollectionEconomy(Muks.BackEnd.BackendManager.Instance.GachaEconomy);
         _gachaItemList.Init(_gachaMachines[0].ItemDataList);
         SetMachine(_gachaMachines[0]);
         _leftButton.onClick.AddListener(() => SetMachine(-1));

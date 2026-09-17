@@ -68,10 +68,15 @@ public sealed class GachaResultCardPopup : IDisposable
         return true;
     }
 
-    public void ShowItem(GachaItemData item)
+    public void ShowItem(GachaData item)
+    {
+        ShowItem(item, false);
+    }
+
+    public void ShowItem(GachaData item, bool isNew)
     {
         if (item == null) { Hide(); return; }
-        _card.SetData(item);
+        _card.SetData(item, isNew);
         Show();
     }
 

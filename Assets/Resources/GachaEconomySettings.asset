@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2021f49bcb6490ab11b820a5270693d, type: 3}
+  m_Name: GachaEconomySettings
+  m_EditorClassIdentifier: 
+  ItemTicketPrice: 100
+  StaffTicketPrice: 100
+  TicketBundleQuantity: 1
+  NormalItemPrice: 40
+  RareItemPrice: 100
+  UniqueItemPrice: 250
+  SpecialItemPrice: 600
+  ItemTicketSprite: {fileID: 0}
+  StaffTicketSprite: {fileID: 0}

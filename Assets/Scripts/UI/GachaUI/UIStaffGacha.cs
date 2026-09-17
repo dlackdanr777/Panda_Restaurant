@@ -67,6 +67,54 @@ public class UIStaffGacha : GachaMachineParent
     private bool _purchaseButtonsBound;
     private bool _startingPurchaseFromInput;
     private Func<bool> _questEntryIsCurrent;
+    private GachaEconomyService _collectionEconomy;
+    private bool _requiresCollectionEconomy;
+
+    public void BindCollectionEconomy(UIGacha view, GachaEconomyService economy)
+    {
+        _requiresCollectionEconomy = true;
+        if (ReferenceEquals(_collectionEconomy, economy)) return;
+        _purchaseDisplay?.Dispose();
+        _uiGacha = view;
+        _collectionEconomy = economy;
+        _purchaseDisplay = economy == null ? null : StaffGachaPurchaseDisplay.ForEconomy(this, view, economy);
+    }
+
+    public void PresentCollectionTransaction(GachaEconomyService service, GachaEconomyTransaction transaction)
+    {
+        if (this == null || !ReferenceEquals(_collectionEconomy, service) || service == null ||
+            !ReferenceEquals(service.LastTransaction, transaction) || transaction == null ||
+            !transaction.IsCompleted || !transaction.IsDraw || transaction.Machine != GachaMachineKind.Staff ||
+            IsQuestEntry || _uiGacha == null || !ReferenceEquals(_uiGacha.Economy, service)) return;
+        // A synchronous save must enter presentation before another input in this frame can purchase.
+        // Tick retains its normal visibility/session checks and owns the start/close state transition.
+        _purchaseDisplay?.Tick();
+    }
+
+#if UNITY_EDITOR
+    public void ConfigureCollectionOffline(UIGacha view, GachaEconomyService economy)
+    {
+        if (gameObject.activeInHierarchy || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin)
+            throw new InvalidOperationException("An inactive SDK-free collection copy is required.");
+        _uiGacha = view;
+        _isInitialized = true;
+        _itemDataList = new List<GachaData>();
+        _gachaMacineAnimator.fireEvents = false;
+        _scrollImage.Init();
+        _gachaCard.Init();
+        EnsureResultSlots();
+        _screenButton.onClick.RemoveAllListeners();
+        _screenButton.onClick.AddListener(OnScreenButtonClicked);
+        _skipButton.onClick.RemoveAllListeners();
+        _skipButton.onClick.AddListener(OnSkipButtonClicked);
+        _singleButton.onClick.RemoveAllListeners();
+        _tenButton.onClick.RemoveAllListeners();
+        _purchaseButtonsBound = false;
+        BindPurchaseButtons();
+        BindCollectionEconomy(view, economy);
+        ConfigurePurchaseButtons();
+    }
+#endif
 
     internal bool IsQuestEntry => !string.IsNullOrEmpty(_questId);
 
@@ -191,7 +239,7 @@ public class UIStaffGacha : GachaMachineParent
         ConfigurePurchaseButtons();
     }
 
-    public StaffGachaPurchaseDisplay EditorOfflinePurchaseDisplay => _hasExplicitPurchaseDisplayOwner ? _purchaseDisplay : null;
+    public StaffGachaPurchaseDisplay EditorOfflinePurchaseDisplay => _hasExplicitPurchaseDisplayOwner || _collectionEconomy != null ? _purchaseDisplay : null;
 #endif
 
     // Explicit display-only bindings; no runtime UnityEditor/reflection dependency.
@@ -215,9 +263,11 @@ public class UIStaffGacha : GachaMachineParent
     private void EnsureResultSlots()
     {
         if (_slotPrefab == null || _getStaffSlotFrame == null) return;
+        foreach (var existing in _getStaffSlotList) if (existing != null) existing.InitPresentation();
         while (_getStaffSlotList.Count < 10)
         {
             UIGachaCardSlot slot = Instantiate(_slotPrefab, _getStaffSlotFrame);
+            slot.InitPresentation();
             _getStaffSlotList.Add(slot);
             slot.gameObject.SetActive(false);
         }
@@ -306,6 +356,11 @@ public class UIStaffGacha : GachaMachineParent
 
     private bool CanUsePaidInput()
     {
+        if (_requiresCollectionEconomy && _collectionEconomy == null) return false;
+        if (_collectionEconomy != null)
+            return _isInitialized && !_startingPurchaseFromInput && !IsQuestEntry &&
+                gameObject.activeInHierarchy && _uiGacha != null && !_uiGacha.IsStartGacha &&
+                _uiGacha.VisibleState == VisibleState.Appeared && !_collectionEconomy.IsBusy;
         if (!IsGachaExecutionEnabled || !_isInitialized || _startingPurchaseFromInput || IsQuestEntry
             || !gameObject.activeInHierarchy || _uiGacha == null || _uiGacha.IsStartGacha
             || _uiGacha.VisibleState != VisibleState.Appeared || _gachaMacineAnimator == null
@@ -319,6 +374,12 @@ public class UIStaffGacha : GachaMachineParent
         // The result animation owns active/input presentation until Close restores it.
         if (_uiGacha != null && _uiGacha.IsStartGacha) return;
         bool visible = CanUsePaidInput();
+        if (_collectionEconomy != null)
+        {
+            SetPaidInteractable(_singleButton, visible && _collectionEconomy.CanDraw(GachaMachineKind.Staff, GachaPaymentKind.DiamondsSingle, out _));
+            SetPaidInteractable(_tenButton, visible && _collectionEconomy.CanDraw(GachaMachineKind.Staff, GachaPaymentKind.DiamondsEleven, out _));
+            return;
+        }
         SetPaidInteractable(_singleButton, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Single, out _));
         SetPaidInteractable(_tenButton, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Multi, out _));
     }
@@ -383,7 +444,7 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void Show()
     {
-        if (!IsQuestEntry && _purchaseDisplay == null)
+        if (!IsQuestEntry && _purchaseDisplay == null && !_requiresCollectionEconomy)
         {
             var owner = _hasExplicitPurchaseDisplayOwner ? _purchaseDisplayOwner : Muks.BackEnd.BackendManager.Instance;
             if (owner == null) return; // An invalid detached owner never falls back to the live account.
@@ -663,6 +724,22 @@ public class UIStaffGacha : GachaMachineParent
 
     private void StartStaffPurchase(StaffGachaPurchaseType type)
     {
+        if (_collectionEconomy != null)
+        {
+            if (!CanUsePaidInput()) return;
+            _startingPurchaseFromInput = true;
+            try
+            {
+                _purchaseDisplay?.Close();
+                var service = _collectionEconomy;
+                if (!service.TryDraw(GachaMachineKind.Staff,
+                    type == StaffGachaPurchaseType.Single ? GachaPaymentKind.DiamondsSingle : GachaPaymentKind.DiamondsEleven,
+                    transaction => PresentCollectionTransaction(service, transaction),
+                    out string collectionError)) _uiGacha.ReportCollectionError(collectionError);
+            }
+            finally { _startingPurchaseFromInput = false; RefreshPurchaseButtonState(); }
+            return;
+        }
         if (!CanUsePaidInput() || !_purchaseDisplayOwner.CanStartStaffPurchase(type, out _))
         {
             RefreshPurchaseButtonState();

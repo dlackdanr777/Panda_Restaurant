@@ -19,7 +19,7 @@ public class StaffAccountSaveConverterTests
     [Test]
     public void RoundTrip_PreservesRecordsIntegerBoundsAndCopiedInputsWithoutRegistryRules()
     {
-        Assert.That(StaffAccountSaveConverter.CurrentVersion, Is.EqualTo(1));
+        Assert.That(StaffAccountSaveConverter.CurrentVersion, Is.EqualTo(2));
         var records = new List<StaffAccountStaffRecord>
         {
             new StaffAccountStaffRecord("STAFF01", 2),
@@ -94,13 +94,13 @@ public class StaffAccountSaveConverterTests
             invalidJson.Add(valid.Replace("[{\"Id\":\"STAFF01\",\"Level\":2}]", value));
         foreach (string json in invalidJson)
             AssertReadFailure(json, StaffAccountSaveReadStatus.InvalidData);
-        foreach (int version in new[] { -1, 0, 2, int.MaxValue })
+        foreach (int version in new[] { -1, 0, 3, int.MaxValue })
             AssertReadFailure(valid.Replace("\"Version\":1", "\"Version\":" + version),
                 StaffAccountSaveReadStatus.UnsupportedVersion);
 
         var invalidModels = new List<StaffAccountSaveData>
         {
-            null, new StaffAccountSaveData(2, new StaffAccountStaffRecord[0], 0),
+            null, new StaffAccountSaveData(3, new StaffAccountStaffRecord[0], 0),
             new StaffAccountSaveData(1, null, 0),
             new StaffAccountSaveData(1, new StaffAccountStaffRecord[] { null }, 0),
             new StaffAccountSaveData(1, new StaffAccountStaffRecord[0], -1),

@@ -80,6 +80,8 @@ public class StaffGachaAcquisitionCardTests
             SetField(itemStar, "_star" + (i + 1), _stars[i]);
         }
         SetField(_card, "_itemStar", itemStar);
+        // Match the real machine's initialization: its pooled badge belongs to the stable hierarchy before snapshots.
+        _card.Init();
         _randomState = Random.state;
     }
 

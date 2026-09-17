@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 889abe75cdfa4ee9aa7c993762e10456, type: 3}
+  m_Name: GachaCollectionUiTheme
+  m_EditorClassIdentifier: 
+  Font: {fileID: 11400000, guid: 452e39f04be31f147b0e2a9b45681611, type: 2}
+  PandaToken: {fileID: 21300000, guid: db16390218ccde14aaae6e326dc045c9, type: 3}
+  Ticket: {fileID: 21300000, guid: 077813c0407b1b54b892895bcdef2d63, type: 3}
+  SlotFrame: {fileID: 21300000, guid: 23bf936bb42deb148a6ae6a425916b3d, type: 3}
+  ButtonPlate: {fileID: 21300000, guid: 33bad3f45f6ad944b8dcdd410dfd0f93, type: 3}
+  WoodFrame: {fileID: 21300000, guid: 7f1f9f8009e14d02bcdf946a63f784bb, type: 3}
+  ExchangeClose: {fileID: 21300000, guid: a59d06d35f294e3f9fe015853b16c1d1, type: 3}
+  ExchangeBuy: {fileID: 21300000, guid: 531e5314c77a4d98a6937d67ec71469f, type: 3}
+  ExchangeTitle: {fileID: 21300000, guid: c8469a0bf8a64310b1aa2753f624455f, type: 3}
+  LeftChain: {fileID: 21300000, guid: f775c44f0e2942d3acf3746414e86602, type: 3}
+  RightChain: {fileID: 21300000, guid: b6232a1bcd8948359eaa1635bf3d7c1e, type: 3}
+  ExchangeRefresh: {fileID: 21300000, guid: d3955f2be7624c5493efb84779e8d23f, type: 3}
+  NormalProductFrame: {fileID: 21300000, guid: 9690270fff02e22409cb62e3dab80b5a, type: 3}
+  RareProductFrame: {fileID: 21300000, guid: 86296a49f755dd94ca6d349f3d9582a8, type: 3}
+  UniqueProductFrame: {fileID: 21300000, guid: a40d66b4024431040ba894eb1870104e, type: 3}
+  SpecialProductFrame: {fileID: 21300000, guid: f886ac98eb4035b41a8192070c4f4288, type: 3}
+  DetailFrame: {fileID: 21300000, guid: e581e7cbf9734a9a90f5e0a5128ad42d, type: 3}
+  Star: {fileID: 21300000, guid: be03524238420774b94136fa1a767c68, type: 3}
+  EntranceSeconds: 0.78
+  Ink: {r: 0.32549, g: 0.18824, b: 0.10196, a: 1}
+  Cream: {r: 1, g: 0.97255, b: 0.88627, a: 1}
+  Wood: {r: 0.68235, g: 0.43922, b: 0.27059, a: 1}
+  Accent: {r: 0.90196, g: 0.66275, b: 0.25098, a: 1}

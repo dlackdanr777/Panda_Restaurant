@@ -136,7 +136,7 @@ public class StaffGachaAccountApplyCalculatorTests
     private static void AssertAccount(StaffAccountSaveData account, long tokens)
     {
         Assert.That(account, Is.Not.Null);
-        Assert.That(account.Version, Is.EqualTo(StaffAccountSaveConverter.CurrentVersion));
+        Assert.That(account.Version, Is.EqualTo(1), "This fixture preserves an explicitly supplied legacy V1 snapshot");
         Assert.That(account.PandaTokens, Is.EqualTo(tokens));
         CollectionAssert.AreEqual(new[] { "STAFF01", "STAFF03", "STAFF23" }, account.Staff.Select(item => item.Id));
         CollectionAssert.AreEqual(new[] { 2, 4, 1 }, account.Staff.Select(item => item.Level));

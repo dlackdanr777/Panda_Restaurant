@@ -98,7 +98,7 @@ namespace Muks.BackEnd
             Gold = !completion && Before.RewardGranted == false ? 5000L : 0L;
             if (!Before.CanAdd(Gold)) throw new InvalidOperationException("시작 보상 금액의 범위를 확인할 수 없습니다.");
             StaffAdded = !completion && !Source.Staff.Any(s => s.Id == "STAFF11");
-            Result = StaffAdded ? new StaffAccountSaveData(Source.Version, Source.Staff.Concat(new[] { new StaffAccountStaffRecord("STAFF11", 1) }).ToArray(), Source.PandaTokens) : Source;
+            Result = StaffAdded ? new StaffAccountSaveData(Source.Version, Source.Staff.Concat(new[] { new StaffAccountStaffRecord("STAFF11", 1) }).ToArray(), Source.PandaTokens, Source.GachaEconomy) : Source;
             _stageStaff = _stage.CaptureStaffRuntimeSnapshot();
             _beforePlacement = _stage.CaptureTutorialPlacement();
             var placements = JObject.Parse(_beforePlacement);

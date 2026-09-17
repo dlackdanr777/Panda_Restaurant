@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb6b66503134403e96e233c41184e3e9, type: 3}
+  m_Name: EnhancementFairySettings
+  m_EditorClassIdentifier:
+  MaxActive: 12
+  RotationSeconds: 12
+  NewArrivalPrioritySeconds: 8
+  GroundArea:
+    serializedVersion: 2
+    x: -8
+    y: 8
+    width: 16
+    height: 1.8
+  SpriteHeight: 1.65
+  WalkSpeed: 1.05
+  HopHeight: 0.55
+  RestMinSeconds: 1.8
+  RestMaxSeconds: 5.6
+  HopProbability: 0.14
+  VisitProbability: 0.16
+  WalkProbability: 0.3
+  LookProbability: 0.23
+  TurnProbability: 0.07
+  RestProbability: 0.1
+  CalmEnergy: 0.7
+  PersonalityEnergyStep: 0.32
+  InitialWaitSeconds: {x: 0.5, y: 5.6}
+  WalkSeconds: {x: 1.2, y: 3.8}
+  VisitSeconds: {x: 1.5, y: 3}
+  LookSeconds: {x: 0.8, y: 1.7}
+  TurnSeconds: {x: 0.7, y: 1.2}
+  HopSeconds: 0.65
+  MaximumHops: 2
+  WalkRadius: {x: 3, y: 1}
+  VisitRadius: {x: 1, y: 0.4}
+  ArrivalDistance: 0.1
+  IdleLift: 0.06
+  IdleBobAmplitude: 0.035
+  IdleBobRate: 2.3
+  IdleTiltDegrees: 2
+  WalkBobAmplitude: 0.09
+  WalkBobRate: 7
+  WalkTiltDegrees: 5
+  WalkTiltRate: 10
+  LookTiltDegrees: 9
+  LookRate: 4
+  HopSquash: 0.09
+  ArrivalSeconds: 0.65
+  RotationFadeSeconds: 0.4
+  ArrivalPuffSize: 1.9
+  ArrivalStarSize: 0.18
+  ArrivalStarRadius: {x: 0.8, y: 0.55}
+  ArrivalPuffOpacity: 0.75
+  ArrivalScaleInFraction: 0.3333333
+  ArrivalScaleOvershoot: 0.12
+  SortingLayer: Staff
+  VisualLayer: 2
+  ArrivalSprite: {fileID: 21300000, guid: 6b6316f1fecc37f4fb50b44d94948556, type: 3}
+  SparkleSprite: {fileID: 21300000, guid: 41f8b62216353e1409f8e3e010cbb0a0, type: 3}

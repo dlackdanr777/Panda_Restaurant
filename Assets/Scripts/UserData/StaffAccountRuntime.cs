@@ -187,6 +187,21 @@ public sealed class StaffAccountRuntime
     }
 
     public bool IsOwned(string id) => GetLevel(id).HasValue;
+    internal bool TryCommitEconomy(BackendGachaEconomyStore store, GameDataSaveReceipt receipt, out string error)
+    {
+        error = null; Refresh();
+        if (_changing || store == null || _mode != StaffAccountRuntimeMode.Common)
+        { error = "경제 거래 확정 중이거나 계정이 준비되지 않았습니다."; return false; }
+        _changing = true;
+        try
+        {
+            if (!store.ValidateCommit(this, receipt, out error) || !StaffAccountSaveConverter.Validate(store.Candidate, out error)) return false;
+            if (!store.CommitReservedCost(out error)) return false;
+            _current = store.Candidate;
+            return true;
+        }
+        finally { _changing = false; }
+    }
     internal bool TryCommitQuestStaffGrant(QuestStaffGrantExecution operation, GameDataSaveReceipt receipt,
         IQuestStaffTutorialState state, out string error)
     {
@@ -260,7 +275,7 @@ public sealed class StaffAccountRuntime
             if (!IsRegistered(staff) || !StillSame(query, before, StaffAccountRuntimeMode.Common)) return false;
             if (before.Staff.Any(record => record.Id == staff.Id)) return true;
             var records = new List<StaffAccountStaffRecord>(before.Staff) { new StaffAccountStaffRecord(staff.Id, 1) };
-            _current = new StaffAccountSaveData(before.Version, records, before.PandaTokens);
+            _current = new StaffAccountSaveData(before.Version, records, before.PandaTokens, before.GachaEconomy);
             added = true;
             Notify(notify);
             return true;
@@ -296,7 +311,7 @@ public sealed class StaffAccountRuntime
             { error = "성장에 필요한 재화가 부족합니다."; return false; }
             StaffAccountSaveData next = mode == StaffAccountRuntimeMode.Common
                 ? new StaffAccountSaveData(before.Version, before.Staff.Select(record => record.Id == staff.Id
-                    ? new StaffAccountStaffRecord(record.Id, level + 1) : record).ToArray(), before.PandaTokens) : null;
+                    ? new StaffAccountStaffRecord(record.Id, level + 1) : record).ToArray(), before.PandaTokens, before.GachaEconomy) : null;
 
             // External reads are complete. The two commits below have no events, SDK calls or asynchronous work.
             int currentScore = wallet.Score;

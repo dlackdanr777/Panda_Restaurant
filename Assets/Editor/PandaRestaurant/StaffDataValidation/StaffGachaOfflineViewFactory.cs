@@ -272,7 +272,8 @@ public static class StaffGachaOfflineViewFactory
     private static bool IsDisplayBehaviour(MonoBehaviour component, UIGacha view, UIStaffGacha staff)
     {
         if (component == view || component == staff || component is UIGachaCard ||
-            component is UIItemStar || component is GachaCapsule || component is ScrollingImage) return true;
+            component is UIItemStar || component is GachaCapsule || component is ScrollingImage ||
+            component is RotationGameObject) return true;
         // Exact assemblies exclude game subclasses; only rendering/layout and inert controls survive.
         // EventTrigger and other arbitrary UnityEvent dispatchers are deliberately not in the list.
         Type type = component.GetType();

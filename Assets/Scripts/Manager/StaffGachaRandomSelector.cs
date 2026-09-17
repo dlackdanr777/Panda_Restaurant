@@ -38,6 +38,14 @@ public static class StaffGachaRandomSelector
 
     public static float TotalGradeProbability => (float)GetTotalGradeWeight() / ProbabilityScale;
 
+    // Read the same single grade table for conditional exchange selection; never consume draw RNG.
+    public static int GetGradeWeight(Rank rank)
+    {
+        if (!TryGetGradeGroup(rank, out GradeGroup group)) return 0;
+        foreach (var probability in GradeProbabilities) if (probability.Group == group) return probability.Weight;
+        return 0;
+    }
+
     // Purchase input is the unfiltered registration source, not the display list. No RNG is consumed here.
     public static bool TryValidatePurchaseCandidates(IReadOnlyList<GachaData> candidates, out string error)
         => TryValidatePurchaseSource(candidates?.Count ?? 0, index => (candidates[index] as GachaStaffData)?.StaffData, out error);
@@ -87,7 +95,7 @@ public static class StaffGachaRandomSelector
         return Select(candidates, _ => gradeRoll, _ => staffIndex);
     }
 
-    private static GachaStaffData Select(
+    public static GachaStaffData Select(
         IReadOnlyList<GachaData> candidates,
         Func<int, int> gradeRollSelector,
         Func<int, int> staffIndexSelector)

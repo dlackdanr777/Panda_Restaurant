@@ -1209,6 +1209,7 @@ public static partial class UserInfo
 
     public static void AddUserGachaMachineCount(int cnt = 1)
     {
+        if (EconomyInventoryReservation != null) return;
         _totalUseGachaMachineCount += cnt;
         OnUseGachaMachineHandler?.Invoke();
     }
@@ -1921,6 +1922,7 @@ public static partial class UserInfo
 
     public static void GiveRecipe(FoodData data)
     {
+        if (EconomyInventoryReservation != null) return;
         if (_giveRecipeLevelDic.ContainsKey(data.Id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
@@ -1934,6 +1936,7 @@ public static partial class UserInfo
 
     public static void GiveRecipe(string id)
     {
+        if (EconomyInventoryReservation != null) return;
         if (_giveRecipeLevelDic.ContainsKey(id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
@@ -2039,6 +2042,7 @@ public static partial class UserInfo
 
     public static bool UpgradeRecipe(string id)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (_giveRecipeLevelDic.TryGetValue(id, out int level))
         {
             FoodData data = FoodDataManager.Instance.GetFoodData(id);
@@ -2066,6 +2070,7 @@ public static partial class UserInfo
 
     public static bool UpgradeRecipe(FoodData data)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (_giveRecipeLevelDic.TryGetValue(data.Id, out int level))
         {
             if (FoodDataManager.Instance.GetFoodData(data.Id).UpgradeEnable(level))
@@ -2107,7 +2112,7 @@ public static partial class UserInfo
 
     public static Dictionary<string, int> GetGiveGachaItemCountDic()
     {
-        return _giveGachaItemCountDic;
+        return EconomyInventoryReservation == null ? _giveGachaItemCountDic : new Dictionary<string, int>(_giveGachaItemCountDic);
     }
 
 
@@ -2183,6 +2188,7 @@ public static partial class UserInfo
 
     public static bool GiveGachaItem(GachaItemData data)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (data == null)
         {
             DebugLog.LogError("가챠 아이템 데이터가 null입니다.");
@@ -2225,6 +2231,7 @@ public static partial class UserInfo
 
     public static void GiveGachaItem(List<GachaItemData> dataList)
     {
+        if (EconomyInventoryReservation != null) return;
         for (int i = 0, cnt = dataList.Count; i < cnt; ++i)
         {
             if (dataList[i] == null)
@@ -2267,6 +2274,7 @@ public static partial class UserInfo
     
     public static bool RemoveGachaItem(GachaItemData data, int count)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (data == null)
         {
             DebugLog.LogError("해당 하는 아이템이 존재하지 않습니다: " + data.Id);
@@ -2318,6 +2326,7 @@ public static partial class UserInfo
 
     public static bool UpgradeGachaItem(GachaItemData data)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (!_giveGachaItemCountDic.ContainsKey(data.Id))
         {
             DebugLog.LogError("보유중인 아이템이 아닙니다: " + data.Id);
@@ -2346,6 +2355,7 @@ public static partial class UserInfo
 
     public static bool UpgradeGachaItem(string id)
     {
+        if (EconomyInventoryReservation != null) return false;
         GachaItemData data = ItemManager.Instance.GetGachaItemData(id);
         if (data == null)
         {
@@ -2381,12 +2391,12 @@ public static partial class UserInfo
 
     public static Dictionary<string, int> GetGiveGachaItemDic()
     {
-        return _giveGachaItemCountDic;
+        return EconomyInventoryReservation == null ? _giveGachaItemCountDic : new Dictionary<string, int>(_giveGachaItemCountDic);
     }
 
     public static Dictionary<string, int> GetGiveGachaItemLevelDic()
     {
-        return _giveGachaItemLevelDic;
+        return EconomyInventoryReservation == null ? _giveGachaItemLevelDic : new Dictionary<string, int>(_giveGachaItemLevelDic);
     }
 
 

@@ -425,7 +425,11 @@ public partial class StaffStageMigrationCollectionTests
         Assert.That(read.Status, Is.EqualTo(StaffAccountSaveReadStatus.Success));
         CollectionAssert.AreEqual(new[] { "STAFF01", "STAFF03", "STAFF23" }, read.Data.Staff.Select(staff => staff.Id));
         CollectionAssert.AreEqual(new[] { staff01Level, 4, 1 }, read.Data.Staff.Select(staff => staff.Level));
-        Assert.That(read.Data.Version, Is.EqualTo(1)); Assert.That(read.Data.PandaTokens, Is.Zero);
+        Assert.That(read.Data.Version, Is.EqualTo(StaffAccountSaveConverter.CurrentVersion));
+        Assert.That(read.Data.GachaEconomy.ItemTickets, Is.Zero); Assert.That(read.Data.GachaEconomy.StaffTickets, Is.Zero);
+        Assert.That(read.Data.GachaEconomy.ItemCounter, Is.Zero); Assert.That(read.Data.GachaEconomy.StaffCounter, Is.Zero);
+        Assert.That(read.Data.GachaEconomy.Acquired, Is.Empty);
+        Assert.That(read.Data.PandaTokens, Is.Zero);
     }
 }
 #endif

@@ -66,6 +66,78 @@ public class UIItemGacha : GachaMachineParent
     private readonly List<bool> _summaryButtonStates = new List<bool>();
     private Transform _summarySlotParent;
     private int _summarySlotSibling;
+    private GachaEconomyService _collectionEconomy;
+    private bool _requiresCollectionEconomy;
+    private readonly List<bool> _resultIsNew = new List<bool>();
+    private readonly List<GachaAcquisitionResult> _confirmedResults = new List<GachaAcquisitionResult>();
+    private GachaEconomyTransaction _lastPresentedTransaction;
+
+    public void BindCollectionEconomy(UIGacha view, GachaEconomyService economy)
+    {
+        if (!ReferenceEquals(_collectionEconomy, economy))
+        {
+            CancelResultPresentation();
+            if (_gachaMacineAnimator != null)
+            {
+                foreach (var parameter in _gachaMacineAnimator.parameters)
+                    if (parameter.type == AnimatorControllerParameterType.Trigger)
+                        _gachaMacineAnimator.ResetTrigger(parameter.nameHash);
+                if (Application.isPlaying && _gachaMacineAnimator.isActiveAndEnabled)
+                    _gachaMacineAnimator.Play("Base Layer.Idle", 0, 0f);
+            }
+            if (_skinGachaCard != null) _skinGachaCard.gameObject.SetActive(false);
+            if (_screenButton != null) _screenButton.gameObject.SetActive(false);
+            if (_skipButton != null) _skipButton.gameObject.SetActive(false);
+            if (_getItemImage != null) _getItemImage.gameObject.SetActive(false);
+            if (_getItemSlotFrame != null) _getItemSlotFrame.gameObject.SetActive(false);
+            _currentStep = 1;
+            _screenTouchWaitTime = 0;
+            if (view != null && view.IsCurrentMachine(this)) view.SetStartGacha(false);
+            _getItemList.Clear();
+            _resultIsNew.Clear();
+            _confirmedResults.Clear();
+            _lastPresentedTransaction = null;
+            _getItemIndex = 0;
+        }
+        _uiGacha = view;
+        _collectionEconomy = economy;
+        _requiresCollectionEconomy = true;
+    }
+
+    public void PresentCollectionTransaction(GachaEconomyTransaction transaction)
+    {
+        if (transaction == null || !transaction.IsCompleted || !transaction.IsDraw || transaction == _lastPresentedTransaction ||
+            transaction.Machine != GachaMachineKind.Item || transaction.Results.Count == 0 ||
+            _collectionEconomy == null || transaction.After.AccountId != _collectionEconomy.Snapshot?.AccountId ||
+            !gameObject.activeInHierarchy || !_uiGacha.IsCurrentMachine(this) ||
+            _uiGacha.VisibleState != VisibleState.Appeared) return;
+        _lastPresentedTransaction = transaction;
+        CancelResultPresentation();
+        _getItemList.Clear();
+        _resultIsNew.Clear();
+        _confirmedResults.Clear();
+        foreach (var result in transaction.Results)
+        {
+            if (!(result.Data is GachaItemData item)) continue;
+            _getItemList.Add(item);
+            _resultIsNew.Add(result.IsNew);
+            _confirmedResults.Add(result);
+        }
+        if (_getItemList.Count == 0) return;
+        _getItemIndex = 0;
+        _isPlayTextAnime = false;
+        _isCapsuleColorChanged = true;
+        PreparePurchasePresentation();
+        _uiGacha.SetStartGacha(true);
+        _gachaMacineAnimator.SetTrigger("Start");
+    }
+
+    private bool ResultIsNew(int index) => index >= 0 && index < _resultIsNew.Count && _resultIsNew[index];
+    private void NotifyCollectionReveal(int index)
+    {
+        if (index >= 0 && index < _confirmedResults.Count)
+            _uiGacha.NotifyCollectionReveal(_confirmedResults[index]);
+    }
 
 #if UNITY_EDITOR
     private bool _editorOfflineNavigation;
@@ -94,6 +166,7 @@ public class UIItemGacha : GachaMachineParent
         for (int i = 0; i < 10; i++)
         {
             UIGachaCardSlot slot = Instantiate(_slotPrefab, _getItemSlotFrame);
+            slot.InitPresentation();
             slot.gameObject.SetActive(false);
             _getItemSlotList.Add(slot);
         }
@@ -109,6 +182,15 @@ public class UIItemGacha : GachaMachineParent
         _editorOfflinePresentation = true;
     }
 
+    public void ConfigureCollectionOffline(UIGacha view, GachaEconomyService economy)
+    {
+        ConfigureEditorOfflineNavigation(view);
+        ConfigureEditorOfflinePresentation(view);
+        BindCollectionEconomy(view, economy);
+        _singleButton.onClick.AddListener(OnSingleGachaButtonClicked);
+        _tenButton.onClick.AddListener(OnTenGachaButtonClicked);
+    }
+
     public void BeginEditorOfflinePresentation(IReadOnlyList<GachaItemData> results)
     {
         if (!Application.isPlaying || !_editorOfflinePresentation || !gameObject.activeInHierarchy ||
@@ -120,6 +202,8 @@ public class UIItemGacha : GachaMachineParent
         CancelResultPresentation();
         _getItemList.Clear();
         _getItemList.AddRange(results);
+        _resultIsNew.Clear();
+        _confirmedResults.Clear();
         _getItemIndex = 0;
         _isPlayTextAnime = false;
         _isCapsuleColorChanged = true;
@@ -197,6 +281,7 @@ public class UIItemGacha : GachaMachineParent
         for (int i = 0; i < 10; ++i)
         {
             UIGachaCardSlot slot = Instantiate(_slotPrefab, _getItemSlotFrame);
+            slot.InitPresentation();
             _getItemSlotList.Add(slot);
             slot.gameObject.SetActive(false);
         }
@@ -213,6 +298,13 @@ public class UIItemGacha : GachaMachineParent
 
     private void Update()
     {
+        if (_collectionEconomy != null && _uiGacha != null && !_uiGacha.IsStartGacha)
+        {
+            PresentCollectionTransaction(_collectionEconomy.LastTransaction);
+            bool ready = !_collectionEconomy.IsBusy && _uiGacha.VisibleState == VisibleState.Appeared;
+            _singleButton.interactable = ready && _collectionEconomy.CanDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsSingle, out _);
+            _tenButton.interactable = ready && _collectionEconomy.CanDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsEleven, out _);
+        }
         if( 0 < _screenTouchWaitTime)
             _screenTouchWaitTime -= Time.deltaTime;
     }
@@ -369,7 +461,7 @@ public class UIItemGacha : GachaMachineParent
 
                 if(_isPlayTextAnime)
                 {
-                    _skinGachaCard.SetData(_getItemList[_getItemIndex - 1]);
+                    _skinGachaCard.SetData(_getItemList[_getItemIndex - 1], ResultIsNew(_getItemIndex - 1));
                     _isPlayTextAnime = false;
                     _screenTouchWaitTime = 0.5f;
                     return;
@@ -508,7 +600,8 @@ public class UIItemGacha : GachaMachineParent
                     _skinGachaCard.gameObject.SetActive(true);
                     _skinGachaCard.ResetScale();
                     _getItemImage.gameObject.SetActive(true);
-                    _skinGachaCard.SetData(_getItemList[_getItemIndex]);
+                    _skinGachaCard.SetData(_getItemList[_getItemIndex], ResultIsNew(_getItemIndex));
+                    NotifyCollectionReveal(_getItemIndex);
                     _getItemImage.sprite = _getItemList[_getItemIndex].ThumbnailSprite;
                     Utility.ChangeImagePivot(_getItemImage);
                     _skinGachaCard.SetPosition(new Vector3(0, 0, 0));
@@ -541,6 +634,9 @@ public class UIItemGacha : GachaMachineParent
             _getItemList.Clear();
             _getItemIndex = 0;
             _getItemList.Add(data);
+            _resultIsNew.Clear();
+            _resultIsNew.Add(true); // The tutorial admission above explicitly rejects previously owned data.
+            _confirmedResults.Clear();
             StartTutorialPresentation();
             return true;
         }
@@ -562,6 +658,22 @@ public class UIItemGacha : GachaMachineParent
 
     private void Purchase(int count, int cost)
     {
+        if (_requiresCollectionEconomy && _collectionEconomy == null)
+        { _uiGacha.ReportCollectionError("계정 복원을 확인 중입니다. 잠시 후 다시 시도해 주세요."); return; }
+        if (_collectionEconomy != null)
+        {
+            if (_purchaseInProgress || _collectionEconomy.IsBusy || _uiGacha.IsStartGacha) return;
+            _purchaseInProgress = true;
+            try
+            {
+                if (!_collectionEconomy.TryDraw(GachaMachineKind.Item,
+                    count == 1 ? GachaPaymentKind.DiamondsSingle : GachaPaymentKind.DiamondsEleven,
+                    PresentCollectionTransaction, out string collectionError))
+                    _uiGacha.ReportCollectionError(collectionError);
+            }
+            finally { _purchaseInProgress = false; }
+            return;
+        }
 #if UNITY_EDITOR
         if (_editorOfflineNavigation) return;
 #endif
@@ -685,7 +797,8 @@ public class UIItemGacha : GachaMachineParent
         _skinGachaCard.gameObject.SetActive(false);
         for (int i = 0, cnt = _getItemList.Count - 1; i < cnt; i++)
         {
-            _getItemSlotList[i].SetData(_getItemList[i]);
+            _getItemSlotList[i].SetData(_getItemList[i], ResultIsNew(i));
+            NotifyCollectionReveal(i);
             _getItemSlotList[i].gameObject.SetActive(true);
             _getItemSlotList[i].TweenStop();
             _getItemSlotList[i].transform.localScale = Vector3.one * 1.2f;
@@ -706,7 +819,8 @@ public class UIItemGacha : GachaMachineParent
         while (!_capsule.IsOpenComplete) yield return null;
         _capsule.CancelPresentation();
         _skinGachaCard.gameObject.SetActive(true);
-        _skinGachaCard.SetData(finalItem);
+        _skinGachaCard.SetData(finalItem, ResultIsNew(_getItemList.Count - 1));
+        NotifyCollectionReveal(_getItemList.Count - 1);
         _skinGachaCard.SetPosition(finalPosition);
         _skinGachaCard.TweenStop();
 
@@ -756,7 +870,7 @@ public class UIItemGacha : GachaMachineParent
             || !gameObject.activeInHierarchy || _uiGacha == null || !_uiGacha.IsCurrentMachine(this)
             || _uiGacha.VisibleState != VisibleState.Appeared) return false;
         if (_resultPopup == null) _resultPopup = new GachaResultCardPopup(_uiGacha.transform, _skinGachaCard);
-        _resultPopup.ShowItem(_getItemList[index]);
+        _resultPopup.ShowItem(_getItemList[index], ResultIsNew(index));
         return _resultPopup.IsOpen;
     }
 

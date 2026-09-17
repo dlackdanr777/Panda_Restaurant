@@ -45,7 +45,7 @@ public static class StaffGachaAccountApplyCalculator
             updatedStaff.Add(new StaffAccountStaffRecord(staffId, 1));
         }
 
-        var updatedAccount = new StaffAccountSaveData(snapshot.Version, updatedStaff, pandaTokens);
+        var updatedAccount = new StaffAccountSaveData(snapshot.Version, updatedStaff, pandaTokens, snapshot.GachaEconomy);
         result = new StaffGachaAccountApplyResult(acquisition, updatedAccount);
         return true;
     }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using BackEnd;
 
@@ -299,7 +299,7 @@ namespace Muks.BackEnd
         /// 실제 연결 시 factory에서 현재 스냅샷으로 기존 RequestSession/PurchasePlan을 사용해야 한다.
         /// </summary>
         public bool TryStartPurchase(GameDataSaveIdentity identity, Func<Param> createValues,
-            Action<GameDataSaveReceipt> onConfirmed, out string error)
+            Action<GameDataSaveReceipt> onConfirmed, out string error, Action<GameDataSaveRequest> onStateChanged = null)
         {
             error = null;
             if (!EnsureSession()) { error = "인증·복원 세션이 무효화되었습니다."; return false; }
@@ -309,7 +309,7 @@ namespace Muks.BackEnd
             if (identity == null || !identity.IsValid || !_target.Matches(identity.Target) || _usedIds.Contains(identity.RequestId))
             { error = "저장 대상/요청 ID가 잘못되었거나 이 조정기에서 이미 사용되었습니다."; return false; }
             var batch = new SaveBatch(identity, false, createValues);
-            var request = new GameDataSaveRequest(identity, onConfirmed, null);
+            var request = new GameDataSaveRequest(identity, onConfirmed, onStateChanged);
             batch.Requests.Add(request);
             _pending.AddLast(batch);
             Pump();
