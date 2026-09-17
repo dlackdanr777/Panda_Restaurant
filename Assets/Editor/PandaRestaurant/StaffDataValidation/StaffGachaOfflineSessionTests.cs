@@ -397,7 +397,7 @@ public sealed partial class StaffGachaOfflineSessionTests
     }
 
     [Test]
-    public void OfflineNavigation_NativeArrowsExitAndShopReentryKeepOneAcknowledgedCompletionAndReplayItsFixedResult()
+    public void OfflineNavigation_NativeArrowsExitAndShopReentryKeepOneAcknowledgedCompletionAndRetiredResultHidden()
     {
         StaffData[] catalog = Catalog();
         using (var witness = new GlobalWitness(catalog))
@@ -475,18 +475,14 @@ public sealed partial class StaffGachaOfflineSessionTests
                 Assert.That(ui.CurrentMachine, Is.SameAs(ui.Staff));
                 Assert.That(ui.Display.EditorIsResultVisible || ui.Display.EditorIsAnimating, Is.False);
                 Assert.That(ui.View.IsStartGacha, Is.False);
-                Button replay = Reference<Button>(ui.Staff, "_skipButton");
-                Assert.That(replay.gameObject.activeInHierarchy && replay.interactable, Is.True);
-                Assert.That(replay.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("결과 확인"));
-                replay.onClick.Invoke();
-                Assert.That(ui.Display.EditorIsResultVisible, Is.True);
-                Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(request.Plan.AccountResult.Acquisition.Items[10]));
-                Assert.That(ui.Display.EditorResultIndex, Is.EqualTo(10));
-                Assert.That(ui.Display.EditorVisibleSlotCount, Is.EqualTo(10));
-                Assert.That(ui.Display.SelectCard(0), Is.True);
-                Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(request.Plan.AccountResult.Acquisition.Items[0]));
-                Assert.That(ui.Display.EditorResultCount, Is.EqualTo(11));
-                ui.ClickResultClose();
+                Button retiredResultButton = Reference<Button>(ui.Staff, "_skipButton");
+                Assert.That(retiredResultButton.gameObject.activeInHierarchy, Is.False);
+                Assert.That(retiredResultButton.interactable, Is.False);
+                retiredResultButton.onClick.Invoke();
+                Assert.That(ui.Display.EditorIsResultVisible || ui.Display.EditorIsAnimating, Is.False);
+                Assert.That(ui.Display.EditorResultCount, Is.Zero);
+                Assert.That(ui.Display.EditorVisibleSlotCount, Is.Zero);
+                Assert.That(ui.Display.SelectCard(0), Is.False);
                 Assert.That(session.Request, Is.SameAs(request));
                 Assert.That(session.Owner.LastCompletedStaffPurchaseExecution, Is.SameAs(request));
                 Assert.That(request.Plan.AccountResult.Acquisition, Is.SameAs(acquisition));
@@ -496,7 +492,8 @@ public sealed partial class StaffGachaOfflineSessionTests
                 Assert.That(session.Account.PandaTokens, Is.EqualTo(110));
                 Assert.That(session.DrawCount, Is.EqualTo(11));
                 Assert.That(session.PurchaseWrites, Is.EqualTo(1));
-                Assert.That(session.FollowupWrites, Is.EqualTo(completedFollowupWrites), "Navigation and result replay must not enqueue another save");
+                Assert.That(session.FollowupWrites, Is.EqualTo(completedFollowupWrites),
+                    "Navigation and hidden retired-result input must not enqueue another save");
                 Assert.That(session.FollowupPayload, Is.EqualTo(completedFollowupPayload));
                 Assert.That(session.RecordNotifications, Is.EqualTo(1));
                 Assert.That(session.WalletNotifications, Is.EqualTo(1));

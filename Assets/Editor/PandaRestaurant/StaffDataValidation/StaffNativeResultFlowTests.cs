@@ -149,13 +149,11 @@ public sealed partial class StaffGachaOfflineSessionTests
 
             ui.Display.Tick();
             NativeResultAssertClosedControlLayout(ui);
-            NativeResultClick(ui.Staff, "_skipButton", "결과 확인");
-            Assert.That(ui.Display.EditorResultIndex, Is.EqualTo(count - 1));
-            NativeResultAssertCard(ui, request, count - 1);
-            Assert.That(ui.Display.EditorAnimationStartCount, Is.EqualTo(1), "Reopening never starts the machine again");
-            ui.ClickResultClose();
-            ui.Display.Tick();
-            NativeResultAssertClosedControlLayout(ui);
+            Button retiredResultButton = Reference<Button>(ui.Staff, "_skipButton");
+            retiredResultButton.onClick.Invoke();
+            Assert.That(ui.Display.EditorPresentationPhase, Is.EqualTo("Closed"));
+            Assert.That(ui.Display.EditorIsResultVisible || ui.Display.EditorIsAnimating, Is.False);
+            Assert.That(ui.Display.EditorAnimationStartCount, Is.EqualTo(1));
             ui.ClickArrow("_leftButton");
             ui.Display.Tick();
             Assert.That(ui.CurrentMachine, Is.SameAs(ui.Item));
@@ -193,42 +191,11 @@ public sealed partial class StaffGachaOfflineSessionTests
         GameObject components = Reference<GameObject>(ui.View, "_uiComponents");
         Button exit = components.transform.Find("Exit Button").GetComponent<Button>();
         Assert.That(components.activeInHierarchy, Is.True, "The normal machine controls must be restored");
-        Assert.That(replay.gameObject.activeInHierarchy && replay.interactable, Is.True,
-            "A retained result must remain reachable after close and native machine reentry");
-        Assert.That(replay.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("결과 확인"));
+        Assert.That(replay.gameObject.activeSelf, Is.False);
+        Assert.That(replay.gameObject.activeInHierarchy, Is.False);
+        Assert.That(replay.interactable, Is.False);
         Assert.That(exit.gameObject.activeInHierarchy && exit.interactable, Is.True,
-            "The replay control must coexist with the real machine exit button");
-
-        Canvas.ForceUpdateCanvases();
-        RectTransform viewport = ui.Root.GetComponent<RectTransform>();
-        Assert.That(viewport.rect.width, Is.GreaterThan(0f));
-        Assert.That(viewport.rect.height, Is.GreaterThan(0f));
-        Rect replayRect = NativeResultRectInViewport((RectTransform)replay.transform, viewport);
-        Rect exitRect = NativeResultRectInViewport((RectTransform)exit.transform, viewport);
-        Assert.That(replayRect.width, Is.GreaterThan(0f));
-        Assert.That(replayRect.height, Is.GreaterThan(0f));
-        Assert.That(replayRect.Overlaps(exitRect), Is.False,
-            "The real Exit Button used to cover the native retained-result control");
-        const float tolerance = 0.5f;
-        Assert.That(replayRect.xMin, Is.GreaterThanOrEqualTo(viewport.rect.xMin - tolerance));
-        Assert.That(replayRect.xMax, Is.LessThanOrEqualTo(viewport.rect.xMax + tolerance));
-        Assert.That(replayRect.yMin, Is.GreaterThanOrEqualTo(viewport.rect.yMin - tolerance));
-        Assert.That(replayRect.yMax, Is.LessThanOrEqualTo(viewport.rect.yMax + tolerance));
-    }
-
-    private static Rect NativeResultRectInViewport(RectTransform rect, RectTransform viewport)
-    {
-        var corners = new Vector3[4];
-        rect.GetWorldCorners(corners);
-        Vector2 min = viewport.InverseTransformPoint(corners[0]);
-        Vector2 max = min;
-        for (int index = 1; index < corners.Length; index++)
-        {
-            Vector2 point = viewport.InverseTransformPoint(corners[index]);
-            min = Vector2.Min(min, point);
-            max = Vector2.Max(max, point);
-        }
-        return Rect.MinMaxRect(min.x, min.y, max.x, max.y);
+            "The normal machine exit remains available without a retained-result control");
     }
 
     private static void NativeResultFinishCapsule(OfflineNavigationView ui, int expectedIndex)

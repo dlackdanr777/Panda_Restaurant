@@ -2,6 +2,7 @@
 using Muks.Tween;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -150,6 +151,62 @@ public class UIStaff : MobileUIView
         }
     }
 
+    private static List<StaffData> CreateDisplayDataList(IEnumerable<StaffData> source)
+    {
+        var result = new List<StaffData>();
+        if (source != null)
+        {
+            foreach (StaffData data in source)
+                if (data != null)
+                    result.Add(data);
+        }
+
+        result.Sort(CompareDisplayStaff);
+        return result;
+    }
+
+    private static int CompareDisplayStaff(StaffData left, StaffData right)
+    {
+        if (ReferenceEquals(left, right)) return 0;
+        if (left == null) return 1;
+        if (right == null) return -1;
+
+        int rankOrder = GetDisplayRankPriority(left.Rank).CompareTo(GetDisplayRankPriority(right.Rank));
+        if (rankOrder != 0) return rankOrder;
+
+        bool leftStandard = TryGetStandardStaffNumber(left.Id, out int leftNumber);
+        bool rightStandard = TryGetStandardStaffNumber(right.Id, out int rightNumber);
+        if (leftStandard != rightStandard) return leftStandard ? -1 : 1;
+        if (leftStandard)
+        {
+            int numberOrder = leftNumber.CompareTo(rightNumber);
+            if (numberOrder != 0) return numberOrder;
+        }
+
+        return string.Compare(left.Id, right.Id, StringComparison.Ordinal);
+    }
+
+    private static int GetDisplayRankPriority(Rank rank)
+    {
+        return rank switch
+        {
+            Rank.Special => 0,
+            Rank.Unique => 1,
+            Rank.Rare => 2,
+            Rank.Normal1 or Rank.Normal2 => 3,
+            _ => 4
+        };
+    }
+
+    private static bool TryGetStandardStaffNumber(string id, out int number)
+    {
+        number = 0;
+        return !string.IsNullOrEmpty(id)
+            && id.StartsWith("STAFF", StringComparison.Ordinal)
+            && id.Length > 5
+            && int.TryParse(id.Substring(5), NumberStyles.None, CultureInfo.InvariantCulture, out number);
+    }
+
     private void SubscribeEvents()
     {
         UserInfo.OnChangeStaffHandler += OnChangeStaffEvent;
@@ -284,6 +341,8 @@ public class UIStaff : MobileUIView
     private void SetStaffDataOptimized(EquipStaffType type)
     {
 
+        StaffData previousPreview = _previewStaffData;
+
         if (_currentType != type && _slots[(int)_currentType] != null)
         {
             var currentSlots = _slots[(int)_currentType];
@@ -294,21 +353,39 @@ public class UIStaff : MobileUIView
         }
 
         _currentType = type;
-        _currentTypeDataList = StaffDataManager.Instance.GetSortStaffDataList(type, _currentFloorType);
+        _currentTypeDataList = CreateDisplayDataList(
+            StaffDataManager.Instance.GetStaffDataList(type, _currentFloorType));
         _typeText.text = Utility.StaffTypeStringConverter(type);
 
-        SetStaffPreviewOptimized();
+        SetStaffPreviewOptimized(previousPreview);
         UpdateUIOptimized();
     }
 
-    private void SetStaffPreviewOptimized()
+    private void SetStaffPreviewOptimized(StaffData previousPreview)
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _currentFloorType, _currentType);
-        StaffData previewData = equipStaffData ?? (_currentTypeDataList.Count > 0 ? _currentTypeDataList[0] : null);
+        StaffData previewData = FindDisplayStaff(previousPreview)
+            ?? FindDisplayStaff(equipStaffData)
+            ?? (_currentTypeDataList.Count > 0 ? _currentTypeDataList[0] : null);
         if (_previewStaffData != previewData) SelectionRevision++;
         _previewStaffData = previewData;
         
         _uiStaffPreview.SetData(_currentFloorType, _currentType, previewData);
+    }
+
+    private StaffData FindDisplayStaff(StaffData candidate)
+    {
+        if (candidate == null || _currentTypeDataList == null)
+            return null;
+
+        for (int i = 0; i < _currentTypeDataList.Count; i++)
+        {
+            StaffData data = _currentTypeDataList[i];
+            if (ReferenceEquals(data, candidate) || string.Equals(data.Id, candidate.Id, StringComparison.Ordinal))
+                return data;
+        }
+
+        return null;
     }
 
     private void UpdateUIOptimized()

@@ -316,7 +316,7 @@ public sealed class StaffGachaPurchaseDisplay
     public void HandleResultButton()
     {
         if (!IsVisible) return;
-        if (_displayed == null) { TryShowCompleted(false, out _); return; }
+        if (_displayed == null) return;
         if (!_canPresent(_displayed)) return;
         if (_phase == Phase.Summary) { AcknowledgeResult(); return; }
         if (_sequence.Count != 11 || _phase == Phase.Accumulating || _phase == Phase.CapsuleMoving ||
@@ -362,8 +362,7 @@ public sealed class StaffGachaPurchaseDisplay
     {
         Button button = _staff == null ? null : _staff.ResultSkipButton;
         if (button == null) return;
-        bool show = IsVisible && canShow && (_phase == Phase.Closed ||
-            (_phase == Phase.Summary && _sequence?.Count == 1) ||
+        bool show = IsVisible && canShow && ((_phase == Phase.Summary && _sequence?.Count == 1) ||
             ((_phase == Phase.Machine || _phase == Phase.Card) && _sequence?.Count == 11));
         button.gameObject.SetActive(show);
         button.interactable = show;
@@ -372,7 +371,7 @@ public sealed class StaffGachaPurchaseDisplay
             GachaMachineParent.AlignResultButton(rect, (RectTransform)_view.transform, _buttonCorners);
         }
         TextMeshProUGUI label = button.GetComponentInChildren<TextMeshProUGUI>(true);
-        if (label != null) label.text = _phase == Phase.Closed ? "결과 확인" : _phase == Phase.Summary ? "닫기" : "건너뛰기";
+        if (label != null) label.text = _phase == Phase.Summary ? "닫기" : "건너뛰기";
         if (show) button.transform.SetAsLastSibling();
     }
 

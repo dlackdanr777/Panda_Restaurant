@@ -254,12 +254,14 @@ public sealed partial class StaffGachaOfflineSessionTests
             ui.Display.Tick(); // EditMode has no Update after the native machine's Show reset.
             Assert.That(retainedPopup.IsOpen, Is.False);
             Assert.That(ui.Display.EditorIsResultVisible, Is.False);
-            NativeResultClick(ui.Staff, "_skipButton", "결과 확인");
-            Assert.That(retainedPopup.IsOpen, Is.False, "Reopening the summary must not reopen its dismissed inspection");
-            Assert.That(ui.Display.SelectCard(10), Is.True);
-            NativeResultAssertText(RuntimeReference<GachaResultCardPopup>(ui.Display, "_popup").Card,
-                request.DrawnStaff[10], request.Plan.AccountResult.Acquisition.Items[10]);
-            ui.ClickResultClose();
+            Button retiredResultButton = Reference<Button>(ui.Staff, "_skipButton");
+            Assert.That(retiredResultButton.gameObject.activeInHierarchy, Is.False);
+            Assert.That(retiredResultButton.interactable, Is.False);
+            retiredResultButton.onClick.Invoke();
+            Assert.That(ui.Display.EditorIsResultVisible || ui.Display.EditorIsAnimating, Is.False);
+            Assert.That(ui.Display.SelectCard(10), Is.False);
+            Assert.That(retainedPopup.IsOpen, Is.False,
+                "The retired result control cannot reopen the dismissed inspection or summary");
             Assert.That(session.Request, Is.SameAs(request));
             Assert.That(request.CompletionCount, Is.EqualTo(1));
             Assert.That(session.PurchaseWrites, Is.EqualTo(1));

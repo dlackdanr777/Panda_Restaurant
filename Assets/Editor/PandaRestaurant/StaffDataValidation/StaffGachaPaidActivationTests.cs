@@ -371,7 +371,7 @@ public partial class StaffStageMigrationCollectionTests
     }
 
     [Test]
-    public void PaidButtons_ExplicitResultCloseSurvivesReentryAndDisplayRecreation_ReplayAndNextPurchaseRemainIndependent()
+    public void PaidButtons_ExplicitResultCloseSurvivesReentryAndDisplayRecreation_RetiredReplayStaysHiddenAndNextPurchaseRemainsIndependent()
     {
         using (var resources = new RuntimeStaffScope(Catalog()))
         {
@@ -415,11 +415,7 @@ public partial class StaffStageMigrationCollectionTests
                 Assert.That(ui.Display.EditorIsResultVisible, Is.False);
                 Assert.That(ui.Display.EditorIsAnimating, Is.False);
                 Assert.That(ui.Display.EditorAnimationStartCount, Is.Zero);
-                ui.ClickReplay();
-                Assert.That(ui.Display.EditorIsResultVisible, Is.True, "Native 결과 확인 still reads the retained completion");
-                Assert.That(ui.Display.EditorCurrentItem, Is.SameAs(single.Plan.AccountResult.Acquisition.Items[0]));
-                Assert.That(ui.Display.EditorAnimationStartCount, Is.Zero);
-                ui.ClickResultClose();
+                ui.AssertRetiredResultControlHidden();
                 ui.Staff.Hide(); ui.Staff.Show(); ui.Display.Tick();
                 Assert.That(ui.Display.EditorIsResultVisible, Is.False);
                 Assert.That(fixture.Manager.CurrentStaffPurchaseExecution, Is.SameAs(single));
@@ -724,12 +720,14 @@ public partial class StaffStageMigrationCollectionTests
             Assert.That(Display.EditorIsResultVisible, Is.False);
         }
 
-        public void ClickReplay()
+        public void AssertRetiredResultControlHidden()
         {
             var button = PaidField<Button>(Staff, "_skipButton");
-            Assert.That(button.gameObject.activeInHierarchy && button.interactable, Is.True);
-            Assert.That(button.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("결과 확인"));
+            Assert.That(button.gameObject.activeInHierarchy, Is.False);
+            Assert.That(button.interactable, Is.False);
             button.onClick.Invoke();
+            Assert.That(Display.EditorPresentationPhase, Is.EqualTo("Closed"));
+            Assert.That(Display.EditorIsResultVisible || Display.EditorIsAnimating, Is.False);
         }
 
         public void ClickViewClose()

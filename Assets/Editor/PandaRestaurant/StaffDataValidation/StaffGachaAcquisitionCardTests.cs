@@ -817,10 +817,12 @@ public class StaffGachaAcquisitionCardTests
             Assert.That(display.EditorIsResultVisible, Is.False);
             Assert.That(popup.IsOpen, Is.False);
             display.Tick();
-            Assert.That(nativeButton.GetComponentInChildren<TextMeshProUGUI>(true).text, Is.EqualTo("결과 확인"));
+            Assert.That(nativeButton.gameObject.activeInHierarchy, Is.False);
+            Assert.That(nativeButton.interactable, Is.False);
             nativeButton.onClick.Invoke();
-            Assert.That(display.EditorVisibleSlotCount, Is.EqualTo(10));
-            Assert.That(display.EditorResultIndex, Is.EqualTo(10));
+            Assert.That(display.EditorIsResultVisible || display.EditorIsAnimating, Is.False);
+            Assert.That(display.EditorVisibleSlotCount, Is.Zero);
+            Assert.That(display.EditorResultIndex, Is.EqualTo(-1));
             Assert.That(display.EditorAnimationStartCount, Is.Zero);
             Assert.That(root.GetComponentsInChildren<Transform>(true)
                     .Where(t => t.GetComponent<TMP_SubMeshUI>() == null && !inspectionObjects.Contains(t.GetInstanceID())
@@ -829,7 +831,7 @@ public class StaffGachaAcquisitionCardTests
                 Is.EquivalentTo(originalObjects), "Inspection preserves every original summary object");
             Assert.That(root.GetComponentsInChildren<Transform>(true)
                 .Count(t => t.name == "Result Card Inspection"), Is.Zero,
-                "Closing disposes the inspection; replaying the summary alone must not open another");
+                "Closing disposes the inspection; the retired result control must not open another");
             Assert.That(root.GetComponentsInChildren<Canvas>(true).Select(c => c.GetInstanceID()),
                 Is.EquivalentTo(originalCanvases));
             Assert.That(view.transform.Find("Staff Acquisition Results"), Is.Null);

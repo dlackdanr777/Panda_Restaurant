@@ -7,6 +7,7 @@ using System.Reflection;
 using Muks.BackEnd;
 using Muks.MobileUI;
 using NUnit.Framework;
+using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using Muks.Tween;
@@ -277,8 +278,11 @@ public partial class StaffStageMigrationCollectionTests
     [Test]
     public void IntegrationNavigation_ProductStaffDetailSeparatesPlacementAndUpgradeAndUsesCurrentFloor()
     {
-        using (var scope = new RuntimeStaffScope(Catalog()))
+        var catalog = Catalog();
+        using (var scope = new RuntimeStaffScope(catalog))
         {
+            var roleCacheField = Field(typeof(StaffDataManager), "_staffTypeDataList", true);
+            var oldRoleCache = roleCacheField.GetValue(null);
             var fixture = CreateAccountRuntimeFixture(out _);
             var stage = fixture.Stage.Runtime[EStage.Stage1];
             var oldStages = Field(typeof(UserInfo), "_stageInfos", true).GetValue(null);
@@ -292,6 +296,13 @@ public partial class StaffStageMigrationCollectionTests
             UIStaffPreview preview = null;
             try
             {
+                var roleCache = new List<StaffData>[(int)StaffGroupType.Length];
+                for (int index = 0; index < roleCache.Length; index++)
+                    roleCache[index] = new List<StaffData>();
+                foreach (var employee in catalog)
+                    roleCache[(int)StaffDataManager.GetStaffGroupTypeFromData(employee)].Add(employee);
+                roleCacheField.SetValue(null, roleCache);
+
                 Field(typeof(GameManager), "_instance", true).SetValue(null, manager);
                 Field(typeof(UserInfo), "_stageInfos", true).SetValue(null,
                     new[] { stage, fixture.Stage.Runtime[EStage.Stage2], fixture.Stage.Runtime[EStage.Stage3] });
@@ -336,6 +347,74 @@ public partial class StaffStageMigrationCollectionTests
                 Assert.That(fixture.Manager.StaffRuntime.GetLevel(staff.Id), Is.EqualTo(1));
                 Assert.That(fixture.Manager.StaffRuntime.Snapshot.PandaTokens, Is.EqualTo(55));
                 UIStaff detail = scene.GetRootGameObjects().SelectMany(root => root.GetComponentsInChildren<UIStaff>(true)).Single();
+
+                var sourceOrder = new List<StaffData>
+                {
+                    scope.Staff("STAFF01"),
+                    scope.Staff("STAFF41"),
+                    scope.Staff("STAFF35"),
+                    scope.Staff("STAFF39"),
+                    scope.Staff("STAFF33")
+                };
+                string[] unchangedSourceIds = sourceOrder.Select(data => data.Id).ToArray();
+                var createDisplayDataList = typeof(UIStaff).GetMethod(
+                    "CreateDisplayDataList", BindingFlags.Static | BindingFlags.NonPublic);
+                Assert.That(createDisplayDataList, Is.Not.Null);
+                var displayOrder = (List<StaffData>)createDisplayDataList.Invoke(null, new object[] { sourceOrder });
+                Assert.That(displayOrder.Select(data => data.Id), Is.EqualTo(new[]
+                {
+                    "STAFF39", "STAFF35", "STAFF33", "STAFF41", "STAFF01"
+                }), "Employee display order is Special, Unique, Rare, Normal, then numeric STAFF ID");
+                Assert.That(sourceOrder.Select(data => data.Id), Is.EqualTo(unchangedSourceIds),
+                    "Display sorting must not mutate the manager catalog input");
+                Field(typeof(UIStaff), "_currentTypeDataList").SetValue(detail, displayOrder);
+                var findDisplayStaff = typeof(UIStaff).GetMethod(
+                    "FindDisplayStaff", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(findDisplayStaff, Is.Not.Null);
+                Assert.That(findDisplayStaff.Invoke(detail, new object[] { scope.Staff("STAFF35") }),
+                    Is.SameAs(scope.Staff("STAFF35")), "A selected employee remains selected after display sorting");
+
+                var content = (RectTransform)Field(typeof(UIStaff), "_slotParnet").GetValue(detail);
+                var grid = content.GetComponent<GridLayoutGroup>();
+                var fitter = content.GetComponent<ContentSizeFitter>();
+                Assert.That(grid, Is.Not.Null);
+                Assert.That(fitter, Is.Not.Null);
+                Assert.That(content.childCount, Is.Zero, "The scene contains no placeholder cards");
+                Assert.That(grid.constraint, Is.EqualTo(GridLayoutGroup.Constraint.FixedColumnCount));
+                Assert.That(grid.constraintCount, Is.EqualTo(3));
+                Assert.That(grid.startCorner, Is.EqualTo(GridLayoutGroup.Corner.UpperLeft));
+                Assert.That(grid.startAxis, Is.EqualTo(GridLayoutGroup.Axis.Horizontal));
+                Assert.That(grid.childAlignment, Is.EqualTo(TextAnchor.UpperLeft));
+                Assert.That(content.anchorMin, Is.EqualTo(new Vector2(0f, 1f)));
+                Assert.That(content.anchorMax, Is.EqualTo(new Vector2(0f, 1f)));
+                Assert.That(content.pivot, Is.EqualTo(new Vector2(0f, 1f)));
+                Assert.That(content.sizeDelta.x, Is.EqualTo(603.898f).Within(0.001f));
+                Assert.That(grid.cellSize, Is.EqualTo(new Vector2(167.873f, 175.3194f)));
+                Assert.That(grid.spacing, Is.EqualTo(new Vector2(33.47f, 16.51f)));
+                float threeColumnWidth = grid.padding.horizontal + 3f * grid.cellSize.x + 2f * grid.spacing.x;
+                Assert.That(content.rect.width, Is.EqualTo(threeColumnWidth).Within(1f));
+                Assert.That(fitter.horizontalFit, Is.EqualTo(ContentSizeFitter.FitMode.Unconstrained));
+                Assert.That(fitter.verticalFit, Is.EqualTo(ContentSizeFitter.FitMode.PreferredSize));
+                var scroll = content.GetComponentInParent<ScrollRect>(true);
+                Assert.That(scroll, Is.Not.Null);
+                Assert.That(scroll.vertical, Is.True);
+                Assert.That(scroll.horizontal, Is.False);
+
+                var nameText = (TextMeshProUGUI)Field(typeof(UIStaffSelectSlot), "_nameText").GetValue(select);
+                Assert.That(nameText.enableAutoSizing, Is.True);
+                Assert.That(nameText.fontSizeMin, Is.EqualTo(20f));
+                Assert.That(nameText.fontSizeMax, Is.EqualTo(34f));
+                Assert.That(nameText.textWrappingMode, Is.EqualTo(TextWrappingModes.NoWrap));
+                Assert.That(nameText.horizontalAlignment, Is.EqualTo(HorizontalAlignmentOptions.Center));
+                Assert.That(nameText.margin.x, Is.EqualTo(20f));
+                Assert.That(nameText.margin.z, Is.EqualTo(20f));
+                Assert.That(nameText.rectTransform.rect.width - nameText.margin.x - nameText.margin.z,
+                    Is.EqualTo(185f).Within(0.001f), "The gold nameplate keeps its safe inner width");
+                select.SetText("차이나 걸 토루루");
+                Assert.That(nameText.text, Is.EqualTo("차이나 걸 토루루"));
+                select.SetText("와부");
+                Assert.That(nameText.fontSizeMax, Is.EqualTo(34f), "Short names retain the original maximum size");
+
                 foreach (string quest in new[] { "MainReward01", "MainReward04", "MainReward05", "MainReward19" })
                 {
                     QuestStaffTutorialPolicy.TryGetMapping(quest, out string id, out _);
@@ -343,7 +422,7 @@ public partial class StaffStageMigrationCollectionTests
                     var role = StaffDataManager.Instance.GetEquipStaffTypeList(employee)[0];
                     Field(typeof(UIStaff), "_currentType").SetValue(detail, role);
                     Field(typeof(UIStaff), "_currentFloorType").SetValue(detail, ERestaurantFloorType.Floor1);
-                    Field(typeof(UIStaff), "_currentTypeDataList").SetValue(detail, Catalog().Where(item =>
+                    Field(typeof(UIStaff), "_currentTypeDataList").SetValue(detail, catalog.Where(item =>
                         StaffDataManager.Instance.GetEquipStaffTypeList(item).Contains(role)).ToList());
                     Assert.That(detail.TrySelectStaff(id), Is.True, quest);
                     Assert.That(detail.SelectedStaff, Is.SameAs(employee), "Shortcut selects its exact employee, not the role's first slot");
@@ -352,10 +431,35 @@ public partial class StaffStageMigrationCollectionTests
                 Assert.That(detail.TrySelectStaff("STAFF21"), Is.True);
                 Assert.That(detail.SelectionRevision, Is.EqualTo(selectionVersion), "Selecting the same staff is not a new context");
                 Assert.That(detail.TrySelectStaff("NOT_REGISTERED"), Is.False);
+
+                StaffData retainedStaff = detail.SelectedStaff;
+                int retainedRevision = detail.SelectionRevision;
+                EquipStaffType retainedRole = StaffDataManager.Instance.GetEquipStaffTypeList(retainedStaff)[0];
+                string[] managerCatalogBefore = StaffDataManager.Instance.GetStaffDataList(retainedRole)
+                    .Select(data => data.Id).ToArray();
+                var floorSource = StaffDataManager.Instance.GetStaffDataList(
+                    retainedRole, ERestaurantFloorType.Floor1);
+                var expectedRefreshed = (List<StaffData>)createDisplayDataList.Invoke(
+                    null, new object[] { floorSource });
+                detail.gameObject.SetActive(false);
+                var refreshDisplay = typeof(UIStaff).GetMethod(
+                    "SetStaffDataOptimized", BindingFlags.Instance | BindingFlags.NonPublic);
+                Assert.That(refreshDisplay, Is.Not.Null);
+                refreshDisplay.Invoke(detail, new object[] { retainedRole });
+                Assert.That(detail.SelectedStaff, Is.SameAs(retainedStaff),
+                    "Refreshing the same role keeps the current selected employee");
+                Assert.That(detail.SelectionRevision, Is.EqualTo(retainedRevision),
+                    "A retained selection does not create a new selection context");
+                var refreshed = (List<StaffData>)Field(typeof(UIStaff), "_currentTypeDataList").GetValue(detail);
+                Assert.That(refreshed.Select(data => data.Id),
+                    Is.EqualTo(expectedRefreshed.Select(data => data.Id)));
+                Assert.That(StaffDataManager.Instance.GetStaffDataList(retainedRole).Select(data => data.Id),
+                    Is.EqualTo(managerCatalogBefore), "UI refresh must not reorder the manager catalog");
                 Assert.That(fixture.Game.Writes, Is.Zero);
             }
             finally
             {
+                roleCacheField.SetValue(null, oldRoleCache);
                 if (preview != null) typeof(UIStaffPreview).GetMethod("OnDestroy", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(preview, null);
                 if (scene.IsValid()) EditorSceneManager.ClosePreviewScene(scene);
                 Field(typeof(UserInfo), "_stageInfos", true).SetValue(null, oldStages);
