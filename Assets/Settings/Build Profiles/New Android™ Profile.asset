@@ -171,13 +171,7 @@ MonoBehaviour:
     - line: '|   visionOSBundleVersion: 1.0'
     - line: '|   tvOSBundleVersion: 1.0'
     - line: '|   bundleVersion: 0.1.35'
-    - line: '|   preloadedAssets:'
-    - line: '|   - {fileID: 11400000, guid: 30b763d89188da04e870593241b05b2a, type:
-        2}'
-    - line: '|   - {fileID: 11400000, guid: ff46c819df58a8c469e19311cfbc36de, type:
-        2}'
-    - line: '|   - {fileID: 8809792029177104436, guid: 8f49a511a8c2a7a428532e45acc86a1b,
-        type: 2}'
+    - line: '|   preloadedAssets: []'
     - line: '|   metroInputSource: 0'
     - line: '|   wsaTransparentSwapchain: 0'
     - line: '|   m_HolographicPauseOnTrackingLoss: 1'
@@ -996,7 +990,7 @@ MonoBehaviour:
     - rid: 2559943995649687553
       type: {class: AndroidPlatformBuildSettings, ns: UnityEditor.Android, asm: UnityEditor.Android.Extensions}
       data:
-        m_Development: 0
+        m_Development: 1
         m_ConnectProfiler: 1
         m_BuildWithDeepProfilingSupport: 0
         m_AllowDebugging: 0
@@ -1013,7 +1007,7 @@ MonoBehaviour:
         m_DebugSymbolLevel: 1
         m_DebugSymbolFormat: 5
         m_CurrentDeploymentTargetId: __builtin__target_default
-        m_BuildType: 2
+        m_BuildType: 1
         m_BuildAppBundle: 0
         m_IPAddressToConnect: 
         m_SymlinkSources: 0
