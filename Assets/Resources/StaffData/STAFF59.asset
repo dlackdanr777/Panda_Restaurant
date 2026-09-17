@@ -1,0 +1,74 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 93bdf2a61116f5a4bbf3c395f44840da, type: 3}
+  m_Name: STAFF59
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 0d234451a3d147546ad5f4364a4fef36, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: bea5b4ab853ede14b8967254e0086507, type: 3}
+  _name: "\uC820\uD2C0 \uB8E8\uD30C"
+  _id: STAFF59
+  _description: "\uC7A5\uB09C\uAFB8\uB7EC\uAE30 \uAC19\uC9C0\uB9CC \uB808\uC2A4\uD1A0\uB791\uC758
+    \uBE44\uBC00 \uBCD1\uAE30."
+  _rank: 2
+  _skill: {fileID: 11400000, guid: 380da4458e44988418363ca290068345, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 57cb19f14752f7045b0393170db6dd8f, type: 3}
+  - {fileID: 21300000, guid: 2cf818aed1f9ff540845496470470f33, type: 3}
+  - {fileID: 21300000, guid: f64adc33122f2134a9b3cc46a0de46ed, type: 3}
+  - {fileID: 21300000, guid: 4e5ff92a731955e4bb7193353f9682bf, type: 3}
+  - {fileID: 21300000, guid: 4e5ff92a731955e4bb7193353f9682bf, type: 3}
+  - {fileID: 21300000, guid: 4e5ff92a731955e4bb7193353f9682bf, type: 3}
+  - {fileID: 21300000, guid: 4e5ff92a731955e4bb7193353f9682bf, type: 3}
+  - {fileID: 21300000, guid: f64adc33122f2134a9b3cc46a0de46ed, type: 3}
+  - {fileID: 21300000, guid: 2cf818aed1f9ff540845496470470f33, type: 3}
+  - {fileID: 21300000, guid: 57cb19f14752f7045b0393170db6dd8f, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 0
+  _floorType: 4
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _speed: 7
+  _backSprite: {fileID: 21300000, guid: 841de32227c66a647a67035580b8ff64, type: 3}
+  _handSprite: {fileID: 21300000, guid: 13058ccf32fee094198c78afc53292b6, type: 3}
+  _handOffset: {x: -0.18, y: 1.43}
+  _chefLevelData:
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 75000
+    _foodSpeedAddPercent: 70
+    _addSpeed: 0
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 225000
+    _foodSpeedAddPercent: 70
+    _addSpeed: 0.5
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 750000
+    _foodSpeedAddPercent: 70
+    _addSpeed: 1
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 20
+    _foodSpeedAddPercent: 70
+    _addSpeed: 1.5
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _foodSpeedAddPercent: 70
+    _addSpeed: 2

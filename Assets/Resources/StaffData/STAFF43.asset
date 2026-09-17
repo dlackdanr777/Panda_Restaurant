@@ -1,0 +1,62 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e39c2e09d58fec4e92da628aa6f0c2e, type: 3}
+  m_Name: STAFF43
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 238c569ffa75e1843a184d4cfc9bfbd2, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: a71903f0988e49b4bbf7607ce1508a39, type: 3}
+  _name: "\uCC28\uC774\uB098 \uAC78 \uD1A0\uB8E8\uB8E8"
+  _id: STAFF43
+  _description: "\uB9CC\uB450\uCC98\uB7FC \uCAC0\uB4DD\uD55C \uC560\uAD50\uB85C \uC190\uB2D8\uC744
+    \uD640\uB9AC\uB294 \uD1A0\uB8E8\uB8E8."
+  _rank: 3
+  _skill: {fileID: 11400000, guid: 31ad10e513b88294ca6bdf444b51f384, type: 2}
+  _idleSprites: []
+  _animatorController: {fileID: 0}
+  _salesLocationType: 0
+  _floorType: 4
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _speed: 0
+  _marketerLevelData:
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 180000
+    _marketingTime: 5
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 540000
+    _marketingTime: 4.8
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 1800000
+    _marketingTime: 4.6
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 35
+    _marketingTime: 4.4
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _marketingTime: 4.2
+  _uiSprite: {fileID: 21300000, guid: 238c569ffa75e1843a184d4cfc9bfbd2, type: 3}
+  _animationSprite: {fileID: 21300000, guid: e7a18aaf001f4354ab111f3bb99aeffa, type: 3}
+  _particleCount: 10
+  _particleSprites:
+  - {fileID: 21300000, guid: dbfc1d9e32f972c4abb96fcf42bb8bfe, type: 3}
+  - {fileID: 21300000, guid: 2306e98d88682824a842c67d72fc4f95, type: 3}

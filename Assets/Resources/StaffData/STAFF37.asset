@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8dc5b35de2517409d1bc40735a6ac5, type: 3}
+  m_Name: STAFF37
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 19f99c3d7f7c0924091cc0c5d36822f0, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 516dde5a04354884e9a45115853448d0, type: 3}
+  _name: "\uBCA0\uD14C\uB791 \uD3EC\uC57C"
+  _id: STAFF37
+  _description: "\uC628\uD654\uD55C \uBBF8\uC18C\uB85C \uC190\uB2D8\uC744 \uB9DE\uC73C\uBA70
+    \uB9E4\uB044\uB7EC\uC6B4 \uC2DD\uB2F9 \uC6B4\uC601\uC744 \uCC45\uC784\uC9C0\uB294
+    \uD3EC\uC57C."
+  _rank: 2
+  _skill: {fileID: 11400000, guid: 212fcb2363c36354bb19d9553ea9c5ec, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 3dd94fd2908faf44c87f0524e7406fe1, type: 3}
+  - {fileID: 21300000, guid: 90a2cf6dbbf3ba54ba56f2b7a572bd8a, type: 3}
+  - {fileID: 21300000, guid: 58f1337cdc73d4040996b93e08e3064e, type: 3}
+  - {fileID: 21300000, guid: 480916afd3615734daff7d1cdb9264d2, type: 3}
+  - {fileID: 21300000, guid: 480916afd3615734daff7d1cdb9264d2, type: 3}
+  - {fileID: 21300000, guid: 480916afd3615734daff7d1cdb9264d2, type: 3}
+  - {fileID: 21300000, guid: 480916afd3615734daff7d1cdb9264d2, type: 3}
+  - {fileID: 21300000, guid: 58f1337cdc73d4040996b93e08e3064e, type: 3}
+  - {fileID: 21300000, guid: 90a2cf6dbbf3ba54ba56f2b7a572bd8a, type: 3}
+  - {fileID: 21300000, guid: 3dd94fd2908faf44c87f0524e7406fe1, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 0
+  _floorType: 4
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _speed: 0
+  _managerLevelData:
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 75000
+    _customerGuideTime: 1.6
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 225000
+    _customerGuideTime: 1.4
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 750000
+    _customerGuideTime: 1.2
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 20
+    _customerGuideTime: 1
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _customerGuideTime: 0.8

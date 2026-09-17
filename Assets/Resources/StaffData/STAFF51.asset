@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a377ea42dec1d4d4c9ea62112443872a, type: 3}
+  m_Name: STAFF51
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 25ba61753745e22448395566ca613d06, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 08861583bc2da0d45af5d2efb930568e, type: 3}
+  _name: "\uBCA0\uC2A4\uD2B8 \uBA5C\uB85C"
+  _id: STAFF51
+  _description: "\uCCAD\uC18C\uD558\uB2E4 \uB9D0\uACE0 \uAC11\uC790\uAE30 \uCFF5\uD478
+    \uB3D9\uC791\uC744 \uBCF4\uC5EC\uC8FC\uB294 \uC5C9\uB6B1\uD55C \uBA5C\uB85C."
+  _rank: 2
+  _skill: {fileID: 11400000, guid: a2fafc86083532040afc5219ad54cdc2, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: a39530241a825784a905999042067e0b, type: 3}
+  - {fileID: 21300000, guid: 51cb5a79c37d60b4583e1794830d5a12, type: 3}
+  - {fileID: 21300000, guid: 59bb9af43f428c14c9dfb20b680722cb, type: 3}
+  - {fileID: 21300000, guid: 59bb9af43f428c14c9dfb20b680722cb, type: 3}
+  - {fileID: 21300000, guid: 59bb9af43f428c14c9dfb20b680722cb, type: 3}
+  - {fileID: 21300000, guid: 59bb9af43f428c14c9dfb20b680722cb, type: 3}
+  - {fileID: 21300000, guid: 51cb5a79c37d60b4583e1794830d5a12, type: 3}
+  - {fileID: 21300000, guid: a39530241a825784a905999042067e0b, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 0
+  _floorType: 4
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _speed: 7
+  _cleanerLevelData:
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 75000
+    _cleaningTime: 0.8
+    _addSpeed: 0
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 225000
+    _cleaningTime: 0.8
+    _addSpeed: 0.5
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 750000
+    _cleaningTime: 0.8
+    _addSpeed: 1
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 20
+    _cleaningTime: 0.8
+    _addSpeed: 1.5
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _cleaningTime: 0.8
+    _addSpeed: 2

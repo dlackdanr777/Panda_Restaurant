@@ -18,7 +18,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private const string ApplyMenuPath =
             "Tools/Panda Restaurant/Staff/Apply Remaining Skill Existing Staff Migration";
         private const string ExpectedFinalInventoryFingerprint =
-            "90c3a56ca032d6542359d392ca014ce29b3c367cb227238165d9eadacf0be15b";
+            "d8eaa32c956b4557e1b5db429fdf9ca685b826b9c288d04fd6d0e822722c233f";
         private const string FinalSkill09ActivePath =
             "Assets/Scripts/Datas/Staff/Skill/STAFF27Skill.asset";
         private const string FinalSkill09MigrationLegacyPath =
@@ -70,7 +70,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 { "STAFF72", new OfficialTarget("호량콘", "웨이터", 4, "STAFF_SKILL08", 22, 140) },
                 { "STAFF74", new OfficialTarget("쿵푸 마쉬", "매니저", 4, "STAFF_SKILL08", 22, 140) },
                 { "STAFF84", new OfficialTarget("마쉬 꾼", "매니저", 4, "STAFF_SKILL08", 22, 140) },
-                { "STAFF68", new OfficialTarget("스윗 염소아치", "주방장", 5, "STAFF_SKILL09", 30, 200) },
+                { "STAFF68", new OfficialTarget("스윗 염소아치", "주방장", 5, "STAFF_SKILL09", 1, 240) },
                 { "STAFF39", new OfficialTarget("책사 포야", "매니저", 5, "STAFF_SKILL10", 20, 220) },
                 { "STAFF40", new OfficialTarget("포상궁", "매니저", 5, "STAFF_SKILL10", 20, 220) },
                 { "STAFF64", new OfficialTarget("캔디 마쉬", "매니저", 5, "STAFF_SKILL10", 20, 220) },
@@ -107,6 +107,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
         private static void FinalStateAudit()
         {
+            ValidateProfile(StaffExpansionValidationProfiles.Baseline32);
+        }
+
+        internal static bool ValidateProfile(StaffExpansionValidationProfile profile)
+        {
+            StaffExpansionValidationProfiles.RequireApproved(profile);
             List<string> errors = new List<string>();
             StaffDataAssetInventorySnapshot inventory = null;
             int legacySkillCount = 0;
@@ -134,6 +140,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 {
                     ValidateFinalStateInventory(
                         inventory,
+                        profile,
                         errors,
                         out legacySkillCount,
                         out sharedSkillCount,
@@ -153,6 +160,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             StringBuilder output = new StringBuilder();
             output.AppendLine("[Remaining Skill Existing Staff Migration — DEPRECATED]");
             output.AppendLine("Policy: " + DeprecatedMigrationPolicy);
+            output.AppendLine("Profile: " + profile.Name);
             output.AppendLine(
                 "Status: "
                 + (errors.Count == 0 ? "SUPERSEDED_FINAL_STATE" : "SUPERSEDED_FINAL_STATE_AUDIT: FAIL"));
@@ -184,6 +192,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 output.AppendLine("SUPERSEDED_FINAL_STATE_AUDIT: FAIL");
                 Debug.LogError(output.ToString());
             }
+
+            return errors.Count == 0;
         }
 
         private static void BlockDeprecatedApply()
@@ -202,6 +212,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
         private static void ValidateFinalStateInventory(
             StaffDataAssetInventorySnapshot inventory,
+            StaffExpansionValidationProfile profile,
             List<string> errors,
             out int legacySkillCount,
             out int sharedSkillCount,
@@ -217,20 +228,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             missingScriptCount = 0;
             duplicateGuidCount = 0;
 
-            if (inventory.Staff.Count != 32)
-            {
-                errors.Add("Expected exactly 32 StaffData assets: " + inventory.Staff.Count + ".");
-            }
-
-            if (inventory.Skills.Count != 32)
-            {
-                errors.Add("Expected exactly 32 Active Skill assets: " + inventory.Skills.Count + ".");
-            }
-
-            if (inventory.InventoryFingerprint != ExpectedFinalInventoryFingerprint)
+            StaffExpansionValidationProfiles.ValidateInventory(inventory, profile, errors);
+            StaffDataAssetInventorySnapshot baseline = StaffExpansionValidationProfiles.CreateBaselineSnapshot(inventory);
+            if (baseline.InventoryFingerprint != ExpectedFinalInventoryFingerprint)
             {
                 errors.Add(
-                    "Final InventoryFingerprint mismatch: " + inventory.InventoryFingerprint + ".");
+                    "Protected STAFF01~32 final InventoryFingerprint mismatch: " + baseline.InventoryFingerprint + ".");
             }
 
             HashSet<string> assetGuids = new HashSet<string>(StringComparer.Ordinal);
@@ -334,18 +337,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 errors.Add("Duplicate GUID must remain zero: " + duplicateGuidCount + ".");
             }
 
-            ValidateFinalSkillClassCount(skillClasses, "SpeedUpSkill", 12, errors);
-            ValidateFinalSkillClassCount(skillClasses, "TouchAddCustomerButtonSkill", 3, errors);
-            ValidateFinalSkillClassCount(skillClasses, "AssignedCookingSpeedUpSkill", 4, errors);
-            ValidateFinalSkillClassCount(skillClasses, "FoodPaymentTipUpSkill", 1, errors);
-            ValidateFinalSkillClassCount(skillClasses, "FoodPriceUpSkill", 6, errors);
-            ValidateFinalSkillClassCount(skillClasses, "NormalCustomerMoveSpeedUpSkill", 5, errors);
-            ValidateFinalSkillClassCount(skillClasses, "GlobalCookingSpeedUpSkill", 0, errors);
-            ValidateFinalSkillClassCount(skillClasses, "GlobalRemainingCookingTimeReductionSkill", 1, errors);
-            ValidateFinalSkillClassCount(skillClasses, "AllStaffMoveSpeedUpSkill", 0, errors);
+            foreach (KeyValuePair<string, int> expected in profile.SkillClassCounts)
+                ValidateFinalSkillClassCount(skillClasses, expected.Key, expected.Value, errors);
 
-            ValidateFinalSkill08Targets(inventory, errors);
-            ValidateFinalSkill09State(inventory, errors);
+            ValidateFinalSkill08Targets(baseline, errors);
+            ValidateFinalSkill09State(baseline, errors);
         }
 
         private static void ValidateFinalSkillClassCount(

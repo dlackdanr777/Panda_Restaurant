@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
+  m_Name: STAFF73
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 5ddd30d881e5594429a617d49f09bc27, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: b48f7fbbb82b97641bf8ca7b7eddab56, type: 3}
+  _name: "\uD0D5\uCD94\uCD94"
+  _id: STAFF73
+  _description: "\uADF8\uB0E5 \uD0D5\uD6C4\uB8E8 \uBA39\uACE0 \uC788\uB294 \uB3D9\uB124
+    \uAF2C\uB9C8"
+  _rank: 2
+  _skill: {fileID: 11400000, guid: 827b759f0aafe094081347c46c5a3c33, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 2bd7cf34db407e343a717461581f041c, type: 3}
+  - {fileID: 21300000, guid: 705b60e8966dd994ca27e1b12dc71c8c, type: 3}
+  - {fileID: 21300000, guid: e335fb73d713f214bb0c93b5500810c2, type: 3}
+  - {fileID: 21300000, guid: 4f9069a1cf92b764dbaf2572ccb9597e, type: 3}
+  - {fileID: 21300000, guid: 4f9069a1cf92b764dbaf2572ccb9597e, type: 3}
+  - {fileID: 21300000, guid: 4f9069a1cf92b764dbaf2572ccb9597e, type: 3}
+  - {fileID: 21300000, guid: 4f9069a1cf92b764dbaf2572ccb9597e, type: 3}
+  - {fileID: 21300000, guid: e335fb73d713f214bb0c93b5500810c2, type: 3}
+  - {fileID: 21300000, guid: 705b60e8966dd994ca27e1b12dc71c8c, type: 3}
+  - {fileID: 21300000, guid: 2bd7cf34db407e343a717461581f041c, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 0
+  _floorType: 4
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _speed: 7
+  _waiterLevelData:
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 75000
+    _addSpeed: 0
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 225000
+    _addSpeed: 0.5
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 750000
+    _addSpeed: 1
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 20
+    _addSpeed: 1.5
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _addSpeed: 2

@@ -91,6 +91,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             report.Run(70, "Skill09 1·2층 활성 Burner 경계", ValidateSkill09ActiveBurnerBoundaries);
             report.Run(71, "Skill09 Legacy 지속형 채널 제거", ValidateSkill09LegacyChannelRemoval);
             report.Run(72, "Deprecated Remaining Migration Safety", ValidateDeprecatedRemainingMigrationSafety);
+            report.Run(73, "Expansion Profile Exact Sets and Immutability", StaffExpansionValidationProfiles.ValidateDefinitions);
             report.Print();
         }
 
@@ -3674,9 +3675,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 && finalAuditHelpers.Contains("FinalSkill09MigrationLegacyGuid"),
                 "Remaining Migration final-state audit must verify the preserved Skill09 migration Legacy GUID.");
             Require(
-                finalAuditHelpers.Contains("inventory.Skills.Count != 32")
+                finalAuditHelpers.Contains("StaffExpansionValidationProfiles.ValidateInventory(inventory, profile, errors)")
+                && finalAuditHelpers.Contains("StaffExpansionValidationProfiles.CreateBaselineSnapshot(inventory)")
+                && finalAuditHelpers.Contains("profile.SkillClassCounts")
                 && finalAuditHelpers.Contains("legacySkillCount != 18"),
-                "Remaining Migration final-state audit must require exactly 32 Active and 18 Legacy Skills.");
+                "Remaining Migration final-state audit must require the explicit exact profile, preserve STAFF01~32, and require 18 Legacy Skills.");
             Require(
                 finalAuditEntry.Contains("Asset write: 0")
                 && blockedApplyEntry.Contains("Asset write: 0"),
@@ -3953,7 +3956,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             internal void Print()
             {
-                _output.AppendLine("73. 오류 수: " + _errors.Count);
+                _output.AppendLine("74. 오류 수: " + _errors.Count);
                 for (int index = 0; index < _errors.Count; index++)
                 {
                     _output.AppendLine("ERROR: " + _errors[index]);
@@ -3961,7 +3964,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
                 bool passed = _errors.Count == 0;
                 _output.AppendLine(
-                    "74. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
+                    "75. 최종 결과: STAFF SKILL RUNTIME FOUNDATION VALIDATION: "
                     + (passed ? "PASS" : "FAIL"));
 
                 if (passed)

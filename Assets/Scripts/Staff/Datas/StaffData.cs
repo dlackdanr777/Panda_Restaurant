@@ -33,7 +33,7 @@ public abstract class StaffData : BasicData,ShopData
     [SerializeField] protected int _buyPrice;
     public int BuyPrice => _buyPrice;
 
-    [Range(1, 30)] [SerializeField] protected float _speed;
+    [Range(0, 30)] [SerializeField] protected float _speed;
 
     public abstract float SecondValue { get; }
     public abstract int MaxLevel { get; }

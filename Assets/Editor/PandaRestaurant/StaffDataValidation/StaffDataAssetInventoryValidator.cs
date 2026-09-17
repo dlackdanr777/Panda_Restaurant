@@ -48,7 +48,6 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             "bf3d91b6f1b78bedad789b7a3131798356522b7a619f8824194e9ba46795aae6";
         private const string Skill09LegacySpeedMetaSha256 =
             "62aa0dfe48bcf573136c6677ac4aacde1bff1282d8eee306259a8957a96766f5";
-        private const int ExpectedComparisonFileCount = 164;
         private const string PreA1InventoryFingerprint =
             "90c3a56ca032d6542359d392ca014ce29b3c367cb227238165d9eadacf0be15b";
         private const string PreA1PlanFingerprint =
@@ -58,30 +57,11 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private const string AllStaffMoveScriptPath =
             "Assets/Scripts/Staff/StaffSkill/AllStaffMoveSpeedUpSkill.cs";
 
-        private static readonly Dictionary<string, int> ExpectedStaffClassCounts =
-            new Dictionary<string, int>(StringComparer.Ordinal)
-            {
-                { "WaiterData", 7 },
-                { "ManagerData", 5 },
-                { "MarketerData", 5 },
-                { "ChefData", 7 },
-                { "CleanerData", 6 },
-                { "GuardData", 2 }
-            };
+        private static IReadOnlyDictionary<string, int> ExpectedStaffClassCounts
+        { get { return StaffExpansionValidationProfiles.Baseline32.StaffClassCounts; } }
 
-        private static readonly Dictionary<string, int> ExpectedSkillClassCounts =
-            new Dictionary<string, int>(StringComparer.Ordinal)
-            {
-                { "SpeedUpSkill", 12 },
-                { "TouchAddCustomerButtonSkill", 3 },
-                { "AssignedCookingSpeedUpSkill", 4 },
-                { "FoodPaymentTipUpSkill", 1 },
-                { "FoodPriceUpSkill", 6 },
-                { "NormalCustomerMoveSpeedUpSkill", 5 },
-                { "GlobalCookingSpeedUpSkill", 0 },
-                { "GlobalRemainingCookingTimeReductionSkill", 1 },
-                { "AllStaffMoveSpeedUpSkill", 0 }
-            };
+        private static IReadOnlyDictionary<string, int> ExpectedSkillClassCounts
+        { get { return StaffExpansionValidationProfiles.Baseline32.SkillClassCounts; } }
 
         private static readonly Skill04MigrationTarget[] Skill04MigrationTargets =
         {
@@ -135,7 +115,35 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         [MenuItem(MenuPath)]
         private static void ValidateCurrentStaffAssetInventory()
         {
+            ValidateProfile(StaffExpansionValidationProfiles.Baseline32);
+        }
+
+        [MenuItem("Tools/Panda Restaurant/Staff/Expansion/Validate Pilot37 Inventory")]
+        public static void ValidatePilot37()
+        {
+            if (!ValidateProfile(StaffExpansionValidationProfiles.Pilot37))
+                throw new InvalidOperationException("Pilot37 inventory validation failed.");
+        }
+
+        [MenuItem("Tools/Panda Restaurant/Staff/Expansion/Validate Full92 Inventory")]
+        public static void ValidateFull92()
+        {
+            if (!ValidateProfile(StaffExpansionValidationProfiles.Full92))
+                throw new InvalidOperationException("Full92 inventory validation failed.");
+        }
+
+        public static void ValidateBaseline32()
+        {
+            if (!ValidateProfile(StaffExpansionValidationProfiles.Baseline32))
+                throw new InvalidOperationException("Baseline32 inventory validation failed.");
+        }
+
+        internal static bool ValidateProfile(StaffExpansionValidationProfile profile)
+        {
+            StaffExpansionValidationProfiles.RequireApproved(profile);
+            StaffExpansionValidationProfiles.ValidateDefinitions();
             List<string> errors = new List<string>();
+            bool inspectorRangePassed = ValidateSpeedInspectorRange(errors);
             Dictionary<int, List<string>> details = CreateDetailSections();
 
             Dictionary<string, AssetFileState> beforeState;
@@ -164,7 +172,22 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 AddDiagnostics("두 번째 Inventory", secondDiagnostics, errors);
             }
 
-            bool inventoryPassed = firstBuilt && firstSnapshot != null;
+            bool selectedProfilePassed = firstBuilt && firstSnapshot != null
+                                         && StaffExpansionValidationProfiles.ValidateInventory(firstSnapshot, profile, errors);
+            if (secondBuilt && secondSnapshot != null)
+                selectedProfilePassed &= StaffExpansionValidationProfiles.ValidateInventory(secondSnapshot, profile, errors);
+            if (firstSnapshot != null && secondSnapshot != null
+                && firstSnapshot.InventoryFingerprint != secondSnapshot.InventoryFingerprint)
+            {
+                errors.Add("Selected full inventory changed between deterministic reads.");
+                selectedProfilePassed = false;
+            }
+            string selectedInventoryFingerprint = firstSnapshot != null ? firstSnapshot.InventoryFingerprint : string.Empty;
+            // Only the historical preservation checks below inspect this explicit baseline projection.
+            // The complete current catalog is validated against the selected exact profile above.
+            if (firstSnapshot != null) firstSnapshot = StaffExpansionValidationProfiles.CreateBaselineSnapshot(firstSnapshot);
+            if (secondSnapshot != null) secondSnapshot = StaffExpansionValidationProfiles.CreateBaselineSnapshot(secondSnapshot);
+            bool inventoryPassed = firstBuilt && firstSnapshot != null && selectedProfilePassed;
             bool staffIdentityPassed = inventoryPassed
                                        && ValidateStaffIdentity(firstSnapshot, details[2], errors);
             bool classDistributionPassed = inventoryPassed
@@ -182,6 +205,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             bool officialDataStatePassed = inventoryPassed
                                            && ValidateExistingV18OfficialDataState(
                                                firstSnapshot,
+                                               profile,
                                                details[6],
                                                errors);
             bool skillStructurePassed = inventoryPassed
@@ -235,9 +259,10 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 out afterState);
             bool assetStatePassed = beforeStateBuilt
                                     && afterStateBuilt
-                                    && CompareAssetStates(beforeState, afterState, details[12], errors);
+                                    && CompareAssetStates(beforeState, afterState, profile.ComparisonFileCount, details[12], errors);
 
-            bool passed = inventoryPassed
+            bool passed = inspectorRangePassed
+                          && inventoryPassed
                           && staffIdentityPassed
                           && classDistributionPassed
                           && levelStructurePassed
@@ -258,6 +283,12 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
             StringBuilder output = new StringBuilder();
             output.AppendLine("[Current Staff Asset Inventory Validation]");
+            output.AppendLine("Profile: " + profile.Name + " | Staff/Skill: " + profile.StaffCount + "/" + profile.SkillCount
+                              + " | Remaining new: " + profile.RemainingNewStaffCount);
+            output.AppendLine("Selected full inventory Exact ID Set/distributions/references: " + (selectedProfilePassed ? "PASS" : "FAIL"));
+            output.AppendLine("StaffData._speed Inspector accepts canonical zero: " + (inspectorRangePassed ? "PASS" : "FAIL"));
+            output.AppendLine("Selected InventoryFingerprint: " + selectedInventoryFingerprint);
+            output.AppendLine("The following historical migration sections preserve only STAFF01~STAFF32.");
             output.AppendLine();
             AppendResult(output, 1, "Inventory 생성", inventoryPassed, details[1]);
             AppendResult(output, 2, "StaffData 수·ID·GUID", staffIdentityPassed, details[2]);
@@ -300,6 +331,27 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             {
                 Debug.LogError(output.ToString());
             }
+
+            return passed;
+        }
+
+        private static bool ValidateSpeedInspectorRange(List<string> errors)
+        {
+            FieldInfo field = typeof(StaffData).GetField("_speed", BindingFlags.Instance | BindingFlags.NonPublic);
+            if (field == null)
+            {
+                errors.Add("StaffData._speed field is missing.");
+                return false;
+            }
+
+            RangeAttribute range = Attribute.GetCustomAttribute(field, typeof(RangeAttribute)) as RangeAttribute;
+            if (range != null && !(range.min <= 0f))
+            {
+                errors.Add("StaffData._speed Inspector range excludes canonical zero.");
+                return false;
+            }
+
+            return true;
         }
 
         private static bool ValidateStaffIdentity(
@@ -612,12 +664,14 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
         private static bool ValidateExistingV18OfficialDataState(
             StaffDataAssetInventorySnapshot snapshot,
+            StaffExpansionValidationProfile profile,
             List<string> details,
             List<string> errors)
         {
             StaffDataDryRunPlanSnapshot firstPlan;
             IReadOnlyList<string> firstDiagnostics;
             if (!StaffDataDryRunPlanner.TryBuildCanonicalV8ReadOnlyPlan(
+                    profile,
                     out firstPlan,
                     out firstDiagnostics)
                 || firstPlan == null)
@@ -629,6 +683,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             StaffDataDryRunPlanSnapshot secondPlan;
             IReadOnlyList<string> secondDiagnostics;
             if (!StaffDataDryRunPlanner.TryBuildCanonicalV8ReadOnlyPlan(
+                    profile,
                     out secondPlan,
                     out secondDiagnostics)
                 || secondPlan == null)
@@ -2178,18 +2233,19 @@ namespace PandaRestaurant.Editor.StaffDataValidation
         private static bool CompareAssetStates(
             Dictionary<string, AssetFileState> before,
             Dictionary<string, AssetFileState> after,
+            int expectedComparisonFileCount,
             List<string> details,
             List<string> errors)
         {
-            bool expectedCountPassed = before.Count == ExpectedComparisonFileCount
-                                       && after.Count == ExpectedComparisonFileCount;
+            bool expectedCountPassed = before.Count == expectedComparisonFileCount
+                                       && after.Count == expectedComparisonFileCount;
             bool fileListPassed = before.Count == after.Count;
             bool shaPassed = true;
             bool guidPassed = true;
             if (!expectedCountPassed)
             {
                 errors.Add("실행 전후 비교 파일 수가 Post-B5 기준 "
-                           + ExpectedComparisonFileCount + "개와 다릅니다: "
+                           + expectedComparisonFileCount + "개와 다릅니다: "
                            + before.Count + "/" + after.Count);
             }
 
@@ -2237,8 +2293,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             details.Add("- 비교 파일: " + before.Count + "/" + after.Count
-                        + " (기대 " + ExpectedComparisonFileCount + "/"
-                        + ExpectedComparisonFileCount + ")");
+                        + " (기대 " + expectedComparisonFileCount + "/"
+                        + expectedComparisonFileCount + ")");
             details.Add("- 실행 전후 File List 동일: "
                         + (fileListPassed ? "YES" : "NO"));
             details.Add("- 실행 전후 SHA-256 동일: " + (shaPassed ? "YES" : "NO"));
