@@ -382,6 +382,9 @@ public class SoundManager : MonoBehaviour
             return;
         }
 
+        // Play() 시점의 동기 디코딩 비용을 줄이기 위해 대기 시간 동안 미리 로드를 시작한다
+        EnsureClipLoaded(clip);
+
         if (waitTime == 0)
         {
             bool isRestaurantRelated = IsRestaurantAreaType(type);
@@ -441,6 +444,18 @@ public class SoundManager : MonoBehaviour
         return _effectAudioDic[type][0];
     }
 
+    // 로딩 화면 등에서 미리 호출해 Play() 시점의 동기 로딩 비용을 없앤다
+    public void PreloadAudioClip(AudioClip clip)
+    {
+        EnsureClipLoaded(clip);
+    }
+
+    private void EnsureClipLoaded(AudioClip clip)
+    {
+        if (clip != null && clip.loadState == AudioDataLoadState.Unloaded)
+            clip.LoadAudioData();
+    }
+
     public void PlayEffectAudio(EffectType type, SoundEffectType soundEffectType)
     {
         // ? 레스토랑 관련 타입 간 재생 허용 로직 추가
@@ -459,6 +474,8 @@ public class SoundManager : MonoBehaviour
             DebugLog.LogError("재생할 효과음이 없습니다: " + soundEffectType.ToString());
             return;
         }
+
+        EnsureClipLoaded(clip);
 
         // 해당 타입의 오디오 소스 풀에서 재생 가능한 소스 찾기
         AudioSource availableSource = GetAvailableAudioSource(type);

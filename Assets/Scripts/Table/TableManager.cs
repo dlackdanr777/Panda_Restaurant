@@ -55,6 +55,9 @@ public class TableManager : MonoBehaviour
     {
         _guideButton.onClick.AddListener(() => OnCustomerGuideEventPlaySound(-1));
 
+        // 벨을 누른 순간이 아닌 로딩 단계에서 미리 오디오 데이터를 올려 재생 지연을 없앤다
+        SoundManager.Instance.PreloadAudioClip(_callSound);
+
         UpdateTable();
         _customerController.OnChangeCustomerHandler += UpdateTable;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;

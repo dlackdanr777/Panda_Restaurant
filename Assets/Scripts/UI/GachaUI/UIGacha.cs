@@ -187,12 +187,19 @@ public class UIGacha : MobileUIView
 
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
-        gameObject.SetActive(true);
+
+        // 루트가 꺼져 있는 동안 이전 머신 상태 정리와 시작 위치 준비를 끝낸다
+        SetStartGacha(false);
+        SetOpeningMachine(_gachaMachines[0]);
+
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-        SetStartGacha(false);
-        SetMachine(_gachaMachines[0]);
-        SetMachineParentPos();
+
+        gameObject.SetActive(true);
+
+        // 루트 활성화 이후에만 선택 머신을 표시해 내부 Tween/코루틴이 안전하게 동작하도록 한다
+        _currentGachaMachine.Show();
+
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
@@ -266,6 +273,21 @@ public class UIGacha : MobileUIView
         _currentGachaMachine.Show();
     }
 
+    // 창을 여는 경로 전용: 머신 전환 Tween을 시작했다 바로 취소하지 않고 즉시 상태를 지정한다
+    private void SetOpeningMachine(GachaMachineParent machine)
+    {
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            _gachaMachines[i].Hide();
+        }
+
+        _currentGachaMachine = machine;
+        _gachaItemList.UpdateData(machine.ItemDataList);
+
+        // 위치·크기만 즉시 지정한다 (실제 Show() 호출은 루트 활성화 이후로 미룸)
+        SetMachineParentPos();
+    }
+
     private void SetMachineParentPosAnime()
     {
         float duration = 0.5f;
@@ -312,7 +334,6 @@ public class UIGacha : MobileUIView
         _currentGachaMachine.TweenStop();
         _machineParent.TweenStop();
         _machineParent.anchoredPosition = pos;
-        _currentGachaMachine.Show();
         _currentGachaMachine.transform.localScale = Vector3.one;
     }
 
