@@ -82,6 +82,14 @@ public class UIRestaurantAdmin : MobileUIView
     private int _sessionVersion;
     private MobileUIView _nativeHideView;
 
+    // 창을 열 때 바로 선택할 탭 (0:가구, 1:직원, 2:레시피, 3:주방)
+    private int _openingTabIndex;
+
+    public void PrepareOpen(int tabIndex)
+    {
+        _openingTabIndex = tabIndex;
+    }
+
     public override void Init()
     {
         if (_isInitialized) return;
@@ -179,24 +187,25 @@ public class UIRestaurantAdmin : MobileUIView
 
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
-        gameObject.SetActive(true);
+
+        // 루트를 켜기 전에 하위 상태를 모두 준비해 자식이 켜졌다 바로 꺼지는 것을 방지한다
         _mainUI.SetActive(false);
-        
-        ShowFurnitureTabOptimized();
-        
+
+        SetTabActive(_openingTabIndex);
+        _floorButtonGroup.SetActive(_openingTabIndex != 2); // Recipe 탭에서만 숨김
+
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
         _dontTouchArea.gameObject.SetActive(true);
-        
-        // Floor 타입 강제 초기화하여 ChangeFloorType이 항상 실행되도록 함
-        ERestaurantFloorType targetFloor = _mainScene.CurrentFloor;
-        _floorType = (ERestaurantFloorType)(-1); // 강제로 다른 값으로 설정
-        ChangeFloorTypeOptimized(targetFloor);
-        
-        // Floor Button Groups 초기 상태 설정
-        UpdateFloorButtonGroups(targetFloor);
 
-        _recipeTab.UpdateUI();
+        // 여는 경로에서는 전환 코루틴 없이 층 상태만 즉시 반영
+        ERestaurantFloorType targetFloor = _mainScene.CurrentFloor;
+        SetFloorTypeForOpen(targetFloor);
+
+        _recipeTab.RequestFullRefresh();
+
+        // 하위 상태 준비가 끝난 뒤에만 루트를 활성화한다
+        gameObject.SetActive(true);
 
         TweenData tween = _canvasGroup.TweenAlpha(1, 0.1f);
         tween.OnComplete(() =>
@@ -898,6 +907,22 @@ public class UIRestaurantAdmin : MobileUIView
         _floorButtonGroup.SetFloorText(_floorType);
 
         SetBackgroundImageOptimized(_floorType);
+        UpdateFloorButtonGroups(_floorType);
+    }
+
+    // 창을 여는 경로 전용: 전환 코루틴 없이 층 상태를 즉시 반영한다
+    private void SetFloorTypeForOpen(ERestaurantFloorType floorType)
+    {
+        _previousFloorType = floorType;
+        _floorType = floorType;
+
+        _kitchenTab.ChangeFloorType(_floorType);
+        _furnitureTab.ChangeFloorType(_floorType);
+        _staffTab.ChangeFloorType(_floorType);
+        _recipeTab.ChangeFloorType(_floorType);
+        _floorButtonGroup.SetFloorText(_floorType);
+
+        SetBackgroundImageImmediate(_floorType);
         UpdateFloorButtonGroups(_floorType);
     }
     

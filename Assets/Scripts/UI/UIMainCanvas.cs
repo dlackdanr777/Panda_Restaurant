@@ -148,31 +148,32 @@ public class UIMainCanvas : MonoBehaviour
 
     private void OnShowRecipeTab()
     {
+        _uiAdmin.PrepareOpen(2);
         _uiNav.Push("RestaurantAdminUI");
-        _uiAdmin.ShowRecipeTab();
     }
 
     private void OnShowFurnitureTab()
     {
+        _uiAdmin.PrepareOpen(0);
         _uiNav.Push("RestaurantAdminUI");
-        _uiAdmin.ShowFurnitureTab();
     }
 
     private void OnShowStaffTab()
     {
+        _uiAdmin.PrepareOpen(1);
         _uiNav.Push("RestaurantAdminUI");
-        _uiAdmin.ShowStaffTab();
     }
 
     private void OnShowKitchenTab()
     {
+        _uiAdmin.PrepareOpen(3);
         _uiNav.Push("RestaurantAdminUI");
-        _uiAdmin.ShowKitchenTab();
     }
 
 
     private void OnShowRestaurantAdminUI()
     {
+        _uiAdmin.PrepareOpen(0);
         _uiNav.Push("RestaurantAdminUI");
     }
 
