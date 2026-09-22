@@ -61,7 +61,8 @@ public class MainScene : MonoBehaviour
     {
         _currentFloor = floor;
         EffectType effectType = SoundManager.Instance.GetHallEffectType(_currentFloor, _restaurantType);
-        if (SoundManager.Instance.EffectType != EffectType.UI)
+        // OnUIEvent와 동일한 실시간 출처를 사용해 SoundManager 내부 상태와의 어긋남을 방지한다
+        if (_uiNavCoordinator.GetOpenViewCount() <= 0)
             SoundManager.Instance.ChangePlayEffectType(effectType, 0.1f);
     }
 
@@ -72,7 +73,8 @@ public class MainScene : MonoBehaviour
 
         _restaurantType = type;
         EffectType effectType = SoundManager.Instance.GetHallEffectType(_currentFloor, _restaurantType);
-        if (SoundManager.Instance.EffectType != EffectType.UI)
+        // OnUIEvent와 동일한 실시간 출처를 사용해 SoundManager 내부 상태와의 어긋남을 방지한다
+        if (_uiNavCoordinator.GetOpenViewCount() <= 0)
             SoundManager.Instance.ChangePlayEffectType(effectType, 0.1f);
     }
 

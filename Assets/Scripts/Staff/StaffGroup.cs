@@ -1,8 +1,15 @@
 using System.Collections.Generic;
+using Unity.Profiling;
 using UnityEngine;
 
 public class StaffGroup : MonoBehaviour
 {
+    private static readonly ProfilerMarker ActionMarker =
+        new ProfilerMarker("StaffGroup.StaffAction");
+
+    private static readonly ProfilerMarker SkillMarker =
+        new ProfilerMarker("StaffGroup.UsingStaffSkill");
+
     [Header("Option")]
     [SerializeField] private ERestaurantFloorType _floorType;
     public ERestaurantFloorType FloorType => _floorType;
@@ -63,8 +70,15 @@ public class StaffGroup : MonoBehaviour
             if (!staff.gameObject.activeInHierarchy)
                 continue;
 
-            staff.StaffAction();
-            staff.UsingStaffSkill(_tableManager, _kitchenSystem, _customerController);
+            using (ActionMarker.Auto())
+            {
+                staff.StaffAction();
+            }
+
+            using (SkillMarker.Auto())
+            {
+                staff.UsingStaffSkill(_tableManager, _kitchenSystem, _customerController);
+            }
         }
     }
 

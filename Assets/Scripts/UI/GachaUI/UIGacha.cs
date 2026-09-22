@@ -690,6 +690,21 @@ public partial class UIGacha : MobileUIView
         TryStartItemGachaTutorial();
     }
 
+    // 창을 여는 경로 전용: 머신 전환 Tween을 시작했다 바로 취소하지 않고 즉시 상태를 지정한다
+    private void SetOpeningMachine(GachaMachineParent machine)
+    {
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            _gachaMachines[i].Hide();
+        }
+
+        _currentGachaMachine = machine;
+        _gachaItemList.UpdateData(machine.ItemDataList);
+
+        // 위치·크기만 즉시 지정한다 (실제 Show() 호출은 루트 활성화 이후로 미룸)
+        SetMachineParentPos();
+    }
+
     private void SetMachineParentPosAnime()
     {
         float duration = 0.5f;
@@ -746,7 +761,6 @@ public partial class UIGacha : MobileUIView
         _currentGachaMachine.TweenStop();
         _machineParent.TweenStop();
         _machineParent.anchoredPosition = pos;
-        _currentGachaMachine.Show();
         _currentGachaMachine.transform.localScale = Vector3.one;
     }
 

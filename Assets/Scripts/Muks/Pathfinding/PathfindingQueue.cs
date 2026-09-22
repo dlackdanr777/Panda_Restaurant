@@ -51,7 +51,15 @@ namespace Muks.PathFinding
                 {
                     if (_pathfindingQueue.TryDequeue(out Action action))
                     {
-                        action.Invoke();
+                        try
+                        {
+                            action.Invoke();
+                        }
+                        catch (Exception ex)
+                        {
+                            // 개별 경로 작업의 예외가 처리 루프 전체를 종료시키지 않도록 격리
+                            Debug.LogError($"[PathfindingQueue] 경로 작업 실행 중 예외 발생: {ex}");
+                        }
                     }
                     else
                     {

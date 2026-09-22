@@ -54,12 +54,7 @@ public class UIRecipePreview : MonoBehaviour
         _needItemButton.onClick.AddListener(OnNeedItemButtonClicked);
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
 
-        UserInfo.OnUpgradeRecipeHandler += UpdateUI;
-        UserInfo.OnGiveRecipeHandler += UpdateUI;
-        UserInfo.OnChangeMoneyHandler += UpdateUI;
-        UserInfo.OnChangeScoreHandler += UpdateUI;
         UserInfo.OnAddCookCountHandler += UpdateUI;
-        GameManager.Instance.OnChangeScoreHandler += UpdateUI;
         TimeManager.Instance.OnUpdateTimeHandler += TimeManagerUpdateEvent;
         TimeManager.Instance.OnAddTimeHandler += TimeManagerAddRemoveEvent;
         TimeManager.Instance.OnRemoveTimeHandler += TimeManagerAddRemoveEvent;
@@ -199,6 +194,46 @@ public class UIRecipePreview : MonoBehaviour
     public void UpdateUI()
     {
         SetData(_currentData);
+    }
+
+    public void UpdatePurchaseAvailability()
+    {
+        if (_currentData == null ||
+            UserInfo.IsGiveRecipe(_currentData) ||
+            !UserInfo.IsScoreValid(_currentData) ||
+            !string.IsNullOrWhiteSpace(_currentData.NeedItem))
+        {
+            return;
+        }
+
+        _buyButton.gameObject.SetActive(false);
+        _notEnoughMoneyButton.gameObject.SetActive(false);
+
+        string priceText = _currentData.BuyPrice <= 0
+            ? "¹«·á"
+            : Utility.ConvertToMoney(_currentData.BuyPrice);
+
+        if (_currentData.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(_currentData.BuyPrice))
+        {
+            _notEnoughMoneyButton.gameObject.SetActive(true);
+            _notEnoughImage.sprite = _notEnoughMoneySprite;
+            _notEnoughMoneyButton.SetText(priceText);
+            return;
+        }
+
+        if (_currentData.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(_currentData.BuyPrice))
+        {
+            _notEnoughMoneyButton.gameObject.SetActive(true);
+            _notEnoughImage.sprite = _notEnoughDiaSprite;
+            _notEnoughMoneyButton.SetText(priceText);
+            return;
+        }
+
+        _buyButton.gameObject.SetActive(true);
+        _buyButton.SetText(priceText);
+        _buyImage.sprite = _currentData.MoneyType == MoneyType.Gold
+            ? _buyMoneySprite
+            : _buyDiaSprite;
     }
 
 
@@ -341,12 +376,7 @@ public class UIRecipePreview : MonoBehaviour
 
     private void OnDestroy()
     {
-        UserInfo.OnUpgradeRecipeHandler -= UpdateUI;
-        UserInfo.OnGiveRecipeHandler -= UpdateUI;
-        UserInfo.OnChangeMoneyHandler -= UpdateUI;
-        UserInfo.OnChangeScoreHandler -= UpdateUI;
         UserInfo.OnAddCookCountHandler -= UpdateUI;
-        GameManager.Instance.OnChangeScoreHandler -= UpdateUI;
         TimeManager.Instance.OnUpdateTimeHandler -= TimeManagerUpdateEvent;
         TimeManager.Instance.OnAddTimeHandler -= TimeManagerAddRemoveEvent;
         TimeManager.Instance.OnRemoveTimeHandler -= TimeManagerAddRemoveEvent;

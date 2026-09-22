@@ -142,8 +142,9 @@ public class UIStaff : MobileUIView
             
             for (int j = 0; j < maxSlotCount; j++)
             {
+                int slotIndex = j;
                 UIRestaurantAdminStaffSlot slot = Instantiate(_slotPrefab, _slotParnet);
-                slot.Init(() => { }); // �ʱ�ȭ �ÿ��� �� �׼�
+                slot.Init(() => OnSlotClicked(slotIndex));
                 slot.SetFrame(Rank.Normal1);
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
@@ -211,10 +212,10 @@ public class UIStaff : MobileUIView
     {
         UserInfo.OnChangeStaffHandler += OnChangeStaffEvent;
         UserInfo.OnGiveStaffHandler += UpdateUIOptimized;
-        UserInfo.OnChangeMoneyHandler += UpdateUIOptimized;
-        UserInfo.OnChangeScoreHandler += UpdateUIOptimized;
+        UserInfo.OnChangeMoneyHandler += UpdateResourceUI;
+        UserInfo.OnChangeScoreHandler += UpdateResourceUI;
         UserInfo.OnChangeStaffSkinHandler += UpdateUIOptimized;
-        GameManager.Instance.OnChangeScoreHandler += UpdateUIOptimized;
+        GameManager.Instance.OnChangeScoreHandler += UpdateResourceUI;
     }
 
     public override void Show()
@@ -390,7 +391,7 @@ public class UIStaff : MobileUIView
 
     private void UpdateUIOptimized()
     {
-        if (!gameObject.activeInHierarchy || _currentTypeDataList == null || _currentTypeDataList.Count == 0)
+        if (!gameObject.activeInHierarchy || _currentTypeDataList == null)
             return;
 
         _uiStaffPreview.UpdateUI();
@@ -400,20 +401,14 @@ public class UIStaff : MobileUIView
         int dataCount = _currentTypeDataList.Count;
         
 
-        for (int i = 0; i < currentSlots.Count; i++)
-        {
-            currentSlots[i].gameObject.SetActive(false);
-        }
-        
-
         for (int i = 0; i < dataCount; i++)
         {
             var data = _currentTypeDataList[i];
             var slot = currentSlots[i];
-            
-            // ���� Ŭ�� �̺�Ʈ �缳��
-            slot.Init(() => OnSlotClicked(data));
-            slot.gameObject.SetActive(true);
+
+            if (!slot.gameObject.activeSelf)
+                slot.gameObject.SetActive(true);
+
             slot.EquipGroupSetActive(false);
             slot.transform.SetSiblingIndex(i);
 
@@ -429,6 +424,20 @@ public class UIStaff : MobileUIView
                 ProcessUnequippedSlot(data, slot);
             }
         }
+
+        for (int i = dataCount; i < currentSlots.Count; i++)
+        {
+            if (currentSlots[i].gameObject.activeSelf)
+                currentSlots[i].gameObject.SetActive(false);
+        }
+    }
+
+    private void UpdateResourceUI()
+    {
+        if (!gameObject.activeInHierarchy)
+            return;
+
+        _uiStaffPreview.UpdateUI();
     }
 
     // 간소화된 ProcessEquippedSlot
@@ -517,6 +526,14 @@ public class UIStaff : MobileUIView
         _uiStaffPreview.SetData(_currentFloorType, _currentType, data);
     }
 
+    private void OnSlotClicked(int slotIndex)
+    {
+        if (_currentTypeDataList == null || slotIndex < 0 || slotIndex >= _currentTypeDataList.Count)
+            return;
+
+        OnSlotClicked(_currentTypeDataList[slotIndex]);
+    }
+
     private void OnShowSkinButtonClicked()
     {
         if (_previewStaffData == null)
@@ -532,9 +549,9 @@ public class UIStaff : MobileUIView
 #endif
         UserInfo.OnChangeStaffHandler -= OnChangeStaffEvent;
         UserInfo.OnGiveStaffHandler -= UpdateUIOptimized;
-        UserInfo.OnChangeMoneyHandler -= UpdateUIOptimized;
-        UserInfo.OnChangeScoreHandler -= UpdateUIOptimized;
+        UserInfo.OnChangeMoneyHandler -= UpdateResourceUI;
+        UserInfo.OnChangeScoreHandler -= UpdateResourceUI;
         UserInfo.OnChangeStaffSkinHandler -= UpdateUIOptimized;
-        GameManager.Instance.OnChangeScoreHandler -= UpdateUIOptimized;
+        GameManager.Instance.OnChangeScoreHandler -= UpdateResourceUI;
     }
 }

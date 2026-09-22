@@ -1,10 +1,12 @@
 ﻿using Muks.Tween;
 using Muks.UI;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Unity.Profiling;
 
 [RequireComponent(typeof(Camera))]
 public class CameraController : MonoBehaviour
@@ -57,6 +59,12 @@ public class CameraController : MonoBehaviour
     private bool _moveHorizontally; // X축 이동 여부 결정 변수
     private float _initialTouchThreshold = 0.1f; // 0.5cm 이내에서는 이동 X
     private List<GraphicRaycaster> _graphicRaycasters = new List<GraphicRaycaster>(); // UI 감지용
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private const int CameraComparisonCycles = 3;
+    private Coroutine _cameraComparisonRoutine;
+    private UIMarketerImage.PresentationParticleState[] _activePresentationParticleStates;
+#endif
 
 
     public RestaurantType CurrentRestaurant => _mainScene.CurrentRestaurantType;
@@ -175,6 +183,14 @@ public class CameraController : MonoBehaviour
 
     private void Update()
     {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (Input.GetKeyDown(KeyCode.F8) && _cameraComparisonRoutine == null)
+        {
+            _cameraComparisonRoutine = StartCoroutine(RunPresentationParticleComparison());
+            return;
+        }
+#endif
+
         if (_isMoveAction)
             return;
 
@@ -204,6 +220,232 @@ public class CameraController : MonoBehaviour
         HandleTouchInput();
 #endif
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    private IEnumerator RunPresentationParticleComparison()
+    {
+        if (_isMoveAction || UserInfo.IsTutorialStart || _navigationCoordinator.GetOpenViewCount() != 0)
+        {
+            Debug.LogWarning("[PERF-CAMERA-01A] 카메라 이동 중, 튜토리얼 중 또는 UI가 열린 상태라 비교를 시작하지 않습니다.");
+            _cameraComparisonRoutine = null;
+            yield break;
+        }
+
+        UIMarketerImage[] owners = FindObjectsByType<UIMarketerImage>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+        UIMarketerImage.PresentationParticleState[] states =
+            new UIMarketerImage.PresentationParticleState[owners.Length];
+        _activePresentationParticleStates = states;
+
+        int particleSystemCount = 0;
+        for (int i = 0; i < owners.Length; i++)
+        {
+            states[i] = owners[i].CapturePresentationParticleState();
+            particleSystemCount += states[i].ParticleSystemCount;
+            Debug.Log("[PERF-CAMERA-01A] Baseline particle state: " + states[i].Describe());
+        }
+
+        if (particleSystemCount == 0)
+        {
+            Debug.LogWarning("[PERF-CAMERA-01A] UIMarketerImage 연출 그룹에서 ParticleSystem을 찾지 못했습니다.");
+            _cameraComparisonRoutine = null;
+            yield break;
+        }
+
+        RestaurantType initialRestaurant = CurrentRestaurant;
+        CameraComparisonMetrics baselineMetrics = new CameraComparisonMetrics();
+        yield return RunComparisonPhase("BASELINE", initialRestaurant, baselineMetrics);
+
+        for (int i = 0; i < states.Length; i++)
+        {
+            states[i].Exclude();
+            Debug.Log(
+                "[PERF-CAMERA-01A] Presentation particle excluded: activeSelf=false, previous="
+                + states[i].Describe());
+        }
+
+        yield return null;
+        CameraComparisonMetrics excludedMetrics = new CameraComparisonMetrics();
+        yield return RunComparisonPhase(
+            "PRESENTATION_PARTICLE_EXCLUDED",
+            initialRestaurant,
+            excludedMetrics);
+
+        RestorePresentationParticleStates();
+
+        Debug.Log(
+            "[PERF-CAMERA-01A] DELTA excluded vs baseline"
+            + FormatDelta("frameAvg", baselineMetrics.FrameAverageMilliseconds, excludedMetrics.FrameAverageMilliseconds)
+            + FormatDelta("frameMax", baselineMetrics.FrameMaxMilliseconds, excludedMetrics.FrameMaxMilliseconds)
+            + FormatDelta("ParticleSystem.UpdateAvg", baselineMetrics.ParticleUpdate.AverageMilliseconds, excludedMetrics.ParticleUpdate.AverageMilliseconds)
+            + FormatDelta("TransparentRenderAvg", baselineMetrics.TransparentRender.AverageMilliseconds, excludedMetrics.TransparentRender.AverageMilliseconds)
+            + FormatDelta("RendererBoundsAvg", baselineMetrics.RendererBounds.AverageMilliseconds, excludedMetrics.RendererBounds.AverageMilliseconds));
+
+        if (CurrentRestaurant != initialRestaurant)
+        {
+            MoveCamera(initialRestaurant);
+            while (_isMoveAction)
+                yield return null;
+        }
+
+        _cameraComparisonRoutine = null;
+        Debug.Log("[PERF-CAMERA-01A] A/B comparison completed.");
+    }
+
+    private void OnDisable()
+    {
+        RestorePresentationParticleStates();
+        _cameraComparisonRoutine = null;
+    }
+
+    private void RestorePresentationParticleStates()
+    {
+        if (_activePresentationParticleStates == null)
+            return;
+
+        for (int i = 0; i < _activePresentationParticleStates.Length; i++)
+        {
+            UIMarketerImage.PresentationParticleState state =
+                _activePresentationParticleStates[i];
+            if (state == null)
+                continue;
+
+            state.Restore();
+            Debug.Log("[PERF-CAMERA-01A] Restored particle state: " + state.Describe());
+        }
+
+        _activePresentationParticleStates = null;
+    }
+
+    private IEnumerator RunComparisonPhase(
+        string phaseName,
+        RestaurantType initialRestaurant,
+        CameraComparisonMetrics metrics)
+    {
+        using (ProfilerRecorder particleUpdate =
+               ProfilerRecorder.StartNew(ProfilerCategory.Particles, "ParticleSystem.Update"))
+        using (ProfilerRecorder transparentRender =
+               ProfilerRecorder.StartNew(ProfilerCategory.Render, "Render.TransparentGeometry"))
+        using (ProfilerRecorder rendererBounds =
+               ProfilerRecorder.StartNew(ProfilerCategory.Render, "UpdateRendererBoundingVolumes"))
+        {
+            RestaurantType otherRestaurant = initialRestaurant == RestaurantType.Hall
+                ? RestaurantType.Kitchen
+                : RestaurantType.Hall;
+
+            for (int cycle = 0; cycle < CameraComparisonCycles; cycle++)
+            {
+                yield return MeasureMove(otherRestaurant, particleUpdate, transparentRender, rendererBounds, metrics);
+                yield return MeasureMove(initialRestaurant, particleUpdate, transparentRender, rendererBounds, metrics);
+            }
+
+            Debug.Log(
+                "[PERF-CAMERA-01A] " + phaseName
+                + ": moves=" + CameraComparisonCycles * 2
+                + ", frames=" + metrics.FrameCount
+                + ", frameAvg=" + metrics.FrameAverageMilliseconds.ToString("F3") + "ms"
+                + ", frameMax=" + metrics.FrameMaxMilliseconds.ToString("F3") + "ms"
+                + FormatRecorderMetric("ParticleSystem.Update", particleUpdate.Valid, metrics.ParticleUpdate)
+                + FormatRecorderMetric("Render.TransparentGeometry", transparentRender.Valid, metrics.TransparentRender)
+                + FormatRecorderMetric("UpdateRendererBoundingVolumes", rendererBounds.Valid, metrics.RendererBounds));
+        }
+    }
+
+    private static string FormatDelta(string metricName, double baseline, double excluded)
+    {
+        double difference = excluded - baseline;
+        if (baseline <= 0d)
+        {
+            return ", " + metricName
+                + "=" + difference.ToString("+0.000;-0.000;0.000") + "ms (percent unavailable)";
+        }
+
+        double percent = difference / baseline * 100d;
+        return ", " + metricName
+            + "=" + difference.ToString("+0.000;-0.000;0.000") + "ms"
+            + " (" + percent.ToString("+0.0;-0.0;0.0") + "%)";
+    }
+
+    private IEnumerator MeasureMove(
+        RestaurantType target,
+        ProfilerRecorder particleUpdate,
+        ProfilerRecorder transparentRender,
+        ProfilerRecorder rendererBounds,
+        CameraComparisonMetrics metrics)
+    {
+        MoveCamera(target);
+        while (_isMoveAction)
+        {
+            yield return null;
+            metrics.RecordFrame(
+                Time.unscaledDeltaTime * 1000d,
+                particleUpdate.Valid ? particleUpdate.LastValue : 0,
+                transparentRender.Valid ? transparentRender.LastValue : 0,
+                rendererBounds.Valid ? rendererBounds.LastValue : 0);
+        }
+    }
+
+    private static string FormatRecorderMetric(
+        string markerName,
+        bool recorderValid,
+        CameraMarkerMetrics metrics)
+    {
+        if (!recorderValid)
+            return ", " + markerName + "=unavailable";
+
+        return ", " + markerName
+            + "Avg=" + metrics.AverageMilliseconds.ToString("F3") + "ms"
+            + ", " + markerName
+            + "Max=" + metrics.MaxMilliseconds.ToString("F3") + "ms";
+    }
+
+    private sealed class CameraComparisonMetrics
+    {
+        internal readonly CameraMarkerMetrics ParticleUpdate = new CameraMarkerMetrics();
+        internal readonly CameraMarkerMetrics TransparentRender = new CameraMarkerMetrics();
+        internal readonly CameraMarkerMetrics RendererBounds = new CameraMarkerMetrics();
+
+        internal int FrameCount { get; private set; }
+        internal double FrameAverageMilliseconds =>
+            FrameCount == 0 ? 0d : _frameTotalMilliseconds / FrameCount;
+        internal double FrameMaxMilliseconds { get; private set; }
+
+        private double _frameTotalMilliseconds;
+
+        internal void RecordFrame(
+            double frameMilliseconds,
+            long particleUpdateNanoseconds,
+            long transparentRenderNanoseconds,
+            long rendererBoundsNanoseconds)
+        {
+            FrameCount++;
+            _frameTotalMilliseconds += frameMilliseconds;
+            FrameMaxMilliseconds = Math.Max(FrameMaxMilliseconds, frameMilliseconds);
+            ParticleUpdate.Record(particleUpdateNanoseconds);
+            TransparentRender.Record(transparentRenderNanoseconds);
+            RendererBounds.Record(rendererBoundsNanoseconds);
+        }
+    }
+
+    private sealed class CameraMarkerMetrics
+    {
+        internal double AverageMilliseconds =>
+            _sampleCount == 0 ? 0d : _totalNanoseconds / _sampleCount / 1000000d;
+        internal double MaxMilliseconds => _maxNanoseconds / 1000000d;
+
+        private int _sampleCount;
+        private double _totalNanoseconds;
+        private long _maxNanoseconds;
+
+        internal void Record(long nanoseconds)
+        {
+            _sampleCount++;
+            _totalNanoseconds += nanoseconds;
+            _maxNanoseconds = Math.Max(_maxNanoseconds, nanoseconds);
+        }
+    }
+#endif
 
     // 📌 터치 입력 처리
     private void HandleTouchInput()

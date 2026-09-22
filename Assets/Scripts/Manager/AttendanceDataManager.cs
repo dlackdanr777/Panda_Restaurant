@@ -116,11 +116,20 @@ public class AttendanceDataManager : MonoBehaviour
             dayCounter++;
 
             string rewardType = string.Concat(row[1].Where(c => !Char.IsWhiteSpace(c)));
-            // ??? ?? ??? ? ?? ?? ?? ??
-            MoneyType moneyType = (rewardType == "����" || rewardType == "??" ||
-                                   rewardType == "????" || rewardType == "Gold")
-                ? MoneyType.Gold
-                : MoneyType.Dia;
+            MoneyType moneyType;
+            if (rewardType == "코인" || rewardType == "Gold")
+            {
+                moneyType = MoneyType.Gold;
+            }
+            else if (rewardType == "다이아" || rewardType == "Dia")
+            {
+                moneyType = MoneyType.Dia;
+            }
+            else
+            {
+                Debug.LogError($"[AttendanceDataManager] 알 수 없는 보상 타입 (line {i}): '{row[1]}'");
+                continue;
+            }
 
             string rewardStr = string.Concat(row[2].Where(c => !Char.IsWhiteSpace(c)));
             if (!int.TryParse(rewardStr, out int rewardValue))

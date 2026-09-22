@@ -4,9 +4,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Unity.Profiling;
 
 public class GameManager : MonoBehaviour
 {
+    private const int TargetFrameRate = 120;
+
+    private static readonly ProfilerMarker SaveDataPreparationMarker =
+        new ProfilerMarker("Panda.Backend.GameDataPreparation");
+
     public static GameManager Instance
     {
         get
@@ -442,8 +448,9 @@ public class GameManager : MonoBehaviour
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 
-        BackendManager.Instance.RequestGameDataAutosave((bro) =>
-        {
+        UserInfo.ApplyDailyWeeklyResetIfNeeded();
+        Param param = UserInfo.GetSaveUserData();
+        BackendManager.Instance.SaveGameDataAsync("GameData", param, (bro) =>{
             UserInfo.SaveStageDataAsync();
             DebugLog.Log("[GameManager] GameData 저장 성공. StageData 비동기 저장을 요청했습니다.");
         }, (state) =>
@@ -486,7 +493,12 @@ public class GameManager : MonoBehaviour
         _instance = this;
         DontDestroyOnLoad(gameObject);
         QualitySettings.vSyncCount = 0;
-        Application.targetFrameRate = 120;
+        Application.targetFrameRate = TargetFrameRate;
+        UnityEngine.Rendering.OnDemandRendering.renderFrameInterval = 1;
+        Debug.Log(
+            "[FRAME-PACING] targetFPS=" + Application.targetFrameRate
+            + ", renderInterval=" + UnityEngine.Rendering.OnDemandRendering.renderFrameInterval
+            + ", refreshHz=" + Screen.currentResolution.refreshRateRatio.value.ToString("F2"));
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
         UserInfo.DataBindTip(UserInfo.CurrentStage);
         UserInfo.DataBindMoney();
@@ -505,7 +517,8 @@ public class GameManager : MonoBehaviour
         UserInfo.OnGiveGachaItemHandler += OnUpgradeGachaItemCheck;
         UserInfo.OnUpgradeGachaItemHandler += OnUpgradeGachaItemCheck;
         BackendManager.OnExitHandler += SaveGameData;
-        BackendManager.OnPauseHandler += SaveGameData;
+        // pause(광고 전환 등) 시 동기 저장으로 인한 프레임 정지 방지
+        BackendManager.OnPauseHandler += AsyncSaveGameData;
 
         //OnEquipStaffEffectCheck();
         OnEquipFurnitureEffectCheck();
@@ -551,7 +564,7 @@ public class GameManager : MonoBehaviour
         UserInfo.OnGiveGachaItemHandler -= OnUpgradeGachaItemCheck;
         UserInfo.OnUpgradeGachaItemHandler -= OnUpgradeGachaItemCheck;
         BackendManager.OnExitHandler -= SaveGameData;
-        BackendManager.OnPauseHandler -= SaveGameData;
+        BackendManager.OnPauseHandler -= AsyncSaveGameData;
     }
 
     private void OnGiveFurnitureEffectCheck()

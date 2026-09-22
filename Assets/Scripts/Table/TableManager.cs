@@ -55,9 +55,11 @@ public class TableManager : MonoBehaviour
     {
         _guideButton.onClick.AddListener(() => OnCustomerGuideEventPlaySound(-1));
 
+        // 벨을 누른 순간이 아닌 로딩 단계에서 미리 오디오 데이터를 올려 재생 지연을 없앤다
+        SoundManager.Instance.PreloadAudioClip(_callSound);
+
         UpdateTable();
         _customerController.OnChangeCustomerHandler += UpdateTable;
-        _customerController.OnGuideCustomerHandler += UpdateTable;
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
         UserInfo.OnChangeFurnitureHandler += OnChangeTableEvent;
         UserInfo.OnChangeFloorHandler += UpdateTable;
@@ -206,7 +208,6 @@ public class TableManager : MonoBehaviour
 
         Vector3 targetPos = data.ChairTrs[data.SitIndex].position;
         targetPos.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
-        UpdateTable();
 
         _customerController.GuideCustomer(targetPos, 0, () =>
         {
@@ -786,6 +787,21 @@ public TableData GetMinDistanceTable( Vector3 startPos, List<TableData> tableDat
     );
 }
 
+// GetTableDataList(floorType, state)처럼 상태별 임시 리스트를 새로 만들지 않고,
+// 기존 층별 테이블 목록을 그대로 순회하며 상태 조건을 검사해 가장 가까운 테이블을 찾음
+public TableData GetMinDistanceTableByState(Vector3 startPos, ERestaurantFloorType floorType, ETableState state)
+{
+    List<TableData> tableDataList = _furnitureSystem.GetTableDataList(floorType);
+    return GetMinDistanceObject(
+        RestaurantType.Hall,
+        startPos,
+        tableDataList,
+        table => table.transform.position,
+        table => table.TableState == state,
+        1f
+    );
+}
+
 public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurnerData> dataList)
 {
     return GetMinDistanceObject(
@@ -916,7 +932,6 @@ public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurn
     private void OnDestroy()
     {
         _customerController.OnChangeCustomerHandler -= UpdateTable;
-        _customerController.OnGuideCustomerHandler -= UpdateTable;
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEvent;
         UserInfo.OnChangeFurnitureHandler -= OnChangeTableEvent;
         UserInfo.OnChangeFloorHandler -= UpdateTable;
