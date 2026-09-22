@@ -448,9 +448,7 @@ public class GameManager : MonoBehaviour
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 
-        UserInfo.ApplyDailyWeeklyResetIfNeeded();
-        Param param = UserInfo.GetSaveUserData();
-        BackendManager.Instance.SaveGameDataAsync("GameData", param, (bro) =>{
+        BackendManager.Instance.RequestGameDataAutosave((bro) =>{
             UserInfo.SaveStageDataAsync();
             DebugLog.Log("[GameManager] GameData 저장 성공. StageData 비동기 저장을 요청했습니다.");
         }, (state) =>

@@ -136,24 +136,37 @@ public class FirstLoadingScene : MonoBehaviour
             if (!IsCurrent()) return;
             UserInfo.LoadStageDataAsync();
             if (!IsCurrent()) return;
-            PaymentInfo.LoadPaymentData();
-            AssignRandomNicknameIfNeeded(IsCurrent, () =>
+
+            void ContinueAfterPaymentLoad()
             {
                 if (!IsCurrent()) return;
-                Tween.Wait(0.7f, () =>
+                AssignRandomNicknameIfNeeded(IsCurrent, () =>
                 {
                     if (!IsCurrent()) return;
-                    _uiFirstLoadingScene.HideTitle(() =>
+                    Tween.Wait(0.7f, () =>
                     {
                         if (!IsCurrent()) return;
-                        Tween.Wait(0.1f, () =>
+                        _uiFirstLoadingScene.HideTitle(() =>
                         {
-                            if (IsCurrent()) LoadingSceneManager.LoadScene(
-                                UserInfo.IsFirstTutorialClear ? "Stage1" : "IntroScene");
+                            if (!IsCurrent()) return;
+                            Tween.Wait(0.1f, () =>
+                            {
+                                if (IsCurrent()) LoadingSceneManager.LoadScene(
+                                    UserInfo.IsFirstTutorialClear ? "Stage1" : "IntroScene");
+                            });
                         });
                     });
                 });
-            });
+            }
+
+            PaymentInfo.LoadPaymentDataAsync(
+                Backend.UserInDate,
+                (loadResult) => ContinueAfterPaymentLoad(),
+                (failure) =>
+                {
+                    Debug.LogWarning("[FirstLoadingScene] PaymentData 로드 실패: " + failure);
+                    ContinueAfterPaymentLoad();
+                });
         }, (state) =>
         {
             if (this != null) ShowGameDataLoadFailure(state.ToString());
