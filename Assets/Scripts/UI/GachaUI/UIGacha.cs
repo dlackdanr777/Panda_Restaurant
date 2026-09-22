@@ -6,9 +6,25 @@ using UnityEngine.UI;
 using System;
 using UnityEngine.EventSystems;
 
-public class UIGacha : MobileUIView
+public partial class UIGacha : MobileUIView
 {
+#if UNITY_EDITOR
+    public const bool EnableEditorEntryUnlockForTesting = true;
+#else
+    public const bool EnableEditorEntryUnlockForTesting = false;
+#endif
+
     public event Action<int> GachaStepHandler;
+    public event Action HiddenHandler;
+
+    public static bool IsEntryUnlocked()
+    {
+        return EnableEditorEntryUnlockForTesting
+            || IsProgressionEntryUnlocked();
+    }
+
+    public static bool IsProgressionEntryUnlocked() => UserInfo.GetIsClearChallenge("MainReward12")
+        || GachaTutorial.IsCurrentItemTutorialQuest();
 
     [Header("Components")]
     [SerializeField] private MainScene _mainScene;
@@ -36,22 +52,269 @@ public class UIGacha : MobileUIView
     [SerializeField] private GachaTutorial _miniGameTutorial;
 
     private GachaMachineParent _currentGachaMachine;
+    private GachaMachineParent _requestedInitialMachine;
+    private bool _isInitialized;
+    private bool _questStaffEntry;
+    private UIStaffGacha _questPresentationMachine;
+    private readonly Dictionary<GameObject, bool> _questHiddenObjects = new Dictionary<GameObject, bool>();
+    private bool _questPresentationCaptured;
+    private bool _questScrollWasEnabled;
+    private float _nextItemTutorialCheck;
+
+    private void Update()
+    {
+        UpdateCollectionUI();
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured) return;
+#endif
+        if (Time.unscaledTime < _nextItemTutorialCheck) return;
+        _nextItemTutorialCheck = Time.unscaledTime + 0.25f;
+        // A preceding normal save may still be finishing when Show completes.
+        TryStartItemGachaTutorial();
+    }
+
+    /// <summary>Dedicated quest entry never relies on the Editor unlock or the paid entry gate.</summary>
+    public bool PrepareQuestStaffMachine(Muks.BackEnd.BackendManager owner)
+        => PrepareQuestStaffMachine(owner, null, null);
+
+    public bool PrepareQuestStaffMachine(Muks.BackEnd.BackendManager owner, string expectedQuestId,
+        Func<bool> isEntryCurrent)
+    {
+        if (owner == null || (isEntryCurrent != null && !isEntryCurrent())) return false;
+        string questId = null;
+        if (owner.TryGetCurrentQuestStaffOffer(out var offer, out _)) questId = offer.QuestId;
+        else
+        {
+            var request = owner.CurrentQuestStaffGrant;
+            if (request != null && owner.IsCurrentQuestStaffGrant(request)) questId = request.QuestId;
+        }
+        if (string.IsNullOrEmpty(questId) || _gachaMachines == null ||
+            (expectedQuestId != null && questId != expectedQuestId)) return false;
+        foreach (var machine in _gachaMachines)
+        {
+            if (!(machine is UIStaffGacha staff)) continue;
+            _questStaffEntry = true;
+            _requestedInitialMachine = staff;
+            staff.PrepareQuestEntry(owner, questId, isEntryCurrent);
+            // Only the four fixed quest gifts use this presentation shell. The
+            // existing owner remains solely responsible for grant admission.
+            _questPresentationMachine = QuestStaffTutorialPolicy.TryGetMapping(questId, out _, out _) ? staff : null;
+            ApplyQuestStaffPresentation();
+            return true;
+        }
+        return false;
+    }
+
+    private void ClearQuestStaffEntry()
+    {
+        _questStaffEntry = false;
+        if (_gachaMachines != null)
+            foreach (var machine in _gachaMachines)
+                if (machine is UIStaffGacha staff) staff.ClearQuestEntry();
+        RestoreQuestStaffPresentation();
+    }
+
+    private void ApplyQuestStaffPresentation()
+    {
+        if (!_questStaffEntry || _questPresentationMachine == null) return;
+        if (!_questPresentationCaptured)
+        {
+            _questPresentationCaptured = true;
+            _questScrollWasEnabled = _scrollRect != null && _scrollRect.enabled;
+        }
+        // Keep the selected machine in the native central slot, with its own
+        // free button and the existing view exit. Do not mask the whole view.
+        if (_gachaMachines != null)
+            foreach (var machine in _gachaMachines)
+                if (machine != null && machine != _questPresentationMachine)
+                    HideQuestSurroundingObject(machine.gameObject);
+        if (_gachaItemList != null)
+        {
+            // The authored catalog preview is a separate sibling and may still
+            // contain editor placeholder text. It is never an acquired result
+            // and must not be restored with the surrounding machine shell.
+            _gachaItemList.HidePreviewCard();
+            HideQuestSurroundingObject(_gachaItemList.gameObject);
+        }
+        if (_leftButton != null) HideQuestSurroundingObject(_leftButton.gameObject);
+        if (_rightButton != null) HideQuestSurroundingObject(_rightButton.gameObject);
+        if (_scrollRect != null) { _scrollRect.StopMovement(); _scrollRect.enabled = false; }
+    }
+
+    private void HideQuestSurroundingObject(GameObject target)
+    {
+        if (!_questHiddenObjects.ContainsKey(target)) _questHiddenObjects.Add(target, target.activeSelf);
+        if (target.activeSelf) target.SetActive(false);
+    }
+
+    private void RestoreQuestStaffPresentation()
+    {
+        // Dispose the quest/result presentation before this method is called:
+        // its own animation snapshot must not restore our hidden states later.
+        foreach (var entry in _questHiddenObjects)
+            if (entry.Key != null) entry.Key.SetActive(entry.Value);
+        _questHiddenObjects.Clear();
+        if (_questPresentationCaptured && _scrollRect != null) _scrollRect.enabled = _questScrollWasEnabled;
+        _questPresentationCaptured = false;
+        _questPresentationMachine = null;
+    }
+
+    private void OnDisable()
+    {
+        HideCollectionUI();
+        if (!_questStaffEntry && !_questPresentationCaptured) return;
+        _requestedInitialMachine = null;
+        ClearQuestStaffEntry();
+    }
+
+#if UNITY_EDITOR
+    private bool _editorOfflineConfigured;
+    private bool _editorOfflineNavigation;
+    private int _editorOfflineMachineIndex;
+    private Button _editorOfflineCloseButton;
+    public GachaMachineParent EditorOfflineCurrentMachine => _editorOfflineNavigation ? _currentGachaMachine : null;
+
+    public void ConfigureEditorOfflineView(UIStaffGacha staff)
+    {
+        if (gameObject.activeInHierarchy || staff == null || !staff.transform.IsChildOf(transform))
+            throw new InvalidOperationException("오프라인 가챠 표시는 비활성 복사본에 연결해야 합니다.");
+        if (!_editorOfflineConfigured)
+            _editorOfflineMachineIndex = _gachaMachines == null ? 0 : Math.Max(0, Array.IndexOf(_gachaMachines, staff));
+        _editorOfflineConfigured = true;
+        _isInitialized = true; // Do not initialize other machines, gameplay lists, tutorials or navigation.
+        _currentGachaMachine = staff;
+        _requestedInitialMachine = null;
+        _gachaMachines = new GachaMachineParent[] { staff };
+        _mainScene = null;
+        _miniGameTutorial = null;
+        if (_leftButton != null) _leftButton.gameObject.SetActive(false);
+        if (_rightButton != null) _rightButton.gameObject.SetActive(false);
+        if (_gachaItemList != null) _gachaItemList.gameObject.SetActive(false);
+        if (_scrollRect != null) _scrollRect.enabled = false;
+        // This is the existing view X, not the result card's own close button.
+        _editorOfflineCloseButton = transform.Find("Anime UI/UI Components/Exit Button")?.GetComponent<Button>();
+        if (_editorOfflineCloseButton != null)
+        {
+            _editorOfflineCloseButton.onClick.RemoveListener(CloseEditorOfflineView);
+            _editorOfflineCloseButton.onClick.AddListener(CloseEditorOfflineView);
+        }
+        VisibleState = VisibleState.Disappeared;
+    }
+
+    private void CloseEditorOfflineView() => SetEditorOfflineVisible(false);
+
+    // Keeps the production Show/Hide, machine tween and navigation stack paths. Only
+    // account-dependent catalog/tutorial/audio services are absent in the disposable copy.
+    public void ConfigureEditorOfflineNavigation(UIStaffGacha staff, UIItemGacha item)
+    {
+        if (gameObject.activeInHierarchy || staff == null || item == null ||
+            !staff.transform.IsChildOf(transform) || !item.transform.IsChildOf(transform))
+            throw new InvalidOperationException("Inactive copied machines are required.");
+        _editorOfflineConfigured = _editorOfflineNavigation = true;
+        _isInitialized = true;
+        _mainScene = null;
+        _miniGameTutorial = null;
+        _gachaMachines = new GachaMachineParent[] { item, staff };
+        _currentGachaMachine = staff;
+        _requestedInitialMachine = staff;
+        _leftButton.onClick.RemoveAllListeners();
+        _rightButton.onClick.RemoveAllListeners();
+        _leftButton.onClick.AddListener(() => SetMachine(-1));
+        _rightButton.onClick.AddListener(() => SetMachine(1));
+        _leftButton.interactable = _rightButton.interactable = true;
+        if (_gachaItemList != null) _gachaItemList.gameObject.SetActive(false);
+        if (_scrollRect != null) _scrollRect.enabled = false;
+        VisibleState = VisibleState.Disappeared;
+    }
+
+    public void SetEditorOfflineVisible(bool visible)
+    {
+        if (!_editorOfflineConfigured) throw new InvalidOperationException("오프라인 가챠 표시가 연결되지 않았습니다.");
+        if (visible && VisibleState == VisibleState.Appeared && gameObject.activeInHierarchy) return;
+        if (!visible && VisibleState == VisibleState.Disappeared && !gameObject.activeSelf) return;
+        if (visible)
+        {
+            gameObject.SetActive(true);
+            VisibleState = VisibleState.Appeared;
+            _canvasGroup.interactable = _canvasGroup.blocksRaycasts = true;
+            _animeUI.TweenStop();
+            _animeUI.transform.localScale = Vector3.one;
+            SetStartGacha(false);
+            if (_scrollRect != null) _scrollRect.StopMovement();
+            // Keep the existing selected-machine coordinates; no new layout or tween is introduced.
+            _machineParent.TweenStop();
+            Vector2 position = _machineParent.anchoredPosition;
+            position.x = _editorOfflineMachineIndex == 1 ? -1130f : -440f;
+            _machineParent.anchoredPosition = position;
+            _currentGachaMachine.transform.localScale = Vector3.one;
+            _currentGachaMachine.Show();
+        }
+        else
+        {
+            VisibleState = VisibleState.Disappeared;
+            _currentGachaMachine.Hide();
+            SetStartGacha(false);
+            _canvasGroup.interactable = _canvasGroup.blocksRaycasts = false;
+            gameObject.SetActive(false);
+        }
+    }
+#endif
 
     private bool _isStartGacha;
     public bool IsStartGacha => _isStartGacha;
+    internal bool IsCurrentMachine(GachaMachineParent machine) => ReferenceEquals(_currentGachaMachine, machine);
+    internal bool AreUIComponentsActive => _uiComponents != null && _uiComponents.activeSelf;
+    internal Action IsolateMachineArt(GachaMachineParent selected)
+    {
+        var restore = new List<Action>();
+        foreach (var machine in _gachaMachines)
+        {
+            if (machine == null || machine.MachineObjects == null) continue;
+            foreach (var part in machine.MachineObjects)
+            {
+                if (part == null) continue;
+                bool active = part.activeSelf;
+                restore.Add(() => { if (part != null) part.SetActive(active); });
+            }
+            machine.SetActiveGachaMachine(machine == selected);
+        }
+        return () => { foreach (var action in restore) action(); };
+    }
     public void SetStartGacha(bool isStart)
     {
         _isStartGacha = isStart;
-        _scrollRect.enabled = !isStart;
+        if (_scrollRect != null)
+        {
+            _scrollRect.enabled = !isStart && !_questStaffEntry;
+#if UNITY_EDITOR
+            if (_editorOfflineConfigured) _scrollRect.enabled = false;
+#endif
+        }
+
+        SetNavigationButtonsActive(!isStart);
 
     }
     public override void Init()
     {
+        if (_isInitialized)
+            return;
+
+        _isInitialized = true;
+        RemoveInvalidAndDuplicateMachines();
+
+        if (_gachaMachines.Length == 0)
+        {
+            DebugLog.LogError("가챠 머신이 연결되어 있지 않습니다.");
+            gameObject.SetActive(false);
+            return;
+        }
+
         for (int i = 0; i < _gachaMachines.Length; i++)
         {
             _gachaMachines[i].Init(this);
             _gachaMachines[i].Hide();
         }
+        BindCollectionEconomy(Muks.BackEnd.BackendManager.Instance.GachaEconomy);
         _gachaItemList.Init(_gachaMachines[0].ItemDataList);
         SetMachine(_gachaMachines[0]);
         _leftButton.onClick.AddListener(() => SetMachine(-1));
@@ -64,6 +327,9 @@ public class UIGacha : MobileUIView
         {
             trigger = _scrollRect.gameObject.AddComponent<EventTrigger>();
         }
+
+        if (trigger.triggers == null)
+            trigger.triggers = new List<EventTrigger.Entry>();
 
         // BeginDrag 이벤트
         EventTrigger.Entry beginDragEntry = new EventTrigger.Entry();
@@ -84,6 +350,68 @@ public class UIGacha : MobileUIView
         trigger.triggers.Add(endDragEntry);
     }
 
+    private void RemoveInvalidAndDuplicateMachines()
+    {
+        if (_gachaMachines == null)
+        {
+            _gachaMachines = Array.Empty<GachaMachineParent>();
+            return;
+        }
+
+        List<GachaMachineParent> validMachines = new List<GachaMachineParent>(_gachaMachines.Length);
+        HashSet<GachaMachineParent> seenMachines = new HashSet<GachaMachineParent>();
+
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            GachaMachineParent machine = _gachaMachines[i];
+            if (machine == null)
+            {
+                DebugLog.LogError($"가챠 머신 배열의 {i}번 참조가 비어 있습니다.");
+                continue;
+            }
+
+            if (!seenMachines.Add(machine))
+            {
+                DebugLog.LogError($"동일한 가챠 머신이 중복 연결되어 제외했습니다: {machine.name}");
+                continue;
+            }
+
+            validMachines.Add(machine);
+        }
+
+        _gachaMachines = validMachines.ToArray();
+    }
+
+    public bool PrepareItemMachine()
+    {
+        ClearQuestStaffEntry();
+        return PrepareMachine<UIItemGacha>();
+    }
+
+    public bool PrepareStaffMachine()
+    {
+        ClearQuestStaffEntry();
+        return PrepareMachine<UIStaffGacha>();
+    }
+
+    private bool PrepareMachine<T>() where T : GachaMachineParent
+    {
+        if (_gachaMachines == null)
+            return false;
+
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            if (_gachaMachines[i] is T)
+            {
+                _requestedInitialMachine = _gachaMachines[i];
+                return true;
+            }
+        }
+
+        DebugLog.LogError($"요청한 가챠 머신을 찾을 수 없습니다: {typeof(T).Name}");
+        return false;
+    }
+
     public void StartGachaStepEvent(int step)
     {
         GachaStepHandler?.Invoke(step);
@@ -92,7 +420,7 @@ public class UIGacha : MobileUIView
 
     private void OnScrollBeginDrag(PointerEventData eventData)
     {
-        if(_isStartGacha)
+        if (VisibleState != VisibleState.Appeared || _isStartGacha || _questStaffEntry || _gachaMachines.Length < 2)
             return;
 
         DebugLog.Log("스크롤 시작");
@@ -109,7 +437,7 @@ public class UIGacha : MobileUIView
 
     private void OnScrollDrag(PointerEventData eventData)
     {
-        if(_isStartGacha)
+        if (VisibleState != VisibleState.Appeared || _isStartGacha || _questStaffEntry || _gachaMachines.Length < 2)
             return;
 
         float currentX = _machineParent.anchoredPosition.x;
@@ -132,7 +460,7 @@ public class UIGacha : MobileUIView
 
     private void OnScrollEndDrag(PointerEventData eventData)
     {
-        if (_isStartGacha)
+        if (VisibleState != VisibleState.Appeared || _isStartGacha || _questStaffEntry || _gachaMachines.Length < 2)
             return;
             
         DebugLog.Log("스크롤 종료");
@@ -171,14 +499,22 @@ public class UIGacha : MobileUIView
         {
             // 이동 완료 후 해당 머신 설정
             SetMachineNoAnime(_gachaMachines[targetIndex]);
-            _rightButton.gameObject.SetActive(true);
-            _leftButton.gameObject.SetActive(true);
+            SetNavigationButtonsActive(true);
         });
     }
 
 
     public override void Show()
     {
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured && !_editorOfflineNavigation) { SetEditorOfflineVisible(true); return; }
+#endif
+        if (_gachaMachines == null || _gachaMachines.Length == 0)
+        {
+            DebugLog.LogError("표시할 가챠 머신이 없습니다.");
+            return;
+        }
+
         // if(!UserInfo.GetIsClearChallenge("MainReward12"))
         // {
         //     PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
@@ -186,44 +522,110 @@ public class UIGacha : MobileUIView
         // }
 
         VisibleState = VisibleState.Appearing;
-        SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
-
-        // 루트가 꺼져 있는 동안 이전 머신 상태 정리와 시작 위치 준비를 끝낸다
-        SetStartGacha(false);
-        SetOpeningMachine(_gachaMachines[0]);
-
-        _canvasGroup.blocksRaycasts = false;
-        _animeUI.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-
+#if UNITY_EDITOR
+        if (!_editorOfflineConfigured)
+#endif
+            SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
         gameObject.SetActive(true);
-
-        // 루트 활성화 이후에만 선택 머신을 표시해 내부 Tween/코루틴이 안전하게 동작하도록 한다
-        _currentGachaMachine.Show();
-
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = true;
+        _animeUI.TweenStop();
+        _animeUI.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+        SetStartGacha(false);
+        if (_scrollRect != null)
+        {
+            _scrollRect.StopMovement();
+            _scrollRect.enabled = false;
+        }
+        SetNavigationButtonsActive(false);
+        GachaMachineParent initialMachine = _requestedInitialMachine ?? GetDefaultMachine();
+        _requestedInitialMachine = null;
+        SetMachine(initialMachine);
+        SetMachineParentPos();
+        ApplyQuestStaffPresentation();
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Appeared;
+            _canvasGroup.interactable = true;
             _canvasGroup.blocksRaycasts = true;
-
-            if(!UserInfo.IsTutorialStart && !UserInfo.IsMiniGameTutorialClear)
-            {
-                _miniGameTutorial.StartTutorial();
-            }
+            if (_scrollRect != null)
+                _scrollRect.enabled = !_isStartGacha && !_questStaffEntry;
+            SetNavigationButtonsActive(!_isStartGacha);
+            TryStartItemGachaTutorial();
         });
+    }
+
+    private void TryStartItemGachaTutorial()
+    {
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured) return;
+#endif
+        if (_questStaffEntry
+            || VisibleState != VisibleState.Appeared
+            || !(_currentGachaMachine is UIItemGacha)
+            || UserInfo.IsTutorialStart
+            || UserInfo.IsMiniGameTutorialClear
+            || !GachaTutorial.IsCurrentItemTutorialQuest()
+            || _miniGameTutorial == null)
+        {
+            return;
+        }
+
+        _miniGameTutorial.StartTutorial();
+    }
+
+    private GachaMachineParent GetDefaultMachine()
+    {
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            if (_gachaMachines[i] is UIItemGacha)
+                return _gachaMachines[i];
+        }
+
+        return _gachaMachines[0];
     }
 
 
     public override void Hide()
     {
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured && !_editorOfflineNavigation) { SetEditorOfflineVisible(false); return; }
+#endif
+        if (VisibleState == VisibleState.Disappeared && !gameObject.activeSelf)
+            return;
+
+        if (_currentGachaMachine is UIStaffGacha staff) staff.AcknowledgeVisibleResultBeforeExit();
         VisibleState = VisibleState.Disappeared;
-        _mainScene.PlayMainMusic();
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = false;
+        _animeUI.TweenStop();
+        SetStartGacha(false);
+        _requestedInitialMachine = null;
+#if UNITY_EDITOR
+        if (!_editorOfflineConfigured)
+#endif
+            _mainScene.PlayMainMusic();
         gameObject.SetActive(false);
+        ClearQuestStaffEntry();
+        HiddenHandler?.Invoke();
+    }
+
+    private void SetNavigationButtonsActive(bool isActive)
+    {
+        bool showButtons = isActive && !_questStaffEntry && _gachaMachines != null && 1 < _gachaMachines.Length;
+
+        if (_leftButton != null)
+            _leftButton.gameObject.SetActive(showButtons);
+
+        if (_rightButton != null)
+            _rightButton.gameObject.SetActive(showButtons);
     }
 
     public void SetActiveUIComponents(bool isActive)
     {
         _uiComponents.SetActive(isActive);
+        ApplyQuestStaffPresentation();
     }
 
     public void SetActiveGachaMachine(bool isActive)
@@ -232,12 +634,18 @@ public class UIGacha : MobileUIView
         {
             _gachaMachines[i].SetActiveGachaMachine(isActive);
         }
-
+        ApplyQuestStaffPresentation();
     }
 
     private void SetMachine(int dir)
     {
+        if (_gachaMachines == null || _gachaMachines.Length == 0)
+            return;
+
         int currentIndex = Array.IndexOf(_gachaMachines, _currentGachaMachine);
+        if (currentIndex < 0)
+            currentIndex = 0;
+
         int nextIndex = currentIndex + dir;
 
         if (nextIndex < 0)
@@ -252,25 +660,34 @@ public class UIGacha : MobileUIView
 
     private void SetMachine(GachaMachineParent gachaMachine)
     {
+        if (gachaMachine == null)
+            return;
+
         for (int i = 0; i < _gachaMachines.Length; i++)
         {
             _gachaMachines[i].Hide();
         }
         _currentGachaMachine = gachaMachine;
-        _gachaItemList.UpdateData(gachaMachine.ItemDataList);
+        UpdateMachineItemList(gachaMachine);
 
         SetMachineParentPosAnime();
+        ApplyQuestStaffPresentation();
     }
 
     private void SetMachineNoAnime(GachaMachineParent gachaMachine)
     {
+        if (gachaMachine == null)
+            return;
+
         for (int i = 0; i < _gachaMachines.Length; i++)
         {
             _gachaMachines[i].Hide();
         }
         _currentGachaMachine = gachaMachine;
-        _gachaItemList.UpdateData(gachaMachine.ItemDataList);
+        UpdateMachineItemList(gachaMachine);
         _currentGachaMachine.Show();
+        ApplyQuestStaffPresentation();
+        TryStartItemGachaTutorial();
     }
 
     // 창을 여는 경로 전용: 머신 전환 Tween을 시작했다 바로 취소하지 않고 즉시 상태를 지정한다
@@ -312,7 +729,17 @@ public class UIGacha : MobileUIView
         _machineParent.TweenAnchoredPosition(pos, duration, Ease.Smoothstep).OnComplete(() =>
         {
             _currentGachaMachine.Show();
+            ApplyQuestStaffPresentation();
+            TryStartItemGachaTutorial();
         });
+    }
+
+    private void UpdateMachineItemList(GachaMachineParent machine)
+    {
+#if UNITY_EDITOR
+        if (_editorOfflineConfigured) return;
+#endif
+        _gachaItemList.UpdateMachineData(machine.ItemDataList);
     }
 
     private void SetMachineParentPos()

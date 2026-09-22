@@ -42,14 +42,15 @@ public class StaffGroup : MonoBehaviour
             _staffList.Add(staff);
             StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);
 
-            if (data == null)
-                continue;
-
             if (type == EquipStaffType.Marketer)
             {
                 StaffMarketer marketer = (StaffMarketer)_staffDic[type];
-                marketer.SetSkillEffect(_customerController.MarketerSkillEffect);
+                // Bind before asynchronous preparation equips the first marketer.
+                marketer.SetSkillEffect(_customerController.MarketerSkillEffect, _floorType);
             }
+
+            if (data == null)
+                continue;
             
             staff.SetStaffData(data, _floorType);
         }

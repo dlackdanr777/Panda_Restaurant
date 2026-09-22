@@ -24,12 +24,13 @@ MonoBehaviour:
   - {fileID: 21300000, guid: be75984608cca8946933d708bbf74dce, type: 3}
   - {fileID: 21300000, guid: 153647d6121adca43a354065a1795653, type: 3}
   - {fileID: 21300000, guid: 04b50477b7751cf4a8a709f215af8db6, type: 3}
-  - {fileID: 21300000, guid: 04b50477b7751cf4a8a709f215af8db6, type: 3}
-  - {fileID: 21300000, guid: 04b50477b7751cf4a8a709f215af8db6, type: 3}
-  - {fileID: 21300000, guid: 153647d6121adca43a354065a1795653, type: 3}
-  - {fileID: 21300000, guid: be75984608cca8946933d708bbf74dce, type: 3}
+  - {fileID: 21300000, guid: cccf888c16ffc7b4fbbb4bfb5c24d36c, type: 3}
+  - {fileID: 21300000, guid: 5374f508b9a65ef43bf4ed3b1c2f0b54, type: 3}
+  - {fileID: 21300000, guid: f1d4234d95c0fcd47b8c30d2cb89a88d, type: 3}
+  - {fileID: 21300000, guid: 7b13d6eb130c08440a1fe396863d8f70, type: 3}
   _animatorController: {fileID: 0}
   _salesLocationType: 0
+  _floorType: 4
   _moneyType: 1
   _buyScore: 11000
   _buyPrice: 250

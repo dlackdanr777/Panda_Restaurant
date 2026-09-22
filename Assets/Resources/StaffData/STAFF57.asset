@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e39c2e09d58fec4e92da628aa6f0c2e, type: 3}
+  m_Name: STAFF57
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 447eca574e7b0da4fae89ba24b1d4375, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: feff5f34d37d0aa40ac5082073fe7a78, type: 3}
+  _name: "\uC820\uD2C0 \uC640\uC640"
+  _id: STAFF57
+  _description: "\uC77C\uD558\uB294 \uC911\uC5D0 \uBB3C\uB9AC\uC9C0 \uC54A\uB3C4\uB85D
+    \uC870\uC2EC\uD574\uC57C\uD574!"
+  _rank: 2
+  _skill: {fileID: 11400000, guid: 9786d02abe4136e4bbdcf32bfa82ae4c, type: 2}
+  _idleSprites: []
+  _animatorController: {fileID: 0}
+  _salesLocationType: 0
+  _floorType: 4
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _speed: 0
+  _marketerLevelData:
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 75000
+    _marketingTime: 6
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 225000
+    _marketingTime: 5.8
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 750000
+    _marketingTime: 5.6
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 20
+    _marketingTime: 5.4
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _marketingTime: 5.2
+  _uiSprite: {fileID: 21300000, guid: 447eca574e7b0da4fae89ba24b1d4375, type: 3}
+  _animationSprite: {fileID: 21300000, guid: b5abcc59d01013e419639f46d13c1168, type: 3}
+  _particleCount: 10
+  _particleSprites:
+  - {fileID: 21300000, guid: cec144abbf9431f4a80379088b3689e1, type: 3}
+  - {fileID: 21300000, guid: f303d1bf24d2e2f49a916937e3c8a9ce, type: 3}
+  - {fileID: 21300000, guid: 770913e44f93e05458ba95514622c656, type: 3}

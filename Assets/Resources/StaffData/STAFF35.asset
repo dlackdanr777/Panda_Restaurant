@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
+  m_Name: STAFF35
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: cf1c49c57c7e3bb4cb21b7a4f069f61a, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 14b45f339785c1d45b3a7ee974ec565d, type: 3}
+  _name: "\uCC28\uC774\uB098 \uC9C0\uC9C0"
+  _id: STAFF35
+  _description: "\uBC1D\uACE0 \uBA85\uB791\uD55C \uCC28\uC774\uB098\uD48D \uBCF5\uC7A5\uC758
+    \uD65C\uBC1C\uD55C \uC9C0\uC9C0."
+  _rank: 3
+  _skill: {fileID: 11400000, guid: b198fae0cc93bd54dbe6a8dd6bd76469, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: e3e41e938412e3b4ebfdeaefd8e48d52, type: 3}
+  - {fileID: 21300000, guid: 28da9cf49e1b58c4faf53f30686108d0, type: 3}
+  - {fileID: 21300000, guid: 886b3170af992fd498ddb93d677c1d1c, type: 3}
+  - {fileID: 21300000, guid: 13e4320b448a9d34fb10f6ffe02ca5d0, type: 3}
+  - {fileID: 21300000, guid: 13e4320b448a9d34fb10f6ffe02ca5d0, type: 3}
+  - {fileID: 21300000, guid: 13e4320b448a9d34fb10f6ffe02ca5d0, type: 3}
+  - {fileID: 21300000, guid: 13e4320b448a9d34fb10f6ffe02ca5d0, type: 3}
+  - {fileID: 21300000, guid: 886b3170af992fd498ddb93d677c1d1c, type: 3}
+  - {fileID: 21300000, guid: 28da9cf49e1b58c4faf53f30686108d0, type: 3}
+  - {fileID: 21300000, guid: e3e41e938412e3b4ebfdeaefd8e48d52, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 0
+  _floorType: 4
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _speed: 8.5
+  _waiterLevelData:
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 180000
+    _addSpeed: 0
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 540000
+    _addSpeed: 0.5
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 1800000
+    _addSpeed: 1
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 35
+    _addSpeed: 1.5
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _addSpeed: 2

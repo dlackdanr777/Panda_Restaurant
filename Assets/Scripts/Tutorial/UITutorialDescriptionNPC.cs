@@ -22,6 +22,9 @@ public class UITutorialDescriptionNPC : MobileUIView
     private bool _isScreenClicked = false;
 
     private Action _onSkipOkButtonClicked;
+    private CanvasGroup _guidanceCanvasGroup;
+    private bool _guidancePassthrough, _previousBlocksRaycasts;
+    private int _textLifetime;
 
     public override void Init()
     {
@@ -40,6 +43,8 @@ public class UITutorialDescriptionNPC : MobileUIView
 
     public override void Show()
     {
+        ++_textLifetime;
+        EndGuidancePassthrough();
         _descriptionText1.gameObject.SetActive(false);
         _descriptionText2.gameObject.SetActive(false);
         _descriptionText3.gameObject.SetActive(false);
@@ -71,12 +76,89 @@ public class UITutorialDescriptionNPC : MobileUIView
 
     public override void Hide()
     {
-        if (_textCoroutine != null)
-            StopCoroutine(_textCoroutine);
+        HideGuidanceCard();
+        EndGuidancePassthrough();
+        ForceCloseSkip();
 
         VisibleState = VisibleState.Disappeared;
         gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
+    }
+
+    public void ForceCloseSkip()
+    {
+        if (_tutorialSkip != null) _tutorialSkip.CloseImmediately();
+        if (_skipButton != null) _skipButton.gameObject.SetActive(false);
+    }
+
+    // A quest hint labels the real shop/result controls; it must not consume the
+    // user's click or change the global tutorial/save gate.
+    public void ShowGuidanceText(string text)
+    {
+        ++_textLifetime;
+        if (_textCoroutine != null) StopCoroutine(_textCoroutine);
+        _textCoroutine = null;
+        _descriptionText1.gameObject.SetActive(false);
+        _descriptionText2.gameObject.SetActive(true);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
+        _descriptionText2.SetText(text);
+        _screenButton.gameObject.SetActive(false);
+        _skipButton.gameObject.SetActive(false);
+        foreach (var cursor in _cursorObjs) cursor.SetActive(false);
+        EnableGuidancePassthrough();
+    }
+
+    public void BeginGuidancePassthrough()
+    {
+        HideGuidanceCard();
+        EnableGuidancePassthrough();
+    }
+
+    private void EnableGuidancePassthrough()
+    {
+        if (_guidancePassthrough) return;
+        if (_guidanceCanvasGroup == null)
+        {
+            // Use Unity's overloaded null check so destroyed components from a
+            // rebuilt view are replaced before accessing blocksRaycasts.
+            var group = GetComponent<CanvasGroup>();
+            if (group == null)
+                group = gameObject.AddComponent<CanvasGroup>();
+            _guidanceCanvasGroup = group;
+        }
+        _previousBlocksRaycasts = _guidanceCanvasGroup.blocksRaycasts;
+        _guidanceCanvasGroup.blocksRaycasts = false;
+        _guidancePassthrough = true;
+    }
+
+    public void EndGuidancePassthrough()
+    {
+        if (_guidancePassthrough && _guidanceCanvasGroup != null)
+            _guidanceCanvasGroup.blocksRaycasts = _previousBlocksRaycasts;
+        _guidancePassthrough = false;
+    }
+
+    /// <summary>Hide only the guidance card while leaving the target overlay active.</summary>
+    public void HideGuidanceCard()
+    {
+        ++_textLifetime;
+        if (_textCoroutine != null) StopCoroutine(_textCoroutine);
+        _textCoroutine = null;
+        _isScreenClicked = false;
+        _descriptionText1.gameObject.SetActive(false);
+        _descriptionText2.gameObject.SetActive(false);
+        _descriptionText3.gameObject.SetActive(false);
+        _descriptionText4.gameObject.SetActive(false);
+        _screenButton.gameObject.SetActive(false);
+        _skipButton.gameObject.SetActive(false);
+        foreach (var cursor in _cursorObjs) cursor.SetActive(false);
+    }
+
+    private void OnDisable()
+    {
+        ++_textLifetime;
+        EndGuidancePassthrough();
     }
 
 
@@ -139,13 +221,19 @@ public class UITutorialDescriptionNPC : MobileUIView
 
     private IEnumerator ShowDescriptionTextRoutine(UIImageAndText text, string str, float duration)
     {
+        EndGuidancePassthrough();
+        int lifetime = ++_textLifetime;
         text.gameObject.SetActive(true);
         _screenButton.gameObject.SetActive(false);
         for(int i = 0, cnt = _cursorObjs.Length; i < cnt; ++i)
             _cursorObjs[i].gameObject.SetActive(false);
 
         text.Text.text = string.Empty;
-        TweenWait tween = Tween.Wait(0.2f, () => _screenButton.gameObject.SetActive(true));
+        TweenWait tween = Tween.Wait(0.2f, () =>
+        {
+            if (this != null && lifetime == _textLifetime && gameObject.activeInHierarchy)
+                _screenButton.gameObject.SetActive(true);
+        });
         _isScreenClicked = false;
 
         // Rich Text 태그를 처리하면서 한 글자씩 출력
@@ -168,6 +256,7 @@ public class UITutorialDescriptionNPC : MobileUIView
             // 일반 텍스트는 한 글자씩 추가
             text.Text.text += str[index];
             yield return YieldCache.WaitForSeconds(duration);
+            if (lifetime != _textLifetime || !gameObject.activeInHierarchy) yield break;
             
             if(_isScreenClicked)
                 break;
@@ -179,12 +268,16 @@ public class UITutorialDescriptionNPC : MobileUIView
         _screenButton.gameObject.SetActive(false);
         _isScreenClicked = false;
         yield return YieldCache.WaitForSeconds(0.2f);
+        if (lifetime != _textLifetime || !gameObject.activeInHierarchy) yield break;
         _screenButton.gameObject.SetActive(true);
         for (int i = 0, cnt = _cursorObjs.Length; i < cnt; ++i)
             _cursorObjs[i].gameObject.SetActive(true);
 
         while (!_isScreenClicked)
+        {
             yield return YieldCache.WaitForSeconds(0.02f);
+            if (lifetime != _textLifetime || !gameObject.activeInHierarchy) yield break;
+        }
 
         text.gameObject.SetActive(false);
         _screenButton.gameObject.SetActive(false);

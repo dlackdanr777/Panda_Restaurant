@@ -6,10 +6,14 @@ using UnityEngine.UI;
 using System;
 using System.Linq;
 using System.Collections;
+using TMPro;
 
 
 public class UIStaffGacha : GachaMachineParent
 {
+    // Only the confirmed purchase service is enabled. Legacy grant/AnimationEvent entry points remain closed.
+    private static readonly bool IsGachaExecutionEnabled = true;
+    private const string UnavailableMessage = "이전 직원 지급 경로는 사용할 수 없습니다.";
 
     [Header("Components")]
     [SerializeField] private ScrollingImage _scrollImage;
@@ -51,6 +55,229 @@ public class UIStaffGacha : GachaMachineParent
     private bool _isCapsuleColorChanged;
     private bool _isPlayTextAnime;
     private AudioClip _getStaffSound;
+    private bool _isInitialized;
+    private StaffGachaPurchaseDisplay _purchaseDisplay;
+    private Muks.BackEnd.BackendManager _purchaseDisplayOwner;
+    private bool _hasExplicitPurchaseDisplayOwner;
+    private StaffGachaPurchaseDisplay _questDisplay;
+    private Muks.BackEnd.BackendManager _questOwner;
+    private string _questId;
+    private Button _questButton;
+    private TextMeshProUGUI _questLabel;
+    private bool _purchaseButtonsBound;
+    private bool _startingPurchaseFromInput;
+    private Func<bool> _questEntryIsCurrent;
+    private GachaEconomyService _collectionEconomy;
+    private bool _requiresCollectionEconomy;
+
+    public void BindCollectionEconomy(UIGacha view, GachaEconomyService economy)
+    {
+        _requiresCollectionEconomy = true;
+        if (ReferenceEquals(_collectionEconomy, economy)) return;
+        _purchaseDisplay?.Dispose();
+        _uiGacha = view;
+        _collectionEconomy = economy;
+        _purchaseDisplay = economy == null ? null : StaffGachaPurchaseDisplay.ForEconomy(this, view, economy);
+    }
+
+    public void PresentCollectionTransaction(GachaEconomyService service, GachaEconomyTransaction transaction)
+    {
+        if (this == null || !ReferenceEquals(_collectionEconomy, service) || service == null ||
+            !ReferenceEquals(service.LastTransaction, transaction) || transaction == null ||
+            !transaction.IsCompleted || !transaction.IsDraw || transaction.Machine != GachaMachineKind.Staff ||
+            IsQuestEntry || _uiGacha == null || !ReferenceEquals(_uiGacha.Economy, service)) return;
+        // A synchronous save must enter presentation before another input in this frame can purchase.
+        // Tick retains its normal visibility/session checks and owns the start/close state transition.
+        _purchaseDisplay?.Tick();
+    }
+
+#if UNITY_EDITOR
+    public void ConfigureCollectionOffline(UIGacha view, GachaEconomyService economy)
+    {
+        if (gameObject.activeInHierarchy || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin)
+            throw new InvalidOperationException("An inactive SDK-free collection copy is required.");
+        _uiGacha = view;
+        _isInitialized = true;
+        _itemDataList = new List<GachaData>();
+        _gachaMacineAnimator.fireEvents = false;
+        _scrollImage.Init();
+        _gachaCard.Init();
+        EnsureResultSlots();
+        _screenButton.onClick.RemoveAllListeners();
+        _screenButton.onClick.AddListener(OnScreenButtonClicked);
+        _skipButton.onClick.RemoveAllListeners();
+        _skipButton.onClick.AddListener(OnSkipButtonClicked);
+        _singleButton.onClick.RemoveAllListeners();
+        _tenButton.onClick.RemoveAllListeners();
+        _purchaseButtonsBound = false;
+        BindPurchaseButtons();
+        BindCollectionEconomy(view, economy);
+        ConfigurePurchaseButtons();
+    }
+#endif
+
+    internal bool IsQuestEntry => !string.IsNullOrEmpty(_questId);
+
+    internal void PrepareQuestEntry(Muks.BackEnd.BackendManager owner, string questId, Func<bool> isEntryCurrent = null)
+    {
+        if (owner == null || string.IsNullOrEmpty(questId))
+            throw new ArgumentException("유효한 직원 안내가 필요합니다.");
+        _purchaseDisplay?.Suspend();
+        _questDisplay?.Dispose();
+        _questOwner = owner;
+        _questId = questId;
+        _questEntryIsCurrent = isEntryCurrent;
+        _questDisplay = StaffGachaPurchaseDisplay.ForQuestGrant(this, _uiGacha, owner, questId,
+            () => Muks.DataBind.DataBind.GetUnityActionBindData("HideGachaUI").Item?.Invoke());
+    }
+
+    internal void ClearQuestEntry()
+    {
+        _questDisplay?.Dispose();
+        _questDisplay = null;
+        _questOwner = null;
+        _questId = null;
+        _questEntryIsCurrent = null;
+        if (_questButton != null) _questButton.gameObject.SetActive(false);
+    }
+
+    private void UpdateQuestButton()
+    {
+        if (!IsQuestEntry || _questOwner == null) return;
+        if (_questButton == null)
+        {
+            // A separate tutorial input reuses the existing button art; paid listeners/state stay untouched.
+            _questButton = Instantiate(_singleButton, _singleButton.transform.parent, false);
+            _questButton.name = "Quest Staff Claim";
+            _questButton.onClick = new Button.ButtonClickedEvent();
+            _questButton.onClick.AddListener(OnQuestStaffButtonClicked);
+            SetButtonUnavailable(_questButton);
+            var rect = (RectTransform)_questButton.transform;
+            rect.anchoredPosition = (((RectTransform)_singleButton.transform).anchoredPosition +
+                ((RectTransform)_tenButton.transform).anchoredPosition) * 0.5f;
+            _questLabel = _questButton.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+            if (_questLabel != null)
+            {
+                // This copy has no price icon: use its own inset content area, not the
+                // narrower paid-label box. Preserve the source button art and dimensions.
+                RectTransform labelRect = _questLabel.rectTransform;
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.pivot = Vector2.one * 0.5f;
+                labelRect.offsetMin = new Vector2(24f, 16f);
+                labelRect.offsetMax = new Vector2(-24f, -16f);
+                _questLabel.enableWordWrapping = false;
+                _questLabel.enableAutoSizing = true;
+                _questLabel.fontSizeMax = _questLabel.fontSize;
+                _questLabel.fontSizeMin = Mathf.Min(32f, _questLabel.fontSizeMax);
+                _questLabel.alignment = TextAlignmentOptions.Center;
+                _questLabel.margin = Vector4.zero;
+            }
+        }
+        _singleButton.gameObject.SetActive(false);
+        _tenButton.gameObject.SetActive(false);
+        if (_uiGacha.IsStartGacha) return; // The animation owns its captured input state until close.
+        _questButton.gameObject.SetActive(true);
+        bool available = (_questEntryIsCurrent == null || _questEntryIsCurrent()) &&
+            _questOwner.TryGetCurrentQuestStaffOffer(out var offer, out _) && offer.QuestId == _questId;
+        _questButton.interactable = available;
+        var press = _questButton.GetComponent<ButtonPressEffect>();
+        if (press != null) press.Interactable = available;
+        if (_questLabel != null)
+            _questLabel.text = available ? "무료 뽑기" :
+                (_questOwner.LastCompletedQuestStaffGrant?.QuestId == _questId ? "획득 완료" : "확인 중");
+    }
+
+    private void OnQuestStaffButtonClicked()
+    {
+        // The open view is not an entitlement; check the current quest again at the input boundary.
+        if (!IsQuestEntry || _questOwner == null || _uiGacha.IsStartGacha ||
+            (_questEntryIsCurrent != null && !_questEntryIsCurrent()) ||
+            !_questOwner.TryGetCurrentQuestStaffOffer(out var offer, out _) || offer.QuestId != _questId)
+            return;
+        if (!_questOwner.TryStartQuestStaffGrant(out _, out string error))
+        {
+            DebugLog.Log(error);
+            PopupManager.Instance.ShowDisplayText("직원을 받을 수 없습니다. 현재 진행 상태를 확인해 주세요.");
+        }
+        UpdateQuestButton();
+    }
+
+    /// <summary>Bind a detached owner before this scene display is activated. No singleton is resolved.</summary>
+    public void BindPurchaseDisplayOwner(UIGacha view, Muks.BackEnd.BackendManager owner)
+    {
+        if (gameObject.activeInHierarchy)
+            throw new InvalidOperationException("직원 결과 표시의 소유자는 활성화 전에 연결해야 합니다.");
+        if (view == null || owner == null) throw new ArgumentNullException(view == null ? nameof(view) : nameof(owner));
+        _purchaseDisplay?.Dispose();
+        _hasExplicitPurchaseDisplayOwner = true;
+        _purchaseDisplayOwner = owner;
+        _uiGacha = view;
+        _purchaseDisplay = new StaffGachaPurchaseDisplay(this, view, owner);
+    }
+
+#if UNITY_EDITOR
+    /// <summary>Initialize only the existing display bindings on an inactive, disposable scene copy.</summary>
+    public void ConfigureEditorOffline(Muks.BackEnd.BackendManager owner, UIGacha view)
+    {
+        if (owner == null || !owner.IsEditorOfflineOwner)
+            throw new InvalidOperationException("오프라인 전용 결과 소유자가 필요합니다.");
+        BindPurchaseDisplayOwner(view, owner);
+        // fireEvents is native runtime state and is not retained across entering Play.
+        // Suppress the copied staff machine before its first activation, not just at extraction.
+        _gachaMacineAnimator.fireEvents = false;
+        _isInitialized = true;
+        _itemDataList = new List<GachaData>();
+        _scrollImage.Init();
+        _gachaCard.Init();
+        EnsureResultSlots();
+        _screenButton.onClick.RemoveListener(OnScreenButtonClicked);
+        _screenButton.onClick.AddListener(OnScreenButtonClicked);
+        _screenButton.interactable = true;
+        _skipButton.onClick.RemoveListener(OnSkipButtonClicked);
+        _skipButton.onClick.AddListener(OnSkipButtonClicked);
+        ConfigurePurchaseButtons();
+    }
+
+    public StaffGachaPurchaseDisplay EditorOfflinePurchaseDisplay => _hasExplicitPurchaseDisplayOwner || _collectionEconomy != null ? _purchaseDisplay : null;
+#endif
+
+    // Explicit display-only bindings; no runtime UnityEditor/reflection dependency.
+    internal Animator ResultAnimator => _gachaMacineAnimator;
+    internal UIGachaCard ResultCard => _gachaCard;
+    internal Image ResultImage => _getStaffImage;
+    internal RectTransform ResultCapsules => _capsules;
+    internal Image ResultUpperCapsule => _upperCapsule;
+    internal Image ResultLowerCapsule => _lowerCapsule;
+    internal AudioSource ResultAudio => _gachaSound;
+    internal AudioClip ResultBoom => _boomSound;
+    internal Transform ResultSlots => _getStaffSlotFrame;
+    internal GachaCapsule ResultFinalCapsule => _capsule;
+    internal Button ResultScreenButton => _screenButton;
+    internal Button ResultSkipButton => _skipButton;
+    internal Capsule ResultCapsuleColor => _capsuleColors != null && _capsuleColors.Length > 0 ? _capsuleColors[0] : null;
+    internal IReadOnlyList<UIGachaCardSlot> ResultCardSlots { get { EnsureResultSlots(); return _getStaffSlotList; } }
+    private StaffGachaPurchaseDisplay ActiveDisplay => IsQuestEntry ? _questDisplay : _purchaseDisplay;
+    internal void AcknowledgeVisibleResultBeforeExit() => ActiveDisplay?.AcknowledgeResult(false);
+
+    private void EnsureResultSlots()
+    {
+        if (_slotPrefab == null || _getStaffSlotFrame == null) return;
+        foreach (var existing in _getStaffSlotList) if (existing != null) existing.InitPresentation();
+        while (_getStaffSlotList.Count < 10)
+        {
+            UIGachaCardSlot slot = Instantiate(_slotPrefab, _getStaffSlotFrame);
+            slot.InitPresentation();
+            _getStaffSlotList.Add(slot);
+            slot.gameObject.SetActive(false);
+        }
+    }
+    internal Button ResultEntryButton => IsQuestEntry ? _questButton : _singleButton;
+    internal Button[] ResultControlButtons => _questButton == null
+        ? new[] { _singleButton, _tenButton, _screenButton, _skipButton }
+        : new[] { _singleButton, _tenButton, _screenButton, _skipButton, _questButton };
+    internal AudioClip GetResultSound(Rank rank) => rank == Rank.Unique || rank == Rank.Special
+        ? _getSpecialStaffSound : _getNormalStaffSound;
 
 
     public void PlayGetStaffSound()
@@ -70,30 +297,146 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void Init(UIGacha uiGacha)
     {
+        if (_isInitialized)
+            return;
+
+        _isInitialized = true;
         _uiGacha = uiGacha;
         _scrollImage.Init();
         _gachaCard.Init();
         _itemDataList = StaffDataManager.Instance.GetSortGachaStaffDataList(GradeSortType.GradeDescending).Select((data) => (GachaData)data).ToList();
 
-        for (int i = 0; i < 10; ++i)
-        {
-            UIGachaCardSlot slot = Instantiate(_slotPrefab, _getStaffSlotFrame);
-            _getStaffSlotList.Add(slot);
-            slot.gameObject.SetActive(false);
-        }
+        EnsureResultSlots();
 
         _screenButton.onClick.AddListener(OnScreenButtonClicked);
-        _singleButton.onClick.AddListener(OnSingleGachaButtonClicked);
-        _tenButton.onClick.AddListener(OnTenGachaButtonClicked);
+        BindPurchaseButtons();
         _skipButton.onClick.AddListener(OnSkipButtonClicked);
 
+        ConfigurePurchaseButtons();
         SetStep(1);
         _gachaCard.gameObject.SetActive(false);
         gameObject.SetActive(false);
     }
 
+    private void BindPurchaseButtons()
+    {
+        if (_purchaseButtonsBound) return;
+        _singleButton.onClick.AddListener(OnSingleGachaButtonClicked);
+        _tenButton.onClick.AddListener(OnTenGachaButtonClicked);
+        _purchaseButtonsBound = true;
+    }
+
+    private void ConfigurePurchaseButtons()
+    {
+        ConfigurePurchaseButton(_singleButton, StaffGachaPurchaseType.Single, "1회");
+        ConfigurePurchaseButton(_tenButton, StaffGachaPurchaseType.Multi, "10+1회");
+        RefreshPurchaseButtonState();
+    }
+
+    private static void ConfigurePurchaseButton(Button button, StaffGachaPurchaseType type, string text)
+    {
+        if (button == null) return;
+        var label = button.transform.Find("Text")?.GetComponent<TextMeshProUGUI>();
+        if (label != null) label.SetText(text); // Preserve the original icon/text RectTransforms.
+        Transform priceGroup = button.transform.Find("Money Image");
+        if (priceGroup != null)
+        {
+            priceGroup.gameObject.SetActive(true);
+            var price = priceGroup.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (price != null && StaffGachaPurchasePlanCalculator.TryGetPolicy(type, out int cost, out _))
+                price.SetText(cost.ToString());
+        }
+        var description = button.transform.Find("Description Text")?.GetComponent<TextMeshProUGUI>();
+        if (description != null)
+        {
+            description.gameObject.SetActive(true);
+            description.SetText(type == StaffGachaPurchaseType.Multi ? "1회 추가" : "1회");
+        }
+    }
+
+    private bool CanUsePaidInput()
+    {
+        if (_requiresCollectionEconomy && _collectionEconomy == null) return false;
+        if (_collectionEconomy != null)
+            return _isInitialized && !_startingPurchaseFromInput && !IsQuestEntry &&
+                gameObject.activeInHierarchy && _uiGacha != null && !_uiGacha.IsStartGacha &&
+                _uiGacha.VisibleState == VisibleState.Appeared && !_collectionEconomy.IsBusy;
+        if (!IsGachaExecutionEnabled || !_isInitialized || _startingPurchaseFromInput || IsQuestEntry
+            || !gameObject.activeInHierarchy || _uiGacha == null || _uiGacha.IsStartGacha
+            || _uiGacha.VisibleState != VisibleState.Appeared || _gachaMacineAnimator == null
+            || !_gachaMacineAnimator.enabled || _purchaseDisplayOwner == null) return false;
+        // A current free offer is not bypassed by entering the ordinary machine from another shortcut.
+        return !_purchaseDisplayOwner.TryGetCurrentQuestStaffOffer(out _, out _);
+    }
+
+    private void RefreshPurchaseButtonState()
+    {
+        // The result animation owns active/input presentation until Close restores it.
+        if (_uiGacha != null && _uiGacha.IsStartGacha) return;
+        bool visible = CanUsePaidInput();
+        if (_collectionEconomy != null)
+        {
+            SetPaidInteractable(_singleButton, visible && _collectionEconomy.CanDraw(GachaMachineKind.Staff, GachaPaymentKind.DiamondsSingle, out _));
+            SetPaidInteractable(_tenButton, visible && _collectionEconomy.CanDraw(GachaMachineKind.Staff, GachaPaymentKind.DiamondsEleven, out _));
+            return;
+        }
+        SetPaidInteractable(_singleButton, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Single, out _));
+        SetPaidInteractable(_tenButton, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Multi, out _));
+    }
+
+    private static void SetPaidInteractable(Button button, bool value)
+    {
+        if (button == null) return;
+        button.interactable = value;
+        var press = button.GetComponent<ButtonPressEffect>();
+        if (press != null)
+        {
+            if (Application.isPlaying && press.Interactable && !value && button.gameObject.activeInHierarchy)
+                press.ResetScale(); // A reservation may disable input between pointer-down and pointer-up.
+            press.Interactable = value;
+        }
+    }
+
+    private static void SetButtonUnavailable(Button button)
+    {
+        if (button == null)
+            return;
+
+        button.interactable = false;
+        ButtonPressEffect pressEffect = button.GetComponent<ButtonPressEffect>();
+        if (pressEffect != null)
+            pressEffect.Interactable = false;
+
+        Transform priceGroup = button.transform.Find("Money Image");
+        if (priceGroup != null)
+            priceGroup.gameObject.SetActive(false);
+
+        Transform description = button.transform.Find("Description Text");
+        if (description != null)
+            description.gameObject.SetActive(false);
+
+        Transform labelTransform = button.transform.Find("Text");
+        TextMeshProUGUI label = labelTransform == null ? null : labelTransform.GetComponent<TextMeshProUGUI>();
+
+        if (label != null)
+        {
+            label.SetText("준비 중");
+            label.rectTransform.anchoredPosition = Vector2.zero;
+        }
+    }
+
     private void Update()
     {
+        if (IsQuestEntry)
+        {
+            UpdateQuestButton();
+            _questDisplay?.Tick();
+        }
+        else
+        {
+            _purchaseDisplay?.Tick();
+            RefreshPurchaseButtonState();
+        }
         if( 0 < _screenTouchWaitTime)
             _screenTouchWaitTime -= Time.deltaTime;
     }
@@ -101,9 +444,18 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void Show()
     {
+        if (!IsQuestEntry && _purchaseDisplay == null && !_requiresCollectionEconomy)
+        {
+            var owner = _hasExplicitPurchaseDisplayOwner ? _purchaseDisplayOwner : Muks.BackEnd.BackendManager.Instance;
+            if (owner == null) return; // An invalid detached owner never falls back to the live account.
+            _purchaseDisplayOwner = owner;
+            _purchaseDisplay = new StaffGachaPurchaseDisplay(this, _uiGacha, owner);
+        }
         gameObject.SetActive(true);
+        SetActiveGachaMachine(true);
         _singleButton.gameObject.SetActive(true);
         _tenButton.gameObject.SetActive(true);
+        ConfigurePurchaseButtons();
         _uiGacha.SetActiveUIComponents(true);
         _scrollImage.gameObject.SetActive(true);
         _screenButton.gameObject.SetActive(false);
@@ -116,13 +468,22 @@ public class UIStaffGacha : GachaMachineParent
         _screenTouchWaitTime = 0;
         _gachaMacineAnimator.enabled = true;
         OnScreenButtonClicked();
+        UpdateQuestButton();
+        RefreshPurchaseButtonState();
     }
 
 
     public override void Hide()
     {
+        _questDisplay?.Suspend();
+        if (_questButton != null) _questButton.gameObject.SetActive(false);
+        _purchaseDisplay?.Suspend();
         gameObject.SetActive(true);
+        StopAllCoroutines();
         _screenTouchWaitTime = 0;
+        if (_gachaSound != null)
+            _gachaSound.Stop();
+        SetStep(1);
         _singleButton.gameObject.SetActive(false);
         _tenButton.gameObject.SetActive(false);
         _uiGacha.SetActiveUIComponents(false);
@@ -130,21 +491,29 @@ public class UIStaffGacha : GachaMachineParent
         _screenButton.gameObject.SetActive(false);
         _gachaCard.gameObject.SetActive(false);
         _skipButton.gameObject.SetActive(false);
+        _getStaffImage.gameObject.SetActive(false);
+        _getStaffSlotFrame.gameObject.SetActive(false);
         _capsule.gameObject.SetActive(false);
         _gachaMacineAnimator.enabled = false;
-        SetStep(1);
+    }
+
+    private void OnDisable()
+    {
+        _questDisplay?.Suspend();
+        _purchaseDisplay?.Suspend();
+    }
+
+    private void OnDestroy()
+    {
+        _questDisplay?.Dispose();
+        _purchaseDisplay?.Dispose();
     }
 
 
     public void GetStaff(GachaStaffData data)
     {
-        _getStaffList.Clear();
-        _getStaffIndex = 0;
-
-        _getStaffList.Add(data);
-        UserInfo.GiveStaff(UserInfo.CurrentStage, data.StaffData);
-
-        _gachaMacineAnimator.SetTrigger("Start");
+        // Retained for serialized/old callers, never an alternative to a save-confirmed result.
+        DebugLog.Log(UnavailableMessage);
     }
 
     public void CapsuleSetSibilingIndex(int index)
@@ -155,6 +524,8 @@ public class UIStaffGacha : GachaMachineParent
 
     public override void OnScreenButtonClicked()
     {
+        if (ActiveDisplay != null && ActiveDisplay.HandleScreenInput()) return;
+        if (_uiGacha != null && _uiGacha.IsStartGacha) return;
         if (0 < _screenTouchWaitTime)
         {
             DebugLog.Log("아직 터치할 수 없습니다.");
@@ -213,6 +584,14 @@ public class UIStaffGacha : GachaMachineParent
 
     public void SetStep(int step)
     {
+        if (step != 1)
+        {
+            DebugLog.Log(UnavailableMessage);
+            return; // A stale animation event must not reset/unlock a current confirmed presentation either.
+        }
+
+        if (_uiGacha != null && _uiGacha.IsStartGacha) return;
+
         if (_currentStep == step)
             return;
 
@@ -226,6 +605,7 @@ public class UIStaffGacha : GachaMachineParent
                 _uiGacha.SetStartGacha(false);
                 _singleButton.gameObject.SetActive(true);
                 _tenButton.gameObject.SetActive(true);
+                ConfigurePurchaseButtons();
                 _screenButton.gameObject.SetActive(false);
                 _gachaCard.gameObject.SetActive(false);
                 _skipButton.gameObject.SetActive(false);
@@ -329,83 +709,54 @@ public class UIStaffGacha : GachaMachineParent
 
     public void StartAddStaff(GachaStaffData data)
     {
-        _uiGacha.SetActiveGachaMachine(false);
-        SetActiveGachaMachine(true);
-
-        _getStaffList.Clear();
-        _getStaffIndex = 0;
-        GachaStaffData staff = data;
-        _getStaffList.Add(staff);
-        UserInfo.GiveStaff(UserInfo.CurrentStage, staff.StaffData);
-        _gachaMacineAnimator.SetTrigger("Start");
-        UserInfo.AddUserGachaMachineCount();
+        DebugLog.Log(UnavailableMessage);
     }
 
     public override void OnSingleGachaButtonClicked()
     {
-
-        if(UserInfo.IsDiaValid(10))
-        {
-            _uiGacha.SetActiveGachaMachine(false);
-            SetActiveGachaMachine(true);
-        
-            _getStaffList.Clear();
-            _getStaffIndex = 0;
-            GachaStaffData staff = (GachaStaffData)StaffDataManager.Instance.GetRandomGachaStaffData(_itemDataList);
-            _getStaffList.Add(staff);
-            UserInfo.GiveStaff(UserInfo.CurrentStage, staff.StaffData);
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-10);
-            UserInfo.AddUserGachaMachineCount();
-            GameManager.Instance.AsyncSaveGameData();
-            PaymentInfo.AddGachaData($"Normal Staff Gacha 1");
-            PaymentInfo.SavePaymentData();
-        }
-
-        else
-        {
-            PopupManager.Instance.ShowTextLackDia();
-        }
+        StartStaffPurchase(StaffGachaPurchaseType.Single);
     }
-
 
     public override void OnTenGachaButtonClicked()
     {
-        if(UserInfo.IsDiaValid(100))
+        StartStaffPurchase(StaffGachaPurchaseType.Multi);
+    }
+
+    private void StartStaffPurchase(StaffGachaPurchaseType type)
+    {
+        if (_collectionEconomy != null)
         {
-            _uiGacha.SetActiveGachaMachine(false);
-            SetActiveGachaMachine(true);
-
-            _getStaffList.Clear();
-            _getStaffIndex = 0;
-
-            GachaStaffData staff;
-            int i = 0;
-            while (i < 11)
+            if (!CanUsePaidInput()) return;
+            _startingPurchaseFromInput = true;
+            try
             {
-                staff = (GachaStaffData)StaffDataManager.Instance.GetRandomGachaStaffData(_itemDataList);
-                _getStaffList.Add(staff);
-                i++;
+                _purchaseDisplay?.Close();
+                var service = _collectionEconomy;
+                if (!service.TryDraw(GachaMachineKind.Staff,
+                    type == StaffGachaPurchaseType.Single ? GachaPaymentKind.DiamondsSingle : GachaPaymentKind.DiamondsEleven,
+                    transaction => PresentCollectionTransaction(service, transaction),
+                    out string collectionError)) _uiGacha.ReportCollectionError(collectionError);
             }
-
-            foreach (var staffData in _getStaffList)
-            {
-                UserInfo.GiveStaff(UserInfo.CurrentStage, staffData.StaffData);
-            }
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-100);
-            UserInfo.AddUserGachaMachineCount(11);
-            GameManager.Instance.AsyncSaveGameData();
-            PaymentInfo.AddGachaData($"Normal Staff Gacha 11");
-            PaymentInfo.SavePaymentData();
+            finally { _startingPurchaseFromInput = false; RefreshPurchaseButtonState(); }
+            return;
         }
-        else
+        if (!CanUsePaidInput() || !_purchaseDisplayOwner.CanStartStaffPurchase(type, out _))
         {
-            PopupManager.Instance.ShowTextLackDia();
+            RefreshPurchaseButtonState();
+            return;
         }
-
+        _startingPurchaseFromInput = true; // Includes synchronous completion/notification reentry.
+        try
+        {
+            _purchaseDisplay?.Close(); // Close only the old display before a possibly synchronous response.
+            if (!_purchaseDisplayOwner.TryStartStaffPurchase(type, out _, out string error))
+            {
+                DebugLog.Log(error);
+                if (!_hasExplicitPurchaseDisplayOwner)
+                    PopupManager.Instance.ShowDisplayText("직원 뽑기를 진행할 수 없습니다. 잠시 후 다시 시도해 주세요.");
+            }
+        }
+        finally { _startingPurchaseFromInput = false; RefreshPurchaseButtonState(); }
     }
 
 
@@ -423,10 +774,8 @@ public class UIStaffGacha : GachaMachineParent
 
     private void OnSkipButtonClicked()
     {
-        _screenTouchWaitTime = 5f;
-        _getStaffIndex = _getStaffList.Count - 1;
-        StopAllCoroutines();
-        StartCoroutine(SkipRoutine());
+        // Only presentation of an already confirmed result; never the retired grant routine.
+        ActiveDisplay?.HandleResultButton();
     }
     
 

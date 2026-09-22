@@ -438,36 +438,23 @@ public class GameManager : MonoBehaviour
 
     public void SaveGameData()
     {
-        if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
-            return;
-
-        UserInfo.ApplyDailyWeeklyResetIfNeeded();
-        Param param = UserInfo.GetSaveUserData();
-        bool success = BackendManager.Instance.SaveGameData("GameData", param);
-        if (!success)
-        {
-            DebugLog.LogError("[GameManager] GameData 저장 실패. StageData 저장을 중단합니다.");
-            return;
-        }
-        UserInfo.SaveStageData();
-        DebugLog.Log("저장");
+        // Pause/quit also use the shared asynchronous path; completion before app termination is not guaranteed.
+        AsyncSaveGameData();
     }
 
     public void AsyncSaveGameData()
     {
+        if (!BackendManager.Instance.CanSaveLegacyGameData) return;
         if (!UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart)
             return;
 
-        Param param;
-        using (SaveDataPreparationMarker.Auto())
-        {
-            UserInfo.ApplyDailyWeeklyResetIfNeeded();
-            param = UserInfo.GetSaveUserData();
-        }
-        BackendManager.Instance.SaveGameDataAsync("GameData", param, (bro) =>{
+        BackendManager.Instance.RequestGameDataAutosave((bro) =>{
             UserInfo.SaveStageDataAsync();
-            DebugLog.Log("비동기 저장");
-        });
+            DebugLog.Log("[GameManager] GameData 저장 성공. StageData 비동기 저장을 요청했습니다.");
+        }, (state) =>
+        {
+            DebugLog.LogError("[GameManager] GameData 저장 완료가 확인되지 않아 StageData 저장을 시작하지 않습니다.");
+        }, requireGameplay: true);
     }
 
     public void ChanceScene()

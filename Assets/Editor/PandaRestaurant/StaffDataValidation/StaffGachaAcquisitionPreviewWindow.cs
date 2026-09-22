@@ -1,0 +1,666 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using TMPro;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+using Object = UnityEngine.Object;
+
+/// <summary>현재 직원머신의 카드 복사본에만 계산 결과를 표시하는 Editor 전용 도구.</summary>
+public sealed class StaffGachaAcquisitionPreviewWindow : EditorWindow
+{
+    private const double SettleSeconds = 0.2;
+    private static readonly FieldInfo CurrentMachineField = typeof(UIGacha)
+        .GetField("_currentGachaMachine", BindingFlags.Instance | BindingFlags.NonPublic);
+    private static readonly FieldInfo ExecutionEnabledField = typeof(UIStaffGacha)
+        .GetField("IsGachaExecutionEnabled", BindingFlags.Static | BindingFlags.NonPublic);
+
+    private UIGacha _observedGacha;
+    private UIStaffGacha _observedStaff;
+    private Vector3 _lastMachineScale;
+    private Vector2 _lastParentPosition;
+    private double _stableSince;
+    private UIGacha _gacha;
+    private UIStaffGacha _staff;
+    private CanvasGroup _parentInput;
+    private bool _previousInteractable;
+    private bool _previousPopEnabled;
+    private bool _inputCaptured;
+    private EventSystem _eventSystem;
+    private GameObject _previousSelection;
+    private GameObject _overlay;
+    private UIGachaCard _previewCard;
+    private StaffGachaAcquisitionPreviewSequence _sequence;
+    private StaffGachaSingleAnimationPreview _animationPreview;
+    private Vector2 _scrollPosition;
+    private string _singleStaffId;
+    private string _message = "Play Mode에서 직원머신을 열고 전환이 끝난 뒤 사용하세요.";
+
+    [MenuItem("Tools/Panda Restaurant/Staff Gacha/Acquisition Result Preview")]
+    private static void OpenWindow()
+    {
+        GetWindow<StaffGachaAcquisitionPreviewWindow>("Staff Result Preview");
+    }
+
+    private void OnEnable()
+    {
+        EditorApplication.update += Observe;
+        EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        AssemblyReloadEvents.beforeAssemblyReload += ClosePreview;
+    }
+
+    private void OnDisable()
+    {
+        EditorApplication.update -= Observe;
+        EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+        AssemblyReloadEvents.beforeAssemblyReload -= ClosePreview;
+        ClosePreview();
+    }
+
+    private void OnPlayModeChanged(PlayModeStateChange state)
+    {
+        if (state != PlayModeStateChange.EnteredPlayMode)
+            ClosePreview();
+    }
+
+    private void OnGUI()
+    {
+        // Escape must not unlock the gacha during the same input frame.
+        if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            Event.current.Use();
+
+        _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
+        EditorGUILayout.HelpBox("테스트 미리보기입니다. 실제 보유·재화·지급·저장을 변경하지 않습니다.", MessageType.Info);
+        bool available = TryGetContext(out UIGacha gacha, out UIStaffGacha staff,
+            out _, out _, out string reason) && IsSettled(gacha, staff);
+        if (!available && _animationPreview == null)
+            EditorGUILayout.HelpBox(reason ?? "직원머신 전환이 끝날 때까지 기다려 주세요.", MessageType.None);
+        using (new EditorGUI.DisabledScope(!available || _animationPreview != null ||
+            !StaffGachaMockRequestContext.Shared.CanStartNewRequest))
+        {
+            // Select existing staff for long-description checks; the fixed eleven fixture is unchanged.
+            GachaStaffData[] singleCandidates = StaffGachaAcquisitionPreviewSequence
+                .GetDisplayCandidates(staff == null ? null : staff.ItemDataList).ToArray();
+            if (singleCandidates.Length > 0)
+            {
+                int selected = Mathf.Max(0, Array.FindIndex(singleCandidates, data => data.Id == _singleStaffId));
+                selected = EditorGUILayout.Popup("단일 미리보기 직원", selected,
+                    singleCandidates.Select(data => data.Id + " · " + data.Name).ToArray());
+                _singleStaffId = singleCandidates[selected].Id;
+            }
+            if (GUILayout.Button("신규 획득 미리보기")) ShowResult(false);
+            if (GUILayout.Button("중복 획득 미리보기")) ShowResult(true);
+            if (GUILayout.Button("11회 결과 미리보기")) ShowResult(false, true);
+            if (GUILayout.Button("1회 연출 미리보기")) ShowAnimationPreview();
+            if (GUILayout.Button("11회 연출 미리보기")) ShowAnimationPreview(true);
+        }
+        if (_sequence != null)
+        {
+            EditorGUILayout.LabelField($"{_sequence.Index + 1}/{_sequence.Count}", EditorStyles.boldLabel);
+            int newCount = _sequence.Result.NewStaffIds.Count;
+            EditorGUILayout.LabelField($"신규 {newCount}명 / 중복 {_sequence.Count - newCount}명 / " +
+                $"판다토큰 {_sequence.Result.TotalPandaTokens}", EditorStyles.wordWrappedLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                bool canNavigate = _animationPreview == null ? available :
+                    _animationPreview.IsComplete && HasAnimationContext() &&
+                    EditorApplication.isPlaying && !EditorApplication.isPaused;
+                using (new EditorGUI.DisabledScope(!canNavigate || !_sequence.CanMovePrevious))
+                    if (GUILayout.Button("이전")) MoveResult(-1);
+                using (new EditorGUI.DisabledScope(!canNavigate || _sequence == null || !_sequence.CanMoveNext))
+                    if (GUILayout.Button("다음")) MoveResult(1);
+            }
+        }
+        using (new EditorGUI.DisabledScope(_overlay == null))
+            if (GUILayout.Button("미리보기 닫기")) ClosePreview();
+        DrawMockRequestControls();
+        EditorGUILayout.Space();
+        if (GUILayout.Button("런타임 구매 화면 검증 (독립 오프라인 환경)")) StaffGachaOfflineWindow.Open();
+        EditorGUILayout.LabelField(_message, EditorStyles.wordWrappedLabel);
+        EditorGUILayout.EndScrollView();
+    }
+
+    private void DrawMockRequestControls()
+    {
+        var context = StaffGachaMockRequestContext.Shared;
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("모의 요청 검증 · 테스트 전용", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox("가상 데이터만 사용합니다. 성공 모의 응답은 실제 서버 저장을 뜻하지 않습니다. " +
+            "창·카드를 닫아도 같은 Play 세션의 요청은 유지됩니다.", MessageType.Info);
+        EditorGUILayout.LabelField("가상 다이아", context.Diamonds.ToString());
+        EditorGUILayout.LabelField("가상 판다토큰", context.Account.PandaTokens.ToString());
+        EditorGUILayout.LabelField("가상 보유", string.Join(", ",
+            context.Account.Staff.Select(record => record.Id + " Lv." + record.Level)), EditorStyles.wordWrappedLabel);
+        EditorGUILayout.LabelField("요청 상태", MockStateLabel(context.State));
+        EditorGUILayout.LabelField("현재 요청 ID", context.CurrentRequest?.RequestId ?? "없음",
+            EditorStyles.wordWrappedLabel);
+        if (context.CurrentRequest != null)
+        {
+            StaffGachaPurchasePlan plan = context.CurrentRequest.Plan;
+            EditorGUILayout.LabelField($"계산안: {plan.ResultCount}개 / 가격 {plan.DiamondCost} 다이아 / " +
+                $"다이아 {plan.DiamondsBefore} → {plan.DiamondsAfter}", EditorStyles.wordWrappedLabel);
+        }
+        EditorGUILayout.LabelField("보관된 완료 ID", context.LastCompletedRequest?.RequestId ?? "없음",
+            EditorStyles.wordWrappedLabel);
+        if (!EditorApplication.isPlaying)
+            EditorGUILayout.HelpBox("Play Mode에서 모의 요청을 시작하세요. 직원머신이 없어도 요청·응답 검증은 가능합니다.", MessageType.None);
+
+        // Request controls do not depend on TryGetContext/card availability.
+        using (new EditorGUI.DisabledScope(!EditorApplication.isPlaying))
+        {
+            using (new EditorGUI.DisabledScope(!context.CanStartNewRequest || _animationPreview != null))
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("단일 모의 요청")) StartMockRequest(StaffGachaPurchaseType.Single);
+                if (GUILayout.Button("11회 모의 요청")) StartMockRequest(StaffGachaPurchaseType.Multi);
+            }
+            // Terminal replies remain clickable to check duplicate-response rejection.
+            using (new EditorGUI.DisabledScope(context.CurrentRequest == null))
+            {
+                if (GUILayout.Button("성공 확정 응답")) HandleMockResponse(StaffGachaResponseKind.SuccessConfirmed);
+                if (GUILayout.Button("미반영 확정 실패 응답")) HandleMockResponse(StaffGachaResponseKind.UnappliedFailureConfirmed);
+                if (GUILayout.Button("결과 미확정 응답")) HandleMockResponse(StaffGachaResponseKind.Indeterminate);
+            }
+            using (new EditorGUI.DisabledScope(context.LastCompletedRequest == null ||
+                !context.CanStartNewRequest || _animationPreview != null))
+                if (GUILayout.Button("완료 결과 다시 보기")) TryShowMockCompletedResult(out _message);
+            using (new EditorGUI.DisabledScope(!context.CanReset || _animationPreview != null))
+            {
+                if (GUILayout.Button("가상 데이터 초기화") && context.TryReset(out _message))
+                {
+                    ClosePreview();
+                    _message = "[테스트 전용] 가상 데이터만 초기화했습니다. 과거 요청 ID는 다시 사용하지 않습니다.";
+                }
+            }
+        }
+    }
+
+    private void StartMockRequest(StaffGachaPurchaseType purchaseType)
+    {
+        var context = StaffGachaMockRequestContext.Shared;
+        if (!context.TryStart(purchaseType, out _message)) return;
+        ClosePreview(); // Presentation only: the accepted request is owned by the Editor context.
+        _message = "[테스트 전용] 모의 응답 대기 중 · " + context.CurrentRequest.RequestId;
+    }
+
+    private void HandleMockResponse(StaffGachaResponseKind response)
+    {
+        var context = StaffGachaMockRequestContext.Shared;
+        bool changed = context.TryHandleResponse(context.CurrentRequest?.RequestId, response, out var completed);
+        if (completed != null)
+            TryShowMockCompletedResult(out _message); // Virtual application already finished, even if display fails.
+        else
+            _message = changed ? "[테스트 전용] " + MockStateLabel(context.State) + " · 가상 데이터 변경 없음"
+                : "[테스트 전용] 응답을 무시했습니다. 가상 데이터 변경 없음";
+    }
+
+    internal bool TryShowMockCompletedResult(out string error)
+    {
+        var context = StaffGachaMockRequestContext.Shared;
+        error = "요청이나 연출 진행 중에는 완료 결과를 다시 표시하지 않습니다.";
+        if (!context.CanStartNewRequest || _animationPreview != null) return false;
+        if (context.LastCompletedRequest == null)
+        {
+            error = "아직 성공 확정된 모의 요청 결과가 없습니다.";
+            return false;
+        }
+        if (!TryGetContext(out UIGacha gacha, out UIStaffGacha staff,
+                out UIGachaCard sourceCard, out _, out string reason) || !IsSettled(gacha, staff))
+        {
+            error = (reason ?? "직원머신 전환이 끝난 뒤 사용하세요.") +
+                " 완료 결과는 보관되어 있습니다. 표시 가능한 상태에서 '완료 결과 다시 보기'를 누르세요.";
+            return false;
+        }
+        try
+        {
+            if (!context.TryCreateCompletedSequence(out var sequence, out error)) return false;
+            ClosePreview();
+            CreateOverlay(gacha, staff, sourceCard);
+            _sequence = sequence;
+            DisplayCurrentResult();
+            error = _message;
+            return true;
+        }
+        catch (Exception exception)
+        {
+            ClosePreview();
+            error = exception.Message + " 완료 결과와 가상 데이터는 보관되어 있습니다.";
+            return false;
+        }
+    }
+
+    private static string MockStateLabel(StaffGachaRequestState state)
+    {
+        switch (state)
+        {
+            case StaffGachaRequestState.Idle: return "대기";
+            case StaffGachaRequestState.Processing: return "처리 중";
+            case StaffGachaRequestState.Indeterminate: return "결과 미확정";
+            case StaffGachaRequestState.Succeeded: return "성공 확정 (모의)";
+            case StaffGachaRequestState.FailedUnapplied: return "미반영 확정 실패 (모의)";
+            default: return state.ToString();
+        }
+    }
+
+    private void Observe()
+    {
+        if (_animationPreview != null)
+        {
+            if (!EditorApplication.isPlaying || !HasAnimationContext())
+                ClosePreview();
+            else if (!EditorApplication.isPaused)
+            {
+                try { _animationPreview.Tick(); }
+                catch (Exception exception) { ClosePreview(); _message = exception.Message; }
+            }
+            Repaint();
+            return;
+        }
+        if (!TryGetContext(out UIGacha gacha, out UIStaffGacha staff,
+            out _, out RectTransform machineParent, out _))
+        {
+            _observedGacha = null;
+            _observedStaff = null;
+            if (_inputCaptured || _overlay != null) ClosePreview();
+            Repaint();
+            return;
+        }
+        Vector3 scale = staff.transform.localScale;
+        Vector2 position = machineParent.anchoredPosition;
+        if (_observedGacha != gacha || _observedStaff != staff ||
+            (scale - _lastMachineScale).sqrMagnitude > 0.000001f ||
+            (position - _lastParentPosition).sqrMagnitude > 0.000001f)
+        {
+            _observedGacha = gacha;
+            _observedStaff = staff;
+            _lastMachineScale = scale;
+            _lastParentPosition = position;
+            _stableSince = EditorApplication.timeSinceStartup;
+        }
+        if (_inputCaptured && (_overlay == null || gacha != _gacha || staff != _staff))
+            ClosePreview();
+        Repaint();
+    }
+
+    private bool IsSettled(UIGacha gacha, UIStaffGacha staff)
+    {
+        return gacha != null && staff != null && gacha == _observedGacha && staff == _observedStaff &&
+            (staff.transform.localScale - Vector3.one).sqrMagnitude < 0.000001f &&
+            EditorApplication.timeSinceStartup - _stableSince >= SettleSeconds;
+    }
+
+    private bool HasAnimationContext()
+    {
+        // The real machine buttons remain hidden until close. Their visibility is not a
+        // result-navigation condition for the session that already owns this machine.
+        return _animationPreview != null && _animationPreview.IsActive &&
+            _gacha != null && _staff != null && _overlay != null && _previewCard != null &&
+            _inputCaptured && _gacha.VisibleState == VisibleState.Appeared &&
+            _staff.gameObject.activeInHierarchy && CurrentMachineField.GetValue(_gacha) == _staff;
+    }
+
+    private bool TryGetContext(out UIGacha gacha, out UIStaffGacha staff,
+        out UIGachaCard sourceCard, out RectTransform machineParent, out string reason)
+    {
+        gacha = null;
+        staff = null;
+        sourceCard = null;
+        machineParent = null;
+        reason = "Play Mode의 열린 직원머신에서만 사용할 수 있습니다.";
+        if (!EditorApplication.isPlaying || EditorApplication.isPaused ||
+            CurrentMachineField == null || ExecutionEnabledField == null ||
+            !(ExecutionEnabledField.GetValue(null) is bool enabled) || enabled)
+            return false;
+
+        foreach (UIGacha view in Object.FindObjectsByType<UIGacha>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        {
+            if (view.VisibleState != VisibleState.Appeared || view.IsStartGacha) continue;
+            if (gacha != null) return false;
+            gacha = view;
+        }
+        if (gacha == null || !(CurrentMachineField.GetValue(gacha) is UIStaffGacha selected) ||
+            !selected.gameObject.activeInHierarchy)
+            return false;
+        staff = selected;
+        sourceCard = ReadReference<UIGachaCard>(staff, "_gachaCard");
+        machineParent = ReadReference<RectTransform>(gacha, "_machineParent");
+        CanvasGroup input = ReadReference<CanvasGroup>(gacha, "_canvasGroup");
+        Button single = ReadReference<Button>(staff, "_singleButton");
+        if (sourceCard == null || sourceCard.gameObject.activeSelf || machineParent == null || input == null ||
+            single == null || !single.gameObject.activeInHierarchy ||
+            (!input.interactable && !(_inputCaptured && _gacha == gacha)))
+            return false;
+        reason = null;
+        return true;
+    }
+
+    private void ShowResult(bool duplicate, bool eleven = false)
+    {
+        if (_animationPreview != null) return;
+        if (!TryGetContext(out UIGacha gacha, out UIStaffGacha staff,
+            out UIGachaCard sourceCard, out _, out string reason) || !IsSettled(gacha, staff))
+        {
+            _message = reason ?? "직원머신 전환 중에는 미리보기를 열 수 없습니다.";
+            return;
+        }
+        try
+        {
+            // Each open calculates once; navigation below only reads this stored sequence.
+            StaffGachaAcquisitionPreviewSequence sequence;
+            string error;
+            bool calculated = eleven
+                ? StaffGachaAcquisitionPreviewSequence.TryCreateFixedEleven(staff.ItemDataList, out sequence, out error)
+                : StaffGachaAcquisitionPreviewSequence.TryCreateSingle(
+                    StaffGachaAcquisitionPreviewSequence.GetDisplayCandidates(staff.ItemDataList)
+                        .FirstOrDefault(data => data.Id == _singleStaffId),
+                    duplicate, out sequence, out error);
+            if (!calculated)
+                throw new InvalidOperationException(error);
+            if (_overlay == null) CreateOverlay(gacha, staff, sourceCard);
+            _sequence = sequence;
+            DisplayCurrentResult();
+        }
+        catch (Exception exception)
+        {
+            ClosePreview();
+            _message = exception.Message;
+        }
+    }
+
+    private void ShowAnimationPreview(bool eleven = false)
+    {
+        // A session owns the machine until close, including the displayed result.
+        if (_animationPreview != null) return;
+        if (!TryGetContext(out UIGacha gacha, out UIStaffGacha staff,
+            out UIGachaCard sourceCard, out _, out string reason) || !IsSettled(gacha, staff))
+        {
+            _message = reason ?? "직원머신 전환이 끝난 뒤 사용하세요.";
+            return;
+        }
+        try
+        {
+            StaffGachaAcquisitionPreviewSequence sequence;
+            string error;
+            bool calculated = eleven
+                ? StaffGachaAcquisitionPreviewSequence.TryCreateFixedEleven(staff.ItemDataList, out sequence, out error)
+                : StaffGachaAcquisitionPreviewSequence.TryCreateSingle(
+                    StaffGachaAcquisitionPreviewSequence.GetDisplayCandidates(staff.ItemDataList)
+                        .FirstOrDefault(data => data.Id == _singleStaffId), false, out sequence, out error);
+            if (!calculated)
+                throw new InvalidOperationException(error);
+            if (_overlay == null) CreateOverlay(gacha, staff, sourceCard);
+            _sequence = sequence;
+            _previewCard.gameObject.SetActive(false);
+            _overlay.GetComponent<Image>().color = Color.clear;
+            _overlay.SetActive(true); // Transparent input blocker; the original machine stays visible.
+            var session = new StaffGachaSingleAnimationPreview();
+            _animationPreview = session;
+            if (!session.TryStart(staff, sequence, completed =>
+            {
+                // Closed/replaced sessions cannot reopen a card, even through a retained delegate.
+                if (_animationPreview != session || _overlay == null || _sequence != completed) return;
+                DisplayCurrentResult();
+            }, out error))
+                throw new InvalidOperationException(error);
+            _message = "[테스트 미리보기] " + sequence.CurrentItem.StaffId + " · 머신 연출 중";
+        }
+        catch (Exception exception)
+        {
+            ClosePreview();
+            _message = exception.Message;
+        }
+    }
+
+    private void MoveResult(int offset)
+    {
+        if (_sequence == null || _previewCard == null || _overlay == null) return;
+        if (_animationPreview != null)
+        {
+            if (!_animationPreview.IsComplete || !HasAnimationContext() ||
+                !EditorApplication.isPlaying || EditorApplication.isPaused) return;
+        }
+        else if (!TryGetContext(out UIGacha gacha, out UIStaffGacha staff, out _, out _, out _) ||
+            !IsSettled(gacha, staff)) return;
+        if (!_sequence.TryMove(offset)) return;
+        try
+        {
+            DisplayCurrentResult();
+        }
+        catch (Exception exception)
+        {
+            ClosePreview();
+            _message = exception.Message;
+        }
+    }
+
+    private void DisplayCurrentResult()
+    {
+        if (!_previewCard.TrySetStaffAcquisitionResult(_sequence.CurrentStaff, _sequence.CurrentItem, true))
+            throw new InvalidOperationException("카드가 획득 계산 결과를 표시하지 못했습니다.");
+        _previewCard.gameObject.SetActive(true);
+        _overlay.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.7f);
+        _overlay.SetActive(true);
+        _message = "[테스트 미리보기] " + _sequence.CurrentItem.StaffId +
+            (_sequence.CurrentItem.IsNew ? " · 신규 획득" : " · 중복 획득");
+    }
+
+    private void CreateOverlay(UIGacha gacha, UIStaffGacha staff, UIGachaCard sourceCard)
+    {
+        Canvas canvas = gacha.GetComponentInParent<Canvas>();
+        if (canvas == null) throw new InvalidOperationException("가챠 Canvas 참조가 없습니다.");
+        canvas = canvas.rootCanvas;
+        int highestOrder = canvas.sortingOrder;
+        foreach (Canvas childCanvas in gacha.GetComponentsInChildren<Canvas>(true))
+            highestOrder = Mathf.Max(highestOrder, childCanvas.sortingOrder);
+        if (highestOrder >= short.MaxValue)
+            throw new InvalidOperationException("미리보기를 올릴 Canvas 정렬 여유가 없습니다.");
+        _gacha = gacha;
+        _staff = staff;
+        _overlay = new GameObject("Staff Acquisition Test Preview", typeof(RectTransform));
+        _overlay.hideFlags = HideFlags.DontSave;
+        _overlay.SetActive(false);
+        _overlay.transform.SetParent(canvas.transform, false);
+        Stretch((RectTransform)_overlay.transform);
+        Canvas overlayCanvas = _overlay.AddComponent<Canvas>();
+        overlayCanvas.overrideSorting = true;
+        overlayCanvas.sortingLayerID = canvas.sortingLayerID;
+        overlayCanvas.sortingOrder = highestOrder + 1;
+        _overlay.AddComponent<GraphicRaycaster>();
+        CanvasGroup overlayInput = _overlay.AddComponent<CanvasGroup>();
+        overlayInput.ignoreParentGroups = true;
+        overlayInput.interactable = true;
+        overlayInput.blocksRaycasts = true;
+        Image blocker = _overlay.AddComponent<Image>();
+        blocker.color = new Color(0f, 0f, 0f, 0.7f);
+        blocker.raycastTarget = true;
+
+        _previewCard = Instantiate(sourceCard, _overlay.transform, false);
+        _previewCard.name = "Staff Result Card (Test Preview)";
+        foreach (MonoBehaviour component in _previewCard.GetComponentsInChildren<MonoBehaviour>(true))
+        {
+            if (component is RotationGameObject rotation) rotation.enabled = false;
+            else if (!(component is UIGachaCard) && !(component is UIItemStar) &&
+                !(component is Graphic) && !(component is LayoutGroup))
+                throw new InvalidOperationException("미리보기 카드에 예상하지 못한 스크립트가 있습니다: " + component.GetType().Name);
+        }
+        foreach (Animator animator in _previewCard.GetComponentsInChildren<Animator>(true)) animator.enabled = false;
+        foreach (AudioSource audio in _previewCard.GetComponentsInChildren<AudioSource>(true)) audio.enabled = false;
+        foreach (Graphic graphic in _previewCard.GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
+        if (ReadReference<Button>(_previewCard, "_closeButton") != null)
+            throw new InvalidOperationException("원본 닫기 연결이 있는 카드는 미리보기에 사용할 수 없습니다.");
+        RectTransform cardRect = (RectTransform)_previewCard.transform;
+        cardRect.anchorMin = cardRect.anchorMax = new Vector2(0.5f, 0.5f);
+        cardRect.anchoredPosition = Vector2.zero;
+        // Instantiate preserves the source card size and scale (currently 465 x 617, scale 1.3).
+        TextMeshProUGUI description = ReadReference<TextMeshProUGUI>(_previewCard, "_descriptionText");
+        if (description == null) throw new InvalidOperationException("설명 텍스트 참조가 없습니다.");
+
+        Button close = CreateCloseButton(description);
+        _parentInput = ReadReference<CanvasGroup>(gacha, "_canvasGroup");
+        _previousInteractable = _parentInput.interactable;
+        _previousPopEnabled = gacha.PopEnabled;
+        _eventSystem = EventSystem.current;
+        _previousSelection = _eventSystem == null ? null : _eventSystem.currentSelectedGameObject;
+        _inputCaptured = true;
+        _parentInput.interactable = false;
+        gacha.PopEnabled = false;
+        if (_eventSystem != null) _eventSystem.SetSelectedGameObject(close.gameObject);
+    }
+
+    private Button CreateCloseButton(TextMeshProUGUI sourceText)
+    {
+        var buttonObject = new GameObject("Close Test Preview", typeof(RectTransform), typeof(Image), typeof(Button));
+        buttonObject.transform.SetParent(_overlay.transform, false);
+        RectTransform rect = (RectTransform)buttonObject.transform;
+        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
+        rect.sizeDelta = new Vector2(300f, 64f);
+        rect.anchoredPosition = new Vector2(0f, -470f);
+        buttonObject.GetComponent<Image>().color = new Color(0.16f, 0.2f, 0.27f, 1f);
+        Button button = buttonObject.GetComponent<Button>();
+        button.onClick.AddListener(ClosePreview);
+        var labelObject = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+        labelObject.transform.SetParent(buttonObject.transform, false);
+        Stretch((RectTransform)labelObject.transform);
+        TextMeshProUGUI label = labelObject.GetComponent<TextMeshProUGUI>();
+        label.font = sourceText.font;
+        label.fontSharedMaterial = sourceText.fontSharedMaterial;
+        label.fontSize = 28f;
+        label.alignment = TextAlignmentOptions.Center;
+        label.raycastTarget = false;
+        label.text = "미리보기 닫기";
+        return button;
+    }
+
+    private void ClosePreview()
+    {
+        var animation = _animationPreview;
+        _animationPreview = null; // Invalidate the completion callback before restoring the machine.
+        bool sameVisibleMachine = _gacha != null && _staff != null &&
+            _gacha.VisibleState == VisibleState.Appeared && _staff.gameObject.activeInHierarchy &&
+            CurrentMachineField.GetValue(_gacha) == _staff;
+        animation?.Close(sameVisibleMachine);
+        if (_overlay != null) _overlay.SetActive(false);
+        if (_inputCaptured)
+        {
+            _inputCaptured = false;
+            if (_parentInput != null && (animation == null || sameVisibleMachine))
+                _parentInput.interactable = _previousInteractable;
+            if (_gacha != null) _gacha.PopEnabled = _previousPopEnabled;
+            if (_eventSystem != null)
+                _eventSystem.SetSelectedGameObject(_previousSelection != null && _previousSelection.activeInHierarchy
+                    ? _previousSelection : null);
+        }
+        if (_overlay != null) DestroyImmediate(_overlay);
+        _overlay = null;
+        _previewCard = null;
+        _gacha = null;
+        _staff = null;
+        _parentInput = null;
+        _eventSystem = null;
+        _previousSelection = null;
+        _sequence = null;
+        _message = "미리보기를 닫았습니다. 다시 열면 첫 결과부터 표시합니다.";
+    }
+
+    private static T ReadReference<T>(Object owner, string field) where T : Object
+    {
+        using (var serialized = new SerializedObject(owner))
+            return serialized.FindProperty(field)?.objectReferenceValue as T;
+    }
+
+    private static void Stretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+    }
+}
+
+/// <summary>Editor wrapper uses the same runtime display driver; test input creation stays Editor-only.</summary>
+internal sealed class StaffGachaSingleAnimationPreview
+{
+    private readonly StaffGachaResultAnimation _animation = new StaffGachaResultAnimation();
+    public bool IsActive => _animation.IsActive;
+    public bool IsComplete => _animation.IsComplete;
+    public bool TryStart(UIStaffGacha staff, StaffGachaAcquisitionPreviewSequence sequence,
+        Action<StaffGachaAcquisitionPreviewSequence> completed, out string error)
+    {
+        return _animation.TryStart(staff, sequence,
+            completed == null ? (Action<StaffGachaResultSequence>)null : result => completed(sequence), out error);
+    }
+    public void Tick() => _animation.Tick();
+    public void Close(bool restorePresentation = true) => _animation.Close(restorePresentation);
+}
+
+/// <summary>Editor 표시용 고정 입력과 계산 결과. 이동은 인덱스만 바꾸며 다시 계산하지 않는다.</summary>
+internal sealed class StaffGachaAcquisitionPreviewSequence : StaffGachaResultSequence
+{
+    private StaffGachaAcquisitionPreviewSequence(GachaStaffData[] staff, StaffGachaAcquisitionResult result)
+        : base(staff, result) { }
+
+    public static bool TryCreateFromCalculated(StaffGachaAcquisitionResult result,
+        IReadOnlyList<GachaStaffData> displayStaff, out StaffGachaAcquisitionPreviewSequence sequence, out string error)
+    {
+        sequence = null;
+        if (!StaffGachaResultSequence.TryCreateFromCalculated(result, displayStaff, out var verified, out error))
+            return false;
+        sequence = new StaffGachaAcquisitionPreviewSequence(displayStaff.ToArray(), verified.Result);
+        return true;
+    }
+
+    internal static IEnumerable<GachaStaffData> GetDisplayCandidates(IEnumerable<GachaData> candidates)
+    {
+        return (candidates ?? Enumerable.Empty<GachaData>()).OfType<GachaStaffData>()
+            .Where(data => data != null && data.StaffData != null &&
+                !string.IsNullOrWhiteSpace(data.Id) && !data.Id.Any(char.IsWhiteSpace) &&
+                string.Equals(data.Id, data.StaffData.Id, StringComparison.Ordinal) &&
+                data.Rank == data.StaffData.Rank &&
+                (data.Rank == Rank.Normal1 || data.Rank == Rank.Normal2 || data.Rank == Rank.Rare ||
+                    data.Rank == Rank.Unique || data.Rank == Rank.Special) &&
+                (data.ThumbnailSprite != null || data.Sprite != null))
+            .OrderBy(data => data.Id, StringComparer.Ordinal);
+    }
+
+    public static bool TryCreateFixedEleven(IEnumerable<GachaData> candidates,
+        out StaffGachaAcquisitionPreviewSequence sequence, out string error)
+    {
+        sequence = null;
+        GachaStaffData[] valid = GetDisplayCandidates(candidates).ToArray();
+        GachaStaffData a = valid.FirstOrDefault(data => data.Rank == Rank.Normal1 || data.Rank == Rank.Normal2);
+        GachaStaffData b = valid.FirstOrDefault(data => data.Rank == Rank.Rare && data.Id != a?.Id);
+        if (a == null || b == null)
+        {
+            error = "11회 미리보기에는 서로 다른 실제 ID의 유효한 노멀·레어 직원이 필요합니다.";
+            return false;
+        }
+
+        // Display fixture only, not a roll or rarity guarantee: B, B, A x 9; owns A only.
+        var staff = new GachaStaffData[11];
+        staff[0] = staff[1] = b;
+        for (int i = 2; i < staff.Length; i++) staff[i] = a;
+        return TryCreate(new[] { a.Id }, staff, out sequence, out error);
+    }
+
+    public static bool TryCreateSingle(GachaStaffData staff, bool duplicate,
+        out StaffGachaAcquisitionPreviewSequence sequence, out string error)
+    {
+        return TryCreate(duplicate && staff != null ? new[] { staff.Id } : Array.Empty<string>(),
+            new[] { staff }, out sequence, out error);
+    }
+
+    private static bool TryCreate(IReadOnlyCollection<string> owned, GachaStaffData[] staff,
+        out StaffGachaAcquisitionPreviewSequence sequence, out string error)
+    {
+        sequence = null;
+        if (!StaffGachaAcquisitionCalculator.TryCalculate(owned, staff, out var result, out error))
+            return false;
+        sequence = new StaffGachaAcquisitionPreviewSequence(staff, result);
+        return true;
+    }
+
+}
+#endif

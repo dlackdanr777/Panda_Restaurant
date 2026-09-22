@@ -16,13 +16,47 @@ public class UIGachaCardSlot : MonoBehaviour
 
     [SerializeField] private UIItemStar _itemStar;
 
+    public void InitPresentation()
+    {
+        if (GetComponentInChildren<GachaAcquisitionBadge>(true) == null)
+            GachaAcquisitionBadge.Bind(transform, _nameText.font, false, _star1Frame.rectTransform);
+    }
+
+    // The slot reads only the saved acquisition output, never the current account or item grant path.
+    public bool TrySetStaffAcquisitionResult(GachaStaffData data, StaffGachaAcquisitionItem item)
+    {
+        if (data == null || data.StaffData == null || item == null ||
+            !string.Equals(data.Id, item.StaffId, System.StringComparison.Ordinal) ||
+            !string.Equals(data.StaffData.Id, item.StaffId, System.StringComparison.Ordinal) ||
+            data.Rank != item.Rank || data.StaffData.Rank != item.Rank)
+        {
+            ClearData();
+            return false;
+        }
+        SetImage(data);
+        UpdateFrame(data);
+        SetName(data);
+        _descriptionText.SetText(item.IsNew ? "신규 획득" : "중복 획득\n판다토큰 +" + item.PandaTokenReward);
+        _effectText.SetText(Utility.GetStaffEffectDescription(data.StaffData, 1));
+        _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.GetStaffGroupTypeFromData(data.StaffData)));
+        _itemStar.SetStar(data.Rank);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, item.IsNew, _star1Frame.rectTransform);
+        return true;
+    }
+
 
 
     public void SetData(GachaData data)
     {
+        SetData(data, false);
+    }
+
+    public void SetData(GachaData data, bool isNew)
+    {
         if (data == null)
         {
-            DebugLog.LogError("스킨 데이터가 없습니다.");
+            DebugLog.LogError("가챠 결과 카드에 표시할 데이터가 없습니다.");
+            ClearData();
             return;
         }
         
@@ -33,29 +67,24 @@ public class UIGachaCardSlot : MonoBehaviour
         SetEffect(data);
         SetType(data);
         _itemStar.SetStar(data.Rank);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, isNew, _star1Frame.rectTransform);
     }
     
     private void SetImage(GachaData data)
     {
-        if (data == null)
-        {
-            _skinImage.sprite = null;
-            return;
-        }
-
-        _skinImage.sprite = data.ThumbnailSprite;
+        _skinImage.sprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
     }
 
 
     private void SetDescription(GachaData data)
     {
-        _descriptionText.SetText(data.Description);
+        _descriptionText.SetText(data.Description ?? string.Empty);
     }
 
 
     private void SetName(GachaData data)
     {
-        _nameText.SetText(data.Name);
+        _nameText.SetText(string.IsNullOrWhiteSpace(data.Name) ? data.Id : data.Name);
     }
 
     private void SetEffect(GachaData data)
@@ -77,6 +106,10 @@ public class UIGachaCardSlot : MonoBehaviour
         else if (data is GachaItemData itemData)
         {
             _effectText.SetText(Utility.GetGachaItemEffectDescription(itemData));
+        }
+        else if (data is GachaStaffData staffGachaData && staffGachaData.StaffData != null)
+        {
+            _effectText.SetText(Utility.GetStaffEffectDescription(staffGachaData.StaffData));
         }
         else
         {
@@ -121,6 +154,17 @@ public class UIGachaCardSlot : MonoBehaviour
             }
         }
 
+        else if (data is GachaStaffData staffGachaData)
+        {
+            StaffData staffData = staffGachaData.StaffData;
+            if (staffData == null)
+            {
+                _typeText.SetText("직원");
+                return;
+            }
+
+            _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.GetStaffGroupTypeFromData(staffData)));
+        }
         else
         {
             _typeText.SetText("아이템");
@@ -131,6 +175,7 @@ public class UIGachaCardSlot : MonoBehaviour
 
     private void UpdateFrame(GachaData data)
     {
+        GachaCardHaloPolicy.Apply(_star4Frame, _star5Frame, data == null ? Rank.Normal1 : data.Rank);
         _star1Frame.gameObject.SetActive(false);
         _star3Frame.gameObject.SetActive(false);
         _star4Frame.gameObject.SetActive(false);
@@ -162,8 +207,20 @@ public class UIGachaCardSlot : MonoBehaviour
         }
     }
     
-        public void ChangeImagePivot()
+    public void ChangeImagePivot()
     {
         Utility.ChangeImagePivot(_skinImage);
+    }
+
+    private void ClearData()
+    {
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, false, _star1Frame.rectTransform);
+        _skinImage.sprite = null;
+        _nameText.SetText(string.Empty);
+        _descriptionText.SetText(string.Empty);
+        _effectText.SetText(string.Empty);
+        _typeText.SetText(string.Empty);
+        UpdateFrame(null);
+        _itemStar.SetStar(Rank.Normal1);
     }
 }

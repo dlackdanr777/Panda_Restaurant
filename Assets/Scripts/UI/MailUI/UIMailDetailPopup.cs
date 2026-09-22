@@ -55,7 +55,10 @@ public class UIMailDetailPopup : MonoBehaviour
 
         // 내용
         if (_descriptionText != null)
-            _descriptionText.text = mail.Content;
+        {
+            string status = MailManager.Instance.GetReceiveStatusText(mail);
+            _descriptionText.text = mail.Content + (string.IsNullOrEmpty(status) ? string.Empty : "\n\n" + status);
+        }
 
         // NPC 이미지
         if (_npcImage != null)
@@ -129,18 +132,18 @@ public class UIMailDetailPopup : MonoBehaviour
         // }
 
         // 받기 버튼: 아이템 있는 미수령 편지만 표시
-        bool canReceive = !mail.IsReceived && !mail.IsExpired && hasItem;
+        bool canReceive = MailManager.Instance.CanReceive(mail) && hasItem;
         if (_receiveButton != null)
         {
             _receiveButton.gameObject.SetActive(canReceive);
             _receiveButton.interactable = canReceive;
         }
 
-        bool isReceived = mail.IsReceived;
+        bool isReceived = MailManager.Instance.IsReceiveDisplayComplete(mail);
 
         // 읽음 아이콘: 아이템 없는 편지는 팝업을 여는 순간 읽은 것으로 표시
         // (실제 SetReceived/백엔드 저장은 UIMailbox.OnSlotClicked에서 처리)
-        bool showAsRead = isReceived || (!hasItem && !mail.IsExpired);
+        bool showAsRead = isReceived;
 
         if (_receivedIcon != null) _receivedIcon.gameObject.SetActive(hasItem && isReceived);
         if (_readIcon     != null) _readIcon.gameObject.SetActive(!hasItem && showAsRead);
@@ -165,7 +168,7 @@ public class UIMailDetailPopup : MonoBehaviour
 
     private void OnReceiveClicked()
     {
-        if (_currentMail == null || _currentMail.IsReceived || _currentMail.IsExpired) return;
+        if (!MailManager.Instance.CanReceive(_currentMail)) return;
         _receiveButton.gameObject.SetActive(false);
         _onReceive?.Invoke(_currentMail);
     }

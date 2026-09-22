@@ -2,6 +2,7 @@
 using Muks.Tween;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -56,6 +57,44 @@ public class UIStaff : MobileUIView
     private bool _isInitialized = false;
     private Vector3 _tmpScale;
     private static readonly Vector3 _hideScale = new Vector3(0.3f, 0.3f, 0.3f);
+    private ScrollRect _staffScrollRect;
+    private Vector2 _scrollPositionBeforeGacha;
+    private bool _hasScrollPositionBeforeGacha;
+    private float _canvasAlphaBeforeGacha;
+    private bool _canvasInteractableBeforeGacha;
+    private bool _canvasBlockedRaycastsBeforeGacha;
+    public StaffData SelectedStaff => _previewStaffData;
+    public int SelectionRevision { get; private set; }
+    public RectTransform BuyButtonRect => _uiStaffPreview != null ? _uiStaffPreview.BuyButtonRect : null;
+    public RectTransform EquipButtonRect => _uiStaffPreview != null ? _uiStaffPreview.EquipButtonRect : null;
+    public bool IsReadyForGuidance => gameObject.activeInHierarchy && VisibleState == VisibleState.Appeared
+        && _canvasGroup != null && _canvasGroup.alpha > 0f && _canvasGroup.interactable && _canvasGroup.blocksRaycasts;
+
+#if UNITY_EDITOR
+    private bool _editorOfflineNavigation;
+
+    /// <summary>Keep the copied staff view and scroll position available to native shop navigation.</summary>
+    public void ConfigureEditorOfflineNavigation(UIRestaurantAdmin shop)
+    {
+        if (gameObject.activeInHierarchy || shop == null || shop.gameObject.activeInHierarchy || _canvasGroup == null)
+            throw new InvalidOperationException("Offline staff navigation requires inactive copied staff and shop views.");
+        _editorOfflineNavigation = true;
+        _isInitialized = true;
+        _uiRestaurantAdmin = shop;
+        _staffScrollRect = _slotParnet != null ? _slotParnet.GetComponentInParent<ScrollRect>(true) : null;
+        _hasScrollPositionBeforeGacha = false;
+        VisibleState = VisibleState.Disappeared;
+        _canvasGroup.alpha = 1f;
+        _canvasGroup.interactable = _canvasGroup.blocksRaycasts = true;
+        if (_animeUI != null)
+        {
+            _animeUI.SetActive(true);
+            _animeUI.transform.localScale = Vector3.one;
+        }
+        _currentFloorType = ERestaurantFloorType.Floor1;
+        UpdateFloorUI();
+    }
+#endif
 
     public override void Init()
     {
@@ -77,6 +116,9 @@ public class UIStaff : MobileUIView
         _showSkinButton.onClick.AddListener(OnShowSkinButtonClicked);
         _isInitialized = true;
         _tmpScale = _animeUI.transform.localScale;
+        _staffScrollRect = _slotParnet != null
+            ? _slotParnet.GetComponentInParent<ScrollRect>(true)
+            : null;
         gameObject.SetActive(false);
     }
 
@@ -110,6 +152,62 @@ public class UIStaff : MobileUIView
         }
     }
 
+    private static List<StaffData> CreateDisplayDataList(IEnumerable<StaffData> source)
+    {
+        var result = new List<StaffData>();
+        if (source != null)
+        {
+            foreach (StaffData data in source)
+                if (data != null)
+                    result.Add(data);
+        }
+
+        result.Sort(CompareDisplayStaff);
+        return result;
+    }
+
+    private static int CompareDisplayStaff(StaffData left, StaffData right)
+    {
+        if (ReferenceEquals(left, right)) return 0;
+        if (left == null) return 1;
+        if (right == null) return -1;
+
+        int rankOrder = GetDisplayRankPriority(left.Rank).CompareTo(GetDisplayRankPriority(right.Rank));
+        if (rankOrder != 0) return rankOrder;
+
+        bool leftStandard = TryGetStandardStaffNumber(left.Id, out int leftNumber);
+        bool rightStandard = TryGetStandardStaffNumber(right.Id, out int rightNumber);
+        if (leftStandard != rightStandard) return leftStandard ? -1 : 1;
+        if (leftStandard)
+        {
+            int numberOrder = leftNumber.CompareTo(rightNumber);
+            if (numberOrder != 0) return numberOrder;
+        }
+
+        return string.Compare(left.Id, right.Id, StringComparison.Ordinal);
+    }
+
+    private static int GetDisplayRankPriority(Rank rank)
+    {
+        return rank switch
+        {
+            Rank.Special => 0,
+            Rank.Unique => 1,
+            Rank.Rare => 2,
+            Rank.Normal1 or Rank.Normal2 => 3,
+            _ => 4
+        };
+    }
+
+    private static bool TryGetStandardStaffNumber(string id, out int number)
+    {
+        number = 0;
+        return !string.IsNullOrEmpty(id)
+            && id.StartsWith("STAFF", StringComparison.Ordinal)
+            && id.Length > 5
+            && int.TryParse(id.Substring(5), NumberStyles.None, CultureInfo.InvariantCulture, out number);
+    }
+
     private void SubscribeEvents()
     {
         UserInfo.OnChangeStaffHandler += OnChangeStaffEvent;
@@ -124,6 +222,8 @@ public class UIStaff : MobileUIView
     {
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
+        _canvasGroup.alpha = 1f;
+        _canvasGroup.interactable = true;
         _uiSkin.Hide();
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
@@ -158,14 +258,68 @@ public class UIStaff : MobileUIView
         });
     }
 
+    public void SuspendForGacha()
+    {
+        _canvasAlphaBeforeGacha = _canvasGroup.alpha;
+        _canvasInteractableBeforeGacha = _canvasGroup.interactable;
+        _canvasBlockedRaycastsBeforeGacha = _canvasGroup.blocksRaycasts;
+
+        if (_staffScrollRect != null)
+        {
+            _scrollPositionBeforeGacha = _staffScrollRect.normalizedPosition;
+            _hasScrollPositionBeforeGacha = true;
+            _staffScrollRect.StopMovement();
+        }
+
+        _canvasGroup.alpha = 0;
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = false;
+    }
+
+    public void ResumeAfterGacha()
+    {
+        _canvasGroup.alpha = _canvasAlphaBeforeGacha;
+        _canvasGroup.interactable = _canvasInteractableBeforeGacha;
+        _canvasGroup.blocksRaycasts = _canvasBlockedRaycastsBeforeGacha;
+
+#if UNITY_EDITOR
+        if (!_editorOfflineNavigation)
+#endif
+            UpdateUIOptimized(); // Read committed ownership without changing the selected staff.
+
+        if (_staffScrollRect == null || !_hasScrollPositionBeforeGacha)
+            return;
+
+        _staffScrollRect.StopMovement();
+        _staffScrollRect.normalizedPosition = _scrollPositionBeforeGacha;
+        _hasScrollPositionBeforeGacha = false;
+    }
+
+    public void CompleteImmediateHideAfterGachaNavigationClear()
+    {
+        _animeUI.TweenStop();
+        _canvasGroup.blocksRaycasts = false;
+        VisibleState = VisibleState.Disappeared;
+        gameObject.SetActive(false);
+    }
+
     public void ShowUIStaff(ERestaurantFloorType floorType, EquipStaffType type)
     {
+        SelectionRevision++;
         _uiRestaurantAdmin.MainUISetActive(false);
         _uiRestaurantAdmin.ShowStaffTab();
         _uiNav.Push("UIStaff");
         _currentFloorType = floorType;
         UpdateFloorUI();
         SetStaffDataOptimized(type);
+    }
+
+    public bool TrySelectStaff(string staffId)
+    {
+        StaffData target = _currentTypeDataList?.Find(item => item != null && item.Id == staffId);
+        if (target == null) return false;
+        OnSlotClicked(target);
+        return true;
     }
 
     private void UpdateFloorUI()
@@ -188,6 +342,8 @@ public class UIStaff : MobileUIView
     private void SetStaffDataOptimized(EquipStaffType type)
     {
 
+        StaffData previousPreview = _previewStaffData;
+
         if (_currentType != type && _slots[(int)_currentType] != null)
         {
             var currentSlots = _slots[(int)_currentType];
@@ -198,20 +354,39 @@ public class UIStaff : MobileUIView
         }
 
         _currentType = type;
-        _currentTypeDataList = StaffDataManager.Instance.GetSortStaffDataList(type, _currentFloorType);
+        _currentTypeDataList = CreateDisplayDataList(
+            StaffDataManager.Instance.GetStaffDataList(type, _currentFloorType));
         _typeText.text = Utility.StaffTypeStringConverter(type);
 
-        SetStaffPreviewOptimized();
+        SetStaffPreviewOptimized(previousPreview);
         UpdateUIOptimized();
     }
 
-    private void SetStaffPreviewOptimized()
+    private void SetStaffPreviewOptimized(StaffData previousPreview)
     {
         StaffData equipStaffData = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _currentFloorType, _currentType);
-        StaffData previewData = equipStaffData ?? (_currentTypeDataList.Count > 0 ? _currentTypeDataList[0] : null);
+        StaffData previewData = FindDisplayStaff(previousPreview)
+            ?? FindDisplayStaff(equipStaffData)
+            ?? (_currentTypeDataList.Count > 0 ? _currentTypeDataList[0] : null);
+        if (_previewStaffData != previewData) SelectionRevision++;
         _previewStaffData = previewData;
         
         _uiStaffPreview.SetData(_currentFloorType, _currentType, previewData);
+    }
+
+    private StaffData FindDisplayStaff(StaffData candidate)
+    {
+        if (candidate == null || _currentTypeDataList == null)
+            return null;
+
+        for (int i = 0; i < _currentTypeDataList.Count; i++)
+        {
+            StaffData data = _currentTypeDataList[i];
+            if (ReferenceEquals(data, candidate) || string.Equals(data.Id, candidate.Id, StringComparison.Ordinal))
+                return data;
+        }
+
+        return null;
     }
 
     private void UpdateUIOptimized()
@@ -346,6 +521,7 @@ public class UIStaff : MobileUIView
 
     private void OnSlotClicked(StaffData data)
     {
+        if (_previewStaffData != data) SelectionRevision++;
         _previewStaffData = data;
         _uiStaffPreview.SetData(_currentFloorType, _currentType, data);
     }
@@ -368,6 +544,9 @@ public class UIStaff : MobileUIView
 
     private void OnDestroy()
     {
+#if UNITY_EDITOR
+        if (_editorOfflineNavigation) return;
+#endif
         UserInfo.OnChangeStaffHandler -= OnChangeStaffEvent;
         UserInfo.OnGiveStaffHandler -= UpdateUIOptimized;
         UserInfo.OnChangeMoneyHandler -= UpdateResourceUI;

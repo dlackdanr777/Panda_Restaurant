@@ -34,6 +34,7 @@ public class UIMailbox : MobileUIView
 
     private List<UIMailSlot> _slotPool = new List<UIMailSlot>();
     private bool _sortNewest = true;
+    private bool _isLoading;
 
     public override void Init()
     {
@@ -120,7 +121,7 @@ public class UIMailbox : MobileUIView
         if (_mailCountText != null)
             _mailCountText.text = $"{shown}/100";
 
-        _receiveAllButton.interactable = MailManager.Instance.UnreceivedCount > 0;
+        _receiveAllButton.interactable = !_isLoading && MailManager.Instance.UnreceivedCount > 0;
 
         // 읽은 편지가 있을 때만 삭제 버튼 표시
         if (_deleteReadButton != null)
@@ -132,10 +133,11 @@ public class UIMailbox : MobileUIView
 
     private void SetLoading(bool isLoading)
     {
+        _isLoading = isLoading;
         if (_loadingIndicator != null)
             _loadingIndicator.SetActive(isLoading);
 
-        _receiveAllButton.interactable = !isLoading;
+        _receiveAllButton.interactable = !isLoading && MailManager.Instance.UnreceivedCount > 0;
     }
 
     #endregion
@@ -148,28 +150,19 @@ public class UIMailbox : MobileUIView
         _receiveAllButton.interactable = false;
         SetLoading(true);
 
-        int remaining = 0;
-
-        System.Action onDone = null;
-        onDone = () =>
-        {
-            remaining--;
-            if (remaining <= 0)
+        MailManager.Instance.ReceiveAllAvailableMailAsync(
+            () =>
             {
                 SetLoading(false);
-                PopupManager.Instance?.ShowDisplayText("모든 보상을 수령했습니다!");
-            }
-        };
-        System.Action onFail = () =>
-        {
-            remaining--;
-            if (remaining <= 0) SetLoading(false);
-        };
-
-        // Admin + Coupon 동시 수령 시도
-        remaining = 2;
-        MailManager.Instance.ReceiveAllMailAsync(onDone, onFail);
-        MailManager.Instance.ReceiveAllCouponMailAsync(onDone, onFail);
+                RefreshUI();
+                PopupManager.Instance?.ShowDisplayText("보상 메모리 반영 완료 · 저장 확인은 별도입니다.");
+            },
+            () =>
+            {
+                SetLoading(false);
+                RefreshUI();
+                PopupManager.Instance?.ShowDisplayText(MailManager.Instance.LastReceiveError ?? "우편 수령 상태를 확인해 주세요.");
+            });
     }
 
     private void OnSortToggled()
@@ -200,7 +193,7 @@ public class UIMailbox : MobileUIView
         _detailPopup.ShowDetail(mail, OnDetailReceive);
         DebugLog.Log("[UIMailbox] ShowDetail 호출 완료");
 
-        if ((mail.Items == null || mail.Items.Count == 0) && !mail.IsReceived && !mail.IsExpired)
+        if ((mail.Items == null || mail.Items.Count == 0) && MailManager.Instance.CanReceive(mail))
         {
             MailManager.Instance.ReceiveMailAsync(
                 mail,
@@ -218,9 +211,9 @@ public class UIMailbox : MobileUIView
             onSuccess: received =>
             {
                 RefreshUI();
-                PopupManager.Instance?.ShowDisplayText("보상을 수령했습니다!");
+                PopupManager.Instance?.ShowDisplayText("보상 메모리 반영 완료 · 저장 확인은 별도입니다.");
             },
-            onFail: () => RefreshUI()
+            onFail: ShowReceiveFailure
         );
     }
 
@@ -231,10 +224,16 @@ public class UIMailbox : MobileUIView
             onSuccess: received =>
             {
                 RefreshUI();
-                PopupManager.Instance?.ShowDisplayText("보상을 수령했습니다!");
+                PopupManager.Instance?.ShowDisplayText("보상 메모리 반영 완료 · 저장 확인은 별도입니다.");
             },
-            onFail: () => RefreshUI()
+            onFail: ShowReceiveFailure
         );
+    }
+
+    private void ShowReceiveFailure()
+    {
+        RefreshUI();
+        PopupManager.Instance?.ShowDisplayText(MailManager.Instance.LastReceiveError ?? "우편 수령 상태를 확인해 주세요.");
     }
 
     #endregion

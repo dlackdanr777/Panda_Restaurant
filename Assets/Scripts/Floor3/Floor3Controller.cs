@@ -10,6 +10,7 @@ public class Floor3Controller : MonoBehaviour
 
     private void Start()
     {
+        EnhancementFairyHabitat.AttachTo(this);
         _touchEvent.AddDownEvent(OnTouchStart);
         _touchEvent.AddUpEvent(OnTouchEnd);
     }

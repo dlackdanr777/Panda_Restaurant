@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a377ea42dec1d4d4c9ea62112443872a, type: 3}
+  m_Name: STAFF50
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: 961a1c55fefc74f43af4bae5a2c8b47d, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: f001a4a6fa0ab2843873aedf1b3716ce, type: 3}
+  _name: "\uBA5C\uB85C \uD504\uB77C\uC774"
+  _id: STAFF50
+  _description: "\uD758\uB9B0 \uAC10\uC790\uD280\uAE40\uC744 \uADF8\uB9CC \uC8FC\uC6CC\uBA39\uC5B4\uC57C\uD558\uB294
+    \uBA5C\uB85C."
+  _rank: 3
+  _skill: {fileID: 11400000, guid: 7e3d03bb618f4714abb8237651c4543d, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 02cf71c6202b1584192a9c3d4b95971c, type: 3}
+  - {fileID: 21300000, guid: 84ad449797d46dd46ba06144db66322b, type: 3}
+  - {fileID: 21300000, guid: 7c23bc5fdd3ca90428bcc103fa62cf58, type: 3}
+  - {fileID: 21300000, guid: 7c23bc5fdd3ca90428bcc103fa62cf58, type: 3}
+  - {fileID: 21300000, guid: 7c23bc5fdd3ca90428bcc103fa62cf58, type: 3}
+  - {fileID: 21300000, guid: 7c23bc5fdd3ca90428bcc103fa62cf58, type: 3}
+  - {fileID: 21300000, guid: 84ad449797d46dd46ba06144db66322b, type: 3}
+  - {fileID: 21300000, guid: 02cf71c6202b1584192a9c3d4b95971c, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 0
+  _floorType: 4
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _speed: 8.5
+  _cleanerLevelData:
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 180000
+    _cleaningTime: 0.6
+    _addSpeed: 0
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 540000
+    _cleaningTime: 0.6
+    _addSpeed: 0.5
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 1800000
+    _cleaningTime: 0.6
+    _addSpeed: 1
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 35
+    _cleaningTime: 0.6
+    _addSpeed: 1.5
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _cleaningTime: 0.6
+    _addSpeed: 2

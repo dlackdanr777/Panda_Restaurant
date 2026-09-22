@@ -50,6 +50,7 @@ public class UISkinGacha : GachaMachineParent
     private bool _isCapsuleColorChanged;
     private bool _isPlayTextAnime;
     private AudioClip _getItemSound;
+    private bool _purchaseInProgress;
 
 
 
@@ -331,73 +332,96 @@ public class UISkinGacha : GachaMachineParent
 
     public override void OnSingleGachaButtonClicked()
     {
-
-        if(UserInfo.IsDiaValid(10))
-        {
-            _uiGacha.SetActiveGachaMachine(false);
-            SetActiveGachaMachine(true);
-        
-            _getItemList.Clear();
-            _getItemIndex = 0;
-
-            SkinData item = (SkinData)ItemManager.Instance.GetRandomGachaData(_itemDataList);
-            _getItemList.Add(item);
-            UserInfo.GiveSkin(item);
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-10);
-            UserInfo.AddUserGachaMachineCount();
-            GameManager.Instance.AsyncSaveGameData();
-            PaymentInfo.AddGachaData($"Normal Skin Gacha 1");
-            PaymentInfo.SavePaymentData();
-        }
-
-        else
-        {
-            PopupManager.Instance.ShowTextLackDia();
-        }
+        Purchase(1, 10);
     }
 
 
     public override void OnTenGachaButtonClicked()
     {
-        if(UserInfo.IsDiaValid(100))
-        {
-            _uiGacha.SetActiveGachaMachine(false);
-            SetActiveGachaMachine(true);
-        
-            _getItemList.Clear();
-            _getItemIndex = 0;
-
-            SkinData item;
-            int i = 0;
-            while (i < 11)
-            {
-                item = (SkinData)ItemManager.Instance.GetRandomGachaData(_itemDataList);
-
-                // if (!UserInfo.CanAddMoreItems(item))
-                //     continue;
-
-                _getItemList.Add(item);
-                i++;
-            }
-
-            UserInfo.GiveSkinList(_getItemList);
-
-            _gachaMacineAnimator.SetTrigger("Start");
-            UserInfo.AddDia(-100);
-            UserInfo.AddUserGachaMachineCount(11);
-            GameManager.Instance.AsyncSaveGameData();
-            PaymentInfo.AddGachaData($"Normal Skin Gacha 11");
-            PaymentInfo.SavePaymentData();
-        }
-        else
-        {
-            PopupManager.Instance.ShowTextLackDia();
-        }
-
+        Purchase(11, 100);
     }
 
+    private void Purchase(int count, int cost)
+    {
+        if (_purchaseInProgress) return;
+        _purchaseInProgress = true;
+        try
+        {
+            if (!UserInfo.IsDiaValid(cost))
+            { ReportPurchaseError("현재 다이아를 사용할 수 없습니다."); return; }
+            List<SkinData> results;
+            try
+            {
+                var source = _itemDataList == null ? null : new List<GachaData>(_itemDataList);
+                if (source == null || source.Count == 0 || source.Any(item => !IsRegisteredPurchaseSkin(item)))
+                { ReportPurchaseError("스킨 뽑기 자료를 확인할 수 없습니다."); return; }
+                results = new List<SkinData>(count);
+                for (int index = 0; index < count; index++)
+                {
+                    GachaData selected = DrawPurchaseResult(source);
+                    if (!source.Any(item => ReferenceEquals(item, selected)) || !IsRegisteredPurchaseSkin(selected))
+                    { ReportPurchaseError("스킨 뽑기 결과를 확인할 수 없습니다."); return; }
+                    results.Add((SkinData)selected);
+                }
+                if (results.Any(item => !IsRegisteredPurchaseSkin(item)))
+                { ReportPurchaseError("스킨 뽑기 자료가 변경되었습니다."); return; }
+            }
+            catch (Exception exception)
+            {
+                DebugLog.Log(exception.Message);
+                ReportPurchaseError("스킨 뽑기 자료를 확인할 수 없습니다.");
+                return;
+            }
+            if (!UserInfo.TrySpendDia(cost, out string error))
+            { ReportPurchaseError(error); return; }
+            ApplyPurchaseResults(results);
+        }
+        finally { _purchaseInProgress = false; }
+    }
+
+    private static bool IsRegisteredPurchaseSkin(GachaData value)
+    {
+        if (!(value is SkinData skin) || string.IsNullOrWhiteSpace(skin.Id)
+            || skin.Rank < Rank.Normal1 || skin.Rank >= Rank.Length) return false;
+        // A bare SkinData cannot be granted by UserInfo.GiveSkin. Match the concrete
+        // registered record, not just a forged ID or an arbitrary entry in the display list.
+        if (skin is StaffSkinData)
+            return ReferenceEquals(SkinDataManager.Instance.GetStaffSkinData(skin.Id), skin);
+        if (skin is CustomerSkinData)
+            return ReferenceEquals(SkinDataManager.Instance.GetCustomerSkinData(skin.Id), skin);
+        return false;
+    }
+
+    protected virtual GachaData DrawPurchaseResult(List<GachaData> source)
+        => ItemManager.Instance.GetRandomGachaData(source);
+
+    private void ApplyPurchaseResults(List<SkinData> results)
+    {
+        PreparePurchasePresentation();
+        _getItemList.Clear();
+        _getItemIndex = 0;
+        _getItemList.AddRange(results);
+        if (results.Count == 1) UserInfo.GiveSkin(results[0]);
+        else UserInfo.GiveSkinList(_getItemList);
+        CompletePurchasePresentationAndSave(results.Count);
+    }
+
+    protected virtual void PreparePurchasePresentation()
+    {
+        _uiGacha.SetActiveGachaMachine(false);
+        SetActiveGachaMachine(true);
+    }
+
+    protected virtual void CompletePurchasePresentationAndSave(int count)
+    {
+        _gachaMacineAnimator.SetTrigger("Start");
+        UserInfo.AddUserGachaMachineCount(count);
+        GameManager.Instance.AsyncSaveGameData();
+        PaymentInfo.AddGachaData($"Normal Skin Gacha {count}");
+        PaymentInfo.SavePaymentData();
+    }
+
+    protected virtual void ReportPurchaseError(string error) => PopupManager.Instance.ShowDisplayText(error);
 
     private void CapsuleColorChange()
     {

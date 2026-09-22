@@ -43,6 +43,9 @@ public class RecipeTutorial : MonoBehaviour
 
     private void OnRecipeBought()
     {
+        // Main03 now explains the real Learn button before the purchase. Keep
+        // the later Main13/minigame tutorial on its existing completion path.
+        if (_targetChallengeId == "MainReward03" && QuestProgressGuidance.IsInstalledIn(gameObject.scene)) return;
         StopAllCoroutines();
         StartCoroutine(StartTutorial());
     }

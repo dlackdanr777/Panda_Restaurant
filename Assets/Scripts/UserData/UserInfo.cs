@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-public static class UserInfo
+public static partial class UserInfo
 {
     public static event Action OnChangeFloorHandler;
     public static event Action OnChangeDiaHandler;
@@ -65,6 +65,7 @@ public static class UserInfo
 
     public static bool IsTutorialStart = false;
     public static bool IsFirstTutorialClear = false;
+    public static bool? FirstTutorialStartRewardGranted { get; private set; }
     public static bool IsMiniGameTutorialClear = false;
     public static bool IsFeverTutorialClear = false;
     public static bool IsGatecrasher1TutorialClear = false;
@@ -98,6 +99,10 @@ public static class UserInfo
 
     private static int _dia;
     public static int Dia => _dia;
+    private static long _diamondDataGeneration;
+    private static readonly StaffPurchaseDiamondWallet DiamondWallet = new StaffPurchaseDiamondWallet(
+        () => _dia, value => _dia = value, NotifyDiamondChange, () => _diamondDataGeneration);
+    public static IStaffPurchaseWallet StaffPurchaseWallet => DiamondWallet;
 
     private static long _money;
     public static long Money => _money;
@@ -262,7 +267,7 @@ public static class UserInfo
     {
         for (int i = 0, cnt = _stageInfos.Length; i < cnt; ++i)
         {
-            _stageInfos[i] = new StageInfo();
+            _stageInfos[i] = new StageInfo(() => BackendManager.Instance.StaffRuntime, StaffUpgradeWallet);
 
             _stageInfos[i].OnChangeFloorHandler += OnChangeFloorEvent;
             _stageInfos[i].OnChangeTipHandler += OnChangeTipEvent;
@@ -384,6 +389,8 @@ public static class UserInfo
         Param param = new Param();
 
         param.Add("IsFirstTutorialClear", IsFirstTutorialClear);
+        if (FirstTutorialStartRewardGranted.HasValue) param.Add("FirstTutorialStartRewardGranted", FirstTutorialStartRewardGranted.Value);
+        if (QuestStaffGrantMask.HasValue) param.Add(QuestStaffTutorialPolicy.GrantFieldName, QuestStaffGrantMask.Value);
         param.Add("IsMiniGameTutorialClear", IsMiniGameTutorialClear);
         param.Add("IsFeverTutorialClear", IsFeverTutorialClear);
         param.Add("IsGatecrasher1TutorialClear", IsGatecrasher1TutorialClear);
@@ -517,8 +524,9 @@ public static class UserInfo
     }
 
 
-    public static void SaveStageData(EStage stage)
+    public static void SaveStageData(EStage stage, Func<bool> isCurrent = null)
     {
+        if (isCurrent != null && !isCurrent()) return;
         int stageIndex = (int)stage;
         if (_stageInfos[stageIndex] == null)
         {
@@ -527,12 +535,13 @@ public static class UserInfo
         }
 
         Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameData(stage.ToString() + "Data", param);
+        BackendManager.Instance.SaveGameData(stage.ToString() + "Data", param, isCurrent);
     }
 
 
-    public static void SaveStageDataAsync(EStage stage)
+    public static void SaveStageDataAsync(EStage stage, Func<bool> isCurrent = null)
     {
+        if (isCurrent != null && !isCurrent()) return;
         int stageIndex = (int)stage;
         if (_stageInfos[stageIndex] == null)
         {
@@ -541,90 +550,115 @@ public static class UserInfo
         }
 
         Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameDataAsync(stage.ToString() + "Data", param);
+        BackendManager.Instance.SaveGameDataAsync(stage.ToString() + "Data", param, isCurrent: isCurrent);
     }
 
 
     public static void LoadStageData()
     {
-        for (int i = 0, cnt = (int)EStage.Length; i < cnt; ++i)
-        {
-            LoadStageData((EStage)i);
-        }
+        BackendManager.Instance.LoadAllStageData(false);
     }
 
     public static void LoadStageDataAsync()
     {
-        for (int i = 0, cnt = (int)EStage.Length; i < cnt; ++i)
-        {
-            LoadStageDataAsync((EStage)i);
-        }
+        BackendManager.Instance.LoadAllStageData(true);
     }
 
 
     public static void LoadStageData(EStage stage)
     {
-        BackendReturnObject bro = BackendManager.Instance.GetMyData(stage.ToString() + "Data");
-
-        JsonData json = bro.FlattenRows();
-        if (json.Count <= 0)
-        {
-            Debug.LogError("저장된 데이터가 없습니다.");
-            return;
-        }
-
-        ServerStageData data = new ServerStageData();
-        data.SetData(json);
-        bool migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
-        bool loaded = _stageInfos[(int)stage].LoadData(data);
-        if (loaded && migrationApplied)
-            SaveStageData(stage);
+        BackendManager.Instance.LoadStageData(stage, false);
     }
 
     public static void LoadStageDataAsync(EStage stage)
     {
-        BackendManager.Instance.GetMyDataAsync(stage.ToString() + "Data", (bro) =>
-        {
-            JsonData json = bro.FlattenRows();
-            if (json.Count <= 0)
-            {
-                Debug.LogError("저장된 데이터가 없습니다.");
-                return;
-            }
+        BackendManager.Instance.LoadStageData(stage, true);
+    }
 
-            ServerStageData data = new ServerStageData();
+    public static StaffStageRuntimeSnapshot CaptureStageStaffRuntimeSnapshot(EStage stage)
+    {
+        if (stage < EStage.Stage1 || stage >= EStage.Length || _stageInfos == null)
+            return null;
+        return _stageInfos[(int)stage]?.CaptureStaffRuntimeSnapshot();
+    }
+
+    internal static bool ApplyLoadedStageData(EStage stage, BackendReturnObject response,
+        Func<bool> isCurrent, bool asynchronous)
+    {
+        if (stage < EStage.Stage1 || stage >= EStage.Length || _stageInfos == null || isCurrent == null)
+            return false;
+        StageInfo destination = _stageInfos[(int)stage];
+        if (destination == null || BackendManager.Instance.IsStaffMutationProtected) return false;
+        Func<bool> sameDestination = () => isCurrent() && _stageInfos != null
+            && !BackendManager.Instance.IsStaffMutationProtected
+            && ReferenceEquals(_stageInfos[(int)stage], destination);
+        return TryApplyStageDataResponse(stage, response, sameDestination, destination.LoadData,
+            () => { if (asynchronous) SaveStageDataAsync(stage, sameDestination); else SaveStageData(stage, sameDestination); });
+    }
+
+    // Shared legacy response path. Tests supply detached memory sinks, never actual account writes.
+    // Migration originals have already been captured by BackendManager before entering this method.
+    public static bool TryApplyStageDataResponse(EStage stage, BackendReturnObject response,
+        Func<bool> isCurrent, Func<ServerStageData, bool> applyLegacy, Action saveExistingA2)
+    {
+        if (stage < EStage.Stage1 || stage >= EStage.Length || response == null || !response.IsSuccess()
+            || isCurrent == null || applyLegacy == null || !isCurrent()) return false;
+        ServerStageData data;
+        bool migrationApplied;
+        try
+        {
+            JsonData json = response.FlattenRows();
+            if (!isCurrent() || json == null || json.Count != 1) return false;
+            data = new ServerStageData();
             data.SetData(json);
-            bool migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
-            bool loaded = _stageInfos[(int)stage].LoadData(data);
-            if (loaded && migrationApplied)
-                SaveStageDataAsync(stage);
-        });
+            if (!isCurrent()) return false;
+            migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
+        }
+        catch (Exception)
+        {
+            // A broken Stage payload cannot enter memory or trigger the old A2 save.
+            return false;
+        }
+        if (!isCurrent()) return false;
+        bool loaded = applyLegacy(data);
+        if (!isCurrent()) return false;
+        if (loaded && migrationApplied) saveExistingA2?.Invoke();
+        return loaded;
     }
 
 
     public static void LoadGameData(BackendReturnObject bro)
     {
-        if (!bro.IsSuccess())
+        TryLoadGameData(bro);
+    }
+
+    // Keep the void wrapper for existing callers without duplicating the apply body.
+    // A later exception may leave partial legacy state; the restore context withholds readiness, not rollback.
+    public static bool TryLoadGameData(BackendReturnObject bro)
+    {
+        if (bro == null || !bro.IsSuccess())
         {
             Debug.LogError("bro Not Success");
-            return;
+            return false;
         }
 
         JsonData json = bro.FlattenRows();
-        if (json.Count <= 0)
+        if (json == null || json.Count <= 0)
         {
             Debug.LogError("No Server Data");
-            return;
+            return false;
         }
 
         LoadUserData loadData = new LoadUserData(json);
         if (loadData == null || !loadData.IsValid)
         {
             Debug.LogError("[UserInfo] 유저 데이터 파싱 실패. 기본값 적용 중단.");
-            return;
+            return false;
         }
 
         IsFirstTutorialClear = loadData.IsFirstTutorialClear;
+        FirstTutorialStartRewardGranted = loadData.FirstTutorialStartRewardGranted;
+        QuestStaffGrantMask = loadData.QuestStaffGrantMask;
         IsMiniGameTutorialClear = loadData.IsMiniGameTutorialClear;
         IsFeverTutorialClear = loadData.IsFeverTutorialClear;
         IsGatecrasher1TutorialClear = loadData.IsGatecrasher1TutorialClear;
@@ -634,6 +668,7 @@ public static class UserInfo
         IsFurnitureTutorialClear = loadData.IsFurnitureTutorialClear;
         IsRecipeTutorialClear = loadData.IsRecipeTutorialClear;
 
+        _diamondDataGeneration = checked(_diamondDataGeneration + 1);
         _dia = loadData.Dia;
         _money = loadData.Money;
         _totalAddMoney = loadData.TotalAddMoney;
@@ -651,6 +686,7 @@ public static class UserInfo
         _totalVisitSpecialCustomerCount = loadData.TotalVisitSpecialCustomerCount;
         _totalExterminationGatecrasherCustomer1Count = loadData.TotalExterminationGatecrasherCustomer1Count;
         _totalExterminationGatecrasherCustomer2Count = loadData.TotalExterminationGatecrasherCustomer2Count;
+        _totalUseGachaMachineCount = loadData.TotalUseGachaMachineCount;
 
         _weeklyAddMoney = loadData.WeeklyAddMoney;
         _weeklyCookCount = loadData.WeeklyCookCount;
@@ -759,6 +795,7 @@ public static class UserInfo
         OnGiveGachaItemHandler?.Invoke();
         OnUpgradeGachaItemHandler?.Invoke();
         DebugLog.Log("데이터 로드 완료");
+        return true;
     }
 
     public static void SetUserId(string id)
@@ -1020,10 +1057,37 @@ public static class UserInfo
 
     public static void AddDia(int value)
     {
-        _dia += value;
-        _dia = Math.Max(0, _dia);
-        DataBindDia();
-        OnChangeDiaHandler?.Invoke();
+        // Void reward callers must not silently lose a reward or consume reserved purchase funds.
+        // Negative production callers use TrySpendDia before granting their product/animation.
+        if (value < 0)
+        {
+            if (value == int.MinValue || !TrySpendDia(-value, out string spendError))
+                throw new InvalidOperationException("다이아 차감이 거절되었습니다. TrySpendDia 결과를 확인해야 합니다.");
+            return;
+        }
+        if (!DiamondWallet.TryAddReward(value, out string error))
+            throw new OverflowException(error);
+    }
+
+    public static bool TrySpendDia(int cost, out string error)
+    {
+        return DiamondWallet.TrySpend(cost, out error);
+    }
+
+    private static void NotifyDiamondChange()
+    {
+        if (_staffCostCommitDepth == 0)
+        {
+            var errors = new List<Exception>();
+            try { DataBindDia(); }
+            catch (Exception exception) { errors.Add(exception); }
+            var handlers = OnChangeDiaHandler;
+            if (handlers != null)
+                foreach (Action handler in handlers.GetInvocationList())
+                    try { handler(); }
+                    catch (Exception exception) { errors.Add(exception); }
+            if (errors.Count != 0) throw new AggregateException(errors);
+        }
     }
 
 
@@ -1034,8 +1098,11 @@ public static class UserInfo
         _totalAddMoney += value;
         _dailyAddMoney += value;
         _weeklyAddMoney += value;
-        DataBindMoney();
-        OnChangeMoneyHandler?.Invoke();
+        if (_staffCostCommitDepth == 0)
+        {
+            DataBindMoney();
+            OnChangeMoneyHandler?.Invoke();
+        }
     }
 
     public static void AddScore(int score)
@@ -1152,6 +1219,7 @@ public static class UserInfo
 
     public static void AddUserGachaMachineCount(int cnt = 1)
     {
+        if (EconomyInventoryReservation != null) return;
         _totalUseGachaMachineCount += cnt;
         OnUseGachaMachineHandler?.Invoke();
     }
@@ -1302,18 +1370,12 @@ public static class UserInfo
 
     public static bool IsDiaValid(ShopData data)
     {
-        if (Dia < data.BuyPrice)
-            return false;
-
-        return true;
+        return data != null && DiamondWallet.CanSpend(data.BuyPrice);
     }
 
     public static bool IsDiaValid(int dia)
     {
-        if (Dia < dia)
-            return false;
-
-        return true;
+        return DiamondWallet.CanSpend(dia);
     }
 
     public static bool IsSkinTokenValid(int skinToken)
@@ -1335,17 +1397,56 @@ public static class UserInfo
 
     #region StaffData
 
-    public static void GiveStaff(EStage stage, StaffData data)
+    private static int _staffCostCommitDepth;
+    private static readonly IStaffUpgradeWallet StaffUpgradeWallet = new UserStaffUpgradeWallet();
+    public static StaffAccountSaveData CurrentStaffAccount => BackendManager.Instance.StaffRuntime.Snapshot;
+    public static long? PandaTokens => CurrentStaffAccount?.PandaTokens;
+
+    // Retain AddMoney/AddDia arithmetic and statistics, deferring only their binding/event publication.
+    private sealed class UserStaffUpgradeWallet : IStaffUpgradeWallet
+    {
+        public int Score => _score;
+        public long Gold => _money;
+        public int Diamonds => _dia;
+        public bool TryApplyCost(UpgradeMoneyData cost, long expectedGold, int expectedDiamonds)
+        {
+            if (cost == null || cost.Price < 0 || _money != expectedGold || _dia != expectedDiamonds
+                || (cost.MoneyType == MoneyType.Gold ? _money < cost.Price
+                    : cost.MoneyType != MoneyType.Dia || _dia < cost.Price)) return false;
+            _staffCostCommitDepth++;
+            try
+            {
+                if (cost.MoneyType == MoneyType.Gold) AddMoney(-cost.Price);
+                else if (!TrySpendDia(cost.Price, out _)) return false;
+                return true;
+            }
+            finally { _staffCostCommitDepth--; }
+        }
+        public void NotifyCost(UpgradeMoneyData cost)
+        {
+            if (cost.MoneyType == MoneyType.Gold)
+            {
+                DataBindMoney();
+                OnChangeMoneyHandler?.Invoke();
+            }
+            else
+            {
+                NotifyDiamondChange();
+            }
+        }
+    }
+
+    public static bool GiveStaff(EStage stage, StaffData data)
     {
         int stageIndex = (int)stage;
-        _stageInfos[stageIndex].GiveStaff(data);
+        return _stageInfos[stageIndex].GiveStaff(data);
     }
 
 
-    public static void GiveStaff(EStage stage, string id)
+    public static bool GiveStaff(EStage stage, string id)
     {
         int stageIndex = (int)stage;
-        _stageInfos[stageIndex].GiveStaff(id);
+        return _stageInfos[stageIndex].GiveStaff(id);
     }
 
 
@@ -1522,6 +1623,11 @@ public static class UserInfo
     {
         int stageIndex = (int)stage;
         _stageInfos[stageIndex].SetStaffSkin(staff, skinData);
+    }
+
+    public static bool TrySetStaffSkin(EStage stage, StaffData staff, StaffSkinData skinData)
+    {
+        return _stageInfos[(int)stage].TrySetStaffSkin(staff, skinData);
     }
 
 
@@ -1826,6 +1932,7 @@ public static class UserInfo
 
     public static void GiveRecipe(FoodData data)
     {
+        if (EconomyInventoryReservation != null) return;
         if (_giveRecipeLevelDic.ContainsKey(data.Id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
@@ -1839,6 +1946,7 @@ public static class UserInfo
 
     public static void GiveRecipe(string id)
     {
+        if (EconomyInventoryReservation != null) return;
         if (_giveRecipeLevelDic.ContainsKey(id))
         {
             DebugLog.Log("이미 가지고 있습니다.");
@@ -1944,6 +2052,7 @@ public static class UserInfo
 
     public static bool UpgradeRecipe(string id)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (_giveRecipeLevelDic.TryGetValue(id, out int level))
         {
             FoodData data = FoodDataManager.Instance.GetFoodData(id);
@@ -1971,6 +2080,7 @@ public static class UserInfo
 
     public static bool UpgradeRecipe(FoodData data)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (_giveRecipeLevelDic.TryGetValue(data.Id, out int level))
         {
             if (FoodDataManager.Instance.GetFoodData(data.Id).UpgradeEnable(level))
@@ -2012,7 +2122,7 @@ public static class UserInfo
 
     public static Dictionary<string, int> GetGiveGachaItemCountDic()
     {
-        return _giveGachaItemCountDic;
+        return EconomyInventoryReservation == null ? _giveGachaItemCountDic : new Dictionary<string, int>(_giveGachaItemCountDic);
     }
 
 
@@ -2088,6 +2198,7 @@ public static class UserInfo
 
     public static bool GiveGachaItem(GachaItemData data)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (data == null)
         {
             DebugLog.LogError("가챠 아이템 데이터가 null입니다.");
@@ -2130,6 +2241,7 @@ public static class UserInfo
 
     public static void GiveGachaItem(List<GachaItemData> dataList)
     {
+        if (EconomyInventoryReservation != null) return;
         for (int i = 0, cnt = dataList.Count; i < cnt; ++i)
         {
             if (dataList[i] == null)
@@ -2172,6 +2284,7 @@ public static class UserInfo
     
     public static bool RemoveGachaItem(GachaItemData data, int count)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (data == null)
         {
             DebugLog.LogError("해당 하는 아이템이 존재하지 않습니다: " + data.Id);
@@ -2223,6 +2336,7 @@ public static class UserInfo
 
     public static bool UpgradeGachaItem(GachaItemData data)
     {
+        if (EconomyInventoryReservation != null) return false;
         if (!_giveGachaItemCountDic.ContainsKey(data.Id))
         {
             DebugLog.LogError("보유중인 아이템이 아닙니다: " + data.Id);
@@ -2251,6 +2365,7 @@ public static class UserInfo
 
     public static bool UpgradeGachaItem(string id)
     {
+        if (EconomyInventoryReservation != null) return false;
         GachaItemData data = ItemManager.Instance.GetGachaItemData(id);
         if (data == null)
         {
@@ -2286,12 +2401,12 @@ public static class UserInfo
 
     public static Dictionary<string, int> GetGiveGachaItemDic()
     {
-        return _giveGachaItemCountDic;
+        return EconomyInventoryReservation == null ? _giveGachaItemCountDic : new Dictionary<string, int>(_giveGachaItemCountDic);
     }
 
     public static Dictionary<string, int> GetGiveGachaItemLevelDic()
     {
-        return _giveGachaItemLevelDic;
+        return EconomyInventoryReservation == null ? _giveGachaItemLevelDic : new Dictionary<string, int>(_giveGachaItemLevelDic);
     }
 
 

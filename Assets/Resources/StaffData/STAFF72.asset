@@ -1,0 +1,65 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05e3cf508bf56fd4eace1f06301d7158, type: 3}
+  m_Name: STAFF72
+  m_EditorClassIdentifier: 
+  _sprite: {fileID: 21300000, guid: c0df9c9acf7508242b0b3d4fc1957888, type: 3}
+  _thumbnailSprite: {fileID: 21300000, guid: 3a2622a8a8d87d2408eee5b479f65df0, type: 3}
+  _name: "\uD638\uB7C9\uCF58"
+  _id: STAFF72
+  _description: "\uC544\uC774\uC2A4\uD06C\uB9BC \uCF58 \uD638\uB7C9!"
+  _rank: 3
+  _skill: {fileID: 11400000, guid: da2f8bd616b9aab49898c5e6c5ecb141, type: 2}
+  _idleSprites:
+  - {fileID: 21300000, guid: 977ebedc9ab67d64aab188ab9079189b, type: 3}
+  - {fileID: 21300000, guid: 90fc441fa014ef64bb09fc307b70f5ea, type: 3}
+  - {fileID: 21300000, guid: 195a565c03dca074889a75f29656f29f, type: 3}
+  - {fileID: 21300000, guid: fda2bacbdb32786438e67bb8a07e366f, type: 3}
+  - {fileID: 21300000, guid: fda2bacbdb32786438e67bb8a07e366f, type: 3}
+  - {fileID: 21300000, guid: fda2bacbdb32786438e67bb8a07e366f, type: 3}
+  - {fileID: 21300000, guid: fda2bacbdb32786438e67bb8a07e366f, type: 3}
+  - {fileID: 21300000, guid: 195a565c03dca074889a75f29656f29f, type: 3}
+  - {fileID: 21300000, guid: 90fc441fa014ef64bb09fc307b70f5ea, type: 3}
+  - {fileID: 21300000, guid: 977ebedc9ab67d64aab188ab9079189b, type: 3}
+  _animatorController: {fileID: 0}
+  _salesLocationType: 0
+  _floorType: 4
+  _moneyType: 0
+  _buyScore: 0
+  _buyPrice: 0
+  _speed: 8.5
+  _waiterLevelData:
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 180000
+    _addSpeed: 0
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 540000
+    _addSpeed: 0.5
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: 1800000
+    _addSpeed: 1
+  - _upgradeMinScore: 0
+    _upgradeMoneyData:
+      _moneyType: 1
+      _price: 35
+    _addSpeed: 1.5
+  - _upgradeMinScore: -1
+    _upgradeMoneyData:
+      _moneyType: 0
+      _price: -1
+    _addSpeed: 2

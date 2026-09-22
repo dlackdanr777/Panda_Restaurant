@@ -38,6 +38,11 @@ public class UIFurniturePreview : MonoBehaviour
     private FurnitureData _currentData;
     private ERestaurantFloorType _currentType;
 
+    public FurnitureData SelectedData => _currentData;
+    public RectTransform BuyButtonRect => _buyButton != null ? _buyButton.transform as RectTransform : null;
+    public RectTransform EquipButtonRect => _equipButton != null ? _equipButton.transform as RectTransform : null;
+    public RectTransform ScoreButtonRect => _scoreButton != null ? _scoreButton.transform as RectTransform : null;
+
 
     public void Init(Action<ERestaurantFloorType, FurnitureData> onEquipButtonClicked, Action<FurnitureData> onBuyButtonClicked)
     {

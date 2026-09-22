@@ -58,7 +58,8 @@ public class UIMailSlot : MonoBehaviour
         if (_data == null) return;
 
         if (_senderText != null)  _senderText.text  = GetAuthorDisplayName(_data.Author);
-        if (_contentText != null) _contentText.text = GetContentPreview(_data.Content);
+        string receiveStatus = MailManager.Instance.GetReceiveStatusText(_data);
+        if (_contentText != null) _contentText.text = string.IsNullOrEmpty(receiveStatus) ? GetContentPreview(_data.Content) : receiveStatus;
 
         // ── NPC 이미지: 쿠폰 우편이거나 발신자가 "운영팀"이면 어드민 스프라이트 ──
         if (_npcImage != null)
@@ -133,15 +134,18 @@ public class UIMailSlot : MonoBehaviour
         //         : string.Empty;
         // }
 
-        bool isReceived = _data.IsReceived;
+        bool isReceived = MailManager.Instance.IsReceiveDisplayComplete(_data);
         bool isExpired  = _data.IsExpired;
         bool hasItem    = _data.Items != null && _data.Items.Count > 0;
 
         // 아이템 있는 미수령: 받기 버튼 / 아이템 없는 미수령: 읽기 버튼
-        bool canReceive = !isReceived && !isExpired && hasItem;
-        bool canRead    = !isReceived && !isExpired && !hasItem;
+        bool available = MailManager.Instance.CanReceive(_data);
+        bool canReceive = available && hasItem;
+        bool canRead    = available && !hasItem;
         _receiveButton.gameObject.SetActive(canReceive);
+        _receiveButton.interactable = canReceive;
         if (_readButton != null) _readButton.gameObject.SetActive(canRead);
+        if (_readButton != null) _readButton.interactable = canRead;
 
         if (_receivedIcon != null) _receivedIcon.gameObject.SetActive(hasItem && isReceived);
         if (_readIcon != null)     _readIcon.gameObject.SetActive(!hasItem && isReceived);
@@ -208,14 +212,14 @@ public class UIMailSlot : MonoBehaviour
     private void OnReadClicked()
     {
         DebugLog.Log($"[UIMailSlot] OnReadClicked - mail={_data?.Title}, isReceived={_data?.IsReceived}, onSlotClick null={_onSlotClick == null}");
-        if (_data == null || _data.IsReceived || _data.IsExpired) return;
+        if (!MailManager.Instance.CanReceive(_data)) return;
         _readButton.interactable = false;
         _onSlotClick?.Invoke(_data);
     }
 
     private void OnReceiveClicked()
     {
-        if (_data == null || _data.IsReceived || _data.IsExpired) return;
+        if (!MailManager.Instance.CanReceive(_data)) return;
         _receiveButton.interactable = false;
         _onReceive?.Invoke(_data);
     }

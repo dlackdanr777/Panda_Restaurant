@@ -30,10 +30,22 @@ public class UIStaffSelectSlot : MonoBehaviour
 
     private StaffData _currentData;
     private Action<StaffData> _onButtonClicked;
+    private Button _upgradeActionButton;
 
     public void Init()
     {
+        _button.onClick.RemoveListener(OnUpgradeButtonClicked);
         _button.onClick.AddListener(OnUpgradeButtonClicked);
+        if (_upgradeImage != null)
+        {
+            // The original detail art is an Image only, separate from the portrait Button.
+            // Keep portrait upgrade and make the displayed action use that same validated handler.
+            _upgradeActionButton = _upgradeImage.GetComponent<Button>();
+            if (_upgradeActionButton == null) _upgradeActionButton = _upgradeImage.gameObject.AddComponent<Button>();
+            _upgradeActionButton.targetGraphic = _upgradeImage;
+            _upgradeActionButton.onClick.RemoveListener(OnUpgradeButtonClicked);
+            _upgradeActionButton.onClick.AddListener(OnUpgradeButtonClicked);
+        }
     }
 
     public void OnButtonClicked(Action<StaffData> action)
@@ -41,8 +53,18 @@ public class UIStaffSelectSlot : MonoBehaviour
         _onButtonClicked = action;
     }
 
+    public void SetUpgradeButtonHorizontalOffset(float offset)
+    {
+        if (_upgradeImage == null) return;
+        Vector2 position = _upgradeImage.rectTransform.anchoredPosition;
+        position.x = offset;
+        _upgradeImage.rectTransform.anchoredPosition = position;
+    }
+
     private void OnUpgradeButtonClicked()
     {
+        if (_currentData == null || !UserInfo.IsGiveStaff(UserInfo.CurrentStage, _currentData)
+            || !_currentData.CanUpgradeFromSavedLevel(UserInfo.GetStaffLevel(UserInfo.CurrentStage, _currentData))) return;
         _onButtonClicked?.Invoke(_currentData);
     }
 
@@ -89,6 +111,7 @@ public class UIStaffSelectSlot : MonoBehaviour
     public void SetData(StaffData data)
     {
         _currentData = data;
+        if (_upgradeActionButton != null) _upgradeActionButton.interactable = false;
         if (data == null)
         {
             _image.gameObject.SetActive(false);
@@ -110,6 +133,7 @@ public class UIStaffSelectSlot : MonoBehaviour
                 _upgradeImage.gameObject.SetActive(true);
                 _button.interactable = true;
                 _buttonpressEffect.Interactable = true;
+                if (_upgradeActionButton != null) _upgradeActionButton.interactable = true;
                 return;
             }
 

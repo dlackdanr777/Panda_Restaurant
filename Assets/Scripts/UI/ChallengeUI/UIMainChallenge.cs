@@ -183,6 +183,13 @@ public class UIMainChallenge : MobileUIView
 
     private void OnShortcutButtonClicked()
     {
+        // Never trust a stale panel's quest ID as a grant entitlement. The destination revalidates it.
+        _currentData = ChallengeManager.Instance.GetCurrentMainChallengeData();
+        if (_currentData != null && QuestStaffTutorialPolicy.TryGetMapping(_currentData.Id, out _, out _))
+        {
+            DataBind.GetUnityActionBindData("ShowQuestStaffGachaUI").Item?.Invoke();
+            return;
+        }
         if (_currentData == null)
         {
             DebugLog.Log("메인 과제 데이터가 슬롯에 없습니다.");

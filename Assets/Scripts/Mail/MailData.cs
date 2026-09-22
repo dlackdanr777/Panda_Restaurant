@@ -1,7 +1,9 @@
 using BackEnd;
 using LitJson;
+using Muks.BackEnd;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using UnityEngine;
 
 /// <summary>우편 첨부 아이템 한 건 (GetPostList 응답의 items 배열 요소)</summary>
@@ -23,6 +25,11 @@ public class MailData
     public bool IsReceived { get; private set; }
     public bool IsHidden { get; private set; }
     public List<MailItem> Items { get; private set; }
+    public bool HasValidRewardManifest { get; private set; }
+    public string RewardManifestError { get; private set; }
+    public IReadOnlyList<MailRewardItem> RewardManifest { get; private set; }
+    public string RawRewardManifestJson { get; private set; }
+    public GameDataRestoreQuery SourceQuery { get; private set; }
 
     /// <summary>GameData 수령 이력 레코드의 inDate (이력 메일만 설정됨)</summary>
     public string HistoryInDate { get; private set; }
@@ -45,10 +52,12 @@ public class MailData
     public bool IsServerExpired => UserInfo.GetKoreanTime() > ExpirationDate;
 
     // UPost 응답으로 생성
-    public MailData(PostType postType, JsonData json)
+    public MailData(PostType postType, JsonData json, GameDataRestoreQuery sourceQuery = null)
     {
         PostType = postType;
+        SourceQuery = sourceQuery;
         Items = new List<MailItem>();
+        RewardManifest = new ReadOnlyCollection<MailRewardItem>(new List<MailRewardItem>());
 
         try
         {
@@ -69,55 +78,22 @@ public class MailData
             else
                 ExpirationDate = DateTime.MaxValue;
 
-            // GetPostList 응답의 items 배열 파싱
-            if (json.ContainsKey("items") && json["items"].IsArray)
+            // Keep the complete original manifest separate from mutable presentation items.
+            RawRewardManifestJson = json.ContainsKey("items") && json["items"] != null ? json["items"].ToJson() : null;
+            HasValidRewardManifest = MailRewardParser.TryParse(RawRewardManifestJson,
+                out IReadOnlyList<MailRewardItem> rewards, out string manifestError);
+            if (HasValidRewardManifest)
             {
-                for (int i = 0; i < json["items"].Count; i++)
-                {
-                    JsonData itemJson = json["items"][i];
-                    if (!itemJson.ContainsKey("item")) continue;
-
-                    // 디버그: item 객체의 실제 구조 출력
-                    Debug.Log($"[MailData] items[{i}] raw item = {itemJson["item"].ToJson()}");
-
-                    MailItem mi = new MailItem();
-                    JsonData itemObj = itemJson["item"];
-
-                    if (itemObj.ContainsKey("itemName"))
-                    {
-                        string rawName = itemObj["itemName"].ToString();
-                        // {"itemID":"Gold","chartFileName":"..."} 형태면 itemID만 추출
-                        if (rawName.StartsWith("{"))
-                        {
-                            try
-                            {
-                                JsonData nameJson = JsonMapper.ToObject(rawName);
-                                if (nameJson.ContainsKey("itemID"))
-                                    rawName = nameJson["itemID"].ToString();
-                            }
-                            catch { }
-                        }
-                        mi.ItemName = rawName;
-                    }
-                    // itemName 없고 itemID가 직접 있는 경우
-                    else if (itemObj.ContainsKey("itemID"))
-                    {
-                        mi.ItemName = itemObj["itemID"].ToString();
-                    }
-
-                    Debug.Log($"[MailData] items[{i}] parsed ItemName={mi.ItemName}");
-
-                    if (itemJson.ContainsKey("itemCount") &&
-                        int.TryParse(itemJson["itemCount"].ToString(), out int cnt))
-                        mi.ItemCount = cnt;
-
-                    if (!string.IsNullOrEmpty(mi.ItemName))
-                        Items.Add(mi);
-                }
+                RewardManifest = rewards;
+                foreach (MailRewardItem item in rewards)
+                    Items.Add(new MailItem { ItemName = item.Id, ItemCount = item.Count });
             }
+            else RewardManifestError = manifestError;
         }
         catch (Exception ex)
         {
+            HasValidRewardManifest = false;
+            RewardManifestError = ex.GetType().Name;
             Debug.LogError($"[MailData] JSON 파싱 오류: {ex.Message}");
         }
     }
@@ -166,9 +142,11 @@ public class MailData
     }
 
     /// <summary>GameData 이력 행에서 MailData 복원</summary>
-    public static MailData CreateFromHistory(string historyRecordInDate, JsonData row)
+    public static MailData CreateFromHistory(string historyRecordInDate, JsonData row, GameDataRestoreQuery sourceQuery = null)
     {
         var data = new MailData();
+        data.SourceQuery = sourceQuery;
+        data.RewardManifest = new ReadOnlyCollection<MailRewardItem>(new List<MailRewardItem>());
         data.Items       = new List<MailItem>();
         data.IsReceived  = !row.ContainsKey("isReceived") || row["isReceived"].ToString() != "0";
         data.IsHidden    = row.ContainsKey("isHidden") && row["isHidden"].ToString() == "1";

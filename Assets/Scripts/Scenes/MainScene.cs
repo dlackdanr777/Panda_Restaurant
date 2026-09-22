@@ -1,12 +1,18 @@
 using Muks.DataBind;
 using Muks.UI;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
 
 public class MainScene : MonoBehaviour
 {
+#if UNITY_EDITOR
+    // Set before loading the scene for an isolated real-account QA run. Normal Editor defaults are unchanged.
+    public static bool SuppressEditorDebugGrantsForTesting = false;
+#endif
+
     [Serializable]
     private struct BackgroundData
     {
@@ -24,6 +30,7 @@ public class MainScene : MonoBehaviour
     [Header("Components")]
     [SerializeField] private UINavigationCoordinator _uiNavCoordinator;
     [SerializeField] private UINavigation _uiMainNav;
+    [SerializeField] private UINavigation _uiTutorialNav;
     [SerializeField] private FeverSystem _feverSystem;
     [SerializeField] private AudioClip _mainSceneMusic;
     [SerializeField] private AudioClip _feverMusic;
@@ -36,6 +43,7 @@ public class MainScene : MonoBehaviour
     public RestaurantType CurrentRestaurantType => _restaurantType;
 
     private float _updateTimer;
+    private bool _attendanceScheduled;
     
 
 
@@ -99,15 +107,14 @@ public class MainScene : MonoBehaviour
         PlayMainMusic();
         OnUIEvent();
         
-        if (UserInfo.CheckNoAttendance())
-        {
-            SequentialCommandManager.Instance.EnqueueCommand(() =>  _uiMainNav.Push("UIAttendance"), () => _uiMainNav.ViewsVisibleStateCheck(), () => !_uiMainNav.CheckActiveView("UIAttendance"), 1, 0.5f);
-        }
+        StartCoroutine(WaitToScheduleAttendance());
         SoundManager.Instance.LoadSoundData();
         ChallengeManager.Instance.UpdateChallenge();
         GameManager.Instance.SetMiniGameStart(false);
 
 #if UNITY_EDITOR
+        if (!SuppressEditorDebugGrantsForTesting)
+        {
         UserInfo.AddDia(1000);
         UserInfo.AddMoney(10000000);
 
@@ -154,9 +161,64 @@ public class MainScene : MonoBehaviour
             UserInfo.GiveSkin(list[i]);
         }
         //
+        }
 #endif
 
         GameManager.Instance.ChanceScene();
+    }
+
+    private IEnumerator WaitToScheduleAttendance()
+    {
+        // Preparation can await Stage data or saves before IsTutorialStart becomes
+        // true. Never occupy the sequential queue while that work is pending.
+        while (true)
+        {
+            while (!IsAttendanceReady())
+                yield return null;
+
+            if (_attendanceScheduled || !UserInfo.CheckNoAttendance()) yield break;
+            _attendanceScheduled = true;
+            bool handled = false;
+            bool retryWhenReady = false;
+            SequentialCommandManager.Instance.EnqueueCommand(
+                () =>
+                {
+                    if (handled) return;
+                    handled = true;
+                    if (this == null) return;
+                    // A tutorial that began after reservation must not leave this
+                    // command holding the queue needed by the tutorial itself.
+                    if (!IsAttendanceReady())
+                    {
+                        retryWhenReady = true;
+                        return;
+                    }
+                    // Showing the window never grants rewards.
+                    if (UserInfo.CheckNoAttendance() && !_uiMainNav.CheckActiveView("UIAttendance"))
+                        _uiMainNav.Push("UIAttendance");
+                },
+                () => this == null || _uiMainNav == null || _uiTutorialNav == null
+                    || !UserInfo.IsFirstTutorialClear || UserInfo.IsTutorialStart || AreAttendanceViewsReady(),
+                () => handled && (retryWhenReady || this == null || _uiMainNav == null
+                    || !_uiMainNav.CheckActiveView("UIAttendance")),
+                1, 0.5f);
+
+            while (!handled) yield return null;
+            if (!retryWhenReady) yield break;
+            _attendanceScheduled = false;
+        }
+    }
+
+    private bool IsAttendanceReady()
+        => UserInfo.IsFirstTutorialClear && !UserInfo.IsTutorialStart && AreAttendanceViewsReady();
+
+    private bool AreAttendanceViewsReady()
+    {
+        // Tutorial views belong to their own navigation, not the main popup map.
+        // Count alone is insufficient: Pop removes a view before its hide animation ends.
+        return _uiMainNav != null && _uiTutorialNav != null
+            && _uiMainNav.Count == 0 && _uiMainNav.ViewsVisibleStateCheck()
+            && _uiTutorialNav.Count == 0 && _uiTutorialNav.ViewsVisibleStateCheck();
     }
 
 

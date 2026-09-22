@@ -148,7 +148,11 @@ public class ItemManager : MonoBehaviour
         return null;
     }
 
-        public GachaData GetRandomGachaData(List<GachaData> gachaDataList)
+    public GachaData GetRandomGachaData(List<GachaData> gachaDataList)
+        => SelectGachaData(gachaDataList, () => UnityEngine.Random.Range(0f, 1f), count => UnityEngine.Random.Range(0, count));
+
+    // Both the production machine and isolated preview reuse this exact five-attempt rank policy.
+    public static GachaData SelectGachaData(IReadOnlyList<GachaData> gachaDataList, Func<float> rankRoll, Func<int, int> itemIndex)
     {
         if (gachaDataList == null || gachaDataList.Count == 0)
         {
@@ -174,7 +178,7 @@ public class ItemManager : MonoBehaviour
         int maxAttempts = 5; // 최대 시도 횟수 제한
         for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
-            float randF = UnityEngine.Random.Range(0f, 1f);
+            float randF = rankRoll();
             float tmp = 0;
             Rank currentRank = Rank.Normal1;
 
@@ -194,7 +198,7 @@ public class ItemManager : MonoBehaviour
             {
                 // 해당 랭크의 아이템 중 하나를 랜덤 선택
                 List<GachaData> itemsOfRank = rankItemDict[currentRank];
-                return itemsOfRank[UnityEngine.Random.Range(0, itemsOfRank.Count)];
+                return itemsOfRank[itemIndex(itemsOfRank.Count)];
             }
 
             // 해당 랭크에 아이템이 없으면 로그 출력
@@ -204,10 +208,10 @@ public class ItemManager : MonoBehaviour
         // 여러 번 시도 후에도 실패했다면 사용 가능한 랭크에서 무작위로 선택
         if (availableRanks.Count > 0)
         {
-            Rank fallbackRank = availableRanks[UnityEngine.Random.Range(0, availableRanks.Count)];
+            Rank fallbackRank = availableRanks[itemIndex(availableRanks.Count)];
             DebugLog.Log($"랭크 선택 실패, 대체 랭크 {fallbackRank} 사용");
             List<GachaData> fallbackItems = rankItemDict[fallbackRank];
-            return fallbackItems[UnityEngine.Random.Range(0, fallbackItems.Count)];
+            return fallbackItems[itemIndex(fallbackItems.Count)];
         }
 
         // 여기까지 오면 심각한 문제가 있음

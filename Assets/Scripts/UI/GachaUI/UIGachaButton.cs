@@ -16,7 +16,7 @@ public class UIGachaButton : MonoBehaviour
     
     private void OnChallengeClear()
     {
-        _gachaButton.image.material = UserInfo.GetIsClearChallenge("MainReward12") ? _noneMaterial : _grayMaterial;
+        _gachaButton.image.material = UIGacha.IsEntryUnlocked() ? _noneMaterial : _grayMaterial;
     }
 
     private void OnDestroy()

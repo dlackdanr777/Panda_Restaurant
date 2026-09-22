@@ -2,9 +2,9 @@ using BackEnd;
 using LitJson;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Data;
 using UnityEngine;
-using Unity.Profiling;
 
 namespace Muks.BackEnd
 {
@@ -19,26 +19,34 @@ namespace Muks.BackEnd
         Success,
     }
 
-    /// <summary>뒤끝과 연동할 수 있게 해주는 싱글톤 클래스</summary>
-    public class BackendManager : MonoBehaviour
+    /// <summary>GameData SDK boundary. Tests inject a memory fake without constructing/initializing a Unity singleton.</summary>
+    public interface IGameDataBackendTransport
     {
-        private static readonly ProfilerMarker BackendRequestDispatchMarker =
-            new ProfilerMarker("Panda.Backend.RequestDispatch");
-        private static readonly ProfilerMarker BackendResponseClassificationMarker =
-            new ProfilerMarker("Panda.Backend.ResponseClassification");
-        private static readonly ProfilerMarker BackendResponseRowsConversionMarker =
-            new ProfilerMarker("Panda.Backend.ResponseRowsConversion");
-        private static readonly ProfilerMarker BackendCallbackApplyMarker =
-            new ProfilerMarker("Panda.Backend.CallbackApply");
+        bool LoggedIn { get; }
+        bool NativeLoggedIn { get; }
+        string AccountInDate { get; }
+        void Get(string accountInDate, Action<BackendReturnObject> callback);
+        void Insert(Param values, Action<BackendReturnObject> callback);
+        void Update(GameDataSaveTarget target, Param values, Action<BackendReturnObject> callback);
+        Param LatestValues();
+        bool GameplaySaveAllowed { get; }
+        IReadOnlyList<StaffData> ReadCatalog();
+        bool Restore(BackendReturnObject response);
+        Param InitialValues();
+    }
 
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        private static readonly Dictionary<string, int> ActiveRequestCounts =
-            new Dictionary<string, int>();
-        private static int _callbackFrame = -1;
-        private static int _callbacksInFrame;
-        private static long _nextDiagnosticRequestId;
-#endif
+    /// <summary>Existing Stage reads and legacy application boundary; no migration writes.</summary>
+    public interface IStageDataLoadTransport
+    {
+        void Get(EStage stage, string accountInDate, Func<bool> isCurrent, Action<BackendReturnObject> callback);
+        BackendReturnObject Get(EStage stage, string accountInDate, Func<bool> isCurrent);
+        bool Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous);
+        StaffStageRuntimeSnapshot ReadStaff(EStage stage);
+    }
 
+    /// <summary>뒤끝과 연동할 수 있게 해주는 싱글톤 클래스</summary>
+    public partial class BackendManager : MonoBehaviour
+    {
         public static event Action OnGuestSignupHandler;
         public static event Action OnGuestLoginHandler;
         public static event Action<BackendReturnObject> OnInsertGameDataHandler;
@@ -65,6 +73,85 @@ namespace Muks.BackEnd
 
         private static BackendManager _instance;
 
+#if UNITY_EDITOR
+        // Never serialized into a Scene/Prefab or available in a player build. This owner is not Instance.
+        [NonSerialized] private bool _editorOfflineOwner;
+        private static bool _creatingEditorOfflineOwner;
+        private static GameObject _editorOfflineHostBeingCreated;
+        public bool IsEditorOfflineOwner => _editorOfflineOwner;
+
+        /// <summary>
+        /// A real detached owner, fully injected before activation/Awake. Its synthetic memory-transport
+        /// policy is not evidence of actual SDK initialization. Production singleton/settings are untouched.
+        /// </summary>
+        public static BackendManager CreateEditorOfflineOwner(IGameDataBackendTransport game,
+            IStageDataLoadTransport stage, IStaffPurchaseWallet wallet,
+            Func<IReadOnlyList<GachaData>, GachaStaffData> draw,
+            Action<StaffGachaPurchaseExecution> effects)
+        {
+            if (game == null || stage == null || wallet == null || draw == null || effects == null)
+                throw new ArgumentNullException("All offline owner dependencies must be provided.");
+            if (_creatingEditorOfflineOwner) throw new InvalidOperationException("Offline owner creation is already in progress.");
+            var host = new GameObject("StaffGacha Offline Backend") { hideFlags = HideFlags.HideAndDontSave };
+            host.SetActive(false);
+            _creatingEditorOfflineOwner = true;
+            _editorOfflineHostBeingCreated = host;
+            try
+            {
+                var owner = host.AddComponent<BackendManager>();
+                owner._editorOfflineOwner = true;
+                owner._gameDataTransport = game;
+                owner._stageDataTransport = stage;
+                owner._staffPurchaseWallet = wallet;
+                owner.StaffPurchaseDraw = draw;
+                owner.StaffPurchaseCommittedEffects = effects;
+                bool memoryTransportInitialized = false;
+                var settings = new GameDataSdkRetrySettings(typeof(Backend).Assembly.GetName().Version, false, false, true);
+                GameDataSdkInitializationPolicy.ObserveInitialization(() => settings, () => memoryTransportInitialized,
+                    () => { memoryTransportInitialized = true; return new GameDataRawResponse(true, "200", null, "Offline memory transport"); },
+                    out owner._gameDataInitializationPolicy);
+                if (owner._gameDataInitializationPolicy == null || !owner._gameDataInitializationPolicy.IsSupported)
+                    throw new InvalidOperationException("The installed SDK version is unsupported by this offline exercise.");
+                host.SetActive(true);
+                return owner;
+            }
+            catch
+            {
+                // This host belongs solely to this factory, never to the production scene or singleton.
+                if (Application.isPlaying) Destroy(host); else DestroyImmediate(host);
+                throw;
+            }
+            finally { _editorOfflineHostBeingCreated = null; _creatingEditorOfflineOwner = false; }
+        }
+
+        /// <summary>Owner-lifetime cleanup only. EditMode may not invoke MonoBehaviour.OnDestroy.</summary>
+        public void DestroyEditorOfflineOwner()
+        {
+            if (!_editorOfflineOwner) throw new InvalidOperationException("Only a detached offline Editor owner can be disposed here.");
+            if (this == null || _destroyCleanupDone) return;
+            GameObject host = gameObject;
+            OnDestroy(); // Invalidates evidence and releases owned display data; never clears target locks.
+            if (Application.isPlaying) Destroy(host); else DestroyImmediate(host);
+        }
+#endif
+
+        private bool IsOfflineOwner
+        {
+            get
+            {
+#if UNITY_EDITOR
+                return _editorOfflineOwner;
+#else
+                return false;
+#endif
+            }
+        }
+        private bool SavingEnabledForOwner => IsOfflineOwner || _isSaveEnabled;
+        private void RequireLiveBackendOwner()
+        {
+            if (IsOfflineOwner) throw new InvalidOperationException("This Editor owner permits injected memory transport only.");
+        }
+
         // 저장 가능 상태를 추적하는 플래그
         private static bool _isSaveEnabled = true;
         public static bool IsSaveEnabled => _isSaveEnabled;
@@ -76,6 +163,445 @@ namespace Muks.BackEnd
         private bool _isLoaded = false;
         public bool IsLoaded => _isLoaded;
 
+        // 실제 초기화 경계에서 얻은 증거만 보관한다. Inspector의 현재 값으로 대체하지 않는다.
+        private GameDataSdkInitializationPolicy _gameDataInitializationPolicy;
+
+        // DontDestroyOnLoad 수명: 씬 해제와 계정/조회 세대 무효화는 별개이다.
+        private GameDataRestoreContext _gameDataRestoreContext;
+        private GameDataAuthenticationAttempt _authenticationInFlight;
+        private IGameDataBackendTransport _gameDataTransport;
+        private GameDataSaveCoordinator _gameDataSaveCoordinator;
+        private GameDataRestoreQuery _gameDataSaveQuery;
+        private StaffAccountRuntime _staffAccountRuntime;
+        private Func<bool> _gameDataGameplayGate;
+        private IStageDataLoadTransport _stageDataTransport;
+        private StaffStageMigrationCollection _stageMigrationCollection;
+        private long _stageRoundSerial;
+        private List<StaffMigrationExecution> _staffMigrationExecutions;
+        public StaffMigrationExecution CurrentStaffMigrationExecution { get; private set; }
+        public IReadOnlyList<StaffMigrationExecution> StaffMigrationExecutions =>
+            (_staffMigrationExecutions ?? (_staffMigrationExecutions = new List<StaffMigrationExecution>())).AsReadOnly();
+        public event Action<StaffMigrationExecution> StaffMigrationCompleted;
+        public bool IsStaffMigrationProtected =>
+            GameDataSaveCoordinator.IsStaffMigrationTargetProtected(GameDataRestore.LegacyTarget);
+        public bool IsStaffPurchaseProtected =>
+            GameDataSaveCoordinator.IsStaffPurchaseTargetProtected(GameDataRestore.LegacyTarget);
+        public bool IsStaffMutationProtected => IsStaffMigrationProtected || IsStaffPurchaseProtected || IsFirstTutorialProtected || IsQuestStaffGrantProtected || IsGachaEconomyProtected;
+        private bool _startingStaffPurchase;
+        private List<StaffGachaPurchaseExecution> _staffPurchaseExecutions;
+        private IStaffPurchaseWallet _staffPurchaseWallet;
+        public IStaffPurchaseWallet StaffPurchaseWallet
+        {
+            get => _staffPurchaseWallet ?? (IsOfflineOwner
+                ? throw new InvalidOperationException("Offline purchase wallet is missing.") : UserInfo.StaffPurchaseWallet);
+            set => _staffPurchaseWallet = value;
+        }
+        // Same runtime boundary, deterministic selector injection only for isolated tests. No test UI bypass.
+        public Func<IReadOnlyList<GachaData>, GachaStaffData> StaffPurchaseDraw { get; set; }
+        public Action<StaffGachaPurchaseExecution> StaffPurchaseCommittedEffects { get; set; }
+#if UNITY_EDITOR
+        // Optional isolated QA restriction only. True still requires every production check below.
+        // Read-only/idempotent: both button readiness and actual acceptance consult this before reserving/drawing.
+        public Func<StaffGachaPurchaseType, bool> EditorStaffPurchaseAdmission { get; set; }
+#endif
+        public StaffGachaPurchaseExecution CurrentStaffPurchaseExecution { get; private set; }
+        public StaffGachaPurchaseExecution LastCompletedStaffPurchaseExecution { get; private set; }
+        public event Action<StaffGachaPurchaseExecution> StaffPurchaseCompleted;
+        public StaffStageMigrationCollection StageMigrationCollection
+        {
+            get { _stageMigrationCollection?.RefreshValidity(); return _stageMigrationCollection; }
+        }
+        // Point-in-time validation only. Neither method saves, re-queries nor switches staff ownership.
+        public StaffMigrationPreparationResult PrepareStaffMigration() => _stageMigrationCollection == null
+            ? new StaffMigrationPreparationResult(StaffMigrationPreparationStatus.NotStarted,
+                error: "현재 Stage 수집 회차가 없습니다.")
+            : _stageMigrationCollection.PrepareMigration();
+        public StaffMigrationPreparationResult RevalidateStaffMigration(StaffMigrationPreparation preparation) =>
+            _stageMigrationCollection == null
+                ? new StaffMigrationPreparationResult(StaffMigrationPreparationStatus.NotStarted,
+                    error: "현재 Stage 수집 회차가 없습니다.")
+                : _stageMigrationCollection.RevalidateMigration(preparation);
+        private IStageDataLoadTransport StageDataTransport => _stageDataTransport ??
+            (IsOfflineOwner ? throw new InvalidOperationException("Offline Stage transport is missing.")
+                : (_stageDataTransport = new SdkStageDataLoadTransport(this)));
+        public GameDataSaveCoordinator CurrentGameDataSaveCoordinator => _gameDataSaveCoordinator;
+        // The runtime rechecks the current restore/query on every access; old account values are not reused.
+        public StaffAccountRuntime StaffRuntime => _staffAccountRuntime ??
+            (_staffAccountRuntime = new StaffAccountRuntime(() => GameDataRestore.Result,
+                () => GameDataRestore.LegacyQuery, CanChangeStaffRuntime, () => GameDataTransport.ReadCatalog(),
+                () => IsStaffMutationProtected));
+        private IGameDataBackendTransport GameDataTransport => _gameDataTransport ??
+            (IsOfflineOwner ? throw new InvalidOperationException("Offline GameData transport is missing.")
+                : (_gameDataTransport = new SdkGameDataBackendTransport(this)));
+
+        private sealed class SdkGameDataBackendTransport : IGameDataBackendTransport
+        {
+            private readonly BackendManager _owner;
+            public SdkGameDataBackendTransport(BackendManager owner) { _owner = owner; }
+            public bool LoggedIn => _owner._isLogin && Backend.IsLogin;
+            public bool NativeLoggedIn => Backend.IsLogin;
+            public string AccountInDate => Backend.UserInDate;
+            public void Get(string accountInDate, Action<BackendReturnObject> callback)
+            {
+                var where = new Where();
+                where.Equal("owner_inDate", accountInDate);
+                Backend.GameData.Get("GameData", where, bro => callback(bro));
+            }
+            public void Insert(Param values, Action<BackendReturnObject> callback) =>
+                Backend.GameData.Insert("GameData", values, bro => callback(bro));
+            public void Update(GameDataSaveTarget target, Param values, Action<BackendReturnObject> callback) =>
+                Backend.GameData.UpdateV2("GameData", target.RowInDate, target.AccountInDate, values, bro => callback(bro));
+            public Param LatestValues()
+            {
+                UserInfo.ApplyDailyWeeklyResetIfNeeded();
+                return UserInfo.GetSaveUserData();
+            }
+            public bool GameplaySaveAllowed => UserInfo.IsFirstTutorialClear && !UserInfo.IsTutorialStart;
+            public IReadOnlyList<StaffData> ReadCatalog() => Resources.LoadAll<StaffData>("StaffData");
+            public bool Restore(BackendReturnObject response) => UserInfo.TryLoadGameData(response);
+            public Param InitialValues() => LoadUserData.CreateInitialGameData(_owner.ServerTime);
+        }
+
+        private sealed class SdkStageDataLoadTransport : IStageDataLoadTransport
+        {
+            private readonly BackendManager _owner;
+            public SdkStageDataLoadTransport(BackendManager owner) { _owner = owner; }
+            public void Get(EStage stage, string accountInDate, Func<bool> isCurrent,
+                Action<BackendReturnObject> callback)
+            {
+                if (!isCurrent()) return;
+                var where = new Where();
+                where.Equal("owner_inDate", accountInDate);
+                BackendReturnObject lastResponse = null;
+                GameDataRestoreQuery query = _owner.GameDataRestore.LegacyQuery;
+                long round = _owner._stageRoundSerial;
+                _owner.ProcessBackendAPI(stage + "Data 데이터 조회", next =>
+                {
+                    if (!isCurrent()) return; // Includes delayed popup/automatic read retries.
+                    Backend.GameData.Get(stage + "Data", where, bro =>
+                    {
+                        if (!isCurrent()) return; // Before HandleError/retry/legacy application.
+                        lastResponse = bro;
+                        next(bro);
+                    });
+                }, bro => { if (isCurrent()) callback(bro); },
+                state =>
+                {
+                    if (!isCurrent()) return;
+                    callback(lastResponse);
+                    // A terminal response cannot be replaced in the same collection. An explicit UI retry
+                    // starts a fresh all-Stage round, retaining the existing read retry affordance.
+                    _owner.SetPopupButton1("재시도", () => _owner.RetryStageCollection(query, round));
+                });
+            }
+            public BackendReturnObject Get(EStage stage, string accountInDate, Func<bool> isCurrent)
+            {
+                if (!isCurrent()) return null;
+                var where = new Where();
+                where.Equal("owner_inDate", accountInDate);
+                return _owner.ProcessBackendAPISync(stage + "Data 데이터 조회",
+                    () => Backend.GameData.Get(stage + "Data", where), isCurrent: isCurrent);
+            }
+            public bool Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous) =>
+                UserInfo.ApplyLoadedStageData(stage, response, isCurrent, asynchronous);
+            public StaffStageRuntimeSnapshot ReadStaff(EStage stage) => UserInfo.CaptureStageStaffRuntimeSnapshot(stage);
+        }
+
+        // The existing initialization creates/queries Stage1, Stage2 and Stage3, regardless of unlock state.
+        // Single-stage reloads start a separate round; they never borrow the other stages from an older round.
+        public void LoadAllStageData(bool asynchronous)
+        {
+            StaffStageMigrationCollection collection = BeginStageCollection();
+            if (collection == null) return;
+            foreach (EStage stage in collection.RequiredStages) LoadStageData(collection, stage, asynchronous);
+        }
+        public void LoadStageData(EStage stage, bool asynchronous)
+        {
+            if (stage < EStage.Stage1 || stage >= EStage.Length) return;
+            StaffStageMigrationCollection collection = BeginStageCollection();
+            if (collection != null) LoadStageData(collection, stage, asynchronous);
+        }
+        internal void RetryStageCollection(GameDataRestoreQuery query, long round)
+        {
+            if (round != _stageRoundSerial || !GameDataRestore.IsCurrent(query)
+                || !ReferenceEquals(GameDataRestore.LegacyQuery, query)) return;
+            LoadAllStageData(true);
+        }
+        private StaffStageMigrationCollection BeginStageCollection()
+        {
+            long round = _stageRoundSerial = unchecked(_stageRoundSerial + 1);
+            _stageMigrationCollection?.RefreshValidity();
+            GameDataRestoreQuery query = GameDataRestore.LegacyQuery;
+            GameDataSaveTarget target = GameDataRestore.LegacyTarget;
+            if (!IsCurrentStageRound(query, target, round)) return null;
+            bool migrationRequired = GameDataRestore.Result.Status == GameDataRestoreStatus.MigrationRequired
+                && StaffRuntime.Mode != StaffAccountRuntimeMode.Common;
+            var collection = new StaffStageMigrationCollection(query, round, migrationRequired,
+                () => IsCurrentStageRound(query, target, round), () => GameDataTransport.ReadCatalog());
+            if (!IsCurrentStageRound(query, target, round)) return null;
+            collection.ConfigureRuntime(target, stage => StageDataTransport.ReadStaff(stage),
+                () => GameDataTransport.ReadCatalog());
+            _stageMigrationCollection = collection;
+            return collection;
+        }
+        private bool IsCurrentStageRound(GameDataRestoreQuery query, GameDataSaveTarget target, long round) =>
+            round == _stageRoundSerial && query != null && target != null && GameDataTransport.LoggedIn
+            && GameDataRestore.IsCurrent(query) && ReferenceEquals(GameDataRestore.LegacyQuery, query)
+            && ReferenceEquals(GameDataRestore.LegacyTarget, target);
+
+        private void LoadStageData(StaffStageMigrationCollection collection, EStage stage, bool asynchronous)
+        {
+            bool handled = false;
+            bool initializing = false;
+            Func<bool> current = () => collection.RefreshValidity();
+            Func<bool> canReceive = () => !handled && !initializing && current();
+            void Receive(BackendReturnObject response)
+            {
+                if (!canReceive()) return;
+                initializing = true;
+                if (TryInitializeNewTutorialStage(collection, stage, response, restored => { initializing = false; Receive(restored); })) return;
+                initializing = false;
+                handled = true;
+                // Preserve raw types/values BEFORE FlattenRows, SetData, A2 and StageInfo.LoadData.
+                var raw = collection.Capture(stage, response != null && response.IsSuccess(),
+                    response == null ? null : response.GetReturnValue());
+                if (raw == null || !raw.CanApplyLegacy || !current()) return;
+                if (!collection.BeginApplication(stage)) return;
+                _isLoaded = true;
+                bool applied = false;
+                string applicationError = null;
+                try { applied = StageDataTransport.Apply(stage, response, current, asynchronous); }
+                catch (Exception) { applicationError = "기존 Stage 메모리 적용 중 예외가 발생했습니다."; }
+                finally { collection.CompleteApplication(stage, applied, applicationError); }
+                if (current() && ReferenceEquals(_stageMigrationCollection, collection)) TryStartStaffMigration();
+            }
+            if (!canReceive()) return;
+            try
+            {
+                if (asynchronous) StageDataTransport.Get(stage, collection.Query.AccountInDate, canReceive, Receive);
+                else Receive(StageDataTransport.Get(stage, collection.Query.AccountInDate, canReceive));
+            }
+            catch (Exception)
+            {
+                // A throwing/failed query is not an empty owned-staff list. No additional lookup/write.
+                if (canReceive()) Receive(null);
+            }
+        }
+        private GameDataRestoreContext GameDataRestore => _gameDataRestoreContext ??
+            (_gameDataRestoreContext = new GameDataRestoreContext(
+                () => GameDataTransport.LoggedIn ? GameDataTransport.AccountInDate : null));
+        public GameDataRestoreEvidence RestoredGameData => GameDataRestore.Evidence;
+        public GameDataRestoreResult GameDataRestoreResult => GameDataRestore.Result;
+
+        /// <summary>
+        /// Actual Stage completion invokes this entry. A queued operation stores only intent, not a prepared payload.
+        /// The same round is never enqueued again, even after a rejected/unknown transmission.
+        /// </summary>
+        public bool TryStartStaffMigration()
+        {
+            StaffStageMigrationCollection collection = StageMigrationCollection;
+            if (collection == null || !collection.RefreshValidity()
+                || StaffRuntime.Mode != StaffAccountRuntimeMode.Legacy
+                || GameDataRestore.Result.Status != GameDataRestoreStatus.MigrationRequired
+                || collection.CompletedStageCount != collection.RequiredStages.Count
+                || collection.Applications.Any(item => item.Status != StaffStageApplicationStatus.Succeeded)) return false;
+            if (_staffMigrationExecutions == null) _staffMigrationExecutions = new List<StaffMigrationExecution>();
+            var existing = _staffMigrationExecutions.FirstOrDefault(item => ReferenceEquals(item.Collection, collection));
+            if (existing != null) { CurrentStaffMigrationExecution = existing; return existing.Request?.Accepted == true; }
+            GameDataSaveCoordinator coordinator = GetGameDataSaveCoordinator();
+            if (coordinator == null || !ReferenceEquals(collection, _stageMigrationCollection)
+                || !collection.RefreshValidity()) return false;
+            var operation = new StaffMigrationExecution(this, collection, coordinator, GameDataRestore.LegacyTarget);
+            _staffMigrationExecutions.Add(operation); // fence before synchronous validation/SDK/observers may reenter
+            CurrentStaffMigrationExecution = operation;
+            operation.Enqueue();
+            return operation.Request?.Accepted == true;
+        }
+
+        internal bool IsCurrentStaffMigration(StaffMigrationExecution operation) => operation != null
+            && ReferenceEquals(operation.Collection, _stageMigrationCollection)
+            && ReferenceEquals(operation.Query, _gameDataSaveQuery)
+            && IsCurrentGameDataSaveSession(operation.Query, operation.Identity.Target)
+            && operation.Collection.RefreshValidity()
+            && StaffRuntime.Mode == StaffAccountRuntimeMode.Legacy;
+
+        internal void NotifyStaffMigrationCompleted(StaffMigrationExecution operation)
+        {
+            if (StaffMigrationCompleted == null) return;
+            foreach (Action<StaffMigrationExecution> observer in StaffMigrationCompleted.GetInvocationList())
+            {
+                if (!operation.IsCompleted || !IsCurrentGameDataSaveSession(operation.Query, operation.Identity.Target)) return;
+                try { observer(operation); }
+                catch (Exception ex) { Debug.LogWarning("[StaffMigration] Completion observer failed: " + ex.GetType().Name); }
+            }
+        }
+
+        internal IReadOnlyList<StaffData> ReadStaffPurchaseCatalog() => GameDataTransport.ReadCatalog();
+
+        /// <summary>Button readiness only; no draw, reservation or transmission. Start revalidates this state.</summary>
+        public bool CanStartStaffPurchase(StaffGachaPurchaseType type, out string error)
+        {
+            error = null;
+            if (_startingStaffPurchase) { error = "직원 뽑기를 준비하고 있습니다."; return false; }
+            try { return TryGetStaffPurchaseState(type, out _, out _, out _, out _, out _, out error); }
+            catch (Exception ex) { error = "구매 준비 확인 실패: " + ex.GetType().Name; return false; }
+        }
+
+        private bool TryGetStaffPurchaseState(StaffGachaPurchaseType type,
+            out GameDataRestoreQuery query, out GameDataSaveTarget target, out StaffAccountSaveData source,
+            out IStaffPurchaseWallet wallet, out GameDataSaveCoordinator coordinator, out string error)
+        {
+            query = null; target = null; source = null; wallet = null; coordinator = null; error = null;
+            if (IsOfflineOwner && (StaffPurchaseDraw == null || StaffPurchaseCommittedEffects == null
+                || _staffPurchaseWallet == null || _gameDataTransport == null || _stageDataTransport == null))
+            { error = "Offline purchase dependencies are incomplete."; return false; }
+            if (!StaffGachaPurchasePlanCalculator.TryGetPolicy(type, out int cost, out _))
+            { error = "구매 종류가 잘못되었습니다."; return false; }
+#if UNITY_EDITOR
+            if (EditorStaffPurchaseAdmission != null && !EditorStaffPurchaseAdmission(type))
+            { error = "검증 세션에서 아직 허용하지 않은 구매입니다."; return false; }
+#endif
+            query = GameDataRestore.LegacyQuery;
+            target = GameDataRestore.LegacyTarget;
+            var runtime = StaffRuntime;
+            source = runtime.Snapshot;
+            wallet = StaffPurchaseWallet;
+            if (source == null || runtime.Mode != StaffAccountRuntimeMode.Common || !runtime.CanMutate
+                || !CanSaveLegacyGameData || wallet.Diamonds < cost)
+            { error = "현재 직원 뽑기를 진행할 수 없습니다. 상태와 다이아를 확인해 주세요."; return false; }
+            coordinator = GetGameDataSaveCoordinator();
+            if (coordinator == null || !coordinator.CanStartPurchase || !IsCurrentGameDataSaveSession(query, target))
+            { error = "다른 작업이 진행 중입니다. 잠시 후 다시 시도해 주세요."; return false; }
+            return true;
+        }
+
+        public bool TryStartStaffPurchase(StaffGachaPurchaseType type,
+            out StaffGachaPurchaseExecution execution, out string error)
+        {
+            execution = null;
+            error = null;
+            if (_startingStaffPurchase) { error = "직원 뽑기를 준비하고 있습니다."; return false; }
+            _startingStaffPurchase = true;
+            try
+            {
+                if (!TryGetStaffPurchaseState(type, out var query, out var target, out var source,
+                    out var wallet, out var coordinator, out error)) return false;
+                var runtime = StaffRuntime;
+                if (!StaffGachaPurchaseExecution.TryReadCandidates(ReadStaffPurchaseCatalog(), source, out _, out error)) return false;
+                if (!IsCurrentGameDataSaveSession(query, target) || !ReferenceEquals(source, runtime.Snapshot)
+                    || !runtime.CanMutate || !coordinator.CanStartPurchase)
+                { error = "구매 확인 중 계정 또는 직원 상태가 변경되었습니다."; return false; }
+                execution = new StaffGachaPurchaseExecution(this, coordinator, query, target, wallet, type);
+                if (_staffPurchaseExecutions == null) _staffPurchaseExecutions = new List<StaffGachaPurchaseExecution>();
+                _staffPurchaseExecutions.Add(execution);
+                CurrentStaffPurchaseExecution = execution; // Before synchronous fake responses or callbacks.
+                execution.Start();
+                error = execution.Error;
+                return execution.Request != null && execution.Request.Accepted
+                    && execution.Request.Status != GameDataSaveRequestStatus.RejectedBeforeSend;
+            }
+            catch (Exception ex)
+            { error = "구매 준비 확인 실패: " + ex.GetType().Name; return false; }
+            finally { _startingStaffPurchase = false; }
+        }
+
+        internal bool IsCurrentStaffPurchase(StaffGachaPurchaseExecution operation) => operation != null
+            && ReferenceEquals(CurrentStaffPurchaseExecution, operation)
+            && ReferenceEquals(_gameDataSaveQuery, operation.Query)
+            && IsCurrentGameDataSaveSession(operation.Query, operation.Identity.Target)
+            && StaffRuntime.Mode == StaffAccountRuntimeMode.Common;
+
+        public bool CanPresentStaffPurchase(StaffGachaPurchaseExecution operation) => operation != null
+            && operation.IsCompleted && IsCurrentGameDataSaveSession(operation.Query, operation.Identity.Target)
+            && StaffRuntime.Mode == StaffAccountRuntimeMode.Common;
+
+        internal void NotifyStaffPurchaseCompleted(StaffGachaPurchaseExecution operation, IStaffPurchaseWallet wallet)
+        {
+            LastCompletedStaffPurchaseExecution = operation;
+            void Notify(Action action)
+            {
+                if (!CanPresentStaffPurchase(operation)) return;
+                try { action(); }
+                catch (Exception ex) { operation.NotificationError = ex.GetType().Name; }
+            }
+            Notify(wallet.NotifyCommittedCost);
+            if (StaffPurchaseCommittedEffects != null) Notify(() => StaffPurchaseCommittedEffects(operation));
+            else
+            {
+                RequireLiveBackendOwner(); // Missing offline effects must never fall back to UserInfo/PaymentInfo.
+                if (operation.Plan.AccountResult.Acquisition.NewStaffIds.Count > 0) Notify(UserInfo.OnGiveStaffEvent);
+                Notify(() => UserInfo.AddUserGachaMachineCount(operation.Plan.ResultCount));
+                Notify(() => PaymentInfo.AddGachaData("Normal Staff Gacha " + operation.Plan.ResultCount));
+                Notify(PaymentInfo.SavePaymentData); // Separate record, not part of the GameData transaction.
+            }
+            // Count/reward deltas received during the request must be saved from current values, never old payloads.
+            Notify(() => RequestGameDataAutosave());
+            if (StaffPurchaseCompleted != null)
+                foreach (Action<StaffGachaPurchaseExecution> observer in StaffPurchaseCompleted.GetInvocationList())
+                    Notify(() => observer(operation));
+        }
+
+        // 읽기/대기 세션은 무효화하되 이미 보낸 작업의 대상 소유권과 미해결 기록은 유지한다.
+        public void InvalidateGameDataRestore()
+        {
+            InvalidateStageCollection();
+            InvalidateGameDataSaveSession();
+            GameDataRestore.InvalidateAccountSession();
+        }
+        private void InvalidateStageCollection()
+        {
+            _stageRoundSerial = unchecked(_stageRoundSerial + 1);
+            _stageMigrationCollection?.RefreshValidity();
+        }
+        private void InvalidateGameDataSaveSession()
+        {
+            if (_gameDataSaveQuery != null) ClearEconomySession();
+            _gameDataSaveCoordinator?.InvalidateSession();
+            _gameDataSaveCoordinator = null;
+            _gameDataSaveQuery = null;
+        }
+        private GameDataRestoreQuery BeginGameDataQuery()
+        {
+            InvalidateStageCollection();
+            InvalidateGameDataSaveSession();
+            return GameDataRestore.BeginQuery();
+        }
+        public bool IsCurrentGameDataQuery(GameDataRestoreQuery query) => GameDataRestore.IsCurrent(query);
+
+        public GameDataAuthenticationAttempt BeginGameDataAuthentication(GameDataAuthenticationKind kind)
+        {
+            // SDK updates its shared account before callbacks. Do not overlap real authentication calls.
+            if (_authenticationInFlight != null) return null;
+            InvalidateStageCollection();
+            InvalidateGameDataSaveSession();
+            return _authenticationInFlight = GameDataRestore.BeginAuthentication(kind, GameDataTransport.NativeLoggedIn);
+        }
+        public bool IsCurrentGameDataAuthentication(GameDataAuthenticationAttempt attempt) =>
+            GameDataRestore.IsCurrentAuthentication(attempt);
+        public bool ObserveGameDataAuthenticationResponse(GameDataAuthenticationAttempt attempt)
+        {
+            if (ReferenceEquals(_authenticationInFlight, attempt)) _authenticationInFlight = null;
+            return GameDataRestore.IsCurrentAuthentication(attempt);
+        }
+
+        // SDK 5.15 인증 후처리는 원본 gamerInDate로 UserInDate를 갱신한 뒤,
+        // status/error/message만 복제한 콜백을 준다(ReturnValue는 비어 있음).
+        // 콜백 직후의 SDK 계정 값과 현재 인증 시도를 묶고 인증 원문/토큰은 읽거나 보관하지 않는다.
+        public bool CompleteGameDataAuthentication(GameDataAuthenticationAttempt attempt, BackendReturnObject bro)
+        {
+            if (!ObserveGameDataAuthenticationResponse(attempt)) return false;
+            string account = GameDataTransport.AccountInDate;
+            _isLogin = true;
+            if (!GameDataRestore.CompleteAuthentication(attempt, ToRawResponse(bro), account))
+            {
+                _isLogin = false;
+                return false;
+            }
+            // A fresh authenticated session still cannot save until its own GameData restoration succeeds.
+            if (!IsOfflineOwner) _isSaveEnabled = true;
+            return true;
+        }
+
         public DateTime LocalTime = DateTime.Now;
 
         // ServerTime 캐시 (동기 네트워크 호출 빈도 제한)
@@ -83,65 +609,45 @@ namespace Muks.BackEnd
         private float _serverTimeCachedAt = -9999f;
         private const float ServerTimeCacheSeconds = 60f;
 
-        // 서버 시간 갱신 요청 상태 (중복 요청/연속 재시도 방지)
-        private bool _isRefreshingServerTime = false;
-        private float _lastServerTimeFetchAttempt = -9999f;
-        private const float ServerTimeRetryBackoffSeconds = 10f;
-
-        /// <summary>캐시된 서버 시간을 즉시 반환합니다. 네트워크 호출은 하지 않으며, 캐시가 만료됐다면 백그라운드로 갱신만 요청합니다.</summary>
         public DateTime ServerTime
         {
             get
             {
-                bool cacheExpired = Time.realtimeSinceStartup - _serverTimeCachedAt >= ServerTimeCacheSeconds;
-                if (cacheExpired)
-                    RequestServerTimeRefresh();
+                RequireLiveBackendOwner();
+                if (Time.realtimeSinceStartup - _serverTimeCachedAt < ServerTimeCacheSeconds)
+                    return _cachedServerTime;
 
-                // 캐시된 서버 시간이 있으면 경과 시간을 더해 사용, 없으면(최초 조회 전) 로컬 시간 반환
-                if (_serverTimeCachedAt > 0)
-                {
-                    float elapsed = Time.realtimeSinceStartup - _serverTimeCachedAt;
-                    return _cachedServerTime.AddSeconds(elapsed);
-                }
-                return LocalTime;
-            }
-        }
-
-        /// <summary>서버 시간을 실제로 네트워크에서 갱신합니다(비동기, 논블로킹). 이미 요청 중이거나 최근에 실패했다면 다시 요청하지 않습니다.</summary>
-        private void RequestServerTimeRefresh()
-        {
-            if (_isRefreshingServerTime)
-                return;
-
-            float now = Time.realtimeSinceStartup;
-            if (now - _lastServerTimeFetchAttempt < ServerTimeRetryBackoffSeconds)
-                return;
-
-            _isRefreshingServerTime = true;
-            _lastServerTimeFetchAttempt = now;
-
-            Backend.Utils.GetServerTime(bro =>
-            {
-                _isRefreshingServerTime = false;
+                BackendReturnObject bro = Backend.Utils.GetServerTime();
 
                 if (bro != null && bro.IsSuccess())
                 {
-                    try
-                    {
-                        string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
-                        _cachedServerTime = DateTime.Parse(time);
-                        _serverTimeCachedAt = Time.realtimeSinceStartup;
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogException(ex);
-                    }
+                    string time = bro.GetReturnValuetoJSON()["utcTime"].ToString();
+                    _cachedServerTime = DateTime.Parse(time);
+                    _serverTimeCachedAt = Time.realtimeSinceStartup;
+                    RecordGachaEconomyServerUtc(DateTime.Parse(time, null,
+                        System.Globalization.DateTimeStyles.AssumeUniversal | System.Globalization.DateTimeStyles.AdjustToUniversal));
+                    return _cachedServerTime;
                 }
-            });
+                else
+                {
+                    // 캐시된 서버 시간이 있으면 사용, 없으면 로컬 시간 반환
+                    if (_serverTimeCachedAt > 0)
+                    {
+                        float elapsed = Time.realtimeSinceStartup - _serverTimeCachedAt;
+                        return _cachedServerTime.AddSeconds(elapsed);
+                    }
+                    return LocalTime;
+                }
+            }
         }
 
         private void Awake()
         {
+#if UNITY_EDITOR
+            // Inactive AddComponent defers Awake; this fence also fails closed if Unity invokes it early.
+            if (_editorOfflineOwner || ReferenceEquals(gameObject, _editorOfflineHostBeingCreated))
+            { _editorOfflineOwner = true; return; }
+#endif
             if (_instance != null)
             {
                 Destroy(gameObject);
@@ -165,10 +671,22 @@ namespace Muks.BackEnd
             Debug.Log("[BackendManager] 전역 오류 감지 시스템이 활성화되었습니다.");
         }
         
+        private bool _destroyCleanupDone;
         private void OnDestroy()
         {
+            if (_destroyCleanupDone) return;
+            _destroyCleanupDone = true;
             // 이벤트 구독 해제
             Application.logMessageReceived -= HandleLog;
+            // This owner is DontDestroyOnLoad. Ordinary screen/scene closure never reaches this cleanup.
+            // Keep sent financial evidence/target locks, but a destroyed owner cannot apply a late response.
+            _gameDataSaveCoordinator?.InvalidateSession();
+            _gameDataRestoreContext?.InvalidateAccountSession();
+            DisposeEconomy();
+            if (_staffPurchaseExecutions != null)
+                foreach (var purchase in _staffPurchaseExecutions) purchase.ReleaseOwnedDisplayData();
+            if (_questStaffGrants != null)
+                foreach (var grant in _questStaffGrants) grant.ReleaseDisplayData();
         }
 
         private void HandleLog(string logString, string stackTrace, LogType type)
@@ -280,15 +798,13 @@ namespace Muks.BackEnd
         
         private void Init()
         {
+            if (IsOfflineOwner) return;
             // 동기식 초기화 호출
             bool isSuccess = InitializeBackend();
             if (!isSuccess)
             {
                 Debug.LogError("[BackendManager] 뒤끝 초기화 실패");
             }
-
-            // 최초 저장 전에 캐시가 채워지도록 서버 시간을 미리 백그라운드로 요청
-            RequestServerTimeRefresh();
         }
         
         /// <summary>
@@ -296,17 +812,27 @@ namespace Muks.BackEnd
         /// </summary>
         private bool InitializeBackend()
         {
+            RequireLiveBackendOwner();
+            _gameDataInitializationPolicy = null;
             try
             {
-                BackendReturnObject bro = Backend.Initialize();
-                if (bro.IsSuccess())
+                GameDataRawResponse response = GameDataSdkInitializationPolicy.ObserveInitialization(
+                    ReadGameDataSdkRetrySettings, () => Backend.IsInitialized,
+                    () =>
+                    {
+                        // 기본 초기화를 유지해 인증/시간 제한/국가/콜백 등 기존 설정 전체가 적용되게 한다.
+                        BackendReturnObject bro = Backend.Initialize();
+                        return bro == null ? null : new GameDataRawResponse(
+                            bro.IsSuccess(), bro.GetStatusCode(), bro.GetErrorCode(), bro.GetMessage());
+                    }, out _gameDataInitializationPolicy);
+                if (response != null && response.IsSuccess)
                 {
                     Debug.Log("[BackendManager] 뒤끝 초기화 성공");
                     return true;
                 }
                 else
                 {
-                    Debug.LogError($"[BackendManager] 뒤끝 초기화 실패: {bro.GetMessage()}");
+                    Debug.LogError("[BackendManager] 뒤끝 초기화 실패");
                     return false;
                 }
             }
@@ -317,6 +843,14 @@ namespace Muks.BackEnd
             }
         }
         
+        private static GameDataSdkRetrySettings ReadGameDataSdkRetrySettings()
+        {
+            // SDK 5.15.0의 기본 Initialize가 읽는 바로 그 Resource. 민감한 값은 읽거나 출력하지 않는다.
+            var settings = Resources.Load<TheBackendSettings>("TheBackendSettings");
+            return settings == null ? null : new GameDataSdkRetrySettings(typeof(Backend).Assembly.GetName().Version,
+                settings.retryWhenClientRequestFailError, settings.retryWhenServerError, settings.autoRefreshToken);
+        }
+
         #region 비동기/동기 작업 처리를 위한 공통 메서드
 
         /// <summary>
@@ -328,8 +862,11 @@ namespace Muks.BackEnd
             Action<BackendReturnObject> onSuccess = null,
             Action<BackendState> onFail = null, 
             int maxRetries = 3,
-            bool usePopup = true)
+            bool usePopup = true,
+            Func<bool> isCurrent = null)
         {
+            RequireLiveBackendOwner();
+            if (isCurrent != null && !isCurrent()) return;
             if (!_isSaveEnabled && operationName.Contains("저장"))
             {
                 Debug.LogWarning($"[BackendManager] 저장이 비활성화되어 있어 {operationName}이 중단되었습니다.");
@@ -346,155 +883,50 @@ namespace Muks.BackEnd
             }
 
             int retryCount = 0;
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long diagnosticRequestId = ++_nextDiagnosticRequestId;
-            long callbackWaitStarted = 0;
-#endif
 
-            void DispatchRequest()
+            void Send(Action<BackendReturnObject> callback)
             {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                long dispatchStarted = System.Diagnostics.Stopwatch.GetTimestamp();
-                int requestFrame = Time.frameCount;
-                int concurrentRequestCount = IncrementActiveRequestCount(operationName);
-#endif
-
-                using (BackendRequestDispatchMarker.Auto())
-                {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    callbackWaitStarted = System.Diagnostics.Stopwatch.GetTimestamp();
-#endif
-                    backendFunction(HandleCallback);
-                }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                double dispatchMilliseconds = GetElapsedMilliseconds(dispatchStarted);
-                Debug.Log(
-                    $"[PERF-01A] Request #{diagnosticRequestId} dispatched: {operationName}, "
-                    + $"attempt={retryCount + 1}, frame={requestFrame}, "
-                    + $"dispatchCpu={dispatchMilliseconds:F3}ms, concurrentSameOperation={concurrentRequestCount}");
-#endif
+                if (isCurrent == null || isCurrent()) backendFunction(callback);
             }
 
             // 콜백 처리 함수
             void HandleCallback(BackendReturnObject bro)
             {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                long callbackStarted = System.Diagnostics.Stopwatch.GetTimestamp();
-                double networkAndSdkWaitMilliseconds =
-                    GetElapsedMilliseconds(callbackWaitStarted, callbackStarted);
-                int callbacksInFrame = IncrementCallbacksInCurrentFrame();
-                int remainingRequestCount = DecrementActiveRequestCount(operationName);
-#endif
-
-                BackendState state;
-                using (BackendResponseClassificationMarker.Auto())
-                {
-                    state = HandleError(bro);
-                }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                double responseConversionMilliseconds = GetElapsedMilliseconds(callbackStarted);
-                long callbackApplyStarted = System.Diagnostics.Stopwatch.GetTimestamp();
-#endif
+                if (isCurrent != null && !isCurrent()) return;
+                BackendState state = HandleError(bro);
                 
-                using (BackendCallbackApplyMarker.Auto())
+                if (state == BackendState.Success)
                 {
-                    if (state == BackendState.Success)
-                    {
-                        Debug.Log($"[BackendManager] {operationName} 성공");
-                        onSuccess?.Invoke(bro);
-                    }
-                    else if (state == BackendState.Retry && retryCount < maxRetries)
-                    {
-                        retryCount++;
-                        Debug.Log($"[BackendManager] {operationName} 재시도({retryCount}/{maxRetries})");
-                        DispatchRequest();
-                    }
-                    else
-                    {
-                        string errorMessage = bro != null ? bro.GetMessage() : "BackendReturnObject is null";
-                        string errorCode = bro != null ? bro.GetErrorCode() : "NULL_RESPONSE";
-                        Debug.LogError($"[BackendManager] {operationName} 실패: {errorMessage}");
-                        
-                        if (usePopup)
-                        {
-                            ShowPopup("네트워크 에러", 
-                                $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {errorCode}");
-                            SetPopupButton1("재시도", DispatchRequest);
-                            ShowPopupExitButton();
-                        }
-                        
-                        onFail?.Invoke(state);
-                    }
+                    Debug.Log($"[BackendManager] {operationName} 성공");
+                    onSuccess?.Invoke(bro);
                 }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                double callbackApplyMilliseconds = GetElapsedMilliseconds(callbackApplyStarted);
-                Debug.Log(
-                    $"[PERF-01A] Request #{diagnosticRequestId} callback: {operationName}, "
-                    + $"frame={Time.frameCount}, callbacksInFrame={callbacksInFrame}, "
-                    + $"networkAndSdkWait={networkAndSdkWaitMilliseconds:F3}ms, "
-                    + $"responseConversionCpu={responseConversionMilliseconds:F3}ms, "
-                    + $"callbackApplyCpu={callbackApplyMilliseconds:F3}ms, "
-                    + $"remainingSameOperation={remainingRequestCount}");
-#endif
+                else if (state == BackendState.Retry && retryCount < maxRetries)
+                {
+                    retryCount++;
+                    Debug.Log($"[BackendManager] {operationName} 재시도({retryCount}/{maxRetries})");
+                    Send(HandleCallback);
+                }
+                else
+                {
+                    string errorMessage = bro != null ? bro.GetMessage() : "BackendReturnObject is null";
+                    string errorCode = bro != null ? bro.GetErrorCode() : "NULL_RESPONSE";
+                    Debug.LogError($"[BackendManager] {operationName} 실패: {errorMessage}");
+                    
+                    if (usePopup)
+                    {
+                        ShowPopup("네트워크 에러", 
+                            $"{operationName}에 실패했습니다.\n다시 시도해 주세요.\n오류 코드: {errorCode}");
+                        SetPopupButton1("재시도", () => Send(HandleCallback));
+                        ShowPopupExitButton();
+                    }
+                    
+                    onFail?.Invoke(state);
+                }
             }
             
             // API 호출
-            DispatchRequest();
+            Send(HandleCallback);
         }
-
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-        private static int IncrementActiveRequestCount(string operationName)
-        {
-            ActiveRequestCounts.TryGetValue(operationName, out int count);
-            count++;
-            ActiveRequestCounts[operationName] = count;
-            return count;
-        }
-
-        private static int DecrementActiveRequestCount(string operationName)
-        {
-            if (!ActiveRequestCounts.TryGetValue(operationName, out int count))
-                return 0;
-
-            count--;
-            if (count <= 0)
-            {
-                ActiveRequestCounts.Remove(operationName);
-                return 0;
-            }
-
-            ActiveRequestCounts[operationName] = count;
-            return count;
-        }
-
-        private static int IncrementCallbacksInCurrentFrame()
-        {
-            int currentFrame = Time.frameCount;
-            if (_callbackFrame != currentFrame)
-            {
-                _callbackFrame = currentFrame;
-                _callbacksInFrame = 0;
-            }
-
-            return ++_callbacksInFrame;
-        }
-
-        private static double GetElapsedMilliseconds(long startedTimestamp)
-        {
-            return GetElapsedMilliseconds(
-                startedTimestamp,
-                System.Diagnostics.Stopwatch.GetTimestamp());
-        }
-
-        private static double GetElapsedMilliseconds(long startedTimestamp, long endedTimestamp)
-        {
-            long elapsedTicks = endedTimestamp - startedTimestamp;
-            return elapsedTicks * 1000d / System.Diagnostics.Stopwatch.Frequency;
-        }
-#endif
 
         /// <summary>
         /// 백엔드 API 호출을 처리하는 중앙 함수 (동기)
@@ -508,8 +940,11 @@ namespace Muks.BackEnd
             string operationName,
             Func<BackendReturnObject> backendFunction,
             int maxRetries = 3,
-            bool usePopup = true)
+            bool usePopup = true,
+            Func<bool> isCurrent = null)
         {
+            RequireLiveBackendOwner();
+            if (isCurrent != null && !isCurrent()) return null;
             if (!_isSaveEnabled && operationName.Contains("저장"))
             {
                 Debug.LogWarning($"[BackendManager] 저장이 비활성화되어 있어 {operationName}이 중단되었습니다.");
@@ -531,8 +966,10 @@ namespace Muks.BackEnd
                 
                 do
                 {
+                    if (isCurrent != null && !isCurrent()) return null;
                     // API 호출
                     bro = backendFunction();
+                    if (isCurrent != null && !isCurrent()) return null;
                     state = HandleError(bro);
 
                     if (state == BackendState.Success)
@@ -566,6 +1003,7 @@ namespace Muks.BackEnd
             }
             catch (Exception ex)
             {
+                if (isCurrent != null && !isCurrent()) return null;
                 Debug.LogException(ex);
                 Debug.LogError($"[BackendManager] {operationName} 처리 중 예외 발생: {ex.Message}");
                 
@@ -589,7 +1027,7 @@ namespace Muks.BackEnd
         {
             ProcessBackendAPI(
                 "서버 시간 조회",
-                cb => Backend.Utils.GetServerTime(bro => cb(bro)), // 실제 비동기 콜백 오버로드 사용(동기 호출 아님)
+                cb => cb(Backend.Utils.GetServerTime()), // ← 결과를 cb로 전달
                 bro =>
                 {
                     try
@@ -598,6 +1036,7 @@ namespace Muks.BackEnd
                         var dt = DateTime.Parse(time, null,
                             System.Globalization.DateTimeStyles.AssumeUniversal |
                             System.Globalization.DateTimeStyles.AdjustToUniversal);
+                        RecordGachaEconomyServerUtc(dt);
                         onSuccess?.Invoke(dt);
                     }
                     catch (Exception ex)
@@ -623,11 +1062,18 @@ namespace Muks.BackEnd
                 return;
             }
             
+            GameDataAuthenticationAttempt attempt = null;
             ProcessBackendAPI(
                 "커스텀 로그인",
-                (callback) => Backend.BMember.CustomLogin(id, pw, (bro) => callback?.Invoke(bro)),
+                (callback) => {
+                    var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                    Backend.BMember.CustomLogin(id, pw, bro => {
+                        if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                    });
+                },
                 (bro) => {
-                    _isLogin = true;
+                    if (!CompleteGameDataAuthentication(attempt, bro)) return;
                     Debug.Log("[BackendManager] 커스텀 로그인 성공");
                     onSuccess?.Invoke(bro);
                 },
@@ -648,9 +1094,13 @@ namespace Muks.BackEnd
                 return;
             }
 
+            GameDataAuthenticationAttempt attempt = null;
             void HandleGuestLogin(Action<BackendReturnObject> callback)
             {
+                var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Guest);
+                if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
                 Backend.BMember.GuestLogin((bro) => {
+                    if (!ObserveGameDataAuthenticationResponse(started)) return;
                     // 특수 케이스: bro null 또는 실패
                     if (bro == null)
                     {
@@ -690,7 +1140,7 @@ namespace Muks.BackEnd
                 "게스트 로그인",
                 HandleGuestLogin,
                 (bro) => {
-                    _isLogin = true;
+                    if (!CompleteGameDataAuthentication(attempt, bro)) return;
                     
                     // 신규 가입 또는 기존 로그인 처리
                     if (bro.GetStatusCode() == "201")
@@ -716,10 +1166,13 @@ namespace Muks.BackEnd
         /// 뒤끝 서버에서 유저의 gamerId(UUID)를 조회해 UserInfo.GamerId에 저장합니다.
         /// 로그인 직후 한 번 호출하면 이후 모든 UI에서 재사용할 수 있습니다.
         /// </summary>
-        public void FetchGamerIdAsync(Action onSuccess = null, Action onFail = null)
+        public void FetchGamerIdAsync(Action onSuccess = null, Action onFail = null, Func<bool> canApply = null)
         {
+            RequireLiveBackendOwner();
+            if (canApply != null && !canApply()) return;
             Backend.BMember.GetUserInfo((bro) =>
             {
+                if (canApply != null && !canApply()) return;
                 if (bro.IsSuccess())
                 {
                     string gamerId = bro.GetReturnValuetoJSON()["row"]["gamerId"]?.ToString();
@@ -739,7 +1192,8 @@ namespace Muks.BackEnd
 
         public void LogOut()
         {
-            _isSaveEnabled = false;
+            InvalidateGameDataRestore();
+            if (!IsOfflineOwner) _isSaveEnabled = false;
             _isLogin = false;
         }
 
@@ -747,11 +1201,12 @@ namespace Muks.BackEnd
         /// 페더레이션 로그인 성공을 외부에서 통보받아 로그인 상태를 활성화합니다.
         /// GoogleLoginManager 등 외부에서 Backend.BMember.AuthorizeFederation 직접 호출 후 사용합니다.
         /// </summary>
-        public void NotifyFederationLoginSuccess()
+        public bool NotifyFederationLoginSuccess(GameDataAuthenticationAttempt attempt, BackendReturnObject bro)
         {
-            _isLogin = true;
-            _isSaveEnabled = true;
+            if (!CompleteGameDataAuthentication(attempt, bro)) return false;
+            if (!IsOfflineOwner) _isSaveEnabled = true;
             Debug.Log("[BackendManager] 페더레이션 로그인 상태 활성화");
+            return true;
         }
 
         /// <summary>
@@ -767,9 +1222,16 @@ namespace Muks.BackEnd
                 return;
             }
 
+            GameDataAuthenticationAttempt attempt = null;
             ProcessBackendAPI(
                 "구글 연동 계정 전환 로그인",
-                (callback) => Backend.BMember.AuthorizeFederation(accessToken, federationType, (bro) => callback?.Invoke(bro)),
+                (callback) => {
+                    var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                    Backend.BMember.AuthorizeFederation(accessToken, federationType, bro => {
+                        if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                    });
+                },
                 (bro) =>
                 {
                     Debug.Log($"[BackendManager] AuthorizeFederation 응답 statusCode: {bro.GetStatusCode()}, message: {bro.GetMessage()}");
@@ -783,7 +1245,7 @@ namespace Muks.BackEnd
                         onFail?.Invoke(BackendState.Failure);
                         return;
                     }
-                    _isLogin = true;
+                    if (!CompleteGameDataAuthentication(attempt, bro)) return;
                     _isSaveEnabled = true;
                     Debug.Log($"[BackendManager] 구글 연동 계정 전환 로그인 성공 (statusCode: {bro.GetStatusCode()})");
                     onSuccess?.Invoke(bro);
@@ -805,22 +1267,35 @@ namespace Muks.BackEnd
                 return;
             }
 
+            GameDataAuthenticationAttempt attempt = null;
             if (federationType == FederationType.GPGS2)
             {
                 // GPGS2: authCode → GetGPGS2AccessToken → AuthorizeFederation 2단계
                 ProcessBackendAPI(
                     "GPGS2 로그인 액세스 토큰 획득",
-                    (callback) => Backend.BMember.GetGPGS2AccessToken(authCode, (bro) => callback?.Invoke(bro)),
+                    (callback) => {
+                        var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                        if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                        Backend.BMember.GetGPGS2AccessToken(authCode, bro => {
+                            if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                        });
+                    },
                     (bro) =>
                     {
                         string accessToken = bro.GetReturnValuetoJSON()["access_token"].ToString();
                         Debug.Log("[BackendManager] GetGPGS2AccessToken 성공, 뒤끝 연동 로그인 시도");
                         ProcessBackendAPI(
                             "GPGS2 연동 로그인",
-                            (callback2) => Backend.BMember.AuthorizeFederation(accessToken, federationType, (bro2) => callback2?.Invoke(bro2)),
+                            (callback2) => {
+                                var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Google);
+                                if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                                Backend.BMember.AuthorizeFederation(accessToken, federationType, bro2 => {
+                                    if (ObserveGameDataAuthenticationResponse(started)) callback2?.Invoke(bro2);
+                                });
+                            },
                             (bro2) =>
                             {
-                                _isLogin = true;
+                                if (!CompleteGameDataAuthentication(attempt, bro2)) return;
                                 if (bro2.GetStatusCode() == "201")
                                     Debug.Log("[BackendManager] GPGS2 연동 신규 가입 성공");
                                 else
@@ -841,10 +1316,17 @@ namespace Muks.BackEnd
             {
                 ProcessBackendAPI(
                     "구글 연동 로그인",
-                    (callback) => Backend.BMember.AuthorizeFederation(authCode, federationType, (bro) => callback?.Invoke(bro)),
+                    (callback) => {
+                        var started = attempt = BeginGameDataAuthentication(federationType == FederationType.Google
+                            ? GameDataAuthenticationKind.Google : GameDataAuthenticationKind.Other);
+                        if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                        Backend.BMember.AuthorizeFederation(authCode, federationType, bro => {
+                            if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                        });
+                    },
                     (bro) =>
                     {
-                        _isLogin = true;
+                        if (!CompleteGameDataAuthentication(attempt, bro)) return;
                         if (bro.GetStatusCode() == "201")
                             Debug.Log($"[BackendManager] {federationType} 연동 신규 가입 성공");
                         else
@@ -869,12 +1351,19 @@ namespace Muks.BackEnd
                 return;
             }
 
+            GameDataAuthenticationAttempt attempt = null;
             ProcessBackendAPI(
                 "토큰 자동 로그인",
-                (callback) => Backend.BMember.LoginWithTheBackendToken((bro) => callback?.Invoke(bro)),
+                (callback) => {
+                    var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                    Backend.BMember.LoginWithTheBackendToken(bro => {
+                        if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                    });
+                },
                 (bro) =>
                 {
-                    _isLogin = true;
+                    if (!CompleteGameDataAuthentication(attempt, bro)) return;
                     _isSaveEnabled = true;
                     Debug.Log("[BackendManager] 토큰 자동 로그인 성공");
                     onSuccess?.Invoke(bro);
@@ -890,10 +1379,17 @@ namespace Muks.BackEnd
         /// </summary>
         public void CustomSignupAsync(string id, string pw, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
+            GameDataAuthenticationAttempt attempt = null;
             ProcessBackendAPI(
                 "회원가입",
-                (callback) => Backend.BMember.CustomSignUp(id, pw, (bro) => callback?.Invoke(bro)),
-                onSuccess,
+                callback => {
+                    var started = attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (started == null) { onFail?.Invoke(BackendState.Failure); return; }
+                    Backend.BMember.CustomSignUp(id, pw, bro => {
+                        if (ObserveGameDataAuthenticationResponse(started)) callback?.Invoke(bro);
+                    });
+                },
+                bro => { if (CompleteGameDataAuthentication(attempt, bro)) onSuccess?.Invoke(bro); },
                 onFail,
                 3,
                 true
@@ -967,16 +1463,23 @@ namespace Muks.BackEnd
                 return true;
             }
             
+            GameDataAuthenticationAttempt attempt = null;
             BackendReturnObject bro = ProcessBackendAPISync(
                 "커스텀 로그인",
-                () => Backend.BMember.CustomLogin(id, pw),
+                () => {
+                    attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (attempt == null) return null;
+                    var response = Backend.BMember.CustomLogin(id, pw);
+                    ObserveGameDataAuthenticationResponse(attempt);
+                    return response;
+                },
                 3,
                 true
             );
             
             if (bro != null && bro.IsSuccess())
             {
-                _isLogin = true;
+                if (!CompleteGameDataAuthentication(attempt, bro)) return false;
                 Debug.Log("[BackendManager] 커스텀 로그인 성공");
                 return true;
             }
@@ -989,6 +1492,7 @@ namespace Muks.BackEnd
         /// </summary>
         public bool GuestLogin()
         {
+            RequireLiveBackendOwner();
             if (IsLogin)
             {
                 Debug.Log("[BackendManager] 이미 로그인되어 있습니다.");
@@ -996,7 +1500,10 @@ namespace Muks.BackEnd
             }
             
             // 특수 케이스: 게스트 정보가 없는 경우 처리
+            var attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Guest);
+            if (attempt == null) return false;
             BackendReturnObject bro = Backend.BMember.GuestLogin();
+            ObserveGameDataAuthenticationResponse(attempt);
             if (bro.GetStatusCode() == "401")
             {
                 Debug.Log("[BackendManager] 게스트 정보가 없어 삭제 후 재시도합니다.");
@@ -1004,7 +1511,13 @@ namespace Muks.BackEnd
                 
                 bro = ProcessBackendAPISync(
                     "게스트 로그인",
-                    () => Backend.BMember.GuestLogin(),
+                    () => {
+                        attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Guest);
+                        if (attempt == null) return null;
+                        var response = Backend.BMember.GuestLogin();
+                        ObserveGameDataAuthenticationResponse(attempt);
+                        return response;
+                    },
                     3,
                     true
                 );
@@ -1022,7 +1535,7 @@ namespace Muks.BackEnd
             
             if (bro != null && bro.IsSuccess())
             {
-                _isLogin = true;
+                if (!CompleteGameDataAuthentication(attempt, bro)) return false;
                 
                 // 신규 가입 또는 기존 로그인 처리
                 if (bro.GetStatusCode() == "201")
@@ -1047,14 +1560,21 @@ namespace Muks.BackEnd
         /// </summary>
         public bool CustomSignup(string id, string pw)
         {
+            GameDataAuthenticationAttempt attempt = null;
             BackendReturnObject bro = ProcessBackendAPISync(
                 "회원가입",
-                () => Backend.BMember.CustomSignUp(id, pw),
+                () => {
+                    attempt = BeginGameDataAuthentication(GameDataAuthenticationKind.Other);
+                    if (attempt == null) return null;
+                    var response = Backend.BMember.CustomSignUp(id, pw);
+                    ObserveGameDataAuthenticationResponse(attempt);
+                    return response;
+                },
                 3,
                 true
             );
             
-            return bro != null && bro.IsSuccess();
+            return bro != null && bro.IsSuccess() && CompleteGameDataAuthentication(attempt, bro);
         }
         
         /// <summary>
@@ -1114,12 +1634,337 @@ namespace Muks.BackEnd
         #endregion
 
         #region 데이터 관련 메서드 (비동기)
+
+        /// <summary>
+        /// 생성 당시 계정/행/인증·복원 조회 객체에 고정한다. 같은 계정 재로그인도 재사용할 수 없다.
+        /// 두 오류 재시도 OFF가 실제 기본 초기화에 적용된 증거가 있어야 전송한다.
+        /// 인증 거절 후 자동 토큰 갱신은 허용하지만, 결과 미확정의 재전송은 허용하지 않는다.
+        /// </summary>
+        public GameDataSingleUpdate CreateGameDataSingleUpdate()
+        {
+            return CreateBoundGameDataSingleUpdate(GameDataRestore.LegacyQuery, GameDataRestore.LegacyTarget,
+                () => null, requireStaffReady: true);
+        }
+
+        private GameDataSingleUpdate CreateBoundGameDataSingleUpdate(GameDataRestoreQuery query,
+            GameDataSaveTarget target, Func<GameDataSaveCoordinator> readOwner, bool requireStaffReady)
+        {
+            GameDataSingleUpdate updater = null;
+            updater = new GameDataSingleUpdate(() =>
+            {
+                bool current = IsCurrentGameDataSaveSession(query, target);
+                bool staffReady = !requireStaffReady || ReferenceEquals(RestoredGameData?.Query, query);
+                var owner = readOwner() ?? updater.Owner;
+                string transportBlock = owner?.State == GameDataSaveCoordinatorState.ReservedForMail
+                    ? "우편 수령 보호 중에는 GameData를 전송하지 않습니다."
+                    : GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
+                        ? "이 GameData 행은 다른 진행 중/미해결 저장이 소유하고 있습니다." : null;
+                return new GameDataSaveReadiness(
+                    SavingEnabledForOwner, GameDataTransport.LoggedIn, current && staffReady,
+                    !requireStaffReady || GameDataTransport.GameplaySaveAllowed,
+                    GameDataTransport.AccountInDate, target,
+                    transportBlockReason: transportBlock,
+                    initializationPolicy: _gameDataInitializationPolicy);
+            }, new BackendGameDataUpdateTransport((identity, values, response) =>
+            {
+                // Same injected boundary as read/bootstrap. SDK 5.15 default initialization uses
+                // UnityWebRequest + CallbackUpdateManager.Update (main thread); fakes may reply inline.
+                GameDataTransport.Update(identity.Target, values, bro => response(identity, ToRawResponse(bro)));
+            }), isSessionCurrent: () => IsCurrentGameDataSaveSession(query, target),
+                validateRequest: (identity, payload) =>
+                {
+                    var owner = readOwner() ?? updater.Owner;
+                    if (IsGachaEconomyProtected) return _gachaEconomyStore.ValidateTransmission(identity, payload);
+                    var migration = owner?.ActiveStaffMigration;
+                    if (migration != null) return migration.ValidateTransmission(identity, payload);
+                    var purchase = owner?.ActiveStaffPurchase;
+                    if (purchase != null) return purchase.ValidateTransmission(identity, payload);
+                    var tutorial = owner?.ActiveFirstTutorial;
+                    if (tutorial != null) return tutorial.ValidateTransmission(identity, payload);
+                    var questGrant = owner?.ActiveQuestStaffGrant;
+                    if (questGrant != null) return questGrant.ValidateTransmission(identity, payload);
+                    if (!StaffRuntime.ValidateSaveField(payload, out string error))
+                        return error ?? "현재 공용 직원 상태와 저장 자료가 일치하지 않습니다.";
+                    if (!ValidateFirstTutorialSave(payload, out error)) return error;
+                    if (!ValidateQuestStaffGrantSave(payload, out error)) return error;
+                    // A previously queued explicit partial balance must not overwrite purchase/reward deltas.
+                    if (ReferenceEquals(CurrentStaffPurchaseExecution?.Query, query))
+                    {
+                        var dia = Newtonsoft.Json.Linq.JObject.Parse(payload.Json)["Dia"];
+                        if (dia != null && (dia.Type != Newtonsoft.Json.Linq.JTokenType.Integer
+                            || (long)dia != StaffPurchaseWallet.Diamonds))
+                            return "명시된 다이아가 현재 확정된 잔액과 다릅니다.";
+                    }
+                    return IsCurrentGameDataSaveSession(query, target) ? null : "저장 필드 확인 중 세션이 무효화되었습니다.";
+                });
+            return updater;
+        }
+
+        /// <summary>기존 단일 Get을 재사용한다. 공용 필드 부재만 기존 게임 복원을 허용한다.</summary>
+        public void GetAndRestoreGameDataAsync(Action<GameDataRestoreQuery, GameDataRestoreResult> onComplete,
+            Action<BackendState> onFail = null)
+        {
+            GameDataRestoreQuery query = BeginGameDataQuery();
+            GetMyDataAsyncCore("GameData", bro =>
+            {
+                if (!GameDataRestore.CanHandle(query)) return;
+                GameDataRestoreResult result = GameDataRestore.TryRestore(query, bro != null && bro.IsSuccess(),
+                    bro?.GetReturnValue(), GameDataTransport.ReadCatalog, () => GameDataTransport.Restore(bro));
+                if (result.Status == GameDataRestoreStatus.RowMissing
+                    && TryCreateInitialGameData(query, onComplete, onFail)) return;
+                if (GameDataRestore.IsCurrent(query))
+                {
+                    // Install only this query's validated common data before caller/UI continuation.
+                    // MigrationRequired stays legacy; damaged or unfinished data never becomes an empty account.
+                    StaffRuntime.Refresh();
+                    if (!GameDataRestore.IsCurrent(query)) return;
+                    // Compatibility for other tables; GameData writers never use this flag as restore proof.
+                    if (result.CanContinueLegacy) _isLoaded = true;
+                    onComplete?.Invoke(query, result);
+                }
+            }, state =>
+            {
+                if (!GameDataRestore.CanHandle(query)) return;
+                GameDataRestore.TryRestore(query, false, null, null, null);
+                if (GameDataRestore.IsCurrent(query)) onFail?.Invoke(state);
+            }, query);
+        }
+
+        private bool TryCreateInitialGameData(GameDataRestoreQuery query,
+            Action<GameDataRestoreQuery, GameDataRestoreResult> onComplete, Action<BackendState> onFail)
+        {
+            if (!SavingEnabledForOwner || !GameDataTransport.LoggedIn
+                || !GameDataRestore.TryBeginInitialCreation(query, _gameDataInitializationPolicy, out _)) return false;
+            try
+            {
+                // Detached initial defaults, never the previous account's UserInfo snapshot.
+                if (!GameDataSavePayload.TryCapture(GameDataTransport.InitialValues(), out var payload, out _))
+                    throw new InvalidOperationException("Initial GameData payload validation failed.");
+                Param values = payload.CreateParamCopy();
+                if (!GameDataRestore.IsCurrent(query) || !GameDataTransport.LoggedIn || !SavingEnabledForOwner
+                    || _gameDataInitializationPolicy == null || !_gameDataInitializationPolicy.IsSupported) return true;
+                // Exactly one public SDK invocation. No ProcessBackendAPI/automatic/popup retry.
+                GameDataTransport.Insert(values, bro =>
+                {
+                    GameDataRestoreResult result = GameDataRestore.CompleteInitialCreation(query, ToRawResponse(bro));
+                    if (!GameDataRestore.IsCurrent(query)) return;
+                    if (result.Status == GameDataRestoreStatus.InitialCreationConfirmedAwaitingRestore)
+                        GetAndRestoreGameDataAsync(onComplete, onFail);
+                    else if (result.Status == GameDataRestoreStatus.InitialCreationIndeterminate)
+                        onComplete?.Invoke(query, result);
+                });
+            }
+            catch
+            {
+                var result = GameDataRestore.CompleteInitialCreation(query, null);
+                if (GameDataRestore.IsCurrent(query)
+                    && result.Status == GameDataRestoreStatus.InitialCreationIndeterminate)
+                    onComplete?.Invoke(query, result);
+            }
+            return true;
+        }
+
+        private static GameDataRawResponse ToRawResponse(BackendReturnObject bro) => bro == null ? null
+            : new GameDataRawResponse(bro.IsSuccess(), bro.GetStatusCode(), bro.GetErrorCode(), bro.GetMessage(), bro);
+
+        /// <summary>우편 목록도 현재 복원이 끝난 같은 조회 세대에 고정한다. 미완료/무효화 때는 null이다.</summary>
+        public GameDataRestoreQuery CurrentMailReceiveQuery => GameDataRestore.LegacyQuery;
+
+        /// <summary>
+        /// 우편 소비 전에 현재 계정·행·SDK 정책과 저장 유휴 상태를 확인한다.
+        /// 보호 중 일반/자동 저장 접수는 허용하되 확정 종료 전에는 SDK로 보내지 않는다.
+        /// </summary>
+        public bool TryAcquireMailSaveLease(out GameDataMailSaveLease lease, out string error)
+        {
+            lease = null;
+            error = null;
+            var query = GameDataRestore.LegacyQuery;
+            var target = GameDataRestore.LegacyTarget;
+            if (query == null || target == null || !CanSaveLegacyGameData)
+            { error = "현재 복원·SDK 정책·저장 상태로 우편 수령을 보호할 수 없습니다."; return false; }
+            var coordinator = GetGameDataSaveCoordinator();
+            if (coordinator == null || !ReferenceEquals(_gameDataSaveQuery, query)
+                || !IsCurrentGameDataSaveSession(query, target))
+            { error = "우편 수령 준비 중 인증·복원 세션이 변경되었습니다."; return false; }
+            return coordinator.TryReserveForMail(query, () =>
+                ReferenceEquals(_gameDataSaveCoordinator, coordinator)
+                && ReferenceEquals(_gameDataSaveQuery, query)
+                && _gameDataInitializationPolicy != null && _gameDataInitializationPolicy.IsSupported
+                && IsCurrentGameDataSaveSession(query, target), out lease, out error);
+        }
+
+        public bool CanSaveLegacyGameData
+        {
+            get
+            {
+                var query = GameDataRestore.LegacyQuery;
+                var target = GameDataRestore.LegacyTarget;
+                var owner = ReferenceEquals(_gameDataSaveQuery, query) ? _gameDataSaveCoordinator : null;
+                return IsCurrentGameDataSaveSession(query, target)
+                    && _gameDataInitializationPolicy != null && _gameDataInitializationPolicy.IsSupported
+                    && !GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
+                    && (owner == null || (owner.State != GameDataSaveCoordinatorState.Indeterminate
+                        && owner.State != GameDataSaveCoordinatorState.LocalCompletionFailed
+                        && owner.State != GameDataSaveCoordinatorState.InvalidatedAfterSend));
+            }
+        }
+
+        private bool IsCurrentGameDataSaveSession(GameDataRestoreQuery query, GameDataSaveTarget target)
+        {
+            return SavingEnabledForOwner && GameDataTransport.LoggedIn && target != null
+                && GameDataRestore.IsCurrent(query) && ReferenceEquals(query, GameDataRestore.LegacyQuery)
+                && target.Matches(GameDataRestore.LegacyTarget) && !GameDataRestore.IsInitialCreationBlocked;
+        }
+
+        private bool CanChangeStaffRuntime()
+        {
+            var query = GameDataRestore.LegacyQuery;
+            var target = GameDataRestore.LegacyTarget;
+            var owner = ReferenceEquals(_gameDataSaveQuery, query) ? _gameDataSaveCoordinator : null;
+            // Own in-flight saves do not freeze growth: a later autosave must include the latest values.
+            // Own ReservedForMail also permits the protected reward; its queued autosave starts after release.
+            // Unresolved completion and another writer's ownership still block changes; no tutorial UI gate here.
+            return IsCurrentGameDataSaveSession(query, target)
+                && !IsStaffMigrationProtected
+                && !IsStaffPurchaseProtected
+                && !IsFirstTutorialProtected
+                && !IsQuestStaffGrantProtected
+                && !IsGachaEconomyProtected
+                && !GameDataSaveCoordinator.IsTargetOwnedByOther(target, owner)
+                && (owner == null || (owner.State != GameDataSaveCoordinatorState.Indeterminate
+                    && owner.State != GameDataSaveCoordinatorState.LocalCompletionFailed
+                    && owner.State != GameDataSaveCoordinatorState.InvalidatedAfterSend));
+        }
+
+        private GameDataSaveCoordinator GetGameDataSaveCoordinator()
+        {
+            if (!CanSaveLegacyGameData) return null;
+            var query = GameDataRestore.LegacyQuery;
+            var target = GameDataRestore.LegacyTarget;
+            if (ReferenceEquals(_gameDataSaveQuery, query) && _gameDataSaveCoordinator != null)
+                return _gameDataSaveCoordinator;
+
+            InvalidateGameDataSaveSession();
+            GameDataSaveCoordinator owner = null;
+            var updater = CreateBoundGameDataSingleUpdate(query, target, () => owner, requireStaffReady: false);
+            owner = new GameDataSaveCoordinator(target, updater, () =>
+            {
+                if (!IsCurrentGameDataSaveSession(query, target))
+                    throw new InvalidOperationException("오래된 세션의 최신 자료를 생성할 수 없습니다.");
+                Param values = GameDataTransport.LatestValues();
+                if (!IsCurrentGameDataSaveSession(query, target))
+                    throw new InvalidOperationException("자료 생성 중 저장 세션이 무효화되었습니다.");
+                if (!StaffRuntime.TryAddSaveField(values, out string error))
+                    throw new InvalidOperationException(error ?? "현재 공용 직원 저장 자료를 생성할 수 없습니다.");
+                if (!TryAddQuestStaffGrantSaveField(values, out error)) throw new InvalidOperationException(error);
+                return values;
+            }, isSessionCurrent: () => IsCurrentGameDataSaveSession(query, target));
+            _gameDataSaveQuery = query;
+            _gameDataSaveCoordinator = owner;
+            return owner;
+        }
+
+        /// <summary>접수/전송/성공은 ticket에서 구분한다. 앞선 완료 후 전체 최신 자료를 생성하며 병합 시 Param을 보관하지 않는다.</summary>
+        public GameDataSaveRequest RequestGameDataAutosave(Action<BackendReturnObject> onSuccess = null,
+            Action<BackendState> onFail = null, bool requireGameplay = false)
+        {
+            var coordinator = GetGameDataSaveCoordinator();
+            if (coordinator == null) return RejectGameDataRequest("현재 복원 세션/정책/대상 소유권으로 저장을 접수할 수 없습니다.", onFail);
+            Func<bool> guard = requireGameplay
+                ? (_gameDataGameplayGate ?? (_gameDataGameplayGate = () => GameDataTransport.GameplaySaveAllowed)) : null;
+            return SubmitGameDataRequest(coordinator, null, true, onSuccess, onFail, guard);
+        }
+
+        /// <summary>명시된 변경값은 고정된 별도 FIFO 작업이다. 부분 필드와 성공 통지를 자동 저장으로 대체하지 않는다.</summary>
+        public GameDataSaveRequest RequestGameDataSave(Param values, string expectedRow = null,
+            Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        {
+            var coordinator = GetGameDataSaveCoordinator();
+            var query = _gameDataSaveQuery;
+            var target = GameDataRestore.LegacyTarget;
+            if (coordinator == null || target == null || (expectedRow != null
+                && !string.Equals(expectedRow, target.RowInDate, StringComparison.Ordinal)))
+                return RejectGameDataRequest("현재 복원된 저장 대상과 요청이 일치하지 않습니다.", onFail);
+            if (!GameDataSavePayload.TryCapture(values, out var payload, out string error))
+                return RejectGameDataRequest(error, onFail);
+            if (!IsCurrentGameDataSaveSession(query, target))
+                return GameDataSaveRequest.Rejected("자료 고정 중 저장 세션이 무효화되었습니다.");
+            return SubmitGameDataRequest(coordinator, () => payload.CreateParamCopy(), false, onSuccess, onFail);
+        }
+
+        private static GameDataSaveRequest RejectGameDataRequest(string error, Action<BackendState> onFail)
+        {
+            onFail?.Invoke(BackendState.NotSave);
+            return GameDataSaveRequest.Rejected(error);
+        }
+
+        private GameDataSaveRequest SubmitGameDataRequest(GameDataSaveCoordinator coordinator, Func<Param> createValues,
+            bool autosave, Action<BackendReturnObject> onSuccess, Action<BackendState> onFail,
+            Func<bool> canCreateValues = null)
+        {
+            var query = _gameDataSaveQuery;
+            var target = GameDataRestore.LegacyTarget;
+            bool failureReported = false;
+            Action<GameDataSaveReceipt> confirmed = receipt =>
+            {
+                if (IsCurrentGameDataSaveSession(query, target)) onSuccess?.Invoke(receipt.RawResponse?.NativeResponse);
+            };
+            Action<GameDataSaveRequest> changed = request =>
+            {
+                if (failureReported || !IsCurrentGameDataSaveSession(query, target)) return;
+                if (request.Status == GameDataSaveRequestStatus.RejectedBeforeSend
+                    || request.Status == GameDataSaveRequestStatus.Indeterminate
+                    || request.Status == GameDataSaveRequestStatus.LocalCompletionFailed)
+                {
+                    failureReported = true;
+                    onFail?.Invoke(request.Status == GameDataSaveRequestStatus.RejectedBeforeSend
+                        ? BackendState.NotSave : BackendState.Failure);
+                }
+            };
+            return autosave ? coordinator.RequestAutosave(confirmed, changed, canCreateValues)
+                : coordinator.EnqueueSave(createValues, confirmed, changed);
+        }
+
+        private void SaveLegacyGameDataAsync(Param values, string expectedRow,
+            Action<BackendReturnObject> onSuccess, Action<BackendState> onFail) =>
+            RequestGameDataSave(values, expectedRow, onSuccess, onFail);
+
+        // Compatibility only: false may mean accepted but still pending, never an assertion of non-application.
+        // Runtime callers use RequestGameDataAutosave's success callback. No synchronous SDK call/wait is made.
+        private bool SaveLegacyGameData(Param values, string expectedRow)
+        {
+            return RequestGameDataSave(values, expectedRow).Status == GameDataSaveRequestStatus.SuccessConfirmed;
+        }
         
         /// <summary>
         /// 유저 데이터를 조회합니다
         /// </summary>
         public void GetMyDataAsync(string tableId, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
+            // 호환 조회도 새 GameData 조회이면 이전 증거를 폐기한다. Stage 조회와는 수명을 공유하지 않는다.
+            GameDataRestoreQuery query = tableId == "GameData" ? BeginGameDataQuery() : null;
+            GetMyDataAsyncCore(tableId, onSuccess, onFail, query);
+        }
+
+        private void GetMyDataAsyncCore(string tableId, Action<BackendReturnObject> onSuccess,
+            Action<BackendState> onFail, GameDataRestoreQuery query)
+        {
+            if (tableId == "GameData")
+            {
+                if (!GameDataRestore.CanHandle(query) || !GameDataTransport.LoggedIn) return;
+                try
+                {
+                    // Reuse the same Get; never retain a failed query's old popup retry closure.
+                    GameDataTransport.Get(query.AccountInDate, bro =>
+                    {
+                        if (!GameDataRestore.CanHandle(query)) return;
+                        if (bro != null && bro.IsSuccess()) onSuccess?.Invoke(bro);
+                        else onFail?.Invoke(BackendState.Failure);
+                    });
+                }
+                catch { if (GameDataRestore.CanHandle(query)) onFail?.Invoke(BackendState.Failure); }
+                return;
+            }
             if (!Backend.IsLogin && !_isLogin)
             {
                 Debug.LogError("[BackendManager] 로그인이 되어있지 않아 데이터를 조회할 수 없습니다.");
@@ -1129,17 +1974,26 @@ namespace Muks.BackEnd
 
             // 유저 조건 생성
             Where where = new Where();
-            where.Equal("owner_inDate", Backend.UserInDate);
+            where.Equal("owner_inDate", query != null ? query.AccountInDate : Backend.UserInDate);
 
             ProcessBackendAPI(
                 $"{tableId} 데이터 조회",
-                (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
+                (callback) =>
+                {
+                    if (query != null && !GameDataRestore.IsCurrent(query)) return;
+                    Backend.GameData.Get(tableId, where, bro =>
+                    {
+                        // 구세대 응답은 오류 재시도 처리기/메모리 적용/후속 초기화보다 먼저 차단한다.
+                        if (query == null || GameDataRestore.IsCurrent(query)) callback?.Invoke(bro);
+                    });
+                },
                 (bro) => {
+                    if (query != null && !GameDataRestore.IsCurrent(query)) return;
                     Debug.Log($"[BackendManager] {tableId} 데이터 조회 성공");
                     _isLoaded = true;
                     onSuccess?.Invoke(bro);
                 },
-                onFail,
+                state => { if (query == null || GameDataRestore.IsCurrent(query)) onFail?.Invoke(state); },
                 3,
                 true
             );
@@ -1170,8 +2024,12 @@ namespace Muks.BackEnd
         /// <summary>
         /// 게임 데이터를 안전하게 저장합니다
         /// </summary>
-        public void SaveGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
+        public void SaveGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null,
+            Action<BackendState> onFail = null, Func<bool> isCurrent = null)
         {
+            isCurrent = BindFirstTutorialStageSaveGuard(tableId, param, isCurrent);
+            if (isCurrent != null && !isCurrent()) return;
+            if (tableId == "GameData") { SaveLegacyGameDataAsync(param, null, onSuccess, onFail); return; }
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
@@ -1195,11 +2053,8 @@ namespace Muks.BackEnd
                 $"{tableId} 데이터 확인",
                 (callback) => Backend.GameData.Get(tableId, where, (bro) => callback?.Invoke(bro)),
                 (getBro) => {
-                    JsonData rows;
-                    using (BackendResponseRowsConversionMarker.Auto())
-                    {
-                        rows = getBro.FlattenRows();
-                    }
+                    if (isCurrent != null && !isCurrent()) return;
+                    var rows = getBro.FlattenRows();
                     
                     // 결과에 따라 삽입 또는 업데이트
                     if (rows != null && rows.Count > 0)
@@ -1209,11 +2064,12 @@ namespace Muks.BackEnd
                         // 업데이트 수행
                         ProcessBackendAPI(
                             $"{tableId} 데이터 업데이트",
-                            (callback) => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param, (bro) => callback?.Invoke(bro)),
+                            (callback) => ObserveOrdinaryStageWrite(tableId, reply => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param, bro => reply(bro)), callback),
                             onSuccess,
                             onFail,
                             3,
-                            true
+                            true,
+                            isCurrent
                         );
                     }
                     else
@@ -1221,20 +2077,22 @@ namespace Muks.BackEnd
                         // 삽입 수행
                         ProcessBackendAPI(
                             $"{tableId} 데이터 삽입",
-                            (callback) => Backend.GameData.Insert(tableId, param, (bro) => callback?.Invoke(bro)),
+                            (callback) => ObserveOrdinaryStageWrite(tableId, reply => Backend.GameData.Insert(tableId, param, bro => reply(bro)), callback),
                             (insertBro) => {
                                 OnInsertGameDataHandler?.Invoke(insertBro);
                                 onSuccess?.Invoke(insertBro);
                             },
                             onFail,
                             3,
-                            true
+                            true,
+                            isCurrent
                         );
                     }
                 },
                 onFail,
                 2,
-                true
+                true,
+                isCurrent
             );
         }
         
@@ -1243,6 +2101,7 @@ namespace Muks.BackEnd
         /// </summary>
         public void InsertGameDataAsync(string tableId, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
+            if (tableId == "GameData") { onFail?.Invoke(BackendState.NotSave); return; }
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
@@ -1275,6 +2134,7 @@ namespace Muks.BackEnd
         /// </summary>
         public void UpdateGameDataAsync(string tableId, string inDate, Param param, Action<BackendReturnObject> onSuccess = null, Action<BackendState> onFail = null)
         {
+            if (tableId == "GameData") { SaveLegacyGameDataAsync(param, inDate, onSuccess, onFail); return; }
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
@@ -1308,6 +2168,7 @@ namespace Muks.BackEnd
         /// </summary>
         public BackendReturnObject GetMyData(string tableId)
         {
+            if (tableId == "GameData") InvalidateGameDataRestore();
             if (!Backend.IsLogin && !_isLogin)
             {
                 Debug.LogError("[BackendManager] 로그인이 되어있지 않아 데이터를 조회할 수 없습니다.");
@@ -1354,9 +2215,15 @@ namespace Muks.BackEnd
 
         /// <summary>
         /// 게임 데이터를 안전하게 저장합니다 (동기식)
+        /// GameData만 공통 비동기 큐를 사용한다. true는 반환 전에 성공 확정된 경우뿐이며,
+        /// false는 대기/미확정일 수도 있다. 완료 확인이 필요하면 RequestGameDataSave를 사용한다.
+        /// 다른 테이블의 기존 동기 계약은 유지한다.
         /// </summary>
-        public bool SaveGameData(string tableId, Param param)
+        public bool SaveGameData(string tableId, Param param, Func<bool> isCurrent = null)
         {
+            isCurrent = BindFirstTutorialStageSaveGuard(tableId, param, isCurrent);
+            if (isCurrent != null && !isCurrent()) return false;
+            if (tableId == "GameData") return SaveLegacyGameData(param, null);
 
             if (!_isSaveEnabled)
             {
@@ -1379,8 +2246,11 @@ namespace Muks.BackEnd
                 $"{tableId} 데이터 확인",
                 () => Backend.GameData.Get(tableId, where),
                 2,
-                true
+                true,
+                isCurrent
             );
+
+            if (isCurrent != null && !isCurrent()) return false;
             
             if (getBro == null || !getBro.IsSuccess())
             {
@@ -1398,9 +2268,10 @@ namespace Muks.BackEnd
                 // 업데이트 수행
                 BackendReturnObject updateBro = ProcessBackendAPISync(
                     $"{tableId} 데이터 업데이트",
-                    () => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param),
+                    () => ObserveOrdinaryStageWrite(tableId, () => Backend.GameData.UpdateV2(tableId, inDate, Backend.UserInDate, param)),
                     3,
-                    true
+                    true,
+                    isCurrent
                 );
                 
                 return updateBro != null && updateBro.IsSuccess();
@@ -1410,9 +2281,10 @@ namespace Muks.BackEnd
                 // 삽입 수행
                 BackendReturnObject insertBro = ProcessBackendAPISync(
                     $"{tableId} 데이터 삽입",
-                    () => Backend.GameData.Insert(tableId, param),
+                    () => ObserveOrdinaryStageWrite(tableId, () => Backend.GameData.Insert(tableId, param)),
                     3,
-                    true
+                    true,
+                    isCurrent
                 );
                 
                 if (insertBro != null && insertBro.IsSuccess())
@@ -1430,6 +2302,7 @@ namespace Muks.BackEnd
         /// </summary>
         public bool InsertGameData(string tableId, Param param)
         {
+            if (tableId == "GameData") return false;
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
@@ -1460,9 +2333,12 @@ namespace Muks.BackEnd
 
         /// <summary>
         /// 게임 데이터를 업데이트합니다 (동기식)
+        /// GameData는 공통 비동기 큐에 접수하며, 대기 중이면 false다(미반영 확정의 뜻이 아님).
+        /// 완료 확인이 필요하면 RequestGameDataSave를 사용한다. 다른 테이블은 기존 동기식이다.
         /// </summary>
         public bool UpdateGameData(string tableId, string inDate, Param param)
         {
+            if (tableId == "GameData") return SaveLegacyGameData(param, inDate);
             if (!_isSaveEnabled)
             {
                 Debug.LogWarning("[BackendManager] 저장이 비활성화되어 있어 데이터가 저장되지 않습니다.");
@@ -1489,42 +2365,8 @@ namespace Muks.BackEnd
 
         #region 로그 및 오류 처리
 
-        // 오류/일반 로그 업로드 재귀 방지 플래그(비동기 요청이 진행 중인 동안 중복 호출 방지)
+        // 오류 로그 업로드 재귀 방지 플래그
         private bool _isUploadingErrorLog;
-        private bool _isUploadingLog;
-
-        // 동일 로그가 짧은 시간 동안 반복되면 업로드를 묶어서 억제하기 위한 상태
-        private class LogThrottleEntry
-        {
-            public int SuppressedCount;
-            public float LastUploadAt;
-        }
-        private readonly Dictionary<string, LogThrottleEntry> _logThrottleMap = new Dictionary<string, LogThrottleEntry>();
-        private const float LogThrottleWindowSeconds = 30f;
-
-        /// <summary>같은 키의 로그가 최근에 업로드됐다면 억제 횟수만 누적하고 false를 반환합니다.</summary>
-        private bool ShouldUploadLog(string key, out int suppressedCount)
-        {
-            float now = Time.realtimeSinceStartup;
-            if (_logThrottleMap.TryGetValue(key, out LogThrottleEntry entry))
-            {
-                if (now - entry.LastUploadAt < LogThrottleWindowSeconds)
-                {
-                    entry.SuppressedCount++;
-                    suppressedCount = 0;
-                    return false;
-                }
-
-                suppressedCount = entry.SuppressedCount;
-                entry.SuppressedCount = 0;
-                entry.LastUploadAt = now;
-                return true;
-            }
-
-            _logThrottleMap[key] = new LogThrottleEntry { SuppressedCount = 0, LastUploadAt = now };
-            suppressedCount = 0;
-            return true;
-        }
 
         /// <summary>
         /// 백엔드 오류를 분류하고 적절한 처리 방향을 결정합니다
@@ -1537,8 +2379,20 @@ namespace Muks.BackEnd
             if (bro.IsSuccess())
                 return BackendState.Success;
             
-            // 오류 로그 업로드(비동기, 실패해도 계속 진행) - 재진입/중복 방지는 ErrorLogUpload 내부에서 처리
-            try { ErrorLogUpload(bro); } catch {}
+            if (!_isUploadingErrorLog)
+            {
+                try
+                {
+                    _isUploadingErrorLog = true;
+                    // 오류 로그 업로드 (실패해도 계속 진행)
+                    ErrorLogUpload(bro);
+                }
+                catch {}
+                finally
+                {
+                    _isUploadingErrorLog = false;
+                }
+            }
             
             // 오류 유형 분석
             string errorCode = bro.GetErrorCode();
@@ -1628,6 +2482,7 @@ namespace Muks.BackEnd
         /// </summary>
         public bool RefreshTheBackendToken(int maxRetries)
         {
+            RequireLiveBackendOwner();
             if (maxRetries <= 0)
             {
                 Debug.Log("[BackendManager] 토큰 갱신 실패");
@@ -1660,79 +2515,68 @@ namespace Muks.BackEnd
         }
         
         /// <summary>
-        /// 오류 로그를 서버에 업로드합니다 (비동기, 논블로킹). 동일 오류가 짧은 시간 내 반복되면 억제하여 묶어 보냅니다.
-        /// ProcessBackendAPI를 거치지 않고 직접 호출하여, 업로드 자체의 실패가 HandleError를 재귀 호출하지 않도록 합니다.
+        /// 오류 로그를 서버에 업로드합니다 (동기)
         /// </summary>
-        public void ErrorLogUpload(BackendReturnObject errorBro)
+        public bool ErrorLogUpload(BackendReturnObject errorBro)
         {
-            if (!Backend.IsLogin || !_isLogin || errorBro == null || _isUploadingErrorLog)
-                return;
-
-            string dedupKey = "Error:" + errorBro.GetErrorCode() + ":" + errorBro.GetStatusCode();
-            if (!ShouldUploadLog(dedupKey, out int suppressedCount))
-                return;
+            if (!Backend.IsLogin || !_isLogin)
+                return false;
 
             try
             {
-                string errorText = errorBro.ToString();
-                if (suppressedCount > 0)
-                    errorText += $"\n(최근 {LogThrottleWindowSeconds:0}초간 {suppressedCount}회 억제됨)";
-
                 Param logParam = new Param();
-                logParam.Add("ErrorLog", errorText);
+                logParam.Add("ErrorLog", errorBro.ToString());
+                
+                // 오류 발생 시간 추가
                 logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                
+                // 디바이스 정보 추가
                 logParam.Add("Device", SystemInfo.deviceModel);
                 logParam.Add("OS", SystemInfo.operatingSystem);
-
-                _isUploadingErrorLog = true;
-                Backend.GameLog.InsertLogV2("ErrorLogs", logParam, bro =>
-                {
-                    _isUploadingErrorLog = false;
-                    if (bro == null || !bro.IsSuccess())
-                        Debug.LogWarning($"[BackendManager] 오류 로그 업로드 실패(무시): {(bro != null ? bro.GetMessage() : "응답 없음")}");
-                });
+                
+                BackendReturnObject bro = ProcessBackendAPISync(
+                    "오류 로그 업로드",
+                    () => Backend.GameLog.InsertLogV2("ErrorLogs", logParam),
+                    1,  // 한 번만 시도
+                    false // 팝업 표시 안 함
+                );
+                
+                return bro != null && bro.IsSuccess();
             }
             catch (Exception ex)
             {
-                _isUploadingErrorLog = false;
                 Debug.LogError($"[BackendManager] 오류 로그 업로드 중 예외 발생: {ex.Message}");
+                return false;
             }
         }
         
         /// <summary>
-        /// 일반 로그를 서버에 업로드합니다 (비동기, 논블로킹). 동일 로그가 짧은 시간 내 반복되면 억제하여 묶어 보냅니다.
+        /// 일반 로그를 서버에 업로드합니다 (동기)
         /// </summary>
-        public void LogUpload(string logName, string logDescription)
+        public bool LogUpload(string logName, string logDescription)
         {
-            if (!Backend.IsLogin || !_isLogin || _isUploadingLog)
-                return;
-
-            string dedupKey = logName + ":" + logDescription;
-            if (!ShouldUploadLog(dedupKey, out int suppressedCount))
-                return;
+            if (!Backend.IsLogin || !_isLogin)
+                return false;
 
             try
             {
-                string description = suppressedCount > 0
-                    ? $"{logDescription}\n(최근 {LogThrottleWindowSeconds:0}초간 {suppressedCount}회 억제됨)"
-                    : logDescription;
-
                 Param logParam = new Param();
-                logParam.Add(logName, description);
+                logParam.Add(logName, logDescription);
                 logParam.Add("Timestamp", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
-
-                _isUploadingLog = true;
-                Backend.GameLog.InsertLogV2("UserLogs", logParam, bro =>
-                {
-                    _isUploadingLog = false;
-                    if (bro == null || !bro.IsSuccess())
-                        Debug.LogWarning($"[BackendManager] 로그 업로드 실패(무시): {(bro != null ? bro.GetMessage() : "응답 없음")}");
-                });
+                
+                BackendReturnObject bro = ProcessBackendAPISync(
+                    "일반 로그 업로드",
+                    () => Backend.GameLog.InsertLogV2("UserLogs", logParam),
+                    1,  // 한 번만 시도
+                    false // 팝업 표시 안 함
+                );
+                
+                return bro != null && bro.IsSuccess();
             }
             catch (Exception ex)
             {
-                _isUploadingLog = false;
                 Debug.LogError($"[BackendManager] 로그 업로드 중 예외 발생: {ex.Message}");
+                return false;
             }
         }
         
@@ -1796,6 +2640,7 @@ namespace Muks.BackEnd
 
         private void OnApplicationPause(bool isPaused)
         {
+            if (IsOfflineOwner) return;
             if (isPaused)
             {
                 // 앱이 백그라운드로 전환될 때
@@ -1819,6 +2664,7 @@ namespace Muks.BackEnd
         
         private void OnApplicationQuit()
         {
+            if (IsOfflineOwner) return;
             // 앱 종료 시
             if (_isLogin && _isSaveEnabled)
             {
@@ -1829,6 +2675,7 @@ namespace Muks.BackEnd
 
         private void CheckTokenValidity()
         {
+            if (IsOfflineOwner) return;
             // 광고 재생 중에는 토큰 검사 생략 (ad 오버레이로 인한 일시적 네트워크 실패 → 오탐 방지)
             if (AdManager.HasInstance && AdManager.IsAdPlaying)
             {
@@ -1836,37 +2683,28 @@ namespace Muks.BackEnd
                 return;
             }
 
-            if (!_isLogin)
-                return;
-
-            // 앱 복귀 순간 메인 스레드가 멈추지 않도록 비동기 호출로 검사
-            CheckTokenValidityAsync(1);
-        }
-
-        private void CheckTokenValidityAsync(int retriesLeft)
-        {
-            Backend.BMember.GetUserInfo((bro) =>
+            if (_isLogin)
             {
-                BackendState state = HandleError(bro);
+                // 토큰 유효성 검사를 위한 API 호출
+                BackendReturnObject bro = ProcessBackendAPISync(
+                    "토큰 유효성 검사",
+                    () => Backend.BMember.GetUserInfo(),
+                    1,  // 한 번만 시도
+                    false // 팝업 표시 안 함
+                );
 
-                if (state == BackendState.Success)
-                    return;
-
-                if (state == BackendState.Retry && retriesLeft > 0)
+                if (bro == null || !bro.IsSuccess())
                 {
-                    CheckTokenValidityAsync(retriesLeft - 1);
-                    return;
+                    if (bro != null && bro.IsBadAccessTokenError() && !RefreshTheBackendToken(1))
+                    {
+                        // 토큰 갱신 실패 시 로그아웃 처리
+                        Debug.LogWarning("[BackendManager] 세션이 만료되어 로그아웃합니다.");
+                        LogOut();
+                        ShowPopup("세션 만료", "세션이 만료되었습니다. 다시 접속해 주세요.");
+                        ShowPopupExitButton();
+                    }
                 }
-
-                if (bro != null && bro.IsBadAccessTokenError() && !RefreshTheBackendToken(1))
-                {
-                    // 토큰 갱신 실패 시 로그아웃 처리
-                    Debug.LogWarning("[BackendManager] 세션이 만료되어 로그아웃합니다.");
-                    LogOut();
-                    ShowPopup("세션 만료", "세션이 만료되었습니다. 다시 접속해 주세요.");
-                    ShowPopupExitButton();
-                }
-            });
+            }
         }
 
         #endregion

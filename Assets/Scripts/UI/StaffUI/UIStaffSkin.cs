@@ -258,8 +258,10 @@ public class UIStaffSkin : MonoBehaviour
 
         if (UserInfo.IsGiveStaff(UserInfo.CurrentStage, _customerData))
         {
-            UserInfo.SetStaffSkin(UserInfo.CurrentStage, _customerData, _currentSkinData);
-            PopupManager.Instance.ShowDisplayText("스킨이 교체되었습니다.");
+            if (UserInfo.TrySetStaffSkin(UserInfo.CurrentStage, _customerData, _currentSkinData))
+                PopupManager.Instance.ShowDisplayText("스킨이 교체되었습니다.");
+            else
+                PopupManager.Instance.ShowDisplayText("직원 정보를 확인할 수 없어 스킨을 변경하지 못했습니다.");
         }
         else
         {

@@ -81,14 +81,43 @@ public class UIRestaurantAdmin : MobileUIView
     private bool _isFailSafeCloseStarted;
     private int _sessionVersion;
     private MobileUIView _nativeHideView;
+    private bool _isSuspendedForGacha;
+    private bool _staffViewWasActiveBeforeGacha;
+    private float _shopAlphaBeforeGacha;
+    private bool _shopInteractableBeforeGacha;
+    private bool _shopBlockedRaycastsBeforeGacha;
+    public StaffData SelectedStaff => _staffUI != null ? _staffUI.SelectedStaff : null;
+    public UIFurniture FurnitureView => _furnitureUI;
+    public UIKitchen KitchenView => _kitchenUI;
+    public UIRecipeTab RecipeView => _recipeTab;
+    public int StaffSelectionRevision => _staffUI != null ? _staffUI.SelectionRevision : -1;
+    public bool IsReadyForDetail => !_isClosingSession && !_isSuspendedForGacha && gameObject.activeInHierarchy
+        && VisibleState == VisibleState.Appeared && _canvasGroup.alpha > 0f
+        && _canvasGroup.interactable && _canvasGroup.blocksRaycasts
+        && (_dontTouchArea == null || !_dontTouchArea.gameObject.activeSelf);
 
-    // 창을 열 때 바로 선택할 탭 (0:가구, 1:직원, 2:레시피, 3:주방)
-    private int _openingTabIndex;
+#if UNITY_EDITOR
+    private bool _editorOfflineNavigation;
 
-    public void PrepareOpen(int tabIndex)
+    /// <summary>Prepare the copied shop for the native staff suspend/resume path without gameplay initialization.</summary>
+    public void ConfigureEditorOfflineNavigation(UIStaff staff)
     {
-        _openingTabIndex = tabIndex;
+        if (gameObject.activeInHierarchy || staff == null || staff.gameObject.activeInHierarchy || _canvasGroup == null)
+            throw new System.InvalidOperationException("Offline shop navigation requires inactive copied shop and staff views.");
+        _editorOfflineNavigation = true;
+        _isInitialized = true;
+        _staffUI = staff;
+        _isClosingSession = false;
+        _isSuspendedForGacha = false;
+        _staffViewWasActiveBeforeGacha = false;
+        VisibleState = VisibleState.Disappeared;
+        _canvasGroup.alpha = 1f;
+        _canvasGroup.interactable = _canvasGroup.blocksRaycasts = true;
+        if (_mainUI != null) _mainUI.SetActive(false);
+        if (_dontTouchArea != null) _dontTouchArea.gameObject.SetActive(false);
+        DeactivateTransitionOverlay();
     }
+#endif
 
     public override void Init()
     {
@@ -187,25 +216,25 @@ public class UIRestaurantAdmin : MobileUIView
 
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
-
-        // 루트를 켜기 전에 하위 상태를 모두 준비해 자식이 켜졌다 바로 꺼지는 것을 방지한다
+        gameObject.SetActive(true);
+        _canvasGroup.interactable = true;
         _mainUI.SetActive(false);
-
-        SetTabActive(_openingTabIndex);
-        _floorButtonGroup.SetActive(_openingTabIndex != 2); // Recipe 탭에서만 숨김
-
+        
+        ShowFurnitureTabOptimized();
+        
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
         _dontTouchArea.gameObject.SetActive(true);
-
-        // 여는 경로에서는 전환 코루틴 없이 층 상태만 즉시 반영
+        
+        // Floor 타입 강제 초기화하여 ChangeFloorType이 항상 실행되도록 함
         ERestaurantFloorType targetFloor = _mainScene.CurrentFloor;
-        SetFloorTypeForOpen(targetFloor);
+        _floorType = (ERestaurantFloorType)(-1); // 강제로 다른 값으로 설정
+        ChangeFloorTypeOptimized(targetFloor);
+        
+        // Floor Button Groups 초기 상태 설정
+        UpdateFloorButtonGroups(targetFloor);
 
-        _recipeTab.RequestFullRefresh();
-
-        // 하위 상태 준비가 끝난 뒤에만 루트를 활성화한다
-        gameObject.SetActive(true);
+        _recipeTab.UpdateUI();
 
         TweenData tween = _canvasGroup.TweenAlpha(1, 0.1f);
         tween.OnComplete(() =>
@@ -241,6 +270,14 @@ public class UIRestaurantAdmin : MobileUIView
         MobileUIView currentView = _uiNav != null
             ? _uiNav.FirstView as MobileUIView
             : null;
+        bool hiddenGachaIsStillNavigationTop = currentView is UIGacha &&
+                                               currentView.VisibleState == VisibleState.Disappeared;
+        if (hiddenGachaIsStillNavigationTop)
+        {
+            CompleteSessionCloseAfterGachaAllPop(closingSessionVersion);
+            return;
+        }
+
         bool closeMainShop = currentView == this &&
                              _mainUI != null &&
                              _mainUI.activeSelf;
@@ -281,6 +318,65 @@ public class UIRestaurantAdmin : MobileUIView
         CompleteSessionCloseWithoutNativeHide(
             closingSessionVersion,
             "No supported active shop View matched the Navigation top View.");
+    }
+
+    public bool TrySuspendStaffViewForGacha()
+    {
+        bool canSuspend = !_isSuspendedForGacha
+                          && !_isClosingSession
+                          && VisibleState == VisibleState.Appeared
+                          && gameObject.activeInHierarchy
+                          && _staffUI != null
+                          && _staffUI.VisibleState == VisibleState.Appeared
+                          && _staffUI.gameObject.activeInHierarchy
+                          && _uiNav != null
+                          && _uiNav.FirstView == _staffUI;
+
+        if (!canSuspend)
+            return false;
+
+        _isSuspendedForGacha = true;
+        _staffViewWasActiveBeforeGacha = _staffUI.gameObject.activeSelf;
+        _shopAlphaBeforeGacha = _canvasGroup.alpha;
+        _shopInteractableBeforeGacha = _canvasGroup.interactable;
+        _shopBlockedRaycastsBeforeGacha = _canvasGroup.blocksRaycasts;
+
+        _canvasGroup.alpha = 0;
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = false;
+        _staffUI.SuspendForGacha();
+        return true;
+    }
+
+    public bool ResumeStaffViewAfterGacha()
+    {
+        if (!_isSuspendedForGacha)
+            return false;
+
+        bool restoreStaffView = _staffViewWasActiveBeforeGacha;
+        float restoreShopAlpha = _shopAlphaBeforeGacha;
+        bool restoreShopInteractable = _shopInteractableBeforeGacha;
+        bool restoreShopRaycasts = _shopBlockedRaycastsBeforeGacha;
+
+        _isSuspendedForGacha = false;
+        _staffViewWasActiveBeforeGacha = false;
+        _shopAlphaBeforeGacha = 0;
+        _shopInteractableBeforeGacha = false;
+        _shopBlockedRaycastsBeforeGacha = false;
+
+        _canvasGroup.alpha = restoreShopAlpha;
+        _canvasGroup.interactable = restoreShopInteractable;
+        _canvasGroup.blocksRaycasts = restoreShopRaycasts;
+        if (restoreStaffView)
+            _staffUI.ResumeAfterGacha();
+        else
+            _staffUI.gameObject.SetActive(false);
+
+#if UNITY_EDITOR
+        if (!_editorOfflineNavigation)
+#endif
+            SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
+        return true;
     }
 
     private bool IsOpeningSessionCurrent(int sessionVersion)
@@ -380,6 +476,31 @@ public class UIRestaurantAdmin : MobileUIView
         _mainUI.SetActive(false);
         ResetBackgroundImageOffsetOptimized();
         BeginBackgroundFade(sessionVersion);
+    }
+
+    private void CompleteSessionCloseAfterGachaAllPop(int sessionVersion)
+    {
+        if (!IsClosingSessionCurrent(sessionVersion))
+            return;
+
+        // AllPop keeps the hidden gacha at the Navigation top until its loop ends.
+        // Close the already-hidden shop immediately so it cannot flash for a frame.
+        CleanupTransition();
+        _mainScene.PlayMainMusic();
+        _canvasGroup.blocksRaycasts = false;
+        _canvasGroup.alpha = 0;
+        _dontTouchArea.gameObject.SetActive(false);
+
+        _staffUI.CompleteImmediateHideAfterGachaNavigationClear();
+        PopActiveUIViews(_staffUI);
+        _mainUI.SetActive(false);
+        ResetBackgroundImageOffsetOptimized();
+        VisibleState = VisibleState.Disappeared;
+
+        _nativeHideView = null;
+        _isFailSafeCloseStarted = false;
+        _isClosingSession = false;
+        gameObject.SetActive(false);
     }
 
     private void PopActiveUIViews(MobileUIView alreadyHiddenView)
@@ -612,9 +733,54 @@ public class UIRestaurantAdmin : MobileUIView
         _furnitureTab.ShowUIFurniture(type);
     }
 
+    // Navigation/selection only. Purchases and placement keep their native validity checks.
+    public bool ShowQuestFurniture(string id)
+    {
+        if (!CanOpenQuestProduct(_furnitureUI) || string.IsNullOrEmpty(id)) return false;
+        var data = FurnitureDataManager.Instance.GetFurnitureDataList().Find(item => item.Id == id);
+        if (data == null || !UserInfo.IsFloorValid(UserInfo.CurrentStage, data.FloorType)) return false;
+        ChangeFloorTypeOptimized(data.FloorType);
+        _furnitureUI.ShowUIFurniture(data.FloorType, data.Type);
+        return _furnitureUI.TrySelectFurniture(id);
+    }
+
+    public bool ShowQuestKitchen(string id)
+    {
+        if (!CanOpenQuestProduct(_kitchenUI) || string.IsNullOrEmpty(id)) return false;
+        var data = KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList().Find(item => item.Id == id);
+        if (data == null || !UserInfo.IsFloorValid(UserInfo.CurrentStage, data.FloorType)) return false;
+        ChangeFloorTypeOptimized(data.FloorType);
+        _kitchenUI.ShowUIKitchen(data.FloorType, data.Type);
+        return _kitchenUI.TrySelectKitchen(id);
+    }
+
+    public bool ShowQuestRecipe(string id)
+    {
+        if (_recipeTab == null || !CanOpenQuestProduct(this) || string.IsNullOrEmpty(id)) return false;
+        if (!FoodDataManager.Instance.GetFoodDataList().Exists(item => item.Id == id)) return false;
+        ShowRecipeTab();
+        return _recipeTab.TrySelectRecipe(id);
+    }
+
+    private bool CanOpenQuestProduct(MobileUIView detail)
+        => detail != null && IsReadyForDetail && _uiNav != null && _uiNav.ViewsVisibleStateCheck()
+            && _uiNav.CheckActiveView("RestaurantAdminUI")
+            && (_uiNav.FirstView == this || _uiNav.FirstView == detail);
+
     public void ShowUIStaff(EquipStaffType type)
     {
         _staffTab.ShowUIStaff(type);
+    }
+
+    public bool ShowQuestStaff(StaffData staff)
+    {
+        if (!IsReadyForDetail || staff == null || _staffUI == null) return false;
+        var roles = StaffDataManager.Instance.GetEquipStaffTypeList(staff);
+        if (roles == null || roles.Count == 0) return false;
+        // The four main employment quests are Stage1/Floor1 staff, not a VIP tab's first entry.
+        ChangeFloorTypeOptimized(ERestaurantFloorType.Floor1);
+        _staffUI.ShowUIStaff(ERestaurantFloorType.Floor1, roles[0]);
+        return _staffUI.TrySelectStaff(staff.Id);
     }
 
     public void ShowUIKitchen(KitchenUtensilType type)
@@ -907,22 +1073,6 @@ public class UIRestaurantAdmin : MobileUIView
         _floorButtonGroup.SetFloorText(_floorType);
 
         SetBackgroundImageOptimized(_floorType);
-        UpdateFloorButtonGroups(_floorType);
-    }
-
-    // 창을 여는 경로 전용: 전환 코루틴 없이 층 상태를 즉시 반영한다
-    private void SetFloorTypeForOpen(ERestaurantFloorType floorType)
-    {
-        _previousFloorType = floorType;
-        _floorType = floorType;
-
-        _kitchenTab.ChangeFloorType(_floorType);
-        _furnitureTab.ChangeFloorType(_floorType);
-        _staffTab.ChangeFloorType(_floorType);
-        _recipeTab.ChangeFloorType(_floorType);
-        _floorButtonGroup.SetFloorText(_floorType);
-
-        SetBackgroundImageImmediate(_floorType);
         UpdateFloorButtonGroups(_floorType);
     }
     

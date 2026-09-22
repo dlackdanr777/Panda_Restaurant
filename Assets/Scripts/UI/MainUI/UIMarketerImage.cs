@@ -26,6 +26,42 @@ public class UIMarketerImage : MonoBehaviour
     private int _particleCount;
     private ERestaurantFloorType _currentFloor;
     private MarketerLightStickData _lightStickData;
+    private readonly Dictionary<ERestaurantFloorType, StaffMarketer> _skillEffectSources = new Dictionary<ERestaurantFloorType, StaffMarketer>();
+
+    private void Awake()
+    {
+        // The authored flame is not an availability indicator. Runtime skill/fever
+        // state owns it, including a first placement after asynchronous preparation.
+        if (_marketerSkillEffect != null) _marketerSkillEffect.gameObject.SetActive(false);
+    }
+
+    public void RegisterSkillEffect(ERestaurantFloorType floor, StaffMarketer source)
+    {
+        _skillEffectSources[floor] = source;
+        RefreshSkillEffect();
+    }
+
+    public void UnregisterSkillEffect(StaffMarketer source)
+    {
+        var floors = new List<ERestaurantFloorType>();
+        foreach (var pair in _skillEffectSources)
+            if (pair.Value == source) floors.Add(pair.Key);
+        foreach (var floor in floors) _skillEffectSources.Remove(floor);
+        RefreshSkillEffect();
+    }
+
+    public void RefreshSkillEffect()
+    {
+        if (_marketerSkillEffect == null) return;
+        bool visible = _skillEffectSources.TryGetValue(_currentFloor, out StaffMarketer source)
+            && source != null && source.IsSkillEffectVisible;
+        _marketerSkillEffect.gameObject.SetActive(visible);
+    }
+
+    private void OnDisable()
+    {
+        if (_marketerSkillEffect != null) _marketerSkillEffect.gameObject.SetActive(false);
+    }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     private bool _excludePresentationParticleForDiagnostics;
@@ -160,21 +196,27 @@ public class UIMarketerImage : MonoBehaviour
     {
         _currentFloor = _mainScene.CurrentFloor;
         OnChangeMarketerEvent(_currentFloor, EquipStaffType.Marketer);
+        RefreshSkillEffect();
     }
 
     private void OnDestroy()
     {
         UserInfo.OnChangeStaffHandler -= OnChangeMarketerEvent;
         UserInfo.OnChangeStaffSkinHandler -= OnChangeMarketerSkinEvent;
+        if (_camera != null) _camera.OnEndMoveCameraHandler -= OnChangeFloorEvent;
     }
 
     public void Init()
     {
         _currentFloor = _mainScene.CurrentFloor;
         OnChangeMarketerEvent(_currentFloor, EquipStaffType.Marketer);
+        UserInfo.OnChangeStaffHandler -= OnChangeMarketerEvent;
         UserInfo.OnChangeStaffHandler += OnChangeMarketerEvent;
+        _camera.OnEndMoveCameraHandler -= OnChangeFloorEvent;
         _camera.OnEndMoveCameraHandler += OnChangeFloorEvent;
+        UserInfo.OnChangeStaffSkinHandler -= OnChangeMarketerSkinEvent;
         UserInfo.OnChangeStaffSkinHandler += OnChangeMarketerSkinEvent;
+        RefreshSkillEffect();
     }
 
     public void StartAnime()
@@ -211,6 +253,7 @@ public class UIMarketerImage : MonoBehaviour
     {
         _currentFloor = _mainScene.CurrentFloor;
         OnChangeMarketerEvent(_currentFloor, EquipStaffType.Marketer);
+        RefreshSkillEffect();
     }
 
 

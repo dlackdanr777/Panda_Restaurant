@@ -41,6 +41,9 @@ public class UIKitchenPreview : MonoBehaviour
     private KitchenUtensilData _currentData;
     private ERestaurantFloorType _floorType;
 
+    public KitchenUtensilData SelectedData => _currentData;
+    public RectTransform BuyButtonRect => _buyButton != null ? _buyButton.transform as RectTransform : null;
+
 
     public void Init(Action<ERestaurantFloorType, ShopData> onEquipButtonClicked, Action<ShopData> onBuyButtonClicked)
     {

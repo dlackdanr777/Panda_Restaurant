@@ -24,10 +24,17 @@ public class UIGachaCard : MonoBehaviour
     public void Init()
     {
         _tmpScale = _rectTransform.localScale;
+        InitPresentation();
         if (_closeButton != null)
         {
             _closeButton.onClick.AddListener(OnCloseButtonClicked);
         }
+    }
+
+    public void InitPresentation()
+    {
+        if (GetComponentInChildren<GachaAcquisitionBadge>(true) == null)
+            GachaAcquisitionBadge.Bind(transform, _nameText.font, false);
     }
 
     public void SetScale(float scale)
@@ -48,9 +55,21 @@ public class UIGachaCard : MonoBehaviour
 
     public void SetData(GachaData data)
     {
+        BindData(data, true);
+    }
+
+    public void SetData(GachaData data, bool isNew)
+    {
+        BindData(data, true);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, data != null && isNew);
+    }
+
+    private void BindData(GachaData data, bool showOwnedStaffEffect)
+    {
         if (data == null)
         {
-            DebugLog.LogError("스킨 데이터가 없습니다.");
+            DebugLog.LogError("가챠 카드에 표시할 데이터가 없습니다.");
+            ClearData();
             return;
         }
 
@@ -58,35 +77,58 @@ public class UIGachaCard : MonoBehaviour
         UpdateFrame(data);
         SetName(data);
         SetDescription(data);
-        SetEffect(data);
+        SetEffect(data, showOwnedStaffEffect);
         SetType(data);
         _itemStar.SetStar(data.Rank);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, false);
+    }
+
+    /// <summary>
+    /// 계산이 완료된 직원 한 항목을 표시한다. 추첨, 지급, 재화 변경 및 저장은 수행하지 않는다.
+    /// 기존 SetData도 설명 전체를 다시 쓰므로 카드 재사용 시 획득 문구가 남지 않는다.
+    /// </summary>
+    public bool TrySetStaffAcquisitionResult(
+        GachaStaffData data, StaffGachaAcquisitionItem item, bool isTestPreview = false)
+    {
+        if (data == null || data.StaffData == null || item == null ||
+            string.IsNullOrWhiteSpace(item.StaffId) ||
+            !string.Equals(data.Id, item.StaffId, System.StringComparison.Ordinal) ||
+            !string.Equals(data.StaffData.Id, item.StaffId, System.StringComparison.Ordinal) ||
+            data.Rank != item.Rank || data.StaffData.Rank != item.Rank)
+        {
+            ClearData();
+            return false;
+        }
+
+        // 획득 결과는 기존 상세 화면의 기본(Lv.1) 능력 문구를 사용한다.
+        // 실제 계정의 보유 레벨을 조회하거나 미보유 정보를 가리지 않는다.
+        BindData(data, false);
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, item.IsNew);
+        string previewLabel = isTestPreview ? "[테스트 미리보기]\n" : string.Empty;
+        _descriptionText.SetText(item.IsNew
+            ? previewLabel + "신규 획득"
+            : previewLabel + "중복 획득\n판다토큰 +" + item.PandaTokenReward);
+        return true;
     }
     
     private void SetImage(GachaData data)
     {
-        if (data == null)
-        {
-            _skinImage.sprite = null;
-            return;
-        }
-
-        _skinImage.sprite = data.ThumbnailSprite;
+        _skinImage.sprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
     }
 
 
     private void SetDescription(GachaData data)
     {
-        _descriptionText.SetText(data.Description);
+        _descriptionText.SetText(data.Description ?? string.Empty);
     }
 
 
     private void SetName(GachaData data)
     {
-        _nameText.SetText(data.Name);
+        _nameText.SetText(string.IsNullOrWhiteSpace(data.Name) ? data.Id : data.Name);
     }
 
-    private void SetEffect(GachaData data)
+    private void SetEffect(GachaData data, bool showOwnedStaffEffect)
     {
         if (data is SkinData)
         {
@@ -104,6 +146,12 @@ public class UIGachaCard : MonoBehaviour
         else if (data is GachaItemData itemData)
         {
             _effectText.SetText(Utility.GetGachaItemEffectDescription(itemData));
+        }
+        else if (data is GachaStaffData staffGachaData && staffGachaData.StaffData != null)
+        {
+            _effectText.SetText(showOwnedStaffEffect
+                ? Utility.GetStaffEffectDescription(staffGachaData.StaffData)
+                : Utility.GetStaffEffectDescription(staffGachaData.StaffData, 1));
         }
         else
         {
@@ -148,6 +196,17 @@ public class UIGachaCard : MonoBehaviour
             }
         }
 
+        else if (data is GachaStaffData staffGachaData)
+        {
+            StaffData staffData = staffGachaData.StaffData;
+            if (staffData == null)
+            {
+                _typeText.SetText("직원");
+                return;
+            }
+
+            _typeText.SetText(Utility.StaffTypeStringConverter(StaffDataManager.GetStaffGroupTypeFromData(staffData)));
+        }
         else
         {
             _typeText.SetText("아이템");
@@ -158,6 +217,7 @@ public class UIGachaCard : MonoBehaviour
 
     private void UpdateFrame(GachaData data)
     {
+        GachaCardHaloPolicy.Apply(_star4Frame, _star5Frame, data == null ? Rank.Normal1 : data.Rank);
         _star1Frame.gameObject.SetActive(false);
         _star3Frame.gameObject.SetActive(false);
         _star4Frame.gameObject.SetActive(false);
@@ -192,5 +252,17 @@ public class UIGachaCard : MonoBehaviour
     private void OnCloseButtonClicked()
     {
         gameObject.SetActive(false);
+    }
+
+    private void ClearData()
+    {
+        GachaAcquisitionBadge.Bind(transform, _nameText.font, false);
+        _skinImage.sprite = null;
+        _nameText.SetText(string.Empty);
+        _descriptionText.SetText(string.Empty);
+        _effectText.SetText(string.Empty);
+        _typeText.SetText(string.Empty);
+        UpdateFrame(null);
+        _itemStar.SetStar(Rank.Normal1);
     }
 }

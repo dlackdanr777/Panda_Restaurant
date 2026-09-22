@@ -20,8 +20,8 @@ MonoBehaviour:
   timeOutSec: 100
   Version: 5.15.0
   autoRefreshToken: 1
-  retryWhenClientRequestFailError: 1
-  retryWhenServerError: 1
+  retryWhenClientRequestFailError: 0
+  retryWhenServerError: 0
   initFailWhenDeviceIdUnknown: 1
   autoLoadLocationProperties: 1
   waitUntilInitializeFinish: 0

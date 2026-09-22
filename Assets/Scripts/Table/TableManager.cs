@@ -78,20 +78,14 @@ public class TableManager : MonoBehaviour
             return false;
         }
 
-        TableData data = GetTableType(ETableState.Empty);
-        if (data == null)
+        if (!TrySelectCustomerGuideTable(customer, null, out ERestaurantFloorType choiceFloor, out TableData data))
         {
             DebugLog.Log("남는 테이블이 없습니다.");
             UpdateTable();
             return false;
         }
 
-        ERestaurantFloorType choiceFloor = GetWeightRandomChoiceFloor(customer);
-        //TODO: 나중에 삭제 후 위에꺼 쓰기(임시로 1층만 사용)
-        //ERestaurantFloorType choiceFloor = ERestaurantFloorType.Floor1;
-        data = GetTableType(choiceFloor, ETableState.Empty);
-
-        if (data == null || data.TableState == ETableState.DontUse)
+        if (data.TableState == ETableState.DontUse)
         {
             NotFurnitureTable(data);
             return false;
@@ -116,8 +110,7 @@ public class TableManager : MonoBehaviour
             return false;
         }
 
-        TableData data = GetTableType(choiceFloor, ETableState.Empty);
-        if (data == null)
+        if (!TrySelectCustomerGuideTable(customer, choiceFloor, out choiceFloor, out TableData data))
         {
             DebugLog.Log("남는 테이블이 없습니다.");
             UpdateTable();
@@ -148,18 +141,47 @@ public class TableManager : MonoBehaviour
 
     public void OnCustomerGuideEventPlaySound(ERestaurantFloorType floor, int sitPos = -1)
     {
+        if (RestrictFirstTutorialCustomersToFloor1)
+            floor = ERestaurantFloorType.Floor1;
         EffectType effectType = SoundManager.Instance.GetHallEffectType(floor, RestaurantType.Hall);
         if (OnCustomerGuideEvent(floor, sitPos))
             SoundManager.Instance.PlayEffectAudio(effectType, _callSound);
     }
 
-    public void OnCustomerGuideEventPlayUISound(int sitPos = -1)
+    public bool OnCustomerGuideEventPlayUISound(int sitPos = -1)
     {
-        if (OnCustomerGuideEvent(sitPos))
+        if (!OnCustomerGuideEvent(sitPos))
+            return false;
+
+        SoundManager.Instance.PlayEffectAudio(EffectType.UI, _callSound);
+        return true;
+    }
+
+    // Keep the tutorial's actual table and chair destination on Floor1, not just its UI.
+    // Completion/Skip clears this scope; saved floor unlocks are never changed here.
+    private static bool RestrictFirstTutorialCustomersToFloor1 =>
+        UserInfo.CurrentStage == EStage.Stage1 && UserInfo.IsTutorialStart && !UserInfo.IsFirstTutorialClear;
+
+    private bool TrySelectCustomerGuideTable(NormalCustomer customer, ERestaurantFloorType? requestedFloor,
+        out ERestaurantFloorType choiceFloor, out TableData data)
+    {
+        choiceFloor = requestedFloor ?? ERestaurantFloorType.Floor1;
+        data = null;
+        if (RestrictFirstTutorialCustomersToFloor1)
         {
-            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _callSound);
+            choiceFloor = ERestaurantFloorType.Floor1;
         }
-            
+        else if (!requestedFloor.HasValue)
+        {
+            if (GetTableType(ETableState.Empty) == null)
+                return false;
+            choiceFloor = GetWeightRandomChoiceFloor(customer);
+        }
+
+        // A full first floor leaves the customer in the existing waiting queue.
+        // In particular, do not retry selection against the other unlocked floors.
+        data = GetTableType(choiceFloor, ETableState.Empty);
+        return data != null;
     }
 
 
@@ -630,7 +652,9 @@ public class TableManager : MonoBehaviour
             return;
         }
 
-        int unlockFloorCount = (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
+        int unlockFloorCount = RestrictFirstTutorialCustomersToFloor1
+            ? (int)ERestaurantFloorType.Floor1
+            : (int)UserInfo.GetUnlockFloor(UserInfo.CurrentStage);
         //TODO: 나중에 삭제 후 위에꺼 쓰기(임시로 1층만 사용)
         //int unlockFloorCount = (int)ERestaurantFloorType.Floor1;
         for (int i = 0; i <= unlockFloorCount; ++i)

@@ -38,6 +38,11 @@ public class UIRecipePreview : MonoBehaviour
 
     private Action<FoodData> _onBuyButtonClicked;
     private FoodData _currentData;
+    public event Action BeforeMiniGameNavigation;
+
+    public FoodData SelectedData => _currentData;
+    public RectTransform BuyButtonRect => _buyButton != null ? _buyButton.transform as RectTransform : null;
+    public RectTransform MiniGameButtonRect => _minigameButton != null ? _minigameButton.transform as RectTransform : null;
 
     public void Init(Action<FoodData> onBuyButonClicked, Action<FoodData> onUpgradeButtonClicked)
     {
@@ -254,6 +259,9 @@ public class UIRecipePreview : MonoBehaviour
         }
 
         int waitTime = TimeManager.Instance.GetTime(_currentData.Id + "_MiniGame");
+        // The mini-game has its own navigation, so the shop can remain visible
+        // underneath it. Clear presentation-only hints before either view opens.
+        NotifyBeforeMiniGameNavigation();
         if (0 < waitTime)
         {
             _uiTimeSkip.ShowTimeSkipUI(_currentData.Id + "_MiniGame");
@@ -261,6 +269,21 @@ public class UIRecipePreview : MonoBehaviour
         else
         {
             _uiMiniGame.StartMiniGame1(_currentData);
+        }
+    }
+
+    private void NotifyBeforeMiniGameNavigation()
+    {
+        var handlers = BeforeMiniGameNavigation;
+        if (handlers == null) return;
+        foreach (Action handler in handlers.GetInvocationList())
+        {
+            try { handler(); }
+            catch (Exception exception)
+            {
+                // An optional hint must never prevent the player's native input.
+                Debug.LogWarning("[UIRecipePreview] Recipe hint cleanup failed: " + exception.GetType().Name);
+            }
         }
     }
 

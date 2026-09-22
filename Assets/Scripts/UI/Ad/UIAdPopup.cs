@@ -522,48 +522,69 @@ public class UIAdPopup : MobileUIView
         PopUIAd();
     }
 
+    private bool _diaPurchaseInProgress;
+
     private void OnDiaButtonClicked()
     {
+        if (_diaPurchaseInProgress) return;
+        _diaPurchaseInProgress = true;
+        try { BuyAdReplacement(); }
+        finally { _diaPurchaseInProgress = false; }
+    }
+
+    private void BuyAdReplacement()
+    {
+        if (_currentWatchAdButton == null || _diaButton == null
+            || (_currentAdType != AdType.Fever && _currentAdType != AdType.Customer)) return;
+        WatchAdButton rewardButton = _currentWatchAdButton;
         if (_currentAdType == AdType.Fever && IsFeverRuntimeActive())
         {
-            PopupManager.Instance.ShowDisplayText("피버 타임 중에는 게이지를 충전할 수 없습니다.");
+            ShowDiaPurchaseRejected("피버 타임 중에는 게이지를 충전할 수 없습니다.");
             return;
         }
 
         DebugLog.Log(UserInfo.FeverDiaCount);
         if (_currentAdType == AdType.Fever && ConstValue.AD_FEVER_COUNT <= UserInfo.FeverDiaCount)
         {
-            PopupManager.Instance.ShowDisplayText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요");
+            ShowDiaPurchaseRejected("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요");
             return;
         }
         else if (_currentAdType == AdType.Customer && ConstValue.AD_CUSTOMER_COUNT <= UserInfo.AddCustomerDiaCount)
         {
-            PopupManager.Instance.ShowDisplayText("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요");
+            ShowDiaPurchaseRejected("오늘 사용할 수 있는\n다이아 사용 횟수를 모두 사용했어요");
             return;
         }
               
         if (_currentAdType == AdType.Fever && FeverSystem.CurrentMaxFeverGauge <= FeverSystem.FeverGauge)
         {
-            PopupManager.Instance.ShowDisplayText("피버게이지가 가득 찼습니다.");
+            ShowDiaPurchaseRejected("피버게이지가 가득 찼습니다.");
             return;
         }
         else if(_currentAdType == AdType.Customer && CustomerController.IsMaxCount)
         {
-            PopupManager.Instance.ShowDisplayText("손님이 가득 찼습니다.");
+            ShowDiaPurchaseRejected("손님이 가득 찼습니다.");
             return;
         }
 
-        int needDia = int.Parse(_diaButton.GetText());
+        int needDia = _currentAdType == AdType.Fever ? _feverDia : _customerDia;
         if (!UserInfo.IsDiaValid(needDia))
         {
-            PopupManager.Instance.ShowTextLackDia();
+            ShowDiaPurchaseRejected("다이아가 부족합니다...");
+            return;
+        }
+        if (!UserInfo.TrySpendDia(needDia, out string error))
+        {
+            ShowDiaPurchaseRejected(error);
             return;
         }
         PopEnabled = true;
-        UserInfo.AddDia(-needDia);
-        _currentWatchAdButton.DiaRewarded();
-        PopUIAd();
+        rewardButton.DiaRewarded();
+        CompleteDiaPurchasePresentation();
     }
+
+    protected virtual void ShowDiaPurchaseRejected(string error) => PopupManager.Instance.ShowDisplayText(error);
+
+    protected virtual void CompleteDiaPurchasePresentation() => PopUIAd();
 
     private void OnDestroy()
     {

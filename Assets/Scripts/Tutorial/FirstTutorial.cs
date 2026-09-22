@@ -1,5 +1,6 @@
 using Muks.MobileUI;
 using Muks.Tween;
+using Muks.BackEnd;
 using System.Collections;
 using UnityEngine;
 
@@ -34,29 +35,102 @@ public class FirstTutorial : MonoBehaviour
     [SerializeField] private AudioClip _cleaningSound;
 
     private int _touchCount;
+    private BackendManager _backend;
+    private FirstTutorialExecution _preparation;
+    private FirstTutorialExecution _completion;
+    private bool _presentationClaimed;
+    private bool _routineStarted;
+    private bool _completionRequested;
+    private bool _viewsOpened;
+    private string _lastNotice;
+    private System.Action _tableTouchedHandler;
 
     private void Awake()
     {
-        if (UserInfo.IsFirstTutorialClear)
+        _backend = BackendManager.Instance;
+        StartCoroutine(WaitForPreparationRoutine());
+    }
+
+    private IEnumerator WaitForPreparationRoutine()
+    {
+        while (true)
         {
-            gameObject.SetActive(false);
-            return;
+            _backend.TryPrepareFirstTutorial(out FirstTutorialExecution operation,
+                out FirstTutorialPreparationStatus status, out string error);
+            if (status == FirstTutorialPreparationStatus.AlreadyCompleted)
+            {
+                gameObject.SetActive(false);
+                yield break;
+            }
+
+            if (status == FirstTutorialPreparationStatus.Ready && operation != null
+                && operation.IsPrepared && operation.IsCurrent && operation.TryClaimPresentation(this))
+            {
+                _preparation = operation;
+                _presentationClaimed = true;
+                _mainSceneUI.gameObject.SetActive(false);
+                _punchHole.gameObject.SetActive(false);
+                UserInfo.IsTutorialStart = true;
+                SequentialCommandManager.Instance.EnqueueCommand(StartTutorial,
+                    () => true, () => !HasCurrentPresentation() || _preparation.IsCompleted, 0, 0.3f);
+                yield break;
+            }
+
+            if (status == FirstTutorialPreparationStatus.Blocked)
+                ReportPreparationProblem(error);
+            yield return YieldCache.WaitForSeconds(0.25f);
         }
+    }
 
-        _mainSceneUI.gameObject.SetActive(false);
-        _punchHole.gameObject.SetActive(false);
-        UserInfo.IsTutorialStart = true;
+    private bool HasCurrentPresentation() => this != null && _presentationClaimed
+        && _preparation != null && _preparation.IsCurrent;
 
-        UserInfo.GiveStaff(EStage.Stage1, "STAFF11");
-        UserInfo.SetEquipStaff(EStage.Stage1, ERestaurantFloorType.Floor1, EquipStaffType.Marketer, "STAFF11");
-        UserInfo.AddMoney(5000);
-        SequentialCommandManager.Instance.EnqueueCommand(StartTutorial, () => true, () => UserInfo.IsFirstTutorialClear, 0, 0.3f);
+    private void Update()
+    {
+        if (_presentationClaimed && !HasCurrentPresentation())
+        {
+            StopAllCoroutines();
+            ClosePresentation(false);
+            ReportPreparationProblem("The account or restored data changed during the tutorial.");
+            gameObject.SetActive(false);
+        }
+    }
+
+    private void ReportPreparationProblem(string error)
+    {
+        string reason = string.IsNullOrEmpty(error) ? "Tutorial preparation is not available." : error;
+        if (_lastNotice == reason) return;
+        _lastNotice = reason;
+        Debug.LogWarning("[FirstTutorial] " + reason);
+        if (_backend != null)
+        {
+            _backend.ShowPopup("데이터 확인 필요", "튜토리얼 준비를 완료하지 못했습니다.\n잠시 기다린 뒤 게임을 다시 시작해 주세요.");
+            _backend.ShowPopupExitButton();
+        }
     }
 
 
     private void StartTutorial()
     {
-        StartCoroutine(StartTutorialRoutine());
+        if (!HasCurrentPresentation() || _routineStarted || _completionRequested) return;
+        bool interruptedPresentation = _preparation.HasStartedPresentation;
+        if (!interruptedPresentation && !_preparation.TryMarkPresentationStarted(this)) return;
+        _routineStarted = true;
+        StartCoroutine(interruptedPresentation ? ResumeInterruptedPresentationRoutine() : StartTutorialRoutine());
+    }
+
+    private IEnumerator ResumeInterruptedPresentationRoutine()
+    {
+        // Presentation can disappear without resetting the accepted operation. Do not repeat customer/gameplay steps.
+        _uiDescriptionNPC.OnSkipOkButtonClicked(OnSkipButtonClicked);
+        yield return YieldCache.WaitForSeconds(0.02f);
+        _uiNav.Push("UITutorial");
+        _uiNav.Push("UITutorialDescription");
+        _viewsOpened = true;
+        yield return _uiDescriptionNPC.ShowDescription1Text("안내가 중단되었습니다.\n건너뛰기를 눌러 마무리할 수 있습니다.");
+        // Only the existing explicit skip confirmation requests completion; opening this view performs no grant/save.
+        while (HasCurrentPresentation() && !_completionRequested)
+            yield return YieldCache.WaitForSeconds(0.25f);
     }
 
 
@@ -66,6 +140,7 @@ public class FirstTutorial : MonoBehaviour
         yield return YieldCache.WaitForSeconds(0.02f);
         _uiNav.Push("UITutorial");
         _uiNav.Push("UITutorialDescription");
+        _viewsOpened = true;
         yield return YieldCache.WaitForSeconds(3);
         yield return _uiDescriptionNPC.ShowDescription1Text("안녕하세요!");
         yield return _uiDescriptionNPC.ShowDescription1Text("앞으로 레스토랑 운영을 도와드릴\n제인입니다!");
@@ -157,8 +232,8 @@ public class FirstTutorial : MonoBehaviour
         yield return _uiDescriptionNPC.ShowDescription1Text($"먼저 테이블을 치워주세요.");
         _uiTutorial.CustomHoleSetActive(true, 400, _table1.name, _table1.transform);
         bool isTableTouched = false;
-        System.Action onTableTouched = () => isTableTouched = true;
-        _table1.OnTouchEventHandler += onTableTouched;
+        _tableTouchedHandler = () => isTableTouched = true;
+        _table1.OnTouchEventHandler += _tableTouchedHandler;
         while (!isTableTouched)
         {
             if(!_uiTutorial.GetCustomHoleActive())
@@ -166,7 +241,8 @@ public class FirstTutorial : MonoBehaviour
              yield return YieldCache.WaitForSeconds(0.02f);
         }
         _uiTutorial.CustomHoleHide();
-        _table1.OnTouchEventHandler -= onTableTouched;
+        _table1.OnTouchEventHandler -= _tableTouchedHandler;
+        _tableTouchedHandler = null;
 
         yield return _uiDescriptionNPC.ShowDescription1Text($"다음으로 바닥의 쓰레기를 치워볼까요?");
         {
@@ -234,18 +310,7 @@ yield return YieldCache.WaitForSeconds(1);
         yield return _uiDescriptionNPC.ShowDescription1Text("모두의 레스토랑을 즐겁게 운영해봅시다!");
 
 
-        _uiTutorial.PunchHoleSetActive(false);
-        UserInfo.IsFirstTutorialClear = true;
-        _mainSceneUI.gameObject.SetActive(true);
-        _uiTutorial.PopEnabled = true;
-        _uiDescriptionNPC.PopEnabled = true;
-        yield return YieldCache.WaitForSeconds(0.02f);
-        _uiNav.Pop("UITutorial");
-        _uiNav.Pop("UITutorialDescription");
-        _uiTutorial.PopEnabled = false;
-        _uiDescriptionNPC.PopEnabled = false;
-        UserInfo.IsTutorialStart = false;
-        gameObject.SetActive(false);
+        yield return CompleteTutorialRoutine(false);
     }
 
     private void Step2TouchEvent()
@@ -264,19 +329,99 @@ yield return YieldCache.WaitForSeconds(1);
 
     private void OnSkipButtonClicked()
     {
+        if (!HasCurrentPresentation() || _completionRequested) return;
         UserInfo.GiveRecipe("FOOD01");
-        _uiTutorial.PopEnabled = true;
-        _uiDescriptionNPC.PopEnabled = true;
-        _uiNav.Pop("UITutorial");
-        _uiNav.Pop("UITutorialDescription");
-        _uiTutorial.PopEnabled = false;
-        _uiDescriptionNPC.PopEnabled = false;
-        UserInfo.IsTutorialStart = false;
-        UserInfo.IsFirstTutorialClear = true;
-        _mainSceneUI.gameObject.SetActive(true);
-        _table1.gameObject.SetActive(true);
-        _burner1.SetActive(true);
-        gameObject.SetActive(false);
+        StopAllCoroutines();
+        StopTouchObservation();
+        _uiDescriptionNPC.HideGuidanceCard();
+        StartCoroutine(CompleteTutorialRoutine(true));
+    }
+
+    private IEnumerator CompleteTutorialRoutine(bool skipped)
+    {
+        if (!HasCurrentPresentation() || _completionRequested) yield break;
+        _completionRequested = true;
+        StopTouchObservation();
+        string error = null;
+        while (HasCurrentPresentation())
+        {
+            _backend.TryCompleteFirstTutorial(_preparation, skipped, out _completion, out error);
+            // Null operation + null error means no request was accepted: wait for an ordinary save to finish.
+            // Once an operation or error exists, never resend from presentation code.
+            if (_completion != null || error != null) break;
+            yield return YieldCache.WaitForSeconds(0.25f);
+        }
+        if (!HasCurrentPresentation()) yield break;
+        if (_completion == null) ReportPreparationProblem(error);
+        while (HasCurrentPresentation())
+        {
+            if (_completion != null && _completion.IsCompleted)
+            {
+                ClosePresentation(skipped);
+                gameObject.SetActive(false);
+                yield break;
+            }
+            if (_completion != null && _completion.IsFailed)
+                ReportPreparationProblem(_completion.Error);
+            yield return YieldCache.WaitForSeconds(0.25f);
+        }
+    }
+
+    private void StopTouchObservation()
+    {
+        if (_table1 != null && _tableTouchedHandler != null)
+            _table1.OnTouchEventHandler -= _tableTouchedHandler;
+        _tableTouchedHandler = null;
+        if (_uiTutorial != null) _uiTutorial.StopTouch();
+    }
+
+    private void ClosePresentation(bool skipped)
+    {
+        if (!_presentationClaimed) return;
+        _presentationClaimed = false;
+        try
+        {
+            StopTouchObservation();
+            if (_uiTutorial != null) _uiTutorial.PunchHoleSetActive(false);
+            CloseTutorialViews();
+            if (_mainSceneUI != null) _mainSceneUI.gameObject.SetActive(true);
+            if (skipped)
+            {
+                if (_table1 != null) _table1.gameObject.SetActive(true);
+                if (_burner1 != null) _burner1.SetActive(true);
+            }
+        }
+        finally
+        {
+            _viewsOpened = false;
+            UserInfo.IsTutorialStart = false;
+            _preparation?.ReleasePresentation(this);
+        }
+    }
+
+    private void CloseTutorialViews()
+    {
+        if (!_viewsOpened) return;
+        // Only this tutorial's registered views are removed. Animated Pop can
+        // reject cleanup while the Skip confirmation is still disappearing.
+        if (_uiDescriptionNPC != null) _uiDescriptionNPC.Hide();
+        if (_uiTutorial != null) _uiTutorial.Hide();
+        if (_uiNav != null)
+        {
+            _uiNav.PopNoAnime("UITutorialDescription");
+            _uiNav.PopNoAnime("UITutorial");
+        }
+    }
+
+    private void OnDisable()
+    {
+        StopAllCoroutines();
+        ClosePresentation(false);
+    }
+
+    private void OnDestroy()
+    {
+        ClosePresentation(false);
     }
 
 }

@@ -220,6 +220,17 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             out StaffDataDryRunPlanSnapshot plan,
             out IReadOnlyList<string> diagnostics)
         {
+            return TryBuildCanonicalV8ReadOnlyPlan(
+                StaffExpansionValidationProfiles.Baseline32,
+                out plan,
+                out diagnostics);
+        }
+
+        internal static bool TryBuildCanonicalV8ReadOnlyPlan(
+            StaffExpansionValidationProfile validationProfile,
+            out StaffDataDryRunPlanSnapshot plan,
+            out IReadOnlyList<string> diagnostics)
+        {
             plan = null;
             StaffOfficialDataPackageSnapshot official;
             IReadOnlyList<string> officialDiagnostics;
@@ -232,7 +243,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             IReadOnlyList<string> planDiagnostics;
-            bool built = TryBuildV8ReadOnlyPlan(official, out plan, out planDiagnostics);
+            bool built = TryBuildV8ReadOnlyPlan(
+                official, validationProfile, out plan, out planDiagnostics);
             List<string> combined = new List<string>();
             AddDiagnostics(officialDiagnostics, combined);
             AddDiagnostics(planDiagnostics, combined);
@@ -242,6 +254,19 @@ namespace PandaRestaurant.Editor.StaffDataValidation
 
         internal static bool TryBuildV8ReadOnlyPlan(
             StaffOfficialDataPackageSnapshot official,
+            out StaffDataDryRunPlanSnapshot plan,
+            out IReadOnlyList<string> diagnostics)
+        {
+            return TryBuildV8ReadOnlyPlan(
+                official,
+                StaffExpansionValidationProfiles.Baseline32,
+                out plan,
+                out diagnostics);
+        }
+
+        internal static bool TryBuildV8ReadOnlyPlan(
+            StaffOfficialDataPackageSnapshot official,
+            StaffExpansionValidationProfile validationProfile,
             out StaffDataDryRunPlanSnapshot plan,
             out IReadOnlyList<string> diagnostics)
         {
@@ -277,6 +302,17 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                 diagnostics = ToDiagnostics(errors);
                 return false;
             }
+
+            // Gate the complete live inventory before using the immutable STAFF01~32
+            // projection for the historical A1 ledger. Never infer a profile from assets.
+            if (!StaffExpansionValidationProfiles.ValidateInventory(
+                    current, validationProfile, errors))
+            {
+                diagnostics = ToDiagnostics(errors);
+                return false;
+            }
+
+            current = StaffExpansionValidationProfiles.CreateBaselineSnapshot(current);
 
             if (official.PackageFingerprint != V8OfficialPackageFingerprint)
             {
@@ -328,6 +364,40 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             }
 
             return true;
+        }
+
+        // The 92-row plan remains the historical source ledger: 32 protected baseline
+        // rows and 60 expansion definitions. CREATE_NEW in that ledger is not a pending
+        // filesystem action. This explicit profile filter supplies the unapplied rows;
+        // the expansion generator separately verifies all CREATE/NO_OP targets.
+        internal static IReadOnlyList<StaffDataDryRunStaffPlan> GetUnappliedExpansionPlans(
+            StaffDataDryRunPlanSnapshot plan,
+            StaffExpansionValidationProfile validationProfile)
+        {
+            if (plan == null || validationProfile == null)
+            {
+                throw new ArgumentNullException(plan == null ? nameof(plan) : nameof(validationProfile));
+            }
+
+            List<StaffDataDryRunStaffPlan> pending = new List<StaffDataDryRunStaffPlan>();
+            for (int index = 0; index < plan.StaffPlans.Count; index++)
+            {
+                StaffDataDryRunStaffPlan staff = plan.StaffPlans[index];
+                if (staff.StaffNumber >= NewStaffStartNumber
+                    && !validationProfile.ContainsStaffId(staff.StaffId))
+                {
+                    pending.Add(staff);
+                }
+            }
+
+            if (pending.Count != validationProfile.RemainingNewStaffCount)
+            {
+                throw new InvalidOperationException(
+                    "Unapplied expansion ledger does not match explicit profile "
+                    + validationProfile.Name + ".");
+            }
+
+            return new ReadOnlyCollection<StaffDataDryRunStaffPlan>(pending);
         }
 
         internal static bool TryClassifyExistingV18DataState(
@@ -1275,7 +1345,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             for (int planIndex = 0; planIndex < plans.Count; planIndex++)
             {
                 StaffDataDryRunStaffPlan staff = plans[planIndex];
-                if (staff.AssetAction != StaffDryRunAssetAction.UPDATE_EXISTING)
+                if (staff.AssetAction != StaffDryRunAssetAction.UPDATE_EXISTING
+                    || !StaffExpansionValidationProfiles.IsBaselineStaffId(staff.StaffId))
                 {
                     continue;
                 }
@@ -1539,7 +1610,7 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             List<StaffDataDryRunStaffPlan> existing = Filter(plans, StaffDryRunAssetAction.UPDATE_EXISTING);
             List<StaffDataDryRunStaffPlan> created = Filter(plans, StaffDryRunAssetAction.CREATE_NEW);
             RequireCount("existing update plans", existing.Count, 32, errors);
-            RequireCount("new create plans", created.Count, 60, errors);
+            RequireCount("historical expansion source definitions (not pending actions)", created.Count, 60, errors);
             ExistingV18StateSummary a1State = BuildExistingV18StateSummary(plans);
             bool readyToApply = context.Current.InventoryFingerprint == PreA1InventoryFingerprint
                                 && a1State.NameChanges == 2
@@ -2964,8 +3035,9 @@ namespace PandaRestaurant.Editor.StaffDataValidation
                             row[8],
                             speed,
                             skillId,
-                            skillId == "STAFF_SKILL04" || skillId == "STAFF_SKILL05" || skillId == "STAFF_SKILL06"
-                            || skillId == "STAFF_SKILL08" || skillId == "STAFF_SKILL09" || skillId == "STAFF_SKILL10"
+                            (number <= ExistingStaffCount || !profile.IsV8)
+                            && (skillId == "STAFF_SKILL04" || skillId == "STAFF_SKILL05" || skillId == "STAFF_SKILL06"
+                            || skillId == "STAFF_SKILL08" || skillId == "STAFF_SKILL09" || skillId == "STAFF_SKILL10")
                                 ? lockedSkillDescription
                                 : row[11],
                             duration,

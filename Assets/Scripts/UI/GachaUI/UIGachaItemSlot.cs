@@ -37,7 +37,7 @@ public class UIGachaItemSlot : RecyclableScrollSlot<GachaData>
 
         _data = data;
         gameObject.SetActive(true);
-        _itemImage.sprite = data.ThumbnailSprite;
+        _itemImage.sprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
         _uiStar.SetStar(data.Rank);
 
     }
