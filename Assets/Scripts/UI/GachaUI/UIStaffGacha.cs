@@ -427,6 +427,7 @@ public class UIStaffGacha : GachaMachineParent
 
     private void Update()
     {
+        if (_uiGacha != null && _uiGacha.IsPrewarming) return;
         if (IsQuestEntry)
         {
             UpdateQuestButton();

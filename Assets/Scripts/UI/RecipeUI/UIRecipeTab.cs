@@ -22,6 +22,7 @@ public class UIRecipeTab : UIRestaurantAdminTab
     private UIRestaurantAdminFoodTypeSlot[] _slots;
     private List<FoodData> _foodDataList;
     private bool _isInitialized = false;
+    private bool _isDirty;
 
     public FoodData SelectedData => _uiRecipePreview != null ? _uiRecipePreview.SelectedData : null;
     public RectTransform BuyButtonRect => _uiRecipePreview != null ? _uiRecipePreview.BuyButtonRect : null;
@@ -111,11 +112,40 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
     private void SubscribeEvents()
     {
-        UserInfo.OnUpgradeRecipeHandler += UpdateUIOptimized;
-        UserInfo.OnGiveRecipeHandler += UpdateUIOptimized;
-        UserInfo.OnChangeMoneyHandler += UpdateUIOptimized;
-        UserInfo.OnChangeScoreHandler += UpdateUIOptimized;
-        GameManager.Instance.OnChangeScoreHandler += UpdateUIOptimized;
+        UserInfo.OnUpgradeRecipeHandler += OnDataChanged;
+        UserInfo.OnGiveRecipeHandler += OnDataChanged;
+        UserInfo.OnChangeMoneyHandler += OnDataChanged;
+        UserInfo.OnChangeScoreHandler += OnDataChanged;
+        GameManager.Instance.OnChangeScoreHandler += OnDataChanged;
+    }
+
+    // Money/score change often during play; only refresh the recipe list while it is actually shown.
+    private void OnDataChanged()
+    {
+        if (!gameObject.activeInHierarchy || !IsContentVisible())
+        {
+            _isDirty = true;
+            return;
+        }
+
+        UpdateUIOptimized();
+    }
+
+    private void OnEnable()
+    {
+        if (_isDirty && IsContentVisible())
+            UpdateUIOptimized();
+    }
+
+    // Walks activeSelf up to the tab so the result is valid even mid-activation.
+    private bool IsContentVisible()
+    {
+        for (Transform t = _slotParnet; t != null && t != transform; t = t.parent)
+        {
+            if (!t.gameObject.activeSelf)
+                return false;
+        }
+        return true;
     }
 
     public void SetView(FoodData data)
@@ -131,9 +161,10 @@ public class UIRecipeTab : UIRestaurantAdminTab
     // 대폭 최적화된 UpdateUI (정렬 없이 기존 순서대로)
     private void UpdateUIOptimized()
     {
-        if (!gameObject.activeSelf || _foodDataList == null || _foodDataList.Count == 0)
+        if (_foodDataList == null || _foodDataList.Count == 0)
             return;
 
+        _isDirty = false;
         _uiRecipePreview.UpdateUI();
 
         int dataCount = _foodDataList.Count;
@@ -291,10 +322,10 @@ public class UIRecipeTab : UIRestaurantAdminTab
 
     private void OnDestroy()
     {
-        UserInfo.OnUpgradeRecipeHandler -= UpdateUIOptimized;
-        UserInfo.OnGiveRecipeHandler -= UpdateUIOptimized;
-        UserInfo.OnChangeMoneyHandler -= UpdateUIOptimized;
-        UserInfo.OnChangeScoreHandler -= UpdateUIOptimized;
-        GameManager.Instance.OnChangeScoreHandler -= UpdateUIOptimized;
+        UserInfo.OnUpgradeRecipeHandler -= OnDataChanged;
+        UserInfo.OnGiveRecipeHandler -= OnDataChanged;
+        UserInfo.OnChangeMoneyHandler -= OnDataChanged;
+        UserInfo.OnChangeScoreHandler -= OnDataChanged;
+        GameManager.Instance.OnChangeScoreHandler -= OnDataChanged;
     }
 }

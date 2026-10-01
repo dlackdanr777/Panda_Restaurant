@@ -212,29 +212,25 @@ public class UIRestaurantAdmin : MobileUIView
         _isFailSafeCloseStarted = false;
         _nativeHideView = null;
         ClearCanvasAlphaTween();
-        CleanupTransition();
+        StopTransition();
 
         VisibleState = VisibleState.Appearing;
         SoundManager.Instance.PlayBackgroundAudio(_shopMusic, 0.5f);
-        gameObject.SetActive(true);
-        _canvasGroup.interactable = true;
+
+        // Decide every child's visibility while the root is still inactive so only the final UI gets Awake/OnEnable.
         _mainUI.SetActive(false);
-        
-        ShowFurnitureTabOptimized();
-        
+        _canvasGroup.interactable = true;
         _canvasGroup.blocksRaycasts = false;
         _canvasGroup.alpha = 0;
         _dontTouchArea.gameObject.SetActive(true);
-        
-        // Floor 타입 강제 초기화하여 ChangeFloorType이 항상 실행되도록 함
-        ERestaurantFloorType targetFloor = _mainScene.CurrentFloor;
-        _floorType = (ERestaurantFloorType)(-1); // 강제로 다른 값으로 설정
-        ChangeFloorTypeOptimized(targetFloor);
-        
-        // Floor Button Groups 초기 상태 설정
-        UpdateFloorButtonGroups(targetFloor);
 
-        _recipeTab.UpdateUI();
+        _previousFloorType = _floorType;
+        _floorType = _mainScene.CurrentFloor;
+        ApplyFloorState(false);
+
+        ShowFurnitureTabOptimized();
+
+        gameObject.SetActive(true);
 
         TweenData tween = _canvasGroup.TweenAlpha(1, 0.1f);
         tween.OnComplete(() =>
@@ -696,22 +692,22 @@ public class UIRestaurantAdmin : MobileUIView
             }
         }
 
-        // 탭 Attention 상태 설정
+        // Hide unselected content before (re)activating tab roots so hidden content is never woken up.
         for (int i = 0; i < _tabs.Length; i++)
         {
-            _tabs[i].gameObject.SetActive(true);
-            SetTabContentActive(_tabs[i], i == activeIndex);
-
             if (i == activeIndex)
-            {
-                _tabs[i].SetAttention();
-                _tabs[i].transform.SetAsLastSibling();
-            }
-            else
-            {
-                _tabs[i].SetNotAttention();
-            }
+                continue;
+
+            SetTabContentActive(_tabs[i], false);
+            _tabs[i].gameObject.SetActive(true);
+            _tabs[i].SetNotAttention();
         }
+
+        UIRestaurantAdminTab activeTab = _tabs[activeIndex];
+        SetTabContentActive(activeTab, true);
+        activeTab.gameObject.SetActive(true);
+        activeTab.SetAttention();
+        activeTab.transform.SetAsLastSibling();
     }
 
     private static void SetTabContentActive(UIRestaurantAdminTab tab, bool active)
@@ -791,7 +787,15 @@ public class UIRestaurantAdmin : MobileUIView
     // 전환 애니메이션 정리 (UI 닫을 때 호출)
     private void CleanupTransition()
     {
-        // 진행 중인 코루틴이 있다면 중지
+        StopTransition();
+
+        // 현재 _floorType에 맞는 배경으로 강제 설정 (동기화). 탭은 ChangeFloorTypeOptimized에서 이미 동기화됨.
+        SetBackgroundImageImmediate(_floorType);
+    }
+
+    // 전환 취소만 수행하고 화면 데이터 갱신은 하지 않는다.
+    private void StopTransition()
+    {
         if (_transitionCoroutine != null)
         {
             StopCoroutine(_transitionCoroutine);
@@ -811,15 +815,6 @@ public class UIRestaurantAdmin : MobileUIView
                 }
             }
         }
-        
-        // 현재 _floorType에 맞는 배경으로 강제 설정 (동기화)
-        SetBackgroundImageImmediate(_floorType);
-        
-        // 탭들도 현재 _floorType에 맞게 업데이트
-        _kitchenTab.ChangeFloorType(_floorType);
-        _furnitureTab.ChangeFloorType(_floorType);
-        _staffTab.ChangeFloorType(_floorType);
-        _recipeTab.ChangeFloorType(_floorType);
     }
 
     private void DeactivateTransitionOverlay()
@@ -1064,15 +1059,28 @@ public class UIRestaurantAdmin : MobileUIView
 
         _previousFloorType = _floorType;
         _floorType = floorType;
-        
-        // 한 번에 모든 탭 업데이트 (각 탭이 자신의 배경을 관리)
+        ApplyFloorState(true);
+    }
+
+    // 층 관련 표시를 현재 _floorType 기준으로 한 번만 적용한다. 탭은 같은 층이면 내부에서 건너뛰고, 데이터 변경은 각 탭의 이벤트로 반영된다.
+    private void ApplyFloorState(bool animateBackground)
+    {
         _kitchenTab.ChangeFloorType(_floorType);
         _furnitureTab.ChangeFloorType(_floorType);
         _staffTab.ChangeFloorType(_floorType);
         _recipeTab.ChangeFloorType(_floorType);
         _floorButtonGroup.SetFloorText(_floorType);
 
-        SetBackgroundImageOptimized(_floorType);
+        if (animateBackground)
+        {
+            SetBackgroundImageOptimized(_floorType);
+        }
+        else
+        {
+            DeactivateTransitionOverlay();
+            SetBackgroundImageImmediate(_floorType);
+        }
+
         UpdateFloorButtonGroups(_floorType);
     }
     

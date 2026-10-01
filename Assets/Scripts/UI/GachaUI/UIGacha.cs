@@ -4,6 +4,7 @@ using Muks.Tween;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using System;
+using System.Collections;
 using UnityEngine.EventSystems;
 
 public partial class UIGacha : MobileUIView
@@ -60,9 +61,13 @@ public partial class UIGacha : MobileUIView
     private bool _questPresentationCaptured;
     private bool _questScrollWasEnabled;
     private float _nextItemTutorialCheck;
+    private Coroutine _prewarmRoutine;
+    private bool _isPrewarming;
+    internal bool IsPrewarming => _isPrewarming;
 
     private void Update()
     {
+        if (_isPrewarming) return;
         UpdateCollectionUI();
 #if UNITY_EDITOR
         if (_editorOfflineConfigured) return;
@@ -283,15 +288,17 @@ public partial class UIGacha : MobileUIView
     public void SetStartGacha(bool isStart)
     {
         _isStartGacha = isStart;
+        // While appearing/hidden, the open tween's completion is the single place that enables navigation.
+        bool canNavigate = !isStart && VisibleState == VisibleState.Appeared;
         if (_scrollRect != null)
         {
-            _scrollRect.enabled = !isStart && !_questStaffEntry;
+            _scrollRect.enabled = canNavigate && !_questStaffEntry;
 #if UNITY_EDITOR
             if (_editorOfflineConfigured) _scrollRect.enabled = false;
 #endif
         }
 
-        SetNavigationButtonsActive(!isStart);
+        SetNavigationButtonsActive(canNavigate);
 
     }
     public override void Init()
@@ -316,7 +323,7 @@ public partial class UIGacha : MobileUIView
         }
         BindCollectionEconomy(Muks.BackEnd.BackendManager.Instance.GachaEconomy);
         _gachaItemList.Init(_gachaMachines[0].ItemDataList);
-        SetMachine(_gachaMachines[0]);
+        SetOpeningMachine(_gachaMachines[0]);
         _leftButton.onClick.AddListener(() => SetMachine(-1));
         _rightButton.onClick.AddListener(() => SetMachine(1));
         gameObject.SetActive(false);
@@ -348,6 +355,60 @@ public partial class UIGacha : MobileUIView
         endDragEntry.eventID = EventTriggerType.EndDrag;
         endDragEntry.callback.AddListener((data) => { OnScrollEndDrag((PointerEventData)data); });
         trigger.triggers.Add(endDragEntry);
+
+        // MainScene hosts the routine because this view is inactive after Init.
+        if (_mainScene != null && _mainScene.isActiveAndEnabled)
+            _prewarmRoutine = _mainScene.StartCoroutine(PrewarmFirstScreen());
+    }
+
+    // Builds each machine's first screen invisibly, one machine per frame, so Awake/layout/TMP work happens during loading.
+    private IEnumerator PrewarmFirstScreen()
+    {
+        yield return null;
+
+        for (int i = 0; i < _gachaMachines.Length; i++)
+        {
+            if (VisibleState != VisibleState.Disappeared || _questStaffEntry || _requestedInitialMachine != null)
+                break;
+
+            if (!_isPrewarming)
+            {
+                _isPrewarming = true;
+                _canvasGroup.alpha = 0f;
+                _canvasGroup.interactable = false;
+                _canvasGroup.blocksRaycasts = false;
+            }
+
+            SetOpeningMachine(_gachaMachines[i]);
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
+            _gachaMachines[i].Show();
+
+            // Let this frame's LateUpdate and canvas rebuild (layout, TMP meshes) run before moving on.
+            yield return null;
+        }
+
+        _prewarmRoutine = null;
+        StopPrewarm(true);
+    }
+
+    private void StopPrewarm(bool deactivate)
+    {
+        if (_prewarmRoutine != null && _mainScene != null)
+            _mainScene.StopCoroutine(_prewarmRoutine);
+        _prewarmRoutine = null;
+
+        if (!_isPrewarming)
+            return;
+
+        _isPrewarming = false;
+        if (deactivate)
+        {
+            gameObject.SetActive(false);
+            for (int i = 0; i < _gachaMachines.Length; i++)
+                _gachaMachines[i].Hide();
+        }
+        _canvasGroup.alpha = 1f;
     }
 
     private void RemoveInvalidAndDuplicateMachines()
@@ -515,6 +576,8 @@ public partial class UIGacha : MobileUIView
             return;
         }
 
+        StopPrewarm(false);
+
         // if(!UserInfo.GetIsClearChallenge("MainReward12"))
         // {
         //     PopupManager.Instance.ShowDisplayText("할일 목록 미달성");
@@ -526,12 +589,13 @@ public partial class UIGacha : MobileUIView
         if (!_editorOfflineConfigured)
 #endif
             SoundManager.Instance.PlayBackgroundAudio(_backgroundAudio, 0.5f);
-        gameObject.SetActive(true);
+
+        // Settle every child's state while the root is still inactive; buttons stay off until the open tween completes.
         _canvasGroup.interactable = false;
         _canvasGroup.blocksRaycasts = true;
         _animeUI.TweenStop();
         _animeUI.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
-        SetStartGacha(false);
+        _isStartGacha = false;
         if (_scrollRect != null)
         {
             _scrollRect.StopMovement();
@@ -540,8 +604,12 @@ public partial class UIGacha : MobileUIView
         SetNavigationButtonsActive(false);
         GachaMachineParent initialMachine = _requestedInitialMachine ?? GetDefaultMachine();
         _requestedInitialMachine = null;
-        SetMachine(initialMachine);
-        SetMachineParentPos();
+        SetOpeningMachine(initialMachine);
+
+        gameObject.SetActive(true);
+
+        // Machine Show() needs an active hierarchy (Animator.Update, coroutines).
+        _currentGachaMachine.Show();
         ApplyQuestStaffPresentation();
         TweenData tween = _animeUI.TweenScale(new Vector3(1, 1, 1), _showDuration, _showTweenMode);
         tween.OnComplete(() =>
@@ -552,6 +620,7 @@ public partial class UIGacha : MobileUIView
             if (_scrollRect != null)
                 _scrollRect.enabled = !_isStartGacha && !_questStaffEntry;
             SetNavigationButtonsActive(!_isStartGacha);
+            SetActiveUIComponents(true);
             TryStartItemGachaTutorial();
         });
     }
@@ -592,6 +661,12 @@ public partial class UIGacha : MobileUIView
 #if UNITY_EDITOR
         if (_editorOfflineConfigured && !_editorOfflineNavigation) { SetEditorOfflineVisible(false); return; }
 #endif
+        if (_isPrewarming)
+        {
+            StopPrewarm(true);
+            return;
+        }
+
         if (VisibleState == VisibleState.Disappeared && !gameObject.activeSelf)
             return;
 
@@ -699,10 +774,11 @@ public partial class UIGacha : MobileUIView
         }
 
         _currentGachaMachine = machine;
-        _gachaItemList.UpdateData(machine.ItemDataList);
+        UpdateMachineItemList(machine);
 
         // 위치·크기만 즉시 지정한다 (실제 Show() 호출은 루트 활성화 이후로 미룸)
         SetMachineParentPos();
+        ApplyQuestStaffPresentation();
     }
 
     private void SetMachineParentPosAnime()

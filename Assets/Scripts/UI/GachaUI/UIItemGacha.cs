@@ -298,6 +298,7 @@ public class UIItemGacha : GachaMachineParent
 
     private void Update()
     {
+        if (_uiGacha != null && _uiGacha.IsPrewarming) return;
         if (_collectionEconomy != null && _uiGacha != null && !_uiGacha.IsStartGacha)
         {
             PresentCollectionTransaction(_collectionEconomy.LastTransaction);
