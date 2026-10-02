@@ -74,6 +74,62 @@ public class FirstTutorialCustomerFloorTests
     }
 
     [Test]
+    public void ActiveFirstTutorial_AutomaticManagerRouteRejectsFloor2InsteadOfRedirecting()
+    {
+        using (var fixture = new Fixture())
+        {
+            Assert.That(fixture.Select(ERestaurantFloorType.Floor2, true, out var floor, out var table), Is.False);
+            Assert.That(floor, Is.EqualTo(ERestaurantFloorType.Floor2));
+            Assert.That(table, Is.Null);
+            Assert.That(fixture.Customer.WaitCount, Is.EqualTo(1));
+
+            Assert.That(fixture.Select(ERestaurantFloorType.Floor2, false, out floor, out table), Is.True,
+                "The existing manual/tutorial floor policy still selects Floor1");
+            Assert.That(floor, Is.EqualTo(ERestaurantFloorType.Floor1));
+            Assert.That(table, Is.SameAs(fixture.FirstTable));
+            fixture.AssertUnlocksPreserved();
+        }
+    }
+
+    [Test]
+    public void AutomaticManagerSelection_StaysOnRequestedFloorAndNeverFallsBack()
+    {
+        using (var fixture = new Fixture())
+        {
+            UserInfo.IsFirstTutorialClear = true;
+            UserInfo.IsTutorialStart = false;
+
+            Assert.That(fixture.Select(ERestaurantFloorType.Floor1, true, out var floor, out var table), Is.True);
+            Assert.That(floor, Is.EqualTo(ERestaurantFloorType.Floor1));
+            Assert.That(table, Is.SameAs(fixture.FirstTable));
+            Assert.That(fixture.Select(ERestaurantFloorType.Floor2, true, out floor, out table), Is.True);
+            Assert.That(floor, Is.EqualTo(ERestaurantFloorType.Floor2));
+            Assert.That(table, Is.SameAs(fixture.SecondTable));
+
+            fixture.FirstTable.TableState = ETableState.Move;
+            Assert.That(fixture.Select(ERestaurantFloorType.Floor1, true, out floor, out table), Is.False);
+            Assert.That(floor, Is.EqualTo(ERestaurantFloorType.Floor1));
+            Assert.That(table, Is.Null, "An empty Floor2 table must not be used as a fallback");
+            Assert.That(fixture.Customer.WaitCount, Is.EqualTo(1));
+            Assert.That(fixture.SecondTable.TableState, Is.EqualTo(ETableState.Empty));
+        }
+    }
+
+    [Test]
+    public void UnassignedManagerCannotStartAutomaticGuide()
+    {
+        using (var fixture = new Fixture())
+        {
+            Staff unassignedManager = fixture.UnassignedManager(ERestaurantFloorType.Floor1);
+
+            Assert.That(fixture.Manager.OnManagerCustomerGuideEvent(unassignedManager), Is.False);
+            Assert.That(fixture.Customer.WaitCount, Is.EqualTo(1));
+            Assert.That(fixture.FirstTable.CurrentCustomer, Is.Null);
+            Assert.That(fixture.SecondTable.CurrentCustomer, Is.Null);
+        }
+    }
+
+    [Test]
     public void CompletedOrSkippedAndOutsideFirstTutorial_PreserveExistingUnlockedFloorPolicy()
     {
         using (var fixture = new Fixture())
@@ -183,13 +239,25 @@ public class FirstTutorialCustomerFloorTests
             });
         }
 
-        public bool Select(ERestaurantFloorType? requested, out ERestaurantFloorType floor, out TableData table)
+        public bool Select(ERestaurantFloorType? requested, out ERestaurantFloorType floor, out TableData table) =>
+            Select(requested, false, out floor, out table);
+
+        public bool Select(ERestaurantFloorType? requested, bool strictRequestedFloor,
+            out ERestaurantFloorType floor, out TableData table)
         {
-            object[] arguments = { waiting, requested, default(ERestaurantFloorType), null };
+            object[] arguments = { waiting, requested, default(ERestaurantFloorType), null, strictRequestedFloor };
             bool result = (bool)Invoke(Manager, "TrySelectCustomerGuideTable", arguments);
             floor = (ERestaurantFloorType)arguments[2];
             table = (TableData)arguments[3];
             return result;
+        }
+
+        public Staff UnassignedManager(ERestaurantFloorType floor)
+        {
+            Staff staff = Add<Staff>("Unassigned " + floor + " manager");
+            Set(staff, "_staffType", EquipStaffType.Manager);
+            Set(staff, "_equipFloorType", floor);
+            return staff;
         }
 
         public void AssertUnlocksPreserved()

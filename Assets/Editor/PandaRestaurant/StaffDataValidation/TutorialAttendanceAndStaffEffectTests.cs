@@ -268,6 +268,22 @@ public class TutorialAttendanceAndStaffEffectTests
         });
     }
 
+    [TestCase(true, 1, 0f)]
+    [TestCase(false, 1, 1f / 6f)]
+    [TestCase(true, 6, 5f / 6f)]
+    [TestCase(false, 6, 1f)]
+    [TestCase(true, 7, 1f)]
+    [TestCase(false, 7, 0f)]
+    [TestCase(true, 8, 0f)]
+    [TestCase(false, 8, 1f / 6f)]
+    public void AttendanceProgress_UsesReceivedConsecutiveDaysAndSevenDayCycle(
+        bool canAttend, int todayDay, float expected)
+    {
+        var calculate = typeof(UIAttendance).GetMethod("CalculateAttendanceProgress", BindingFlags.Static | BindingFlags.NonPublic);
+        float actual = (float)calculate.Invoke(null, new object[] { canAttend, todayDay });
+        Assert.That(actual, Is.EqualTo(expected).Within(0.0001f));
+    }
+
     [TestCase("not-completed")]
     [TestCase("tutorial-running")]
     [TestCase("main-reference")]

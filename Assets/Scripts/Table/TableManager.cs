@@ -68,6 +68,29 @@ public class TableManager : MonoBehaviour
 
     public bool OnCustomerGuideEvent(int sitPos = -1)
     {
+        return GuideFirstCustomer(null, sitPos, false);
+    }
+
+
+    public bool OnCustomerGuideEvent(ERestaurantFloorType choiceFloor, int sitPos = -1)
+    {
+        return GuideFirstCustomer(choiceFloor, sitPos, false);
+    }
+
+    public bool OnManagerCustomerGuideEvent(Staff staff, int sitPos = -1)
+    {
+        if (!IsCurrentEquippedManager(staff))
+            return false;
+
+        ERestaurantFloorType floor = staff.EquipFloorType;
+        if (RestrictFirstTutorialCustomersToFloor1 && floor != ERestaurantFloorType.Floor1)
+            return false;
+
+        return GuideFirstCustomer(floor, sitPos, true);
+    }
+
+    private bool GuideFirstCustomer(ERestaurantFloorType? requestedFloor, int sitPos, bool strictRequestedFloor)
+    {
         if (_customerController.IsEmpty())
             return false;
 
@@ -78,7 +101,8 @@ public class TableManager : MonoBehaviour
             return false;
         }
 
-        if (!TrySelectCustomerGuideTable(customer, null, out ERestaurantFloorType choiceFloor, out TableData data))
+        if (!TrySelectCustomerGuideTable(customer, requestedFloor, out ERestaurantFloorType choiceFloor,
+            out TableData data, strictRequestedFloor))
         {
             DebugLog.Log("남는 테이블이 없습니다.");
             UpdateTable();
@@ -97,36 +121,12 @@ public class TableManager : MonoBehaviour
         return true;
     }
 
-
-    public bool OnCustomerGuideEvent(ERestaurantFloorType choiceFloor, int sitPos = -1)
+    private bool IsCurrentEquippedManager(Staff staff)
     {
-        if (_customerController.IsEmpty())
-            return false;
-
-        NormalCustomer customer = _customerController.GetFirstCustomer();
-        if (customer == null)
-        {
-            DebugLog.LogError("손님 정보가 없습니다.");
-            return false;
-        }
-
-        if (!TrySelectCustomerGuideTable(customer, choiceFloor, out choiceFloor, out TableData data))
-        {
-            DebugLog.Log("남는 테이블이 없습니다.");
-            UpdateTable();
-            return false;
-        }
-
-        if (data.TableState == ETableState.DontUse)
-        {
-            NotFurnitureTable(data);
-            return false;
-        }
-
-        sitPos = Mathf.Clamp(sitPos, -1, 1);
-        customer.SetVisitFloor(choiceFloor);
-        OnCustomerGuide(customer, data, sitPos);
-        return true;
+        return staff != null
+            && staff.EquipStaffType == EquipStaffType.Manager
+            && staff.StaffData != null
+            && UserInfo.GetEquipStaff(UserInfo.CurrentStage, staff.EquipFloorType, EquipStaffType.Manager) == staff.StaffData;
     }
 
 
@@ -148,6 +148,15 @@ public class TableManager : MonoBehaviour
             SoundManager.Instance.PlayEffectAudio(effectType, _callSound);
     }
 
+    public void OnManagerCustomerGuideEventPlaySound(Staff staff, int sitPos = -1)
+    {
+        if (OnManagerCustomerGuideEvent(staff, sitPos))
+        {
+            EffectType effectType = SoundManager.Instance.GetHallEffectType(staff.EquipFloorType, RestaurantType.Hall);
+            SoundManager.Instance.PlayEffectAudio(effectType, _callSound);
+        }
+    }
+
     public bool OnCustomerGuideEventPlayUISound(int sitPos = -1)
     {
         if (!OnCustomerGuideEvent(sitPos))
@@ -163,13 +172,16 @@ public class TableManager : MonoBehaviour
         UserInfo.CurrentStage == EStage.Stage1 && UserInfo.IsTutorialStart && !UserInfo.IsFirstTutorialClear;
 
     private bool TrySelectCustomerGuideTable(NormalCustomer customer, ERestaurantFloorType? requestedFloor,
-        out ERestaurantFloorType choiceFloor, out TableData data)
+        out ERestaurantFloorType choiceFloor, out TableData data, bool strictRequestedFloor = false)
     {
         choiceFloor = requestedFloor ?? ERestaurantFloorType.Floor1;
         data = null;
         if (RestrictFirstTutorialCustomersToFloor1)
         {
-            choiceFloor = ERestaurantFloorType.Floor1;
+            if (strictRequestedFloor && requestedFloor.HasValue && requestedFloor != ERestaurantFloorType.Floor1)
+                return false;
+            if (!strictRequestedFloor)
+                choiceFloor = ERestaurantFloorType.Floor1;
         }
         else if (!requestedFloor.HasValue)
         {
@@ -181,7 +193,13 @@ public class TableManager : MonoBehaviour
         // A full first floor leaves the customer in the existing waiting queue.
         // In particular, do not retry selection against the other unlocked floors.
         data = GetTableType(choiceFloor, ETableState.Empty);
-        return data != null;
+        if (data == null || data.FloorType != choiceFloor)
+        {
+            data = null;
+            return false;
+        }
+
+        return true;
     }
 
 

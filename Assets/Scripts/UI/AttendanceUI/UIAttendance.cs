@@ -127,18 +127,20 @@ public class UIAttendance : MobileUIView
 
     private void OnAttendanceButtonClicked(bool isAd)
     {
-        OnAttendanceCheck(isAd);
+        if (!OnAttendanceCheck(isAd))
+            return;
+
         GameManager.Instance.AsyncSaveGameData();
         SoundManager.Instance.PlayEffectAudio(EffectType.None, _attendanceSound);
     }
 
 
-    private void OnAttendanceCheck(bool isAd)
+    private bool OnAttendanceCheck(bool isAd)
     {
         if (!UserInfo.CheckNoAttendance())
         {
             DebugLog.LogError("이미 출석 체크를 진행했습니다.");
-            return;
+            return false;
         }
 
         // 화면에 표시 중인 일차와 동일한 기준(GetTodayAttendanceDay)으로 지급할 슬롯을 결정
@@ -153,6 +155,7 @@ public class UIAttendance : MobileUIView
         UserInfo.UpdateAttendanceData();
         // 슬롯 UI 갱신
         UpdateUI();
+        return true;
     }
 
 
@@ -190,7 +193,12 @@ public class UIAttendance : MobileUIView
 
         _attendanceButton.interactable = checkAttendance;
         _adButton.Interactable(checkAttendance);
-        float loadingBarGauge = todaySlotIndex / 6f; // 6일차에 1.0, 7일차에 0으로 초기화
-        _loadingBar.SetFillAmount(loadingBarGauge);
+        _loadingBar.SetFillAmount(CalculateAttendanceProgress(checkAttendance, todayDay));
+    }
+
+    private static float CalculateAttendanceProgress(bool canAttend, int todayDay)
+    {
+        int completedAttendanceDays = canAttend ? todayDay - 1 : todayDay;
+        return (completedAttendanceDays % 7) / 6f;
     }
 }

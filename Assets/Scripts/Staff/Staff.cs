@@ -167,7 +167,7 @@ public class Staff : MonoBehaviour
         CancelActiveSkill(cancellationReason, true);
         StopAllCoroutines();
         SkillEffectSetActive(false);
-        if (staffData == _staffData)
+        if (staffData == _staffData && equipFloorType == _equipFloorType)
         {
             RefreshFeverEffect();
             return;
