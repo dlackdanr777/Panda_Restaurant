@@ -236,15 +236,15 @@ public static class GachaCollectionPreviewVerification
             Ensure(hud.GetComponentsInChildren<TMP_Text>(true).Any(x => x.text.Contains("100")), "Guarantee label is absent.");
             Capture("01-machine-guarantee-99"); Checks.Add("E: native guarantee gauge visible at 99 / 100");
         });
-        foreach (TokenExchangeTab tab in new[] { TokenExchangeTab.Tickets, TokenExchangeTab.Staff, TokenExchangeTab.Items })
+        foreach (TokenExchangeTab tab in new[] { TokenExchangeTab.Mixed })
         {
             TokenExchangeTab captured = tab;
             Steps.Enqueue(() => Call("OpenExchange", captured));
             Steps.Enqueue(() =>
             {
                 TokenExchangeView exchange = Get<UIGacha>("View").CollectionExchange;
-                Ensure(exchange != null && exchange.IsOpen && exchange.CurrentTab == captured,
-                    "Native exchange tab is not open: " + captured);
+                Ensure(exchange != null && exchange.IsOpen,
+                    "Native mixed exchange is not open: " + captured);
                 if (captured == TokenExchangeTab.Staff)
                 {
                     var economy = Get<GachaEconomyService>("Economy");

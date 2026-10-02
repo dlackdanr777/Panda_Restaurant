@@ -27,7 +27,11 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private static string OutputDirectory => _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static bool _textStamp;
+    private static bool _exchangeFinal;
+    private static bool _polish;
+    private static bool _phase3;
     private static bool _phase2;
     private const string RequestPath = "Temp/GachaReview20260917-2213/tests-request.txt";
     private static readonly string[] FixtureNames =
@@ -48,6 +52,30 @@ public static class GachaReviewTestRunner
     private static TestExecutionContext _coroutineContext;
     private static int _editorThread;
     public static bool IsRunning => _running;
+    public static void RunTextStampBatch()
+    {
+        _textStamp = _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+        RunPhase1Batch();
+    }
+    public static void RunExchangeFinalBatch()
+    {
+        _exchangeFinal = _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+        RunPhase1Batch();
+    }
+    public static void RunPolishBatch()
+    {
+        _polish = _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+        RunPhase1Batch();
+    }
+    public static void RunPhase3Batch()
+    {
+        _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = "Logs/GachaUiPhase3";
+        RunPhase1Batch();
+    }
     public static void RunPhase2Batch()
     {
         _phase2 = true;
@@ -66,7 +94,8 @@ public static class GachaReviewTestRunner
         {
             if (EditorApplication.timeSinceStartup < readyAt || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
             EditorApplication.update -= StartWhenReady;
-            try { Begin(Environment.GetCommandLineArgs().Contains("-fairyEvidenceOnly") ? "fairy-evidence"
+            try { Begin(_textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
+                : Environment.GetCommandLineArgs().Contains("-fairyEvidenceOnly") ? "fairy-evidence"
                 : Environment.GetCommandLineArgs().Contains("-fairyUiOnly") ? "ui"
                 : Environment.GetCommandLineArgs().Contains("-fairyOnly") ? "fairy" : "phase1"); }
             catch (Exception error) { Fail(error); }
@@ -110,6 +139,12 @@ public static class GachaReviewTestRunner
         try
         {
             if (command == "inspect") InspectCreationTarget();
+            else if (command == "payment-layout")
+            {
+                _textStamp = _phase3 = true;
+                EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+                Begin("text-stamp");
+            }
             else if (command == "run") Begin("all");
             else if (command == "economy" || command == "fairy" || command == "ui") Begin(command);
             else throw new InvalidOperationException("Use inspect, economy, fairy, ui, or run for the related review tests.");
@@ -171,18 +206,24 @@ public static class GachaReviewTestRunner
     {
         Assembly assembly = typeof(GachaReviewTestRunner).Assembly;
         var names = new List<string>();
-        foreach (string name in FixtureNames)
+        foreach (string name in _phase3 ? FixtureNames.Concat(new[] { "GachaPhase3Tests", "Stage1Phase3StressTests", "ItemGachaCapsulePresentationTests" }) : FixtureNames)
         {
+            if (_textStamp && name != "GachaPhase3Tests" && name != "GachaCollectionUiTests" && name != "Stage1Phase3StressTests") continue;
+            if (_group == "phase3" && name != "GachaPhase3Tests" && name != "Stage1Phase3StressTests" &&
+                name != "StaffStageMigrationCollectionTests" && name != "ItemGachaCapsulePresentationTests") continue;
             if (_group == "fairy" && name != "EnhancementFairyTests" && name != "EnhancementFairyStage1Tests") continue;
             if (_group == "economy" && name != "GachaEconomyTests" && name != "GachaExchangeCatalogTests" && name != "StaffStageMigrationCollectionTests") continue;
             if (_group == "ui" && name != "GachaCollectionUiTests" && name != "GachaCollectionPreviewSafetyTests") continue;
             Type fixture = assembly.GetType(name, true);
             foreach (MethodInfo method in fixture.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
+                if (_textStamp && name == "GachaCollectionUiTests" && !method.Name.Contains("Exchange") && !method.Name.StartsWith("Theme_")) continue;
+                if (_textStamp && name == "Stage1Phase3StressTests" && method.Name != "Stage1_PaymentLayoutAndNativeSingleItemCapsuleEvidence") continue;
                 if (_group == "fairy-evidence" && method.Name != "Stage1_FairyTapReusesReadOnlyCardBlocksDragAndClosesWithoutChangingOwnership"
                     && method.Name != "EconomyBackend_Stage1FairyAppearsOnlyAfterProductionCommitAndNeverDuplicates") continue;
                 if (name == "StaffGachaOfflineSessionTests" && !method.Name.StartsWith("ResultPopup_", StringComparison.Ordinal)) continue;
-                if (name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)) continue;
+                if (name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
+                    && !(_phase3 && method.Name.StartsWith("Attendance_", StringComparison.Ordinal))) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "UnityTestAttribute")) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "TestAttribute" ||
                     attribute.GetType().Name == "TestCaseAttribute" || attribute.GetType().Name == "TestCaseSourceAttribute"))

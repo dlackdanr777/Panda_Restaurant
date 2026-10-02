@@ -12,9 +12,10 @@ public sealed class GachaDrawPlan
     public int BonusCount { get; }
     public int ResultCount => Roles.Count;
     public int DiamondCost { get; }
-    private GachaDrawPlan(int basic, int bonus, int cost)
+    public int TicketCost { get; }
+    private GachaDrawPlan(int basic, int bonus, int cost, int tickets = 0)
     {
-        BaseCount = basic; BonusCount = bonus; DiamondCost = cost;
+        BaseCount = basic; BonusCount = bonus; DiamondCost = cost; TicketCost = tickets;
         Roles = Array.AsReadOnly(Enumerable.Repeat(GachaDrawRole.Base, basic)
             .Concat(Enumerable.Repeat(GachaDrawRole.Bonus, bonus)).ToArray());
     }
@@ -24,7 +25,8 @@ public sealed class GachaDrawPlan
         {
             case GachaPaymentKind.DiamondsSingle: return new GachaDrawPlan(1, 0, 10);
             case GachaPaymentKind.DiamondsEleven: return new GachaDrawPlan(10, 1, 100);
-            case GachaPaymentKind.TicketSingle: return new GachaDrawPlan(1, 0, 0);
+            case GachaPaymentKind.TicketSingle: return new GachaDrawPlan(1, 0, 0, 1);
+            case GachaPaymentKind.TicketEleven: return new GachaDrawPlan(10, 1, 0, 10);
             default: throw new ArgumentOutOfRangeException(nameof(payment));
         }
     }

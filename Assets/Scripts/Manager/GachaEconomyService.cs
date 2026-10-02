@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using UnityEngine;
 
-public enum GachaExchangeCategory { Tickets, Staff, Items }
+public enum GachaExchangeCategory { Tickets, Staff, Items, Mixed }
 public enum GachaTransactionStatus { Prepared, Sending, Completed, Rejected, Indeterminate }
 public enum GachaStoreResult { Confirmed, RejectedBeforeCommit, Indeterminate }
 public enum GachaEconomyOperation { Draw, Purchase, InitializeDisplay, RefreshDisplay }
@@ -22,8 +22,7 @@ public sealed class GachaExchangeProduct
     public int Quantity { get; }
     public GachaData Data { get; }
     public GachaMachineKind TicketMachine { get; }
-    public bool IsRepeatable => Category != GachaExchangeCategory.Staff
-        && (Data == null || GachaAcquisitionResult.KindOf(Data) != GachaAcquisitionKind.Recipe);
+    public bool IsRepeatable => false; // Every displayed offer is one purchase per mixed display.
     internal GachaExchangeProduct(string id, GachaExchangeCategory category, string name, string description,
         Sprite sprite, long price, int quantity, GachaData data = null, GachaMachineKind ticketMachine = GachaMachineKind.Item)
     { Id = id; Category = category; Name = name; Description = description; Sprite = sprite; Price = price;
@@ -188,7 +187,7 @@ public sealed partial class GachaEconomyService
         { error = "올바르지 않은 상품 또는 수량입니다."; return false; }
         if (source == null || source.Account == null) { error = "계정 복원을 기다려 주세요."; return false; }
         if (!product.IsRepeatable && quantity != 1)
-        { error = "한 번 해금하는 상품은 1개만 교환할 수 있습니다."; return false; }
+        { error = "현재 진열 상품은 1개만 교환할 수 있습니다."; return false; }
         if (product.Category == GachaExchangeCategory.Staff && !CanPurchaseStaff(product.Data.Rank))
         { error = "이 직원은 뽑기로 획득할 수 있습니다."; return false; }
         if (!product.IsRepeatable && IsOwnedUnlock(source, product))
@@ -214,18 +213,18 @@ public sealed partial class GachaEconomyService
         var source = Snapshot;
         if (source == null || !StaffAccountSaveConverter.Validate(source.Account, out error))
         { error = error ?? "계정 복원을 기다려 주세요."; return false; }
-        if (payment == GachaPaymentKind.TicketSingle && source.Account.GachaEconomy.Tickets(machine) < 1)
+        var drawPlan = GachaDrawPlan.ForPayment(payment);
+        if (source.Account.GachaEconomy.Tickets(machine) < drawPlan.TicketCost)
         { error = "해당 머신의 뽑기권이 부족합니다."; return false; }
-        int cost = payment == GachaPaymentKind.DiamondsEleven ? 100 : payment == GachaPaymentKind.DiamondsSingle ? 10 : 0;
+        int cost = drawPlan.DiamondCost;
         if (source.Diamonds < cost) { error = "다이아가 부족합니다."; return false; }
         return true;
     }
     private static bool IsOwnedUnlock(GachaEconomySnapshot source, GachaExchangeProduct product)
     {
-        string id = product.Data.Id;
-        if (product.Category == GachaExchangeCategory.Staff) return source.Account.Staff.Any(staff => staff.Id == id);
-        return source.ItemCounts.ContainsKey(id) || source.ItemLevels.ContainsKey(id) || source.RecipeLevels.ContainsKey(id)
-            || source.Account.GachaEconomy.Acquired.Contains(GachaEconomySaveData.Key(GachaAcquisitionKind.Recipe, id));
+        // Item/recipe inventory and acquisition history never mean this offer was purchased.
+        // Staff still follows the existing unique staff ownership policy.
+        return product.Category == GachaExchangeCategory.Staff && source.Account.Staff.Any(staff => staff.Id == product.Data.Id);
     }
     public bool TryDraw(GachaMachineKind machine, GachaPaymentKind payment, Action<GachaEconomyTransaction> completed, out string error)
     {
@@ -354,10 +353,10 @@ public sealed partial class GachaEconomyService
                 throw new InvalidOperationException("머신의 추첨 원본 자료가 올바르지 않습니다.");
             if (counter + drawPlan.BaseCount >= 100 && !candidates.Any(x => x.Rank == Rank.Special))
                 throw new InvalidOperationException("Special 보장 후보가 없어 결제를 중단했습니다.");
-            if (payment == GachaPaymentKind.TicketSingle)
+            if (drawPlan.TicketCost > 0)
             {
-                if (state.Tickets(machine) < 1) throw new InvalidOperationException("해당 머신의 뽑기권이 부족합니다.");
-                if (machine == GachaMachineKind.Staff) staffTickets--; else itemTickets--;
+                if (state.Tickets(machine) < drawPlan.TicketCost) throw new InvalidOperationException("해당 머신의 뽑기권이 부족합니다.");
+                if (machine == GachaMachineKind.Staff) staffTickets -= drawPlan.TicketCost; else itemTickets -= drawPlan.TicketCost;
             }
             diamonds = checked(diamonds - cost); total = checked(total + count);
             for (int i = 0; i < count; i++)
@@ -377,7 +376,7 @@ public sealed partial class GachaEconomyService
         {
             var definition = Products.FirstOrDefault(x => x.Id == productId);
             var product = definition == null ? null : ResolveOffer(before, productId,
-                state.Exchange.Display(definition.Category)?.Version ?? 0, out _);
+                state.Exchange.Mixed.Version, out _);
             if (product == null || quantity <= 0 || quantity > 100 || product.Price <= 0 || product.Quantity <= 0 || product.Quantity > 1000)
                 throw new InvalidOperationException("올바르지 않은 상품 또는 수량입니다.");
             if (!product.IsRepeatable && (quantity != 1 || IsOwnedUnlock(before, product)))
@@ -409,8 +408,7 @@ public sealed partial class GachaEconomyService
         var exchange = state.Exchange;
         if (!isDraw)
         {
-            var product = Products.First(x => x.Id == productId);
-            if (product.Category != GachaExchangeCategory.Tickets) exchange = exchange.RecordPurchase(product.Category, productId, quantity);
+            exchange = exchange.RecordPurchase(GachaExchangeCategory.Mixed, productId, quantity);
         }
         var economy = new GachaEconomySaveData(itemTickets, staffTickets, itemCounter, staffCounter, history.OrderBy(x => x), id, receipt.ToString(Formatting.None), exchange);
         var account = new StaffAccountSaveData(StaffAccountSaveConverter.CurrentVersion, staff, tokens, economy);

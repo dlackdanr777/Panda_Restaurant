@@ -259,7 +259,7 @@ public sealed class EnhancementFairyStage1Tests
 /// Only these audited callbacks run in Edit Mode; login, MainScene.Start, autosave and SDK never run.
 /// All global references and queue/listener contents are restored. No scene/asset/PlayerPrefs save.
 /// </summary>
-internal sealed class EnhancementFairyStage1Host : IDisposable
+internal sealed partial class EnhancementFairyStage1Host : IDisposable
 {
     internal static string EvidenceDirectory = "Logs/FairyStage1Phase1";
     private readonly Dictionary<FieldInfo, object> _statics = new Dictionary<FieldInfo, object>();

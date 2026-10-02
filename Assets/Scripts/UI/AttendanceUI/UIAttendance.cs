@@ -1,4 +1,7 @@
 using Muks.MobileUI;
+using Muks.BackEnd;
+using System;
+using System.Linq;
 using Muks.Tween;
 using System.Collections.Generic;
 using UnityEngine;
@@ -43,6 +46,14 @@ public class UIAttendance : MobileUIView
     // 마지막으로 슬롯에 채워 넣은 주차의 시작일(1, 8, 15...). 주차가 바뀔 때만 슬롯 보상 데이터를 다시 채움
     private int _slotDataBaseStartDay = -1;
 
+    private BackendManager _attendanceOwner;
+    private GameDataRestoreQuery _adQuery;
+    private string _adBefore;
+    private DateTime _adDay;
+    private bool _adPending, _adEarned, _adClosed;
+    private string _lastSoundClaim;
+    private float _nextRefresh;
+
     public override void Init()
     {
         for (int i = 0, cnt = 7; i < cnt; i++)
@@ -53,8 +64,13 @@ public class UIAttendance : MobileUIView
 
         RefreshSlotRewardData(UserInfo.GetTodayAttendanceDay());
 
+        _attendanceOwner = BackendManager.Instance;
+        _attendanceOwner.AttendanceChanged += OnConfirmedAttendanceChanged;
         _attendanceButton.AddListener(() => OnAttendanceButtonClicked(false));
-        _adButton.OnAdRewarded += () => OnAttendanceButtonClicked(true);
+        _adButton.OnAdButtonClicked += BeginAttendanceAd;
+        _adButton.OnAdRewarded += CompleteAttendanceAd;
+        _adButton.OnAdDisplayFailed += CancelAttendanceAd;
+        _adButton.OnAdClosed += CloseAttendanceAd;
         gameObject.SetActive(false);
     }
 
@@ -91,8 +107,10 @@ public class UIAttendance : MobileUIView
 
     public override void Show()
     {
+        _animeUI.TweenStop();
         VisibleState = VisibleState.Appearing;
         gameObject.SetActive(true);
+        _canvasGroup.interactable = true;
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
@@ -109,6 +127,7 @@ public class UIAttendance : MobileUIView
 
     public override void Hide()
     {
+        _animeUI.TweenStop();
         VisibleState = VisibleState.Disappearing;
         _animeUI.SetActive(true);
         transform.SetAsLastSibling();
@@ -125,41 +144,95 @@ public class UIAttendance : MobileUIView
 
 
 
-    private void OnAttendanceButtonClicked(bool isAd)
+    private void BeginAttendanceAd()
     {
-        OnAttendanceCheck(isAd);
-        GameManager.Instance.AsyncSaveGameData();
-        SoundManager.Instance.PlayEffectAudio(EffectType.None, _attendanceSound);
+        if (_attendanceOwner == null || !_attendanceOwner.CanClaimAttendance(out _, out _)) return;
+        _adQuery = _attendanceOwner.CurrentAttendanceQuery;
+        _adBefore = UserInfo.LastAttendanceTime;
+        _adDay = AttendanceProgress.GameDay(UserInfo.GetKoreanTime());
+        _adPending = true; _adEarned = _adClosed = false;
+        UpdateUI();
     }
 
+    private bool IsAttendanceAdCurrent() => _adQuery != null && _attendanceOwner != null &&
+        ReferenceEquals(_adQuery, _attendanceOwner.CurrentAttendanceQuery) &&
+        _adBefore == UserInfo.LastAttendanceTime && _adDay == AttendanceProgress.GameDay(UserInfo.GetKoreanTime());
 
-    private void OnAttendanceCheck(bool isAd)
+    private void CompleteAttendanceAd()
     {
-        if (!UserInfo.CheckNoAttendance())
-        {
-            DebugLog.LogError("이미 출석 체크를 진행했습니다.");
-            return;
-        }
+        _adPending = _adClosed = false;
+        if (!IsAttendanceAdCurrent()) return;
+        _adEarned = true;
+        OnAttendanceButtonClicked(true);
+    }
+    private void CancelAttendanceAd() { _adPending = _adEarned = _adClosed = false; _adQuery = null; UpdateUI(); }
+    private void CloseAttendanceAd() { _adClosed = true; UpdateUI(); }
 
-        // 화면에 표시 중인 일차와 동일한 기준(GetTodayAttendanceDay)으로 지급할 슬롯을 결정
-        int todayDay = UserInfo.GetTodayAttendanceDay();
-        int currentDaySlot = (todayDay - 1) % 7;
-
-        if (currentDaySlot < _slotList.Count)
-        {
-            _slotList[currentDaySlot].ReceiveItem(isAd);
-        }
-
-        UserInfo.UpdateAttendanceData();
-        // 슬롯 UI 갱신
+    private void OnAttendanceButtonClicked(bool isAd)
+    {
+        if (_attendanceOwner == null || (_adPending && !isAd)) return;
+        bool doubled = _adEarned && IsAttendanceAdCurrent();
+        if (isAd && !doubled) return;
+        if (!_attendanceOwner.TryClaimAttendance(doubled, out _, out string error) && !string.IsNullOrEmpty(error))
+            DebugLog.Log(error);
         UpdateUI();
+    }
+
+    private void OnConfirmedAttendanceChanged()
+    {
+        var claim = _attendanceOwner?.CurrentAttendanceClaim;
+        if (claim?.Committed == true && claim.IsCurrent)
+        {
+            if (_lastSoundClaim != claim.Identity.RequestId && isActiveAndEnabled)
+            {
+                _lastSoundClaim = claim.Identity.RequestId;
+                if (_attendanceSound != null && Application.isPlaying) SoundManager.Instance.PlayEffectAudio(EffectType.None, _attendanceSound);
+            }
+            _adEarned = _adPending = _adClosed = false; _adQuery = null;
+        }
+        if (isActiveAndEnabled) UpdateUI();
+    }
+
+    private void Update()
+    {
+        if (VisibleState != VisibleState.Appeared || Time.unscaledTime < _nextRefresh) return;
+        if (_adPending && _adClosed && !AdManager.IsAdPlaying) _adPending = false;
+        _nextRefresh = Time.unscaledTime + .2f;
+        UpdateUI();
+    }
+
+    private void OnDisable()
+    {
+        _animeUI.TweenStop();
+        _canvasGroup.interactable = _canvasGroup.blocksRaycasts = false;
+        VisibleState = VisibleState.Disappeared;
+    }
+
+    private void OnDestroy()
+    {
+        if (_attendanceOwner != null) _attendanceOwner.AttendanceChanged -= OnConfirmedAttendanceChanged;
+        if (_adButton == null) return;
+        _adButton.OnAdButtonClicked -= BeginAttendanceAd;
+        _adButton.OnAdRewarded -= CompleteAttendanceAd;
+        _adButton.OnAdDisplayFailed -= CancelAttendanceAd;
+        _adButton.OnAdClosed -= CloseAttendanceAd;
     }
 
 
     private void UpdateUI()
     {
+        if (_adEarned && !IsAttendanceAdCurrent()) { _adEarned = false; _adQuery = null; }
         bool checkAttendance = UserInfo.CheckNoAttendance();
         int todayDay = UserInfo.GetTodayAttendanceDay();
+        bool canClaim = !_adPending && _attendanceOwner != null && _attendanceOwner.CanClaimAttendance(out _, out _);
+        BindConfirmedState(todayDay, checkAttendance, canClaim);
+    }
+
+    private void BindConfirmedState(int todayDay, bool checkAttendance, bool canClaim)
+    {
+        int lastDay = AttendanceDataManager.Instance.GetRewardDic().Keys.DefaultIfEmpty(1).Max();
+        bool hasReward = AttendanceDataManager.Instance.GetRewardDic().ContainsKey(todayDay);
+        if (!hasReward && todayDay > lastDay) { todayDay = lastDay; checkAttendance = false; }
         int todaySlotIndex = (todayDay - 1) % 7;
 
         RefreshSlotRewardData(todayDay);
@@ -188,9 +261,10 @@ public class UIAttendance : MobileUIView
             }
         }
 
-        _attendanceButton.interactable = checkAttendance;
-        _adButton.Interactable(checkAttendance);
-        float loadingBarGauge = todaySlotIndex / 6f; // 6일차에 1.0, 7일차에 0으로 초기화
+        canClaim = canClaim && checkAttendance && hasReward;
+        _attendanceButton.interactable = canClaim;
+        _adButton.Interactable(canClaim && !_adEarned);
+        float loadingBarGauge = AttendanceProgress.Fill(todayDay, !checkAttendance);
         _loadingBar.SetFillAmount(loadingBarGauge);
     }
 }

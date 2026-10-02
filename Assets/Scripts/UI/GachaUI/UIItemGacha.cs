@@ -18,6 +18,7 @@ public class UIItemGacha : GachaMachineParent
     [SerializeField] private Button _screenButton;
     [SerializeField] private Button _singleButton;
     public Button SingleButton => _singleButton;
+    public Button TenButton => _tenButton;
     [SerializeField] private Button _tenButton;
     [SerializeField] private Button _skipButton;
     [SerializeField] private Image _getItemImage;
@@ -303,8 +304,7 @@ public class UIItemGacha : GachaMachineParent
         {
             PresentCollectionTransaction(_collectionEconomy.LastTransaction);
             bool ready = !_collectionEconomy.IsBusy && _uiGacha.VisibleState == VisibleState.Appeared;
-            _singleButton.interactable = ready && _collectionEconomy.CanDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsSingle, out _);
-            _tenButton.interactable = ready && _collectionEconomy.CanDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsEleven, out _);
+            _singleButton.interactable = _tenButton.interactable = ready && !_uiGacha.IsChoosingPayment;
         }
         if( 0 < _screenTouchWaitTime)
             _screenTouchWaitTime -= Time.deltaTime;
@@ -312,6 +312,11 @@ public class UIItemGacha : GachaMachineParent
 
     private void LateUpdate()
     {
+        if (_capsuleContentNeedsFit && (_currentStep == 3 || _currentStep == 4))
+        {
+            StaffCapsuleContentLayout.Fit(_getItemImage, _upperCapsule, _lowerCapsule, containWithinShell: true);
+            _capsuleContentNeedsFit = false;
+        }
         UpdateSkipButtonLayout();
         _resultPopup?.BringToFront();
     }
@@ -328,6 +333,11 @@ public class UIItemGacha : GachaMachineParent
     public override void Show()
     {
         CancelResultPresentation();
+        if (_collectionEconomy != null)
+        {
+            UIGacha.ConfigureCollectionButton(_singleButton, false);
+            UIGacha.ConfigureCollectionButton(_tenButton, true, _singleButton);
+        }
         gameObject.SetActive(true);
         _singleButton.gameObject.SetActive(true);
         _tenButton.gameObject.SetActive(true);
@@ -378,6 +388,7 @@ public class UIItemGacha : GachaMachineParent
 
     private void CancelResultPresentation()
     {
+        ClearCapsuleContent();
         ClearSummaryInspection();
 #if UNITY_EDITOR
         if (_editorPresentationAudio != null) _editorPresentationAudio.Stop();
@@ -555,8 +566,7 @@ public class UIItemGacha : GachaMachineParent
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
 
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
-                Utility.ChangeImagePivot(_getItemImage);
+                BindCapsuleContent();
                 CapsuleSetSibilingIndex(11);
                 break;
 
@@ -570,13 +580,14 @@ public class UIItemGacha : GachaMachineParent
                 _screenTouchWaitTime = 0.2f;
                 CapsuleColorChange();
 
-                _getItemImage.sprite = _getItemList[_getItemIndex].Sprite;
-                Utility.ChangeImagePivot(_getItemImage);
+                // Keep the Wait pose fit throughout Open, exactly as the staff capsule does.
+                // Refitting to the separating halves would enlarge the result outside the shell.
                 CapsuleSetSibilingIndex(11);
                 break;
 
             case 5:
                 _currentStep = 5;
+                RestoreCapsuleContentLayout();
 
                 _skinGachaCard.gameObject.SetActive(false);
                 _getItemSlotFrame.gameObject.SetActive(true);
@@ -603,7 +614,7 @@ public class UIItemGacha : GachaMachineParent
                     _getItemImage.gameObject.SetActive(true);
                     _skinGachaCard.SetData(_getItemList[_getItemIndex], ResultIsNew(_getItemIndex));
                     NotifyCollectionReveal(_getItemIndex);
-                    _getItemImage.sprite = _getItemList[_getItemIndex].ThumbnailSprite;
+                    _getItemImage.sprite = _getItemList[_getItemIndex].ThumbnailSprite ?? _getItemList[_getItemIndex].Sprite;
                     Utility.ChangeImagePivot(_getItemImage);
                     _skinGachaCard.SetPosition(new Vector3(0, 0, 0));
                 }
@@ -648,12 +659,14 @@ public class UIItemGacha : GachaMachineParent
 
     public override void OnSingleGachaButtonClicked()
     {
+        if (_collectionEconomy != null) { _uiGacha.OpenCollectionPayment(this, false); return; }
         Purchase(1, 10);
     }
 
 
     public override void OnTenGachaButtonClicked()
     {
+        if (_collectionEconomy != null) { _uiGacha.OpenCollectionPayment(this, true); return; }
         Purchase(11, 100);
     }
 
@@ -743,6 +756,7 @@ public class UIItemGacha : GachaMachineParent
 
     protected virtual void PreparePurchasePresentation()
     {
+        ClearCapsuleContent();
         _uiGacha.SetActiveGachaMachine(false);
         SetActiveGachaMachine(true);
     }
@@ -757,6 +771,59 @@ public class UIItemGacha : GachaMachineParent
     }
 
     protected virtual void ReportPurchaseError(string error) => PopupManager.Instance.ShowDisplayText(error);
+
+    private bool _capsuleContentNeedsFit;
+    private bool _capsuleLayoutCaptured;
+    private int _capsuleImageSibling;
+    private Vector2 _capsuleImageSize, _capsuleImagePivot, _capsuleImageAnchorMin, _capsuleImageAnchorMax;
+    private bool _capsuleImagePreserveAspect;
+    private void RestoreCapsuleContentLayout()
+    {
+        _capsuleContentNeedsFit = false;
+        if (!_capsuleLayoutCaptured || _getItemImage == null) return;
+        var rect = _getItemImage.rectTransform;
+        rect.anchorMin = _capsuleImageAnchorMin; rect.anchorMax = _capsuleImageAnchorMax;
+        rect.sizeDelta = _capsuleImageSize; rect.pivot = _capsuleImagePivot;
+        rect.SetSiblingIndex(_capsuleImageSibling);
+        _getItemImage.preserveAspect = _capsuleImagePreserveAspect;
+        _capsuleLayoutCaptured = false;
+    }
+    private void ClearCapsuleContent()
+    {
+        RestoreCapsuleContentLayout();
+        if (_getItemImage == null) return;
+        _getItemImage.sprite = null;
+        _getItemImage.gameObject.SetActive(false);
+    }
+
+    private void BindCapsuleContent()
+    {
+        if (_getItemIndex < 0 || _getItemIndex >= _getItemList.Count) { ClearCapsuleContent(); return; }
+        var result = _getItemList[_getItemIndex];
+        if (!_capsuleLayoutCaptured)
+        {
+            var rect = _getItemImage.rectTransform;
+            _capsuleImageSize = rect.sizeDelta; _capsuleImagePivot = rect.pivot;
+            _capsuleImageAnchorMin = rect.anchorMin; _capsuleImageAnchorMax = rect.anchorMax;
+            _capsuleImagePreserveAspect = _getItemImage.preserveAspect;
+            _capsuleImageSibling = rect.GetSiblingIndex();
+            _capsuleLayoutCaptured = true;
+        }
+        _getItemImage.sprite = result.ThumbnailSprite ?? result.Sprite;
+        _getItemImage.enabled = true;
+        _getItemImage.color = Color.white;
+        _getItemImage.canvasRenderer.SetAlpha(1);
+        _getItemImage.gameObject.SetActive(_getItemImage.sprite != null);
+        // Staff's authored order: content inside/behind both shell halves, smoke in front.
+        if (_getItemImage.transform.parent == _upperCapsule.transform.parent &&
+            _getItemImage.transform.parent == _lowerCapsule.transform.parent)
+        {
+            int shell = Math.Min(_upperCapsule.transform.GetSiblingIndex(), _lowerCapsule.transform.GetSiblingIndex());
+            _getItemImage.transform.SetSiblingIndex(Math.Min(_getItemImage.transform.GetSiblingIndex(), shell));
+        }
+        // Fit after the shared Animator's final sample, as in the staff capsule.
+        _capsuleContentNeedsFit = _getItemImage.sprite != null;
+    }
 
     private void CapsuleColorChange()
     {

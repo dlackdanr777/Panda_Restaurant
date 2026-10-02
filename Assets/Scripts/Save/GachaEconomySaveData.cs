@@ -4,7 +4,7 @@ using System.Linq;
 using Newtonsoft.Json.Linq;
 
 public enum GachaMachineKind { Item, Staff }
-public enum GachaPaymentKind { DiamondsSingle, DiamondsEleven, TicketSingle }
+public enum GachaPaymentKind { DiamondsSingle, DiamondsEleven, TicketSingle, TicketEleven }
 public enum GachaAcquisitionKind { Item, Staff, Recipe }
 
 /// <summary>Account-scoped monotonic history survives consumed inventory and is separate from legacy SkinToken.</summary>

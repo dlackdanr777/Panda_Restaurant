@@ -5,7 +5,22 @@ using UnityEngine;
 public sealed class GachaCollectionUiTheme : ScriptableObject
 {
     public TMP_FontAsset Font;
+    public TMP_FontAsset SoldOutFont;
     public Sprite PandaToken;
+    public Sprite CurrencyPill;
+    public Sprite PaymentFrame;
+    public Sprite PaymentButton;
+    public Sprite PaymentCapsuleTop;
+    public Sprite PaymentCapsuleBottom;
+    public Sprite PaymentLeftCapsuleTop;
+    public Sprite PaymentLeftCapsuleBottom;
+    public Sprite PaymentRightCapsuleTop;
+    public Sprite PaymentRightCapsuleBottom;
+    public Sprite PaymentBlueCapsuleTop;
+    public Sprite PaymentBlueCapsuleBottom;
+    public Sprite PaymentPurpleCapsuleTop;
+    public Sprite PaymentPurpleCapsuleBottom;
+    public Sprite PaymentClose;
     public Sprite Ticket;
     public Sprite SlotFrame;
     public Sprite ButtonPlate;

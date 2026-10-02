@@ -71,19 +71,19 @@ public static class GachaCollectionReviewCapture
             Capture("01-zero-plus-eleven-counter-ten");
         });
         Add(() => { _window.Reset(0); _window.OpenExchange(TokenExchangeTab.Staff); });
-        Add(() => { CheckDisplay(GachaExchangeCategory.Staff); Capture("02-staff-1920x1080"); });
+        Add(() => { CheckDisplay(GachaExchangeCategory.Mixed); Capture("02-staff-1920x1080"); });
         Add(() => { _window.SetPreviewResolution(1280, 720); _window.position = new Rect(100, 100, 850, 590); _window.Repaint(); });
-        Add(() => { CheckDisplay(GachaExchangeCategory.Staff); Capture("03-staff-1280x720"); });
+        Add(() => { CheckDisplay(GachaExchangeCategory.Mixed); Capture("03-staff-1280x720"); });
         Add(() => { _report["smallWindow"] = "850x590; 1280x720 render target; fixed six slots checked";
             _window.position = new Rect(100, 100, 1100, 720); _window.SetPreviewResolution(1920, 1080);
-            _window.View.CollectionExchange.SelectTab(TokenExchangeTab.Tickets); });
-        Add(() => { Check(_window.Economy.GetDisplayedProducts(GachaExchangeCategory.Tickets).Count == 2, "Two fixed tickets"); Capture("04-tickets"); });
-        Add(() => _window.View.CollectionExchange.SelectTab(TokenExchangeTab.Items));
-        Add(() => { CheckDisplay(GachaExchangeCategory.Items); Capture("05-items"); });
-        Add(() => _window.View.CollectionExchange.SelectTab(TokenExchangeTab.Staff));
+            _window.View.CollectionExchange.Refresh(); });
+        Add(() => { Check(_window.Economy.GetDisplayedProducts(GachaExchangeCategory.Tickets).Count >= 1, "Mixed display includes tickets"); Capture("04-tickets"); });
+        Add(() => _window.View.CollectionExchange.Refresh());
+        Add(() => { CheckDisplay(GachaExchangeCategory.Mixed); Capture("05-items"); });
+        Add(() => _window.View.CollectionExchange.Refresh());
         Add(() => { RecordRefresh("before", 3); Capture("06-refresh-three"); ClickRefresh(); });
         Add(() => { RecordRefresh("staffFirst", 2); Capture("07-refresh-two"); ClickRefresh(); });
-        Add(() => { RecordRefresh("staffSecond", 1); Capture("08-refresh-one"); _window.View.CollectionExchange.SelectTab(TokenExchangeTab.Items); });
+        Add(() => { RecordRefresh("staffSecond", 1); Capture("08-refresh-one"); _window.View.CollectionExchange.Refresh(); });
         Add(ClickRefresh);
         Add(() => { RecordRefresh("itemThird", 0); Capture("09-refresh-zero");
             Check(!RefreshButton().interactable, "Fourth refresh must be disabled"); });
@@ -111,8 +111,8 @@ public static class GachaCollectionReviewCapture
         Check(service.GetRefreshStatus().Remaining == expected, "Expected shared remaining " + expected);
         if (_report["refresh"] == null) _report["refresh"] = new JObject();
         _report["refresh"][name] = new JObject { ["remaining"] = expected,
-            ["staffVersion"] = service.GetExchangeDisplay(GachaExchangeCategory.Staff).Version,
-            ["itemVersion"] = service.GetExchangeDisplay(GachaExchangeCategory.Items).Version,
+            ["staffVersion"] = service.GetExchangeDisplay(GachaExchangeCategory.Mixed).Version,
+            ["itemVersion"] = service.GetExchangeDisplay(GachaExchangeCategory.Mixed).Version,
             ["staffIds"] = new JArray(service.GetDisplayedProducts(GachaExchangeCategory.Staff).Select(x => x.Id)),
             ["itemIds"] = new JArray(service.GetDisplayedProducts(GachaExchangeCategory.Items).Select(x => x.Id)) };
     }

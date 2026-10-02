@@ -288,6 +288,13 @@ public partial class UIGacha : MobileUIView
     public void SetStartGacha(bool isStart)
     {
         _isStartGacha = isStart;
+        _collectionHud?.SetResultPresentation(isStart);
+        if (!isStart && Economy != null && _collectionHud != null)
+        {
+            var state = Economy.Snapshot?.Account?.GachaEconomy;
+            _collectionHud.Refresh(state?.Counter(CollectionMachine) ?? 0, state?.Tickets(CollectionMachine) ?? 0, Economy.IsBusy);
+            _collectionHud.SnapToCommitted();
+        }
         // While appearing/hidden, the open tween's completion is the single place that enables navigation.
         bool canNavigate = !isStart && VisibleState == VisibleState.Appeared;
         if (_scrollRect != null)

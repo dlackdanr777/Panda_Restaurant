@@ -299,6 +299,8 @@ public class UIMainCanvas : MonoBehaviour
 
     private IEnumerator OpenShopShortcutRoutine(Action openDetail)
     {
+        try
+        {
         // Close only the originating quest panel. Do not clear unrelated UI or skip the shop's Show lifecycle.
         if (_uiNav.CheckActiveView("UIMainChallenge")) _uiNav.Pop("UIMainChallenge");
         yield return null;
@@ -309,6 +311,14 @@ public class UIMainCanvas : MonoBehaviour
             (!_uiNav.ViewsVisibleStateCheck() || !_uiAdmin.IsReadyForDetail)) yield return null;
         _shopShortcut = null;
         if (_uiNav.CheckActiveView("RestaurantAdminUI") && _uiAdmin.IsReadyForDetail) openDetail?.Invoke();
+        }
+        finally { _shopShortcut = null; }
+    }
+
+    private void OnDisable()
+    {
+        if (_shopShortcut != null) StopCoroutine(_shopShortcut);
+        _shopShortcut = null;
     }
 
     private void OnShowStaffUI()

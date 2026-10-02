@@ -111,13 +111,14 @@ public partial class StaffStageMigrationCollectionTests
     [TestCase(GachaPaymentKind.DiamondsSingle)]
     [TestCase(GachaPaymentKind.DiamondsEleven)]
     [TestCase(GachaPaymentKind.TicketSingle)]
+    [TestCase(GachaPaymentKind.TicketEleven)]
     public void EconomyBackend_FreeQuestOfferBlocksStaffDrawBeforeRngAndPayment(GachaPaymentKind payment)
     {
         using (var scope = new EconomyUserInfoScope())
         {
             var fixture = CreateAccountRuntimeFixture(out _);
             var account = new StaffAccountSaveData(StaffAccountSaveConverter.CurrentVersion,
-                new[] { new StaffAccountStaffRecord("STAFF03", 4) }, 55, new GachaEconomySaveData(staffTickets: 1));
+                new[] { new StaffAccountStaffRecord("STAFF03", 4) }, 55, new GachaEconomySaveData(staffTickets: 10));
             Assert.That(StaffAccountSaveConverter.TrySerialize(account, out string json, out _), Is.True);
             RestoreAccountJson(fixture, json);
             int draws = 0;
