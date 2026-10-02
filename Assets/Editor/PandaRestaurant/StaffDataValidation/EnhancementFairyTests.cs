@@ -50,6 +50,8 @@ public sealed class EnhancementFairyTests
             Assert.That(f.Habitat.ConfirmAcquisition("recipe", f.Recipe), Is.False);
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(1));
             Assert.That(f.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
+            Assert.That(f.Arrivals.PendingCount, Is.EqualTo(1), "A started birth is pending until landing");
+            Advance(f, BirthSeconds(f) + .1f);
             Assert.That(f.Arrivals.PendingCount, Is.Zero);
         }
     }
@@ -77,6 +79,9 @@ public sealed class EnhancementFairyTests
             Assert.That(f.Habitat.GetComponentsInChildren<SpriteRenderer>().Length, Is.Zero);
             f.Habitat.SetFloorVisible(true, true);
             Assert.That(f.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
+            Assert.That(f.Arrivals.PendingCount, Is.EqualTo(1), "Interrupted birth restarts without consuming the confirmed arrival");
+            Advance(f, BirthSeconds(f) + .1f);
+            Assert.That(f.Arrivals.PendingCount, Is.Zero);
         }
     }
 
@@ -113,11 +118,14 @@ public sealed class EnhancementFairyTests
             Assert.That(f.Habitat.GetActiveBrain(0).ItemId, Is.EqualTo("ITEM1"));
             f.Habitat.ConfirmAcquisition("new2", f.Items[2]);
             Assert.That(f.Habitat.GetActiveBrain(0).ItemId, Is.EqualTo("ITEM1"));
-            Assert.That(f.Arrivals.PendingCount, Is.EqualTo(1));
-            for (int i = 0; i < 20; i++) f.Habitat.AdvancePreview(0.1f);
+            Assert.That(f.Arrivals.PendingCount, Is.EqualTo(2), "The active and queued births remain pending");
+            Advance(f, BirthSeconds(f) + f.Settings.BirthStartDelay.y + .4f);
             Assert.That(f.Habitat.GetActiveBrain(0).ItemId, Is.EqualTo("ITEM2"));
             Assert.That(f.Habitat.ArrivalPresentationCount, Is.EqualTo(2));
             Assert.That(f.Habitat.PooledObjectCount, Is.EqualTo(1));
+            Assert.That(f.Arrivals.PendingCount, Is.EqualTo(1), "Only the first completed birth was consumed");
+            Advance(f, BirthSeconds(f) + .1f);
+            Assert.That(f.Arrivals.PendingCount, Is.Zero);
         }
     }
 
@@ -127,6 +135,8 @@ public sealed class EnhancementFairyTests
         using (var f = new Fixture())
         {
             f.Habitat.ConfirmAcquisition("new", f.Items[0]);
+            Advance(f, BirthSeconds(f) + .1f);
+            Assert.That(f.Arrivals.PendingCount, Is.Zero, "Only a completed birth is silent on scene reconstruction");
             UnityEngine.Object.DestroyImmediate(f.Host);
             f.Host = new GameObject("Recreated floor");
             f.Habitat = f.Host.AddComponent<EnhancementFairyHabitat>();
@@ -150,6 +160,8 @@ public sealed class EnhancementFairyTests
             f.Habitat = f.Host.AddComponent<EnhancementFairyHabitat>();
             f.Habitat.ConfigureOffline(f.Items, new[] { "ITEM0" }, f.Settings, f.Arrivals);
             Assert.That(f.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
+            Assert.That(f.Arrivals.PendingCount, Is.EqualTo(1));
+            Advance(f, BirthSeconds(f) + .1f);
             Assert.That(f.Arrivals.PendingCount, Is.Zero);
         }
     }
@@ -181,11 +193,18 @@ public sealed class EnhancementFairyTests
     {
         using (var f = new Fixture())
         {
+            f.Settings.BirthStartDelay = new Vector2(.1f, .1f);
             for (int i = 0; i < 4; i++) f.Habitat.ConfirmAcquisition("old" + i, f.Items[i]);
-            Assert.That(CountEnabledPuffs(f.Host), Is.EqualTo(4));
+            Assert.That(CountEnabledPuffs(f.Host), Is.Zero, "The first arrival begins with the trail");
+            Advance(f, f.Settings.TrailSeconds + f.Settings.GatherSeconds + .6f);
+            Assert.That(CountEnabledPuffs(f.Host), Is.EqualTo(4), "Staggered births may overlap, so reset must stop every active puff");
+            Assert.That(f.Habitat.ActiveBirthCount, Is.EqualTo(4));
+            Assert.That(f.Arrivals.PendingCount, Is.EqualTo(4));
             f.Habitat.ResetOfflineSession(new[] { "ITEM0", "ITEM1", "ITEM2", "ITEM3" });
             Assert.That(CountEnabledPuffs(f.Host), Is.Zero);
             f.Habitat.ConfirmAcquisition("new-account", f.Items[4]);
+            Assert.That(CountEnabledPuffs(f.Host), Is.Zero);
+            Advance(f, f.Settings.TrailSeconds + f.Settings.GatherSeconds + .2f);
             Assert.That(CountEnabledPuffs(f.Host), Is.EqualTo(1));
             Assert.That(f.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
             Assert.That(f.Habitat.ActiveCount, Is.EqualTo(5));
@@ -439,13 +458,14 @@ public sealed class EnhancementFairyTests
             var brain = f.Habitat.GetActiveBrain(0);
             var position = brain.GroundPosition;
             var body = f.Host.transform.Find("Fairy ITEM0/Item sprite").GetComponent<SpriteRenderer>();
-            f.Habitat.AdvancePreview(.1f);
-            f.Habitat.AdvancePreview(.1f);
+            Assert.That(f.Settings.BirthArea.Contains(f.Habitat.GetBirthPosition(brain.ItemId)), Is.True,
+                "The birth is distributed inside the authored wall area");
+            Advance(f, f.Settings.TrailSeconds + f.Settings.GatherSeconds + .2f);
             Assert.That(MeshBottom(body) - body.transform.parent.position.y, Is.GreaterThan(.25f));
             Assert.That(brain.ElapsedSeconds, Is.Zero, "Birth does not consume the ordinary behavior loop");
             Assert.That(brain.GroundPosition, Is.EqualTo(position));
             Assert.That(f.Host.transform.Find("Fairy ITEM0/Arrival puff").GetComponent<SpriteRenderer>().enabled, Is.True);
-            for (int i = 0; i < 10; i++) f.Habitat.AdvancePreview(.1f);
+            Advance(f, f.Settings.ArrivalSeconds + f.Settings.BirthSettleSeconds + .1f);
             Assert.That(f.Habitat.GetActiveBrain(0), Is.SameAs(brain));
             Assert.That(brain.ElapsedSeconds, Is.GreaterThan(0f));
             Assert.That(MeshBottom(body), Is.EqualTo(body.transform.parent.position.y).Within(.0001f));
@@ -459,6 +479,13 @@ public sealed class EnhancementFairyTests
         foreach (var vertex in body.sprite.vertices)
             result = Mathf.Min(result, body.transform.TransformPoint(new Vector3(body.flipX ? -vertex.x : vertex.x, vertex.y, 0f)).y);
         return result;
+    }
+
+    private static float BirthSeconds(Fixture f) => f.Settings.BirthDuration;
+
+    private static void Advance(Fixture f, float seconds)
+    {
+        for (int i = 0; i < Mathf.CeilToInt(seconds * 20f); i++) f.Habitat.AdvancePreview(.05f);
     }
 
     private static void Set(object instance, string name, object value)

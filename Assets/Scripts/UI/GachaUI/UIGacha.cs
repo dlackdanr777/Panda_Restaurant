@@ -577,6 +577,8 @@ public partial class UIGacha : MobileUIView
 #if UNITY_EDITOR
         if (_editorOfflineConfigured && !_editorOfflineNavigation) { SetEditorOfflineVisible(true); return; }
 #endif
+        if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
+            return;
         if (_gachaMachines == null || _gachaMachines.Length == 0)
         {
             DebugLog.LogError("표시할 가챠 머신이 없습니다.");
@@ -622,6 +624,10 @@ public partial class UIGacha : MobileUIView
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Appeared;
+            // Staff.Show runs while Appearing, with paid input deliberately disabled.
+            // Complete that handoff here as well as on an ordinary sideways entry;
+            // do not depend on a later Update or a second machine Show to restore it.
+            if (_currentGachaMachine is UIStaffGacha staff) staff.CompleteOpening();
             _canvasGroup.interactable = true;
             _canvasGroup.blocksRaycasts = true;
             if (_scrollRect != null)

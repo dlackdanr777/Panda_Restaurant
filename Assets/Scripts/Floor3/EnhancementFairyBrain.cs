@@ -40,6 +40,15 @@ public sealed class EnhancementFairyBrain
         FacingLeft = _random.Next(2) == 0;
     }
 
+    /// <summary>Presentation spawn point only; subsequent movement uses the original bounds and brain.</summary>
+    public void PlaceForBirth(Vector2 ground)
+    {
+        GroundPosition = Clamp(ground);
+        _target = GroundPosition;
+        VisualHeight = Tilt = Squash = 0f;
+        Rest();
+    }
+
     public void Step(float deltaTime, Vector2 neighbour, bool hasNeighbour)
     {
         if (deltaTime <= 0f || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;

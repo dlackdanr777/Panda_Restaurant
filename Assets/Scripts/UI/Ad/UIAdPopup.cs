@@ -154,7 +154,7 @@ public class UIAdPopup : MobileUIView
         _adCountText.SetText((ConstValue.DAILY_AD_DIA_REWARD_COUNT - UserInfo.DailyAdDiaRewardCount) + "/" + ConstValue.DAILY_AD_DIA_REWARD_COUNT.ToString());
         if (UserInfo.DailyAdDiaRewardCount < ConstValue.DAILY_AD_DIA_REWARD_COUNT)
         {
-            _text.SetText($"광고를 요청하시면\n{Utility.SetStringColor("보상", ColorType.Positive)}을 받으시겠습니까?");
+            _text.SetText($"광고를 시청하고\n{Utility.SetStringColor($"다이아 {UIPaymentAdSlot.DiamondRewardAmount}개", ColorType.Positive)}를 받으시겠습니까?");
             _adButton.gameObject.SetActive(true);
         }
         else

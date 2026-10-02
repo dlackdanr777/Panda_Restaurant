@@ -83,6 +83,7 @@ public class CameraController : MonoBehaviour
 
     public RestaurantType CurrentRestaurant => _mainScene.CurrentRestaurantType;
     public ERestaurantFloorType CurrentFloor => _mainScene.CurrentFloor;
+    public bool IsCameraMoving => _isMoveAction || _isDraggingEnabled;
 
     private float _targetAspect = 2.3333f;
     private Dictionary<ERestaurantFloorType, Dictionary<RestaurantType, Vector3>> _targetPosDic = new Dictionary<ERestaurantFloorType, Dictionary<RestaurantType, Vector3>>();

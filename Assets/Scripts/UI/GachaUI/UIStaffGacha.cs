@@ -506,6 +506,21 @@ public class UIStaffGacha : GachaMachineParent
         _gachaMacineAnimator.enabled = false;
     }
 
+    internal void CompleteOpening()
+    {
+        if (_uiGacha == null || !_uiGacha.IsCurrentMachine(this) ||
+            _uiGacha.VisibleState != VisibleState.Appeared || _uiGacha.IsStartGacha)
+            return;
+
+        // The opening path has already initialized the machine and bound its listeners.
+        // Reconcile only its controls after the parent becomes visible. Quest entry keeps
+        // its separate free control and never inherits these paid buttons.
+        _singleButton.gameObject.SetActive(!IsQuestEntry);
+        _tenButton.gameObject.SetActive(!IsQuestEntry);
+        ConfigurePurchaseButtons();
+        UpdateQuestButton();
+    }
+
     private void OnDisable()
     {
         _questDisplay?.Suspend();

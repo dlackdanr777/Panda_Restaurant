@@ -7,9 +7,128 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
+public enum ManagerCustomerGuideSource { Action, Skill }
+
+// A last-request snapshot is available to a debugger or an isolated capture without per-tick logging.
+public struct ManagerCustomerGuideDiagnostic
+{
+    public string StaffId;
+    public ERestaurantFloorType EquipFloor;
+    public string SavedManagerId;
+    public ERestaurantFloorType RequestedFloor;
+    public ERestaurantFloorType SelectedFloor;
+    public ManagerCustomerGuideSource Source;
+    public string Result;
+}
+
 public class TableManager : MonoBehaviour
 {
     public event Action OnTableUpdateHandler;
+
+    private readonly Dictionary<ERestaurantFloorType, ManagerRuntime> _managerRuntimes =
+        new Dictionary<ERestaurantFloorType, ManagerRuntime>();
+    public ManagerCustomerGuideDiagnostic LastManagerGuideDiagnostic { get; private set; }
+
+    private struct ManagerRuntime
+    {
+        public Staff Staff;
+        public StaffData Data;
+        public EStage Stage;
+    }
+
+    // Only the owning floor's StaffGroup binds this identity. Matching a Staff ID alone
+    // would let a pooled/replaced instance continue to guide customers after a move.
+    internal void RegisterManagerRuntime(ERestaurantFloorType floor, Staff staff)
+    {
+        if (staff == null || staff.StaffData == null || staff.EquipFloorType != floor
+            || staff.EquipStaffType != EquipStaffType.Manager)
+            return;
+        _managerRuntimes[floor] = new ManagerRuntime
+        {
+            Staff = staff, Data = staff.StaffData, Stage = UserInfo.CurrentStage
+        };
+    }
+
+    internal void UnregisterManagerRuntime(ERestaurantFloorType floor, Staff staff)
+    {
+        if (_managerRuntimes.TryGetValue(floor, out ManagerRuntime current) && current.Staff == staff)
+            _managerRuntimes.Remove(floor);
+    }
+
+    public bool OnManagerCustomerGuideEvent(Staff manager, ManagerCustomerGuideSource source, bool playSound = false)
+    {
+        if (!TrySelectManagerGuideTable(manager, source, out TableData table))
+            return false;
+        if (_customerController.IsEmpty())
+            return CompleteManagerGuideDiagnostic("NoWaitingCustomer");
+        NormalCustomer customer = _customerController.GetFirstCustomer();
+        if (customer == null)
+            return CompleteManagerGuideDiagnostic("NoWaitingCustomer");
+
+        customer.SetVisitFloor(table.FloorType);
+        OnCustomerGuide(customer, table);
+        CompleteManagerGuideDiagnostic("Guided");
+        if (playSound)
+        {
+            EffectType effect = SoundManager.Instance.GetHallEffectType(table.FloorType, RestaurantType.Hall);
+            SoundManager.Instance.PlayEffectAudio(effect, _callSound);
+        }
+        return true;
+    }
+
+    private bool TrySelectManagerGuideTable(Staff manager, ManagerCustomerGuideSource source, out TableData table)
+    {
+        table = null;
+        ERestaurantFloorType floor = manager != null ? manager.EquipFloorType : ERestaurantFloorType.Error;
+        LastManagerGuideDiagnostic = new ManagerCustomerGuideDiagnostic
+        {
+            StaffId = manager != null && manager.StaffData != null ? manager.StaffData.Id : null,
+            EquipFloor = floor, RequestedFloor = floor, SelectedFloor = ERestaurantFloorType.Error,
+            Source = source
+        };
+        if (manager == null || !manager.isActiveAndEnabled || manager.StaffData == null
+            || manager.EquipStaffType != EquipStaffType.Manager
+            || floor < ERestaurantFloorType.Floor1 || floor >= ERestaurantFloorType.Length)
+            return CompleteManagerGuideDiagnostic("InactiveOrInvalidManager");
+
+        StaffData saved = UserInfo.GetEquipStaff(UserInfo.CurrentStage, floor, EquipStaffType.Manager);
+        ManagerCustomerGuideDiagnostic diagnostic = LastManagerGuideDiagnostic;
+        diagnostic.SavedManagerId = saved != null ? saved.Id : null;
+        LastManagerGuideDiagnostic = diagnostic;
+        if (saved == null || !string.Equals(saved.Id, manager.StaffData.Id, StringComparison.Ordinal))
+            return CompleteManagerGuideDiagnostic("AssignmentChanged");
+        if (!_managerRuntimes.TryGetValue(floor, out ManagerRuntime current)
+            || current.Staff != manager || current.Data != manager.StaffData || current.Stage != UserInfo.CurrentStage)
+            return CompleteManagerGuideDiagnostic("StaleRuntime");
+        if (!UserInfo.IsFloorValid(UserInfo.CurrentStage, floor))
+            return CompleteManagerGuideDiagnostic("FloorLocked");
+        // Manual guide requests retain their tutorial redirect. An automatic Floor2
+        // request is rejected instead of redirecting it to a floor with no manager.
+        if (RestrictFirstTutorialCustomersToFloor1 && floor != ERestaurantFloorType.Floor1)
+            return CompleteManagerGuideDiagnostic("TutorialFloorRestricted");
+
+        table = GetTableType(floor, ETableState.Empty);
+        if (table == null)
+            return CompleteManagerGuideDiagnostic("NoTableOnAssignedFloor");
+        diagnostic = LastManagerGuideDiagnostic;
+        diagnostic.SelectedFloor = table.FloorType;
+        LastManagerGuideDiagnostic = diagnostic;
+        if (table.FloorType != floor)
+        {
+            table = null;
+            return CompleteManagerGuideDiagnostic("TableFloorMismatch");
+        }
+        CompleteManagerGuideDiagnostic("Selected");
+        return true;
+    }
+
+    private bool CompleteManagerGuideDiagnostic(string result)
+    {
+        ManagerCustomerGuideDiagnostic diagnostic = LastManagerGuideDiagnostic;
+        diagnostic.Result = result;
+        LastManagerGuideDiagnostic = diagnostic;
+        return false;
+    }
 
     [Header("Transform")]
     [SerializeField] private Transform _moneyUITr;

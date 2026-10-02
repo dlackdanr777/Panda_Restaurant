@@ -27,7 +27,9 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private static string OutputDirectory => _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static bool _fireworks;
+    private static bool _phase4;
     private static bool _textStamp;
     private static bool _exchangeFinal;
     private static bool _polish;
@@ -52,6 +54,17 @@ public static class GachaReviewTestRunner
     private static TestExecutionContext _coroutineContext;
     private static int _editorThread;
     public static bool IsRunning => _running;
+    public static void RunFireworksBatch()
+    {
+        _fireworks = true;
+        RunPhase4Batch();
+    }
+    public static void RunPhase4Batch()
+    {
+        _phase4 = _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+        RunPhase1Batch();
+    }
     public static void RunTextStampBatch()
     {
         _textStamp = _phase3 = true;
@@ -94,7 +107,7 @@ public static class GachaReviewTestRunner
         {
             if (EditorApplication.timeSinceStartup < readyAt || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
             EditorApplication.update -= StartWhenReady;
-            try { Begin(_textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
+            try { Begin(_phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
                 : Environment.GetCommandLineArgs().Contains("-fairyEvidenceOnly") ? "fairy-evidence"
                 : Environment.GetCommandLineArgs().Contains("-fairyUiOnly") ? "ui"
                 : Environment.GetCommandLineArgs().Contains("-fairyOnly") ? "fairy" : "phase1"); }
@@ -206,8 +219,16 @@ public static class GachaReviewTestRunner
     {
         Assembly assembly = typeof(GachaReviewTestRunner).Assembly;
         var names = new List<string>();
-        foreach (string name in _phase3 ? FixtureNames.Concat(new[] { "GachaPhase3Tests", "Stage1Phase3StressTests", "ItemGachaCapsulePresentationTests" }) : FixtureNames)
+        const string fixtureArgument = "-reviewFixture=";
+        string selectedFixture = Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(fixtureArgument, StringComparison.Ordinal));
+        if (selectedFixture != null) selectedFixture = selectedFixture.Substring(fixtureArgument.Length);
+        IEnumerable<string> fixtures = _phase3 ? FixtureNames.Concat(new[] { "GachaPhase3Tests", "Stage1Phase3StressTests", "ItemGachaCapsulePresentationTests" }) : FixtureNames;
+        if (_phase4) fixtures = fixtures.Concat(new[] { "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffGroundContactTests", "StaffGachaEntryTests", "Phase4AdUiEvidenceTests", "AdvertisementDiamondRewardTests" });
+        if (_phase4 && !Environment.GetCommandLineArgs().Contains("-phase4CoreOnly")) fixtures = fixtures.Concat(new[] { "FairyBirthSequenceTests" });
+        foreach (string name in fixtures)
         {
+            if (selectedFixture != null && name != selectedFixture) continue;
+            if (_phase4 && Environment.GetCommandLineArgs().Contains("-phase4CoreOnly") && name != "ManagerFloorGuideTests" && name != "FirstTutorialCustomerFloorTests" && name != "StaffGroundContactTests" && name != "StaffGachaEntryTests" && name != "AdvertisementDiamondRewardTests" && name != "StaffGachaOfflineSessionTests" && name != "StaffStageMigrationCollectionTests") continue;
             if (_textStamp && name != "GachaPhase3Tests" && name != "GachaCollectionUiTests" && name != "Stage1Phase3StressTests") continue;
             if (_group == "phase3" && name != "GachaPhase3Tests" && name != "Stage1Phase3StressTests" &&
                 name != "StaffStageMigrationCollectionTests" && name != "ItemGachaCapsulePresentationTests") continue;
@@ -221,9 +242,10 @@ public static class GachaReviewTestRunner
                 if (_textStamp && name == "Stage1Phase3StressTests" && method.Name != "Stage1_PaymentLayoutAndNativeSingleItemCapsuleEvidence") continue;
                 if (_group == "fairy-evidence" && method.Name != "Stage1_FairyTapReusesReadOnlyCardBlocksDragAndClosesWithoutChangingOwnership"
                     && method.Name != "EconomyBackend_Stage1FairyAppearsOnlyAfterProductionCommitAndNeverDuplicates") continue;
-                if (name == "StaffGachaOfflineSessionTests" && !method.Name.StartsWith("ResultPopup_", StringComparison.Ordinal)) continue;
+                if (_phase4 && Environment.GetCommandLineArgs().Contains("-phase4CoreOnly") && (name == "StaffGachaOfflineSessionTests" || name == "StaffStageMigrationCollectionTests") && !method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal)) continue;
+                if (name == "StaffGachaOfflineSessionTests" && !method.Name.StartsWith("ResultPopup_", StringComparison.Ordinal) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
                 if (name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
-                    && !(_phase3 && method.Name.StartsWith("Attendance_", StringComparison.Ordinal))) continue;
+                    && !(_phase3 && method.Name.StartsWith("Attendance_", StringComparison.Ordinal)) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "UnityTestAttribute")) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "TestAttribute" ||
                     attribute.GetType().Name == "TestCaseAttribute" || attribute.GetType().Name == "TestCaseSourceAttribute"))

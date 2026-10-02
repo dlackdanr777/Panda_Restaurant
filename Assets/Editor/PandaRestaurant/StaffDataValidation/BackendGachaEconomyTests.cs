@@ -185,6 +185,7 @@ public partial class StaffStageMigrationCollectionTests
                 {
                     host.Move(ERestaurantFloorType.Floor3);
                     host.Move(RestaurantType.Kitchen);
+                    host.Advance(1f / 30f); // Observe the final Kitchen camera transform.
                     Assert.That(service.TryDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsSingle, null, out string error), Is.True, error);
                     var tx = service.LastTransaction;
                     Assert.That(EnhancementFairyCatalog.IsEligible(tx.Results[0].Data), Is.True);
@@ -196,10 +197,16 @@ public partial class StaffStageMigrationCollectionTests
                     fixture.Game.WriteReplies[0](Bro("204", ""));
                     Assert.That(tx.IsCompleted, Is.True);
                     Assert.That(host.Habitat.ActiveCount, Is.EqualTo(1));
-                    Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
+                    Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1), "A confirmed birth can start on the visible Kitchen wall");
+                    Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.EqualTo(1));
                     fixture.Game.WriteReplies[0](Bro("204", ""));
-                    Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1), "Repeated success callback");
+                    Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1), "Repeated success callback must not start another birth");
+                    Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.EqualTo(1), "Repeated success callback does not enqueue twice");
+                    host.Move(RestaurantType.Hall);
+                    host.Advance(1f / 30f);
+                    Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
                     host.RecordBirth();
+                    Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.Zero, "Landing consumes the confirmed birth once");
                     host.Advance(.25f);
                     Assert.That(host.VisibleBodyCount(), Is.GreaterThan(0));
                     host.Capture("stage1-first-acquisition.png");

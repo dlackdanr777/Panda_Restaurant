@@ -77,7 +77,10 @@ public sealed class EnhancementFairyStage1Tests
             host.Move(ERestaurantFloorType.Floor2);
             Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.EqualTo(1));
             host.Move(ERestaurantFloorType.Floor3);
+            host.Advance(1f / 30f); // The tween applies its final camera position after the completion callback.
             Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
+            Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.EqualTo(1), "Camera arrival starts the presentation, not completion");
+            host.Advance(host.Habitat.Settings.BirthDuration + .1f);
             Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.Zero);
         }
     }
@@ -172,8 +175,13 @@ public sealed class EnhancementFairyStage1Tests
                 Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.EqualTo(1));
             });
             Assert.That(host.Habitat.ActiveCount, Is.EqualTo(1));
+            host.Advance(1f / 30f); // Birth positions use the first frame after the camera/UI settles.
             Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
             Assert.That(EnhancementFairyAcquisitionEvents.PublishConfirmed("duplicate-birth", item.Id), Is.False);
+            Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
+            Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.EqualTo(1));
+            host.Advance(host.Habitat.Settings.BirthDuration + .1f);
+            Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.Zero);
             Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
         }
     }
@@ -263,7 +271,7 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
 {
     internal static string EvidenceDirectory = "Logs/FairyStage1Phase1";
     private readonly Dictionary<FieldInfo, object> _statics = new Dictionary<FieldInfo, object>();
-    private readonly string[] _seen, _pending;
+    private readonly string[] _seen, _pending, _pendingOrder;
     private readonly GachaCollectionPreviewSceneWitness _witness;
     private readonly GameObject _services;
     private readonly SoundManager _sound;
@@ -281,6 +289,7 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
         _witness = GachaCollectionPreviewSceneWitness.Capture();
         _seen = QueueSet("_seenItems").ToArray();
         _pending = QueueSet("_pendingItems").ToArray();
+        _pendingOrder = ((List<string>)Get(EnhancementFairyAcquisitionEvents.Queue, "_pendingOrder")).ToArray();
         try
         {
         Replace(typeof(EnhancementFairyAcquisitionEvents), "Changed", null);
@@ -312,7 +321,7 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
 
     internal void ReloadStage()
     {
-        if (_scene.IsValid()) EditorSceneManager.ClosePreviewScene(_scene);
+        CloseStage();
         _scene = EditorSceneManager.OpenPreviewScene("Assets/Scenes/Stage1.unity");
         Floor = SceneComponents<Floor3Controller>().Single();
         Controller = SceneComponents<CameraController>().Single();
@@ -538,41 +547,130 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
     }
     internal void RecordBirth()
     {
+        const int fps = 20;
+        const int frames = 80;
         var brain = Habitat.GetActiveBrain(0);
         var position = brain.GroundPosition;
+        var birthPosition = Habitat.GetBirthPosition(brain.ItemId);
         var body = Bodies().Single();
+        var puff = body.transform.parent.Find("Arrival puff").GetComponent<SpriteRenderer>();
+        float revealAt = Habitat.Settings.TrailSeconds + Habitat.Settings.GatherSeconds;
+        float completesAt = Habitat.Settings.BirthDuration;
+        int puffFrame = Mathf.CeilToInt((revealAt + .2f) * fps) - 1;
+        Vector3 cameraPosition = Camera.transform.position;
+        float cameraSize = Camera.orthographicSize;
         bool airborne = false;
-        for (int frame = 0; frame < 24; frame++)
+        bool consumedAfterLanding = false;
+        Assert.That(Habitat.Settings.BirthArea.Contains(birthPosition), Is.True, "Birth uses a visible point within the authored wall area");
+        Assert.That(birthPosition.y, Is.GreaterThan(position.y), "The birth begins above its eventual ground position");
+        for (int frame = 0; frame < frames; frame++)
         {
-            Habitat.AdvancePreview(1f / 20f);
-            if (frame < 10)
+            Habitat.AdvancePreview(1f / fps);
+            float seconds = (frame + 1f) / fps;
+            if (seconds < completesAt - .05f)
             {
                 Assert.That(brain.GroundPosition, Is.EqualTo(position));
-                airborne |= EnhancementFairyTests.MeshBottom(body) > body.transform.parent.position.y + .2f;
+                Assert.That(brain.ElapsedSeconds, Is.Zero, "Ordinary behavior waits for the birth to land");
+                Assert.That(EnhancementFairyAcquisitionEvents.Queue.IsPending(brain.ItemId), Is.True);
             }
-            Capture("birth-frames/frame-" + frame.ToString("D4") + ".png");
-            if (frame == 5) Capture("stage1-birth-peak.png");
-            if (frame == 5)
+            if (seconds < Habitat.Settings.TrailSeconds - .05f)
             {
-                var puff = body.transform.parent.Find("Arrival puff").GetComponent<SpriteRenderer>();
+                Assert.That(body.color.a, Is.Zero, "Trail precedes the fairy body");
+                Assert.That(puff.enabled, Is.False, "Puff waits for gathering at the selected wall position");
+            }
+            if (seconds > revealAt && seconds < completesAt)
+                airborne |= body.color.a > 0f && EnhancementFairyTests.MeshBottom(body) > Floor.transform.TransformPoint(position).y + .2f;
+            if (seconds > completesAt + .1f)
+                consumedAfterLanding |= !EnhancementFairyAcquisitionEvents.Queue.IsPending(brain.ItemId);
+            Capture("birth-frames/frame-" + frame.ToString("D4") + ".png");
+            Assert.That(Camera.transform.position, Is.EqualTo(cameraPosition), "Evidence keeps the actual camera throughout");
+            Assert.That(Camera.orthographicSize, Is.EqualTo(cameraSize));
+            if (frame == puffFrame)
+            {
                 Assert.That(puff.sprite, Is.Not.Null, "The actual production puff asset must be connected");
                 Assert.That(puff.enabled, Is.True);
-                Vector3 oldPosition = Camera.transform.position;
-                float oldSize = Camera.orthographicSize;
-                try
-                {
-                    Camera.orthographicSize = 2.5f;
-                    Camera.transform.position = new Vector3(body.bounds.center.x, body.transform.parent.position.y + .9f, oldPosition.z);
-                    Capture("stage1-birth-closeup.png");
-                    File.WriteAllText(Path.Combine(EvidenceDirectory, "birth-visual-state.txt"),
-                        "puff=" + puff.sprite.name + "; bounds=" + puff.bounds + "; color=" + puff.color
-                        + "; body=" + body.bounds + "; ground=" + body.transform.parent.position);
-                }
-                finally { Camera.orthographicSize = oldSize; Camera.transform.position = oldPosition; }
+                Capture("stage1-birth-peak.png");
+                File.WriteAllText(Path.Combine(EvidenceDirectory, "birth-visual-state.txt"),
+                    "puff=" + puff.sprite.name + "; bounds=" + puff.bounds + "; color=" + puff.color
+                    + "; body=" + body.bounds + "; ground=" + body.transform.parent.position
+                    + "; localBirthPosition=" + birthPosition + "; seconds=" + seconds);
             }
         }
         Assert.That(airborne, Is.True, "Production confirmed acquisition must visibly hop, not just scale");
+        Assert.That(consumedAfterLanding, Is.True, "Pending state is consumed only after the full presentation");
+        Assert.That(puff.enabled, Is.False);
         Assert.That(brain.ElapsedSeconds, Is.GreaterThan(0f), "Ordinary behavior resumes after the birth");
+        File.WriteAllText(Path.Combine(EvidenceDirectory, "birth-metadata.txt"),
+            "Actual Stage1 asset in an isolated PreviewScene container; Production Floor3Controller, Habitat, ItemManager and UserInfo ownership adapter.\n"
+            + "Saved FPS=" + fps + "; frames=" + frames + "; duration=" + frames / (float)fps
+            + "s. Deterministic Editor callbacks; NOT mobile/Play performance measurement.\n"
+            + "Camera remains at its native position; no forced camera move or closeup during the sequence.\n"
+            + "No SDK, server, login, PlayerPrefs writes, persisted account or real purchases.\n"
+            + "Birth local position=" + birthPosition + "; ground destination=" + position + "; floor world transform=" + Floor.transform.position + "\n"
+            + JsonUtility.ToJson(Habitat.Settings, true));
+    }
+    internal void RecordFireworks()
+    {
+        const int fps = 20;
+        const int frames = 220;
+        var ids = EnhancementFairyAcquisitionEvents.Queue.PendingItems.ToArray();
+        Assert.That(ids.Length, Is.EqualTo(11), "The caller prepares eleven confirmed, unfinished births");
+        var startedAt = new Dictionary<string, float>(StringComparer.Ordinal);
+        var positions = new Dictionary<string, Vector2>(StringComparer.Ordinal);
+        var completed = new HashSet<string>(StringComparer.Ordinal);
+        var timeline = new List<string> { "seconds,active,pending,completed" };
+        Vector3 cameraPosition = Camera.transform.position;
+        float cameraSize = Camera.orthographicSize;
+        int peakConcurrent = 0;
+        void Observe(float seconds)
+        {
+            var active = Habitat.ActiveBirthItemIds.ToArray();
+            Assert.That(active.Length, Is.EqualTo(Habitat.ActiveBirthCount));
+            Assert.That(active.Length, Is.LessThanOrEqualTo(Mathf.Min(5, Habitat.Settings.MaxConcurrentBirths)));
+            peakConcurrent = Mathf.Max(peakConcurrent, active.Length);
+            foreach (string id in active)
+            {
+                Assert.That(ids, Does.Contain(id), "Only the confirmed eleven may present");
+                if (startedAt.ContainsKey(id)) continue;
+                startedAt[id] = seconds;
+                Vector2 position = Habitat.GetBirthPosition(id);
+                positions[id] = position;
+                Assert.That(Habitat.Settings.BirthArea.Contains(position), Is.True);
+                Vector3 viewport = Camera.WorldToViewportPoint(Floor.transform.TransformPoint(position));
+                Assert.That(viewport.z, Is.GreaterThan(0f));
+                Assert.That(viewport.x, Is.InRange(0f, 1f));
+                Assert.That(viewport.y, Is.InRange(0f, 1f));
+            }
+            foreach (string id in ids)
+                if (!EnhancementFairyAcquisitionEvents.Queue.IsPending(id)) completed.Add(id);
+            timeline.Add(seconds.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + ","
+                + active.Length + "," + EnhancementFairyAcquisitionEvents.Queue.PendingCount + "," + completed.Count);
+        }
+        Observe(0f);
+        for (int frame = 0; frame < frames; frame++)
+        {
+            Habitat.AdvancePreview(1f / fps);
+            Observe((frame + 1f) / fps);
+            Capture("fireworks-frames/frame-" + frame.ToString("D4") + ".png");
+            Assert.That(Camera.transform.position, Is.EqualTo(cameraPosition), "Births follow the visible wall without moving the camera");
+            Assert.That(Camera.orthographicSize, Is.EqualTo(cameraSize));
+        }
+        Assert.That(peakConcurrent, Is.GreaterThan(1), "The sequence includes overlapping births");
+        Assert.That(startedAt.Count, Is.EqualTo(11));
+        Assert.That(completed.Count, Is.EqualTo(11), "Every confirmed birth settles and consumes once");
+        Assert.That(positions.Values.Distinct().Count(), Is.GreaterThan(1), "Births are distributed instead of sharing one anchor");
+        Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.Zero);
+        Assert.That(Habitat.ActiveBirthCount, Is.Zero);
+        File.WriteAllLines(Path.Combine(EvidenceDirectory, "fireworks-timeline.csv"), timeline);
+        File.WriteAllText(Path.Combine(EvidenceDirectory, "fireworks-metadata.txt"),
+            "Actual Stage1 asset in an isolated PreviewScene container; Production Floor3Controller, Habitat, catalog and confirmed queue.\n"
+            + "Saved FPS=" + fps + "; frames=" + frames + "; duration=" + frames / (float)fps
+            + "s. Deterministic Editor callbacks; NOT mobile/Play performance measurement.\n"
+            + "No SDK, server, login, PlayerPrefs writes, persisted account or real purchases. Camera position/size remained unchanged.\n"
+            + "Peak concurrent=" + peakConcurrent + "; completed=" + completed.Count + "; floor world transform=" + Floor.transform.position + "\n"
+            + string.Join("\n", startedAt.OrderBy(pair => pair.Value).Select(pair => pair.Key + "; started="
+                + pair.Value.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) + "; localBirthPosition=" + positions[pair.Key]))
+            + "\n" + JsonUtility.ToJson(Habitat.Settings, true));
     }
     private static HashSet<string> QueueSet(string name) => (HashSet<string>)Get(EnhancementFairyAcquisitionEvents.Queue, name);
     private void Replace(Type type, string name, object value)
@@ -598,15 +696,32 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
         }
         throw new MissingMethodException(name);
     }
+    private void CloseStage()
+    {
+        if (!_scene.IsValid()) return;
+        // This Edit Mode host invokes Floor3.Start/InitializeRuntime explicitly, so it
+        // must also complete the matching lifecycle before native preview objects die.
+        foreach (var habitat in SceneComponents<EnhancementFairyHabitat>())
+        {
+            Invoke(habitat, "OnDisable");
+            Invoke(habitat, "OnDestroy");
+            var listeners = (Action)Field(typeof(EnhancementFairyAcquisitionEvents), "Changed", true).GetValue(null);
+            Assert.That(listeners == null || listeners.GetInvocationList().All(listener => !ReferenceEquals(listener.Target, habitat)),
+                Is.True, "A closed Stage1 host must not retain a confirmed-acquisition subscriber");
+        }
+        EditorSceneManager.ClosePreviewScene(_scene);
+        _scene = default;
+    }
     public void Dispose()
     {
-        if (_scene.IsValid()) { EditorSceneManager.ClosePreviewScene(_scene); _scene = default; }
+        CloseStage();
         if (Catalog != null) foreach (var item in Catalog) if (item != null) Object.DestroyImmediate(item);
         if (_services != null) Object.DestroyImmediate(_services);
         foreach (var pair in _statics) pair.Key.SetValue(null, pair.Value);
         EnhancementFairyAcquisitionEvents.Queue.Clear();
         foreach (string id in _seen) QueueSet("_seenItems").Add(id);
         foreach (string id in _pending) QueueSet("_pendingItems").Add(id);
+        ((List<string>)Get(EnhancementFairyAcquisitionEvents.Queue, "_pendingOrder")).AddRange(_pendingOrder);
         _witness.AssertUnchanged("Stage1 production fixture disposed");
         Assert.That(BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin, Is.False);
     }
