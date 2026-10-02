@@ -3,8 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using Muks.UI;
 using UnityEngine;
+using UnityEngine.UI;
 
-/// <summary>A passive, pooled presentation attached only to the actual third-floor root.</summary>
+/// <summary>Pooled third-floor presentation with read-only item inspection.</summary>
 [DisallowMultipleComponent]
 public sealed class EnhancementFairyHabitat : MonoBehaviour
 {
@@ -18,6 +19,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         public Transform PuffTransform;
         public Transform[] StarTransforms;
         public Vector2 SpriteCenter;
+        public Vector2[] SpriteVertices;
         public float PuffScalePerUnit;
         public float StarScalePerUnit;
         public bool ArrivalEffectsVisible;
@@ -39,6 +41,8 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private EnhancementFairyArrivalQueue _arrivals;
     private EnhancementFairySettings _settings;
     private CameraController _cameraController;
+    private Floor3Controller _floorController;
+    private FloorLockGroup[] _floorLocks = Array.Empty<FloorLockGroup>();
     private UINavigationCoordinator _navigation;
     private UIView[] _sceneViews = Array.Empty<UIView>();
     private Coroutine _visibilityWait;
@@ -50,6 +54,11 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private float _rotationClock;
     private int _cursor;
     private int _rotationSlot;
+    private bool _approachingFloor3;
+    private Camera _worldCamera;
+    private UIGachaCard _cardTemplate;
+    private GameObject _cardCanvas;
+    private GachaResultCardPopup _itemPopup;
 
     public int OwnedTypeCount => _owned.Count;
     public int ActiveCount => _visible && gameObject.activeInHierarchy ? _views.Count : 0;
@@ -57,6 +66,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     public int ArrivalPresentationCount { get; private set; }
     public bool IsVisible => _visible && gameObject.activeInHierarchy;
     public EnhancementFairySettings Settings => _settings;
+    public bool IsItemCardOpen => _itemPopup != null && _itemPopup.IsOpen;
 
     public static EnhancementFairyHabitat AttachTo(Floor3Controller floor)
     {
@@ -74,12 +84,20 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         LoadSettings(null);
         SetCatalog(ItemManager.Instance.GetGachaItemDataList());
         _arrivals = EnhancementFairyAcquisitionEvents.Queue;
-        // Once at attachment, never a scene search in Update.
-        _cameraController = FindFirstObjectByType<CameraController>();
-        _navigation = FindFirstObjectByType<UINavigationCoordinator>();
-        _sceneViews = FindObjectsByType<UIView>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        // Bind to this floor's scene, including an isolated host loading the real Stage1.
+        // An additive scene or a preview must never borrow another scene's camera/UI.
+        _floorController = GetComponent<Floor3Controller>();
+        _floorLocks = GetComponentsInChildren<FloorLockGroup>(true);
+        _cameraController = SceneComponents<CameraController>().Find(value => value.isActiveAndEnabled);
+        _navigation = SceneComponents<UINavigationCoordinator>().Find(value => value.isActiveAndEnabled);
+        _sceneViews = SceneComponents<UIView>().ToArray();
+        var itemMachine = SceneComponents<UIItemGacha>().Find(value => value != null);
+        _cardTemplate = itemMachine != null ? itemMachine.GetComponentInChildren<UIGachaCard>(true) : null;
         if (_cameraController != null)
         {
+            _worldCamera = _cameraController.GetComponent<Camera>();
+            _cameraController.OnPreviewFloorHandler += OnPreviewFloor;
+            _cameraController.OnWorldTapHandler += TryOpenItemCard;
             _cameraController.OnStartMoveCameraHandler += OnCameraMoving;
             _cameraController.OnEndMoveCameraHandler += OnCameraStopped;
         }
@@ -93,6 +111,14 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         EnhancementFairyAcquisitionEvents.Changed += OnConfirmedAcquisition;
         RefreshRuntimeOwnership();
         RefreshRuntimeVisibility();
+    }
+
+    private List<T> SceneComponents<T>() where T : Component
+    {
+        var result = new List<T>();
+        foreach (var root in gameObject.scene.GetRootGameObjects())
+            result.AddRange(root.GetComponentsInChildren<T>(true));
+        return result;
     }
 
     /// <summary>Detached offline host: no UserInfo, SDK, singleton, save file or PlayerPrefs access.</summary>
@@ -186,11 +212,38 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
 
     private void RefreshRuntimeOwnership() => RestoreOwnership(UserInfo.GetGiveGachaItemCountDic().Keys);
     private void OnConfirmedAcquisition() { RefreshRuntimeOwnership(); Reconcile(); }
-    private void OnCameraMoving() => SetFloorVisible(false, false);
-    private void OnCameraStopped(ERestaurantFloorType floor, RestaurantType restaurant) => RefreshRuntimeVisibility();
+    private void OnCameraMoving()
+    {
+        CloseItemCard();
+        // Leave third-floor objects in world space during a pan; the end event applies
+        // the destination floor. Horizontal Hall/Kitchen movement needs no hide/rebuild.
+        if (!_approachingFloor3 && (_cameraController == null || _cameraController.CurrentFloor != ERestaurantFloorType.Floor3))
+            SetFloorVisible(false, false);
+    }
+    private void OnPreviewFloor(ERestaurantFloorType floor)
+    {
+        bool wasVisible = _visible;
+        _approachingFloor3 = floor == ERestaurantFloorType.Floor3;
+        RefreshRuntimeVisibility();
+        if (!wasVisible && _visible)
+        {
+            // Revealed artwork is fully ready on this frame, with no arrival fade delay.
+            foreach (var view in _views)
+            {
+                if (!view.Replacing && !_arrivals.IsPending(view.Brain.ItemId)) view.Fade = 1f;
+                Render(view);
+            }
+        }
+    }
+    private void OnCameraStopped(ERestaurantFloorType floor, RestaurantType restaurant)
+    {
+        _approachingFloor3 = false;
+        RefreshRuntimeVisibility();
+    }
 
     private void OnUiOpened()
     {
+        CloseItemCard();
         if (_visibilityWait != null) StopCoroutine(_visibilityWait);
         _visibilityWait = null;
         _waitingForUiHide = false;
@@ -238,10 +291,14 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             _visibilityWait = null;
             _waitingForUiHide = false;
         }
-        bool unlocked = UserInfo.GetUnlockFloor(UserInfo.CurrentStage) >= ERestaurantFloorType.Floor3;
+        // Stage1's decorative third floor is accessible with the normal Floor2 progression
+        // value. Follow its actual active floor/lock objects; do not invent a second unlock
+        // requirement or mutate the account's business-floor progression.
+        bool unlocked = _floorController != null && _floorController.isActiveAndEnabled;
+        for (int i = 0; i < _floorLocks.Length; i++)
+            if (_floorLocks[i] != null && _floorLocks[i].isActiveAndEnabled) unlocked = false;
         bool visible = _cameraController != null && _cameraController.isActiveAndEnabled
-            && _cameraController.CurrentFloor == ERestaurantFloorType.Floor3
-            && _cameraController.CurrentRestaurant == RestaurantType.Hall
+            && (_cameraController.CurrentFloor == ERestaurantFloorType.Floor3 || _approachingFloor3)
             && !_waitingForUiHide && !closing
             && (_navigation == null || _navigation.GetOpenViewCount() == 0);
         SetFloorVisible(unlocked, visible);
@@ -249,7 +306,11 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
 
     private void Reconcile()
     {
-        if (!_visible || !gameObject.activeInHierarchy || _settings == null || _arrivals == null) return;
+        if (!gameObject.activeInHierarchy || _settings == null || _arrivals == null) return;
+        // A confirmed purchase on Floor3 prepares its object immediately even while the
+        // gacha UI covers it. The puff remains pending until that UI has actually closed.
+        if (!_visible && !(_runtime && _cameraController != null
+            && _cameraController.CurrentFloor == ERestaurantFloorType.Floor3 && _arrivals.PendingCount > 0)) return;
         int cap = Mathf.Clamp(_settings.MaxActive, 1, 64);
         while (_views.Count > cap) Release(_views.Count - 1);
         for (int i = 0; i < _views.Count; i++)
@@ -316,12 +377,13 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         view.Body.sprite = sprite;
         Bounds bounds = sprite.bounds;
         view.SpriteCenter = bounds.center;
+        view.SpriteVertices = sprite.vertices;
         view.Scale = _settings.SpriteHeight / Mathf.Max(0.01f, bounds.size.y);
         view.ArrivalRemaining = 0f;
         view.PriorityUntil = 0f;
         view.Fade = 0f;
         view.Replacing = false;
-        view.Root.gameObject.SetActive(true);
+        view.Root.gameObject.SetActive(_visible);
         _views.Add(view);
         if (_arrivals.IsPending(id)) BeginArrival(view);
         Render(view);
@@ -329,12 +391,14 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
 
     private void BeginArrival(View view)
     {
+        if (!_visible || _approachingFloor3) return;
         if (!_arrivals.Consume(view.Brain.ItemId)) return;
         view.ArrivalRemaining = Mathf.Max(0.1f, _settings.ArrivalSeconds);
         view.PriorityUntil = _clock + Mathf.Max(1f, _settings.NewArrivalPrioritySeconds);
         view.Fade = 1f;
         view.Replacing = false;
         ArrivalPresentationCount++;
+        Render(view);
     }
 
     private View CreateView()
@@ -399,6 +463,8 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     {
         if (!_visible || !gameObject.activeInHierarchy || _settings == null || deltaTime <= 0f
             || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
+        // A slow or cancelled reveal must not spend pending births, rotation slots or behavior time.
+        if (_approachingFloor3) return;
         float dt = Mathf.Min(deltaTime, 0.1f);
         _clock += dt;
         _rotationClock += dt;
@@ -406,8 +472,9 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         {
             var view = _views[i];
             var neighbour = _views.Count > 1 ? _views[(i + 1) % _views.Count].Brain.GroundPosition : Vector2.zero;
-            view.Brain.Step(dt, neighbour, _views.Count > 1);
-            view.ArrivalRemaining = Mathf.Max(0f, view.ArrivalRemaining - dt);
+            // Keep each birth at its own ground position; resume its ordinary brain on landing.
+            if (!_approachingFloor3 && view.ArrivalRemaining <= 0f) view.Brain.Step(dt, neighbour, _views.Count > 1);
+            if (!_approachingFloor3) view.ArrivalRemaining = Mathf.Max(0f, view.ArrivalRemaining - dt);
             view.Fade = Mathf.MoveTowards(view.Fade, view.Replacing ? 0f : 1f, dt / Mathf.Max(0.1f, _settings.RotationFadeSeconds));
             if (view.Replacing && view.Fade <= 0f) { Release(i); continue; }
             Render(view);
@@ -433,17 +500,30 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         float pop = progress < 1f ? Mathf.Clamp01(progress / Mathf.Max(0.1f, _settings.ArrivalScaleInFraction))
             + Mathf.Sin(progress * Mathf.PI) * _settings.ArrivalScaleOvershoot : 1f;
         float scale = view.Scale * pop;
-        float baseHeight = _settings.SpriteHeight * 0.5f - view.SpriteCenter.y * scale;
+        float squash = view.ArrivalRemaining > 0f ? 0f : brain.Squash;
+        var bodyScale = new Vector3(scale * (1f + squash), scale * (1f - squash), 1f);
+        var rotation = Quaternion.Euler(0f, 0f, brain.Tilt);
+        // A sprite's pivot, tilt, flip and squash must not lift its lowest mesh point.
+        float minY = float.PositiveInfinity;
+        foreach (var vertex in view.SpriteVertices)
+        {
+            var point = new Vector3((brain.FacingLeft ? -vertex.x : vertex.x) * bodyScale.x,
+                vertex.y * bodyScale.y, 0f);
+            minY = Mathf.Min(minY, (rotation * point).y);
+        }
+        if (float.IsInfinity(minY)) minY = 0f;
+        float lift = view.ArrivalRemaining > 0f
+            ? Mathf.Sin(progress * Mathf.PI) * Mathf.Max(0f, _settings.HopHeight) : brain.VisualHeight;
         view.BodyTransform.SetLocalPositionAndRotation(
-            new Vector3(-view.SpriteCenter.x * scale, baseHeight + brain.VisualHeight, 0f),
-            Quaternion.Euler(0f, 0f, brain.Tilt));
-        view.BodyTransform.localScale = new Vector3(scale * (1f + brain.Squash), scale * (1f - brain.Squash), 1f);
+            new Vector3(-view.SpriteCenter.x * scale, -minY + lift, 0f), rotation);
+        view.BodyTransform.localScale = bodyScale;
         view.Body.flipX = brain.FacingLeft;
         int sortingOrder = 500 - Mathf.RoundToInt(brain.GroundPosition.y * 10f);
         if (view.SortingOrder != sortingOrder)
         { view.SortingOrder = sortingOrder; view.Body.sortingOrder = sortingOrder; }
-        if (view.RenderedAlpha != view.Fade)
-        { view.RenderedAlpha = view.Fade; view.Body.color = new Color(1f, 1f, 1f, view.Fade); }
+        float alpha = _arrivals.IsPending(brain.ItemId) ? 0f : view.Fade;
+        if (view.RenderedAlpha != alpha)
+        { view.RenderedAlpha = alpha; view.Body.color = new Color(1f, 1f, 1f, alpha); }
         bool puff = view.ArrivalRemaining > 0f;
         if (view.ArrivalEffectsVisible != puff)
         {
@@ -473,11 +553,65 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
 
     public EnhancementFairyBrain GetActiveBrain(int index) => _views[index].Brain;
 
+    /// <summary>Called by the camera only for a completed, UI-free tap, never a drag.</summary>
+    public bool TryOpenItemCard(Vector2 screenPosition)
+    {
+        if (!_runtime || !IsVisible || IsItemCardOpen || _worldCamera == null || _cardTemplate == null
+            || _cameraController.CurrentFloor != ERestaurantFloorType.Floor3 || _approachingFloor3
+            || (_navigation != null && _navigation.GetOpenViewCount() > 0)) return false;
+        View nearest = null;
+        float distance = float.PositiveInfinity;
+        float minimumSize = Mathf.Clamp(Screen.dpi * .7f / 2.54f, 44f, 96f);
+        foreach (var view in _views)
+        {
+            if (!view.Body.enabled || view.Body.color.a < .5f || !view.Root.gameObject.activeInHierarchy) continue;
+            var bounds = view.Body.bounds;
+            Vector3 lower = _worldCamera.WorldToScreenPoint(bounds.min);
+            Vector3 upper = _worldCamera.WorldToScreenPoint(bounds.max);
+            if (lower.z <= 0f) continue;
+            Vector2 center = (lower + upper) * .5f;
+            Vector2 size = new Vector2(Mathf.Max(minimumSize, upper.x - lower.x), Mathf.Max(minimumSize, upper.y - lower.y));
+            if (!new Rect(center - size * .5f, size).Contains(screenPosition)) continue;
+            float candidate = (screenPosition - center).sqrMagnitude;
+            if (candidate < distance) { nearest = view; distance = candidate; }
+        }
+        if (nearest == null) return false;
+        if (_itemPopup == null)
+        {
+            _cardCanvas = new GameObject("Fairy Item Inspection", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            _cardCanvas.transform.SetParent(transform, false);
+            var canvas = _cardCanvas.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 30000;
+            var scaler = _cardCanvas.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920f, 1080f);
+            scaler.matchWidthOrHeight = .5f;
+            _itemPopup = new GachaResultCardPopup(_cardCanvas.transform, _cardTemplate);
+            _itemPopup.Closed += OnItemCardClosed;
+        }
+        _itemPopup.ShowItem(_catalog[nearest.Brain.ItemId], false);
+        _cameraController.SetWorldInputBlocked(this, true);
+        return true;
+    }
+
+    public void CloseItemCard() => _itemPopup?.Hide();
+    private void OnItemCardClosed() => _cameraController?.SetWorldInputBlocked(this, false);
+
+    private void OnDisable()
+    {
+        CloseItemCard();
+        OnItemCardClosed();
+    }
+
     private static float SpriteScale(Sprite sprite, float worldSize) => sprite == null ? 1f
         : Mathf.Max(0f, worldSize) / Mathf.Max(0.01f, Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y));
 
     private void OnDestroy()
     {
+        CloseItemCard();
+        OnItemCardClosed();
+        _itemPopup?.Dispose();
         if (_runtime)
         {
             UserInfo.OnGiveGachaItemHandler -= RefreshRuntimeOwnership;
@@ -485,6 +619,8 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             EnhancementFairyAcquisitionEvents.Changed -= OnConfirmedAcquisition;
             if (_cameraController != null)
             {
+                _cameraController.OnPreviewFloorHandler -= OnPreviewFloor;
+                _cameraController.OnWorldTapHandler -= TryOpenItemCard;
                 _cameraController.OnStartMoveCameraHandler -= OnCameraMoving;
                 _cameraController.OnEndMoveCameraHandler -= OnCameraStopped;
             }

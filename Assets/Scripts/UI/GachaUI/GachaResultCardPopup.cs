@@ -11,6 +11,7 @@ public sealed class GachaResultCardPopup : IDisposable
     private readonly UIGachaCard _card;
     public bool IsOpen => _root != null && _root.activeInHierarchy;
     public UIGachaCard Card => _card;
+    public event Action Closed;
 
     public GachaResultCardPopup(Transform parent, UIGachaCard template)
     {
@@ -98,7 +99,12 @@ public sealed class GachaResultCardPopup : IDisposable
         _content.anchoredPosition = Vector2.zero;
     }
 
-    public void Hide() { if (_root != null) _root.SetActive(false); }
+    public void Hide()
+    {
+        bool wasOpen = IsOpen;
+        if (_root != null) _root.SetActive(false);
+        if (wasOpen) Closed?.Invoke();
+    }
 
     public void Dispose()
     {

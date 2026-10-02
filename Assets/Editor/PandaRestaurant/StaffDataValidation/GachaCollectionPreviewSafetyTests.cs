@@ -214,7 +214,13 @@ public sealed class GachaCollectionPreviewSafetyTests
         }
         finally
         {
-            if (window != null) window.Close();
+            if (window != null)
+            {
+                // Headless Open creates a detached EditorWindow with no native container.
+                // Destroy invokes the same OnDisable/preview cleanup; Close needs a container.
+                if (Application.isBatchMode) Object.DestroyImmediate(window);
+                else window.Close();
+            }
         }
         before.AssertUnchanged("integrated preview closed");
         Assert.That(active.GetValue(null), Is.Null);

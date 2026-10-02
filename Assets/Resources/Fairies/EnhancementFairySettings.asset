@@ -17,10 +17,10 @@ MonoBehaviour:
   NewArrivalPrioritySeconds: 8
   GroundArea:
     serializedVersion: 2
-    x: -8
-    y: 8
-    width: 16
-    height: 1.8
+    x: -50
+    y: 7.85
+    width: 60
+    height: 0
   SpriteHeight: 1.65
   WalkSpeed: 1.05
   HopHeight: 0.55

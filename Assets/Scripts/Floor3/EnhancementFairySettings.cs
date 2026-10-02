@@ -10,7 +10,7 @@ public sealed class EnhancementFairySettings : ScriptableObject
     [Min(1f)] public float RotationSeconds = 12f;
     [Min(1f)] public float NewArrivalPrioritySeconds = 8f;
     [Tooltip("Local ground coordinates on the existing Stage1 Floor3 root.")]
-    public Rect GroundArea = new Rect(-8f, 8f, 16f, 1.8f);
+    public Rect GroundArea = new Rect(-50f, 7.85f, 60f, 0f);
     [Min(0.1f)] public float SpriteHeight = 1.65f;
     [Min(0.1f)] public float WalkSpeed = 1.05f;
     [Min(0f)] public float HopHeight = 0.55f;
@@ -63,5 +63,5 @@ public sealed class EnhancementFairySettings : ScriptableObject
     public Sprite SparkleSprite;
 
     public Rect SafeGroundArea => new Rect(GroundArea.x, GroundArea.y,
-        Mathf.Max(0.1f, GroundArea.width), Mathf.Max(0.1f, GroundArea.height));
+        Mathf.Max(0.1f, GroundArea.width), Mathf.Max(0f, GroundArea.height));
 }

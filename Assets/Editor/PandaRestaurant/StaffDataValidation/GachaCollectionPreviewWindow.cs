@@ -81,10 +81,18 @@ public sealed class GachaCollectionPreviewWindow : EditorWindow
 
     public static GachaCollectionPreviewWindow Open()
     {
-        var window = GetWindow<GachaCollectionPreviewWindow>("가챠 통합 데모");
+        // Batch verification has no user window to focus. A detached EditorWindow runs
+        // the same preview lifecycle without GUI focus creating an unrelated Undo group.
+        var window = Application.isBatchMode ? CreateInstance<GachaCollectionPreviewWindow>()
+            : GetWindow<GachaCollectionPreviewWindow>("가챠 통합 데모");
         window.minSize = new Vector2(850, 590);
-        try { window.InitializePreview(); window.Show(); return window; }
-        catch { window.Close(); throw; }
+        try { window.InitializePreview(); if (!Application.isBatchMode) window.Show(); return window; }
+        catch
+        {
+            if (Application.isBatchMode) Object.DestroyImmediate(window);
+            else window.Close();
+            throw;
+        }
     }
 
     public void InitializePreview()
@@ -404,6 +412,7 @@ public sealed class GachaCollectionPreviewWindow : EditorWindow
         long probeBytes = GC.GetAllocatedBytesForCurrentThread();
         var camera = _showFloor ? _floor.Camera : _camera;
         camera.targetTexture = _target;
+        if (_showFloor) _floor.FrameGround((float)_target.width / _target.height);
         if (!_showFloor)
         {
             foreach (var transform in _root.GetComponentsInChildren<Transform>(true)) transform.gameObject.layer = 31;

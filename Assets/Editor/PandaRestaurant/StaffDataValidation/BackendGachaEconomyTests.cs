@@ -168,7 +168,91 @@ public partial class StaffStageMigrationCollectionTests
         }
     }
 
-    private GachaEconomyService CreateEconomyService(Fixture fixture, out Action cleanup, Action onDraw = null)
+    [Test]
+    public void EconomyBackend_Stage1FairyAppearsOnlyAfterProductionCommitAndNeverDuplicates()
+    {
+        using (var scope = new EconomyUserInfoScope())
+        {
+            var fixture = CreateAccountRuntimeFixture(out _);
+            using (var host = new EnhancementFairyStage1Host())
+            {
+                var service = CreateEconomyService(fixture, out var cleanup, productionItems: host.Catalog);
+                var handler = (Action<GachaEconomyTransaction>)Delegate.CreateDelegate(typeof(Action<GachaEconomyTransaction>),
+                    fixture.Manager, typeof(BackendManager).GetMethod("OnEconomyCommitted", BindingFlags.Instance | BindingFlags.NonPublic));
+                service.Committed += handler;
+                try
+                {
+                    host.Move(ERestaurantFloorType.Floor3);
+                    host.Move(RestaurantType.Kitchen);
+                    Assert.That(service.TryDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsSingle, null, out string error), Is.True, error);
+                    var tx = service.LastTransaction;
+                    Assert.That(EnhancementFairyCatalog.IsEligible(tx.Results[0].Data), Is.True);
+                    Assert.That(host.Habitat.ActiveCount, Is.Zero, "Sending must not grant a fairy");
+                    Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.Zero);
+                    fixture.Game.WriteReplies[0](Bro("500", ""));
+                    Assert.That(tx.Status, Is.EqualTo(GachaTransactionStatus.Indeterminate));
+                    Assert.That(host.Habitat.ActiveCount, Is.Zero, "An unknown/failed response is not a confirmed grant");
+                    fixture.Game.WriteReplies[0](Bro("204", ""));
+                    Assert.That(tx.IsCompleted, Is.True);
+                    Assert.That(host.Habitat.ActiveCount, Is.EqualTo(1));
+                    Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
+                    fixture.Game.WriteReplies[0](Bro("204", ""));
+                    Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1), "Repeated success callback");
+                    host.RecordBirth();
+                    host.Advance(.25f);
+                    Assert.That(host.VisibleBodyCount(), Is.GreaterThan(0));
+                    host.Capture("stage1-first-acquisition.png");
+                    var identity = host.Identity();
+                    if (fixture.Game.WriteReplies.Count > 1) fixture.Game.WriteReplies[1](Bro("204", ""));
+                    int nextWrite = fixture.Game.Writes;
+                    Assert.That(service.TryDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsSingle, null, out error), Is.True, error);
+                    Assert.That(service.LastTransaction.Results[0].Id, Is.EqualTo(tx.Results[0].Id));
+                    Assert.That(service.LastTransaction.Results[0].IsNew, Is.False);
+                    fixture.Game.WriteReplies[nextWrite](Bro("204", ""));
+                    Assert.That(service.LastTransaction.IsCompleted, Is.True);
+                    CollectionAssert.AreEqual(identity, host.Identity());
+                    Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
+                    host.Advance(.5f);
+                    host.Capture("stage1-duplicate-acquisition.png");
+                    if (fixture.Game.WriteReplies.Count > nextWrite + 1) fixture.Game.WriteReplies[nextWrite + 1](Bro("204", ""));
+                }
+                finally
+                { service.Committed -= handler; fixture.Manager.InvalidateGameDataRestore(); cleanup(); }
+            }
+        }
+    }
+
+    [Test]
+    public void EconomyBackend_CancelledSessionDoesNotGrantStage1FairyFromLateSuccess()
+    {
+        using (var scope = new EconomyUserInfoScope())
+        {
+            var fixture = CreateAccountRuntimeFixture(out _);
+            using (var host = new EnhancementFairyStage1Host())
+            {
+                var service = CreateEconomyService(fixture, out var cleanup, productionItems: host.Catalog);
+                var handler = (Action<GachaEconomyTransaction>)Delegate.CreateDelegate(typeof(Action<GachaEconomyTransaction>),
+                    fixture.Manager, typeof(BackendManager).GetMethod("OnEconomyCommitted", BindingFlags.Instance | BindingFlags.NonPublic));
+                service.Committed += handler;
+                try
+                {
+                    host.Move(ERestaurantFloorType.Floor3);
+                    Assert.That(service.TryDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsSingle, null, out string error), Is.True, error);
+                    fixture.Manager.InvalidateGameDataRestore();
+                    fixture.Game.WriteReplies[0](Bro("204", ""));
+                    Assert.That(service.LastTransaction.IsCompleted, Is.False);
+                    Assert.That(host.Habitat.ActiveCount, Is.Zero);
+                    Assert.That(host.Habitat.OwnedTypeCount, Is.Zero);
+                    Assert.That(host.Habitat.ArrivalPresentationCount, Is.Zero);
+                    Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.Zero);
+                }
+                finally { service.Committed -= handler; fixture.Manager.InvalidateGameDataRestore(); cleanup(); }
+            }
+        }
+    }
+
+    private GachaEconomyService CreateEconomyService(Fixture fixture, out Action cleanup, Action onDraw = null,
+        IReadOnlyList<GachaItemData> productionItems = null)
     {
         if (Field(typeof(BackendManager), "_questStaffTutorialState").GetValue(fixture.Manager) == null)
             Field(typeof(BackendManager), "_questStaffTutorialState").SetValue(fixture.Manager, new MemoryQuestStaffState());
@@ -180,13 +264,20 @@ public partial class StaffStageMigrationCollectionTests
         typeof(BasicData).GetField("_name", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(item, "Offline economy item");
         typeof(GachaData).GetField("_rank", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(item, Rank.Normal2);
         var wrappers = fixture.Game.Catalog.Select(GachaStaffData.Create).ToArray();
-        var catalog = new List<GachaData>(wrappers) { item };
+        var catalog = new List<GachaData>(wrappers);
+        if (productionItems == null) catalog.Add(item);
+        else catalog.AddRange(productionItems);
         var type = typeof(BackendManager).Assembly.GetType("Muks.BackEnd.BackendGachaEconomyStore", true);
         var restore = (GameDataRestoreContext)Field(typeof(BackendManager), "_gameDataRestoreContext").GetValue(fixture.Manager);
         var store = (IGachaEconomyStore)Activator.CreateInstance(type, fixture.Manager, restore.LegacyQuery, restore.LegacyTarget);
         Field(typeof(BackendManager), "_gachaEconomyStore").SetValue(fixture.Manager, store);
         cleanup = () => { foreach (var wrapper in wrappers) Object.DestroyImmediate(wrapper); Object.DestroyImmediate(item); Object.DestroyImmediate(config); };
-        return new GachaEconomyService(store, catalog, config, (machine, pool, guarantee) => { onDraw?.Invoke(); return pool[0]; });
+        return new GachaEconomyService(store, catalog, config, (machine, pool, guarantee) =>
+        {
+            onDraw?.Invoke();
+            return productionItems != null && machine == GachaMachineKind.Item
+                ? pool.First(EnhancementFairyCatalog.IsEligible) : pool[0];
+        });
     }
     private sealed class EconomyUserInfoScope : IDisposable
     {

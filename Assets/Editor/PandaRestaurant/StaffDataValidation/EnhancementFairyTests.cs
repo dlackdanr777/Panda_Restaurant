@@ -400,6 +400,67 @@ public sealed class EnhancementFairyTests
         }
     }
 
+    [Test]
+    public void AllGroundActionsStayOnTheirBaselineWhileExplicitHopsLeaveIt()
+    {
+        using (var f = new Fixture())
+        {
+            f.Habitat.RestoreOwnership(new[] { "ITEM0", "ITEM1", "ITEM2" });
+            var observed = new HashSet<EnhancementFairyAction>();
+            bool airborne = false;
+            for (int frame = 0; frame < 1800; frame++)
+            {
+                f.Habitat.AdvancePreview(.1f);
+                for (int i = 0; i < f.Habitat.ActiveCount; i++)
+                {
+                    var brain = f.Habitat.GetActiveBrain(i);
+                    var body = f.Host.transform.Find("Fairy " + brain.ItemId + "/Item sprite").GetComponent<SpriteRenderer>();
+                    float bottom = MeshBottom(body);
+                    float baseline = body.transform.parent.position.y;
+                    observed.Add(brain.Action);
+                    Assert.That(brain.GroundPosition.y, Is.EqualTo(7.85f).Within(.0001f));
+                    Assert.That(bottom - baseline, Is.EqualTo(brain.VisualHeight).Within(.0001f), "Actual transformed mesh contact, including flip and tilt");
+                    if (brain.Action != EnhancementFairyAction.Hop) Assert.That(brain.VisualHeight, Is.Zero);
+                    else if (bottom > baseline + .1f) airborne = true;
+                }
+            }
+            CollectionAssert.AreEquivalent(Enum.GetValues(typeof(EnhancementFairyAction)), observed);
+            Assert.That(airborne, Is.True, "Explicit jump animation must remain");
+        }
+    }
+
+    [Test]
+    public void ConfirmedBirthUsesPuffAndForcedHopThenResumesTheSameBrain()
+    {
+        using (var f = new Fixture())
+        {
+            f.Settings.HopProbability = 0f;
+            f.Habitat.ConfirmAcquisition("birth", f.Items[0]);
+            var brain = f.Habitat.GetActiveBrain(0);
+            var position = brain.GroundPosition;
+            var body = f.Host.transform.Find("Fairy ITEM0/Item sprite").GetComponent<SpriteRenderer>();
+            f.Habitat.AdvancePreview(.1f);
+            f.Habitat.AdvancePreview(.1f);
+            Assert.That(MeshBottom(body) - body.transform.parent.position.y, Is.GreaterThan(.25f));
+            Assert.That(brain.ElapsedSeconds, Is.Zero, "Birth does not consume the ordinary behavior loop");
+            Assert.That(brain.GroundPosition, Is.EqualTo(position));
+            Assert.That(f.Host.transform.Find("Fairy ITEM0/Arrival puff").GetComponent<SpriteRenderer>().enabled, Is.True);
+            for (int i = 0; i < 10; i++) f.Habitat.AdvancePreview(.1f);
+            Assert.That(f.Habitat.GetActiveBrain(0), Is.SameAs(brain));
+            Assert.That(brain.ElapsedSeconds, Is.GreaterThan(0f));
+            Assert.That(MeshBottom(body), Is.EqualTo(body.transform.parent.position.y).Within(.0001f));
+            Assert.That(f.Host.transform.Find("Fairy ITEM0/Arrival puff").GetComponent<SpriteRenderer>().enabled, Is.False);
+        }
+    }
+
+    internal static float MeshBottom(SpriteRenderer body)
+    {
+        float result = float.PositiveInfinity;
+        foreach (var vertex in body.sprite.vertices)
+            result = Mathf.Min(result, body.transform.TransformPoint(new Vector3(body.flipX ? -vertex.x : vertex.x, vertex.y, 0f)).y);
+        return result;
+    }
+
     private static void Set(object instance, string name, object value)
     {
         for (Type type = instance.GetType(); type != null; type = type.BaseType)

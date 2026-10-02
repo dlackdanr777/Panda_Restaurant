@@ -146,7 +146,13 @@ public sealed class EnhancementFairyOfflinePreview : IDisposable
             Camera.cullingMask = 1 << PreviewLayer;
             Camera.nearClipPlane = 0.1f;
             Camera.farClipPlane = 100f;
-            var viewport = new Bounds(new Vector3(hallX, floorY, 0f), new Vector3(44f, Camera.orthographicSize * 2f, 20f));
+            // The shared production ground now spans both Hall and Kitchen. Copy that
+            // whole strip so the existing demo can still show every spawned fairy.
+            var area = _settings.SafeGroundArea;
+            var viewport = new Bounds(new Vector3(floor.transform.position.x + area.center.x, floorY, 0f),
+                new Vector3(area.width + 8f, Camera.orthographicSize * 2f, 20f));
+            Camera.transform.position = new Vector3(viewport.center.x, floorY, -30f);
+            FrameGround(1400f / 600f);
 
             foreach (var sourceRenderer in objects.SelectMany(o => o.GetComponentsInChildren<SpriteRenderer>(true)))
             {
@@ -233,6 +239,12 @@ public sealed class EnhancementFairyOfflinePreview : IDisposable
 
     public void Tick(float deltaTime) => Habitat.AdvancePreview(deltaTime);
 
+    public void FrameGround(float aspect)
+    {
+        Camera.aspect = Mathf.Max(.1f, aspect);
+        Camera.orthographicSize = Mathf.Max(9f, (_settings.SafeGroundArea.width + 8f) / (2f * Camera.aspect));
+    }
+
     public Texture2D Render(int width = 1400, int height = 600)
     {
         var texture = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32);
@@ -242,7 +254,7 @@ public sealed class EnhancementFairyOfflinePreview : IDisposable
         try
         {
             Camera.targetTexture = texture;
-            Camera.aspect = (float)width / height;
+            FrameGround((float)width / height);
             Camera.Render();
             RenderTexture.active = texture;
             var image = new Texture2D(width, height, TextureFormat.RGBA32, false);

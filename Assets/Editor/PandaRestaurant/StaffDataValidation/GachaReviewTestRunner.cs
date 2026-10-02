@@ -27,12 +27,13 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private const string OutputDirectory = "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static bool _phase2;
     private const string RequestPath = "Temp/GachaReview20260917-2213/tests-request.txt";
     private static readonly string[] FixtureNames =
     {
-        "GachaEconomyTests", "EnhancementFairyTests", "GachaCollectionUiTests",
-        "GachaCollectionPreviewSafetyTests", "GachaExchangeCatalogTests", "StaffStageMigrationCollectionTests"
+        "GachaEconomyTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests", "GachaCollectionUiTests",
+        "GachaCollectionPreviewSafetyTests", "GachaExchangeCatalogTests", "StaffStageMigrationCollectionTests", "StaffGachaOfflineSessionTests"
     };
     private static readonly List<CaseResult> Cases = new List<CaseResult>();
     private static GachaCollectionPreviewSceneWitness _witness;
@@ -41,11 +42,37 @@ public static class GachaReviewTestRunner
     private static string _started, _error, _group = "all";
     private static double _nextPoll, _coroutineStarted;
     private static bool _running;
+    private static bool _batch;
     private static NUnitTestAssemblyRunner _runner;
     private static int _coroutineSteps;
     private static TestExecutionContext _coroutineContext;
     private static int _editorThread;
     public static bool IsRunning => _running;
+    public static void RunPhase2Batch()
+    {
+        _phase2 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = "Logs/FairyStage1Phase2";
+        RunPhase1Batch();
+    }
+
+    // Explicit CLI entry point; never launched automatically by an editor reload.
+    public static void RunPhase1Batch()
+    {
+        _batch = true;
+        // executeMethod runs before startup's first editor update/Undo group boundary.
+        // Capture the workspace only after that initial editor lifecycle has settled.
+        double readyAt = EditorApplication.timeSinceStartup + 3;
+        void StartWhenReady()
+        {
+            if (EditorApplication.timeSinceStartup < readyAt || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            EditorApplication.update -= StartWhenReady;
+            try { Begin(Environment.GetCommandLineArgs().Contains("-fairyEvidenceOnly") ? "fairy-evidence"
+                : Environment.GetCommandLineArgs().Contains("-fairyUiOnly") ? "ui"
+                : Environment.GetCommandLineArgs().Contains("-fairyOnly") ? "fairy" : "phase1"); }
+            catch (Exception error) { Fail(error); }
+        }
+        EditorApplication.update += StartWhenReady;
+    }
 
     [Serializable] public sealed class CaseResult
     {
@@ -109,7 +136,8 @@ public static class GachaReviewTestRunner
         if (preview != null)
         {
             if (preview.IsRecordingVideo) throw new InvalidOperationException("Finish the preview recording before running tests.");
-            preview.Close();
+            if (Application.isBatchMode) Object.DestroyImmediate(preview);
+            else preview.Close();
         }
         _running = true; _group = group; _started = DateTime.UtcNow.ToString("O"); _error = null; Cases.Clear();
         _editorThread = Thread.CurrentThread.ManagedThreadId;
@@ -129,7 +157,7 @@ public static class GachaReviewTestRunner
             RunSynchronousTests();
         }
         _witness.AssertUnchanged("synchronous related tests completed");
-        if (_group != "all" && _group != "ui") { Complete(); return; }
+        if (_group != "all" && _group != "ui" && _group != "phase1") { Complete(); return; }
         var fixture = new GachaCollectionPreviewSafetyTests();
         var method = new TestMethod(new MethodWrapper(typeof(GachaCollectionPreviewSafetyTests),
             nameof(GachaCollectionPreviewSafetyTests.IntegratedPreviewOpenClosePreservesCurrentSceneWorkspace)));
@@ -145,12 +173,15 @@ public static class GachaReviewTestRunner
         var names = new List<string>();
         foreach (string name in FixtureNames)
         {
-            if (_group == "fairy" && name != "EnhancementFairyTests") continue;
+            if (_group == "fairy" && name != "EnhancementFairyTests" && name != "EnhancementFairyStage1Tests") continue;
             if (_group == "economy" && name != "GachaEconomyTests" && name != "GachaExchangeCatalogTests" && name != "StaffStageMigrationCollectionTests") continue;
             if (_group == "ui" && name != "GachaCollectionUiTests" && name != "GachaCollectionPreviewSafetyTests") continue;
             Type fixture = assembly.GetType(name, true);
             foreach (MethodInfo method in fixture.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
+                if (_group == "fairy-evidence" && method.Name != "Stage1_FairyTapReusesReadOnlyCardBlocksDragAndClosesWithoutChangingOwnership"
+                    && method.Name != "EconomyBackend_Stage1FairyAppearsOnlyAfterProductionCommitAndNeverDuplicates") continue;
+                if (name == "StaffGachaOfflineSessionTests" && !method.Name.StartsWith("ResultPopup_", StringComparison.Ordinal)) continue;
                 if (name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "UnityTestAttribute")) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "TestAttribute" ||
@@ -285,6 +316,7 @@ public static class GachaReviewTestRunner
         Cleanup(); _witness.AssertUnchanged("all related tests and test preview scene closed");
         WriteReport();
         Debug.Log("GACHA_REVIEW_TESTS_COMPLETED: " + Cases.Count + " cases; failed=" + Cases.Count(test => test.status == "Failed"));
+        if (_batch) ExitBatchAfterEditorCleanup(Cases.Any(test => test.status != "Passed") ? 1 : 0);
     }
 
     private static void Fail(Exception error)
@@ -293,6 +325,21 @@ public static class GachaReviewTestRunner
         try { Cleanup(); _witness?.AssertUnchanged("related test failure cleanup"); }
         catch (Exception cleanupError) { _error += "\nCleanup: " + cleanupError; }
         WriteReport(); Debug.LogError("GACHA_REVIEW_TESTS_FAILED: " + _error);
+        if (_batch) ExitBatchAfterEditorCleanup(1);
+    }
+
+    private static void ExitBatchAfterEditorCleanup(int code)
+    {
+        // Let PreviewScene destruction and ExecuteAlways package helpers settle before
+        // ending the owned batch process; never shut down inside its scene-close stack.
+        double readyAt = EditorApplication.timeSinceStartup + 1;
+        void ExitWhenReady()
+        {
+            if (EditorApplication.timeSinceStartup < readyAt) return;
+            EditorApplication.update -= ExitWhenReady;
+            EditorApplication.Exit(code);
+        }
+        EditorApplication.update += ExitWhenReady;
     }
 
     private static void Cleanup()
