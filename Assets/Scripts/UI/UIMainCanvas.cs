@@ -579,6 +579,8 @@ public class UIMainCanvas : MonoBehaviour
             }
             _gachaEntrySource = GachaEntrySource.QuestStaff;
             _uiNav.Push("UIGacha");
+            if (_uiNav.CheckActiveView("UIGacha"))
+                _uiGacha.SetActiveUIComponents(true);
             RestoreAfterFailedGachaPush();
             return;
         }
@@ -601,6 +603,8 @@ public class UIMainCanvas : MonoBehaviour
 
         _gachaEntrySource = GachaEntrySource.StaffShop;
         _uiNav.Push("UIGacha");
+        if (_uiNav.CheckActiveView("UIGacha"))
+            _uiGacha.SetActiveUIComponents(true);
         RestoreAfterFailedGachaPush();
     }
 
