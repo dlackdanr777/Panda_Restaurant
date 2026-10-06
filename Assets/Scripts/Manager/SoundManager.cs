@@ -57,6 +57,138 @@ public class SoundManager : MonoBehaviour
     }
     private static SoundManager _instance;
 
+    // Presentation adapters must not create a persistent manager during teardown or previews.
+    public static SoundManager TryGetExistingInstance() => _instance != null ? _instance : null;
+    private float _masterVolume = 1f;
+    private float _soundEffectVolume = 1f;
+    public bool IsEffectAudioMuted => _masterVolume <= 0f || _soundEffectVolume <= 0f || _effectVolume <= 0f;
+
+    private struct EffectVoice
+    {
+        public object Owner;
+        public EffectType Type;
+        public bool Presentation;
+        public double EndsAt;
+    }
+    private readonly Dictionary<AudioSource, EffectVoice> _effectVoices = new Dictionary<AudioSource, EffectVoice>();
+    private readonly List<AudioSource> _finishedEffects = new List<AudioSource>();
+
+#if UNITY_EDITOR
+    public readonly struct EffectPlaybackDiagnostic
+    {
+        public readonly AudioSource Source;
+        public readonly AudioClip Clip;
+        public readonly EffectType Type;
+        public readonly object Owner;
+        public readonly float Volume, EffectiveVolume, Pitch, StartSeconds;
+        public readonly double Time;
+        public EffectPlaybackDiagnostic(AudioSource source, AudioClip clip, EffectType type,
+            object owner, float volume, float effectiveVolume, float pitch, float startSeconds, double time)
+        { Source = source; Clip = clip; Type = type; Owner = owner; Volume = volume;
+            EffectiveVolume = effectiveVolume; Pitch = pitch; StartSeconds = startSeconds; Time = time; }
+    }
+    // Accepted pool dispatches, including legacy button audio. Native playback can be
+    // suppressed in SDK-free tests; a diagnostic is not evidence of speaker capture.
+    public event Action<EffectPlaybackDiagnostic> EffectPlaybackRequested;
+    public event Action<AudioSource, double> EffectPlaybackStopped;
+    public Func<double> EffectClockForTests { get; set; }
+    public bool SuppressNativePlaybackForTests { get; set; }
+#endif
+
+    private double EffectClock
+    {
+        get
+        {
+#if UNITY_EDITOR
+            if (EffectClockForTests != null) return EffectClockForTests();
+#endif
+            return AudioSettings.dspTime;
+        }
+    }
+
+    public AudioClip GetEffectClip(SoundEffectType type)
+    {
+        int index = (int)type;
+        return _clips != null && index >= 0 && index < _clips.Length ? _clips[index] : null;
+    }
+
+    public AudioSource PlayPresentationEffect(EffectType type, AudioClip clip,
+        float volumeScale = 1f, float pitch = 1f, object owner = null, int maxConcurrent = 0, float startSeconds = 0f)
+    {
+        if (clip == null || IsEffectAudioMuted || !CanPlayEffectType(type) || volumeScale <= 0f
+            || float.IsNaN(volumeScale) || float.IsInfinity(volumeScale)
+            || float.IsNaN(pitch) || float.IsInfinity(pitch)
+            || float.IsNaN(startSeconds) || float.IsInfinity(startSeconds)) return null;
+        startSeconds = Mathf.Clamp(startSeconds, 0f, clip.length);
+        if (startSeconds >= clip.length || !_effectAudioDic.ContainsKey(type)) return null;
+        RetireFinishedEffects();
+        if (maxConcurrent > 0)
+        {
+            int count = 0;
+            foreach (var voice in _effectVoices.Values)
+                if (voice.Presentation && voice.Type == type && ReferenceEquals(voice.Owner, owner)) count++;
+            if (count >= maxConcurrent) return null;
+        }
+        // Reuse the existing channel pool; never allocate or steal a busy voice here.
+        AudioSource source = GetAvailableAudioSource(type, false);
+        if (source == null) return null;
+        EnsureClipLoaded(clip);
+        PlayPooledEffect(source, type, clip, volumeScale, pitch, owner, true, startSeconds);
+        return source;
+    }
+
+    public void StopPresentationEffects(object owner)
+    {
+        _finishedEffects.Clear();
+        foreach (var pair in _effectVoices)
+            if (pair.Value.Presentation && ReferenceEquals(pair.Value.Owner, owner)) _finishedEffects.Add(pair.Key);
+        foreach (var source in _finishedEffects) StopPooledEffect(source);
+        _finishedEffects.Clear();
+    }
+
+    private bool CanPlayEffectType(EffectType type) => type == EffectType.None || type == _effectType
+        || (IsRestaurantAreaType(type) && IsRestaurantAreaType(_effectType));
+
+    private void RetireFinishedEffects()
+    {
+        double now = EffectClock;
+        _finishedEffects.Clear();
+        foreach (var pair in _effectVoices)
+            if (pair.Key == null || pair.Value.EndsAt <= now) _finishedEffects.Add(pair.Key);
+        foreach (var source in _finishedEffects) _effectVoices.Remove(source);
+        _finishedEffects.Clear();
+    }
+
+    private void StopPooledEffect(AudioSource source)
+    {
+        bool tracked = _effectVoices.Remove(source);
+        if (source != null) source.Stop();
+#if UNITY_EDITOR
+        if (tracked) EffectPlaybackStopped?.Invoke(source, EffectClock);
+#endif
+    }
+
+    private void PlayPooledEffect(AudioSource source, EffectType type, AudioClip clip,
+        float volumeScale = 1f, float pitch = 1f, object owner = null, bool presentation = false, float startSeconds = 0f)
+    {
+        StopPooledEffect(source);
+        source.clip = clip;
+        source.timeSamples = Mathf.Clamp(Mathf.RoundToInt(startSeconds * clip.frequency), 0, Mathf.Max(0, clip.samples - 1));
+        source.loop = false;
+        source.pitch = Mathf.Clamp(pitch, .1f, 3f);
+        source.volume = Mathf.Clamp01(_effectVolume * volumeScale);
+        double now = EffectClock;
+        _effectVoices[source] = new EffectVoice { Owner = owner, Type = type, Presentation = presentation,
+            EndsAt = now + (clip.length - startSeconds) / source.pitch };
+#if UNITY_EDITOR
+        if (!SuppressNativePlaybackForTests) source.Play();
+        EffectPlaybackRequested?.Invoke(new EffectPlaybackDiagnostic(source, clip, type, owner,
+            source.volume, source.volume * _masterVolume * _soundEffectVolume, source.pitch, startSeconds, now));
+#else
+        source.Play();
+#endif
+    }
+
     public event Action<float, AudioType> OnVolumeChangedHandler;
 
     private AudioMixer _audioMixer;
@@ -236,6 +368,8 @@ public class SoundManager : MonoBehaviour
         _audioMixer.SetFloat("Background", backgroundDB);
         _audioMixer.SetFloat("SoundEffect", soundEffectDB);
 
+        _masterVolume = masterVolume;
+        _soundEffectVolume = soundEffectVolume;
         _isVibration = isVibration;
     }
 
@@ -376,6 +510,7 @@ public class SoundManager : MonoBehaviour
 
     public void PlayEffectAudio(EffectType type, AudioClip clip, float waitTime = 0)
     {
+        if (IsEffectAudioMuted) return;
         if (clip == null)
         {
             DebugLog.LogError("재생할 효과음이 없습니다: " + type.ToString());
@@ -404,9 +539,7 @@ public class SoundManager : MonoBehaviour
             AudioSource availableSource = GetAvailableAudioSource(type);
             if (availableSource != null)
             {
-                availableSource.clip = clip;
-                availableSource.volume = _effectVolume;
-                availableSource.Play();
+                PlayPooledEffect(availableSource, type, clip);
             }
         }
         else
@@ -425,8 +558,9 @@ public class SoundManager : MonoBehaviour
         }
     }
 
-    private AudioSource GetAvailableAudioSource(EffectType type)
+    private AudioSource GetAvailableAudioSource(EffectType type, bool allowSteal = true)
     {
+        RetireFinishedEffects();
         if (!_effectAudioDic.ContainsKey(type))
         {
             DebugLog.LogError("등록되지 않은 EffectType입니다: " + type.ToString());
@@ -436,12 +570,12 @@ public class SoundManager : MonoBehaviour
         // 해당 타입의 오디오 소스 풀에서 현재 재생 중이지 않은 소스 찾기   
         foreach (AudioSource source in _effectAudioDic[type])
         {
-            if (!source.isPlaying)
+            if (source != null && !source.isPlaying && !_effectVoices.ContainsKey(source))
                 return source;
         }
 
         // 모든 소스가 재생 중이면 가장 오래된 소스 선택 (첫 번째 소스 반환)
-        return _effectAudioDic[type][0];
+        return allowSteal && _effectAudioDic[type].Count > 0 ? _effectAudioDic[type][0] : null;
     }
 
     // 로딩 화면 등에서 미리 호출해 Play() 시점의 동기 로딩 비용을 없앤다
@@ -458,6 +592,7 @@ public class SoundManager : MonoBehaviour
 
     public void PlayEffectAudio(EffectType type, SoundEffectType soundEffectType)
     {
+        if (IsEffectAudioMuted) return;
         // ? 레스토랑 관련 타입 간 재생 허용 로직 추가
         bool isRestaurantRelated = IsRestaurantAreaType(type);
         bool isCurrentRestaurantRelated = IsRestaurantAreaType(_effectType);
@@ -468,7 +603,7 @@ public class SoundManager : MonoBehaviour
             return;
         }
 
-        AudioClip clip = _clips[(int)soundEffectType];
+        AudioClip clip = GetEffectClip(soundEffectType);
         if (clip == null)
         {
             DebugLog.LogError("재생할 효과음이 없습니다: " + soundEffectType.ToString());
@@ -481,9 +616,7 @@ public class SoundManager : MonoBehaviour
         AudioSource availableSource = GetAvailableAudioSource(type);
         if (availableSource != null)
         {
-            availableSource.clip = clip;
-            availableSource.volume = _effectVolume;
-            availableSource.Play();
+            PlayPooledEffect(availableSource, type, clip);
         }
     }
 
@@ -510,7 +643,7 @@ public class SoundManager : MonoBehaviour
         {
             foreach (var pair in _effectAudioDic)
                 foreach (var source in pair.Value)
-                    source.Stop();
+                    StopPooledEffect(source);
             return;
         }
 
@@ -525,6 +658,7 @@ public class SoundManager : MonoBehaviour
         switch (type)
         {
             case AudioType.Master:
+                _masterVolume = value;
                 _audioMixer.SetFloat("Master", volume);
                 SaveSoundData("Master", value);
                 break;
@@ -535,6 +669,7 @@ public class SoundManager : MonoBehaviour
                 break;
 
             case AudioType.EffectAudio:
+                _soundEffectVolume = value;
                 _audioMixer.SetFloat("SoundEffect", volume);
                 SaveSoundData("SoundEffect", value);
                 if (value <= 0)
@@ -613,6 +748,7 @@ public class SoundManager : MonoBehaviour
     private IEnumerator IEDelayPlayEffectAudio(EffectType type, AudioClip clip, float waitTime)
     {
         yield return YieldCache.WaitForSeconds(waitTime);
+        if (IsEffectAudioMuted) yield break;
 
         // ? 지연 후 다시 한 번 타입 검증 (지연 중 타입이 변경될 수 있음)
         bool isRestaurantRelated = IsRestaurantAreaType(type);
@@ -632,9 +768,7 @@ public class SoundManager : MonoBehaviour
         AudioSource availableSource = GetAvailableAudioSource(type);
         if (availableSource != null)
         {
-            availableSource.clip = clip;
-            availableSource.volume = _effectVolume;
-            availableSource.Play();
+            PlayPooledEffect(availableSource, type, clip);
         }
     }
 
@@ -840,15 +974,20 @@ public class SoundManager : MonoBehaviour
     {
         float changeDuration = duration;
         float timer = 0;
+        RetireFinishedEffects();
+        var startingVolumes = new Dictionary<AudioSource, float>();
+        foreach (var pair in _effectAudioDic)
+            foreach (var source in pair.Value)
+                if (source != null && (source.isPlaying || _effectVoices.ContainsKey(source)))
+                    startingVolumes[source] = source.volume;
 
         while (timer < changeDuration)
         {
             timer += 0.02f;
             float t = timer / changeDuration;
-            foreach (var pair in _effectAudioDic)
-                foreach (var source in pair.Value)
-                    if (source.isPlaying)
-                        source.volume = Mathf.Lerp(_effectVolume, 0, t);
+            foreach (var pair in startingVolumes)
+                if (pair.Key != null)
+                    pair.Key.volume = Mathf.Min(pair.Key.volume, Mathf.Lerp(pair.Value, 0, t));
 
             yield return YieldCache.WaitForSeconds(0.02f);
         }
@@ -857,7 +996,7 @@ public class SoundManager : MonoBehaviour
         {
             foreach (var source in pair.Value)
             {
-                source.Stop();
+                StopPooledEffect(source);
                 source.volume = _effectVolume;
             }
         }

@@ -88,3 +88,26 @@ MonoBehaviour:
     width: 0.57254197
     height: 0.32370184
   SparkleSprite: {fileID: 21300000, guid: 41f8b62216353e1409f8e3e010cbb0a0, type: 3}
+  BirthPopClip: {fileID: 8300000, guid: 8f5971b5e545d704fa079b8c1477d829, type: 3}
+  BirthPopVolume: 0.35
+  MaxConcurrentPops: 2
+  BirthVoiceVariants:
+  - Clip: {fileID: 8300000, guid: dcb386894f552ac41be433135b2be823, type: 3}
+    Pitch: 1.18
+    Volume: 0.85
+  - Clip: {fileID: 8300000, guid: dcb386894f552ac41be433135b2be823, type: 3}
+    Pitch: 1.28
+    Volume: 0.95
+  - Clip: {fileID: 8300000, guid: dcb386894f552ac41be433135b2be823, type: 3}
+    Pitch: 1.38
+    Volume: 1
+  - Clip: {fileID: 8300000, guid: dcb386894f552ac41be433135b2be823, type: 3}
+    Pitch: 1.48
+    Volume: 0.9
+  - Clip: {fileID: 8300000, guid: dcb386894f552ac41be433135b2be823, type: 3}
+    Pitch: 1.6
+    Volume: 0.8
+  VoiceVolume: 0.8
+  VoiceDelay: 0.12
+  VoiceStartSeconds: 0.15
+  MaxConcurrentVoices: 2

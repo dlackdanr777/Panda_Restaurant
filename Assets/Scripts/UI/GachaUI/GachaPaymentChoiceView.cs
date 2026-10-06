@@ -53,7 +53,7 @@ public sealed class GachaPaymentChoiceView : MonoBehaviour, IPointerClickHandler
         AddCapsule(plate, "Tiny Green Capsule", theme.PaymentLeftCapsuleTop, theme.PaymentLeftCapsuleBottom,
             new Vector2(405, 60), 46, 15);
         E.ArtButton("Close Payment", plate, font, "", theme.PaymentClose, 568, 8, 44, 44,
-            theme.Ink, view.Close);
+            theme.Ink, view.Close, SoundEffectType.ButtonExitSound);
         view._product = E.Label("Selected Product", plate, font, "", 50, 36, 520, 102, 36, theme.Ink);
         var prompt = view._product.rectTransform;
         prompt.anchorMin = prompt.anchorMax = prompt.pivot = Vector2.one * .5f;
@@ -160,7 +160,9 @@ public sealed class GachaPaymentChoiceView : MonoBehaviour, IPointerClickHandler
     public void OnPointerClick(PointerEventData eventData)
     {
         // Interior whitespace and disabled buttons must never act as an outside click.
-        if (IsOpen && eventData.pointerCurrentRaycast.gameObject == gameObject) Close();
+        if (IsOpen && isActiveAndEnabled && eventData != null &&
+            eventData.button == PointerEventData.InputButton.Left && eventData.pointerCurrentRaycast.gameObject == gameObject)
+        { GachaButtonInputSound.Play(SoundEffectType.ButtonExitSound); Close(); }
     }
     public void Close()
     {

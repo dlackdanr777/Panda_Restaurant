@@ -74,6 +74,7 @@ public partial class UIGacha
     internal static void ConfigureCollectionButton(Button button, bool eleven, Button plainTemplate = null)
     {
         if (button == null) return;
+        GachaButtonInputSound.Bind(button);
         if (eleven && plainTemplate != null)
         {
             // The old bonus banner is baked into the multi-draw sprite. Reuse the plain wood button.

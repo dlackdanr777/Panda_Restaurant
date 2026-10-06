@@ -271,7 +271,7 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
 {
     internal static string EvidenceDirectory = "Logs/FairyStage1Phase1";
     private readonly Dictionary<FieldInfo, object> _statics = new Dictionary<FieldInfo, object>();
-    private readonly string[] _seen, _pending, _pendingOrder;
+    private readonly string[] _seen, _pending, _pendingOrder, _popPresented, _voicePresented;
     private readonly GachaCollectionPreviewSceneWitness _witness;
     private readonly GameObject _services;
     private readonly SoundManager _sound;
@@ -289,6 +289,8 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
         _witness = GachaCollectionPreviewSceneWitness.Capture();
         _seen = QueueSet("_seenItems").ToArray();
         _pending = QueueSet("_pendingItems").ToArray();
+        _popPresented = QueueSet("_popPresented").ToArray();
+        _voicePresented = QueueSet("_voicePresented").ToArray();
         _pendingOrder = ((List<string>)Get(EnhancementFairyAcquisitionEvents.Queue, "_pendingOrder")).ToArray();
         try
         {
@@ -721,6 +723,8 @@ internal sealed partial class EnhancementFairyStage1Host : IDisposable
         EnhancementFairyAcquisitionEvents.Queue.Clear();
         foreach (string id in _seen) QueueSet("_seenItems").Add(id);
         foreach (string id in _pending) QueueSet("_pendingItems").Add(id);
+        foreach (string id in _popPresented) QueueSet("_popPresented").Add(id);
+        foreach (string id in _voicePresented) QueueSet("_voicePresented").Add(id);
         ((List<string>)Get(EnhancementFairyAcquisitionEvents.Queue, "_pendingOrder")).AddRange(_pendingOrder);
         _witness.AssertUnchanged("Stage1 production fixture disposed");
         Assert.That(BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin, Is.False);

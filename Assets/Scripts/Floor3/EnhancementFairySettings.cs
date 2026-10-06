@@ -75,6 +75,25 @@ public sealed class EnhancementFairySettings : ScriptableObject
     public Rect ArrivalVisibleRect = new Rect(0f, 0f, 1f, 1f);
     public Sprite SparkleSprite;
 
+    [System.Serializable]
+    public sealed class VoiceVariant
+    {
+        public AudioClip Clip;
+        [Range(.1f, 3f)] public float Pitch = 1.3f;
+        [Range(0f, 1f)] public float Volume = 1f;
+    }
+
+    [Header("Birth sound (existing shared SFX pool)")]
+    public AudioClip BirthPopClip;
+    [Range(0f, 1f)] public float BirthPopVolume = .35f;
+    [Range(1, 5)] public int MaxConcurrentPops = 2;
+    public VoiceVariant[] BirthVoiceVariants = System.Array.Empty<VoiceVariant>();
+    [Range(0f, 1f)] public float VoiceVolume = .8f;
+    [Range(.05f, .18f)] public float VoiceDelay = .12f;
+    [Tooltip("Skip leading silence in the existing voice clip without editing/importing audio assets.")]
+    [Min(0f)] public float VoiceStartSeconds = .15f;
+    [Range(1, 5)] public int MaxConcurrentVoices = 2;
+
     public Rect SafeGroundArea => new Rect(GroundArea.x, GroundArea.y,
         Mathf.Max(0.1f, GroundArea.width), Mathf.Max(0f, GroundArea.height));
 

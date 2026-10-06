@@ -51,7 +51,9 @@ internal static class GachaCollectionUiElements
         panel.raycastTarget = true;
         var outline = panel.gameObject.AddComponent<Outline>();
         outline.effectColor = ink; outline.effectDistance = new Vector2(2, -3);
+        panel.gameObject.AddComponent<GachaButtonInputSound>(); // Handle submit before Button changes/closes the view.
         var button = panel.gameObject.AddComponent<Button>();
+        GachaButtonInputSound.Bind(button);
         button.targetGraphic = panel;
         var colors = button.colors; colors.disabledColor = new Color(.64f,.64f,.64f,1); button.colors = colors;
         Label("Label", panel.transform, font, label, 8, 3, width - 16, height - 6, 28, ink);
@@ -64,7 +66,8 @@ internal static class GachaCollectionUiElements
         return text != null && text.font != null ? text.font : theme.Font;
     }
     internal static Button ArtButton(string name, Transform parent, TMP_FontAsset font, string label, Sprite sprite,
-        float x, float y, float width, float height, Color ink, UnityEngine.Events.UnityAction action)
+        float x, float y, float width, float height, Color ink, UnityEngine.Events.UnityAction action,
+        SoundEffectType sound = SoundEffectType.ButtonClickSound)
     {
         var graphic = Icon(name, parent, sprite, x, y, width, height);
         // Image.preserveAspect aligns inside its rect using the pivot. Keep the same outer
@@ -72,7 +75,9 @@ internal static class GachaCollectionUiElements
         graphic.rectTransform.pivot = new Vector2(.5f, .5f);
         graphic.rectTransform.anchoredPosition = new Vector2(x + width * .5f, -y - height * .5f);
         graphic.raycastTarget = true;
+        graphic.gameObject.AddComponent<GachaButtonInputSound>();
         var button = graphic.gameObject.AddComponent<Button>();
+        GachaButtonInputSound.Bind(button, sound);
         button.targetGraphic = graphic;
         Label("Label", graphic.transform, font, label, 5, 3, width - 10, height - 6, 25, ink);
         if (action != null) button.onClick.AddListener(action);

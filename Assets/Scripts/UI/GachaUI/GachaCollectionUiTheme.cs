@@ -38,6 +38,10 @@ public sealed class GachaCollectionUiTheme : ScriptableObject
     public Sprite DetailFrame;
     public Sprite Star;
     public float EntranceSeconds = .78f;
+    public AudioClip ExchangeChainSound;
+    [Range(0, 1)] public float ExchangeChainVolume = .6f;
+    public AudioClip SoldOutStampSound;
+    [Range(0, 1)] public float SoldOutStampVolume = 1f;
     public Color Ink = new Color32(83, 48, 26, 255);
     public Color Cream = new Color32(255, 248, 226, 255);
     public Color Wood = new Color32(174, 112, 69, 255);

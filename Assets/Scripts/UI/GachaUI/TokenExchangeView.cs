@@ -55,6 +55,7 @@ public sealed class TokenExchangeView : MonoBehaviour
         public CanvasGroup StampGroup;
         public string OfferKey;
         public bool SoldOut;
+        public bool StampSoundPending;
         public float StampStarted = -1;
     }
     private TokenExchangeSnapshot _snapshot;
@@ -62,6 +63,8 @@ public sealed class TokenExchangeView : MonoBehaviour
     private bool _requesting, _entering;
     private int _requestVersion;
     private float _refreshAt, _openedAt;
+    private readonly HashSet<string> _confirmedStampSounds = new HashSet<string>();
+    private readonly object _chainAudioOwner = new object(), _stampAudioOwner = new object();
     public bool IsOpen => gameObject.activeSelf;
     public bool IsEntering => _entering;
     public string SelectedProductId => _selectedId;
@@ -82,6 +85,9 @@ public sealed class TokenExchangeView : MonoBehaviour
         var view = root.gameObject.AddComponent<TokenExchangeView>();
         view._theme = theme; view._font = E.FontFrom(parent, theme); view._read = snapshot;
         view._purchase = requestPurchase; view._refreshCatalog = requestRefresh; view._closed = closed;
+        var sound = SoundManager.TryGetExistingInstance();
+        if (sound != null)
+        { sound.PreloadAudioClip(theme.ExchangeChainSound); sound.PreloadAudioClip(theme.SoldOutStampSound); }
         view.Build();
         return view;
     }
@@ -100,6 +106,8 @@ public sealed class TokenExchangeView : MonoBehaviour
         _openedAt = Time.realtimeSinceStartup; _entering = true;
         gameObject.SetActive(true); transform.SetAsLastSibling(); Refresh(); Fit();
         TickPresentation(_openedAt);
+        SoundManager.TryGetExistingInstance()?.PlayPresentationEffect(EffectType.None,
+            _theme.ExchangeChainSound, _theme.ExchangeChainVolume, owner: _chainAudioOwner, maxConcurrent: 1);
     }
 
     /// <summary>A service replacement invalidates view callbacks without cancelling an in-flight save.</summary>
@@ -143,7 +151,7 @@ public sealed class TokenExchangeView : MonoBehaviour
             38, new Color32(110, 56, 16, 255));
         _balance.fontStyle = FontStyles.Bold;
         E.ArtButton("Close Exchange", _board, _font, "", _theme.ExchangeClose, 1290, 151, 62, 62,
-            _theme.Ink, () => SetVisible(false));
+            _theme.Ink, () => SetVisible(false), SoundEffectType.ButtonExitSound);
 
         SlicePanel("Native Selected Product Frame", 108, 248, 470, 609);
         _art = E.Icon("Selected Product Image", _board, null, 215, 278, 258, 224);
@@ -209,6 +217,11 @@ public sealed class TokenExchangeView : MonoBehaviour
             bool animate = offerKey == card.OfferKey && soldOut && !card.SoldOut;
             if (offerKey != card.OfferKey || !soldOut) card.StampStarted = -1;
             if (animate) card.StampStarted = Time.realtimeSinceStartup;
+            if (offerKey != card.OfferKey || !soldOut) card.StampSoundPending = false;
+            // The service's successful save callback is the only source of this token.
+            // A retained/restored SOLD OUT snapshot by itself cannot produce sound.
+            if (soldOut && card.StampStarted >= 0 && _confirmedStampSounds.Remove(offerKey))
+                card.StampSoundPending = true;
             card.OfferKey = offerKey; card.SoldOut = soldOut;
             card.Stamp.gameObject.SetActive(soldOut);
             UpdateStamp(card, Time.realtimeSinceStartup);
@@ -231,7 +244,9 @@ public sealed class TokenExchangeView : MonoBehaviour
         var frame = E.Icon("Product Slot " + index, _content, _theme.NormalProductFrame,
             (index % 3) * 202, (index / 3) * 265, 188, 188);
         frame.raycastTarget = true;
+        frame.gameObject.AddComponent<GachaButtonInputSound>();
         var button = frame.gameObject.AddComponent<Button>(); button.targetGraphic = frame;
+        GachaButtonInputSound.Bind(button, canPlay: () => index < _cards.Count && !_cards[index].SoldOut);
         button.onClick.AddListener(() =>
         {
             if (_entering || _requesting || index >= _cards.Count || _cards[index].Id == null) return;
@@ -268,13 +283,20 @@ public sealed class TokenExchangeView : MonoBehaviour
         return card;
     }
 
-    private static void UpdateStamp(ProductCard card, float now)
+    private void UpdateStamp(ProductCard card, float now)
     {
         if (!card.SoldOut) return;
         float t = card.StampStarted < 0 ? 1 : Mathf.Clamp01((now - card.StampStarted) / .3f);
         float scale = t < .65f ? Mathf.Lerp(1.7f, .94f, t / .65f) : Mathf.Lerp(.94f, 1, (t - .65f) / .35f);
         card.Stamp.localScale = Vector3.one * scale;
         card.StampGroup.alpha = Mathf.Clamp01(t * 5);
+        if (card.StampSoundPending && t >= .65f)
+        {
+            card.StampSoundPending = false;
+            if (isActiveAndEnabled)
+                SoundManager.TryGetExistingInstance()?.PlayPresentationEffect(EffectType.None,
+                    _theme.SoldOutStampSound, _theme.SoldOutStampVolume, owner: _stampAudioOwner);
+        }
     }
 
     private static string CompactAvailability(TokenExchangeProductView product)
@@ -291,7 +313,9 @@ public sealed class TokenExchangeView : MonoBehaviour
         if (_entering || _requesting || _snapshot == null || _snapshot.Busy) return;
         TokenExchangeProductView selected = _snapshot.Products.FirstOrDefault(p => p.Id == _selectedId);
         if (selected == null || !selected.CanPurchase || selected.SoldOut) return;
-        BeginRequest(reply => _purchase(selected.Id, selected.DisplayVersion, reply), "교환이 완료되었습니다!");
+        string offer = selected.DisplayVersion + ":" + selected.Id;
+        BeginRequest(reply => _purchase(selected.Id, selected.DisplayVersion, reply), "교환이 완료되었습니다!",
+            () => { if (isActiveAndEnabled) _confirmedStampSounds.Add(offer); });
     }
 
     private void RequestRefresh()
@@ -301,7 +325,7 @@ public sealed class TokenExchangeView : MonoBehaviour
         BeginRequest(reply => _refreshCatalog(TokenExchangeTab.Mixed, _snapshot.DisplayVersion, reply), "새 진열이 준비되었습니다!");
     }
 
-    private void BeginRequest(Action<Action<bool, string>> request, string successText)
+    private void BeginRequest(Action<Action<bool, string>> request, string successText, Action confirmed = null)
     {
         _requestError = null; _requesting = true; int version = ++_requestVersion; RebuildCards(); bool replied = false;
         try
@@ -310,6 +334,7 @@ public sealed class TokenExchangeView : MonoBehaviour
             {
                 if (this == null || replied || version != _requestVersion) return;
                 replied = true; _requesting = false;
+                if (success) confirmed?.Invoke();
                 _requestError = success ? null : string.IsNullOrEmpty(message) ? "요청을 완료할 수 없습니다." : message;
                 Refresh();
             });
@@ -319,6 +344,15 @@ public sealed class TokenExchangeView : MonoBehaviour
             if (version != _requestVersion) return;
             _requesting = false; _requestError = exception.Message; Refresh();
         }
+    }
+
+    private void OnDisable()
+    {
+        _confirmedStampSounds.Clear();
+        foreach (var card in _cards) card.StampSoundPending = false;
+        var sound = SoundManager.TryGetExistingInstance();
+        if (sound != null)
+        { sound.StopPresentationEffects(_chainAudioOwner); sound.StopPresentationEffects(_stampAudioOwner); }
     }
 
     /// <summary>Runtime and the isolated editor preview share the same unscaled presentation clock.</summary>

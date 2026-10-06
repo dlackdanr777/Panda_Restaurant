@@ -68,6 +68,10 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private readonly List<View> _birthViews = new List<View>(5);
     // Presentation randomness must never consume gameplay/gacha RNG state.
     private readonly System.Random _birthRandom = new System.Random();
+    private readonly System.Random _birthSoundRandom = new System.Random();
+    private readonly object _popSoundOwner = new object(), _voiceSoundOwner = new object();
+    private SoundManager _soundManager;
+    private int _lastVoiceVariant = -1;
     private float _nextBirthAt;
 
     public int OwnedTypeCount => _owned.Count;
@@ -104,6 +108,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         if (_runtime) return;
         _runtime = true;
         LoadSettings(null);
+        PrepareBirthSounds();
         SetCatalog(ItemManager.Instance.GetGachaItemDataList());
         _arrivals = EnhancementFairyAcquisitionEvents.Queue;
         // Bind to this floor's scene, including an isolated host loading the real Stage1.
@@ -149,6 +154,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     {
         if (_runtime) throw new InvalidOperationException("Use a detached habitat for an offline preview.");
         LoadSettings(settings);
+        PrepareBirthSounds();
         _arrivals = arrivals ?? new EnhancementFairyArrivalQueue();
         SetCatalog(catalog);
         RestoreOwnership(owned);
@@ -170,6 +176,39 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         if (catalog == null) return;
         foreach (var item in catalog)
             if (EnhancementFairyCatalog.IsEligible(item)) _catalog[item.Id] = item;
+    }
+
+    private void PrepareBirthSounds()
+    {
+        // No live singleton creation in an isolated Editor/preview host.
+        _soundManager = Application.isPlaying ? SoundManager.Instance : SoundManager.TryGetExistingInstance();
+        if (_soundManager == null) return;
+        _soundManager.PreloadAudioClip(_settings.BirthPopClip);
+        foreach (var variant in _settings.BirthVoiceVariants ?? Array.Empty<EnhancementFairySettings.VoiceVariant>())
+            if (variant != null) _soundManager.PreloadAudioClip(variant.Clip);
+    }
+
+    private void AdvanceBirthSounds(View view)
+    {
+        float revealAt = Mathf.Max(.1f, _settings.TrailSeconds) + Mathf.Max(.05f, _settings.GatherSeconds);
+        if (view.BirthElapsed < revealAt) return;
+        string id = view.Brain.ItemId;
+        // Claim the presentation even while muted/voice-limited: returning to a
+        // floor or unmuting must not replay an old birth sound.
+        if (_arrivals.TryPresentPop(id) && _soundManager != null)
+            _soundManager.PlayPresentationEffect(EffectType.None, _settings.BirthPopClip,
+                _settings.BirthPopVolume, 1f, _popSoundOwner, Mathf.Clamp(_settings.MaxConcurrentPops, 1, 5));
+        if (view.BirthElapsed < revealAt + Mathf.Clamp(_settings.VoiceDelay, .05f, .18f)
+            || !_arrivals.TryPresentVoice(id)) return;
+        var variants = _settings.BirthVoiceVariants;
+        if (_soundManager == null || variants == null || variants.Length == 0) return;
+        int index = _birthSoundRandom.Next(variants.Length > 1 && _lastVoiceVariant >= 0 ? variants.Length - 1 : variants.Length);
+        if (variants.Length > 1 && _lastVoiceVariant >= 0 && index >= _lastVoiceVariant) index++;
+        var voice = variants[index];
+        if (voice == null || voice.Clip == null) return;
+        if (_soundManager.PlayPresentationEffect(EffectType.None, voice.Clip,
+            _settings.VoiceVolume * voice.Volume, voice.Pitch, _voiceSoundOwner,
+            Mathf.Clamp(_settings.MaxConcurrentVoices, 1, 5), _settings.VoiceStartSeconds) != null) _lastVoiceVariant = index;
     }
 
     /// <summary>Snapshot restore is deliberately silent. Zero remaining material still means owned.</summary>
@@ -206,6 +245,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     public void ResetOfflineSession(IEnumerable<string> owned)
     {
         if (_runtime) throw new InvalidOperationException("Runtime arrivals follow the account session lifecycle.");
+        StopBirthSounds();
         // A new demo account must not inherit an in-flight puff or protected slot from the former one.
         while (_views.Count > 0) Release(_views.Count - 1);
         _clock = _rotationClock = 0f;
@@ -237,6 +277,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private void RefreshRuntimeOwnership() => RestoreOwnership(UserInfo.GetGiveGachaItemCountDic().Keys);
     private void OnConfirmedAcquisition()
     {
+        if (_arrivals.PendingCount == 0) StopBirthSounds();
         for (int i = _birthViews.Count - 1; i >= 0; i--)
             if (!_arrivals.IsPending(_birthViews[i].Brain.ItemId)) PauseBirth(_birthViews[i]);
         RefreshRuntimeOwnership(); Reconcile();
@@ -532,12 +573,23 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private void PauseBirth(View view)
     {
         if (!_birthViews.Remove(view)) return;
+        _arrivals.PauseSoundPresentation(view.Brain.ItemId);
         view.BirthElapsed = view.ArrivalRemaining = 0f;
         if (view.Root != null) Render(view);
     }
 
+    private void StopBirthSounds()
+    {
+        if (_soundManager != null)
+        {
+            _soundManager.StopPresentationEffects(_popSoundOwner);
+            _soundManager.StopPresentationEffects(_voiceSoundOwner);
+        }
+    }
+
     private void PauseBirth()
     {
+        StopBirthSounds();
         while (_birthViews.Count > 0) PauseBirth(_birthViews[_birthViews.Count - 1]);
         _nextBirthAt = _clock;
     }
@@ -552,6 +604,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             var view = _birthViews[i];
             if (!_arrivals.IsPending(view.Brain.ItemId) || !area.Contains(view.BirthPosition)) { PauseBirth(view); continue; }
             view.BirthElapsed += deltaTime;
+            AdvanceBirthSounds(view);
             view.ArrivalRemaining = Mathf.Max(0f, _settings.BirthDuration - view.BirthElapsed);
             if (view.ArrivalRemaining > 0f) continue;
             _arrivals.Consume(view.Brain.ItemId);
@@ -836,6 +889,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
 
     private void OnDestroy()
     {
+        PauseBirth();
         CloseItemCard();
         OnItemCardClosed();
         _itemPopup?.Dispose();

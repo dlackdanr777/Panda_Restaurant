@@ -27,7 +27,8 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private static string OutputDirectory => _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static bool _phase5;
     private static bool _fireworks;
     private static bool _phase4;
     private static bool _textStamp;
@@ -54,6 +55,11 @@ public static class GachaReviewTestRunner
     private static TestExecutionContext _coroutineContext;
     private static int _editorThread;
     public static bool IsRunning => _running;
+    public static void RunPhase5SoundBatch()
+    {
+        _phase5 = true;
+        RunPhase4Batch();
+    }
     public static void RunFireworksBatch()
     {
         _fireworks = true;
@@ -225,6 +231,7 @@ public static class GachaReviewTestRunner
         IEnumerable<string> fixtures = _phase3 ? FixtureNames.Concat(new[] { "GachaPhase3Tests", "Stage1Phase3StressTests", "ItemGachaCapsulePresentationTests" }) : FixtureNames;
         if (_phase4) fixtures = fixtures.Concat(new[] { "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffGroundContactTests", "StaffGachaEntryTests", "Phase4AdUiEvidenceTests", "AdvertisementDiamondRewardTests" });
         if (_phase4 && !Environment.GetCommandLineArgs().Contains("-phase4CoreOnly")) fixtures = fixtures.Concat(new[] { "FairyBirthSequenceTests" });
+        if (_phase5) fixtures = fixtures.Concat(new[] { "PresentationSoundTests", "FairyBirthSoundTests", "Phase5UiSoundTests", "FairySoundStage1EvidenceTests", "Phase5UiSoundEvidenceTests" });
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;

@@ -56,7 +56,9 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
         E.Label("Bonus Guarantee Notice", _gauge, _font, "10+1의 보너스는 보장 횟수에서 제외", 12, 36, 1036, 17, 15, _theme.Ink);
         var exchangeArt = E.ExchangeTitle("Open Token Exchange", transform, _theme, _font, 0, 119, 344, 118.4f);
         exchangeArt.raycastTarget = true;
+        exchangeArt.gameObject.AddComponent<GachaButtonInputSound>();
         _exchange = exchangeArt.gameObject.AddComponent<Button>();
+        GachaButtonInputSound.Bind(_exchange);
         _exchange.targetGraphic = exchangeArt;
         _exchange.transition = Selectable.Transition.None; // Keep the art and replacement lettering ground the same tint.
         _exchange.onClick.AddListener(() => openExchange?.Invoke());
