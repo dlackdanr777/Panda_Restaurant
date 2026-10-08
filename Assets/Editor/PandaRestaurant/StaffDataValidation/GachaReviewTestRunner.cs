@@ -27,12 +27,20 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private const string OutputDirectory = "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static bool _phase5;
+    private static bool _fireworks;
+    private static bool _phase4;
+    private static bool _textStamp;
+    private static bool _exchangeFinal;
+    private static bool _polish;
+    private static bool _phase3;
+    private static bool _phase2;
     private const string RequestPath = "Temp/GachaReview20260917-2213/tests-request.txt";
     private static readonly string[] FixtureNames =
     {
-        "GachaEconomyTests", "EnhancementFairyTests", "GachaCollectionUiTests",
-        "GachaCollectionPreviewSafetyTests", "GachaExchangeCatalogTests", "StaffStageMigrationCollectionTests"
+        "GachaEconomyTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests", "GachaCollectionUiTests",
+        "GachaCollectionPreviewSafetyTests", "GachaExchangeCatalogTests", "StaffStageMigrationCollectionTests", "StaffGachaOfflineSessionTests"
     };
     private static readonly List<CaseResult> Cases = new List<CaseResult>();
     private static GachaCollectionPreviewSceneWitness _witness;
@@ -41,11 +49,78 @@ public static class GachaReviewTestRunner
     private static string _started, _error, _group = "all";
     private static double _nextPoll, _coroutineStarted;
     private static bool _running;
+    private static bool _batch;
     private static NUnitTestAssemblyRunner _runner;
     private static int _coroutineSteps;
     private static TestExecutionContext _coroutineContext;
     private static int _editorThread;
     public static bool IsRunning => _running;
+    public static void RunPhase5SoundBatch()
+    {
+        _phase5 = true;
+        RunPhase4Batch();
+    }
+    public static void RunFireworksBatch()
+    {
+        _fireworks = true;
+        RunPhase4Batch();
+    }
+    public static void RunPhase4Batch()
+    {
+        _phase4 = _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+        RunPhase1Batch();
+    }
+    public static void RunTextStampBatch()
+    {
+        _textStamp = _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+        RunPhase1Batch();
+    }
+    public static void RunExchangeFinalBatch()
+    {
+        _exchangeFinal = _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+        RunPhase1Batch();
+    }
+    public static void RunPolishBatch()
+    {
+        _polish = _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+        RunPhase1Batch();
+    }
+    public static void RunPhase3Batch()
+    {
+        _phase3 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = "Logs/GachaUiPhase3";
+        RunPhase1Batch();
+    }
+    public static void RunPhase2Batch()
+    {
+        _phase2 = true;
+        EnhancementFairyStage1Host.EvidenceDirectory = "Logs/FairyStage1Phase2";
+        RunPhase1Batch();
+    }
+
+    // Explicit CLI entry point; never launched automatically by an editor reload.
+    public static void RunPhase1Batch()
+    {
+        _batch = true;
+        // executeMethod runs before startup's first editor update/Undo group boundary.
+        // Capture the workspace only after that initial editor lifecycle has settled.
+        double readyAt = EditorApplication.timeSinceStartup + 3;
+        void StartWhenReady()
+        {
+            if (EditorApplication.timeSinceStartup < readyAt || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            EditorApplication.update -= StartWhenReady;
+            try { Begin(_phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
+                : Environment.GetCommandLineArgs().Contains("-fairyEvidenceOnly") ? "fairy-evidence"
+                : Environment.GetCommandLineArgs().Contains("-fairyUiOnly") ? "ui"
+                : Environment.GetCommandLineArgs().Contains("-fairyOnly") ? "fairy" : "phase1"); }
+            catch (Exception error) { Fail(error); }
+        }
+        EditorApplication.update += StartWhenReady;
+    }
 
     [Serializable] public sealed class CaseResult
     {
@@ -83,6 +158,12 @@ public static class GachaReviewTestRunner
         try
         {
             if (command == "inspect") InspectCreationTarget();
+            else if (command == "payment-layout")
+            {
+                _textStamp = _phase3 = true;
+                EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+                Begin("text-stamp");
+            }
             else if (command == "run") Begin("all");
             else if (command == "economy" || command == "fairy" || command == "ui") Begin(command);
             else throw new InvalidOperationException("Use inspect, economy, fairy, ui, or run for the related review tests.");
@@ -109,7 +190,8 @@ public static class GachaReviewTestRunner
         if (preview != null)
         {
             if (preview.IsRecordingVideo) throw new InvalidOperationException("Finish the preview recording before running tests.");
-            preview.Close();
+            if (Application.isBatchMode) Object.DestroyImmediate(preview);
+            else preview.Close();
         }
         _running = true; _group = group; _started = DateTime.UtcNow.ToString("O"); _error = null; Cases.Clear();
         _editorThread = Thread.CurrentThread.ManagedThreadId;
@@ -129,7 +211,7 @@ public static class GachaReviewTestRunner
             RunSynchronousTests();
         }
         _witness.AssertUnchanged("synchronous related tests completed");
-        if (_group != "all" && _group != "ui") { Complete(); return; }
+        if (_group != "all" && _group != "ui" && _group != "phase1") { Complete(); return; }
         var fixture = new GachaCollectionPreviewSafetyTests();
         var method = new TestMethod(new MethodWrapper(typeof(GachaCollectionPreviewSafetyTests),
             nameof(GachaCollectionPreviewSafetyTests.IntegratedPreviewOpenClosePreservesCurrentSceneWorkspace)));
@@ -143,15 +225,34 @@ public static class GachaReviewTestRunner
     {
         Assembly assembly = typeof(GachaReviewTestRunner).Assembly;
         var names = new List<string>();
-        foreach (string name in FixtureNames)
+        const string fixtureArgument = "-reviewFixture=";
+        string selectedFixture = Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(fixtureArgument, StringComparison.Ordinal));
+        if (selectedFixture != null) selectedFixture = selectedFixture.Substring(fixtureArgument.Length);
+        IEnumerable<string> fixtures = _phase3 ? FixtureNames.Concat(new[] { "GachaPhase3Tests", "Stage1Phase3StressTests", "ItemGachaCapsulePresentationTests" }) : FixtureNames;
+        if (_phase4) fixtures = fixtures.Concat(new[] { "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffGroundContactTests", "StaffGachaEntryTests", "Phase4AdUiEvidenceTests", "AdvertisementDiamondRewardTests" });
+        if (_phase4 && !Environment.GetCommandLineArgs().Contains("-phase4CoreOnly")) fixtures = fixtures.Concat(new[] { "FairyBirthSequenceTests" });
+        if (_phase5) fixtures = fixtures.Concat(new[] { "PresentationSoundTests", "FairyBirthSoundTests", "Phase5UiSoundTests", "FairySoundStage1EvidenceTests", "Phase5UiSoundEvidenceTests" });
+        foreach (string name in fixtures)
         {
-            if (_group == "fairy" && name != "EnhancementFairyTests") continue;
+            if (selectedFixture != null && name != selectedFixture) continue;
+            if (_phase4 && Environment.GetCommandLineArgs().Contains("-phase4CoreOnly") && name != "ManagerFloorGuideTests" && name != "FirstTutorialCustomerFloorTests" && name != "StaffGroundContactTests" && name != "StaffGachaEntryTests" && name != "AdvertisementDiamondRewardTests" && name != "StaffGachaOfflineSessionTests" && name != "StaffStageMigrationCollectionTests") continue;
+            if (_textStamp && name != "GachaPhase3Tests" && name != "GachaCollectionUiTests" && name != "Stage1Phase3StressTests") continue;
+            if (_group == "phase3" && name != "GachaPhase3Tests" && name != "Stage1Phase3StressTests" &&
+                name != "StaffStageMigrationCollectionTests" && name != "ItemGachaCapsulePresentationTests") continue;
+            if (_group == "fairy" && name != "EnhancementFairyTests" && name != "EnhancementFairyStage1Tests") continue;
             if (_group == "economy" && name != "GachaEconomyTests" && name != "GachaExchangeCatalogTests" && name != "StaffStageMigrationCollectionTests") continue;
             if (_group == "ui" && name != "GachaCollectionUiTests" && name != "GachaCollectionPreviewSafetyTests") continue;
             Type fixture = assembly.GetType(name, true);
             foreach (MethodInfo method in fixture.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
-                if (name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)) continue;
+                if (_textStamp && name == "GachaCollectionUiTests" && !method.Name.Contains("Exchange") && !method.Name.StartsWith("Theme_")) continue;
+                if (_textStamp && name == "Stage1Phase3StressTests" && method.Name != "Stage1_PaymentLayoutAndNativeSingleItemCapsuleEvidence") continue;
+                if (_group == "fairy-evidence" && method.Name != "Stage1_FairyTapReusesReadOnlyCardBlocksDragAndClosesWithoutChangingOwnership"
+                    && method.Name != "EconomyBackend_Stage1FairyAppearsOnlyAfterProductionCommitAndNeverDuplicates") continue;
+                if (_phase4 && Environment.GetCommandLineArgs().Contains("-phase4CoreOnly") && (name == "StaffGachaOfflineSessionTests" || name == "StaffStageMigrationCollectionTests") && !method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal)) continue;
+                if (name == "StaffGachaOfflineSessionTests" && !method.Name.StartsWith("ResultPopup_", StringComparison.Ordinal) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
+                if (name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
+                    && !(_phase3 && method.Name.StartsWith("Attendance_", StringComparison.Ordinal)) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "UnityTestAttribute")) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "TestAttribute" ||
                     attribute.GetType().Name == "TestCaseAttribute" || attribute.GetType().Name == "TestCaseSourceAttribute"))
@@ -285,6 +386,7 @@ public static class GachaReviewTestRunner
         Cleanup(); _witness.AssertUnchanged("all related tests and test preview scene closed");
         WriteReport();
         Debug.Log("GACHA_REVIEW_TESTS_COMPLETED: " + Cases.Count + " cases; failed=" + Cases.Count(test => test.status == "Failed"));
+        if (_batch) ExitBatchAfterEditorCleanup(Cases.Any(test => test.status != "Passed") ? 1 : 0);
     }
 
     private static void Fail(Exception error)
@@ -293,6 +395,21 @@ public static class GachaReviewTestRunner
         try { Cleanup(); _witness?.AssertUnchanged("related test failure cleanup"); }
         catch (Exception cleanupError) { _error += "\nCleanup: " + cleanupError; }
         WriteReport(); Debug.LogError("GACHA_REVIEW_TESTS_FAILED: " + _error);
+        if (_batch) ExitBatchAfterEditorCleanup(1);
+    }
+
+    private static void ExitBatchAfterEditorCleanup(int code)
+    {
+        // Let PreviewScene destruction and ExecuteAlways package helpers settle before
+        // ending the owned batch process; never shut down inside its scene-close stack.
+        double readyAt = EditorApplication.timeSinceStartup + 1;
+        void ExitWhenReady()
+        {
+            if (EditorApplication.timeSinceStartup < readyAt) return;
+            EditorApplication.update -= ExitWhenReady;
+            EditorApplication.Exit(code);
+        }
+        EditorApplication.update += ExitWhenReady;
     }
 
     private static void Cleanup()

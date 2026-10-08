@@ -33,24 +33,28 @@ public sealed class GachaExchangeCatalogSaveData
 {
     public GachaExchangeDisplaySaveData Staff { get; }
     public GachaExchangeDisplaySaveData Items { get; }
+    public GachaExchangeDisplaySaveData Mixed { get; }
     public string RefreshDateKey { get; }
     public int RefreshUsed { get; }
     public string LastRefreshRequestId { get; }
     public string LastRefreshReceiptJson { get; }
     public static GachaExchangeCatalogSaveData Empty => new GachaExchangeCatalogSaveData();
     public GachaExchangeCatalogSaveData(GachaExchangeDisplaySaveData staff = null, GachaExchangeDisplaySaveData items = null,
-        string refreshDateKey = "", int refreshUsed = 0, string lastRefreshRequestId = "", string lastRefreshReceiptJson = "")
+        string refreshDateKey = "", int refreshUsed = 0, string lastRefreshRequestId = "", string lastRefreshReceiptJson = "",
+        GachaExchangeDisplaySaveData mixed = null)
     {
         Staff = staff ?? new GachaExchangeDisplaySaveData(); Items = items ?? new GachaExchangeDisplaySaveData();
+        Mixed = mixed ?? new GachaExchangeDisplaySaveData();
         RefreshDateKey = refreshDateKey ?? ""; RefreshUsed = refreshUsed;
         LastRefreshRequestId = lastRefreshRequestId ?? ""; LastRefreshReceiptJson = lastRefreshReceiptJson ?? "";
     }
     public GachaExchangeDisplaySaveData Display(GachaExchangeCategory category)
-        => category == GachaExchangeCategory.Staff ? Staff : category == GachaExchangeCategory.Items ? Items : null;
+        => category == GachaExchangeCategory.Mixed ? Mixed : category == GachaExchangeCategory.Staff ? Staff : category == GachaExchangeCategory.Items ? Items : null;
     internal GachaExchangeCatalogSaveData RecordPurchase(GachaExchangeCategory category, string id, int quantity)
         => new GachaExchangeCatalogSaveData(category == GachaExchangeCategory.Staff ? Staff.RecordPurchase(id, quantity) : Staff,
             category == GachaExchangeCategory.Items ? Items.RecordPurchase(id, quantity) : Items,
-            RefreshDateKey, RefreshUsed, LastRefreshRequestId, LastRefreshReceiptJson);
+            RefreshDateKey, RefreshUsed, LastRefreshRequestId, LastRefreshReceiptJson,
+            category == GachaExchangeCategory.Mixed ? Mixed.RecordPurchase(id, quantity) : Mixed);
     internal bool Validate(out string error)
     {
         error = null;
@@ -58,7 +62,7 @@ public sealed class GachaExchangeCatalogSaveData
             (RefreshDateKey.Length != 0 && !DateTime.TryParseExact(RefreshDateKey, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _)) ||
             LastRefreshRequestId.Length > 128 || LastRefreshReceiptJson.Length > 65536)
         { error = "교환소 새로고침 저장 정보가 잘못되었습니다."; return false; }
-        foreach (var display in new[] { Staff, Items })
+        foreach (var display in new[] { Staff, Items, Mixed })
         {
             if (display == null || display.Version < 0 || display.Slots.Count > 6 ||
                 (display.Version == 0 && display.Slots.Count != 0) ||
@@ -71,16 +75,19 @@ public sealed class GachaExchangeCatalogSaveData
     }
     internal JObject ToJson() => new JObject { ["Staff"] = Staff.ToJson(), ["Items"] = Items.ToJson(),
         ["RefreshDateKey"] = RefreshDateKey, ["RefreshUsed"] = RefreshUsed,
-        ["LastRefreshRequestId"] = LastRefreshRequestId, ["LastRefreshReceiptJson"] = LastRefreshReceiptJson };
+        ["LastRefreshRequestId"] = LastRefreshRequestId, ["LastRefreshReceiptJson"] = LastRefreshReceiptJson,
+        ["Mixed"] = Mixed.ToJson() };
     internal static bool TryRead(JToken token, out GachaExchangeCatalogSaveData value, out string error)
     {
         value = null; error = "교환소 저장 형식이 잘못되었습니다.";
-        if (!(token is JObject root) || root.Count != 6 || !ReadDisplay(root["Staff"], out var staff) ||
+        if (!(token is JObject root) || (root.Count != 6 && root.Count != 7) || !ReadDisplay(root["Staff"], out var staff) ||
             !ReadDisplay(root["Items"], out var items) || root["RefreshDateKey"]?.Type != JTokenType.String ||
             root["LastRefreshRequestId"]?.Type != JTokenType.String || root["LastRefreshReceiptJson"]?.Type != JTokenType.String ||
             !Int(root["RefreshUsed"], out int used)) return false;
+        var mixed = new GachaExchangeDisplaySaveData();
+        if (root.Count == 7 && !ReadDisplay(root["Mixed"], out mixed)) return false;
         value = new GachaExchangeCatalogSaveData(staff, items, (string)root["RefreshDateKey"], used,
-            (string)root["LastRefreshRequestId"], (string)root["LastRefreshReceiptJson"]);
+            (string)root["LastRefreshRequestId"], (string)root["LastRefreshReceiptJson"], mixed);
         return value.Validate(out error);
     }
     private static bool ReadDisplay(JToken token, out GachaExchangeDisplaySaveData value)

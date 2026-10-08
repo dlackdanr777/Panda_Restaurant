@@ -50,12 +50,13 @@ public sealed class GachaEconomyTests
             new GachaEconomySaveData(itemTickets,staffTickets,itemCounter,staffCounter,history, exchange: SavedTestOffers())), 1000, counts,levels);
     // These tests begin with previously persisted offers; dedicated catalog tests cover first creation.
     private GachaExchangeCatalogSaveData SavedTestOffers()
-        => new GachaExchangeCatalogSaveData(
-            new GachaExchangeDisplaySaveData(1, _catalog.OfType<GachaStaffData>().Where(x => GachaEconomyService.CanPurchaseStaff(x.Rank))
-                .OrderByDescending(x => x.Rank).ThenBy(x => x.Id, StringComparer.Ordinal)
-                .Select(x => new GachaExchangeSlotSaveData("staff:" + x.Id, GachaEconomyService.StaffPrice(x.Rank), 1))),
-            new GachaExchangeDisplaySaveData(1, _catalog.OfType<GachaItemData>().OrderByDescending(x => x.Rank).ThenBy(x => x.Id, StringComparer.Ordinal)
-                .Select(x => new GachaExchangeSlotSaveData("item:" + x.Id, _settings.ItemPrice(x.Rank), 1))));
+        => new GachaExchangeCatalogSaveData(mixed: new GachaExchangeDisplaySaveData(1,
+            _catalog.OfType<GachaStaffData>().Where(x => GachaEconomyService.CanPurchaseStaff(x.Rank))
+                .Select(x => new GachaExchangeSlotSaveData("staff:" + x.Id, GachaEconomyService.StaffPrice(x.Rank), 1))
+                .Concat(_catalog.OfType<GachaItemData>().Where(x => x.Id != "ITEM-S")
+                    .Select(x => new GachaExchangeSlotSaveData("item:" + x.Id, _settings.ItemPrice(x.Rank), 1)))
+                .Concat(new[] { new GachaExchangeSlotSaveData("ticket:staff", Math.Max(1, _settings.StaffTicketPrice), 1),
+                    new GachaExchangeSlotSaveData("ticket:item", Math.Max(1, _settings.ItemTicketPrice), 1) })));
     private GachaEconomyService Service(GachaEconomyMemoryStore store, Func<GachaMachineKind,IReadOnlyList<GachaData>,bool,GachaData> draw = null)
         => new GachaEconomyService(store,_catalog,_settings,draw ?? ((m,p,g) => p[0]));
     private GachaStaffData Staff(Rank rank) => _catalog.OfType<GachaStaffData>().First(x => x.Rank == rank);
@@ -91,7 +92,7 @@ public sealed class GachaEconomyTests
         var store=new GachaEconomyMemoryStore(Initial(0));var service=Service(store);
         Assert.That(service.TryExchange("ticket:staff",1,null,out _),Is.False);
         _settings.StaffTicketPrice=0;service=Service(new GachaEconomyMemoryStore(Initial()));
-        Assert.That(service.TryExchange("ticket:staff",1,null,out _),Is.False);
+        Assert.That(service.TryExchange("ticket:staff",1,null,out _),Is.True, "Saved offer price is retained independently of later settings");
     }
     [TestCase("tokens")] [TestCase("tickets")] [TestCase("items")]
     public void ArithmeticOverflow_RejectsTheEntireTransactionBeforeSave(string resource)
@@ -112,14 +113,14 @@ public sealed class GachaEconomyTests
     [Test] public void TicketPurchaseAndUse_AreSeparate_MachineSpecific_NoDiamondsOrBonus()
     {
         var store=new GachaEconomyMemoryStore(Initial());var service=Service(store);
-        Assert.That(service.TryExchange("ticket:staff",10,null,out string error),Is.True,error);
-        Assert.That(service.Snapshot.Account.GachaEconomy.StaffTickets,Is.EqualTo(10));
+        Assert.That(service.TryExchange("ticket:staff",1,null,out string error),Is.True,error);
+        Assert.That(service.Snapshot.Account.GachaEconomy.StaffTickets,Is.EqualTo(1));
         Assert.That(service.Snapshot.Account.GachaEconomy.StaffCounter,Is.Zero);
         Assert.That(service.TryDraw(GachaMachineKind.Item,GachaPaymentKind.TicketSingle,null,out _),Is.False);
-        for(int i=0;i<10;i++) Assert.That(service.TryDraw(GachaMachineKind.Staff,GachaPaymentKind.TicketSingle,null,out error),Is.True,error);
+        for(int i=0;i<1;i++) Assert.That(service.TryDraw(GachaMachineKind.Staff,GachaPaymentKind.TicketSingle,null,out error),Is.True,error);
         Assert.That(service.Snapshot.Account.GachaEconomy.StaffTickets,Is.Zero);
-        Assert.That(service.Snapshot.Account.GachaEconomy.StaffCounter,Is.EqualTo(10));
-        Assert.That(service.Snapshot.Diamonds,Is.EqualTo(1000)); Assert.That(service.Snapshot.TotalDrawCount,Is.EqualTo(10));
+        Assert.That(service.Snapshot.Account.GachaEconomy.StaffCounter,Is.EqualTo(1));
+        Assert.That(service.Snapshot.Diamonds,Is.EqualTo(1000)); Assert.That(service.Snapshot.TotalDrawCount,Is.EqualTo(1));
         Assert.That(service.TryDraw(GachaMachineKind.Staff,GachaPaymentKind.TicketSingle,null,out _),Is.False);
         Assert.That(service.Snapshot.Diamonds,Is.EqualTo(1000));
     }
@@ -169,17 +170,17 @@ public sealed class GachaEconomyTests
         Assert.That(drawService.Snapshot.Account.PandaTokens, Is.EqualTo(900));
     }
     [TestCase("zero-count")] [TestCase("level")] [TestCase("history")]
-    public void RecipeExchange_PreviousUnlockEvidenceRejectsRepurchase(string evidence)
+    public void RecipeExchange_PreviousOwnershipDoesNotMarkNewSlotSoldOut(string evidence)
     {
         const string id = "RECIPE-A";
         var before = Initial(counts: evidence == "zero-count" ? new Dictionary<string,int>{{id,0}} : null,
             levels: evidence == "level" ? new Dictionary<string,int>{{id,1}} : null,
             history: evidence == "history" ? new[]{GachaEconomySaveData.Key(GachaAcquisitionKind.Recipe,id)} : null);
         var store = new GachaEconomyMemoryStore(before); var service = Service(store);
-        Assert.That(service.CanExchange("item:" + id, 1, out string error), Is.False);
-        Assert.That(error, Does.Contain("이미 해금"));
+        Assert.That(service.CanExchange("item:" + id, 1, out string error), Is.True, error);
+        Assert.That(service.TryExchange("item:" + id, 1, null, out _), Is.True);
         Assert.That(service.TryExchange("item:" + id, 1, null, out _), Is.False);
-        Assert.That(store.SaveAttempts, Is.Zero); Assert.That(store.Capture().HasSameState(before), Is.True);
+        Assert.That(store.CommitCount, Is.EqualTo(1));
     }
     [Test] public void ConsumedItemAndOldAccountHistory_AreNotNew_AndKindsRemainIndependent()
     {

@@ -836,12 +836,12 @@ public sealed class StaffGachaResultAnimation
 
 }
 
-/// <summary>Staff-only geometry inside the existing closed capsule; no asset or item-machine changes.</summary>
+/// <summary>Fits sprite artwork inside the existing closed capsule without changing shared animation curves.</summary>
 internal static class StaffCapsuleContentLayout
 {
     private const float ContentRatio = 0.88f;
 
-    internal static void Fit(Image content, Image upper, Image lower)
+    internal static void Fit(Image content, Image upper, Image lower, bool containWithinShell = false)
     {
         if (content == null || content.sprite == null || upper == null || lower == null ||
             content.transform.parent == null)
@@ -856,6 +856,13 @@ internal static class StaffCapsuleContentLayout
         if (visibleSize.x <= 0f || visibleSize.y <= 0f || capsule.width <= 0f || capsule.height <= 0f)
             throw new InvalidOperationException("직원 또는 캡슐 스프라이트 크기가 유효하지 않습니다.");
         float scale = Mathf.Min(capsule.width / visibleSize.x, capsule.height / visibleSize.y) * ContentRatio;
+        if (containWithinShell)
+        {
+            // A rectangle fit can leave wide recipe/item corners outside the rounded shell.
+            // Inscribe the entire visible bounds in its ellipse; keep staff's existing sizing.
+            float x = visibleSize.x / capsule.width, y = visibleSize.y / capsule.height;
+            scale = ContentRatio / Mathf.Sqrt(x * x + y * y);
+        }
         Vector2 size = sourceSize * scale;
         Vector2 spriteCenter = (Vector2)sprite.bounds.center * sprite.pixelsPerUnit + sprite.pivot;
         RectTransform rect = content.rectTransform;

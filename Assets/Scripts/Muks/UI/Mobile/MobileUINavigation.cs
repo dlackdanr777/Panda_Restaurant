@@ -64,7 +64,16 @@ namespace Muks.MobileUI
                 if (!_activeViewList.Contains(uiView))
                 {
                     _activeViewList.Add(uiView);
-                    uiView.Show();
+                    try { uiView.Show(); }
+                    catch (Exception)
+                    {
+                        // Roll back only this failed opening, preserving other views.
+                        _activeViewList.Remove(uiView);
+                        uiView.VisibleState = VisibleState.Disappeared;
+                        uiView.gameObject.SetActive(false);
+                        SortCanvasOrderLayer();
+                        throw;
+                    }
                 }
                 else
                 {

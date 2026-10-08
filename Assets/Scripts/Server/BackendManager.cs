@@ -1675,6 +1675,8 @@ namespace Muks.BackEnd
                 {
                     var owner = readOwner() ?? updater.Owner;
                     if (IsGachaEconomyProtected) return _gachaEconomyStore.ValidateTransmission(identity, payload);
+                    if (_attendanceClaim != null && !_attendanceClaim.Committed && _attendanceClaim.Identity.Matches(identity))
+                        return _attendanceClaim.ValidateTransmission(identity, payload);
                     var migration = owner?.ActiveStaffMigration;
                     if (migration != null) return migration.ValidateTransmission(identity, payload);
                     var purchase = owner?.ActiveStaffPurchase;
@@ -1687,6 +1689,8 @@ namespace Muks.BackEnd
                         return error ?? "현재 공용 직원 상태와 저장 자료가 일치하지 않습니다.";
                     if (!ValidateFirstTutorialSave(payload, out error)) return error;
                     if (!ValidateQuestStaffGrantSave(payload, out error)) return error;
+                    error = ValidateAttendanceSave(payload);
+                    if (error != null) return error;
                     // A previously queued explicit partial balance must not overwrite purchase/reward deltas.
                     if (ReferenceEquals(CurrentStaffPurchaseExecution?.Query, query))
                     {

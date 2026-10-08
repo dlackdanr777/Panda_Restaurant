@@ -6,6 +6,13 @@ public class UIGachaSlotList : RecyclableVerticalScrollView<GachaData>
 {
     [SerializeField] private UIGachaCard _card;
 
+    internal float FourRowFrameHeight(RectTransform frame)
+    {
+        var viewport = _scrollRect.viewport != null ? _scrollRect.viewport : (RectTransform)_scrollRect.transform;
+        return 4 * _slotPrefab.Height + 3 * _spacing + _topOffset + _bottomOffset +
+            Mathf.Max(0, frame.rect.height - viewport.rect.height);
+    }
+
     public void UpdateMachineData(List<GachaData> dataList)
     {
         _scrollRect.StopMovement();

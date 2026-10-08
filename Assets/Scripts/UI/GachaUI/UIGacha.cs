@@ -288,6 +288,13 @@ public partial class UIGacha : MobileUIView
     public void SetStartGacha(bool isStart)
     {
         _isStartGacha = isStart;
+        _collectionHud?.SetResultPresentation(isStart);
+        if (!isStart && Economy != null && _collectionHud != null)
+        {
+            var state = Economy.Snapshot?.Account?.GachaEconomy;
+            _collectionHud.Refresh(state?.Counter(CollectionMachine) ?? 0, state?.Tickets(CollectionMachine) ?? 0, Economy.IsBusy);
+            _collectionHud.SnapToCommitted();
+        }
         // While appearing/hidden, the open tween's completion is the single place that enables navigation.
         bool canNavigate = !isStart && VisibleState == VisibleState.Appeared;
         if (_scrollRect != null)
@@ -570,6 +577,8 @@ public partial class UIGacha : MobileUIView
 #if UNITY_EDITOR
         if (_editorOfflineConfigured && !_editorOfflineNavigation) { SetEditorOfflineVisible(true); return; }
 #endif
+        if (VisibleState == VisibleState.Appearing || VisibleState == VisibleState.Appeared)
+            return;
         if (_gachaMachines == null || _gachaMachines.Length == 0)
         {
             DebugLog.LogError("표시할 가챠 머신이 없습니다.");
@@ -615,6 +624,10 @@ public partial class UIGacha : MobileUIView
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Appeared;
+            // Staff.Show runs while Appearing, with paid input deliberately disabled.
+            // Complete that handoff here as well as on an ordinary sideways entry;
+            // do not depend on a later Update or a second machine Show to restore it.
+            if (_currentGachaMachine is UIStaffGacha staff) staff.CompleteOpening();
             _canvasGroup.interactable = true;
             _canvasGroup.blocksRaycasts = true;
             if (_scrollRect != null)

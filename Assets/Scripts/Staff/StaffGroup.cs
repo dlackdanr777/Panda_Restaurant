@@ -53,6 +53,8 @@ public class StaffGroup : MonoBehaviour
                 continue;
             
             staff.SetStaffData(data, _floorType);
+            if (type == EquipStaffType.Manager)
+                _tableManager.RegisterManagerRuntime(_floorType, staff);
         }
 
         UserInfo.OnChangeStaffHandler += OnEquipEvent;
@@ -89,11 +91,18 @@ public class StaffGroup : MonoBehaviour
             return;
 
         StaffData data = UserInfo.GetEquipStaff(UserInfo.CurrentStage, _floorType, type);
+        if (type == EquipStaffType.Manager)
+            _tableManager.UnregisterManagerRuntime(_floorType, _staffDic[type]);
         _staffDic[type].SetStaffData(data, _floorType);
+        if (type == EquipStaffType.Manager && data != null)
+            _tableManager.RegisterManagerRuntime(_floorType, _staffDic[type]);
     }
 
     private void OnDestroy()
     {
+        if (_tableManager != null && _staffDic.TryGetValue(EquipStaffType.Manager, out Staff manager))
+            _tableManager.UnregisterManagerRuntime(_floorType, manager);
+
         foreach(Staff staff in _staffDic.Values)
         {
             staff?.DestroyStaff();

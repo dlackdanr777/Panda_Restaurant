@@ -13,7 +13,22 @@ MonoBehaviour:
   m_Name: GachaCollectionUiTheme
   m_EditorClassIdentifier: 
   Font: {fileID: 11400000, guid: 452e39f04be31f147b0e2a9b45681611, type: 2}
+  SoldOutFont: {fileID: 11400000, guid: 0cbc05084ee1e444389450df4c0062e1, type: 2}
   PandaToken: {fileID: 21300000, guid: db16390218ccde14aaae6e326dc045c9, type: 3}
+  CurrencyPill: {fileID: 21300000, guid: 663ec646f7383794f9932c5295108205, type: 3}
+  PaymentFrame: {fileID: 21300000, guid: bd43d82d481e98542b65b3512963fbe7, type: 3}
+  PaymentButton: {fileID: 21300000, guid: 8b7135dbd46ccba4eb5a48d9e2975fa8, type: 3}
+  PaymentCapsuleTop: {fileID: 21300000, guid: 21f72736aefd594488a6e28fd07eae50, type: 3}
+  PaymentCapsuleBottom: {fileID: 21300000, guid: dcdad53c76c1feb49b5ad35b6db697cc, type: 3}
+  PaymentLeftCapsuleTop: {fileID: 21300000, guid: bc17ec789fef62d488f94014cd2cf514, type: 3}
+  PaymentLeftCapsuleBottom: {fileID: 21300000, guid: 78376d0e8ba4a7c459498cd2ca1a5e85, type: 3}
+  PaymentRightCapsuleTop: {fileID: 21300000, guid: bbb0e791e935c784ebee4d52d74582de, type: 3}
+  PaymentRightCapsuleBottom: {fileID: 21300000, guid: 17a1991723a65cb4f935f0ce6a79c6bc, type: 3}
+  PaymentBlueCapsuleTop: {fileID: 21300000, guid: 41d706c2be98e2f48b5372a5373df7bc, type: 3}
+  PaymentBlueCapsuleBottom: {fileID: 21300000, guid: a66e911b2a74f4f409b33ccad9a0493a, type: 3}
+  PaymentPurpleCapsuleTop: {fileID: 21300000, guid: e512db42146eb784fb1680bdc237f06a, type: 3}
+  PaymentPurpleCapsuleBottom: {fileID: 21300000, guid: 1a9af73821b4b5a43bf222c56726cf9c, type: 3}
+  PaymentClose: {fileID: 21300000, guid: 771911d1845b3914f88fcc752a8cce29, type: 3}
   Ticket: {fileID: 21300000, guid: 077813c0407b1b54b892895bcdef2d63, type: 3}
   SlotFrame: {fileID: 21300000, guid: 23bf936bb42deb148a6ae6a425916b3d, type: 3}
   ButtonPlate: {fileID: 21300000, guid: 33bad3f45f6ad944b8dcdd410dfd0f93, type: 3}
@@ -31,6 +46,10 @@ MonoBehaviour:
   DetailFrame: {fileID: 21300000, guid: e581e7cbf9734a9a90f5e0a5128ad42d, type: 3}
   Star: {fileID: 21300000, guid: be03524238420774b94136fa1a767c68, type: 3}
   EntranceSeconds: 0.78
+  ExchangeChainSound: {fileID: 8300000, guid: 09a49c6692b24c94283868a83c31f5c4, type: 3}
+  ExchangeChainVolume: 0.6
+  SoldOutStampSound: {fileID: 8300000, guid: f4f31c804d937794894b8a792b9e59d2, type: 3}
+  SoldOutStampVolume: 1
   Ink: {r: 0.32549, g: 0.18824, b: 0.10196, a: 1}
   Cream: {r: 1, g: 0.97255, b: 0.88627, a: 1}
   Wood: {r: 0.68235, g: 0.43922, b: 0.27059, a: 1}

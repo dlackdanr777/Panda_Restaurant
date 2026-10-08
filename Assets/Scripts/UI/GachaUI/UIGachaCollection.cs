@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using Muks.MobileUI;
 using UnityEngine;
@@ -51,6 +52,15 @@ public partial class UIGacha
             { CollectionError = "토큰 교환소 UI 설정이 없습니다."; return; }
             _collectionHud = GachaCollectionMachineHud.Attach((RectTransform)transform, _collectionTheme,
                 OpenCollectionExchange, DrawCollectionTicket);
+            var frame = _gachaItemList != null ? _gachaItemList.transform.Find("Background Image") as RectTransform : null;
+            if (frame != null)
+            {
+                frame.anchoredPosition += new Vector2(0, 90);
+                var title = _uiComponents != null ? _uiComponents.transform.Find("List Title Image") as RectTransform : null;
+                if (title != null) title.anchoredPosition += new Vector2(-16, 90);
+                var exit = _uiComponents != null ? _uiComponents.transform.Find("Exit Button") as RectTransform : null;
+                _collectionHud.BindCatalogLayout(frame, title, _gachaItemList, exit);
+            }
             _collectionExchange = TokenExchangeView.Attach(transform, _collectionTheme,
                 ReadExchangeSnapshot, PurchaseExchangeProduct, RefreshExchangeDisplay, () =>
                 {
@@ -95,7 +105,7 @@ public partial class UIGacha
         if (_collectionHud == null) return;
         bool visible = Economy != null && !_questStaffEntry && VisibleState == VisibleState.Appeared;
         _collectionHud.gameObject.SetActive(visible);
-        if (!visible) { _collectionExchange?.SetVisible(false); return; }
+        if (!visible) { _collectionPayment?.Close(); _collectionExchange?.SetVisible(false); return; }
         _collectionHud.SetResultPresentation(_isStartGacha);
         var machine = CollectionMachine;
         if (machine != _collectionHudMachine || (_collectionWasDrawing && !_isStartGacha))
@@ -106,14 +116,14 @@ public partial class UIGacha
         _nextCollectionRefresh = Time.unscaledTime + .1f;
         var state = Economy.Snapshot?.Account?.GachaEconomy;
         _collectionHud.Refresh(state?.Counter(machine) ?? 0, state?.Tickets(machine) ?? 0,
-            Economy.IsBusy || _isStartGacha || _collectionExchange.IsOpen,
+            Economy.IsBusy || _isStartGacha || _collectionExchange.IsOpen || IsChoosingPayment,
             Economy.CanDraw(machine, GachaPaymentKind.TicketSingle, out _));
     }
 
     public void OpenCollectionExchange()
     {
         if (Economy == null || Economy.IsBusy || _isStartGacha || _questStaffEntry ||
-            VisibleState != VisibleState.Appeared) return;
+            VisibleState != VisibleState.Appeared || IsChoosingPayment) return;
         CollectionError = null;
         HideCollectionLayers();
         _collectionExchange.SetVisible(true);
@@ -127,18 +137,7 @@ public partial class UIGacha
 
     public void DrawCollectionTicket()
     {
-        if (Economy == null || Economy.IsBusy || _isStartGacha || _questStaffEntry ||
-            VisibleState != VisibleState.Appeared || _collectionExchange.IsOpen) return;
-        var machine = CollectionMachine;
-        var source = _currentGachaMachine;
-        var service = Economy;
-        if (!service.TryDraw(machine, GachaPaymentKind.TicketSingle, transaction =>
-        {
-            if (this == null || !ReferenceEquals(Economy, service) || !gameObject.activeInHierarchy ||
-                !IsCurrentMachine(source)) return;
-            if (source is UIItemGacha item) item.PresentCollectionTransaction(transaction);
-            if (source is UIStaffGacha staff) staff.PresentCollectionTransaction(service, transaction);
-        }, out string error)) ReportCollectionError(error);
+        OpenCollectionPayment(_currentGachaMachine, false);
     }
 
     private TokenExchangeSnapshot ReadExchangeSnapshot()
@@ -146,19 +145,16 @@ public partial class UIGacha
         var result = new TokenExchangeSnapshot { Busy = Economy == null || Economy.IsBusy };
         if (Economy == null) return result;
         result.PandaTokens = Economy.Snapshot?.Account?.PandaTokens ?? 0;
-        result.StaffVersion = Economy.GetExchangeDisplay(GachaExchangeCategory.Staff)?.Version ?? 0;
-        result.ItemVersion = Economy.GetExchangeDisplay(GachaExchangeCategory.Items)?.Version ?? 0;
+        var display = Economy.GetExchangeDisplay(GachaExchangeCategory.Mixed);
+        result.DisplayVersion = display?.Version ?? 0;
         var refresh = Economy.GetRefreshStatus();
         result.RemainingRefreshes = refresh.Remaining; result.RefreshLimit = refresh.Limit;
         result.RefreshMessage = refresh.Message;
-        result.CanRefreshStaff = Economy.CanRefreshExchange(GachaExchangeCategory.Staff, result.StaffVersion, out _);
-        result.CanRefreshItems = Economy.CanRefreshExchange(GachaExchangeCategory.Items, result.ItemVersion, out _);
+        result.CanRefresh = Economy.CanRefreshExchange(GachaExchangeCategory.Mixed, result.DisplayVersion, out _);
         var products = new List<TokenExchangeProductView>();
-        foreach (GachaExchangeCategory category in new[] { GachaExchangeCategory.Tickets, GachaExchangeCategory.Staff, GachaExchangeCategory.Items })
-        foreach (var product in Economy.GetDisplayedProducts(category))
+        foreach (var product in Economy.GetDisplayedProducts(GachaExchangeCategory.Mixed))
         {
-            int version = category == GachaExchangeCategory.Staff ? result.StaffVersion :
-                category == GachaExchangeCategory.Items ? result.ItemVersion : 0;
+            int version = result.DisplayVersion;
             bool available = Economy.CanExchange(product.Id, 1, version, out string error);
             products.Add(new TokenExchangeProductView
             {
@@ -168,8 +164,8 @@ public partial class UIGacha
                 Price = product.Price, Quantity = product.Quantity, DisplayVersion = version,
                 Rank = product.Data != null ? product.Data.Rank : Rank.Normal1,
                 Category = (TokenExchangeTab)product.Category, CanPurchase = available,
-                Status = available ? (product.IsRepeatable ? "반복 교환 가능" :
-                    product.Category == GachaExchangeCategory.Staff ? "미보유 직원" : "미해금 레시피") : error
+                SoldOut = display.Slots.Any(slot => slot.ProductId == product.Id && slot.PurchaseCount > 0),
+                Status = available ? "" : error
             });
         }
         result.Products = products;
@@ -254,7 +250,9 @@ public partial class UIGacha
 
     private void HideCollectionUI()
     {
+        _collectionPayment?.Close();
         _collectionExchange?.SetVisible(false);
+        RestoreCollectionLayers();
         _collectionHud?.SnapToCommitted();
     }
 

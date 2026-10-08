@@ -81,10 +81,18 @@ public sealed class GachaCollectionPreviewWindow : EditorWindow
 
     public static GachaCollectionPreviewWindow Open()
     {
-        var window = GetWindow<GachaCollectionPreviewWindow>("가챠 통합 데모");
+        // Batch verification has no user window to focus. A detached EditorWindow runs
+        // the same preview lifecycle without GUI focus creating an unrelated Undo group.
+        var window = Application.isBatchMode ? CreateInstance<GachaCollectionPreviewWindow>()
+            : GetWindow<GachaCollectionPreviewWindow>("가챠 통합 데모");
         window.minSize = new Vector2(850, 590);
-        try { window.InitializePreview(); window.Show(); return window; }
-        catch { window.Close(); throw; }
+        try { window.InitializePreview(); if (!Application.isBatchMode) window.Show(); return window; }
+        catch
+        {
+            if (Application.isBatchMode) Object.DestroyImmediate(window);
+            else window.Close();
+            throw;
+        }
     }
 
     public void InitializePreview()
@@ -280,7 +288,7 @@ public sealed class GachaCollectionPreviewWindow : EditorWindow
 
     public void OpenExchange(TokenExchangeTab tab)
     {
-        ShowMachine(_machine); View.OpenCollectionExchange(); View.CollectionExchange.SelectTab(tab); Repaint();
+        ShowMachine(_machine); View.OpenCollectionExchange(); Repaint();
     }
 
     public void ShowFairies()
@@ -291,16 +299,16 @@ public sealed class GachaCollectionPreviewWindow : EditorWindow
 
     private void WireButtons()
     {
-        Bind(Staff.SingleButton, () => Draw(GachaMachineKind.Staff));
-        Bind(Read<Button>(Staff, "_tenButton"), () => Draw(GachaMachineKind.Staff, null, true));
-        Bind(Item.SingleButton, () => Draw(GachaMachineKind.Item));
-        Bind(Read<Button>(Item, "_tenButton"), () => Draw(GachaMachineKind.Item, null, true));
+        View.EditorOfflineCollectionPresentation = Present;
+        View.EditorOfflineDiamondStore = () => _message = "오프라인: 실제 다이아 구매창은 연결하지 않습니다.";
+        Bind(Staff.SingleButton, () => View.OpenCollectionPayment(Staff, false));
+        Bind(Read<Button>(Staff, "_tenButton"), () => View.OpenCollectionPayment(Staff, true));
+        Bind(Item.SingleButton, () => View.OpenCollectionPayment(Item, false));
+        Bind(Read<Button>(Item, "_tenButton"), () => View.OpenCollectionPayment(Item, true));
         Bind(Read<Button>(View, "_leftButton"), () => ShowMachine(GachaMachineKind.Item));
         Bind(Read<Button>(View, "_rightButton"), () => ShowMachine(GachaMachineKind.Staff));
         var exit = View.transform.Find("Anime UI/UI Components/Exit Button")?.GetComponent<Button>();
         if (exit != null) Bind(exit, Close);
-        if (View.CollectionHud != null)
-            Bind(Read<Button>(View.CollectionHud, "_ticket"), () => DrawWithPayment(_machine, null, GachaPaymentKind.TicketSingle));
     }
 
     private static void Bind(Button button, UnityEngine.Events.UnityAction action)
@@ -310,10 +318,9 @@ public sealed class GachaCollectionPreviewWindow : EditorWindow
     {
         Write(View, "_nextCollectionRefresh", 0f);
         typeof(UIGacha).GetMethod("UpdateCollectionUI", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(View, null);
-        Staff.SingleButton.interactable = Economy.CanDraw(GachaMachineKind.Staff, GachaPaymentKind.DiamondsSingle, out _);
-        Read<Button>(Staff, "_tenButton").interactable = Economy.CanDraw(GachaMachineKind.Staff, GachaPaymentKind.DiamondsEleven, out _);
-        Item.SingleButton.interactable = Economy.CanDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsSingle, out _);
-        Read<Button>(Item, "_tenButton").interactable = Economy.CanDraw(GachaMachineKind.Item, GachaPaymentKind.DiamondsEleven, out _);
+        bool ready = !Economy.IsBusy && !View.IsStartGacha && !View.IsChoosingPayment;
+        Staff.SingleButton.interactable = Read<Button>(Staff, "_tenButton").interactable = ready;
+        Item.SingleButton.interactable = Read<Button>(Item, "_tenButton").interactable = ready;
     }
 
     private void Tick()
@@ -404,6 +411,7 @@ public sealed class GachaCollectionPreviewWindow : EditorWindow
         long probeBytes = GC.GetAllocatedBytesForCurrentThread();
         var camera = _showFloor ? _floor.Camera : _camera;
         camera.targetTexture = _target;
+        if (_showFloor) _floor.FrameGround((float)_target.width / _target.height);
         if (!_showFloor)
         {
             foreach (var transform in _root.GetComponentsInChildren<Transform>(true)) transform.gameObject.layer = 31;
