@@ -67,6 +67,10 @@ public sealed class GachaPhase3Tests
             Assert.That(host.View.CollectionPayment.TicketButton.interactable, Is.EqualTo(!tickets || sufficient));
             Assert.That(host.View.CollectionPayment.GetComponent<Image>().raycastTarget, Is.True);
             var labels = host.View.CollectionPayment.GetComponentsInChildren<TMPro.TMP_Text>(true);
+            Assert.That(labels.Single(x => x.name == "Diamond Cost").rectTransform.anchoredPosition,
+                Is.EqualTo(new Vector2(27, -10)));
+            Assert.That(labels.Single(x => x.name == "Ticket Cost").rectTransform.anchoredPosition,
+                Is.EqualTo(new Vector2(27, -10)));
             string prompt = (machine == GachaMachineKind.Staff ? "스텝" : "아이템") +
                 (eleven ? " 10+1회 뽑기\n진행하시겠습니까?" : " 1회 뽑기\n진행하시겠습니까?");
             Assert.That(labels.Single(x => x.name == "Selected Product").text, Is.EqualTo(prompt));

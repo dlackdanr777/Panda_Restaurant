@@ -40,6 +40,7 @@ public sealed class TokenExchangeView : MonoBehaviour
     private Action _closed;
     private RectTransform _board, _content, _balanceFrame;
     private TextMeshProUGUI _balance, _name, _description, _quantity, _price, _buyLabel, _refreshLabel;
+    private Image _priceToken;
     private string _requestError;
     private Image _art;
     private Button _buy, _refresh;
@@ -158,13 +159,14 @@ public sealed class TokenExchangeView : MonoBehaviour
         _name = E.Label("Selected Product Name", _board, _font, "", 138, 517, 410, 57, 33, _theme.Ink);
         SlicePanel("Native Description Frame", 141, 580, 404, 155);
         _description = E.Label("Selected Product Description", _board, _font, "", 156, 594, 374, 125, 24,
-            _theme.Ink, TextAlignmentOptions.TopLeft);
+            _theme.Ink, TextAlignmentOptions.Center);
         _description.textWrappingMode = TextWrappingModes.Normal;
         _description.enableAutoSizing = false;
         _description.overflowMode = TextOverflowModes.Ellipsis;
         _quantity = E.Label("Quantity", _board, _font, "", 153, 742, 380, 29, 21, _theme.Ink);
-        E.Icon("Price Panda Token", _board, _theme.PandaToken, 228, 778, 35, 35);
-        _price = E.Label("Token Price", _board, _font, "", 270, 776, 173, 38, 29, _theme.Ink, TextAlignmentOptions.Left);
+        _priceToken = E.Icon("Price Panda Token", _board, _theme.PandaToken, 228, 778, 35, 35);
+        _price = E.Label("Token Price", _board, _font, "", 270, 776, 173, 38, 29, _theme.Ink, TextAlignmentOptions.Center);
+        _price.enableAutoSizing = false;
         _buy = E.ArtButton("Exchange Selected Product", _board, _font, "교환하기", _theme.ExchangeBuy,
             219, 817, 248, 57, _theme.Ink, RequestPurchase);
         _buyLabel = _buy.GetComponentInChildren<TextMeshProUGUI>();
@@ -231,12 +233,31 @@ public sealed class TokenExchangeView : MonoBehaviour
         _name.text = selected?.Name ?? "판매 상품이 없습니다";
         _description.text = _requestError ?? selected?.Description ?? "다음 진열을 기다려 주세요.";
         _quantity.text = selected == null ? "" : "교환 수량  " + selected.Quantity;
-        _price.text = selected?.Price.ToString("N0") ?? "";
+        SetSelectedPrice(selected?.Price.ToString("N0"));
         _art.sprite = selected?.Sprite; _art.enabled = _art.sprite != null;
         _buy.interactable = !locked && selected != null && selected.CanPurchase && !selected.SoldOut;
         _buyLabel.text = _requesting || _snapshot.Busy ? "확인 중…" : "교환하기";
         _refresh.interactable = !locked && _refreshCatalog != null && _snapshot.CanRefresh;
         _refreshLabel.text = "남은 새로고침 " + _snapshot.RemainingRefreshes + "/" + _snapshot.RefreshLimit;
+    }
+
+    private void SetSelectedPrice(string value)
+    {
+        _price.text = value ?? "";
+        _price.ForceMeshUpdate();
+        float textWidth = string.IsNullOrEmpty(_price.text)
+            ? 0f
+            : Mathf.Ceil(_price.GetPreferredValues(_price.text).x) + 2f;
+        RectTransform priceRect = _price.rectTransform;
+        priceRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textWidth);
+
+        const float tokenWidth = 35f;
+        const float tokenGap = 7f;
+        float groupCenter = _quantity.rectTransform.anchoredPosition.x
+            + _quantity.rectTransform.rect.width * 0.5f;
+        float tokenX = groupCenter - (tokenWidth + tokenGap + textWidth) * 0.5f;
+        _priceToken.rectTransform.anchoredPosition = new Vector2(tokenX, -778f);
+        priceRect.anchoredPosition = new Vector2(tokenX + tokenWidth + tokenGap, -776f);
     }
 
     private ProductCard CreateCard(int index)

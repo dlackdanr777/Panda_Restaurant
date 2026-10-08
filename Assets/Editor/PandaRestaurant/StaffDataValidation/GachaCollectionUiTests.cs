@@ -320,6 +320,8 @@ public sealed class GachaCollectionUiTests
         var snapshot = new TokenExchangeSnapshot { PandaTokens = 999, Products = products };
         var view = TokenExchangeView.Attach(_root.transform, theme, () => snapshot, (id, reply) => {});
         view.SetVisible(true); SettleExchange(view);
+        var description = view.Board.Find("Selected Product Description").GetComponent<TMP_Text>();
+        Assert.That(description.alignment, Is.EqualTo(TextAlignmentOptions.Center));
         int ActiveProducts() => view.GetComponentsInChildren<Button>(true)
             .Count(button => button.gameObject.activeSelf && button.name.StartsWith("Product "));
         Assert.That(ActiveProducts(), Is.EqualTo(6));
@@ -353,6 +355,43 @@ public sealed class GachaCollectionUiTests
             Is.EqualTo(wood.sprite.rect.width / wood.sprite.rect.height).Within(.001));
         Assert.That(view.Board.rect.width * view.Board.localScale.x, Is.LessThanOrEqualTo(width));
         Assert.That(view.Board.rect.height * view.Board.localScale.y, Is.LessThanOrEqualTo(height));
+    }
+
+    [Test]
+    public void Exchange_TokenPriceCentersAndKeepsTokenAttachedAsPriceWidens()
+    {
+        var snapshot = new TokenExchangeSnapshot
+        {
+            Products = new[]
+            {
+                new TokenExchangeProductView { Id = "short", Name = "짧은 가격", Price = 40, Quantity = 1, CanPurchase = true },
+                new TokenExchangeProductView { Id = "long", Name = "긴 가격", Price = 1234567890, Quantity = 1, CanPurchase = true }
+            }
+        };
+        var view = TokenExchangeView.Attach(_root.transform, GachaCollectionUiTheme.Load(), () => snapshot,
+            (id, reply) => { });
+        view.SetVisible(true);
+        SettleExchange(view);
+
+        var price = view.Board.Find("Token Price").GetComponent<TMP_Text>();
+        var token = view.Board.Find("Price Panda Token").GetComponent<RectTransform>();
+        var quantity = view.Board.Find("Quantity").GetComponent<RectTransform>();
+        Assert.That(price.alignment, Is.EqualTo(TextAlignmentOptions.Center));
+        float shortWidth = price.rectTransform.rect.width;
+        float shortTokenX = token.anchoredPosition.x;
+
+        view.SelectProduct("long");
+
+        float longWidth = price.rectTransform.rect.width;
+        float longTokenX = token.anchoredPosition.x;
+        float groupCenter = token.anchoredPosition.x
+            + (token.rect.width + 7f + longWidth) * 0.5f;
+        float expectedCenter = quantity.anchoredPosition.x + quantity.rect.width * 0.5f;
+        Assert.That(longWidth, Is.GreaterThan(shortWidth));
+        Assert.That(longTokenX, Is.LessThan(shortTokenX));
+        Assert.That(price.rectTransform.anchoredPosition.x - (token.anchoredPosition.x + token.rect.width),
+            Is.EqualTo(7f).Within(0.01f));
+        Assert.That(groupCenter, Is.EqualTo(expectedCenter).Within(0.01f));
     }
 
     [Test]

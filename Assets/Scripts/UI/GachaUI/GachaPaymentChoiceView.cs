@@ -74,9 +74,9 @@ public sealed class GachaPaymentChoiceView : MonoBehaviour, IPointerClickHandler
         view._diamondIcon = E.Icon("Diamond Icon", view._diamonds.transform, null, 7, 10, 16, 16);
         E.Icon("Ticket Icon", view._tickets.transform, theme.Ticket, 5, 11, 18, 13);
         view._diamondText = E.Label("Diamond Cost", view._diamonds.transform, font,
-            "", 27, 5, 72, 22, 14, theme.Ink);
+            "", 27, 10, 72, 22, 14, theme.Ink);
         view._ticketText = E.Label("Ticket Cost", view._tickets.transform, font,
-            "", 27, 5, 72, 22, 14, theme.Ink);
+            "", 27, 10, 72, 22, 14, theme.Ink);
         view._diamondText.fontSizeMin = view._ticketText.fontSizeMin = 11;
         view.Close();
         return view;
