@@ -32,23 +32,27 @@ public sealed class TokenExchangeSnapshot
 /// <summary>One hanging modal. The view never rolls a catalog, grants a product or alters a wallet.</summary>
 public sealed class TokenExchangeView : MonoBehaviour
 {
+    public const string PrefabResourcePath = "UI/GachaCollection/TokenExchangeView";
+
     private GachaCollectionUiTheme _theme;
     private TMP_FontAsset _font;
     private Func<TokenExchangeSnapshot> _read;
     private Action<string, int, Action<bool, string>> _purchase;
     private Action<TokenExchangeTab, int, Action<bool, string>> _refreshCatalog;
     private Action _closed;
-    private RectTransform _board, _content, _balanceFrame;
-    private TextMeshProUGUI _balance, _name, _description, _quantity, _price, _buyLabel, _refreshLabel;
-    private Image _priceToken;
+    [SerializeField] private RectTransform _board, _content, _balanceFrame, _priceRow, _priceTokenRow;
+    [SerializeField] private TextMeshProUGUI _balance, _name, _description, _quantity, _price, _buyLabel, _refreshLabel;
+    [SerializeField] private Image _priceToken, _art;
+    [SerializeField] private Button _closeButton, _buy, _refresh;
     private string _requestError;
-    private Image _art;
-    private Button _buy, _refresh;
-    private readonly List<ProductCard> _cards = new List<ProductCard>();
+    [SerializeField] private List<ProductCard> _cards = new List<ProductCard>();
+
+    [Serializable]
     private sealed class ProductCard
     {
         public string Id;
         public Button Button;
+        public RectTransform PriceGroup;
         public Image Frame, Artwork, Token;
         public Image[] Stars;
         public TextMeshProUGUI Name, Price, Availability;
@@ -81,16 +85,75 @@ public sealed class TokenExchangeView : MonoBehaviour
     {
         if (parent == null || theme == null || theme.PandaToken == null || snapshot == null || requestPurchase == null)
             throw new ArgumentException("교환소의 정식 UI 테마와 거래 연결이 필요합니다.");
-        var root = E.Rect("Token Exchange", parent, 0, 0, 0, 0);
-        root.gameObject.SetActive(false); E.Stretch(root);
-        var view = root.gameObject.AddComponent<TokenExchangeView>();
-        view._theme = theme; view._font = E.FontFrom(parent, theme); view._read = snapshot;
-        view._purchase = requestPurchase; view._refreshCatalog = requestRefresh; view._closed = closed;
+        TokenExchangeView prefab = Resources.Load<TokenExchangeView>(PrefabResourcePath);
+        TokenExchangeView view;
+        bool usePrefab = prefab != null && prefab.HasPrefabLayout();
+        if (usePrefab)
+        {
+            view = Instantiate(prefab, parent, false);
+            view.gameObject.name = "Token Exchange";
+        }
+        else
+        {
+            var root = E.Rect("Token Exchange", parent, 0, 0, 0, 0);
+            root.gameObject.SetActive(false); E.Stretch(root);
+            view = root.gameObject.AddComponent<TokenExchangeView>();
+        }
+
+        view.Configure(theme, parent, snapshot, requestPurchase, requestRefresh, closed);
+        if (!usePrefab)
+            view.Build();
+        view.BindCallbacks();
+        return view;
+    }
+
+    private bool HasPrefabLayout()
+    {
+        return _board != null && _content != null && _balanceFrame != null && _priceRow != null && _priceTokenRow != null
+            && _priceRow.GetComponent<HorizontalLayoutGroup>() != null
+            && _priceTokenRow.GetComponent<HorizontalLayoutGroup>() != null
+            && _priceTokenRow.GetComponent<ContentSizeFitter>() != null
+            && _balance != null && _name != null && _description != null && _quantity != null
+            && _price != null && _priceToken != null && _art != null && _buyLabel != null
+            && _refreshLabel != null && _closeButton != null && _buy != null && _refresh != null
+            && _cards != null && _cards.Count == 6 && _cards.All(card => card != null
+                && card.Button != null && card.Frame != null && card.Artwork != null && card.Token != null
+                && card.PriceGroup != null && card.PriceGroup.GetComponent<HorizontalLayoutGroup>() != null
+                && card.PriceGroup.GetComponent<ContentSizeFitter>() != null
+                && card.Name != null && card.Price != null && card.Availability != null
+                && card.Stars != null && card.Stars.Length == 5 && card.Stamp != null && card.StampGroup != null);
+    }
+
+    private void Configure(GachaCollectionUiTheme theme, Transform parent,
+        Func<TokenExchangeSnapshot> snapshot, Action<string, int, Action<bool, string>> requestPurchase,
+        Action<TokenExchangeTab, int, Action<bool, string>> requestRefresh, Action closed)
+    {
+        _theme = theme;
+        _font = E.FontFrom(parent, theme);
+        _read = snapshot;
+        _purchase = requestPurchase;
+        _refreshCatalog = requestRefresh;
+        _closed = closed;
         var sound = SoundManager.TryGetExistingInstance();
         if (sound != null)
         { sound.PreloadAudioClip(theme.ExchangeChainSound); sound.PreloadAudioClip(theme.SoldOutStampSound); }
-        view.Build();
-        return view;
+    }
+
+    private void BindCallbacks()
+    {
+        GachaButtonInputSound.Bind(_closeButton, SoundEffectType.ButtonExitSound);
+        GachaButtonInputSound.Bind(_buy);
+        GachaButtonInputSound.Bind(_refresh);
+        _closeButton.onClick.AddListener(() => SetVisible(false));
+        _buy.onClick.AddListener(RequestPurchase);
+        _refresh.onClick.AddListener(RequestRefresh);
+        for (int i = 0; i < _cards.Count; i++)
+        {
+            int index = i;
+            GachaButtonInputSound.Bind(_cards[index].Button,
+                canPlay: () => index < _cards.Count && !_cards[index].SoldOut);
+            _cards[index].Button.onClick.AddListener(() => SelectCard(index));
+        }
     }
 
     public void SetVisible(bool visible)
@@ -151,8 +214,8 @@ public sealed class TokenExchangeView : MonoBehaviour
         _balance = E.Label("Available Panda Tokens", _balanceFrame, _font, "0", 88.45f, 10.24f, 142.22f, 49.84f,
             38, new Color32(110, 56, 16, 255));
         _balance.fontStyle = FontStyles.Bold;
-        E.ArtButton("Close Exchange", _board, _font, "", _theme.ExchangeClose, 1290, 151, 62, 62,
-            _theme.Ink, () => SetVisible(false), SoundEffectType.ButtonExitSound);
+        _closeButton = E.ArtButton("Close Exchange", _board, _font, "", _theme.ExchangeClose, 1290, 151, 62, 62,
+            _theme.Ink, null, SoundEffectType.ButtonExitSound);
 
         SlicePanel("Native Selected Product Frame", 108, 248, 470, 609);
         _art = E.Icon("Selected Product Image", _board, null, 215, 278, 258, 224);
@@ -164,11 +227,37 @@ public sealed class TokenExchangeView : MonoBehaviour
         _description.enableAutoSizing = false;
         _description.overflowMode = TextOverflowModes.Ellipsis;
         _quantity = E.Label("Quantity", _board, _font, "", 153, 742, 380, 29, 21, _theme.Ink);
-        _priceToken = E.Icon("Price Panda Token", _board, _theme.PandaToken, 228, 778, 35, 35);
-        _price = E.Label("Token Price", _board, _font, "", 270, 776, 173, 38, 29, _theme.Ink, TextAlignmentOptions.Center);
+        _priceRow = E.Rect("Selected Price Row", _board, 153, 776, 380, 38);
+        var priceLayout = _priceRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+        priceLayout.spacing = 0;
+        priceLayout.childAlignment = TextAnchor.MiddleCenter;
+        priceLayout.childControlWidth = false;
+        priceLayout.childControlHeight = false;
+        priceLayout.childForceExpandWidth = false;
+        priceLayout.childForceExpandHeight = false;
+
+        _priceTokenRow = E.Rect("Token Price Row", _priceRow, 0, 0, 0, 40);
+        _priceTokenRow.anchorMin = _priceTokenRow.anchorMax = _priceTokenRow.pivot = new Vector2(.5f, .5f);
+        var tokenPriceLayout = _priceTokenRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+        tokenPriceLayout.spacing = 5;
+        tokenPriceLayout.childAlignment = TextAnchor.MiddleCenter;
+        tokenPriceLayout.childControlWidth = true;
+        tokenPriceLayout.childControlHeight = false;
+        tokenPriceLayout.childForceExpandWidth = false;
+        tokenPriceLayout.childForceExpandHeight = false;
+        var tokenPriceSize = _priceTokenRow.gameObject.AddComponent<ContentSizeFitter>();
+        tokenPriceSize.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        tokenPriceSize.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        _priceToken = E.Icon("Price Panda Token", _priceTokenRow, _theme.PandaToken, 0, 0, 40, 40);
+        var tokenLayout = _priceToken.gameObject.AddComponent<LayoutElement>();
+        tokenLayout.preferredWidth = tokenLayout.preferredHeight = 40;
+        tokenLayout.flexibleWidth = tokenLayout.flexibleHeight = 0;
+        _price = E.Label("Token Price", _priceTokenRow, _font, "", 0, 0, 173, 38, 29, _theme.Ink, TextAlignmentOptions.MidlineLeft);
         _price.enableAutoSizing = false;
+        _price.textWrappingMode = TextWrappingModes.NoWrap;
         _buy = E.ArtButton("Exchange Selected Product", _board, _font, "교환하기", _theme.ExchangeBuy,
-            219, 817, 248, 57, _theme.Ink, RequestPurchase);
+            219, 817, 248, 57, _theme.Ink, null);
         _buyLabel = _buy.GetComponentInChildren<TextMeshProUGUI>();
 
         _content = E.Rect("Product Grid", _board, 693, 275, 596, 524);
@@ -176,7 +265,7 @@ public sealed class TokenExchangeView : MonoBehaviour
         _refreshLabel = E.Label("Remaining Refreshes", _board, _font, "", 885, 848, 310, 40, 25,
             _theme.Cream, TextAlignmentOptions.Right);
         _refresh = E.ArtButton("Refresh Display", _board, _font, "", _theme.ExchangeRefresh,
-            1213, 832, 72, 72, _theme.Ink, RequestRefresh);
+            1213, 832, 72, 72, _theme.Ink, null);
     }
 
     private Image SlicePanel(string name, float x, float y, float width, float height, float pixelScale = 8)
@@ -245,19 +334,17 @@ public sealed class TokenExchangeView : MonoBehaviour
     {
         _price.text = value ?? "";
         _price.ForceMeshUpdate();
-        float textWidth = string.IsNullOrEmpty(_price.text)
-            ? 0f
-            : Mathf.Ceil(_price.GetPreferredValues(_price.text).x) + 2f;
-        RectTransform priceRect = _price.rectTransform;
-        priceRect.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, textWidth);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_priceTokenRow);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(_priceRow);
+    }
 
-        const float tokenWidth = 35f;
-        const float tokenGap = 7f;
-        float groupCenter = _quantity.rectTransform.anchoredPosition.x
-            + _quantity.rectTransform.rect.width * 0.5f;
-        float tokenX = groupCenter - (tokenWidth + tokenGap + textWidth) * 0.5f;
-        _priceToken.rectTransform.anchoredPosition = new Vector2(tokenX, -778f);
-        priceRect.anchoredPosition = new Vector2(tokenX + tokenWidth + tokenGap, -776f);
+    private void SelectCard(int index)
+    {
+        if (_entering || _requesting || _snapshot == null || index >= _cards.Count || _cards[index].Id == null)
+            return;
+        _selectedId = _cards[index].Id;
+        _requestError = null;
+        RebuildCards();
     }
 
     private ProductCard CreateCard(int index)
@@ -268,28 +355,63 @@ public sealed class TokenExchangeView : MonoBehaviour
         frame.gameObject.AddComponent<GachaButtonInputSound>();
         var button = frame.gameObject.AddComponent<Button>(); button.targetGraphic = frame;
         GachaButtonInputSound.Bind(button, canPlay: () => index < _cards.Count && !_cards[index].SoldOut);
-        button.onClick.AddListener(() =>
-        {
-            if (_entering || _requesting || index >= _cards.Count || _cards[index].Id == null) return;
-            _selectedId = _cards[index].Id; _requestError = null; RebuildCards();
-        });
+        var priceGroup = E.Rect("Price Group", frame.transform, 0, 0, 0, 40);
+        priceGroup.anchorMin = priceGroup.anchorMax = priceGroup.pivot = new Vector2(.5f, .5f);
+        priceGroup.anchoredPosition = new Vector2(0, -114.55f);
+        var priceLayout = priceGroup.gameObject.AddComponent<HorizontalLayoutGroup>();
+        priceLayout.spacing = 5;
+        priceLayout.childAlignment = TextAnchor.MiddleCenter;
+        priceLayout.childControlWidth = true;
+        priceLayout.childControlHeight = false;
+        priceLayout.childForceExpandWidth = false;
+        priceLayout.childForceExpandHeight = false;
+        var priceSize = priceGroup.gameObject.AddComponent<ContentSizeFitter>();
+        priceSize.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        priceSize.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+        var token = E.Icon("Panda Token Price", priceGroup, _theme.PandaToken, 0, 0, 30, 30);
+        var tokenLayout = token.gameObject.AddComponent<LayoutElement>();
+        tokenLayout.preferredWidth = tokenLayout.preferredHeight = 30;
+        tokenLayout.flexibleWidth = tokenLayout.flexibleHeight = 0;
         var card = new ProductCard
         {
-            Button = button, Frame = frame,
+            Button = button, Frame = frame, PriceGroup = priceGroup,
             Artwork = E.Icon("Artwork", frame.transform, null, 40, 35, 105, 90),
             Name = E.Label("Product Name", frame.transform, _font, "", 34, 144, 120, 24, 20, _theme.Ink),
-            Price = E.Label("Price", frame.transform, _font, "", 54, 193, 79, 31, 24, _theme.Cream, TextAlignmentOptions.Left),
-            Token = E.Icon("Panda Token Price", frame.transform, _theme.PandaToken, 21, 194, 28, 28),
-            Availability = E.Label("Availability", frame.transform, _font, "", 134, 201, 55, 21, 14,
+            Price = E.Label("Price", priceGroup, _font, "", 0, 0, 0, 31, 20, _theme.Cream, TextAlignmentOptions.Left),
+            Token = token,
+            Availability = E.Label("Availability", priceGroup, _font, "", 0, 0, 0, 21, 14,
                 _theme.Cream, TextAlignmentOptions.Right),
             Stars = new Image[5]
         };
+        RectTransform artworkRect = card.Artwork.rectTransform;
+        artworkRect.anchorMin = artworkRect.anchorMax = artworkRect.pivot = new Vector2(.5f, .5f);
+        artworkRect.anchoredPosition = new Vector2(-1.5f, 11.7f);
+        artworkRect.sizeDelta = new Vector2(120, 100);
+
+        RectTransform nameRect = card.Name.rectTransform;
+        nameRect.anchorMin = nameRect.anchorMax = new Vector2(.5f, .5f);
+        nameRect.pivot = new Vector2(.5f, .5f);
+        nameRect.anchoredPosition = new Vector2(0, -58.2f);
+        nameRect.sizeDelta = new Vector2(120, 24);
         for (int i = 0; i < card.Stars.Length; i++)
+        {
             card.Stars[i] = E.Icon("Rank Star " + (i + 1), frame.transform, _theme.Star, 44 + i * 20, 122, 20, 20);
+            RectTransform starRect = card.Stars[i].rectTransform;
+            starRect.anchorMin = starRect.anchorMax = new Vector2(.5f, .5f);
+            starRect.pivot = new Vector2(.5f, 1f);
+            starRect.anchoredPosition = new Vector2(-40 + i * 20, -28);
+            starRect.sizeDelta = new Vector2(20, 20);
+        }
         card.Name.textWrappingMode = TextWrappingModes.NoWrap;
         card.Name.overflowMode = TextOverflowModes.Ellipsis;
+        card.Price.fontSize = 20;
+        card.Price.fontSizeMin = 14;
+        card.Price.fontSizeMax = 20;
+        card.Price.enableAutoSizing = true;
+        card.Price.textWrappingMode = TextWrappingModes.NoWrap;
+        card.Price.overflowMode = TextOverflowModes.Ellipsis;
         card.Stamp = E.Rect("SOLD OUT Stamp", frame.transform, 94, 92, 170, 56);
-        card.Stamp.pivot = Vector2.one * .5f;
         card.Stamp.localRotation = Quaternion.Euler(0, 0, 12);
         card.StampGroup = card.Stamp.gameObject.AddComponent<CanvasGroup>();
         card.StampGroup.blocksRaycasts = false; card.StampGroup.interactable = false;

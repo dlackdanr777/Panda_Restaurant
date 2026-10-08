@@ -373,25 +373,88 @@ public sealed class GachaCollectionUiTests
         view.SetVisible(true);
         SettleExchange(view);
 
-        var price = view.Board.Find("Token Price").GetComponent<TMP_Text>();
-        var token = view.Board.Find("Price Panda Token").GetComponent<RectTransform>();
+        var outerRow = (RectTransform)view.Board.Find("Selected Price Row");
+        var priceRow = (RectTransform)outerRow.Find("Token Price Row");
+        var price = priceRow.Find("Token Price").GetComponent<TMP_Text>();
+        var token = priceRow.Find("Price Panda Token").GetComponent<Image>();
         var quantity = view.Board.Find("Quantity").GetComponent<RectTransform>();
-        Assert.That(price.alignment, Is.EqualTo(TextAlignmentOptions.Center));
+        var productCard = view.Board.Find("Product Grid/Product short");
+        var artwork = productCard.Find("Artwork").GetComponent<RectTransform>();
+        Assert.That(artwork.pivot, Is.EqualTo(new Vector2(.5f, .5f)));
+        Assert.That(artwork.anchoredPosition, Is.EqualTo(new Vector2(-1.5f, 11.7f)));
+        Assert.That(artwork.sizeDelta, Is.EqualTo(new Vector2(120, 100)));
+        var nameRect = productCard.Find("Product Name").GetComponent<RectTransform>();
+        Assert.That(nameRect.anchorMin, Is.EqualTo(new Vector2(.5f, .5f)));
+        Assert.That(nameRect.pivot, Is.EqualTo(new Vector2(.5f, .5f)));
+        Assert.That(nameRect.anchoredPosition, Is.EqualTo(new Vector2(0, -58.2f)));
+        Assert.That(nameRect.sizeDelta, Is.EqualTo(new Vector2(120, 24)));
+        for (int starIndex = 0; starIndex < 5; starIndex++)
+        {
+            var starRect = productCard.Find("Rank Star " + (starIndex + 1)).GetComponent<RectTransform>();
+            Assert.That(starRect.anchorMin, Is.EqualTo(new Vector2(.5f, .5f)));
+            Assert.That(starRect.pivot, Is.EqualTo(new Vector2(.5f, 1f)));
+            Assert.That(starRect.anchoredPosition, Is.EqualTo(new Vector2(-40 + starIndex * 20, -28)));
+            Assert.That(starRect.sizeDelta, Is.EqualTo(new Vector2(20, 20)));
+        }
+        var productPriceGroup = productCard.Find("Price Group");
+        Assert.That(productPriceGroup.GetComponent<HorizontalLayoutGroup>().spacing, Is.EqualTo(5));
+        Assert.That(productPriceGroup.GetComponent<ContentSizeFitter>().horizontalFit,
+            Is.EqualTo(ContentSizeFitter.FitMode.PreferredSize));
+        var cardToken = productPriceGroup.Find("Panda Token Price").GetComponent<Image>();
+        var cardTokenLayout = cardToken.GetComponent<LayoutElement>();
+        Assert.That(cardTokenLayout.preferredWidth, Is.EqualTo(30));
+        Assert.That(cardTokenLayout.preferredHeight, Is.EqualTo(30));
+        var cardPrice = productPriceGroup.Find("Price").GetComponent<TMP_Text>();
+        Assert.That(cardPrice.enableAutoSizing, Is.True);
+        Assert.That(cardPrice.fontSizeMin, Is.EqualTo(14));
+        Assert.That(cardPrice.fontSizeMax, Is.EqualTo(20));
+        Assert.That(cardPrice.textWrappingMode, Is.EqualTo(TextWrappingModes.NoWrap));
+        Assert.That(productPriceGroup.Find("Availability"), Is.Not.Null);
+        float shortCardGroupWidth = ((RectTransform)productPriceGroup).rect.width;
+        view.SelectProduct("long");
+        Canvas.ForceUpdateCanvases();
+        float longCardGroupWidth = ((RectTransform)productPriceGroup).rect.width;
+        Assert.That(longCardGroupWidth, Is.GreaterThan(shortCardGroupWidth));
+        var outerLayout = outerRow.GetComponent<HorizontalLayoutGroup>();
+        var innerLayout = priceRow.GetComponent<HorizontalLayoutGroup>();
+        var sizeFitter = priceRow.GetComponent<ContentSizeFitter>();
+        var tokenLayout = token.GetComponent<LayoutElement>();
+        Assert.That(outerLayout.childAlignment, Is.EqualTo(TextAnchor.MiddleCenter));
+        Assert.That(outerLayout.childControlWidth, Is.False);
+        Assert.That(outerLayout.childControlHeight, Is.False);
+        Assert.That(outerLayout.childForceExpandWidth, Is.False);
+        Assert.That(outerLayout.childForceExpandHeight, Is.False);
+        Assert.That(innerLayout.childAlignment, Is.EqualTo(TextAnchor.MiddleCenter));
+        Assert.That(innerLayout.spacing, Is.EqualTo(5));
+        Assert.That(innerLayout.childControlWidth, Is.True);
+        Assert.That(innerLayout.childForceExpandWidth, Is.False);
+        Assert.That(sizeFitter.horizontalFit, Is.EqualTo(ContentSizeFitter.FitMode.PreferredSize));
+        Assert.That(sizeFitter.verticalFit, Is.EqualTo(ContentSizeFitter.FitMode.Unconstrained));
+        Assert.That(tokenLayout.preferredWidth, Is.EqualTo(40));
+        Assert.That(tokenLayout.preferredHeight, Is.EqualTo(40));
+        Assert.That(tokenLayout.flexibleWidth, Is.Zero);
+        Assert.That(tokenLayout.flexibleHeight, Is.Zero);
+        Assert.That(price.alignment, Is.EqualTo(TextAlignmentOptions.MidlineLeft));
+        Assert.That(price.enableAutoSizing, Is.False);
+        Assert.That(price.textWrappingMode, Is.EqualTo(TextWrappingModes.NoWrap));
+        Assert.That(price.GetComponent<ContentSizeFitter>(), Is.Null);
         float shortWidth = price.rectTransform.rect.width;
-        float shortTokenX = token.anchoredPosition.x;
+        float shortTokenX = RectTransformUtility.CalculateRelativeRectTransformBounds(outerRow, token.rectTransform).min.x;
 
         view.SelectProduct("long");
 
+        Canvas.ForceUpdateCanvases();
         float longWidth = price.rectTransform.rect.width;
-        float longTokenX = token.anchoredPosition.x;
-        float groupCenter = token.anchoredPosition.x
-            + (token.rect.width + 7f + longWidth) * 0.5f;
-        float expectedCenter = quantity.anchoredPosition.x + quantity.rect.width * 0.5f;
+        var tokenBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(outerRow, token.rectTransform);
+        var priceBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(outerRow, price.rectTransform);
+        float longTokenX = tokenBounds.min.x;
+        float groupCenter = (tokenBounds.min.x + priceBounds.max.x) * 0.5f;
+        float expectedCenter = outerRow.rect.center.x;
         Assert.That(longWidth, Is.GreaterThan(shortWidth));
         Assert.That(longTokenX, Is.LessThan(shortTokenX));
-        Assert.That(price.rectTransform.anchoredPosition.x - (token.anchoredPosition.x + token.rect.width),
-            Is.EqualTo(7f).Within(0.01f));
+        Assert.That(priceBounds.min.x - tokenBounds.max.x, Is.EqualTo(5f).Within(0.5f));
         Assert.That(groupCenter, Is.EqualTo(expectedCenter).Within(0.01f));
+        Assert.That(quantity.rect.center.x, Is.EqualTo(outerRow.rect.center.x).Within(0.01f));
     }
 
     [Test]
