@@ -40,6 +40,15 @@ public sealed class EnhancementFairyBrain
         FacingLeft = _random.Next(2) == 0;
     }
 
+    /// <summary>Presentation spawn point only; subsequent movement uses the original bounds and brain.</summary>
+    public void PlaceForBirth(Vector2 ground)
+    {
+        GroundPosition = Clamp(ground);
+        _target = GroundPosition;
+        VisualHeight = Tilt = Squash = 0f;
+        Rest();
+    }
+
     public void Step(float deltaTime, Vector2 neighbour, bool hasNeighbour)
     {
         if (deltaTime <= 0f || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
@@ -59,19 +68,20 @@ public sealed class EnhancementFairyBrain
         }
 
         float wave = Mathf.Sin(ElapsedSeconds * (_settings.IdleBobRate + _energy) + _phase);
-        VisualHeight = _settings.IdleLift + wave * _settings.IdleBobAmplitude;
+        // Ground actions keep their contact point on the floor. Only an explicit
+        // airborne action lifts the sprite; tilt still supplies the idle/walk motion.
+        VisualHeight = 0f;
         Tilt = wave * _settings.IdleTiltDegrees;
         Squash = 0f;
         if (Action == EnhancementFairyAction.Hop)
         {
             float t = Mathf.Clamp01(_actionElapsed / Mathf.Max(0.1f, _settings.HopSeconds));
-            VisualHeight += Mathf.Abs(Mathf.Sin(t * Mathf.PI * _hopCount)) * Mathf.Max(0f, _settings.HopHeight);
+            VisualHeight = Mathf.Abs(Mathf.Sin(t * Mathf.PI * _hopCount)) * Mathf.Max(0f, _settings.HopHeight);
             Squash = Mathf.Sin(t * Mathf.PI * _hopCount * 2f) * Mathf.Clamp(_settings.HopSquash, 0f, 0.5f);
         }
         else if (Action == EnhancementFairyAction.Walk || Action == EnhancementFairyAction.Visit)
         {
             Tilt = Mathf.Sin(ElapsedSeconds * _settings.WalkTiltRate + _phase) * _settings.WalkTiltDegrees;
-            VisualHeight += Mathf.Abs(Mathf.Sin(ElapsedSeconds * _settings.WalkBobRate + _phase)) * _settings.WalkBobAmplitude;
         }
         else if (Action == EnhancementFairyAction.Look)
             Tilt = Mathf.Sin(_actionElapsed * _settings.LookRate) * _settings.LookTiltDegrees;

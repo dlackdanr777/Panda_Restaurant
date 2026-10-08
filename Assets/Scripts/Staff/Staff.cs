@@ -167,7 +167,8 @@ public class Staff : MonoBehaviour
         CancelActiveSkill(cancellationReason, true);
         StopAllCoroutines();
         SkillEffectSetActive(false);
-        if (staffData == _staffData && equipFloorType == _equipFloorType)
+        // Moving the same employee still releases and rebuilds its floor-bound action.
+        if (staffData == _staffData && (staffData == null || equipFloorType == _equipFloorType))
         {
             RefreshFeverEffect();
             return;
@@ -853,11 +854,21 @@ public class Staff : MonoBehaviour
         if (_staffData == null || _idleSprites == null || _idleSprites.Length == 0)
             yield break;
 
+        // Only Bara's original orange-drop sequence holds its final pose.
+        StaffData idleOwner = _staffData;
+        bool holdBaraDroppedPose = _staffData.Id == "STAFF29"
+            && ReferenceEquals(_idleSprites, _staffData.IdleSprites);
+
         for (int i = 0, cnt = _idleSprites.Length; i < cnt; ++i)
         {
             _spriteRenderer.sprite = _idleSprites[i];
             DebugLog.Log($"[{name}] Idle 애니메이션 - 스프라이트 변경: {_idleSprites[i].name} ({i + 1}/{cnt})");
-            yield return YieldCache.WaitForSeconds(0.1f);
+            bool holdFinalPose = holdBaraDroppedPose && i == cnt - 1;
+            yield return YieldCache.WaitForSeconds(holdFinalPose ? 2f : 0.1f);
+            // A delayed idle return must not overwrite a later work/move/skin pose.
+            if (holdFinalPose && (_state != EStaffState.None || _staffData != idleOwner
+                || !ReferenceEquals(_idleSprites, idleOwner.IdleSprites)))
+                yield break;
         }
 
         _spriteRenderer.sprite = _sprite;

@@ -21,6 +21,7 @@ public class UIStaffGacha : GachaMachineParent
     [SerializeField] private Button _screenButton;
     [SerializeField] private Button _singleButton;
     public Button SingleButton => _singleButton;
+    public Button TenButton => _tenButton;
     [SerializeField] private Button _tenButton;
     [SerializeField] private Button _skipButton;
     [SerializeField] private Image _getStaffImage;
@@ -328,6 +329,13 @@ public class UIStaffGacha : GachaMachineParent
 
     private void ConfigurePurchaseButtons()
     {
+        if (_collectionEconomy != null)
+        {
+            UIGacha.ConfigureCollectionButton(_singleButton, false);
+            UIGacha.ConfigureCollectionButton(_tenButton, true, _singleButton);
+            RefreshPurchaseButtonState();
+            return;
+        }
         ConfigurePurchaseButton(_singleButton, StaffGachaPurchaseType.Single, "1회");
         ConfigurePurchaseButton(_tenButton, StaffGachaPurchaseType.Multi, "10+1회");
         RefreshPurchaseButtonState();
@@ -376,8 +384,8 @@ public class UIStaffGacha : GachaMachineParent
         bool visible = CanUsePaidInput();
         if (_collectionEconomy != null)
         {
-            SetPaidInteractable(_singleButton, visible && _collectionEconomy.CanDraw(GachaMachineKind.Staff, GachaPaymentKind.DiamondsSingle, out _));
-            SetPaidInteractable(_tenButton, visible && _collectionEconomy.CanDraw(GachaMachineKind.Staff, GachaPaymentKind.DiamondsEleven, out _));
+            SetPaidInteractable(_singleButton, visible && !_uiGacha.IsChoosingPayment);
+            SetPaidInteractable(_tenButton, visible && !_uiGacha.IsChoosingPayment);
             return;
         }
         SetPaidInteractable(_singleButton, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Single, out _));
@@ -496,6 +504,21 @@ public class UIStaffGacha : GachaMachineParent
         _getStaffSlotFrame.gameObject.SetActive(false);
         _capsule.gameObject.SetActive(false);
         _gachaMacineAnimator.enabled = false;
+    }
+
+    internal void CompleteOpening()
+    {
+        if (_uiGacha == null || !_uiGacha.IsCurrentMachine(this) ||
+            _uiGacha.VisibleState != VisibleState.Appeared || _uiGacha.IsStartGacha)
+            return;
+
+        // The opening path has already initialized the machine and bound its listeners.
+        // Reconcile only its controls after the parent becomes visible. Quest entry keeps
+        // its separate free control and never inherits these paid buttons.
+        _singleButton.gameObject.SetActive(!IsQuestEntry);
+        _tenButton.gameObject.SetActive(!IsQuestEntry);
+        ConfigurePurchaseButtons();
+        UpdateQuestButton();
     }
 
     private void OnDisable()
@@ -728,17 +751,8 @@ public class UIStaffGacha : GachaMachineParent
         if (_collectionEconomy != null)
         {
             if (!CanUsePaidInput()) return;
-            _startingPurchaseFromInput = true;
-            try
-            {
-                _purchaseDisplay?.Close();
-                var service = _collectionEconomy;
-                if (!service.TryDraw(GachaMachineKind.Staff,
-                    type == StaffGachaPurchaseType.Single ? GachaPaymentKind.DiamondsSingle : GachaPaymentKind.DiamondsEleven,
-                    transaction => PresentCollectionTransaction(service, transaction),
-                    out string collectionError)) _uiGacha.ReportCollectionError(collectionError);
-            }
-            finally { _startingPurchaseFromInput = false; RefreshPurchaseButtonState(); }
+            _uiGacha.OpenCollectionPayment(this, type == StaffGachaPurchaseType.Multi);
+            RefreshPurchaseButtonState();
             return;
         }
         if (!CanUsePaidInput() || !_purchaseDisplayOwner.CanStartStaffPurchase(type, out _))

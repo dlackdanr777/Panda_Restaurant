@@ -5,6 +5,35 @@ using System.Linq;
 /// <summary>Conditional shop sampling, without replacement, independent of paid draws and fairy RNG.</summary>
 public static class GachaExchangeDisplaySelector
 {
+    public static IReadOnlyList<GachaExchangeProduct> SelectMixed(IReadOnlyList<GachaExchangeProduct> products, System.Random random)
+    {
+        if (random == null) throw new ArgumentNullException(nameof(random));
+        var remaining = products.Where(x => x.Price > 0 && x.Quantity > 0 &&
+            (x.Category == GachaExchangeCategory.Tickets || x.Data != null) &&
+            (x.Category != GachaExchangeCategory.Staff || GachaEconomyService.CanPurchaseStaff(x.Data.Rank)))
+            .GroupBy(x => x.Id, StringComparer.Ordinal).Select(x => x.First()).OrderBy(x => x.Id, StringComparer.Ordinal).ToList();
+        var result = new List<GachaExchangeProduct>();
+        // Include each available kind, then fill from the same pool without duplicate products.
+        foreach (var category in new[] { GachaExchangeCategory.Tickets, GachaExchangeCategory.Staff, GachaExchangeCategory.Items })
+        {
+            var candidates = remaining.Where(x => x.Category == category).ToArray();
+            if (candidates.Length == 0) continue;
+            var chosen = category == GachaExchangeCategory.Tickets ? candidates[random.Next(candidates.Length)] : Select(candidates, category, random, 1)[0];
+            result.Add(chosen); remaining.Remove(chosen);
+        }
+        while (result.Count < 6 && remaining.Count > 0)
+        {
+            var category = remaining[random.Next(remaining.Count)].Category;
+            var candidates = remaining.Where(x => x.Category == category).ToArray();
+            var chosen = category == GachaExchangeCategory.Tickets ? candidates[random.Next(candidates.Length)] : Select(candidates, category, random, 1)[0];
+            result.Add(chosen); remaining.Remove(chosen);
+        }
+        for (int i = result.Count - 1; i > 0; i--)
+        {
+            int j = random.Next(i + 1); var swap = result[i]; result[i] = result[j]; result[j] = swap;
+        }
+        return result;
+    }
     public static IReadOnlyList<GachaExchangeProduct> Select(IReadOnlyList<GachaExchangeProduct> products,
         GachaExchangeCategory category, System.Random random, int slots = 6)
     {

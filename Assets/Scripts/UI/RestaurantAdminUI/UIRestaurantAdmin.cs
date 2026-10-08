@@ -225,7 +225,8 @@ public class UIRestaurantAdmin : MobileUIView
         _dontTouchArea.gameObject.SetActive(true);
 
         _previousFloorType = _floorType;
-        _floorType = _mainScene.CurrentFloor;
+        _floorType = ResolveShopFloor(_mainScene.CurrentFloor,
+            UserInfo.IsFloorValid(UserInfo.CurrentStage, ERestaurantFloorType.Floor2));
         ApplyFloorState(false);
 
         ShowFurnitureTabOptimized();
@@ -252,6 +253,11 @@ public class UIRestaurantAdmin : MobileUIView
             });
         });
     }
+
+    // Floor3 has no furniture shop. Change only the shop context, never the camera.
+    public static ERestaurantFloorType ResolveShopFloor(ERestaurantFloorType current, bool vipUnlocked)
+        => current == ERestaurantFloorType.Floor3
+            ? (vipUnlocked ? ERestaurantFloorType.Floor2 : ERestaurantFloorType.Floor1) : current;
 
     public override void Hide()
     {

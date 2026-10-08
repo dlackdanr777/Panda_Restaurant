@@ -273,7 +273,7 @@ public static class StaffGachaOfflineViewFactory
     {
         if (component == view || component == staff || component is UIGachaCard ||
             component is UIItemStar || component is GachaCapsule || component is ScrollingImage ||
-            component is RotationGameObject) return true;
+            component is RotationGameObject || component is GachaButtonInputSound) return true;
         // Exact assemblies exclude game subclasses; only rendering/layout and inert controls survive.
         // EventTrigger and other arbitrary UnityEvent dispatchers are deliberately not in the list.
         Type type = component.GetType();

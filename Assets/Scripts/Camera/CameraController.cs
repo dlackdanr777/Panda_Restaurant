@@ -13,6 +13,20 @@ public class CameraController : MonoBehaviour
 {
     public Action OnStartMoveCameraHandler;
     public Action<ERestaurantFloorType, RestaurantType> OnEndMoveCameraHandler;
+    // Before a tween or direct drag reveals another floor, allow its presentation to prepare.
+    public event Action<ERestaurantFloorType> OnPreviewFloorHandler;
+    public event Func<Vector2, bool> OnWorldTapHandler;
+    private readonly HashSet<object> _worldInputBlocks = new HashSet<object>();
+    private Vector2 _tapStartPosition;
+    private bool _tapCandidate;
+    public bool IsWorldInputBlocked => _worldInputBlocks.Count > 0;
+    public void SetWorldInputBlocked(object owner, bool blocked)
+    {
+        if (owner == null) return;
+        _tapCandidate = false;
+        if (blocked) _worldInputBlocks.Add(owner);
+        else _worldInputBlocks.Remove(owner);
+    }
 
     [Header("Components")]
     [SerializeField] private Camera _cam;
@@ -69,6 +83,7 @@ public class CameraController : MonoBehaviour
 
     public RestaurantType CurrentRestaurant => _mainScene.CurrentRestaurantType;
     public ERestaurantFloorType CurrentFloor => _mainScene.CurrentFloor;
+    public bool IsCameraMoving => _isMoveAction || _isDraggingEnabled;
 
     private float _targetAspect = 2.3333f;
     private Dictionary<ERestaurantFloorType, Dictionary<RestaurantType, Vector3>> _targetPosDic = new Dictionary<ERestaurantFloorType, Dictionary<RestaurantType, Vector3>>();
@@ -76,6 +91,7 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera(ERestaurantFloorType floor, RestaurantType moveType)
     {
+        OnPreviewFloorHandler?.Invoke(floor);
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
         _mainScene.SetFloor(floor);
@@ -95,6 +111,7 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera(ERestaurantFloorType floor)
     {
+        OnPreviewFloorHandler?.Invoke(floor);
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
         _mainScene.SetFloor(floor);
@@ -113,6 +130,7 @@ public class CameraController : MonoBehaviour
 
     public void MoveCamera(RestaurantType moveType)
     {
+        OnPreviewFloorHandler?.Invoke(CurrentFloor);
         OnStartMoveCameraHandler?.Invoke();
         _isMoveAction = true;
         _mainScene.SetRestaurantType(moveType);
@@ -196,8 +214,9 @@ public class CameraController : MonoBehaviour
 
 
         //DOTO: GetOpenViewCount로 인해 렉이 생길 수 있으니 테스트 해봐야할듯합니다.
-        if(UserInfo.IsTutorialStart || _navigationCoordinator.GetOpenViewCount() != 0)
+        if(UserInfo.IsTutorialStart || _navigationCoordinator.GetOpenViewCount() != 0 || IsWorldInputBlocked)
         {
+            _tapCandidate = false;
             if(!_isStopAction)
             {
                 _isStopAction = true;
@@ -450,6 +469,7 @@ public class CameraController : MonoBehaviour
     // 📌 터치 입력 처리
     private void HandleTouchInput()
     {
+        if (Input.touchCount != 1) { _tapCandidate = false; return; }
         if (Input.touchCount == 1)
         {
             Touch touch = Input.GetTouch(0);
@@ -458,7 +478,8 @@ public class CameraController : MonoBehaviour
             switch (touch.phase)
             {
                 case TouchPhase.Began:
-                    if (IsPointerOverUI() || !IsTouchingDraggableSprite(touchWorldPos))
+                    BeginWorldTap(touch.position);
+                    if (IsPointerOverUI(touch.position) || !IsTouchingDraggableSprite(touchWorldPos))
                     {
                         _isDragging = false; // ❌ 드래그 시작 X
                         return;
@@ -470,6 +491,7 @@ public class CameraController : MonoBehaviour
                     break;
 
                 case TouchPhase.Moved:
+                    TrackWorldTap(touch.position);
                     if (_isDragging)
                     {
                         ProcessDrag(touch.position);
@@ -478,6 +500,9 @@ public class CameraController : MonoBehaviour
 
                 case TouchPhase.Ended:
                 case TouchPhase.Canceled:
+                    bool tapped = touch.phase == TouchPhase.Ended && CompleteWorldTap(touch.position);
+                    _tapCandidate = false;
+                    if (tapped) { _isDragging = _isDraggingEnabled = false; return; }
                     if (!_isDragging) // 🔹 드래그가 시작되지 않았다면 이동함수 실행 안 함
                         return;
 
@@ -494,6 +519,7 @@ public class CameraController : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
+            BeginWorldTap(Input.mousePosition);
             Vector2 mouseWorldPos = _cam.ScreenToWorldPoint(Input.mousePosition);
             if (IsPointerOverUI() || !IsTouchingDraggableSprite(mouseWorldPos))
             {
@@ -506,13 +532,15 @@ public class CameraController : MonoBehaviour
             _isDragging = true;
         }
 
-        if (Input.GetMouseButton(0) && _isDragging)
+        if (Input.GetMouseButton(0))
         {
-            ProcessDrag(Input.mousePosition);
+            TrackWorldTap(Input.mousePosition);
+            if (_isDragging) ProcessDrag(Input.mousePosition);
         }
 
         if (Input.GetMouseButtonUp(0))
         {
+            if (CompleteWorldTap(Input.mousePosition)) { _isDragging = _isDraggingEnabled = false; return; }
             if (!_isDragging) // 🔹 드래그가 시작되지 않았다면 이동함수 실행 안 함
                 return;
 
@@ -531,7 +559,7 @@ public class CameraController : MonoBehaviour
         // 🔹 초기 일정 거리 이내에서는 이동 금지 & 이동 방향 결정
         if (!_isDraggingEnabled)
         {
-            if (distance < _initialTouchThreshold * Screen.dpi / 2.54f) // cm -> pixels 변환
+            if (distance < _initialTouchThreshold * (Screen.dpi > 0f ? Screen.dpi : 96f) / 2.54f) // cm -> pixels, including displays without DPI
             {
                 return;
             }
@@ -569,6 +597,8 @@ public class CameraController : MonoBehaviour
         
         // 🔹 카메라 위치를 경계 내로 제한
         newPosition = ClampCameraPosition(newPosition);
+        OnPreviewFloorHandler?.Invoke(CurrentFloor == ERestaurantFloorType.Floor2 && newPosition.y > _floor2Pos_Y
+            ? ERestaurantFloorType.Floor3 : CurrentFloor);
         _cam.transform.position = newPosition;
 
         // 🔹 새로운 기준점 설정 (이전 터치 위치 업데이트)
@@ -596,9 +626,15 @@ public class CameraController : MonoBehaviour
     // 📌 UI 위에서 터치 감지 방지
     private bool IsPointerOverUI()
     {
+        return IsPointerOverUI(Input.mousePosition);
+    }
+
+    private bool IsPointerOverUI(Vector2 screenPosition)
+    {
+        if (EventSystem.current == null) return false;
         PointerEventData eventData = new PointerEventData(EventSystem.current)
         {
-            position = Input.mousePosition
+            position = screenPosition
         };
 
         List<RaycastResult> results = new List<RaycastResult>();
@@ -615,6 +651,30 @@ public class CameraController : MonoBehaviour
         }
 
         return IsPointerOverNonInteractableUI(eventData);
+    }
+
+    private void BeginWorldTap(Vector2 position)
+    {
+        _tapStartPosition = position;
+        _tapCandidate = !_isMoveAction && !IsWorldInputBlocked && !IsPointerOverUI(position);
+    }
+
+    private void TrackWorldTap(Vector2 position)
+    {
+        float tolerance = Mathf.Max(12f, Screen.dpi * 0.15f / 2.54f);
+        if ((position - _tapStartPosition).sqrMagnitude > tolerance * tolerance) _tapCandidate = false;
+    }
+
+    private bool CompleteWorldTap(Vector2 position)
+    {
+        TrackWorldTap(position);
+        bool eligible = _tapCandidate && !_isDraggingEnabled && !_isMoveAction
+            && !IsWorldInputBlocked && !IsPointerOverUI(position);
+        _tapCandidate = false;
+        if (!eligible || OnWorldTapHandler == null) return false;
+        foreach (Func<Vector2, bool> handler in OnWorldTapHandler.GetInvocationList())
+            if (handler(position)) return true;
+        return false;
     }
 
     private bool IsPointerOverNonInteractableUI(PointerEventData eventData)

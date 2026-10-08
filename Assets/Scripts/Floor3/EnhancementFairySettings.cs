@@ -10,7 +10,7 @@ public sealed class EnhancementFairySettings : ScriptableObject
     [Min(1f)] public float RotationSeconds = 12f;
     [Min(1f)] public float NewArrivalPrioritySeconds = 8f;
     [Tooltip("Local ground coordinates on the existing Stage1 Floor3 root.")]
-    public Rect GroundArea = new Rect(-8f, 8f, 16f, 1.8f);
+    public Rect GroundArea = new Rect(-50f, 7.85f, 60f, 0f);
     [Min(0.1f)] public float SpriteHeight = 1.65f;
     [Min(0.1f)] public float WalkSpeed = 1.05f;
     [Min(0f)] public float HopHeight = 0.55f;
@@ -49,10 +49,21 @@ public sealed class EnhancementFairySettings : ScriptableObject
     [Min(0f)] public float LookRate = 4f;
     [Range(0f, 0.5f)] public float HopSquash = 0.09f;
     [Header("Arrival and rotation visuals")]
-    [Min(0.1f)] public float ArrivalSeconds = 0.65f;
+    [Tooltip("Floor3 local wall area. Births use only its visible portion, in either Hall or Kitchen.")]
+    public Rect BirthArea = new Rect(-53f, 9f, 69f, 10f);
+    [Range(1, 5)] public int MaxConcurrentBirths = 5;
+    public Vector2 BirthStartDelay = new Vector2(.08f, .42f);
+    [Min(1f)] public float BirthMinSeparation = 5f;
+    [Min(.1f)] public float BirthSettleSeconds = .8f;
+    [Min(0.1f)] public float TrailSeconds = 1.05f;
+    [Min(0.05f)] public float GatherSeconds = 0.2f;
+    [Range(1, 2)] public int BirthJumpCount = 2;
+    [Min(0.1f)] public float TrailStarSize = 0.7f;
+    [Min(0.1f)] public float GatherStarSize = 1.3f;
+    [Min(0.1f)] public float ArrivalSeconds = 1.05f;
     [Min(0.1f)] public float RotationFadeSeconds = 0.4f;
-    [Min(0.1f)] public float ArrivalPuffSize = 1.9f;
-    [Min(0.01f)] public float ArrivalStarSize = 0.18f;
+    [Min(0.1f)] public float ArrivalPuffSize = 3.7f;
+    [Min(0.01f)] public float ArrivalStarSize = 0.26f;
     public Vector2 ArrivalStarRadius = new Vector2(0.8f, 0.55f);
     [Range(0f, 1f)] public float ArrivalPuffOpacity = 0.75f;
     [Range(0.1f, 1f)] public float ArrivalScaleInFraction = 0.3333333f;
@@ -60,8 +71,32 @@ public sealed class EnhancementFairySettings : ScriptableObject
     public string SortingLayer = "Staff";
     [Range(0, 31)] public int VisualLayer = 2;
     public Sprite ArrivalSprite;
+    [Tooltip("Visible region in normalized sprite coordinates for the existing Full Rect puff. Full rectangle uses mesh bounds; no texture/importer changes are required.")]
+    public Rect ArrivalVisibleRect = new Rect(0f, 0f, 1f, 1f);
     public Sprite SparkleSprite;
 
+    [System.Serializable]
+    public sealed class VoiceVariant
+    {
+        public AudioClip Clip;
+        [Range(.1f, 3f)] public float Pitch = 1.3f;
+        [Range(0f, 1f)] public float Volume = 1f;
+    }
+
+    [Header("Birth sound (existing shared SFX pool)")]
+    public AudioClip BirthPopClip;
+    [Range(0f, 1f)] public float BirthPopVolume = .35f;
+    [Range(1, 5)] public int MaxConcurrentPops = 2;
+    public VoiceVariant[] BirthVoiceVariants = System.Array.Empty<VoiceVariant>();
+    [Range(0f, 1f)] public float VoiceVolume = .8f;
+    [Range(.05f, .18f)] public float VoiceDelay = .12f;
+    [Tooltip("Skip leading silence in the existing voice clip without editing/importing audio assets.")]
+    [Min(0f)] public float VoiceStartSeconds = .15f;
+    [Range(1, 5)] public int MaxConcurrentVoices = 2;
+
     public Rect SafeGroundArea => new Rect(GroundArea.x, GroundArea.y,
-        Mathf.Max(0.1f, GroundArea.width), Mathf.Max(0.1f, GroundArea.height));
+        Mathf.Max(0.1f, GroundArea.width), Mathf.Max(0f, GroundArea.height));
+
+    public float BirthDuration => Mathf.Max(.1f, TrailSeconds) + Mathf.Max(.05f, GatherSeconds)
+        + Mathf.Max(.1f, ArrivalSeconds) + Mathf.Max(.1f, BirthSettleSeconds);
 }

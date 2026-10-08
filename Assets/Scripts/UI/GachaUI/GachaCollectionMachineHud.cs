@@ -10,9 +10,14 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
 {
     private GachaCollectionUiTheme _theme;
     private TMP_FontAsset _font;
-    private TextMeshProUGUI _progress, _tickets;
+    private TextMeshProUGUI _progress;
+    private RectTransform _gauge;
     private RectTransform _fill;
-    private Button _exchange, _ticket;
+    private Button _exchange;
+    private RectTransform _catalogFrame, _catalogTitle, _catalogExit;
+    private UIGachaSlotList _catalog;
+    private Vector2 _catalogSize, _catalogPosition, _titlePosition, _exitPosition, _catalogParentSize;
+    private readonly Vector3[] _catalogCorners = new Vector3[4];
     private int _committed, _target;
     private float _start, _from, _until;
     private bool _guaranteed;
@@ -22,6 +27,8 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
     public int CommittedCounter => _committed;
     public float DisplayedProgress => _fill == null ? 0 : _fill.anchorMax.x;
     public int PendingProgressCount => _pending.Count + (_until != 0 ? 1 : 0);
+    public bool IsGaugeVisible => _gauge != null && _gauge.gameObject.activeSelf;
+    public Button ExchangeButton => _exchange;
 
     public static GachaCollectionMachineHud Attach(RectTransform parent, GachaCollectionUiTheme theme,
         Action openExchange, Action drawTicket)
@@ -38,44 +45,83 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
 
     private void Build(Action openExchange, Action drawTicket)
     {
-        E.Panel("Gauge Border", transform, 0, 0, 1060, 60, _theme.Ink, 27);
-        E.Panel("Gauge Track", transform, 6, 6, 1048, 48, new Color32(255,247,220,255), 22);
-        var region = E.Rect("Gauge Fill Region", transform, 8, 8, 1044, 44);
+        _gauge = E.Rect("Special Guarantee Gauge", transform, 0, 0, 1060, 60);
+        E.Panel("Gauge Border", _gauge, 0, 0, 1060, 60, _theme.Ink, 27);
+        E.Panel("Gauge Track", _gauge, 6, 6, 1048, 48, new Color32(255,247,220,255), 22);
+        var region = E.Rect("Gauge Fill Region", _gauge, 8, 8, 1044, 44);
         var fill = E.Panel("Special Guarantee Fill", region, 0, 0, 0, 0, _theme.Accent, 20);
         _fill = fill.rectTransform; _fill.anchorMin = Vector2.zero; _fill.anchorMax = Vector2.one;
         _fill.offsetMin = _fill.offsetMax = Vector2.zero;
-        _progress = E.Label("Special Guarantee Progress", transform, _font, "", 12, 5, 1036, 31, 27, _theme.Ink);
-        E.Label("Bonus Guarantee Notice", transform, _font, "10+1의 보너스는 보장 횟수에서 제외", 12, 36, 1036, 17, 15, _theme.Ink);
-        _exchange = E.Button("Open Token Exchange", transform, _font, "토큰 교환소", -234, 77, 344, 64,
-            _theme.Cream, _theme.Ink, () => openExchange?.Invoke());
-        E.Icon("Actual Panda Token", _exchange.transform, _theme.PandaToken, 14, 8, 48, 48);
-        var exchangeLabel = _exchange.GetComponentInChildren<TextMeshProUGUI>();
-        exchangeLabel.rectTransform.offsetMin = new Vector2(63, -58);
-        exchangeLabel.rectTransform.offsetMax = new Vector2(333, -3);
-        _ticket = E.Button("Use One Machine Ticket", transform, _font, "뽑기권 1장 사용", 946, 77, 354, 64,
-            _theme.Cream, _theme.Ink, () => drawTicket?.Invoke());
-        E.Icon("Machine Ticket", _ticket.transform, _theme.Ticket, 12, 9, 48, 45);
-        var ticketLabel = _ticket.GetComponentInChildren<TextMeshProUGUI>();
-        ticketLabel.rectTransform.offsetMin = new Vector2(62, -58);
-        ticketLabel.rectTransform.offsetMax = new Vector2(343, -3);
-        _tickets = E.Label("Machine Ticket Balance", transform, _font, "", 946, 148, 225, 45, 22, _theme.Cream);
+        _progress = E.Label("Special Guarantee Progress", _gauge, _font, "", 12, 5, 1036, 31, 27, _theme.Ink);
+        E.Label("Bonus Guarantee Notice", _gauge, _font, "10+1의 보너스는 보장 횟수에서 제외", 12, 36, 1036, 17, 15, _theme.Ink);
+        var exchangeArt = E.ExchangeTitle("Open Token Exchange", transform, _theme, _font, 0, 119, 344, 118.4f);
+        exchangeArt.raycastTarget = true;
+        exchangeArt.gameObject.AddComponent<GachaButtonInputSound>();
+        _exchange = exchangeArt.gameObject.AddComponent<Button>();
+        GachaButtonInputSound.Bind(_exchange);
+        _exchange.targetGraphic = exchangeArt;
+        _exchange.transition = Selectable.Transition.None; // Keep the art and replacement lettering ground the same tint.
+        _exchange.onClick.AddListener(() => openExchange?.Invoke());
+        RefreshCatalogLayout();
+    }
+
+    public void BindCatalogLayout(RectTransform catalogFrame, RectTransform title = null, UIGachaSlotList catalog = null, RectTransform exit = null)
+    {
+        if (catalogFrame == null) return;
+        _catalogFrame = catalogFrame; _catalogTitle = title; _catalog = catalog;
+        _catalogExit = exit;
+        _catalogSize = catalogFrame.sizeDelta; _catalogPosition = catalogFrame.anchoredPosition;
+        if (title != null) _titlePosition = title.anchoredPosition;
+        if (exit != null) _exitPosition = exit.anchoredPosition;
+    }
+
+    private void LateUpdate() => RefreshCatalogLayout();
+
+    // Preserve full card sizes on short, wide viewports; only resize/reposition the frame.
+    private void RefreshCatalogLayout()
+    {
+        var view = transform.parent as RectTransform;
+        if (view != null && _exchange != null)
+            ((RectTransform)_exchange.transform).anchoredPosition =
+                new Vector2(32 + (Rect.rect.width - view.rect.width) * .5f, -119);
+        if (_catalog == null || _catalogFrame == null) return;
+        var parent = _catalogFrame.parent as RectTransform;
+        if (parent == null || view == null || parent.rect.size == _catalogParentSize) return;
+        _catalogParentSize = parent.rect.size;
+        _catalogFrame.sizeDelta = _catalogSize; _catalogFrame.anchoredPosition = _catalogPosition;
+        if (_catalogTitle != null) _catalogTitle.anchoredPosition = _titlePosition;
+        if (_catalogExit != null) _catalogExit.anchoredPosition = _exitPosition;
+        _catalogFrame.GetWorldCorners(_catalogCorners);
+        float oldTop = view.InverseTransformPoint(_catalogCorners[2]).y;
+        _catalogFrame.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical,
+            Mathf.Max(_catalogFrame.rect.height, _catalog.FourRowFrameHeight(_catalogFrame)));
+        _catalogFrame.GetWorldCorners(_catalogCorners);
+        float bottom = view.InverseTransformPoint(_catalogCorners[0]).y;
+        float top = view.InverseTransformPoint(_catalogCorners[2]).y;
+        float shift = Mathf.Max(0, view.rect.yMin + ((RectTransform)_exchange.transform).rect.height + 28 - bottom);
+        shift = Mathf.Min(shift, view.rect.yMax - 70 - top);
+        _catalogFrame.position += view.TransformVector(new Vector3(0, shift, 0));
+        if (_catalogTitle != null) _catalogTitle.position += view.TransformVector(new Vector3(0, top + shift - oldTop, 0));
+        if (_catalogExit != null)
+        {
+            var board = RectTransformUtility.CalculateRelativeRectTransformBounds(view, _catalogFrame);
+            var close = RectTransformUtility.CalculateRelativeRectTransformBounds(view, _catalogExit);
+            if (board.Intersects(close))
+                _catalogExit.position += view.TransformVector(new Vector3(board.min.x - close.max.x - 12, 0, 0));
+        }
     }
 
     public void SetResultPresentation(bool presenting)
     {
-        // The single result's badge reaches above the native card; keep its top edge clear.
-        Rect.anchoredPosition = new Vector2(0, presenting ? -45 : -105);
+        _gauge.gameObject.SetActive(!presenting);
         _exchange.gameObject.SetActive(!presenting);
-        _ticket.gameObject.SetActive(!presenting);
-        _tickets.gameObject.SetActive(!presenting);
+        if (!presenting) SnapToCommitted();
     }
 
     public void Refresh(int pity, int tickets, bool busy, bool canUseTicket = true)
     {
         _committed = Mathf.Clamp(pity, 0, 99);
-        _tickets.text = "보유 뽑기권  " + tickets;
         _exchange.interactable = !busy;
-        _ticket.interactable = !busy && tickets > 0 && canUseTicket;
         if (_until == 0) SnapToCommitted();
     }
 
@@ -127,5 +173,9 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
         _fill.anchorMax = new Vector2(Mathf.Clamp01(progress / 100f),1);
         _progress.text = "스페셜 보장  " + Mathf.RoundToInt(progress) + " / 100" + (progress >= 99 && progress < 100 ? "  · 다음 뽑기 확정!" : "");
     }
-    private void OnDisable() { if (_fill != null) SnapToCommitted(); }
+    private void OnDisable()
+    {
+        if (_fill != null) SnapToCommitted();
+        if (_exchange != null) _exchange.gameObject.SetActive(false);
+    }
 }

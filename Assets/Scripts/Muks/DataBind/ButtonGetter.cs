@@ -13,6 +13,16 @@ namespace Muks.DataBind
         private BindData<UnityAction> _data;
         private Button _button;
         private UnityAction _action;
+        private bool _inputOnlySound;
+
+        // Opt-in for runtime gacha UI only; other data-bound buttons keep their existing behavior.
+        public void SuppressAutomaticSoundBinding()
+        {
+            if (_bindId != "ButtonClickSound" && _bindId != "ButtonExitSound") return;
+            _inputOnlySound = true;
+            var button = _button != null ? _button : GetComponent<Button>();
+            if (button != null && _action != null) button.onClick.RemoveListener(_action);
+        }
 
 
         private void Awake()
@@ -31,6 +41,7 @@ namespace Muks.DataBind
 
         private void OnEnable()
         {
+            if (_inputOnlySound) return;
             if (_data.Item == null)
                 return;
 
@@ -44,6 +55,7 @@ namespace Muks.DataBind
 
         private void UpdateAction(UnityAction action)
         {
+            if (_inputOnlySound) return;
             if (!enabled)
                 return;
 

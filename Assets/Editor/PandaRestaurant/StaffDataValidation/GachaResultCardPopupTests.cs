@@ -27,6 +27,7 @@ public sealed partial class StaffGachaOfflineSessionTests
     private OfflineNavigationView _resultRaycastView;
     private StaffGachaOfflineSession _resultRaycastSession;
     private PopupItemResources _resultRaycastItems;
+    private GameObject _fairyInspectionFloor;
 
     [UnityTest]
     public IEnumerator ResultPopup_PlayerLoopRaycast_AllElevenStaffAndItemCardsKeepSummaryUntilBackdrop()
@@ -155,6 +156,53 @@ public sealed partial class StaffGachaOfflineSessionTests
         for (int frame = 0; frame < 120 && ui.Item.EditorSummaryComplete; frame++) yield return null;
         Assert.That(ui.Item.EditorSummaryComplete, Is.False, "The real Stop -> Idle animation must close summary");
         Assert.That(ui.Item.EditorVisibleSlotCount, Is.Zero);
+        // Fairy inspection uses the same read-only popup on its own overlay under a
+        // world-space floor root. Verify that exact canvas arrangement in a real UI frame.
+        var fairyFloor = _fairyInspectionFloor = new GameObject("Isolated fairy inspection floor");
+        fairyFloor.transform.position = new Vector3(.12f, 46.34f, 0f);
+        var fairyCanvas = new GameObject("Fairy Item Inspection", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        fairyCanvas.transform.SetParent(fairyFloor.transform, false);
+        fairyCanvas.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
+        fairyCanvas.GetComponent<Canvas>().sortingOrder = 30000;
+        var fairyScaler = fairyCanvas.GetComponent<CanvasScaler>();
+        fairyScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        fairyScaler.referenceResolution = new Vector2(1920f, 1080f);
+        fairyScaler.matchWidthOrHeight = .5f;
+        int closed = 0;
+        using (var fairyPopup = new GachaResultCardPopup(fairyCanvas.transform, itemCard))
+        {
+            fairyPopup.Closed += () => closed++;
+            fairyPopup.ShowItem(results[0], false);
+            yield return null;
+            var backdrop = fairyCanvas.GetComponentsInChildren<Button>().Single(button => button.name == "Dismiss Background");
+            // Route through the existing sanitized EventSystem even though this overlay
+            // lives on the floor rather than under the navigation's UI root.
+            EventSystem previous = EventSystem.current;
+            try
+            {
+                EventSystem.current = ui.Root.GetComponentInChildren<EventSystem>();
+                Canvas.ForceUpdateCanvases();
+                var pointer = new PointerEventData(EventSystem.current)
+                { position = new Vector2(Screen.width * .025f, Screen.height * .025f), button = PointerEventData.InputButton.Left };
+                var hits = new List<RaycastResult>();
+                EventSystem.current.RaycastAll(pointer, hits);
+                Assert.That(hits.Count, Is.GreaterThan(0));
+                var handler = ExecuteEvents.GetEventHandler<IPointerClickHandler>(hits[0].gameObject);
+                Assert.That(handler, Is.SameAs(backdrop.gameObject), "Actual overlay top hit closes the fairy detail");
+                ExecuteEvents.Execute(handler, pointer, ExecuteEvents.pointerClickHandler);
+                Assert.That(fairyPopup.IsOpen, Is.False);
+                fairyPopup.Hide();
+                Assert.That(closed, Is.EqualTo(1), "One close event despite repeated Hide");
+                fairyPopup.ShowItem(results[1], false);
+                yield return null;
+                Assert.That(fairyPopup.IsOpen, Is.True);
+                Assert.That(fairyCanvas.GetComponentsInChildren<UIGachaCard>(true).Length, Is.EqualTo(1));
+                Assert.That(Reference<TextMeshProUGUI>(fairyPopup.Card, "_nameText").text, Is.EqualTo(results[1].Name));
+            }
+            finally { EventSystem.current = previous; }
+        }
+        Object.Destroy(fairyFloor);
+        yield return null;
         Assert.That(PopupUserInfoState(), Is.EqualTo(originalUser));
         Assert.That(BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin, Is.False);
         Assert.That(session.Request, Is.SameAs(request));
@@ -185,6 +233,8 @@ public sealed partial class StaffGachaOfflineSessionTests
         }
         try
         {
+            if (_fairyInspectionFloor != null) Object.DestroyImmediate(_fairyInspectionFloor);
+            _fairyInspectionFloor = null;
             _resultRaycastView?.Dispose();
             _resultRaycastItems?.Dispose();
             _resultRaycastSession?.Dispose();

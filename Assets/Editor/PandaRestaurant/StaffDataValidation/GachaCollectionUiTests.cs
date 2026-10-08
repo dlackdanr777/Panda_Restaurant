@@ -143,12 +143,13 @@ public sealed class GachaCollectionUiTests
         Assert.That(hud.DisplayedProgress, Is.EqualTo(.01f).Within(.001));
         hud.Refresh(99, 0, false);
         Assert.That(hud.GetComponentsInChildren<TMP_Text>(true).Any(t => t.text.Contains("다음 뽑기 확정")), Is.True);
-        Assert.That(hud.GetComponentsInChildren<Button>(true).Single(b => b.name == "Use One Machine Ticket").interactable, Is.False);
+        Assert.That(hud.GetComponentsInChildren<Button>(true).Any(b => b.name == "Use One Machine Ticket"), Is.False);
         hud.SetResultPresentation(true);
-        Assert.That(hud.Rect.anchoredPosition.y, Is.EqualTo(-45));
+        Assert.That(hud.IsGaugeVisible, Is.False);
         Assert.That(hud.GetComponentsInChildren<Button>(true).All(button => !button.gameObject.activeSelf), Is.True,
             "Purchasing controls must not overlap result cards or badges");
         hud.SetResultPresentation(false);
+        Assert.That(hud.IsGaugeVisible, Is.True);
         Assert.That(hud.Rect.anchoredPosition.y, Is.EqualTo(-105));
     }
 
@@ -181,12 +182,12 @@ public sealed class GachaCollectionUiTests
         int before = reads; reply(true, "완료"); reply(true, "중복 콜백");
         Assert.That(reads, Is.EqualTo(before + 1));
         Assert.That(snapshot.PandaTokens, Is.EqualTo(500), "View must never mutate a wallet");
-        view.SelectTab(TokenExchangeTab.Staff); Assert.That(buy.interactable, Is.False);
+        view.SelectProduct("staff:owned"); Assert.That(buy.interactable, Is.False);
         Assert.That(view.transform.Find("Wooden Exchange Board/Product Grid/Product staff:owned/Availability")
             .GetComponent<TMP_Text>().text,
             Is.EqualTo("보유중"));
-        Assert.That(view.GetComponentsInChildren<TMP_Text>(true).Single(text => text.name == "Exchange Status").text,
-            Is.EqualTo("이미 보유"), "Only the small product-card status is shortened");
+        Assert.That(view.GetComponentsInChildren<TMP_Text>(true).Any(text => text.name == "Exchange Status"), Is.False,
+            "No auxiliary footer remains; unavailable products retain their card status");
         view.SetVisible(false); Assert.That(view.IsOpen, Is.False); Assert.That(closed, Is.EqualTo(1));
         view.SetVisible(false); Assert.That(closed, Is.EqualTo(1));
     }
@@ -298,9 +299,10 @@ public sealed class GachaCollectionUiTests
         callbacks[0](true, "old-account-confirmed");
         Assert.That(buy.interactable, Is.False);
         Assert.That(view.GetComponentsInChildren<TMP_Text>(true).Any(label => label.text.Contains("old-account-confirmed")), Is.False);
-        callbacks[1](true, "current-account-confirmed");
+        callbacks[1](false, "current-account-error");
         Assert.That(buy.interactable, Is.True);
-        Assert.That(view.GetComponentsInChildren<TMP_Text>(true).Any(label => label.text.Contains("current-account-confirmed")), Is.True);
+        Assert.That(view.GetComponentsInChildren<TMP_Text>(true).Any(label => label.text.Contains("current-account-error")), Is.True,
+            "Errors remain visible in the selected product description without restoring auxiliary footer text");
     }
 
     [TestCase(1280, 720)]
@@ -311,21 +313,22 @@ public sealed class GachaCollectionUiTests
         var theme = GachaCollectionUiTheme.Load();
         var products = new List<TokenExchangeProductView>();
         foreach (TokenExchangeTab tab in new[] { TokenExchangeTab.Tickets, TokenExchangeTab.Staff, TokenExchangeTab.Items })
-            for (int i = 0; i < (tab == TokenExchangeTab.Tickets ? 2 : 6); i++)
+            for (int i = 0; i < 2; i++)
                 products.Add(new TokenExchangeProductView { Id = tab + ":" + i, Category = tab,
                     Name = "프레임 내부에 표시하는 아주 긴 상품 이름 " + i, Rank = (Rank)(i % 5), Price = 100,
                     Quantity = 1, CanPurchase = true, Sprite = theme.Ticket });
         var snapshot = new TokenExchangeSnapshot { PandaTokens = 999, Products = products };
         var view = TokenExchangeView.Attach(_root.transform, theme, () => snapshot, (id, reply) => {});
         view.SetVisible(true); SettleExchange(view);
+        var description = view.Board.Find("Selected Product Description").GetComponent<TMP_Text>();
+        Assert.That(description.alignment, Is.EqualTo(TextAlignmentOptions.Center));
         int ActiveProducts() => view.GetComponentsInChildren<Button>(true)
             .Count(button => button.gameObject.activeSelf && button.name.StartsWith("Product "));
-        Assert.That(ActiveProducts(), Is.EqualTo(2), "Fixed tickets must not be duplicated to fill the grid");
+        Assert.That(ActiveProducts(), Is.EqualTo(6));
+        Assert.That(view.GetComponentsInChildren<Button>(true).Any(b => b.name.StartsWith("Tab ")), Is.False);
         Assert.That(view.GetComponentsInChildren<ScrollRect>(true), Is.Empty);
         Assert.That(view.GetComponentsInChildren<Button>(true).Count(b => b.name == "Close Exchange"), Is.EqualTo(1));
-        foreach (TokenExchangeTab tab in new[] { TokenExchangeTab.Staff, TokenExchangeTab.Items })
         {
-            view.SelectTab(tab);
             Assert.That(ActiveProducts(), Is.EqualTo(6));
             var grid = (RectTransform)view.Board.Find("Product Grid");
             foreach (Button button in grid.GetComponentsInChildren<Button>(true))
@@ -355,24 +358,124 @@ public sealed class GachaCollectionUiTests
     }
 
     [Test]
+    public void Exchange_TokenPriceCentersAndKeepsTokenAttachedAsPriceWidens()
+    {
+        var snapshot = new TokenExchangeSnapshot
+        {
+            Products = new[]
+            {
+                new TokenExchangeProductView { Id = "short", Name = "짧은 가격", Price = 40, Quantity = 1, CanPurchase = true },
+                new TokenExchangeProductView { Id = "long", Name = "긴 가격", Price = 1234567890, Quantity = 1, CanPurchase = true }
+            }
+        };
+        var view = TokenExchangeView.Attach(_root.transform, GachaCollectionUiTheme.Load(), () => snapshot,
+            (id, reply) => { });
+        view.SetVisible(true);
+        SettleExchange(view);
+
+        var outerRow = (RectTransform)view.Board.Find("Selected Price Row");
+        var priceRow = (RectTransform)outerRow.Find("Token Price Row");
+        var price = priceRow.Find("Token Price").GetComponent<TMP_Text>();
+        var token = priceRow.Find("Price Panda Token").GetComponent<Image>();
+        var quantity = view.Board.Find("Quantity").GetComponent<RectTransform>();
+        var productCard = view.Board.Find("Product Grid/Product short");
+        var artwork = productCard.Find("Artwork").GetComponent<RectTransform>();
+        Assert.That(artwork.pivot, Is.EqualTo(new Vector2(.5f, .5f)));
+        Assert.That(artwork.anchoredPosition, Is.EqualTo(new Vector2(-1.5f, 11.7f)));
+        Assert.That(artwork.sizeDelta, Is.EqualTo(new Vector2(120, 100)));
+        var nameRect = productCard.Find("Product Name").GetComponent<RectTransform>();
+        Assert.That(nameRect.anchorMin, Is.EqualTo(new Vector2(.5f, .5f)));
+        Assert.That(nameRect.pivot, Is.EqualTo(new Vector2(.5f, .5f)));
+        Assert.That(nameRect.anchoredPosition, Is.EqualTo(new Vector2(0, -58.2f)));
+        Assert.That(nameRect.sizeDelta, Is.EqualTo(new Vector2(120, 24)));
+        for (int starIndex = 0; starIndex < 5; starIndex++)
+        {
+            var starRect = productCard.Find("Rank Star " + (starIndex + 1)).GetComponent<RectTransform>();
+            Assert.That(starRect.anchorMin, Is.EqualTo(new Vector2(.5f, .5f)));
+            Assert.That(starRect.pivot, Is.EqualTo(new Vector2(.5f, 1f)));
+            Assert.That(starRect.anchoredPosition, Is.EqualTo(new Vector2(-40 + starIndex * 20, -28)));
+            Assert.That(starRect.sizeDelta, Is.EqualTo(new Vector2(20, 20)));
+        }
+        var productPriceGroup = productCard.Find("Price Group");
+        Assert.That(productPriceGroup.GetComponent<HorizontalLayoutGroup>().spacing, Is.EqualTo(5));
+        Assert.That(productPriceGroup.GetComponent<ContentSizeFitter>().horizontalFit,
+            Is.EqualTo(ContentSizeFitter.FitMode.PreferredSize));
+        var cardToken = productPriceGroup.Find("Panda Token Price").GetComponent<Image>();
+        var cardTokenLayout = cardToken.GetComponent<LayoutElement>();
+        Assert.That(cardTokenLayout.preferredWidth, Is.EqualTo(30));
+        Assert.That(cardTokenLayout.preferredHeight, Is.EqualTo(30));
+        var cardPrice = productPriceGroup.Find("Price").GetComponent<TMP_Text>();
+        Assert.That(cardPrice.enableAutoSizing, Is.True);
+        Assert.That(cardPrice.fontSizeMin, Is.EqualTo(14));
+        Assert.That(cardPrice.fontSizeMax, Is.EqualTo(20));
+        Assert.That(cardPrice.textWrappingMode, Is.EqualTo(TextWrappingModes.NoWrap));
+        Assert.That(productPriceGroup.Find("Availability"), Is.Not.Null);
+        float shortCardGroupWidth = ((RectTransform)productPriceGroup).rect.width;
+        view.SelectProduct("long");
+        Canvas.ForceUpdateCanvases();
+        float longCardGroupWidth = ((RectTransform)productPriceGroup).rect.width;
+        Assert.That(longCardGroupWidth, Is.GreaterThan(shortCardGroupWidth));
+        var outerLayout = outerRow.GetComponent<HorizontalLayoutGroup>();
+        var innerLayout = priceRow.GetComponent<HorizontalLayoutGroup>();
+        var sizeFitter = priceRow.GetComponent<ContentSizeFitter>();
+        var tokenLayout = token.GetComponent<LayoutElement>();
+        Assert.That(outerLayout.childAlignment, Is.EqualTo(TextAnchor.MiddleCenter));
+        Assert.That(outerLayout.childControlWidth, Is.False);
+        Assert.That(outerLayout.childControlHeight, Is.False);
+        Assert.That(outerLayout.childForceExpandWidth, Is.False);
+        Assert.That(outerLayout.childForceExpandHeight, Is.False);
+        Assert.That(innerLayout.childAlignment, Is.EqualTo(TextAnchor.MiddleCenter));
+        Assert.That(innerLayout.spacing, Is.EqualTo(5));
+        Assert.That(innerLayout.childControlWidth, Is.True);
+        Assert.That(innerLayout.childForceExpandWidth, Is.False);
+        Assert.That(sizeFitter.horizontalFit, Is.EqualTo(ContentSizeFitter.FitMode.PreferredSize));
+        Assert.That(sizeFitter.verticalFit, Is.EqualTo(ContentSizeFitter.FitMode.Unconstrained));
+        Assert.That(tokenLayout.preferredWidth, Is.EqualTo(40));
+        Assert.That(tokenLayout.preferredHeight, Is.EqualTo(40));
+        Assert.That(tokenLayout.flexibleWidth, Is.Zero);
+        Assert.That(tokenLayout.flexibleHeight, Is.Zero);
+        Assert.That(price.alignment, Is.EqualTo(TextAlignmentOptions.MidlineLeft));
+        Assert.That(price.enableAutoSizing, Is.False);
+        Assert.That(price.textWrappingMode, Is.EqualTo(TextWrappingModes.NoWrap));
+        Assert.That(price.GetComponent<ContentSizeFitter>(), Is.Null);
+        float shortWidth = price.rectTransform.rect.width;
+        float shortTokenX = RectTransformUtility.CalculateRelativeRectTransformBounds(outerRow, token.rectTransform).min.x;
+
+        view.SelectProduct("long");
+
+        Canvas.ForceUpdateCanvases();
+        float longWidth = price.rectTransform.rect.width;
+        var tokenBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(outerRow, token.rectTransform);
+        var priceBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(outerRow, price.rectTransform);
+        float longTokenX = tokenBounds.min.x;
+        float groupCenter = (tokenBounds.min.x + priceBounds.max.x) * 0.5f;
+        float expectedCenter = outerRow.rect.center.x;
+        Assert.That(longWidth, Is.GreaterThan(shortWidth));
+        Assert.That(longTokenX, Is.LessThan(shortTokenX));
+        Assert.That(priceBounds.min.x - tokenBounds.max.x, Is.EqualTo(5f).Within(0.5f));
+        Assert.That(groupCenter, Is.EqualTo(expectedCenter).Within(0.01f));
+        Assert.That(quantity.rect.center.x, Is.EqualTo(outerRow.rect.center.x).Within(0.01f));
+    }
+
+    [Test]
     public void Exchange_EntranceAndPendingRequestBlockRepeatedInputAndRetainDisplayVersion()
     {
         int purchases = 0, refreshes = 0; Action<bool, string> pending = null;
-        var snapshot = new TokenExchangeSnapshot { StaffVersion = 7, RemainingRefreshes = 3, CanRefreshStaff = true,
+        var snapshot = new TokenExchangeSnapshot { DisplayVersion = 7, RemainingRefreshes = 3, CanRefresh = true,
             Products = new[] { new TokenExchangeProductView { Id = "staff:7", Category = TokenExchangeTab.Staff,
                 Name = "직원", Rank = Rank.Rare, Quantity = 1, Price = 100, CanPurchase = true, DisplayVersion = 7 } } };
         var view = TokenExchangeView.Attach(_root.transform, GachaCollectionUiTheme.Load(), () => snapshot,
             (id, version, reply) => { Assert.That(id, Is.EqualTo("staff:7")); Assert.That(version, Is.EqualTo(7)); purchases++; pending = reply; },
-            (tab, version, reply) => { Assert.That(tab, Is.EqualTo(TokenExchangeTab.Staff)); Assert.That(version, Is.EqualTo(7)); refreshes++; pending = reply; });
-        view.SelectTab(TokenExchangeTab.Staff); view.SetVisible(true);
+            (tab, version, reply) => { Assert.That(tab, Is.EqualTo(TokenExchangeTab.Mixed)); Assert.That(version, Is.EqualTo(7)); refreshes++; pending = reply; });
+        view.SetVisible(true);
         Button Button(string name) => view.GetComponentsInChildren<Button>(true).Single(b => b.name == name);
         var buy = Button("Exchange Selected Product"); var refresh = Button("Refresh Display");
         Assert.That(view.IsEntering, Is.True);
         var entrance = view.Board.anchoredPosition;
         view.SetVisible(true);
         Assert.That(view.Board.anchoredPosition, Is.EqualTo(entrance), "Repeated open must not create or restart a tween");
-        buy.onClick.Invoke(); refresh.onClick.Invoke(); Button("Tab Items").onClick.Invoke();
-        Assert.That(purchases + refreshes, Is.Zero); Assert.That(view.CurrentTab, Is.EqualTo(TokenExchangeTab.Staff));
+        buy.onClick.Invoke(); refresh.onClick.Invoke(); Button("Product staff:7").onClick.Invoke();
+        Assert.That(purchases + refreshes, Is.Zero); Assert.That(view.SelectedProductId, Is.EqualTo("staff:7"));
         view.SetVisible(false);
         Assert.That(view.Board.anchoredPosition, Is.EqualTo(Vector2.zero));
         Assert.That(view.Board.localRotation, Is.EqualTo(Quaternion.identity));
@@ -417,6 +520,38 @@ public sealed class GachaCollectionUiTests
         Assert.That(original.alpha, Is.EqualTo(.75f)); Assert.That(original.blocksRaycasts, Is.True);
     }
 
+    [Test]
+    public void Exchange_SoldOutStampUsesOnlyConfirmedSlotStateAndResetsWithNewDisplay()
+    {
+        var product = new TokenExchangeProductView { Id = "item:stamp", Name = "아이템", Quantity = 1,
+            Price = 100, CanPurchase = true, DisplayVersion = 1, Category = TokenExchangeTab.Items };
+        var snapshot = new TokenExchangeSnapshot { DisplayVersion = 1, Products = new[] { product } };
+        var theme = GachaCollectionUiTheme.Load();
+        var view = TokenExchangeView.Attach(_root.transform, theme, () => snapshot, (id, callback) => {});
+        view.SetVisible(true); SettleExchange(view);
+        var stamp = (RectTransform)view.transform.Find("Wooden Exchange Board/Product Grid/Product item:stamp/SOLD OUT Stamp");
+        Assert.That(stamp.gameObject.activeSelf, Is.False);
+        product.CanPurchase = false; product.Status = "잔액 부족"; view.Refresh();
+        Assert.That(stamp.gameObject.activeSelf, Is.False, "Unavailable is not sold out");
+        product.SoldOut = true; view.Refresh();
+        Assert.That(stamp.gameObject.activeSelf, Is.True);
+        Assert.That(stamp.localScale.x, Is.GreaterThan(1), "Confirmed purchase begins the stamping motion");
+        var label = stamp.GetComponentInChildren<TMP_Text>(true);
+        Assert.That(label.text, Is.EqualTo("SOLD OUT")); Assert.That(label.font, Is.SameAs(theme.SoldOutFont));
+        Assert.That(AssetDatabase.GetAssetPath(label.font), Is.EqualTo("Assets/TextMesh Pro/Fonts/영덕대게체.asset"));
+        Assert.That(label.font.faceInfo.familyName, Is.EqualTo("Yeongdeok Snow Crab"));
+        Assert.That(label.color, Is.EqualTo((Color)new Color32(186, 42, 32, 255)));
+        Assert.That(stamp.GetComponentsInChildren<Graphic>(true).All(x => !x.raycastTarget), Is.True);
+        view.TickPresentation(Time.realtimeSinceStartup + .31f);
+        Assert.That(stamp.localScale, Is.EqualTo(Vector3.one));
+        view.SetVisible(false); view.SetVisible(true); SettleExchange(view);
+        Assert.That(stamp.gameObject.activeSelf, Is.True);
+        snapshot.DisplayVersion = product.DisplayVersion = 2; product.SoldOut = false; product.CanPurchase = true;
+        view.Refresh(); Assert.That(stamp.gameObject.activeSelf, Is.False);
+        view.ResetSession(); product.SoldOut = true; view.SetVisible(true); SettleExchange(view);
+        Assert.That(stamp.localScale, Is.EqualTo(Vector3.one), "Account replacement must not replay an old purchase animation");
+    }
+
     private static void SettleExchange(TokenExchangeView view)
     {
         float openedAt = (float)typeof(TokenExchangeView).GetField("_openedAt", Fields).GetValue(view);
@@ -454,6 +589,10 @@ public sealed class GachaCollectionUiTests
             animator.Rebind(); animator.Play("Base Layer.Idle", 0, 0); animator.Update(0);
 
             if (ticket) view.DrawCollectionTicket(); else staff.OnSingleGachaButtonClicked();
+            Assert.That(memory.CommitCount, Is.Zero, "Opening the choice never pays");
+            Assert.That(view.CollectionPayment.IsOpen, Is.True);
+            if (ticket) view.CollectionPayment.TicketButton.onClick.Invoke();
+            else view.CollectionPayment.DiamondButton.onClick.Invoke();
             Assert.That(memory.CommitCount, Is.EqualTo(1));
             Assert.That(view.IsStartGacha, Is.True, "The committed result must claim the native presentation in the same call");
             staff.OnSingleGachaButtonClicked();
