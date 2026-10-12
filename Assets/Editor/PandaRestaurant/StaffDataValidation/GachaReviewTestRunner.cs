@@ -27,10 +27,13 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private static string OutputDirectory => _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _fairyBirthInput ? FairyBirthInputOutputDirectory : _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string FairyBirthInputOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_FAIRY_INPUT_EVIDENCE_DIR"))
+        ? Path.Combine(Path.GetTempPath(), "FairyBirthInputReview") : Environment.GetEnvironmentVariable("PANDA_FAIRY_INPUT_EVIDENCE_DIR");
     private static string ExchangeInspectorOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_EXCHANGE_EVIDENCE_DIR"))
         ? Path.Combine(Path.GetTempPath(), "TokenExchangeInspectorReview") : Environment.GetEnvironmentVariable("PANDA_EXCHANGE_EVIDENCE_DIR");
     private static bool _exchangeInspector;
+    private static bool _fairyBirthInput;
     private static bool _phase5;
     private static bool _fireworks;
     private static bool _phase4;
@@ -59,6 +62,13 @@ public static class GachaReviewTestRunner
     private static IDisposable _coroutineLogScope;
     private static int _editorThread;
     public static bool IsRunning => _running;
+    public static void RunFairyBirthInputBatch()
+    {
+        _fairyBirthInput = true;
+        Environment.SetEnvironmentVariable("PANDA_FAIRY_INPUT_EVIDENCE_DIR", Path.GetFullPath(FairyBirthInputOutputDirectory));
+        EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
+        RunPhase1Batch();
+    }
     public static void RunExchangeInspectorBatch()
     {
         _exchangeInspector = true;
@@ -123,7 +133,7 @@ public static class GachaReviewTestRunner
         {
             if (EditorApplication.timeSinceStartup < readyAt || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
             EditorApplication.update -= StartWhenReady;
-            try { Begin(_exchangeInspector ? "exchange-inspector" : _phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
+            try { Begin(_fairyBirthInput ? "fairy-input" : _exchangeInspector ? "exchange-inspector" : _phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
                 : Environment.GetCommandLineArgs().Contains("-fairyEvidenceOnly") ? "fairy-evidence"
                 : Environment.GetCommandLineArgs().Contains("-fairyUiOnly") ? "ui"
                 : Environment.GetCommandLineArgs().Contains("-fairyOnly") ? "fairy" : "phase1"); }
@@ -239,12 +249,17 @@ public static class GachaReviewTestRunner
         const string fixtureArgument = "-reviewFixture=";
         string selectedFixture = Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(fixtureArgument, StringComparison.Ordinal));
         if (selectedFixture != null) selectedFixture = selectedFixture.Substring(fixtureArgument.Length);
+        const string methodArgument = "-reviewMethod=";
+        string selectedMethod = _fairyBirthInput ? Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(methodArgument, StringComparison.Ordinal)) : null;
+        if (selectedMethod != null) selectedMethod = selectedMethod.Substring(methodArgument.Length);
         IEnumerable<string> fixtures = _phase3 ? FixtureNames.Concat(new[] { "GachaPhase3Tests", "Stage1Phase3StressTests", "ItemGachaCapsulePresentationTests" }) : FixtureNames;
         if (_phase4) fixtures = fixtures.Concat(new[] { "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffGroundContactTests", "StaffGachaEntryTests", "Phase4AdUiEvidenceTests", "AdvertisementDiamondRewardTests" });
         if (_phase4 && !Environment.GetCommandLineArgs().Contains("-phase4CoreOnly")) fixtures = fixtures.Concat(new[] { "FairyBirthSequenceTests" });
         if (_phase5) fixtures = fixtures.Concat(new[] { "PresentationSoundTests", "FairyBirthSoundTests", "Phase5UiSoundTests", "FairySoundStage1EvidenceTests", "Phase5UiSoundEvidenceTests" });
         if (_exchangeInspector) fixtures = new[] { "TokenExchangeInspectorTests", "GachaCollectionUiTests", "GachaExchangeCatalogTests",
             "Phase5UiSoundTests", "PresentationSoundTests", "GachaCollectionPreviewSafetyTests" };
+        if (_fairyBirthInput) fixtures = new[] { "FairyBirthInputTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
+            "FairyBirthSequenceTests", "FairyBirthSoundTests", "PresentationSoundTests" };
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;
@@ -258,6 +273,12 @@ public static class GachaReviewTestRunner
             Type fixture = assembly.GetType(name, true);
             foreach (MethodInfo method in fixture.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
+                if (selectedMethod != null && method.Name != selectedMethod) continue;
+                if (_fairyBirthInput && (method.Name == "Stage1_ElevenConfirmedBirthsProduceTheFireworksEvidence"
+                    || method.Name == "Stage1_ProductionBirthUsesVisibleWallPuffJumpAndThenFreeBehaviour"
+                    || method.Name == "Stage1_ProductionRestoreHallKitchenFloorReturnAndReentryPreserveObjects")) continue;
+                if (_fairyBirthInput && method.Name == "Stage1_FiftyTapNormalSpeedVideoAndOriginalAudioEvidence"
+                    && selectedMethod != method.Name && !Environment.GetCommandLineArgs().Contains("-fairyInputVideo")) continue;
                 if (_textStamp && name == "GachaCollectionUiTests" && !method.Name.Contains("Exchange") && !method.Name.StartsWith("Theme_")) continue;
                 if (_textStamp && name == "Stage1Phase3StressTests" && method.Name != "Stage1_PaymentLayoutAndNativeSingleItemCapsuleEvidence") continue;
                 if (_group == "fairy-evidence" && method.Name != "Stage1_FairyTapReusesReadOnlyCardBlocksDragAndClosesWithoutChangingOwnership"
@@ -323,7 +344,7 @@ public static class GachaReviewTestRunner
         public void TestStarted(ITest test)
         {
             RequireEditorThread();
-            if (_exchangeInspector && !test.IsSuite) _logScope = CreateLogScope();
+            if ((_exchangeInspector || _fairyBirthInput) && !test.IsSuite) _logScope = CreateLogScope();
         }
         public void TestOutput(TestOutput output) { }
         public void TestFinished(ITestResult result)
@@ -347,7 +368,7 @@ public static class GachaReviewTestRunner
         }
     }
 
-    // The inline NUnit bridge does not create Unity's log scopes. The Inspector mode does,
+    // The inline NUnit bridge does not create Unity's log scopes. Explicit Inspector/input modes do,
     // so LogAssert.Expect is checked and unanticipated errors cannot silently pass.
     private static IDisposable CreateLogScope()
     {
@@ -481,6 +502,7 @@ public static class GachaReviewTestRunner
             failed = Cases.Count(test => test.status == "Failed"), skipped = Cases.Count(test => test.status == "Skipped"),
             inconclusive = Cases.Count(test => test.status == "Inconclusive")
         };
+        if (_fairyBirthInput) report.scope = "Selected fairy input/birth/audio NUnit tests on the main Editor thread. Actual Stage1 is read in a disposable PreviewScene. Production pointer frame processors use a temporary owned collider in the already loaded default-physics scene; the collider is deleted before scene/dirty/Selection/Undo witness comparison. No existing scene object is edited or saved, no scene replacement, Play transition, SDK/login or production backend call. Evidence is written under PANDA_FAIRY_INPUT_EVIDENCE_DIR. Optional video uses deterministic 1:1 simulation-frame timing, not device or real-time performance capture.";
         report.success = string.IsNullOrEmpty(_error) && report.total > 0 && report.failed == 0 && report.skipped == 0 && report.inconclusive == 0;
         File.WriteAllText(Path.Combine(OutputDirectory, OutputPrefix + "-tests.json"), JsonUtility.ToJson(report, true));
     }

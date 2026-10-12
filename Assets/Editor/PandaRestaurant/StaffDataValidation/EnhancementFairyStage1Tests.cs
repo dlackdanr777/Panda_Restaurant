@@ -91,7 +91,11 @@ public sealed class EnhancementFairyStage1Tests
         using (var host = new EnhancementFairyStage1Host())
         using (var fonts = new StaffGachaOfflineFonts())
         {
-            foreach (var itemUi in host.SceneComponents<UIItemGacha>()) fonts.BindBeforeActivation(itemUi.gameObject);
+            foreach (var itemUi in host.SceneComponents<UIItemGacha>())
+            {
+                itemUi.gameObject.SetActive(false); // The isolated Stage1 copy is prepared before font binding.
+                fonts.BindBeforeActivation(itemUi.gameObject);
+            }
             var items = host.Catalog.Where(EnhancementFairyCatalog.IsEligible).Take(8).ToArray();
             host.Restore(items.Select(item => new KeyValuePair<string, int>(item.Id, 3)));
             host.Move(ERestaurantFloorType.Floor3);
