@@ -88,8 +88,6 @@ public partial class UIGacha
         if (label != null)
         {
             label.text = eleven ? "10+1회 뽑기" : "1회 뽑기";
-            label.rectTransform.anchoredPosition = Vector2.zero;
-            label.enableAutoSizing = true;
         }
         var money = button.transform.Find("Money Image");
         if (money != null) money.gameObject.SetActive(false);
