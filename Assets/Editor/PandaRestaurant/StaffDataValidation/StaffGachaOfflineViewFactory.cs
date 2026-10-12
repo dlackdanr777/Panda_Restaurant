@@ -48,9 +48,12 @@ public static class StaffGachaOfflineViewFactory
             preview = EditorSceneManager.OpenPreviewScene(SourceScenePath);
             Transform group = preview.GetRootGameObjects().SingleOrDefault(item => item.name == "Canvas Group")?.transform;
             UIGacha source = group?.Find(SourceViewPath)?.GetComponent<UIGacha>();
-            if (source == null || source.gameObject.activeSelf)
-                throw new InvalidOperationException("The existing inactive Gacha UI source could not be verified.");
+            if (source == null || source.gameObject.scene != preview)
+                throw new InvalidOperationException("The existing Stage1 Gacha UI source could not be verified.");
 
+            // Source activeSelf is an authored Scene value. Never change it. The destination
+            // parent is inactive before Instantiate, so even an active source is copied without
+            // gameplay Awake/OnEnable running before offline dependencies and callbacks are set.
             root = new GameObject(RootName, typeof(RectTransform));
             root.SetActive(false);
             SceneManager.MoveGameObjectToScene(root, destination);
@@ -66,6 +69,7 @@ public static class StaffGachaOfflineViewFactory
             EditorUtility.CopySerialized(originalScaler, scaler);
             root.AddComponent<GraphicRaycaster>();
 
+            if (root.activeInHierarchy) throw new InvalidOperationException("The offline copy parent must stay inactive.");
             GameObject clone = Object.Instantiate(source.gameObject, root.transform, false);
             clone.name = source.name;
             clone.SetActive(false);
@@ -273,7 +277,9 @@ public static class StaffGachaOfflineViewFactory
     {
         if (component == view || component == staff || component is UIGachaCard ||
             component is UIItemStar || component is GachaCapsule || component is ScrollingImage ||
-            component is RotationGameObject || component is GachaButtonInputSound) return true;
+            component is RotationGameObject || component is GachaButtonInputSound ||
+            component is TokenExchangeView || component is TokenExchangeViewportFitter ||
+            component is GachaRoundedPanel) return true;
         // Exact assemblies exclude game subclasses; only rendering/layout and inert controls survive.
         // EventTrigger and other arbitrary UnityEvent dispatchers are deliberately not in the list.
         Type type = component.GetType();

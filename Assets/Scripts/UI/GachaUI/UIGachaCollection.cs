@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Muks.MobileUI;
 using UnityEngine;
+using UnityEngine.UI;
 
 /// <summary>The existing two-machine view owns one exchange modal and one account-scoped service.</summary>
 public partial class UIGacha
@@ -11,7 +12,9 @@ public partial class UIGacha
     public TokenExchangeView CollectionExchange => _collectionExchange;
     public GachaCollectionMachineHud CollectionHud => _collectionHud;
     public string CollectionError { get; private set; }
-    private TokenExchangeView _collectionExchange;
+    [Header("Token Exchange")]
+    [SerializeField] private TokenExchangeView _collectionExchange;
+    [SerializeField] private Button _collectionExchangeButton;
     private GachaCollectionMachineHud _collectionHud;
     private GachaCollectionUiTheme _collectionTheme;
     private GachaMachineKind _collectionHudMachine;
@@ -22,6 +25,7 @@ public partial class UIGacha
     private readonly HashSet<GachaAcquisitionResult> _revealedCollectionResults = new HashSet<GachaAcquisitionResult>();
     private GachaEconomyTransaction _revealTransaction;
     private string _reportedCollectionFailure;
+    private string _collectionLayoutError;
     private readonly List<HiddenCollectionLayer> _hiddenCollectionLayers = new List<HiddenCollectionLayer>();
     private sealed class HiddenCollectionLayer
     {
@@ -32,9 +36,11 @@ public partial class UIGacha
 
     public void BindCollectionEconomy(GachaEconomyService economy)
     {
-        if (ReferenceEquals(Economy, economy) && _collectionHud != null) return;
+        if (ReferenceEquals(Economy, economy) && _collectionHud != null &&
+            _collectionExchange != null && _collectionExchange.IsConfigured && _collectionLayoutError == null &&
+            ValidateCollectionReferences(out _)) return;
         HideCollectionUI();
-        _collectionExchange?.ResetSession();
+        if (IsCollectionChild(_collectionExchange)) _collectionExchange.ResetSession();
         _pendingExchangeReply = null;
         _pendingExchangeTransaction = null;
         _reportedCollectionFailure = null;
@@ -45,13 +51,13 @@ public partial class UIGacha
             if (machine is UIStaffGacha staff) staff.BindCollectionEconomy(this, economy);
             if (machine is UIItemGacha item) item.BindCollectionEconomy(this, economy);
         }
+        if (_collectionTheme == null) _collectionTheme = GachaCollectionUiTheme.Load();
+        if (_collectionTheme == null || _collectionTheme.PandaToken == null)
+        { RejectCollectionLayout("GachaCollectionUiTheme 또는 PandaToken 참조가 없습니다."); return; }
         if (_collectionHud == null)
         {
-            _collectionTheme = GachaCollectionUiTheme.Load();
-            if (_collectionTheme == null || _collectionTheme.PandaToken == null)
-            { CollectionError = "토큰 교환소 UI 설정이 없습니다."; return; }
             _collectionHud = GachaCollectionMachineHud.Attach((RectTransform)transform, _collectionTheme,
-                OpenCollectionExchange, DrawCollectionTicket);
+                OpenCollectionExchange, DrawCollectionTicket, null, false);
             var frame = _gachaItemList != null ? _gachaItemList.transform.Find("Background Image") as RectTransform : null;
             if (frame != null)
             {
@@ -61,14 +67,50 @@ public partial class UIGacha
                 var exit = _uiComponents != null ? _uiComponents.transform.Find("Exit Button") as RectTransform : null;
                 _collectionHud.BindCatalogLayout(frame, title, _gachaItemList, exit);
             }
-            _collectionExchange = TokenExchangeView.Attach(transform, _collectionTheme,
-                ReadExchangeSnapshot, PurchaseExchangeProduct, RefreshExchangeDisplay, () =>
-                {
-                    RestoreCollectionLayers();
-                    _collectionHud?.SnapToCommitted();
-                });
         }
+        if (!ValidateCollectionReferences(out string layoutError)) RejectCollectionLayout(layoutError);
+        else if (_collectionExchange.Bind(null, ReadExchangeSnapshot,
+            PurchaseExchangeProduct, RefreshExchangeDisplay, OnCollectionExchangeClosed))
+        {
+            _collectionLayoutError = null;
+            CollectionError = null;
+            _collectionHud.BindExchangeButton(_collectionExchangeButton, OpenCollectionExchange);
+            _collectionHud.SetExchangeAvailable(true);
+        }
+        else RejectCollectionLayout("UIGacha._collectionExchange 초기화에 실패했습니다. 교환소의 참조 진단을 확인하세요.");
         _nextCollectionRefresh = 0;
+    }
+
+    private bool IsCollectionChild(Component component) => component != null &&
+        component.transform != transform && component.transform.IsChildOf(transform);
+
+    private bool ValidateCollectionReferences(out string error)
+    {
+        if (!IsCollectionChild(_collectionExchange))
+        { error = "UIGacha._collectionExchange에 이 Gacha UI 아래의 TokenExchangeView를 연결해야 합니다."; return false; }
+        if (!IsCollectionChild(_collectionExchangeButton) ||
+            _collectionExchangeButton.transform.IsChildOf(_collectionExchange.transform))
+        { error = "UIGacha._collectionExchangeButton에 교환소 밖의 가챠 진입 버튼을 연결해야 합니다."; return false; }
+        return _collectionExchange.ValidateLayout(out error);
+    }
+
+    private void RejectCollectionLayout(string error)
+    {
+        CollectionError = "토큰 교환소 UI 연결 오류: " + error;
+        // A missing serialized field must not leave an accidentally active authored overlay
+        // blocking the machine. Only this view's descendants are touched, never a foreign view.
+        foreach (var exchange in GetComponentsInChildren<TokenExchangeView>(true))
+            if (IsCollectionChild(exchange)) exchange.SetVisible(false);
+        RestoreCollectionLayers();
+        _collectionHud?.SetExchangeAvailable(false);
+        if (_collectionLayoutError != error) Debug.LogError(CollectionError, this);
+        _collectionLayoutError = error;
+    }
+
+    private void OnCollectionExchangeClosed()
+    {
+        RestoreCollectionLayers();
+        _collectionHud?.SnapToCommitted();
     }
 
     private GachaMachineKind CollectionMachine => _currentGachaMachine is UIStaffGacha
@@ -105,7 +147,7 @@ public partial class UIGacha
         if (_collectionHud == null) return;
         bool visible = Economy != null && !_questStaffEntry && VisibleState == VisibleState.Appeared;
         _collectionHud.gameObject.SetActive(visible);
-        if (!visible) { _collectionPayment?.Close(); _collectionExchange?.SetVisible(false); return; }
+        if (!visible) { HideCollectionUI(); return; }
         _collectionHud.SetResultPresentation(_isStartGacha);
         var machine = CollectionMachine;
         if (machine != _collectionHudMachine || (_collectionWasDrawing && !_isStartGacha))
@@ -116,7 +158,7 @@ public partial class UIGacha
         _nextCollectionRefresh = Time.unscaledTime + .1f;
         var state = Economy.Snapshot?.Account?.GachaEconomy;
         _collectionHud.Refresh(state?.Counter(machine) ?? 0, state?.Tickets(machine) ?? 0,
-            Economy.IsBusy || _isStartGacha || _collectionExchange.IsOpen || IsChoosingPayment,
+            Economy.IsBusy || _isStartGacha || (IsCollectionChild(_collectionExchange) && _collectionExchange.IsOpen) || IsChoosingPayment,
             Economy.CanDraw(machine, GachaPaymentKind.TicketSingle, out _));
     }
 
@@ -124,9 +166,16 @@ public partial class UIGacha
     {
         if (Economy == null || Economy.IsBusy || _isStartGacha || _questStaffEntry ||
             VisibleState != VisibleState.Appeared || IsChoosingPayment) return;
+        if (!ValidateCollectionReferences(out string layoutError))
+        { RejectCollectionLayout(layoutError); return; }
+        if (!_collectionExchange.IsConfigured)
+        { RejectCollectionLayout("UIGacha._collectionExchange에 거래 콜백이 연결되지 않았습니다."); return; }
+        if (!_collectionExchange.SetVisible(true))
+        { RejectCollectionLayout("교환소를 열지 못했습니다. TokenExchangeView의 참조 진단을 확인하세요."); return; }
+        _collectionLayoutError = null;
+        _collectionHud?.SetExchangeAvailable(true);
         CollectionError = null;
         HideCollectionLayers();
-        _collectionExchange.SetVisible(true);
         var service = Economy;
         if (!service.ExchangeCatalogReady && !service.TryEnsureExchangeCatalog(transaction =>
         {
@@ -160,7 +209,7 @@ public partial class UIGacha
             {
                 Id = product.Id, Name = product.Name, Description = product.Description,
                 Sprite = product.Sprite != null ? product.Sprite :
-                    product.Category == GachaExchangeCategory.Tickets ? _collectionTheme.Ticket : null,
+                    product.Category == GachaExchangeCategory.Tickets ? _collectionExchange.Theme.Ticket : null,
                 Price = product.Price, Quantity = product.Quantity, DisplayVersion = version,
                 Rank = product.Data != null ? product.Data.Rank : Rank.Normal1,
                 Category = (TokenExchangeTab)product.Category, CanPurchase = available,
@@ -205,16 +254,20 @@ public partial class UIGacha
 
     private void HideCollectionLayers()
     {
-        if (_hiddenCollectionLayers.Count != 0) return;
-        foreach (Transform child in transform)
+        if (_hiddenCollectionLayers.Count != 0 || !IsCollectionChild(_collectionExchange)) return;
+        // Preserve every authored container on the route to the exchange. Hiding only
+        // the root's direct children would also hide an exchange nested in a layout wrapper.
+        for (Transform branch = _collectionExchange.transform; branch != transform; branch = branch.parent)
         {
-            if (_collectionExchange != null && child == _collectionExchange.transform) continue;
-            var group = child.GetComponent<CanvasGroup>();
-            bool created = group == null;
-            if (created) group = child.gameObject.AddComponent<CanvasGroup>();
-            _hiddenCollectionLayers.Add(new HiddenCollectionLayer { Group = group,
-                Alpha = group.alpha, Interactable = group.interactable, BlocksRaycasts = group.blocksRaycasts });
-            group.alpha = 0; group.interactable = false; group.blocksRaycasts = false;
+            foreach (Transform sibling in branch.parent)
+            {
+                if (sibling == branch) continue;
+                var group = sibling.GetComponent<CanvasGroup>();
+                if (group == null) group = sibling.gameObject.AddComponent<CanvasGroup>();
+                _hiddenCollectionLayers.Add(new HiddenCollectionLayer { Group = group,
+                    Alpha = group.alpha, Interactable = group.interactable, BlocksRaycasts = group.blocksRaycasts });
+                group.alpha = 0; group.interactable = false; group.blocksRaycasts = false;
+            }
         }
     }
 
@@ -251,7 +304,7 @@ public partial class UIGacha
     private void HideCollectionUI()
     {
         _collectionPayment?.Close();
-        _collectionExchange?.SetVisible(false);
+        if (IsCollectionChild(_collectionExchange)) _collectionExchange.SetVisible(false);
         RestoreCollectionLayers();
         _collectionHud?.SnapToCommitted();
     }

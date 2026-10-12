@@ -2,22 +2,27 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 using E = GachaCollectionUiElements;
 
 /// <summary>Cosmetic progress follows retained results. Refresh always retains the authoritative final counter.</summary>
 public sealed class GachaCollectionMachineHud : MonoBehaviour
 {
+    public const string EntryButtonResourcePath = "UI/GachaCollection/TokenExchangeEntryButton";
     private GachaCollectionUiTheme _theme;
     private TMP_FontAsset _font;
     private TextMeshProUGUI _progress;
     private RectTransform _gauge;
     private RectTransform _fill;
     private Button _exchange;
+    private UnityAction _exchangeClick;
+    private bool _exchangeAvailable = true;
     private RectTransform _catalogFrame, _catalogTitle, _catalogExit;
     private UIGachaSlotList _catalog;
     private Vector2 _catalogSize, _catalogPosition, _titlePosition, _exitPosition, _catalogParentSize;
     private readonly Vector3[] _catalogCorners = new Vector3[4];
+    private readonly Vector3[] _exchangeCorners = new Vector3[4];
     private int _committed, _target;
     private float _start, _from, _until;
     private bool _guaranteed;
@@ -31,7 +36,7 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
     public Button ExchangeButton => _exchange;
 
     public static GachaCollectionMachineHud Attach(RectTransform parent, GachaCollectionUiTheme theme,
-        Action openExchange, Action drawTicket)
+        Action openExchange, Action drawTicket, Button exchangeButton = null, bool instantiateEntryWhenMissing = true)
     {
         if (parent == null || theme == null || theme.PandaToken == null) throw new ArgumentException("머신 UI 테마가 필요합니다.");
         var rect = E.Rect("Collection Machine HUD", parent, 0, 105, 1060, 199);
@@ -39,11 +44,23 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
         rect.pivot = new Vector2(.5f,1);
         var view = rect.gameObject.AddComponent<GachaCollectionMachineHud>();
         view._theme = theme; view._font = E.FontFrom(parent, theme);
-        view.Build(openExchange, drawTicket); view.Refresh(0, 0, false);
+        view.Build();
+        if (exchangeButton == null && instantiateEntryWhenMissing)
+        {
+            var prefab = Resources.Load<Button>(EntryButtonResourcePath);
+            if (prefab != null)
+            {
+                exchangeButton = Instantiate(prefab, parent, false);
+                exchangeButton.name = prefab.name;
+            }
+            else Debug.LogError("토큰 교환소 진입 버튼 Prefab이 없습니다: Resources/" + EntryButtonResourcePath, parent);
+        }
+        view.BindExchangeButton(exchangeButton, openExchange);
+        view.Refresh(0, 0, false);
         return view;
     }
 
-    private void Build(Action openExchange, Action drawTicket)
+    private void Build()
     {
         _gauge = E.Rect("Special Guarantee Gauge", transform, 0, 0, 1060, 60);
         E.Panel("Gauge Border", _gauge, 0, 0, 1060, 60, _theme.Ink, 27);
@@ -54,15 +71,27 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
         _fill.offsetMin = _fill.offsetMax = Vector2.zero;
         _progress = E.Label("Special Guarantee Progress", _gauge, _font, "", 12, 5, 1036, 31, 27, _theme.Ink);
         E.Label("Bonus Guarantee Notice", _gauge, _font, "10+1의 보너스는 보장 횟수에서 제외", 12, 36, 1036, 17, 15, _theme.Ink);
-        var exchangeArt = E.ExchangeTitle("Open Token Exchange", transform, _theme, _font, 0, 119, 344, 118.4f);
-        exchangeArt.raycastTarget = true;
-        exchangeArt.gameObject.AddComponent<GachaButtonInputSound>();
-        _exchange = exchangeArt.gameObject.AddComponent<Button>();
+    }
+
+    public void BindExchangeButton(Button button, Action openExchange)
+    {
+        if (_exchange != null && _exchangeClick != null) _exchange.onClick.RemoveListener(_exchangeClick);
+        if (_exchange != null && _exchange != button) _exchange.gameObject.SetActive(false);
+        _exchange = button;
+        _exchangeClick = null;
+        if (_exchange == null) return;
+        _exchangeClick = () => openExchange?.Invoke();
+        _exchange.onClick.AddListener(_exchangeClick);
         GachaButtonInputSound.Bind(_exchange);
-        _exchange.targetGraphic = exchangeArt;
-        _exchange.transition = Selectable.Transition.None; // Keep the art and replacement lettering ground the same tint.
-        _exchange.onClick.AddListener(() => openExchange?.Invoke());
-        RefreshCatalogLayout();
+        _exchange.interactable = _exchangeAvailable;
+    }
+
+    public void SetExchangeAvailable(bool available)
+    {
+        _exchangeAvailable = available;
+        if (_exchange == null) return;
+        _exchange.interactable = available;
+        if (!available) _exchange.gameObject.SetActive(false);
     }
 
     public void BindCatalogLayout(RectTransform catalogFrame, RectTransform title = null, UIGachaSlotList catalog = null, RectTransform exit = null)
@@ -81,9 +110,6 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
     private void RefreshCatalogLayout()
     {
         var view = transform.parent as RectTransform;
-        if (view != null && _exchange != null)
-            ((RectTransform)_exchange.transform).anchoredPosition =
-                new Vector2(32 + (Rect.rect.width - view.rect.width) * .5f, -119);
         if (_catalog == null || _catalogFrame == null) return;
         var parent = _catalogFrame.parent as RectTransform;
         if (parent == null || view == null || parent.rect.size == _catalogParentSize) return;
@@ -98,7 +124,21 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
         _catalogFrame.GetWorldCorners(_catalogCorners);
         float bottom = view.InverseTransformPoint(_catalogCorners[0]).y;
         float top = view.InverseTransformPoint(_catalogCorners[2]).y;
-        float shift = Mathf.Max(0, view.rect.yMin + ((RectTransform)_exchange.transform).rect.height + 28 - bottom);
+        // The editable entry is outside this HUD. Measure its size in the view's coordinates,
+        // leaving its authored anchor, position, rotation and scale untouched.
+        float entryHeight = 0;
+        if (_exchange != null)
+        {
+            ((RectTransform)_exchange.transform).GetWorldCorners(_exchangeCorners);
+            float minY = float.PositiveInfinity, maxY = float.NegativeInfinity;
+            foreach (var corner in _exchangeCorners)
+            {
+                float y = view.InverseTransformPoint(corner).y;
+                minY = Mathf.Min(minY, y); maxY = Mathf.Max(maxY, y);
+            }
+            entryHeight = maxY - minY;
+        }
+        float shift = Mathf.Max(0, view.rect.yMin + entryHeight + 28 - bottom);
         shift = Mathf.Min(shift, view.rect.yMax - 70 - top);
         _catalogFrame.position += view.TransformVector(new Vector3(0, shift, 0));
         if (_catalogTitle != null) _catalogTitle.position += view.TransformVector(new Vector3(0, top + shift - oldTop, 0));
@@ -114,14 +154,14 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
     public void SetResultPresentation(bool presenting)
     {
         _gauge.gameObject.SetActive(!presenting);
-        _exchange.gameObject.SetActive(!presenting);
+        if (_exchange != null) _exchange.gameObject.SetActive(!presenting && _exchangeAvailable);
         if (!presenting) SnapToCommitted();
     }
 
     public void Refresh(int pity, int tickets, bool busy, bool canUseTicket = true)
     {
         _committed = Mathf.Clamp(pity, 0, 99);
-        _exchange.interactable = !busy;
+        if (_exchange != null) _exchange.interactable = !busy && _exchangeAvailable;
         if (_until == 0) SnapToCommitted();
     }
 
@@ -177,5 +217,10 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
     {
         if (_fill != null) SnapToCommitted();
         if (_exchange != null) _exchange.gameObject.SetActive(false);
+    }
+
+    private void OnDestroy()
+    {
+        if (_exchange != null && _exchangeClick != null) _exchange.onClick.RemoveListener(_exchangeClick);
     }
 }

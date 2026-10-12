@@ -27,7 +27,10 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private static string OutputDirectory => _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string ExchangeInspectorOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_EXCHANGE_EVIDENCE_DIR"))
+        ? Path.Combine(Path.GetTempPath(), "TokenExchangeInspectorReview") : Environment.GetEnvironmentVariable("PANDA_EXCHANGE_EVIDENCE_DIR");
+    private static bool _exchangeInspector;
     private static bool _phase5;
     private static bool _fireworks;
     private static bool _phase4;
@@ -53,8 +56,15 @@ public static class GachaReviewTestRunner
     private static NUnitTestAssemblyRunner _runner;
     private static int _coroutineSteps;
     private static TestExecutionContext _coroutineContext;
+    private static IDisposable _coroutineLogScope;
     private static int _editorThread;
     public static bool IsRunning => _running;
+    public static void RunExchangeInspectorBatch()
+    {
+        _exchangeInspector = true;
+        Environment.SetEnvironmentVariable("PANDA_EXCHANGE_EVIDENCE_DIR", Path.GetFullPath(ExchangeInspectorOutputDirectory));
+        RunPhase1Batch();
+    }
     public static void RunPhase5SoundBatch()
     {
         _phase5 = true;
@@ -113,7 +123,7 @@ public static class GachaReviewTestRunner
         {
             if (EditorApplication.timeSinceStartup < readyAt || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
             EditorApplication.update -= StartWhenReady;
-            try { Begin(_phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
+            try { Begin(_exchangeInspector ? "exchange-inspector" : _phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
                 : Environment.GetCommandLineArgs().Contains("-fairyEvidenceOnly") ? "fairy-evidence"
                 : Environment.GetCommandLineArgs().Contains("-fairyUiOnly") ? "ui"
                 : Environment.GetCommandLineArgs().Contains("-fairyOnly") ? "fairy" : "phase1"); }
@@ -211,13 +221,14 @@ public static class GachaReviewTestRunner
             RunSynchronousTests();
         }
         _witness.AssertUnchanged("synchronous related tests completed");
-        if (_group != "all" && _group != "ui" && _group != "phase1") { Complete(); return; }
+        if (_group != "all" && _group != "ui" && _group != "phase1" && _group != "exchange-inspector") { Complete(); return; }
         var fixture = new GachaCollectionPreviewSafetyTests();
         var method = new TestMethod(new MethodWrapper(typeof(GachaCollectionPreviewSafetyTests),
             nameof(GachaCollectionPreviewSafetyTests.IntegratedPreviewOpenClosePreservesCurrentSceneWorkspace)));
         _coroutineContext = new TestExecutionContext
         { CurrentTest = method, CurrentResult = method.MakeTestResult(), TestObject = fixture };
         _coroutine = fixture.IntegratedPreviewOpenClosePreservesCurrentSceneWorkspace();
+        if (_exchangeInspector) _coroutineLogScope = CreateLogScope();
         _coroutineStarted = EditorApplication.timeSinceStartup; _coroutineSteps = 0;
     }
 
@@ -232,6 +243,8 @@ public static class GachaReviewTestRunner
         if (_phase4) fixtures = fixtures.Concat(new[] { "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffGroundContactTests", "StaffGachaEntryTests", "Phase4AdUiEvidenceTests", "AdvertisementDiamondRewardTests" });
         if (_phase4 && !Environment.GetCommandLineArgs().Contains("-phase4CoreOnly")) fixtures = fixtures.Concat(new[] { "FairyBirthSequenceTests" });
         if (_phase5) fixtures = fixtures.Concat(new[] { "PresentationSoundTests", "FairyBirthSoundTests", "Phase5UiSoundTests", "FairySoundStage1EvidenceTests", "Phase5UiSoundEvidenceTests" });
+        if (_exchangeInspector) fixtures = new[] { "TokenExchangeInspectorTests", "GachaCollectionUiTests", "GachaExchangeCatalogTests",
+            "Phase5UiSoundTests", "PresentationSoundTests", "GachaCollectionPreviewSafetyTests" };
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;
@@ -306,17 +319,44 @@ public static class GachaReviewTestRunner
 
     private sealed class Listener : ITestListener
     {
-        public void TestStarted(ITest test) { RequireEditorThread(); }
+        private IDisposable _logScope;
+        public void TestStarted(ITest test)
+        {
+            RequireEditorThread();
+            if (_exchangeInspector && !test.IsSuite) _logScope = CreateLogScope();
+        }
         public void TestOutput(TestOutput output) { }
         public void TestFinished(ITestResult result)
         {
             RequireEditorThread();
             if (result.Test.IsSuite) return;
+            if (_logScope != null)
+            {
+                try { EvaluateLogScope(_logScope); }
+                catch (Exception error)
+                {
+                    var actual = error is TargetInvocationException invocation ? invocation.InnerException : error;
+                    if (result is TestResult mutable) mutable.SetResult(ResultState.Failure,
+                        (result.Message ?? "") + "\nUnexpected or missing Unity diagnostic: " + actual.Message, actual.StackTrace);
+                }
+                finally { _logScope.Dispose(); _logScope = null; }
+            }
             Cases.Add(new CaseResult { name = result.FullName, status = result.ResultState.Status.ToString(),
                 message = result.Message, stackTrace = result.StackTrace, seconds = result.Duration, source = "NUnit" });
             _witness.AssertUnchanged(result.FullName);
         }
     }
+
+    // The inline NUnit bridge does not create Unity's log scopes. The Inspector mode does,
+    // so LogAssert.Expect is checked and unanticipated errors cannot silently pass.
+    private static IDisposable CreateLogScope()
+    {
+        Type type = typeof(UnityEngine.TestTools.LogAssert).Assembly.GetType("UnityEngine.TestTools.Logging.LogScope", true);
+        return (IDisposable)Activator.CreateInstance(type, true);
+    }
+
+    private static void EvaluateLogScope(IDisposable scope) => scope.GetType()
+        .GetMethod("EvaluateLogScope", BindingFlags.Instance | BindingFlags.Public).Invoke(scope, new object[] { true });
 
     private sealed class EditorThreadDispatcher : IWorkItemDispatcher
     {
@@ -360,6 +400,7 @@ public static class GachaReviewTestRunner
                     throw new TimeoutException("The preview preservation UnityTest timed out.");
                 return;
             }
+            if (_coroutineLogScope != null) EvaluateLogScope(_coroutineLogScope);
             Cases.Add(new CaseResult
             {
                 name = "GachaCollectionPreviewSafetyTests.IntegratedPreviewOpenClosePreservesCurrentSceneWorkspace",
@@ -423,6 +464,7 @@ public static class GachaReviewTestRunner
         finally
         {
             _coroutine = null; _coroutineContext = null;
+            _coroutineLogScope?.Dispose(); _coroutineLogScope = null;
             if (_testScene.IsValid()) EditorSceneManager.ClosePreviewScene(_testScene);
             _testScene = default;
         }
