@@ -16,6 +16,7 @@ public sealed class GachaCollectionUiTests
     private UIGachaCardSlot _slot;
     private UIGachaCard _card;
     private GachaCollectionUiTestData _normal, _unique, _special;
+    private StaffGachaOfflineFonts _previewFonts;
     private UnityEngine.Random.State _random;
     private const BindingFlags Fields = BindingFlags.Instance | BindingFlags.NonPublic;
 
@@ -42,6 +43,7 @@ public sealed class GachaCollectionUiTests
     public void TearDown()
     {
         Object.DestroyImmediate(_root);
+        _previewFonts?.Dispose(); _previewFonts = null;
         Object.DestroyImmediate(_normal); Object.DestroyImmediate(_unique); Object.DestroyImmediate(_special);
         Assert.That(UnityEngine.Random.state, Is.EqualTo(_random));
     }
@@ -150,8 +152,10 @@ public sealed class GachaCollectionUiTests
         Assert.That(hud.IsGaugeVisible, Is.False);
         Assert.That(hud.GetComponentsInChildren<Button>(true).All(button => !button.gameObject.activeSelf), Is.True,
             "Purchasing controls must not overlap result cards or badges");
+        Assert.That(hud.ExchangeButton.gameObject.activeSelf, Is.False);
         hud.SetResultPresentation(false);
         Assert.That(hud.IsGaugeVisible, Is.True);
+        Assert.That(hud.ExchangeButton.gameObject.activeSelf, Is.True);
         Assert.That(hud.Rect.anchoredPosition.y, Is.EqualTo(-105));
     }
 
@@ -169,8 +173,9 @@ public sealed class GachaCollectionUiTests
             (id, callback) => { Assert.That(id, Is.EqualTo("ticket:item")); calls++; reply = callback; }, () => closed++);
         view.SetVisible(true);
         SettleExchange(view);
-        var board = (RectTransform)view.transform.Find("Wooden Exchange Board");
-        Assert.That(board.anchoredPosition, Is.EqualTo(Vector2.zero));
+        var board = view.Board;
+        Assert.That(board.anchoredPosition, Is.EqualTo(new Vector2(-135, 0)),
+            "The saved composition includes the board and the external balance within one responsive container.");
         Assert.That(board.rect.width * board.localScale.x, Is.LessThanOrEqualTo(1920));
         Assert.That(board.rect.height * board.localScale.y, Is.LessThanOrEqualTo(1080));
         Button originalProductCard = view.GetComponentsInChildren<Button>(true).Single(b => b.name == "Product ticket:item");
@@ -185,7 +190,7 @@ public sealed class GachaCollectionUiTests
         Assert.That(reads, Is.EqualTo(before + 1));
         Assert.That(snapshot.PandaTokens, Is.EqualTo(500), "View must never mutate a wallet");
         view.SelectProduct("staff:owned"); Assert.That(buy.interactable, Is.False);
-        Assert.That(view.transform.Find("Wooden Exchange Board/Product Grid/Product staff:owned/Availability")
+        Assert.That(view.Board.Find("Product Grid/Product staff:owned/Price Group/Availability")
             .GetComponent<TMP_Text>().text,
             Is.EqualTo("보유중"));
         Assert.That(view.GetComponentsInChildren<TMP_Text>(true).Any(text => text.name == "Exchange Status"), Is.False,
@@ -239,6 +244,7 @@ public sealed class GachaCollectionUiTests
         viewObject.transform.SetParent(_root.transform, false);
         ((RectTransform)viewObject.transform).sizeDelta = new Vector2(1920,1080);
         var view = viewObject.AddComponent<UIGacha>();
+        TokenExchangeInspectorTests.ConnectAuthoredAssets(view);
         typeof(UIGacha).GetField("_editorOfflineConfigured", Fields).SetValue(view, true);
         view.VisibleState = VisibleState.Appeared;
         view.BindCollectionEconomy(first);
@@ -309,6 +315,7 @@ public sealed class GachaCollectionUiTests
 
     [TestCase(1280, 720)]
     [TestCase(1920, 1080)]
+    [TestCase(2560, 1080)]
     public void Exchange_GuideUsesSixFixedNativeFramesAndTwoDistinctTickets(int width, int height)
     {
         ((RectTransform)_root.transform).sizeDelta = new Vector2(width, height);
@@ -355,8 +362,13 @@ public sealed class GachaCollectionUiTests
         Assert.That(wood.preserveAspect, Is.True);
         Assert.That(wood.rectTransform.rect.width / wood.rectTransform.rect.height,
             Is.EqualTo(wood.sprite.rect.width / wood.sprite.rect.height).Within(.001));
-        Assert.That(view.Board.rect.width * view.Board.localScale.x, Is.LessThanOrEqualTo(width));
-        Assert.That(view.Board.rect.height * view.Board.localScale.y, Is.LessThanOrEqualTo(height));
+        Bounds boardBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(_root.transform, view.Board);
+        Assert.That(boardBounds.size.x, Is.LessThanOrEqualTo(width));
+        // Hanging chains intentionally extend above the board; check the visible wood, not its children.
+        var boardCorners = new Vector3[4]; view.Board.GetWorldCorners(boardCorners);
+        float boardHeight = _root.transform.InverseTransformPoint(boardCorners[1]).y -
+            _root.transform.InverseTransformPoint(boardCorners[0]).y;
+        Assert.That(boardHeight, Is.LessThanOrEqualTo(height));
     }
 
     [Test]
@@ -372,6 +384,7 @@ public sealed class GachaCollectionUiTests
         };
         var view = TokenExchangeView.Attach(_root.transform, GachaCollectionUiTheme.Load(), () => snapshot,
             (id, reply) => { });
+        ActivateExchangeFixture();
         view.SetVisible(true);
         SettleExchange(view);
 
@@ -413,9 +426,8 @@ public sealed class GachaCollectionUiTests
         Assert.That(cardPrice.textWrappingMode, Is.EqualTo(TextWrappingModes.NoWrap));
         Assert.That(productPriceGroup.Find("Availability"), Is.Not.Null);
         float shortCardGroupWidth = ((RectTransform)productPriceGroup).rect.width;
-        view.SelectProduct("long");
         Canvas.ForceUpdateCanvases();
-        float longCardGroupWidth = ((RectTransform)productPriceGroup).rect.width;
+        float longCardGroupWidth = ((RectTransform)view.Board.Find("Product Grid/Product long/Price Group")).rect.width;
         Assert.That(longCardGroupWidth, Is.GreaterThan(shortCardGroupWidth));
         var outerLayout = outerRow.GetComponent<HorizontalLayoutGroup>();
         var innerLayout = priceRow.GetComponent<HorizontalLayoutGroup>();
@@ -469,6 +481,8 @@ public sealed class GachaCollectionUiTests
         var view = TokenExchangeView.Attach(_root.transform, GachaCollectionUiTheme.Load(), () => snapshot,
             (id, version, reply) => { Assert.That(id, Is.EqualTo("staff:7")); Assert.That(version, Is.EqualTo(7)); purchases++; pending = reply; },
             (tab, version, reply) => { Assert.That(tab, Is.EqualTo(TokenExchangeTab.Mixed)); Assert.That(version, Is.EqualTo(7)); refreshes++; pending = reply; });
+        Vector2 authoredBoardPosition = view.Board.anchoredPosition;
+        Quaternion authoredBoardRotation = view.Board.localRotation;
         view.SetVisible(true);
         Button Button(string name) => view.GetComponentsInChildren<Button>(true).Single(b => b.name == name);
         var buy = Button("Exchange Selected Product"); var refresh = Button("Refresh Display");
@@ -479,8 +493,8 @@ public sealed class GachaCollectionUiTests
         buy.onClick.Invoke(); refresh.onClick.Invoke(); Button("Product staff:7").onClick.Invoke();
         Assert.That(purchases + refreshes, Is.Zero); Assert.That(view.SelectedProductId, Is.EqualTo("staff:7"));
         view.SetVisible(false);
-        Assert.That(view.Board.anchoredPosition, Is.EqualTo(Vector2.zero));
-        Assert.That(view.Board.localRotation, Is.EqualTo(Quaternion.identity));
+        Assert.That(view.Board.anchoredPosition, Is.EqualTo(authoredBoardPosition));
+        Assert.That(view.Board.localRotation, Is.EqualTo(authoredBoardRotation));
         view.SetVisible(true); SettleExchange(view);
         Assert.That(view.IsEntering, Is.False); Assert.That(buy.interactable, Is.True);
         buy.onClick.Invoke(); buy.onClick.Invoke(); refresh.onClick.Invoke();
@@ -501,6 +515,7 @@ public sealed class GachaCollectionUiTests
         var original = native.GetComponent<CanvasGroup>();
         original.alpha = .75f; original.interactable = false; original.blocksRaycasts = true;
         var view = _root.AddComponent<UIGacha>();
+        TokenExchangeInspectorTests.ConnectAuthoredAssets(view);
         typeof(UIGacha).GetField("_editorOfflineConfigured", Fields).SetValue(view, true);
         view.VisibleState = VisibleState.Appeared;
         var memory = new GachaEconomyMemoryStore(new GachaEconomySnapshot("hide-machine",
@@ -531,17 +546,18 @@ public sealed class GachaCollectionUiTests
         var theme = GachaCollectionUiTheme.Load();
         var view = TokenExchangeView.Attach(_root.transform, theme, () => snapshot, (id, callback) => {});
         view.SetVisible(true); SettleExchange(view);
-        var stamp = (RectTransform)view.transform.Find("Wooden Exchange Board/Product Grid/Product item:stamp/SOLD OUT Stamp");
+        var stamp = (RectTransform)view.Board.Find("Product Grid/Product item:stamp/SOLD OUT Stamp");
+        var label = stamp.GetComponentInChildren<TMP_Text>(true);
+        Assert.That(label.text, Is.EqualTo("SOLD OUT")); Assert.That(label.font, Is.SameAs(theme.SoldOutFont));
+        Assert.That(AssetDatabase.GetAssetPath(label.font), Is.EqualTo("Assets/TextMesh Pro/Fonts/영덕대게체.asset"));
+        Assert.That(label.font.faceInfo.familyName, Is.EqualTo("Yeongdeok Snow Crab"));
+        ActivateExchangeFixture();
         Assert.That(stamp.gameObject.activeSelf, Is.False);
         product.CanPurchase = false; product.Status = "잔액 부족"; view.Refresh();
         Assert.That(stamp.gameObject.activeSelf, Is.False, "Unavailable is not sold out");
         product.SoldOut = true; view.Refresh();
         Assert.That(stamp.gameObject.activeSelf, Is.True);
         Assert.That(stamp.localScale.x, Is.GreaterThan(1), "Confirmed purchase begins the stamping motion");
-        var label = stamp.GetComponentInChildren<TMP_Text>(true);
-        Assert.That(label.text, Is.EqualTo("SOLD OUT")); Assert.That(label.font, Is.SameAs(theme.SoldOutFont));
-        Assert.That(AssetDatabase.GetAssetPath(label.font), Is.EqualTo("Assets/TextMesh Pro/Fonts/영덕대게체.asset"));
-        Assert.That(label.font.faceInfo.familyName, Is.EqualTo("Yeongdeok Snow Crab"));
         Assert.That(label.color, Is.EqualTo((Color)new Color32(186, 42, 32, 255)));
         Assert.That(stamp.GetComponentsInChildren<Graphic>(true).All(x => !x.raycastTarget), Is.True);
         view.TickPresentation(Time.realtimeSinceStartup + .31f);
@@ -558,6 +574,16 @@ public sealed class GachaCollectionUiTests
     {
         float openedAt = (float)typeof(TokenExchangeView).GetField("_openedAt", Fields).GetValue(view);
         view.TickPresentation(openedAt + 1f);
+    }
+
+    private void ActivateExchangeFixture()
+    {
+        // Layout and visible stamp transitions require an active Canvas. Keep the unrelated
+        // native card fixture inactive, and isolate all font atlases before activating UI.
+        _slotRoot.SetActive(false);
+        var canvas = _root.AddComponent<Canvas>(); canvas.renderMode = RenderMode.WorldSpace;
+        _previewFonts = new StaffGachaOfflineFonts(); _previewFonts.BindBeforeActivation(_root);
+        _root.SetActive(true); Canvas.ForceUpdateCanvases();
     }
 
     [TestCase(false)]

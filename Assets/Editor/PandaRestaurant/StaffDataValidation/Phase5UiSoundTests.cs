@@ -105,11 +105,11 @@ public sealed class Phase5UiSoundTests
             f.Audio.Events.Clear();
             for (int i = 0; i < 10; i++) f.Exchange.SetVisible(true);
             Assert.That(f.Audio.Events.Count(x => x.Clip == f.Theme.ExchangeChainSound), Is.EqualTo(1));
-            f.Exchange.SetVisible(false); Assert.That(f.Audio.Stops, Is.EqualTo(1));
+            f.CloseExchange(); Assert.That(f.Audio.Stops, Is.EqualTo(1));
             f.Exchange.SetVisible(true); Assert.That(f.Audio.Events.Count(x => x.Clip == f.Theme.ExchangeChainSound), Is.EqualTo(2));
             f.FinishEntrance(); f.Exchange.SelectProduct("P1"); f.Exchange.Refresh();
             Assert.That(f.Audio.Events.Count(x => x.Clip == f.Theme.ExchangeChainSound), Is.EqualTo(2));
-            f.Exchange.SetVisible(false); f.Audio.Muted = true; f.Exchange.SetVisible(true);
+            f.CloseExchange(); f.Audio.Muted = true; f.Exchange.SetVisible(true);
             Assert.That(f.Audio.Events.Count(x => x.Clip == f.Theme.ExchangeChainSound), Is.EqualTo(2));
         }
     }
@@ -132,7 +132,7 @@ public sealed class Phase5UiSoundTests
             f.Exchange.TickPresentation(started + .6f); f.Exchange.Refresh(); Assert.That(f.Stamps, Is.EqualTo(1));
             f.Audio.Events.Clear(); f.Pointer(f.Button("Product P0"));
             Assert.That(f.Audio.ButtonEvents.Count(), Is.Zero, "Already SOLD OUT card is silent");
-            f.Exchange.SetVisible(false); f.Exchange.SetVisible(true); f.FinishEntrance(); Assert.That(f.Stamps, Is.Zero);
+            f.CloseExchange(); f.Exchange.SetVisible(true); f.FinishEntrance(); Assert.That(f.Stamps, Is.Zero);
             f.Products[0].DisplayVersion++; f.Products[0].SoldOut = false; f.Products[0].CanPurchase = true;
             f.Exchange.Refresh(); f.Button("Exchange Selected Product").onClick.Invoke();
             f.Products[0].SoldOut = true; f.Products[0].CanPurchase = false; f.PendingPurchase(true, null);
@@ -147,7 +147,7 @@ public sealed class Phase5UiSoundTests
         {
             f.OpenAll(); f.DeferPurchase = true; f.Button("Exchange Selected Product").onClick.Invoke();
             if (closeBeforeReply)
-            { f.Exchange.SetVisible(false); f.Products[0].SoldOut = true; f.Products[0].CanPurchase = false; }
+            { f.CloseExchange(); f.Products[0].SoldOut = true; f.Products[0].CanPurchase = false; }
             f.PendingPurchase(closeBeforeReply, "unconfirmed");
             f.Exchange.SetVisible(true); f.FinishEntrance(); f.Exchange.TickPresentation(Time.realtimeSinceStartup + 3);
             Assert.That(f.Stamps, Is.Zero);
@@ -162,6 +162,7 @@ internal sealed class Phase5UiFixture : IDisposable
     internal readonly GachaCollectionUiTheme Theme;
     internal readonly TokenExchangeView Exchange;
     internal readonly GachaPaymentChoiceView Payment;
+    internal readonly GachaCollectionMachineHud Hud;
     internal readonly TokenExchangeProductView[] Products;
     internal bool DeferPurchase;
     internal Action<bool, string> PendingPurchase;
@@ -180,16 +181,32 @@ internal sealed class Phase5UiFixture : IDisposable
             (id, version, reply) => { PendingPurchase = reply; if (!DeferPurchase) reply(false, "isolated cancelled purchase"); },
             (tab, version, reply) => reply(false, "isolated cancelled refresh"));
         Payment = GachaPaymentChoiceView.Attach(_root.transform, Theme);
-        GachaCollectionMachineHud.Attach((RectTransform)_root.transform, Theme, () => Exchange.SetVisible(true), () => { });
+        Hud = GachaCollectionMachineHud.Attach((RectTransform)_root.transform, Theme, () => Exchange.SetVisible(true), () => { });
         _fonts.BindBeforeActivation(_root); _root.SetActive(true);
     }
-    internal Button Button(string name) => _root.GetComponentsInChildren<Button>(true).Single(x => x.name == name);
+    internal Button Button(string name) => name == "Open Token Exchange" ? Hud.ExchangeButton :
+        _root.GetComponentsInChildren<Button>(true).Single(x => x.name == name);
     internal void ShowPayment() { Audio.Now += 2; Payment.Show(GachaMachineKind.Item, false, 100, 10, null, true, _ => { }); }
     internal void FinishEntrance() => Exchange.TickPresentation(Time.realtimeSinceStartup + 1);
     internal void OpenAll() { Audio.Now += 2; Exchange.SetVisible(true); FinishEntrance(); ShowPayment(); }
-    internal void CloseAll() { Payment.Close(); Exchange.SetVisible(false); }
-    internal void Pointer(Button button) { Audio.Now += 2; Events.Pointer(button); }
-    internal void Submit(Button button) { Audio.Now += 2; Events.Submit(button); }
+    internal void CloseAll() { Payment.Close(); CloseExchange(); }
+    internal void CloseExchange()
+    {
+        bool wasOpen = Exchange.IsOpen;
+        Exchange.SetVisible(false);
+        CompleteExchangeDisable(wasOpen);
+    }
+    internal void Pointer(Button button)
+    { Audio.Now += 2; bool wasOpen = Exchange.IsOpen; Events.Pointer(button); CompleteExchangeDisable(wasOpen); }
+    internal void Submit(Button button)
+    { Audio.Now += 2; bool wasOpen = Exchange.IsOpen; Events.Submit(button); CompleteExchangeDisable(wasOpen); }
+    private void CompleteExchangeDisable(bool wasOpen)
+    {
+        // The synchronous EditMode runner does not deliver ordinary MonoBehaviour callbacks.
+        // Exercise the production teardown that Unity delivers automatically in PlayMode.
+        if (!Application.isPlaying && wasOpen && !Exchange.IsOpen)
+            typeof(TokenExchangeView).GetMethod("OnDisable", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(Exchange, null);
+    }
     public void Dispose() { Object.DestroyImmediate(_root); _fonts.Dispose(); Events.Dispose(); Audio.Dispose(); }
 }
 
@@ -197,9 +214,18 @@ internal sealed class Phase5UiEvents : IDisposable
 {
     private readonly GameObject _root;
     private readonly EventSystem _previous;
+    private readonly bool _simulateLifecycle;
     internal readonly EventSystem System;
     internal Phase5UiEvents()
-    { _previous = EventSystem.current; _root = new GameObject("Phase5 isolated EventSystem"); System = _root.AddComponent<EventSystem>(); EventSystem.current = System; }
+    {
+        _previous = EventSystem.current;
+        _root = new GameObject("Phase5 isolated EventSystem");
+        System = _root.AddComponent<EventSystem>();
+        _simulateLifecycle = !Application.isPlaying;
+        // EventSystem.current only accepts systems registered by its OnEnable callback.
+        if (_simulateLifecycle) Lifecycle("OnEnable");
+        EventSystem.current = System;
+    }
     internal void Pointer(Button button)
     {
         var data = new PointerEventData(System) { button = PointerEventData.InputButton.Left, pointerId = 0 };
@@ -208,7 +234,15 @@ internal sealed class Phase5UiEvents : IDisposable
         ExecuteEvents.Execute(button.gameObject, data, ExecuteEvents.pointerClickHandler);
     }
     internal void Submit(Button button) => ExecuteEvents.Execute(button.gameObject, new BaseEventData(System), ExecuteEvents.submitHandler);
-    public void Dispose() { Object.DestroyImmediate(_root); EventSystem.current = _previous; }
+    private void Lifecycle(string method) => typeof(EventSystem)
+        .GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(System, null);
+    public void Dispose()
+    {
+        if (_simulateLifecycle) Lifecycle("OnDisable");
+        Object.DestroyImmediate(_root);
+        // A null system is not a registered EventSystem and cannot be assigned to current.
+        if (_previous != null) EventSystem.current = _previous;
+    }
 }
 
 internal sealed class Phase5UiAudioScope : IDisposable

@@ -103,7 +103,7 @@ public sealed class FairyBirthSequenceTests
     [TestCase("offscreen")]
     [TestCase("ui")]
     [TestCase("card")]
-    public void Stage1_InterruptedBirthRemainsPendingAndRestartsInTheVisibleHall(string reason)
+    public void Stage1_InterruptedBirthRemainsPendingAndResumesInTheVisibleHall(string reason)
     {
         using (var host = new EnhancementFairyStage1Host())
         {
@@ -113,9 +113,22 @@ public sealed class FairyBirthSequenceTests
             host.Move(ERestaurantFloorType.Floor3);
             host.Advance(1.5f);
             Assert.That(host.Habitat.ActiveBirthItemId, Is.EqualTo(item.Id));
+            var birth = new FairyBirthInputTests.BirthState(host, item.Id);
+            float beforeElapsed = birth.Elapsed;
             Vector3 position = host.Camera.transform.position;
+            FairyBirthInputTests.OwnedDragBackground dragBackground = null;
+            Vector2 dragEnd = Vector2.zero;
+            try
+            {
             if (reason == "floor") host.Move(ERestaurantFloorType.Floor2);
-            if (reason == "drag") EnhancementFairyStage1Host.Set(host.Controller, "_isDraggingEnabled", true);
+            if (reason == "drag")
+            {
+                dragBackground = new FairyBirthInputTests.OwnedDragBackground(host);
+                dragEnd = dragBackground.ScreenPosition + Vector2.right * Mathf.Max(30f, FairyBirthInputTests.DragThreshold(host) * 2f);
+                FairyBirthInputTests.PointerDown(host, false, dragBackground.ScreenPosition);
+                FairyBirthInputTests.PointerMove(host, false, dragEnd, true);
+                Assert.That(EnhancementFairyStage1Host.Get(host.Controller, "_isDraggingEnabled"), Is.True);
+            }
             if (reason == "offscreen") host.Camera.transform.position += Vector3.left * 120f;
             if (reason == "card") Assert.That(host.Habitat.TryOpenItemCard(host.Camera.WorldToScreenPoint(host.Bodies().Single().bounds.center)), Is.True);
             if (reason == "ui") host.VerifyActualGachaOpenClose(() =>
@@ -130,8 +143,14 @@ public sealed class FairyBirthSequenceTests
                 Assert.That(EnhancementFairyAcquisitionEvents.Queue.IsPending(item.Id), Is.True);
                 Assert.That(host.Habitat.ActiveBirthItemId, Is.Null);
             }
+            birth.AssertPath();
+            Assert.That(birth.Elapsed, Is.EqualTo(beforeElapsed), "The hidden interval must retain the original elapsed time.");
             if (reason == "floor") host.Move(ERestaurantFloorType.Floor3);
-            if (reason == "drag") EnhancementFairyStage1Host.Set(host.Controller, "_isDraggingEnabled", false);
+            if (reason == "drag")
+            {
+                FairyBirthInputTests.PointerUp(host, false, dragEnd);
+                host.CompleteCameraTween();
+            }
             if (reason == "offscreen") host.Camera.transform.position = position;
             if (reason == "card")
             {
@@ -140,10 +159,13 @@ public sealed class FairyBirthSequenceTests
             }
             host.Advance(.1f);
             Assert.That(host.Habitat.ActiveBirthItemId, Is.EqualTo(item.Id));
-            Assert.That(host.Habitat.BirthElapsed, Is.LessThan(.2f));
-            host.Advance(host.Habitat.Settings.BirthDuration + .1f);
+            birth.AssertPath();
+            Assert.That(host.Habitat.BirthElapsed, Is.InRange(beforeElapsed, beforeElapsed + .101f));
+            host.Advance(host.Habitat.Settings.BirthDuration - beforeElapsed + .1f);
             Assert.That(EnhancementFairyAcquisitionEvents.Queue.PendingCount, Is.Zero);
             Assert.That(host.Habitat.ArrivalPresentationCount, Is.EqualTo(1));
+            }
+            finally { dragBackground?.Dispose(); }
         }
     }
 

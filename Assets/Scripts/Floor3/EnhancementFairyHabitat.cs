@@ -278,8 +278,8 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private void OnConfirmedAcquisition()
     {
         if (_arrivals.PendingCount == 0) StopBirthSounds();
-        for (int i = _birthViews.Count - 1; i >= 0; i--)
-            if (!_arrivals.IsPending(_birthViews[i].Brain.ItemId)) PauseBirth(_birthViews[i]);
+        for (int i = _views.Count - 1; i >= 0; i--)
+            if (_views[i].ArrivalRemaining > 0f && !_arrivals.IsPending(_views[i].Brain.ItemId)) CancelBirth(_views[i]);
         RefreshRuntimeOwnership(); Reconcile();
     }
     private void OnCameraMoving()
@@ -295,7 +295,9 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private void OnPreviewFloor(ERestaurantFloorType floor)
     {
         bool wasVisible = _visible;
-        _approachingFloor3 = floor == ERestaurantFloorType.Floor3;
+        _approachingFloor3 = floor == ERestaurantFloorType.Floor3
+            && _cameraController != null && _cameraController.CurrentFloor != ERestaurantFloorType.Floor3;
+        _waitForCameraFrame = true;
         RefreshRuntimeVisibility();
         if (!wasVisible && _visible)
         {
@@ -406,8 +408,11 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             if (id == null) break;
             Spawn(id);
         }
+        // Resume existing presentations before assigning slots/positions to new ones.
         for (int i = 0; i < _views.Count; i++)
-            if (_arrivals.IsPending(_views[i].Brain.ItemId)) BeginArrival(_views[i]);
+            if (_views[i].ArrivalRemaining > 0f && _arrivals.IsPending(_views[i].Brain.ItemId)) BeginArrival(_views[i]);
+        for (int i = 0; i < _views.Count; i++)
+            if (_views[i].ArrivalRemaining <= 0f && _arrivals.IsPending(_views[i].Brain.ItemId)) BeginArrival(_views[i]);
     }
 
     private bool HasView(string id)
@@ -461,14 +466,25 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         view.Replacing = false;
         view.Root.gameObject.SetActive(_visible);
         _views.Add(view);
-        if (_arrivals.IsPending(id)) BeginArrival(view);
         Render(view);
     }
 
     private void BeginArrival(View view)
     {
         if (_birthViews.Contains(view) || _birthViews.Count >= Mathf.Clamp(_settings.MaxConcurrentBirths, 1, 5)
-            || _clock < _nextBirthAt || !CanPresentBirth() || !IsNextWaitingBirth(view)) return;
+            || !CanPresentBirth()) return;
+        if (view.ArrivalRemaining > 0f)
+        {
+            // A paused birth keeps its world position, path and sound claims. If that
+            // position is outside this room, wait for it to become visible again.
+            if (!TryGetVisibleBirthArea(out Rect visibleArea) || !visibleArea.Contains(view.BirthPosition)) return;
+            _birthViews.Add(view);
+            view.PriorityUntil = Mathf.Max(view.PriorityUntil,
+                _clock + view.ArrivalRemaining + Mathf.Max(1f, _settings.NewArrivalPrioritySeconds));
+            Render(view);
+            return;
+        }
+        if (_clock < _nextBirthAt || !IsNextWaitingBirth(view)) return;
         if (!TryFindBirthPosition(view, out Vector2 position, out Rect area)) return;
         view.BirthPosition = position;
         view.BirthElapsed = 0f;
@@ -495,7 +511,8 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         foreach (string id in _arrivals.PendingItems)
         {
             bool started = false;
-            foreach (var active in _birthViews) if (active.Brain.ItemId == id) { started = true; break; }
+            foreach (var view in _views)
+                if (view.ArrivalRemaining > 0f && view.Brain.ItemId == id) { started = true; break; }
             if (!started) return id == candidate.Brain.ItemId;
         }
         return false;
@@ -544,9 +561,10 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
                     Mathf.Lerp(area.yMin, area.yMax, (cell / 8 + .5f) / 3f));
             }
             bool free = true;
-            foreach (var active in _birthViews)
-                if (Vector2.Distance(active.BirthPosition, position) < separation
-                    || Mathf.Abs(active.Brain.GroundPosition.x - position.x) < LandingHalfWidth(active) + LandingHalfWidth(candidate))
+            foreach (var active in _views)
+                if (active != candidate && active.ArrivalRemaining > 0f
+                    && (Vector2.Distance(active.BirthPosition, position) < separation
+                    || Mathf.Abs(active.Brain.GroundPosition.x - position.x) < LandingHalfWidth(active) + LandingHalfWidth(candidate)))
                 { free = false; break; }
             if (free) return true;
         }
@@ -574,7 +592,16 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     {
         if (!_birthViews.Remove(view)) return;
         _arrivals.PauseSoundPresentation(view.Brain.ItemId);
-        view.BirthElapsed = view.ArrivalRemaining = 0f;
+        // Temporary input, camera motion and occlusion suspend the same presentation.
+        // Only cancellation/releasing a view discards its in-memory progress.
+        if (view.Root != null) Render(view);
+    }
+
+    private void CancelBirth(View view)
+    {
+        PauseBirth(view);
+        view.BirthElapsed = view.ArrivalRemaining = view.PriorityUntil = 0f;
+        view.ArrivalStarted = false;
         if (view.Root != null) Render(view);
     }
 
@@ -591,7 +618,6 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     {
         StopBirthSounds();
         while (_birthViews.Count > 0) PauseBirth(_birthViews[_birthViews.Count - 1]);
-        _nextBirthAt = _clock;
     }
 
     private void AdvanceBirth(float deltaTime)
@@ -602,7 +628,8 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
         for (int i = _birthViews.Count - 1; i >= 0; i--)
         {
             var view = _birthViews[i];
-            if (!_arrivals.IsPending(view.Brain.ItemId) || !area.Contains(view.BirthPosition)) { PauseBirth(view); continue; }
+            if (!_arrivals.IsPending(view.Brain.ItemId)) { CancelBirth(view); continue; }
+            if (!area.Contains(view.BirthPosition)) { PauseBirth(view); continue; }
             view.BirthElapsed += deltaTime;
             AdvanceBirthSounds(view);
             view.ArrivalRemaining = Mathf.Max(0f, _settings.BirthDuration - view.BirthElapsed);
@@ -658,7 +685,7 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
     private void Release(int index)
     {
         var view = _views[index];
-        PauseBirth(view);
+        CancelBirth(view);
         view.Root.gameObject.SetActive(false);
         view.Body.sprite = null;
         view.Brain = null;
@@ -708,9 +735,10 @@ public sealed class EnhancementFairyHabitat : MonoBehaviour
             int replace = FindReplaceable();
             if (replace >= 0) _views[replace].Replacing = true;
         }
-        // New arrivals waiting for a priority slot are retried at a bounded cadence.
+        // Paused births can resume immediately; BeginArrival still applies the
+        // configured start cadence when assigning a genuinely new presentation.
         if (_views.Count < Mathf.Min(_ordered.Count, Mathf.Clamp(_settings.MaxActive, 1, 64))
-            || (_arrivals.PendingCount > 0 && _birthViews.Count < Mathf.Clamp(_settings.MaxConcurrentBirths, 1, 5) && _clock >= _nextBirthAt))
+            || (_arrivals.PendingCount > 0 && _birthViews.Count < Mathf.Clamp(_settings.MaxConcurrentBirths, 1, 5)))
             Reconcile();
     }
 

@@ -470,84 +470,82 @@ public class CameraController : MonoBehaviour
     private void HandleTouchInput()
     {
         if (Input.touchCount != 1) { _tapCandidate = false; return; }
-        if (Input.touchCount == 1)
+        Touch touch = Input.GetTouch(0);
+        ProcessTouchInputFrame(touch.position, touch.phase);
+    }
+
+    // Platform polling and input processing share this path with isolated frame replay.
+    private void ProcessTouchInputFrame(Vector2 position, TouchPhase phase)
+    {
+        Vector2 touchWorldPos = _cam.ScreenToWorldPoint(position);
+        switch (phase)
         {
-            Touch touch = Input.GetTouch(0);
-            Vector2 touchWorldPos = _cam.ScreenToWorldPoint(touch.position);
-
-            switch (touch.phase)
-            {
-                case TouchPhase.Began:
-                    BeginWorldTap(touch.position);
-                    if (IsPointerOverUI(touch.position) || !IsTouchingDraggableSprite(touchWorldPos))
-                    {
-                        _isDragging = false; // ❌ 드래그 시작 X
-                        return;
-                    }
-
-                    _startTouchPos = touch.position;
-                    _startCamPos = _cam.transform.position;
-                    _isDragging = true;
-                    break;
-
-                case TouchPhase.Moved:
-                    TrackWorldTap(touch.position);
-                    if (_isDragging)
-                    {
-                        ProcessDrag(touch.position);
-                    }
-                    break;
-
-                case TouchPhase.Ended:
-                case TouchPhase.Canceled:
-                    bool tapped = touch.phase == TouchPhase.Ended && CompleteWorldTap(touch.position);
-                    _tapCandidate = false;
-                    if (tapped) { _isDragging = _isDraggingEnabled = false; return; }
-                    if (!_isDragging) // 🔹 드래그가 시작되지 않았다면 이동함수 실행 안 함
-                        return;
-
+            case TouchPhase.Began:
+                BeginWorldTap(position);
+                if (IsPointerOverUI(position) || !IsTouchingDraggableSprite(touchWorldPos))
+                {
                     _isDragging = false;
-                    _isDraggingEnabled = false;
-                    HandleCameraSnapBackOrMove();
-                    break;
-            }
+                    return;
+                }
+                _startTouchPos = position;
+                _startCamPos = _cam.transform.position;
+                _isDragging = true;
+                break;
+
+            case TouchPhase.Moved:
+                TrackWorldTap(position);
+                if (_isDragging) ProcessDrag(position);
+                break;
+
+            case TouchPhase.Ended:
+            case TouchPhase.Canceled:
+                CompletePointerInput(position, phase == TouchPhase.Ended);
+                break;
         }
     }
 
     // 📌 마우스 입력 처리 (Unity 에디터 전용)
     private void HandleMouseInput()
     {
-        if (Input.GetMouseButtonDown(0))
+        ProcessMouseInputFrame(Input.mousePosition, Input.GetMouseButtonDown(0), Input.GetMouseButton(0), Input.GetMouseButtonUp(0));
+    }
+
+    private void ProcessMouseInputFrame(Vector2 position, bool down, bool held, bool up)
+    {
+        if (down)
         {
-            BeginWorldTap(Input.mousePosition);
-            Vector2 mouseWorldPos = _cam.ScreenToWorldPoint(Input.mousePosition);
-            if (IsPointerOverUI() || !IsTouchingDraggableSprite(mouseWorldPos))
+            BeginWorldTap(position);
+            Vector2 mouseWorldPos = _cam.ScreenToWorldPoint(position);
+            if (IsPointerOverUI(position) || !IsTouchingDraggableSprite(mouseWorldPos))
             {
                 _isDragging = false; // ❌ 드래그 시작 X
                 return;
             }
 
-            _startTouchPos = Input.mousePosition;
+            _startTouchPos = position;
             _startCamPos = _cam.transform.position;
             _isDragging = true;
         }
 
-        if (Input.GetMouseButton(0))
+        if (held)
         {
-            TrackWorldTap(Input.mousePosition);
-            if (_isDragging) ProcessDrag(Input.mousePosition);
+            TrackWorldTap(position);
+            if (_isDragging) ProcessDrag(position);
         }
 
-        if (Input.GetMouseButtonUp(0))
-        {
-            if (CompleteWorldTap(Input.mousePosition)) { _isDragging = _isDraggingEnabled = false; return; }
-            if (!_isDragging) // 🔹 드래그가 시작되지 않았다면 이동함수 실행 안 함
-                return;
+        if (up)
+            CompletePointerInput(position, true);
+    }
 
-            _isDragging = false;
-            _isDraggingEnabled = false;
-            HandleCameraSnapBackOrMove();
-        }
+    private void CompletePointerInput(Vector2 position, bool allowTap)
+    {
+        // A background press only arms dragging. An unhandled tap is still a tap,
+        // so retain the actual drag state before clearing the pointer flags.
+        bool dragged = _isDragging && _isDraggingEnabled;
+        bool tapped = allowTap && CompleteWorldTap(position);
+        _tapCandidate = false;
+        _isDragging = _isDraggingEnabled = false;
+        if (dragged && !tapped) HandleCameraSnapBackOrMove();
     }
 
     private void ProcessDrag(Vector2 currentPos)
@@ -701,6 +699,10 @@ public class CameraController : MonoBehaviour
     {
         Vector3 currentPos = _cam.transform.position;
         Vector3 targetPos = _targetPosDic[CurrentFloor][CurrentRestaurant];
+
+        // An out-and-back/clamped drag may already be at rest. Keep the public
+        // MoveCamera lifecycle intact for initialization and explicit navigation.
+        if (currentPos == targetPos) return;
 
         float xDiff = currentPos.x - targetPos.x; // X축 이동 거리
         float yDiff = currentPos.y - targetPos.y; // Y축 이동 거리
