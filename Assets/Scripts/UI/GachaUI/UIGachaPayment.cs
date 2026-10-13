@@ -28,9 +28,8 @@ public partial class UIGacha
         if (state?.Account == null) return;
         var ticket = eleven ? GachaPaymentKind.TicketEleven : GachaPaymentKind.TicketSingle;
         var entry = source is UIStaffGacha staffSource ? staffSource.SingleButton : ((UIItemGacha)source).SingleButton;
-        var money = entry.transform.Find("Money Image")?.GetComponent<Image>();
         _collectionPayment.Show(machine, eleven, state.Diamonds, state.Account.GachaEconomy.Tickets(machine),
-            money != null ? money.sprite : null, service.CanDraw(machine, ticket, out _), useTicket =>
+            _collectionTheme.Diamond, service.CanDraw(machine, ticket, out _), useTicket =>
             {
                 if (!ReferenceEquals(Economy, service) || !CanOpenCollectionPayment(source)) return;
                 var payment = useTicket ? ticket : eleven ? GachaPaymentKind.DiamondsEleven : GachaPaymentKind.DiamondsSingle;

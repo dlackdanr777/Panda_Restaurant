@@ -16,6 +16,7 @@ MonoBehaviour:
   SoldOutFont: {fileID: 11400000, guid: 0cbc05084ee1e444389450df4c0062e1, type: 2}
   PandaToken: {fileID: 21300000, guid: db16390218ccde14aaae6e326dc045c9, type: 3}
   CurrencyPill: {fileID: 21300000, guid: 663ec646f7383794f9932c5295108205, type: 3}
+  Diamond: {fileID: 21300000, guid: 86c170bcc004b7646895713337202d45, type: 3}
   PaymentFrame: {fileID: 21300000, guid: bd43d82d481e98542b65b3512963fbe7, type: 3}
   PaymentButton: {fileID: 21300000, guid: 8b7135dbd46ccba4eb5a48d9e2975fa8, type: 3}
   PaymentCapsuleTop: {fileID: 21300000, guid: 21f72736aefd594488a6e28fd07eae50, type: 3}

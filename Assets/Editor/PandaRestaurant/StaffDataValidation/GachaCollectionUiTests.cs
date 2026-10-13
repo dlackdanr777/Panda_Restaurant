@@ -117,6 +117,8 @@ public sealed class GachaCollectionUiTests
         Assert.That(theme, Is.Not.Null);
         Assert.That(AssetDatabase.GetAssetPath(theme.PandaToken),
             Is.EqualTo("Assets/Sprites/UI/UI공통 이미지/UI_상점_공통_가챠 토큰.png"));
+        Assert.That(AssetDatabase.GetAssetPath(theme.Diamond),
+            Is.EqualTo("Assets/Sprites/UI/UIGacha/가챠UI/가챠UI_다이아.png"));
         Assert.That(AssetDatabase.GetAssetPath(theme.WoodFrame), Is.EqualTo("Assets/Resources/GachaCollection/Art/exchange-base.png"));
         Assert.That(theme.Ticket, Is.Not.Null.And.Not.EqualTo(theme.PandaToken));
         Assert.That(theme.ExchangeClose, Is.Not.Null); Assert.That(theme.ExchangeBuy, Is.Not.Null);

@@ -103,8 +103,17 @@ public sealed class TokenExchangeView : MonoBehaviour
         view.Configure(theme, parent, snapshot, requestPurchase, requestRefresh, closed);
         if (!usePrefab)
             view.Build();
+        view.CenterArtworkPivot();
         view.BindCallbacks();
         return view;
+    }
+
+    private void CenterArtworkPivot()
+    {
+        RectTransform rect = _art.rectTransform;
+        Vector2 pivot = new Vector2(.5f, .5f);
+        rect.anchoredPosition += Vector2.Scale(pivot - rect.pivot, rect.sizeDelta);
+        rect.pivot = pivot;
     }
 
     private bool HasPrefabLayout()

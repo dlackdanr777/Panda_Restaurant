@@ -8,6 +8,7 @@ public sealed class GachaCollectionUiTheme : ScriptableObject
     public TMP_FontAsset SoldOutFont;
     public Sprite PandaToken;
     public Sprite CurrencyPill;
+    public Sprite Diamond;
     public Sprite PaymentFrame;
     public Sprite PaymentButton;
     public Sprite PaymentCapsuleTop;

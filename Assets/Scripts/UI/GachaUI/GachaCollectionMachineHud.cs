@@ -53,6 +53,8 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
         _fill = fill.rectTransform; _fill.anchorMin = Vector2.zero; _fill.anchorMax = Vector2.one;
         _fill.offsetMin = _fill.offsetMax = Vector2.zero;
         _progress = E.Label("Special Guarantee Progress", _gauge, _font, "", 12, 5, 1036, 31, 27, _theme.Ink);
+        _progress.rectTransform.anchoredPosition = new Vector2(0, -6.8f);
+        _progress.fontSizeMax = 25;
         E.Label("Bonus Guarantee Notice", _gauge, _font, "10+1의 보너스는 보장 횟수에서 제외", 12, 36, 1036, 17, 15, _theme.Ink);
         var exchangeArt = E.ExchangeTitle("Open Token Exchange", transform, _theme, _font, 0, 119, 344, 118.4f);
         exchangeArt.raycastTarget = true;
