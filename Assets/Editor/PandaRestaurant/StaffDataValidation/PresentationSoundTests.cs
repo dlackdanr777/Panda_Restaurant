@@ -143,13 +143,15 @@ public sealed class PresentationSoundTests
             var owner = new object();
             var source = f.Sound.PlayPresentationEffect(EffectType.None, f.Clip,
                 pitch: 1.5f, owner: owner, maxConcurrent: 1, startSeconds: .2f);
-            Assert.That(source.time, Is.EqualTo(.2f).Within(.001f));
+            // Native playback is suppressed. Verify the exact seek field used by production,
+            // rather than AudioSource.time, whose native playback cursor may remain at zero.
+            Assert.That(source.timeSamples, Is.EqualTo(Mathf.RoundToInt(.2f * f.Clip.frequency)));
             Assert.That(f.Plays[0].StartSeconds, Is.EqualTo(.2f));
             f.Clock = .19d;
             Assert.That(f.Sound.PlayPresentationEffect(EffectType.None, f.Clip, owner: owner, maxConcurrent: 1), Is.Null);
             f.Clock = .21d;
             Assert.That(f.Sound.PlayPresentationEffect(EffectType.None, f.Clip, owner: owner, maxConcurrent: 1), Is.SameAs(source));
-            Assert.That(source.time, Is.Zero.Within(.001f));
+            Assert.That(source.timeSamples, Is.Zero);
             Assert.That(f.Sound.PlayPresentationEffect(EffectType.None, f.Clip, startSeconds: float.NaN), Is.Null);
             Assert.That(f.Sound.PlayPresentationEffect(EffectType.None, f.Clip, startSeconds: f.Clip.length), Is.Null);
         }
