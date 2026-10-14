@@ -91,6 +91,7 @@ public class StaffWaiter : Staff
 
     protected override void CancelTeleportEffects()
     {
+        if (_bowlAnimator != null) _bowlAnimator.enabled = true;
         _bottomBowl.TweenStop();
         _topBowl.TweenStop();
         base.CancelTeleportEffects();
@@ -102,9 +103,11 @@ public class StaffWaiter : Staff
         _topBowl.TweenStop();
         _bottomBowl.TweenAlpha(alpha, duration, ease);
         _topBowl.TweenAlpha(alpha, duration, ease);
+        long version = _moveVersion;
         base.TweenAlpha(alpha, duration, ease, () => {
+            if (!IsMovementCurrent(version)) return;
             onCompleted?.Invoke();
-            SetAlpha(alpha);
+            if (IsMovementCurrent(version)) SetAlpha(alpha);
     });
     }
 
@@ -117,12 +120,15 @@ public class StaffWaiter : Staff
             StopCoroutine(_teleportCoroutine);
 
         _isStairsMove = true;
+        long version = _moveVersion;
 
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
+            if (!IsMovementCurrent(version)) return;
             _bowlAnimator.enabled = false;
             _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() =>
             {
+                if (!IsMovementCurrent(version)) return;
                 _spriteRenderer.TweenStop();
                 _bottomBowl.TweenStop();
                 _topBowl.TweenStop();
@@ -131,7 +137,7 @@ public class StaffWaiter : Staff
                 _bottomBowl.color = Color.white;
                 _topBowl.color = Color.white;
                 _skillEffect.color = Color.white;
-                AStar.Instance.RequestPath(_tableManager.GetDoorPos(RestaurantType.Hall, _targetPos), _targetPos, TargetMove);
+                RequestCurrentPath(_tableManager.GetDoorPos(RestaurantType.Hall, _targetPos), _targetPos, TargetMove);
                 _bowlAnimator.enabled = true;
             }));
         }

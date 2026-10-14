@@ -72,6 +72,8 @@ namespace Muks.BackEnd
         }
 
         private static BackendManager _instance;
+        // Runtime callback guards must never create an SDK owner just to check its lifetime.
+        internal static BackendManager ExistingInstance => _instance;
 
 #if UNITY_EDITOR
         // Never serialized into a Scene/Prefab or available in a player build. This owner is not Instance.
@@ -262,7 +264,7 @@ namespace Muks.BackEnd
             public Param InitialValues() => LoadUserData.CreateInitialGameData(_owner.ServerTime);
         }
 
-        private sealed class SdkStageDataLoadTransport : IStageDataLoadTransport
+        private sealed class SdkStageDataLoadTransport : IStageDataLoadTransport, IStageDataWriteTransport
         {
             private readonly BackendManager _owner;
             public SdkStageDataLoadTransport(BackendManager owner) { _owner = owner; }
@@ -305,6 +307,11 @@ namespace Muks.BackEnd
             public bool Apply(EStage stage, BackendReturnObject response, Func<bool> isCurrent, bool asynchronous) =>
                 UserInfo.ApplyLoadedStageData(stage, response, isCurrent, asynchronous);
             public StaffStageRuntimeSnapshot ReadStaff(EStage stage) => UserInfo.CaptureStageStaffRuntimeSnapshot(stage);
+            public void ReadForSave(EStage stage, string account, Func<bool> current, bool asynchronous, Action<BackendReturnObject> reply) =>
+                _owner.ReadStageForSave(stage, account, current, asynchronous, reply);
+            public void Update(EStage stage, string account, string row, Func<Param> latestValues,
+                Func<bool> current, bool asynchronous, Action<BackendReturnObject> reply) =>
+                _owner.WriteStageValues(stage, account, row, latestValues, current, asynchronous, reply);
         }
 
         // The existing initialization creates/queries Stage1, Stage2 and Stage3, regardless of unlock state.
@@ -353,6 +360,7 @@ namespace Muks.BackEnd
         {
             bool handled = false;
             bool initializing = false;
+            Func<bool> unchangedDestination = UserInfo.CaptureStageLoadGuard(stage);
             Func<bool> current = () => collection.RefreshValidity();
             Func<bool> canReceive = () => !handled && !initializing && current();
             void Receive(BackendReturnObject response)
@@ -365,12 +373,20 @@ namespace Muks.BackEnd
                 // Preserve raw types/values BEFORE FlattenRows, SetData, A2 and StageInfo.LoadData.
                 var raw = collection.Capture(stage, response != null && response.IsSuccess(),
                     response == null ? null : response.GetReturnValue());
-                if (raw == null || !raw.CanApplyLegacy || !current()) return;
+                if (!current()) return;
+                if (raw == null || !raw.CanApplyLegacy)
+                {
+                    // A rejected raw envelope never authorizes saving through an
+                    // older successful load's binding for this Stage.
+                    ForgetStageSaveDestination(stage);
+                    return;
+                }
                 if (!collection.BeginApplication(stage)) return;
                 _isLoaded = true;
                 bool applied = false;
                 string applicationError = null;
-                try { applied = StageDataTransport.Apply(stage, response, current, asynchronous); }
+                try { if (unchangedDestination()) applied = StageDataTransport.Apply(stage, response, current, asynchronous);
+                    else applicationError = "Stage changed while its load was in flight"; }
                 catch (Exception) { applicationError = "기존 Stage 메모리 적용 중 예외가 발생했습니다."; }
                 finally { collection.CompleteApplication(stage, applied, applicationError); }
                 if (current() && ReferenceEquals(_stageMigrationCollection, collection)) TryStartStaffMigration();

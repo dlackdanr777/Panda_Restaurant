@@ -1,4 +1,4 @@
-﻿using BackEnd;
+using BackEnd;
 using LitJson;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,6 +14,7 @@ public class ServerStageData
     public float FeverGauge;
 
     public List<string> WaitingCustomerIdList = new List<string>();
+    public WaitingPartySaveData WaitingParties;
 
     public Dictionary<string, Dictionary<string, string>> EquipStaffDataDic = new Dictionary<string, Dictionary<string, string>>();
     public List<SaveStaffData> GiveStaffList = new List<SaveStaffData>();
@@ -32,8 +33,10 @@ public class ServerStageData
     public List<List<SaveTableData>> SaveTableDataList = new List<List<SaveTableData>>();
 
 
-    public Param GetParam()
+    public Param GetParam(bool existingRowUpdate = false)
     {
+        var waiting = WaitingParties ?? WaitingPartySaveData.FromLegacy(WaitingCustomerIdList);
+        if (!waiting.CanSave && !existingRowUpdate) throw new System.InvalidOperationException("Waiting fields require an existing-row partial update: " + waiting.Reason);
         Param param = new Param();
 
         param.Add("UnlockFloor", (int)UnlockFloor);
@@ -41,7 +44,16 @@ public class ServerStageData
         param.Add("Tip", Tip);
         param.Add("Satisfaction", Satisfaction);
         param.Add("FeverGauge", FeverGauge);
-        param.Add("WaitingCustomerIdList", WaitingCustomerIdList);
+        // Legacy output is derived, never a second source. Multi-member teams are not
+        // split for old clients; alternating old/new application writes is unsupported.
+        if (waiting.CanSave)
+        {
+            param.Add("WaitingCustomerIdList", waiting.Teams.All(t => t.Count == 1)
+                ? waiting.Teams.Select(t => t[0]).ToList() : new List<string>());
+            param.Add(WaitingPartySaveData.FieldName, waiting.Serialize());
+        }
+        // A partial Update leaves BOTH original columns untouched, including their
+        // unknown JSON/SDK types. Never use this payload to insert a replacement row.
 
         param.Add("GiveStaffList", GiveStaffList);
         param.Add("EquipStaffDataDic", EquipStaffDataDic);
@@ -58,12 +70,16 @@ public class ServerStageData
         return param;
     }
 
-    public void SetData(JsonData json)
+    public void SetData(JsonData json, WaitingPartySaveData waiting = null)
     {
         if (json == null || json.Count == 0)
             return;
 
         JsonData data = json[0];
+        // This path may now load normal fields beside an opaque waiting queue.
+        // Do not authorize a later partial save from silently defaulted bad fields.
+        if (waiting != null && (waiting.IsProtected || waiting.Teams.Count > 0))
+            ValidateOtherStageFields(WaitingPartySaveData.ParseRawObject(data.ToJson()));
 
         // 안전한 데이터 가져오기 메서드
         bool GetBool(string key) => data.ContainsKey(key) && data[key].ToString().ToLower() == "true";
@@ -78,7 +94,10 @@ public class ServerStageData
         Tip = GetInt("Tip");
         Satisfaction = GetFloat("Satisfaction");
         FeverGauge = GetFloat("FeverGauge");
-        WaitingCustomerIdList = ConvertJsonToList(data, "WaitingCustomerIdList");
+
+        WaitingParties = (waiting ?? WaitingPartySaveData.ParsePlain(Newtonsoft.Json.Linq.JObject.Parse(data.ToJson()))).RequireValidation();
+        WaitingCustomerIdList = WaitingParties.Teams.All(t => t.Count == 1)
+            ? WaitingParties.Teams.Select(t => t[0]).ToList() : new List<string>();
 
 
         if (data.ContainsKey("GiveStaffList"))
@@ -135,6 +154,65 @@ public class ServerStageData
 
         if (data.ContainsKey("SaveKitchenDataList"))
             SaveKitchenDataList = ConvertJsonToKitchenList(data["SaveKitchenDataList"]);
+    }
+
+    private static void ValidateOtherStageFields(Newtonsoft.Json.Linq.JObject row)
+    {
+        void Require(bool valid, string field)
+        { if (!valid) throw new System.FormatException("Invalid Stage field: " + field); }
+        void Number(Newtonsoft.Json.Linq.JObject value, string name, bool floating = false, bool wide = false)
+        {
+            if (!value.TryGetValue(name, out var token)) return; // Existing legacy defaults for absent fields.
+            string text = token.Type == Newtonsoft.Json.Linq.JTokenType.Null ? null : token.ToString();
+            bool valid = floating ? float.TryParse(text, out float f) && !float.IsNaN(f) && !float.IsInfinity(f)
+                : wide ? long.TryParse(text, out _) : int.TryParse(text, out _);
+            Require(valid, name);
+        }
+        void Strings(Newtonsoft.Json.Linq.JToken token)
+        { Require(token is Newtonsoft.Json.Linq.JArray && token.All(t => t.Type == Newtonsoft.Json.Linq.JTokenType.String), token.Path); }
+        void Array(string field, bool nested, System.Action<Newtonsoft.Json.Linq.JToken> validate)
+        {
+            if (!row.TryGetValue(field, out var token)) return;
+            Require(token is Newtonsoft.Json.Linq.JArray, field);
+            foreach (var item in token)
+            {
+                if (!nested) validate(item);
+                else { Require(item is Newtonsoft.Json.Linq.JArray, field); foreach (var cell in item) validate(cell); }
+            }
+        }
+        void Record(Newtonsoft.Json.Linq.JToken token)
+        {
+            Require(token is Newtonsoft.Json.Linq.JObject, token.Path);
+            var value = (Newtonsoft.Json.Linq.JObject)token;
+            foreach (string name in new[] { "CoinCount", "Count", "FloorType", "TableType", "MaxSinkBowlCount", "SinkBowlCount", "Level" }) Number(value, name);
+            Number(value, "Money", wide: true);
+            foreach (string name in new[] { "Id", "SkinId" })
+                if (value.TryGetValue(name, out var id)) Require(id.Type == Newtonsoft.Json.Linq.JTokenType.String, name);
+            if (value.TryGetValue("NeedCleaning", out var clean)) Require(bool.TryParse(clean.ToString(), out _), "NeedCleaning");
+            if (value.TryGetValue("CleaningBowlProcessed", out var bowl)) Require(bool.TryParse(bowl.ToString(), out _), "CleaningBowlProcessed");
+            if (value.TryGetValue("FloorType", out var floor)) Require((int)floor >= 0 && (int)floor < (int)ERestaurantFloorType.Length, "FloorType");
+            if (value.TryGetValue("TableType", out var table)) Require((int)table >= 0 && (int)table < (int)TableType.Length, "TableType");
+            if (value.TryGetValue("CoinAreaDatas", out var coins))
+            { Require(coins is Newtonsoft.Json.Linq.JArray && coins.Count() <= 2, "CoinAreaDatas"); foreach (var coin in coins) Record(coin); }
+            if (value.TryGetValue("GarbageAreaData", out var garbage)) Record(garbage);
+        }
+        foreach (string field in new[] { "UnlockFloor", "Score", "Tip" }) Number(row, field);
+        foreach (string field in new[] { "Satisfaction", "FeverGauge" }) Number(row, field, floating: true);
+        foreach (string field in new[] { "GiveFurnitureList", "GiveKitchenUtensilList", "GiveStaffSkinList" })
+            if (row.TryGetValue(field, out var list)) Strings(list);
+        foreach (string field in new[] { "EquipFurnitureList", "EquipKitchenUtensilList", "EquipStaffDataList" }) Array(field, false, Strings);
+        foreach (string field in new[] { "GiveStaffList", "SaveKitchenDataList" }) Array(field, false, Record);
+        foreach (string field in new[] { "DropCoinAreaDataList", "DropGarbageAreaDataList", "SaveTableDataList" }) Array(field, true, Record);
+        if (row.TryGetValue("EquipStaffDataDic", out var equipment))
+        {
+            Require(equipment is Newtonsoft.Json.Linq.JObject, "EquipStaffDataDic");
+            foreach (var floor in ((Newtonsoft.Json.Linq.JObject)equipment).Properties())
+            {
+                Require(floor.Value is Newtonsoft.Json.Linq.JObject, floor.Name);
+                foreach (var slot in ((Newtonsoft.Json.Linq.JObject)floor.Value).Properties())
+                    Require(slot.Value.Type == Newtonsoft.Json.Linq.JTokenType.String, slot.Name);
+            }
+        }
     }
 
     //JSON 데이터를 1차원 리스트로 변환하는 헬퍼 함수
@@ -244,6 +322,12 @@ public class ServerStageData
                     if (item.ContainsKey("NeedCleaning"))
                         saveData.SetNeedCleaning(item["NeedCleaning"].ToString().ToLower() == "true");
 
+                    if (item.ContainsKey("CleaningBowlProcessed"))
+                    {
+                        if (!bool.TryParse(item["CleaningBowlProcessed"].ToString(), out bool processed))
+                            throw new System.FormatException("Invalid CleaningBowlProcessed");
+                        saveData.SetCleaningBowlProcessed(processed);
+                    }
                     // CoinAreaData[]
                     if (item.ContainsKey("CoinAreaDatas"))
                     {

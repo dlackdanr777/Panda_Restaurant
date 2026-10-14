@@ -50,10 +50,21 @@ public class StageInfo
         OnChangeFeverGaugeHandler?.Invoke();
     }
 
-    private List<string> _waitingCustomerIdList = new List<string>();
-    public IReadOnlyList<string> WaitingCustomerIdList => _waitingCustomerIdList;
-    public void SetWaitingCustomerIds(List<string> ids) { _waitingCustomerIdList = ids ?? new List<string>(); }
-
+    private WaitingPartySaveData _waitingParties = WaitingPartySaveData.FromTeams(Array.Empty<string[]>());
+    public WaitingPartySaveData WaitingParties => _waitingParties;
+    public IReadOnlyList<string> WaitingCustomerIdList => _waitingParties.Teams.SelectMany(t => t).ToArray();
+    public void SetWaitingCustomerIds(List<string> ids)
+    {
+        if (!_waitingParties.CanSave || _waitingParties.Teams.Any(t => t.Count > 1)) return;
+        _waitingParties = WaitingPartySaveData.FromLegacy(ids);
+    }
+    public bool SetWaitingParties(IEnumerable<IEnumerable<string>> teams)
+    {
+        if (!_waitingParties.CanSave) return false;
+        _waitingParties = WaitingPartySaveData.FromTeams(teams); return true;
+    }
+    public void ProtectWaitingParties(string reason) { _waitingParties = _waitingParties.Protect(reason); }
+    internal void ProtectWaitingParties(WaitingPartySaveData rejected) { _waitingParties = rejected; }
     private Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>> _equipStaffTypeDic = new Dictionary<ERestaurantFloorType, Dictionary<EquipStaffType, StaffData>>();
     private Dictionary<string, SaveStaffData> _giveStaffDic = new Dictionary<string, SaveStaffData>();
     private readonly object _staffRuntimeOwnerToken = new object();
@@ -1284,6 +1295,21 @@ public class StageInfo
         return _saveKitchenDatas[floorIndex].MaxSinkBowlCount;
     }
 
+    // Same saved table and kitchen snapshot; notify only after both are committed.
+    internal bool TryProcessCleaningBowl(ERestaurantFloorType floor, TableType type, SaveTableData expected = null)
+    {
+        var table = GetTableData(floor, type);
+        if (expected != null && !ReferenceEquals(expected, table)) return false;
+        if (table.CleaningBowlProcessed) return true;
+        var kitchen = _saveKitchenDatas[(int)floor];
+        if (!kitchen.GetBowlAddEnabled()) return false;
+        table.SetNeedCleaning(true);
+        table.SetCleaningBowlProcessed(true);
+        kitchen.AddSinkBowlCount();
+        OnChangeSinkBowlHandler?.Invoke();
+        return true;
+    }
+
     public void AddSinkBowlCount(ERestaurantFloorType floor)
     {
         int floorIndex = (int)floor;
@@ -1329,7 +1355,7 @@ public class StageInfo
         data.Tip = _tip;
         data.Satisfaction = _satisfaction;
         data.FeverGauge = _feverGauge;
-        data.WaitingCustomerIdList = new List<string>(_waitingCustomerIdList);
+        data.WaitingParties = _waitingParties;
 
         data.SaveKitchenDataList = ConvertKitchenDataToList();
         data.SaveTableDataList = ConvertTableDataToList();
@@ -1407,7 +1433,7 @@ public bool LoadData(ServerStageData loadData)
     _tip = loadData.Tip;
     _satisfaction = Mathf.Clamp(loadData.Satisfaction, ConstValue.MIN_SATISFACTION, ConstValue.MAX_SATISFACTION);
     _feverGauge = loadData.FeverGauge;
-    _waitingCustomerIdList = loadData.WaitingCustomerIdList ?? new List<string>();
+    _waitingParties = loadData.WaitingParties ?? WaitingPartySaveData.FromLegacy(loadData.WaitingCustomerIdList);
 
 
         _giveStaffDic.Clear();

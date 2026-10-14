@@ -26,6 +26,8 @@ public sealed class GachaCollectionVideoRecorder : IDisposable
     private readonly Task<string> _stderr;
     private readonly string _path;
     private readonly double _started, _duration;
+    private readonly bool _padToDuration;
+    private double _encodedDuration;
     private int _lastRequested = -1, _pending, _captured, _skipped, _written, _duplicates;
     private bool _stopping, _disposed;
     private string _error;
@@ -39,12 +41,12 @@ public sealed class GachaCollectionVideoRecorder : IDisposable
     }
     private readonly Evidence _evidence;
 
-    public GachaCollectionVideoRecorder(string encoderPath, string outputPath, int width, int height, double seconds)
+    public GachaCollectionVideoRecorder(string encoderPath, string outputPath, int width, int height, double seconds, bool padToDuration = true)
     {
         if (!SystemInfo.supportsAsyncGPUReadback) throw new NotSupportedException("Async GPU readback is required for recording.");
         if (!File.Exists(encoderPath)) throw new FileNotFoundException("Supply the evidence-only FFmpeg executable.", encoderPath);
         _path = Path.GetFullPath(outputPath); Directory.CreateDirectory(Path.GetDirectoryName(_path));
-        _duration = seconds; _started = EditorApplication.timeSinceStartup;
+        _duration = seconds; _encodedDuration = seconds; _padToDuration = padToDuration; _started = EditorApplication.timeSinceStartup;
         _evidence = new Evidence { file = _path, startedUtc = DateTime.UtcNow.ToString("O"), width = width, height = height,
             savedFps = Fps, durationSeconds = seconds,
             method = "Actual preview Camera.Render frames; asynchronous GPU readback; timestamp-based 60 FPS encoding. Missing render frames repeat; no simulation advancement by recorder. Performance measurements are separate from recording." };
@@ -86,7 +88,12 @@ public sealed class GachaCollectionVideoRecorder : IDisposable
 
     public void Stop()
     {
-        lock (_gate) { _stopping = true; Monitor.PulseAll(_gate); }
+        lock (_gate)
+        {
+            if (!_stopping && !_padToDuration) _encodedDuration = Math.Min(_duration, EditorApplication.timeSinceStartup - _started);
+            _evidence.durationSeconds = _encodedDuration;
+            _stopping = true; Monitor.PulseAll(_gate);
+        }
     }
 
     private void WriteFrames()
@@ -112,7 +119,7 @@ public sealed class GachaCollectionVideoRecorder : IDisposable
                 if (previous != null) lock (_gate) _pool.Push(previous);
                 previous = frame.bytes;
             }
-            int total = (int)Math.Round(_duration * Fps);
+            int total = (int)Math.Round(_encodedDuration * Fps);
             while (previous != null && _written < total)
             { stream.Write(previous, 0, previous.Length); _written++; _duplicates++; }
             stream.Flush(); _encoder.StandardInput.Close();

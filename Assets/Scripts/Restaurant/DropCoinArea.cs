@@ -71,23 +71,19 @@ public class DropCoinArea : MonoBehaviour
     }
 
 
-    public void DropCoin(Vector3 startPos, int moneyValue)
+    public void DropCoin(Vector3 startPos, int moneyValue, bool isolateSoundFailure = false)
     {
         _currentMoney += moneyValue;
         _data.SetMoney(_currentMoney);
         PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
         coin.AddEvent(GiveCoin);
 
-        if (UserInfo.IsFirstTutorialClear)
+        if (isolateSoundFailure)
         {
-            EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
-            SoundManager.Instance.PlayEffectAudio(effectType, _dropCoinSound, 0.05f);
+            try { PlayDropSound(); }
+            catch (System.Exception error) { LastDropDiagnostic = error.ToString(); }
         }
-        else
-        {
-            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _dropCoinSound, 0.05f);
-        }
-
+        else PlayDropSound();
         Vector3 targetPos = _dropArea.position;
         targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * Count), 0, 0);
 
@@ -111,6 +107,21 @@ public class DropCoinArea : MonoBehaviour
             coin.transform.position = targetPos;
             coin.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
         });
+
+    }
+
+    public string LastDropDiagnostic { get; private set; }
+    private void PlayDropSound()
+    {
+        if (UserInfo.IsFirstTutorialClear)
+        {
+            EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
+            SoundManager.Instance.PlayEffectAudio(effectType, _dropCoinSound, 0.05f);
+        }
+        else
+        {
+            SoundManager.Instance.PlayEffectAudio(EffectType.UI, _dropCoinSound, 0.05f);
+        }
 
     }
 

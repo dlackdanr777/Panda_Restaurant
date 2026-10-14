@@ -27,7 +27,15 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private static string OutputDirectory => _fairyBirthInput ? FairyBirthInputOutputDirectory : _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _customerUse ? CustomerUseOutputDirectory : _fairyBirthInput ? FairyBirthInputOutputDirectory : _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static bool _customerUse;
+    private static string CustomerUseOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_CUSTOMER_USE_EVIDENCE_DIR"))
+        ? Path.Combine(Path.GetTempPath(), "CustomerTableUseReview") : Environment.GetEnvironmentVariable("PANDA_CUSTOMER_USE_EVIDENCE_DIR");
+    public static void RunCustomerUseBatch()
+    {
+        _customerUse = true;
+        RunPhase1Batch();
+    }
     private static string FairyBirthInputOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_FAIRY_INPUT_EVIDENCE_DIR"))
         ? Path.Combine(Path.GetTempPath(), "FairyBirthInputReview") : Environment.GetEnvironmentVariable("PANDA_FAIRY_INPUT_EVIDENCE_DIR");
     private static string ExchangeInspectorOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_EXCHANGE_EVIDENCE_DIR"))
@@ -133,7 +141,7 @@ public static class GachaReviewTestRunner
         {
             if (EditorApplication.timeSinceStartup < readyAt || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
             EditorApplication.update -= StartWhenReady;
-            try { Begin(_fairyBirthInput ? "fairy-input" : _exchangeInspector ? "exchange-inspector" : _phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
+            try { Begin(_customerUse ? "customer-use" : _fairyBirthInput ? "fairy-input" : _exchangeInspector ? "exchange-inspector" : _phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
                 : Environment.GetCommandLineArgs().Contains("-fairyEvidenceOnly") ? "fairy-evidence"
                 : Environment.GetCommandLineArgs().Contains("-fairyUiOnly") ? "ui"
                 : Environment.GetCommandLineArgs().Contains("-fairyOnly") ? "fairy" : "phase1"); }
@@ -250,7 +258,7 @@ public static class GachaReviewTestRunner
         string selectedFixture = Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(fixtureArgument, StringComparison.Ordinal));
         if (selectedFixture != null) selectedFixture = selectedFixture.Substring(fixtureArgument.Length);
         const string methodArgument = "-reviewMethod=";
-        string selectedMethod = _fairyBirthInput ? Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(methodArgument, StringComparison.Ordinal)) : null;
+        string selectedMethod = (_customerUse || _fairyBirthInput) ? Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(methodArgument, StringComparison.Ordinal)) : null;
         if (selectedMethod != null) selectedMethod = selectedMethod.Substring(methodArgument.Length);
         IEnumerable<string> fixtures = _phase3 ? FixtureNames.Concat(new[] { "GachaPhase3Tests", "Stage1Phase3StressTests", "ItemGachaCapsulePresentationTests" }) : FixtureNames;
         if (_phase4) fixtures = fixtures.Concat(new[] { "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffGroundContactTests", "StaffGachaEntryTests", "Phase4AdUiEvidenceTests", "AdvertisementDiamondRewardTests" });
@@ -260,6 +268,7 @@ public static class GachaReviewTestRunner
             "Phase5UiSoundTests", "PresentationSoundTests", "GachaCollectionPreviewSafetyTests" };
         if (_fairyBirthInput) fixtures = new[] { "FairyBirthInputTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
             "FairyBirthSequenceTests", "FairyBirthSoundTests", "PresentationSoundTests" };
+        if (_customerUse) fixtures = new[] { "CustomerPartyServingTests", "CustomerPartyCompletionTests", "CustomerPartyOrderTests", "CustomerTableUseRegressionTests", "CustomerVisitPartyTests", "CustomerPartyQueueTests", "StageWaitingSaveGuardTests", "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffStageMigrationCollectionTests" };
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;
@@ -285,7 +294,9 @@ public static class GachaReviewTestRunner
                     && method.Name != "EconomyBackend_Stage1FairyAppearsOnlyAfterProductionCommitAndNeverDuplicates") continue;
                 if (_phase4 && Environment.GetCommandLineArgs().Contains("-phase4CoreOnly") && (name == "StaffGachaOfflineSessionTests" || name == "StaffStageMigrationCollectionTests") && !method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal)) continue;
                 if (name == "StaffGachaOfflineSessionTests" && !method.Name.StartsWith("ResultPopup_", StringComparison.Ordinal) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
-                if (name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
+                if (_customerUse && name == "StaffStageMigrationCollectionTests" && !new[] { "AllStages_", "RawEnvelope", "CatalogAndRaw", "RawLevelSix", "ExistingCommonStaff_", "NewCollectionRounds_", "GameDataRequery", "Legacy",
+                    "FirstTutorial_ConfirmedSignup", "FirstTutorial_StageBootstrap", "FirstTutorial_UnknownInitial", "FirstTutorial_OrdinaryStageWrite" }.Any(prefix => method.Name.StartsWith(prefix, StringComparison.Ordinal))) continue;
+                if (!_customerUse && name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
                     && !(_phase3 && method.Name.StartsWith("Attendance_", StringComparison.Ordinal)) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "UnityTestAttribute")) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "TestAttribute" ||
@@ -344,7 +355,7 @@ public static class GachaReviewTestRunner
         public void TestStarted(ITest test)
         {
             RequireEditorThread();
-            if ((_exchangeInspector || _fairyBirthInput) && !test.IsSuite) _logScope = CreateLogScope();
+            if ((_customerUse || _exchangeInspector || _fairyBirthInput) && !test.IsSuite) _logScope = CreateLogScope();
         }
         public void TestOutput(TestOutput output) { }
         public void TestFinished(ITestResult result)
@@ -469,6 +480,22 @@ public static class GachaReviewTestRunner
         {
             if (EditorApplication.timeSinceStartup < readyAt) return;
             EditorApplication.update -= ExitWhenReady;
+            // Only the owned, disposable customer batch. Unity 6's 2D Animation
+            // updater recreates itself if engine shutdown destroys it before its
+            // manager. Destroy the existing manager first through normal OnDisable.
+            // No package edits, private lifecycle invocation, or user-editor cleanup.
+            if (_customerUse && Application.isBatchMode && File.Exists(Path.Combine(Application.dataPath, "../party-preview-owned.json")))
+            {
+                var skins = Resources.FindObjectsOfTypeAll<UnityEngine.U2D.Animation.SpriteSkin>();
+                if (!skins.Any(skin => !EditorUtility.IsPersistent(skin) && skin.gameObject.scene.IsValid()))
+                {
+                    Type manager = typeof(UnityEngine.U2D.Animation.SpriteSkin).Assembly.GetType("UnityEngine.U2D.Animation.DeformationManager");
+                    if (manager != null)
+                        foreach (Object instance in Resources.FindObjectsOfTypeAll(manager))
+                            if (!EditorUtility.IsPersistent(instance)) Object.DestroyImmediate(instance);
+                    _witness.AssertUnchanged("owned batch package shutdown");
+                }
+            }
             EditorApplication.Exit(code);
         }
         EditorApplication.update += ExitWhenReady;

@@ -1,4 +1,4 @@
-﻿using Muks.PathFinding.AStar;
+using Muks.PathFinding.AStar;
 using Muks.Tween;
 using Muks.WeightedRandom;
 using System;
@@ -21,9 +21,43 @@ public struct ManagerCustomerGuideDiagnostic
     public string Result;
 }
 
-public class TableManager : MonoBehaviour
+public partial class TableManager : MonoBehaviour
 {
     public event Action OnTableUpdateHandler;
+
+    private object _executionIdentity;
+
+    private void OnEnable()
+    {
+        _executionIdentity = new object();
+        LoadingSceneManager.OnLoadSceneHandler += InvalidateExecution;
+    }
+
+    private void InvalidateExecution()
+    {
+        _executionIdentity = null;
+        if (_customerController != null) _customerController.EndVisitParties();
+    }
+
+    private void OnDisable()
+    {
+        InvalidateExecution();
+        LoadingSceneManager.OnLoadSceneHandler -= InvalidateExecution;
+    }
+
+    internal bool IsExecutionCurrent(object identity) => identity != null
+        && ReferenceEquals(identity, _executionIdentity);
+
+    private static Action GuardExit(TableUseIdentity use, Action complete)
+    {
+        bool completed = false;
+        return () =>
+        {
+            if (completed || !use.IsCustomerContextCurrent) return;
+            completed = true;
+            complete();
+        };
+    }
 
     private readonly Dictionary<ERestaurantFloorType, ManagerRuntime> _managerRuntimes =
         new Dictionary<ERestaurantFloorType, ManagerRuntime>();
@@ -65,8 +99,8 @@ public class TableManager : MonoBehaviour
         if (customer == null)
             return CompleteManagerGuideDiagnostic("NoWaitingCustomer");
 
-        customer.SetVisitFloor(table.FloorType);
-        OnCustomerGuide(customer, table);
+        if (!OnCustomerGuide(customer, table))
+            return CompleteManagerGuideDiagnostic(_customerController.LastVisitDiagnostic);
         CompleteManagerGuideDiagnostic("Guided");
         if (playSound)
         {
@@ -220,6 +254,8 @@ public class TableManager : MonoBehaviour
             return false;
         }
 
+        if (_customerController.FirstReadyParty == null) return false;
+
         if (!TrySelectCustomerGuideTable(customer, requestedFloor, out ERestaurantFloorType choiceFloor,
             out TableData data, strictRequestedFloor))
         {
@@ -235,9 +271,7 @@ public class TableManager : MonoBehaviour
         }
 
         sitPos = Mathf.Clamp(sitPos, -1, 1);
-        customer.SetVisitFloor(choiceFloor);
-        OnCustomerGuide(customer, data, sitPos);
-        return true;
+        return OnCustomerGuide(customer, data, sitPos);
     }
 
     private bool IsCurrentEquippedManager(Staff staff)
@@ -323,42 +357,44 @@ public class TableManager : MonoBehaviour
 
 
 
-    private void OnCustomerGuide(NormalCustomer customer, TableData data, int sitPos = -1)
+    private bool OnCustomerGuide(NormalCustomer customer, TableData data, int sitPos = -1)
     {
-        data.CurrentCustomer = customer;
+        if (data == null || data.CurrentUse != null || data.CurrentCustomer != null
+            || data.TableState != ETableState.Empty || _executionIdentity == null
+            || _customerController.IsEmpty() || !ReferenceEquals(_customerController.GetFirstCustomer(), customer)
+            || _customerController.FirstReadyParty == null) return false;
+        CustomerVisitParty party = _customerController.FirstReadyParty;
+        CustomerVisitMember member = party.Members[0];
+        if (!party.IsActive || party.CurrentUse != null || data.ChairTrs == null || data.ChairTrs.Length < party.Members.Count
+            || data.ChairTrs[0] == null || (party.Members.Count == 2 && (data.ChairTrs[1] == null || data.ChairTrs[0] == data.ChairTrs[1]))) return false;
+        int seatIndex = party.Members.Count == 2 ? 0 : sitPos == 0 || sitPos == 1 ? sitPos : UnityEngine.Random.Range(0, data.ChairTrs.Length);
+        TableUseIdentity use = data.BeginUse(this, _executionIdentity, customer, member, seatIndex);
+        if (use == null) return false;
+        data.CurrentCustomer = use.IsSingle ? customer : null;
+        if (!use.IsSingle) return GuideParty(party, data, use);
+        customer.SetVisitFloor(data.FloorType);
         customer.SetLayer("Customer", 0);
         customer.StopWaiting();
         data.TableState = ETableState.Move;
         data.OrdersCount = customer.OrderCount;
         data.Satisfaction = 0;
-        if (sitPos != 0 && sitPos != 1)
-        {
-            int randInt = UnityEngine.Random.Range(0, data.ChairTrs.Length);
-            data.SitDir = randInt == 0 ? -1 : 1;
-            data.SitIndex = randInt;
-        }
-        else
-        {
-            data.SitDir = sitPos == 0 ? -1 : 1;
-            data.SitIndex = sitPos;
-        }
+        data.SitDir = seatIndex == 0 ? -1 : 1;
+        data.SitIndex = seatIndex;
 
-        Vector3 targetPos = data.ChairTrs[data.SitIndex].position;
+        Vector3 targetPos = data.GetSeatPosition(data.SitIndex);
         targetPos.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
 
-        _customerController.GuideCustomer(targetPos, 0, () =>
+        if (!_customerController.TakeReadyParty(party, use)) { data.EndUse(); data.CurrentCustomer = null; return false; }
+        if (!use.IsMemberCurrent(member)) return false;
+        customer.Move(targetPos, 0, () =>
         {
-            // 손님 도착 확인 - 참조 일치 여부 체크
-            if (data.CurrentCustomer == null || data.CurrentCustomer != customer)
-            {
-                DebugLog.LogError($"손님 안내 중단: CurrentCustomer 불일치 (Table: {data.name})");
-                return;
-            }
+            if (!use.IsCurrent(data) || use.Arrived) return;
+            use.Arrived = true;
 
             // 손님이 도착했으므로 즉시 위치 설정 (대기 시간 제거)
             // StopMove()로 경로 탐색 race condition 완전 차단
             customer.StopMove();
-            customer.transform.position = data.ChairTrs[data.SitIndex].position;
+            customer.transform.position = data.GetSeatPosition(data.SitIndex);
             customer.SetSitTableData(data);
             data.OrderButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
             data.ServingButton.SetWorldTransform(data.ChairTrs[data.SitIndex]);
@@ -370,12 +406,8 @@ public class TableManager : MonoBehaviour
 
             Tween.Wait(1.5f, () =>
             {
-                // 재확인: 손님이 여전히 테이블에 있는지
-                if (data.CurrentCustomer == null || data.CurrentCustomer != customer)
-                {
-                    DebugLog.LogError($"앉기 애니메이션 후 손님 없음 (Table: {data.name})");
-                    return;
-                }
+                if (!use.IsCurrent(data) || use.Seated) return;
+                use.Seated = true;
 
                 if (!_satisfactionSystem.CheckCustomerTendency(customer.NormalCustomerData.TendencyType))
                 {
@@ -386,12 +418,51 @@ public class TableManager : MonoBehaviour
                 OnCustomerSeating(data);
             });
         });
+        _customerController.PublishGuide();
+        return use.IsPartyCurrent(data);
+    }
+
+    private bool GuideParty(CustomerVisitParty party, TableData data, TableUseIdentity use)
+    {
+        if (!_customerController.TakeReadyParty(party, use)) { data.EndUse(); return false; }
+        data.TableState = ETableState.Move;
+        foreach (var member in party.Members)
+        {
+            if (!use.IsMemberCurrent(member)) return false;
+            var customer = member.Customer;
+            customer.SetVisitFloor(data.FloorType); customer.StopWaiting(); customer.SetLayer("Customer", 0);
+            Vector3 target = data.GetSeatPosition(member.SeatIndex);
+            target.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
+            customer.Move(target, 0, () =>
+            {
+                if (!use.IsMemberCurrent(member) || !customer.ConfirmReachedMoveTarget() || !use.TryArrive(member)) return;
+                customer.StopMove(); customer.transform.position = data.GetSeatPosition(member.SeatIndex);
+                customer.SetSitTableData(data); customer.SetSpriteDir(member.SeatIndex == 0 ? 1 : -1);
+                customer.SetLayer("SitCustomer", 0); customer.ChangeState(CustomerState.Sit); customer.FixSpritePosition(false);
+                Tween.Wait(1.5f, () =>
+                {
+                    if (!use.TrySeat(member) || !use.AllSeated) return;
+                    PreparePartyOrders(data, use);
+                });
+            });
+        }
+        UpdateTable();
+        _customerController.PublishGuide();
+        return use.IsPartyCurrent(data);
+    }
+
+    public bool CancelPartyGuide(TableData table)
+    {
+        if (table == null || table.CurrentUse == null || table.CurrentUse.IsSingle) return false;
+        table.EndUse(); UpdateTable(); return true;
     }
 
 
 
     public void OnCustomerSeating(TableData data)
     {
+        TableUseIdentity use = data == null ? null : data.CurrentUse;
+        if (use == null || !use.IsCurrent(data) || use.CompletionStarted) return;
         if (data.TableState == ETableState.DontUse)
         {
             NotFurnitureTable(data);
@@ -416,19 +487,19 @@ public class TableManager : MonoBehaviour
 
         FoodData foodData = data.CurrentCustomer.NormalCustomerData.GetRandomOrderFood();
         int foodLevel = UserInfo.GetRecipeLevel(foodData);
+        TableOrderIdentity order = null;
         CookingData cookingData = new CookingData(foodData, data, Mathf.Clamp(0.5f, foodData.GetCookingTime(foodLevel) - GameManager.Instance.SubCookingTime, 100000), foodData.GetSellPrice(foodLevel), () =>
         {
-            if (data.CurrentCustomer == null)
-            {
-                DebugLog.Log("현재 손님이 비어있습니다.");
-                return;
-            }    
+            if (order == null || !order.IsCurrent(data) || order.CookingCompleted
+                || use.CompletionStarted) return;
+            order.CookingCompleted = true;
 
             data.TableState = ETableState.CanServing;
             data.ServingButton.SetData(foodData);
             foodData = null;
             UpdateTable();
         });
+        order = cookingData.Identity;
 
         int tip = Mathf.FloorToInt(foodData.GetSellPrice(foodLevel) * GameManager.Instance.TipMul * _satisfactionSystem.AddCustomerTipMul(data.CurrentCustomer.NormalCustomerData.TendencyType));
         data.TotalTip += tip;
@@ -463,6 +534,12 @@ public class TableManager : MonoBehaviour
 
     public void OnCustomerOrder(TableData data)
     {
+        if (data != null && data.CurrentUse != null && !data.CurrentUse.IsSingle)
+        { TryAcceptPartyOrders(data); return; }
+        TableOrderIdentity order = data == null ? null : data.CurrentFood.Identity;
+        if (order == null || !order.IsCurrent(data) || order.Use.CompletionStarted) return;
+        if (data.TableState != ETableState.Seating && data.TableState != ETableState.UseStaff
+            && data.TableState != ETableState.DontUse) return;
         if (data.TableState == ETableState.DontUse)
         {
             NotFurnitureTable(data);
@@ -482,6 +559,8 @@ public class TableManager : MonoBehaviour
             return;
         }
 
+        if (order.OrderAccepted) return;
+        order.OrderAccepted = true;
         _kitchenSystem.EqueueFood(data.FloorType, data.CurrentFood);
         data.TableState = ETableState.WaitFood;
         UpdateTable();
@@ -489,6 +568,7 @@ public class TableManager : MonoBehaviour
 
     public void OnWaitFood(TableData data)
     {
+        if (data == null || (data.CurrentUse != null && !data.CurrentUse.IsSingle)) return;
         if (data.TableState == ETableState.DontUse)
         {
             NotFurnitureTable(data);
@@ -508,6 +588,14 @@ public class TableManager : MonoBehaviour
 
     public void OnServing(TableData data)
     {
+        if (data != null && data.CurrentUse != null && !data.CurrentUse.IsSingle) return;
+        TryDeliverFood(data == null ? null : data.CurrentFood.Identity, null);
+    }
+
+    private void OnServingSingle(TableData data, TableOrderIdentity order)
+    {
+        if (order == null || !order.IsCurrent(data) || order.ServingStarted
+            || order.Use.CompletionStarted) return;
         if (data.TableState == ETableState.DontUse)
         {
             NotFurnitureTable(data);
@@ -520,27 +608,37 @@ public class TableManager : MonoBehaviour
             return;
         }
 
+        if (data.TableState != ETableState.CanServing && data.TableState != ETableState.StaffServing) return;
+        order.ServingStarted = true;
         data.CurrentCustomer.StopWaitingForFood();
         FoodData foodData = FoodDataManager.Instance.GetFoodData(data.CurrentFood.FoodData.Id);
         data.TableState = ETableState.Eating;
-        StartCoroutine(EatRoutine(data, foodData));
+        if (order.IsCurrent(data)) StartCoroutine(EatCurrentOrder(data, foodData, order));
         UpdateTable();
     }
 
 
     private IEnumerator EatRoutine(TableData data, FoodData foodData)
     {
+        // Capture before the iterator's first MoveNext, not after a later coroutine resume.
+        return EatCurrentOrder(data, foodData, data.CurrentFood.Identity);
+    }
+
+    private IEnumerator EatCurrentOrder(TableData data, FoodData foodData, TableOrderIdentity order)
+    {
         DebugLog.Log(data.name + " 11");
         yield return YieldCache.WaitForSeconds(0.5f);
-        if (data.CurrentCustomer == null)
+        if (order == null || !order.IsCurrent(data) || !order.ServingStarted || order.EatingCompleted || order.Use.CompletionStarted)
             yield break;
 
         DebugLog.Log(data.name + " 22");
-        data.CurrentCustomer.transform.position = data.ChairTrs[data.SitIndex].position;
+        data.CurrentCustomer.transform.position = data.GetSeatPosition(data.SitIndex);
         data.CurrentCustomer.ChangeState(CustomerState.Eat);
         data.CurrentCustomer.ShowFood(foodData.Sprite);
 
         yield return YieldCache.WaitForSeconds(1.5f);
+        if (!order.IsCurrent(data) || order.EatingCompleted || order.Use.CompletionStarted) yield break;
+        order.EatingCompleted = true;
         DebugLog.Log(data.name + " 33");
 
         if (data.OrdersCount <= 0)
@@ -560,12 +658,14 @@ public class TableManager : MonoBehaviour
 
     public void OnUseStaff(TableData data)
     {
+        if (data == null || (data.CurrentUse != null && !data.CurrentUse.IsSingle)) return;
         data.TableState = ETableState.UseStaff;
         UpdateTable();
     }
 
     public void OnServigStaff(TableData data)
     {
+        if (data == null || (data.CurrentUse != null && !data.CurrentUse.IsSingle)) return;
         data.TableState = ETableState.StaffServing;
         UpdateTable();
     }
@@ -573,6 +673,8 @@ public class TableManager : MonoBehaviour
 
     public void ExitCustomer(TableData data)
     {
+        TableUseIdentity use = data == null ? null : data.CurrentUse;
+        if (use == null || !use.IsCurrent(data)) return;
         if (data.TableState == ETableState.DontUse)
         {
             NotFurnitureTable(data);
@@ -591,24 +693,28 @@ public class TableManager : MonoBehaviour
         exitCustomer.StartHappy();
         UserInfo.AddSatisfaction(UserInfo.CurrentStage, data.Satisfaction * exitCustomer.AddSatisfactionMul);
         _feverSystem.AddFeverGauge(exitCustomer.AddFeverGaugeMul);
+        data.EndUse();
         data.CurrentCustomer = null;
         data.TotalTip = 0;
         data.TotalPrice = 0;
         data.Satisfaction = 0;
         DirtyTable(data);
         UpdateTable();
-        exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
+        exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, GuardExit(use, () =>
         {
             ObjectPoolManager.Instance.DespawnNormalCustomer(exitCustomer);
             exitCustomer.StopHappy();
             exitCustomer = null;
             UpdateTable();
-        });
+        }));
     }
 
 
         public void AngerExitCustomer(TableData data)
     {
+        TableUseIdentity use = data == null ? null : data.CurrentUse;
+        if (use != null && !use.IsSingle) { HoldUnsupportedPartyPolicy(use, "MidVisitFailurePolicyPending"); return; }
+        if (use == null || !use.IsCurrent(data)) return;
         if (data.TableState == ETableState.DontUse)
         {
             NotFurnitureTable(data);
@@ -626,20 +732,21 @@ public class TableManager : MonoBehaviour
         exitCustomer.HideFood();
         exitCustomer.StartAnger();
         exitCustomer.FixSpritePosition(true);
+        data.EndUse();
         data.CurrentCustomer = null;
         data.TotalTip = 0;
         data.TotalPrice = 0;
         data.TableState = ETableState.Empty;
 
-        UserInfo.AddSatisfaction(UserInfo.CurrentStage, -5);
+        UserInfo.AddSatisfaction(UserInfo.CurrentStage, BasicRecipeRejectionSatisfaction);
         UpdateTable();
-        exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
+        exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, GuardExit(use, () =>
         {
             exitCustomer.StopAnger();
             ObjectPoolManager.Instance.DespawnNormalCustomer(exitCustomer);
             exitCustomer = null;
             UpdateTable();
-        });
+        }));
     }
 
 
@@ -647,6 +754,10 @@ public class TableManager : MonoBehaviour
     {
         if (data.TableType == TableType.Table1)
             return;
+
+        TableUseIdentity use = data.CurrentUse;
+        if (use != null && !use.IsSingle) { HoldUnsupportedPartyPolicy(use, "FurnitureRemovedPolicyPending"); return; }
+        data.EndUse(null, ETableState.DontUse);
 
         data.TotalTip = 0;
         data.TotalPrice = 0;
@@ -675,6 +786,7 @@ public class TableManager : MonoBehaviour
 
         exitCustomer.Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
+            if (use == null || !use.IsCustomerContextCurrent) return;
             ObjectPoolManager.Instance.DespawnNormalCustomer(exitCustomer);
             exitCustomer = null;
             UpdateTable();
@@ -684,11 +796,9 @@ public class TableManager : MonoBehaviour
 
     private void EndEat(TableData data)
     {
-        if (data.CurrentCustomer == null)
-        {
-            DebugLog.Log("손님이 없습니다.");
-            return;
-        }
+        TableUseIdentity use = data == null ? null : data.CurrentUse;
+        if (use == null || !use.IsCurrent(data) || use.CompletionStarted) return;
+        use.CompletionStarted = true;
 
         int basePaymentTip = data.TotalTip;
         EStage paymentStage = UserInfo.CurrentStage;
@@ -714,11 +824,12 @@ public class TableManager : MonoBehaviour
         StartGarbageAnime(data);
         Tween.Wait(0.5f, () =>
         {
-            if (data.CurrentCustomer == null)
-                return;
+            if (!use.IsCurrent(data) || use.SettlementCompleted) return;
+            use.SettlementCompleted = true;
 
             ExitCustomer(data);
- 
+
+            // Exit ends the use. This already-claimed settlement still owns its captured tip.
             UserInfo.AddTip(paymentStage, finalPaymentTip);
             UpdateTable();
         });
@@ -759,13 +870,17 @@ public class TableManager : MonoBehaviour
 
     private void StartGarbageAnime(TableData data)
     {
+        TableUseIdentity use = data.CurrentUse;
         int sitIndex = data.SitIndex;
         int count = UnityEngine.Random.Range(1, 3);
         float time = 0.02f;
         for (int i = 0; i < count; i++)
         {
+            bool dropped = false;
             Tween.Wait(time, () =>
             {
+                if (dropped || use == null || !use.IsCurrent(data)) return;
+                dropped = true;
                 data.DropGarbageArea.DropGarbage(data.ChairTrs[sitIndex].position + new Vector3(0, 1.2f, 0));
             });
             time += 0.02f;
@@ -1057,10 +1172,15 @@ public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurn
                 if (data.TableState == ETableState.DontUse)
                     continue;
 
-                if (data.CurrentCustomer == null || data.TableState == ETableState.Move || data.TableState == ETableState.UseStaff)
+                if (data.TableState == ETableState.UseStaff)
                     continue;
-
-                data.CurrentCustomer.transform.position = data.ChairTrs[data.SitIndex].position;
+                if (data.TableState == ETableState.PartyRejecting || (data.CurrentUse != null && !data.CurrentUse.IsSingle && data.CurrentUse.CompletionStarted)) continue;
+                data.RefreshPartyOrderButtons();
+                var party = data.CurrentParty;
+                if (party == null) continue;
+                foreach (var member in party.Members)
+                    if (data.TableState != ETableState.Move || data.CurrentUse.HasArrived(member))
+                        member.Customer.transform.position = data.GetSeatPosition(member.SeatIndex);
             }
         });
 
@@ -1068,6 +1188,8 @@ public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurn
 
     private void OnDestroy()
     {
+        InvalidateExecution();
+        LoadingSceneManager.OnLoadSceneHandler -= InvalidateExecution;
         _customerController.OnChangeCustomerHandler -= UpdateTable;
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEvent;
         UserInfo.OnChangeFurnitureHandler -= OnChangeTableEvent;

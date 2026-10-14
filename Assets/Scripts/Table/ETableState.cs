@@ -11,5 +11,13 @@ public enum ETableState
     StaffServing,
     NeedCleaning,
     DontUse,
+    PartySeatedAwaitingOrders,
+    PartyWaitingForCooking,
+    PartyReadyForServing,
+    PartyRejecting,
+    PartyOrderPreparationFailed,
+    PartyMealsInProgress,
+    PartyCurrentMealsCompleted,
+    PartyPolicyPending,
     Length
 }

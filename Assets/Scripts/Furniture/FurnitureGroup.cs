@@ -107,7 +107,7 @@ public class FurnitureGroup : MonoBehaviour
     {
         foreach(TableData data in _tableDataDic.Values)
         {
-            if (data.TableState != state)
+            if (data.TableState != state || (state == ETableState.Empty && (data.CurrentUse != null || data.CurrentCustomer != null)))
                 continue;
 
             return data;
@@ -229,6 +229,11 @@ public class FurnitureGroup : MonoBehaviour
             TableType type = (TableType)i;
             TableButton orderButton = Instantiate(orderButtonPrefab, obj.transform);
             TableButton servingButton = Instantiate(servingButtonPrefab, obj.transform);
+            TableButton companionServing = Instantiate(servingButtonPrefab, obj.transform);
+            companionServing.Init(); companionServing.gameObject.SetActive(false);
+            TableButton companionButton = Instantiate(orderButtonPrefab, obj.transform);
+            companionButton.Init();
+            companionButton.gameObject.SetActive(false);
 
             orderButton.Init();
             servingButton.Init();
@@ -239,13 +244,20 @@ public class FurnitureGroup : MonoBehaviour
             data.FloorType = _floorType;
             data.TableState = ETableState.Empty;
             orderButton.AddListener(() => _tableManager.OnCustomerOrder(data));
-            servingButton.AddListener(() => _tableManager.OnServing(data));
+            servingButton.AddListener(() => {
+                if (data.PartyOrders != null) _tableManager.TryServePartyOrder(data.GetPartyOrderAtSeat(0));
+                else _tableManager.OnServing(data);
+            });
+            companionServing.AddListener(() => _tableManager.TryServePartyOrder(data.GetPartyOrderAtSeat(1)));
+            data.CompanionServingButton = companionServing;
 
             orderButton.SetWorldTransform(data.ChairTrs[0]);
             servingButton.SetWorldTransform(data.ChairTrs[0]);
 
             data.ServingButton = servingButton;
             data.OrderButton = orderButton;
+            data.CompanionOrderButton = companionButton;
+            companionButton.AddListener(() => _tableManager.OnCustomerOrder(data));
 
             SaveTableData saveTableData = UserInfo.GetTableData(UserInfo.CurrentStage, _floorType, type);
             GarbageAreaData garbageData = saveTableData.GarbageAreaData;
@@ -329,11 +341,17 @@ public class FurnitureGroup : MonoBehaviour
         {
             TableType type = (TableType)i;
             TableData data = _tableDataDic[type];
+            if (data.CompanionOrderButton != null) data.CompanionOrderButton.gameObject.SetActive(false);
+            if (data.CompanionServingButton != null) data.CompanionServingButton.gameObject.SetActive(false);
             if ((TableType.Table2 <= type && type <= TableType.Table5) && UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _floorType, (FurnitureType)i) == null)
             {
                 _tableManager.NotFurnitureTable(data);
                 data.OrderButton.gameObject.SetActive(false);
                 data.ServingButton.gameObject.SetActive(false);
+            }
+            else if (data.CurrentUse != null && !data.CurrentUse.IsSingle)
+            {
+                data.RefreshPartyOrderButtons();
             }
             else if (data.TableState == ETableState.DontUse)
             {

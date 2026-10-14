@@ -524,35 +524,37 @@ public static partial class UserInfo
     }
 
 
-    public static void SaveStageData(EStage stage, Func<bool> isCurrent = null)
-    {
-        if (isCurrent != null && !isCurrent()) return;
-        int stageIndex = (int)stage;
-        if (_stageInfos[stageIndex] == null)
-        {
-            DebugLog.LogError("현재 스테이지 정보가 없습니다: " + stage.ToString());
-            return;
-        }
+    public static StageSaveRequest SaveStageData(EStage stage, Func<bool> isCurrent = null,
+        Action<StageSaveRequest> completed = null) => RequestStageSave(stage, false, isCurrent, completed);
 
-        Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameData(stage.ToString() + "Data", param, isCurrent);
+    public static StageSaveRequest SaveStageDataAsync(EStage stage, Func<bool> isCurrent = null,
+        Action<StageSaveRequest> completed = null) => RequestStageSave(stage, true, isCurrent, completed);
+
+    private static StageSaveRequest RequestStageSave(EStage stage, bool asynchronous,
+        Func<bool> isCurrent, Action<StageSaveRequest> completed)
+    {
+        var owner = BackendManager.ExistingInstance;
+        if (stage < EStage.Stage1 || stage >= EStage.Length || _stageInfos == null
+            || _stageInfos[(int)stage] == null || owner == null)
+            return StageSaveRequest.Held("Stage/owner unavailable", completed);
+        var destination = _stageInfos[(int)stage];
+        return owner.RequestStageSave(stage, destination, asynchronous,
+            () => ReferenceEquals(BackendManager.ExistingInstance, owner) && _stageInfos != null
+                && ReferenceEquals(_stageInfos[(int)stage], destination) && (isCurrent == null || isCurrent()), completed);
     }
 
-
-    public static void SaveStageDataAsync(EStage stage, Func<bool> isCurrent = null)
+    // Read-only fingerprint at the beginning of a Stage GET. A late load must not
+    // replace local changes made while that GET was in flight.
+    internal static Func<bool> CaptureStageLoadGuard(EStage stage)
     {
-        if (isCurrent != null && !isCurrent()) return;
-        int stageIndex = (int)stage;
-        if (_stageInfos[stageIndex] == null)
-        {
-            DebugLog.LogError("현재 스테이지 정보가 없습니다: " + stage.ToString());
-            return;
-        }
-
-        Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameDataAsync(stage.ToString() + "Data", param, isCurrent: isCurrent);
+        var destination = _stageInfos?[(int)stage];
+        if (destination == null) return () => _stageInfos?[(int)stage] == null;
+        var waiting = destination.WaitingParties;
+        string values = destination.SaveData().GetParam(true).GetJson();
+        return () => _stageInfos != null && ReferenceEquals(_stageInfos[(int)stage], destination)
+            && ReferenceEquals(destination.WaitingParties, waiting)
+            && destination.SaveData().GetParam(true).GetJson() == values;
     }
-
 
     public static void LoadStageData()
     {
@@ -592,30 +594,51 @@ public static partial class UserInfo
         Func<bool> sameDestination = () => isCurrent() && _stageInfos != null
             && !BackendManager.Instance.IsStaffMutationProtected
             && ReferenceEquals(_stageInfos[(int)stage], destination);
-        return TryApplyStageDataResponse(stage, response, sameDestination, destination.LoadData,
-            () => { if (asynchronous) SaveStageDataAsync(stage, sameDestination); else SaveStageData(stage, sameDestination); });
+        // Legacy LoadData raises furniture/equipment events. A reentrant save must
+        // not use the old row binding while this Stage is only partly applied.
+        if (!sameDestination()) return false;
+        BackendManager.Instance.ForgetStageSaveDestination(stage);
+        bool loaded = false;
+        try
+        {
+            loaded = TryApplyStageDataResponse(stage, response, sameDestination, destination.LoadData,
+                () => { BackendManager.Instance.BindStageSaveDestination(stage, destination, response); if (asynchronous) SaveStageDataAsync(stage, sameDestination); else SaveStageData(stage, sameDestination); }, destination.ProtectWaitingParties);
+            if (loaded && sameDestination()) { BackendManager.Instance.BindStageSaveDestination(stage, destination, response); OnWaitingPartiesLoaded?.Invoke(stage); }
+            return loaded;
+        }
+        finally
+        {
+            if (!loaded && sameDestination()) BackendManager.Instance.ForgetStageSaveDestination(stage);
+        }
     }
 
     // Shared legacy response path. Tests supply detached memory sinks, never actual account writes.
     // Migration originals have already been captured by BackendManager before entering this method.
+    public static event Action<EStage> OnWaitingPartiesLoaded;
+
     public static bool TryApplyStageDataResponse(EStage stage, BackendReturnObject response,
-        Func<bool> isCurrent, Func<ServerStageData, bool> applyLegacy, Action saveExistingA2)
+        Func<bool> isCurrent, Func<ServerStageData, bool> applyLegacy, Action saveExistingA2, Action<WaitingPartySaveData> protectWaiting = null)
     {
         if (stage < EStage.Stage1 || stage >= EStage.Length || response == null || !response.IsSuccess()
             || isCurrent == null || applyLegacy == null || !isCurrent()) return false;
+        var waitingPreflight = WaitingPartySaveData.PreflightResponse(response.GetReturnValue());
+        if (!isCurrent()) return false;
+        if (waitingPreflight.IsProtected && (waitingPreflight.Reason == "InvalidStageEnvelope" || waitingPreflight.Reason == "MalformedStageEnvelope"))
+        { protectWaiting?.Invoke(waitingPreflight); return false; }
         ServerStageData data;
         bool migrationApplied;
         try
         {
-            JsonData json = response.FlattenRows();
+            JsonData json = WaitingPartySaveData.FlattenOtherStageFields(response.GetReturnValue());
             if (!isCurrent() || json == null || json.Count != 1) return false;
             data = new ServerStageData();
-            data.SetData(json);
+            data.SetData(json, waitingPreflight);
             if (!isCurrent()) return false;
             migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
         }
         catch (Exception)
         {
+            if (isCurrent()) protectWaiting?.Invoke(WaitingPartySaveData.Blocked(response.GetReturnValue(), "StageParseFailed"));
             // A broken Stage payload cannot enter memory or trigger the old A2 save.
             return false;
         }
@@ -1029,6 +1052,9 @@ public static partial class UserInfo
         _stageInfos[stageIndex].SetFeverGauge(value);
     }
 
+    public static WaitingPartySaveData GetWaitingPartySave(EStage stage) => _stageInfos[(int)stage].WaitingParties;
+    public static bool SetWaitingParties(EStage stage, IEnumerable<IEnumerable<string>> teams) => _stageInfos[(int)stage].SetWaitingParties(teams);
+    public static void ProtectWaitingParties(EStage stage, string reason) => _stageInfos[(int)stage].ProtectWaitingParties(reason);
     public static IReadOnlyList<string> GetWaitingCustomerIds(EStage stage)
     {
         return _stageInfos[(int)stage].WaitingCustomerIdList;
@@ -2531,6 +2557,9 @@ public static partial class UserInfo
         int stageIndex = (int)stage;
         return _stageInfos[stageIndex].GetMaxSinkBowlCount(floor);
     }
+
+    internal static bool TryProcessCleaningBowl(EStage stage, ERestaurantFloorType floor, TableType type, SaveTableData expected = null)
+        => _stageInfos[(int)stage].TryProcessCleaningBowl(floor, type, expected);
 
     public static void AddSinkBowlCount(EStage stage, ERestaurantFloorType floor)
     {

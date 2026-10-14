@@ -15,6 +15,24 @@ public class NormalCustomer : Customer
     [SerializeField] private GameObject _eatAnimation;
     [SerializeField] private SpriteRenderer _foodRenderer;
 
+    private object _visitIdentity = new object();
+    internal object VisitIdentity => _visitIdentity;
+    private bool _visitReady;
+    private CustomerVisitMember _visitMember;
+    public CustomerVisitMember VisitMember => _visitMember != null && _visitMember.Party.IsActive ? _visitMember : null;
+    public CustomerVisitParty VisitParty => VisitMember?.Party;
+    internal bool IsVisitReady(CustomerController owner) => _visitReady && isActiveAndEnabled
+        && _normalCustomerData != null && ReferenceEquals(_customerController, owner);
+    internal void AttachVisitMember(CustomerVisitMember member) { _visitMember = member; }
+    internal void DetachVisitMember(CustomerVisitMember member)
+    {
+        if (ReferenceEquals(_visitMember, member) && ReferenceEquals(_visitIdentity, member.VisitIdentity))
+        {
+            _visitMember = null;
+            _visitReady = false;
+        }
+    }
+
     private NormalCustomerData _normalCustomerData;
     public NormalCustomerData NormalCustomerData => _normalCustomerData;
 
@@ -62,6 +80,7 @@ public class NormalCustomer : Customer
             DebugLog.LogError("해당 오브젝트는 NormalCustomerData만 받을 수 있습니다.");
             return;
         }
+        InvalidateVisit();
         _normalCustomerData = (NormalCustomerData)data;
         base.SetData(data, customerController, tableManager);
 
@@ -88,6 +107,7 @@ public class NormalCustomer : Customer
         // }
 
         ApplySkinEffect(skinData);
+        _visitReady = true;
     }
 
     public void SetSitTableData(TableData tableData)
@@ -216,6 +236,7 @@ public class NormalCustomer : Customer
     // 대기열 진입 시 호출
     public void StartWaiting()
     {
+        if (VisitParty != null && VisitParty.Members.Count > 1) return;
         StopCoroutines();
         _waitingCoroutine = StartCoroutine(WaitingInLineCoroutine());
     }
@@ -276,8 +297,11 @@ public class NormalCustomer : Customer
     {
         DebugLog.Log("줄서다 나감");
         _customerController.RemoveCustomerFromLineQueue(this);
+        object leavingVisit = _visitIdentity;
+        _visitMember?.Party.End();
         Move(GameManager.Instance.OutDoorPos, 0, () =>
         {
+            if (!ReferenceEquals(leavingVisit, _visitIdentity)) return;
             ObjectPoolManager.Instance.DespawnNormalCustomer(this);
         });
     }
@@ -424,8 +448,18 @@ public class NormalCustomer : Customer
     //     _spriteRenderer.sprite = skinData == null ? _customerData.Sprite : skinData.Sprite;
     // }
 
+    private void InvalidateVisit()
+    {
+        _visitMember?.Party.End();
+        _visitReady = false;
+        _visitIdentity = new object();
+        _sitTableData = null;
+        InvalidateMovement(true);
+    }
+
     private void OnDisable()
     {
+        InvalidateVisit();
         StopCoroutines();
     }
 
