@@ -24,7 +24,7 @@ internal sealed class TableServiceReservation
         ? ReferenceEquals(Order.ServingReservation, this) : ReferenceEquals(Use.OrderReservation, this));
     internal bool IsUseCurrent => Use.IsPartyCurrent(Table) && (Batch == null
         ? Order != null && Order.IsCurrent(Table) : ReferenceEquals(Use.Orders, Batch) && Batch.IsCurrent);
-    internal bool IsCurrent => OwnsSlot && IsUseCurrent && Owner != null
+    internal bool IsCurrent => OwnsSlot && IsUseCurrent && !Use.ServiceAborted && !Use.CompletionStarted && Owner != null
         && Owner.IsWorkCurrent(Action, StaffLifetime, Floor);
 
     internal TableServiceReservation(TableUseIdentity use, TableOrderIdentity order,
@@ -43,7 +43,7 @@ internal sealed class TableServiceReservation
         if (!IsUseCurrent) return;
         try
         {
-        if (IsServing && !Order.ServingStarted)
+        if (IsServing && !Order.ServingStarted && !Use.ServiceAborted)
         {
             if (Order.PartyOrder != null && Order.PartyOrder.State == PartyFoodState.Carrying)
                 Order.PartyOrder.State = PartyFoodState.ReadyForServing;

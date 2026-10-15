@@ -12,6 +12,8 @@ internal sealed class PartyMemberCompletion
     internal readonly int Seat;
     internal int RemainingOrders, TotalPrice, TotalTip, Satisfaction, MealsCompleted;
     internal int CoinAmount, TipAmount, GarbageCount, GarbageDropped;
+    internal int CompletedPrice;
+    internal bool MealStarted;
     internal bool FinalCompleted, VisitCounted, CustomerCounted, TipPaid, CoinFixed, CoinDropped;
     internal bool SatisfactionApplied, FeverApplied, ExitStarted, Returned;
     internal Vector3 DropPosition;
@@ -23,12 +25,15 @@ public partial class TableManager
 {
     private void CompletePartyMeal(PartyFoodOrder food)
     {
-        if (!food.IsCurrent || food.CompletionRecorded || food.Batch.Use.PolicyPending) return;
+        if (!food.IsCurrent || food.CompletionRecorded || food.Batch.Use.PolicyPending
+            || !food.Identity.EatingCompleted || food.State != PartyFoodState.CurrentMealCompleted) return;
         food.CompletionRecorded = true;
         var use = food.Batch.Use;
         var result = use.GetCompletion(food.Member);
         result.MealsCompleted++;
+        result.CompletedPrice += food.PlannedPrice;
         if (result.RemainingOrders == 0) CompletePartyMember(use, result);
+        if (use.ServiceAborted) { TryFinishPartyInterruption(use); return; }
         foreach (var order in food.Batch.Orders)
             if (!order.CompletionRecorded) return;
         if (!food.Batch.IsCurrent || use.CompletionStarted || use.PolicyPending) return;
@@ -72,7 +77,7 @@ public partial class TableManager
 
     internal void BeginPartyDeparture(TableUseIdentity use)
     {
-        if (use == null || use.IsSingle || !use.IsPartyCurrent(use.Table) || use.PolicyPending) return;
+        if (use == null || use.IsSingle || !use.IsPartyCurrent(use.Table) || use.PolicyPending || use.ServiceAborted) return;
         foreach (var result in use.Completions)
             if (!result.FinalCompleted || !result.CoinFixed) return;
         foreach (var order in use.Orders.Orders)
@@ -89,17 +94,7 @@ public partial class TableManager
             if (!use.IsCompletionContextCurrent) return;
             var customer = result.Member.Customer;
             PartyEffect(use, ref result.CoinDropped, () => table.DropCoinAreas[result.Seat].DropCoin(result.DropPosition, result.CoinAmount, true));
-            result.GarbageCount = UnityEngine.Random.Range(1, 3);
-            for (int i = 0; i < result.GarbageCount; i++)
-            {
-                bool dropped = false;
-                Tween.Wait(.02f * (i + 1), () => {
-                    if (!use.IsCompletionContextCurrent || dropped) return;
-                    dropped = true; result.GarbageDropped++;
-                    try { table.DropGarbageArea.DropGarbage(result.DropPosition); }
-                    catch (Exception error) { table.LastServiceDiagnostic = error.ToString(); }
-                });
-            }
+            DropPartyGarbage(use, result);
             PartyEffect(use, ref result.SatisfactionApplied,
                 () => UserInfo.AddSatisfaction(use.Stage, result.Satisfaction * customer.AddSatisfactionMul));
             PartyEffect(use, ref result.FeverApplied, () => _feverSystem.AddFeverGauge(customer.AddFeverGaugeMul));
@@ -112,6 +107,22 @@ public partial class TableManager
         try { UpdateTable(); } catch (Exception error) { table.LastServiceDiagnostic = error.ToString(); }
     }
 
+    private void DropPartyGarbage(TableUseIdentity use, PartyMemberCompletion result)
+    {
+        var table = use.Table;
+            result.GarbageCount = UnityEngine.Random.Range(1, 3);
+            for (int i = 0; i < result.GarbageCount; i++)
+            {
+                bool dropped = false;
+                Tween.Wait(.02f * (i + 1), () => {
+                    if (!use.IsCompletionContextCurrent || dropped) return;
+                    dropped = true; result.GarbageDropped++;
+                    try { table.DropGarbageArea.DropGarbage(result.DropPosition); }
+                    catch (Exception error) { table.LastServiceDiagnostic = error.ToString(); }
+                });
+            }
+    }
+
     private void StartPartyExit(TableUseIdentity use, PartyMemberCompletion result)
     {
         if (result.ExitStarted || !use.IsMemberCurrent(result.Member)) return;
@@ -120,18 +131,24 @@ public partial class TableManager
         customer.StopWaiting(); customer.StopWaitingForFood(); customer.StopMove();
         Vector3 start = use.Table.GetSeatPosition(result.Seat);
         start.y = use.Table.TableFurniture.transform.position.y + AStar.Instance.NodeSize * .5f;
-        customer.transform.position = start; // Existing chair-to-walkway stand-up alignment.
+        if (use.HasArrived(result.Member)) customer.transform.position = start; // Existing chair-to-walkway alignment.
         customer.ChangeState(CustomerState.Idle); customer.SetLayer("Customer", 0);
         customer.HideFood(); customer.FixSpritePosition(true);
-        try { customer.StartHappy(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+        try { if (use.ServiceAborted) customer.StartAnger(); else customer.StartHappy(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
         customer.Move(GameManager.Instance.OutDoorPos, 0, () => {
             if (result.Returned || !use.IsMemberCurrent(result.Member) || !customer.ConfirmReachedMoveTarget()) return;
             result.Returned = true;
             use.Party.CompleteDeparture(result.Member);
-            try { customer.StopHappy(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+            try { if (use.ServiceAborted) customer.StopAnger(); else customer.StopHappy(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
             ObjectPoolManager.Instance.DespawnNormalCustomer(customer);
             foreach (var other in use.Completions) if (!other.Returned) return;
             use.SettlementCompleted = true;
+            if (use.FurnitureRemoved && !HasUsableFurniture(use.Table))
+                try { use.Table.TableState = ETableState.DontUse; }
+                catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+            else if (use.ServiceAborted && !use.MealTableUsed)
+                try { use.Table.TableState = ETableState.Empty; }
+                catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
             use.Table.ReleaseCompletedParty(use);
             try { UpdateTable(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
         });
@@ -139,7 +156,7 @@ public partial class TableManager
 
     private void HoldUnsupportedPartyPolicy(TableUseIdentity use, string reason)
     {
-        if (use == null || use.IsSingle || use.CompletionStarted || !use.IsPartyCurrent(use.Table)) return;
+        if (use == null || use.IsSingle || use.CompletionStarted || use.ServiceAborted || !use.IsPartyCurrent(use.Table)) return;
         use.PolicyPending = true;
         use.Table.LastServiceDiagnostic = reason;
         use.OrderReservation?.Release();

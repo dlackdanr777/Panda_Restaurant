@@ -250,6 +250,7 @@ public class NormalCustomer : Customer
     // 테이블에 앉고 음식 주문 시 호출
     public void StartWaitingForFood()
     {
+        if (VisitParty != null && VisitParty.Members.Count > 1) return;
         _orderFoodCoroutine = StartCoroutine(WaitingForFoodCoroutine());
     }
 

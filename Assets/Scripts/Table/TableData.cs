@@ -63,7 +63,7 @@ public class TableData : MonoBehaviour
         }
         if (OrderButton != null) OrderButton.gameObject.SetActive(false);
         if (ServingButton != null) ServingButton.gameObject.SetActive(false);
-        bool show = batch.State == PartyOrderBatchState.Prepared && !batch.Use.PolicyPending && !batch.Use.CompletionStarted;
+        bool show = batch.State == PartyOrderBatchState.Prepared && !batch.Use.PolicyPending && !batch.Use.CompletionStarted && !batch.Use.ServiceAborted;
         for (int index = 0; index < batch.Orders.Count; index++)
         {
             var order = batch.Orders[index];

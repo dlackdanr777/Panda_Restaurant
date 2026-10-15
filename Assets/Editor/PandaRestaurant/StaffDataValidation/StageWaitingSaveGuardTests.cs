@@ -201,6 +201,68 @@ public class StageWaitingSaveGuardTests
     }
 
     [Test]
+    public void NaturalMixedQueue_ActualSaveAckAndSdkReload_RestoresOrderWithoutReroll()
+    {
+        using(var s=new Flow())
+        {
+            ObjectPoolManager.Instance.DespawnNormalCustomer(s.Customer);
+            using(var f=new MemorySession(GetStaticStages()))
+            {
+                try
+                {
+                    f.LoadAll(); Assert.That(s.Controller.Count,Is.Zero);
+                    var config=CustomerNaturalPartyTests.Setup(s);
+                    var records=(Dictionary<string,SaveCustomerData>)Static(typeof(UserInfo),"_enabledCustomerDic").GetValue(null);
+                    var b=s.Track(UnityEngine.Object.Instantiate(s.Data)); Set(b,"_id","NATURAL-SAVE-B");
+                    Set(b,"_visitCountFoodDic",new Dictionary<int,string>());
+                    Get<Dictionary<string,CustomerData>>(CustomerDataManager.Instance,"_customerDataDic")[b.Id]=b;
+                    Get<List<NormalCustomerData>>(CustomerDataManager.Instance,"_normalCustomerDataList").Add(b);
+                    records[b.Id]=new SaveCustomerData(b.Id,"",0);
+                    var rolls=new Queue<float>(new[]{.8f,.1f,.8f}); int choices=0;
+                    s.Controller.NaturalPartyRoll=()=>rolls.Dequeue();
+                    s.Controller.NaturalCompanionIndex=count=>{Assert.That(count,Is.EqualTo(1));choices++;return 0;};
+                    for(int i=0;i<3;i++){CustomerNaturalPartyTests.RepresentativeSeed(0,2);Assert.That(s.Controller.TryAddCustomer(),Is.True);}
+                    string[][] expected={new[]{s.Data.Id},new[]{s.Data.Id,b.Id},new[]{s.Data.Id}};
+                    var original=s.Controller.WaitingParties.ToArray();
+                    var oldVisits=original.SelectMany(party=>party.Members).Select(m=>m.VisitIdentity).ToArray();
+                    Assert.That(original.Select(party=>party.Members.Select(m=>m.Customer.NormalCustomerData.Id).ToArray()).ToArray(),Is.EqualTo(expected));
+                    Assert.That(s.Controller.Count,Is.EqualTo(3));Assert.That(s.Controller.WaitingPersonCount,Is.EqualTo(4));
+                    Assert.That(rolls.Count,Is.Zero);Assert.That(choices,Is.EqualTo(1));Assert.That(UserInfo.PromotionCount,Is.EqualTo(3));
+                    Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id),Is.EqualTo(25));Assert.That(UserInfo.GetVisitedCustomerCount(b.Id),Is.Zero);
+                    string serialized=s.Stage.WaitingParties.Serialize();var oldStored=f.Queue(EStage.Stage1).DeepClone();int writeIndex=f.Writes.Count;
+                    var save=UserInfo.SaveStageDataAsync(EStage.Stage1);
+                    Assert.That(save.Status,Is.EqualTo(StageSaveStatus.Pending));Assert.That(f.Writes.Count,Is.EqualTo(writeIndex+1));
+                    Assert.That((string)JObject.Parse(f.Writes[writeIndex].Json)[WaitingPartySaveData.FieldName],Is.EqualTo(serialized));
+                    Assert.That(JToken.DeepEquals(f.Queue(EStage.Stage1),oldStored),Is.True,"Only ACK commits the fake transport row");
+                    f.Ack(writeIndex);Assert.That(save.Status,Is.EqualTo(StageSaveStatus.Succeeded));
+                    Assert.That((string)f.Queue(EStage.Stage1),Is.EqualTo(serialized));
+                    var beforeReload=s.Stage.WaitingParties;Invoke(s.Controller,"EndVisitParties");
+                    Assert.That(s.Controller.Count,Is.Zero);Assert.That(original.All(party=>!party.IsActive),Is.True);
+                    config.EnableNaturalParties=false;config.MinimumNormalVisits=999;config.CompanionProbability=0;
+                    records[s.Data.Id]=new SaveCustomerData(s.Data.Id,"",0);
+                    s.Controller.NaturalPartyRoll=()=>throw new Exception("Restore rerolled party");
+                    s.Controller.NaturalCompanionIndex=_=>throw new Exception("Restore rerolled companion");
+                    var randomBefore=UnityEngine.Random.state;int writesBeforeReload=f.Writes.Count;
+                    // Backend memory envelope -> UserInfo SDK parser -> StageInfo -> controller load event.
+                    UserInfo.LoadStageData(EStage.Stage1);
+                    var restored=s.Controller.WaitingParties.ToArray();
+                    Assert.That(s.Controller.WaitingLoadDiagnostic,Is.EqualTo("Restored"));
+                    Assert.That(s.Stage.WaitingParties,Is.Not.SameAs(beforeReload));Assert.That(s.Stage.WaitingParties.IsProtected,Is.False);
+                    Assert.That(restored.Select(party=>party.Members.Select(m=>m.Customer.NormalCustomerData.Id).ToArray()).ToArray(),Is.EqualTo(expected));
+                    Assert.That(s.Controller.Count,Is.EqualTo(3));Assert.That(s.Controller.WaitCount,Is.EqualTo(3));Assert.That(s.Controller.WaitingPersonCount,Is.EqualTo(4));
+                    for(int i=0;i<restored.Length;i++)
+                    {Assert.That(restored[i],Is.Not.SameAs(original[i]));Assert.That(restored[i].IsActive,Is.True);foreach(var member in restored[i].Members)Assert.That(oldVisits.Any(v=>ReferenceEquals(v,member.VisitIdentity)),Is.False);}
+                    Assert.That(UnityEngine.Random.state,Is.EqualTo(randomBefore));Assert.That(UserInfo.PromotionCount,Is.EqualTo(3));
+                    Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id),Is.Zero);Assert.That(UserInfo.GetVisitedCustomerCount(b.Id),Is.Zero);
+                    Assert.That(f.Writes.Count,Is.EqualTo(writesBeforeReload));Assert.That((string)f.Queue(EStage.Stage1),Is.EqualTo(serialized));
+                    Assert.That(Backend.IsInitialized||Backend.IsLogin,Is.False);
+                }
+                finally{Invoke(s.Controller,"EndVisitParties");}
+            }
+        }
+    }
+
+    [Test]
     public void CompletionMayQueueAnotherSave_WithoutStartingItTwice()
     {
         using (var f = new MemorySession())
@@ -416,6 +478,30 @@ public class StageWaitingSaveGuardTests
             Assert.That((string)f.Rows[EStage.Stage2]["SaveTableDataList"][0][0]["CleaningBowlProcessed"],Is.EqualTo("invalid"));
         }
     }
+    [Test]
+    public void OfflineFullUi_ClockIsExplicitAndGoogleLookupCannotInitializeSdk()
+    {
+        bool initialized=BackEnd.Backend.IsInitialized;
+        using(var f=new MemorySession())
+        {
+            Assert.Throws<InvalidOperationException>(()=>{var unused=f.Owner.ServerTime;});
+            f.Owner.SetEditorOfflineUtcClock(()=>new DateTime(2026,10,15));
+            Assert.Throws<InvalidOperationException>(()=>{var unused=f.Owner.ServerTime;});
+            var utc=new DateTime(2026,10,15,3,0,0,DateTimeKind.Utc);
+            f.Owner.SetEditorOfflineUtcClock(()=>utc);
+            Assert.That(f.Owner.ServerTime,Is.EqualTo(utc));
+            var go=new GameObject("Owned offline Google lookup probe");go.SetActive(false);
+            try
+            {
+                int replies=0;string value=null;
+                go.AddComponent<GoogleLoginManager>().FetchLinkedEmail(text=>{replies++;value=text;});
+                Assert.That(replies,Is.EqualTo(1));Assert.That(value,Is.Empty);
+                Assert.That(BackEnd.Backend.IsInitialized,Is.EqualTo(initialized));
+            }
+            finally {UnityEngine.Object.DestroyImmediate(go);}
+        }
+    }
+
     private static BackendReturnObject Response(string code, string json) => StaffGachaOfflineSession.Response(code, json);
     private static JObject Attribute(JToken value)
     {

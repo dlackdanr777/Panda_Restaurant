@@ -150,19 +150,26 @@ public partial class CustomerController : MonoBehaviour
                 return;
             }
 
-            _tabCount = 0;
-            AddCustomer();
-            OnAddCustomerHandler?.Invoke();
+            _tabCount = 0; // Consume the existing complete call opportunity even on allocation failure.
+            TryAddCustomer();
+            if (_createdInLastCall) OnAddCustomerHandler?.Invoke();
             return;
         }
         _tabCount++;
         OnAddTabCountHandler?.Invoke();
     }
 
-    public void AddCustomer()
+    private bool _createdInLastCall;
+    public void AddCustomer() => TryAddCustomer();
+
+    // False also stops a fill operation after a technical failure: never redraw
+    // a representative or companion to conceal a failed team allocation.
+    public bool TryAddCustomer()
     {
-        if (IsMaxCount)
-            return;
+        _createdInLastCall = false;
+        if (IsMaxCount || _visitExecution == null)
+            return false;
+        bool created = false;
 
         List<NormalCustomerData> normalCustomerDataList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
         List<NormalCustomerData> normalCustomerDataListCopy = new List<NormalCustomerData>(normalCustomerDataList);
@@ -248,12 +255,17 @@ public partial class CustomerController : MonoBehaviour
 
             else
             {
+                if (normalCustomerDataList.Count == 0) { LastVisitDiagnostic = "NoAvailableGeneralCustomer"; return false; }
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
-                CustomerData customerData = normalCustomerDataList[randInt];
-                if (SpawnWaitingParty(new[] { customerData.Id }, false, out _, false)) UserInfo.AddPromotionCount();
+                NormalCustomerData customerData = normalCustomerDataList[randInt];
+                var members = SelectNaturalPartyMembers(customerData, normalCustomerDataList);
+                if (!SpawnWaitingParty(members, false, out _, false)) return false;
+                UserInfo.AddPromotionCount();
             }
+            created = true; _createdInLastCall = true;
             OnChangeCustomerHandler?.Invoke();
         }
+        return created;
     }
 
 
@@ -273,6 +285,7 @@ public partial class CustomerController : MonoBehaviour
     private void Update()
     {
         RefreshVisitParties();
+        TickPartyClocks(Time.timeAsDouble);
         CheckGatecrasherCustomer();
     }
 

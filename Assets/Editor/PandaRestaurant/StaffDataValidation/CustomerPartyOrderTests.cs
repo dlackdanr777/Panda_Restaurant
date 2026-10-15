@@ -25,7 +25,7 @@ public sealed class CustomerPartyOrderTests
         private readonly Dictionary<int, Action> _exitCallbacks = new Dictionary<int, Action>();
         internal PartyOrderBatch Batch => S.Table.PartyOrders;
         internal KitchenBurnerData Burner => Get<KitchenBurnerData[]>(S.Kitchen, "_burnerDatas")[0];
-        internal Pair(bool firstOwned = true, bool secondOwned = true, bool same = false, bool visited = false, bool invalidMenu = false, int ordersA = 2, int ordersB = 1)
+        internal Pair(bool firstOwned = true, bool secondOwned = true, bool same = false, bool visited = false, bool invalidMenu = false, int ordersA = 2, int ordersB = 1, Action<Pair> beforeGuide = null, bool requireBatch = true, Action<Pair> beforeSpawn = null, bool natural = false)
         {
             SecondFood = same ? S.Food : S.Track(Object.Instantiate(S.Food));
             if (!same)
@@ -51,15 +51,25 @@ public sealed class CustomerPartyOrderTests
                 skins[skin.Id] = skin; visits[entry.Item1] = new SaveCustomerData(entry.Item1, skin.Id, visited ? 25 : 0);
             }
             S.Table.OrderButton = Button(); S.Table.CompanionOrderButton = Button();
-            Assert.That(S.Controller.TrySpawnWaitingParty(new[] { S.Data.Id, SecondData.Id }, out Party), Is.True);
-            foreach (var member in Party.Members) Get<Action>(member.Customer, "_moveCompleted")();
+            beforeSpawn?.Invoke(this);
+            if (natural)
+            {
+                CustomerNaturalPartyTests.Setup(S);
+                Get<List<NormalCustomerData>>(CustomerDataManager.Instance, "_normalCustomerDataList").Add(SecondData);
+                CustomerNaturalPartyTests.RepresentativeSeed(0, 2);
+                Assert.That(S.Controller.TryAddCustomer(), Is.True); Party = S.Controller.WaitingParties.Last();
+                Assert.That(Party.Members.Count, Is.EqualTo(2));
+            }
+            else Assert.That(S.Controller.TrySpawnWaitingParty(new[] { S.Data.Id, SecondData.Id }, out Party), Is.True);
+            foreach (var member in Party.Members) { member.Customer.transform.position=member.Customer.TargetPos; Get<Action>(member.Customer,"_moveCompleted")(); }
+            beforeGuide?.Invoke(this);
             Assert.That(S.Manager.OnCustomerGuideEvent(ERestaurantFloorType.Floor1), Is.True);
             foreach (var member in Party.Members)
             {
                 member.Customer.transform.position = member.Customer.TargetPos;
                 Get<Action>(member.Customer, "_moveCompleted")(); S.TakeWait(1.5f)();
             }
-            Assert.That(Batch, Is.Not.Null);
+            if (requireBatch) Assert.That(Batch, Is.Not.Null);
         }
         private TableButton Button()
         {
@@ -249,7 +259,7 @@ public sealed class CustomerPartyOrderTests
         }
     }
 
-    private static TableData AddSingleOrder(Pair p)
+    internal static TableData AddSingleOrder(Pair p)
     {
         var pairTable = p.S.Table;
         var single = p.S.Track(Object.Instantiate(pairTable));
@@ -315,10 +325,12 @@ public sealed class CustomerPartyOrderTests
         {
             Assert.That(p.Batch.State, Is.EqualTo(PartyOrderBatchState.PreparationFailed));
             Assert.That(p.S.Table.TableState, Is.EqualTo(ETableState.PartyOrderPreparationFailed));
-            var first = p.Batch.Orders.Single(); var random = UnityEngine.Random.state;
+            var failed = p.Batch; var random = UnityEngine.Random.state;
             Assert.That(p.Accept(), Is.EqualTo(PartyOrderAcceptResult.InvalidMenu));
             p.S.Table.RefreshPartyOrderButtons();
-            Assert.That(p.Batch.Orders.Single(), Is.SameAs(first)); Assert.That(UnityEngine.Random.state, Is.EqualTo(random));
+            Invoke(p.S.Manager, "PreparePartyOrders", p.S.Table, p.S.Table.CurrentUse);
+            Assert.That(p.Batch, Is.SameAs(failed)); Assert.That(p.Batch.Orders, Is.Empty);
+            Assert.That(UnityEngine.Random.state, Is.EqualTo(random));
             Assert.That(p.S.Queue, Is.Empty); Assert.That(p.S.Stage.Satisfaction, Is.Zero);
             Assert.That(p.S.Manager.CancelPartyGuide(p.S.Table), Is.True); Assert.That(p.S.Table.OccupantCount, Is.Zero);
         }
@@ -437,7 +449,7 @@ public sealed class CustomerPartyOrderTests
             p.Accept(); p.Pump(); var old=p.Batch; var late=old.Orders.Select(o=>o.Cooking.OnCompleted).ToArray();
             p.S.Manager.CancelPartyGuide(p.S.Table);
             Assert.That(p.S.Controller.TrySpawnWaitingParty(new[]{p.S.Data.Id,p.SecondData.Id},out var next),Is.True);
-            foreach(var member in next.Members) Get<Action>(member.Customer,"_moveCompleted")();
+            foreach(var member in next.Members) { member.Customer.transform.position=member.Customer.TargetPos; Get<Action>(member.Customer,"_moveCompleted")(); }
             Assert.That(p.S.Manager.OnCustomerGuideEvent(ERestaurantFloorType.Floor1),Is.True);
             foreach(var member in next.Members) { member.Customer.transform.position=member.Customer.TargetPos; Get<Action>(member.Customer,"_moveCompleted")(); p.S.TakeWait(1.5f)(); }
             var fresh=p.Batch; foreach(var callback in late)callback();

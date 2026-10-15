@@ -178,6 +178,13 @@ public class Customer : MonoBehaviour
         StopTeleportRoutine();
     }
 
+    internal bool RetargetCurrentMove(Vector2 target)
+    {
+        if (_moveCompleted == null || !isActiveAndEnabled) return false;
+        Move(target, _moveEndDir, _moveCompleted);
+        return true;
+    }
+
     public void StopMove()
     {
         InvalidateMovement();

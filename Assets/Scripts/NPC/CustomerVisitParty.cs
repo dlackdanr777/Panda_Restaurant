@@ -14,9 +14,17 @@ public sealed class CustomerVisitParty
     private bool _ended;
     private TableUseIdentity _use;
     private readonly HashSet<CustomerVisitMember> _departed = new HashSet<CustomerVisitMember>();
+    internal bool WaitingDeparture { get; private set; }
+    internal bool HasDeparted(CustomerVisitMember member) => _departed.Contains(member);
+    internal bool TryBeginWaitingDeparture()
+    {
+        if (!IsActive || _use != null || WaitingDeparture || Members.Count != 2) return false;
+        WaitingDeparture = true;
+        return true;
+    }
     internal void CompleteDeparture(CustomerVisitMember member)
     {
-        if (_ended || _use == null || !_use.CompletionStarted || !System.Linq.Enumerable.Contains(Members, member)) return;
+        if (_ended || (!WaitingDeparture && (_use == null || !_use.CompletionStarted)) || !System.Linq.Enumerable.Contains(Members, member)) return;
         _departed.Add(member);
         member.SetSeat(-1);
         member.Customer.DetachVisitMember(member);
@@ -86,7 +94,7 @@ public sealed class CustomerVisitParty
 
     internal bool TryBind(TableUseIdentity use, int[] seatIndices)
     {
-        if (!IsActive || _use != null || use == null || seatIndices == null
+        if (!IsActive || WaitingDeparture || _use != null || use == null || seatIndices == null
             || seatIndices.Length != Members.Count) return false;
         for (int i = 0; i < seatIndices.Length; i++)
             if (seatIndices[i] < 0 || seatIndices[i] > 1

@@ -29,6 +29,15 @@ public static class GachaReviewTestRunner
 {
     private static string OutputDirectory => _customerUse ? CustomerUseOutputDirectory : _fairyBirthInput ? FairyBirthInputOutputDirectory : _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
     private static bool _customerUse;
+    private static bool _manualPartyChecks;
+    [MenuItem("Tools/Panda Restaurant/Customer Parties/Run Manual Play Safety Checks")]
+    public static void RunManualPartyChecks()
+    {
+        if (_running) return;
+        _batch = false; _customerUse = true; _manualPartyChecks = true;
+        try { Begin("customer-use"); }
+        finally { _manualPartyChecks = false; }
+    }
     private static string CustomerUseOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_CUSTOMER_USE_EVIDENCE_DIR"))
         ? Path.Combine(Path.GetTempPath(), "CustomerTableUseReview") : Environment.GetEnvironmentVariable("PANDA_CUSTOMER_USE_EVIDENCE_DIR");
     public static void RunCustomerUseBatch()
@@ -70,6 +79,11 @@ public static class GachaReviewTestRunner
     private static IDisposable _coroutineLogScope;
     private static int _editorThread;
     public static bool IsRunning => _running;
+    internal static void ReleaseCreationTargetBeforeManualPlay()
+    {
+        if (_running) throw new InvalidOperationException("Wait for the active regression run.");
+        CreationTarget.ReleaseDefaultRouting();
+    }
     public static void RunFairyBirthInputBatch()
     {
         _fairyBirthInput = true;
@@ -268,7 +282,8 @@ public static class GachaReviewTestRunner
             "Phase5UiSoundTests", "PresentationSoundTests", "GachaCollectionPreviewSafetyTests" };
         if (_fairyBirthInput) fixtures = new[] { "FairyBirthInputTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
             "FairyBirthSequenceTests", "FairyBirthSoundTests", "PresentationSoundTests" };
-        if (_customerUse) fixtures = new[] { "CustomerPartyServingTests", "CustomerPartyCompletionTests", "CustomerPartyOrderTests", "CustomerTableUseRegressionTests", "CustomerVisitPartyTests", "CustomerPartyQueueTests", "StageWaitingSaveGuardTests", "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffStageMigrationCollectionTests" };
+        if (_customerUse) fixtures = new[] { "CustomerPartyFurnitureTests", "CustomerPartyIntegrationTests", "CustomerNaturalPartyTests", "CustomerPartyInterruptionTests", "CustomerPartyFailureBoundaryTests", "CustomerPartyServingTests", "CustomerPartyCompletionTests", "CustomerPartyOrderTests", "CustomerTableUseRegressionTests", "CustomerVisitPartyTests", "CustomerPartyQueueTests", "StageWaitingSaveGuardTests", "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffStageMigrationCollectionTests" };
+        if (_manualPartyChecks) fixtures = new[] { "CustomerPartyManualPlayTests", "CustomerPartyFurnitureTests", "CustomerPartyIntegrationTests", "StageWaitingSaveGuardTests" };
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;
@@ -480,22 +495,6 @@ public static class GachaReviewTestRunner
         {
             if (EditorApplication.timeSinceStartup < readyAt) return;
             EditorApplication.update -= ExitWhenReady;
-            // Only the owned, disposable customer batch. Unity 6's 2D Animation
-            // updater recreates itself if engine shutdown destroys it before its
-            // manager. Destroy the existing manager first through normal OnDisable.
-            // No package edits, private lifecycle invocation, or user-editor cleanup.
-            if (_customerUse && Application.isBatchMode && File.Exists(Path.Combine(Application.dataPath, "../party-preview-owned.json")))
-            {
-                var skins = Resources.FindObjectsOfTypeAll<UnityEngine.U2D.Animation.SpriteSkin>();
-                if (!skins.Any(skin => !EditorUtility.IsPersistent(skin) && skin.gameObject.scene.IsValid()))
-                {
-                    Type manager = typeof(UnityEngine.U2D.Animation.SpriteSkin).Assembly.GetType("UnityEngine.U2D.Animation.DeformationManager");
-                    if (manager != null)
-                        foreach (Object instance in Resources.FindObjectsOfTypeAll(manager))
-                            if (!EditorUtility.IsPersistent(instance)) Object.DestroyImmediate(instance);
-                    _witness.AssertUnchanged("owned batch package shutdown");
-                }
-            }
             EditorApplication.Exit(code);
         }
         EditorApplication.update += ExitWhenReady;
@@ -556,6 +555,15 @@ public static class GachaReviewTestRunner
         private static readonly MethodInfo Setter = typeof(EditorSceneManager).GetMethod("SetTargetSceneForNewGameObjects", Flags, null, new[] { typeof(Scene) }, null);
         private static readonly MethodInfo Clear = typeof(EditorSceneManager).GetMethod("ClearTargetSceneForNewGameObjects", Flags, null, Type.EmptyTypes, null);
         private readonly Scene _previous;
+        private readonly bool _previousWasActive;
+        public static void ReleaseDefaultRouting()
+        {
+            Scene target = Get();
+            if (target.IsValid() && target != SceneManager.GetActiveScene())
+                throw new InvalidOperationException("Another tool owns the new-object scene target.");
+            Clear.Invoke(null, null);
+            Debug.Log("PARTY_MANUAL_ROUTING_RELEASED: before=" + target.handle + "; after=" + Get().handle + "; active=" + SceneManager.GetActiveScene().handle);
+        }
         public static Scene Get()
         {
             if (Getter == null || Setter == null || Clear == null)
@@ -565,13 +573,16 @@ public static class GachaReviewTestRunner
         public CreationTarget(Scene target)
         {
             _previous = Get();
+            _previousWasActive = _previous == SceneManager.GetActiveScene();
             if (!target.IsValid() || !EditorSceneManager.IsPreviewScene(target))
                 throw new InvalidOperationException("Only an owned PreviewScene may receive temporary test objects.");
             Setter.Invoke(null, new object[] { target });
         }
         public void Dispose()
         {
-            if (_previous.IsValid()) Setter.Invoke(null, new object[] { _previous });
+            // The getter resolves default routing to the active edit scene. Restoring
+            // that as an explicit handle would outlive this scene at the next Play.
+            if (_previous.IsValid() && !_previousWasActive) Setter.Invoke(null, new object[] { _previous });
             else Clear.Invoke(null, null);
         }
     }

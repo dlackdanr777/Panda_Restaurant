@@ -72,8 +72,12 @@ public partial class KitchenUtensilGroup
             if (burner.CookingData.IsDefault() || burner.CookingData.Identity == null
                 || !ReferenceEquals(burner.CookingData.Identity.Use, use)) continue;
             burner.CookingData.Identity.CancelCooking();
-            ReleaseCancelledStaff(burner);
-            ResetBurnerData(index);
+            try { ReleaseCancelledStaff(burner); }
+            catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+            // Reset commits the model before touching timer/smoke presentation.
+            // A missing view must not leave subsequent cancelled burners occupied.
+            try { ResetBurnerData(index); }
+            catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
         }
     }
 

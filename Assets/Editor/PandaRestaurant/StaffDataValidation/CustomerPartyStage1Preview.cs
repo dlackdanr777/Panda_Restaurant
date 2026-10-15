@@ -1,11 +1,9 @@
 #if UNITY_EDITOR
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using Muks.BackEnd;
 using Muks.PathFinding.AStar;
 using UnityEditor;
@@ -14,325 +12,276 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
-// This entry only plays a marked, disposable project copy. The source editor never
-// changes scene, selection, Undo, Play state, account, or assets. No SDK initialization.
+// Manual Play in this Editor. No project/scene copy, source scene edit/save,
+// automated game input, forced arrival, recorder or external Editor process.
 [InitializeOnLoad]
-public static partial class CustomerPartyStage1Preview
+public sealed class CustomerPartyStage1Preview : EditorWindow
 {
-    private const string Marker = "party-preview-owned.json";
-    private const string Pending = "Panda.PartyPreview.Pending";
-    private static Task copy;
-    private static string copyPath;
+    internal const string ScenePath = "Assets/Scenes/Stage1.unity";
+    private const string PreviousStart = "Panda.PartyManual.PreviousStartScene", ModeKey = "Panda.PartyManual.UnownedMenu", FloorKey = "Panda.PartyManual.Floor";
+    private static CustomerPartyOwnedMemory memory;
     private static CustomerController controller;
-    private static TableManager manager;
-    private static FurnitureSystem furniture;
-    private static Camera camera;
-    private static CustomerVisitParty party;
-    private static RenderTexture target;
-    private static GachaCollectionVideoRecorder recorder;
-    private static string output;
-    private static int floor, phase;
-    private static double began, readyAt, seatedAt;
-    private static bool finishing;
-    private static readonly List<string> observations = new List<string>();
+    private static TableManager tables;
+    private static CustomerPartySettings settings;
+    private static readonly Dictionary<string, CustomerData> originalCustomers = new Dictionary<string, CustomerData>();
+    private static readonly List<CustomerData> runtimeCustomers = new List<CustomerData>();
+    private static bool ready, prepared, reloadLocked, guideBound;
+    private static string status = "Play 전에 시작 버튼을 누르세요. 상점 조작은 Game 뷰에서 직접 합니다.";
+    private bool unowned;
+    private int floor;
 
     static CustomerPartyStage1Preview()
     {
-        EditorApplication.playModeStateChanged += PlayChanged;
-        if (SessionState.GetBool(Pending, false)) EditorApplication.update += Tick;
+        EditorApplication.playModeStateChanged += OnPlayChanged;
+        EditorApplication.update += Tick;
+        EditorApplication.delayCall += RecoverInterruptedStart;
     }
-
-    [MenuItem("Tools/Panda Restaurant/Customer Parties/Open isolated Stage1 preview")]
-    public static void OpenCopy()
+    private static void RecoverInterruptedStart()
     {
-        if (copy != null && !copy.IsCompleted) return;
-        string source = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-        copyPath = Path.Combine(Path.GetTempPath(), "PandaPartyPreview", DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Guid.NewGuid().ToString("N").Substring(0, 8));
-        string destination = copyPath;
-        copy = Task.Run(() =>
+        if (!EditorApplication.isPlayingOrWillChangePlaymode && SessionState.GetBool(CustomerPartyManualPlayBootstrap.SessionKey, false))
+            OnPlayChanged(PlayModeStateChange.EnteredEditMode);
+    }
+    [MenuItem("Tools/Panda Restaurant/Customer Parties/Manual Play (Original)")]
+    public static void OpenManual()
+    {
+        var window = GetWindow<CustomerPartyStage1Preview>("일행 수동 검수");
+        var main = EditorGUIUtility.GetMainWindowPosition();
+        window.position = new Rect(main.x + 20, main.y + 180, 360, 500);
+        window.Show(); window.Focus();
+    }
+    [MenuItem("Tools/Panda Restaurant/Customer Parties/Stop Manual Play")]
+    public static void StopManual()
+    { if (SessionState.GetBool(CustomerPartyManualPlayBootstrap.SessionKey, false)) EditorApplication.isPlaying = false; }
+
+    private void OnGUI()
+    {
+        EditorGUILayout.LabelField("원본 Stage1 · 메모리 테스트 계정", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(status, MessageType.Info);
+        using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
         {
-            Directory.CreateDirectory(destination);
-            File.WriteAllText(Path.Combine(destination, Marker), "{\"owned\":true,\"purpose\":\"PHASE2 isolated Stage1 preview\"}");
-            foreach (string folder in new[] { "Assets", "Packages", "ProjectSettings" })
-                CopyFolder(Path.Combine(source, folder), Path.Combine(destination, folder));
-            string cache = Path.Combine(source, "Library", "PackageCache");
-            if (Directory.Exists(cache)) CopyFolder(cache, Path.Combine(destination, "Library", "PackageCache"));
-            string encoder = Directory.GetFiles(Path.Combine(source, "Logs"), "ffmpeg*.exe", SearchOption.AllDirectories).FirstOrDefault();
-            if (encoder != null) File.WriteAllText(Path.Combine(destination, "party-preview-encoder.txt"), encoder);
-        });
-        EditorApplication.update += FinishCopy;
-        UnityEngine.Debug.Log("Copying an isolated party preview project to " + destination + ". The current editor remains unchanged.");
-    }
-
-    private static void CopyFolder(string source, string destination)
-    {
-        Directory.CreateDirectory(destination);
-        foreach (string file in Directory.GetFiles(source)) File.Copy(file, Path.Combine(destination, Path.GetFileName(file)), false);
-        foreach (string folder in Directory.GetDirectories(source)) CopyFolder(folder, Path.Combine(destination, Path.GetFileName(folder)));
-    }
-    private static void FinishCopy()
-    {
-        if (!copy.IsCompleted) return;
-        EditorApplication.update -= FinishCopy;
-        if (copy.IsFaulted) { UnityEngine.Debug.LogException(copy.Exception); return; }
-        Process.Start(new ProcessStartInfo(EditorApplication.applicationPath,
-            "-projectPath \"" + copyPath + "\" -executeMethod CustomerPartyStage1Preview.Start -logFile \"" + Path.Combine(copyPath, "party-preview.log") + "\"") { UseShellExecute = false });
-    }
-
-    // Command-line entry is also guarded: it can never switch or save a user's source scene.
-    public static void Start()
-    {
-        string root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-        if (!File.Exists(Path.Combine(root, Marker)) || Directory.Exists(Path.Combine(root, ".git")) || File.Exists(Path.Combine(root, ".git")))
-            throw new InvalidOperationException("Party preview requires its owned project copy.");
-        if (EditorApplication.isPlaying) throw new InvalidOperationException("Preview already playing");
-        var scene = EditorSceneManager.OpenScene("Assets/Scenes/Stage1.unity", OpenSceneMode.Single);
-        foreach (var item in scene.GetRootGameObjects()) item.SetActive(false);
-        // Separate authored services from geometry; their original serialized references
-        // and the original collider/map/chair assets remain intact in this owned copy.
-        var m = CopyService(Find<TableManager>(scene));
-        var c = CopyService(Find<CustomerController>(scene));
-        var f = CopyService(Find<FurnitureSystem>(scene));
-        CopyService(Find<AStar>(scene));
-        if (IsServicePreview)
-        {
-            CopyService(Find<StaffController>(scene));
-            if(IsCompletionPreview) Set(m,"_feverSystem",CopyService(Find<FeverSystem>(scene)));
-            // StaffGroup binds the authored marketer image even for an unequipped slot.
-            // Preserve this reference chain, but never activate the customer-call UI.
-            var customerUi = CopyService(Get<UIAddCutomerController>(c,"_uiController"));
-            Set(c,"_uiController",customerUi);
+            floor = EditorGUILayout.Popup("검수 층", floor, new[] { "1층", "VIP층" });
+            unowned = EditorGUILayout.Toggle("B 미보유 메뉴 (거절 검수)", unowned);
+            if (GUILayout.Button("원본 Stage1 메모리 Play 시작")) StartManual((ERestaurantFloorType)floor, unowned);
         }
-        var k = CopyService(Find<KitchenSystem>(scene)); Set(m, "_kitchenSystem", k);
-        Set(c, "_tableManager", m); Set(m, "_customerController", c); Set(m, "_furnitureSystem", f); Set(f, "_tableManager", m);
-        var scripts = scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<MonoBehaviour>(true)).Where(s => s != null).ToArray();
-        foreach (var script in scripts) script.enabled = false;
-        foreach (var script in scripts.Reverse())
+        using (new EditorGUI.DisabledScope(!ready || !EditorApplication.isPlaying || EditorApplication.isPaused))
         {
-            if (script != null && !Retain(script)) Object.DestroyImmediate(script);
+            if (GUILayout.Button("1인 + 2인 대기열 준비")) PrepareCustomers();
+            if (GUILayout.Button("다음 2인 팀 생성")) SpawnPair();
+            if (ready)
+            {
+                EditorGUILayout.LabelField("대기 팀 / 사람", controller.Count + " / " + controller.WaitingPersonCount);
+                EditorGUILayout.LabelField("만족도 / 코인 / 방문", UserInfo.GetSatisfaction(EStage.Stage1) + " / " + UserInfo.Money + " / " + UserInfo.TotalCumulativeCustomerCount);
+                EditorGUILayout.LabelField("메모리 저장 Game / Stage", memory.GameWrites + " / " + memory.StageWrites);
+                for (int f = 0; f < 2; f++)
+                    foreach (var table in tables.GetTableDataList((ERestaurantFloorType)f))
+                        if (table.CurrentUse != null) EditorGUILayout.LabelField((f == 0 ? "1층 " : "VIP ") + table.TableType + " · " + table.TableState,
+                            table.PartyOrders == null ? table.CurrentUse.Party.Members.Count + "인" : string.Join(" | ", table.PartyOrders.Orders.Select(o => o.Food.Id + ": " + o.State)));
+            }
         }
-        var remaining = scripts.Where(s => s != null && !Retain(s)).ToArray();
-        foreach (var script in remaining.Reverse()) Object.DestroyImmediate(script);
-        Require(!scripts.Any(s => s != null && !Retain(s)), "Unsafe scene script remains; Play is refused");
-        foreach (var canvas in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<Canvas>(true))) canvas.gameObject.SetActive(false);
-        EditorSceneManager.SaveScene(scene, "Assets/PartyPreviewOwned.unity");
-        SessionState.SetBool(Pending, true);
-        EditorApplication.update -= Tick; EditorApplication.update += Tick;
+        EditorGUILayout.HelpBox("Play 일시정지를 풀고 대기열을 준비하세요. Game 뷰에서 1인을 안내한 뒤 안내 버튼이 다시 활성화되면 2인을 안내하세요. 기본 Table1은 1인, Table2는 2인입니다. Shop에서 같은 슬롯을 해제/교체하고 상점 본체를 닫으세요. 완료액 검수는 A(판다) 음식만 서빙해 실제 식사 완료 후 진행합니다. B 음식은 서빙하지 않습니다. 서비스 시계는 정상 진행됩니다.", MessageType.None);
+        if (GUILayout.Button("테스트 종료 (Play 중지)")) StopManual();
+        if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape) { StopManual(); Event.current.Use(); }
+    }
+    internal static bool CanStart(out string reason)
+    {
+        reason = null;
+        if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling) reason = "현재 Play/컴파일을 먼저 종료하세요.";
+        else if (GachaReviewTestRunner.IsRunning) reason = "현재 회귀 검사가 끝날 때까지 기다리세요.";
+        else if (BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin || BackendManager.ExistingInstance != null) reason = "실계정 SDK가 남아 있는 Editor에서는 시작하지 않습니다. 로그인하지 않은 Editor 세션이 필요합니다.";
+        else if (EditorSettings.enterPlayModeOptionsEnabled && EditorSettings.enterPlayModeOptions != EnterPlayModeOptions.None) reason = "Domain Reload와 Scene Reload가 모두 켜진 Play 설정이 필요합니다.";
+        else if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null) reason = "원본 Stage1 자산이 없습니다.";
+        return reason == null;
+    }
+    internal static void StartManual(ERestaurantFloorType selectedFloor, bool missingMenu)
+    {
+        if (!CanStart(out string reason)) { status = reason; Debug.LogWarning(reason); return; }
+        GachaReviewTestRunner.ReleaseCreationTargetBeforeManualPlay();
+        SessionState.SetInt("Panda.PartyManual.Selection", Selection.activeObject == null ? 0 : Selection.activeObject.GetInstanceID());
+        SessionState.SetIntArray("Panda.PartyManual.SelectionAll", Selection.instanceIDs);
+        SessionState.SetInt("Panda.PartyManual.SelectionContext", Selection.activeContext == null ? 0 : Selection.activeContext.GetInstanceID());
+        SessionState.SetString("Panda.PartyManual.Workspace", JsonUtility.ToJson(ReadWorkspace()));
+        SessionState.SetString(PreviousStart, AssetDatabase.GetAssetPath(EditorSceneManager.playModeStartScene));
+        SessionState.SetBool(ModeKey, missingMenu); SessionState.SetInt(FloorKey, (int)selectedFloor);
+        SessionState.SetBool(CustomerPartyManualPlayBootstrap.SessionKey, true);
+        EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
+        status = "Awake 이전 외부 호출 차단 후 원본 Stage1을 초기화합니다.";
         EditorApplication.EnterPlaymode();
     }
-
-    private static bool Retain(MonoBehaviour script) => script is CustomerController || script is TableManager || script is FurnitureSystem
-        || (IsServicePreview && (script is StaffController || script is StaffGroup || script is UIAddCutomerController || script is UIMarketerImage)) || script is AStar || script is FurnitureGroup || script is Furniture || script is TableData
-        || (IsCompletionPreview && (script is FeverSystem || script is UIFever || script is UITweenFillAmountImage || script is UIButtonAndPressEffect || script is ButtonPressEffect)) || script is DropCoinArea || script is DropGarbageArea || script is FoodDistributionCounter
-        || script is KitchenSystem || script is KitchenUtensilGroup || script is KitchenUtensil
-        || script is SpriteTouchEvent || script is SinkGaugeBar || script is SpriteFillAmount
-        || script is WorldToSceenPosition || script is UIBurnerTimer || script is UIImageFillAmount || script is TableButton
-        || script is PointerDownSpriteRenderer || script is SatisfactionSystem || script is FloorLocker || script is FloorLockGroup
-        || script.GetType().Namespace?.StartsWith("UnityEngine.") == true
-        || script.GetType().Namespace?.StartsWith("TMPro") == true;
-
-    private static T CopyService<T>(T source) where T : MonoBehaviour
+    // Both BeforeSceneLoad callbacks rendezvous before any scene Awake can request an account.
+    public static void PrepareMemoryBeforeAwake()
     {
-        var go = new GameObject("Party preview " + typeof(T).Name); go.SetActive(false);
-        T result = go.AddComponent<T>(); EditorUtility.CopySerialized(source, result);
-        Object.DestroyImmediate(source); return result;
-    }
-    private static T Find<T>(Scene scene) where T : Component => scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<T>(true)).First();
-    private static FieldInfo Field(Type type, string name)
-    {
-        for (; type != null; type = type.BaseType)
-        { var value = type.GetField(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic); if (value != null) return value; }
-        throw new MissingFieldException(name);
-    }
-    private static void Set(object obj, string field, object value) => Field(obj.GetType(), field).SetValue(obj, value);
-    private static T Get<T>(object obj, string field) => (T)Field(obj.GetType(), field).GetValue(obj);
-    private static void Static(Type type, string field, object value) => Field(type, field).SetValue(null, value);
-    private static void CallStatic(Type type, string method, params object[] args) => type.GetMethod(method, BindingFlags.Static | BindingFlags.NonPublic).Invoke(null, args);
-    private static T Service<T>(GameObject root) where T : Component => root.AddComponent<T>();
-    private static void Require(bool value, string reason) { if (!value) throw new InvalidOperationException(reason); }
-
-    private static void PlayChanged(PlayModeStateChange state)
-    {
-        if (!SessionState.GetBool(Pending, false)) return;
-        if (state == PlayModeStateChange.EnteredPlayMode)
-        { try { Initialize(); } catch (Exception error) { Fail(error); } }
-        if (state == PlayModeStateChange.ExitingPlayMode) { Cleanup(); SessionState.SetBool(Pending, false); }
-    }
-    private static void Initialize()
-    {
-        Require(!BackEnd.Backend.IsInitialized && !BackEnd.Backend.IsLogin && Field(typeof(BackendManager), "_instance").GetValue(null) == null, "Backend must remain offline");
-        Time.timeScale = 1; Application.runInBackground = true;
-        string root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-        output = Environment.GetEnvironmentVariable("PANDA_PARTY_VIDEO_DIR") ?? Path.Combine(root, "PartyEvidence");
-        Directory.CreateDirectory(output);
-        var scene = SceneManager.GetActiveScene();
-        controller = Find<CustomerController>(scene); manager = Find<TableManager>(scene); furniture = Find<FurnitureSystem>(scene);
-        var astar = Find<AStar>(scene); camera = Find<Camera>(scene);
-        var services = new GameObject("Offline memory services"); services.SetActive(false);
-        Static(typeof(UserInfo), "_stageInfos", new[] { new StageInfo(), new StageInfo(), new StageInfo() });
-        if (IsCompletionPreview)
-            foreach (var stage in (StageInfo[])Field(typeof(UserInfo), "_stageInfos").GetValue(null))
-                stage.OnChangeSinkBowlHandler += () => CallStatic(typeof(UserInfo), "OnAddSinkBowlEvent");
-        Static(typeof(UserInfo), "_currentStage", EStage.Stage1);
-        UserInfo.IsTutorialStart = false; UserInfo.IsFirstTutorialClear = true;
-        Static(typeof(GameManager), "_instance", Service<GameManager>(services));
-        var sound = Service<SoundManager>(services); Static(typeof(SoundManager), "_instance", sound); Set(sound, "_masterVolume", 0f);
-        Static(typeof(TimeManager), "_instance", Service<TimeManager>(services));
-        Static(typeof(CustomerDataManager), "_instance", Service<CustomerDataManager>(services));
-        CallStatic(typeof(CustomerDataManager), "LoadNormalCustomerSprites");
-        CallStatic(typeof(CustomerDataManager), "LoadCustomerThumbnailSprites");
-        CallStatic(typeof(CustomerDataManager), "NormalCustomerDataParse", "CustomerData/CSVData/NormalCustomerData");
-        var skins = Service<SkinDataManager>(services); Static(typeof(SkinDataManager), "_instance", skins);
-        CallStatic(typeof(SkinDataManager), "LoadCustomerSkinSprites");
-        typeof(SkinDataManager).GetMethod("SkinCustomerDataParse", BindingFlags.Instance | BindingFlags.NonPublic)
-            .Invoke(skins, new object[] { "CustomerData/CSVData/Skin/CustomerSkinDataList" });
-        Static(typeof(UserInfo), "_enabledCustomerDic", new Dictionary<string, SaveCustomerData> {
-            ["CUSTOMER01"] = new SaveCustomerData("CUSTOMER01", "", 0), ["CUSTOMER04"] = new SaveCustomerData("CUSTOMER04", "", 0) });
-        InitializeOrderData(services);
-        if (IsServicePreview) InitializeServiceMemory(services);
-        Static(typeof(ObjectPoolManager), "_instance", Service<ObjectPoolManager>(services));
-        if(IsCompletionPreview)
+        Require(CustomerPartyManualPlayBootstrap.Active && !BackEnd.Backend.IsInitialized && !BackEnd.Backend.IsLogin, "Offline fence missing");
+        EditorApplication.LockReloadAssemblies(); reloadLocked = true;
+        var roots = CustomerPartyManualPlayBootstrap.Roots;
+        MainScene.SuppressEditorDebugGrantsForTesting = true;
+        foreach (var alarm in roots.SelectMany(r => r.GetComponentsInChildren<UIMailAlarm>(true))) alarm.enabled = false;
+        foreach (var type in new[] { typeof(SoundManager), typeof(GameManager), typeof(FurnitureDataManager), typeof(SkinDataManager), typeof(ItemManager), typeof(AttendanceDataManager) })
         {
-            CallStatic(typeof(ObjectPoolManager),"CoinPooling"); CallStatic(typeof(ObjectPoolManager),"GarbagePooling");
-            foreach(var field in new[]{"_coinParent","_garbageParent"})
-                ((GameObject)Field(typeof(ObjectPoolManager),field).GetValue(null)).transform.SetParent(null,true);
+            var c = roots.SelectMany(r => r.GetComponentsInChildren(type, true)).FirstOrDefault() as Component;
+            if (c != null) c.transform.root.gameObject.SetActive(true);
         }
-        Static(typeof(ObjectPoolManager), "_customerParent", new GameObject("Preview customer pool"));
-        Static(typeof(ObjectPoolManager), "_normalCustomerPool", new Queue<NormalCustomer>());
-        Static(typeof(ObjectPoolManager), "_normalCustomerPrefab", Resources.Load<GameObject>("ObjectPool/NormalCustomer").GetComponent<NormalCustomer>());
-        foreach (var go in scene.GetRootGameObjects())
-            if (go != services && go != controller.gameObject && go != manager.gameObject && go != furniture.gameObject && go != astar.gameObject && go != Find<KitchenSystem>(scene).gameObject
-                && go.GetComponent<FeverSystem>() == null && go.GetComponent<UIAddCutomerController>() == null && (!IsServicePreview || go != Find<StaffController>(scene).gameObject)) go.SetActive(true);
-        Physics2D.SyncTransforms(); astar.enabled = true; astar.gameObject.SetActive(true);
-        Require(AStar.Instance == astar, "Authored AStar must own pathfinding");
-        foreach (var locks in scene.GetRootGameObjects().SelectMany(g => g.GetComponentsInChildren<FloorLockGroup>(true)))
-            if (UserInfo.IsFloorValid(UserInfo.CurrentStage, Get<ERestaurantFloorType>(locks, "_floorType")))
-                typeof(FloorLockGroup).GetMethod("CheckFloorLock", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(locks, null);
-        camera.orthographic = true; camera.orthographicSize = 14; camera.aspect = 16f / 9;
-        camera.transform.position = new Vector3(3, 12, -20);
-        if (target == null) { target = new RenderTexture(1280, 720, 24); target.Create(); camera.targetTexture = target; }
-        camera.enabled = true;
-        if (OrderMode != 0) InitializeOrderViewport(scene);
-        var groups = Get<FurnitureGroup[]>(furniture, "_furnitureGroups");
-        Set(furniture, "_furnitureGroupDic", groups.ToDictionary(g => g.FloorType, g => g));
-        foreach (var group in groups) group.Init(manager, Get<RectTransform>(furniture, "_buttonParent"), Get<TableButton>(furniture, "_orderButtonPrefab"), Get<TableButton>(furniture, "_servingButtonPrefab"));
-        // CopySerialized retained the source Inspector layout. Never replace it with
-        // fixture coordinates; changes made in the isolated Inspector also persist.
-        controller.enabled = true; controller.gameObject.SetActive(true);
-        manager.enabled = true; manager.gameObject.SetActive(true);
-        camera.enabled = false; camera.orthographic = true; camera.orthographicSize = 14; camera.aspect = 16f / 9;
-        camera.transform.position = new Vector3(3, 12, -20);
-        if (target == null) { target = new RenderTexture(1280, 720, 24); target.Create(); camera.targetTexture = target; }
-        if (OrderMode != 0) InitializeOrderKitchen(scene);
-        if (IsServicePreview) InitializeServiceStaff(scene,services);
-        began = EditorApplication.timeSinceStartup; floor = 0; phase = 0; finishing = false;
-        if (IsCompletionPreview && Environment.GetEnvironmentVariable("PANDA_PARTY_SINGLE_FLOOR") == "VIP") floor = 1;
-        UnityEngine.Debug.Log("PARTY_PREVIEW_READY: real Stage1 colliders, original sprites, original player loop; backend offline");
+        _ = CustomerDataManager.Instance; _ = FoodDataManager.Instance; _ = KitchenUtensilDataManager.Instance; _ = StaffDataManager.Instance;
+        memory = new CustomerPartyOwnedMemory(); memory.Initialize(true);
+        Require(ReferenceEquals(BackendManager.ExistingInstance, memory.Owner) && memory.LoggedIn, "Memory owner not installed");
+        UserInfo.SetGamerId("ORIGINAL-MANUAL-MEMORY");
+        if (SessionState.GetBool(ModeKey, false)) ((Dictionary<string, int>)Field(typeof(UserInfo), "_giveRecipeLevelDic").GetValue(null)).Remove("FOOD04");
+        Debug.Log("PARTY_MANUAL_MEMORY_BEFORE_AWAKE: SDK initialized=" + BackEnd.Backend.IsInitialized);
     }
-
+    public static void InitializeManualSession()
+    {
+        Require(memory != null && ReferenceEquals(BackendManager.ExistingInstance, memory.Owner) && memory.LoggedIn, "Memory owner not installed before Awake");
+        var scene = SceneManager.GetActiveScene(); var roots = CustomerPartyManualPlayBootstrap.Roots; var active = CustomerPartyManualPlayBootstrap.ActiveRoots;
+        foreach (var alarm in scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<UIMailAlarm>(true))) alarm.enabled = false;
+        controller = Find<CustomerController>(scene); tables = Find<TableManager>(scene);
+        var original = Get<CustomerPartySettings>(controller, "_naturalPartySettings");
+        Require(original != null && !original.EnableNaturalParties && original.MinimumNormalVisits == 25 && original.CompanionProbability == .2f, "Delivered settings changed");
+        settings = Object.Instantiate(original); settings.EnableNaturalParties = false; Set(controller, "_naturalPartySettings", settings);
+        var catalog = (Dictionary<string, CustomerData>)Field(typeof(CustomerDataManager), "_customerDataDic").GetValue(null);
+        foreach (var pair in new[] { ("CUSTOMER01", "FOOD01"), ("CUSTOMER02", "FOOD04") })
+        {
+            var source = catalog[pair.Item1]; var clone = Object.Instantiate(source);
+            originalCustomers.Add(pair.Item1, source); runtimeCustomers.Add(clone);
+            Set(clone, "_requiredDish", pair.Item2); Set(clone, "_visitCountFoodDic", new Dictionary<int, string>());
+            ReplaceCustomer(source, clone);
+        }
+        Find<CameraController>(scene).transform.root.gameObject.SetActive(true);
+        foreach (var root in roots)
+        {
+            if (!active.Contains(root) || IsExternalRoot(root) || root.GetComponent<AStar>() != null || root.GetComponent<StaffController>() != null
+                || root.GetComponent<FurnitureSystem>() != null || root.GetComponent<KitchenSystem>() != null
+                || root.GetComponentInChildren<CameraController>(true) != null || root.GetComponentInChildren<Canvas>(true) != null) continue;
+            root.SetActive(true);
+        }
+        Physics2D.SyncTransforms(); Find<AStar>(scene).gameObject.SetActive(true); Find<KitchenSystem>(scene).gameObject.SetActive(true);
+        foreach (var root in roots) if (active.Contains(root) && root.GetComponentInChildren<Canvas>(true) != null && !IsExternalRoot(root)) root.SetActive(true);
+        Canvas.ForceUpdateCanvases(); Find<FurnitureSystem>(scene).gameObject.SetActive(true); Physics2D.SyncTransforms();
+        var astar = Find<AStar>(scene);
+        foreach (var map in Get<IDictionary>(astar, "_maps").Values) typeof(AStar).GetMethod("GenerateNodes", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(astar, new[] { map });
+        Find<StaffController>(scene).gameObject.SetActive(true);
+        ready = true; prepared = guideBound = false;
+        status = "메모리 테스트 준비 완료. 대기열 준비 후 Game 뷰에서 안내·주문·상점을 직접 조작하세요. 자동 클릭/종료는 없습니다.";
+        Debug.Log("PARTY_MANUAL_READY: original Stage1; SDK initialized=" + BackEnd.Backend.IsInitialized + "; memory owner=" + ReferenceEquals(BackendManager.ExistingInstance, memory.Owner));
+    }
+    internal static bool IsExternalRoot(GameObject root) => root.GetComponentsInChildren<MonoBehaviour>(true).Any(c => c is BackendManager || c is GoogleLoginManager || c is LevelPlayBoot || c is IAPManager || c is FirstLoadingScene);
+    private static void PrepareCustomers()
+    {
+        if (!ready || prepared || controller.Count != 0) { status = "첫 대기열은 한 번만 준비합니다. 다음 검수는 다음 2인 팀 생성 또는 Play 재시작을 사용하세요."; return; }
+        BindManualGuideFloor();
+        Find<CameraController>(SceneManager.GetActiveScene()).MoveCamera((ERestaurantFloorType)SessionState.GetInt(FloorKey, 0), RestaurantType.Hall);
+        Require(controller.TrySpawnWaitingParty(new[] { "CUSTOMER04" }, out var single), "Single preparation failed");
+        if (!controller.TrySpawnWaitingParty(new[] { "CUSTOMER01", "CUSTOMER02" }, out var pair))
+        { controller.CancelWaitingParty(single); throw new InvalidOperationException("Pair preparation failed"); }
+        prepared = true; status = "1인 + 2인 입장 중입니다. Game 뷰에서 안내 버튼을 두 번 누르세요. 상점·주문·서빙은 자동 진행하지 않습니다.";
+        Debug.Log("PARTY_MANUAL_SPAWN: teams=" + controller.Count + "; people=" + controller.WaitingPersonCount);
+    }
+    private static void SpawnPair()
+    {
+        if (!ready) return;
+        BindManualGuideFloor();
+        status = controller.TrySpawnWaitingParty(new[] { "CUSTOMER01", "CUSTOMER02" }, out var _) ? "다음 2인 팀이 입장합니다. Game 뷰에서 직접 안내하세요." : "현재 팀 한도/준비 상태에서 생성할 수 없습니다.";
+    }
+    private static void BindManualGuideFloor()
+    {
+        if (guideBound) return;
+        // Called by an explicit preparation click after TableManager.Start. The actual
+        // Game-view button still invokes production guidance; only its floor is fixed
+        // for this runtime session. Nothing is invoked by this setup operation.
+        var button = Get<UnityEngine.UI.Button>(tables, "_guideButton");
+        Require(button.onClick.GetPersistentEventCount() == 0, "Unexpected persistent guide action");
+        var owner = tables;
+        var selectedFloor = (ERestaurantFloorType)SessionState.GetInt(FloorKey, 0);
+        button.onClick = new UnityEngine.UI.Button.ButtonClickedEvent();
+        button.onClick.AddListener(() => owner.OnCustomerGuideEventPlaySound(selectedFloor));
+        guideBound = true;
+    }
     private static void Tick()
     {
-        if (!EditorApplication.isPlaying || controller == null || finishing) return;
-        try
+        if (!ready || !EditorApplication.isPlaying) return;
+        if (Input.GetKeyDown(KeyCode.Escape)) { StopManual(); return; }
+        if (BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin) { Debug.LogError("Manual session external SDK fence failed"); StopManual(); }
+        foreach (var w in Resources.FindObjectsOfTypeAll<CustomerPartyStage1Preview>()) w.Repaint();
+    }
+    private static void OnPlayChanged(PlayModeStateChange state)
+    {
+        if (!SessionState.GetBool(CustomerPartyManualPlayBootstrap.SessionKey, false)) return;
+        if (state == PlayModeStateChange.ExitingPlayMode)
         {
-            Require(!BackEnd.Backend.IsInitialized && !BackEnd.Backend.IsLogin && Field(typeof(BackendManager), "_instance").GetValue(null) == null, "Unexpected backend activation");
-            double now = EditorApplication.timeSinceStartup;
-            if (now - began > (OrderMode == 0 ? 95 : 240)) throw new TimeoutException("Actual movement did not finish within the preview budget");
-            if (phase == 0 && now - began > 1)
+            ready = false;
+            if (controller != null) typeof(CustomerController).GetMethod("EndVisitParties", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, null);
+            foreach (var clone in runtimeCustomers)
             {
-                // Editor updates may run before the first PlayerLoop Start. Wait for
-                // production restore to finish instead of racing it with fixture spawn.
-                if (controller.WaitingLoadDiagnostic == null) return;
-                Require(controller.WaitingLoadDiagnostic == "Restored", controller.WaitingLoadDiagnostic);
-                if (IsServicePreview) ResetServiceObservation();
-                BeginVideo();
-                if (floor == 1) ((Dictionary<string, SaveCustomerData>)Field(typeof(UserInfo), "_enabledCustomerDic").GetValue(null))["CUSTOMER01"]
-                    = new SaveCustomerData("CUSTOMER01", "SKIN_CUSTOMER01", 0);
-                Require(controller.TrySpawnWaitingParty(new[] { "CUSTOMER01", OrderMode == 0 ? "CUSTOMER04" : "CUSTOMER02" }, out party), controller.LastVisitDiagnostic);
-                if(IsCompletionPreview) PrepareCompletionParty();
-                else Require(controller.TrySpawnWaitingParty(new[] { "CUSTOMER04" }, out _), controller.LastVisitDiagnostic);
-                phase = 1;
+                if (clone == null) continue;
+                ReplaceCustomer(clone, originalCustomers[clone.Id]); Object.Destroy(clone);
             }
-            if (phase == 1 && controller.FirstReadyParty == party) { readyAt = now; phase = 2; }
-            if (phase == 2 && now - readyAt > 3)
-            {
-                Require(manager.OnCustomerGuideEvent((ERestaurantFloorType)floor), "Joint guide rejected"); phase = 3;
-            }
-            if (party != null)
-            {
-                foreach (var member in party.Members) Require(!member.Customer.HasPathFailure, "Real pathfinding failed");
-                if (floor == 1 && phase >= 3 && (!IsCompletionPreview || !departureObserved))
-                {
-                    float y = party.Members.Average(m => m.Customer.transform.position.y) + 4;
-                    var p = camera.transform.position; p.y = Mathf.Lerp(p.y, y, .06f); camera.transform.position = p;
-                }
-                observations.Add(now.ToString("F3", System.Globalization.CultureInfo.InvariantCulture) + "," + floor + "," + phase + "," +
-                    string.Join(";", party.Members.Select(m => m.Customer.transform.position.ToString("F3"))) + "," + (party.CurrentTable?.TableState.ToString() ?? "Waiting"));
-            }
-            if (phase == 3 && party.CurrentTable?.TableState == ETableState.PartySeatedAwaitingOrders)
-            { seatedAt = now; phase = 4; SaveFrame("floor" + (floor + 1) + "-seated.png"); }
-            RenderPreview(); recorder?.Capture(target, now);
-            if (IsCompletionPreview) { TickCompletion(now); return; }
-            if (IsServicePreview) { TickService(now); return; }
-            if (OrderMode != 0) { TickOrders(now); return; }
-            if (phase == 4 && now - seatedAt > 5) { recorder?.Stop(); phase = 5; }
-            if (phase == 5 && (recorder == null || recorder.IsFinished))
-            {
-                recorder?.PollCompletion(); recorder = null;
-                string video = Path.Combine(output, floor == 0 ? "floor1-real-time" : "vip-real-time");
-                var evidence = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(video + ".json"));
-                Require(File.Exists(video + ".mp4") && (int)evidence["encoderExitCode"] == 0
-                    && string.IsNullOrEmpty((string)evidence["error"]) && (int)evidence["capturedFrames"] > 1, "Video encoding failed");
-                manager.CancelPartyGuide(party.CurrentTable);
-                foreach (var waiting in controller.WaitingParties.ToArray()) controller.CancelWaitingParty(waiting);
-                if (floor == 0) { floor = 1; phase = 0; began = now; camera.transform.position = new Vector3(3, 12, -20); }
-                else
-                {
-                    File.WriteAllLines(Path.Combine(output, "actual-movement.csv"), observations);
-                    File.WriteAllText(Path.Combine(output, "completed.json"), "{\"floors\":2,\"timeScale\":1,\"backendInitialized\":false,\"method\":\"Production AStar MoveRoutine and Tween, actual PlayerLoop\"}");
-                    Stop();
-                }
-            }
+            runtimeCustomers.Clear(); originalCustomers.Clear();
+            if (settings != null) Object.Destroy(settings);
+            // Keep memory transport through OnApplicationQuit and normal game autosave.
         }
-        catch (Exception error) { Fail(error); }
+        if (state != PlayModeStateChange.EnteredEditMode) return;
+        try { memory?.Dispose(); }
+        finally
+        {
+            memory = null; controller = null; tables = null; settings = null; ready = prepared = guideBound = false;
+            MainScene.SuppressEditorDebugGrantsForTesting = false;
+            EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(SessionState.GetString(PreviousStart, ""));
+            Selection.objects = SessionState.GetIntArray("Panda.PartyManual.SelectionAll", new int[0])
+                .Select(EditorUtility.InstanceIDToObject).Where(o => o != null).ToArray();
+            Selection.SetActiveObjectWithContext(EditorUtility.InstanceIDToObject(SessionState.GetInt("Panda.PartyManual.Selection", 0)),
+                EditorUtility.InstanceIDToObject(SessionState.GetInt("Panda.PartyManual.SelectionContext", 0)));
+            SessionState.EraseBool(CustomerPartyManualPlayBootstrap.SessionKey); CustomerPartyManualPlayBootstrap.Clear();
+            if (reloadLocked) { reloadLocked = false; EditorApplication.UnlockReloadAssemblies(); }
+            status = "테스트 종료. 메모리 계정은 폐기되었고 원래 편집 Scene으로 돌아왔습니다.";
+            Debug.Log("PARTY_MANUAL_STOPPED: memory released; SDK initialized=" + BackEnd.Backend.IsInitialized);
+            EditorApplication.delayCall += VerifyWorkspace;
+        }
     }
-    private static void BeginVideo()
+    [Serializable]
+    private sealed class WorkspaceState
     {
-        string root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-        string encoder = Environment.GetEnvironmentVariable("PANDA_PARTY_ENCODER");
-        if (string.IsNullOrEmpty(encoder) && File.Exists(Path.Combine(root, "party-preview-encoder.txt"))) encoder = File.ReadAllText(Path.Combine(root, "party-preview-encoder.txt"));
-        Require(File.Exists(encoder), "An FFmpeg encoder is required for real-time evidence");
-        recorder = new GachaCollectionVideoRecorder(encoder, Path.Combine(output, IsServicePreview ? (floor==0 ? "floor1-service.mp4" : "vip-service.mp4") : OrderMode == 0 ? (floor == 0 ? "floor1-real-time.mp4" : "vip-real-time.mp4") : "orders-real-time.mp4"), target.width, target.height, OrderMode == 0 ? 90 : 210, false);
+        public string setup, dirty, selection, startScene, undo;
     }
-    private static void SaveFrame(string name)
+    private static WorkspaceState ReadWorkspace()
     {
-        RenderPreview(); var previous = RenderTexture.active; RenderTexture.active = target;
-        var texture = new Texture2D(target.width, target.height, TextureFormat.RGB24, false);
-        texture.ReadPixels(new Rect(0, 0, target.width, target.height), 0, 0); texture.Apply();
-        File.WriteAllBytes(Path.Combine(output, name), texture.EncodeToPNG()); Object.DestroyImmediate(texture); RenderTexture.active = previous;
+        var scenes = Enumerable.Range(0, SceneManager.sceneCount).Select(SceneManager.GetSceneAt).ToArray();
+        var undoMethod = typeof(Undo).GetMethod("GetRecords", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic,
+            null, new[] { typeof(List<string>), typeof(int).MakeByRefType() }, null);
+        string undo = "unavailable";
+        if (undoMethod != null)
+        {
+            try { var records = new List<string>(); var args = new object[] { records, 0 }; undoMethod.Invoke(null, args); undo = args[1] + "|" + string.Join("\n", records); }
+            catch { /* Read-only evidence can be unavailable on another Editor version. */ }
+        }
+        return new WorkspaceState
+        {
+            setup = string.Join("\n", EditorSceneManager.GetSceneManagerSetup().Select(s => s.path + "|" + s.isLoaded + "|" + s.isActive)),
+            dirty = string.Join("\n", scenes.Select(s => s.path + "|" + s.isDirty)),
+            selection = string.Join(",", Selection.instanceIDs) + "|" + Selection.activeInstanceID + "|" + (Selection.activeContext == null ? 0 : Selection.activeContext.GetInstanceID()),
+            startScene = AssetDatabase.GetAssetPath(EditorSceneManager.playModeStartScene), undo = undo
+        };
     }
-    private static void Fail(Exception error)
+    private static void VerifyWorkspace()
     {
-        UnityEngine.Debug.LogException(error);
-        if (!string.IsNullOrEmpty(output)) File.WriteAllText(Path.Combine(output, "failed.txt"), error.ToString());
-        Stop();
+        var json = SessionState.GetString("Panda.PartyManual.Workspace", "");
+        if (string.IsNullOrEmpty(json)) return;
+        var before = JsonUtility.FromJson<WorkspaceState>(json); var after = ReadWorkspace();
+        Debug.Log("PARTY_MANUAL_WORKSPACE: setup=" + (before.setup == after.setup) + "; dirty=" + (before.dirty == after.dirty)
+            + "; selection=" + (before.selection == after.selection) + "; startScene=" + (before.startScene == after.startScene)
+            + "; undoHistory=" + (before.undo == "unavailable" || after.undo == "unavailable" ? "Unknown" : (before.undo == after.undo).ToString()));
     }
-    [MenuItem("Tools/Panda Restaurant/Customer Parties/Stop isolated preview")]
-    public static void Stop()
+    private static void ReplaceCustomer(CustomerData from, CustomerData to)
     {
-        if (!SessionState.GetBool(Pending, false)) return;
-        finishing = true; Cleanup(); SessionState.SetBool(Pending, false);
-        EditorApplication.update -= Tick; EditorApplication.ExitPlaymode();
-        if (Environment.GetEnvironmentVariable("PANDA_PARTY_EXIT") == "1") EditorApplication.delayCall += () => EditorApplication.Exit(!string.IsNullOrEmpty(output) && File.Exists(Path.Combine(output, "completed.json")) ? 0 : 1);
+        ((Dictionary<string, CustomerData>)Field(typeof(CustomerDataManager), "_customerDataDic").GetValue(null))[to.Id] = to;
+        foreach (string name in new[] { "_customerDataList", "_normalCustomerDataList" })
+        {
+            var list = (IList)Field(typeof(CustomerDataManager), name).GetValue(null);
+            for (int i = 0; i < list.Count; i++) if (ReferenceEquals(list[i], from)) list[i] = to;
+        }
     }
-    private static void Cleanup()
-    {
-        recorder?.Dispose(); recorder = null;
-        CleanupService();
-        CleanupOrders();
-        if (controller != null) typeof(CustomerController).GetMethod("EndVisitParties", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, null);
-        if (camera != null) camera.targetTexture = null;
-        if (target != null) { target.Release(); Object.DestroyImmediate(target); target = null; }
-    }
+    private static T Find<T>(Scene scene) where T : Component => scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<T>(true)).First();
+    private static FieldInfo Field(Type type, string name)
+    { for (; type != null; type = type.BaseType) { var f = type.GetField(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic); if (f != null) return f; } throw new MissingFieldException(name); }
+    private static T Get<T>(object obj, string name) => (T)Field(obj.GetType(), name).GetValue(obj);
+    private static void Set(object obj, string name, object value) => Field(obj.GetType(), name).SetValue(obj, value);
+    private static void Require(bool condition, string reason) { if (!condition) throw new InvalidOperationException(reason); }
 }
 #endif

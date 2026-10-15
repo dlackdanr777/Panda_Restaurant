@@ -289,6 +289,9 @@ public static partial class UserInfo
 
             _stageInfos[i].OnChangeStaffSkinHandler += OnChangeStaffSkinEvent;
         }
+#if UNITY_EDITOR
+        CustomerPartyManualPlayBootstrap.NotifyUserDataInitialized();
+#endif
     }
 
     private static void OnChangeFloorEvent()

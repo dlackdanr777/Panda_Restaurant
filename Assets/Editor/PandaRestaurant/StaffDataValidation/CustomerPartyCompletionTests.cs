@@ -275,7 +275,7 @@ public sealed class CustomerPartyCompletionTests
     }
 
     [Test]
-    public void AdditionalUnownedRecipe_IsHeldWithoutInitialRejectionOrNewSettlement()
+    public void AdditionalUnownedRecipe_AbortsAndSettlesOnlyPriorMeals()
     {
         using(var p=new Pair())
         {
@@ -283,11 +283,11 @@ public sealed class CustomerPartyCompletionTests
             var use=p.S.Table.CurrentUse;
             var owned=(Dictionary<string,int>)typeof(UserInfo).GetField("_giveRecipeLevelDic",System.Reflection.BindingFlags.Static|System.Reflection.BindingFlags.NonPublic).GetValue(null);
             owned.Clear();
-            Assert.That(p.Accept(),Is.EqualTo(PartyOrderAcceptResult.UnsupportedPolicy));
-            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.PartyPolicyPending));
-            Assert.That(use.CompletionStarted,Is.False); Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.EqualTo(1));
-            Assert.That(p.S.Coins.CurrentMoney,Is.Zero); Assert.That(p.S.Table.DropGarbageArea.Count,Is.Zero);
-            Assert.That(p.Accept(),Is.EqualTo(PartyOrderAcceptResult.UnsupportedPolicy));
+            Assert.That(p.Accept(),Is.EqualTo(PartyOrderAcceptResult.ServiceAborted));
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.NeedCleaning));
+            Assert.That(use.ServiceAborted&&use.CompletionStarted,Is.True); Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.EqualTo(1));
+            Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(202)); Assert.That(p.S.Stage.Satisfaction,Is.EqualTo(-10));
+            Assert.That(p.Accept(),Is.EqualTo(PartyOrderAcceptResult.ServiceAborted));
             Assert.That(p.S.Manager.CancelPartyGuide(p.S.Table),Is.True);
         }
     }
@@ -405,14 +405,14 @@ public sealed class CustomerPartyCompletionTests
         }
     }
     [TestCase(false)] [TestCase(true)]
-    public void UnsupportedFailure_PreservesPersonalTip_AndCookingCallbackCannotOverwriteHold(bool duringCooking)
+    public void ServiceAbortPreservesTip_AndFurnitureFailureKeepsTechnicalHold(bool duringCooking)
     {
         using(var p=new Pair(ordersA:1,ordersB:2))
         {
             if(duringCooking){Assert.That(p.Accept(),Is.EqualTo(PartyOrderAcceptResult.Accepted));p.S.Table.TableType=TableType.Table2;UserInfo.OnAddCookCountHandler+=()=>p.S.Manager.NotFurnitureTable(p.S.Table);p.Pump();p.Pump();}
             else{CookRound(p);Eat(p,p.Batch.Orders[0]);p.S.Manager.AngerExitCustomer(p.S.Table);p.S.TakeWait(.5f)();Assert.That(p.S.Stage.Tip,Is.EqualTo(50));Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.EqualTo(1));Assert.That(p.S.Manager.TryServePartyOrder(p.Batch.Orders[1]),Is.False);}
-            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.PartyPolicyPending));Assert.That(p.S.Manager.HasPendingOrder(p.S.Table),Is.False);Assert.That(p.S.Table.CurrentUse.CompletionStarted,Is.False);
-            Assert.That(p.S.Coins.CurrentMoney,Is.Zero);Assert.That(p.S.Table.DropGarbageArea.Count,Is.Zero);
+            Assert.That(p.S.Table.TableState,Is.EqualTo(duringCooking?ETableState.PartyPolicyPending:ETableState.NeedCleaning));Assert.That(p.S.Manager.HasPendingOrder(p.S.Table),Is.False);Assert.That(p.S.Table.CurrentUse.CompletionStarted,Is.EqualTo(!duringCooking));
+            Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(duringCooking?0:101));Assert.That(p.S.Stage.Satisfaction,Is.EqualTo(duringCooking?0:-10));
         }
     }
     [Test]
@@ -421,7 +421,7 @@ public sealed class CustomerPartyCompletionTests
         using(var s=new Flow())
         {
             Assert.That(s.Controller.TrySpawnWaitingParty(new[]{s.Data.Id,s.Data.Id},out var party),Is.True);
-            foreach(var member in party.Members) Get<Action>(member.Customer,"_moveCompleted")();Assert.That(s.Manager.OnCustomerGuideEvent(s.Table.FloorType),Is.True);s.Table.TableType=TableType.Table2;s.Manager.NotFurnitureTable(s.Table);
+            foreach(var member in party.Members) { member.Customer.transform.position=member.Customer.TargetPos; Get<Action>(member.Customer,"_moveCompleted")(); }Assert.That(s.Manager.OnCustomerGuideEvent(s.Table.FloorType),Is.True);s.Table.TableType=TableType.Table2;s.Manager.NotFurnitureTable(s.Table);
             foreach(var member in party.Members){member.Customer.transform.position=member.Customer.TargetPos;Get<Action>(member.Customer,"_moveCompleted")();s.TakeWait(1.5f)();}
             Assert.That(s.Table.TableState,Is.EqualTo(ETableState.PartyPolicyPending));Assert.That(s.Table.PartyOrders,Is.Null);Assert.That(party.IsActive,Is.True);
         }
@@ -457,7 +457,7 @@ public sealed class CustomerPartyCompletionTests
             p.S.Table.TableFurniture.OnCleanAction();Assert.That(p.S.Stage.GetSinkBowlCount(p.S.Table.FloorType),Is.EqualTo(1));
             var oldCycle=p.S.Table.CleaningCycle;
             Assert.That(p.S.Controller.TrySpawnWaitingParty(new[]{p.S.Data.Id,p.SecondData.Id},out p.Party),Is.True);
-            foreach(var member in p.Party.Members) Get<Action>(member.Customer,"_moveCompleted")();Assert.That(p.S.Manager.OnCustomerGuideEvent(p.S.Table.FloorType),Is.True);
+            foreach(var member in p.Party.Members) { member.Customer.transform.position=member.Customer.TargetPos; Get<Action>(member.Customer,"_moveCompleted")(); }Assert.That(p.S.Manager.OnCustomerGuideEvent(p.S.Table.FloorType),Is.True);
             foreach(var member in p.Party.Members){member.Customer.transform.position=member.Customer.TargetPos;Get<Action>(member.Customer,"_moveCompleted")();p.S.TakeWait(1.5f)();}
             CookRound(p);foreach(var food in p.Batch.Orders.ToArray()) Eat(p,food);
             Assert.That(p.S.Stage.GetSinkBowlCount(p.S.Table.FloorType),Is.EqualTo(2));p.S.Table.TableFurniture.OnCleanAction(oldCycle);Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.NeedCleaning));

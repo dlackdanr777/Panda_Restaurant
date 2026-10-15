@@ -65,6 +65,9 @@ public class TableFurniture : Furniture
         finally { _cleaningCommit = false; }
     }
 
+    internal ETableState AvailableTableState => _saveTableData != null && _saveTableData.NeedCleaning
+        ? ETableState.NeedCleaning : ETableState.Empty;
+
     public override void Init(TableManager manager, ERestaurantFloorType floor)
     {
         base.Init(manager, floor);
@@ -97,6 +100,10 @@ public class TableFurniture : Furniture
             _bowlRenderer.gameObject.SetActive(false);
             return;
         }
+
+        // An unavailable slot retains its saved cleaning cycle for later re-equipping.
+        if (_tableData.TableState == ETableState.DontUse)
+        { _bowlRenderer.gameObject.SetActive(false); return; }
 
         if (_tableData.TableState == ETableState.NeedCleaning)
         {

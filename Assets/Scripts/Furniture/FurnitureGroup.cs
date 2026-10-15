@@ -330,7 +330,7 @@ public class FurnitureGroup : MonoBehaviour
             if (data.TableState != ETableState.DontUse)
                 return;
 
-            data.TableState = ETableState.Empty;
+            data.TableState = data.TableFurniture.AvailableTableState;
         }
     }
 

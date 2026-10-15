@@ -20,6 +20,9 @@ public class UIMailAlarm : MonoBehaviour
 
     private void Start()
     {
+#if UNITY_EDITOR
+        if (CustomerPartyManualPlayBootstrap.Active) return;
+#endif
         MailManager.Instance.OnAlarmChanged += SetAlarm;
 
         // 씬 시작 시 서버에서 메일 목록을 로드하여 알람 갱신

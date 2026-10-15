@@ -9,6 +9,9 @@ public partial class CustomerController
     private sealed class WaitingEntry
     {
         internal CustomerVisitParty Party;
+        internal bool ClockStarted;
+        internal double WaitStartedAt;
+        internal float WaitLimit;
         internal readonly HashSet<CustomerVisitMember> Ready = new HashSet<CustomerVisitMember>();
         internal bool IsReady => Party != null && Party.IsActive && Ready.Count == Party.Members.Count;
     }
@@ -90,7 +93,7 @@ public partial class CustomerController
             }
             if (!CustomerVisitParty.TryCreate(this, customers, out party, out string reason)) throw new InvalidOperationException(reason);
             entry.Party = party;
-            // Two-member automatic timeout policy is deliberately not connected.
+            // Singleton timing retains its original entrance-time start.
             if (customers.Count == 1) customers[0].StartWaiting();
             if (restored)
             {
@@ -102,6 +105,7 @@ public partial class CustomerController
                 }
             }
             else SortCustomerLine();
+            StartPartyWaitingClock(entry);
             LastVisitDiagnostic = "WaitingPartyCreated";
             if (!_restoringWaiting && notify) NotifyWaitingChanged();
             return true;
@@ -119,11 +123,12 @@ public partial class CustomerController
 
     internal bool EnqueueVisit(CustomerVisitParty party, bool ready)
     {
-        if (party == null || !party.IsActive || party.CurrentUse != null || !ReferenceEquals(party.Owner, this)
+        if (party == null || !party.IsActive || party.WaitingDeparture || party.CurrentUse != null || !ReferenceEquals(party.Owner, this)
             || _waitingTeams.Any(e => ReferenceEquals(e.Party, party)) || Count >= GameManager.Instance.MaxWaitCustomerCount) return false;
         var entry = new WaitingEntry { Party = party };
         if (ready) foreach (var member in party.Members) entry.Ready.Add(member);
         _waitingTeams.Add(entry);
+        StartPartyWaitingClock(entry);
         return true;
     }
 
@@ -150,8 +155,9 @@ public partial class CustomerController
                     customer.Move(target, -1, () =>
                     {
                         if (!_waitingTeams.Contains(entry) || !member.Party.IsActive
-                            || !ReferenceEquals(customer.VisitMember, member) || member.Party.CurrentUse != null) return;
-                        if (entry.Ready.Add(member)) { _tableManager.UpdateTable(); NotifyWaitingChanged(); }
+                            || !ReferenceEquals(customer.VisitMember, member) || member.Party.CurrentUse != null
+                            || (member.Party.Members.Count > 1 && !customer.ConfirmReachedMoveTarget())) return;
+                        if (entry.Ready.Add(member)) { StartPartyWaitingClock(entry); _tableManager.UpdateTable(); NotifyWaitingChanged(); }
                     });
                 }
                 customer.SetLayer("WaitCustomer", layer--);
@@ -184,7 +190,11 @@ public partial class CustomerController
     private void OnWaitingPartyEnded(CustomerVisitParty party, bool preserveWaitingSave)
     {
         var entry = _waitingTeams.FirstOrDefault(e => ReferenceEquals(e.Party, party));
-        if (entry == null) return;
+        if (entry == null)
+        {
+            if (party.WaitingDeparture) ReturnPartyMembers(party);
+            return;
+        }
         _waitingTeams.Remove(entry);
         ReturnPartyMembers(party);
         if (!preserveWaitingSave && _visitExecution != null && !_restoringWaiting) { SortCustomerLine(); NotifyWaitingChanged(); }
@@ -193,7 +203,7 @@ public partial class CustomerController
     private static void ReturnPartyMembers(CustomerVisitParty party)
     {
         foreach (var member in party.Members)
-            if (member.Customer != null && ReferenceEquals(member.Customer.VisitIdentity, member.VisitIdentity))
+            if (!party.HasDeparted(member) && member.Customer != null && ReferenceEquals(member.Customer.VisitIdentity, member.VisitIdentity))
             {
                 member.Customer.StopMove(); member.Customer.StopWaiting();
                 if (member.Customer.gameObject.activeSelf) ObjectPoolManager.Instance.DespawnNormalCustomer(member.Customer);

@@ -24,6 +24,10 @@ internal sealed class TableUseIdentity
     internal EStage Stage => _stage;
     internal int Round;
     internal bool PolicyPending;
+    internal bool FurnitureRemoved;
+    internal readonly float FoodWaitLimit;
+    internal bool ServiceAborted, ServicePenaltyApplied, MealTableUsed;
+    internal string ServiceAbortReason;
     internal bool Invalidated;
     internal bool IsCompletionContextCurrent => !Invalidated && IsExecutionContextCurrent;
     internal PartyOrderBatch Orders;
@@ -43,6 +47,8 @@ internal sealed class TableUseIdentity
         Table = table;
         Member = member;
         Party = member.Party;
+        foreach (var original in Party.Members)
+            FoodWaitLimit = UnityEngine.Mathf.Max(FoodWaitLimit, original.Customer.NormalCustomerData.OrderFoodTime);
         _stage = UserInfo.CurrentStage;
         _backend = BackendManager.ExistingInstance;
         _accountQuery = _backend == null ? null : _backend.CurrentMailReceiveQuery;
@@ -96,7 +102,7 @@ internal sealed class TableOrderIdentity
     internal bool EatingCompleted;
 
     internal TableOrderIdentity(TableUseIdentity use, PartyFoodOrder partyOrder = null) { Use = use; PartyOrder = partyOrder; }
-    internal bool CanCook(TableData table) => !CookingTerminal && IsCurrent(table) && !Use.CompletionStarted && !Use.PolicyPending
+    internal bool CanCook(TableData table) => !CookingTerminal && IsCurrent(table) && !Use.CompletionStarted && !Use.PolicyPending && !Use.ServiceAborted
         && (PartyOrder == null || PartyOrder.Batch.State == PartyOrderBatchState.Accepted);
     internal bool TryCompleteCooking(TableData table)
     {

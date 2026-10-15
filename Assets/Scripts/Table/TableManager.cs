@@ -36,6 +36,7 @@ public partial class TableManager : MonoBehaviour
     private void InvalidateExecution()
     {
         _executionIdentity = null;
+        _furnitureEdit = null;
         if (_customerController != null) _customerController.EndVisitParties();
     }
 
@@ -713,7 +714,7 @@ public partial class TableManager : MonoBehaviour
         public void AngerExitCustomer(TableData data)
     {
         TableUseIdentity use = data == null ? null : data.CurrentUse;
-        if (use != null && !use.IsSingle) { HoldUnsupportedPartyPolicy(use, "MidVisitFailurePolicyPending"); return; }
+        if (use != null && !use.IsSingle) { AbortPartyService(use, "CustomerServiceFailure"); return; }
         if (use == null || !use.IsCurrent(data)) return;
         if (data.TableState == ETableState.DontUse)
         {
@@ -756,7 +757,11 @@ public partial class TableManager : MonoBehaviour
             return;
 
         TableUseIdentity use = data.CurrentUse;
-        if (use != null && !use.IsSingle) { HoldUnsupportedPartyPolicy(use, "FurnitureRemovedPolicyPending"); return; }
+        if (use != null && !use.IsSingle)
+        {
+            if (TrackFurnitureEdit(data) || use.FurnitureRemoved || use.CompletionStarted) return;
+            HoldUnsupportedPartyPolicy(use, "FurnitureRemovedOutsideShop"); return;
+        }
         data.EndUse(null, ETableState.DontUse);
 
         data.TotalTip = 0;
@@ -1154,36 +1159,24 @@ public KitchenBurnerData GetMinDistanceBurner(Vector3 startPos, List<KitchenBurn
 
     private void OnChangeTableEvent(ERestaurantFloorType floorType, FurnitureType type)
     {
-        if (type < FurnitureType.Table1 || FurnitureType.Table5 < type)
-            return;
-
-        List<TableData> tableDataList = _furnitureSystem.GetTableDataList(floorType);
-        if (tableDataList == null || tableDataList.Count <= 0)
-            return;
-
-        Tween.Wait(0.01f, () =>
+        if (type < FurnitureType.Table1 || FurnitureType.Table5 < type) return;
+        var tables = _furnitureSystem.GetTableDataList(floorType);
+        if (tables == null) return;
+        foreach (var table in tables)
         {
-            for (int i = 0, cnt = tableDataList.Count; i < cnt; ++i)
-            {
-                TableData data = tableDataList[i];
-                if (data == null)
-                    continue;
-
-                if (data.TableState == ETableState.DontUse)
-                    continue;
-
-                if (data.TableState == ETableState.UseStaff)
-                    continue;
-                if (data.TableState == ETableState.PartyRejecting || (data.CurrentUse != null && !data.CurrentUse.IsSingle && data.CurrentUse.CompletionStarted)) continue;
-                data.RefreshPartyOrderButtons();
-                var party = data.CurrentParty;
-                if (party == null) continue;
-                foreach (var member in party.Members)
-                    if (data.TableState != ETableState.Move || data.CurrentUse.HasArrived(member))
-                        member.Customer.transform.position = data.GetSeatPosition(member.SeatIndex);
-            }
-        });
-
+            if (table == null || table.TableType != (TableType)type) continue;
+            var expected = table.CurrentUse;
+            if (expected == null || !expected.IsPartyCurrent(table)) continue;
+            if (!expected.IsSingle && TrackFurnitureEdit(table)) continue;
+            Tween.Wait(.01f, () => {
+                if (!expected.IsPartyCurrent(table) || expected.CompletionStarted || expected.PolicyPending
+                    || table.TableState == ETableState.DontUse || table.TableState == ETableState.UseStaff) return;
+                if (!expected.IsSingle) { if (HasUsableFurniture(table)) RefreshPartyFurniture(expected); return; }
+                table.RefreshPartyOrderButtons();
+                if (table.TableState != ETableState.Move || expected.HasArrived(expected.Member))
+                    expected.Member.Customer.transform.position = table.GetSeatPosition(expected.Member.SeatIndex);
+            });
+        }
     }
 
     private void OnDestroy()

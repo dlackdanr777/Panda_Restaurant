@@ -33,6 +33,10 @@ public class WaiterAction : IStaffAction
     private TableOrderIdentity _order;
     private bool _disposed;
     private object _request;
+    private object _seatLeg;
+    private Vector3 _seatDestination;
+    private int _deliveryStep;
+    private float _deliveryDue;
     private TableServiceReservation _lease;
     private long _staffLifetime;
     private ERestaurantFloorType _floor;
@@ -85,7 +89,7 @@ public class WaiterAction : IStaffAction
 
     internal void CancelCurrentWork()
     {
-        _request = null;
+        _request = null; _seatLeg = null; _deliveryStep = 0;
         _tweenData?.TweenStop(); _tweenData = null;
         var cancelled = _lease; _lease = null;
         _use = null; _order = null; _currentData = null;
@@ -268,10 +272,6 @@ public class WaiterAction : IStaffAction
         var lease = _lease;
         var food = lease.Food; // Keep the selected plate through every callback.
         float speedMul = _waiter.SpeedMul;
-        int seat = lease.Order.PartyOrder == null ? table.SitIndex : lease.Order.PartyOrder.SeatIndex;
-        int direction = lease.Order.PartyOrder == null ? table.SitDir : (seat == 0 ? -1 : 1);
-        Vector3 destination = table.transform.position;
-        if (!lease.Use.IsSingle) destination.x = table.GetSeatPosition(seat).x;
         _waiter.Move(_tableManager.GetFoodPos(_floor, RestaurantType.Hall, table.TableFurniture.transform.position), 0, () =>
         {
             if (!Arrived(request)) return;
@@ -281,26 +281,59 @@ public class WaiterAction : IStaffAction
                 if (!_tableManager.PickUpWaiterFood(lease)) { if (ReferenceEquals(_request, request)) CancelCurrentWork(); return; }
                 if (!ContinueRequest(request)) return;
                 _waiter.BowlSetActive(true); _waiter.ShowFood(food);
-                _waiter.Move(destination, direction, () =>
-                {
-                    if (!Arrived(request)) return;
-                    _tweenData = Tween.Wait(((_duration * _durationMul) / speedMul) * 0.5f, () =>
-                    {
-                        if (!ContinueRequest(request)) return;
-                        _waiter.BowlSetAction();
-                        _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
-                        {
-                            if (!ContinueRequest(request)) return;
-                            bool delivered = _tableManager.TryDeliverFood(lease.Order, lease);
-                            if (ReferenceEquals(_lease, lease)) _lease = null;
-                            if (!delivered) { lease.Release(); if (ReferenceEquals(_request, request)) CancelCurrentWork(); return; }
-                            if (!ContinueRequest(request)) return;
-                            _waiter.HideFood();
-                            _tweenData = Tween.Wait(1 / speedMul, () => { if (ContinueRequest(request)) SetNoneState(); });
-                        });
-                    });
-                });
+                MoveCarriedFoodToSeat(request, lease, speedMul);
             });
+        });
+    }
+
+    internal void RefreshPartySeat(TableUseIdentity use)
+    {
+        if (!ReferenceEquals(_use, use) || !IsCurrent || _seatLeg == null
+            || _lease == null || !_lease.IsServing || !_lease.PickedUp) return;
+        var target = _currentData.transform.position;
+        target.x = _currentData.GetSeatPosition(_lease.Order.PartyOrder.SeatIndex).x;
+        if (target == _seatDestination) return;
+        MoveCarriedFoodToSeat(_request, _lease, _waiter.SpeedMul);
+    }
+
+    private void MoveCarriedFoodToSeat(object request, TableServiceReservation lease, float speedMul)
+    {
+        if (!ContinueRequest(request)) return;
+        _tweenData?.TweenStop(); _tweenData = null;
+        var leg = new object(); _seatLeg = leg;
+        var table = lease.Table;
+        int seat = lease.Order.PartyOrder == null ? table.SitIndex : lease.Order.PartyOrder.SeatIndex;
+        int direction = lease.Order.PartyOrder == null ? table.SitDir : (seat == 0 ? -1 : 1);
+        Vector3 destination = table.transform.position;
+        if (!lease.Use.IsSingle) destination.x = table.GetSeatPosition(seat).x;
+        _seatDestination = destination;
+        _waiter.Move(destination, direction, () =>
+        {
+            if (!ReferenceEquals(_seatLeg, leg) || !Arrived(request)) return;
+            if (_deliveryStep == 0)
+            { _deliveryStep = 1; _deliveryDue = Time.time + ((_duration * _durationMul) / speedMul) * .5f; }
+            ContinueSeatDelivery(request, lease, speedMul, leg);
+        });
+    }
+
+    private void ContinueSeatDelivery(object request, TableServiceReservation lease, float speedMul, object leg)
+    {
+        _tweenData = Tween.Wait(Mathf.Max(0, _deliveryDue - Time.time), () =>
+        {
+            if (!ReferenceEquals(_seatLeg, leg) || !ContinueRequest(request)) return;
+            if (_deliveryStep == 1)
+            {
+                _waiter.BowlSetAction(); _deliveryStep = 2;
+                _deliveryDue = Time.time + (_duration * _durationMul) / speedMul;
+                ContinueSeatDelivery(request, lease, speedMul, leg); return;
+            }
+            _seatLeg = null;
+            bool delivered = _tableManager.TryDeliverFood(lease.Order, lease);
+            if (ReferenceEquals(_lease, lease)) _lease = null;
+            if (!delivered) { lease.Release(); if (ReferenceEquals(_request, request)) CancelCurrentWork(); return; }
+            if (!ContinueRequest(request)) return;
+            _waiter.HideFood();
+            _tweenData = Tween.Wait(1 / speedMul, () => { if (ContinueRequest(request)) SetNoneState(); });
         });
     }
 

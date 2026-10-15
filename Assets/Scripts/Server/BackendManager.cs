@@ -61,6 +61,10 @@ namespace Muks.BackEnd
             {
                 if (_instance == null)
                 {
+#if UNITY_EDITOR
+                    if (CustomerPartyManualPlayBootstrap.Active)
+                        throw new InvalidOperationException("Manual Play has no memory Backend owner; online fallback is blocked.");
+#endif
                     GameObject obj = new GameObject("BackendManager");
                     _instance = obj.AddComponent<BackendManager>();
                     if (Application.isPlaying)
@@ -81,6 +85,13 @@ namespace Muks.BackEnd
         private static bool _creatingEditorOfflineOwner;
         private static GameObject _editorOfflineHostBeingCreated;
         public bool IsEditorOfflineOwner => _editorOfflineOwner;
+        private Func<DateTime> _editorOfflineUtcClock;
+        public void SetEditorOfflineUtcClock(Func<DateTime> clock)
+        {
+            if (!_editorOfflineOwner || clock == null)
+                throw new InvalidOperationException("An owned offline Editor session and explicit clock are required.");
+            _editorOfflineUtcClock = clock;
+        }
 
         /// <summary>
         /// A real detached owner, fully injected before activation/Awake. Its synthetic memory-transport
@@ -629,6 +640,15 @@ namespace Muks.BackEnd
         {
             get
             {
+#if UNITY_EDITOR
+                if (_editorOfflineOwner)
+                {
+                    if (_editorOfflineUtcClock == null) throw new InvalidOperationException("Offline UTC clock was not injected.");
+                    DateTime utc = _editorOfflineUtcClock();
+                    if (utc.Kind != DateTimeKind.Utc) throw new InvalidOperationException("Offline clock must return UTC.");
+                    return utc;
+                }
+#endif
                 RequireLiveBackendOwner();
                 if (Time.realtimeSinceStartup - _serverTimeCachedAt < ServerTimeCacheSeconds)
                     return _cachedServerTime;
@@ -663,6 +683,8 @@ namespace Muks.BackEnd
             // Inactive AddComponent defers Awake; this fence also fails closed if Unity invokes it early.
             if (_editorOfflineOwner || ReferenceEquals(gameObject, _editorOfflineHostBeingCreated))
             { _editorOfflineOwner = true; return; }
+            if (CustomerPartyManualPlayBootstrap.Active)
+            { enabled = false; return; }
 #endif
             if (_instance != null)
             {

@@ -7,7 +7,7 @@ public partial class TableManager
     internal bool HasPendingOrder(TableData table)
     {
         var use = table == null ? null : table.CurrentUse;
-        if (use == null || !use.IsPartyCurrent(table) || (use.CompletionStarted || use.PolicyPending) || use.OrderReservation != null) return false;
+        if (use == null || !use.IsPartyCurrent(table) || (use.CompletionStarted || use.PolicyPending || use.ServiceAborted) || use.OrderReservation != null) return false;
         return use.IsSingle ? table.TableState == ETableState.Seating && !table.CurrentFood.IsDefault()
             && !table.CurrentFood.Identity.OrderAccepted
             : use.Orders != null && use.Orders.State == PartyOrderBatchState.Prepared && use.Orders.ValidateOrders();
@@ -16,7 +16,7 @@ public partial class TableManager
     internal TableOrderIdentity GetReadyServingOrder(TableData table)
     {
         var use = table == null ? null : table.CurrentUse;
-        if (use == null || !use.IsPartyCurrent(table) || (use.CompletionStarted || use.PolicyPending)) return null;
+        if (use == null || !use.IsPartyCurrent(table) || (use.CompletionStarted || use.PolicyPending || use.ServiceAborted)) return null;
         if (use.IsSingle)
         {
             var order = table.CurrentFood.Identity;
@@ -33,7 +33,7 @@ public partial class TableManager
     // Derived view: the counter keeps identity references only; it never creates orders.
     internal static bool IsFoodAtCounter(TableOrderIdentity order)
     {
-        if (order == null || !order.IsCurrent(order.Use.Table) || (order.Use.CompletionStarted || order.Use.PolicyPending)
+        if (order == null || !order.IsCurrent(order.Use.Table) || (order.Use.CompletionStarted || order.Use.PolicyPending || order.Use.ServiceAborted)
             || !order.CookingCompleted || order.ServingStarted || order.CookingCancelled) return false;
         if (order.PartyOrder != null)
             return order.PartyOrder.Batch.State == PartyOrderBatchState.Accepted
@@ -83,7 +83,7 @@ public partial class TableManager
             {
                 var result = TryAcceptPartyOrders(lease.Table, lease.Batch);
                 return result == PartyOrderAcceptResult.Accepted || result == PartyOrderAcceptResult.AcceptedPresentationFailed
-                    || result == PartyOrderAcceptResult.AlreadyHandled || result == PartyOrderAcceptResult.RejectedRecipe;
+                    || result == PartyOrderAcceptResult.AlreadyHandled || result == PartyOrderAcceptResult.RejectedRecipe || result == PartyOrderAcceptResult.ServiceAborted;
             }
             OnCustomerOrder(lease.Table);
             return lease.Order.OrderAccepted || !lease.IsUseCurrent;
@@ -106,7 +106,7 @@ public partial class TableManager
 
     internal bool TryDeliverFood(TableOrderIdentity order, TableServiceReservation lease)
     {
-        if (order == null || !order.IsCurrent(order.Use.Table) || (order.Use.CompletionStarted || order.Use.PolicyPending)
+        if (order == null || !order.IsCurrent(order.Use.Table) || (order.Use.CompletionStarted || order.Use.PolicyPending || order.Use.ServiceAborted)
             || order.ServingStarted || !order.CookingCompleted) return false;
         if (lease == null)
         {
@@ -124,7 +124,9 @@ public partial class TableManager
         }
         var food = order.PartyOrder;
         if (food.Batch.State != PartyOrderBatchState.Accepted || (food.State != PartyFoodState.ReadyForServing && food.State != PartyFoodState.Carrying)) return false;
+        if (!CheckPartyTendencies(food.Batch.Use, new[] { food.Member })) return false;
         order.ServingStarted = true;
+        food.StopDeliveryClock();
         food.State = PartyFoodState.Eating;
         lease?.Release();
         StartCoroutine(EatPartyOrder(food));
@@ -137,6 +139,7 @@ public partial class TableManager
         yield return YieldCache.WaitForSeconds(0.5f);
         if (!CanContinuePartyMeal(food) || food.Identity.EatingAnimationStarted) yield break;
         food.Identity.EatingAnimationStarted = true;
+        food.Batch.Use.GetCompletion(food.Member).MealStarted = true;
         var customer = food.Member.Customer;
         customer.transform.position = food.Batch.Use.Table.GetSeatPosition(food.SeatIndex);
         customer.ChangeState(CustomerState.Eat); customer.ShowFood(food.Food.Sprite);
@@ -155,7 +158,7 @@ public partial class TableManager
 
     private void RefreshPartyMealState(PartyOrderBatch batch)
     {
-        if (!batch.IsCurrent || batch.Use.PolicyPending) return;
+        if (!batch.IsCurrent || batch.Use.PolicyPending || batch.Use.ServiceAborted) return;
         bool allCompleted = true, anyMeal = false, allReady = true;
         foreach (var food in batch.Orders)
         {

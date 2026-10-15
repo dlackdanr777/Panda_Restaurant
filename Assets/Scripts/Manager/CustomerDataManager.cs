@@ -34,6 +34,12 @@ public class CustomerDataManager : MonoBehaviour
 
     private static Dictionary<string, CustomerSkill> _customerSkillDic = new Dictionary<string, CustomerSkill>();
 
+    public bool TryGetCustomerData(string id, out CustomerData data)
+    {
+        data = null;
+        return !string.IsNullOrWhiteSpace(id) && _customerDataDic.TryGetValue(id, out data) && data != null;
+    }
+
     public CustomerData GetCustomerData(string id)
     {
         if (!_customerDataDic.TryGetValue(id, out CustomerData data))
@@ -59,7 +65,9 @@ public class CustomerDataManager : MonoBehaviour
         List<NormalCustomerData> returnList = new List<NormalCustomerData>();
         for(int i = 0, cnt = _normalCustomerDataList.Count; i < cnt; ++i)
         {
-            if (!UserInfo.GetCustomerEnableState(_normalCustomerDataList[i].Id))
+            var candidate = _normalCustomerDataList[i];
+            if (candidate == null || !TryGetCustomerData(candidate.Id, out var canonical)
+                || !ReferenceEquals(candidate, canonical) || !UserInfo.GetCustomerEnableState(candidate))
                 continue;
 
             returnList.Add(_normalCustomerDataList[i]);

@@ -22,6 +22,9 @@ public class DropCoinArea : MonoBehaviour
 
     private CoinAreaData _data;
     private List<PointerDownSpriteRenderer> _coinList = new List<PointerDownSpriteRenderer>();
+    // A collecting image outlives its area during scene changes. A later spawn
+    // invalidates only that image lease, not the already-clicked payment.
+    private static readonly Dictionary<PointerDownSpriteRenderer, object> _collections = new Dictionary<PointerDownSpriteRenderer, object>();
     private long _currentMoney;
     public long CurrentMoney => _currentMoney;
 
@@ -41,6 +44,7 @@ public class DropCoinArea : MonoBehaviour
         }
         _coinList.Clear();
 
+        LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
         LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
         LoadData(data);
     }
@@ -64,6 +68,7 @@ public class DropCoinArea : MonoBehaviour
             targetPos += new Vector3(-(_areaRangeX * 0.5f) + ((_areaRangeX / _maxCoinCount) * index), 0, 0);
 
             PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(targetPos, Quaternion.identity);
+            _collections.Remove(coin);
             coin.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
             coin.AddEvent(GiveCoin);
             _coinList.Add(coin);
@@ -75,15 +80,18 @@ public class DropCoinArea : MonoBehaviour
     {
         _currentMoney += moneyValue;
         _data.SetMoney(_currentMoney);
-        PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
-        coin.AddEvent(GiveCoin);
-
         if (isolateSoundFailure)
         {
             try { PlayDropSound(); }
             catch (System.Exception error) { LastDropDiagnostic = error.ToString(); }
         }
         else PlayDropSound();
+        // Existing displayed coins also represent subsequent drops at the display cap.
+        // Do not create an untracked pooled image which collection cannot return.
+        if (Count >= _maxCoinCount) return;
+        PointerDownSpriteRenderer coin = ObjectPoolManager.Instance.SpawnCoin(startPos, Quaternion.identity);
+        _collections.Remove(coin);
+        coin.AddEvent(GiveCoin);
         Vector3 targetPos = _dropArea.position;
         targetPos += new Vector3(-(_areaRangeX * 0.5f) + (( _areaRangeX / _maxCoinCount) * Count), 0, 0);
 
@@ -97,12 +105,7 @@ public class DropCoinArea : MonoBehaviour
         coin.TweenMoveX(targetPos.x, 0.45f);
         coin.TweenMoveY(targetPos.y, 0.45f, Ease.InBack).OnComplete(() =>
         {
-            if (_maxCoinCount < Count)
-            {
-                coin.TweenStop();
-                ObjectPoolManager.Instance.DespawnCoin(coin);
-                return;
-            }
+            if (!_coinList.Contains(coin)) return;
 
             coin.transform.position = targetPos;
             coin.TweenMove(targetPos + new Vector3(0, 0.2f, 0), 2f, Ease.Smootherstep).Loop(LoopType.Yoyo);
@@ -164,6 +167,8 @@ public class DropCoinArea : MonoBehaviour
         float endTime = _coinEndTime;
         long currentMoney = _currentMoney;
         int currentCoinCount = Count;
+        var backend = Muks.BackEnd.BackendManager.ExistingInstance;
+        var account = backend == null ? null : backend.CurrentMailReceiveQuery;
         _currentMoney = 0;
         _data.SetMoney(_currentMoney);
         _data.SetCoinCount(0);
@@ -182,13 +187,30 @@ public class DropCoinArea : MonoBehaviour
         {
             int coinIndex = i;
             PointerDownSpriteRenderer coin = _coinList[coinIndex];
+            bool collected = false;
+            var imageLease = new object();
+            _collections[coin] = imageLease;
             coin.TweenStop();
             coin.TweenMove(_coinEndTr.position, endTime, Ease.Smoothstep).
                 OnComplete(() =>
                 {
-                    coin.TweenStop();
-                    ObjectPoolManager.Instance.DespawnCoin(coin);
-                    UserInfo.AddMoney(currentMoney / currentCoinCount);               
+                    if (collected) return;
+                    collected = true;
+                    if (_collections.TryGetValue(coin, out var owner) && ReferenceEquals(owner, imageLease))
+                    {
+                        _collections.Remove(coin);
+                        if (coin != null && coin.gameObject.activeSelf)
+                        {
+                            coin.TweenStop();
+                            ObjectPoolManager.Instance.DespawnCoin(coin);
+                        }
+                    }
+                    // Money belongs to the account that clicked. A normal stage
+                    // transition or area destruction must not discard that amount.
+                    if (!ReferenceEquals(backend, Muks.BackEnd.BackendManager.ExistingInstance)
+                        || (!ReferenceEquals(backend, null) && (backend == null || account == null || !backend.IsCurrentGameDataQuery(account)))) return;
+                    UserInfo.AddMoney(currentMoney / currentCoinCount
+                        + (coinIndex == currentCoinCount - 1 ? currentMoney % currentCoinCount : 0));
                 });
 
             endTime -= _coinAnimeInterval;

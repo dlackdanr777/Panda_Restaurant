@@ -21,7 +21,7 @@ public sealed class CustomerPartyQueueTests
     }
     private static void Arrive(CustomerVisitParty party)
     {
-        foreach (var member in party.Members) Get<Action>(member.Customer, "_moveCompleted")();
+        foreach (var member in party.Members) { member.Customer.transform.position=member.Customer.TargetPos; Get<Action>(member.Customer,"_moveCompleted")(); }
     }
 
     [TestCase(18, 2, 20, 22)]
@@ -50,10 +50,10 @@ public sealed class CustomerPartyQueueTests
             var first = Add(s, 2); var second = Add(s, 1);
             var a = Get<Action>(first.Members[0].Customer, "_moveCompleted");
             var b = Get<Action>(first.Members[1].Customer, "_moveCompleted");
-            b(); b(); Arrive(second);
+            first.Members[1].Customer.transform.position=first.Members[1].Customer.TargetPos; b(); b(); Arrive(second);
             Assert.That(s.Controller.Count, Is.EqualTo(2)); Assert.That(s.Controller.WaitCount, Is.EqualTo(1));
             Assert.That(s.Controller.IsEmpty(), Is.True); Assert.That(s.Manager.OnCustomerGuideEvent(), Is.False);
-            a(); Assert.That(s.Controller.FirstReadyParty, Is.SameAs(first));
+            first.Members[0].Customer.transform.position=first.Members[0].Customer.TargetPos; a(); Assert.That(s.Controller.FirstReadyParty, Is.SameAs(first));
             Assert.That(s.Controller.CancelWaitingParty(first), Is.True);
             Assert.That(first.Members.All(m => !m.Customer.gameObject.activeSelf), Is.True);
             Assert.That(s.Controller.Count, Is.EqualTo(1));
@@ -376,6 +376,7 @@ public sealed class CustomerPartyQueueTests
         {
             var party = Add(s, 2); Arrive(party);
             Assert.That(s.Manager.OnCustomerGuideEvent(ERestaurantFloorType.Floor1), Is.True);
+            party.Members[0].Customer.transform.position = (Vector3)party.Members[0].Customer.TargetPos + Vector3.right * 100;
             Get<Action>(party.Members[0].Customer, "_moveCompleted")();
             Assert.That(party.Members[0].Customer.HasPathFailure, Is.True);
             Assert.That(s.Table.TableState, Is.EqualTo(ETableState.Move));

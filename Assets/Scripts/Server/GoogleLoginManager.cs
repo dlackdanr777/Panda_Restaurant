@@ -75,6 +75,11 @@ namespace Muks.BackEnd
         /// <summary>잘못된 캐시 복구용 — 구글 로그인으로 이메일만 조회하며 저장하지 않습니다.</summary>
         public void FetchLinkedEmail(Action<string> onComplete)
         {
+#if UNITY_EDITOR
+            // An isolated full-UI preview must never start Google auth from UISetting.Init.
+            if (BackendManager.ExistingInstance != null && BackendManager.ExistingInstance.IsEditorOfflineOwner)
+            { onComplete?.Invoke(string.Empty); return; }
+#endif
 #if UNITY_ANDROID
             TheBackend.ToolKit.GoogleLogin.Android.GoogleLogin((isSuccess, errorMessage, token) =>
             {

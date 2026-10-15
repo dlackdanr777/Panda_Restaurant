@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public enum PartyOrderBatchState { Prepared, Accepting, Accepted, Rejected, Cancelled, Preparing, PreparationFailed }
 public enum PartyFoodState { Prepared, Queued, Cooking, ReadyForServing, Cancelled, Carrying, Eating, CurrentMealCompleted }
-public enum PartyOrderAcceptResult { Accepted, AcceptedPresentationFailed, AlreadyHandled, Stale, InvalidMenu, KitchenUnavailable, RegistrationFailed, RejectedRecipe, UnsupportedPolicy }
+public enum PartyOrderAcceptResult { Accepted, AcceptedPresentationFailed, AlreadyHandled, Stale, InvalidMenu, KitchenUnavailable, RegistrationFailed, RejectedRecipe, UnsupportedPolicy, ServiceAborted }
 
 // Runtime only: this object is the initial-round identity owned by one TableUseIdentity.
 // Neither the orders nor their planned amounts are account-save data or paid rewards.
@@ -23,7 +23,7 @@ public sealed class PartyOrderBatch
         && Use.IsPartyCurrent(Use.Table) && Use.AllSeated;
     internal bool ValidateOrders()
     {
-        if (!IsCurrent || Use.CompletionStarted || Use.PolicyPending || _orders.Count < 1 || _orders.Count > Use.Party.Members.Count) return false;
+        if (!IsCurrent || Use.CompletionStarted || Use.PolicyPending || Use.ServiceAborted || _orders.Count < 1 || _orders.Count > Use.Party.Members.Count) return false;
         var seen = new HashSet<CustomerVisitMember>();
         foreach (var order in _orders)
             if (!order.IsCurrent || !seen.Add(order.Member) || order.Food == null
@@ -53,6 +53,14 @@ public sealed class PartyFoodOrder
     public CookingData Cooking { get; internal set; }
     internal readonly TableOrderIdentity Identity;
     internal bool CompletionRecorded;
+    internal double PreparedAt { get; private set; }
+    internal bool WaitClockStarted { get; private set; }
+    internal bool WaitClockStopped { get; private set; }
+    internal bool IsWaitingForDelivery => WaitClockStarted && !WaitClockStopped && IsCurrent
+        && !Identity.ServingStarted && State != PartyFoodState.Cancelled;
+    internal void StartDeliveryClock(double now)
+    { if (!WaitClockStarted) { PreparedAt = now; WaitClockStarted = true; } }
+    internal void StopDeliveryClock() { WaitClockStopped = true; }
     private readonly object _visit;
     internal PartyFoodOrder(PartyOrderBatch batch, CustomerVisitMember member, FoodData food, int price, int tip)
     {
@@ -66,10 +74,11 @@ public sealed class PartyFoodOrder
         && Batch.Orders.ContainsReference(this);
     internal void Cancel()
     {
-        Identity.ServingReservation?.Release();
-        Identity.CancelCooking();
         State = PartyFoodState.Cancelled;
+        StopDeliveryClock();
+        Identity.CancelCooking();
         PlannedPrice = 0; PlannedTip = 0;
+        Identity.ServingReservation?.Release();
     }
 }
 

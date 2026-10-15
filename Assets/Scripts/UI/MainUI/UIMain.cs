@@ -103,7 +103,7 @@ public class UIMain : MonoBehaviour
     {
         while (!CustomerController.IsMaxCount)
         {
-            _customerController.AddCustomer();
+            if (!_customerController.TryAddCustomer()) break;
             yield return YieldCache.WaitForSeconds(0.3f);
         }
 
