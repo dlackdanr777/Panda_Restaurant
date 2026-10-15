@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Muks.MobileUI;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -24,7 +25,17 @@ public partial class UIGacha
     private GachaEconomyTransaction _pendingExchangeTransaction;
     private readonly HashSet<GachaAcquisitionResult> _revealedCollectionResults = new HashSet<GachaAcquisitionResult>();
     private GachaEconomyTransaction _revealTransaction;
-    private string _reportedCollectionFailure;
+    private bool _hasReportedCollectionFailure;
+    private string _reportedCollectionFailureId;
+    private GachaTransactionStatus _reportedCollectionFailureStatus;
+    private bool _collectionHudShown = true;
+    private static readonly ProfilerMarker ExchangeSnapshotMarker = new ProfilerMarker("UIGacha.ReadExchangeSnapshot.Rebuild");
+    private TokenExchangeSnapshot _exchangeSnapshotCache;
+    private GachaEconomyService _exchangeCacheEconomy;
+    private StaffAccountSaveData _exchangeCacheAccount;
+    private bool _exchangeCacheBusy, _exchangeCacheClockReady;
+    private int _exchangeCacheRemaining;
+    private string _exchangeCacheDay, _exchangeCacheMessage;
     private string _collectionLayoutError;
     private readonly List<HiddenCollectionLayer> _hiddenCollectionLayers = new List<HiddenCollectionLayer>();
     private sealed class HiddenCollectionLayer
@@ -43,7 +54,9 @@ public partial class UIGacha
         if (IsCollectionChild(_collectionExchange)) _collectionExchange.ResetSession();
         _pendingExchangeReply = null;
         _pendingExchangeTransaction = null;
-        _reportedCollectionFailure = null;
+        _hasReportedCollectionFailure = false;
+        _reportedCollectionFailureId = null;
+        _exchangeSnapshotCache = null;
         _revealedCollectionResults.Clear();
         Economy = economy;
         foreach (var machine in _gachaMachines ?? Array.Empty<GachaMachineParent>())
@@ -122,9 +135,15 @@ public partial class UIGacha
         if (observed != null && (observed.Status == GachaTransactionStatus.Rejected ||
             observed.Status == GachaTransactionStatus.Indeterminate))
         {
-            string identity = observed.Id + ":" + observed.Status;
-            if (_reportedCollectionFailure != identity)
-            { _reportedCollectionFailure = identity; ReportCollectionError(observed.Error ?? "거래 결과를 확인하고 있습니다."); }
+            // Compare the transaction ID and status directly, without building an "Id:Status" string every frame.
+            if (!_hasReportedCollectionFailure || _reportedCollectionFailureStatus != observed.Status ||
+                !string.Equals(_reportedCollectionFailureId, observed.Id, StringComparison.Ordinal))
+            {
+                _hasReportedCollectionFailure = true;
+                _reportedCollectionFailureId = observed.Id;
+                _reportedCollectionFailureStatus = observed.Status;
+                ReportCollectionError(observed.Error ?? "거래 결과를 확인하고 있습니다.");
+            }
         }
         if (_pendingExchangeReply != null && _pendingExchangeTransaction != null &&
             (_pendingExchangeTransaction.Status == GachaTransactionStatus.Rejected ||
@@ -146,20 +165,32 @@ public partial class UIGacha
         }
         if (_collectionHud == null) return;
         bool visible = Economy != null && !_questStaffEntry && VisibleState == VisibleState.Appeared;
-        _collectionHud.gameObject.SetActive(visible);
-        if (!visible) { HideCollectionUI(); return; }
+        if (_collectionHud.gameObject.activeSelf != visible) _collectionHud.gameObject.SetActive(visible);
+        if (!visible)
+        {
+            // Clean up once on the visible-to-hidden transition, or again only if something was left open.
+            if (_collectionHudShown || _hiddenCollectionLayers.Count != 0 || IsChoosingPayment ||
+                (IsCollectionChild(_collectionExchange) && _collectionExchange.IsOpen))
+                HideCollectionUI();
+            _collectionHudShown = false;
+            return;
+        }
+        if (!_collectionHudShown) { _collectionHudShown = true; _nextCollectionRefresh = 0; }
         _collectionHud.SetResultPresentation(_isStartGacha);
         var machine = CollectionMachine;
         if (machine != _collectionHudMachine || (_collectionWasDrawing && !_isStartGacha))
+        {
             _collectionHud.SnapToCommitted();
+            if (machine != _collectionHudMachine) _nextCollectionRefresh = 0;
+        }
         _collectionHudMachine = machine;
         _collectionWasDrawing = _isStartGacha;
         if (Time.unscaledTime < _nextCollectionRefresh) return;
         _nextCollectionRefresh = Time.unscaledTime + .1f;
-        var state = Economy.Snapshot?.Account?.GachaEconomy;
+        // HUD.Refresh only uses the counter and busy state, so skip the full snapshot copy and the CanDraw check.
+        var state = Economy.CurrentAccount?.GachaEconomy;
         _collectionHud.Refresh(state?.Counter(machine) ?? 0, state?.Tickets(machine) ?? 0,
-            Economy.IsBusy || _isStartGacha || (IsCollectionChild(_collectionExchange) && _collectionExchange.IsOpen) || IsChoosingPayment,
-            Economy.CanDraw(machine, GachaPaymentKind.TicketSingle, out _));
+            Economy.IsBusy || _isStartGacha || (IsCollectionChild(_collectionExchange) && _collectionExchange.IsOpen) || IsChoosingPayment);
     }
 
     public void OpenCollectionExchange()
@@ -170,6 +201,7 @@ public partial class UIGacha
         { RejectCollectionLayout(layoutError); return; }
         if (!_collectionExchange.IsConfigured)
         { RejectCollectionLayout("UIGacha._collectionExchange에 거래 콜백이 연결되지 않았습니다."); return; }
+        bool wasOpen = _collectionExchange.IsOpen;
         if (!_collectionExchange.SetVisible(true))
         { RejectCollectionLayout("교환소를 열지 못했습니다. TokenExchangeView의 참조 진단을 확인하세요."); return; }
         _collectionLayoutError = null;
@@ -177,11 +209,17 @@ public partial class UIGacha
         CollectionError = null;
         HideCollectionLayers();
         var service = Economy;
-        if (!service.ExchangeCatalogReady && !service.TryEnsureExchangeCatalog(transaction =>
+        // A fresh SetVisible(true) has already drawn the latest state. Refresh again only after a catalog request
+        // or if the view was already open, so a ready catalog does not rebuild twice on the same frame.
+        if (!service.ExchangeCatalogReady)
         {
-            if (this != null && ReferenceEquals(Economy, service)) _collectionExchange?.Refresh();
-        }, out string error)) ReportCollectionError(error);
-        _collectionExchange.Refresh();
+            if (!service.TryEnsureExchangeCatalog(transaction =>
+            {
+                if (this != null && ReferenceEquals(Economy, service)) _collectionExchange?.Refresh();
+            }, out string error)) ReportCollectionError(error);
+            _collectionExchange.Refresh();
+        }
+        else if (wasOpen) _collectionExchange.Refresh();
     }
 
     public void DrawCollectionTicket()
@@ -191,34 +229,62 @@ public partial class UIGacha
 
     private TokenExchangeSnapshot ReadExchangeSnapshot()
     {
-        var result = new TokenExchangeSnapshot { Busy = Economy == null || Economy.IsBusy };
-        if (Economy == null) return result;
-        result.PandaTokens = Economy.Snapshot?.Account?.PandaTokens ?? 0;
-        var display = Economy.GetExchangeDisplay(GachaExchangeCategory.Mixed);
-        result.DisplayVersion = display?.Version ?? 0;
-        var refresh = Economy.GetRefreshStatus();
-        result.RemainingRefreshes = refresh.Remaining; result.RefreshLimit = refresh.Limit;
-        result.RefreshMessage = refresh.Message;
-        result.CanRefresh = Economy.CanRefreshExchange(GachaExchangeCategory.Mixed, result.DisplayVersion, out _);
-        var products = new List<TokenExchangeProductView>();
-        foreach (var product in Economy.GetDisplayedProducts(GachaExchangeCategory.Mixed))
+        var economy = Economy;
+        if (economy == null) { _exchangeSnapshotCache = null; return new TokenExchangeSnapshot { Busy = true }; }
+        // Every input to the display is in this key: the immutable account (tokens, display, sold-out state, staff
+        // ownership), busy/save state, and the date-based refresh status. If the key matches, reuse the projection.
+        bool busy = economy.IsBusy;
+        var account = economy.CurrentAccount;
+        var refresh = economy.GetRefreshStatus();
+        if (_exchangeSnapshotCache != null && ReferenceEquals(_exchangeCacheEconomy, economy) &&
+            ReferenceEquals(_exchangeCacheAccount, account) && _exchangeCacheBusy == busy &&
+            _exchangeCacheRemaining == refresh.Remaining && _exchangeCacheClockReady == refresh.ClockReady &&
+            string.Equals(_exchangeCacheDay, refresh.DayKey, StringComparison.Ordinal) &&
+            string.Equals(_exchangeCacheMessage, refresh.Message, StringComparison.Ordinal))
+            return _exchangeSnapshotCache;
+
+        using (ExchangeSnapshotMarker.Auto())
         {
-            int version = result.DisplayVersion;
-            bool available = Economy.CanExchange(product.Id, 1, version, out string error);
-            products.Add(new TokenExchangeProductView
+            var result = new TokenExchangeSnapshot { Busy = busy };
+            result.PandaTokens = account?.PandaTokens ?? 0;
+            var display = economy.GetExchangeDisplay(GachaExchangeCategory.Mixed);
+            result.DisplayVersion = display?.Version ?? 0;
+            result.RemainingRefreshes = refresh.Remaining; result.RefreshLimit = refresh.Limit;
+            result.RefreshMessage = refresh.Message;
+            result.CanRefresh = economy.CanRefreshExchange(GachaExchangeCategory.Mixed, result.DisplayVersion, out _);
+            var displayed = economy.GetDisplayedProducts(GachaExchangeCategory.Mixed);
+            var products = new List<TokenExchangeProductView>(displayed.Count);
+            for (int p = 0; p < displayed.Count; p++)
             {
-                Id = product.Id, Name = product.Name, Description = product.Description,
-                Sprite = product.Sprite != null ? product.Sprite :
-                    product.Category == GachaExchangeCategory.Tickets ? _collectionExchange.Theme.Ticket : null,
-                Price = product.Price, Quantity = product.Quantity, DisplayVersion = version,
-                Rank = product.Data != null ? product.Data.Rank : Rank.Normal1,
-                Category = (TokenExchangeTab)product.Category, CanPurchase = available,
-                SoldOut = display.Slots.Any(slot => slot.ProductId == product.Id && slot.PurchaseCount > 0),
-                Status = available ? "" : error
-            });
+                var product = displayed[p];
+                int version = result.DisplayVersion;
+                bool available = economy.CanExchange(product.Id, 1, version, out string error);
+                bool soldOut = false;
+                for (int s = 0; s < display.Slots.Count; s++)
+                {
+                    var slot = display.Slots[s];
+                    if (slot.ProductId == product.Id && slot.PurchaseCount > 0) { soldOut = true; break; }
+                }
+                products.Add(new TokenExchangeProductView
+                {
+                    Id = product.Id, Name = product.Name, Description = product.Description,
+                    Sprite = product.Sprite != null ? product.Sprite :
+                        product.Category == GachaExchangeCategory.Tickets ? _collectionExchange.Theme.Ticket : null,
+                    Price = product.Price, Quantity = product.Quantity, DisplayVersion = version,
+                    Rank = product.Data != null ? product.Data.Rank : Rank.Normal1,
+                    Category = (TokenExchangeTab)product.Category, CanPurchase = available,
+                    SoldOut = soldOut,
+                    Status = available ? "" : error
+                });
+            }
+            result.Products = products;
+
+            _exchangeSnapshotCache = result;
+            _exchangeCacheEconomy = economy; _exchangeCacheAccount = account; _exchangeCacheBusy = busy;
+            _exchangeCacheRemaining = refresh.Remaining; _exchangeCacheClockReady = refresh.ClockReady;
+            _exchangeCacheDay = refresh.DayKey; _exchangeCacheMessage = refresh.Message;
+            return result;
         }
-        result.Products = products;
-        return result;
     }
 
     private void PurchaseExchangeProduct(string id, int displayVersion, Action<bool, string> complete)

@@ -76,6 +76,22 @@ public class UIRestaurantAdmin : MobileUIView
     private Vector3 _tmpScale;
     private Material _transitionMaterialInstance;
     private Coroutine _transitionCoroutine;
+    // 연속 층 변경으로 전환이 재시작돼도 최초 전환 직전의 입력/메인 UI 상태로 복구한다.
+    private bool _hasTransitionSavedState;
+    private bool _transitionSavedBlocksRaycasts;
+    private bool _transitionSavedMainUIActive;
+
+    private static readonly int AngleId = Shader.PropertyToID("_Angle");
+    private static readonly int EdgeWidthId = Shader.PropertyToID("_EdgeWidth");
+    private static readonly int InnerEdgeColorId = Shader.PropertyToID("_InnerEdgeColor");
+    private static readonly int OuterEdgeColorId = Shader.PropertyToID("_OuterEdgeColor");
+    private static readonly int ProgressId = Shader.PropertyToID("_Progress");
+    private static readonly int NormalTexId = Shader.PropertyToID("_NormalTex");
+    private static readonly int VipTexId = Shader.PropertyToID("_VipTex");
+    private static readonly int NormalScaleId = Shader.PropertyToID("_NormalScale");
+    private static readonly int VipScaleId = Shader.PropertyToID("_VipScale");
+    private static readonly int NormalOffsetId = Shader.PropertyToID("_NormalOffset");
+    private static readonly int VipOffsetId = Shader.PropertyToID("_VipOffset");
 
     private bool _isClosingSession;
     private bool _isFailSafeCloseStarted;
@@ -133,11 +149,11 @@ public class UIRestaurantAdmin : MobileUIView
             if (_vipTransitionImage != null)
                 _vipTransitionImage.material = _transitionMaterialInstance;
             
-            _transitionMaterialInstance.SetFloat("_Angle", _transitionAngle);
-            _transitionMaterialInstance.SetFloat("_EdgeWidth", _edgeWidth);
-            _transitionMaterialInstance.SetColor("_InnerEdgeColor", _innerEdgeColor);
-            _transitionMaterialInstance.SetColor("_OuterEdgeColor", _outerEdgeColor);
-            _transitionMaterialInstance.SetFloat("_Progress", 0);
+            _transitionMaterialInstance.SetFloat(AngleId, _transitionAngle);
+            _transitionMaterialInstance.SetFloat(EdgeWidthId, _edgeWidth);
+            _transitionMaterialInstance.SetColor(InnerEdgeColorId, _innerEdgeColor);
+            _transitionMaterialInstance.SetColor(OuterEdgeColorId, _outerEdgeColor);
+            _transitionMaterialInstance.SetFloat(ProgressId, 0);
         }
 
         DeactivateTransitionOverlay();
@@ -799,7 +815,21 @@ public class UIRestaurantAdmin : MobileUIView
         SetBackgroundImageImmediate(_floorType);
     }
 
-    // 전환 취소만 수행하고 화면 데이터 갱신은 하지 않는다.
+    private void OnDestroy()
+    {
+        // Init에서 직접 만든 인스턴스만 정리한다. 원본 _transitionMaterial은 프로젝트 에셋이다.
+        if (_transitionMaterialInstance != null)
+        {
+            if (_normalTransitionImage != null && _normalTransitionImage.material == _transitionMaterialInstance)
+                _normalTransitionImage.material = null;
+            if (_vipTransitionImage != null && _vipTransitionImage.material == _transitionMaterialInstance)
+                _vipTransitionImage.material = null;
+            Destroy(_transitionMaterialInstance);
+            _transitionMaterialInstance = null;
+        }
+    }
+
+    // 전환 취소만 수행하고 화면 데이터 갱신은 하지 않는다. 입력/메인 UI 상태는 Show/Hide가 직접 결정한다.
     private void StopTransition()
     {
         if (_transitionCoroutine != null)
@@ -807,6 +837,7 @@ public class UIRestaurantAdmin : MobileUIView
             StopCoroutine(_transitionCoroutine);
             _transitionCoroutine = null;
         }
+        _hasTransitionSavedState = false;
 
         DeactivateTransitionOverlay();
         
@@ -882,12 +913,18 @@ public class UIRestaurantAdmin : MobileUIView
 
     private System.Collections.IEnumerator TransitionFloorCoroutine(ERestaurantFloorType targetFloor)
     {
-        // 사용자 입력 차단 (애니메이션 중 UI 조작 방지)
-        bool prevBlocksRaycasts = _canvasGroup.blocksRaycasts;
+        // 사용자 입력 차단 (애니메이션 중 UI 조작 방지). 재시작된 전환은 최초 전환 직전 상태를 그대로 이어받는다.
+        if (!_hasTransitionSavedState)
+        {
+            _transitionSavedBlocksRaycasts = _canvasGroup.blocksRaycasts;
+            _transitionSavedMainUIActive = _mainUI.activeSelf;
+            _hasTransitionSavedState = true;
+        }
+        bool prevBlocksRaycasts = _transitionSavedBlocksRaycasts;
+        bool mainUIWasActive = _transitionSavedMainUIActive;
         _canvasGroup.blocksRaycasts = false;
         
         // 메인 UI 비활성화
-        bool mainUIWasActive = _mainUI.activeSelf;
         _mainUI.SetActive(false);
         
         ScrollingImage fromScrollImage = _currentScrollImage;
@@ -896,6 +933,7 @@ public class UIRestaurantAdmin : MobileUIView
         if (fromScrollImage == null || toScrollImage == null)
         {
             Debug.LogError("ScrollingImage is null!");
+            _hasTransitionSavedState = false;
             _mainUI.SetActive(mainUIWasActive);
             _canvasGroup.blocksRaycasts = prevBlocksRaycasts;
             DeactivateTransitionOverlay();
@@ -934,6 +972,7 @@ public class UIRestaurantAdmin : MobileUIView
             // 원래 상태로 복구
             normalScrollImage.gameObject.SetActive(normalWasActive);
             vipScrollImage.gameObject.SetActive(vipWasActive);
+            _hasTransitionSavedState = false;
             _mainUI.SetActive(mainUIWasActive);
             _canvasGroup.blocksRaycasts = prevBlocksRaycasts;
 
@@ -950,7 +989,9 @@ public class UIRestaurantAdmin : MobileUIView
             _normalTransitionImage.sprite = normalImage.sprite;
             _normalTransitionImage.type = normalImage.type;
             _normalTransitionImage.pixelsPerUnitMultiplier = normalImage.pixelsPerUnitMultiplier;
-            _normalTransitionImage.material = new Material(_transitionMaterialInstance);
+            // 셰이더 속성이 두 이미지에서 동일하므로 Init에서 만든 인스턴스 하나를 공유한다(전환마다 새 Material 생성 안 함).
+            if (_normalTransitionImage.material != _transitionMaterialInstance)
+                _normalTransitionImage.material = _transitionMaterialInstance;
         }
         
         if (_vipTransitionImage != null)
@@ -959,17 +1000,21 @@ public class UIRestaurantAdmin : MobileUIView
             _vipTransitionImage.sprite = vipImage.sprite;
             _vipTransitionImage.type = vipImage.type;
             _vipTransitionImage.pixelsPerUnitMultiplier = vipImage.pixelsPerUnitMultiplier;
-            _vipTransitionImage.material = new Material(_transitionMaterialInstance);
+            if (_vipTransitionImage.material != _transitionMaterialInstance)
+                _vipTransitionImage.material = _transitionMaterialInstance;
         }
         
-        _transitionMaterialInstance.SetTexture("_NormalTex", normalTex);
-        _transitionMaterialInstance.SetTexture("_VipTex", vipTex);
+        _transitionMaterialInstance.SetTexture(NormalTexId, normalTex);
+        _transitionMaterialInstance.SetTexture(VipTexId, vipTex);
         
         // 타일링 스케일 설정 (Tiled Image 타일링 유지)
         Vector2 normalScale = normalScrollImage.GetTextureScale();
         Vector2 vipScale = vipScrollImage.GetTextureScale();
-        _transitionMaterialInstance.SetVector("_NormalScale", normalScale);
-        _transitionMaterialInstance.SetVector("_VipScale", vipScale);
+        _transitionMaterialInstance.SetVector(NormalScaleId, normalScale);
+        _transitionMaterialInstance.SetVector(VipScaleId, vipScale);
+        _transitionMaterialInstance.SetFloat(ProgressId, toVip ? 0f : 1f);
+        _transitionMaterialInstance.SetVector(NormalOffsetId, normalScrollImage.Offset);
+        _transitionMaterialInstance.SetVector(VipOffsetId, vipScrollImage.Offset);
         
         // 텍스처 검증이 끝난 뒤에만 Overlay와 실제 이미지를 활성화한다.
         if (_transitionOverlay != null)
@@ -997,40 +1042,30 @@ public class UIRestaurantAdmin : MobileUIView
             t = Mathf.SmoothStep(0, 1, t);
             
             float currentProgress = Mathf.Lerp(startProgress, endProgress, t);
-            _transitionMaterialInstance.SetFloat("_Progress", currentProgress);
+            _transitionMaterialInstance.SetFloat(ProgressId, currentProgress);
             
-            // 스크롤링 오프셋 업데이트 (배경이 계속 스크롤되도록)
-            Vector2 normalOffset = normalScrollImage.Offset;
-            Vector2 vipOffset = vipScrollImage.Offset;
-            _transitionMaterialInstance.SetVector("_NormalOffset", normalOffset);
-            _transitionMaterialInstance.SetVector("_VipOffset", vipOffset);
-            
-            // 두 이미지의 Material에도 적용
-            if (_normalTransitionImage != null && _normalTransitionImage.material != null)
-            {
-                _normalTransitionImage.material.SetVector("_NormalOffset", normalOffset);
-                _normalTransitionImage.material.SetVector("_VipOffset", vipOffset);
-                _normalTransitionImage.material.SetFloat("_Progress", currentProgress);
-            }
-            if (_vipTransitionImage != null && _vipTransitionImage.material != null)
-            {
-                _vipTransitionImage.material.SetVector("_NormalOffset", normalOffset);
-                _vipTransitionImage.material.SetVector("_VipOffset", vipOffset);
-                _vipTransitionImage.material.SetFloat("_Progress", currentProgress);
-            }
+            // 스크롤링 오프셋 업데이트 (배경이 계속 스크롤되도록). 두 이미지는 같은 인스턴스를 공유한다.
+            _transitionMaterialInstance.SetVector(NormalOffsetId, normalScrollImage.Offset);
+            _transitionMaterialInstance.SetVector(VipOffsetId, vipScrollImage.Offset);
             
             yield return null;
         }
         
         // 최종 상태
-        _transitionMaterialInstance.SetFloat("_Progress", endProgress);
+        _transitionMaterialInstance.SetFloat(ProgressId, endProgress);
         
         Debug.Log("Transition complete");
         
-        // 이전 배경 비활성화, 새 배경은 이미 활성화 상태
+        // 이전 배경 비활성화, 새 배경은 이미 활성화 상태.
+        // 전환이 되돌려져 from == to가 된 경우에도 잠시 켰던 반대편 배경이 남지 않게 한다.
         if (fromScrollImage != toScrollImage)
             fromScrollImage.gameObject.SetActive(false);
+        if (normalScrollImage != toScrollImage)
+            normalScrollImage.gameObject.SetActive(false);
+        if (vipScrollImage != toScrollImage)
+            vipScrollImage.gameObject.SetActive(false);
         _currentScrollImage = toScrollImage;
+        _hasTransitionSavedState = false;
         
         // 정상 완료 시 자식 이미지와 Overlay 컨테이너를 함께 비활성화한다.
         DeactivateTransitionOverlay();

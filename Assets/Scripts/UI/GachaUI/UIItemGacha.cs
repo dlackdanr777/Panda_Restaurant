@@ -72,6 +72,26 @@ public class UIItemGacha : GachaMachineParent
     private readonly List<bool> _resultIsNew = new List<bool>();
     private readonly List<GachaAcquisitionResult> _confirmedResults = new List<GachaAcquisitionResult>();
     private GachaEconomyTransaction _lastPresentedTransaction;
+    private bool _collectionButtonsConfigured;
+    private readonly List<int> _machineTriggerHashes = new List<int>();
+    private RuntimeAnimatorController _machineTriggerController;
+
+    // Animator.parameters allocates a new array on every access; the trigger set only changes with the controller.
+    private void ResetMachineTriggers()
+    {
+        var controller = _gachaMacineAnimator.runtimeAnimatorController;
+        // An uninitialized Animator can report no parameters, so only cache once it is initialized.
+        if (!ReferenceEquals(_machineTriggerController, controller) || !_gachaMacineAnimator.isInitialized)
+        {
+            _machineTriggerHashes.Clear();
+            foreach (var parameter in _gachaMacineAnimator.parameters)
+                if (parameter.type == AnimatorControllerParameterType.Trigger)
+                    _machineTriggerHashes.Add(parameter.nameHash);
+            _machineTriggerController = _gachaMacineAnimator.isInitialized ? controller : null;
+        }
+        for (int i = 0; i < _machineTriggerHashes.Count; i++)
+            _gachaMacineAnimator.ResetTrigger(_machineTriggerHashes[i]);
+    }
 
     public void BindCollectionEconomy(UIGacha view, GachaEconomyService economy)
     {
@@ -80,9 +100,7 @@ public class UIItemGacha : GachaMachineParent
             CancelResultPresentation();
             if (_gachaMacineAnimator != null)
             {
-                foreach (var parameter in _gachaMacineAnimator.parameters)
-                    if (parameter.type == AnimatorControllerParameterType.Trigger)
-                        _gachaMacineAnimator.ResetTrigger(parameter.nameHash);
+                ResetMachineTriggers();
                 if (Application.isPlaying && _gachaMacineAnimator.isActiveAndEnabled)
                     _gachaMacineAnimator.Play("Base Layer.Idle", 0, 0f);
             }
@@ -300,7 +318,8 @@ public class UIItemGacha : GachaMachineParent
     private void Update()
     {
         if (_uiGacha != null && _uiGacha.IsPrewarming) return;
-        if (_collectionEconomy != null && _uiGacha != null && !_uiGacha.IsStartGacha)
+        // Non-selected machines stay active for their side art only; Show() refreshes them when reselected.
+        if (_collectionEconomy != null && _uiGacha != null && !_uiGacha.IsStartGacha && _uiGacha.IsCurrentMachine(this))
         {
             PresentCollectionTransaction(_collectionEconomy.LastTransaction);
             bool ready = !_collectionEconomy.IsBusy && _uiGacha.VisibleState == VisibleState.Appeared;
@@ -333,10 +352,11 @@ public class UIItemGacha : GachaMachineParent
     public override void Show()
     {
         CancelResultPresentation();
-        if (_collectionEconomy != null)
+        if (_collectionEconomy != null && !_collectionButtonsConfigured)
         {
             UIGacha.ConfigureCollectionButton(_singleButton, false);
             UIGacha.ConfigureCollectionButton(_tenButton, true, _singleButton);
+            _collectionButtonsConfigured = true;
         }
         gameObject.SetActive(true);
         _singleButton.gameObject.SetActive(true);
@@ -357,9 +377,7 @@ public class UIItemGacha : GachaMachineParent
         _screenTouchWaitTime = 0;
         _gachaMacineAnimator.enabled = true;
         // A disabled machine can retain queued skip/open triggers across navigation.
-        foreach (AnimatorControllerParameter parameter in _gachaMacineAnimator.parameters)
-            if (parameter.type == AnimatorControllerParameterType.Trigger)
-                _gachaMacineAnimator.ResetTrigger(parameter.nameHash);
+        ResetMachineTriggers();
         _gachaMacineAnimator.Play("Base Layer.Idle", 0, 0f);
         _gachaMacineAnimator.Update(0f);
     }

@@ -26,6 +26,11 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
     private int _committed, _target;
     private float _start, _from, _until;
     private bool _guaranteed;
+    // Last applied visuals; -1/NaN/MinValue force the first apply.
+    private int _appliedPresentation = -1;
+    private float _shownFill = float.NaN;
+    private int _shownValue = int.MinValue;
+    private bool _shownNextGuaranteed, _showingGuaranteedText;
     private readonly Queue<ProgressStep> _pending = new Queue<ProgressStep>();
     private struct ProgressStep { public int Before, After; public bool Guaranteed; }
     public RectTransform Rect => (RectTransform)transform;
@@ -81,6 +86,7 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
         if (_exchange != null && _exchange != button) _exchange.gameObject.SetActive(false);
         _exchange = button;
         _exchangeClick = null;
+        _appliedPresentation = -1;
         if (_exchange == null) return;
         _exchangeClick = () => openExchange?.Invoke();
         _exchange.onClick.AddListener(_exchangeClick);
@@ -91,6 +97,7 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
     public void SetExchangeAvailable(bool available)
     {
         _exchangeAvailable = available;
+        _appliedPresentation = -1;
         if (_exchange == null) return;
         _exchange.interactable = available;
         if (!available) _exchange.gameObject.SetActive(false);
@@ -153,8 +160,17 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
         }
     }
 
+    // UIGacha calls this every frame; apply only when the presentation state actually changes.
     public void SetResultPresentation(bool presenting)
     {
+        int state = presenting ? 1 : 0;
+        if (_appliedPresentation == state)
+        {
+            // Outside a result presentation the gauge always shows the committed value.
+            if (!presenting && _until != 0) SnapToCommitted();
+            return;
+        }
+        _appliedPresentation = state;
         _gauge.gameObject.SetActive(!presenting);
         if (_exchange != null) _exchange.gameObject.SetActive(!presenting && _exchangeAvailable);
         if (!presenting) SnapToCommitted();
@@ -184,8 +200,9 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
 
     public void SnapToCommitted()
     {
-        _until = 0; _guaranteed = false; _pending.Clear();
-        _progress.rectTransform.localScale = Vector3.one; Show(_committed);
+        _until = 0; _guaranteed = false;
+        if (_pending.Count != 0) _pending.Clear();
+        ResetProgressScale(); Show(_committed);
     }
 
     private void Update()
@@ -194,13 +211,17 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
         float elapsed = Time.unscaledTime - _start;
         if (_guaranteed && elapsed < .55f)
         {
-            Show(Mathf.Lerp(_from,100,Mathf.Clamp01(elapsed / .2f)));
-            _progress.text = "스페셜 보장!  100 / 100";
+            SetFill(Mathf.Lerp(_from,100,Mathf.Clamp01(elapsed / .2f)));
+            if (!_showingGuaranteedText)
+            {
+                _progress.text = "스페셜 보장!  100 / 100";
+                _showingGuaranteedText = true;
+            }
             _progress.rectTransform.localScale = Vector3.one * (1f + Mathf.Sin(elapsed / .55f * Mathf.PI) * .07f);
         }
         else
         {
-            _progress.rectTransform.localScale = Vector3.one;
+            ResetProgressScale();
             Show(_guaranteed ? _target : Mathf.Lerp(_from,_target,Mathf.Clamp01(elapsed / .16f)));
         }
         if (Time.unscaledTime >= _until)
@@ -212,13 +233,34 @@ public sealed class GachaCollectionMachineHud : MonoBehaviour
 
     private void Show(float progress)
     {
-        _fill.anchorMax = new Vector2(Mathf.Clamp01(progress / 100f),1);
-        _progress.text = "스페셜 보장  " + Mathf.RoundToInt(progress) + " / 100" + (progress >= 99 && progress < 100 ? "  · 다음 뽑기 확정!" : "");
+        SetFill(progress);
+        int value = Mathf.RoundToInt(progress);
+        bool nextGuaranteed = progress >= 99 && progress < 100;
+        if (!_showingGuaranteedText && value == _shownValue && nextGuaranteed == _shownNextGuaranteed) return;
+        _showingGuaranteedText = false;
+        _shownValue = value; _shownNextGuaranteed = nextGuaranteed;
+        _progress.text = "스페셜 보장  " + value + " / 100" + (nextGuaranteed ? "  · 다음 뽑기 확정!" : "");
     }
+
+    private void SetFill(float progress)
+    {
+        float fill = Mathf.Clamp01(progress / 100f);
+        if (fill == _shownFill) return;
+        _shownFill = fill;
+        _fill.anchorMax = new Vector2(fill,1);
+    }
+
+    private void ResetProgressScale()
+    {
+        var rect = _progress.rectTransform;
+        if (rect.localScale != Vector3.one) rect.localScale = Vector3.one;
+    }
+
     private void OnDisable()
     {
         if (_fill != null) SnapToCommitted();
         if (_exchange != null) _exchange.gameObject.SetActive(false);
+        _appliedPresentation = -1;
     }
 
     private void OnDestroy()

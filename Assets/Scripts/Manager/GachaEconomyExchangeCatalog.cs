@@ -11,10 +11,10 @@ public sealed partial class GachaEconomyService
     private readonly System.Random _displayRandom;
     public bool ExchangeCatalogReady
     {
-        get { return Snapshot?.Account?.GachaEconomy.Exchange.Mixed.IsInitialized == true; }
+        get { return CurrentAccount?.GachaEconomy.Exchange.Mixed.IsInitialized == true; }
     }
     public GachaExchangeDisplaySaveData GetExchangeDisplay(GachaExchangeCategory category)
-        => Snapshot?.Account?.GachaEconomy.Exchange.Display(category);
+        => CurrentAccount?.GachaEconomy.Exchange.Display(category);
 
     public IReadOnlyList<GachaExchangeProduct> GetDisplayedProducts(GachaExchangeCategory category)
     {
@@ -60,7 +60,7 @@ public sealed partial class GachaEconomyService
     }
     public GachaExchangeRefreshStatus GetRefreshStatus()
     {
-        var saved = Snapshot?.Account?.GachaEconomy.Exchange;
+        var saved = CurrentAccount?.GachaEconomy.Exchange;
         if (saved == null || _exchangeClock == null || !_exchangeClock.TryGetUtcNow(out DateTime utc) || utc.Kind != DateTimeKind.Utc)
             return new GachaExchangeRefreshStatus(0, false, saved?.RefreshDateKey ?? "", "서버 시간 확인 후 새로고침할 수 있습니다.");
         string day;

@@ -76,7 +76,7 @@ namespace Muks.BackEnd
         }
     }
 
-    internal sealed class BackendGachaEconomyStore : IGachaEconomyStore, IGachaEconomyDrawAdmission
+    internal sealed class BackendGachaEconomyStore : IGachaEconomyStore, IGachaEconomyDrawAdmission, IGachaEconomyAccountReader
     {
         private readonly BackendManager _owner;
         private readonly GameDataRestoreQuery _query;
@@ -96,6 +96,7 @@ namespace Muks.BackEnd
         public BackendGachaEconomyStore(BackendManager owner, GameDataRestoreQuery query, GameDataSaveTarget target)
         { _owner = owner; _query = query; _target = target; }
         public GachaEconomySnapshot Capture() => IsCurrent ? UserInfo.CaptureGachaEconomy(_target.AccountInDate, _owner.StaffRuntime.Snapshot) : null;
+        public StaffAccountSaveData ReadAccount() => IsCurrent ? _owner.StaffRuntime.Snapshot : null;
         public bool CanStart(out string error)
         {
             error = null;

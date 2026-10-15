@@ -65,6 +65,12 @@ public partial class UIGacha : MobileUIView
     private bool _isPrewarming;
     internal bool IsPrewarming => _isPrewarming;
 
+    internal enum PrewarmState { NotStarted, Running, Completed, Skipped }
+    private PrewarmState _prewarmState;
+    internal PrewarmState FirstScreenPrewarmState => _prewarmState;
+    // Completed, interrupted by a real entry, or impossible: nothing is pending for the loading fade any more.
+    internal bool IsPrewarmFinished => _prewarmState == PrewarmState.Completed || _prewarmState == PrewarmState.Skipped;
+
     private void Update()
     {
         if (_isPrewarming) return;
@@ -365,22 +371,35 @@ public partial class UIGacha : MobileUIView
 
         // MainScene hosts the routine because this view is inactive after Init.
         if (_mainScene != null && _mainScene.isActiveAndEnabled)
+        {
+            _prewarmState = PrewarmState.Running;
+            // Keep the loading fade (which blocks input) up until the first screen is warm; FadeManager bounds the wait.
+            FadeManager.HoldFadeOut(this);
             _prewarmRoutine = _mainScene.StartCoroutine(PrewarmFirstScreen());
+        }
+        else _prewarmState = PrewarmState.Skipped;
     }
 
     // Builds each machine's first screen invisibly, one machine per frame, so Awake/layout/TMP work happens during loading.
+    // Uses the machines' own Show(): it only resets visuals/buttons (no music, purchase, reward or tutorial), and
+    // UIGacha/machine Update() bail out while _isPrewarming so no HUD, purchase polling or tutorial check runs.
     private IEnumerator PrewarmFirstScreen()
     {
         yield return null;
 
+        bool interrupted = false;
         for (int i = 0; i < _gachaMachines.Length; i++)
         {
             if (VisibleState != VisibleState.Disappeared || _questStaffEntry || _requestedInitialMachine != null)
+            {
+                interrupted = true;
                 break;
+            }
 
             if (!_isPrewarming)
             {
                 _isPrewarming = true;
+                _prewarmState = PrewarmState.Running;
                 _canvasGroup.alpha = 0f;
                 _canvasGroup.interactable = false;
                 _canvasGroup.blocksRaycasts = false;
@@ -396,7 +415,9 @@ public partial class UIGacha : MobileUIView
         }
 
         _prewarmRoutine = null;
+        bool completed = _isPrewarming && !interrupted;
         StopPrewarm(true);
+        if (completed) _prewarmState = PrewarmState.Completed;
     }
 
     private void StopPrewarm(bool deactivate)
@@ -404,6 +425,8 @@ public partial class UIGacha : MobileUIView
         if (_prewarmRoutine != null && _mainScene != null)
             _mainScene.StopCoroutine(_prewarmRoutine);
         _prewarmRoutine = null;
+        if (_prewarmState == PrewarmState.Running) _prewarmState = PrewarmState.Skipped;
+        FadeManager.ReleaseFadeOut(this);
 
         if (!_isPrewarming)
             return;
@@ -416,6 +439,16 @@ public partial class UIGacha : MobileUIView
                 _gachaMachines[i].Hide();
         }
         _canvasGroup.alpha = 1f;
+    }
+
+    private void OnDestroy()
+    {
+        // Scene teardown: the host coroutine dies with MainScene; never touch possibly destroyed UI here.
+        if (_prewarmRoutine != null && _mainScene != null) _mainScene.StopCoroutine(_prewarmRoutine);
+        _prewarmRoutine = null;
+        _isPrewarming = false;
+        if (_prewarmState == PrewarmState.Running) _prewarmState = PrewarmState.Skipped;
+        FadeManager.ReleaseFadeOut(this);
     }
 
     private void RemoveInvalidAndDuplicateMachines()

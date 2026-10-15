@@ -149,6 +149,7 @@ public class UIStaffGacha : GachaMachineParent
         {
             // A separate tutorial input reuses the existing button art; paid listeners/state stay untouched.
             _questButton = Instantiate(_singleButton, _singleButton.transform.parent, false);
+            _questPress = null;
             _questButton.name = "Quest Staff Claim";
             _questButton.onClick = new Button.ButtonClickedEvent();
             _questButton.onClick.AddListener(OnQuestStaffButtonClicked);
@@ -182,8 +183,8 @@ public class UIStaffGacha : GachaMachineParent
         bool available = (_questEntryIsCurrent == null || _questEntryIsCurrent()) &&
             _questOwner.TryGetCurrentQuestStaffOffer(out var offer, out _) && offer.QuestId == _questId;
         _questButton.interactable = available;
-        var press = _questButton.GetComponent<ButtonPressEffect>();
-        if (press != null) press.Interactable = available;
+        if (_questPress == null) _questPress = _questButton.GetComponent<ButtonPressEffect>();
+        if (_questPress != null) _questPress.Interactable = available;
         if (_questLabel != null)
             _questLabel.text = available ? "무료 뽑기" :
                 (_questOwner.LastCompletedQuestStaffGrant?.QuestId == _questId ? "획득 완료" : "확인 중");
@@ -329,17 +330,30 @@ public class UIStaffGacha : GachaMachineParent
 
     private void ConfigurePurchaseButtons()
     {
-        if (_collectionEconomy != null)
+        // Labels, sprites and sizes are static per mode; only the interactable state changes afterwards.
+        var mode = _collectionEconomy != null ? PurchaseButtonMode.Collection : PurchaseButtonMode.Staff;
+        if (_purchaseButtonMode != mode)
         {
-            UIGacha.ConfigureCollectionButton(_singleButton, false);
-            UIGacha.ConfigureCollectionButton(_tenButton, true, _singleButton);
-            RefreshPurchaseButtonState();
-            return;
+            if (mode == PurchaseButtonMode.Collection)
+            {
+                UIGacha.ConfigureCollectionButton(_singleButton, false);
+                UIGacha.ConfigureCollectionButton(_tenButton, true, _singleButton);
+            }
+            else
+            {
+                ConfigurePurchaseButton(_singleButton, StaffGachaPurchaseType.Single, "1회");
+                ConfigurePurchaseButton(_tenButton, StaffGachaPurchaseType.Multi, "10+1회");
+            }
+            _purchaseButtonMode = mode;
         }
-        ConfigurePurchaseButton(_singleButton, StaffGachaPurchaseType.Single, "1회");
-        ConfigurePurchaseButton(_tenButton, StaffGachaPurchaseType.Multi, "10+1회");
         RefreshPurchaseButtonState();
     }
+
+    private enum PurchaseButtonMode { None, Collection, Staff }
+    private PurchaseButtonMode _purchaseButtonMode;
+    private ButtonPressEffect _singlePress;
+    private ButtonPressEffect _tenPress;
+    private ButtonPressEffect _questPress;
 
     private static void ConfigurePurchaseButton(Button button, StaffGachaPurchaseType type, string text)
     {
@@ -384,19 +398,19 @@ public class UIStaffGacha : GachaMachineParent
         bool visible = CanUsePaidInput();
         if (_collectionEconomy != null)
         {
-            SetPaidInteractable(_singleButton, visible && !_uiGacha.IsChoosingPayment);
-            SetPaidInteractable(_tenButton, visible && !_uiGacha.IsChoosingPayment);
+            SetPaidInteractable(_singleButton, ref _singlePress, visible && !_uiGacha.IsChoosingPayment);
+            SetPaidInteractable(_tenButton, ref _tenPress, visible && !_uiGacha.IsChoosingPayment);
             return;
         }
-        SetPaidInteractable(_singleButton, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Single, out _));
-        SetPaidInteractable(_tenButton, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Multi, out _));
+        SetPaidInteractable(_singleButton, ref _singlePress, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Single, out _));
+        SetPaidInteractable(_tenButton, ref _tenPress, visible && _purchaseDisplayOwner.CanStartStaffPurchase(StaffGachaPurchaseType.Multi, out _));
     }
 
-    private static void SetPaidInteractable(Button button, bool value)
+    private static void SetPaidInteractable(Button button, ref ButtonPressEffect press, bool value)
     {
         if (button == null) return;
         button.interactable = value;
-        var press = button.GetComponent<ButtonPressEffect>();
+        if (press == null) press = button.GetComponent<ButtonPressEffect>();
         if (press != null)
         {
             if (Application.isPlaying && press.Interactable && !value && button.gameObject.activeInHierarchy)
@@ -436,15 +450,18 @@ public class UIStaffGacha : GachaMachineParent
     private void Update()
     {
         if (_uiGacha != null && _uiGacha.IsPrewarming) return;
+        // Result displays always tick (they suspend themselves when hidden); button state is only refreshed
+        // for the selected machine. Show()/CompleteOpening() refresh it again when this machine is reselected.
+        bool selected = _uiGacha != null && _uiGacha.IsCurrentMachine(this);
         if (IsQuestEntry)
         {
-            UpdateQuestButton();
+            if (selected) UpdateQuestButton();
             _questDisplay?.Tick();
         }
         else
         {
             _purchaseDisplay?.Tick();
-            RefreshPurchaseButtonState();
+            if (selected) RefreshPurchaseButtonState();
         }
         if( 0 < _screenTouchWaitTime)
             _screenTouchWaitTime -= Time.deltaTime;

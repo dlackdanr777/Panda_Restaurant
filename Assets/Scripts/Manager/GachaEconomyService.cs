@@ -123,6 +123,12 @@ public interface IGachaEconomyDrawAdmission
     bool CanDraw(GachaMachineKind machine, GachaPaymentKind payment, out string error);
 }
 
+/// <summary>Optional read-only access to Capture().Account without copying the inventory dictionaries.</summary>
+public interface IGachaEconomyAccountReader
+{
+    StaffAccountSaveData ReadAccount();
+}
+
 /// <summary>Same authoritative policy is used by runtime and offline demo. No payment/grant occurs during planning.</summary>
 public sealed partial class GachaEconomyService
 {
@@ -132,6 +138,9 @@ public sealed partial class GachaEconomyService
     private readonly GachaEconomySettings _settings;
     private bool _preparing;
     public GachaEconomySnapshot Snapshot => _store.Capture();
+    /// <summary>Same value as Snapshot?.Account. The account is immutable and replaced on every change.</summary>
+    public StaffAccountSaveData CurrentAccount => _store is IGachaEconomyAccountReader reader
+        ? reader.ReadAccount() : _store.Capture()?.Account;
     public IReadOnlyList<GachaExchangeProduct> Products { get; }
     public GachaEconomyTransaction LastTransaction { get; private set; }
     public bool IsBusy

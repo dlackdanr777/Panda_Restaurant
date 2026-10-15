@@ -73,7 +73,8 @@ public class LoadingSceneManager : MonoBehaviour
                         Tween.Wait(0.1f, () =>
                         {
                             FadeManager.Instance.FadeSetActive(true);
-                            FadeManager.Instance.FadeOut();
+                            // Keeps the input-blocking fade until first-screen prewarm (e.g. UIGacha) finishes, bounded.
+                            FadeManager.Instance.FadeOutWhenReady(() => op.isDone);
                         });
                     }));
                     yield break;

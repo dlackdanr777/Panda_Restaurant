@@ -112,9 +112,14 @@ public sealed class StaffGachaPurchaseDisplay
     private bool IsVisible => _staff != null && _view != null && _staff.gameObject.activeInHierarchy &&
         _view.IsCurrentMachine(_staff) && _view.VisibleState == VisibleState.Appeared;
 
+    // Close() is idempotent, but repeating it every frame for a hidden machine re-walks every result slot.
+    private bool IsSuspended => _phase == Phase.Closed && _observed == null && _displayed == null && _sequence == null &&
+        _animation == null && _popup == null && _bonusHitArea == null && _bonusButton == null && _slotParent == null &&
+        _restoreMachineArt == null && !_captured && _slotButtons.Count == 0;
+
     public void Tick()
     {
-        if (!IsVisible) { Suspend(); return; }
+        if (!IsVisible) { if (!IsSuspended) Suspend(); return; }
         if (_displayed != null && !_canPresent(_displayed)) Close();
         try
         {

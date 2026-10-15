@@ -73,10 +73,18 @@ public sealed class TokenExchangeView : MonoBehaviour
         public TextMeshProUGUI Name, Price, Availability;
         public RectTransform Stamp;
         public CanvasGroup StampGroup;
-        [NonSerialized] public string OfferKey;
+        [NonSerialized] public string OfferId;
+        [NonSerialized] public int OfferVersion;
         [NonSerialized] public bool SoldOut;
         [NonSerialized] public bool StampSoundPending;
         [NonSerialized] public float StampStarted = -1;
+        // Once the stamp animation finishes and the sound is done, it is not posed again every frame.
+        [NonSerialized] public bool StampSettled;
+        // Last applied values. Bound=false forces a full apply on the next RebuildCards.
+        [NonSerialized] public bool Bound;
+        [NonSerialized] public string AppliedNameId;
+        [NonSerialized] public bool HasAppliedPrice;
+        [NonSerialized] public long AppliedPrice;
         [NonSerialized] public Vector3 BaseStampScale;
         [NonSerialized] public Quaternion BaseStampRotation;
         [NonSerialized] public float BaseStampAlpha;
@@ -87,6 +95,15 @@ public sealed class TokenExchangeView : MonoBehaviour
     private bool _requesting, _entering;
     private int _requestVersion;
     private float _refreshAt, _openedAt;
+    // Last applied state for the balance/detail area. _detailBound=false forces a full apply on the next Refresh.
+    private bool _detailBound;
+    private long _appliedBalance;
+    private bool _hasAppliedSelectedPrice;
+    private long _appliedSelectedPrice;
+    private int _appliedQuantity;
+    private int _appliedRefreshRemaining, _appliedRefreshLimit;
+    private static readonly Unity.Profiling.ProfilerMarker RebuildCardsMarker =
+        new Unity.Profiling.ProfilerMarker("TokenExchangeView.RebuildCards");
     private readonly HashSet<string> _confirmedStampSounds = new HashSet<string>();
     private readonly object _chainAudioOwner = new object(), _stampAudioOwner = new object();
     private readonly List<(Button button, UnityAction action)> _listeners = new List<(Button, UnityAction)>();
@@ -244,6 +261,7 @@ public sealed class TokenExchangeView : MonoBehaviour
             { card.Stamp.localScale = card.BaseStampScale; card.Stamp.localRotation = card.BaseStampRotation; }
             if (card.StampGroup != null && card.StampGroup.transform.IsChildOf(transform)) card.StampGroup.alpha = card.BaseStampAlpha;
             card.StampStarted = -1;
+            card.StampSettled = false;
         }
     }
 
@@ -283,7 +301,10 @@ public sealed class TokenExchangeView : MonoBehaviour
         if (!ValidateLayout(out string error)) return RejectConfiguration(error);
         if (IsOpen) return true;
         _openedAt = Time.realtimeSinceStartup; _refreshAt = 0; _entering = true;
+        InvalidateAppliedState();
         gameObject.SetActive(true); transform.SetAsLastSibling(); Refresh();
+        // This Refresh already shows the latest state, so the first TickPresentation does not refresh again.
+        _refreshAt = _openedAt + .5f;
         TickPresentation(_openedAt);
         SoundManager.TryGetExistingInstance()?.PlayPresentationEffect(EffectType.None,
             _theme.ExchangeChainSound, _theme.ExchangeChainVolume, owner: _chainAudioOwner, maxConcurrent: 1);
@@ -293,83 +314,147 @@ public sealed class TokenExchangeView : MonoBehaviour
     public void ResetSession()
     {
         ++_requestVersion; _requesting = false; _snapshot = null; _selectedId = null; _refreshAt = 0; _requestError = null;
+        InvalidateAppliedState();
         if (_cards != null) foreach (var card in _cards)
         {
             if (card == null) continue;
-            card.OfferKey = null; card.SoldOut = false; card.StampStarted = -1;
+            card.OfferId = null; card.OfferVersion = 0; card.SoldOut = false; card.StampStarted = -1; card.StampSettled = false;
             if (card.Stamp != null && card.Stamp.IsChildOf(transform)) card.Stamp.gameObject.SetActive(false);
         }
         SetVisible(false);
     }
 
+    private void InvalidateAppliedState()
+    {
+        _detailBound = false;
+        if (_cards != null) foreach (var card in _cards) if (card != null) card.Bound = false;
+    }
+
     public void SelectProduct(string id)
     {
-        if (_requesting || _entering || _snapshot == null || !_snapshot.Products.Any(p => p.Id == id)) return;
+        if (_requesting || _entering || _snapshot == null || FindProduct(_snapshot.Products, id) == null) return;
         _selectedId = id; _requestError = null; RebuildCards();
+    }
+
+    private static TokenExchangeProductView FindProduct(IReadOnlyList<TokenExchangeProductView> products, string id)
+    {
+        if (products == null) return null;
+        for (int i = 0; i < products.Count; i++)
+            if (products[i] != null && products[i].Id == id) return products[i];
+        return null;
     }
 
     public void Refresh()
     {
         if (!IsConfigured || _read == null) return;
         _snapshot = _read() ?? new TokenExchangeSnapshot { Busy = true };
-        _balance.text = _snapshot.PandaTokens.ToString("N0");
+        if (!_detailBound || _appliedBalance != _snapshot.PandaTokens)
+        {
+            _appliedBalance = _snapshot.PandaTokens;
+            _balance.text = _snapshot.PandaTokens.ToString("N0");
+        }
         RebuildCards();
     }
 
+    // Values are compared on every call, because callers may change products inside the same snapshot.
+    // Only properties that actually changed are applied, and strings are built only on change.
     private void RebuildCards()
     {
         if (_snapshot == null) return;
-        var products = (_snapshot.Products ?? Array.Empty<TokenExchangeProductView>()).Take(6).ToList();
-        var selected = products.FirstOrDefault(p => p.Id == _selectedId) ?? products.FirstOrDefault();
+        using (RebuildCardsMarker.Auto())
+        {
+        var products = _snapshot.Products ?? Array.Empty<TokenExchangeProductView>();
+        int productCount = Mathf.Min(products.Count, 6);
+        TokenExchangeProductView selected = null;
+        for (int i = 0; i < productCount; i++)
+            if (products[i] != null && products[i].Id == _selectedId) { selected = products[i]; break; }
+        if (selected == null && productCount > 0) selected = products[0];
         _selectedId = selected?.Id;
         bool locked = _entering || _requesting || _snapshot.Busy;
+        bool visible = IsOpen && gameObject.activeInHierarchy;
+        float now = Time.realtimeSinceStartup;
         for (int i = 0; i < _cards.Count; i++)
         {
             ProductCard card = _cards[i];
-            card.Button.gameObject.SetActive(true);
-            TokenExchangeProductView product = i < products.Count ? products[i] : null;
+            if (!card.Button.gameObject.activeSelf) card.Button.gameObject.SetActive(true);
+            TokenExchangeProductView product = i < productCount ? products[i] : null;
             card.Id = product?.Id;
-            card.Button.name = product == null ? "Unavailable Slot " + i : "Product " + product.Id;
+            if (!card.Bound || card.AppliedNameId != card.Id)
+            {
+                card.Button.name = product == null ? "Unavailable Slot " + i : "Product " + product.Id;
+                card.AppliedNameId = card.Id;
+            }
             card.Button.interactable = !_entering && !_requesting && product != null;
             card.Frame.sprite = _theme.ProductFrame(product?.Rank ?? Rank.Normal1);
             card.Frame.color = card.BaseFrameColor * (product == null ? _emptyTint :
                 product.Id == _selectedId ? _selectedTint : _normalTint);
             card.Artwork.sprite = product?.Sprite; card.Artwork.enabled = card.Artwork.sprite != null;
             card.Name.text = product?.Name ?? _emptySlotText;
-            card.Price.text = product?.Price.ToString("N0") ?? "";
+            if (product == null)
+            {
+                if (!card.Bound || card.HasAppliedPrice) { card.Price.text = ""; card.HasAppliedPrice = false; }
+            }
+            else if (!card.Bound || !card.HasAppliedPrice || card.AppliedPrice != product.Price)
+            {
+                card.Price.text = product.Price.ToString("N0");
+                card.HasAppliedPrice = true; card.AppliedPrice = product.Price;
+            }
             card.Token.enabled = product != null;
             card.Availability.text = product == null ? "" : CompactAvailability(product);
-            string offerKey = product == null ? null : product.DisplayVersion + ":" + product.Id;
+            bool sameOffer = product == null
+                ? card.OfferId == null
+                : card.OfferId == product.Id && card.OfferVersion == product.DisplayVersion;
             bool soldOut = product?.SoldOut == true;
-            bool visible = IsOpen && gameObject.activeInHierarchy;
-            bool animate = visible && offerKey == card.OfferKey && soldOut && !card.SoldOut;
-            if (offerKey != card.OfferKey || !soldOut || !visible) card.StampStarted = -1;
-            if (animate) card.StampStarted = Time.realtimeSinceStartup;
-            if (offerKey != card.OfferKey || !soldOut) card.StampSoundPending = false;
+            bool animate = visible && sameOffer && soldOut && !card.SoldOut;
+            if (!sameOffer || !soldOut || !visible) card.StampStarted = -1;
+            if (animate) card.StampStarted = now;
+            if (!sameOffer || !soldOut) card.StampSoundPending = false;
             // The service's successful save callback is the only source of this token.
             // A retained/restored SOLD OUT snapshot by itself cannot produce sound.
-            if (soldOut && card.StampStarted >= 0 && _confirmedStampSounds.Remove(offerKey))
+            if (soldOut && card.StampStarted >= 0 && _confirmedStampSounds.Count != 0 &&
+                _confirmedStampSounds.Remove(OfferKey(product.DisplayVersion, product.Id)))
                 card.StampSoundPending = true;
-            card.OfferKey = offerKey; card.SoldOut = soldOut;
-            card.Stamp.gameObject.SetActive(soldOut);
-            UpdateStamp(card, Time.realtimeSinceStartup);
+            if (!sameOffer || soldOut != card.SoldOut || animate || card.StampSoundPending) card.StampSettled = false;
+            card.OfferId = product?.Id; card.OfferVersion = product?.DisplayVersion ?? 0; card.SoldOut = soldOut;
+            if (card.Stamp.gameObject.activeSelf != soldOut) card.Stamp.gameObject.SetActive(soldOut);
+            UpdateStamp(card, now);
             for (int star = 0; star < card.Stars.Length; star++)
                 card.Stars[star].enabled = product != null && product.Category != TokenExchangeTab.Tickets && star <= (int)product.Rank;
+            card.Bound = true;
         }
         _name.text = selected?.Name ?? _emptySelectionText;
         _description.text = _requestError ?? selected?.Description ?? _emptyDescriptionText;
-        _quantity.text = selected == null ? "" : _quantityPrefix + selected.Quantity;
-        SetSelectedPrice(selected?.Price.ToString("N0"));
+        int quantity = selected == null ? int.MinValue : selected.Quantity;
+        if (!_detailBound || _appliedQuantity != quantity)
+        {
+            _quantity.text = selected == null ? "" : _quantityPrefix + selected.Quantity;
+            _appliedQuantity = quantity;
+        }
+        SetSelectedPrice(selected);
         _art.sprite = selected?.Sprite; _art.enabled = _art.sprite != null;
         _buy.interactable = !locked && selected != null && selected.CanPurchase && !selected.SoldOut;
         _buyLabel.text = _requesting || _snapshot.Busy ? _busyText : _buyText;
         _refresh.interactable = !locked && _refreshCatalog != null && _snapshot.CanRefresh;
-        _refreshLabel.text = _refreshPrefix + _snapshot.RemainingRefreshes + "/" + _snapshot.RefreshLimit;
+        if (!_detailBound || _appliedRefreshRemaining != _snapshot.RemainingRefreshes ||
+            _appliedRefreshLimit != _snapshot.RefreshLimit)
+        {
+            _refreshLabel.text = _refreshPrefix + _snapshot.RemainingRefreshes + "/" + _snapshot.RefreshLimit;
+            _appliedRefreshRemaining = _snapshot.RemainingRefreshes; _appliedRefreshLimit = _snapshot.RefreshLimit;
+        }
+        _detailBound = true;
+        }
     }
 
-    private void SetSelectedPrice(string value)
+    private static string OfferKey(int version, string id) => version + ":" + id;
+
+    // Rebuild the price-row layout immediately only when the displayed price changes.
+    private void SetSelectedPrice(TokenExchangeProductView selected)
     {
-        _price.text = value ?? "";
+        bool hasPrice = selected != null;
+        long price = hasPrice ? selected.Price : 0;
+        if (_detailBound && hasPrice == _hasAppliedSelectedPrice && price == _appliedSelectedPrice) return;
+        _hasAppliedSelectedPrice = hasPrice; _appliedSelectedPrice = price;
+        _price.text = hasPrice ? price.ToString("N0") : "";
         _price.ForceMeshUpdate();
         LayoutRebuilder.ForceRebuildLayoutImmediate(_priceTokenRow);
         LayoutRebuilder.ForceRebuildLayoutImmediate(_priceRow);
@@ -386,7 +471,7 @@ public sealed class TokenExchangeView : MonoBehaviour
 
     private void UpdateStamp(ProductCard card, float now)
     {
-        if (!card.SoldOut) return;
+        if (!card.SoldOut || card.StampSettled) return;
         float t = card.StampStarted < 0 ? 1 : PresentationProgress(now - card.StampStarted, _stampSeconds);
         float scale = t < .65f ? Mathf.Lerp(_stampStartScale, _stampImpactScale, t / .65f) : Mathf.Lerp(_stampImpactScale, 1, (t - .65f) / .35f);
         card.Stamp.localScale = card.BaseStampScale * scale;
@@ -399,6 +484,8 @@ public sealed class TokenExchangeView : MonoBehaviour
                 SoundManager.TryGetExistingInstance()?.PlayPresentationEffect(EffectType.None,
                     _theme.SoldOutStampSound, _theme.SoldOutStampVolume, owner: _stampAudioOwner);
         }
+        // Pose is final (t=1) and no sound is pending. Keep StampStarted so a late save-confirm token still works.
+        if (t >= 1 && !card.StampSoundPending) card.StampSettled = true;
     }
 
     private string CompactAvailability(TokenExchangeProductView product)
@@ -413,9 +500,9 @@ public sealed class TokenExchangeView : MonoBehaviour
     private void RequestPurchase()
     {
         if (!IsConfigured || _entering || _requesting || _snapshot == null || _snapshot.Busy) return;
-        TokenExchangeProductView selected = _snapshot.Products.FirstOrDefault(p => p.Id == _selectedId);
+        TokenExchangeProductView selected = FindProduct(_snapshot.Products, _selectedId);
         if (selected == null || !selected.CanPurchase || selected.SoldOut) return;
-        string offer = selected.DisplayVersion + ":" + selected.Id;
+        string offer = OfferKey(selected.DisplayVersion, selected.Id);
         BeginRequest(reply => _purchase(selected.Id, selected.DisplayVersion, reply),
             () => { if (isActiveAndEnabled) _confirmedStampSounds.Add(offer); });
     }

@@ -2,9 +2,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using Muks.Tween;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 
-/// <summary>È­¸é ÀüÈ¯ È¿°ú¸¦ ÁÖ´Â ½Ì±ÛÅæ ¸Å´ÏÀú</summary>
+/// <summary>È­ï¿½ï¿½ ï¿½ï¿½È¯ È¿ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½Ì±ï¿½ï¿½ï¿½ ï¿½Å´ï¿½ï¿½ï¿½</summary>
 public class FadeManager : MonoBehaviour
 {
 
@@ -37,6 +39,52 @@ public class FadeManager : MonoBehaviour
     public event Action OnEndFadeOutHandler;
     public event Action OnEndFirstLoadingHandler;
 
+    // Scene views that are still preparing their first screen during the loading fade (e.g. UIGacha prewarm).
+    // Static so releasing never creates the singleton; destroyed Unity owners are pruned automatically.
+    private static readonly HashSet<object> _fadeOutHolds = new HashSet<object>();
+    private static readonly Predicate<object> _isDestroyedOwner = owner => owner is UnityEngine.Object unityObject && unityObject == null;
+    private const float MaxFadeOutHoldSeconds = 2f;
+
+    public static void HoldFadeOut(object owner)
+    {
+        if (owner != null) _fadeOutHolds.Add(owner);
+    }
+
+    public static void ReleaseFadeOut(object owner)
+    {
+        if (owner != null && _fadeOutHolds.Count != 0) _fadeOutHolds.Remove(owner);
+    }
+
+    private static bool HasFadeOutHolds
+    {
+        get
+        {
+            if (_fadeOutHolds.Count != 0) _fadeOutHolds.RemoveWhere(_isDestroyedOwner);
+            return _fadeOutHolds.Count != 0;
+        }
+    }
+
+    /// <summary>Scene-entry FadeOut that keeps the input-blocking fade until the scene is active and registered holds
+    /// are released, for at most MaxFadeOutHoldSeconds in total.</summary>
+    public void FadeOutWhenReady(Func<bool> isSceneActivated = null)
+    {
+        StartCoroutine(FadeOutWhenReadyRoutine(isSceneActivated));
+    }
+
+    private IEnumerator FadeOutWhenReadyRoutine(Func<bool> isSceneActivated)
+    {
+        float deadline = Time.unscaledTime + MaxFadeOutHoldSeconds;
+        while (isSceneActivated != null && !isSceneActivated() && Time.unscaledTime < deadline)
+            yield return null;
+        // Scene Start() (where holds are registered) has run by the next frame.
+        yield return null;
+        while (HasFadeOutHolds && Time.unscaledTime < deadline)
+            yield return null;
+        // A hold that outlived the bound must not delay any later scene entry.
+        _fadeOutHolds.Clear();
+        FadeOut();
+    }
+
     private void Awake()
     {
         if (_instance != null)
@@ -52,7 +100,7 @@ public class FadeManager : MonoBehaviour
     }
 
 
-    /// <summary>FadeInÈ¿°ú¸¦ ÁÖ´Â ÇÔ¼ö(durationÀÌ 0ÀÏ °æ¿ì ±âº» °ª, onComplete´Â FadeInÈ¿°ú°¡ Á¾·áµÈ ÈÄ ½ÇÇà)</summary>
+    /// <summary>FadeInÈ¿ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½Ô¼ï¿½(durationï¿½ï¿½ 0ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½âº» ï¿½ï¿½, onCompleteï¿½ï¿½ FadeInÈ¿ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)</summary>
     public void FadeIn(float duration = 0, Action onComplete = null)
     {
         if (_isLoading)
@@ -78,7 +126,7 @@ public class FadeManager : MonoBehaviour
         _fadeImage.color = new Color(_fadeImage.color.r, _fadeImage.color.g, _fadeImage.color.b, value ? 1 : 0);
     }
 
-    /// <summary>FadeOutÈ¿°ú¸¦ ÁÖ´Â ÇÔ¼ö(durationÀÌ 0ÀÏ °æ¿ì ±âº» °ª, onComplete´Â FadeInÈ¿°ú°¡ Á¾·áµÈ ÈÄ ½ÇÇà)</summary>
+    /// <summary>FadeOutÈ¿ï¿½ï¿½ï¿½ï¿½ ï¿½Ö´ï¿½ ï¿½Ô¼ï¿½(durationï¿½ï¿½ 0ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½âº» ï¿½ï¿½, onCompleteï¿½ï¿½ FadeInÈ¿ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)</summary>
     public void FadeOut(float duration = 0, float waitDuration = 0, Action onComplete = null)
     {
         _fadeImage.gameObject.SetActive(true);
