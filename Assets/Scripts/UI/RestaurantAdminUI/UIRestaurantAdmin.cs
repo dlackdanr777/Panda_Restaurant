@@ -148,6 +148,10 @@ public class UIRestaurantAdmin : MobileUIView
                 _normalTransitionImage.material = _transitionMaterialInstance;
             if (_vipTransitionImage != null)
                 _vipTransitionImage.material = _transitionMaterialInstance;
+            // 오버레이 이미지의 ScrollingImage는 첫 Update에서 material을 복제본으로 바꿔치기해 공유 인스턴스의 진행도가
+            // 화면에 반영되지 않게 만든다. 배경 스크롤은 _NormalOffset/_VipOffset으로 전달하므로 오버레이에서는 끈다.
+            DisableOverlayScrolling(_normalTransitionImage);
+            DisableOverlayScrolling(_vipTransitionImage);
             
             _transitionMaterialInstance.SetFloat(AngleId, _transitionAngle);
             _transitionMaterialInstance.SetFloat(EdgeWidthId, _edgeWidth);
@@ -829,6 +833,22 @@ public class UIRestaurantAdmin : MobileUIView
         }
     }
 
+    private static void DisableOverlayScrolling(UnityEngine.UI.Image image)
+    {
+        if (image == null) return;
+        var scrolling = image.GetComponent<ScrollingImage>();
+        if (scrolling != null) scrolling.enabled = false;
+    }
+
+    // 다른 컴포넌트가 오버레이 material을 교체했더라도 공유 인스턴스로 되돌린다(같으면 아무 작업 없음).
+    private void EnsureTransitionMaterial()
+    {
+        if (_normalTransitionImage != null && _normalTransitionImage.material != _transitionMaterialInstance)
+            _normalTransitionImage.material = _transitionMaterialInstance;
+        if (_vipTransitionImage != null && _vipTransitionImage.material != _transitionMaterialInstance)
+            _vipTransitionImage.material = _transitionMaterialInstance;
+    }
+
     // 전환 취소만 수행하고 화면 데이터 갱신은 하지 않는다. 입력/메인 UI 상태는 Show/Hide가 직접 결정한다.
     private void StopTransition()
     {
@@ -989,9 +1009,6 @@ public class UIRestaurantAdmin : MobileUIView
             _normalTransitionImage.sprite = normalImage.sprite;
             _normalTransitionImage.type = normalImage.type;
             _normalTransitionImage.pixelsPerUnitMultiplier = normalImage.pixelsPerUnitMultiplier;
-            // 셰이더 속성이 두 이미지에서 동일하므로 Init에서 만든 인스턴스 하나를 공유한다(전환마다 새 Material 생성 안 함).
-            if (_normalTransitionImage.material != _transitionMaterialInstance)
-                _normalTransitionImage.material = _transitionMaterialInstance;
         }
         
         if (_vipTransitionImage != null)
@@ -1000,9 +1017,9 @@ public class UIRestaurantAdmin : MobileUIView
             _vipTransitionImage.sprite = vipImage.sprite;
             _vipTransitionImage.type = vipImage.type;
             _vipTransitionImage.pixelsPerUnitMultiplier = vipImage.pixelsPerUnitMultiplier;
-            if (_vipTransitionImage.material != _transitionMaterialInstance)
-                _vipTransitionImage.material = _transitionMaterialInstance;
         }
+        // 셰이더 속성이 두 이미지에서 동일하므로 Init에서 만든 인스턴스 하나를 공유한다(전환마다 새 Material 생성 안 함).
+        EnsureTransitionMaterial();
         
         _transitionMaterialInstance.SetTexture(NormalTexId, normalTex);
         _transitionMaterialInstance.SetTexture(VipTexId, vipTex);
@@ -1042,6 +1059,7 @@ public class UIRestaurantAdmin : MobileUIView
             t = Mathf.SmoothStep(0, 1, t);
             
             float currentProgress = Mathf.Lerp(startProgress, endProgress, t);
+            EnsureTransitionMaterial();
             _transitionMaterialInstance.SetFloat(ProgressId, currentProgress);
             
             // 스크롤링 오프셋 업데이트 (배경이 계속 스크롤되도록). 두 이미지는 같은 인스턴스를 공유한다.
