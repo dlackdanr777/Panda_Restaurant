@@ -66,6 +66,11 @@ public class Staff : MonoBehaviour
                 if (dispose) { waiter.Destructor(); _staffAction = null; }
                 else waiter.CancelCurrentWork();
             }
+            if (_staffAction is GuardAction guard)
+            {
+                if (dispose) { guard.Destructor(); _staffAction = null; }
+                else guard.CancelCurrentWork();
+            }
         }
         finally { _invalidatingWork = false; }
     }
@@ -188,6 +193,17 @@ public class Staff : MonoBehaviour
             : staffData == _staffData
                 ? StaffSkillCancellationReason.SameStaffDataReassigned
                 : StaffSkillCancellationReason.StaffDataChanged;
+        // The same active employee in the same slot is not a new assignment.
+        // Preserve these actions' current trip; cancelling movement alone leaves
+        // their busy state waiting for an arrival that can no longer happen.
+        if (staffData != null && staffData == _staffData && equipFloorType == _equipFloorType
+            && (_staffAction is ChefAction || _staffAction is CleanerAction)
+            && IsWorkCurrent(_staffAction, _workLifetime, equipFloorType))
+        {
+            CancelActiveSkill(cancellationReason, true);
+            RefreshFeverEffect();
+            return;
+        }
         InvalidateWaiterWork();
         CancelActiveSkill(cancellationReason, true);
         StopAllCoroutines();

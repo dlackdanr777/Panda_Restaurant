@@ -26,6 +26,7 @@ public class UIFever : MonoBehaviour
 
     private Vector3 _tmpButtonScale = new Vector3(-1, 1, 1);
     private FeverSystem _ferverSystem;
+    private TimeManager _subscribedTimeManager;
 
     private float _tmpFeverGauge = 0;
     private int _tmpMaxFeverGauge = 0;
@@ -62,7 +63,8 @@ public class UIFever : MonoBehaviour
 
         _feverAdButton.OnAdRewarded += OnAdButtonClicked;
         _feverAdButton.OnDiaRewarded += OnDiaButtonClicked;
-        TimeManager.Instance.OnRemoveTimeHandler += OnRemoveTimeEvent;
+        _subscribedTimeManager = TimeManager.Instance;
+        _subscribedTimeManager.OnRemoveTimeHandler += OnRemoveTimeEvent;
 
         RefreshFeverPurchaseButtonState();
 
@@ -84,8 +86,9 @@ public class UIFever : MonoBehaviour
             _feverAdButton.OnDiaRewarded -= OnDiaButtonClicked;
         }
 
-        if (TimeManager.Instance != null)
-            TimeManager.Instance.OnRemoveTimeHandler -= OnRemoveTimeEvent;
+        if (_subscribedTimeManager != null)
+            _subscribedTimeManager.OnRemoveTimeHandler -= OnRemoveTimeEvent;
+        _subscribedTimeManager = null;
 
         CancelInvoke(nameof(FeverAdButtonSetActive));
     }

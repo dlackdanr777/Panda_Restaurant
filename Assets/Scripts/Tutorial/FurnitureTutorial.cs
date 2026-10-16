@@ -13,18 +13,21 @@ public class FurnitureTutorial : MonoBehaviour
     [SerializeField] private MobileUINavigation _uiNav;
     [SerializeField] private UITutorial _uiTutorial;
     [SerializeField] private UITutorialDescriptionNPC _uiDescriptionNPC;
+    private ChallengeManager _subscribedChallengeManager;
 
     private void Start()
     {
-        ChallengeManager.Instance.OnMainChallengeUpdateHandler += RefreshFurnitureBuyEventBinding;
+        _subscribedChallengeManager = ChallengeManager.Instance;
+        _subscribedChallengeManager.OnMainChallengeUpdateHandler += RefreshFurnitureBuyEventBinding;
         UserInfo.OnClearChallengeHandler += RefreshFurnitureBuyEventBinding;
         RefreshFurnitureBuyEventBinding();
     }
 
     private void OnDestroy()
     {
-        if (ChallengeManager.Instance != null)
-            ChallengeManager.Instance.OnMainChallengeUpdateHandler -= RefreshFurnitureBuyEventBinding;
+        if (_subscribedChallengeManager != null)
+            _subscribedChallengeManager.OnMainChallengeUpdateHandler -= RefreshFurnitureBuyEventBinding;
+        _subscribedChallengeManager = null;
         UserInfo.OnClearChallengeHandler -= RefreshFurnitureBuyEventBinding;
         StopAllCoroutines();
         if (_uiFurniture != null)

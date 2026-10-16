@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -14,6 +15,16 @@ using UnityEngine;
 // PlayerPrefs/account import, or disk account persistence is implemented here.
 internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStageDataLoadTransport,IStageDataWriteTransport,IDisposable
 {
+    internal static readonly IReadOnlyDictionary<EquipStaffType,IReadOnlyList<string>> StaffAiStaffIds =
+        new ReadOnlyDictionary<EquipStaffType,IReadOnlyList<string>>(new Dictionary<EquipStaffType,IReadOnlyList<string>>
+        {
+            [EquipStaffType.Manager] = Array.AsReadOnly(new[] { "STAFF06", "STAFF07" }),
+            [EquipStaffType.Chef] = Array.AsReadOnly(new[] { "STAFF16", "STAFF17" }),
+            [EquipStaffType.Waiter] = Array.AsReadOnly(new[] { "STAFF01", "STAFF02" }),
+            [EquipStaffType.Cleaner] = Array.AsReadOnly(new[] { "STAFF21", "STAFF22" }),
+            [EquipStaffType.Marketer] = Array.AsReadOnly(new[] { "STAFF11", "STAFF12" }),
+            [EquipStaffType.Guard] = Array.AsReadOnly(new[] { "STAFF26", "STAFF30" })
+        });
     internal BackendManager Owner;
     internal int GameWrites,StageWrites;
     internal bool FailNextStageWrite;
@@ -33,7 +44,25 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
     private static JObject Parse(string text)
     {using(var reader=new JsonTextReader(new StringReader(text)){DateParseHandling=DateParseHandling.None})return JObject.Load(reader);}
 
-    internal void Initialize(bool furnitureFix = false)
+    private static StaffAccountStaffRecord[] CreateStaffAiRecords()
+    {
+        var dataManager = StaffDataManager.Instance;
+        var records = new List<StaffAccountStaffRecord>();
+        foreach (var role in StaffAiStaffIds)
+            foreach (string id in role.Value)
+            {
+                var data = dataManager.GetStaffData(id);
+                if (data == null || data.Id != id || data.MaxLevel < 1 || data.GetRuntimeLevel(1) != 1
+                    || dataManager.GetStaffGroupType(data) != dataManager.GetStaffGroupType(role.Key)
+                    || !dataManager.GetStaffDataList(role.Key, ERestaurantFloorType.Floor1).Contains(data)
+                    || !dataManager.GetStaffDataList(role.Key, ERestaurantFloorType.Floor2).Contains(data))
+                    throw new InvalidOperationException("Invalid representative staff catalog entry: " + role.Key + "/" + id);
+                records.Add(new StaffAccountStaffRecord(id, 1));
+            }
+        return records.ToArray();
+    }
+
+    internal void Initialize(bool furnitureFix = false, bool staffAi = false)
     {
         started=Time.realtimeSinceStartupAsDouble;
         stages=(StageInfo[])Field(typeof(UserInfo),"_stageInfos").GetValue(null);
@@ -42,10 +71,11 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
         foreach(var property in game.Properties().Where(p=>p.Name.StartsWith("Is")&&p.Name.EndsWith("TutorialClear")).ToArray())property.Value=true;
         game["FirstTutorialStartRewardGranted"]=true;
         game["LastAttendanceTime"]=UtcNow().AddHours(9).ToString("O");game["TotalAttendanceDays"]=1;
-        game["EnabledCustomerDataList"]=JArray.FromObject(new[]{"CUSTOMER01","CUSTOMER02","CUSTOMER04"}.Select(id=>new SaveCustomerData(id,"",furnitureFix?0:25)));
+        game["EnabledCustomerDataList"]=JArray.FromObject(new[]{"CUSTOMER01","CUSTOMER02","CUSTOMER04"}.Select(id=>new SaveCustomerData(id,"",furnitureFix&&!staffAi?0:25)));
         game["GiveRecipeList"]=new JArray(new[]{"FOOD01","FOOD02","FOOD04","FOOD05","FOOD13","FOOD14"}.Select(id=>new JObject{["Id"]=id,["Level"]=1}));
         game["ClearMainChallengeList"]=new JArray(Enumerable.Range(1,12).Select(i=>"MainReward"+i.ToString("D2")));
-        var account=new StaffAccountSaveData(StaffAccountSaveConverter.CurrentVersion,new[]{new StaffAccountStaffRecord("STAFF01",1)},0,new GachaEconomySaveData(0,0,0,0));
+        var ownedStaff=staffAi?CreateStaffAiRecords():new[]{new StaffAccountStaffRecord("STAFF01",1)};
+        var account=new StaffAccountSaveData(StaffAccountSaveConverter.CurrentVersion,ownedStaff,0,new GachaEconomySaveData(0,0,0,0));
         if(!StaffAccountSaveConverter.TrySerialize(account,out string staff,out string error))throw new InvalidOperationException(error);
         game["StaffAccount"]=staff;
         for(int index=0;index<stages.Length;index++)
@@ -63,7 +93,7 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
                 {
                     for(int t=0;t<5;t++){var art=FurnitureDataManager.Instance.GetFurnitureDataList((FurnitureType)t).First(d=>d.Id.StartsWith("TABLE01"));if(furnitureFix&&f==1)art=FurnitureDataManager.Instance.GetFurnitureDataList((FurnitureType)t).First(d=>d.Id.StartsWith("TABLE11"));tables[f,t]=art;if(!ownedFurniture.Contains(art.Id))ownedFurniture.Add(art.Id);}
                     for(int k=0;k<4;k++){var art=KitchenUtensilDataManager.Instance.GetKitchenUtensilDataList((KitchenUtensilType)k).First(d=>d.Id.StartsWith("COOKER01"));kitchens[f,k]=art;if(!ownedKitchen.Contains(art.Id))ownedKitchen.Add(art.Id);}
-                    if(!furnitureFix)equipment[(ERestaurantFloorType)f][EquipStaffType.Waiter]=StaffDataManager.Instance.GetStaffData("STAFF01");
+                    if(!furnitureFix&&!staffAi)equipment[(ERestaurantFloorType)f][EquipStaffType.Waiter]=StaffDataManager.Instance.GetStaffData("STAFF01");
                 }
             }
             if(furnitureFix&&index==0){var list=(List<string>)Field(typeof(StageInfo),"_giveFurnitureList").GetValue(stage);list.Add("TABLE02_02");list.Add("TABLE13_02");}

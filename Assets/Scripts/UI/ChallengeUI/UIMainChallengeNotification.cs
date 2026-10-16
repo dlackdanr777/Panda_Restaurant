@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class UIMainChallengeNotification : UINotificationParent
 {
+    private ChallengeManager _subscribedChallengeManager;
+
     private ChallengeData _currentData;
 
     public override bool GetAlarmState()
@@ -22,7 +24,8 @@ public class UIMainChallengeNotification : UINotificationParent
 
     protected override void Awake()
     {
-        ChallengeManager.Instance.OnMainChallengeUpdateHandler += RefreshNotificationMessage;
+        _subscribedChallengeManager = ChallengeManager.Instance;
+        _subscribedChallengeManager.OnMainChallengeUpdateHandler += RefreshNotificationMessage;
         UserInfo.OnClearChallengeHandler += RefreshNotificationMessage;
         base.Awake();
     }
@@ -30,7 +33,9 @@ public class UIMainChallengeNotification : UINotificationParent
 
     protected override void OnDestroy()
     {
-        ChallengeManager.Instance.OnMainChallengeUpdateHandler -= RefreshNotificationMessage;
+        if (_subscribedChallengeManager != null)
+            _subscribedChallengeManager.OnMainChallengeUpdateHandler -= RefreshNotificationMessage;
+        _subscribedChallengeManager = null;
         UserInfo.OnClearChallengeHandler -= RefreshNotificationMessage;
         base.OnDestroy();
     }

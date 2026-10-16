@@ -9,6 +9,8 @@ using UnityEngine.UI;
 
 public class UIStaff : MobileUIView
 {
+    private GameManager _subscribedGameManager;
+
     [Header("Components")]
     [SerializeField] private UIRestaurantAdmin _uiRestaurantAdmin;
     [SerializeField] private UIStaffUpgrade _uiStaffUpgrade;
@@ -215,7 +217,8 @@ public class UIStaff : MobileUIView
         UserInfo.OnChangeMoneyHandler += UpdateResourceUI;
         UserInfo.OnChangeScoreHandler += UpdateResourceUI;
         UserInfo.OnChangeStaffSkinHandler += UpdateUIOptimized;
-        GameManager.Instance.OnChangeScoreHandler += UpdateResourceUI;
+        _subscribedGameManager = GameManager.Instance;
+        _subscribedGameManager.OnChangeScoreHandler += UpdateResourceUI;
     }
 
     public override void Show()
@@ -552,6 +555,8 @@ public class UIStaff : MobileUIView
         UserInfo.OnChangeMoneyHandler -= UpdateResourceUI;
         UserInfo.OnChangeScoreHandler -= UpdateResourceUI;
         UserInfo.OnChangeStaffSkinHandler -= UpdateUIOptimized;
-        GameManager.Instance.OnChangeScoreHandler -= UpdateResourceUI;
+        if (_subscribedGameManager != null)
+            _subscribedGameManager.OnChangeScoreHandler -= UpdateResourceUI;
+        _subscribedGameManager = null;
     }
 }

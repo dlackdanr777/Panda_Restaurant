@@ -226,6 +226,7 @@ public class ChefAction : IStaffAction
 
     private void SinkAction(Staff staff, Func<bool> actionStopResult)
     {
+        _isUsed = true;
         long action = ++_actionVersion;
         float speedMul = staff.SpeedMul;
         _sink.SetUseStaff(staff);
@@ -313,15 +314,11 @@ public class ChefAction : IStaffAction
             if (shouldGoToSink) {
                 // 싱크대로 전환 (재귀 호출 대신)
                 _tweenData?.TweenStop();
-                _isUsed = false;
                 _notEqulsFloor = false;
                 _time = 0;
                 
-                SinkAction(_staff, () => {
-                    int bowlCount = UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _staff.EquipFloorType);
-                    List<KitchenBurnerData> burnerDataList = _kitchenSystem.GetCookingBurnerDataList(_staff.EquipFloorType);
-                    return (0 < burnerDataList.Count) || (bowlCount <= 0);
-                });
+                // Match the full-sink priority used by PerformAction before resuming cooking.
+                SinkAction(_staff, () => UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _staff.EquipFloorType) <= 0);
                 return;
             } else {
                 ResetStaffState(_staff);

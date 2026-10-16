@@ -67,6 +67,7 @@ public class GatecrasherCustomer : Customer
 
 
     private object _serviceEventIdentity = new object();
+    internal object ServiceEventIdentity => _serviceEventIdentity;
 
     public override void SetData(CustomerData data, CustomerController customerController, TableManager tableManager)
     {

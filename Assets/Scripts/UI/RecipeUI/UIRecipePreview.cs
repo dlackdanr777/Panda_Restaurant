@@ -38,6 +38,7 @@ public class UIRecipePreview : MonoBehaviour
 
     private Action<FoodData> _onBuyButtonClicked;
     private FoodData _currentData;
+    private TimeManager _subscribedTimeManager;
     public event Action BeforeMiniGameNavigation;
 
     public FoodData SelectedData => _currentData;
@@ -55,9 +56,10 @@ public class UIRecipePreview : MonoBehaviour
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
 
         UserInfo.OnAddCookCountHandler += UpdateUI;
-        TimeManager.Instance.OnUpdateTimeHandler += TimeManagerUpdateEvent;
-        TimeManager.Instance.OnAddTimeHandler += TimeManagerAddRemoveEvent;
-        TimeManager.Instance.OnRemoveTimeHandler += TimeManagerAddRemoveEvent;
+        _subscribedTimeManager = TimeManager.Instance;
+        _subscribedTimeManager.OnUpdateTimeHandler += TimeManagerUpdateEvent;
+        _subscribedTimeManager.OnAddTimeHandler += TimeManagerAddRemoveEvent;
+        _subscribedTimeManager.OnRemoveTimeHandler += TimeManagerAddRemoveEvent;
     }
 
 
@@ -377,8 +379,12 @@ public class UIRecipePreview : MonoBehaviour
     private void OnDestroy()
     {
         UserInfo.OnAddCookCountHandler -= UpdateUI;
-        TimeManager.Instance.OnUpdateTimeHandler -= TimeManagerUpdateEvent;
-        TimeManager.Instance.OnAddTimeHandler -= TimeManagerAddRemoveEvent;
-        TimeManager.Instance.OnRemoveTimeHandler -= TimeManagerAddRemoveEvent;
+        if (_subscribedTimeManager != null)
+        {
+            _subscribedTimeManager.OnUpdateTimeHandler -= TimeManagerUpdateEvent;
+            _subscribedTimeManager.OnAddTimeHandler -= TimeManagerAddRemoveEvent;
+            _subscribedTimeManager.OnRemoveTimeHandler -= TimeManagerAddRemoveEvent;
+        }
+        _subscribedTimeManager = null;
     }
 }

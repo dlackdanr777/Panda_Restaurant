@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class UIPictorialBook : MobileUIView
 {
+    private GameManager _subscribedGameManager;
+
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private UIPictorialBookGachaItem _uiGachaItem;
@@ -62,7 +64,8 @@ public class UIPictorialBook : MobileUIView
         UserInfo.OnGiveRecipeHandler += CustomerUpdateUI;
         UserInfo.OnChangeScoreHandler += CustomerUpdateUI;
         UserInfo.OnGiveGachaItemHandler += CustomerUpdateUI;
-        GameManager.Instance.OnChangeScoreHandler += CustomerUpdateUI;
+        _subscribedGameManager = GameManager.Instance;
+        _subscribedGameManager.OnChangeScoreHandler += CustomerUpdateUI;
         UserInfo.OnGiveGachaItemHandler += GachaItemUpdateUI;
 
         OnGachaItemButtonClicked();
@@ -174,7 +177,9 @@ public class UIPictorialBook : MobileUIView
         UserInfo.OnGiveRecipeHandler -= CustomerUpdateUI;
         UserInfo.OnChangeScoreHandler -= CustomerUpdateUI;
         UserInfo.OnGiveGachaItemHandler -= CustomerUpdateUI;
-        GameManager.Instance.OnChangeScoreHandler -= CustomerUpdateUI;
+        if (_subscribedGameManager != null)
+            _subscribedGameManager.OnChangeScoreHandler -= CustomerUpdateUI;
+        _subscribedGameManager = null;
         UserInfo.OnGiveGachaItemHandler -= GachaItemUpdateUI;
     }
 }

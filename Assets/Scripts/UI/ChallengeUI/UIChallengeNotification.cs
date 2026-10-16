@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class UIChallengeNotification : UINotificationParent
 {
+    private ChallengeManager _subscribedChallengeManager;
+
     private List<ChallengeData> _allTimeChallengeList;
     private List<ChallengeData> _dailyChallengeList;
 
@@ -45,7 +47,8 @@ public class UIChallengeNotification : UINotificationParent
 
     protected void Start()
     {
-        ChallengeManager.Instance.OnDailyChallengeUpdateHandler += RefreshNotificationMessage;
+        _subscribedChallengeManager = ChallengeManager.Instance;
+        _subscribedChallengeManager.OnDailyChallengeUpdateHandler += RefreshNotificationMessage;
         UserInfo.OnClearChallengeHandler += RefreshNotificationMessage;
         UserInfo.OnDoneChallengeHandler += RefreshNotificationMessage;
         RefreshNotificationMessage();
@@ -53,7 +56,9 @@ public class UIChallengeNotification : UINotificationParent
 
     protected override void OnDestroy()
     {
-        ChallengeManager.Instance.OnDailyChallengeUpdateHandler -= RefreshNotificationMessage;
+        if (_subscribedChallengeManager != null)
+            _subscribedChallengeManager.OnDailyChallengeUpdateHandler -= RefreshNotificationMessage;
+        _subscribedChallengeManager = null;
         UserInfo.OnClearChallengeHandler -= RefreshNotificationMessage;
         UserInfo.OnDoneChallengeHandler -= RefreshNotificationMessage;
         base.OnDestroy();

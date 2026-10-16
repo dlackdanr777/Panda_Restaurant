@@ -12,18 +12,21 @@ public class RecipeTutorial : MonoBehaviour
     [SerializeField] private MobileUINavigation _uiNav;
     [SerializeField] private UITutorial _uiTutorial;
     [SerializeField] private UITutorialDescriptionNPC _uiDescriptionNPC;
+    private ChallengeManager _subscribedChallengeManager;
 
     private void Start()
     {
-        ChallengeManager.Instance.OnMainChallengeUpdateHandler += RefreshRecipeBuyEventBinding;
+        _subscribedChallengeManager = ChallengeManager.Instance;
+        _subscribedChallengeManager.OnMainChallengeUpdateHandler += RefreshRecipeBuyEventBinding;
         UserInfo.OnClearChallengeHandler += RefreshRecipeBuyEventBinding;
         RefreshRecipeBuyEventBinding();
     }
 
     private void OnDestroy()
     {
-        if (ChallengeManager.Instance != null)
-            ChallengeManager.Instance.OnMainChallengeUpdateHandler -= RefreshRecipeBuyEventBinding;
+        if (_subscribedChallengeManager != null)
+            _subscribedChallengeManager.OnMainChallengeUpdateHandler -= RefreshRecipeBuyEventBinding;
+        _subscribedChallengeManager = null;
         UserInfo.OnClearChallengeHandler -= RefreshRecipeBuyEventBinding;
         StopAllCoroutines();
         if (_uiRecipeTab != null)

@@ -15,10 +15,11 @@ using Object = UnityEngine.Object;
 // Manual Play in this Editor. No project/scene copy, source scene edit/save,
 // automated game input, forced arrival, recorder or external Editor process.
 [InitializeOnLoad]
-public sealed class CustomerPartyStage1Preview : EditorWindow
+public sealed partial class CustomerPartyStage1Preview : EditorWindow
 {
     internal const string ScenePath = "Assets/Scenes/Stage1.unity";
     private const string PreviousStart = "Panda.PartyManual.PreviousStartScene", ModeKey = "Panda.PartyManual.UnownedMenu", FloorKey = "Panda.PartyManual.Floor";
+    private const string ManagerWitnessKey = "Panda.PartyManual.ManagerWitness";
     private static CustomerPartyOwnedMemory memory;
     private static CustomerController controller;
     private static TableManager tables;
@@ -55,18 +56,23 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
 
     private void OnGUI()
     {
+        manualScroll = EditorGUILayout.BeginScrollView(manualScroll);
         EditorGUILayout.LabelField("원본 Stage1 · 메모리 테스트 계정", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(status, MessageType.Info);
         using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
         {
-            floor = EditorGUILayout.Popup("검수 층", floor, new[] { "1층", "VIP층" });
+            EditorGUILayout.LabelField("검수 층");
+            floor = GUILayout.SelectionGrid(floor, new[] { "1층", "VIP층" }, 2);
             unowned = EditorGUILayout.Toggle("B 미보유 메뉴 (거절 검수)", unowned);
+            staffAi = EditorGUILayout.Toggle("직원 AI 검수 준비", EditorApplication.isPlaying ? SessionState.GetBool(StaffAiKey, false) : staffAi);
+            if (staffAi) naturalAi = EditorGUILayout.Toggle("자연 호출 설정 (메모리만)", EditorApplication.isPlaying ? SessionState.GetBool(NaturalAiKey, false) : naturalAi);
             if (GUILayout.Button("원본 Stage1 메모리 Play 시작")) StartManual((ERestaurantFloorType)floor, unowned);
         }
         using (new EditorGUI.DisabledScope(!ready || !EditorApplication.isPlaying || EditorApplication.isPaused))
         {
             if (GUILayout.Button("1인 + 2인 대기열 준비")) PrepareCustomers();
             if (GUILayout.Button("다음 2인 팀 생성")) SpawnPair();
+            if (ready && EditorApplication.isPlaying && SessionState.GetBool(StaffAiKey, false)) DrawStaffAiControls();
             if (ready)
             {
                 EditorGUILayout.LabelField("대기 팀 / 사람", controller.Count + " / " + controller.WaitingPersonCount);
@@ -78,8 +84,9 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
                             table.PartyOrders == null ? table.CurrentUse.Party.Members.Count + "인" : string.Join(" | ", table.PartyOrders.Orders.Select(o => o.Food.Id + ": " + o.State)));
             }
         }
-        EditorGUILayout.HelpBox("Play 일시정지를 풀고 대기열을 준비하세요. Game 뷰에서 1인을 안내한 뒤 안내 버튼이 다시 활성화되면 2인을 안내하세요. 기본 Table1은 1인, Table2는 2인입니다. Shop에서 같은 슬롯을 해제/교체하고 상점 본체를 닫으세요. 완료액 검수는 A(판다) 음식만 서빙해 실제 식사 완료 후 진행합니다. B 음식은 서빙하지 않습니다. 서비스 시계는 정상 진행됩니다.", MessageType.None);
+        if (!SessionState.GetBool(StaffAiKey, false)) EditorGUILayout.HelpBox("Play 일시정지를 풀고 대기열을 준비하세요. Game 뷰에서 1인을 안내한 뒤 안내 버튼이 다시 활성화되면 2인을 안내하세요. 기본 Table1은 1인, Table2는 2인입니다. Shop에서 같은 슬롯을 해제/교체하고 상점 본체를 닫으세요. 완료액 검수는 A(판다) 음식만 서빙해 실제 식사 완료 후 진행합니다. B 음식은 서빙하지 않습니다. 서비스 시계는 정상 진행됩니다.", MessageType.None);
         if (GUILayout.Button("테스트 종료 (Play 중지)")) StopManual();
+        EditorGUILayout.EndScrollView();
         if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape) { StopManual(); Event.current.Use(); }
     }
     internal static bool CanStart(out string reason)
@@ -100,8 +107,10 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
         SessionState.SetIntArray("Panda.PartyManual.SelectionAll", Selection.instanceIDs);
         SessionState.SetInt("Panda.PartyManual.SelectionContext", Selection.activeContext == null ? 0 : Selection.activeContext.GetInstanceID());
         SessionState.SetString("Panda.PartyManual.Workspace", JsonUtility.ToJson(ReadWorkspace()));
+        SessionState.SetString(ManagerWitnessKey, ReadManagerWitness());
         SessionState.SetString(PreviousStart, AssetDatabase.GetAssetPath(EditorSceneManager.playModeStartScene));
         SessionState.SetBool(ModeKey, missingMenu); SessionState.SetInt(FloorKey, (int)selectedFloor);
+        SessionState.SetBool(StaffAiKey, staffAi); SessionState.SetBool(NaturalAiKey, staffAi && naturalAi);
         SessionState.SetBool(CustomerPartyManualPlayBootstrap.SessionKey, true);
         EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
         status = "Awake 이전 외부 호출 차단 후 원본 Stage1을 초기화합니다.";
@@ -121,7 +130,7 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
             if (c != null) c.transform.root.gameObject.SetActive(true);
         }
         _ = CustomerDataManager.Instance; _ = FoodDataManager.Instance; _ = KitchenUtensilDataManager.Instance; _ = StaffDataManager.Instance;
-        memory = new CustomerPartyOwnedMemory(); memory.Initialize(true);
+        memory = new CustomerPartyOwnedMemory(); memory.Initialize(true, SessionState.GetBool(StaffAiKey, false));
         Require(ReferenceEquals(BackendManager.ExistingInstance, memory.Owner) && memory.LoggedIn, "Memory owner not installed");
         UserInfo.SetGamerId("ORIGINAL-MANUAL-MEMORY");
         if (SessionState.GetBool(ModeKey, false)) ((Dictionary<string, int>)Field(typeof(UserInfo), "_giveRecipeLevelDic").GetValue(null)).Remove("FOOD04");
@@ -136,6 +145,7 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
         var original = Get<CustomerPartySettings>(controller, "_naturalPartySettings");
         Require(original != null && !original.EnableNaturalParties && original.MinimumNormalVisits == 25 && original.CompanionProbability == .2f, "Delivered settings changed");
         settings = Object.Instantiate(original); settings.EnableNaturalParties = false; Set(controller, "_naturalPartySettings", settings);
+        settings.EnableNaturalParties = SessionState.GetBool(NaturalAiKey, false);
         var catalog = (Dictionary<string, CustomerData>)Field(typeof(CustomerDataManager), "_customerDataDic").GetValue(null);
         foreach (var pair in new[] { ("CUSTOMER01", "FOOD01"), ("CUSTOMER02", "FOOD04") })
         {
@@ -154,6 +164,7 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
         }
         Physics2D.SyncTransforms(); Find<AStar>(scene).gameObject.SetActive(true); Find<KitchenSystem>(scene).gameObject.SetActive(true);
         foreach (var root in roots) if (active.Contains(root) && root.GetComponentInChildren<Canvas>(true) != null && !IsExternalRoot(root)) root.SetActive(true);
+        if (SessionState.GetBool(StaffAiKey, false)) InitializeCompletedCustomerTutorialNavigation(scene);
         Canvas.ForceUpdateCanvases(); Find<FurnitureSystem>(scene).gameObject.SetActive(true); Physics2D.SyncTransforms();
         var astar = Find<AStar>(scene);
         foreach (var map in Get<IDictionary>(astar, "_maps").Values) typeof(AStar).GetMethod("GenerateNodes", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(astar, new[] { map });
@@ -161,8 +172,28 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
         ready = true; prepared = guideBound = false;
         status = "메모리 테스트 준비 완료. 대기열 준비 후 Game 뷰에서 안내·주문·상점을 직접 조작하세요. 자동 클릭/종료는 없습니다.";
         Debug.Log("PARTY_MANUAL_READY: original Stage1; SDK initialized=" + BackEnd.Backend.IsInitialized + "; memory owner=" + ReferenceEquals(BackendManager.ExistingInstance, memory.Owner));
+        Debug.Log("PARTY_MANUAL_SESSION_START: " + ReadManagerWitness()
+            + "; subscriptions=" + ReadManagerSubscriptions() + "; teams=" + controller.Count
+            + "; people=" + controller.WaitingPersonCount + "; callTouches=" + controller.TabCount
+            + "; timeScale=" + Time.timeScale + "; natural=" + settings.EnableNaturalParties
+            + "; equipped=" + Enumerable.Range(0, 2).Sum(f => CustomerPartyOwnedMemory.StaffAiStaffIds.Keys.Count(
+                role => UserInfo.GetEquipStaff(UserInfo.CurrentStage, (ERestaurantFloorType)f, role) != null)));
     }
     internal static bool IsExternalRoot(GameObject root) => root.GetComponentsInChildren<MonoBehaviour>(true).Any(c => c is BackendManager || c is GoogleLoginManager || c is LevelPlayBoot || c is IAPManager || c is FirstLoadingScene);
+    private static void InitializeCompletedCustomerTutorialNavigation(Scene scene)
+    {
+        // Stage1 keeps this child canvas inactive. Its Start has therefore not bound
+        // the customer tutorial view, although completed-event commands query it.
+        // Initialize only this inactive navigation for the completed memory account;
+        // never reinitialize the active shop/gacha/exchange navigation.
+        Require(UserInfo.IsGatecrasher1TutorialClear && UserInfo.IsGatecrasher2TutorialClear
+            && UserInfo.IsSpecialCustomer1TutorialClear && UserInfo.IsSpecialCustomer2TutorialClear, "Completed tutorial memory account required");
+        var nav = Find<UITutorialCanvas>(scene).GetComponent<Muks.MobileUI.MobileUINavigation>();
+        if (!nav.gameObject.activeInHierarchy && Get<IDictionary>(nav, "_viewDic").Count == 0)
+            typeof(Muks.MobileUI.MobileUINavigation).GetMethod("Init", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(nav, null);
+        var customerTutorial = Get<UICustomerTutorial>(controller, "_uiCustomerTutorial");
+        Require(ReferenceEquals(Field(typeof(Muks.UI.UIView), "_uiNav").GetValue(customerTutorial), nav), "Customer tutorial navigation not bound");
+    }
     private static void PrepareCustomers()
     {
         if (!ready || prepared || controller.Count != 0) { status = "첫 대기열은 한 번만 준비합니다. 다음 검수는 다음 2인 팀 생성 또는 Play 재시작을 사용하세요."; return; }
@@ -182,6 +213,7 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
     }
     private static void BindManualGuideFloor()
     {
+        if (SessionState.GetBool(StaffAiKey, false)) return; // AI mode keeps the production manual-guide listener.
         if (guideBound) return;
         // Called by an explicit preparation click after TableManager.Start. The actual
         // Game-view button still invokes production guidance; only its floor is fixed
@@ -199,6 +231,7 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
         if (!ready || !EditorApplication.isPlaying) return;
         if (Input.GetKeyDown(KeyCode.Escape)) { StopManual(); return; }
         if (BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin) { Debug.LogError("Manual session external SDK fence failed"); StopManual(); }
+        TickStaffAiObservation();
         foreach (var w in Resources.FindObjectsOfTypeAll<CustomerPartyStage1Preview>()) w.Repaint();
     }
     private static void OnPlayChanged(PlayModeStateChange state)
@@ -206,6 +239,7 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
         if (!SessionState.GetBool(CustomerPartyManualPlayBootstrap.SessionKey, false)) return;
         if (state == PlayModeStateChange.ExitingPlayMode)
         {
+            StopStaffAiObservation();
             ready = false;
             if (controller != null) typeof(CustomerController).GetMethod("EndVisitParties", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(controller, null);
             foreach (var clone in runtimeCustomers)
@@ -232,6 +266,10 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
             if (reloadLocked) { reloadLocked = false; EditorApplication.UnlockReloadAssemblies(); }
             status = "테스트 종료. 메모리 계정은 폐기되었고 원래 편집 Scene으로 돌아왔습니다.";
             Debug.Log("PARTY_MANUAL_STOPPED: memory released; SDK initialized=" + BackEnd.Backend.IsInitialized);
+            string managerAfter = ReadManagerWitness();
+            Debug.Log("PARTY_MANUAL_MANAGER_RESTORE: matches=" + (managerAfter == SessionState.GetString(ManagerWitnessKey, ""))
+                + "; before=" + SessionState.GetString(ManagerWitnessKey, "") + "; after=" + managerAfter);
+            SessionState.EraseString(ManagerWitnessKey);
             EditorApplication.delayCall += VerifyWorkspace;
         }
     }
@@ -239,6 +277,24 @@ public sealed class CustomerPartyStage1Preview : EditorWindow
     private sealed class WorkspaceState
     {
         public string setup, dirty, selection, startScene, undo;
+    }
+    // Read-only lifecycle evidence, including DontDestroyOnLoad objects. Never creates or destroys managers.
+    private static string ReadManagerWitness()
+    {
+        return string.Join(";", new[] { typeof(GameManager), typeof(ChallengeManager) }.Select(type => type.Name + "="
+            + string.Join(",", Resources.FindObjectsOfTypeAll(type).OfType<Component>()
+                .Where(c => c != null && c.gameObject.scene.IsValid()).Select(c => c.GetInstanceID()).OrderBy(id => id))));
+    }
+    private static string ReadManagerSubscriptions()
+    {
+        return string.Join("|", new[] { typeof(GameManager), typeof(ChallengeManager) }.SelectMany(type =>
+            Resources.FindObjectsOfTypeAll(type).OfType<Component>().Where(c => c != null && c.gameObject.scene.IsValid())
+                .SelectMany(c => type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+                    .Where(f => typeof(Delegate).IsAssignableFrom(f.FieldType)).Select(f =>
+                    {
+                        Delegate[] handlers = (f.GetValue(c) as Delegate)?.GetInvocationList() ?? Array.Empty<Delegate>();
+                        return type.Name + "." + f.Name + "=" + handlers.Length + "/duplicates=" + (handlers.Length - handlers.Distinct().Count());
+                    }))));
     }
     private static WorkspaceState ReadWorkspace()
     {

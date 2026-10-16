@@ -30,6 +30,7 @@ public static class GachaReviewTestRunner
     private static string OutputDirectory => _customerUse ? CustomerUseOutputDirectory : _fairyBirthInput ? FairyBirthInputOutputDirectory : _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
     private static bool _customerUse;
     private static bool _manualPartyChecks;
+    private static bool _staffAiChecks;
     [MenuItem("Tools/Panda Restaurant/Customer Parties/Run Manual Play Safety Checks")]
     public static void RunManualPartyChecks()
     {
@@ -37,6 +38,42 @@ public static class GachaReviewTestRunner
         _batch = false; _customerUse = true; _manualPartyChecks = true;
         try { Begin("customer-use"); }
         finally { _manualPartyChecks = false; }
+    }
+    [MenuItem("Tools/Panda Restaurant/Customer Parties/Run Staff AI Checks")]
+    public static void RunStaffAiChecks()
+    {
+        if (_running) return;
+        string previousStarted = _started;
+        _batch = false; _customerUse = true; _staffAiChecks = true;
+        try { Begin("staff-ai"); }
+        catch (Exception error)
+        {
+            if (_running || _started != previousStarted) Fail(error);
+            else Debug.LogException(error);
+        }
+        finally { _staffAiChecks = false; }
+    }
+
+    [MenuItem("Tools/Panda Restaurant/Customer Parties/Check Known Fever Assertion")]
+    public static void CheckKnownFeverAssertion()
+    {
+        if (_running || EditorApplication.isPlayingOrWillChangePlaymode || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin)
+            throw new InvalidOperationException("The known Fever check requires an idle, SDK-free Edit Mode.");
+        var validator = typeof(GachaReviewTestRunner).Assembly.GetType(
+            "PandaRestaurant.Editor.StaffDataValidation.StaffSkillRuntimeFoundationValidator", true);
+        var method = validator.GetMethod("ValidateFeverPurchaseLock", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new MissingMethodException(validator.FullName, "ValidateFeverPurchaseLock");
+        try
+        {
+            method.Invoke(null, null);
+            Debug.Log("KNOWN_FEVER_ASSERTION_52: no failure reproduced. This separate source assertion is not included in Staff AI test totals.");
+        }
+        catch (TargetInvocationException error) when (error.InnerException is InvalidOperationException
+            && (error.InnerException.Message == "Fever active guard must run before dia validation."
+                || error.InnerException.Message == "Fever active guard must run before dia deduction."))
+        {
+            Debug.LogWarning("KNOWN_FEVER_ASSERTION_52_FAILED: existing payment-source string expectation remains failed; not counted as a Staff AI pass.\n" + error.InnerException);
+        }
     }
     private static string CustomerUseOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_CUSTOMER_USE_EVIDENCE_DIR"))
         ? Path.Combine(Path.GetTempPath(), "CustomerTableUseReview") : Environment.GetEnvironmentVariable("PANDA_CUSTOMER_USE_EVIDENCE_DIR");
@@ -206,11 +243,17 @@ public static class GachaReviewTestRunner
                 EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
                 Begin("text-stamp");
             }
+            else if (command == "staff-ai") RunStaffAiChecks();
+            else if (command == "known-fever") CheckKnownFeverAssertion();
             else if (command == "run") Begin("all");
             else if (command == "economy" || command == "fairy" || command == "ui") Begin(command);
-            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, or run for the related review tests.");
+            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, run, staff-ai, or known-fever for the related review tests.");
         }
-        catch (Exception error) { Fail(error); }
+        catch (Exception error)
+        {
+            if (command == "known-fever") Debug.LogException(error);
+            else Fail(error);
+        }
     }
 
     private static void InspectCreationTarget()
@@ -284,6 +327,9 @@ public static class GachaReviewTestRunner
             "FairyBirthSequenceTests", "FairyBirthSoundTests", "PresentationSoundTests" };
         if (_customerUse) fixtures = new[] { "CustomerPartyFurnitureTests", "CustomerPartyIntegrationTests", "CustomerNaturalPartyTests", "CustomerPartyInterruptionTests", "CustomerPartyFailureBoundaryTests", "CustomerPartyServingTests", "CustomerPartyCompletionTests", "CustomerPartyOrderTests", "CustomerTableUseRegressionTests", "CustomerVisitPartyTests", "CustomerPartyQueueTests", "StageWaitingSaveGuardTests", "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffStageMigrationCollectionTests" };
         if (_manualPartyChecks) fixtures = new[] { "CustomerPartyManualPlayTests", "CustomerPartyFurnitureTests", "CustomerPartyIntegrationTests", "StageWaitingSaveGuardTests" };
+        if (_staffAiChecks) fixtures = new[] { "StaffAiLifecycleTests", "StaffAiGuardLifecycleTests", "StaffAiSinkLifecycleTests", "StaffAiShutdownTests", "CustomerPartyManualPlayTests", "CustomerPartyOrderTests",
+            "CustomerPartyServingTests", "CustomerPartyCompletionTests", "ManagerFloorGuideTests", "CustomerNaturalPartyTests",
+            "StageWaitingSaveGuardTests", "CustomerPartyFurnitureTests" };
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;
@@ -297,6 +343,13 @@ public static class GachaReviewTestRunner
             Type fixture = assembly.GetType(name, true);
             foreach (MethodInfo method in fixture.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
+                // This review permits memory instances only: the user forbids saved
+                // verification Scene/Prefab copies and disk copies of test settings.
+                // Exclude these asset-roundtrip cases only from the Staff AI scope;
+                // their assertions and the existing Manual Play filter stay intact.
+                if (_staffAiChecks && ((name == "CustomerPartyServingTests" && method.Name == "CounterInspectorSpacing_SurvivesSavedReloadAndFoodRefresh")
+                    || (name == "CustomerPartyOrderTests" && method.Name == "AuthoredBubbleSizeAndOffsets_PersistThroughTemporaryPrefabReloadAndFurnitureRefresh")
+                    || (name == "CustomerNaturalPartyTests" && method.Name == "TempSettingsAsset_ReloadAffectsNewSpawnOnly_AndNeverChangesDelivery"))) continue;
                 if (selectedMethod != null && method.Name != selectedMethod) continue;
                 if (_fairyBirthInput && (method.Name == "Stage1_ElevenConfirmedBirthsProduceTheFireworksEvidence"
                     || method.Name == "Stage1_ProductionBirthUsesVisibleWallPuffJumpAndThenFreeBehaviour"
@@ -529,6 +582,7 @@ public static class GachaReviewTestRunner
             inconclusive = Cases.Count(test => test.status == "Inconclusive")
         };
         if (_fairyBirthInput) report.scope = "Selected fairy input/birth/audio NUnit tests on the main Editor thread. Actual Stage1 is read in a disposable PreviewScene. Production pointer frame processors use a temporary owned collider in the already loaded default-physics scene; the collider is deleted before scene/dirty/Selection/Undo witness comparison. No existing scene object is edited or saved, no scene replacement, Play transition, SDK/login or production backend call. Evidence is written under PANDA_FAIRY_INPUT_EVIDENCE_DIR. Optional video uses deterministic 1:1 simulation-frame timing, not device or real-time performance capture.";
+        if (_group == "staff-ai") report.scope = "Selected Staff AI lifecycle and directly related customer NUnit regressions on the main Editor thread, NumberOfTestWorkers=0, using the existing disposable in-memory PreviewScene and scene/dirty/Selection/Undo witness. No scene save, scene replacement, Play transition, SDK/login or production backend call. The saved-asset roundtrip methods CounterInspectorSpacing_SurvivesSavedReloadAndFoodRefresh, AuthoredBubbleSizeAndOffsets_PersistThroughTemporaryPrefabReloadAndFurnitureRefresh and TempSettingsAsset_ReloadAffectsNewSpawnOnly_AndNeverChangesDelivery are excluded because this review permits memory instances only. Direct decision and callback tests do not establish real PlayerLoop or OS input behavior. Known Fever assertion #52 is checked separately and is not included in these totals.";
         report.success = string.IsNullOrEmpty(_error) && report.total > 0 && report.failed == 0 && report.skipped == 0 && report.inconclusive == 0;
         File.WriteAllText(Path.Combine(OutputDirectory, OutputPrefix + "-tests.json"), JsonUtility.ToJson(report, true));
     }
