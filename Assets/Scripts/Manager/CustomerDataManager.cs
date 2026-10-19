@@ -146,6 +146,9 @@ public class CustomerDataManager : MonoBehaviour
             if (_customerDataList[i] == null || string.IsNullOrWhiteSpace(_customerDataList[i].Id))
                 continue;
 
+            if (!UserInfo.GetCustomerEnableState(_customerDataList[i]))
+                continue;
+
             if (UserInfo.IsClearNotification(_customerDataList[i].Id))
                 continue;
 
@@ -621,7 +624,7 @@ public class CustomerDataManager : MonoBehaviour
         UserInfo.OnGiveGachaItemHandler -= CheckEnableCustomer;
         UserInfo.OnGiveRecipeHandler -= CheckEnableCustomer;
 
-        if (GameManager.Instance != null)
+        if (GameManager.HasInstance)
             GameManager.Instance.OnChangeScoreHandler -= CheckEnableCustomer;
 
         UserInfo.OnVisitedCustomerHandler -= CheckCustomerNotification;
