@@ -143,7 +143,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         foreach (var alarm in scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<UIMailAlarm>(true))) alarm.enabled = false;
         controller = Find<CustomerController>(scene); tables = Find<TableManager>(scene);
         var original = Get<CustomerPartySettings>(controller, "_naturalPartySettings");
-        Require(original != null && !original.EnableNaturalParties && original.MinimumNormalVisits == 25 && original.CompanionProbability == .2f, "Delivered settings changed");
+        Require(original != null && original.MinimumNormalVisits == 25 && original.CompanionProbability == .2f, "Delivered settings changed");
         settings = Object.Instantiate(original); settings.EnableNaturalParties = false; Set(controller, "_naturalPartySettings", settings);
         settings.EnableNaturalParties = SessionState.GetBool(NaturalAiKey, false);
         var catalog = (Dictionary<string, CustomerData>)Field(typeof(CustomerDataManager), "_customerDataDic").GetValue(null);

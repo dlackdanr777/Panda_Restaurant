@@ -38,10 +38,11 @@ public partial class CustomerController
         if (appeared != null)
             foreach (var candidate in appeared)
             {
-                if (candidate == null || string.IsNullOrWhiteSpace(candidate.Id) || candidate.Id == representative.Id
+                if (candidate == null || string.IsNullOrWhiteSpace(candidate.Id)
                     || !CustomerDataManager.Instance.TryGetCustomerData(candidate.Id, out var canonical)
                     || !(canonical is NormalCustomerData normal) || !ReferenceEquals(candidate, normal)
                     || !UserInfo.GetCustomerEnableState(normal)
+                    || UserInfo.GetVisitedCustomerCount(normal) < _naturalPartySettings.MinimumNormalVisits
                     || !Enum.IsDefined(typeof(CustomerTendencyType), normal.TendencyType)
                     || !_satisfactionSystem.CheckCustomerTendency(normal.TendencyType) || !unique.Add(normal.Id)) continue;
                 candidates.Add(normal.Id);

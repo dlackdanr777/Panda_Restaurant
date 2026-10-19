@@ -24,12 +24,13 @@ public sealed class CustomerNaturalPartyTests
         s.Controller.NaturalPartyRoll = () => 0f; s.Controller.NaturalCompanionIndex = count => 0;
         return config;
     }
-    private static NormalCustomerData Candidate(Flow s, string id, bool enabled = true, bool known = true, CustomerTendencyType tendency = CustomerTendencyType.Normal)
+    private static NormalCustomerData Candidate(Flow s, string id, bool enabled = true, bool known = true,
+        CustomerTendencyType tendency = CustomerTendencyType.Normal, int visits = 1)
     {
         var data = s.Track(Object.Instantiate(s.Data)); Set(data, "_id", id); Set(data, "_tendencyType", tendency);
         Set(data, "_visitCountFoodDic", new Dictionary<int, string>());
         if (known) Get<Dictionary<string, CustomerData>>(CustomerDataManager.Instance, "_customerDataDic")[id] = data;
-        if (enabled && !string.IsNullOrWhiteSpace(id)) Records[id] = new SaveCustomerData(id, "", 0);
+        if (enabled && !string.IsNullOrWhiteSpace(id)) Records[id] = new SaveCustomerData(id, "", visits);
         Get<List<NormalCustomerData>>(CustomerDataManager.Instance, "_normalCustomerDataList").Add(data);
         return data;
     }
@@ -51,12 +52,12 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s, visits); var b = Candidate(s, "B"); int rolls = 0, choices = 0, visitEvents = 0;
+            Setup(s, visits); var b = Candidate(s, "B", visits: 25); int rolls = 0, choices = 0, visitEvents = 0;
             UserInfo.OnVisitedCustomerHandler += () => visitEvents++;
             s.Controller.NaturalPartyRoll = () => { rolls++; return 0; };
             s.Controller.NaturalCompanionIndex = count => { choices++; return 0; };
             Assert.That(Select(s, b).Length, Is.EqualTo(size)); Assert.That(rolls, Is.EqualTo(draws)); Assert.That(choices, Is.EqualTo(draws));
-            Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id), Is.EqualTo(visits)); Assert.That(UserInfo.GetVisitedCustomerCount(b.Id), Is.Zero);
+            Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id), Is.EqualTo(visits)); Assert.That(UserInfo.GetVisitedCustomerCount(b.Id), Is.EqualTo(25));
             Assert.That(visitEvents, Is.Zero);
         }
     }
@@ -65,7 +66,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); var b = Candidate(s, "B"); int draws = 0, choices = 0;
+            Setup(s); var b = Candidate(s, "B", visits: 25); int draws = 0, choices = 0;
             s.Controller.NaturalPartyRoll = () => { draws++; return roll; };
             s.Controller.NaturalCompanionIndex = count => { choices++; Assert.That(count, Is.EqualTo(1)); return 0; };
             Assert.That(Select(s, b).Length, Is.EqualTo(size)); Assert.That(draws, Is.EqualTo(1)); Assert.That(choices, Is.EqualTo(size - 1));
@@ -76,14 +77,15 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            var config = Setup(s); var b = Candidate(s, "B");
+            var config = Setup(s); var b = Candidate(s, "B", visits: 25);
             if (reason == "disabled") config.EnableNaturalParties = false;
             if (reason == "tutorial") UserInfo.IsTutorialStart = true;
             if (reason == "unloaded-record") Records.Remove(s.Data.Id);
             s.Controller.NaturalPartyRoll = () => throw new Exception("Unexpected party RNG");
             s.Controller.NaturalCompanionIndex = count => throw new Exception("Unexpected companion RNG");
             var before = UnityEngine.Random.state;
-            Assert.That(Select(s, reason == "no-candidate" ? s.Data : b), Is.EqualTo(new[] { s.Data.Id }));
+            var candidates = reason == "no-candidate" ? Candidate(s, "BELOW-THRESHOLD", visits: 24) : b;
+            Assert.That(Select(s, candidates), Is.EqualTo(new[] { s.Data.Id }));
             Assert.That(UnityEngine.Random.state, Is.EqualTo(before));
         }
     }
@@ -92,7 +94,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            var config = Setup(s); var b = Candidate(s, "B");
+            var config = Setup(s); var b = Candidate(s, "B", visits: 25);
             if (reason == "missing") Set(s.Controller, "_naturalPartySettings", null);
             if (reason == "negative-visits") config.MinimumNormalVisits = -1;
             if (reason == "negative-probability") config.CompanionProbability = -.1f;
@@ -104,15 +106,89 @@ public sealed class CustomerNaturalPartyTests
             Assert.That(s.Controller.LastNaturalPartyDiagnostic, Is.EqualTo("NaturalPartySettingsMissingOrInvalid"));
         }
     }
-    [TestCase(0, "B")] [TestCase(1, "C")]
-    public void UniqueIds_AreTheUniformDenominator_ZeroVisitCompanionAllowed(int index, string expected)
+    [TestCase(0, "TABLE-USE-CUSTOMER")] [TestCase(1, "B")] [TestCase(2, "C")]
+    public void UniqueIds_AreUniformAndRepeatedCandidatesHaveNoExtraWeight(int index, string expected)
     {
         using (var s = new Flow())
         {
-            Setup(s); var b = Candidate(s, "B"); var c = Candidate(s, "C");
-            s.Controller.NaturalCompanionIndex = count => { Assert.That(count, Is.EqualTo(2)); return index; };
+            Setup(s); var b = Candidate(s, "B", visits: 25); var c = Candidate(s, "C", visits: 25);
+            s.Controller.NaturalCompanionIndex = count => { Assert.That(count, Is.EqualTo(3)); return index; };
             Assert.That(Select(s, s.Data, b, b, c, c, c), Is.EqualTo(new[] { s.Data.Id, expected }));
-            Assert.That(UserInfo.GetVisitedCustomerCount(expected), Is.Zero);
+        }
+    }
+
+    [TestCase(0)] [TestCase(1)] [TestCase(24)]
+    public void CompanionBelowMinimumVisits_IsExcluded(int visits)
+    {
+        using (var s = new Flow())
+        {
+            Setup(s); var b = Candidate(s, "B", visits: visits);
+            s.Controller.NaturalPartyRoll = () => throw new Exception("No eligible B must not consume party RNG");
+            s.Controller.NaturalCompanionIndex = count => throw new Exception("No eligible B must not select a companion");
+            Assert.That(Select(s, b), Is.EqualTo(new[] { s.Data.Id }));
+            Assert.That(s.Controller.LastNaturalPartyDiagnostic, Is.EqualTo("NoEligibleCompanion"));
+            Assert.That(UserInfo.GetVisitedCustomerCount(b), Is.EqualTo(visits));
+        }
+    }
+
+    [Test]
+    public void CandidateUsesConfiguredMinimumRatherThanAVisitCountLiteral()
+    {
+        using (var s = new Flow())
+        {
+            var settings = Setup(s, 7); settings.MinimumNormalVisits = 7;
+            var b = Candidate(s, "B", visits: 7);
+            s.Controller.NaturalCompanionIndex = count => { Assert.That(count, Is.EqualTo(1)); return 0; };
+            Assert.That(Select(s, b), Is.EqualTo(new[] { s.Data.Id, "B" }));
+            Records["B"] = new SaveCustomerData("B", "", 6);
+            s.Controller.NaturalPartyRoll = () => throw new Exception("Below-minimum B must be excluded");
+            Assert.That(Select(s, b), Is.EqualTo(new[] { s.Data.Id }));
+        }
+    }
+
+    [Test]
+    public void EligibleRepresentativesCanSelectSelfOrOtherEligibleId()
+    {
+        using (var s = new Flow())
+        {
+            Setup(s); var b = Candidate(s, "B", visits: 25);
+            var appeared = new[] { s.Data, b };
+            s.Controller.NaturalPartyRoll = () => 0f;
+            foreach (var item in new[]
+            {
+                (representative: s.Data, index: 0, expected: new[] { s.Data.Id, s.Data.Id }),
+                (representative: s.Data, index: 1, expected: new[] { s.Data.Id, b.Id }),
+                (representative: b, index: 0, expected: new[] { b.Id, s.Data.Id }),
+                (representative: b, index: 1, expected: new[] { b.Id, b.Id })
+            })
+            {
+                s.Controller.NaturalCompanionIndex = count => { Assert.That(count, Is.EqualTo(2)); return item.index; };
+                Assert.That(s.Controller.SelectNaturalPartyMembers(item.representative, appeared), Is.EqualTo(item.expected));
+            }
+        }
+    }
+
+    [Test]
+    public void RepresentativeAt25AndCompanionAt24_CanSelectOnlyRepresentativeSelf()
+    {
+        using (var s = new Flow())
+        {
+            Setup(s); var b = Candidate(s, "B", visits: 24);
+            s.Controller.NaturalCompanionIndex = count => { Assert.That(count, Is.EqualTo(1)); return 0; };
+            Assert.That(s.Controller.SelectNaturalPartyMembers(s.Data, new[] { s.Data, b }),
+                Is.EqualTo(new[] { s.Data.Id, s.Data.Id }));
+        }
+    }
+
+    [Test]
+    public void RepresentativeCanBeItsOwnOnlyEligibleCompanion()
+    {
+        using (var s = new Flow())
+        {
+            Setup(s);
+            s.Controller.NaturalCompanionIndex = count => { Assert.That(count, Is.EqualTo(1)); return 0; };
+            Assert.That(Select(s, s.Data), Is.EqualTo(new[] { s.Data.Id, s.Data.Id }));
+            Assert.That(s.Controller.LastNaturalPartyDiagnostic, Is.EqualTo("NaturalCompanionSelected"));
         }
     }
     [Test]
@@ -120,17 +196,19 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); var locked = Candidate(s, "LOCKED", false); var unknown = Candidate(s, "UNKNOWN", true, false);
-            var sensitive = Candidate(s, "SENSITIVE", tendency: CustomerTendencyType.Sensitive);
-            var highly = Candidate(s, "HIGH", tendency: CustomerTendencyType.HighlySensitive);
-            var invalid = Candidate(s, "BAD-TENDENCY", tendency: (CustomerTendencyType)999);
-            var empty = Candidate(s, ""); var special = Candidate(s, "SPECIAL"); var gate = Candidate(s, "GATE");
+            Setup(s); var locked = Candidate(s, "LOCKED", false, visits: 25); var unknown = Candidate(s, "UNKNOWN", true, false, visits: 25);
+            var sensitive = Candidate(s, "SENSITIVE", tendency: CustomerTendencyType.Sensitive, visits: 25);
+            var highly = Candidate(s, "HIGH", tendency: CustomerTendencyType.HighlySensitive, visits: 25);
+            var invalid = Candidate(s, "BAD-TENDENCY", tendency: (CustomerTendencyType)999, visits: 25);
+            var empty = Candidate(s, "", visits: 25); var special = Candidate(s, "SPECIAL", visits: 25); var gate = Candidate(s, "GATE", visits: 25);
             var catalog = Get<Dictionary<string, CustomerData>>(CustomerDataManager.Instance, "_customerDataDic");
             catalog[special.Id] = s.Track(ScriptableObject.CreateInstance<SpecialCustomerData>());
             catalog[gate.Id] = s.Track(ScriptableObject.CreateInstance<GatecrasherCustomer1Data>());
             Set(Get<SatisfactionSystem>(s.Controller, "_satisfactionSystem"), "_satisfaction", -30f);
-            s.Controller.NaturalPartyRoll = () => throw new Exception("No eligible candidates must skip RNG");
-            Assert.That(Select(s, null, locked, unknown, sensitive, highly, invalid, empty, special, gate, s.Data).Length, Is.EqualTo(1));
+            s.Controller.NaturalPartyRoll = () => 0f;
+            s.Controller.NaturalCompanionIndex = count => { Assert.That(count, Is.EqualTo(1)); return 0; };
+            Assert.That(Select(s, null, locked, unknown, sensitive, highly, invalid, empty, special, gate, s.Data),
+                Is.EqualTo(new[] { s.Data.Id, s.Data.Id }), "Only the eligible representative itself remains selectable");
             Assert.That(CustomerDataManager.Instance.GetAppearNormalCustomerList(), Has.No.Member(unknown));
             Assert.That(CustomerDataManager.Instance.GetAppearNormalCustomerList(), Has.No.Member(special));
         }
@@ -141,7 +219,7 @@ public sealed class CustomerNaturalPartyTests
         using (var s = new Flow())
         {
             Setup(s); Set(s.Data, "_tendencyType", CustomerTendencyType.HighlySensitive);
-            Candidate(s, "B", tendency: CustomerTendencyType.HighlySensitive); Records["B"] = new SaveCustomerData("B", "", 25);
+            Candidate(s, "B", tendency: CustomerTendencyType.HighlySensitive, visits: 25);
             s.Controller.NaturalPartyRoll = () => throw new Exception("Fallback must not supply a companion");
             Assert.That(s.Controller.TryAddCustomer(), Is.True); Assert.That(s.Controller.WaitingPersonCount, Is.EqualTo(1));
             Assert.That(UserInfo.PromotionCount, Is.EqualTo(1));
@@ -153,7 +231,7 @@ public sealed class CustomerNaturalPartyTests
         using (var s = new Flow())
         {
             var config = Setup(s); config.EnableNaturalParties = tutorial; UserInfo.IsTutorialStart = tutorial;
-            var b = Candidate(s, "B"); s.Controller.NaturalPartyRoll = () => throw new Exception("Extra RNG");
+            var b = Candidate(s, "B", visits: 25); s.Controller.NaturalPartyRoll = () => throw new Exception("Extra RNG");
             UnityEngine.Random.InitState(4001); UnityEngine.Random.Range(0, 100); int representative = UnityEngine.Random.Range(0, 2);
             var expected = UnityEngine.Random.state;
             UnityEngine.Random.InitState(4001); s.Controller.AddCustomer();
@@ -166,7 +244,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); Candidate(s, "B"); Set(GameManager.Instance, "_maxWaitCustomerCount", 20);
+            Setup(s); Candidate(s, "B", visits: 25); Set(GameManager.Instance, "_maxWaitCustomerCount", 20);
             for (int i = 0; i < existing; i++) Assert.That(s.Controller.TrySpawnWaitingParty(new[] { s.Data.Id }, out _), Is.True);
             RepresentativeSeed(0, 2); Assert.That(s.Controller.TryAddCustomer(), Is.EqualTo(success));
             Assert.That(s.Controller.Count, Is.EqualTo(20)); Assert.That(s.Controller.WaitingPersonCount, Is.EqualTo(success ? 21 : 20));
@@ -178,7 +256,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); Candidate(s, "B"); int draws = 0, changes = 0, called = 0;
+            Setup(s); Candidate(s, "B", visits: 25); int draws = 0, changes = 0, called = 0;
             s.Controller.NaturalPartyRoll = () => { draws++; return 0; };
             s.Controller.OnChangeCustomerHandler += () => changes++; s.Controller.OnAddCustomerHandler += () => called++;
             ObjectPoolManager.Instance.DespawnNormalCustomer(s.Customer); s.Swap(typeof(ObjectPoolManager), "_normalCustomerPrefab", null);
@@ -191,12 +269,15 @@ public sealed class CustomerNaturalPartyTests
         }
     }
     [Test]
-    public void NaturalSave_ParamParseRestore_KeepsMembersDespiteDisabledChangedSettings()
+    public void NaturalSave_ParamParseRestore_KeepsAPlusAWithoutRerollingOrMergingMembers()
     {
         using (var s = new Flow())
         {
-            var config = Setup(s); Candidate(s, "B"); RepresentativeSeed(0, 2); s.Controller.AddCustomer();
+            var config = Setup(s); Candidate(s, "B", visits: 25); RepresentativeSeed(0, 2); s.Controller.AddCustomer();
             var original = s.Controller.WaitingParties.Single(); var ids = original.Members.Select(m => m.Customer.NormalCustomerData.Id).ToArray();
+            Assert.That(ids, Is.EqualTo(new[] { s.Data.Id, s.Data.Id }));
+            Assert.That(original.Members[0].Customer, Is.Not.SameAs(original.Members[1].Customer));
+            Assert.That(original.Members[0], Is.Not.SameAs(original.Members[1]));
             var plain = JObject.Parse(s.Stage.SaveData().GetParam().GetJson());
             var saved = WaitingPartySaveData.ParsePlain(plain); Assert.That(saved.Teams.Single(), Is.EqualTo(ids));
             Invoke(s.Controller, "EndVisitParties"); Set(s.Stage, "_waitingParties", saved);
@@ -205,6 +286,8 @@ public sealed class CustomerNaturalPartyTests
             s.Controller.NaturalPartyRoll = () => throw new Exception("Restore rerolled");
             Invoke(s.Controller, "LoadWaitingCustomers"); var restored = s.Controller.WaitingParties.Single();
             Assert.That(restored, Is.Not.SameAs(original)); Assert.That(restored.Members.Select(m => m.Customer.NormalCustomerData.Id), Is.EqualTo(ids));
+            Assert.That(restored.Members[0].Customer, Is.Not.SameAs(restored.Members[1].Customer));
+            Assert.That(restored.Members[0], Is.Not.SameAs(restored.Members[1]));
             Assert.That(UserInfo.PromotionCount, Is.EqualTo(1));
         }
     }
@@ -213,17 +296,17 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s, 24); var b = Candidate(s, "B"); Assert.That(Select(s, b).Length, Is.EqualTo(1));
+            Setup(s, 24); var b = Candidate(s, "B", visits: 25); Assert.That(Select(s, b).Length, Is.EqualTo(1));
             s.GuideAndSeat(); s.OrderAndCook(false); s.Eat(); s.Settle();
             Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id), Is.EqualTo(25)); Assert.That(Select(s, b).Length, Is.EqualTo(2));
             Assert.That(s.Customer.VisitParty == null || s.Customer.VisitParty.Members.Count == 1, Is.True);
         }
     }
     [Test]
-    public void DeliveredAsset_AndStageReference_AreDefaultOff25AndPoint20()
+    public void DeliveredAsset_AndStageReference_EnableNaturalPartiesAt25AndPoint20()
     {
         var config = AssetDatabase.LoadAssetAtPath<CustomerPartySettings>("Assets/Resources/CustomerPartySettings.asset");
-        Assert.That(config, Is.Not.Null); Assert.That(config.EnableNaturalParties, Is.False);
+        Assert.That(config, Is.Not.Null); Assert.That(config.EnableNaturalParties, Is.True);
         Assert.That(config.MinimumNormalVisits, Is.EqualTo(25)); Assert.That(config.CompanionProbability, Is.EqualTo(.2f));
         string guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(config));
         Assert.That(File.ReadAllText("Assets/Scenes/Stage1.unity"), Does.Contain("_naturalPartySettings: {fileID: 11400000, guid: " + guid + ", type: 2}"));
@@ -240,7 +323,7 @@ public sealed class CustomerNaturalPartyTests
                 config.MinimumNormalVisits = 26; config.CompanionProbability = 1;
                 AssetDatabase.CreateAsset(config, path); AssetDatabase.SaveAssetIfDirty(config);
                 AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
-                var loaded = AssetDatabase.LoadAssetAtPath<CustomerPartySettings>(path); Setup(s); Candidate(s, "B"); Set(s.Controller, "_naturalPartySettings", loaded);
+                var loaded = AssetDatabase.LoadAssetAtPath<CustomerPartySettings>(path); Setup(s); Candidate(s, "B", visits: 25); Set(s.Controller, "_naturalPartySettings", loaded);
                 RepresentativeSeed(0, 2); s.Controller.AddCustomer(); var first = s.Controller.WaitingParties.Single();
                 Assert.That(first.Members.Count, Is.EqualTo(1));
                 loaded.MinimumNormalVisits = 25; EditorUtility.SetDirty(loaded); AssetDatabase.SaveAssetIfDirty(loaded); AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
@@ -250,7 +333,7 @@ public sealed class CustomerNaturalPartyTests
             }
         }
         finally { AssetDatabase.DeleteAsset(path); }
-        DeliveredAsset_AndStageReference_AreDefaultOff25AndPoint20();
+        DeliveredAsset_AndStageReference_EnableNaturalPartiesAt25AndPoint20();
     }
 
     [TestCase(false)] [TestCase(true)]
@@ -261,7 +344,7 @@ public sealed class CustomerNaturalPartyTests
             var s = p.S; var original = p.Party; var use = s.Table.CurrentUse;
             Assert.That(p.Batch.Orders.Select(f => f.Food.Id), Is.EqualTo(new[] { s.Food.Id, p.SecondFood.Id }));
             Assert.That(original.Members.Select(m => m.Customer.OrderCount), Is.EqualTo(new[] { 1, 2 }));
-            Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id), Is.EqualTo(25)); Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id), Is.Zero);
+            Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id), Is.EqualTo(25)); Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id), Is.EqualTo(25));
             Get<CustomerPartySettings>(s.Controller, "_naturalPartySettings").EnableNaturalParties = false;
             s.Controller.NaturalPartyRoll = () => throw new Exception("Existing party must not reroll");
             s.Table.RefreshPartyOrderButtons(); Invoke(s.Controller, "SortCustomerLine");
@@ -272,14 +355,14 @@ public sealed class CustomerNaturalPartyTests
             {
                 Assert.That(s.Manager.AbortPartyService(use, "Natural test service failure"), Is.True);
                 Assert.That(use.ServicePenaltyApplied, Is.True); Assert.That(s.Stage.Satisfaction, Is.EqualTo(-10));
-                Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id), Is.Zero);
+                Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id), Is.EqualTo(25));
             }
             else
             {
                 CustomerPartyCompletionTests.Eat(p, p.Batch.Orders[1]);
                 Assert.That(p.Batch.Round, Is.EqualTo(2)); Assert.That(p.Batch.Orders.Single().Member.Customer.NormalCustomerData.Id, Is.EqualTo(p.SecondData.Id));
                 CustomerPartyCompletionTests.CookRound(p); CustomerPartyCompletionTests.Eat(p, p.Batch.Orders.Single());
-                Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id), Is.EqualTo(1));
+                Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id), Is.EqualTo(26));
                 Assert.That(UserInfo.TotalCumulativeCustomerCount, Is.EqualTo(2));
             }
             p.ArriveExit(0); p.ArriveExit(1);
@@ -288,12 +371,50 @@ public sealed class CustomerNaturalPartyTests
         }
     }
 
+    [Test]
+    public void NaturalAPlusA_UsesDistinctCustomersOrdersVisitsAndSettlement()
+    {
+        using (var p = new CustomerPartyOrderTests.Pair(same: true, ordersA: 1, ordersB: 1, natural: true, sameCustomerId: true))
+        {
+            string id = p.S.Data.Id;
+            var members = p.Party.Members;
+            Assert.That(members.Count, Is.EqualTo(2));
+            Assert.That(members.Select(m => m.Customer.NormalCustomerData.Id), Is.EqualTo(new[] { id, id }));
+            Assert.That(members[0].Customer, Is.Not.SameAs(members[1].Customer));
+            Assert.That(members[0], Is.Not.SameAs(members[1]));
+            Assert.That(members.Select(m => m.SeatIndex), Is.EqualTo(new[] { 0, 1 }));
+            Assert.That(p.S.Table.OccupantCount, Is.EqualTo(2));
+            Assert.That(p.Batch.Orders.Count, Is.EqualTo(2));
+            Assert.That(p.Batch.Orders.Select(o => o.Member).Distinct().Count(), Is.EqualTo(2));
+            Assert.That(p.Batch.Orders.All(o => o.Member.Customer.NormalCustomerData.Id == id), Is.True);
+            Assert.That(UserInfo.GetVisitedCustomerCount(id), Is.EqualTo(25));
+
+            CustomerPartyCompletionTests.CookRound(p);
+            foreach (var order in p.Batch.Orders.ToArray()) CustomerPartyCompletionTests.Eat(p, order);
+
+            Assert.That(UserInfo.GetVisitedCustomerCount(id), Is.EqualTo(27));
+            Assert.That(UserInfo.TotalCumulativeCustomerCount, Is.EqualTo(2));
+            Assert.That(UserInfo.TotalCookCount, Is.EqualTo(2));
+            Assert.That(p.S.Coins.CurrentMoney, Is.EqualTo(202));
+            p.S.TakeWait(.5f)(); p.S.TakeWait(.5f)();
+            Assert.That(p.S.Stage.Tip, Is.EqualTo(100));
+
+            p.ArriveExit(0); p.ArriveExit(0); p.ArriveExit(1); p.ArriveExit(1);
+            Assert.That(p.S.Table.CurrentUse, Is.Null);
+            Assert.That(p.S.Table.TableState, Is.EqualTo(ETableState.NeedCleaning));
+            Assert.That(UserInfo.GetVisitedCustomerCount(id), Is.EqualTo(27));
+            Assert.That(UserInfo.TotalCumulativeCustomerCount, Is.EqualTo(2));
+            Assert.That(p.S.Coins.CurrentMoney, Is.EqualTo(202));
+            Assert.That(p.S.Stage.Tip, Is.EqualTo(100));
+        }
+    }
+
     [TestCase("manual")] [TestCase("marketer")] [TestCase("auto-skill")]
     public void ExistingCallEntryPoints_CreateOneNaturalTeamForTheOriginalTapAmount(string path)
     {
         using (var s = new Flow())
         {
-            Setup(s); Candidate(s, "B"); RepresentativeSeed(0, 2);
+            Setup(s); Candidate(s, "B", visits: 25); RepresentativeSeed(0, 2);
             int calls = 0; s.Controller.OnAddCustomerHandler += () => calls++;
             if (path == "manual")
             {
@@ -326,7 +447,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); Candidate(s, "B"); Records["B"] = new SaveCustomerData("B", "", 25);
+            Setup(s); Candidate(s, "B", visits: 25);
             Assert.That(GameManager.Instance.MaxWaitCustomerCount, Is.EqualTo(10));
             GameManager.Instance.AppendPromotionCustomer(2); Assert.That(GameManager.Instance.AddPromotionCustomer, Is.EqualTo(3));
             s.Controller.AddCustomer(); Assert.That(s.Controller.Count, Is.EqualTo(3)); Assert.That(s.Controller.WaitingPersonCount, Is.EqualTo(6));
@@ -341,7 +462,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); Candidate(s, "B"); Records["B"] = new SaveCustomerData("B", "", 25);
+            Setup(s); Candidate(s, "B", visits: 25);
             var fever = Get<FeverSystem>(s.Manager, "_feverSystem"); var main = s.Create<MainScene>();
             Set(main, "_feverSystem", fever); Set(fever, "_mainScene", main); Set(fever, "_customerController", s.Controller);
             var clip = s.Track(AudioClip.Create("Offline same music", 100, 1, 44100, false));
@@ -366,7 +487,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); Candidate(s, "B"); Records["B"] = new SaveCustomerData("B", "", 25);
+            Setup(s); Candidate(s, "B", visits: 25);
             GameManager.Instance.AppendPromotionCustomer(1); int calls = 0;
             s.Controller.OnAddCustomerHandler += () => calls++;
             s.Controller.OnChangeCustomerHandler += () => s.Swap(typeof(ObjectPoolManager), "_normalCustomerPrefab", null);
@@ -382,7 +503,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); Candidate(s, "B"); Records["B"] = new SaveCustomerData("B", "", 25);
+            Setup(s); Candidate(s, "B", visits: 25);
             Set(GameManager.Instance, "_maxWaitCustomerCount", 20);
             for (int i = 0; i < 19; i++) s.Controller.TrySpawnWaitingParty(new[] { s.Data.Id }, out _);
             var main = s.Create<UIMain>(); var watch = s.Create<WatchAdButton>();
@@ -413,7 +534,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); var candidates = new[] { Candidate(s, "B"), Candidate(s, "C"), Candidate(s, "D") };
+            Setup(s); var candidates = new[] { Candidate(s, "B", visits: 25), Candidate(s, "C", visits: 25), Candidate(s, "D", visits: 25) };
             const int seed = 4102026, samples = 2000; int draws = 0, choices = 0, hits = 0;
             var rng = new System.Random(seed); var counts = candidates.ToDictionary(c => c.Id, c => 0);
             s.Controller.NaturalPartyRoll = () => { draws++; return (float)rng.NextDouble(); };
@@ -432,7 +553,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); Candidate(s, "B"); Records["B"] = new SaveCustomerData("B", "", 25);
+            Setup(s); Candidate(s, "B", visits: 25);
             s.Swap(typeof(ObjectPoolManager), "_normalCustomerPrefab", null);
             var main = s.Create<UIMain>(); Set(main, "_customerController", s.Controller);
             Set(main, "_watchAdButton", s.Create<WatchAdButton>()); Set(main, "_customerCountText", s.Create<TMPro.TextMeshProUGUI>());
@@ -448,7 +569,7 @@ public sealed class CustomerNaturalPartyTests
     {
         using (var s = new Flow())
         {
-            Setup(s); Candidate(s, "B"); RepresentativeSeed(0, 2); s.Controller.AddCustomer(); var old = s.Controller.WaitingParties.Single();
+            Setup(s); Candidate(s, "B", visits: 25); RepresentativeSeed(0, 2); s.Controller.AddCustomer(); var old = s.Controller.WaitingParties.Single();
             if (boundary == "account")
             {
                 s.InstallAccount();

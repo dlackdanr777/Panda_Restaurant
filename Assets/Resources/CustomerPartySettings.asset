@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f2f00fa05b3d4931a819a214ee0c57a7, type: 3}
   m_Name: CustomerPartySettings
   m_EditorClassIdentifier: 
-  EnableNaturalParties: 0
+  EnableNaturalParties: 1
   MinimumNormalVisits: 25
   CompanionProbability: 0.2

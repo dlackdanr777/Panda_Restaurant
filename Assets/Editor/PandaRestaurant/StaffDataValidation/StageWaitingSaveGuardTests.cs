@@ -217,10 +217,10 @@ public class StageWaitingSaveGuardTests
                     Set(b,"_visitCountFoodDic",new Dictionary<int,string>());
                     Get<Dictionary<string,CustomerData>>(CustomerDataManager.Instance,"_customerDataDic")[b.Id]=b;
                     Get<List<NormalCustomerData>>(CustomerDataManager.Instance,"_normalCustomerDataList").Add(b);
-                    records[b.Id]=new SaveCustomerData(b.Id,"",0);
+                    records[b.Id]=new SaveCustomerData(b.Id,"",config.MinimumNormalVisits);
                     var rolls=new Queue<float>(new[]{.8f,.1f,.8f}); int choices=0;
                     s.Controller.NaturalPartyRoll=()=>rolls.Dequeue();
-                    s.Controller.NaturalCompanionIndex=count=>{Assert.That(count,Is.EqualTo(1));choices++;return 0;};
+                    s.Controller.NaturalCompanionIndex=count=>{Assert.That(count,Is.EqualTo(2));choices++;return 1;};
                     for(int i=0;i<3;i++){CustomerNaturalPartyTests.RepresentativeSeed(0,2);Assert.That(s.Controller.TryAddCustomer(),Is.True);}
                     string[][] expected={new[]{s.Data.Id},new[]{s.Data.Id,b.Id},new[]{s.Data.Id}};
                     var original=s.Controller.WaitingParties.ToArray();
@@ -228,7 +228,7 @@ public class StageWaitingSaveGuardTests
                     Assert.That(original.Select(party=>party.Members.Select(m=>m.Customer.NormalCustomerData.Id).ToArray()).ToArray(),Is.EqualTo(expected));
                     Assert.That(s.Controller.Count,Is.EqualTo(3));Assert.That(s.Controller.WaitingPersonCount,Is.EqualTo(4));
                     Assert.That(rolls.Count,Is.Zero);Assert.That(choices,Is.EqualTo(1));Assert.That(UserInfo.PromotionCount,Is.EqualTo(3));
-                    Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id),Is.EqualTo(25));Assert.That(UserInfo.GetVisitedCustomerCount(b.Id),Is.Zero);
+                    Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id),Is.EqualTo(25));Assert.That(UserInfo.GetVisitedCustomerCount(b.Id),Is.EqualTo(config.MinimumNormalVisits));
                     string serialized=s.Stage.WaitingParties.Serialize();var oldStored=f.Queue(EStage.Stage1).DeepClone();int writeIndex=f.Writes.Count;
                     var save=UserInfo.SaveStageDataAsync(EStage.Stage1);
                     Assert.That(save.Status,Is.EqualTo(StageSaveStatus.Pending));Assert.That(f.Writes.Count,Is.EqualTo(writeIndex+1));
@@ -240,6 +240,7 @@ public class StageWaitingSaveGuardTests
                     Assert.That(s.Controller.Count,Is.Zero);Assert.That(original.All(party=>!party.IsActive),Is.True);
                     config.EnableNaturalParties=false;config.MinimumNormalVisits=999;config.CompanionProbability=0;
                     records[s.Data.Id]=new SaveCustomerData(s.Data.Id,"",0);
+                    records[b.Id]=new SaveCustomerData(b.Id,"",0);
                     s.Controller.NaturalPartyRoll=()=>throw new Exception("Restore rerolled party");
                     s.Controller.NaturalCompanionIndex=_=>throw new Exception("Restore rerolled companion");
                     var randomBefore=UnityEngine.Random.state;int writesBeforeReload=f.Writes.Count;

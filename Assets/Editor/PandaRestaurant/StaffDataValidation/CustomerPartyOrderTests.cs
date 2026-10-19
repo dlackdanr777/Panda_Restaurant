@@ -25,25 +25,37 @@ public sealed class CustomerPartyOrderTests
         private readonly Dictionary<int, Action> _exitCallbacks = new Dictionary<int, Action>();
         internal PartyOrderBatch Batch => S.Table.PartyOrders;
         internal KitchenBurnerData Burner => Get<KitchenBurnerData[]>(S.Kitchen, "_burnerDatas")[0];
-        internal Pair(bool firstOwned = true, bool secondOwned = true, bool same = false, bool visited = false, bool invalidMenu = false, int ordersA = 2, int ordersB = 1, Action<Pair> beforeGuide = null, bool requireBatch = true, Action<Pair> beforeSpawn = null, bool natural = false)
+        internal Pair(bool firstOwned = true, bool secondOwned = true, bool same = false, bool visited = false, bool invalidMenu = false,
+            int ordersA = 2, int ordersB = 1, Action<Pair> beforeGuide = null, bool requireBatch = true,
+            Action<Pair> beforeSpawn = null, bool natural = false, bool sameCustomerId = false)
         {
-            SecondFood = same ? S.Food : S.Track(Object.Instantiate(S.Food));
+            if (sameCustomerId && ordersA != ordersB)
+                throw new ArgumentException("A+A members share the same customer data and order-count skin.");
+            SecondFood = same || sameCustomerId ? S.Food : S.Track(Object.Instantiate(S.Food));
             if (!same)
             {
-                Set(SecondFood, "_id", "PARTY-FOOD-B"); Set(SecondFood, "_cookingTime", 7f);
-                Set(SecondFood, "_sellPrice", 101); Set(SecondFood, "_foodType", FoodType.Cozy); Set(SecondFood, "_sprite", S.NewSprite());
+                if (!sameCustomerId)
+                {
+                    Set(SecondFood, "_id", "PARTY-FOOD-B"); Set(SecondFood, "_cookingTime", 7f);
+                    Set(SecondFood, "_sellPrice", 101); Set(SecondFood, "_foodType", FoodType.Cozy); Set(SecondFood, "_sprite", S.NewSprite());
+                }
             }
             Get<Dictionary<string, FoodData>>(FoodDataManager.Instance, "_foodDataDic")[SecondFood.Id] = SecondFood;
-            SecondData = S.Track(Object.Instantiate(S.Data)); Set(SecondData, "_id", "PARTY-CUSTOMER-B");
+            SecondData = sameCustomerId ? S.Data : S.Track(Object.Instantiate(S.Data));
+            if (!sameCustomerId) Set(SecondData, "_id", "PARTY-CUSTOMER-B");
             Set(SecondData, "_requiredDish", visited || invalidMenu ? "" : SecondFood.Id);
             Set(SecondData, "_visitCountFoodDic", visited ? new Dictionary<int, string> { [25] = SecondFood.Id } : new Dictionary<int, string>());
-            Get<Dictionary<string, CustomerData>>(CustomerDataManager.Instance, "_customerDataDic")[SecondData.Id] = SecondData;
-            ((Dictionary<string, SaveCustomerData>)Field(typeof(UserInfo), "_enabledCustomerDic").GetValue(null))[SecondData.Id] = new SaveCustomerData(SecondData.Id, "", visited ? 25 : 0);
+            if (!sameCustomerId)
+            {
+                Get<Dictionary<string, CustomerData>>(CustomerDataManager.Instance, "_customerDataDic")[SecondData.Id] = SecondData;
+                ((Dictionary<string, SaveCustomerData>)Field(typeof(UserInfo), "_enabledCustomerDic").GetValue(null))[SecondData.Id] = new SaveCustomerData(SecondData.Id, "", visited ? 25 : 0);
+            }
             var owned = ((Dictionary<string, int>)Field(typeof(UserInfo), "_giveRecipeLevelDic").GetValue(null)); owned.Clear();
             if (firstOwned) owned[S.Food.Id] = 1; if (secondOwned) owned[SecondFood.Id] = 1;
             var skins = Get<Dictionary<string, CustomerSkinData>>(SkinDataManager.Instance, "_customerSkinDataDic");
             var visits = (Dictionary<string, SaveCustomerData>)Field(typeof(UserInfo), "_enabledCustomerDic").GetValue(null);
-            foreach (var entry in new[] { (S.Data.Id, ordersA), (SecondData.Id, ordersB) })
+            var skinMembers = sameCustomerId ? new[] { (S.Data.Id, ordersA) } : new[] { (S.Data.Id, ordersA), (SecondData.Id, ordersB) };
+            foreach (var entry in skinMembers)
             {
                 var skin = S.Track(ScriptableObject.CreateInstance<CustomerSkinData>());
                 Set(skin, "_id", entry.Item1 + "-ORDERS"); Set(skin, "_sprite", S.NewSprite());
@@ -54,9 +66,15 @@ public sealed class CustomerPartyOrderTests
             beforeSpawn?.Invoke(this);
             if (natural)
             {
-                CustomerNaturalPartyTests.Setup(S);
-                Get<List<NormalCustomerData>>(CustomerDataManager.Instance, "_normalCustomerDataList").Add(SecondData);
-                CustomerNaturalPartyTests.RepresentativeSeed(0, 2);
+                var naturalSettings = CustomerNaturalPartyTests.Setup(S);
+                if (!sameCustomerId)
+                {
+                    Get<List<NormalCustomerData>>(CustomerDataManager.Instance, "_normalCustomerDataList").Add(SecondData);
+                    var secondRecord = visits[SecondData.Id];
+                    visits[SecondData.Id] = new SaveCustomerData(SecondData.Id, secondRecord.SkinId, naturalSettings.MinimumNormalVisits);
+                }
+                CustomerNaturalPartyTests.RepresentativeSeed(0, sameCustomerId ? 1 : 2);
+                S.Controller.NaturalCompanionIndex = count => count - 1;
                 Assert.That(S.Controller.TryAddCustomer(), Is.True); Party = S.Controller.WaitingParties.Last();
                 Assert.That(Party.Members.Count, Is.EqualTo(2));
             }

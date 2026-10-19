@@ -67,5 +67,15 @@ public sealed class CustomerPartyManualPlayTests
         Assert.That(source, Does.Contain("playModeStartScene"));
         Assert.That(AssetDatabase.LoadAssetAtPath<SceneAsset>(CustomerPartyStage1Preview.ScenePath), Is.Not.Null);
     }
+
+    [Test]
+    public void ManualPlayAllowsEnabledDeliveryAssetButKeepsNaturalCallsExplicitlyOptIn()
+    {
+        string source = File.ReadAllText("Assets/Editor/PandaRestaurant/StaffDataValidation/CustomerPartyStage1Preview.cs");
+        Assert.That(source, Does.Not.Contain("!original.EnableNaturalParties"));
+        Assert.That(source, Does.Contain("settings.EnableNaturalParties = false; Set(controller, \"_naturalPartySettings\", settings);"));
+        Assert.That(source, Does.Contain("settings.EnableNaturalParties = SessionState.GetBool(NaturalAiKey, false);"));
+        Assert.That(source, Does.Contain("SessionState.SetBool(NaturalAiKey, staffAi && naturalAi);"));
+    }
 }
 #endif
