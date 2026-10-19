@@ -326,7 +326,7 @@ public static class GachaReviewTestRunner
         if (_fairyBirthInput) fixtures = new[] { "FairyBirthInputTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
             "FairyBirthSequenceTests", "FairyBirthSoundTests", "PresentationSoundTests" };
         if (_customerUse) fixtures = new[] { "CustomerPartyFurnitureTests", "CustomerPartyIntegrationTests", "CustomerNaturalPartyTests", "CustomerPartyInterruptionTests", "CustomerPartyFailureBoundaryTests", "CustomerPartyServingTests", "CustomerPartyCompletionTests", "CustomerPartyOrderTests", "CustomerTableUseRegressionTests", "CustomerVisitPartyTests", "CustomerPartyQueueTests", "StageWaitingSaveGuardTests", "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffStageMigrationCollectionTests" };
-        if (_manualPartyChecks) fixtures = new[] { "CustomerPartyManualPlayTests", "CustomerPartyFurnitureTests", "CustomerPartyIntegrationTests", "StageWaitingSaveGuardTests" };
+        if (_manualPartyChecks) fixtures = new[] { "CustomerPartyManualPlayTests", "CustomerPartyFurnitureTests", "CustomerPartyIntegrationTests", "CustomerPartyFailureBoundaryTests", "CustomerPartyOrderTests", "CustomerTableUseRegressionTests", "StageWaitingSaveGuardTests" };
         if (_staffAiChecks) fixtures = new[] { "StaffAiLifecycleTests", "StaffAiGuardLifecycleTests", "StaffAiSinkLifecycleTests", "StaffAiShutdownTests", "CustomerPartyManualPlayTests", "CustomerPartyOrderTests",
             "CustomerPartyServingTests", "CustomerPartyCompletionTests", "ManagerFloorGuideTests", "CustomerNaturalPartyTests",
             "StageWaitingSaveGuardTests", "CustomerPartyFurnitureTests" };

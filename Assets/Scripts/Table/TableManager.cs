@@ -436,7 +436,9 @@ public partial class TableManager : MonoBehaviour
             target.y = data.TableFurniture.transform.position.y + AStar.Instance.NodeSize * 0.5f;
             customer.Move(target, 0, () =>
             {
-                if (!use.IsMemberCurrent(member) || !customer.ConfirmReachedMoveTarget() || !use.TryArrive(member)) return;
+                if (!use.IsMemberCurrent(member)) return;
+                if (!customer.ConfirmReachedMoveTarget()) { CancelPartyGuideAfterEntryPathFailure(data, use, member, customer); return; }
+                if (!use.TryArrive(member)) return;
                 customer.StopMove(); customer.transform.position = data.GetSeatPosition(member.SeatIndex);
                 customer.SetSitTableData(data); customer.SetSpriteDir(member.SeatIndex == 0 ? 1 : -1);
                 customer.SetLayer("SitCustomer", 0); customer.ChangeState(CustomerState.Sit); customer.FixSpritePosition(false);
@@ -445,17 +447,33 @@ public partial class TableManager : MonoBehaviour
                     if (!use.TrySeat(member) || !use.AllSeated) return;
                     PreparePartyOrders(data, use);
                 });
-            });
+            }, () => CancelPartyGuideAfterEntryPathFailure(data, use, member, customer));
         }
         UpdateTable();
         _customerController.PublishGuide();
         return use.IsPartyCurrent(data);
     }
 
+    private void CancelPartyGuideAfterEntryPathFailure(TableData table, TableUseIdentity use, CustomerVisitMember member, NormalCustomer customer)
+    {
+        if (table == null || use == null || member == null || customer == null || use.IsSingle
+            || use.Party.Members.Count != 2 || table.TableState != ETableState.Move || use.AllSeated
+            || !use.IsPartyCurrent(table) || !use.IsMemberCurrent(member)
+            || !ReferenceEquals(member.Customer, customer) || !customer.HasPathFailure) return;
+        CancelPartyGuide(table, use);
+    }
+
     public bool CancelPartyGuide(TableData table)
     {
-        if (table == null || table.CurrentUse == null || table.CurrentUse.IsSingle) return false;
-        table.EndUse(); UpdateTable(); return true;
+        TableUseIdentity use = table == null ? null : table.CurrentUse;
+        return CancelPartyGuide(table, use);
+    }
+
+    private bool CancelPartyGuide(TableData table, TableUseIdentity expectedUse)
+    {
+        if (table == null || expectedUse == null || expectedUse.IsSingle
+            || !ReferenceEquals(table.CurrentUse, expectedUse)) return false;
+        table.EndUse(expectedUse); UpdateTable(); return true;
     }
 
 

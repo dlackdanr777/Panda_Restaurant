@@ -351,12 +351,12 @@ public sealed class CustomerPartyFailureBoundaryTests
                 Assert.That(s.Controller.TrySpawnWaitingParty(new[]{s.Data.Id,s.Data.Id},out var team),Is.True);
                 foreach(var m in team.Members) { m.Customer.transform.position=m.Customer.TargetPos; Get<Action>(m.Customer,"_moveCompleted")(); }
                 Get<Dictionary<string,Muks.PathFinding.AStar.MapData>>(Muks.PathFinding.AStar.AStar.Instance,"_maps").Clear();
-                for(int i=0;i<2;i++)UnityEngine.TestTools.LogAssert.Expect(LogType.Error,new System.Text.RegularExpressions.Regex("No available maps found for start position"));
-                Assert.That(s.Manager.OnCustomerGuideEvent(s.Table.FloorType),Is.True);
-                Assert.That(team.Members.All(m=>m.Customer.HasPathFailure),Is.True);
-                Assert.That(s.Table.CurrentUse.AllSeated,Is.False);Assert.That(s.Table.TableState,Is.EqualTo(ETableState.Move));
-                Assert.That(s.Table.OccupantCount,Is.EqualTo(2));Assert.That(s.Manager.CancelPartyGuide(s.Table),Is.True);
-                Assert.That(s.Table.CurrentUse,Is.Null);
+                UnityEngine.TestTools.LogAssert.Expect(LogType.Error,new System.Text.RegularExpressions.Regex("No available maps found for start position"));
+                Assert.That(s.Manager.OnCustomerGuideEvent(s.Table.FloorType),Is.False);
+                Assert.That(team.IsActive,Is.False);Assert.That(s.Table.CurrentUse,Is.Null);
+                Assert.That(s.Table.TableState,Is.EqualTo(ETableState.Empty));Assert.That(s.Table.OccupantCount,Is.Zero);
+                Assert.That(team.Members.All(m=>!m.Customer.gameObject.activeSelf&&m.Customer.VisitParty==null),Is.True);
+                Assert.That(s.Manager.CancelPartyGuide(s.Table),Is.False);
             }
             return;
         }
@@ -371,6 +371,500 @@ public sealed class CustomerPartyFailureBoundaryTests
                 Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(202));Assert.That(use.SettlementCompleted,Is.False);
             }
             Assert.That(p.S.Manager.CancelPartyGuide(p.S.Table),Is.True);Assert.That(p.S.Table.CurrentUse,Is.Null);
+        }
+    }
+
+    private static void PrepareWaitingPair(Flow flow, out CustomerVisitParty team)
+    {
+        Assert.That(flow.Controller.TrySpawnWaitingParty(new[]{flow.Data.Id,flow.Data.Id},out team),Is.True);
+        foreach(var member in team.Members)
+        {
+            member.Customer.transform.position=member.Customer.TargetPos;
+            Get<Action>(member.Customer,"_moveCompleted")?.Invoke();
+            member.Customer.StopMove();
+        }
+    }
+
+    private static void SetMapWalkable(bool walkable)
+    {
+        var maps=Get<Dictionary<string,Muks.PathFinding.AStar.MapData>>(Muks.PathFinding.AStar.AStar.Instance,"_maps");
+        foreach(var map in maps.Values) foreach(var node in map.Nodes) { node.IsWall=!walkable; node.IsGround=walkable; }
+    }
+
+    private static Muks.PathFinding.PathfindingQueue Paths => Muks.PathFinding.PathfindingQueue.Instance;
+    private static System.Collections.Concurrent.ConcurrentQueue<Action> PathQueue =>
+        Get<System.Collections.Concurrent.ConcurrentQueue<Action>>(Paths,"_pathfindingQueue");
+    private static Queue<Action> DispatchQueue => Get<Queue<Action>>(Muks.PathFinding.MainThreadDispatcher.Instance,"_executionQueue");
+
+    private static void DrainPathQueue()
+    {
+        while(PathQueue.TryDequeue(out var work)) work();
+    }
+
+    private static void ClearPendingPathWork()
+    {
+        while(PathQueue.TryDequeue(out _)) { }
+        DispatchQueue.Clear();
+    }
+
+    private static void FailPendingPaths(int count)
+    {
+        for(int i=0;i<count;i++)
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Error,new System.Text.RegularExpressions.Regex("No walkable node found near start position"));
+        DrainPathQueue();
+        Assert.That(DispatchQueue.Count,Is.EqualTo(count));
+        SetMapWalkable(true);
+        while(DispatchQueue.Count>0) DispatchQueue.Dequeue()();
+    }
+
+    private static TableUseIdentity CompletePairAndStartExit(Pair p)
+    {
+        ClearPendingPathWork();
+        var use=p.S.Table.CurrentUse;
+        CustomerPartyCompletionTests.CookRound(p);
+        foreach(var food in p.Batch.Orders.ToArray()) CustomerPartyCompletionTests.Eat(p,food);
+        Assert.That(use.CompletionStarted,Is.True);
+        Assert.That(use.Completions.All(x=>x.ExitStarted),Is.True);
+        return use;
+    }
+
+    private static void FinishPartyDelayedEffects(Pair p, TableUseIdentity use, bool tipsPaid)
+    {
+        if(!tipsPaid)
+        {
+            var first=p.S.TakeWait(.5f);first();first();
+            var second=p.S.TakeWait(.5f);second();second();
+        }
+        int garbage=use.Completions.Sum(x=>x.GarbageCount);
+        for(int i=0;i<garbage;i++)
+        {
+            var wait=p.S.TakeWait(i<2?.02f:.04f);wait();wait();
+        }
+    }
+
+    [Test]
+    public void EntryPathFailure_CancelsPartyAndLateMemberResultCannotCancelReplacement()
+    {
+        using(var s=new Flow())
+        {
+            PrepareWaitingPair(s,out var firstParty);
+            while(PathQueue.TryDequeue(out _)) { }
+            SetMapWalkable(false);
+            Assert.That(s.Manager.OnCustomerGuideEvent(s.Table.FloorType),Is.True);
+            var oldUse=s.Table.CurrentUse;
+            Assert.That(oldUse,Is.Not.Null);Assert.That(s.Table.OccupantCount,Is.EqualTo(2));
+            Assert.That(PathQueue.Count,Is.EqualTo(2));
+            for(int i=0;i<2;i++) UnityEngine.TestTools.LogAssert.Expect(LogType.Error,new System.Text.RegularExpressions.Regex("No walkable node found near start position"));
+            DrainPathQueue();
+            Assert.That(DispatchQueue.Count,Is.EqualTo(2));
+            DispatchQueue.Dequeue()();
+            Assert.That(s.Table.CurrentUse,Is.Null);Assert.That(s.Table.TableState,Is.EqualTo(ETableState.Empty));
+            Assert.That(s.Table.OccupantCount,Is.Zero);Assert.That(oldUse.Invalidated,Is.True);
+            Assert.That(firstParty.IsActive,Is.False);Assert.That(firstParty.Members.All(m=>!m.Customer.gameObject.activeSelf&&m.Customer.VisitParty==null),Is.True);
+            Assert.That(oldUse.OrderReservation,Is.Null);Assert.That(oldUse.Orders,Is.Null);
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.Zero);Assert.That(UserInfo.TotalCookCount,Is.Zero);
+            Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id),Is.Zero);Assert.That(s.Stage.Tip,Is.Zero);
+            Assert.That(s.Stage.Satisfaction,Is.Zero);Assert.That(s.Coins.CurrentMoney,Is.Zero);
+
+            SetMapWalkable(true);
+            PrepareWaitingPair(s,out var nextParty);
+            while(PathQueue.TryDequeue(out _)) { }
+            Assert.That(s.Manager.OnCustomerGuideEvent(s.Table.FloorType),Is.True);
+            var nextUse=s.Table.CurrentUse;
+            Assert.That(nextUse,Is.Not.Null);Assert.That(nextUse,Is.Not.SameAs(oldUse));
+            Assert.That(s.Table.CurrentParty,Is.SameAs(nextParty));Assert.That(s.Table.OccupantCount,Is.EqualTo(2));
+            DispatchQueue.Dequeue()();
+            Assert.That(s.Table.CurrentUse,Is.SameAs(nextUse));Assert.That(nextParty.IsActive,Is.True);
+            Assert.That(s.Table.TableState,Is.EqualTo(ETableState.Move));
+            Assert.That(PathQueue.Count,Is.EqualTo(2));
+            foreach(var member in nextParty.Members)
+            {
+                member.Customer.transform.position=member.Customer.TargetPos;
+                Get<Action>(member.Customer,"_moveCompleted")();
+                Assert.That(nextUse.HasArrived(member),Is.True);
+                Assert.That(member.Customer.transform.position,Is.EqualTo(s.Table.GetSeatPosition(member.SeatIndex)));
+            }
+            Assert.That(nextUse.AllSeated,Is.False,"The ordinary seating delay still gates party order preparation.");
+            Assert.That(s.Manager.CancelPartyGuide(s.Table),Is.True);
+            while(DispatchQueue.Count>0)DispatchQueue.Dequeue()();
+        }
+    }
+
+    [Test]
+    public void EntryPathFailureAfterFirstMemberArrives_CancelsWholePartyWithoutVisitOrReward()
+    {
+        using(var s=new Flow())
+        {
+            PrepareWaitingPair(s,out var team);
+            while(PathQueue.TryDequeue(out _)) { }
+            SetMapWalkable(true);
+            Assert.That(s.Manager.OnCustomerGuideEvent(s.Table.FloorType),Is.True);
+            var use=s.Table.CurrentUse;
+            Assert.That(PathQueue.Count,Is.EqualTo(2));
+            Assert.That(PathQueue.TryDequeue(out var firstPath),Is.True);firstPath();
+            var first=team.Members[0];first.Customer.transform.position=first.Customer.TargetPos;
+            Get<Action>(first.Customer,"_moveCompleted")();
+            Assert.That(use.HasArrived(first),Is.True);Assert.That(use.HasArrived(team.Members[1]),Is.False);
+            SetMapWalkable(false);
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Error,new System.Text.RegularExpressions.Regex("No walkable node found near start position"));
+            Assert.That(PathQueue.TryDequeue(out var secondPath),Is.True);secondPath();
+            Assert.That(DispatchQueue.Count,Is.EqualTo(2));
+            DispatchQueue.Dequeue()();
+            Assert.That(s.Table.CurrentUse,Is.SameAs(use));
+            DispatchQueue.Dequeue()();
+            Assert.That(s.Table.CurrentUse,Is.Null);Assert.That(team.IsActive,Is.False);
+            Assert.That(team.Members.All(m=>!m.Customer.gameObject.activeSelf&&m.Customer.VisitParty==null),Is.True);
+            Assert.That(s.Table.TableState,Is.EqualTo(ETableState.Empty));Assert.That(s.Table.OccupantCount,Is.Zero);
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.Zero);Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id),Is.Zero);
+            Assert.That(UserInfo.TotalCookCount,Is.Zero);Assert.That(s.Stage.Tip,Is.Zero);Assert.That(s.Stage.Satisfaction,Is.Zero);
+            Assert.That(s.Coins.CurrentMoney,Is.Zero);
+        }
+    }
+
+    [Test]
+    public void CompletedParty_FirstExitPathFails_SecondExitContinuesAndReleasesOnce()
+    {
+        using(var p=new Pair(ordersA:1,ordersB:1))
+        {
+            var use=CompletePairAndStartExit(p);
+            var first=use.Completions[0];var second=use.Completions[1];
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Error,new System.Text.RegularExpressions.Regex("No walkable node found near start position"));
+            Assert.That(PathQueue.TryDequeue(out var firstPath),Is.True);SetMapWalkable(false);firstPath();
+            Assert.That(DispatchQueue.Count,Is.EqualTo(1));
+            Assert.That(PathQueue.TryDequeue(out var secondPath),Is.True);SetMapWalkable(true);secondPath();
+            Assert.That(DispatchQueue.Count,Is.EqualTo(2));
+
+            DispatchQueue.Dequeue()();
+            Assert.That(first.ExitFailureResolved,Is.True);Assert.That(first.Returned,Is.False);
+            Assert.That(use.SettlementCompleted,Is.False);Assert.That(p.S.Table.CurrentUse,Is.SameAs(use));
+            Assert.That(second.ExitFailureResolved||second.Returned,Is.False);
+            Assert.That(second.Member.Customer.gameObject.activeSelf,Is.True);
+
+            DispatchQueue.Dequeue()();
+            Assert.That(p.S.Table.CurrentUse,Is.SameAs(use));
+            var secondCustomer=second.Member.Customer;var completion=Get<Action>(secondCustomer,"_moveCompleted");
+            secondCustomer.transform.position=secondCustomer.TargetPos;completion();
+            Assert.That(second.Returned,Is.True);Assert.That(second.ExitFailureResolved,Is.False);
+            Assert.That(second.Member.DepartureResolution,Is.EqualTo(CustomerVisitDepartureResolution.ReachedExit));
+            Assert.That(use.SettlementCompleted,Is.True);Assert.That(p.S.Table.CurrentUse,Is.Null);
+            Assert.That(first.Member.DepartureResolution,Is.EqualTo(CustomerVisitDepartureResolution.TechnicalCleanup));
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.NeedCleaning));
+
+            FinishPartyDelayedEffects(p,use,false);
+            Assert.That(p.S.Stage.Tip,Is.EqualTo(100));Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(202));
+            Assert.That(p.S.Table.DropGarbageArea.Count,Is.EqualTo(use.Completions.Sum(x=>x.GarbageCount)));
+            SetMapWalkable(true);ClearPendingPathWork();
+        }
+    }
+
+    [TestCase(false)] [TestCase(true)]
+    public void CompletedMealServiceAbort_BothExitPathsFail_PreservesOnlyCompletedMember(bool tipAlreadyPaid)
+    {
+        using(var p=new Pair(ordersA:1,ordersB:1))
+        {
+            ClearPendingPathWork();CustomerPartyCompletionTests.CookRound(p);
+            var use=p.S.Table.CurrentUse;var foods=p.Batch.Orders.ToArray();
+            CustomerPartyCompletionTests.Eat(p,foods[0]);
+            var completed=use.Completions[0];var unfinished=use.Completions[1];
+            if(tipAlreadyPaid)p.S.TakeWait(.5f)();
+            Assert.That(p.S.Manager.AbortPartyService(use,"FoodWaitExpired"),Is.True);
+            Assert.That(use.ServiceAborted&&use.CompletionStarted,Is.True);
+            Assert.That(p.S.Stage.Satisfaction,Is.EqualTo(-10));
+            Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(101));
+            Assert.That(UserInfo.GetVisitedCustomerCount(p.S.Data.Id),Is.EqualTo(1));
+            Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id),Is.Zero);
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.EqualTo(1));
+            Assert.That(completed.CompletedPrice,Is.EqualTo(101));Assert.That(completed.CoinDropped,Is.True);
+            Assert.That(unfinished.MealsCompleted,Is.Zero);Assert.That(unfinished.CompletedPrice,Is.Zero);
+            Assert.That(unfinished.VisitCounted||unfinished.CustomerCounted||unfinished.CoinDropped,Is.False);
+            Assert.That(PathQueue.Count,Is.EqualTo(2));
+
+            var callbacks=use.Completions.Select(x=>Get<Action>(x.Member.Customer,"_moveCompleted")).ToArray();
+            SetMapWalkable(false);FailPendingPaths(2);
+            Assert.That(use.SettlementCompleted,Is.True);Assert.That(p.S.Table.CurrentUse,Is.Null);
+            Assert.That(use.Completions.All(x=>!x.Returned&&x.ExitFailureResolved),Is.True);
+            Assert.That(p.Party.Members.All(x=>x.DepartureResolution==CustomerVisitDepartureResolution.TechnicalCleanup),Is.True);
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.NeedCleaning));
+            Assert.That(UserInfo.GetVisitedCustomerCount(p.S.Data.Id),Is.EqualTo(1));
+            Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id),Is.Zero);
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.EqualTo(1));
+            Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(101));Assert.That(p.S.Stage.Satisfaction,Is.EqualTo(-10));
+            Assert.That(p.S.Stage.FeverGauge,Is.Zero);Assert.That(UserInfo.GetSinkBowlCount(UserInfo.CurrentStage,p.S.Table.FloorType),Is.EqualTo(1));
+            foreach(var callback in callbacks)callback?.Invoke();
+            if(!tipAlreadyPaid)p.S.TakeWait(.5f)();
+            for(int i=0;i<completed.GarbageCount;i++){var wait=p.S.TakeWait(.02f*(i+1));wait();wait();}
+            Assert.That(p.S.Stage.Tip,Is.EqualTo(50));Assert.That(completed.TipPaid,Is.True);
+            Assert.That(completed.GarbageDropped,Is.EqualTo(completed.GarbageCount));
+            Assert.That(unfinished.GarbageCount,Is.Zero);Assert.That(p.S.Table.DropGarbageArea.Count,Is.EqualTo(completed.GarbageCount));
+            Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(101));Assert.That(p.S.Stage.Satisfaction,Is.EqualTo(-10));
+            p.S.Table.TableFurniture.OnCleanAction();
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.Empty));
+            SetMapWalkable(true);ClearPendingPathWork();
+        }
+    }
+
+    [Test]
+    public void FinalFurnitureRemoval_BothExitPathsFail_PreservesDontUseAndNoMealRewards()
+    {
+        using(var p=new Pair(ordersA:1,ordersB:1))
+        {
+            ClearPendingPathWork();var use=p.S.Table.CurrentUse;
+            p.S.Table.TableType=TableType.Table2;
+            var edit=p.S.Manager.BeginFurnitureEdit();p.S.Manager.NotFurnitureTable(p.S.Table);
+            p.S.Manager.CompleteFurnitureEdit(edit);
+            Assert.That(use.ServiceAborted&&use.FurnitureRemoved&&use.CompletionStarted,Is.True);
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.DontUse));
+            Assert.That(p.S.Stage.Satisfaction,Is.EqualTo(-10));Assert.That(PathQueue.Count,Is.EqualTo(2));
+            SetMapWalkable(false);FailPendingPaths(2);
+            Assert.That(use.SettlementCompleted,Is.True);Assert.That(p.S.Table.CurrentUse,Is.Null);
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.DontUse));
+            Assert.That(use.Completions.All(x=>!x.Returned&&x.ExitFailureResolved),Is.True);
+            Assert.That(p.Party.Members.All(x=>x.DepartureResolution==CustomerVisitDepartureResolution.TechnicalCleanup),Is.True);
+            Assert.That(p.S.Table.OccupantCount,Is.Zero);Assert.That(p.S.Coins.CurrentMoney,Is.Zero);
+            Assert.That(p.S.Stage.Tip,Is.Zero);Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.Zero);
+            Assert.That(p.S.Stage.Satisfaction,Is.EqualTo(-10));Assert.That(p.S.Stage.FeverGauge,Is.Zero);
+            SetMapWalkable(true);ClearPendingPathWork();
+        }
+    }
+
+    [Test]
+    public void SingleEntryPathFailure_DoesNotEnterPartyAutoCancelPolicy()
+    {
+        using(var s=new Flow())
+        {
+            var arrival=s.Guide();var use=s.Table.CurrentUse;
+            Assert.That(PathQueue.TryDequeue(out var path),Is.True);
+            SetMapWalkable(false);
+            UnityEngine.TestTools.LogAssert.Expect(LogType.Error,new System.Text.RegularExpressions.Regex("No walkable node found near start position"));
+            path();
+            Assert.That(DispatchQueue.Count,Is.EqualTo(1));DispatchQueue.Dequeue()();
+            Assert.That(s.Table.CurrentUse,Is.SameAs(use));Assert.That(s.Table.TableState,Is.EqualTo(ETableState.Move));
+            Assert.That(s.Customer.HasPathFailure,Is.True);Assert.That(arrival,Is.Not.Null);
+        }
+    }
+
+    [TestCase(false)] [TestCase(true)]
+    public void CompletedParty_BothExitPathsFail_TechnicalCleanupPreservesDelayedRewards(bool tipsPaid)
+    {
+        using(var p=new Pair(ordersA:1,ordersB:1))
+        {
+            var use=CompletePairAndStartExit(p);
+            if(tipsPaid)
+            {
+                p.S.TakeWait(.5f)();p.S.TakeWait(.5f)();
+                Assert.That(p.S.Stage.Tip,Is.EqualTo(100));
+            }
+            var callbacks=use.Completions.Select(x=>Get<Action>(x.Member.Customer,"_moveCompleted")).ToArray();
+            Assert.That(PathQueue.Count,Is.EqualTo(2));
+            SetMapWalkable(false);
+            FailPendingPaths(2);
+
+            Assert.That(use.SettlementCompleted,Is.True);
+            Assert.That(p.S.Table.CurrentUse,Is.Null);
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.NeedCleaning));
+            Assert.That(use.Completions.All(x=>!x.Returned&&x.ExitFailureResolved),Is.True);
+            Assert.That(use.Completions.All(x=>x.ExitFailureReason=="AStarPathUnavailable"),Is.True);
+            Assert.That(p.Party.Members.All(x=>x.DepartureResolution==CustomerVisitDepartureResolution.TechnicalCleanup),Is.True);
+            Assert.That(p.Party.Members.All(x=>!x.Customer.gameObject.activeSelf&&x.Customer.VisitParty==null),Is.True);
+            Assert.That(use.Completions.Select(x=>x.CompletedPrice),Is.EqualTo(new[]{101,101}));
+            Assert.That(use.Completions.Select(x=>x.CoinAmount),Is.EqualTo(new[]{101,101}));
+            Assert.That(use.Completions.All(x=>x.VisitCounted&&x.CustomerCounted&&x.CoinDropped&&x.SatisfactionApplied&&x.FeverApplied),Is.True);
+            Assert.That(UserInfo.GetVisitedCustomerCount(p.S.Data.Id),Is.EqualTo(1));
+            Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id),Is.EqualTo(1));
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.EqualTo(2));
+            Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(202));
+            Assert.That(p.S.Stage.Satisfaction,Is.EqualTo(4));
+            Assert.That(p.S.Stage.FeverGauge,Is.EqualTo(40));
+            Assert.That(UserInfo.GetSinkBowlCount(UserInfo.CurrentStage,p.S.Table.FloorType),Is.EqualTo(1));
+
+            foreach(var callback in callbacks) callback?.Invoke();
+            FinishPartyDelayedEffects(p,use,tipsPaid);
+            Assert.That(p.S.Stage.Tip,Is.EqualTo(100));
+            Assert.That(use.Completions.All(x=>x.TipPaid&&x.GarbageDropped==x.GarbageCount),Is.True);
+            Assert.That(p.S.Table.DropGarbageArea.Count,Is.EqualTo(use.Completions.Sum(x=>x.GarbageCount)));
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.EqualTo(2));
+            Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(202));
+            Assert.That(p.S.Stage.Satisfaction,Is.EqualTo(4));
+            Assert.That(p.S.Stage.FeverGauge,Is.EqualTo(40));
+
+            p.S.Table.TableFurniture.OnCleanAction();
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.Empty));
+            Assert.That(p.S.Controller.TrySpawnWaitingParty(new[]{p.S.Data.Id,p.SecondData.Id},out var next),Is.True);
+            foreach(var member in next.Members)
+            {
+                member.Customer.transform.position=member.Customer.TargetPos;
+                Get<Action>(member.Customer,"_moveCompleted")?.Invoke();
+                member.Customer.StopMove();
+            }
+            ClearPendingPathWork();
+            Assert.That(p.S.Manager.OnCustomerGuideEvent(ERestaurantFloorType.Floor1),Is.True);
+            var nextUse=p.S.Table.CurrentUse;
+            Assert.That(nextUse,Is.Not.Null);Assert.That(nextUse,Is.Not.SameAs(use));
+            foreach(var callback in callbacks) callback?.Invoke();
+            Assert.That(p.S.Table.CurrentUse,Is.SameAs(nextUse));
+            Assert.That(next.IsActive,Is.True);
+            Assert.That(p.S.Manager.CancelPartyGuide(p.S.Table),Is.True);
+            ClearPendingPathWork();SetMapWalkable(true);
+        }
+    }
+
+    [TestCase(false)] [TestCase(true)]
+    public void CompletedParty_FirstMemberExitsSecondPathFails_NewUseIgnoresOldCallback(bool tipsPaid)
+    {
+        using(var p=new Pair(ordersA:1,ordersB:1))
+        {
+            var use=CompletePairAndStartExit(p);
+            if(tipsPaid){p.S.TakeWait(.5f)();p.S.TakeWait(.5f)();}
+            var failedCustomer=use.Completions[1].Member.Customer;
+            var staleCompletion=Get<Action>(failedCustomer,"_moveCompleted");
+
+            p.ArriveExit(0);
+            Assert.That(use.Completions[0].Returned,Is.True);
+            Assert.That(use.Completions[0].ExitFailureResolved,Is.False);
+            Assert.That(p.S.Table.CurrentUse,Is.SameAs(use));
+            Assert.That(failedCustomer.gameObject.activeSelf,Is.True);
+            Assert.That(PathQueue.TryDequeue(out _),Is.True,"Discard the already-completed member's queued path calculation.");
+            Assert.That(PathQueue.Count,Is.EqualTo(1));
+            SetMapWalkable(false);FailPendingPaths(1);
+
+            Assert.That(use.Completions[0].Returned,Is.True);
+            Assert.That(use.Completions[0].Member.DepartureResolution,Is.EqualTo(CustomerVisitDepartureResolution.ReachedExit));
+            Assert.That(use.Completions[1].Returned,Is.False);
+            Assert.That(use.Completions[1].ExitFailureResolved,Is.True);
+            Assert.That(use.Completions[1].Member.DepartureResolution,Is.EqualTo(CustomerVisitDepartureResolution.TechnicalCleanup));
+            Assert.That(use.SettlementCompleted,Is.True);Assert.That(p.S.Table.CurrentUse,Is.Null);
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.NeedCleaning));
+            FinishPartyDelayedEffects(p,use,tipsPaid);
+            Assert.That(p.S.Stage.Tip,Is.EqualTo(100));
+            Assert.That(p.S.Table.DropGarbageArea.Count,Is.EqualTo(use.Completions.Sum(x=>x.GarbageCount)));
+            Assert.That(UserInfo.GetVisitedCustomerCount(p.S.Data.Id),Is.EqualTo(1));
+            Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id),Is.EqualTo(1));
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.EqualTo(2));
+            Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(202));
+
+            p.S.Table.TableFurniture.OnCleanAction();
+            Assert.That(p.S.Controller.TrySpawnWaitingParty(new[]{p.S.Data.Id,p.SecondData.Id},out var next),Is.True);
+            foreach(var member in next.Members)
+            {
+                member.Customer.transform.position=member.Customer.TargetPos;
+                Get<Action>(member.Customer,"_moveCompleted")?.Invoke();
+                member.Customer.StopMove();
+            }
+            ClearPendingPathWork();
+            Assert.That(next.Members.Any(x=>ReferenceEquals(x.Customer,failedCustomer)),Is.True);
+            Assert.That(p.S.Manager.OnCustomerGuideEvent(ERestaurantFloorType.Floor1),Is.True);
+            var nextUse=p.S.Table.CurrentUse;
+            staleCompletion?.Invoke();
+            Assert.That(p.S.Table.CurrentUse,Is.SameAs(nextUse));
+            Assert.That(next.IsActive,Is.True);
+            Assert.That(p.S.Manager.CancelPartyGuide(p.S.Table),Is.True);
+            ClearPendingPathWork();SetMapWalkable(true);
+        }
+    }
+
+    [Test]
+    public void CompletedParty_UnreachedCompletionCallbackIsTechnicalAndDoesNotClaimPhysicalExit()
+    {
+        using(var p=new Pair(ordersA:1,ordersB:1))
+        {
+            var use=CompletePairAndStartExit(p);
+            ClearPendingPathWork();
+            var first=use.Completions[0];
+            var callback=Get<Action>(first.Member.Customer,"_moveCompleted");
+            first.Member.Customer.transform.position=(Vector3)first.Member.Customer.TargetPos+Vector3.right*100;
+            callback();
+            Assert.That(first.Member.Customer.HasPathFailure,Is.True);
+            Assert.That(first.Returned,Is.False);Assert.That(first.ExitFailureResolved,Is.True);
+            Assert.That(first.ExitFailureReason,Is.EqualTo("DestinationNotReached"));
+            Assert.That(first.Member.DepartureResolution,Is.EqualTo(CustomerVisitDepartureResolution.TechnicalCleanup));
+            Assert.That(use.SettlementCompleted,Is.False);
+            Assert.That(p.S.Table.CurrentUse,Is.SameAs(use));
+            Assert.That(use.Completions[1].Member.Customer.gameObject.activeSelf,Is.True);
+
+            p.ArriveExit(1);
+            Assert.That(use.Completions[1].Returned,Is.True);
+            Assert.That(use.SettlementCompleted,Is.True);Assert.That(p.S.Table.CurrentUse,Is.Null);
+            Assert.That(p.S.Table.TableState,Is.EqualTo(ETableState.NeedCleaning));
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.EqualTo(2));
+            Assert.That(p.S.Coins.CurrentMoney,Is.EqualTo(202));
+            FinishPartyDelayedEffects(p,use,false);
+            Assert.That(p.S.Stage.Tip,Is.EqualTo(100));
+            ClearPendingPathWork();SetMapWalkable(true);
+        }
+    }
+
+    [Test]
+    public void WaitingParty_BothExitPathsFail_RemovesReservationAndEndsTeamWithoutRewards()
+    {
+        using(var s=new Flow())
+        {
+            Assert.That(s.Controller.TrySpawnWaitingParty(new[]{s.Data.Id,s.Data.Id},out var party),Is.True);
+            foreach(var member in party.Members)
+            {
+                member.Customer.transform.position=member.Customer.TargetPos;
+                Get<Action>(member.Customer,"_moveCompleted")();
+            }
+            Assert.That(s.Controller.TryGetPartyWaitingClock(party,out var started,out var limit),Is.True);
+            ClearPendingPathWork();
+            s.Controller.TickPartyClocks(started+limit+1);
+            Assert.That(party.WaitingDeparture,Is.True);
+            Assert.That(s.Controller.Count,Is.Zero);Assert.That(s.Controller.WaitCount,Is.Zero);
+            Assert.That(PathQueue.Count,Is.EqualTo(2));
+            SetMapWalkable(false);FailPendingPaths(2);
+
+            Assert.That(party.IsActive,Is.False);
+            Assert.That(party.Members.All(x=>x.DepartureResolution==CustomerVisitDepartureResolution.TechnicalCleanup),Is.True);
+            Assert.That(party.Members.All(x=>!x.Customer.gameObject.activeSelf&&x.Customer.VisitParty==null),Is.True);
+            Assert.That(s.Controller.Count,Is.Zero);Assert.That(s.Controller.WaitingPersonCount,Is.Zero);
+            Assert.That(s.Controller.WaitCount,Is.Zero);Assert.That(s.Stage.WaitingParties.Teams,Is.Empty);
+            Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id),Is.Zero);
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.Zero);
+            Assert.That(s.Stage.Tip,Is.Zero);Assert.That(s.Stage.Satisfaction,Is.Zero);Assert.That(s.Coins.CurrentMoney,Is.Zero);
+            SetMapWalkable(true);ClearPendingPathWork();
+        }
+    }
+
+    [Test]
+    public void WaitingParty_OnePhysicalExitAndOnePathFailureEndsOnce_StaleCallbackCannotTouchNextTeam()
+    {
+        using(var s=new Flow())
+        {
+            Assert.That(s.Controller.TrySpawnWaitingParty(new[]{s.Data.Id,s.Data.Id},out var party),Is.True);
+            foreach(var member in party.Members)
+            {
+                member.Customer.transform.position=member.Customer.TargetPos;
+                Get<Action>(member.Customer,"_moveCompleted")();
+            }
+            Assert.That(s.Controller.TryGetPartyWaitingClock(party,out var started,out var limit),Is.True);
+            ClearPendingPathWork();
+            s.Controller.TickPartyClocks(started+limit+1);
+            var physicallyExited=party.Members[0];var failed=party.Members[1];
+            var stale=Get<Action>(failed.Customer,"_moveCompleted");
+            physicallyExited.Customer.transform.position=physicallyExited.Customer.TargetPos;
+            Get<Action>(physicallyExited.Customer,"_moveCompleted")();
+            Assert.That(physicallyExited.DepartureResolution,Is.EqualTo(CustomerVisitDepartureResolution.ReachedExit));
+            Assert.That(failed.Customer.gameObject.activeSelf,Is.True);
+            Assert.That(PathQueue.TryDequeue(out _),Is.True);
+            Assert.That(PathQueue.Count,Is.EqualTo(1));
+            SetMapWalkable(false);FailPendingPaths(1);
+
+            Assert.That(failed.DepartureResolution,Is.EqualTo(CustomerVisitDepartureResolution.TechnicalCleanup));
+            Assert.That(party.IsActive,Is.False);
+            Assert.That(s.Controller.Count,Is.Zero);Assert.That(s.Controller.WaitingPersonCount,Is.Zero);
+            Assert.That(s.Controller.WaitCount,Is.Zero);Assert.That(s.Stage.WaitingParties.Teams,Is.Empty);
+            Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id),Is.Zero);
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.Zero);
+            Assert.That(s.Stage.Tip,Is.Zero);Assert.That(s.Stage.Satisfaction,Is.Zero);Assert.That(s.Coins.CurrentMoney,Is.Zero);
+
+            Assert.That(s.Controller.TrySpawnWaitingParty(new[]{s.Data.Id,s.Data.Id},out var next),Is.True);
+            Assert.That(next.Members.Any(x=>ReferenceEquals(x.Customer,failed.Customer)),Is.True);
+            stale?.Invoke();
+            Assert.That(next.IsActive,Is.True);Assert.That(s.Controller.Count,Is.EqualTo(1));
+            Assert.That(s.Controller.WaitingPersonCount,Is.EqualTo(2));
+            Assert.That(s.Controller.WaitingParties.Single(),Is.SameAs(next));
+            Assert.That(next.Members.All(x=>x.DepartureResolution==CustomerVisitDepartureResolution.None),Is.True);
+            Assert.That(s.Controller.CancelWaitingParty(next),Is.True);
+            SetMapWalkable(true);ClearPendingPathWork();
         }
     }
 }

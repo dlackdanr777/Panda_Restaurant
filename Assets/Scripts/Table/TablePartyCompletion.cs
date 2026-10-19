@@ -15,7 +15,8 @@ internal sealed class PartyMemberCompletion
     internal int CompletedPrice;
     internal bool MealStarted;
     internal bool FinalCompleted, VisitCounted, CustomerCounted, TipPaid, CoinFixed, CoinDropped;
-    internal bool SatisfactionApplied, FeverApplied, ExitStarted, Returned;
+    internal bool SatisfactionApplied, FeverApplied, ExitStarted, Returned, ExitFailureResolved;
+    internal string ExitFailureReason;
     internal Vector3 DropPosition;
     internal PartyMemberCompletion(CustomerVisitMember member)
     { Member = member; Seat = member.SeatIndex; RemainingOrders = member.Customer.OrderCount; }
@@ -125,7 +126,8 @@ public partial class TableManager
 
     private void StartPartyExit(TableUseIdentity use, PartyMemberCompletion result)
     {
-        if (result.ExitStarted || !use.IsMemberCurrent(result.Member)) return;
+        if (result.ExitStarted || result.Returned || result.ExitFailureResolved
+            || !use.IsMemberCurrent(result.Member)) return;
         result.ExitStarted = true;
         var customer = result.Member.Customer;
         customer.StopWaiting(); customer.StopWaitingForFood(); customer.StopMove();
@@ -135,23 +137,75 @@ public partial class TableManager
         customer.ChangeState(CustomerState.Idle); customer.SetLayer("Customer", 0);
         customer.HideFood(); customer.FixSpritePosition(true);
         try { if (use.ServiceAborted) customer.StartAnger(); else customer.StartHappy(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+        int movementSequence = customer.MovementSequenceId + 1;
         customer.Move(GameManager.Instance.OutDoorPos, 0, () => {
-            if (result.Returned || !use.IsMemberCurrent(result.Member) || !customer.ConfirmReachedMoveTarget()) return;
+            if (customer.MovementSequenceId != movementSequence || !IsPartyExitCurrent(use, result, customer)) return;
+            if (!customer.ConfirmReachedMoveTarget())
+            {
+                ResolvePartyExitFailure(use, result, customer, movementSequence, "DestinationNotReached");
+                return;
+            }
             result.Returned = true;
-            use.Party.CompleteDeparture(result.Member);
+            if (!use.Party.CompleteDeparture(result.Member, CustomerVisitDepartureResolution.ReachedExit))
+            { result.Returned = false; return; }
             try { if (use.ServiceAborted) customer.StopAnger(); else customer.StopHappy(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
             ObjectPoolManager.Instance.DespawnNormalCustomer(customer);
-            foreach (var other in use.Completions) if (!other.Returned) return;
-            use.SettlementCompleted = true;
-            if (use.FurnitureRemoved && !HasUsableFurniture(use.Table))
-                try { use.Table.TableState = ETableState.DontUse; }
-                catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
-            else if (use.ServiceAborted && !use.MealTableUsed)
-                try { use.Table.TableState = ETableState.Empty; }
-                catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
-            use.Table.ReleaseCompletedParty(use);
-            try { UpdateTable(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
-        });
+            TryReleasePartyAfterExitResolution(use);
+        }, () => ResolvePartyExitFailure(use, result, customer, movementSequence, "AStarPathUnavailable"));
+    }
+
+    private bool IsPartyExitCurrent(TableUseIdentity use, PartyMemberCompletion result, NormalCustomer customer)
+    {
+        return use != null && result != null && customer != null && !use.SettlementCompleted
+            && result.ExitStarted && !result.Returned && !result.ExitFailureResolved
+            && ReferenceEquals(use.GetCompletion(result.Member), result)
+            && ReferenceEquals(result.Member.Customer, customer)
+            && ReferenceEquals(customer.VisitMember, result.Member)
+            && result.Member.DepartureResolution == CustomerVisitDepartureResolution.None
+            && use.IsPartyCurrent(use.Table) && use.IsMemberCurrent(result.Member);
+    }
+
+    private void ResolvePartyExitFailure(TableUseIdentity use, PartyMemberCompletion result,
+        NormalCustomer customer, int movementSequence, string reason)
+    {
+        if (customer == null || customer.MovementSequenceId != movementSequence || !customer.HasPathFailure
+            || !IsPartyExitCurrent(use, result, customer)) return;
+
+        // Detach before pool return so OnDisable cannot end the partner's live use.
+        result.ExitFailureResolved = true;
+        result.ExitFailureReason = reason;
+        if (!use.Party.CompleteDeparture(result.Member, CustomerVisitDepartureResolution.TechnicalCleanup))
+        {
+            result.ExitFailureResolved = false;
+            result.ExitFailureReason = null;
+            return;
+        }
+
+        try { customer.StopMove(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+        try { customer.StopHappy(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+        try { customer.StopAnger(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+        try { ObjectPoolManager.Instance.DespawnNormalCustomer(customer); }
+        catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+        use.Table.LastServiceDiagnostic = "PartyExitTechnicalCleanup; reason=" + reason
+            + "; member=" + result.Member.Customer.CustomerData.Id;
+        TryReleasePartyAfterExitResolution(use);
+    }
+
+    private void TryReleasePartyAfterExitResolution(TableUseIdentity use)
+    {
+        if (use == null || use.SettlementCompleted || !use.IsPartyCurrent(use.Table)) return;
+        foreach (var result in use.Completions)
+            if (!result.Returned && !result.ExitFailureResolved) return;
+
+        use.SettlementCompleted = true;
+        if (use.FurnitureRemoved && !HasUsableFurniture(use.Table))
+            try { use.Table.TableState = ETableState.DontUse; }
+            catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+        else if (use.ServiceAborted && !use.MealTableUsed)
+            try { use.Table.TableState = ETableState.Empty; }
+            catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
+        use.Table.ReleaseCompletedParty(use);
+        try { UpdateTable(); } catch (Exception error) { use.Table.LastServiceDiagnostic = error.ToString(); }
     }
 
     private void HoldUnsupportedPartyPolicy(TableUseIdentity use, string reason)

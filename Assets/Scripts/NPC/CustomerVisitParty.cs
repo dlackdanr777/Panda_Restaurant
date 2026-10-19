@@ -22,12 +22,15 @@ public sealed class CustomerVisitParty
         WaitingDeparture = true;
         return true;
     }
-    internal void CompleteDeparture(CustomerVisitMember member)
+    internal bool CompleteDeparture(CustomerVisitMember member,
+        CustomerVisitDepartureResolution resolution = CustomerVisitDepartureResolution.ReachedExit)
     {
-        if (_ended || (!WaitingDeparture && (_use == null || !_use.CompletionStarted)) || !System.Linq.Enumerable.Contains(Members, member)) return;
-        _departed.Add(member);
+        if (_ended || (!WaitingDeparture && (_use == null || !_use.CompletionStarted))
+            || !System.Linq.Enumerable.Contains(Members, member) || !_departed.Add(member)) return false;
+        member.SetDepartureResolution(resolution);
         member.SetSeat(-1);
         member.Customer.DetachVisitMember(member);
+        return true;
     }
 
     public IReadOnlyList<CustomerVisitMember> Members { get; }
@@ -127,6 +130,7 @@ public sealed class CustomerVisitMember
     public NormalCustomer Customer { get; }
     internal object VisitIdentity { get; }
     public int SeatIndex { get; private set; } = -1;
+    internal CustomerVisitDepartureResolution DepartureResolution { get; private set; }
     internal bool IsVisitCurrent => Customer != null && Customer.IsVisitReady(Party.Owner)
         && ReferenceEquals(Customer.VisitIdentity, VisitIdentity);
 
@@ -137,4 +141,12 @@ public sealed class CustomerVisitMember
         VisitIdentity = customer.VisitIdentity;
     }
     internal void SetSeat(int index) { SeatIndex = index; }
+    internal void SetDepartureResolution(CustomerVisitDepartureResolution resolution) { DepartureResolution = resolution; }
+}
+
+internal enum CustomerVisitDepartureResolution : byte
+{
+    None,
+    ReachedExit,
+    TechnicalCleanup
 }

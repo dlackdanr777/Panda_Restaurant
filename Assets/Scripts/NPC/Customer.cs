@@ -44,6 +44,7 @@ public class Customer : MonoBehaviour
     protected float _moveSpeed;
     protected bool _isStairsMove;
     protected List<Vector2> _path;
+    private Action _movePathFailed;
 
     protected CustomerController _customerController;
     protected TableManager _tableManager;
@@ -119,6 +120,7 @@ public class Customer : MonoBehaviour
     }
 
     public bool HasPathFailure { get; private set; }
+    internal int MovementSequenceId => _moveSequenceId;
 
     public bool ConfirmReachedMoveTarget()
     {
@@ -129,7 +131,7 @@ public class Customer : MonoBehaviour
         HasPathFailure = true; return false;
     }
 
-    public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
+    public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null, Action onPathFailed = null)
     {
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
@@ -139,6 +141,7 @@ public class Customer : MonoBehaviour
 
         HasPathFailure = false;
         _moveCompleted = onCompleted;
+        _movePathFailed = onPathFailed;
         _hasMoved = true;
 
         Vector3 customerDoorPos = _tableManager.GetDoorPos(RestaurantType.Hall, transform.position);
@@ -160,9 +163,9 @@ public class Customer : MonoBehaviour
                 DebugLog.Log($"[Customer] 오래된 경로 탐색 결과 무시 (seqId={seqId}, current={_moveSequenceId})");
                 return;
             }
-            if (nodeList == null || nodeList.Count == 0) { HasPathFailure = true; return; }
+            if (nodeList == null || nodeList.Count == 0) { ReportPathFailure(seqId); return; }
             if (isEqualPos) TargetMove(nodeList);
-            else StairsMove(nodeList);
+            else StairsMove(nodeList, seqId);
         });
     }
 
@@ -173,6 +176,7 @@ public class Customer : MonoBehaviour
         ++_moveSequenceId;
         if (resetVisit) _hasMoved = false;
         _moveCompleted = null;
+        _movePathFailed = null;
         if (_moveCoroutine != null) StopCoroutine(_moveCoroutine);
         _moveCoroutine = null;
         StopTeleportRoutine();
@@ -181,8 +185,17 @@ public class Customer : MonoBehaviour
     internal bool RetargetCurrentMove(Vector2 target)
     {
         if (_moveCompleted == null || !isActiveAndEnabled) return false;
-        Move(target, _moveEndDir, _moveCompleted);
+        Move(target, _moveEndDir, _moveCompleted, _movePathFailed);
         return true;
+    }
+
+    private void ReportPathFailure(int sequence)
+    {
+        if (sequence != _moveSequenceId) return;
+        HasPathFailure = true;
+        Action callback = _movePathFailed;
+        _movePathFailed = null;
+        callback?.Invoke();
     }
 
     public void StopMove()
@@ -231,7 +244,7 @@ public class Customer : MonoBehaviour
     }
 
 
-    private void StairsMove(List<Vector2> nodeList)
+    private void StairsMove(List<Vector2> nodeList, int sequence)
     {
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
@@ -239,8 +252,6 @@ public class Customer : MonoBehaviour
         StopTeleportRoutine();
 
         _isStairsMove = true;
-        int sequence = _moveSequenceId;
-
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
             if (sequence != _moveSequenceId) return;
@@ -248,7 +259,7 @@ public class Customer : MonoBehaviour
             {
                 if (sequence != _moveSequenceId) return;
                 AStar.Instance.RequestPath(_tableManager.GetDoorPos(RestaurantType.Hall, _targetPos), _targetPos,
-                    path => { if (sequence != _moveSequenceId) return; if (path == null || path.Count == 0) { HasPathFailure = true; return; } TargetMove(path); });
+                    path => { if (sequence != _moveSequenceId) return; if (path == null || path.Count == 0) { ReportPathFailure(sequence); return; } TargetMove(path); });
             }));
         }
         ));
