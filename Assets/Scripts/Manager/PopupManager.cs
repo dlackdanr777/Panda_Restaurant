@@ -35,6 +35,19 @@ public class PopupManager : MonoBehaviour
         _uiPopup.Show(title, description);
     }
 
+    public void ShowCustomerEncounter(string customerName, string message, Sprite portrait, Action onConfirmed)
+    {
+        _isShowPopup = true;
+        _uiPopup.ShowCustomerEncounter(customerName, message, portrait);
+        _uiPopup.SetButton1("\uD655\uC778", () =>
+        {
+            _isShowPopup = false;
+            _uiPopup.Hide();
+            onConfirmed?.Invoke();
+        });
+    }
+
+
     public void SetPopupButton1(string buttonText, Action buttonClicked)
     {
         _uiPopup.SetButton1(buttonText, () =>

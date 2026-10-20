@@ -38,8 +38,10 @@ public class FirstTutorialCustomerFloorTests
     [Test]
     public void FullFirstFloor_RejectsBothActualGuideRoutesAndKeepsTutorialWaiting()
     {
+
         using (var fixture = new Fixture())
         {
+
             fixture.FirstTable.TableState = ETableState.Move;
             int completedGuides = 0;
             fixture.Customer.OnGuideCustomerHandler += () => completedGuides++;
@@ -148,6 +150,7 @@ public class FirstTutorialCustomerFloorTests
                 UserInfo.ChangeStage(state.Item1);
                 UserInfo.IsFirstTutorialClear = state.Item2;
                 UserInfo.IsTutorialStart = state.Item3;
+                fixture.ReenterWaitingVisitIfNeeded();
                 foreach (ERestaurantFloorType? requested in new ERestaurantFloorType?[] { null, ERestaurantFloorType.Floor2 })
                 {
                     Assert.That(fixture.Select(requested, out var floor, out var table), Is.True);
@@ -166,6 +169,7 @@ public class FirstTutorialCustomerFloorTests
 
     private sealed class Fixture : IDisposable
     {
+        private readonly CustomerTableUseRegressionTests.Flow visit = new CustomerTableUseRegressionTests.Flow();
         private readonly GameObject root;
         private readonly List<UnityEngine.Object> dataObjects = new List<UnityEngine.Object>();
         private readonly List<(FieldInfo field, object prior)> globals = new List<(FieldInfo, object)>();
@@ -195,8 +199,8 @@ public class FirstTutorialCustomerFloorTests
             UserInfo.IsTutorialStart = true;
 
             Customer = Add<CustomerController>("Waiting customers");
-            waiting = Add<NormalCustomer>("Unassigned normal customer");
-            Set(Customer, "_waitCustomers", new List<NormalCustomer> { waiting });
+            waiting = visit.Customer;
+
             Manager = Add<TableManager>("Tables");
             var furniture = Add<FurnitureSystem>("Furniture");
             FirstTable = Table(ERestaurantFloorType.Floor1, 0);
@@ -237,10 +241,32 @@ public class FirstTutorialCustomerFloorTests
             {
                 { customerData.Id, new SaveCustomerData(customerData.Id, "", 0) }
             });
+            PrepareActiveWaitingVisit(visit);
         }
 
         public bool Select(ERestaurantFloorType? requested, out ERestaurantFloorType floor, out TableData table) =>
             Select(requested, false, out floor, out table);
+
+        public void PrepareActiveWaitingVisit(CustomerTableUseRegressionTests.Flow visit)
+        {
+            // Actual guide rejection must start with a valid visit, so it reaches the
+            // full-floor policy rather than failing the earlier party adapter.
+            var data = waiting.NormalCustomerData;
+            CustomerTableUseRegressionTests.Get<Dictionary<string, CustomerData>>(CustomerDataManager.Instance, "_customerDataDic")[data.Id] = data;
+            visit.Customer.SetData(data, Customer, Manager);
+
+            Assert.That(Invoke(Customer, "CreateSingleVisit", visit.Customer), Is.True);
+            Assert.That(visit.Customer.VisitParty.Members.Count, Is.EqualTo(1));
+            Assert.That(Invoke(Customer, "EnqueueVisit", visit.Customer.VisitParty, true), Is.True);
+        }
+
+        public void ReenterWaitingVisitIfNeeded()
+        {
+            if (visit.Customer.VisitParty != null) return;
+            if (!visit.Customer.gameObject.activeSelf)
+                visit.Customer = ObjectPoolManager.Instance.SpawnNormalCustomer(Vector3.zero, Quaternion.identity);
+            PrepareActiveWaitingVisit(visit);
+        }
 
         public bool Select(ERestaurantFloorType? requested, bool strictRequestedFloor,
             out ERestaurantFloorType floor, out TableData table)
@@ -322,6 +348,7 @@ public class FirstTutorialCustomerFloorTests
             UnityEngine.Random.state = priorRandom;
             UnityEngine.Object.DestroyImmediate(root);
             foreach (var data in dataObjects) UnityEngine.Object.DestroyImmediate(data);
+            visit.Dispose();
         }
     }
 }

@@ -6,6 +6,8 @@ public class SaveTableData
     public ERestaurantFloorType FloorType { get; private set; }
     public TableType TableType { get; private set; }
     public bool NeedCleaning { get; private set; }
+    public bool CleaningBowlProcessed { get; private set; }
+    public void SetCleaningBowlProcessed(bool value) => CleaningBowlProcessed = value;
     public CoinAreaData[] CoinAreaDatas { get; private set; } = new CoinAreaData[2];
     public GarbageAreaData GarbageAreaData { get; private set; } = new GarbageAreaData();
 
@@ -13,7 +15,7 @@ public class SaveTableData
 
     public void SetTableType(TableType tableType) => TableType = tableType;
 
-    public void SetNeedCleaning(bool needCleaning) => NeedCleaning = needCleaning;
+    public void SetNeedCleaning(bool needCleaning) { NeedCleaning = needCleaning; if (!needCleaning) CleaningBowlProcessed = false; }
 
     public void SetCoinAreaData(int index, CoinAreaData data) => CoinAreaDatas[index] = data;
 

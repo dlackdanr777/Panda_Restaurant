@@ -61,10 +61,7 @@ public class CleanerAction : IStaffAction
         // 대상 수집
         DropGarbageArea garbageArea = _tableManager.GetMinDistanceGarbageArea(staff.EquipFloorType, staffPos);
         DropCoinArea coinArea = _tableManager.GetMinDistanceCoinArea(staff.EquipFloorType, staffPos);
-        TableData tableData = UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, staff.EquipFloorType) ? _tableManager.GetMinDistanceTableByState(
-            staffPos,
-            staff.EquipFloorType, ETableState.NeedCleaning)
-            : null;
+        TableData tableData = _tableManager.FindCleanableTable(staffPos, staff.EquipFloorType);
 
         if (UserInfo.IsTutorialStart || (garbageArea == null && coinArea == null && tableData == null))
         {
@@ -213,10 +210,14 @@ public class CleanerAction : IStaffAction
 
     private void CleanTableAction(Staff staff, TableData data)
     {
+        object cleaningCycle = data.CleaningCycle;
+        long lifetime = staff.WorkLifetime;
+        var floor = staff.EquipFloorType;
         float speedMul = staff.SpeedMul;
         _isNoAction = false;
         staff.Move(data.transform.position, 0, () =>
         {
+            if (!staff.IsWorkCurrent(this, lifetime, floor)) return;
             if (UserInfo.IsTutorialStart || data.TableState != ETableState.NeedCleaning)
             {
                 ResetStaffState(staff);
@@ -226,9 +227,12 @@ public class CleanerAction : IStaffAction
             staff.SetStaffState(EStaffState.Action);
             _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
             {
-                data.TableFurniture.OnCleanAction();
+                if (!staff.IsWorkCurrent(this, lifetime, floor)) return;
+                data.TableFurniture.OnCleanAction(cleaningCycle);
+                if (!staff.IsWorkCurrent(this, lifetime, floor)) return;
                 _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
                 {
+                    if (!staff.IsWorkCurrent(this, lifetime, floor)) return;
                     staff.SetStaffState(EStaffState.None);
                     _isUsed = false;
                     _time = 0;

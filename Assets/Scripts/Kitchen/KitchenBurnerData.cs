@@ -98,7 +98,12 @@ public class KitchenBurnerData
 
     private Staff _useStaff;
     public Staff UseStaff => _useStaff;
-    public void SetUseStaff(Staff value) => _useStaff = value;
+    internal long StaffReservationVersion { get; private set; }
+    public void SetUseStaff(Staff value)
+    {
+        if (!ReferenceEquals(_useStaff, value)) StaffReservationVersion++;
+        _useStaff = value;
+    }
 
     private FoodType _foodType;
     public FoodType FoodType => _foodType;

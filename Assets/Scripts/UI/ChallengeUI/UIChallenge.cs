@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class UIChallenge : MobileUIView
 {
+    private ChallengeManager _subscribedChallengeManager;
+
     [Header("Components")]
     [SerializeField] private UIMoney _uiMoney;
     [SerializeField] private UIDia _uiDia;
@@ -53,9 +55,10 @@ public class UIChallenge : MobileUIView
         _uiWeeklyButton.onClick.AddListener(OnWeeklyButtonClicked);
         _uiAllTimeButton.onClick.AddListener(OnAllTimeButtonClicked);
 
-        ChallengeManager.Instance.OnDailyChallengeUpdateHandler += OnDailyUpdateUI;
-        ChallengeManager.Instance.OnAllTimeChallengeUpdateHandler += OnAllTimeUpdateUI;
-        ChallengeManager.Instance.OnWeeklyChallengeUpdateHandler += OnWeeklyUpdateUI;
+        _subscribedChallengeManager = ChallengeManager.Instance;
+        _subscribedChallengeManager.OnDailyChallengeUpdateHandler += OnDailyUpdateUI;
+        _subscribedChallengeManager.OnAllTimeChallengeUpdateHandler += OnAllTimeUpdateUI;
+        _subscribedChallengeManager.OnWeeklyChallengeUpdateHandler += OnWeeklyUpdateUI;
 
         gameObject.SetActive(false);
     }
@@ -230,9 +233,13 @@ public class UIChallenge : MobileUIView
 
     private void OnDestroy()
     {
-        ChallengeManager.Instance.OnDailyChallengeUpdateHandler -= OnDailyUpdateUI;
-        ChallengeManager.Instance.OnAllTimeChallengeUpdateHandler -= OnAllTimeUpdateUI;
-        ChallengeManager.Instance.OnWeeklyChallengeUpdateHandler -= OnWeeklyUpdateUI;
+        if (_subscribedChallengeManager != null)
+        {
+            _subscribedChallengeManager.OnDailyChallengeUpdateHandler -= OnDailyUpdateUI;
+            _subscribedChallengeManager.OnAllTimeChallengeUpdateHandler -= OnAllTimeUpdateUI;
+            _subscribedChallengeManager.OnWeeklyChallengeUpdateHandler -= OnWeeklyUpdateUI;
+        }
+        _subscribedChallengeManager = null;
     }
 
 

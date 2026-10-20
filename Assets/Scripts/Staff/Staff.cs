@@ -46,6 +46,34 @@ public class Staff : MonoBehaviour
     public EquipStaffType EquipStaffType => _staffType;
     protected StaffGroupType _staffGroupType;
     protected IStaffAction _staffAction;
+    private long _workLifetime;
+    private bool _invalidatingWork;
+    internal long WorkLifetime => _workLifetime;
+    internal bool IsActionOwner(IStaffAction action) => ReferenceEquals(_staffAction, action);
+    internal bool IsWorkCurrent(IStaffAction action, long lifetime, ERestaurantFloorType floor)
+        => !_invalidatingWork && isActiveAndEnabled && _staffData != null && _workLifetime == lifetime
+            && _equipFloorType == floor && IsActionOwner(action);
+    private void InvalidateWaiterWork(bool dispose = false)
+    {
+        if (_invalidatingWork) return;
+        _invalidatingWork = true;
+        ++_workLifetime;
+        try
+        {
+            StopMove();
+            if (_staffAction is WaiterAction waiter)
+            {
+                if (dispose) { waiter.Destructor(); _staffAction = null; }
+                else waiter.CancelCurrentWork();
+            }
+            if (_staffAction is GuardAction guard)
+            {
+                if (dispose) { guard.Destructor(); _staffAction = null; }
+                else guard.CancelCurrentWork();
+            }
+        }
+        finally { _invalidatingWork = false; }
+    }
     protected EStaffState _state;
     protected ERestaurantFloorType _equipFloorType;
     public ERestaurantFloorType EquipFloorType => _equipFloorType;
@@ -98,6 +126,7 @@ public class Staff : MonoBehaviour
 
     public virtual void Init(EquipStaffType type, TableManager tableManager, KitchenSystem kitchenSystem, CustomerController customerController, FeverSystem feverSystem)
     {
+        InvalidateWaiterWork(true);
         CancelActiveSkill(StaffSkillCancellationReason.ManualCancellation, true);
         if (_feverSystem != null)
         {
@@ -120,7 +149,7 @@ public class Staff : MonoBehaviour
         _kitchenSystem = kitchenSystem;
         _feverSystem = feverSystem;
         _spriteRenderer.color = Color.white;
-        _scaleX = transform.localScale.x;
+        _scaleX = Mathf.Abs(transform.localScale.x);
         _gameManager.OnChangeStaffSkillValueHandler -= OnChangeSkillValueEvent;
         _gameManager.OnChangeStaffSkillValueHandler += OnChangeSkillValueEvent;
         UserInfo.OnUpgradeStaffHandler -= OnLevelUpEvent;
@@ -164,11 +193,23 @@ public class Staff : MonoBehaviour
             : staffData == _staffData
                 ? StaffSkillCancellationReason.SameStaffDataReassigned
                 : StaffSkillCancellationReason.StaffDataChanged;
+        // The same active employee in the same slot is not a new assignment.
+        // Preserve these actions' current trip; cancelling movement alone leaves
+        // their busy state waiting for an arrival that can no longer happen.
+        if (staffData != null && staffData == _staffData && equipFloorType == _equipFloorType
+            && (_staffAction is ChefAction || _staffAction is CleanerAction)
+            && IsWorkCurrent(_staffAction, _workLifetime, equipFloorType))
+        {
+            CancelActiveSkill(cancellationReason, true);
+            RefreshFeverEffect();
+            return;
+        }
+        InvalidateWaiterWork();
         CancelActiveSkill(cancellationReason, true);
         StopAllCoroutines();
         SkillEffectSetActive(false);
         // Moving the same employee still releases and rebuilds its floor-bound action.
-        if (staffData == _staffData && (staffData == null || equipFloorType == _equipFloorType))
+        if (staffData == _staffData && (staffData == null || (equipFloorType == _equipFloorType && _staffAction != null && gameObject.activeSelf)))
         {
             RefreshFeverEffect();
             return;
@@ -398,6 +439,7 @@ public class Staff : MonoBehaviour
 
     private void OnDisable()
     {
+        InvalidateWaiterWork();
         CancelActiveSkill(StaffSkillCancellationReason.GameObjectDisabled, true);
 
         if (transform != null)
@@ -610,6 +652,31 @@ public class Staff : MonoBehaviour
     protected int _targetFloor;
     protected int _moveEndDir;
     protected bool _isStairsMove;
+    protected long _moveVersion;
+    protected bool IsMovementCurrent(long version) => version == _moveVersion && isActiveAndEnabled;
+    public bool ConfirmReachedMoveTarget()
+    {
+        float tolerance = AStar.Instance.NodeSize * 1.5f;
+        var type = _staffType == EquipStaffType.Chef ? RestaurantType.Kitchen : RestaurantType.Hall;
+        return Mathf.Abs(_tableManager.GetDoorPos(type, _moveObj.transform.position).y
+            - _tableManager.GetDoorPos(type, _targetPos).y) < tolerance
+            && Vector2.Distance(_moveObj.transform.position, _targetPos) <= tolerance;
+    }
+    protected void RequestCurrentPath(Vector2 start, Vector2 end, Action<List<Vector2>> callback)
+    {
+        long version = _moveVersion;
+        AStar.Instance.RequestPath(start, end, nodes =>
+        {
+            if (!IsMovementCurrent(version)) return;
+            if (nodes == null || nodes.Count == 0)
+            {
+                var failed = _moveCompleted; _moveCompleted = null;
+                failed?.Invoke(); // The waiter verifies its real target and releases this lease.
+                return;
+            }
+            callback(nodes);
+        });
+    }
 
     protected virtual void CancelTeleportEffects()
     {
@@ -620,6 +687,7 @@ public class Staff : MonoBehaviour
 
     public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
     {
+        ++_moveVersion;
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
 
@@ -641,11 +709,13 @@ public class Staff : MonoBehaviour
 
         bool isEqualPos = customerDoorPos.y == targetDoorPos.y;
         Vector3 pathPos = isEqualPos ? targetPos : customerDoorPos;
-        AStar.Instance.RequestPath(_moveObj.transform.position, pathPos, isEqualPos ? TargetMove : StairsMove);
+        RequestCurrentPath(_moveObj.transform.position, pathPos, isEqualPos ? TargetMove : StairsMove);
     }
 
     public void StopMove()
     {
+        ++_moveVersion;
+        _moveCompleted = null;
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
 
@@ -680,15 +750,17 @@ public class Staff : MonoBehaviour
             StopCoroutine(_teleportCoroutine);
 
         _isStairsMove = true;
-
+        long version = _moveVersion;
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
+            if (!IsMovementCurrent(version)) return;
             _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() =>
             {
+                if (!IsMovementCurrent(version)) return;
                 _spriteRenderer.color = Color.white;
                 _skillEffect.color = Color.white;
                 // 텔레포트 후 현재 위치에서 목적지로 경로 탐색
-                AStar.Instance.RequestPath(_moveObj.transform.position, _targetPos, TargetMove);
+                RequestCurrentPath(_moveObj.transform.position, _targetPos, TargetMove);
             }));
         }
         ));
@@ -697,6 +769,8 @@ public class Staff : MonoBehaviour
 
     protected IEnumerator MoveRoutine(List<Vector2> nodeList, Action onCompleted = null)
     {
+        long version = _moveVersion;
+        if (!IsMovementCurrent(version)) yield break;
         // 현재 위치에서 너무 가까운 첫 노드들을 모두 제거 (순간이동 방지)
         Vector3 currentPos = _moveObj.transform.position;
         while (nodeList.Count > 1)
@@ -721,8 +795,8 @@ public class Staff : MonoBehaviour
             
             if (!_isStairsMove)
             {
-                _moveCompleted?.Invoke();
-                _moveCompleted = null;
+                var emptyCompleted = _moveCompleted; _moveCompleted = null;
+                emptyCompleted?.Invoke();
             }
             yield break;
         }
@@ -740,6 +814,7 @@ public class Staff : MonoBehaviour
             
             while (true)
             {
+                if (!IsMovementCurrent(version)) yield break;
                 currentPos = _moveObj.transform.position;
                 
                 // 거리 제곱 계산 (GC 없음)
@@ -785,14 +860,17 @@ public class Staff : MonoBehaviour
         if (_isStairsMove)
             yield break;
 
-        _moveCompleted?.Invoke();
-        _moveCompleted = null;
+        if (!IsMovementCurrent(version)) yield break;
+        var completed = _moveCompleted; _moveCompleted = null;
+        completed?.Invoke();
     }
 
 
     protected IEnumerator TeleportFloorRoutine(Action onCompleted)
     {
+        long version = _moveVersion;
         yield return YieldCache.WaitForSeconds(0.6f);
+        if (!IsMovementCurrent(version)) yield break;
         
         if (!gameObject.activeInHierarchy)
         {
@@ -806,10 +884,12 @@ public class Staff : MonoBehaviour
         
         Vector3 doorPos = _tableManager.GetDoorPos(type, _targetPos);
         TweenAlpha(0, 0.4f, Ease.Constant, () => {
+            if (!IsMovementCurrent(version)) return;
             _moveObj.transform.position = doorPos;
             SetAlpha(0f);
             });
         yield return YieldCache.WaitForSeconds(1f);
+        if (!IsMovementCurrent(version)) yield break;
         SetAlpha(0f);
         if (!gameObject.activeInHierarchy)
         {
@@ -817,8 +897,9 @@ public class Staff : MonoBehaviour
             yield break;
         }
         
-        TweenAlpha(1, 0.4f, Ease.Constant, () => SetAlpha(1f));
+        TweenAlpha(1, 0.4f, Ease.Constant, () => { if (IsMovementCurrent(version)) SetAlpha(1f); });
         yield return YieldCache.WaitForSeconds(1f);
+        if (!IsMovementCurrent(version)) yield break;
         SetAlpha(1f);
         if (_skillEffect != null)
             _skillEffect.color = Color.white;
@@ -951,6 +1032,7 @@ public class Staff : MonoBehaviour
 
     public void ObjectPoolDespawnEvent()
     {
+        InvalidateWaiterWork(true);
         CancelActiveSkill(StaffSkillCancellationReason.ObjectPoolDespawned, true);
 
         LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
@@ -971,6 +1053,7 @@ public class Staff : MonoBehaviour
 
     private void OnChangeSceneEvent()
     {
+        InvalidateWaiterWork(true);
         CancelActiveSkill(StaffSkillCancellationReason.SceneChanged, true);
 
         if (_staffData != null)
@@ -1046,6 +1129,7 @@ public class Staff : MonoBehaviour
         StaffSkillCancellationReason cancellationReason = _isApplicationQuitting
             ? StaffSkillCancellationReason.ApplicationQuitting
             : StaffSkillCancellationReason.ComponentDestroyed;
+        InvalidateWaiterWork(true);
         CancelActiveSkill(cancellationReason, true);
 
         LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;

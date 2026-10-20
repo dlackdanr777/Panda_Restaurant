@@ -29,6 +29,13 @@ public class KitchenSystem : MonoBehaviour
     }
 
 
+    internal bool TryGetOrderKitchen(ERestaurantFloorType floorType, out KitchenUtensilGroup group)
+    {
+        return _kitchenUtensilGroupDic.TryGetValue(floorType, out group) && group != null
+            && group.FloorType == floorType && group.IsOrderKitchenReady
+            && UserInfo.IsFloorValid(UserInfo.CurrentStage, floorType);
+    }
+
     public void EqueueFood(ERestaurantFloorType floorType, CookingData foodData)
     {
         if (!_kitchenUtensilGroupDic.TryGetValue(floorType, out KitchenUtensilGroup group))

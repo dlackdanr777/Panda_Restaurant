@@ -20,12 +20,15 @@ public class FoodDistributionCounter : MonoBehaviour
 
     private ERestaurantFloorType _floorType;
     private List<GameObject> _foodList = new List<GameObject>();
-    private List<ETableState> _beforeTableStateList = new List<ETableState>();
+    private readonly List<TableOrderIdentity> _displayOrders = new List<TableOrderIdentity>();
+    internal IReadOnlyList<TableOrderIdentity> DisplayOrders => _displayOrders.AsReadOnly();
     private List<TableData> _tableDataList;
     private List<System.Action<ETableState>> _tableStateHandlers = new List<System.Action<ETableState>>();
 
     public void Init(ERestaurantFloorType floor, List<TableData> tableDataList)
     {
+        Unsubscribe();
+        foreach (var old in _foodList) if (old != null) Destroy(old);
         _floorType = floor;
         _tableDataList = tableDataList;
         _foodList.Clear();
@@ -33,13 +36,13 @@ public class FoodDistributionCounter : MonoBehaviour
         {
             int index = i;
             GameObject food = Instantiate(_foodPrefab, _foodStartTr.position + new Vector3(-_foodInterval * i, 0, 0), Quaternion.identity, _foodStartTr);
-            _beforeTableStateList.Add(tableDataList[i].TableState);
             _foodList.Add(food);
 
             food.SetActive(false);
             System.Action<ETableState> handler = (state) => OnChangeTableStateEvent();
             _tableStateHandlers.Add(handler);
             tableDataList[i].OnChangeTableStateHandler += handler;
+            tableDataList[i].OnServiceChangedHandler += OnChangeTableStateEvent;
         }
 
         OnChangeTableStateEvent();
@@ -47,12 +50,21 @@ public class FoodDistributionCounter : MonoBehaviour
 
     private void OnChangeTableStateEvent()
     {
-        int activeCount = 0;
+        _displayOrders.Clear();
         for(int i = 0, cnt = _tableDataList.Count; i < cnt; ++i)
         {
-            if (_tableDataList[i].TableState == ETableState.CanServing || (_tableDataList[i].TableState == ETableState.UseStaff && _tableDataList[i].BeforeTableState == ETableState.CanServing))
-                activeCount++;
+            var table = _tableDataList[i];
+            if (table.FloorType != _floorType) continue;
+            if (table.PartyOrders != null)
+            {
+                foreach (var food in table.PartyOrders.Orders)
+                    if (TableManager.IsFoodAtCounter(food.Identity)) _displayOrders.Add(food.Identity);
+            }
+            else if (TableManager.IsFoodAtCounter(table.CurrentFood.Identity)) _displayOrders.Add(table.CurrentFood.Identity);
         }
+        int activeCount = _displayOrders.Count;
+        while (_foodList.Count < activeCount)
+            _foodList.Add(Instantiate(_foodPrefab, _foodStartTr));
 
         for(int i = 0, cnt = _foodList.Count; i < cnt; ++i)
         {
@@ -62,6 +74,7 @@ public class FoodDistributionCounter : MonoBehaviour
                 continue;
             }
 
+            _foodList[i].transform.localPosition = Vector3.left * _foodInterval * i;
             _foodList[i].SetActive(true);
         }
 
@@ -79,9 +92,18 @@ public class FoodDistributionCounter : MonoBehaviour
 
     private void OnDestroy()
     {
+        Unsubscribe();
+    }
+
+    private void Unsubscribe()
+    {
         if (_tableDataList == null) return;
         for (int i = 0; i < _tableDataList.Count && i < _tableStateHandlers.Count; i++)
+        {
             _tableDataList[i].OnChangeTableStateHandler -= _tableStateHandlers[i];
+            _tableDataList[i].OnServiceChangedHandler -= OnChangeTableStateEvent;
+        }
+        _tableStateHandlers.Clear();
     }
 
 }

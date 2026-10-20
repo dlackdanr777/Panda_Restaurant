@@ -44,6 +44,7 @@ public class Customer : MonoBehaviour
     protected float _moveSpeed;
     protected bool _isStairsMove;
     protected List<Vector2> _path;
+    private Action _movePathFailed;
 
     protected CustomerController _customerController;
     protected TableManager _tableManager;
@@ -51,9 +52,10 @@ public class Customer : MonoBehaviour
     // AStar 경로 탐색 race condition 방지용 시퀀스 ID
     // Move()가 여러 번 빠르게 호출될 때 오래된 콜백을 무시하기 위함
     private int _moveSequenceId = 0;
+    private bool _hasMoved;
 
     /// <summary>Move()가 한 번이라도 호출됐는지 여부(대기열 등에서 중복 이동 요청 판단용)</summary>
-    public bool HasMoved => _moveSequenceId > 0;
+    public bool HasMoved => _hasMoved;
     /// <summary>마지막으로 Move() 요청한 목표 위치</summary>
     public Vector2 TargetPos => _targetPos;
 
@@ -117,7 +119,19 @@ public class Customer : MonoBehaviour
         _spriteRenderer.sortingOrder = orderInLayer;
     }
 
-    public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null)
+    public bool HasPathFailure { get; private set; }
+    internal int MovementSequenceId => _moveSequenceId;
+
+    public bool ConfirmReachedMoveTarget()
+    {
+        float tolerance = AStar.Instance.NodeSize * 1.5f;
+        bool sameRegion = Mathf.Abs(_tableManager.GetDoorPos(RestaurantType.Hall, transform.position).y
+            - _tableManager.GetDoorPos(RestaurantType.Hall, _targetPos).y) < tolerance;
+        if (sameRegion && Vector2.Distance(transform.position, _targetPos) <= tolerance) return true;
+        HasPathFailure = true; return false;
+    }
+
+    public void Move(Vector2 targetPos, int moveEndDir = 0, Action onCompleted = null, Action onPathFailed = null)
     {
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
@@ -125,7 +139,10 @@ public class Customer : MonoBehaviour
         if (_teleportCoroutine != null)
             StopCoroutine(_teleportCoroutine);
 
+        HasPathFailure = false;
         _moveCompleted = onCompleted;
+        _movePathFailed = onPathFailed;
+        _hasMoved = true;
 
         Vector3 customerDoorPos = _tableManager.GetDoorPos(RestaurantType.Hall, transform.position);
         Vector3 targetDoorPos = _tableManager.GetDoorPos(RestaurantType.Hall, targetPos);
@@ -146,14 +163,44 @@ public class Customer : MonoBehaviour
                 DebugLog.Log($"[Customer] 오래된 경로 탐색 결과 무시 (seqId={seqId}, current={_moveSequenceId})");
                 return;
             }
+            if (nodeList == null || nodeList.Count == 0) { ReportPathFailure(seqId); return; }
             if (isEqualPos) TargetMove(nodeList);
-            else StairsMove(nodeList);
+            else StairsMove(nodeList, seqId);
         });
     }
 
 
+    // Invalidates queued path results as well as the active movement when pooled/reassigned.
+    protected void InvalidateMovement(bool resetVisit = false)
+    {
+        ++_moveSequenceId;
+        if (resetVisit) _hasMoved = false;
+        _moveCompleted = null;
+        _movePathFailed = null;
+        if (_moveCoroutine != null) StopCoroutine(_moveCoroutine);
+        _moveCoroutine = null;
+        StopTeleportRoutine();
+    }
+
+    internal bool RetargetCurrentMove(Vector2 target)
+    {
+        if (_moveCompleted == null || !isActiveAndEnabled) return false;
+        Move(target, _moveEndDir, _moveCompleted, _movePathFailed);
+        return true;
+    }
+
+    private void ReportPathFailure(int sequence)
+    {
+        if (sequence != _moveSequenceId) return;
+        HasPathFailure = true;
+        Action callback = _movePathFailed;
+        _movePathFailed = null;
+        callback?.Invoke();
+    }
+
     public void StopMove()
     {
+        InvalidateMovement();
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
 
@@ -197,7 +244,7 @@ public class Customer : MonoBehaviour
     }
 
 
-    private void StairsMove(List<Vector2> nodeList)
+    private void StairsMove(List<Vector2> nodeList, int sequence)
     {
         if (_moveCoroutine != null)
             StopCoroutine(_moveCoroutine);
@@ -205,10 +252,15 @@ public class Customer : MonoBehaviour
         StopTeleportRoutine();
 
         _isStairsMove = true;
-
         _moveCoroutine = StartCoroutine(MoveRoutine(nodeList, () =>
         {
-            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() => AStar.Instance.RequestPath(_tableManager.GetDoorPos(RestaurantType.Hall, _targetPos), _targetPos, TargetMove)));
+            if (sequence != _moveSequenceId) return;
+            _teleportCoroutine = StartCoroutine(TeleportFloorRoutine(() =>
+            {
+                if (sequence != _moveSequenceId) return;
+                AStar.Instance.RequestPath(_tableManager.GetDoorPos(RestaurantType.Hall, _targetPos), _targetPos,
+                    path => { if (sequence != _moveSequenceId) return; if (path == null || path.Count == 0) { ReportPathFailure(sequence); return; } TargetMove(path); });
+            }));
         }
         ));
     }

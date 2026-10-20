@@ -52,6 +52,7 @@ public static partial class UserInfo
 
     public static event Action OnEnabledCustomerHandler;
     public static event Action OnVisitedCustomerHandler;
+    public static event Action<CustomerData, int, int> OnCustomerVisitCompletedHandler;
     public static event Action OnVisitSpecialCustomerHandler;
     public static event Action OnExterminationGatecrasherCustomerHandler;
     public static event Action OnGiveCustomerSkinHandler;
@@ -182,6 +183,9 @@ public static partial class UserInfo
     private static Dictionary<string, int> _giveGachaItemLevelDic = new Dictionary<string, int>();
 
     private static Dictionary<string, SaveCustomerData> _enabledCustomerDic = new Dictionary<string, SaveCustomerData>();
+    private static CustomerEncounterProgressData _customerEncounterProgress = CustomerEncounterProgressData.CreateEmpty();
+    private static bool _customerEncounterStateWritable = true;
+    private static long _customerEncounterContextGeneration;
     private static HashSet<string> _giveCustomerSkinSet = new HashSet<string>();
 
     private static HashSet<string> _doneMainChallengeSet = new HashSet<string>();
@@ -289,6 +293,9 @@ public static partial class UserInfo
 
             _stageInfos[i].OnChangeStaffSkinHandler += OnChangeStaffSkinEvent;
         }
+#if UNITY_EDITOR
+        CustomerPartyManualPlayBootstrap.NotifyUserDataInitialized();
+#endif
     }
 
     private static void OnChangeFloorEvent()
@@ -467,6 +474,11 @@ public static partial class UserInfo
 
         param.Add("GiveStaffSkinList", _giveStaffSkinSet.ToList());
         param.Add("EnabledCustomerDataList", _saveCustomerDataList);
+        if (_customerEncounterStateWritable)
+        {
+            param.Add(CustomerEncounterCatalog.StateVersionField, CustomerEncounterCatalog.StateVersion);
+            param.Add(CustomerEncounterCatalog.StateListField, _customerEncounterProgress.ToSaveRecords());
+        }
         param.Add("GiveCustomerSkinList", _giveCustomerSkinSet.ToList());
 
         param.Add("DoneMainChallengeList", _doneMainChallengeSet.ToList());
@@ -524,35 +536,37 @@ public static partial class UserInfo
     }
 
 
-    public static void SaveStageData(EStage stage, Func<bool> isCurrent = null)
-    {
-        if (isCurrent != null && !isCurrent()) return;
-        int stageIndex = (int)stage;
-        if (_stageInfos[stageIndex] == null)
-        {
-            DebugLog.LogError("현재 스테이지 정보가 없습니다: " + stage.ToString());
-            return;
-        }
+    public static StageSaveRequest SaveStageData(EStage stage, Func<bool> isCurrent = null,
+        Action<StageSaveRequest> completed = null) => RequestStageSave(stage, false, isCurrent, completed);
 
-        Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameData(stage.ToString() + "Data", param, isCurrent);
+    public static StageSaveRequest SaveStageDataAsync(EStage stage, Func<bool> isCurrent = null,
+        Action<StageSaveRequest> completed = null) => RequestStageSave(stage, true, isCurrent, completed);
+
+    private static StageSaveRequest RequestStageSave(EStage stage, bool asynchronous,
+        Func<bool> isCurrent, Action<StageSaveRequest> completed)
+    {
+        var owner = BackendManager.ExistingInstance;
+        if (stage < EStage.Stage1 || stage >= EStage.Length || _stageInfos == null
+            || _stageInfos[(int)stage] == null || owner == null)
+            return StageSaveRequest.Held("Stage/owner unavailable", completed);
+        var destination = _stageInfos[(int)stage];
+        return owner.RequestStageSave(stage, destination, asynchronous,
+            () => ReferenceEquals(BackendManager.ExistingInstance, owner) && _stageInfos != null
+                && ReferenceEquals(_stageInfos[(int)stage], destination) && (isCurrent == null || isCurrent()), completed);
     }
 
-
-    public static void SaveStageDataAsync(EStage stage, Func<bool> isCurrent = null)
+    // Read-only fingerprint at the beginning of a Stage GET. A late load must not
+    // replace local changes made while that GET was in flight.
+    internal static Func<bool> CaptureStageLoadGuard(EStage stage)
     {
-        if (isCurrent != null && !isCurrent()) return;
-        int stageIndex = (int)stage;
-        if (_stageInfos[stageIndex] == null)
-        {
-            DebugLog.LogError("현재 스테이지 정보가 없습니다: " + stage.ToString());
-            return;
-        }
-
-        Param param = _stageInfos[stageIndex].SaveData().GetParam();
-        BackendManager.Instance.SaveGameDataAsync(stage.ToString() + "Data", param, isCurrent: isCurrent);
+        var destination = _stageInfos?[(int)stage];
+        if (destination == null) return () => _stageInfos?[(int)stage] == null;
+        var waiting = destination.WaitingParties;
+        string values = destination.SaveData().GetParam(true).GetJson();
+        return () => _stageInfos != null && ReferenceEquals(_stageInfos[(int)stage], destination)
+            && ReferenceEquals(destination.WaitingParties, waiting)
+            && destination.SaveData().GetParam(true).GetJson() == values;
     }
-
 
     public static void LoadStageData()
     {
@@ -592,30 +606,51 @@ public static partial class UserInfo
         Func<bool> sameDestination = () => isCurrent() && _stageInfos != null
             && !BackendManager.Instance.IsStaffMutationProtected
             && ReferenceEquals(_stageInfos[(int)stage], destination);
-        return TryApplyStageDataResponse(stage, response, sameDestination, destination.LoadData,
-            () => { if (asynchronous) SaveStageDataAsync(stage, sameDestination); else SaveStageData(stage, sameDestination); });
+        // Legacy LoadData raises furniture/equipment events. A reentrant save must
+        // not use the old row binding while this Stage is only partly applied.
+        if (!sameDestination()) return false;
+        BackendManager.Instance.ForgetStageSaveDestination(stage);
+        bool loaded = false;
+        try
+        {
+            loaded = TryApplyStageDataResponse(stage, response, sameDestination, destination.LoadData,
+                () => { BackendManager.Instance.BindStageSaveDestination(stage, destination, response); if (asynchronous) SaveStageDataAsync(stage, sameDestination); else SaveStageData(stage, sameDestination); }, destination.ProtectWaitingParties);
+            if (loaded && sameDestination()) { BackendManager.Instance.BindStageSaveDestination(stage, destination, response); OnWaitingPartiesLoaded?.Invoke(stage); }
+            return loaded;
+        }
+        finally
+        {
+            if (!loaded && sameDestination()) BackendManager.Instance.ForgetStageSaveDestination(stage);
+        }
     }
 
     // Shared legacy response path. Tests supply detached memory sinks, never actual account writes.
     // Migration originals have already been captured by BackendManager before entering this method.
+    public static event Action<EStage> OnWaitingPartiesLoaded;
+
     public static bool TryApplyStageDataResponse(EStage stage, BackendReturnObject response,
-        Func<bool> isCurrent, Func<ServerStageData, bool> applyLegacy, Action saveExistingA2)
+        Func<bool> isCurrent, Func<ServerStageData, bool> applyLegacy, Action saveExistingA2, Action<WaitingPartySaveData> protectWaiting = null)
     {
         if (stage < EStage.Stage1 || stage >= EStage.Length || response == null || !response.IsSuccess()
             || isCurrent == null || applyLegacy == null || !isCurrent()) return false;
+        var waitingPreflight = WaitingPartySaveData.PreflightResponse(response.GetReturnValue());
+        if (!isCurrent()) return false;
+        if (waitingPreflight.IsProtected && (waitingPreflight.Reason == "InvalidStageEnvelope" || waitingPreflight.Reason == "MalformedStageEnvelope"))
+        { protectWaiting?.Invoke(waitingPreflight); return false; }
         ServerStageData data;
         bool migrationApplied;
         try
         {
-            JsonData json = response.FlattenRows();
+            JsonData json = WaitingPartySaveData.FlattenOtherStageFields(response.GetReturnValue());
             if (!isCurrent() || json == null || json.Count != 1) return false;
             data = new ServerStageData();
-            data.SetData(json);
+            data.SetData(json, waitingPreflight);
             if (!isCurrent()) return false;
             migrationApplied = StaffSaveMigrationA2.TryApply(data, stage);
         }
         catch (Exception)
         {
+            if (isCurrent()) protectWaiting?.Invoke(WaitingPartySaveData.Blocked(response.GetReturnValue(), "StageParseFailed"));
             // A broken Stage payload cannot enter memory or trigger the old A2 save.
             return false;
         }
@@ -719,6 +754,32 @@ public static partial class UserInfo
         _clearWeeklyChallengeSet = loadData.ClearWeeklyChallengeSet;
 
         _enabledCustomerDic = loadData.EnabledCustomerDataDic;
+
+        _customerEncounterContextGeneration = unchecked(_customerEncounterContextGeneration + 1);
+        if (loadData.EncounterLoadStatus == CustomerEncounterLoadStatus.ProtectedInvalid)
+        {
+            _customerEncounterProgress = CustomerEncounterProgressData.CreateEmpty();
+            _customerEncounterStateWritable = false;
+            Debug.LogError("[CustomerEncounter] Unsupported or damaged state; writes are withheld.");
+        }
+        else if (loadData.EncounterLoadStatus == CustomerEncounterLoadStatus.Valid)
+        {
+            if (CustomerEncounterProgressData.TryRestore(loadData.CustomerEncounterRecords, out var restoredProgress, out _))
+            {
+                _customerEncounterProgress = restoredProgress;
+                _customerEncounterStateWritable = true;
+            }
+            else
+            {
+                _customerEncounterProgress = CustomerEncounterProgressData.CreateEmpty();
+                _customerEncounterStateWritable = false;
+            }
+        }
+        else
+        {
+            _customerEncounterProgress = CustomerEncounterProgressData.MigrateLegacy(_enabledCustomerDic.Values);
+            _customerEncounterStateWritable = true;
+        }
 
         _notificationMessageSet = loadData.NotificationMessageSet;
         _clearNotificationMessageSet = loadData.ClearNotificationMessageSet;
@@ -1029,6 +1090,9 @@ public static partial class UserInfo
         _stageInfos[stageIndex].SetFeverGauge(value);
     }
 
+    public static WaitingPartySaveData GetWaitingPartySave(EStage stage) => _stageInfos[(int)stage].WaitingParties;
+    public static bool SetWaitingParties(EStage stage, IEnumerable<IEnumerable<string>> teams) => _stageInfos[(int)stage].SetWaitingParties(teams);
+    public static void ProtectWaitingParties(EStage stage, string reason) => _stageInfos[(int)stage].ProtectWaitingParties(reason);
     public static IReadOnlyList<string> GetWaitingCustomerIds(EStage stage)
     {
         return _stageInfos[(int)stage].WaitingCustomerIdList;
@@ -2532,6 +2596,9 @@ public static partial class UserInfo
         return _stageInfos[stageIndex].GetMaxSinkBowlCount(floor);
     }
 
+    internal static bool TryProcessCleaningBowl(EStage stage, ERestaurantFloorType floor, TableType type, SaveTableData expected = null)
+        => _stageInfos[(int)stage].TryProcessCleaningBowl(floor, type, expected);
+
     public static void AddSinkBowlCount(EStage stage, ERestaurantFloorType floor)
     {
         int stageIndex = (int)stage;
@@ -2720,8 +2787,15 @@ public static partial class UserInfo
         if (!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData data))
             return;
 
-        _enabledCustomerDic[customer.Id].AddVisitCount();
+        int previousVisitCount = data.VisitCount;
+        data.AddVisitCount();
+        int currentVisitCount = data.VisitCount;
+        bool encounterChanged = _customerEncounterStateWritable
+            && _customerEncounterProgress.RecordCompletedVisit(customer.Id, previousVisitCount, currentVisitCount);
+        if (encounterChanged) RequestCustomerEncounterSave();
         OnVisitedCustomerHandler?.Invoke();
+        try { OnCustomerVisitCompletedHandler?.Invoke(customer, previousVisitCount, currentVisitCount); }
+        catch (Exception error) { Debug.LogException(error); }
     }
 
     public static void CustomerVisits(CustomerData customer, int visitCount)
@@ -2739,6 +2813,43 @@ public static partial class UserInfo
         OnVisitedCustomerHandler?.Invoke();
     }
 
+    public static bool IsCustomerEncounterStateWritable => _customerEncounterStateWritable;
+    public static long CustomerEncounterContextGeneration => _customerEncounterContextGeneration;
+
+    public static bool RecordCustomerEncounterAppearance(string customerId)
+    {
+        if (!_customerEncounterStateWritable || !_enabledCustomerDic.TryGetValue(customerId ?? string.Empty, out SaveCustomerData customer))
+            return false;
+        bool pending = _customerEncounterProgress.RecordValidAppearance(customerId, customer.VisitCount);
+        if (pending) RequestCustomerEncounterSave();
+        return pending;
+    }
+
+    public static bool TryGetPendingCustomerEncounter(string customerId,
+        out CustomerEncounterSaveData record, out string message)
+    {
+        record = null;
+        message = null;
+        return _customerEncounterStateWritable
+            && _customerEncounterProgress.TryGetNextPending(customerId, out record, out message);
+    }
+
+    public static bool MarkCustomerEncounterSeen(string customerId, CustomerEncounterEventKind kind,
+        int visitMilestone, long expectedContextGeneration)
+    {
+        if (!_customerEncounterStateWritable || expectedContextGeneration != _customerEncounterContextGeneration) return false;
+        bool changed = _customerEncounterProgress.MarkSeen(customerId, kind, visitMilestone);
+        if (changed) RequestCustomerEncounterSave();
+        return changed;
+    }
+
+    private static void RequestCustomerEncounterSave()
+    {
+        BackendManager backend = BackendManager.ExistingInstance;
+        if (backend == null || !backend.IsLogin || !backend.IsLoaded || !IsFirstTutorialClear || IsTutorialStart
+            || !GameManager.HasInstance) return;
+        try { GameManager.Instance.AsyncSaveGameData(); } catch (Exception error) { Debug.LogException(error); }
+    }
     public static int GetVisitedCustomerCount(string id)
     {
         if (_enabledCustomerDic.TryGetValue(id, out SaveCustomerData data))

@@ -34,9 +34,9 @@ public class TableButton : MonoBehaviour
         _button.interactable = value;
     }
 
-    public void SetWorldTransform(Transform tr)
+    public void SetWorldTransform(Transform tr, Vector3 additionalOffset = default)
     {
-        _worldToSceenPos.SetWorldTransform(tr);
+        _worldToSceenPos.SetWorldTransform(tr, additionalOffset);
     }
 
 

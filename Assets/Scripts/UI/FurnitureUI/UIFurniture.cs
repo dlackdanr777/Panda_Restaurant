@@ -9,6 +9,8 @@ using UnityEngine.UI;
 
 public class UIFurniture : MobileUIView
 {
+    private GameManager _subscribedGameManager;
+
 
     public event Action OnShowEvent;
     public event Action OnBuyEvent;
@@ -126,7 +128,8 @@ public class UIFurniture : MobileUIView
         UserInfo.OnGiveFurnitureHandler += UpdateUIOptimized;
         UserInfo.OnChangeMoneyHandler += UpdateUIOptimized;
         UserInfo.OnChangeScoreHandler += UpdateUIOptimized;
-        GameManager.Instance.OnChangeScoreHandler += UpdateUIOptimized;
+        _subscribedGameManager = GameManager.Instance;
+        _subscribedGameManager.OnChangeScoreHandler += UpdateUIOptimized;
     }
 
     public override void Show()
@@ -438,6 +441,8 @@ public class UIFurniture : MobileUIView
         UserInfo.OnGiveFurnitureHandler -= UpdateUIOptimized;
         UserInfo.OnChangeMoneyHandler -= UpdateUIOptimized;
         UserInfo.OnChangeScoreHandler -= UpdateUIOptimized;
-        GameManager.Instance.OnChangeScoreHandler -= UpdateUIOptimized;
+        if (_subscribedGameManager != null)
+            _subscribedGameManager.OnChangeScoreHandler -= UpdateUIOptimized;
+        _subscribedGameManager = null;
     }
 }

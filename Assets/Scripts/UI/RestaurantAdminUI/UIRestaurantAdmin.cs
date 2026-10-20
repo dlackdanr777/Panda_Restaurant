@@ -93,6 +93,31 @@ public class UIRestaurantAdmin : MobileUIView
     private static readonly int NormalOffsetId = Shader.PropertyToID("_NormalOffset");
     private static readonly int VipOffsetId = Shader.PropertyToID("_VipOffset");
 
+    private TableManager _partyTableManager;
+    private object _partyFurnitureEdit;
+    private void BeginPartyFurnitureEdit()
+    {
+        if (_partyFurnitureEdit != null) return;
+        foreach (var root in gameObject.scene.GetRootGameObjects())
+        {
+            var manager = root.GetComponentInChildren<TableManager>(true);
+            if (manager == null || !manager.isActiveAndEnabled) continue;
+            _partyTableManager = manager;
+            _partyFurnitureEdit = manager.BeginFurnitureEdit();
+            break;
+        }
+    }
+    private void CompletePartyFurnitureEdit()
+    {
+        var token = _partyFurnitureEdit; _partyFurnitureEdit = null;
+        if (_partyTableManager != null && token != null) _partyTableManager.CompleteFurnitureEdit(token);
+    }
+    private void OnDisable()
+    {
+        if (_partyTableManager != null) _partyTableManager.CancelFurnitureEdit(_partyFurnitureEdit);
+        _partyFurnitureEdit = null; _partyTableManager = null;
+    }
+
     private bool _isClosingSession;
     private bool _isFailSafeCloseStarted;
     private int _sessionVersion;
@@ -227,6 +252,7 @@ public class UIRestaurantAdmin : MobileUIView
 
     public override void Show()
     {
+        BeginPartyFurnitureEdit();
         int openingSessionVersion = ++_sessionVersion;
         _isClosingSession = false;
         _isFailSafeCloseStarted = false;
@@ -505,6 +531,7 @@ public class UIRestaurantAdmin : MobileUIView
         if (!IsClosingSessionCurrent(sessionVersion))
             return;
 
+        CompletePartyFurnitureEdit();
         // AllPop keeps the hidden gacha at the Navigation top until its loop ends.
         // Close the already-hidden shop immediately so it cannot flash for a frame.
         CleanupTransition();
@@ -608,6 +635,7 @@ public class UIRestaurantAdmin : MobileUIView
 
     private void BeginBackgroundFade(int sessionVersion)
     {
+        CompletePartyFurnitureEdit();
         ClearCanvasAlphaTween();
         TweenData fadeTween = _canvasGroup.TweenAlpha(0, 0.1f);
         fadeTween.OnComplete(() => CompleteSessionClose(sessionVersion));

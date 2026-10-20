@@ -201,6 +201,9 @@ public class CameraController : MonoBehaviour
 
     private void Update()
     {
+#if UNITY_EDITOR
+        LogManualPointerDiagnostic();
+#endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         if (Input.GetKeyDown(KeyCode.F8) && _cameraComparisonRoutine == null)
         {
@@ -239,6 +242,57 @@ public class CameraController : MonoBehaviour
         HandleTouchInput();
 #endif
     }
+
+#if UNITY_EDITOR
+    [SerializeField, Tooltip("수동 검수 실행 중 실제 마우스 누름/해제의 입력 상태만 기록합니다. 기본 꺼짐.")]
+    private bool _logManualPointerDiagnostics = false;
+
+    // Opt-in original-project diagnosis: read only, once per real mouse edge.
+    private void LogManualPointerDiagnostic()
+    {
+        if (!_logManualPointerDiagnostics || !CustomerPartyManualPlayBootstrap.Active) return;
+        bool down = Input.GetMouseButtonDown(0), held = Input.GetMouseButton(0), up = Input.GetMouseButtonUp(0);
+        if (!down && !up) return;
+        Vector2 pixel = Input.mousePosition;
+        Vector3 world = _cam.ScreenToWorldPoint(pixel);
+        Vector3 currentOrigin = _cam.ScreenToWorldPoint(new Vector3(world.x, world.y, _cam.nearClipPlane));
+        var currentRay = new Ray(currentOrigin, _cam.transform.forward);
+        var screenRay = _cam.ScreenPointToRay(pixel);
+        int mask = _draggableLayerMask.value & ~_ignoredLayer.value;
+        var owners = new List<string>();
+        foreach (object owner in _worldInputBlocks)
+        {
+            var unityOwner = owner as UnityEngine.Object;
+            owners.Add(owner.GetType().Name + (unityOwner == null ? "" : "/" + unityOwner.name));
+        }
+        var hits = new List<string>();
+        if (EventSystem.current != null)
+        {
+            var results = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = pixel }, results);
+            foreach (var hit in results)
+                hits.Add((hit.module == null ? "none" : hit.module.GetType().Name) + "/" + hit.gameObject.name
+                    + "/layer=" + hit.gameObject.layer + "/ignored=" + (((1 << hit.gameObject.layer) & _ignoredLayer.value) != 0));
+        }
+        Debug.Log("PARTY_CAMERA_POINTER: edge=" + (down ? "down" : "up") + "; down=" + down + "; held=" + held + "; up=" + up + "; frame=" + Time.frameCount
+            + "; pixel=" + pixel + "; world=" + world + "; screen=" + Screen.width + "x" + Screen.height
+            + "; touches=" + Input.touchCount + "; camera=" + _cam.transform.position
+            + "; floor=" + CurrentFloor + "; restaurant=" + CurrentRestaurant
+            + "; moving=" + _isMoveAction + "; stopped=" + _isStopAction
+            + "; dragging=" + _isDragging + "; dragEnabled=" + _isDraggingEnabled
+            + "; tutorial=" + UserInfo.IsTutorialStart + "; nav=" + (_navigationCoordinator == null ? -1 : _navigationCoordinator.GetOpenViewCount())
+            + "; owners=" + string.Join("|", owners) + "; UI=" + IsPointerOverUI(pixel)
+            + "; eventHits=" + string.Join("|", hits) + "; mask=" + mask
+            + "; currentRay=" + currentOrigin + "/" + DescribeManualCameraRay(currentRay, mask)
+            + "; screenRay=" + screenRay.origin + "/" + DescribeManualCameraRay(screenRay, mask));
+    }
+
+    private static string DescribeManualCameraRay(Ray ray, int mask)
+    {
+        if (!Physics.Raycast(ray, out RaycastHit hit, 30f, mask)) return "none";
+        return hit.collider.name + "/layer=" + hit.collider.gameObject.layer + "/point=" + hit.point;
+    }
+#endif
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     private IEnumerator RunPresentationParticleComparison()

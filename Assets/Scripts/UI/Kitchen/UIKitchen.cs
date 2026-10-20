@@ -8,6 +8,8 @@ using UnityEngine.UI;
 
 public class UIKitchen : MobileUIView
 {
+    private GameManager _subscribedGameManager;
+
     [Header("Components")]
     [SerializeField] private UIRestaurantAdmin _uiRestaurantAdmin;
     [SerializeField] private UIKitchenPreview _uikitchenPreview;
@@ -114,7 +116,8 @@ public class UIKitchen : MobileUIView
         UserInfo.OnGiveKitchenUtensilHandler += UpdateUI;
         UserInfo.OnChangeMoneyHandler += UpdateUI;
         UserInfo.OnChangeScoreHandler += UpdateUI;
-        GameManager.Instance.OnChangeScoreHandler += UpdateUI;
+        _subscribedGameManager = GameManager.Instance;
+        _subscribedGameManager.OnChangeScoreHandler += UpdateUI;
     }
 
     public override void Show()
@@ -424,6 +427,8 @@ public class UIKitchen : MobileUIView
         UserInfo.OnGiveKitchenUtensilHandler -= UpdateUI;
         UserInfo.OnChangeMoneyHandler -= UpdateUI;
         UserInfo.OnChangeScoreHandler -= UpdateUI;
-        GameManager.Instance.OnChangeScoreHandler -= UpdateUI;
+        if (_subscribedGameManager != null)
+            _subscribedGameManager.OnChangeScoreHandler -= UpdateUI;
+        _subscribedGameManager = null;
     }
 }

@@ -1,4 +1,4 @@
-
+using System;
 using Muks.Tween;
 using UnityEngine;
 
@@ -7,215 +7,188 @@ public class GuardAction : IStaffAction
     private CustomerController _customerController;
     private TableManager _tableManager;
     private GatecrasherCustomer _gatecrasherCustomer;
-
     private float _actionTime = 1f;
-    private float _actionTimer = 0;
+    private float _actionTimer;
     private bool _startAction;
     private Vector3 _tmpScale;
+
+    private Staff _owner;
+    private long _staffLifetime;
+    private ERestaurantFloorType _assignedFloor;
+    private object _targetEvent;
+    private long _workVersion;
+    private bool _disposed;
+    private TweenWait _wait;
+    private object _waitIdentity;
+    private TweenData _colorTween, _scaleTween;
 
     public GuardAction(CustomerController customerController, TableManager tableManager)
     {
         _customerController = customerController;
         _tableManager = tableManager;
         _actionTimer = _actionTime;
-        _startAction = false;
     }
-
 
     public void Destructor()
     {
+        CancelCurrentWork();
+        _disposed = true;
     }
 
+    // Also used before the same StaffData early return and when the object is disabled.
+    public void CancelCurrentWork()
+    {
+        ++_workVersion;
+        _waitIdentity = null;
+        var wait = _wait;
+        _wait = null;
+        if (wait != null && wait.enabled)
+        {
+            // TweenWait defers completion for one frame; stop that coroutine before
+            // returning its component to the pool so it cannot complete a later wait.
+            wait.StopAllCoroutines();
+            wait.Stop();
+        }
+        if (_owner != null && _owner.IsActionOwner(this))
+        {
+            _colorTween?.Clear();
+            _scaleTween?.Clear();
+            if (_startAction)
+            {
+                _owner.SetAlpha(1f);
+                _owner.SpriteRenderer.transform.localScale = _tmpScale;
+            }
+        }
+        _colorTween = null;
+        _scaleTween = null;
+        _gatecrasherCustomer = null;
+        _targetEvent = null;
+        _startAction = false;
+        _actionTimer = _actionTime;
+    }
+
+    private bool IsWorkCurrent(Staff staff, long version) => !_disposed && version == _workVersion
+        && staff != null && ReferenceEquals(staff, _owner)
+        && staff.IsWorkCurrent(this, _staffLifetime, _assignedFloor);
+
+    private bool IsTargetCurrent => _gatecrasherCustomer != null
+        && _gatecrasherCustomer.gameObject.activeInHierarchy && !_gatecrasherCustomer.IsEndEvent
+        && !_gatecrasherCustomer.IsInDisguise && _gatecrasherCustomer.VisitFloor == _assignedFloor
+        && ReferenceEquals(_targetEvent, _gatecrasherCustomer.ServiceEventIdentity)
+        && ReferenceEquals(_customerController.GatecrasherCustomer[(int)_assignedFloor], _gatecrasherCustomer);
+
+    private void Wait(Staff staff, long version, float duration, Action completed)
+    {
+        var identity = new object();
+        _waitIdentity = identity;
+        _wait = Tween.Wait(duration, () =>
+        {
+            if (!ReferenceEquals(_waitIdentity, identity) || !IsWorkCurrent(staff, version)) return;
+            _waitIdentity = null;
+            _wait = null;
+            completed();
+        });
+    }
+
+    private void FinishWork(Staff staff, long version)
+    {
+        if (!IsWorkCurrent(staff, version)) return;
+        CancelCurrentWork();
+    }
 
     public void PerformAction(Staff staff)
     {
-        if (_startAction)
-            return;
-
+        if (_disposed || staff == null || !staff.IsActionOwner(this) || !staff.isActiveAndEnabled) return;
+        if (_startAction) return;
         float speedMul = staff.SpeedMul;
         _actionTimer -= Time.deltaTime * speedMul;
-        if (0 < _actionTimer)
-            return;
-
+        if (_actionTimer > 0) return;
         _actionTimer = _actionTime;
 
-        // 진상손님 상태 체크 및 갱신
-        if(_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
-        {
-            _gatecrasherCustomer = null;
-            _startAction = false;
-            
-            // 새로운 진상손님 찾기
-            if (_customerController.GatecrasherCustomer[(int)staff.EquipFloorType] == null)
-                return;
+        var target = _customerController.GatecrasherCustomer[(int)staff.EquipFloorType];
+        if (target == null || !target.gameObject.activeInHierarchy || target.IsEndEvent
+            || target.VisitFloor != staff.EquipFloorType || target.IsInDisguise) return;
 
-            _gatecrasherCustomer = _customerController.GatecrasherCustomer[(int)staff.EquipFloorType];
-            
-            // 새로 찾은 진상손님도 유효하지 않으면 리턴
-            if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
-            {
-                _gatecrasherCustomer = null;
-                return;
-            }
-        }
-        
-        // 진상손님이 같은 층에 있는지 확인
-        if (_gatecrasherCustomer.VisitFloor != staff.EquipFloorType)
-        {
-            _gatecrasherCustomer = null;
-            _startAction = false;
-            return;
-        }
-
-        // 진상손님이 위장 상태인지 체크
-        if (_gatecrasherCustomer.IsInDisguise)
-        {
-            _startAction = false;
-            return;
-        }
-
-        // 액션 시작
+        _owner = staff;
+        _staffLifetime = staff.WorkLifetime;
+        _assignedFloor = staff.EquipFloorType;
+        _gatecrasherCustomer = target;
+        _targetEvent = target.ServiceEventIdentity;
+        _tmpScale = staff.SpriteRenderer.transform.localScale;
         _startAction = true;
-        Tween.Wait(1 / speedMul, () =>
+        long version = ++_workVersion;
+        Wait(staff, version, 1f / speedMul, () =>
         {
-            if (!staff.gameObject.activeInHierarchy)
+            if (!IsTargetCurrent) { FinishWork(staff, version); return; }
+            _colorTween = staff.SpriteRenderer.TweenAlpha(0, .25f / speedMul).OnComplete(() =>
             {
-                _startAction = false;
-                return;
-            }
-
-            // 다시 한번 진상손님 상태 체크
-            if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
-            {
-                _gatecrasherCustomer = null;
-                _startAction = false;
-                return;
-            }
-
-            staff.SpriteRenderer.TweenAlpha(0, 0.25f / speedMul).OnComplete(() =>
-            {
-                if (!staff.gameObject.activeInHierarchy)
+                if (!IsWorkCurrent(staff, version)) return;
+                if (!IsTargetCurrent)
                 {
-                    _startAction = false;
-                    staff.SetAlpha(1f);
-                    return;
-                }
-
-                // 진상손님이 여전히 유효한지 최종 체크
-                if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
-                {
-                    // 원래 위치로 복귀
-                    staff.transform.position = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Guard);
+                    staff.transform.position = _tableManager.GetStaffPos(_assignedFloor, EquipStaffType.Guard);
                     staff.SetSpriteDir(-1);
-                    staff.SpriteRenderer.TweenAlpha(1, 0.25f / speedMul).OnComplete(() =>
-                    {
-                        _startAction = false;
-                        _gatecrasherCustomer = null;
-                    });
+                    _colorTween = staff.SpriteRenderer.TweenAlpha(1, .25f / speedMul)
+                        .OnComplete(() => FinishWork(staff, version));
                     return;
                 }
-
-                staff.transform.position = _gatecrasherCustomer.transform.position + new Vector3(0.2f, 0);
+                staff.transform.position = target.transform.position + new Vector3(.2f, 0);
                 staff.SetSpriteDir(-1);
-                staff.SpriteRenderer.TweenAlpha(1, 0.25f / speedMul).OnComplete(() =>
+                _colorTween = staff.SpriteRenderer.TweenAlpha(1, .25f / speedMul).OnComplete(() =>
                 {
-                    if (_gatecrasherCustomer == null || _gatecrasherCustomer.IsEndEvent)
-                    {
-                        _startAction = false;
-                        staff.SetAlpha(1f);
-                        return;
-                    }
-
-                    _tmpScale = staff.SpriteRenderer.transform.localScale;
-                    EliminatingGatecrasherCustomer2(staff);
+                    if (!IsWorkCurrent(staff, version)) return;
+                    if (!IsTargetCurrent) { FinishWork(staff, version); return; }
+                    EliminatingGatecrasherCustomer2(staff, version);
                 });
             });
         });
-
-        return;
     }
 
-
-    private void EliminatingGatecrasherCustomer2(Staff staff)
+    private void ReturnHome(Staff staff, long version, float speedMul)
     {
-        float speedMul = staff.SpeedMul;
-        
-        // 진상손님이 사라졌거나 이벤트가 끝났을 때
-        if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
+        if (!IsWorkCurrent(staff, version)) return;
+        _gatecrasherCustomer = null;
+        _targetEvent = null;
+        _colorTween = staff.SpriteRenderer.TweenAlpha(0, .3f / speedMul).OnComplete(() =>
         {
-            _gatecrasherCustomer = null;
-            Tween.Wait(1f / speedMul, () =>
-            {
-                if (!staff.gameObject.activeInHierarchy)
-                {
-                    staff.SetAlpha(1f);
-                    return;
-                }
+            if (!IsWorkCurrent(staff, version)) return;
+            staff.transform.position = _tableManager.GetStaffPos(_assignedFloor, EquipStaffType.Guard);
+            staff.SetSpriteDir(-1);
+            _colorTween = staff.SpriteRenderer.TweenAlpha(1, .3f / speedMul)
+                .OnComplete(() => FinishWork(staff, version));
+        });
+    }
 
-                staff.SpriteRenderer.TweenAlpha(0, 0.3f / speedMul).OnComplete(() =>
-                {
-                    if (!staff.gameObject.activeInHierarchy)
-                    {
-                        staff.SetAlpha(1f);
-                        return;
-                    }
-                    
-                    staff.transform.position = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Guard);
-                    staff.SetSpriteDir(-1);
-                    staff.SpriteRenderer.TweenAlpha(1, 0.3f / speedMul).OnComplete(() =>
-                    {
-                        _startAction = false;
-                    });
-                });
-            });
+    private void EliminatingGatecrasherCustomer2(Staff staff, long version)
+    {
+        if (!IsWorkCurrent(staff, version)) return;
+        float speedMul = staff.SpeedMul;
+        if (!IsTargetCurrent)
+        {
+            Wait(staff, version, 1f / speedMul, () => ReturnHome(staff, version, speedMul));
             return;
         }
 
-        // 진상손님 공격 처리
-        float duration = (staff.GetActionValue() / staff.SpeedMul) / Mathf.Max(_gatecrasherCustomer.TotalTouchCount, 1);
-        Tween.Wait(duration, () =>
+        var target = _gatecrasherCustomer;
+        float duration = (staff.GetActionValue() / staff.SpeedMul) / Mathf.Max(target.TotalTouchCount, 1);
+        Wait(staff, version, duration, () =>
         {
-            if (!staff.gameObject.activeInHierarchy)
-            {
-                _startAction = false;
-                return;
-            }
-
-            // 공격 직전에 다시 한번 진상손님 상태 체크
-            if (_gatecrasherCustomer == null || !_gatecrasherCustomer.gameObject.activeInHierarchy || _gatecrasherCustomer.IsEndEvent)
-            {
-                _gatecrasherCustomer = null;
-                _startAction = false;
-                
-                // 원래 위치로 복귀
-                staff.SpriteRenderer.TweenAlpha(0, 0.3f / speedMul).OnComplete(() =>
-                {
-                    if (!staff.gameObject.activeInHierarchy)
-                    {
-                        staff.SetAlpha(1f);
-                        return;
-                    }
-                    
-                    staff.transform.position = _tableManager.GetStaffPos(staff.EquipFloorType, EquipStaffType.Guard);
-                    staff.SetSpriteDir(-1);
-                    staff.SpriteRenderer.TweenAlpha(1, 0.3f / speedMul);
-                });
-                return;
-            }
-
-            staff.SetSpriteDir(_gatecrasherCustomer.transform.position.x < staff.transform.position.x ? -1 : 1);
-            _gatecrasherCustomer.OnTouchEvent();
-            staff.transform.position = _gatecrasherCustomer.transform.position + new Vector3(0.2f, 0);
+            if (!IsTargetCurrent) { ReturnHome(staff, version, speedMul); return; }
+            staff.SetSpriteDir(target.transform.position.x < staff.transform.position.x ? -1 : 1);
+            target.OnTouchEvent();
+            // The touch completion can synchronously replace the employee or pooled target.
+            if (!IsWorkCurrent(staff, version)) return;
+            if (!ReferenceEquals(_targetEvent, target.ServiceEventIdentity))
+            { ReturnHome(staff, version, speedMul); return; }
+            staff.transform.position = target.transform.position + new Vector3(.2f, 0);
             staff.SpriteRenderer.transform.localScale = _tmpScale;
-            ObjectPoolManager.Instance.SpawnSmokeParticle(_gatecrasherCustomer.transform.position + new Vector3(0, 1.5f, 0), Quaternion.identity).Play();
-            staff.SpriteRenderer.TweenScale(_tmpScale * 0.99f, duration * 0.5f, Ease.OutBack).OnComplete(() =>
+            ObjectPoolManager.Instance.SpawnSmokeParticle(target.transform.position + new Vector3(0, 1.5f, 0), Quaternion.identity).Play();
+            _scaleTween = staff.SpriteRenderer.TweenScale(_tmpScale * .99f, duration * .5f, Ease.OutBack).OnComplete(() =>
             {
-                staff.SpriteRenderer.transform.localScale = _tmpScale * 0.99f;
-                staff.SpriteRenderer.TweenScale(_tmpScale, duration * 0.5f, Ease.OutBack);
+                if (!IsWorkCurrent(staff, version)) return;
+                staff.SpriteRenderer.transform.localScale = _tmpScale * .99f;
+                _scaleTween = staff.SpriteRenderer.TweenScale(_tmpScale, duration * .5f, Ease.OutBack);
             });
-            
-            // 재귀 호출
-            EliminatingGatecrasherCustomer2(staff);
+            EliminatingGatecrasherCustomer2(staff, version);
         });
     }
 }

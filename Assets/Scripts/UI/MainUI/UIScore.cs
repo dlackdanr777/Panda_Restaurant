@@ -6,6 +6,8 @@ using UnityEngine;
 
 public class UIScore : MonoBehaviour
 {
+    private GameManager _subscribedGameManager;
+
     [Header("Components")]
     [SerializeField] private RectTransform _rt;
     [SerializeField] private TextMeshProUGUI _text;
@@ -33,7 +35,8 @@ public class UIScore : MonoBehaviour
         _tmpScale = _rt.localScale;
 
         UserInfo.OnChangeScoreHandler += OnChangeScoreEvent;
-        GameManager.Instance.OnChangeScoreHandler += OnChangeScoreEvent;
+        _subscribedGameManager = GameManager.Instance;
+        _subscribedGameManager.OnChangeScoreHandler += OnChangeScoreEvent;
     }
 
 
@@ -88,7 +91,9 @@ public class UIScore : MonoBehaviour
     private void OnDestroy()
     {
         UserInfo.OnChangeScoreHandler -= OnChangeScoreEvent;
-        GameManager.Instance.OnChangeScoreHandler -= OnChangeScoreEvent;
+        if (_subscribedGameManager != null)
+            _subscribedGameManager.OnChangeScoreHandler -= OnChangeScoreEvent;
+        _subscribedGameManager = null;
         if (_animeRoutine != null)
             StopCoroutine(_animeRoutine);
         

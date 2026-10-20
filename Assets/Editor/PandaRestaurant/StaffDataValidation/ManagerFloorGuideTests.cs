@@ -106,7 +106,7 @@ public sealed class ManagerFloorGuideTests
             Assert.That(f.Manager.LastManagerGuideDiagnostic.Result, Is.EqualTo("TutorialFloorRestricted"));
             Assert.That(f.Select(f.First, ManagerCustomerGuideSource.Skill, out var table), Is.True);
             Assert.That(table, Is.SameAs(f.FirstTable));
-            object[] manualArgs = { null, (ERestaurantFloorType?)ERestaurantFloorType.Floor2, default(ERestaurantFloorType), null };
+            object[] manualArgs = { null, (ERestaurantFloorType?)ERestaurantFloorType.Floor2, default(ERestaurantFloorType), null, false };
             Assert.That((bool)Invoke(f.Manager, "TrySelectCustomerGuideTable", manualArgs), Is.True);
             Assert.That(manualArgs[3], Is.SameAs(f.FirstTable), "Manual/tutorial selection keeps its existing redirect");
         }
