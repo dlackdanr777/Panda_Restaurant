@@ -27,7 +27,61 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private static string OutputDirectory => _fairyBirthInput ? FairyBirthInputOutputDirectory : _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _customerUse ? CustomerUseOutputDirectory : _fairyBirthInput ? FairyBirthInputOutputDirectory : _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static bool _customerUse;
+    private static bool _manualPartyChecks;
+    private static bool _staffAiChecks;
+    [MenuItem("Tools/Panda Restaurant/Customer Parties/Run Manual Play Safety Checks")]
+    public static void RunManualPartyChecks()
+    {
+        if (_running) return;
+        _batch = false; _customerUse = true; _manualPartyChecks = true;
+        try { Begin("customer-use"); }
+        finally { _manualPartyChecks = false; }
+    }
+    [MenuItem("Tools/Panda Restaurant/Customer Parties/Run Staff AI Checks")]
+    public static void RunStaffAiChecks()
+    {
+        if (_running) return;
+        string previousStarted = _started;
+        _batch = false; _customerUse = true; _staffAiChecks = true;
+        try { Begin("staff-ai"); }
+        catch (Exception error)
+        {
+            if (_running || _started != previousStarted) Fail(error);
+            else Debug.LogException(error);
+        }
+        finally { _staffAiChecks = false; }
+    }
+
+    [MenuItem("Tools/Panda Restaurant/Customer Parties/Check Known Fever Assertion")]
+    public static void CheckKnownFeverAssertion()
+    {
+        if (_running || EditorApplication.isPlayingOrWillChangePlaymode || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin)
+            throw new InvalidOperationException("The known Fever check requires an idle, SDK-free Edit Mode.");
+        var validator = typeof(GachaReviewTestRunner).Assembly.GetType(
+            "PandaRestaurant.Editor.StaffDataValidation.StaffSkillRuntimeFoundationValidator", true);
+        var method = validator.GetMethod("ValidateFeverPurchaseLock", BindingFlags.Static | BindingFlags.NonPublic)
+            ?? throw new MissingMethodException(validator.FullName, "ValidateFeverPurchaseLock");
+        try
+        {
+            method.Invoke(null, null);
+            Debug.Log("KNOWN_FEVER_ASSERTION_52: no failure reproduced. This separate source assertion is not included in Staff AI test totals.");
+        }
+        catch (TargetInvocationException error) when (error.InnerException is InvalidOperationException
+            && (error.InnerException.Message == "Fever active guard must run before dia validation."
+                || error.InnerException.Message == "Fever active guard must run before dia deduction."))
+        {
+            Debug.LogWarning("KNOWN_FEVER_ASSERTION_52_FAILED: existing payment-source string expectation remains failed; not counted as a Staff AI pass.\n" + error.InnerException);
+        }
+    }
+    private static string CustomerUseOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_CUSTOMER_USE_EVIDENCE_DIR"))
+        ? Path.Combine(Path.GetTempPath(), "CustomerTableUseReview") : Environment.GetEnvironmentVariable("PANDA_CUSTOMER_USE_EVIDENCE_DIR");
+    public static void RunCustomerUseBatch()
+    {
+        _customerUse = true;
+        RunPhase1Batch();
+    }
     private static string FairyBirthInputOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_FAIRY_INPUT_EVIDENCE_DIR"))
         ? Path.Combine(Path.GetTempPath(), "FairyBirthInputReview") : Environment.GetEnvironmentVariable("PANDA_FAIRY_INPUT_EVIDENCE_DIR");
     private static string ExchangeInspectorOutputDirectory => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PANDA_EXCHANGE_EVIDENCE_DIR"))
@@ -62,6 +116,11 @@ public static class GachaReviewTestRunner
     private static IDisposable _coroutineLogScope;
     private static int _editorThread;
     public static bool IsRunning => _running;
+    internal static void ReleaseCreationTargetBeforeManualPlay()
+    {
+        if (_running) throw new InvalidOperationException("Wait for the active regression run.");
+        CreationTarget.ReleaseDefaultRouting();
+    }
     public static void RunFairyBirthInputBatch()
     {
         _fairyBirthInput = true;
@@ -133,7 +192,7 @@ public static class GachaReviewTestRunner
         {
             if (EditorApplication.timeSinceStartup < readyAt || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
             EditorApplication.update -= StartWhenReady;
-            try { Begin(_fairyBirthInput ? "fairy-input" : _exchangeInspector ? "exchange-inspector" : _phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
+            try { Begin(_customerUse ? "customer-use" : _fairyBirthInput ? "fairy-input" : _exchangeInspector ? "exchange-inspector" : _phase4 ? "phase4" : _textStamp ? "text-stamp" : Environment.GetCommandLineArgs().Contains("-phase3Only") ? "phase3"
                 : Environment.GetCommandLineArgs().Contains("-fairyEvidenceOnly") ? "fairy-evidence"
                 : Environment.GetCommandLineArgs().Contains("-fairyUiOnly") ? "ui"
                 : Environment.GetCommandLineArgs().Contains("-fairyOnly") ? "fairy" : "phase1"); }
@@ -184,11 +243,17 @@ public static class GachaReviewTestRunner
                 EnhancementFairyStage1Host.EvidenceDirectory = OutputDirectory;
                 Begin("text-stamp");
             }
+            else if (command == "staff-ai") RunStaffAiChecks();
+            else if (command == "known-fever") CheckKnownFeverAssertion();
             else if (command == "run") Begin("all");
             else if (command == "economy" || command == "fairy" || command == "ui") Begin(command);
-            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, or run for the related review tests.");
+            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, run, staff-ai, or known-fever for the related review tests.");
         }
-        catch (Exception error) { Fail(error); }
+        catch (Exception error)
+        {
+            if (command == "known-fever") Debug.LogException(error);
+            else Fail(error);
+        }
     }
 
     private static void InspectCreationTarget()
@@ -250,7 +315,7 @@ public static class GachaReviewTestRunner
         string selectedFixture = Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(fixtureArgument, StringComparison.Ordinal));
         if (selectedFixture != null) selectedFixture = selectedFixture.Substring(fixtureArgument.Length);
         const string methodArgument = "-reviewMethod=";
-        string selectedMethod = _fairyBirthInput ? Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(methodArgument, StringComparison.Ordinal)) : null;
+        string selectedMethod = (_customerUse || _fairyBirthInput) ? Environment.GetCommandLineArgs().FirstOrDefault(value => value.StartsWith(methodArgument, StringComparison.Ordinal)) : null;
         if (selectedMethod != null) selectedMethod = selectedMethod.Substring(methodArgument.Length);
         IEnumerable<string> fixtures = _phase3 ? FixtureNames.Concat(new[] { "GachaPhase3Tests", "Stage1Phase3StressTests", "ItemGachaCapsulePresentationTests" }) : FixtureNames;
         if (_phase4) fixtures = fixtures.Concat(new[] { "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffGroundContactTests", "StaffGachaEntryTests", "Phase4AdUiEvidenceTests", "AdvertisementDiamondRewardTests" });
@@ -260,6 +325,11 @@ public static class GachaReviewTestRunner
             "Phase5UiSoundTests", "PresentationSoundTests", "GachaCollectionPreviewSafetyTests" };
         if (_fairyBirthInput) fixtures = new[] { "FairyBirthInputTests", "EnhancementFairyTests", "EnhancementFairyStage1Tests",
             "FairyBirthSequenceTests", "FairyBirthSoundTests", "PresentationSoundTests" };
+        if (_customerUse) fixtures = new[] { "CustomerPartyFurnitureTests", "CustomerPartyIntegrationTests", "CustomerNaturalPartyTests", "CustomerPartyInterruptionTests", "CustomerPartyFailureBoundaryTests", "CustomerPartyServingTests", "CustomerPartyCompletionTests", "CustomerPartyOrderTests", "CustomerTableUseRegressionTests", "CustomerVisitPartyTests", "CustomerPartyQueueTests", "StageWaitingSaveGuardTests", "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffStageMigrationCollectionTests" };
+        if (_manualPartyChecks) fixtures = new[] { "CustomerPartyManualPlayTests", "CustomerPartyFurnitureTests", "CustomerPartyIntegrationTests", "CustomerPartyFailureBoundaryTests", "CustomerPartyOrderTests", "CustomerTableUseRegressionTests", "StageWaitingSaveGuardTests" };
+        if (_staffAiChecks) fixtures = new[] { "StaffAiLifecycleTests", "StaffAiGuardLifecycleTests", "StaffAiSinkLifecycleTests", "StaffAiShutdownTests", "CustomerPartyManualPlayTests", "CustomerPartyOrderTests",
+            "CustomerPartyServingTests", "CustomerPartyCompletionTests", "ManagerFloorGuideTests", "CustomerNaturalPartyTests",
+            "StageWaitingSaveGuardTests", "CustomerPartyFurnitureTests" };
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;
@@ -273,6 +343,13 @@ public static class GachaReviewTestRunner
             Type fixture = assembly.GetType(name, true);
             foreach (MethodInfo method in fixture.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
+                // This review permits memory instances only: the user forbids saved
+                // verification Scene/Prefab copies and disk copies of test settings.
+                // Exclude these asset-roundtrip cases only from the Staff AI scope;
+                // their assertions and the existing Manual Play filter stay intact.
+                if (_staffAiChecks && ((name == "CustomerPartyServingTests" && method.Name == "CounterInspectorSpacing_SurvivesSavedReloadAndFoodRefresh")
+                    || (name == "CustomerPartyOrderTests" && method.Name == "AuthoredBubbleSizeAndOffsets_PersistThroughTemporaryPrefabReloadAndFurnitureRefresh")
+                    || (name == "CustomerNaturalPartyTests" && method.Name == "TempSettingsAsset_ReloadAffectsNewSpawnOnly_AndNeverChangesDelivery"))) continue;
                 if (selectedMethod != null && method.Name != selectedMethod) continue;
                 if (_fairyBirthInput && (method.Name == "Stage1_ElevenConfirmedBirthsProduceTheFireworksEvidence"
                     || method.Name == "Stage1_ProductionBirthUsesVisibleWallPuffJumpAndThenFreeBehaviour"
@@ -285,7 +362,9 @@ public static class GachaReviewTestRunner
                     && method.Name != "EconomyBackend_Stage1FairyAppearsOnlyAfterProductionCommitAndNeverDuplicates") continue;
                 if (_phase4 && Environment.GetCommandLineArgs().Contains("-phase4CoreOnly") && (name == "StaffGachaOfflineSessionTests" || name == "StaffStageMigrationCollectionTests") && !method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal)) continue;
                 if (name == "StaffGachaOfflineSessionTests" && !method.Name.StartsWith("ResultPopup_", StringComparison.Ordinal) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
-                if (name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
+                if (_customerUse && name == "StaffStageMigrationCollectionTests" && !new[] { "AllStages_", "RawEnvelope", "CatalogAndRaw", "RawLevelSix", "ExistingCommonStaff_", "NewCollectionRounds_", "GameDataRequery", "Legacy",
+                    "FirstTutorial_ConfirmedSignup", "FirstTutorial_StageBootstrap", "FirstTutorial_UnknownInitial", "FirstTutorial_OrdinaryStageWrite" }.Any(prefix => method.Name.StartsWith(prefix, StringComparison.Ordinal))) continue;
+                if (!_customerUse && name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
                     && !(_phase3 && method.Name.StartsWith("Attendance_", StringComparison.Ordinal)) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "UnityTestAttribute")) continue;
                 if (method.GetCustomAttributes(false).Any(attribute => attribute.GetType().Name == "TestAttribute" ||
@@ -344,7 +423,7 @@ public static class GachaReviewTestRunner
         public void TestStarted(ITest test)
         {
             RequireEditorThread();
-            if ((_exchangeInspector || _fairyBirthInput) && !test.IsSuite) _logScope = CreateLogScope();
+            if ((_customerUse || _exchangeInspector || _fairyBirthInput) && !test.IsSuite) _logScope = CreateLogScope();
         }
         public void TestOutput(TestOutput output) { }
         public void TestFinished(ITestResult result)
@@ -503,6 +582,7 @@ public static class GachaReviewTestRunner
             inconclusive = Cases.Count(test => test.status == "Inconclusive")
         };
         if (_fairyBirthInput) report.scope = "Selected fairy input/birth/audio NUnit tests on the main Editor thread. Actual Stage1 is read in a disposable PreviewScene. Production pointer frame processors use a temporary owned collider in the already loaded default-physics scene; the collider is deleted before scene/dirty/Selection/Undo witness comparison. No existing scene object is edited or saved, no scene replacement, Play transition, SDK/login or production backend call. Evidence is written under PANDA_FAIRY_INPUT_EVIDENCE_DIR. Optional video uses deterministic 1:1 simulation-frame timing, not device or real-time performance capture.";
+        if (_group == "staff-ai") report.scope = "Selected Staff AI lifecycle and directly related customer NUnit regressions on the main Editor thread, NumberOfTestWorkers=0, using the existing disposable in-memory PreviewScene and scene/dirty/Selection/Undo witness. No scene save, scene replacement, Play transition, SDK/login or production backend call. The saved-asset roundtrip methods CounterInspectorSpacing_SurvivesSavedReloadAndFoodRefresh, AuthoredBubbleSizeAndOffsets_PersistThroughTemporaryPrefabReloadAndFurnitureRefresh and TempSettingsAsset_ReloadAffectsNewSpawnOnly_AndNeverChangesDelivery are excluded because this review permits memory instances only. Direct decision and callback tests do not establish real PlayerLoop or OS input behavior. Known Fever assertion #52 is checked separately and is not included in these totals.";
         report.success = string.IsNullOrEmpty(_error) && report.total > 0 && report.failed == 0 && report.skipped == 0 && report.inconclusive == 0;
         File.WriteAllText(Path.Combine(OutputDirectory, OutputPrefix + "-tests.json"), JsonUtility.ToJson(report, true));
     }
@@ -529,6 +609,15 @@ public static class GachaReviewTestRunner
         private static readonly MethodInfo Setter = typeof(EditorSceneManager).GetMethod("SetTargetSceneForNewGameObjects", Flags, null, new[] { typeof(Scene) }, null);
         private static readonly MethodInfo Clear = typeof(EditorSceneManager).GetMethod("ClearTargetSceneForNewGameObjects", Flags, null, Type.EmptyTypes, null);
         private readonly Scene _previous;
+        private readonly bool _previousWasActive;
+        public static void ReleaseDefaultRouting()
+        {
+            Scene target = Get();
+            if (target.IsValid() && target != SceneManager.GetActiveScene())
+                throw new InvalidOperationException("Another tool owns the new-object scene target.");
+            Clear.Invoke(null, null);
+            Debug.Log("PARTY_MANUAL_ROUTING_RELEASED: before=" + target.handle + "; after=" + Get().handle + "; active=" + SceneManager.GetActiveScene().handle);
+        }
         public static Scene Get()
         {
             if (Getter == null || Setter == null || Clear == null)
@@ -538,13 +627,16 @@ public static class GachaReviewTestRunner
         public CreationTarget(Scene target)
         {
             _previous = Get();
+            _previousWasActive = _previous == SceneManager.GetActiveScene();
             if (!target.IsValid() || !EditorSceneManager.IsPreviewScene(target))
                 throw new InvalidOperationException("Only an owned PreviewScene may receive temporary test objects.");
             Setter.Invoke(null, new object[] { target });
         }
         public void Dispose()
         {
-            if (_previous.IsValid()) Setter.Invoke(null, new object[] { _previous });
+            // The getter resolves default routing to the active edit scene. Restoring
+            // that as an explicit handle would outlive this scene at the next Play.
+            if (_previous.IsValid() && !_previousWasActive) Setter.Invoke(null, new object[] { _previous });
             else Clear.Invoke(null, null);
         }
     }

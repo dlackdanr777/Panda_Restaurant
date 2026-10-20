@@ -24,6 +24,8 @@ public class ChefAction : IStaffAction
     private Staff _staff;
 
     private KitchenBurnerData _burnerData;
+    private long _burnerReservation;
+    private long _actionVersion;
 
 
     public ChefAction(Staff staff, TableManager tableManager, KitchenSystem kitchenSystem)
@@ -52,6 +54,7 @@ public class ChefAction : IStaffAction
 
     public void Destructor()
     {
+        _actionVersion++;
         _tweenData?.TweenStop();
 
         if(_sink.UseStaff != null && _sink.UseStaff == _staff)
@@ -60,7 +63,7 @@ public class ChefAction : IStaffAction
             _sink.EndStaffAction();
         }
 
-        if (_burnerData != null && _burnerData.UseStaff != null && _burnerData.UseStaff == _staff)
+        if (_burnerData != null && _burnerData.UseStaff != null && _burnerData.UseStaff == _staff && _burnerData.StaffReservationVersion == _burnerReservation)
         {
             _burnerData.KitchenUtensil.SetStaffWorking(false);
             _burnerData.SetStaffUsable(false);
@@ -71,6 +74,8 @@ public class ChefAction : IStaffAction
 
     public void PerformAction(Staff staff)
     {
+        if (_isUsed && _burnerData != null && (_burnerData.UseStaff != _staff
+            || _burnerData.StaffReservationVersion != _burnerReservation)) ResetStaffState(staff);
         if (_isUsed)
             return;
 
@@ -128,6 +133,7 @@ public class ChefAction : IStaffAction
 
     private void ResetStaffState(Staff staff)
     {
+        _actionVersion++;
         _tweenData?.TweenStop();
         _tweenData = null; // 중요: null로 설정
         
@@ -190,11 +196,15 @@ public class ChefAction : IStaffAction
         data.SetStaffUsable(true);
         data.SetUseStaff(_staff);
         _burnerData = data;
+        _burnerReservation = data.StaffReservationVersion;
+        long action = ++_actionVersion;
         _staff.Move(data.KitchenUtensil.transform.position, 0, () =>
         {
+            if (action != _actionVersion) return;
             _tweenData = Tween.Wait(_duration / speedMul, () =>
             {
-                if (data.CookingData.IsDefault() || (data.UseStaff != null && data.UseStaff != _staff))
+                if (action != _actionVersion) return;
+                if (data.CookingData.IsDefault() || data.UseStaff != _staff || data.StaffReservationVersion != _burnerReservation)
                 {
                     CleanupBurnerData(data);
                     _staff.SetStaffState(EStaffState.None);
@@ -216,12 +226,16 @@ public class ChefAction : IStaffAction
 
     private void SinkAction(Staff staff, Func<bool> actionStopResult)
     {
+        _isUsed = true;
+        long action = ++_actionVersion;
         float speedMul = staff.SpeedMul;
         _sink.SetUseStaff(staff);
         staff.Move(_sink.transform.position, 0, () =>
         {
+            if (action != _actionVersion) return;
             _tweenData = Tween.Wait(_duration / speedMul, () =>
             {
+                if (action != _actionVersion) return;
                 if (_sink.UseStaff == null || _sink.UseStaff != staff || UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, staff.EquipFloorType) <= 0)
                 {
                     staff.SetStaffState(EStaffState.None);
@@ -250,8 +264,10 @@ public class ChefAction : IStaffAction
             return;
         }
 
+        long action = _actionVersion;
         _tweenData = Tween.Wait(0.1f, () =>
         {
+            if (action != _actionVersion) return;
             _sink.SetUseStaff(_staff);
             _sink.ContinueStaffAction();
             _sink.SetChefEffect(true);
@@ -262,6 +278,8 @@ public class ChefAction : IStaffAction
 
     private void UpdateBurnerAction(KitchenBurnerData data)
     {
+        if (data != null && (data.StaffReservationVersion != _burnerReservation || data.UseStaff != _staff))
+        { ResetStaffState(_staff); return; }
         // 이미 null 체크
         if (data == null || data.UseStaff == null || data.UseStaff != _staff)
         {
@@ -296,15 +314,11 @@ public class ChefAction : IStaffAction
             if (shouldGoToSink) {
                 // 싱크대로 전환 (재귀 호출 대신)
                 _tweenData?.TweenStop();
-                _isUsed = false;
                 _notEqulsFloor = false;
                 _time = 0;
                 
-                SinkAction(_staff, () => {
-                    int bowlCount = UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _staff.EquipFloorType);
-                    List<KitchenBurnerData> burnerDataList = _kitchenSystem.GetCookingBurnerDataList(_staff.EquipFloorType);
-                    return (0 < burnerDataList.Count) || (bowlCount <= 0);
-                });
+                // Match the full-sink priority used by PerformAction before resuming cooking.
+                SinkAction(_staff, () => UserInfo.GetSinkBowlCount(UserInfo.CurrentStage, _staff.EquipFloorType) <= 0);
                 return;
             } else {
                 ResetStaffState(_staff);
@@ -315,7 +329,9 @@ public class ChefAction : IStaffAction
         // 요리 속도 증가 적용
         data.SetAddCookSpeedMul(_staff.GetActionValue());
         // 다음 업데이트까지 약간의 지연
+        long action = _actionVersion;
         _tweenData = Tween.Wait(0.5f, () => {
+            if (action != _actionVersion) return;
             // 상태 변수 명시적 검사 추가
             if (_isUsed && _staff != null && !_isNoAction) {
                 UpdateBurnerAction(data);
@@ -330,17 +346,15 @@ public class ChefAction : IStaffAction
     // 버너 데이터 정리를 위한 헬퍼 메서드 추가
     private void CleanupBurnerData(KitchenBurnerData data)
     {
-        if (data != null && data.UseStaff == _staff)
+        if (data != null && data.UseStaff == _staff && data.StaffReservationVersion == _burnerReservation)
         {
             data.KitchenUtensil.SetStaffWorking(false);
             data.SetStaffUsable(false);
             data.SetUseStaff(null);
             data.SetAddCookSpeedMul(0);
             // _burnerData 초기화 추가
-            if (_burnerData == data)
-            {
-                _burnerData = null;
-            }
         }
+        // Local ownership must also be cleared when a cancelled reservation no longer matches.
+        if (ReferenceEquals(_burnerData, data)) { _burnerData = null; _burnerReservation = 0; }
     }
 }

@@ -3519,8 +3519,8 @@ namespace PandaRestaurant.Editor.StaffDataValidation
             Require(groupMethod.Contains("burnerData.IsUsable"), "Skill09 must require an enabled Burner.");
             Require(groupMethod.Contains("burnerData.CookingData.IsDefault()"), "Skill09 must exclude empty Burners.");
             Require(groupMethod.Contains("burnerData.Time <= 0f"), "Skill09 must exclude completed Burners.");
-            Require(groupMethod.Contains("burnerData.CookingData.TableData == null"), "Skill09 must reject missing TableData.");
-            Require(groupMethod.Contains("CurrentCustomer == null"), "Skill09 must reject invalid customer orders.");
+
+            Require(groupMethod.Contains("!burnerData.CookingData.CanCook"), "Skill09 must reject stale, completed or cancelled individual orders.");
             Require(!groupMethod.Contains("_cookingQueue"), "Skill09 must not inspect or change queued food.");
             Require(!groupMethod.Contains("IsStaffUsable"), "Skill09 must include automatic and Chef Burners.");
             Require(!groupMethod.Contains("IsStaffWorking"), "Skill09 must not require a Chef to be working.");

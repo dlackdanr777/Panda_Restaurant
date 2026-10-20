@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class UIRecipeTab : UIRestaurantAdminTab
 {
+    private GameManager _subscribedGameManager;
+
     public event Action OnShowEvent;
     public event Action OnBuyEvent;
 
@@ -116,7 +118,8 @@ public class UIRecipeTab : UIRestaurantAdminTab
         UserInfo.OnGiveRecipeHandler += OnDataChanged;
         UserInfo.OnChangeMoneyHandler += OnDataChanged;
         UserInfo.OnChangeScoreHandler += OnDataChanged;
-        GameManager.Instance.OnChangeScoreHandler += OnDataChanged;
+        _subscribedGameManager = GameManager.Instance;
+        _subscribedGameManager.OnChangeScoreHandler += OnDataChanged;
     }
 
     // Money/score change often during play; only refresh the recipe list while it is actually shown.
@@ -326,6 +329,8 @@ public class UIRecipeTab : UIRestaurantAdminTab
         UserInfo.OnGiveRecipeHandler -= OnDataChanged;
         UserInfo.OnChangeMoneyHandler -= OnDataChanged;
         UserInfo.OnChangeScoreHandler -= OnDataChanged;
-        GameManager.Instance.OnChangeScoreHandler -= OnDataChanged;
+        if (_subscribedGameManager != null)
+            _subscribedGameManager.OnChangeScoreHandler -= OnDataChanged;
+        _subscribedGameManager = null;
     }
 }

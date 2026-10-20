@@ -122,12 +122,19 @@ public class DropGarbageArea : MonoBehaviour
     }
 
 
+    public string LastCleanupDiagnostic { get; private set; }
     public void CleanGarbage()
     {
         if (_garbageList.Count <= 0)
             return;
 
-        UserInfo.AddCleanCount();
+        var cleaning = _garbageList.ToArray();
+        _garbageList.Clear();
+        _garbageData.SetCount(0);
+        try { UserInfo.AddCleanCount(); }
+        catch (Exception error) { LastCleanupDiagnostic = error.ToString(); }
+
+        try {
 
         if(UserInfo.IsFirstTutorialClear)
         {
@@ -139,10 +146,11 @@ public class DropGarbageArea : MonoBehaviour
             SoundManager.Instance.PlayEffectAudio(EffectType.UI, _cleanSound);
         }
 
-        for (int i = 0; i < _garbageList.Count; i++)
+        } catch (Exception error) { LastCleanupDiagnostic = error.ToString(); }
+        for (int i = 0; i < cleaning.Length; i++)
         {
             int index = i;
-            PointerDownSpriteRenderer garbage = _garbageList[index];
+            PointerDownSpriteRenderer garbage = cleaning[index];
             garbage.RemoveEvent(CleanGarbage);
             garbage.TweenStop();
             garbage.SpriteRenderer.TweenAlpha(0, _garbageEndTime, Ease.Smoothstep);
@@ -156,9 +164,7 @@ public class DropGarbageArea : MonoBehaviour
                 });
 
         }
-        _garbageList.Clear();
-        _garbageData.SetCount(0);
-        OnChangeGarbageCountHandler?.Invoke();
+        try { OnChangeGarbageCountHandler?.Invoke(); } catch (Exception error) { LastCleanupDiagnostic = error.ToString(); }
     }
 
 

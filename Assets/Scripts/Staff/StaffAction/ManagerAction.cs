@@ -30,6 +30,7 @@ public class ManagerAction : IStaffAction
         if (_actionCoolTime <= 0)
         {
             _tableManager.OnManagerCustomerGuideEvent(staff, ManagerCustomerGuideSource.Action, true);
+            if (_disposed || staff != _owner || !staff.isActiveAndEnabled || staff.StaffData == null || staff.EquipFloorType != _assignedFloor) return;
             _actionCoolTime = staff.GetActionValue();
         }
         else

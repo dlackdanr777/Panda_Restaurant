@@ -29,8 +29,29 @@ public class WaiterAction : IStaffAction
     private StaffWaiter _waiter;
 
     private TableData _currentData;
+    private TableUseIdentity _use;
+    private TableOrderIdentity _order;
+    private bool _disposed;
+    private object _request;
+    private object _seatLeg;
+    private Vector3 _seatDestination;
+    private int _deliveryStep;
+    private float _deliveryDue;
+    private TableServiceReservation _lease;
+    private long _staffLifetime;
+    private ERestaurantFloorType _floor;
+    private bool IsCurrent => !_disposed && _waiter.IsWorkCurrent(this, _staffLifetime, _floor)
+        && _use != null && _use.IsPartyCurrent(_currentData)
+        && (_order == null || _order.IsCurrent(_currentData))
+        && (_lease == null || _lease.IsCurrent);
     private WaiterActionType _actionType = WaiterActionType.None;
-
+    private bool ContinueRequest(object request)
+    {
+        if (_disposed || !ReferenceEquals(_request, request)) return false;
+        if (IsCurrent) return true;
+        CancelCurrentWork();
+        return false;
+    }
     public WaiterAction(Staff staff, TableManager tableManager)
     {
         if (!(staff is StaffWaiter))
@@ -60,22 +81,35 @@ public class WaiterAction : IStaffAction
 
     public void Destructor()
     {
+        if (_disposed) return;
+        _disposed = true;
+        CancelCurrentWork();
         _waiter.OnLevelUpEventHandler -= OnLevelUpEvent;
-        _tweenData?.TweenStop();
-
-        if(_tweenData != null && _actionType != WaiterActionType.None)
-        {
-            _currentData.OrdersCount += 1;
-            _tableManager.OnCustomerSeating(_currentData);
-            _currentData = null;
-        }
     }
 
-
+    internal void CancelCurrentWork()
+    {
+        _request = null; _seatLeg = null; _deliveryStep = 0;
+        _tweenData?.TweenStop(); _tweenData = null;
+        var cancelled = _lease; _lease = null;
+        _use = null; _order = null; _currentData = null;
+        _actionType = WaiterActionType.None; _isUsed = false; _isNoAction = false;
+        _notEqulsFloor = false; _time = 0;
+        cancelled?.Release();
+        if (_request == null && _waiter != null && _waiter.IsActionOwner(this))
+        {
+            _waiter.StopMove(); _waiter.HideFood(); _waiter.BowlSetActive(false);
+            if (_waiter.isActiveAndEnabled) _waiter.SetStaffState(EStaffState.None);
+        }
+    }
     public void PerformAction(Staff staff)
     {
+        if (_disposed) return;
         if (_isUsed)
+        {
+            if (_request != null) ContinueRequest(_request);
             return;
+        }
 
         float speedMul = staff.SpeedMul;
         if (_time < (_duration * _durationMul))
@@ -90,8 +124,8 @@ public class WaiterAction : IStaffAction
             return;
         }
 
-        TableData servingData = _tableManager.GetMinDistanceTableByState(_waiter.transform.position, staff.EquipFloorType, ETableState.CanServing);
-        TableData orderData = _tableManager.GetMinDistanceTableByState(_waiter.transform.position, staff.EquipFloorType, ETableState.Seating);
+        TableData servingData = _tableManager.FindWaiterTable(_waiter.transform.position, staff.EquipFloorType, true);
+        TableData orderData = _tableManager.FindWaiterTable(_waiter.transform.position, staff.EquipFloorType, false);
        
         // 둘 다 없으면 초기화
         if (servingData == null && orderData == null)
@@ -201,130 +235,135 @@ public class WaiterAction : IStaffAction
             staff.Move(_defaultPos, 1);
     }
 
-     private void ServingAction(TableData servingTableData)
+    private object BeginWork(TableData table, bool serving)
     {
-        if (servingTableData == null)
-            return;
-            
-        if (0.5f < Mathf.Abs(servingTableData.transform.position.y - _waiter.transform.position.y) && !_notEqulsFloor)
+        if (table == null || _disposed) { _isUsed = false; return null; }
+        if (0.5f < Mathf.Abs(table.transform.position.y - _waiter.transform.position.y) && !_notEqulsFloor)
         {
-            _waiter.SetStaffState(EStaffState.None);
-            _actionType = WaiterActionType.None;
-            _notEqulsFloor = true;
-            _isUsed = false;
-            return;
+            _waiter.SetStaffState(EStaffState.None); _actionType = WaiterActionType.None;
+            _notEqulsFloor = true; _isUsed = false; return null;
         }
+        _staffLifetime = _waiter.WorkLifetime; _floor = _waiter.EquipFloorType;
+        _currentData = table; _use = table.CurrentUse;
+        var request = new object(); _request = request;
+        TableServiceReservation lease;
+        try { lease = _tableManager.ReserveWaiterWork(table, _waiter, this, serving); }
+        catch { CancelCurrentWork(); throw; }
+        if (!ReferenceEquals(_request, request)) { lease?.Release(); return null; }
+        _lease = lease;
+        if (_lease == null) { CancelCurrentWork(); return null; }
+        _order = _lease.Order; _isUsed = true; _isNoAction = false;
+        _actionType = serving ? WaiterActionType.Serving : WaiterActionType.Order;
         _waiter.BowlSetActive(false);
-        float speedMul = _waiter.SpeedMul;
-        _isNoAction = false;
-        _tableManager.OnUseStaff(servingTableData);
-        _actionType = WaiterActionType.Serving;
-        _currentData = servingTableData;
+        return ContinueRequest(request) ? request : null;
+    }
 
-        DebugLog.Log(_waiter.EquipFloorType + " " + _waiter.transform.position + " " + servingTableData.transform.position);
-        _waiter.Move(_tableManager.GetFoodPos(_waiter.EquipFloorType, RestaurantType.Hall, servingTableData.TableFurniture.transform.position), 0, () =>
+    private bool Arrived(object request)
+    {
+        if (!ContinueRequest(request)) return false;
+        if (_waiter.ConfirmReachedMoveTarget()) return true;
+        CancelCurrentWork(); return false;
+    }
+
+    private void ServingAction(TableData table)
+    {
+        var request = BeginWork(table, true);
+        if (request == null) return;
+        var lease = _lease;
+        var food = lease.Food; // Keep the selected plate through every callback.
+        float speedMul = _waiter.SpeedMul;
+        _waiter.Move(_tableManager.GetFoodPos(_floor, RestaurantType.Hall, table.TableFurniture.transform.position), 0, () =>
         {
-                    DebugLog.Log("웨이터 서빙 액션 시작3: " + servingTableData.TableFurniture.name);
+            if (!Arrived(request)) return;
             _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
             {
-                if (servingTableData.CurrentCustomer == null || servingTableData.TableState != ETableState.UseStaff)
-                {
-                    SetNoneState();
-                    return;
-                }
+                if (!ContinueRequest(request)) return;
+                if (!_tableManager.PickUpWaiterFood(lease)) { if (ReferenceEquals(_request, request)) CancelCurrentWork(); return; }
+                if (!ContinueRequest(request)) return;
+                _waiter.BowlSetActive(true); _waiter.ShowFood(food);
+                MoveCarriedFoodToSeat(request, lease, speedMul);
+            });
+        });
+    }
 
-                _tableManager.OnServigStaff(servingTableData);
-                _waiter.BowlSetActive(true);
-                _waiter.Move(servingTableData.transform.position, servingTableData.SitDir, () =>
-                {
-                    _tweenData = Tween.Wait(((_duration * _durationMul) / speedMul) * 0.5f, () =>
-                    {
-                        _waiter.BowlSetAction();
-                        _waiter.ShowFood(servingTableData.CurrentFood.FoodData);
-                        _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
-                        {
-                            if (servingTableData.CurrentCustomer == null || servingTableData.TableState != ETableState.StaffServing)
-                            {
-                                SetNoneState();
-                                return;
-                            }
+    internal void RefreshPartySeat(TableUseIdentity use)
+    {
+        if (!ReferenceEquals(_use, use) || !IsCurrent || _seatLeg == null
+            || _lease == null || !_lease.IsServing || !_lease.PickedUp) return;
+        var target = _currentData.transform.position;
+        target.x = _currentData.GetSeatPosition(_lease.Order.PartyOrder.SeatIndex).x;
+        if (target == _seatDestination) return;
+        MoveCarriedFoodToSeat(_request, _lease, _waiter.SpeedMul);
+    }
 
-                            _waiter.HideFood();
-                            _tableManager.OnServing(servingTableData);
-                            _tweenData = Tween.Wait(1 / speedMul, () =>
-                            {
-                                SetNoneState();
-                            });
-                        });
-                    });
+    private void MoveCarriedFoodToSeat(object request, TableServiceReservation lease, float speedMul)
+    {
+        if (!ContinueRequest(request)) return;
+        _tweenData?.TweenStop(); _tweenData = null;
+        var leg = new object(); _seatLeg = leg;
+        var table = lease.Table;
+        int seat = lease.Order.PartyOrder == null ? table.SitIndex : lease.Order.PartyOrder.SeatIndex;
+        int direction = lease.Order.PartyOrder == null ? table.SitDir : (seat == 0 ? -1 : 1);
+        Vector3 destination = table.transform.position;
+        if (!lease.Use.IsSingle) destination.x = table.GetSeatPosition(seat).x;
+        _seatDestination = destination;
+        _waiter.Move(destination, direction, () =>
+        {
+            if (!ReferenceEquals(_seatLeg, leg) || !Arrived(request)) return;
+            if (_deliveryStep == 0)
+            { _deliveryStep = 1; _deliveryDue = Time.time + ((_duration * _durationMul) / speedMul) * .5f; }
+            ContinueSeatDelivery(request, lease, speedMul, leg);
+        });
+    }
+
+    private void ContinueSeatDelivery(object request, TableServiceReservation lease, float speedMul, object leg)
+    {
+        _tweenData = Tween.Wait(Mathf.Max(0, _deliveryDue - Time.time), () =>
+        {
+            if (!ReferenceEquals(_seatLeg, leg) || !ContinueRequest(request)) return;
+            if (_deliveryStep == 1)
+            {
+                _waiter.BowlSetAction(); _deliveryStep = 2;
+                _deliveryDue = Time.time + (_duration * _durationMul) / speedMul;
+                ContinueSeatDelivery(request, lease, speedMul, leg); return;
+            }
+            _seatLeg = null;
+            bool delivered = _tableManager.TryDeliverFood(lease.Order, lease);
+            if (ReferenceEquals(_lease, lease)) _lease = null;
+            if (!delivered) { lease.Release(); if (ReferenceEquals(_request, request)) CancelCurrentWork(); return; }
+            if (!ContinueRequest(request)) return;
+            _waiter.HideFood();
+            _tweenData = Tween.Wait(1 / speedMul, () => { if (ContinueRequest(request)) SetNoneState(); });
+        });
+    }
+
+    private void OrderAction(TableData table)
+    {
+        var request = BeginWork(table, false);
+        if (request == null) return;
+        var lease = _lease;
+        float speedMul = _waiter.SpeedMul;
+        _waiter.Move(table.transform.position, table.SitDir, () =>
+        {
+            if (!Arrived(request)) return;
+            _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
+            {
+                if (!ContinueRequest(request)) return;
+                _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
+                {
+                    if (!ContinueRequest(request)) return;
+                    _waiter.SetStaffState(EStaffState.Action);
+                    bool handled = _tableManager.AcceptWaiterOrder(lease);
+                    if (ReferenceEquals(_lease, lease)) _lease = null;
+                    if (!handled) { if (ReferenceEquals(_request, request)) CancelCurrentWork(); return; }
+                    if (!ContinueRequest(request)) return;
+                    _tweenData = Tween.Wait(1 / speedMul, () => { if (ContinueRequest(request)) SetNoneState(); });
                 });
             });
         });
     }
 
-    private void OrderAction(TableData orderTableData)
-    {
-        if (orderTableData == null)
-            return;
-
-        if (0.5f < Mathf.Abs(orderTableData.transform.position.y - _waiter.transform.position.y) && !_notEqulsFloor)
-        {
-            _waiter.SetStaffState(EStaffState.None);
-            _actionType = WaiterActionType.None;
-            _notEqulsFloor = true;
-            _isUsed = false;
-            return;
-        }
-
-        _waiter.BowlSetActive(false);
-        float speedMul = _waiter.SpeedMul;
-        _isNoAction = false;
-        _tableManager.OnUseStaff(orderTableData);
-        _actionType = WaiterActionType.Order;
-        _currentData = orderTableData;
-
-        _waiter.Move(orderTableData.transform.position, orderTableData.SitDir, () =>
-        {
-            _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
-            {
-                if (orderTableData.CurrentCustomer == null || orderTableData.TableState != ETableState.UseStaff)
-                {
-                    SetNoneState();
-                    return;
-                }
-
-                _tweenData = Tween.Wait((_duration * _durationMul) / speedMul, () =>
-                    {
-                        if (orderTableData.CurrentCustomer == null || orderTableData.TableState != ETableState.UseStaff)
-                        {
-                            SetNoneState();
-                            return;
-                        }
-
-                        _waiter.SetStaffState(EStaffState.Action);
-
-                        _tableManager.OnCustomerOrder(orderTableData);
-                        _tweenData = Tween.Wait(1 / speedMul, () =>
-                        {
-                            SetNoneState();
-                        });
-                    });
-            });
-
-        });
-    }
-
-
-
-    private void SetNoneState()
-    {
-        _waiter.SetStaffState(EStaffState.None);
-        _actionType = WaiterActionType.None;
-        _isUsed = false;
-        _notEqulsFloor = false;
-        _time = 0;
-    }
-
+    private void SetNoneState() { CancelCurrentWork(); }
     private void OnLevelUpEvent()
     {
         if (_waiter == null)

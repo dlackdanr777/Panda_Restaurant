@@ -8,7 +8,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class CustomerController : MonoBehaviour
+public partial class CustomerController : MonoBehaviour
 {
     private const string TIME_TAG = "customerBreakTime";
 
@@ -33,16 +33,109 @@ public class CustomerController : MonoBehaviour
 
 
 
-    private static List<NormalCustomer> _callCustomers = new List<NormalCustomer>();
-    private List<NormalCustomer> _waitCustomers = new List<NormalCustomer>();
+
+
     private GatecrasherCustomer[] _gatecrasherCustomers = new global::GatecrasherCustomer[(int)ERestaurantFloorType.Length];
     private bool _breakCustomerEnabled = true;
-    public int Count => _callCustomers.Count;
-    public int WaitCount => _waitCustomers.Count;
+
+
+
+    // Lifetime ownership includes entering, waiting and seated visits. This is a
+    // registry only; CustomerPartyQueue owns waiting order, capacity and persistence.
+    private readonly List<CustomerVisitParty> _visitParties = new List<CustomerVisitParty>();
+    private object _visitExecution = new object();
+    internal object VisitExecution => _visitExecution;
+    public string LastVisitDiagnostic { get; private set; }
+    internal bool IsVisitExecutionCurrent(object execution) => execution != null
+        && ReferenceEquals(execution, _visitExecution);
+    internal void RegisterVisitParty(CustomerVisitParty party) { _visitParties.Add(party); }
+    internal void UnregisterVisitParty(CustomerVisitParty party, bool preserveWaitingSave)
+    { _visitParties.Remove(party); OnWaitingPartyEnded(party, preserveWaitingSave); }
+
+    internal bool CreateSingleVisit(NormalCustomer customer)
+    {
+        bool created = CustomerVisitParty.TryCreate(this, new[] { customer }, out _, out string reason);
+        LastVisitDiagnostic = reason;
+        return created;
+    }
+
+    internal bool TryGetSingleVisit(NormalCustomer customer, bool requireUnseated, out CustomerVisitMember member)
+    {
+        member = customer == null ? null : customer.VisitMember;
+        var party = member?.Party;
+        if (party == null || !party.IsActive || !ReferenceEquals(party.Owner, this))
+            LastVisitDiagnostic = "InvalidVisit";
+        else if (party.Members.Count != 1)
+            LastVisitDiagnostic = "UnsupportedPartySize";
+        else if (!ReferenceEquals(party.Members[0], member) || !member.IsVisitCurrent)
+            LastVisitDiagnostic = "VisitMemberMismatch";
+        else if (requireUnseated && party.CurrentUse != null)
+            LastVisitDiagnostic = "VisitAlreadySeated";
+        else { LastVisitDiagnostic = "SingleVisitAccepted"; return true; }
+        member = null;
+        return false;
+    }
+
+    internal void EndVisitParties()
+    {
+        bool restoring = _restoringWaiting;
+        _restoringWaiting = true;
+        try
+        {
+            while (_visitParties.Count > 0)
+            {
+                var party = _visitParties[_visitParties.Count - 1];
+                party.End(); ReturnPartyMembers(party);
+            }
+            _waitingTeams.Clear();
+        }
+        finally { _restoringWaiting = restoring; }
+    }
+
+    private void OnEnable()
+    {
+        EndVisitParties();
+        _visitExecution = new object();
+        LoadingSceneManager.OnLoadSceneHandler += EndVisitExecution;
+        UserInfo.OnWaitingPartiesLoaded += OnWaitingPartiesLoaded;
+        UserInfo.OnCustomerVisitCompletedHandler += OnCustomerVisitCompleted;
+    }
+
+    private void OnWaitingPartiesLoaded(EStage stage)
+    {
+        if (stage == UserInfo.CurrentStage && _visitExecution != null) LoadWaitingCustomers();
+    }
+
+    private void EndVisitExecution()
+    {
+        _visitExecution = null;
+        EndVisitParties();
+    }
+
+    private void OnDisable()
+    {
+        EndVisitExecution();
+        LoadingSceneManager.OnLoadSceneHandler -= EndVisitExecution;
+        UserInfo.OnWaitingPartiesLoaded -= OnWaitingPartiesLoaded;
+        UserInfo.OnCustomerVisitCompletedHandler -= OnCustomerVisitCompleted;
+    }
+
+    private void OnCustomerVisitCompleted(CustomerData data, int previousVisitCount, int currentVisitCount)
+    {
+        CustomerEncounterPresentation.OnCustomerVisitCompleted(data);
+    }
+
+    private void OnDestroy() { OnDisable(); }
+
+    private void RefreshVisitParties()
+    {
+        // Existing account query identity also covers logout/authentication replacement.
+        for (int i = _visitParties.Count - 1; i >= 0; i--) _ = _visitParties[i].IsActive;
+    }
 
     public Transform[] _GatecrasherCustomer2TargetPos => _gatecrasherCustomer2TargetPos;
     public GatecrasherCustomer[] GatecrasherCustomer => _gatecrasherCustomers;
-    public static bool IsMaxCount => GameManager.Instance.MaxWaitCustomerCount <= _callCustomers.Count;
+
 
 
     //// UI관련 변수
@@ -64,59 +157,26 @@ public class CustomerController : MonoBehaviour
                 return;
             }
 
-            _tabCount = 0;
-            AddCustomer();
-            OnAddCustomerHandler?.Invoke();
+            _tabCount = 0; // Consume the existing complete call opportunity even on allocation failure.
+            TryAddCustomer();
+            if (_createdInLastCall) OnAddCustomerHandler?.Invoke();
             return;
         }
         _tabCount++;
         OnAddTabCountHandler?.Invoke();
     }
 
-    public NormalCustomer GetFirstCustomer()
+    private bool _createdInLastCall;
+    public void AddCustomer() => TryAddCustomer();
+
+    // False also stops a fill operation after a technical failure: never redraw
+    // a representative or companion to conceal a failed team allocation.
+    public bool TryAddCustomer()
     {
-        return _waitCustomers.First();
-    }
-
-    public void RemoveCustomerFromLineQueue(NormalCustomer customer)
-    {
-        if (_waitCustomers.Count <= 0)
-            return;
-
-        bool waitCustomer = _waitCustomers.Contains(customer);
-        bool callCustomer = _callCustomers.Contains(customer);
-
-        if (waitCustomer)
-        {
-            _waitCustomers.Remove(customer);
-        }
-
-        if (callCustomer)
-        {
-            _callCustomers.Remove(customer);
-        }
-
-        if (!waitCustomer && !callCustomer)
-        {
-            return;
-        }
-
-        SortCustomerLine();
-        OnChangeCustomerHandler?.Invoke();
-    }
-
-
-    public bool IsEmpty()
-    {
-        bool result = _waitCustomers.Count == 0;
-        return result;
-    }
-
-
-    public void AddCustomer()
-    {
-        if (IsMaxCount)
-            return;
+        _createdInLastCall = false;
+        if (IsMaxCount || _visitExecution == null)
+            return false;
+        bool created = false;
 
         List<NormalCustomerData> normalCustomerDataList = CustomerDataManager.Instance.GetAppearNormalCustomerList();
         List<NormalCustomerData> normalCustomerDataListCopy = new List<NormalCustomerData>(normalCustomerDataList);
@@ -202,57 +262,24 @@ public class CustomerController : MonoBehaviour
 
             else
             {
-                NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-                customer.transform.position = GameManager.Instance.OutDoorPos;
+                if (normalCustomerDataList.Count == 0) { LastVisitDiagnostic = "NoAvailableGeneralCustomer"; return false; }
                 randInt = UnityEngine.Random.Range(0, normalCustomerDataList.Count);
-                DebugLog.Log($"RandInt: {randInt}, Count: {normalCustomerDataList.Count}");
-                CustomerData customerData = normalCustomerDataList[randInt];
-                customer.SetData(customerData, this, _tableManager);
-                customer.StartWaiting();
-                _callCustomers.Add(customer);
+                NormalCustomerData customerData = normalCustomerDataList[randInt];
+                var members = SelectNaturalPartyMembers(customerData, normalCustomerDataList);
+                if (!SpawnWaitingParty(members, false, out _, false)) return false;
                 UserInfo.AddPromotionCount();
-
-                Vector2 startLinePos = _startLine.position;
-                int orderLayer = Count;
-                float gridSize = AStar.Instance.NodeSize;
-
-                customer.Move(_startLine.position + new Vector3(_lineSpacingGrid * gridSize * (Count - 1), 0), -1, () =>
-                {
-                    _waitCustomers.Add(customer);
-                    _tableManager.UpdateTable();
-                    SortCustomerLine();
-                });
-                SortCustomerLine();
-                startLinePos.x += _lineSpacingGrid * gridSize;
             }
-
+            created = true; _createdInLastCall = true;
             OnChangeCustomerHandler?.Invoke();
         }
+        return created;
     }
 
-
-
-    public bool GuideCustomer(Vector3 targetPos, int moveEndDir = 0, Action onCompleted = null)
-    {
-        if (_waitCustomers.Count <= 0)
-            return false;
-
-        NormalCustomer customer = _waitCustomers.First();
-        _waitCustomers.RemoveAt(0);
-        _callCustomers.Remove(customer);
-        customer.Move(targetPos, moveEndDir, onCompleted);
-
-
-        SortCustomerLine();
-        OnChangeCustomerHandler?.Invoke();
-        OnGuideCustomerHandler?.Invoke();
-        return true;
-    }
 
 
     private void Awake()
     {
-        _callCustomers.Clear();
+        _queueOwner = this;
         _breakCustomerEnabled = true;
         OnChangeCustomerHandler += UpdateWaitingCustomerSave;
     }
@@ -262,62 +289,10 @@ public class CustomerController : MonoBehaviour
         LoadWaitingCustomers();
     }
 
-    // 대기 중인 손님 ID리스트를 StageInfo에 동기화
-    private void UpdateWaitingCustomerSave()
-    {
-        var ids = new List<string>();
-        for (int i = 0, cnt = _callCustomers.Count; i < cnt; i++)
-        {
-            if (_callCustomers[i].NormalCustomerData != null)
-                ids.Add(_callCustomers[i].NormalCustomerData.Id);
-        }
-        UserInfo.SetWaitingCustomerIds(UserInfo.CurrentStage, ids);
-    }
-
-    // 저장된 대기 손님을 스펼
-    private void LoadWaitingCustomers()
-    {
-        IReadOnlyList<string> savedIds = UserInfo.GetWaitingCustomerIds(UserInfo.CurrentStage);
-        if (savedIds == null || savedIds.Count == 0)
-            return;
-
-        float gridSize = AStar.Instance.NodeSize;
-        int slotIndex = 0;
-
-        for (int i = 0; i < savedIds.Count; i++)
-        {
-            if (IsMaxCount)
-                break;
-
-            CustomerData data = CustomerDataManager.Instance.GetCustomerData(savedIds[i]);
-            if (!(data is NormalCustomerData))
-                continue;
-
-            NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-
-            // 줄 위치에 직접 배치 (Move 이동 없이, 앞줄부터 순서대로 채워짐)
-            Vector2 slotPos = (Vector2)_startLine.position + new Vector2(_lineSpacingGrid * gridSize * slotIndex, 0);
-            customer.transform.position = slotPos;
-
-            customer.SetData(data, this, _tableManager);
-            customer.StartWaiting();
-            customer.SetLayer("WaitCustomer", savedIds.Count - slotIndex);
-
-            _callCustomers.Add(customer);
-            _waitCustomers.Add(customer);
-            slotIndex++;
-        }
-
-        if (_callCustomers.Count > 0)
-        {
-            _tableManager.UpdateTable();
-            OnChangeCustomerHandler?.Invoke();
-        }
-    }
-
-
     private void Update()
     {
+        RefreshVisitParties();
+        TickPartyClocks(Time.timeAsDouble);
         CheckGatecrasherCustomer();
     }
 
@@ -338,58 +313,6 @@ public class CustomerController : MonoBehaviour
 
     }
 
-
-    private void SortCustomerLine()
-    {
-        Vector2 startLinePos = _startLine.position;
-        int orderLayer = _callCustomers.Count;
-        float gridSize = AStar.Instance.NodeSize;
-
-        foreach (NormalCustomer c in _callCustomers)
-        {
-            // 목표 줄 위치가 이전과 같다면 이미 이동 중(또는 도착)이므로 재요청하지 않음
-            bool targetChanged = !c.HasMoved || c.TargetPos != startLinePos;
-            if (targetChanged)
-            {
-                c.Move(startLinePos, -1, () =>
-                {
-                    if (!_waitCustomers.Contains(c))
-                        _waitCustomers.Add(c);
-
-                    _tableManager.UpdateTable();
-                });
-            }
-            c.SetLayer("WaitCustomer", orderLayer--);
-            startLinePos.x += _lineSpacingGrid * gridSize;
-        }
-
-        // if (_sortCoroutine != null)
-        //     StopCoroutine(_sortCoroutine);
-
-        // _sortCoroutine = StartCoroutine(SortCustomerLineRoutine());
-    }
-
-    private IEnumerator SortCustomerLineRoutine()
-    {
-        yield return YieldCache.WaitForSeconds(0.2f);
-        Vector2 startLinePos = _startLine.position;
-        int orderLayer = _waitCustomers.Count;
-        float gridSize = AStar.Instance.NodeSize;
-
-        // 리스트 복사본 생성
-        List<Customer> customersCopy = new List<Customer>(_waitCustomers);
-
-        foreach (Customer c in customersCopy)
-        {
-            if (!_waitCustomers.Contains(c))
-                continue;
-            c.Move(startLinePos, -1);
-            c.SetLayer("WaitCustomer", orderLayer--);
-            startLinePos.x += _lineSpacingGrid * gridSize;
-
-            yield return YieldCache.WaitForSeconds(0.05f);
-        }
-    }
 
     private void OnCustomerEvent(Customer customer)
     {
@@ -442,15 +365,8 @@ public class CustomerController : MonoBehaviour
 
         else
         {
-            NormalCustomer customer = ObjectPoolManager.Instance.SpawnNormalCustomer(GameManager.Instance.OutDoorPos, Quaternion.identity);
-            customer.SetData(data, this, _tableManager);
-            customer.StartWaiting();
-            _waitCustomers.Add(customer);
-
-            SortCustomerLine();
-            UserInfo.AddPromotionCount();
+            if (SpawnWaitingParty(new[] { data.Id }, false, out _, false)) UserInfo.AddPromotionCount();
         }
-
         OnChangeCustomerHandler?.Invoke();
     }
 }

@@ -8,6 +8,8 @@ using System.Collections.Generic;
 
 public class UIMainChallenge : MobileUIView
 {
+    private ChallengeManager _subscribedChallengeManager;
+
     [Header("Components")]
     [SerializeField] private CanvasGroup _canvasGroup;
     [SerializeField] private RectTransform _dontTouchArea;
@@ -56,7 +58,8 @@ public class UIMainChallenge : MobileUIView
         _shortCutButton.onClick.AddListener(OnShortcutButtonClicked);
 
         UpdateData();
-        ChallengeManager.Instance.OnMainChallengeUpdateHandler += UpdateData;
+        _subscribedChallengeManager = ChallengeManager.Instance;
+        _subscribedChallengeManager.OnMainChallengeUpdateHandler += UpdateData;
         LoadingSceneManager.OnLoadSceneHandler += DespawnCoin;
         LoadingSceneManager.OnLoadSceneHandler += DespawnDia;
         LoadingSceneManager.OnLoadSceneHandler += OnChangeSceneEvent;
@@ -279,7 +282,9 @@ public class UIMainChallenge : MobileUIView
 
     private void OnDestroy()
     {
-        ChallengeManager.Instance.OnMainChallengeUpdateHandler -= UpdateData;
+        if (_subscribedChallengeManager != null)
+            _subscribedChallengeManager.OnMainChallengeUpdateHandler -= UpdateData;
+        _subscribedChallengeManager = null;
     }
 
 
@@ -294,7 +299,9 @@ public class UIMainChallenge : MobileUIView
     {
         DespawnCoin();
         DespawnDia();
-        ChallengeManager.Instance.OnMainChallengeUpdateHandler -= UpdateData;
+        if (_subscribedChallengeManager != null)
+            _subscribedChallengeManager.OnMainChallengeUpdateHandler -= UpdateData;
+        _subscribedChallengeManager = null;
         LoadingSceneManager.OnLoadSceneHandler -= OnChangeSceneEvent;
     }
 

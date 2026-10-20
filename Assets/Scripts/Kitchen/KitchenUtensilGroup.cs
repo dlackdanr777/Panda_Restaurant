@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-public class KitchenUtensilGroup: MonoBehaviour
+public partial class KitchenUtensilGroup: MonoBehaviour
 {
     private const float MaximumAssignedCookingBonusPercent = 1000f;
 
@@ -77,8 +77,7 @@ public class KitchenUtensilGroup: MonoBehaviour
             if (!burnerData.IsUsable
                 || burnerData.CookingData.IsDefault()
                 || burnerData.Time <= 0f
-                || burnerData.CookingData.TableData == null
-                || burnerData.CookingData.TableData.CurrentCustomer == null)
+                || !burnerData.CookingData.CanCook)
             {
                 continue;
             }
@@ -322,7 +321,7 @@ public class KitchenUtensilGroup: MonoBehaviour
             // 요리 중인 데이터가 있는 경우
             if (!_burnerDatas[i].CookingData.IsDefault())
             {
-                if (_burnerDatas[i].CookingData.TableData == null || _burnerDatas[i].CookingData.TableData.CurrentCustomer == null)
+                if (!_burnerDatas[i].CookingData.CanCook)
                 {
                     DequeueFood(i);
                     continue; // return이 아닌 continue로 변경
@@ -390,26 +389,38 @@ public class KitchenUtensilGroup: MonoBehaviour
 
     private void DequeueFood(int burnerIndex)
     {
-        if (!_burnerDatas[burnerIndex].CookingData.IsDefault())
+        var food = _burnerDatas[burnerIndex].CookingData;
+        bool complete = !food.IsDefault() && food.Identity != null && food.Identity.TryCompleteCooking(food.TableData);
+        if (!complete && !food.IsDefault()) { food.Identity?.CancelCooking(); ReleaseCancelledStaff(_burnerDatas[burnerIndex]); }
+        // Release the logical slot before external counter/UI callbacks can reenter.
+        ResetBurnerData(burnerIndex);
+        if (complete)
         {
-            UserInfo.AddCookCount(_burnerDatas[burnerIndex].CookingData.FoodData.Id);
-            _burnerDatas[burnerIndex].CookingData.OnCompleted?.Invoke();
+            try { UserInfo.AddCookCount(food.FoodData.Id); }
+            catch (Exception error) { Debug.LogError("[COOK_COMPLETION] Counter observer: " + error.Message); }
+            try { food.OnCompleted?.Invoke(); }
+            catch (Exception error) { Debug.LogError("[COOK_COMPLETION] Order observer: " + error.Message); }
         }
+        StartNextFood(burnerIndex);
+    }
 
-        if (_cookingQueue.Count == 0)
+    private void StartNextFood(int burnerIndex)
+    {
+        if (!_burnerDatas[burnerIndex].IsUsable || !_burnerDatas[burnerIndex].CookingData.IsDefault()) return;
+        while (_cookingQueue.Count > 0)
         {
-            ResetBurnerData(burnerIndex);
+            CookingData cookingData = _cookingQueue.Dequeue();
+            if (!cookingData.CanCook) { cookingData.Identity?.CancelCooking(); continue; }
+            _burnerDatas[burnerIndex].CookingData = cookingData;
+            _burnerDatas[burnerIndex].Time = cookingData.CookTime;
+            _burnerDatas[burnerIndex].InitializeCookingClock(cookingData.CookTime);
+            if (cookingData.Identity.PartyOrder != null) cookingData.Identity.PartyOrder.State = PartyFoodState.Cooking;
+            _burnerTimers[burnerIndex].SetActive(true);
+            _smokeAnimations[burnerIndex].gameObject.SetActive(true);
+            _burnerTimers[burnerIndex].SetFillAmount(0);
+            _burnerTimers[burnerIndex].SetImage(cookingData.FoodData.ThumbnailSprite);
             return;
         }
-
-        CookingData cookingData = _cookingQueue.Dequeue();
-        _burnerDatas[burnerIndex].CookingData = cookingData;
-        _burnerDatas[burnerIndex].Time = cookingData.CookTime;
-        _burnerDatas[burnerIndex].InitializeCookingClock(cookingData.CookTime);
-        _burnerTimers[burnerIndex].SetActive(true);
-        _smokeAnimations[burnerIndex].gameObject.SetActive(true);
-        _burnerTimers[burnerIndex].SetFillAmount(0);
-        _burnerTimers[burnerIndex].SetImage(cookingData.FoodData.ThumbnailSprite);
     }
 
     private void UpdateKitchen()
@@ -494,9 +505,13 @@ public class KitchenUtensilGroup: MonoBehaviour
         _burnerDatas[index].Time = 0;
         _burnerDatas[index].ResetCookingClock();
         _burnerDatas[index].CookingData.SetDefault();
-        _burnerTimers[index].SetFillAmount(0);
-        _burnerTimers[index].SetActive(false);
-        _smokeAnimations[index].gameObject.SetActive(false);
+        if (_burnerTimers != null && index < _burnerTimers.Length && _burnerTimers[index] != null)
+        {
+            _burnerTimers[index].SetFillAmount(0);
+            _burnerTimers[index].SetActive(false);
+        }
+        if (_smokeAnimations != null && index < _smokeAnimations.Length && _smokeAnimations[index] != null)
+            _smokeAnimations[index].gameObject.SetActive(false);
     }
 
     private void SetDefalutBurnerData(int index)

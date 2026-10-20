@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2f00fa05b3d4931a819a214ee0c57a7, type: 3}
+  m_Name: CustomerPartySettings
+  m_EditorClassIdentifier: 
+  EnableNaturalParties: 1
+  MinimumNormalVisits: 25
+  CompanionProbability: 0.2

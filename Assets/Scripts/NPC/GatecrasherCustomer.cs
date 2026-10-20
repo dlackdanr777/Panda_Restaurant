@@ -66,6 +66,9 @@ public class GatecrasherCustomer : Customer
     }
 
 
+    private object _serviceEventIdentity = new object();
+    internal object ServiceEventIdentity => _serviceEventIdentity;
+
     public override void SetData(CustomerData data, CustomerController customerController, TableManager tableManager)
     {
         if (!(data is GatecrasherCustomerData))
@@ -80,6 +83,7 @@ public class GatecrasherCustomer : Customer
         _currentTouchCount = 0;
         _totalTouchCount = gatecrasherData.TouchCount;
         _isEndEvent = false;
+        _serviceEventIdentity = new object();
         _touchEnabled = false;
         _spriteGroup.SetAlpha(0);
         _spritePressEffect.Interactable = false;
@@ -401,7 +405,15 @@ public class GatecrasherCustomer : Customer
             tableDataList = tableManager.GetTableDataList(_visitFloor);
             for (int i = 0; i < maxIndex; ++i)
             {
-                if (tableDataList[i].CurrentCustomer != null)
+                if (tableDataList[i].CurrentUse != null && !tableDataList[i].CurrentUse.IsSingle)
+                {
+                    var use = tableDataList[i].CurrentUse;
+                    foreach (var member in use.Party.Members)
+                        if (use.IsMemberCurrent(member) && !use.CompletionStarted && !use.ServiceAborted)
+                            StartCoroutine(DelayedAngerForMember(tableDataList[i], tableManager,
+                                GetAngerWaitTime(member.Customer.NormalCustomerData.TendencyType), use, member, _serviceEventIdentity));
+                }
+                else if (tableDataList[i].CurrentCustomer != null)
                 {
                     NormalCustomerData normalCustomerData = (NormalCustomerData)tableDataList[i].CurrentCustomer.CustomerData;
                     CustomerTendencyType tendency = normalCustomerData.TendencyType;
@@ -424,7 +436,15 @@ public class GatecrasherCustomer : Customer
             tableDataList = tableManager.GetTableDataList(_visitFloor);
             for (int i = 0; i < maxIndex; ++i)
             {
-                if (tableDataList[i].CurrentCustomer != null)
+                if (tableDataList[i].CurrentUse != null && !tableDataList[i].CurrentUse.IsSingle)
+                {
+                    var use = tableDataList[i].CurrentUse;
+                    foreach (var member in use.Party.Members)
+                        if (use.IsMemberCurrent(member) && !use.CompletionStarted && !use.ServiceAborted)
+                            StartCoroutine(DelayedAngerForMember(tableDataList[i], tableManager,
+                                GetAngerWaitTime(member.Customer.NormalCustomerData.TendencyType), use, member, _serviceEventIdentity));
+                }
+                else if (tableDataList[i].CurrentCustomer != null)
                 {
                     NormalCustomerData normalCustomerData = (NormalCustomerData)tableDataList[i].CurrentCustomer.CustomerData;
                     CustomerTendencyType tendency = normalCustomerData.TendencyType;
@@ -458,16 +478,31 @@ public class GatecrasherCustomer : Customer
 
     private IEnumerator DelayedAngerCustomer(TableData tableData, TableManager tableManager, float delay)
     {
+        // Capture at scheduling time, before the iterator's first MoveNext.
+        return DelayedAngerForUse(tableData, tableManager, delay, tableData == null ? null : tableData.CurrentUse, _serviceEventIdentity);
+    }
+
+    private IEnumerator DelayedAngerForUse(TableData tableData, TableManager tableManager, float delay, TableUseIdentity use, object eventIdentity)
+    {
         yield return YieldCache.WaitForSeconds(delay);
         
         // 손님이 여전히 해당 테이블에 있는지 확인
-        if (tableData.CurrentCustomer != null && !_isEndEvent)
+        if (use != null && use.IsCurrent(tableData) && !_isEndEvent && ReferenceEquals(eventIdentity, _serviceEventIdentity))
         {
             tableData.CurrentCustomer.StartAnger();
             tableManager.AngerExitCustomer(tableData);
         }
     }
 
+
+    private IEnumerator DelayedAngerForMember(TableData table, TableManager manager, float delay,
+        TableUseIdentity use, CustomerVisitMember member, object eventIdentity)
+    {
+        yield return YieldCache.WaitForSeconds(delay);
+        if (!_isEndEvent && ReferenceEquals(eventIdentity, _serviceEventIdentity)
+            && use.IsMemberCurrent(member) && !use.CompletionStarted && !use.ServiceAborted)
+            manager.AbortPartyService(use, "Gatecrasher");
+    }
 
     private IEnumerator OnEndTimeEvent()
     {

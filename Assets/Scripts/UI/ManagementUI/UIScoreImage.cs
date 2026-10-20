@@ -7,6 +7,8 @@ using UnityEngine.UI;
 
 public class UIScoreImage : MonoBehaviour
 {
+    private GameManager _subscribedGameManager;
+
     [Header("Components")]
     [SerializeField] private RectTransform _uiRect;
     [SerializeField] private TextMeshProUGUI _scoreText;
@@ -38,7 +40,8 @@ public class UIScoreImage : MonoBehaviour
         _tmpScale = _uiRect.localScale;
         OnScoreChangeEvent();
         UserInfo.OnChangeScoreHandler += OnScoreChangeEvent;
-        GameManager.Instance.OnChangeScoreHandler += OnScoreChangeEvent;
+        _subscribedGameManager = GameManager.Instance;
+        _subscribedGameManager.OnChangeScoreHandler += OnScoreChangeEvent;
     }
 
 
@@ -84,8 +87,9 @@ public class UIScoreImage : MonoBehaviour
     {
         UserInfo.OnChangeScoreHandler -= OnScoreChangeEvent;
 
-        if (GameManager.Instance != null)
-            GameManager.Instance.OnChangeScoreHandler -= OnScoreChangeEvent;
+        if (_subscribedGameManager != null)
+            _subscribedGameManager.OnChangeScoreHandler -= OnScoreChangeEvent;
+        _subscribedGameManager = null;
 
         if (_moneyAnimeRoutine != null)
             StopCoroutine(_moneyAnimeRoutine);

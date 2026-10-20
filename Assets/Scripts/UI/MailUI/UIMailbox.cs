@@ -35,6 +35,7 @@ public class UIMailbox : MobileUIView
     private List<UIMailSlot> _slotPool = new List<UIMailSlot>();
     private bool _sortNewest = true;
     private bool _isLoading;
+    private MailManager _subscribedMailManager;
 
     public override void Init()
     {
@@ -42,7 +43,8 @@ public class UIMailbox : MobileUIView
         if (_deleteReadButton != null) _deleteReadButton.onClick.AddListener(OnDeleteReadClicked);
         if (_sortButton != null) _sortButton.AddListener(OnSortToggled);
 
-        MailManager.Instance.OnMailListRefreshed += RefreshUI;
+        _subscribedMailManager = MailManager.Instance;
+        _subscribedMailManager.OnMailListRefreshed += RefreshUI;
 
         gameObject.SetActive(false);
         _detailPopup.Init();
@@ -277,7 +279,8 @@ public class UIMailbox : MobileUIView
 
     private void OnDestroy()
     {
-        if (MailManager.Instance != null)
-            MailManager.Instance.OnMailListRefreshed -= RefreshUI;
+        if (_subscribedMailManager != null)
+            _subscribedMailManager.OnMailListRefreshed -= RefreshUI;
+        _subscribedMailManager = null;
     }
 }

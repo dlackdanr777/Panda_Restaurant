@@ -14,6 +14,7 @@ public class UIMain : MonoBehaviour
     [SerializeField] private GameObject _customerMaxCountImage;
     [SerializeField] private WatchAdButton _watchAdButton;
     [SerializeField] private TextMeshProUGUI _customerCountText;
+    private TimeManager _subscribedTimeManager;
 
     private void Awake()
     {
@@ -24,7 +25,8 @@ public class UIMain : MonoBehaviour
         _customerController.OnAddCustomerHandler += OnUpdateAdButtonEvent;
         _customerController.OnGuideCustomerHandler += OnUpdateAdButtonEvent;
         GameManager.Instance.OnChangeMaxWaitCustomerCountHandler += OnUpdateAdButtonEvent;
-        TimeManager.Instance.OnRemoveTimeHandler += OnRemoveTimeEvent;
+        _subscribedTimeManager = TimeManager.Instance;
+        _subscribedTimeManager.OnRemoveTimeHandler += OnRemoveTimeEvent;
 
         _watchAdButton.OnAdRewarded += OnAdButtonClicked;
         _watchAdButton.OnDiaRewarded += OnDiaButtonClicked;
@@ -103,7 +105,7 @@ public class UIMain : MonoBehaviour
     {
         while (!CustomerController.IsMaxCount)
         {
-            _customerController.AddCustomer();
+            if (!_customerController.TryAddCustomer()) break;
             yield return YieldCache.WaitForSeconds(0.3f);
         }
 
@@ -126,8 +128,9 @@ public class UIMain : MonoBehaviour
             _customerController.OnGuideCustomerHandler -= OnUpdateAdButtonEvent;
         }
 
-        if (TimeManager.Instance != null)
-            TimeManager.Instance.OnRemoveTimeHandler -= OnRemoveTimeEvent;
+        if (_subscribedTimeManager != null)
+            _subscribedTimeManager.OnRemoveTimeHandler -= OnRemoveTimeEvent;
+        _subscribedTimeManager = null;
 
         StopAllCoroutines();
     }

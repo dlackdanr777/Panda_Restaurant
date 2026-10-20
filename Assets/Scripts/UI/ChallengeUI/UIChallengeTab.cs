@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class UIChallengeTab : MonoBehaviour
 {
+    private ChallengeManager _subscribedChallengeManager;
+
     [Header("Components")]
     [SerializeField] private RectTransform _rectTransform;
     [SerializeField] private RectTransform _contentRect;
@@ -18,7 +20,8 @@ public class UIChallengeTab : MonoBehaviour
     {
         _dataList = dataList;
         CreateSlots();
-        ChallengeManager.Instance.OnAddChallengeHandler += OnUpdateEvent;
+        _subscribedChallengeManager = ChallengeManager.Instance;
+        _subscribedChallengeManager.OnAddChallengeHandler += OnUpdateEvent;
     }
 
     public void Init(UIChallenge uiChallenge, Func<List<ChallengeData>> onUpdateEvent)
@@ -146,6 +149,8 @@ public class UIChallengeTab : MonoBehaviour
     private void OnDestroy()
     {
 
-        ChallengeManager.Instance.OnAddChallengeHandler -= OnUpdateEvent;
+        if (_subscribedChallengeManager != null)
+            _subscribedChallengeManager.OnAddChallengeHandler -= OnUpdateEvent;
+        _subscribedChallengeManager = null;
     }
 }

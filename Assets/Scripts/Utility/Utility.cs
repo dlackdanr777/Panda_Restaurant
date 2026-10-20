@@ -303,7 +303,7 @@ public static class Utility
             UpgradeType.UPGRADE28 => StaffTypeStringConverter(StaffGroupType.Waiter) + " 이동 속도\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "%(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "%</color>) 증가",
 
             UpgradeType.UPGRADE29 => "피버 타임 시간\n" + Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "초(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + upgradeValue + "초</color>) 증가",
-            UpgradeType.UPGRADE30 => "최대 대기 손님\n" + (int)Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "명(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "명</color>) 증가",
+            UpgradeType.UPGRADE30 => "최대 대기 팀\n" + (int)Mathf.Abs(data.DefaultValue + data.UpgradeValue * (level - 1)) + "팀(<color=" + ColorToHex(GetColor(ColorType.AddValue)) + ">+" + (int)upgradeValue + "팀</color>) 증가",
             _ => "효과 없음"
         };
         return effectDescription;

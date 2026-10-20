@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class UImanagementManagementGroup : UIManagementLayoutGroup
 {
+    private GameManager _subscribedGameManager;
+
     [SerializeField] private TextMeshProUGUI _tipPerMinuteValue;
     [SerializeField] private TextMeshProUGUI _totalMoneyValue;
     [SerializeField] private TextMeshProUGUI _currentScoreValue;
@@ -18,11 +20,12 @@ public class UImanagementManagementGroup : UIManagementLayoutGroup
 
     public override void Init()
     {
-        GameManager.Instance.OnChangeTipPerMinuteHandler += OnChangeTipPerMinuteEvent;
+        _subscribedGameManager = GameManager.Instance;
+        _subscribedGameManager.OnChangeTipPerMinuteHandler += OnChangeTipPerMinuteEvent;
         UserInfo.OnAddCustomerCountHandler += OnAddCustomerEvent;
         UserInfo.OnChangeMoneyHandler += OnChangeMoneyEvent;
         UserInfo.OnChangeScoreHandler += OnChangeCurrentScoreEvent;
-        GameManager.Instance.OnChangeScoreHandler += OnChangeCurrentScoreEvent;
+        _subscribedGameManager.OnChangeScoreHandler += OnChangeCurrentScoreEvent;
     }
 
 
@@ -62,10 +65,13 @@ public class UImanagementManagementGroup : UIManagementLayoutGroup
 
     private void OnDestroy()
     {
-        GameManager.Instance.OnChangeTipPerMinuteHandler -= OnChangeTipPerMinuteEvent;
+        if (_subscribedGameManager != null)
+            _subscribedGameManager.OnChangeTipPerMinuteHandler -= OnChangeTipPerMinuteEvent;
         UserInfo.OnAddCustomerCountHandler -= OnAddCustomerEvent;
         UserInfo.OnChangeMoneyHandler -= OnChangeMoneyEvent;
         UserInfo.OnChangeScoreHandler -= OnChangeCurrentScoreEvent;
-        GameManager.Instance.OnChangeScoreHandler -= OnChangeCurrentScoreEvent;
+        if (_subscribedGameManager != null)
+            _subscribedGameManager.OnChangeScoreHandler -= OnChangeCurrentScoreEvent;
+        _subscribedGameManager = null;
     }   
 }

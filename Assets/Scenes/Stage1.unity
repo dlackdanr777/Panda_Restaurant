@@ -209838,7 +209838,7 @@ MonoBehaviour:
   _mapInfos:
   - MapKey: "1\uCE35 \uD640"
     MapBottomLeft: {x: -19.44, y: 7.125}
-    MapSize: {x: 45, y: 9}
+    MapSize: {x: 171.44, y: 9}
   - MapKey: "1\uCE35 \uC8FC\uBC29"
     MapBottomLeft: {x: -53.5, y: 7.125}
     MapSize: {x: 33.5, y: 9}
@@ -561029,6 +561029,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 17213a95982817c42a02ea754820a5e4, type: 3}
+  _naturalPartySettings: {fileID: 11400000, guid: 92f63d97f62e41889fdf80f82e1029b8, type: 2}
   m_Name: 
   m_EditorClassIdentifier: 
   _tableManager: {fileID: 32492754}
@@ -578872,7 +578873,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.23590404, y: 0.019241214}
+  m_Offset: {x: -2.72787633, y: 0.019241214}
   m_SpriteTilingProperty:
     border: {x: 0.25, y: 0.25, z: 0.25, w: 0.25}
     pivot: {x: 0.5, y: 0.5}
@@ -578882,7 +578883,7 @@ BoxCollider2D:
     drawMode: 2
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 2.065782, y: 0.19589236}
+  m_Size: {x: 7.04972657, y: 0.19589236}
   m_EdgeRadius: 0
 --- !u!212 &2019629165
 SpriteRenderer:

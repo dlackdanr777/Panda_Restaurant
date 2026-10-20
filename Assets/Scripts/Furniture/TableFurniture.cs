@@ -22,6 +22,51 @@ public class TableFurniture : Furniture
     private TableFurnitureData _tableFurnitureData;
     private TableData _tableData;
     private SaveTableData _saveTableData;
+    private bool _cleaningCommit;
+    private EStage _boundStage;
+    private bool IsCleaningBindingCurrent => UserInfo.CurrentStage == _boundStage && _saveTableData != null && _tableData != null
+        && ReferenceEquals(UserInfo.GetTableData(_boundStage, _floor, _tableData.TableType), _saveTableData);
+    internal bool CanClean => IsCleaningBindingCurrent && !_cleaningCommit && _tableData != null && _saveTableData != null
+        && _tableData.TableState == ETableState.NeedCleaning
+        && (_saveTableData.CleaningBowlProcessed || UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _floor));
+
+    internal void BeginPartyCleaning(TableUseIdentity use)
+    {
+        if (_cleaningCommit || !IsCleaningBindingCurrent || !use.IsPartyCurrent(_tableData)) return;
+        _cleaningCommit = true;
+        try
+        {
+            _saveTableData.SetNeedCleaning(true);
+            try { _tableData.TableState = ETableState.NeedCleaning; }
+            catch (Exception error) { _tableData.LastServiceDiagnostic = error.ToString(); }
+            if (IsCleaningBindingCurrent && use.IsPartyCurrent(_tableData)) UserInfo.TryProcessCleaningBowl(_boundStage, _floor, _tableData.TableType, _saveTableData);
+        }
+        finally { _cleaningCommit = false; }
+    }
+
+    private bool CompleteCleaning(object expected)
+    {
+        if (!CanClean || (expected != null && !ReferenceEquals(expected, _tableData.CleaningCycle))) return false;
+        _cleaningCommit = true;
+        try
+        {
+            if (!_saveTableData.CleaningBowlProcessed)
+            {
+                try { UserInfo.TryProcessCleaningBowl(_boundStage, _floor, _tableData.TableType, _saveTableData); }
+                catch (Exception error) { _tableData.LastServiceDiagnostic = error.ToString(); }
+                if (!_saveTableData.CleaningBowlProcessed) return false;
+            }
+            if (!IsCleaningBindingCurrent) return false;
+            _saveTableData.SetNeedCleaning(false);
+            try { _tableData.TableState = ETableState.Empty; }
+            catch (Exception error) { _tableData.LastServiceDiagnostic = error.ToString(); }
+            return true;
+        }
+        finally { _cleaningCommit = false; }
+    }
+
+    internal ETableState AvailableTableState => _saveTableData != null && _saveTableData.NeedCleaning
+        ? ETableState.NeedCleaning : ETableState.Empty;
 
     public override void Init(TableManager manager, ERestaurantFloorType floor)
     {
@@ -33,6 +78,7 @@ public class TableFurniture : Furniture
 
     public void SetTableData(TableData data, SaveTableData saveData)
     {
+        _boundStage = UserInfo.CurrentStage;
         _tableData = data;
         _saveTableData = saveData;
         _tableData.TableFurniture = this;
@@ -54,6 +100,10 @@ public class TableFurniture : Furniture
             _bowlRenderer.gameObject.SetActive(false);
             return;
         }
+
+        // An unavailable slot retains its saved cleaning cycle for later re-equipping.
+        if (_tableData.TableState == ETableState.DontUse)
+        { _bowlRenderer.gameObject.SetActive(false); return; }
 
         if (_tableData.TableState == ETableState.NeedCleaning)
         {
@@ -179,21 +229,10 @@ public class TableFurniture : Furniture
     }
 
 
-    public void OnCleanAction()
+    public void OnCleanAction() => OnCleanAction(null);
+    internal void OnCleanAction(object expected)
     {
-        if (_tableData.TableState != ETableState.NeedCleaning)
-        {
-            DebugLog.Log("더러운 상태가 아닙니다: " + _tableData.TableType);
-            return;
-        }
-
-        if (!UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _floor))
-        {   
-            return;
-        }
-
-        _tableData.TableState = ETableState.Empty;
-        UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, _floor);
+        if (!CompleteCleaning(expected)) return;
         EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);
         SoundManager.Instance.PlayEffectAudio(effectType, _cleanSound);
         _tableManager.UpdateTable();
@@ -202,20 +241,12 @@ public class TableFurniture : Furniture
 
     private void OnTouchEvent()
     {
-        if (_tableData.TableState != ETableState.NeedCleaning)
+        if (!CompleteCleaning(null))
         {
-            DebugLog.Log("더러운 상태가 아닙니다: " + _tableData.TableType);
-            return;
-        }
-
-        if(!UserInfo.GetBowlAddEnabled(UserInfo.CurrentStage, _floor))
-        {
+            if (_tableData.TableState == ETableState.NeedCleaning && !_cleaningCommit && !CanClean)
             PopupManager.Instance.ShowDisplayText("싱크대가 꽉 차 정리할 수 없습니다.");
             return;
         }
-
-        _tableData.TableState = ETableState.Empty;
-        UserInfo.AddSinkBowlCount(UserInfo.CurrentStage, _floor);
         if (UserInfo.IsFirstTutorialClear)
         {
             EffectType effectType = SoundManager.Instance.GetHallEffectType(_floor, RestaurantType.Hall);

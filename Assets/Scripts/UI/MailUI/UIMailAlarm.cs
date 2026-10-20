@@ -17,10 +17,15 @@ public class UIMailAlarm : MonoBehaviour
     [SerializeField] private float _pollIntervalSeconds = 300f;  // 기본 5분
 
     private Coroutine _pollingCoroutine;
+    private MailManager _subscribedMailManager;
 
     private void Start()
     {
-        MailManager.Instance.OnAlarmChanged += SetAlarm;
+#if UNITY_EDITOR
+        if (CustomerPartyManualPlayBootstrap.Active) return;
+#endif
+        _subscribedMailManager = MailManager.Instance;
+        _subscribedMailManager.OnAlarmChanged += SetAlarm;
 
         // 씬 시작 시 서버에서 메일 목록을 로드하여 알람 갱신
         MailManager.Instance.LoadMailListAsync();
@@ -31,8 +36,9 @@ public class UIMailAlarm : MonoBehaviour
 
     private void OnDestroy()
     {
-        if (MailManager.Instance != null)
-            MailManager.Instance.OnAlarmChanged -= SetAlarm;
+        if (_subscribedMailManager != null)
+            _subscribedMailManager.OnAlarmChanged -= SetAlarm;
+        _subscribedMailManager = null;
 
         if (_pollingCoroutine != null)
             StopCoroutine(_pollingCoroutine);
