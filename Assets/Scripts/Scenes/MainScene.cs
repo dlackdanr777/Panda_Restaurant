@@ -41,6 +41,7 @@ public class MainScene : MonoBehaviour
 
     private RestaurantType _restaurantType;
     public RestaurantType CurrentRestaurantType => _restaurantType;
+    public int CustomerEncounterOpenViewCount => _uiNavCoordinator == null ? -1 : _uiNavCoordinator.GetOpenViewCount();
 
     private float _updateTimer;
     private bool _attendanceScheduled;

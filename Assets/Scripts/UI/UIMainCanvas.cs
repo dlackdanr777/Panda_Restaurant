@@ -27,6 +27,8 @@ public class UIMainCanvas : MonoBehaviour
     private QuestStaffOffer _questShopOffer;
     private QuestOwnedStaffDetail _questOwnedStaffDetail;
     private int _questShopSelectionRevision;
+    public bool IsRestaurantAdminOpenOrOpening => _shopShortcut != null
+        || (_uiNav != null && _uiNav.CheckActiveView("RestaurantAdminUI"));
 
 #if UNITY_EDITOR
     private bool _editorOfflineNavigation;

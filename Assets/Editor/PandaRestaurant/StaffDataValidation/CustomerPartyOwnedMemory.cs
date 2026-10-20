@@ -62,8 +62,12 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
         return records.ToArray();
     }
 
-    internal void Initialize(bool furnitureFix = false, bool staffAi = false)
+    internal void Initialize(bool furnitureFix = false, bool staffAi = false,
+        string encounterCustomerId = null, int encounterVisitCount = 0)
     {
+        if (encounterCustomerId != null && (!CustomerEncounterCatalog.IsSupportedCustomer(encounterCustomerId)
+            || (encounterVisitCount != 0 && encounterVisitCount != 24 && encounterVisitCount != 49)))
+            throw new InvalidOperationException("Invalid memory-only encounter fixture.");
         started=Time.realtimeSinceStartupAsDouble;
         stages=(StageInfo[])Field(typeof(UserInfo),"_stageInfos").GetValue(null);
         if(stages.Any(s=>s==null))throw new InvalidOperationException("Original UserInfo initialization required");
@@ -71,7 +75,10 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
         foreach(var property in game.Properties().Where(p=>p.Name.StartsWith("Is")&&p.Name.EndsWith("TutorialClear")).ToArray())property.Value=true;
         game["FirstTutorialStartRewardGranted"]=true;
         game["LastAttendanceTime"]=UtcNow().AddHours(9).ToString("O");game["TotalAttendanceDays"]=1;
-        game["EnabledCustomerDataList"]=JArray.FromObject(new[]{"CUSTOMER01","CUSTOMER02","CUSTOMER04"}.Select(id=>new SaveCustomerData(id,"",furnitureFix&&!staffAi?0:25)));
+        var enabledCustomerIds = new List<string> { "CUSTOMER01", "CUSTOMER02", "CUSTOMER04" };
+        if (encounterCustomerId != null && !enabledCustomerIds.Contains(encounterCustomerId)) enabledCustomerIds.Add(encounterCustomerId);
+        game["EnabledCustomerDataList"] = JArray.FromObject(enabledCustomerIds.Select(id => new SaveCustomerData(id, "",
+            id == encounterCustomerId ? encounterVisitCount : furnitureFix && !staffAi ? 0 : 25)));
         game["GiveRecipeList"]=new JArray(new[]{"FOOD01","FOOD02","FOOD04","FOOD05","FOOD13","FOOD14"}.Select(id=>new JObject{["Id"]=id,["Level"]=1}));
         game["ClearMainChallengeList"]=new JArray(Enumerable.Range(1,12).Select(i=>"MainReward"+i.ToString("D2")));
         var ownedStaff=staffAi?CreateStaffAiRecords():new[]{new StaffAccountStaffRecord("STAFF01",1)};

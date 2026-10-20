@@ -98,6 +98,7 @@ public partial class CustomerController : MonoBehaviour
         _visitExecution = new object();
         LoadingSceneManager.OnLoadSceneHandler += EndVisitExecution;
         UserInfo.OnWaitingPartiesLoaded += OnWaitingPartiesLoaded;
+        UserInfo.OnCustomerVisitCompletedHandler += OnCustomerVisitCompleted;
     }
 
     private void OnWaitingPartiesLoaded(EStage stage)
@@ -116,6 +117,12 @@ public partial class CustomerController : MonoBehaviour
         EndVisitExecution();
         LoadingSceneManager.OnLoadSceneHandler -= EndVisitExecution;
         UserInfo.OnWaitingPartiesLoaded -= OnWaitingPartiesLoaded;
+        UserInfo.OnCustomerVisitCompletedHandler -= OnCustomerVisitCompleted;
+    }
+
+    private void OnCustomerVisitCompleted(CustomerData data, int previousVisitCount, int currentVisitCount)
+    {
+        CustomerEncounterPresentation.OnCustomerVisitCompleted(data);
     }
 
     private void OnDestroy() { OnDisable(); }

@@ -20,6 +20,11 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
     internal const string ScenePath = "Assets/Scenes/Stage1.unity";
     private const string PreviousStart = "Panda.PartyManual.PreviousStartScene", ModeKey = "Panda.PartyManual.UnownedMenu", FloorKey = "Panda.PartyManual.Floor";
     private const string ManagerWitnessKey = "Panda.PartyManual.ManagerWitness";
+    private const string EncounterPrepKey = "Panda.PartyManual.EncounterPrep";
+    private const string EncounterCustomerKey = "Panda.PartyManual.EncounterCustomer";
+    private const string EncounterVisitsKey = "Panda.PartyManual.EncounterVisits";
+    private static readonly string[] EncounterCustomerIds = { "CUSTOMER01", "CUSTOMER02", "CUSTOMER03" };
+    private static readonly int[] EncounterVisitOptions = { 0, 24, 49 };
     private static CustomerPartyOwnedMemory memory;
     private static CustomerController controller;
     private static TableManager tables;
@@ -27,9 +32,13 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
     private static readonly Dictionary<string, CustomerData> originalCustomers = new Dictionary<string, CustomerData>();
     private static readonly List<CustomerData> runtimeCustomers = new List<CustomerData>();
     private static bool ready, prepared, reloadLocked, guideBound;
+    private static int encounterPopupConfirmCount, oneButtonPopupCount, twoButtonConfirmCount, twoButtonCancelCount;
     private static string status = "Play 전에 시작 버튼을 누르세요. 상점 조작은 Game 뷰에서 직접 합니다.";
     private bool unowned;
     private int floor;
+    private bool prepareEncounterMemory;
+    private int encounterCustomerIndex;
+    private int encounterVisitIndex;
 
     static CustomerPartyStage1Preview()
     {
@@ -66,12 +75,30 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
             unowned = EditorGUILayout.Toggle("B 미보유 메뉴 (거절 검수)", unowned);
             staffAi = EditorGUILayout.Toggle("직원 AI 검수 준비", EditorApplication.isPlaying ? SessionState.GetBool(StaffAiKey, false) : staffAi);
             if (staffAi) naturalAi = EditorGUILayout.Toggle("자연 호출 설정 (메모리만)", EditorApplication.isPlaying ? SessionState.GetBool(NaturalAiKey, false) : naturalAi);
-            if (GUILayout.Button("원본 Stage1 메모리 Play 시작")) StartManual((ERestaurantFloorType)floor, unowned);
+            prepareEncounterMemory = EditorGUILayout.Toggle("인카운터 검수 조건 (메모리만)", prepareEncounterMemory);
+            if (prepareEncounterMemory)
+            {
+                EditorGUILayout.LabelField("인카운터 손님");
+                encounterCustomerIndex = GUILayout.Toolbar(encounterCustomerIndex, new[] { "파니", "랑이", "여리" });
+                EditorGUILayout.LabelField("시작 방문 수");
+                encounterVisitIndex = GUILayout.Toolbar(encounterVisitIndex, new[] { "0회", "24회", "49회" });
+                EditorGUILayout.HelpBox("선택한 손님만 메모리 계정에 추가/방문 수 설정합니다. 실제 입장·방문 완료는 Stage1 게임 경로로 진행하세요.", MessageType.None);
+            }
+            if (GUILayout.Button("원본 Stage1 메모리 Play 시작"))
+                StartManual((ERestaurantFloorType)floor, unowned, prepareEncounterMemory,
+                    EncounterCustomerIds[Mathf.Clamp(encounterCustomerIndex, 0, EncounterCustomerIds.Length - 1)],
+                    EncounterVisitOptions[Mathf.Clamp(encounterVisitIndex, 0, EncounterVisitOptions.Length - 1)]);
         }
         using (new EditorGUI.DisabledScope(!ready || !EditorApplication.isPlaying || EditorApplication.isPaused))
         {
             if (GUILayout.Button("1인 + 2인 대기열 준비")) PrepareCustomers();
             if (GUILayout.Button("다음 2인 팀 생성")) SpawnPair();
+            if (ready && SessionState.GetBool(EncounterPrepKey, false))
+            {
+                if (GUILayout.Button("선택 손님 1인 팀 생성")) SpawnEncounterCustomer(false);
+                if (GUILayout.Button("선택 손님 2인 팀 생성 (A+A)")) SpawnEncounterCustomer(true);
+                DrawPopupReviewControls();
+            }
             if (ready && EditorApplication.isPlaying && SessionState.GetBool(StaffAiKey, false)) DrawStaffAiControls();
             if (ready)
             {
@@ -99,7 +126,8 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         else if (AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath) == null) reason = "원본 Stage1 자산이 없습니다.";
         return reason == null;
     }
-    internal static void StartManual(ERestaurantFloorType selectedFloor, bool missingMenu)
+    internal static void StartManual(ERestaurantFloorType selectedFloor, bool missingMenu,
+        bool prepareEncounter, string encounterCustomerId, int encounterVisitCount)
     {
         if (!CanStart(out string reason)) { status = reason; Debug.LogWarning(reason); return; }
         GachaReviewTestRunner.ReleaseCreationTargetBeforeManualPlay();
@@ -111,6 +139,9 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         SessionState.SetString(PreviousStart, AssetDatabase.GetAssetPath(EditorSceneManager.playModeStartScene));
         SessionState.SetBool(ModeKey, missingMenu); SessionState.SetInt(FloorKey, (int)selectedFloor);
         SessionState.SetBool(StaffAiKey, staffAi); SessionState.SetBool(NaturalAiKey, staffAi && naturalAi);
+        SessionState.SetBool(EncounterPrepKey, prepareEncounter);
+        SessionState.SetString(EncounterCustomerKey, encounterCustomerId);
+        SessionState.SetInt(EncounterVisitsKey, encounterVisitCount);
         SessionState.SetBool(CustomerPartyManualPlayBootstrap.SessionKey, true);
         EditorSceneManager.playModeStartScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
         status = "Awake 이전 외부 호출 차단 후 원본 Stage1을 초기화합니다.";
@@ -130,7 +161,10 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
             if (c != null) c.transform.root.gameObject.SetActive(true);
         }
         _ = CustomerDataManager.Instance; _ = FoodDataManager.Instance; _ = KitchenUtensilDataManager.Instance; _ = StaffDataManager.Instance;
-        memory = new CustomerPartyOwnedMemory(); memory.Initialize(true, SessionState.GetBool(StaffAiKey, false));
+        memory = new CustomerPartyOwnedMemory();
+        memory.Initialize(true, SessionState.GetBool(StaffAiKey, false),
+            SessionState.GetBool(EncounterPrepKey, false) ? SessionState.GetString(EncounterCustomerKey, "") : null,
+            SessionState.GetInt(EncounterVisitsKey, 0));
         Require(ReferenceEquals(BackendManager.ExistingInstance, memory.Owner) && memory.LoggedIn, "Memory owner not installed");
         UserInfo.SetGamerId("ORIGINAL-MANUAL-MEMORY");
         if (SessionState.GetBool(ModeKey, false)) ((Dictionary<string, int>)Field(typeof(UserInfo), "_giveRecipeLevelDic").GetValue(null)).Remove("FOOD04");
@@ -210,6 +244,48 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         if (!ready) return;
         BindManualGuideFloor();
         status = controller.TrySpawnWaitingParty(new[] { "CUSTOMER01", "CUSTOMER02" }, out var _) ? "다음 2인 팀이 입장합니다. Game 뷰에서 직접 안내하세요." : "현재 팀 한도/준비 상태에서 생성할 수 없습니다.";
+    }
+    private static void SpawnEncounterCustomer(bool sameIdPair)
+    {
+        if (!ready || !SessionState.GetBool(EncounterPrepKey, false)) return;
+        string customerId = SessionState.GetString(EncounterCustomerKey, "");
+        if (!EncounterCustomerIds.Contains(customerId)) { status = "선택된 검수 손님 ID가 유효하지 않습니다."; return; }
+        BindManualGuideFloor();
+        var members = sameIdPair ? new[] { customerId, customerId } : new[] { customerId };
+        status = controller.TrySpawnWaitingParty(members, out _)
+            ? (sameIdPair ? "선택 손님 A+A 팀이 실제 대기열 경로로 입장합니다." : "선택 손님이 실제 대기열 경로로 입장합니다.")
+            : "현재 팀 한도/준비 상태에서 생성할 수 없습니다.";
+    }
+    private static void DrawPopupReviewControls()
+    {
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("공용 팝업 화면 검수 · 실제 PopupManager API", EditorStyles.boldLabel);
+        if (GUILayout.Button("인카운터 팝업 표시 (화면 검수)"))
+        {
+            string customerId = SessionState.GetString(EncounterCustomerKey, "");
+            var catalog = (Dictionary<string, CustomerData>)Field(typeof(CustomerDataManager), "_customerDataDic").GetValue(null);
+            if (!catalog.TryGetValue(customerId, out CustomerData customer) || customer == null || customer.ThumbnailSprite == null)
+                status = "선택 손님의 초상화를 찾지 못했습니다.";
+            else
+                PopupManager.Instance.ShowCustomerEncounter(customer.Name, "인카운터 팝업 화면 검수", customer.ThumbnailSprite,
+                    () => encounterPopupConfirmCount++);
+        }
+        if (GUILayout.Button("일반 이미지 없는 1버튼 팝업"))
+        {
+            PopupManager manager = PopupManager.Instance;
+            manager.ShowPopup("일반 팝업 검수", "이미지 없는 한 버튼 팝업입니다.");
+            manager.SetPopupButton1("확인", () => oneButtonPopupCount++);
+        }
+        if (GUILayout.Button("일반 확인/취소 2버튼 팝업"))
+        {
+            PopupManager manager = PopupManager.Instance;
+            manager.ShowPopup("일반 팝업 검수", "확인 또는 취소를 선택하세요.");
+            manager.SetPopupButton1("확인", () => twoButtonConfirmCount++);
+            manager.SetPopupButton2("취소", () => twoButtonCancelCount++);
+        }
+        EditorGUILayout.LabelField("메모리 콜백 횟수 · 인카운터 확인 " + encounterPopupConfirmCount
+            + " / 일반 확인 " + oneButtonPopupCount + " / 2버튼 확인 " + twoButtonConfirmCount
+            + " / 2버튼 취소 " + twoButtonCancelCount);
     }
     private static void BindManualGuideFloor()
     {

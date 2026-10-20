@@ -7,6 +7,8 @@ using System.Collections.Generic;
 public class LoadUserData
 {
     public bool IsValid { get; private set; }
+    public CustomerEncounterLoadStatus EncounterLoadStatus { get; private set; }
+    public List<CustomerEncounterSaveData> CustomerEncounterRecords { get; private set; } = new List<CustomerEncounterSaveData>();
 
     public bool IsFirstTutorialClear;
     // null means an older row has no payment evidence; it is not permission to grant retroactive gold.
@@ -138,9 +140,10 @@ public class LoadUserData
             "GiveStaffSkinList", "EnabledCustomerDataList", "GiveCustomerSkinList",
             "DoneMainChallengeList", "ClearMainChallengeList", "DoneAllTimeChallengeList", "ClearAllTimeChallengeList",
             "DoneDailyChallengeList", "ClearDailyChallengeList", "DoneWeeklyChallengeList", "ClearWeeklyChallengeList",
-            "NotificationMessageList", "ClearNotificationMessageList", "TimeDataList"
+            "NotificationMessageList", "ClearNotificationMessageList", "TimeDataList", CustomerEncounterCatalog.StateListField
         })
             param.Add(field, new object[0]);
+        param.Add(CustomerEncounterCatalog.StateVersionField, CustomerEncounterCatalog.StateVersion);
         return param;
     }
 
@@ -223,6 +226,7 @@ public class LoadUserData
             LoadDictionaryData(data, "TimeDataList", TimeDataDic, "Id", "Time");
 
             LoadCustomerDataList(data);
+            LoadCustomerEncounterState(data);
             LoadStringSet(data, "GiveCustomerSkinList", GiveCustomerSkinSet);
             SkinToken = GetInt("SkinToken");
             LoadTimeData(data);
@@ -331,6 +335,73 @@ public class LoadUserData
         }
     }
 
+    private void LoadCustomerEncounterState(JsonData data)
+    {
+        bool hasVersion = data.ContainsKey(CustomerEncounterCatalog.StateVersionField);
+        bool hasList = data.ContainsKey(CustomerEncounterCatalog.StateListField);
+        if (!hasVersion && !hasList)
+        {
+            EncounterLoadStatus = CustomerEncounterLoadStatus.LegacyMissing;
+            return;
+        }
+        if (!hasVersion || !hasList)
+        {
+            EncounterLoadStatus = CustomerEncounterLoadStatus.ProtectedInvalid;
+            return;
+        }
+
+        JsonData versionData = data[CustomerEncounterCatalog.StateVersionField];
+        JsonData recordsData = data[CustomerEncounterCatalog.StateListField];
+        if (versionData == null || (!versionData.IsInt && !versionData.IsLong)
+            || !int.TryParse(versionData.ToString(), out int version)
+            || version != CustomerEncounterCatalog.StateVersion || recordsData == null || !recordsData.IsArray)
+        {
+            EncounterLoadStatus = CustomerEncounterLoadStatus.ProtectedInvalid;
+            return;
+        }
+
+        var records = new List<CustomerEncounterSaveData>();
+        foreach (JsonData item in recordsData)
+        {
+            if (item == null || !item.IsObject || !item.ContainsKey("CustomerId") || !item["CustomerId"].IsString
+                || !item.ContainsKey("EventKind") || (!item["EventKind"].IsInt && !item["EventKind"].IsLong)
+                || !item.ContainsKey("VisitMilestone") || (!item["VisitMilestone"].IsInt && !item["VisitMilestone"].IsLong)
+                || !item.ContainsKey("State") || (!item["State"].IsInt && !item["State"].IsLong))
+            {
+                EncounterLoadStatus = CustomerEncounterLoadStatus.ProtectedInvalid;
+                CustomerEncounterRecords.Clear();
+                return;
+            }
+            if (!int.TryParse(item["EventKind"].ToString(), out int eventKind)
+                || !int.TryParse(item["VisitMilestone"].ToString(), out int milestone)
+                || !int.TryParse(item["State"].ToString(), out int state))
+            {
+                EncounterLoadStatus = CustomerEncounterLoadStatus.ProtectedInvalid;
+                CustomerEncounterRecords.Clear();
+                return;
+            }
+            string customerId = item["CustomerId"].ToString();
+            if (!CustomerEncounterCatalog.IsValidEventKey(customerId, eventKind, milestone)
+                || (state != (int)CustomerEncounterEventState.Pending && state != (int)CustomerEncounterEventState.Seen))
+            {
+                EncounterLoadStatus = CustomerEncounterLoadStatus.ProtectedInvalid;
+                CustomerEncounterRecords.Clear();
+                return;
+            }
+            records.Add(new CustomerEncounterSaveData(customerId,
+                (CustomerEncounterEventKind)eventKind, milestone, (CustomerEncounterEventState)state));
+        }
+
+        if (!CustomerEncounterProgressData.TryRestore(records, out _, out _))
+        {
+            EncounterLoadStatus = CustomerEncounterLoadStatus.ProtectedInvalid;
+            CustomerEncounterRecords.Clear();
+            return;
+        }
+        CustomerEncounterRecords = records;
+        EncounterLoadStatus = CustomerEncounterLoadStatus.Valid;
+    }
+
     // 타이머 데이터 목록 로드 (특별한 구조를 가진 데이터)
     private void LoadTimeData(JsonData data)
     {
@@ -365,6 +436,13 @@ public class LoadUserData
     }
 
 
+}
+
+public enum CustomerEncounterLoadStatus
+{
+    LegacyMissing,
+    Valid,
+    ProtectedInvalid
 }
 
 public class SaveLevelData

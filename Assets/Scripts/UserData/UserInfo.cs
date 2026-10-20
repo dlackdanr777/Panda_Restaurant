@@ -52,6 +52,7 @@ public static partial class UserInfo
 
     public static event Action OnEnabledCustomerHandler;
     public static event Action OnVisitedCustomerHandler;
+    public static event Action<CustomerData, int, int> OnCustomerVisitCompletedHandler;
     public static event Action OnVisitSpecialCustomerHandler;
     public static event Action OnExterminationGatecrasherCustomerHandler;
     public static event Action OnGiveCustomerSkinHandler;
@@ -182,6 +183,9 @@ public static partial class UserInfo
     private static Dictionary<string, int> _giveGachaItemLevelDic = new Dictionary<string, int>();
 
     private static Dictionary<string, SaveCustomerData> _enabledCustomerDic = new Dictionary<string, SaveCustomerData>();
+    private static CustomerEncounterProgressData _customerEncounterProgress = CustomerEncounterProgressData.CreateEmpty();
+    private static bool _customerEncounterStateWritable = true;
+    private static long _customerEncounterContextGeneration;
     private static HashSet<string> _giveCustomerSkinSet = new HashSet<string>();
 
     private static HashSet<string> _doneMainChallengeSet = new HashSet<string>();
@@ -470,6 +474,11 @@ public static partial class UserInfo
 
         param.Add("GiveStaffSkinList", _giveStaffSkinSet.ToList());
         param.Add("EnabledCustomerDataList", _saveCustomerDataList);
+        if (_customerEncounterStateWritable)
+        {
+            param.Add(CustomerEncounterCatalog.StateVersionField, CustomerEncounterCatalog.StateVersion);
+            param.Add(CustomerEncounterCatalog.StateListField, _customerEncounterProgress.ToSaveRecords());
+        }
         param.Add("GiveCustomerSkinList", _giveCustomerSkinSet.ToList());
 
         param.Add("DoneMainChallengeList", _doneMainChallengeSet.ToList());
@@ -745,6 +754,32 @@ public static partial class UserInfo
         _clearWeeklyChallengeSet = loadData.ClearWeeklyChallengeSet;
 
         _enabledCustomerDic = loadData.EnabledCustomerDataDic;
+
+        _customerEncounterContextGeneration = unchecked(_customerEncounterContextGeneration + 1);
+        if (loadData.EncounterLoadStatus == CustomerEncounterLoadStatus.ProtectedInvalid)
+        {
+            _customerEncounterProgress = CustomerEncounterProgressData.CreateEmpty();
+            _customerEncounterStateWritable = false;
+            Debug.LogError("[CustomerEncounter] Unsupported or damaged state; writes are withheld.");
+        }
+        else if (loadData.EncounterLoadStatus == CustomerEncounterLoadStatus.Valid)
+        {
+            if (CustomerEncounterProgressData.TryRestore(loadData.CustomerEncounterRecords, out var restoredProgress, out _))
+            {
+                _customerEncounterProgress = restoredProgress;
+                _customerEncounterStateWritable = true;
+            }
+            else
+            {
+                _customerEncounterProgress = CustomerEncounterProgressData.CreateEmpty();
+                _customerEncounterStateWritable = false;
+            }
+        }
+        else
+        {
+            _customerEncounterProgress = CustomerEncounterProgressData.MigrateLegacy(_enabledCustomerDic.Values);
+            _customerEncounterStateWritable = true;
+        }
 
         _notificationMessageSet = loadData.NotificationMessageSet;
         _clearNotificationMessageSet = loadData.ClearNotificationMessageSet;
@@ -2752,8 +2787,15 @@ public static partial class UserInfo
         if (!_enabledCustomerDic.TryGetValue(customer.Id, out SaveCustomerData data))
             return;
 
-        _enabledCustomerDic[customer.Id].AddVisitCount();
+        int previousVisitCount = data.VisitCount;
+        data.AddVisitCount();
+        int currentVisitCount = data.VisitCount;
+        bool encounterChanged = _customerEncounterStateWritable
+            && _customerEncounterProgress.RecordCompletedVisit(customer.Id, previousVisitCount, currentVisitCount);
+        if (encounterChanged) RequestCustomerEncounterSave();
         OnVisitedCustomerHandler?.Invoke();
+        try { OnCustomerVisitCompletedHandler?.Invoke(customer, previousVisitCount, currentVisitCount); }
+        catch (Exception error) { Debug.LogException(error); }
     }
 
     public static void CustomerVisits(CustomerData customer, int visitCount)
@@ -2771,6 +2813,43 @@ public static partial class UserInfo
         OnVisitedCustomerHandler?.Invoke();
     }
 
+    public static bool IsCustomerEncounterStateWritable => _customerEncounterStateWritable;
+    public static long CustomerEncounterContextGeneration => _customerEncounterContextGeneration;
+
+    public static bool RecordCustomerEncounterAppearance(string customerId)
+    {
+        if (!_customerEncounterStateWritable || !_enabledCustomerDic.TryGetValue(customerId ?? string.Empty, out SaveCustomerData customer))
+            return false;
+        bool pending = _customerEncounterProgress.RecordValidAppearance(customerId, customer.VisitCount);
+        if (pending) RequestCustomerEncounterSave();
+        return pending;
+    }
+
+    public static bool TryGetPendingCustomerEncounter(string customerId,
+        out CustomerEncounterSaveData record, out string message)
+    {
+        record = null;
+        message = null;
+        return _customerEncounterStateWritable
+            && _customerEncounterProgress.TryGetNextPending(customerId, out record, out message);
+    }
+
+    public static bool MarkCustomerEncounterSeen(string customerId, CustomerEncounterEventKind kind,
+        int visitMilestone, long expectedContextGeneration)
+    {
+        if (!_customerEncounterStateWritable || expectedContextGeneration != _customerEncounterContextGeneration) return false;
+        bool changed = _customerEncounterProgress.MarkSeen(customerId, kind, visitMilestone);
+        if (changed) RequestCustomerEncounterSave();
+        return changed;
+    }
+
+    private static void RequestCustomerEncounterSave()
+    {
+        BackendManager backend = BackendManager.ExistingInstance;
+        if (backend == null || !backend.IsLogin || !backend.IsLoaded || !IsFirstTutorialClear || IsTutorialStart
+            || !GameManager.HasInstance) return;
+        try { GameManager.Instance.AsyncSaveGameData(); } catch (Exception error) { Debug.LogException(error); }
+    }
     public static int GetVisitedCustomerCount(string id)
     {
         if (_enabledCustomerDic.TryGetValue(id, out SaveCustomerData data))
