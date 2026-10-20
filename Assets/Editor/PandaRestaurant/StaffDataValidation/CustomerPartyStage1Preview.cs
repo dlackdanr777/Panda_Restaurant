@@ -111,6 +111,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
                             table.PartyOrders == null ? table.CurrentUse.Party.Members.Count + "인" : string.Join(" | ", table.PartyOrders.Orders.Select(o => o.Food.Id + ": " + o.State)));
             }
         }
+        if (ready && SessionState.GetBool(EncounterPrepKey, false)) DrawEncounterReviewStatus();
         if (!SessionState.GetBool(StaffAiKey, false)) EditorGUILayout.HelpBox("Play 일시정지를 풀고 대기열을 준비하세요. Game 뷰에서 1인을 안내한 뒤 안내 버튼이 다시 활성화되면 2인을 안내하세요. 기본 Table1은 1인, Table2는 2인입니다. Shop에서 같은 슬롯을 해제/교체하고 상점 본체를 닫으세요. 완료액 검수는 A(판다) 음식만 서빙해 실제 식사 완료 후 진행합니다. B 음식은 서빙하지 않습니다. 서비스 시계는 정상 진행됩니다.", MessageType.None);
         if (GUILayout.Button("테스트 종료 (Play 중지)")) StopManual();
         EditorGUILayout.EndScrollView();
@@ -185,7 +186,20 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         {
             var source = catalog[pair.Item1]; var clone = Object.Instantiate(source);
             originalCustomers.Add(pair.Item1, source); runtimeCustomers.Add(clone);
-            Set(clone, "_requiredDish", pair.Item2); Set(clone, "_visitCountFoodDic", new Dictionary<int, string>());
+            bool encounterTarget = SessionState.GetBool(EncounterPrepKey, false)
+                && SessionState.GetString(EncounterCustomerKey, "") == pair.Item1;
+            if (encounterTarget)
+            {
+                if (!(source is NormalCustomerData normalSource))
+                    throw new InvalidOperationException("Encounter review target must use normal customer data.");
+                Set(clone, "_requiredDish", source.RequiredDish);
+                Set(clone, "_visitCountFoodDic", new Dictionary<int, string>(normalSource.GetVisitCountFoodDic()));
+            }
+            else
+            {
+                Set(clone, "_requiredDish", pair.Item2);
+                Set(clone, "_visitCountFoodDic", new Dictionary<int, string>());
+            }
             ReplaceCustomer(source, clone);
         }
         Find<CameraController>(scene).transform.root.gameObject.SetActive(true);
@@ -286,6 +300,32 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         EditorGUILayout.LabelField("메모리 콜백 횟수 · 인카운터 확인 " + encounterPopupConfirmCount
             + " / 일반 확인 " + oneButtonPopupCount + " / 2버튼 확인 " + twoButtonConfirmCount
             + " / 2버튼 취소 " + twoButtonCancelCount);
+    }
+    private static void DrawEncounterReviewStatus()
+    {
+        string customerId = SessionState.GetString(EncounterCustomerKey, "");
+        var customer = CustomerDataManager.Instance.GetCustomerData(customerId) as NormalCustomerData;
+        if (customer == null) return;
+        var progressField = typeof(UserInfo).GetField("_customerEncounterProgress", BindingFlags.Static | BindingFlags.NonPublic);
+        var progress = progressField?.GetValue(null) as CustomerEncounterProgressData;
+        string first = GetEncounterState(progress, customerId, CustomerEncounterEventKind.FirstAppearance, 0);
+        string visit25 = GetEncounterState(progress, customerId, CustomerEncounterEventKind.VisitMilestone, 25);
+        string visit50 = GetEncounterState(progress, customerId, CustomerEncounterEventKind.VisitMilestone, 50);
+        string food50 = customer.GetVisitCountFoodDic().TryGetValue(50, out string mappedFoodId) ? mappedFoodId : null;
+        string foodStatus = string.IsNullOrEmpty(food50) ? "없음" : food50 + (UserInfo.GetGiveRecipeList().Contains(food50) ? " · 레시피 보유" : " · 레시피 미보유");
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("인카운터 메모리 검수", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("선택 손님 공식 방문", customer.Name + " / " + UserInfo.GetVisitedCustomerCount(customerId) + "회");
+        EditorGUILayout.LabelField("첫 등장 / 25회", first + " / " + visit25);
+        EditorGUILayout.LabelField("50회 이벤트 / 음식", visit50 + " / " + foodStatus);
+    }
+    private static string GetEncounterState(CustomerEncounterProgressData progress, string customerId,
+        CustomerEncounterEventKind kind, int milestone)
+    {
+        if (progress == null) return "미확인";
+        if (progress.IsPending(customerId, kind, milestone)) return "Pending";
+        if (progress.IsSeen(customerId, kind, milestone)) return "Seen";
+        return "미등록";
     }
     private static void BindManualGuideFloor()
     {

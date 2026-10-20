@@ -77,9 +77,23 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
         game["LastAttendanceTime"]=UtcNow().AddHours(9).ToString("O");game["TotalAttendanceDays"]=1;
         var enabledCustomerIds = new List<string> { "CUSTOMER01", "CUSTOMER02", "CUSTOMER04" };
         if (encounterCustomerId != null && !enabledCustomerIds.Contains(encounterCustomerId)) enabledCustomerIds.Add(encounterCustomerId);
-        game["EnabledCustomerDataList"] = JArray.FromObject(enabledCustomerIds.Select(id => new SaveCustomerData(id, "",
-            id == encounterCustomerId ? encounterVisitCount : furnitureFix && !staffAi ? 0 : 25)));
-        game["GiveRecipeList"]=new JArray(new[]{"FOOD01","FOOD02","FOOD04","FOOD05","FOOD13","FOOD14"}.Select(id=>new JObject{["Id"]=id,["Level"]=1}));
+        var enabledCustomers = enabledCustomerIds.Select(id => new SaveCustomerData(id, "",
+            id == encounterCustomerId ? encounterVisitCount : furnitureFix && !staffAi ? 0 : 25)).ToArray();
+        game["EnabledCustomerDataList"] = JArray.FromObject(enabledCustomers);
+        var recipeIds = new List<string> { "FOOD01", "FOOD02", "FOOD04", "FOOD05", "FOOD13", "FOOD14" };
+        if (encounterCustomerId != null)
+        {
+            var encounterCustomer = CustomerDataManager.Instance.GetCustomerData(encounterCustomerId) as NormalCustomerData;
+            if (encounterCustomer == null
+                || !encounterCustomer.GetVisitCountFoodDic().TryGetValue(50, out string encounterFoodId)
+                || string.IsNullOrWhiteSpace(encounterFoodId))
+                throw new InvalidOperationException("Encounter review customer must have a configured 50-visit food.");
+            var encounterProgress = CustomerEncounterProgressData.MigrateLegacy(enabledCustomers);
+            game[CustomerEncounterCatalog.StateVersionField] = CustomerEncounterCatalog.StateVersion;
+            game[CustomerEncounterCatalog.StateListField] = JArray.FromObject(encounterProgress.ToSaveRecords());
+            if (!recipeIds.Contains(encounterFoodId)) recipeIds.Add(encounterFoodId);
+        }
+        game["GiveRecipeList"] = new JArray(recipeIds.Select(id => new JObject { ["Id"] = id, ["Level"] = 1 }));
         game["ClearMainChallengeList"]=new JArray(Enumerable.Range(1,12).Select(i=>"MainReward"+i.ToString("D2")));
         var ownedStaff=staffAi?CreateStaffAiRecords():new[]{new StaffAccountStaffRecord("STAFF01",1)};
         var account=new StaffAccountSaveData(StaffAccountSaveConverter.CurrentVersion,ownedStaff,0,new GachaEconomySaveData(0,0,0,0));
