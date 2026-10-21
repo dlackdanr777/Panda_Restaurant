@@ -313,6 +313,12 @@ public sealed class CustomerEncounterProgressData
 
     public bool TryGetNextPending(string customerId, out CustomerEncounterSaveData record, out string message)
     {
+        if (TryGetPendingFirstAppearance(customerId, out record, out message)) return true;
+        return TryGetPendingVisitMilestone(customerId, int.MaxValue, out record, out message);
+    }
+
+    public bool TryGetPendingFirstAppearance(string customerId, out CustomerEncounterSaveData record, out string message)
+    {
         record = null;
         message = null;
         if (!CustomerEncounterCatalog.IsSupportedCustomer(customerId)) return false;
@@ -321,8 +327,19 @@ public sealed class CustomerEncounterProgressData
             && firstState == CustomerEncounterEventState.Pending)
             return TryCreatePendingRecord(firstKey, out record, out message);
 
+        return false;
+    }
+
+    public bool TryGetPendingVisitMilestone(string customerId, int visitsBeforeThisVisit,
+        out CustomerEncounterSaveData record, out string message)
+    {
+        record = null;
+        message = null;
+        // An older Pending remains eligible on any later visit, not just exactly N+1.
+        // A milestone reached after this visit started belongs to a future visit.
         foreach (int milestone in CustomerEncounterCatalog.GetCustomerVisitMilestones(customerId))
         {
+            if (milestone > visitsBeforeThisVisit) continue;
             var key = new EventKey(customerId, CustomerEncounterEventKind.VisitMilestone, milestone);
             if (_states.TryGetValue(key, out CustomerEncounterEventState state) && state == CustomerEncounterEventState.Pending)
                 return TryCreatePendingRecord(key, out record, out message);
