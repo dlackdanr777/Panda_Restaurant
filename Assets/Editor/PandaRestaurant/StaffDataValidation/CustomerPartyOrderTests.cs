@@ -164,7 +164,10 @@ public sealed class CustomerPartyOrderTests
             if (a && b) return;
             Assert.That(batch.Orders.All(o => o.PlannedPrice == 0 && o.PlannedTip == 0), Is.True);
             p.ArriveExit(1); p.ArriveExit(1);
-            Assert.That(p.S.Table.OccupantCount, Is.EqualTo(2)); Assert.That(p.Party.Members.All(m => m.Customer.gameObject.activeSelf), Is.True);
+            Assert.That(p.S.Table.OccupantCount, Is.EqualTo(2));
+            Assert.That(p.Party.Members[0].Customer.gameObject.activeSelf, Is.True);
+            Assert.That(p.Party.Members[1].Customer.gameObject.activeSelf, Is.False);
+            Assert.That(p.Party.Members[1].DepartureResolution, Is.EqualTo(CustomerVisitDepartureResolution.ReachedExit));
             Assert.That(p.S.Table.TableState, Is.EqualTo(ETableState.PartyRejecting));
             p.ArriveExit(0);
             Assert.That(p.S.Table.OccupantCount, Is.Zero); Assert.That(p.S.Table.TableState, Is.EqualTo(ETableState.Empty));

@@ -102,14 +102,23 @@ public sealed class CustomerPartyInterruptionTests
     }
 
     [Test]
-    public void UnreachedQueueCallback_DoesNotStartClockOrPretendTimeout()
+    public void UnreachedQueueCallback_CancelsTechnicallyWithoutClockOrTimeoutPenalty()
     {
         using(var s=new Flow())
         {
-            var party=Waiting(s);foreach(var m in party.Members){m.Customer.transform.position=(Vector3)m.Customer.TargetPos+Vector3.right*100;Get<Action>(m.Customer,"_moveCompleted")();}
+            var party=Waiting(s);
+            var callbacks=party.Members.Select(m=>Get<Action>(m.Customer,"_moveCompleted")).ToArray();
+            party.Members[0].Customer.transform.position=(Vector3)party.Members[0].Customer.TargetPos+Vector3.right*100;
+            foreach(var callback in callbacks) { callback(); callback(); }
             s.Controller.TickPartyClocks(Time.timeAsDouble+1000);
             Assert.That(s.Controller.TryGetPartyWaitingClock(party,out _,out _),Is.False);Assert.That(s.Controller.WaitCount,Is.Zero);
-            Assert.That(s.Controller.Count,Is.EqualTo(1));Assert.That(s.Stage.Satisfaction,Is.Zero);
+            Assert.That(s.Controller.Count,Is.Zero);Assert.That(s.Stage.Satisfaction,Is.Zero);
+            Assert.That(party.IsActive,Is.False);
+            Assert.That(party.Members.All(m=>!m.Customer.gameObject.activeSelf&&m.Customer.VisitMember==null),Is.True);
+            Assert.That(s.Stage.WaitingParties.Teams,Is.Empty);
+            Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id),Is.Zero);
+            Assert.That(UserInfo.TotalCumulativeCustomerCount,Is.Zero);
+            Assert.That(s.Stage.Tip,Is.Zero);Assert.That(s.Stage.FeverGauge,Is.Zero);Assert.That(s.Coins.CurrentMoney,Is.Zero);
         }
     }
 

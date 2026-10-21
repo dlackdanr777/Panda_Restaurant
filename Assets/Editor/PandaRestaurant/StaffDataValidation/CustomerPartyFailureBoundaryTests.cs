@@ -867,5 +867,247 @@ public sealed class CustomerPartyFailureBoundaryTests
             SetMapWalkable(true);ClearPendingPathWork();
         }
     }
+    private static void AssertNoMovementRewards(Flow s, int satisfaction = 0)
+    {
+        Assert.That(UserInfo.GetVisitedCustomerCount(s.Data.Id), Is.Zero);
+        Assert.That(UserInfo.TotalCumulativeCustomerCount, Is.Zero);
+        Assert.That(UserInfo.TotalCookCount, Is.Zero);
+        Assert.That(s.Stage.Tip, Is.Zero);
+        Assert.That(s.Stage.Satisfaction, Is.EqualTo(satisfaction));
+        Assert.That(s.Stage.FeverGauge, Is.Zero);
+        Assert.That(s.Coins.CurrentMoney, Is.Zero);
+        Assert.That(s.Table.DropGarbageArea.Count, Is.Zero);
+    }
+
+    private static void ArriveWaiting(CustomerVisitParty party)
+    {
+        foreach (var member in party.Members)
+        {
+            member.Customer.transform.position = member.Customer.TargetPos;
+            Get<Action>(member.Customer, "_moveCompleted")();
+        }
+    }
+
+    [TestCase(1)] [TestCase(2)]
+    public void WaitingEntry_PathFailuresCancelWholeTeam_AndUnblockNextTeam(int failures)
+    {
+        using (var s = new Flow())
+        {
+            Assert.That(s.Controller.TrySpawnWaitingParty(new[] { s.Data.Id, s.Data.Id }, out var party), Is.True);
+            Assert.That(s.Controller.TrySpawnWaitingParty(new[] { s.Data.Id, s.Data.Id }, out var next), Is.True);
+            ArriveWaiting(next);
+            Assert.That(s.Controller.FirstReadyParty, Is.Null);
+            Assert.That(s.Controller.TryGetPartyWaitingClock(party, out _, out _), Is.False);
+            var stale = party.Members.Select(m => Get<Action>(m.Customer, "_moveCompleted")).ToArray();
+            var pending = new List<Action>();
+            for (int i = 0; i < failures; i++)
+            {
+                Assert.That(PathQueue.TryDequeue(out var path), Is.True);
+                pending.Add(path);
+            }
+            ClearPendingPathWork();
+            SetMapWalkable(false);
+            foreach (var path in pending)
+            {
+                UnityEngine.TestTools.LogAssert.Expect(LogType.Error,
+                    new System.Text.RegularExpressions.Regex("No walkable node found near start position"));
+                path();
+            }
+            SetMapWalkable(true);
+            while (DispatchQueue.Count > 0) DispatchQueue.Dequeue()();
+            foreach (var callback in stale) { callback(); callback(); }
+            Assert.That(party.IsActive, Is.False);
+            Assert.That(party.Members.All(m => !m.Customer.gameObject.activeSelf && m.Customer.VisitMember == null), Is.True);
+            var pool = Get<Queue<NormalCustomer>>(ObjectPoolManager.Instance, "_normalCustomerPool");
+            Assert.That(pool.Count, Is.EqualTo(2));
+            Assert.That(pool.Distinct().Count(), Is.EqualTo(2));
+            Assert.That(s.Controller.Count, Is.EqualTo(1));
+            Assert.That(s.Stage.WaitingParties.Teams.Count, Is.EqualTo(1));
+            ArriveWaiting(next); // Its queue position changed when the failed reservation was removed.
+            Assert.That(s.Controller.FirstReadyParty, Is.SameAs(next));
+            Assert.That(Get<UnityEngine.UI.Button>(s.Manager, "_guideButton").gameObject.activeSelf, Is.True);
+            Assert.That(s.Manager.OnCustomerGuideEvent(s.Table.FloorType), Is.True);
+            AssertNoMovementRewards(s);
+        }
+    }
+
+    [Test]
+    public void WaitingEntry_WrongEndpointCancelsOnce_EvenWhenNotificationReenters()
+    {
+        using (var s = new Flow())
+        {
+            Assert.That(s.Controller.TrySpawnWaitingParty(new[] { s.Data.Id, s.Data.Id }, out var party), Is.True);
+            var callbacks = party.Members.Select(m => Get<Action>(m.Customer, "_moveCompleted")).ToArray();
+            int changes = 0;
+            s.Controller.OnChangeCustomerHandler += () => {
+                changes++;
+                Assert.That(s.Controller.CancelWaitingParty(party), Is.False);
+                foreach (var callback in callbacks) callback();
+            };
+            party.Members[0].Customer.transform.position = (Vector3)party.Members[0].Customer.TargetPos + Vector3.right * 100;
+            callbacks[0]();
+            Assert.That(changes, Is.EqualTo(1));
+            Assert.That(s.Controller.Count, Is.Zero);
+            Assert.That(s.Stage.WaitingParties.Teams, Is.Empty);
+            Assert.That(Get<Queue<NormalCustomer>>(ObjectPoolManager.Instance, "_normalCustomerPool").Count, Is.EqualTo(2));
+            AssertNoMovementRewards(s);
+        }
+    }
+
+    [TestCase(false)] [TestCase(true)]
+    public void WaitingEntry_OldFailureCannotCancelRetargetedOrReusedVisit(bool reuse)
+    {
+        using (var s = new Flow())
+        {
+            Assert.That(s.Controller.TrySpawnWaitingParty(new[] { s.Data.Id, s.Data.Id }, out var old), Is.True);
+            var customer = old.Members[0].Customer;
+            var failure = Get<Action>(customer, "_movePathFailed");
+            var completion = Get<Action>(customer, "_moveCompleted");
+            Assert.That(failure, Is.Not.Null);
+            CustomerVisitParty current = old;
+            if (reuse)
+            {
+                Assert.That(s.Controller.CancelWaitingParty(old), Is.True);
+                Assert.That(s.Controller.TrySpawnWaitingParty(new[] { s.Data.Id, s.Data.Id }, out current), Is.True);
+                Assert.That(current.Members.Any(m => ReferenceEquals(m.Customer, customer)), Is.True);
+            }
+            else
+            {
+                // Same target must be retried after failure even without a ready notification.
+                Set(customer, "<HasPathFailure>k__BackingField", true);
+                int sequence = customer.MovementSequenceId;
+                Invoke(s.Controller, "SortCustomerLine");
+                Assert.That(customer.MovementSequenceId, Is.GreaterThan(sequence));
+                Assert.That(customer.HasPathFailure, Is.False);
+            }
+            Set(customer, "<HasPathFailure>k__BackingField", true);
+            failure(); completion(); failure();
+            Assert.That(current.IsActive, Is.True);
+            Assert.That(s.Controller.WaitingParties.Single(), Is.SameAs(current));
+            Assert.That(current.Members.All(m => m.Customer.gameObject.activeSelf), Is.True);
+            ArriveWaiting(current);
+            Assert.That(s.Controller.FirstReadyParty, Is.SameAs(current));
+            Assert.That(s.Controller.TryGetPartyWaitingClock(current, out _, out _), Is.True);
+            AssertNoMovementRewards(s);
+        }
+    }
+
+    [Test]
+    public void WaitingEntry_SinglePathFailureKeepsExistingWaitingPolicy()
+    {
+        using (var s = new Flow())
+        {
+            Assert.That(s.Controller.TrySpawnWaitingParty(new[] { s.Data.Id }, out var single), Is.True);
+            var customer = single.Members[0].Customer;
+            Assert.That(Get<Action>(customer, "_movePathFailed"), Is.Null);
+            Invoke(customer, "ReportPathFailure", customer.MovementSequenceId);
+            Assert.That(single.IsActive, Is.True);
+            Assert.That(s.Controller.Count, Is.EqualTo(1));
+            int sequence = customer.MovementSequenceId;
+            Invoke(s.Controller, "SortCustomerLine");
+            Assert.That(customer.MovementSequenceId, Is.EqualTo(sequence));
+            Assert.That(s.Controller.TryGetPartyWaitingClock(single, out _, out _), Is.False);
+            AssertNoMovementRewards(s);
+        }
+    }
+
+    [TestCase("mixed")] [TestCase("both")] [TestCase("endpoint")] [TestCase("failure-first")]
+    public void RejectedExit_ResolvesEachMemberWithoutRewards_AndReleasesExactlyOnce(string mode)
+    {
+        using (var p = new Pair(secondOwned: false))
+        {
+            var use = p.S.Table.CurrentUse;
+            var batch = p.Batch;
+            ClearPendingPathWork();
+            Assert.That(p.Accept(), Is.EqualTo(PartyOrderAcceptResult.RejectedRecipe));
+            Assert.That(p.Accept(), Is.EqualTo(PartyOrderAcceptResult.AlreadyHandled));
+            var members = p.Party.Members;
+            var completed = members.Select(m => Get<Action>(m.Customer, "_moveCompleted")).ToArray();
+            var failed = members.Select(m => Get<Action>(m.Customer, "_movePathFailed")).ToArray();
+            Assert.That(failed.All(f => f != null), Is.True);
+            int emptyNotifications = 0;
+            p.S.Table.OnChangeTableStateHandler += state => {
+                if (state != ETableState.Empty) return;
+                emptyNotifications++;
+                foreach (var callback in completed.Concat(failed)) callback();
+            };
+            if (mode == "mixed")
+            {
+                members[0].Customer.transform.position = members[0].Customer.TargetPos;
+                completed[0](); completed[0](); failed[0]();
+                Assert.That(members[0].DepartureResolution, Is.EqualTo(CustomerVisitDepartureResolution.ReachedExit));
+                Assert.That(batch.Exited.SetEquals(new[] { members[0] }), Is.True);
+            }
+            else if (mode == "endpoint")
+            {
+                members[0].Customer.transform.position = (Vector3)members[0].Customer.TargetPos + Vector3.right * 100;
+                completed[0](); failed[0](); completed[0]();
+                Assert.That(members[0].DepartureResolution, Is.EqualTo(CustomerVisitDepartureResolution.TechnicalCleanup));
+                Assert.That(batch.Exited, Is.Empty);
+            }
+            else
+            {
+                SetMapWalkable(false);
+                UnityEngine.TestTools.LogAssert.Expect(LogType.Error,
+                    new System.Text.RegularExpressions.Regex("No walkable node found near start position"));
+                Assert.That(PathQueue.TryDequeue(out var path), Is.True); path();
+                DispatchQueue.Dequeue()();
+                SetMapWalkable(true);
+                failed[0](); completed[0]();
+                Assert.That(members[0].DepartureResolution, Is.EqualTo(CustomerVisitDepartureResolution.TechnicalCleanup));
+                Assert.That(batch.Exited, Is.Empty);
+            }
+            Assert.That(p.S.Table.CurrentUse, Is.SameAs(use));
+            Assert.That(use.SettlementCompleted, Is.False);
+            Assert.That(p.S.Table.OccupantCount, Is.EqualTo(2));
+            Assert.That(members[1].Customer.gameObject.activeSelf, Is.True);
+            Assert.That(members[1].Customer.VisitMember, Is.SameAs(members[1]));
+            Assert.That(members[0].Customer.VisitMember, Is.Null);
+            Assert.That(members[0].Customer.gameObject.activeSelf, Is.False);
+            Invoke(members[0].Customer, "OnDisable");
+            Assert.That(p.S.Table.CurrentUse, Is.SameAs(use), "Pool lifecycle must not end the partner's use.");
+            if (mode == "failure-first")
+            {
+                members[1].Customer.transform.position = members[1].Customer.TargetPos;
+                completed[1]();
+                ClearPendingPathWork();
+            }
+            else
+            {
+                if (mode != "both") Assert.That(PathQueue.TryDequeue(out _), Is.True);
+                Assert.That(PathQueue.Count, Is.EqualTo(1));
+                SetMapWalkable(false);
+                FailPendingPaths(1);
+            }
+            foreach (var callback in completed.Concat(failed)) { callback(); callback(); }
+            Assert.That(members[1].DepartureResolution, Is.EqualTo(mode == "failure-first"
+                ? CustomerVisitDepartureResolution.ReachedExit : CustomerVisitDepartureResolution.TechnicalCleanup));
+            Assert.That(use.SettlementCompleted, Is.True);
+            Assert.That(p.S.Table.CurrentUse, Is.Null);
+            Assert.That(p.S.Table.OccupantCount, Is.Zero);
+            Assert.That(p.S.Table.TableState, Is.EqualTo(ETableState.Empty));
+            Assert.That(emptyNotifications, Is.EqualTo(1));
+            var pool = Get<Queue<NormalCustomer>>(ObjectPoolManager.Instance, "_normalCustomerPool");
+            Assert.That(pool.Count, Is.EqualTo(2));
+            Assert.That(pool.Distinct().Count(), Is.EqualTo(2));
+            Assert.That(members.All(m => m.Customer.VisitMember == null && !m.Customer.gameObject.activeSelf), Is.True);
+            Assert.That(use.Completions.All(x => !x.FinalCompleted && !x.VisitCounted && !x.CustomerCounted
+                && !x.TipPaid && !x.CoinFixed && !x.CoinDropped && !x.FeverApplied && !x.SatisfactionApplied), Is.True);
+            Assert.That(p.S.Stage.GetTableData(p.S.Table.FloorType, p.S.Table.TableType).NeedCleaning, Is.False);
+            Assert.That(UserInfo.GetVisitedCustomerCount(p.SecondData.Id), Is.Zero);
+            AssertNoMovementRewards(p.S, -10);
+
+            Assert.That(p.S.Controller.TrySpawnWaitingParty(new[] { p.S.Data.Id, p.SecondData.Id }, out var next), Is.True);
+            ArriveWaiting(next);
+            Assert.That(p.S.Manager.OnCustomerGuideEvent(p.S.Table.FloorType), Is.True);
+            var replacement = p.S.Table.CurrentUse;
+            foreach (var callback in completed.Concat(failed)) callback();
+            Assert.That(p.S.Table.CurrentUse, Is.SameAs(replacement));
+            Assert.That(p.S.Table.CurrentParty, Is.SameAs(next));
+            Assert.That(next.Members.All(m => m.Customer.gameObject.activeSelf), Is.True);
+            Assert.That(emptyNotifications, Is.EqualTo(1));
+            AssertNoMovementRewards(p.S, -10);
+        }
+    }
 }
 #endif

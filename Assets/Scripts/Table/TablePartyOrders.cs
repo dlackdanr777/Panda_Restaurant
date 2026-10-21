@@ -176,18 +176,48 @@ public partial class TableManager
             customer.transform.position = position;
             customer.ChangeState(CustomerState.Idle); customer.SetLayer("Customer", 0);
             customer.HideFood(); customer.StartAnger(); customer.FixSpritePosition(true);
-            customer.Move(GameManager.Instance.OutDoorPos, 0, () =>
-            {
-                if (!batch.IsCurrent || batch.State != PartyOrderBatchState.Rejected
-                    || !batch.Use.IsMemberCurrent(member) || !customer.ConfirmReachedMoveTarget()
-                    || !batch.Exited.Add(member)) return;
-                customer.StopMove(); customer.StopAnger();
-                // Keep both visits alive until both have actually reached the exit. Despawning
-                // the first member would end the party and release the second member's seat.
-                if (batch.Exited.Count != batch.Orders.Count) return;
-                batch.Use.Table.EndUse(batch.Use);
-                try { UpdateTable(); } catch (Exception error) { batch.LastDiagnostic = error.Message; }
-            });
+            int movementSequence = customer.MovementSequenceId + 1;
+            customer.Move(GameManager.Instance.OutDoorPos, 0,
+                () => ResolveRejectedPartyExit(batch, member, customer, movementSequence, false),
+                () => ResolveRejectedPartyExit(batch, member, customer, movementSequence, true));
         }
+    }
+
+    private void ResolveRejectedPartyExit(PartyOrderBatch batch, CustomerVisitMember member,
+        NormalCustomer customer, int movementSequence, bool pathFailed)
+    {
+        if (customer == null || customer.MovementSequenceId != movementSequence
+            || batch == null || batch.State != PartyOrderBatchState.Rejected || !batch.IsCurrent
+            || !batch.Use.CompletionStarted || batch.Use.SettlementCompleted
+            || !ReferenceEquals(member.Party, batch.Use.Party) || !member.IsVisitCurrent
+            || !ReferenceEquals(customer.VisitMember, member) || !batch.Use.IsMemberCurrent(member)
+            || member.DepartureResolution != CustomerVisitDepartureResolution.None) return;
+        if (pathFailed && !customer.HasPathFailure) return;
+
+        bool reachedExit = !pathFailed && customer.ConfirmReachedMoveTarget();
+        var resolution = reachedExit ? CustomerVisitDepartureResolution.ReachedExit
+            : CustomerVisitDepartureResolution.TechnicalCleanup;
+        // Claim and detach before OnDisable can end the still-departing partner's use.
+        if (!batch.Use.Party.CompleteDeparture(member, resolution)) return;
+        if (reachedExit) batch.Exited.Add(member);
+        else
+        {
+            batch.LastDiagnostic = "RejectedPartyExitTechnicalCleanup; reason="
+                + (pathFailed ? "AStarPathUnavailable" : "DestinationNotReached")
+                + "; member=" + customer.CustomerData.Id;
+            batch.Use.Table.LastServiceDiagnostic = batch.LastDiagnostic;
+        }
+        try { customer.StopMove(); } catch (Exception error) { batch.LastDiagnostic = error.ToString(); }
+        try { customer.StopAnger(); } catch (Exception error) { batch.LastDiagnostic = error.ToString(); }
+        try { ObjectPoolManager.Instance.DespawnNormalCustomer(customer); }
+        catch (Exception error) { batch.LastDiagnostic = error.ToString(); }
+
+        if (!batch.IsCurrent || batch.Use.SettlementCompleted) return;
+        foreach (var original in batch.Use.Party.Members)
+            if (!batch.Use.Party.HasDeparted(original)) return;
+        // Rejection has no meal settlement, cleaning or rewards.
+        batch.Use.SettlementCompleted = true;
+        batch.Use.Table.EndUse(batch.Use);
+        try { UpdateTable(); } catch (Exception error) { batch.LastDiagnostic = error.ToString(); }
     }
 }

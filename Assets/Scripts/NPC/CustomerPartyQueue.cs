@@ -142,32 +142,58 @@ public partial class CustomerController
     private void SortCustomerLine()
     {
         int layer = WaitingPersonCount;
-        for (int slot = 0; slot < _waitingTeams.Count; slot++)
+        foreach (var entry in _waitingTeams.ToArray())
         {
-            var entry = _waitingTeams[slot];
-            if (entry.Party == null || !entry.Party.IsActive) continue;
+            int slot = _waitingTeams.IndexOf(entry);
+            if (slot < 0 || entry.Party == null || !entry.Party.IsActive) continue;
             for (int i = 0; i < entry.Party.Members.Count; i++)
             {
+                if (!_waitingTeams.Contains(entry) || !entry.Party.IsActive) break;
                 var member = entry.Party.Members[i]; var customer = member.Customer;
                 Vector2 target = GetWaitingPosition(slot, i);
-                if (!customer.HasMoved || customer.TargetPos != target)
+                bool joint = entry.Party.Members.Count > 1;
+                if (!customer.HasMoved || customer.TargetPos != target || (joint && customer.HasPathFailure))
                 {
                     entry.Ready.Remove(member);
+                    int movementSequence = customer.MovementSequenceId + 1;
                     customer.Move(target, -1, () =>
                     {
-                        if (!_waitingTeams.Contains(entry) || !member.Party.IsActive
-                            || !ReferenceEquals(customer.VisitMember, member) || member.Party.CurrentUse != null
-                            || (member.Party.Members.Count > 1 && !customer.ConfirmReachedMoveTarget())) return;
+                        if (!IsWaitingMoveCurrent(entry, member, customer, movementSequence)) return;
+                        if (joint && !customer.ConfirmReachedMoveTarget())
+                        {
+                            CancelFailedWaitingMove(entry, member, customer, movementSequence, "DestinationNotReached");
+                            return;
+                        }
                         if (entry.Ready.Add(member))
                         {
                             CustomerEncounterPresentation.OnCustomerReachedWaitingLine(member);
                             StartPartyWaitingClock(entry); _tableManager.UpdateTable(); NotifyWaitingChanged();
                         }
-                    });
+                    }, joint ? (Action)(() => CancelFailedWaitingMove(entry, member, customer,
+                        movementSequence, "AStarPathUnavailable")) : null);
                 }
+                if (!_waitingTeams.Contains(entry)) break;
                 customer.SetLayer("WaitCustomer", layer--);
             }
         }
+    }
+
+    private bool IsWaitingMoveCurrent(WaitingEntry entry, CustomerVisitMember member,
+        NormalCustomer customer, int movementSequence)
+    {
+        return customer != null && customer.MovementSequenceId == movementSequence
+            && _waitingTeams.Contains(entry) && ReferenceEquals(entry.Party, member.Party)
+            && member.IsVisitCurrent && ReferenceEquals(customer.VisitMember, member)
+            && entry.Party.IsActive && entry.Party.CurrentUse == null && !entry.Party.WaitingDeparture;
+    }
+
+    private void CancelFailedWaitingMove(WaitingEntry entry, CustomerVisitMember member,
+        NormalCustomer customer, int movementSequence, string reason)
+    {
+        if (!IsWaitingMoveCurrent(entry, member, customer, movementSequence) || !customer.HasPathFailure) return;
+        LastVisitDiagnostic = "WaitingPartyEntryTechnicalCancel; reason=" + reason
+            + "; member=" + customer.CustomerData.Id;
+        CancelWaitingParty(entry.Party);
     }
 
     // A caller holding a party identity cannot remove a later visit on the same pool object.
