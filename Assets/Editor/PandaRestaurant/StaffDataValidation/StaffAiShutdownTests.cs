@@ -39,7 +39,6 @@ public sealed class StaffAiShutdownTests
         ScoreSubscriber<UIScore>("OnChangeScoreEvent"),
         ScoreSubscriber<UIScoreImage>("OnScoreChangeEvent"),
         ScoreSubscriber<UIFurniture>("UpdateUIOptimized"),
-        ScoreSubscriber<UIStaff>("UpdateResourceUI"),
         ScoreSubscriber<UIRecipeTab>("OnDataChanged"),
         ScoreSubscriber<UIPictorialBook>("CustomerUpdateUI"),
         ScoreSubscriber<UIKitchen>("UpdateUI"),

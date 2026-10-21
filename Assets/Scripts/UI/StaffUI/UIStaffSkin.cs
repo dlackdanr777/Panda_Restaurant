@@ -34,11 +34,14 @@ public class UIStaffSkin : MonoBehaviour
 
     private StaffData _customerData;
     private StaffSkinData _currentSkinData;
+    private bool _initialized;
 
 
 
     public void Init()
     {
+        if (_initialized) return;
+        _initialized = true;
         _nameText.text = string.Empty;
         _descriptionText.text = string.Empty;
         _skinImage.sprite = null;
@@ -305,5 +308,10 @@ public class UIStaffSkin : MonoBehaviour
         {
             PopupManager.Instance.ShowDisplayText("스킨 토큰이 부족합니다.");
         }
+    }
+
+    private void OnDestroy()
+    {
+        UserInfo.OnChangeStaffSkinHandler -= UpdateUI;
     }
 }

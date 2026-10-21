@@ -1,5 +1,37 @@
 # Panda_Restaurant
 
+## Staff and pictorial book UI refresh
+
+- `UIStaff.ShowUIStaff` prepares the requested floor, role, selection and slots
+  before navigation activates the view. Direct `Show` retains the default Manager
+  role. Quest entries also prepare their exact requested staff before activation,
+  instead of rendering a default selection and selecting again after `Push`.
+  Every entry reads current data; it is not skipped solely because the
+  floor/role matches the previous entry.
+- Staff cards compare their displayed ownership, placement, rank, portrait and
+  name. Unchanged cards and sibling order are left alone. Placement events from
+  other floors are still checked because a move can affect the displayed staff.
+  The owner refreshes selected detail without duplicate preview subscriptions.
+  This detail's acquisition action is gacha and upgrade entry eligibility is
+  level-based, so money/score events no longer rebuild it; actual purchase/upgrade
+  validation remains with the existing purchase/upgrade views.
+- The pictorial book prepares its default item tab and closes customer skin
+  presentation while its root is inactive. Customer selection still resets to
+  the first entry on reopening, but hidden detail is not rendered until selected.
+  Hidden/non-selected tabs retain dirty state. Legacy identity-free events merge
+  into one visible refresh; notification badges keep their independent ID-based
+  updates. Customer frames and portrait properties change only when different.
+- Initialization is idempotent, and UI-owned data subscriptions are released on
+  destruction, including staff skin and customer visit/skin subscriptions.
+
+The existing SDK-free Editor request bridge accepts `ui-refresh` through
+`Temp/GachaReview20260917-2213/tests-request.txt`. It runs actual UI commands on
+in-memory Stage1 PreviewScenes with isolated data/events, without saving user
+scenes or verification Scene/Prefab assets. Results are written to
+`%TEMP%\CustomerTableUseReview\related-ui-refresh-tests.json` (or
+`PANDA_CUSTOMER_USE_EVIDENCE_DIR` when set). These are functional regressions,
+not CPU/GC allocation or device benchmarks.
+
 ## Party movement failure handling
 
 - A two-person team's waiting-line path failure or completion short of the target

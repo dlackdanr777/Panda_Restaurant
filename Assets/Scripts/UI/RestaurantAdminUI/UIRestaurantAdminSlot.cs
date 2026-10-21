@@ -36,44 +36,56 @@ public class UIRestaurantAdminSlot : MonoBehaviour
 
     public void SetUse(Sprite sprite, string name, string text, ERestaurantFloorType floor)
     {
-        _useImage?.gameObject.SetActive(true);
-        _operateImage?.gameObject.SetActive(false);
-        _priceImage?.gameObject.SetActive(false);
-        _scoreImage?.gameObject.SetActive(false);
-        _notEnoughPriceImage?.gameObject.SetActive(false);
-        _needItemImage?.gameObject.SetActive(false);
-        _notEnoughDiaPriceImage?.gameObject.SetActive(false);
-        _unlockImage.gameObject.SetActive(false);
-        _alarmImage?.SetActive(false);
-        _lockImgae?.SetActive(false);
-
-        _image.sprite = sprite;
-        _image.color = Utility.GetColor(ColorType.Give);
-        _nameText.text = name;
-        _useImage?.SetText1(text);
-        _useImage?.SetText2(Utility.GetFloorStrEngByType(floor));
-
-        _useImageSprite.color = Utility.GetFloorColor(floor);
+        SetPlacementState(true);
+        SetPortrait(sprite, name, Utility.GetColor(ColorType.Give));
+        if (_useImage != null)
+        {
+            if (_useImage.Text1.text != text) _useImage.SetText1(text);
+            string floorText = Utility.GetFloorStrEngByType(floor);
+            if (_useImage.Text2.text != floorText) _useImage.SetText2(floorText);
+        }
+        Color color = Utility.GetFloorColor(floor);
+        if (_useImageSprite.color != color) _useImageSprite.color = color;
     }
 
 
     public void SetOperate(Sprite sprite, string name, string text)
     {
-        _operateImage?.gameObject.SetActive(true);
-        _useImage?.gameObject.SetActive(false);
-        _priceImage?.gameObject.SetActive(false);
-        _scoreImage?.gameObject.SetActive(false);
-        _notEnoughPriceImage?.gameObject.SetActive(false);
-        _needItemImage?.gameObject.SetActive(false);
-        _notEnoughDiaPriceImage?.gameObject.SetActive(false);
-        _unlockImage.gameObject.SetActive(false);
-        _alarmImage?.SetActive(false);
-        _lockImgae?.SetActive(false);
+        SetOperate(sprite, name, text, Utility.GetColor(ColorType.Give));
+    }
 
-        _image.sprite = sprite;
-        _image.color = Utility.GetColor(ColorType.Give);
-        _nameText.text = name;
-        _operateImage?.SetText(text);
+    protected void SetOperate(Sprite sprite, string name, string text, Color portraitColor)
+    {
+        SetPlacementState(false);
+        SetPortrait(sprite, name, portraitColor);
+        if (_operateImage != null && _operateImage.Text.text != text) _operateImage.SetText(text);
+    }
+
+    private void SetPlacementState(bool inUse)
+    {
+        SetActive(_useImage, inUse);
+        SetActive(_operateImage, !inUse);
+        SetActive(_priceImage, false);
+        SetActive(_scoreImage, false);
+        SetActive(_notEnoughPriceImage, false);
+        SetActive(_needItemImage, false);
+        SetActive(_notEnoughDiaPriceImage, false);
+        SetActive(_unlockImage, false);
+        if (_alarmImage != null && _alarmImage.activeSelf) _alarmImage.SetActive(false);
+        if (_lockImgae != null && _lockImgae.activeSelf) _lockImgae.SetActive(false);
+    }
+
+    private static void SetActive(Component component, bool active)
+    {
+        if (component != null && component.gameObject.activeSelf != active)
+            component.gameObject.SetActive(active);
+    }
+
+    private void SetPortrait(Sprite sprite, string name, Color color)
+    {
+        if (_image.sprite != sprite) _image.sprite = sprite;
+        if (_image.color != color) _image.color = color;
+        if (_nameText.text != name) _nameText.text = name;
     }
 
 

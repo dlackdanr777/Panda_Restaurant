@@ -41,6 +41,7 @@ public class UIStaffPreview : MonoBehaviour
     private ERestaurantFloorType _currentFloor;
     private EquipStaffType _equipStaffType;
     private RectTransform _actionButtonRoot;
+    private bool _initialized;
     public RectTransform BuyButtonRect => _buyButton != null ? _buyButton.transform as RectTransform : null;
     public RectTransform EquipButtonRect => _equipButton != null ? _equipButton.transform as RectTransform : null;
 
@@ -53,6 +54,8 @@ public class UIStaffPreview : MonoBehaviour
 
     public void Init(Action<ERestaurantFloorType, EquipStaffType, StaffData> onEquipButtonClicked, Action<ERestaurantFloorType, StaffData> onUsingButtonClicked, Action<StaffData> onUpgradeButtonClicked)
     {
+        if (_initialized) return;
+        _initialized = true;
         _selectGroup.Init();
         _selectGroup.OnButtonClicked(onUpgradeButtonClicked);
         _onEquipButtonClicked = onEquipButtonClicked;
@@ -62,8 +65,7 @@ public class UIStaffPreview : MonoBehaviour
         _buyButton.AddListener(OnGachaButtonClicked);
         _actionButtonRoot = _buyButton.transform.parent as RectTransform;
 
-        UserInfo.OnUpgradeStaffHandler += UpdateUI;
-        UserInfo.OnChangeStaffSkinHandler += UpdateUI;
+        // UIStaff owns data-event refreshes; this view only renders its selection.
     }
 
 

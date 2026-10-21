@@ -58,9 +58,12 @@ public class UICustomerView : MonoBehaviour
     private Vector3 _originalPosition;
 
     private UICustomerPictorialBook _uiCustomerPictorialBook;
+    private bool _initialized;
 
     public void Init(UICustomerPictorialBook uiCustomerPictorialBook)
     {
+        if (_initialized) return;
+        _initialized = true;
         _uiCustomerPictorialBook = uiCustomerPictorialBook;
         _originalSize = _npcImage.rectTransform.sizeDelta;
         _originalPosition = _npcImage.rectTransform.anchoredPosition;
@@ -86,8 +89,6 @@ public class UICustomerView : MonoBehaviour
         _skinButton.AddListener(ShowSkinView);
         _testButton.onClick.AddListener(AddVisitCount);
 
-        UserInfo.OnVisitedCustomerHandler += OnAddVisitEvent;
-        UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
     }
 
     public void UpdateUI()

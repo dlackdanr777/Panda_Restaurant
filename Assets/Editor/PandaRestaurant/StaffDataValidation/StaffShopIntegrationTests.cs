@@ -442,6 +442,7 @@ public partial class StaffStageMigrationCollectionTests
                 var expectedRefreshed = (List<StaffData>)createDisplayDataList.Invoke(
                     null, new object[] { floorSource });
                 detail.gameObject.SetActive(false);
+                detail.Init();
                 var refreshDisplay = typeof(UIStaff).GetMethod(
                     "SetStaffDataOptimized", BindingFlags.Instance | BindingFlags.NonPublic);
                 Assert.That(refreshDisplay, Is.Not.Null);

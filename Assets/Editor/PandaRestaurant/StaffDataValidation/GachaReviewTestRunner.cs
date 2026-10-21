@@ -249,10 +249,15 @@ public static class GachaReviewTestRunner
                 _customerUse = true;
                 Begin(command);
             }
+            else if (command == "ui-refresh")
+            {
+                _customerUse = true;
+                Begin(command);
+            }
             else if (command == "known-fever") CheckKnownFeverAssertion();
             else if (command == "run") Begin("all");
             else if (command == "economy" || command == "fairy" || command == "ui") Begin(command);
-            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, run, staff-ai, party-movement, or known-fever for the related review tests.");
+            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, run, staff-ai, party-movement, ui-refresh, or known-fever for the related review tests.");
         }
         catch (Exception error)
         {
@@ -339,6 +344,7 @@ public static class GachaReviewTestRunner
             "CustomerPartyFailureBoundaryTests", "CustomerPartyInterruptionTests", "CustomerPartyCompletionTests",
             "CustomerPartyServingTests", "CustomerTableUseRegressionTests", "CustomerVisitPartyTests",
             "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffAiLifecycleTests" };
+        if (_group == "ui-refresh") fixtures = new[] { "UIRefreshRegressionTests", "StaffStageMigrationCollectionTests", "StaffAiShutdownTests" };
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;
@@ -371,7 +377,10 @@ public static class GachaReviewTestRunner
                     && method.Name != "EconomyBackend_Stage1FairyAppearsOnlyAfterProductionCommitAndNeverDuplicates") continue;
                 if (_phase4 && Environment.GetCommandLineArgs().Contains("-phase4CoreOnly") && (name == "StaffGachaOfflineSessionTests" || name == "StaffStageMigrationCollectionTests") && !method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal)) continue;
                 if (name == "StaffGachaOfflineSessionTests" && !method.Name.StartsWith("ResultPopup_", StringComparison.Ordinal) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
-                if (_customerUse && name == "StaffStageMigrationCollectionTests" && !new[] { "AllStages_", "RawEnvelope", "CatalogAndRaw", "RawLevelSix", "ExistingCommonStaff_", "NewCollectionRounds_", "GameDataRequery", "Legacy",
+                if (_group == "ui-refresh" && name == "StaffStageMigrationCollectionTests"
+                    && !method.Name.StartsWith("IntegrationNavigation_", StringComparison.Ordinal)
+                    && !method.Name.StartsWith("QuestStaffShell_", StringComparison.Ordinal)) continue;
+                if (_customerUse && _group != "ui-refresh" && name == "StaffStageMigrationCollectionTests" && !new[] { "AllStages_", "RawEnvelope", "CatalogAndRaw", "RawLevelSix", "ExistingCommonStaff_", "NewCollectionRounds_", "GameDataRequery", "Legacy",
                     "FirstTutorial_ConfirmedSignup", "FirstTutorial_StageBootstrap", "FirstTutorial_UnknownInitial", "FirstTutorial_OrdinaryStageWrite" }.Any(prefix => method.Name.StartsWith(prefix, StringComparison.Ordinal))) continue;
                 if (!_customerUse && name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
                     && !(_phase3 && method.Name.StartsWith("Attendance_", StringComparison.Ordinal)) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;
@@ -593,6 +602,7 @@ public static class GachaReviewTestRunner
         if (_fairyBirthInput) report.scope = "Selected fairy input/birth/audio NUnit tests on the main Editor thread. Actual Stage1 is read in a disposable PreviewScene. Production pointer frame processors use a temporary owned collider in the already loaded default-physics scene; the collider is deleted before scene/dirty/Selection/Undo witness comparison. No existing scene object is edited or saved, no scene replacement, Play transition, SDK/login or production backend call. Evidence is written under PANDA_FAIRY_INPUT_EVIDENCE_DIR. Optional video uses deterministic 1:1 simulation-frame timing, not device or real-time performance capture.";
         if (_group == "staff-ai") report.scope = "Selected Staff AI lifecycle and directly related customer NUnit regressions on the main Editor thread, NumberOfTestWorkers=0, using the existing disposable in-memory PreviewScene and scene/dirty/Selection/Undo witness. No scene save, scene replacement, Play transition, SDK/login or production backend call. The saved-asset roundtrip methods CounterInspectorSpacing_SurvivesSavedReloadAndFoodRefresh, AuthoredBubbleSizeAndOffsets_PersistThroughTemporaryPrefabReloadAndFurnitureRefresh and TempSettingsAsset_ReloadAffectsNewSpawnOnly_AndNeverChangesDelivery are excluded because this review permits memory instances only. Direct decision and callback tests do not establish real PlayerLoop or OS input behavior. Known Fever assertion #52 is checked separately and is not included in these totals.";
         if (_group == "party-movement") report.scope = "Party movement failure regressions and existing party, single-customer and staff guide tests on the main Editor thread in a disposable in-memory PreviewScene. Actual AStar jobs, game commands and captured movement callbacks are advanced explicitly. No user scene save/replacement, saved verification Scene/Prefab copies, Play transition, SDK/login or production backend calls. Asset-roundtrip tests are excluded. This does not verify real-time PlayerLoop movement or device input.";
+        if (_group == "ui-refresh") report.scope = "Staff and pictorial book UI commands, selection, dirty-state coalescing, activation and subscription lifetime regressions plus existing staff shop/quest navigation and teardown tests. Original Stage1 UI is read in disposable in-memory PreviewScenes; isolated event/data fixtures restore their original state. No user scene save/replacement, saved verification Scene/Prefab copies, real SDK/login, production backend, ads or payments. These are functional regressions, not CPU/GC or device benchmarks.";
         report.success = string.IsNullOrEmpty(_error) && report.total > 0 && report.failed == 0 && report.skipped == 0 && report.inconclusive == 0;
         File.WriteAllText(Path.Combine(OutputDirectory, OutputPrefix + "-tests.json"), JsonUtility.ToJson(report, true));
     }

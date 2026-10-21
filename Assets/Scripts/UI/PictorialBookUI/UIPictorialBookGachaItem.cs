@@ -15,9 +15,15 @@ public class UIPictorialBookGachaItem : MonoBehaviour
 
     private List<GachaItemData> _gachaItemDataList;
     private List<UIPictorialBookGachaItemSlot> _slotList = new List<UIPictorialBookGachaItemSlot>();
+    private bool _initialized;
+    private bool _tabVisible;
+    private bool _dirty = true;
+    private bool _sortDirty;
 
     public void Init()
     {
+        if (_initialized) return;
+        _initialized = true;
         _view.Init();
         _gachaItemDataList = ItemManager.Instance.GetSortGachaItemDataList();
         
@@ -39,7 +45,7 @@ public class UIPictorialBookGachaItem : MonoBehaviour
 
     public void ResetData()
     {
-        _view.SetData(_gachaItemDataList[0] != null ? _gachaItemDataList[0] : null);
+        _dirty = true;
         CheckItemNotification(string.Empty);
     }
 
@@ -52,8 +58,25 @@ public class UIPictorialBookGachaItem : MonoBehaviour
 
     public void UpdateUI()
     {
-        _view.SetData(_gachaItemDataList[0] != null ? _gachaItemDataList[0] : null);
-        for (int i = 0, cnt = _slotList.Count; i < cnt; ++i)
+        _dirty = true;
+    }
+
+    internal void SetTabVisible(bool visible)
+    {
+        _tabVisible = visible;
+        if (visible) RefreshVisible();
+    }
+
+    private void LateUpdate() => RefreshVisible();
+
+    private void RefreshVisible()
+    {
+        if (!_initialized || !_tabVisible || !gameObject.activeInHierarchy || !_dirty) return;
+        bool sorted = _sortDirty;
+        if (sorted) BindSortedItems();
+        _dirty = false;
+        if (_gachaItemDataList.Count > 0) _view.SetData(_gachaItemDataList[0]);
+        for (int i = 0, cnt = sorted ? 0 : _slotList.Count; i < cnt; ++i)
         {
             _slotList[i].UpdateUI();
         }
@@ -61,6 +84,11 @@ public class UIPictorialBookGachaItem : MonoBehaviour
 
 
     private void OnChangeGachaItemSortTypeEvent()
+    {
+        _sortDirty = _dirty = true;
+    }
+
+    private void BindSortedItems()
     {
         _gachaItemDataList = ItemManager.Instance.GetSortGachaItemDataList();
 
@@ -80,6 +108,7 @@ public class UIPictorialBookGachaItem : MonoBehaviour
             slot.SetButtonEvent(OnSlotClicked);
             slot.SetData(_gachaItemDataList[i]);
         }
+        _sortDirty = false;
     }
 
     private void OnSlotClicked(GachaItemData data)

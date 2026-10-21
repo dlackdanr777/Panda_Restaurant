@@ -18,31 +18,30 @@ public class UICustomerSlot : MonoBehaviour
 
     private Vector2 _originalSize;
     private Vector3 _originalPosition;
+    private bool _initialized;
 
     public void Init()
     {
+        if (_initialized) return;
+        _initialized = true;
         _originalSize = _itemImage.rectTransform.sizeDelta;
         _originalPosition = _itemImage.rectTransform.anchoredPosition;
     }
 
 
-    public void SetData(CustomerData data)
+    public void SetData(CustomerData data, bool refresh = true)
     {
         if (data == null)
         {
             _data = null;
-            _itemImage.gameObject.SetActive(false);
+            if (_itemImage.gameObject.activeSelf) _itemImage.gameObject.SetActive(false);
             _alarm.ChangeAlarmId(string.Empty);
             return;
         }
 
         _data = data;
-        CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(data.Id);
-        _itemImage.sprite = skinData == null ? data.ThumbnailSprite : skinData.Sprite;
-        _itemImage.color = UserInfo.GetCustomerEnableState(data) && 0 < UserInfo.GetVisitedCustomerCount(data.Id) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
         _alarm.ChangeAlarmId(data.Id);
-
-        UpdateFrame(data, skinData);
+        if (refresh) UpdateUI();
     }
 
 
@@ -61,9 +60,14 @@ public class UICustomerSlot : MonoBehaviour
 
     public void UpdateUI()
     {
+        if (_data == null) return;
         CustomerSkinData skinData = UserInfo.GetEquipCustomerSkin(_data.Id);
-        _itemImage.sprite = skinData == null ?  _data.ThumbnailSprite : skinData.Sprite;
-        _itemImage.color = UserInfo.GetCustomerEnableState(_data) && 0 < UserInfo.GetVisitedCustomerCount(_data.Id) ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        Sprite sprite = skinData == null ? _data.ThumbnailSprite : skinData.Sprite;
+        Color color = UserInfo.GetCustomerEnableState(_data) && 0 < UserInfo.GetVisitedCustomerCount(_data.Id)
+            ? Utility.GetColor(ColorType.Give) : Utility.GetColor(ColorType.NoGive);
+        if (!_itemImage.gameObject.activeSelf) _itemImage.gameObject.SetActive(true);
+        if (_itemImage.sprite != sprite) _itemImage.sprite = sprite;
+        if (_itemImage.color != color) _itemImage.color = color;
         UpdateFrame(_data, skinData);
     }
 
@@ -78,61 +82,33 @@ public class UICustomerSlot : MonoBehaviour
             _originalPosition.z
         );
 
-        _itemImage.rectTransform.sizeDelta = newSize;
-        _itemImage.rectTransform.anchoredPosition = newPosition;
+        if (_itemImage.rectTransform.sizeDelta != newSize) _itemImage.rectTransform.sizeDelta = newSize;
+        if (_itemImage.rectTransform.anchoredPosition != (Vector2)newPosition)
+            _itemImage.rectTransform.anchoredPosition = newPosition;
     }
 
 
     private void UpdateFrame(CustomerData data, SkinData skinData)
     {
-           _normalSkinFrame.SetActive(false);
-        _rareSkinFrame.SetActive(false);
-        _uniqueSkinFrame.SetActive(false);
-        _specialSkinFrame.SetActive(false);
-        _specialFrame.SetActive(false);
-        _gatecrasherFrame.SetActive(false);
+        GameObject frame = data is SpecialCustomerData ? _specialFrame
+            : data is GatecrasherCustomerData ? _gatecrasherFrame
+            : skinData == null ? _normalSkinFrame
+            : skinData.Rank == Rank.Rare ? _rareSkinFrame
+            : skinData.Rank == Rank.Unique ? _uniqueSkinFrame
+            : skinData.Rank == Rank.Special ? _specialSkinFrame : _normalSkinFrame;
+        SetFrameActive(_normalSkinFrame, frame);
+        SetFrameActive(_rareSkinFrame, frame);
+        SetFrameActive(_uniqueSkinFrame, frame);
+        SetFrameActive(_specialSkinFrame, frame);
+        SetFrameActive(_specialFrame, frame);
+        SetFrameActive(_gatecrasherFrame, frame);
+        if (data is SpecialCustomerData || data is GatecrasherCustomerData) SetScaleImage(1);
+        else SetScaleImage(1.3f, 12);
+    }
 
-
-        if (data is SpecialCustomerData)
-        {
-            _specialFrame.gameObject.SetActive(true);
-            SetScaleImage(1);
-        }
-
-        else if (data is GatecrasherCustomerData)
-        {
-            _gatecrasherFrame.gameObject.SetActive(true);
-            SetScaleImage(1);
-        }
-
-        else
-        {
-            if (skinData == null)
-            {
-                _normalSkinFrame.gameObject.SetActive(true);
-            }
-            else
-            {
-                switch (skinData.Rank)
-                {
-                    case Rank.Normal1:
-                    case Rank.Normal2:
-                        _normalSkinFrame.gameObject.SetActive(true);
-                        break;
-
-                    case Rank.Rare:
-                        _rareSkinFrame.gameObject.SetActive(true);
-                        break;
-                    case Rank.Unique:
-                        _uniqueSkinFrame.gameObject.SetActive(true);
-                        break;
-                    case Rank.Special:
-                        _normalSkinFrame.SetActive(false);
-                        _specialSkinFrame.gameObject.SetActive(true);
-                        break;
-                }
-            }
-            SetScaleImage(1.3f, 12);
-        }
+    private static void SetFrameActive(GameObject target, GameObject selected)
+    {
+        bool active = target == selected;
+        if (target.activeSelf != active) target.SetActive(active);
     }
 }

@@ -35,10 +35,13 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
 
     private Vector2 _originalSize;
     private Vector3 _originalPosition;
+    private bool _initialized;
 
 
     public void Init(UICustomerPictorialBook customerView)
     {
+        if (_initialized) return;
+        _initialized = true;
         _originalSize = _skinImage.rectTransform.sizeDelta;
         _originalPosition = _skinImage.rectTransform.anchoredPosition;
 
@@ -59,7 +62,6 @@ public class UIPictorialBookCustomerSkin : MonoBehaviour
         _equipButton.onClick.AddListener(OnChangeCustomerSkin);
         Hide();
 
-        UserInfo.OnChangeCustomerSkinHandler += UpdateUI;
     }
 
     public void SetViewData(string name, string description, string effectText, CustomerTendencyType tendencyType, Sprite skinSprite)

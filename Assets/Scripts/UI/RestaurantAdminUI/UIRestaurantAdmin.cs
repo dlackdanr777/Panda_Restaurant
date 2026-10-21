@@ -829,8 +829,7 @@ public class UIRestaurantAdmin : MobileUIView
         if (roles == null || roles.Count == 0) return false;
         // The four main employment quests are Stage1/Floor1 staff, not a VIP tab's first entry.
         ChangeFloorTypeOptimized(ERestaurantFloorType.Floor1);
-        _staffUI.ShowUIStaff(ERestaurantFloorType.Floor1, roles[0]);
-        return _staffUI.TrySelectStaff(staff.Id);
+        return _staffUI.ShowUIStaff(ERestaurantFloorType.Floor1, roles[0], staff);
     }
 
     public void ShowUIKitchen(KitchenUtensilType type)
@@ -1197,4 +1196,3 @@ public class UIRestaurantAdmin : MobileUIView
     }
     
 }
-

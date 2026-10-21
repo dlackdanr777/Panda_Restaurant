@@ -27,21 +27,60 @@ public class UIRestaurantAdminStaffSlot : UIRestaurantAdminSlot
     [SerializeField] private Sprite _operateButtonSprite;
     [SerializeField] private Sprite _gachaButtonSprite;
 
+    private StaffData _boundStaff;
+    private StaffSkinData _boundSkin;
+    private bool _boundOwned;
+    private ERestaurantFloorType _boundFloor;
+    private EquipStaffType _boundRole;
+    private Sprite _boundSprite;
+    private string _boundName;
+    private Rank _boundRank;
+
+    internal bool RefreshStaff(StaffData data)
+    {
+        bool owned = UserInfo.IsGiveStaff(UserInfo.CurrentStage, data);
+        var floor = owned ? UserInfo.GetEquipStaffFloorType(UserInfo.CurrentStage, data) : ERestaurantFloorType.Error;
+        bool equipped = owned && UserInfo.IsEquipStaff(UserInfo.CurrentStage, data);
+        var role = equipped ? UserInfo.GetEquipStaffType(UserInfo.CurrentStage, data) : EquipStaffType.Length;
+        var skin = owned ? UserInfo.GetEquipStaffSkin(UserInfo.CurrentStage, data) : null;
+        Sprite sprite = data.ThumbnailSprite == null ? data.Sprite : data.ThumbnailSprite;
+        string name = data.Name;
+        if (ReferenceEquals(_boundStaff, data) && _boundOwned == owned && _boundFloor == floor
+            && _boundRole == role && _boundSkin == skin && _boundSprite == sprite
+            && _boundName == name && _boundRank == data.Rank) return false;
+        _boundStaff = data; _boundOwned = owned; _boundFloor = floor; _boundRole = role;
+        _boundSkin = skin; _boundSprite = sprite; _boundName = name; _boundRank = data.Rank;
+        SetFrame(data.Rank);
+        EquipGroupSetActive(equipped);
+        if (equipped) SetEquipText(Utility.StaffTypeStringConverter(role));
+        if (!owned) SetGacha(sprite);
+        else
+        {
+            SetOwnedVisual();
+            if (floor <= ERestaurantFloorType.Floor3) SetUse(sprite, name, "배치중", floor);
+            else SetOperate(sprite, name, "배치하기");
+        }
+        return true;
+    }
+
     public void SetEquipText(string typeText)
     {
-        _equipGroup.SetText1(typeText);
+        if (_equipGroup.Text1.text != typeText) _equipGroup.SetText1(typeText);
     }
 
     public void EquipGroupSetActive(bool value)
     {
-        _equipGroup.gameObject.SetActive(value);
+        SetActive(_equipGroup.gameObject, value);
     }
 
     public void SetGacha(Sprite sprite)
     {
-        SetOperate(sprite, "???", "뽑기");
-        if (_operateButtonImage != null && _gachaButtonSprite != null)
+        SetOperate(sprite, "???", "뽑기", Utility.GetColor(ColorType.NoGive));
+        if (_operateButtonImage != null && _gachaButtonSprite != null && _buttonSprite != _gachaButtonSprite)
+        {
             _operateButtonImage.SetSprite(_gachaButtonSprite);
+            _buttonSprite = _gachaButtonSprite;
+        }
 
         SetPortraitTint(Utility.GetColor(ColorType.NoGive));
         HideUnownedShade();
@@ -50,8 +89,11 @@ public class UIRestaurantAdminStaffSlot : UIRestaurantAdminSlot
 
     public void SetOwnedVisual()
     {
-        if (_operateButtonImage != null && _operateButtonSprite != null)
+        if (_operateButtonImage != null && _operateButtonSprite != null && _buttonSprite != _operateButtonSprite)
+        {
             _operateButtonImage.SetSprite(_operateButtonSprite);
+            _buttonSprite = _operateButtonSprite;
+        }
 
         SetPortraitTint(Utility.GetColor(ColorType.Give));
         HideUnownedShade();
@@ -65,8 +107,10 @@ public class UIRestaurantAdminStaffSlot : UIRestaurantAdminSlot
 
         if (_unownedShadeImage.transform.parent is RectTransform portraitRect)
         {
-            portraitRect.anchoredPosition = isOwned ? OwnedPortraitPosition : UnownedPortraitPosition;
-            portraitRect.sizeDelta = isOwned ? OwnedPortraitSize : UnownedPortraitSize;
+            Vector2 position = isOwned ? OwnedPortraitPosition : UnownedPortraitPosition;
+            Vector2 size = isOwned ? OwnedPortraitSize : UnownedPortraitSize;
+            if (portraitRect.anchoredPosition != position) portraitRect.anchoredPosition = position;
+            if (portraitRect.sizeDelta != size) portraitRect.sizeDelta = size;
         }
 
         Transform nameTransform = transform.Find("Name Text");
@@ -74,7 +118,7 @@ public class UIRestaurantAdminStaffSlot : UIRestaurantAdminSlot
         {
             TextMeshProUGUI nameText = nameTransform.GetComponent<TextMeshProUGUI>();
             if (nameText != null)
-                nameText.gameObject.SetActive(isOwned);
+                SetActive(nameText.gameObject, isOwned);
         }
     }
 
@@ -84,7 +128,7 @@ public class UIRestaurantAdminStaffSlot : UIRestaurantAdminSlot
             return;
 
         Image portraitImage = _unownedShadeImage.transform.parent.GetComponent<Image>();
-        if (portraitImage != null)
+        if (portraitImage != null && portraitImage.color != color)
             portraitImage.color = color;
     }
 
@@ -93,8 +137,8 @@ public class UIRestaurantAdminStaffSlot : UIRestaurantAdminSlot
         if (_unownedShadeImage == null)
             return;
 
-        _unownedShadeImage.enabled = false;
-        _unownedShadeImage.gameObject.SetActive(false);
+        if (_unownedShadeImage.enabled) _unownedShadeImage.enabled = false;
+        SetActive(_unownedShadeImage.gameObject, false);
     }
 
     public void SetFrame(Rank rank)
@@ -105,23 +149,31 @@ public class UIRestaurantAdminStaffSlot : UIRestaurantAdminSlot
                             && _uniqueRankFrameSprite != null
                             && _specialRankFrameSprite != null;
 
-        _normalFrame.SetActive(!useRe02Frame && (rank == Rank.Normal1 || rank == Rank.Normal2));
-        _rareFrame.SetActive(!useRe02Frame && rank == Rank.Rare);
-        _uniqueFrame.SetActive(!useRe02Frame && rank == Rank.Unique);
+        SetActive(_normalFrame, !useRe02Frame && (rank == Rank.Normal1 || rank == Rank.Normal2));
+        SetActive(_rareFrame, !useRe02Frame && rank == Rank.Rare);
+        SetActive(_uniqueFrame, !useRe02Frame && rank == Rank.Unique);
 
         for (int i = 0; i < _specialFrames.Length; ++i)
-            _specialFrames[i].SetActive(!useRe02Frame && rank == Rank.Special);
+            SetActive(_specialFrames[i], !useRe02Frame && rank == Rank.Special);
 
         if (!useRe02Frame)
             return;
 
-        _rankFrameImage.gameObject.SetActive(true);
-        _rankFrameImage.sprite = rank switch
+        SetActive(_rankFrameImage.gameObject, true);
+        Sprite frame = rank switch
         {
             Rank.Rare => _rareRankFrameSprite,
             Rank.Unique => _uniqueRankFrameSprite,
             Rank.Special => _specialRankFrameSprite,
             _ => _normalRankFrameSprite
         };
+        if (_rankFrameImage.sprite != frame) _rankFrameImage.sprite = frame;
+    }
+
+    private Sprite _buttonSprite;
+
+    private static void SetActive(GameObject target, bool active)
+    {
+        if (target.activeSelf != active) target.SetActive(active);
     }
 }

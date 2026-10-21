@@ -41,10 +41,14 @@ public class UIPictorialBook : MobileUIView
     private Vector2 _tmpGachaItemButtonPos;
     private Vector2 _tmpCustomerButtonPos;
     private Vector2 _tmpStatusButtonPos;
+    private bool _initialized;
+    private enum Tab { GachaItem, Customer, Status }
 
 
     public override void Init()
     {
+        if (_initialized) return;
+        _initialized = true;
         _uiGachaItem.Init();
         _uiCustomer.Init();
         _uiStatus.Init();
@@ -68,7 +72,7 @@ public class UIPictorialBook : MobileUIView
         _subscribedGameManager.OnChangeScoreHandler += CustomerUpdateUI;
         UserInfo.OnGiveGachaItemHandler += GachaItemUpdateUI;
 
-        OnGachaItemButtonClicked();
+        SetTab(Tab.GachaItem);
         gameObject.SetActive(false);
     }
 
@@ -77,27 +81,31 @@ public class UIPictorialBook : MobileUIView
     {
         VisibleState = VisibleState.Appearing;
 
-        gameObject.SetActive(true);
-        _animeUI.gameObject.SetActive(true);
+        _uiCustomer.SetTabVisible(false);
+        _uiGachaItem.SetTabVisible(false);
+        if (gameObject.activeSelf) gameObject.SetActive(false);
+        _uiCustomer.PrepareForOpen();
+        _uiGachaItem.ResetData();
+        SetTab(Tab.GachaItem);
         _canvasGroup.blocksRaycasts = false;
+        _animeUI.gameObject.SetActive(true);
         _animeUI.anchoredPosition = _hideTargetPos.anchoredPosition;
-        OnGachaItemButtonClicked();
-        _uiCustomer.HideSkinView();
+        gameObject.SetActive(true);
+        _uiGachaItem.SetTabVisible(true);
         TweenData tween = _animeUI.TweenAnchoredPosition(_showTargetPos.anchoredPosition, _showDuration, _showTweenMode);
         tween.OnComplete(() =>
         {
             VisibleState = VisibleState.Appeared;
             _canvasGroup.blocksRaycasts = true;
         });
-
-        _uiGachaItem.ResetData();
-        _uiCustomer.ResetData();
     }
 
 
     public override void Hide()
     {
         VisibleState = VisibleState.Disappearing;
+        _uiCustomer.SetTabVisible(false);
+        _uiGachaItem.SetTabVisible(false);
         _animeUI.gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.anchoredPosition = _showTargetPos.anchoredPosition;
@@ -113,63 +121,48 @@ public class UIPictorialBook : MobileUIView
 
     private void OnGachaItemButtonClicked()
     {
-        _gachaItemButtonTr.anchoredPosition = _gachaItemButtonClickPos.anchoredPosition;
-        _customerButtonTr.anchoredPosition = _tmpCustomerButtonPos;
-        _statusButtonTr.anchoredPosition = _tmpStatusButtonPos;
-
-        _uiGachaItem.gameObject.SetActive(true);
-        _uiCustomer.gameObject.SetActive(false);
-        _uiStatus.gameObject.SetActive(false);
-
-        _uiGachaItem.UpdateUI();
-        _uiGachaItem.ChoiceView();
+        SetTab(Tab.GachaItem);
+        _uiGachaItem.ResetData();
+        _uiGachaItem.SetTabVisible(true);
     }
 
     private void OnCustomerButtonClicked()
     {
-        _customerButtonTr.anchoredPosition = _customerButtonClickPos.anchoredPosition;
-        _gachaItemButtonTr.anchoredPosition = _tmpGachaItemButtonPos;
-        _statusButtonTr.anchoredPosition = _tmpStatusButtonPos;
-
+        _uiCustomer.SetTabVisible(false);
         _uiCustomer.HideSkinView();
-        _uiCustomer.gameObject.SetActive(true);
-        _uiGachaItem.gameObject.SetActive(false);
-        _uiStatus.gameObject.SetActive(false);
-
-        _uiCustomer.UpdateUI();
+        SetTab(Tab.Customer);
+        _uiCustomer.SetTabVisible(true);
         _uiCustomer.ChoiceView();
     }
 
 
     private void OnStatusButtonClicked()
     {
-        _statusButtonTr.anchoredPosition = _statusButtonClickPos.anchoredPosition;
-        _customerButtonTr.anchoredPosition = _tmpCustomerButtonPos;
-        _gachaItemButtonTr.anchoredPosition = _tmpGachaItemButtonPos;
-
-        _uiCustomer.HideSkinView();
-        _uiStatus.gameObject.SetActive(true);
-        _uiCustomer.gameObject.SetActive(false);
-        _uiGachaItem.gameObject.SetActive(false);
-
+        SetTab(Tab.Status);
         _uiStatus.UpdateUI();
         _uiStatus.Show();
     }
 
     private void CustomerUpdateUI()
     {
-        if (!gameObject.activeSelf)
-            return;
-
         _uiCustomer.UpdateUI();
     }
 
     private void GachaItemUpdateUI()
     {
-        if (!gameObject.activeSelf)
-            return;
-
         _uiGachaItem.UpdateUI();
+    }
+
+    private void SetTab(Tab tab)
+    {
+        _uiCustomer.SetTabVisible(false);
+        _uiGachaItem.SetTabVisible(false);
+        _gachaItemButtonTr.anchoredPosition = tab == Tab.GachaItem ? _gachaItemButtonClickPos.anchoredPosition : _tmpGachaItemButtonPos;
+        _customerButtonTr.anchoredPosition = tab == Tab.Customer ? _customerButtonClickPos.anchoredPosition : _tmpCustomerButtonPos;
+        _statusButtonTr.anchoredPosition = tab == Tab.Status ? _statusButtonClickPos.anchoredPosition : _tmpStatusButtonPos;
+        _uiGachaItem.gameObject.SetActive(tab == Tab.GachaItem);
+        _uiCustomer.gameObject.SetActive(tab == Tab.Customer);
+        _uiStatus.gameObject.SetActive(tab == Tab.Status);
     }
 
     private void OnDestroy()
