@@ -41,6 +41,7 @@ public static class CustomerEncounterCatalog
     public const string StateListField = "CustomerEncounterStateList";
 
     private static readonly int[] Milestones = { 25, 50, 100, 200, 300, 400, 500 };
+    private static readonly IReadOnlyList<int> AllVisitMilestones = Array.AsReadOnly(Milestones);
     private static readonly Dictionary<string, string[]> Lines = new Dictionary<string, string[]>(StringComparer.Ordinal)
     {
         ["CUSTOMER01"] = new[]
@@ -75,18 +76,120 @@ public static class CustomerEncounterCatalog
             "가끔은 다른 향이 그리워.",
             "쉬어 가는 것도 수련일 수 있겠지.",
             "꼬리가 늘었는지는 묻지 마. 아직 확인 중이야."
+        },
+        ["CUSTOMER04"] = new[]
+        {
+            "먹기 위해 뛰고, 뛰기 위해 먹어!",
+            "운동하고 나서 쉬는 시간이 최고야.",
+            "아침에 멀리 한 바퀴 돌고 왔어.",
+            "달콤한 건 마음까지 가볍게 해.",
+            "운동이 습관이 됐어. 신기하지?",
+            "카우리한테도 잠깐 쉬라고 했는데.",
+            "쉬는 날엔 더 많이 걷게 되더라.",
+            "건강하게 오래 즐기는 게 내 목표야."
+        },
+        ["CUSTOMER05"] = new[]
+        {
+            "안녕. 내 털, 오늘은 좀 윤기가 나지?",
+            "채소는 여전히 별로야. 그래도 먹어.",
+            "빗질은 하루도 빼먹지 않아.",
+            "비 오는 날엔 털이 정말 골치야.",
+            "완벽한 털결은 작은 습관에서 나와.",
+            "나도 가끔은 대충 살고 싶어.",
+            "오늘은 빗 하나를 새로 샀어.",
+            "네가 보는 내 모습만큼, 나도 나를 아껴."
+        },
+        ["CUSTOMER06"] = new[]
+        {
+            "자리 하나면 충분해.",
+            "필요 없는 건 두고 왔어.",
+            "물건이 적으면 마음도 조용하지.",
+            "또 그런 소문이 돌았어? ……그래.",
+            "오늘은 짐이 더 가벼워졌어.",
+            "간단한 게 좋아. 설명도.",
+            "무언가를 소유하면 지켜야 할 것도 생기지.",
+            "여긴 오래 앉아도 부담스럽지 않네."
+        },
+        ["CUSTOMER07"] = new[]
+        {
+            "수업 끝났어! ……아마도.",
+            "선생님이 나 찾으시면 못 봤다고 해줘.",
+            "오늘은 공부보다 더 중요한 일이 있어.",
+            "서당 가는 길을 또 잘못 들었네.",
+            "나 사실 공부도 아주 못하진 않아.",
+            "공책엔 너희 가게 가는 길이 제일 잘 그려져.",
+            "오늘은 정말 수업 끝나고 온 거야!",
+            "언젠가 선생님도 데려올게. 그땐 도망 안 가."
+        },
+        ["CUSTOMER08"] = new[]
+        {
+            "여기가 따뜻한 곳이구나. 좋아.",
+            "극지방에선 이런 냄새가 안 나.",
+            "온천을 찾다가 여기까지 왔어.",
+            "내 고향에도 네가 올 수 있으면 좋겠네.",
+            "덥지 않냐고? 이 정도는 포근해.",
+            "여행길에서 만난 친구들을 기록해 둬.",
+            "이곳 풍경은 눈이 없어도 참 좋다.",
+            "돌아가도 여긴 꼭 기억할 거야."
+        },
+        ["CUSTOMER09"] = new[]
+        {
+            "안녕! 오늘 뿔 상태가 꽤 좋아.",
+            "올해 대회도 준비해야겠어.",
+            "사진은 어느 쪽에서 찍어야 잘 나올까?",
+            "상을 받은 뒤로 신경 쓸 게 늘었어.",
+            "칭찬해 줘도 돼. 꽤 노력했거든.",
+            "뿔을 손질하는 시간이 생각보다 길어.",
+            "누구에게나 자기만의 멋이 있는 거겠지.",
+            "다음 대회 결과보다 오늘이 더 즐거워."
+        },
+        ["CUSTOMER10"] = new[]
+        {
+            "면접 다녀오는 길이야. 결과는 나중에.",
+            "안정적이라는 말, 참 듣기 좋지.",
+            "이력서는 계속 고쳐 쓰게 되네.",
+            "왕이라 불리던 때가 언제였더라.",
+            "아직은 포기 안 했어. 걱정 마.",
+            "손님으로 앉아 있는 게 조금 어색해.",
+            "일이 전부는 아니라는데, 글쎄.",
+            "언젠가 좋은 소식 들려줄게. 조용히."
+        },
+        ["CUSTOMER11"] = new[]
+        {
+            "혹시 의자에 털 좀 묻었니?",
+            "오늘은 빗에 털이 적게 남았어.",
+            "바람 부는 날은 조금 무서워.",
+            "여기선 마음 놓고 앉아도 될까?",
+            "걱정만 하면 더 빠진다는 말이 있더라."
         }
     };
 
-    public static IReadOnlyList<int> VisitMilestones => Milestones;
+    private static readonly Dictionary<string, IReadOnlyList<int>> CustomerMilestones = new Dictionary<string, IReadOnlyList<int>>(StringComparer.Ordinal)
+    {
+        ["CUSTOMER01"] = AllVisitMilestones,
+        ["CUSTOMER02"] = AllVisitMilestones,
+        ["CUSTOMER03"] = AllVisitMilestones,
+        ["CUSTOMER04"] = AllVisitMilestones,
+        ["CUSTOMER05"] = AllVisitMilestones,
+        ["CUSTOMER06"] = AllVisitMilestones,
+        ["CUSTOMER07"] = AllVisitMilestones,
+        ["CUSTOMER08"] = AllVisitMilestones,
+        ["CUSTOMER09"] = AllVisitMilestones,
+        ["CUSTOMER10"] = AllVisitMilestones,
+        ["CUSTOMER11"] = Array.AsReadOnly(new[] { 25, 50, 100, 200 })
+    };
+
+    public static IReadOnlyList<int> VisitMilestones => AllVisitMilestones;
     public static IReadOnlyCollection<string> CustomerIds => Lines.Keys;
     public static bool IsSupportedCustomer(string customerId) => !string.IsNullOrEmpty(customerId) && Lines.ContainsKey(customerId);
+    public static IReadOnlyList<int> GetCustomerVisitMilestones(string customerId)
+        => customerId != null && CustomerMilestones.TryGetValue(customerId, out var milestones)
+            ? milestones : Array.Empty<int>();
 
     public static bool IsValidEventKey(string customerId, int eventKind, int visitMilestone)
     {
         if (!IsSupportedCustomer(customerId)) return false;
-        if (eventKind == (int)CustomerEncounterEventKind.FirstAppearance) return visitMilestone == 0;
-        return eventKind == (int)CustomerEncounterEventKind.VisitMilestone && Array.IndexOf(Milestones, visitMilestone) >= 0;
+        return TryGetMessage(customerId, (CustomerEncounterEventKind)eventKind, visitMilestone, out _);
     }
 
     public static bool TryGetMessage(string customerId, CustomerEncounterEventKind eventKind,
@@ -94,20 +197,23 @@ public static class CustomerEncounterCatalog
     {
         message = null;
         if (!Lines.TryGetValue(customerId ?? string.Empty, out string[] lines)) return false;
-        int index;
         if (eventKind == CustomerEncounterEventKind.FirstAppearance)
         {
             if (visitMilestone != 0) return false;
-            index = 0;
+            message = lines[0];
+            return !string.IsNullOrEmpty(message);
         }
-        else
+        if (eventKind != CustomerEncounterEventKind.VisitMilestone) return false;
+        IReadOnlyList<int> milestones = GetCustomerVisitMilestones(customerId);
+        for (int milestoneIndex = 0; milestoneIndex < milestones.Count; milestoneIndex++)
         {
-            int milestoneIndex = Array.IndexOf(Milestones, visitMilestone);
-            if (eventKind != CustomerEncounterEventKind.VisitMilestone || milestoneIndex < 0) return false;
-            index = milestoneIndex + 1;
+            if (milestones[milestoneIndex] != visitMilestone) continue;
+            int lineIndex = milestoneIndex + 1;
+            if (lineIndex >= lines.Length || string.IsNullOrEmpty(lines[lineIndex])) return false;
+            message = lines[lineIndex];
+            return true;
         }
-        message = lines[index];
-        return true;
+        return false;
     }
 }
 
@@ -144,9 +250,11 @@ public sealed class CustomerEncounterProgressData
         foreach (SaveCustomerData customer in customers)
         {
             if (customer == null || !CustomerEncounterCatalog.IsSupportedCustomer(customer.Id) || customer.VisitCount <= 0) continue;
-            progress._states[new EventKey(customer.Id, CustomerEncounterEventKind.FirstAppearance, 0)] = CustomerEncounterEventState.Seen;
-            foreach (int milestone in CustomerEncounterCatalog.VisitMilestones)
-                if (customer.VisitCount >= milestone)
+            if (CustomerEncounterCatalog.IsValidEventKey(customer.Id, (int)CustomerEncounterEventKind.FirstAppearance, 0))
+                progress._states[new EventKey(customer.Id, CustomerEncounterEventKind.FirstAppearance, 0)] = CustomerEncounterEventState.Seen;
+            foreach (int milestone in CustomerEncounterCatalog.GetCustomerVisitMilestones(customer.Id))
+                if (customer.VisitCount >= milestone && CustomerEncounterCatalog.IsValidEventKey(
+                    customer.Id, (int)CustomerEncounterEventKind.VisitMilestone, milestone))
                     progress._states[new EventKey(customer.Id, CustomerEncounterEventKind.VisitMilestone, milestone)] = CustomerEncounterEventState.Seen;
         }
         return progress;
@@ -175,7 +283,8 @@ public sealed class CustomerEncounterProgressData
     public bool RecordValidAppearance(string customerId, int officialVisitCount)
     {
         var key = new EventKey(customerId, CustomerEncounterEventKind.FirstAppearance, 0);
-        if (!CustomerEncounterCatalog.IsSupportedCustomer(customerId) || _states.ContainsKey(key)) return false;
+        if (!CustomerEncounterCatalog.IsValidEventKey(customerId, (int)CustomerEncounterEventKind.FirstAppearance, 0)
+            || _states.ContainsKey(key)) return false;
         if (officialVisitCount > 0)
         {
             // Old rows have no appearance ledger. A customer with completed visits was already encountered.
@@ -190,9 +299,10 @@ public sealed class CustomerEncounterProgressData
     {
         if (!CustomerEncounterCatalog.IsSupportedCustomer(customerId) || currentCount <= previousCount) return false;
         bool changed = false;
-        foreach (int milestone in CustomerEncounterCatalog.VisitMilestones)
+        foreach (int milestone in CustomerEncounterCatalog.GetCustomerVisitMilestones(customerId))
         {
-            if (previousCount >= milestone || currentCount < milestone) continue;
+            if (previousCount >= milestone || currentCount < milestone
+                || !CustomerEncounterCatalog.IsValidEventKey(customerId, (int)CustomerEncounterEventKind.VisitMilestone, milestone)) continue;
             var key = new EventKey(customerId, CustomerEncounterEventKind.VisitMilestone, milestone);
             if (_states.ContainsKey(key)) continue;
             _states.Add(key, CustomerEncounterEventState.Pending);
@@ -211,7 +321,7 @@ public sealed class CustomerEncounterProgressData
             && firstState == CustomerEncounterEventState.Pending)
             return TryCreatePendingRecord(firstKey, out record, out message);
 
-        foreach (int milestone in CustomerEncounterCatalog.VisitMilestones)
+        foreach (int milestone in CustomerEncounterCatalog.GetCustomerVisitMilestones(customerId))
         {
             var key = new EventKey(customerId, CustomerEncounterEventKind.VisitMilestone, milestone);
             if (_states.TryGetValue(key, out CustomerEncounterEventState state) && state == CustomerEncounterEventState.Pending)
@@ -222,12 +332,16 @@ public sealed class CustomerEncounterProgressData
 
     private bool TryCreatePendingRecord(EventKey key, out CustomerEncounterSaveData record, out string message)
     {
+        record = null;
+        message = null;
+        if (!CustomerEncounterCatalog.TryGetMessage(key.CustomerId, key.Kind, key.Milestone, out message)) return false;
         record = new CustomerEncounterSaveData(key.CustomerId, key.Kind, key.Milestone, CustomerEncounterEventState.Pending);
-        return CustomerEncounterCatalog.TryGetMessage(key.CustomerId, key.Kind, key.Milestone, out message);
+        return true;
     }
 
     public bool MarkSeen(string customerId, CustomerEncounterEventKind kind, int milestone)
     {
+        if (!CustomerEncounterCatalog.IsValidEventKey(customerId, (int)kind, milestone)) return false;
         var key = new EventKey(customerId, kind, milestone);
         if (!_states.TryGetValue(key, out CustomerEncounterEventState state) || state != CustomerEncounterEventState.Pending) return false;
         _states[key] = CustomerEncounterEventState.Seen;

@@ -84,14 +84,28 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
         if (encounterCustomerId != null)
         {
             var encounterCustomer = CustomerDataManager.Instance.GetCustomerData(encounterCustomerId) as NormalCustomerData;
-            if (encounterCustomer == null
-                || !encounterCustomer.GetVisitCountFoodDic().TryGetValue(50, out string encounterFoodId)
-                || string.IsNullOrWhiteSpace(encounterFoodId))
-                throw new InvalidOperationException("Encounter review customer must have a configured 50-visit food.");
+            if (encounterCustomer == null || !encounterCustomer.GetVisitCountFoodDic().TryGetValue(50, out string encounterFoodId)
+                || string.IsNullOrWhiteSpace(encounterFoodId) || string.IsNullOrWhiteSpace(encounterCustomer.RequiredDish))
+                throw new InvalidOperationException("Encounter review customer must have a base dish and configured 50-visit food.");
+            var encounterRecipeIds = new HashSet<string>(StringComparer.Ordinal) { encounterCustomer.RequiredDish };
+            foreach (var visitFood in encounterCustomer.GetVisitCountFoodDic())
+            {
+                // Include foods that are actually eligible at this fixture's visit count.
+                // The 50-visit recipe remains preloaded for the existing EC-01 review UI;
+                // its visit threshold still controls whether NormalCustomerData offers it.
+                if (visitFood.Key <= encounterVisitCount || visitFood.Key == 50)
+                    if (!string.IsNullOrWhiteSpace(visitFood.Value)) encounterRecipeIds.Add(visitFood.Value);
+            }
+            foreach (string foodId in encounterRecipeIds)
+            {
+                FoodData food = FoodDataManager.Instance.GetFoodData(foodId);
+                if (food == null || food.Id != foodId)
+                    throw new InvalidOperationException("Encounter review recipe is missing from the food catalog: " + foodId);
+                if (!recipeIds.Contains(foodId)) recipeIds.Add(foodId);
+            }
             var encounterProgress = CustomerEncounterProgressData.MigrateLegacy(enabledCustomers);
             game[CustomerEncounterCatalog.StateVersionField] = CustomerEncounterCatalog.StateVersion;
             game[CustomerEncounterCatalog.StateListField] = JArray.FromObject(encounterProgress.ToSaveRecords());
-            if (!recipeIds.Contains(encounterFoodId)) recipeIds.Add(encounterFoodId);
         }
         game["GiveRecipeList"] = new JArray(recipeIds.Select(id => new JObject { ["Id"] = id, ["Level"] = 1 }));
         game["ClearMainChallengeList"]=new JArray(Enumerable.Range(1,12).Select(i=>"MainReward"+i.ToString("D2")));

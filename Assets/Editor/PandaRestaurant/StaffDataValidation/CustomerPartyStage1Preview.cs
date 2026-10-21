@@ -23,7 +23,15 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
     private const string EncounterPrepKey = "Panda.PartyManual.EncounterPrep";
     private const string EncounterCustomerKey = "Panda.PartyManual.EncounterCustomer";
     private const string EncounterVisitsKey = "Panda.PartyManual.EncounterVisits";
-    private static readonly string[] EncounterCustomerIds = { "CUSTOMER01", "CUSTOMER02", "CUSTOMER03" };
+    private static readonly string[] EncounterCustomerIds =
+    {
+        "CUSTOMER01", "CUSTOMER02", "CUSTOMER03", "CUSTOMER04", "CUSTOMER05", "CUSTOMER06",
+        "CUSTOMER07", "CUSTOMER08", "CUSTOMER09", "CUSTOMER10", "CUSTOMER11"
+    };
+    private static readonly string[] EncounterCustomerNames =
+    {
+        "파니", "랑이", "여리", "밀키", "토식이", "치키", "고돌이", "펭리", "이삭", "리오", "울리"
+    };
     private static readonly int[] EncounterVisitOptions = { 0, 24, 49 };
     private static CustomerPartyOwnedMemory memory;
     private static CustomerController controller;
@@ -78,8 +86,7 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
             prepareEncounterMemory = EditorGUILayout.Toggle("인카운터 검수 조건 (메모리만)", prepareEncounterMemory);
             if (prepareEncounterMemory)
             {
-                EditorGUILayout.LabelField("인카운터 손님");
-                encounterCustomerIndex = GUILayout.Toolbar(encounterCustomerIndex, new[] { "파니", "랑이", "여리" });
+                encounterCustomerIndex = EditorGUILayout.Popup("인카운터 손님", encounterCustomerIndex, EncounterCustomerNames);
                 EditorGUILayout.LabelField("시작 방문 수");
                 encounterVisitIndex = GUILayout.Toolbar(encounterVisitIndex, new[] { "0회", "24회", "49회" });
                 EditorGUILayout.HelpBox("선택한 손님만 메모리 계정에 추가/방문 수 설정합니다. 실제 입장·방문 완료는 Stage1 게임 경로로 진행하세요.", MessageType.None);
@@ -202,6 +209,20 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
             }
             ReplaceCustomer(source, clone);
         }
+        string encounterTargetId = SessionState.GetString(EncounterCustomerKey, "");
+        if (SessionState.GetBool(EncounterPrepKey, false)
+            && encounterTargetId != "CUSTOMER01" && encounterTargetId != "CUSTOMER02")
+        {
+            if (!catalog.TryGetValue(encounterTargetId, out CustomerData targetSource)
+                || !(targetSource is NormalCustomerData normalTarget))
+                throw new InvalidOperationException("Encounter review target is missing normal customer data: " + encounterTargetId);
+            var targetClone = Object.Instantiate(normalTarget);
+            originalCustomers.Add(encounterTargetId, normalTarget);
+            runtimeCustomers.Add(targetClone);
+            Set(targetClone, "_requiredDish", normalTarget.RequiredDish);
+            Set(targetClone, "_visitCountFoodDic", new Dictionary<int, string>(normalTarget.GetVisitCountFoodDic()));
+            ReplaceCustomer(normalTarget, targetClone);
+        }
         Find<CameraController>(scene).transform.root.gameObject.SetActive(true);
         foreach (var root in roots)
         {
@@ -309,16 +330,23 @@ public sealed partial class CustomerPartyStage1Preview : EditorWindow
         var progressField = typeof(UserInfo).GetField("_customerEncounterProgress", BindingFlags.Static | BindingFlags.NonPublic);
         var progress = progressField?.GetValue(null) as CustomerEncounterProgressData;
         string first = GetEncounterState(progress, customerId, CustomerEncounterEventKind.FirstAppearance, 0);
-        string visit25 = GetEncounterState(progress, customerId, CustomerEncounterEventKind.VisitMilestone, 25);
-        string visit50 = GetEncounterState(progress, customerId, CustomerEncounterEventKind.VisitMilestone, 50);
-        string food50 = customer.GetVisitCountFoodDic().TryGetValue(50, out string mappedFoodId) ? mappedFoodId : null;
-        string foodStatus = string.IsNullOrEmpty(food50) ? "없음" : food50 + (UserInfo.GetGiveRecipeList().Contains(food50) ? " · 레시피 보유" : " · 레시피 미보유");
+        string milestoneStatus = string.Join(" / ", CustomerEncounterCatalog.GetCustomerVisitMilestones(customerId)
+            .Select(milestone => milestone + "회 " + GetEncounterState(progress, customerId,
+                CustomerEncounterEventKind.VisitMilestone, milestone)));
+        string baseFoodStatus = GetRecipeStatus(customer.RequiredDish);
+        string stageFoodStatus = string.Join(" / ", customer.GetVisitCountFoodDic().OrderBy(pair => pair.Key)
+            .Select(pair => pair.Key + "회 " + GetRecipeStatus(pair.Value)));
         EditorGUILayout.Space();
         EditorGUILayout.LabelField("인카운터 메모리 검수", EditorStyles.boldLabel);
         EditorGUILayout.LabelField("선택 손님 공식 방문", customer.Name + " / " + UserInfo.GetVisitedCustomerCount(customerId) + "회");
-        EditorGUILayout.LabelField("첫 등장 / 25회", first + " / " + visit25);
-        EditorGUILayout.LabelField("50회 이벤트 / 음식", visit50 + " / " + foodStatus);
+        EditorGUILayout.LabelField("첫 등장", first);
+        EditorGUILayout.LabelField("등록 문턱", milestoneStatus);
+        EditorGUILayout.LabelField("기본 음식", baseFoodStatus);
+        EditorGUILayout.LabelField("단계 음식", stageFoodStatus);
     }
+    private static string GetRecipeStatus(string foodId)
+        => string.IsNullOrWhiteSpace(foodId) ? "없음" : foodId
+            + (UserInfo.GetGiveRecipeList().Contains(foodId) ? " · 레시피 보유" : " · 레시피 미보유");
     private static string GetEncounterState(CustomerEncounterProgressData progress, string customerId,
         CustomerEncounterEventKind kind, int milestone)
     {
