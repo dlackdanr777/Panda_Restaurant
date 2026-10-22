@@ -102,7 +102,7 @@ public partial class CustomerController
                 {
                     party.Members[i].Customer.transform.position = GetWaitingPosition(slot, i);
                     entry.Ready.Add(party.Members[i]);
-                    CustomerEncounterPresentation.OnRestoredCustomerWaiting(party.Members[i].Customer);
+                    CustomerEncounterPresentation.OnRestoredCustomerWaiting(party.Members[i]);
                 }
             }
             else SortCustomerLine();

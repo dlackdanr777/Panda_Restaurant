@@ -28,6 +28,9 @@ public class PopupManager : MonoBehaviour
     private static UIPopup _uiPopup;
     private static bool _isShowPopup;
     public static bool IsShowPopup => _isShowPopup;
+    // Keep encounter cards blocked until the existing popup's Hide animation finishes.
+    public static bool IsCustomerEncounterPresentationBlocked => _isShowPopup
+        || (_uiPopup != null && _uiPopup.gameObject.activeInHierarchy);
 
     public void ShowPopup(string title, string description)
     {

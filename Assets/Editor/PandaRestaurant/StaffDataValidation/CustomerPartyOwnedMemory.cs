@@ -77,9 +77,37 @@ internal sealed class CustomerPartyOwnedMemory : IGameDataBackendTransport,IStag
         game["LastAttendanceTime"]=UtcNow().AddHours(9).ToString("O");game["TotalAttendanceDays"]=1;
         var enabledCustomerIds = new List<string> { "CUSTOMER01", "CUSTOMER02", "CUSTOMER04" };
         if (encounterCustomerId != null && !enabledCustomerIds.Contains(encounterCustomerId)) enabledCustomerIds.Add(encounterCustomerId);
-        game["EnabledCustomerDataList"] = JArray.FromObject(enabledCustomerIds.Select(id => new SaveCustomerData(id, "",
-            id == encounterCustomerId ? encounterVisitCount : furnitureFix && !staffAi ? 0 : 25)));
-        game["GiveRecipeList"]=new JArray(new[]{"FOOD01","FOOD02","FOOD04","FOOD05","FOOD13","FOOD14"}.Select(id=>new JObject{["Id"]=id,["Level"]=1}));
+        var enabledCustomers = enabledCustomerIds.Select(id => new SaveCustomerData(id, "",
+            id == encounterCustomerId ? encounterVisitCount : furnitureFix && !staffAi ? 0 : 25)).ToArray();
+        game["EnabledCustomerDataList"] = JArray.FromObject(enabledCustomers);
+        var recipeIds = new List<string> { "FOOD01", "FOOD02", "FOOD04", "FOOD05", "FOOD13", "FOOD14" };
+        if (encounterCustomerId != null)
+        {
+            var encounterCustomer = CustomerDataManager.Instance.GetCustomerData(encounterCustomerId) as NormalCustomerData;
+            if (encounterCustomer == null || !encounterCustomer.GetVisitCountFoodDic().TryGetValue(50, out string encounterFoodId)
+                || string.IsNullOrWhiteSpace(encounterFoodId) || string.IsNullOrWhiteSpace(encounterCustomer.RequiredDish))
+                throw new InvalidOperationException("Encounter review customer must have a base dish and configured 50-visit food.");
+            var encounterRecipeIds = new HashSet<string>(StringComparer.Ordinal) { encounterCustomer.RequiredDish };
+            foreach (var visitFood in encounterCustomer.GetVisitCountFoodDic())
+            {
+                // Include foods that are actually eligible at this fixture's visit count.
+                // The 50-visit recipe remains preloaded for the existing EC-01 review UI;
+                // its visit threshold still controls whether NormalCustomerData offers it.
+                if (visitFood.Key <= encounterVisitCount || visitFood.Key == 50)
+                    if (!string.IsNullOrWhiteSpace(visitFood.Value)) encounterRecipeIds.Add(visitFood.Value);
+            }
+            foreach (string foodId in encounterRecipeIds)
+            {
+                FoodData food = FoodDataManager.Instance.GetFoodData(foodId);
+                if (food == null || food.Id != foodId)
+                    throw new InvalidOperationException("Encounter review recipe is missing from the food catalog: " + foodId);
+                if (!recipeIds.Contains(foodId)) recipeIds.Add(foodId);
+            }
+            var encounterProgress = CustomerEncounterProgressData.MigrateLegacy(enabledCustomers);
+            game[CustomerEncounterCatalog.StateVersionField] = CustomerEncounterCatalog.StateVersion;
+            game[CustomerEncounterCatalog.StateListField] = JArray.FromObject(encounterProgress.ToSaveRecords());
+        }
+        game["GiveRecipeList"] = new JArray(recipeIds.Select(id => new JObject { ["Id"] = id, ["Level"] = 1 }));
         game["ClearMainChallengeList"]=new JArray(Enumerable.Range(1,12).Select(i=>"MainReward"+i.ToString("D2")));
         var ownedStaff=staffAi?CreateStaffAiRecords():new[]{new StaffAccountStaffRecord("STAFF01",1)};
         var account=new StaffAccountSaveData(StaffAccountSaveConverter.CurrentVersion,ownedStaff,0,new GachaEconomySaveData(0,0,0,0));
