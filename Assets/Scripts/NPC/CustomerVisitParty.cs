@@ -131,14 +131,50 @@ public sealed class CustomerVisitMember
     internal object VisitIdentity { get; }
     public int SeatIndex { get; private set; } = -1;
     internal CustomerVisitDepartureResolution DepartureResolution { get; private set; }
+    private bool _encounterArrivalConsumed;
+    private bool _encounterEntryConsumed;
+    private readonly long _encounterContextGeneration;
+    internal int EncounterVisitsBeforeVisit { get; }
     internal bool IsVisitCurrent => Customer != null && Customer.IsVisitReady(Party.Owner)
         && ReferenceEquals(Customer.VisitIdentity, VisitIdentity);
+
+    // Belongs to this runtime visit, never to the character ID or pooled GameObject.
+    // Consume even when UI blocks presentation; a line shuffle is not a retry event.
+    internal bool TryConsumeEncounterArrival()
+    {
+        if (_encounterArrivalConsumed || !IsVisitCurrent || !Party.IsActive
+            || _encounterContextGeneration != UserInfo.CustomerEncounterContextGeneration
+            || !ReferenceEquals(Customer.VisitMember, this) || Party.CurrentUse != null
+            || Party.WaitingDeparture) return false;
+        _encounterArrivalConsumed = true;
+        return true;
+    }
+
+    internal void SuppressRestoredEncounterEvents()
+    {
+        _encounterArrivalConsumed = true;
+        _encounterEntryConsumed = true;
+    }
+
+    internal bool TryConsumeEncounterEntry(TableUseIdentity use)
+    {
+        if (_encounterEntryConsumed || use == null || !use.IsMemberCurrent(this)
+            || _encounterContextGeneration != UserInfo.CustomerEncounterContextGeneration
+            || use.CompletionStarted || use.ServiceAborted || use.FurnitureRemoved
+            || (use.IsSingle ? !use.Arrived || !use.Seated : !use.AllSeated)) return false;
+        _encounterEntryConsumed = true;
+        return true;
+    }
 
     internal CustomerVisitMember(CustomerVisitParty party, NormalCustomer customer)
     {
         Party = party;
         Customer = customer;
         VisitIdentity = customer.VisitIdentity;
+        _encounterContextGeneration = UserInfo.CustomerEncounterContextGeneration;
+        NormalCustomerData data = customer.NormalCustomerData;
+        EncounterVisitsBeforeVisit = data != null && CustomerEncounterCatalog.IsSupportedCustomer(data.Id)
+            && UserInfo.GetCustomerEnableState(data) ? UserInfo.GetVisitedCustomerCount(data.Id) : 0;
     }
     internal void SetSeat(int index) { SeatIndex = index; }
     internal void SetDepartureResolution(CustomerVisitDepartureResolution resolution) { DepartureResolution = resolution; }

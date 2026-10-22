@@ -2834,6 +2834,25 @@ public static partial class UserInfo
             && _customerEncounterProgress.TryGetNextPending(customerId, out record, out message);
     }
 
+    public static bool TryGetPendingCustomerFirstAppearance(string customerId,
+        out CustomerEncounterSaveData record, out string message)
+    {
+        record = null;
+        message = null;
+        return _customerEncounterStateWritable
+            && _customerEncounterProgress.TryGetPendingFirstAppearance(customerId, out record, out message);
+    }
+
+    public static bool TryGetCustomerEncounterForEntry(string customerId, int visitsBeforeThisVisit,
+        out CustomerEncounterSaveData record, out string message)
+    {
+        record = null;
+        message = null;
+        return _customerEncounterStateWritable
+            && _customerEncounterProgress.TryGetPendingVisitMilestone(customerId, visitsBeforeThisVisit,
+                out record, out message);
+    }
+
     public static bool MarkCustomerEncounterSeen(string customerId, CustomerEncounterEventKind kind,
         int visitMilestone, long expectedContextGeneration)
     {

@@ -390,6 +390,8 @@ public partial class TableManager : MonoBehaviour
         customer.Move(targetPos, 0, () =>
         {
             if (!use.IsCurrent(data) || use.Arrived) return;
+            // Only the encounter needs this extra proof; preserve legacy singleton guidance.
+            bool encounterEntryReached = !customer.HasPathFailure && customer.ConfirmReachedMoveTarget();
             use.Arrived = true;
 
             // 손님이 도착했으므로 즉시 위치 설정 (대기 시간 제거)
@@ -417,6 +419,7 @@ public partial class TableManager : MonoBehaviour
                 }
 
                 OnCustomerSeating(data);
+                if (encounterEntryReached) CustomerEncounterPresentation.OnGuidedEntryCompleted(use);
             });
         });
         _customerController.PublishGuide();
@@ -446,6 +449,7 @@ public partial class TableManager : MonoBehaviour
                 {
                     if (!use.TrySeat(member) || !use.AllSeated) return;
                     PreparePartyOrders(data, use);
+                    CustomerEncounterPresentation.OnGuidedEntryCompleted(use);
                 });
             }, () => CancelPartyGuideAfterEntryPathFailure(data, use, member, customer));
         }

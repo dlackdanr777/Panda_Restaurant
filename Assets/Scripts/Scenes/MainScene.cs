@@ -42,6 +42,10 @@ public class MainScene : MonoBehaviour
     private RestaurantType _restaurantType;
     public RestaurantType CurrentRestaurantType => _restaurantType;
     public int CustomerEncounterOpenViewCount => _uiNavCoordinator == null ? -1 : _uiNavCoordinator.GetOpenViewCount();
+    // Pop removes the stack entry before Hide finishes; AllPop can also mark it
+    // Disappeared early. Include actually active views in all navigation roots.
+    public bool CustomerEncounterViewsSettled => _uiNavCoordinator != null && AreAttendanceViewsReady()
+        && _uiNavCoordinator.GetComponentInChildren<UIView>() == null;
 
     private float _updateTimer;
     private bool _attendanceScheduled;
