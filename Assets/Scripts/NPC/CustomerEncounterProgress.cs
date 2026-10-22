@@ -40,7 +40,10 @@ public static class CustomerEncounterCatalog
     public const string StateVersionField = "CustomerEncounterStateVersion";
     public const string StateListField = "CustomerEncounterStateList";
 
+    // Historical definitions also validate saved keys and index the original dialogue.
+    // Retired milestones must remain here so existing Pending/Seen records stay readable.
     private static readonly int[] Milestones = { 25, 50, 100, 200, 300, 400, 500 };
+    private static readonly int[] ActiveMilestones = { 25, 100, 300, 500 };
     private static readonly IReadOnlyList<int> AllVisitMilestones = Array.AsReadOnly(Milestones);
     private static readonly Dictionary<string, string[]> Lines = new Dictionary<string, string[]>(StringComparer.Ordinal)
     {
@@ -179,12 +182,25 @@ public static class CustomerEncounterCatalog
         ["CUSTOMER11"] = Array.AsReadOnly(new[] { 25, 50, 100, 200 })
     };
 
+    private static readonly Dictionary<string, IReadOnlyList<int>> ActiveCustomerMilestones = CustomerMilestones.ToDictionary(
+        pair => pair.Key,
+        pair => (IReadOnlyList<int>)Array.AsReadOnly(pair.Value.Where(milestone => ActiveMilestones.Contains(milestone)).ToArray()),
+        StringComparer.Ordinal);
+
     public static IReadOnlyList<int> VisitMilestones => AllVisitMilestones;
     public static IReadOnlyCollection<string> CustomerIds => Lines.Keys;
     public static bool IsSupportedCustomer(string customerId) => !string.IsNullOrEmpty(customerId) && Lines.ContainsKey(customerId);
     public static IReadOnlyList<int> GetCustomerVisitMilestones(string customerId)
         => customerId != null && CustomerMilestones.TryGetValue(customerId, out var milestones)
             ? milestones : Array.Empty<int>();
+
+    public static IReadOnlyList<int> GetActiveCustomerVisitMilestones(string customerId)
+        => customerId != null && ActiveCustomerMilestones.TryGetValue(customerId, out var milestones)
+            ? milestones : Array.Empty<int>();
+
+    public static bool IsActiveEventKey(string customerId, int eventKind, int visitMilestone)
+        => IsValidEventKey(customerId, eventKind, visitMilestone)
+            && (eventKind == (int)CustomerEncounterEventKind.FirstAppearance || ActiveMilestones.Contains(visitMilestone));
 
     public static bool IsValidEventKey(string customerId, int eventKind, int visitMilestone)
     {
@@ -252,7 +268,7 @@ public sealed class CustomerEncounterProgressData
             if (customer == null || !CustomerEncounterCatalog.IsSupportedCustomer(customer.Id) || customer.VisitCount <= 0) continue;
             if (CustomerEncounterCatalog.IsValidEventKey(customer.Id, (int)CustomerEncounterEventKind.FirstAppearance, 0))
                 progress._states[new EventKey(customer.Id, CustomerEncounterEventKind.FirstAppearance, 0)] = CustomerEncounterEventState.Seen;
-            foreach (int milestone in CustomerEncounterCatalog.GetCustomerVisitMilestones(customer.Id))
+            foreach (int milestone in CustomerEncounterCatalog.GetActiveCustomerVisitMilestones(customer.Id))
                 if (customer.VisitCount >= milestone && CustomerEncounterCatalog.IsValidEventKey(
                     customer.Id, (int)CustomerEncounterEventKind.VisitMilestone, milestone))
                     progress._states[new EventKey(customer.Id, CustomerEncounterEventKind.VisitMilestone, milestone)] = CustomerEncounterEventState.Seen;
@@ -299,7 +315,7 @@ public sealed class CustomerEncounterProgressData
     {
         if (!CustomerEncounterCatalog.IsSupportedCustomer(customerId) || currentCount <= previousCount) return false;
         bool changed = false;
-        foreach (int milestone in CustomerEncounterCatalog.GetCustomerVisitMilestones(customerId))
+        foreach (int milestone in CustomerEncounterCatalog.GetActiveCustomerVisitMilestones(customerId))
         {
             if (previousCount >= milestone || currentCount < milestone
                 || !CustomerEncounterCatalog.IsValidEventKey(customerId, (int)CustomerEncounterEventKind.VisitMilestone, milestone)) continue;
@@ -337,7 +353,7 @@ public sealed class CustomerEncounterProgressData
         message = null;
         // An older Pending remains eligible on any later visit, not just exactly N+1.
         // A milestone reached after this visit started belongs to a future visit.
-        foreach (int milestone in CustomerEncounterCatalog.GetCustomerVisitMilestones(customerId))
+        foreach (int milestone in CustomerEncounterCatalog.GetActiveCustomerVisitMilestones(customerId))
         {
             if (milestone > visitsBeforeThisVisit) continue;
             var key = new EventKey(customerId, CustomerEncounterEventKind.VisitMilestone, milestone);
@@ -351,14 +367,16 @@ public sealed class CustomerEncounterProgressData
     {
         record = null;
         message = null;
-        if (!CustomerEncounterCatalog.TryGetMessage(key.CustomerId, key.Kind, key.Milestone, out message)) return false;
+        if (!CustomerEncounterCatalog.IsActiveEventKey(key.CustomerId, (int)key.Kind, key.Milestone)
+            || !CustomerEncounterCatalog.TryGetMessage(key.CustomerId, key.Kind, key.Milestone, out message)) return false;
         record = new CustomerEncounterSaveData(key.CustomerId, key.Kind, key.Milestone, CustomerEncounterEventState.Pending);
         return true;
     }
 
     public bool MarkSeen(string customerId, CustomerEncounterEventKind kind, int milestone)
     {
-        if (!CustomerEncounterCatalog.IsValidEventKey(customerId, (int)kind, milestone)) return false;
+        // A late confirmation cannot consume a retired Pending event.
+        if (!CustomerEncounterCatalog.IsActiveEventKey(customerId, (int)kind, milestone)) return false;
         var key = new EventKey(customerId, kind, milestone);
         if (!_states.TryGetValue(key, out CustomerEncounterEventState state) || state != CustomerEncounterEventState.Pending) return false;
         _states[key] = CustomerEncounterEventState.Seen;

@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using LitJson;
+using Muks.BackEnd;
 using Muks.MobileUI;
 using Muks.Tween;
 using Muks.UI;
+using Newtonsoft.Json.Linq;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using static CustomerTableUseRegressionTests;
 using Flow = CustomerTableUseRegressionTests.Flow;
 
@@ -34,20 +37,29 @@ public sealed class CustomerEncounterTests
         Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.FirstAppearance, 0), Is.True);
     }
 
-    [TestCase(24, 25, 25)]
-    [TestCase(49, 50, 50)]
-    [TestCase(99, 100, 100)]
-    [TestCase(199, 200, 200)]
-    [TestCase(299, 300, 300)]
-    [TestCase(399, 400, 400)]
-    [TestCase(499, 500, 500)]
-    public void T03_T05_OfficialVisitCrossingQueuesOnlyReachedMilestone(int previous, int current, int expected)
+    [TestCase(24, 25, true)]
+    [TestCase(49, 50, false)]
+    [TestCase(99, 100, true)]
+    [TestCase(199, 200, false)]
+    [TestCase(299, 300, true)]
+    [TestCase(399, 400, false)]
+    [TestCase(499, 500, true)]
+    public void T03_T05_OfficialVisitCrossingQueuesOnlyActiveReachedMilestone(int previous, int current, bool active)
     {
         var progress = CustomerEncounterProgressData.CreateEmpty();
-        Assert.That(progress.RecordCompletedVisit("CUSTOMER01", previous, current), Is.True);
-        Assert.That(progress.TryGetNextPending("CUSTOMER01", out var record, out _), Is.True);
-        Assert.That(record.EventKind, Is.EqualTo((int)CustomerEncounterEventKind.VisitMilestone));
-        Assert.That(record.VisitMilestone, Is.EqualTo(expected));
+        Assert.That(progress.RecordCompletedVisit("CUSTOMER01", previous, current), Is.EqualTo(active));
+        Assert.That(progress.TryGetNextPending("CUSTOMER01", out var record, out var message), Is.EqualTo(active));
+        if (active)
+        {
+            Assert.That(record.EventKind, Is.EqualTo((int)CustomerEncounterEventKind.VisitMilestone));
+            Assert.That(record.VisitMilestone, Is.EqualTo(current));
+        }
+        else
+        {
+            Assert.That(record, Is.Null);
+            Assert.That(message, Is.Null);
+            Assert.That(progress.ToSaveRecords(), Is.Empty, "Retired milestones must not create even a silent Pending record.");
+        }
         Assert.That(progress.RecordCompletedVisit("CUSTOMER01", previous, current), Is.False);
     }
 
@@ -140,7 +152,7 @@ public sealed class CustomerEncounterTests
     }
 
     [Test]
-    public void T12_CatalogSupportsElevenCustomersWithExactA1LinesAndPerCustomerMilestones()
+    public void T12_CatalogPreserves85ExactDefinitionsAndActivates53ExactMessages()
     {
         string[][] expected =
         {
@@ -168,6 +180,8 @@ public sealed class CustomerEncounterTests
         string[] ids = { "CUSTOMER01", "CUSTOMER02", "CUSTOMER03", "CUSTOMER04", "CUSTOMER05", "CUSTOMER06", "CUSTOMER07", "CUSTOMER08", "CUSTOMER09", "CUSTOMER10", "CUSTOMER11" };
         Assert.That(CustomerEncounterCatalog.CustomerIds, Is.EquivalentTo(ids));
         int totalMessageCount = 0;
+        int activeMessageCount = 0;
+        int retiredMessageCount = 0;
         for (int customer = 0; customer < ids.Length; customer++)
         {
             totalMessageCount += expected[customer].Length;
@@ -175,16 +189,40 @@ public sealed class CustomerEncounterTests
             Assert.That(CustomerEncounterCatalog.TryGetMessage(ids[customer], CustomerEncounterEventKind.FirstAppearance, 0, out var first), Is.True);
             Assert.That(first, Is.EqualTo(expected[customer][0]));
             Assert.That(CustomerEncounterCatalog.IsValidEventKey(ids[customer], (int)CustomerEncounterEventKind.FirstAppearance, 0), Is.True);
+            Assert.That(CustomerEncounterCatalog.IsActiveEventKey(ids[customer], (int)CustomerEncounterEventKind.FirstAppearance, 0), Is.True);
+            activeMessageCount++;
             Assert.That(CustomerEncounterCatalog.GetCustomerVisitMilestones(ids[customer]), Is.EqualTo(expectedMilestones[customer]));
+            int[] expectedActive = customer == 10 ? new[] { 25, 100 } : new[] { 25, 100, 300, 500 };
+            Assert.That(CustomerEncounterCatalog.GetActiveCustomerVisitMilestones(ids[customer]), Is.EqualTo(expectedActive));
             for (int milestone = 0; milestone < expectedMilestones[customer].Length; milestone++)
             {
                 int visits = expectedMilestones[customer][milestone];
                 Assert.That(CustomerEncounterCatalog.IsValidEventKey(ids[customer], (int)CustomerEncounterEventKind.VisitMilestone, visits), Is.True);
                 Assert.That(CustomerEncounterCatalog.TryGetMessage(ids[customer], CustomerEncounterEventKind.VisitMilestone, visits, out var message), Is.True);
                 Assert.That(message, Is.EqualTo(expected[customer][milestone + 1]));
+                bool active = expectedActive.Contains(visits);
+                Assert.That(CustomerEncounterCatalog.IsActiveEventKey(ids[customer], (int)CustomerEncounterEventKind.VisitMilestone, visits), Is.EqualTo(active));
+                var progress = CustomerEncounterProgressData.CreateEmpty();
+                Assert.That(progress.RecordCompletedVisit(ids[customer], visits - 1, visits), Is.EqualTo(active));
+                Assert.That(progress.TryGetPendingVisitMilestone(ids[customer], visits, out var candidate, out var displayed), Is.EqualTo(active));
+                if (active)
+                {
+                    activeMessageCount++;
+                    AssertMilestoneCandidate(candidate, ids[customer], visits);
+                    Assert.That(displayed, Is.EqualTo(expected[customer][milestone + 1]), "Active mapping must retain its original text index.");
+                }
+                else
+                {
+                    retiredMessageCount++;
+                    Assert.That(candidate, Is.Null);
+                    Assert.That(displayed, Is.Null);
+                    Assert.That(progress.ToSaveRecords(), Is.Empty);
+                }
             }
         }
         Assert.That(totalMessageCount, Is.EqualTo(85));
+        Assert.That(activeMessageCount, Is.EqualTo(53));
+        Assert.That(retiredMessageCount, Is.EqualTo(32));
         Assert.That(CustomerEncounterCatalog.IsSupportedCustomer("CUSTOMER12"), Is.False);
         Assert.That(CustomerEncounterCatalog.IsSupportedCustomer("CUSTOMER77"), Is.False);
     }
@@ -205,7 +243,7 @@ public sealed class CustomerEncounterTests
             Assert.That(firstProgress.RecordValidAppearance(customerId, 0), Is.False, customerId + "/repeat first");
             Assert.That(firstProgress.TryGetNextPending(customerId, out _, out _), Is.False, customerId + "/repeat pending");
 
-            foreach (int milestone in CustomerEncounterCatalog.GetCustomerVisitMilestones(customerId))
+            foreach (int milestone in CustomerEncounterCatalog.GetActiveCustomerVisitMilestones(customerId))
             {
                 var progress = CustomerEncounterProgressData.CreateEmpty();
                 Assert.That(progress.RecordCompletedVisit(customerId, milestone - 1, milestone), Is.True, customerId + "/" + milestone);
@@ -260,7 +298,9 @@ public sealed class CustomerEncounterTests
         Assert.That(progress.TryGetNextPending("CUSTOMER04", out var future, out var message), Is.True);
         Assert.That(future.VisitMilestone, Is.EqualTo(25));
         Assert.That(message, Is.EqualTo("운동하고 나서 쉬는 시간이 최고야."));
-        Assert.That(progress.IsSeen("CUSTOMER11", CustomerEncounterEventKind.VisitMilestone, 200), Is.True);
+        Assert.That(progress.IsSeen("CUSTOMER11", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
+        Assert.That(progress.ToSaveRecords().Any(record => record.VisitMilestone == 50 || record.VisitMilestone == 200), Is.False,
+            "A legacy account without a ledger must not manufacture retired Seen records.");
         Assert.That(progress.IsSeen("CUSTOMER11", CustomerEncounterEventKind.VisitMilestone, 300), Is.False);
         Assert.That(progress.IsPending("CUSTOMER11", CustomerEncounterEventKind.VisitMilestone, 300), Is.False);
         string recordsJson = JsonMapper.ToJson(progress.ToSaveRecords());
@@ -270,7 +310,7 @@ public sealed class CustomerEncounterTests
         Assert.That(loaded.EncounterLoadStatus, Is.EqualTo(CustomerEncounterLoadStatus.Valid));
         Assert.That(CustomerEncounterProgressData.TryRestore(loaded.CustomerEncounterRecords, out var restored, out _), Is.True);
         Assert.That(restored.IsPending("CUSTOMER04", CustomerEncounterEventKind.VisitMilestone, 25), Is.True);
-        Assert.That(restored.IsSeen("CUSTOMER11", CustomerEncounterEventKind.VisitMilestone, 200), Is.True);
+        Assert.That(restored.IsSeen("CUSTOMER11", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
         Assert.That(restored.IsPending("CUSTOMER11", CustomerEncounterEventKind.VisitMilestone, 300), Is.False);
     }
 
@@ -289,13 +329,13 @@ public sealed class CustomerEncounterTests
         Assert.That(expanded.IsSeen("CUSTOMER01", CustomerEncounterEventKind.FirstAppearance, 0), Is.True);
         Assert.That(expanded.IsPending("CUSTOMER02", CustomerEncounterEventKind.VisitMilestone, 25), Is.True);
 
-        Assert.That(expanded.RecordValidAppearance("CUSTOMER04", 49), Is.False);
+        Assert.That(expanded.RecordValidAppearance("CUSTOMER04", 99), Is.False);
         Assert.That(expanded.IsSeen("CUSTOMER04", CustomerEncounterEventKind.FirstAppearance, 0), Is.True);
         Assert.That(expanded.TryGetNextPending("CUSTOMER04", out _, out _), Is.False);
-        Assert.That(expanded.RecordCompletedVisit("CUSTOMER04", 49, 50), Is.True);
+        Assert.That(expanded.RecordCompletedVisit("CUSTOMER04", 99, 100), Is.True);
         Assert.That(expanded.TryGetNextPending("CUSTOMER04", out var next, out var nextMessage), Is.True);
-        Assert.That(next.VisitMilestone, Is.EqualTo(50));
-        Assert.That(nextMessage, Is.EqualTo("아침에 멀리 한 바퀴 돌고 왔어."));
+        Assert.That(next.VisitMilestone, Is.EqualTo(100));
+        Assert.That(nextMessage, Is.EqualTo("달콤한 건 마음까지 가볍게 해."));
         Assert.That(expanded.IsSeen("CUSTOMER01", CustomerEncounterEventKind.FirstAppearance, 0), Is.True);
         Assert.That(expanded.IsPending("CUSTOMER02", CustomerEncounterEventKind.VisitMilestone, 25), Is.True);
     }
@@ -458,10 +498,10 @@ public sealed class CustomerEncounterTests
     {
         using (var s = new Flow())
         {
-            var progress = PrepareEncounterFlow(s, visitCount: 50);
+            var progress = PrepareEncounterFlow(s, visitCount: 100);
             progress.RecordValidAppearance("CUSTOMER01", 0);
             progress.RecordCompletedVisit("CUSTOMER01", 24, 25);
-            progress.RecordCompletedVisit("CUSTOMER01", 49, 50);
+            progress.RecordCompletedVisit("CUSTOMER01", 99, 100);
             progress.RecordValidAppearance("CUSTOMER02", 0);
             var sameIdParty = SpawnEncounterParty(s, "CUSTOMER01", "CUSTOMER01");
             var otherIdParty = SpawnEncounterParty(s, "CUSTOMER02");
@@ -481,7 +521,7 @@ public sealed class CustomerEncounterTests
             Assert.That(other.CustomerId, Is.EqualTo("CUSTOMER02"));
             Assert.That(other.EventKind, Is.EqualTo((int)CustomerEncounterEventKind.FirstAppearance));
             Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 25), Is.True);
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True);
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
             Assert.That(progress.IsPending("CUSTOMER02", CustomerEncounterEventKind.FirstAppearance, 0), Is.True);
         }
     }
@@ -541,16 +581,16 @@ public sealed class CustomerEncounterTests
 
     [TestCase(24, 0)]
     [TestCase(25, 25)]
-    [TestCase(49, 25)]
-    [TestCase(50, 25)]
-    [TestCase(51, 25)]
+    [TestCase(99, 25)]
+    [TestCase(100, 25)]
+    [TestCase(101, 25)]
     [TestCase(0, 0)]
     public void Entry_SelectsOldestPendingMilestoneAllowedByVisitStart(int visitsBeforeThisVisit, int expected)
     {
         var progress = CustomerEncounterProgressData.CreateEmpty();
         progress.RecordValidAppearance("CUSTOMER01", 0);
         progress.RecordCompletedVisit("CUSTOMER01", 24, 25);
-        progress.RecordCompletedVisit("CUSTOMER01", 49, 50);
+        progress.RecordCompletedVisit("CUSTOMER01", 99, 100);
         progress.RecordCompletedVisit("CUSTOMER02", 24, 25);
         string before = JsonMapper.ToJson(progress.ToSaveRecords());
 
@@ -611,7 +651,9 @@ public sealed class CustomerEncounterTests
     }
 
     [TestCase(24, 25)]
-    [TestCase(49, 50)]
+    [TestCase(99, 100)]
+    [TestCase(299, 300)]
+    [TestCase(499, 500)]
     public void CompletedMeal_ArmsPendingWithoutCandidateUntilNextVisitActuallySeats(int previous, int milestone)
     {
         using (var s = new Flow())
@@ -650,8 +692,163 @@ public sealed class CustomerEncounterTests
         }
     }
 
-    [TestCase(24, 25)]
     [TestCase(49, 50)]
+    [TestCase(199, 200)]
+    [TestCase(399, 400)]
+    public void RetiredMilestone_OfficialVisitStillIncrementsWithoutArmingOrChangingFoodRules(int previous, int milestone)
+    {
+        using (var s = new Flow())
+        {
+            var progress = PrepareEncounterFlow(s, visitCount: previous);
+            MarkFirstAppearanceSeen(progress, "CUSTOMER01");
+            var candidates = ObserveEncounterCandidates(s);
+            var foodRules = s.Data.GetVisitCountFoodDic().ToArray();
+            var recipes = UserInfo.GetGiveRecipeList().ToArray();
+            int cumulativeBefore = UserInfo.TotalCumulativeCustomerCount;
+            string encounterBefore = JsonMapper.ToJson(progress.ToSaveRecords());
+
+            UserInfo.CustomerVisits(s.Data);
+
+            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(milestone));
+            Assert.That(UserInfo.TotalCumulativeCustomerCount, Is.EqualTo(cumulativeBefore), "The individual counter must not add an extra global visit.");
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, milestone), Is.False);
+            Assert.That(JsonMapper.ToJson(progress.ToSaveRecords()), Is.EqualTo(encounterBefore));
+            Assert.That(candidates, Is.Empty);
+            Assert.That(s.Data.GetVisitCountFoodDic(), Is.EquivalentTo(foodRules));
+            Assert.That(UserInfo.GetGiveRecipeList(), Is.EquivalentTo(recipes));
+        }
+    }
+
+    [TestCase(CustomerEncounterEventState.Pending)]
+    [TestCase(CustomerEncounterEventState.Seen)]
+    public void RetiredRecords_ActualLoadAndUserInfoSaveRoundTripPreservesAll32Keys(CustomerEncounterEventState state)
+    {
+        using (var s = new Flow())
+        {
+            DateTime now = PrepareMemoryAccountRestore(s);
+            var records = CreateRetiredRecords(state);
+            Assert.That(records, Has.Count.EqualTo(32));
+            records.Add(new CustomerEncounterSaveData("CUSTOMER01", CustomerEncounterEventKind.FirstAppearance, 0, CustomerEncounterEventState.Seen));
+            records.Add(new CustomerEncounterSaveData("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 25, CustomerEncounterEventState.Seen));
+            records.Add(new CustomerEncounterSaveData("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100, CustomerEncounterEventState.Pending));
+            JObject payload = CreateMemoryAccountPayload(now, records);
+            string originalPayload = payload.ToString();
+            var response = EncounterMemoryResponse(payload);
+            var loaded = new LoadUserData(response.FlattenRows());
+            Assert.That(loaded.EncounterLoadStatus, Is.EqualTo(CustomerEncounterLoadStatus.Valid));
+            Assert.That(loaded.CustomerEncounterRecords.Select(EncounterRecordKey), Is.EquivalentTo(records.Select(EncounterRecordKey)));
+            Assert.That(UserInfo.TryLoadGameData(response), Is.True);
+            Assert.That(UserInfo.IsCustomerEncounterStateWritable, Is.True);
+            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(501));
+            Assert.That(UserInfo.TryGetPendingCustomerEncounter("CUSTOMER01", out var next, out _), Is.True);
+            AssertMilestoneCandidate(next, "CUSTOMER01", 100);
+            Assert.That(UserInfo.TryGetCustomerEncounterForEntry("CUSTOMER01", 501, out var entry, out _), Is.True);
+            AssertMilestoneCandidate(entry, "CUSTOMER01", 100);
+            foreach (var retired in records.Take(32))
+                Assert.That(UserInfo.MarkCustomerEncounterSeen(retired.CustomerId, CustomerEncounterEventKind.VisitMilestone,
+                    retired.VisitMilestone, UserInfo.CustomerEncounterContextGeneration), Is.False, EncounterRecordKey(retired));
+
+            JObject saved = JObject.Parse(UserInfo.GetSaveUserData().GetJson());
+            Assert.That((int)saved[CustomerEncounterCatalog.StateVersionField], Is.EqualTo(1));
+            Assert.That(saved[CustomerEncounterCatalog.StateListField].ToObject<List<CustomerEncounterSaveData>>().Select(EncounterRecordKey),
+                Is.EquivalentTo(records.Select(EncounterRecordKey)), "Retired Pending and Seen must survive the real save writer unchanged.");
+            Assert.That(UserInfo.TryLoadGameData(EncounterMemoryResponse(saved)), Is.True);
+            JObject savedAgain = JObject.Parse(UserInfo.GetSaveUserData().GetJson());
+            Assert.That(savedAgain[CustomerEncounterCatalog.StateListField].ToObject<List<CustomerEncounterSaveData>>().Select(EncounterRecordKey),
+                Is.EquivalentTo(records.Select(EncounterRecordKey)));
+            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(501));
+            Assert.That(payload.ToString(), Is.EqualTo(originalPayload));
+        }
+    }
+
+    [TestCase(50, 100, false)]
+    [TestCase(50, 100, true)]
+    [TestCase(200, 300, false)]
+    [TestCase(200, 300, true)]
+    [TestCase(400, 500, false)]
+    [TestCase(400, 500, true)]
+    public void RetiredPending_IsSkippedBySelectorsAndActualEntryWithoutBeingConsumed(int retired, int active, bool hasActive)
+    {
+        using (var s = new Flow())
+        {
+            PrepareEncounterFlow(s, visitCount: active);
+            var records = new List<CustomerEncounterSaveData>
+            {
+                new CustomerEncounterSaveData("CUSTOMER01", CustomerEncounterEventKind.FirstAppearance, 0, CustomerEncounterEventState.Seen),
+                new CustomerEncounterSaveData("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, retired, CustomerEncounterEventState.Pending)
+            };
+            if (hasActive)
+                records.Add(new CustomerEncounterSaveData("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, active, CustomerEncounterEventState.Pending));
+            Assert.That(CustomerEncounterProgressData.TryRestore(records, out var progress, out _), Is.True);
+            s.Swap(typeof(UserInfo), "_customerEncounterProgress", progress);
+            Assert.That(progress.TryGetNextPending("CUSTOMER01", out var next, out _), Is.EqualTo(hasActive));
+            Assert.That(progress.TryGetPendingVisitMilestone("CUSTOMER01", active, out var entry, out _), Is.EqualTo(hasActive));
+            if (hasActive)
+            {
+                AssertMilestoneCandidate(next, "CUSTOMER01", active);
+                AssertMilestoneCandidate(entry, "CUSTOMER01", active);
+            }
+            else
+            {
+                Assert.That(next, Is.Null);
+                Assert.That(entry, Is.Null);
+            }
+            var candidates = ObserveEncounterCandidates(s);
+            var party = SpawnEncounterParty(s, "CUSTOMER01");
+            ArriveEncounterParty(party);
+            Assert.That(candidates, Is.Empty);
+            Action repeated = CompleteEncounterEntry(s, party);
+            Assert.That(candidates, Has.Count.EqualTo(hasActive ? 1 : 0));
+            if (hasActive)
+            {
+                AssertMilestoneCandidate(candidates[0], "CUSTOMER01", active);
+                Assert.That(progress.MarkSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, active), Is.True);
+                Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, active), Is.True);
+            }
+            repeated();
+            InvokeGuidedEntry(s.Use);
+            Assert.That(candidates, Has.Count.EqualTo(hasActive ? 1 : 0));
+            Assert.That(progress.TryGetNextPending("CUSTOMER01", out _, out _), Is.False);
+            Assert.That(progress.TryGetPendingVisitMilestone("CUSTOMER01", active, out _, out _), Is.False);
+            Assert.That(progress.MarkSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, retired), Is.False);
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, retired), Is.True);
+            Assert.That(progress.ToSaveRecords().Single(record => record.VisitMilestone == retired).State,
+                Is.EqualTo((int)CustomerEncounterEventState.Pending));
+        }
+    }
+
+    [TestCase("unknown-customer")]
+    [TestCase("invalid-state")]
+    [TestCase("duplicate")]
+    [TestCase("unsupported-version")]
+    public void RetiredRecords_InvalidPayloadStillWithholdsActualUserInfoEncounterWrites(string damage)
+    {
+        using (var s = new Flow())
+        {
+            DateTime now = PrepareMemoryAccountRestore(s);
+            JObject payload = CreateMemoryAccountPayload(now, CreateRetiredRecords(CustomerEncounterEventState.Pending));
+            var records = (JArray)payload[CustomerEncounterCatalog.StateListField];
+            if (damage == "unknown-customer") records[0]["CustomerId"] = "CUSTOMER77";
+            else if (damage == "invalid-state") records[0]["State"] = 77;
+            else if (damage == "duplicate") records.Add(records[0].DeepClone());
+            else payload[CustomerEncounterCatalog.StateVersionField] = 2;
+            var response = EncounterMemoryResponse(payload);
+            var loaded = new LoadUserData(response.FlattenRows());
+            Assert.That(loaded.IsValid, Is.True);
+            Assert.That(loaded.EncounterLoadStatus, Is.EqualTo(CustomerEncounterLoadStatus.ProtectedInvalid));
+            LogAssert.Expect(LogType.Error, "[CustomerEncounter] Unsupported or damaged state; writes are withheld.");
+            Assert.That(UserInfo.TryLoadGameData(response), Is.True, "Only the damaged encounter state is protected.");
+            Assert.That(UserInfo.IsCustomerEncounterStateWritable, Is.False);
+            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(501));
+            JObject saved = JObject.Parse(UserInfo.GetSaveUserData().GetJson());
+            Assert.That(saved.Property(CustomerEncounterCatalog.StateVersionField), Is.Null);
+            Assert.That(saved.Property(CustomerEncounterCatalog.StateListField), Is.Null,
+                "Damaged records must be withheld, not overwritten by an empty normal version-1 state.");
+        }
+    }
+
+    [TestCase(24, 25)]
+    [TestCase(99, 100)]
     public void Entry_VisitStartSnapshotRejectsMilestoneReachedWhileAlreadyWaiting(int previous, int milestone)
     {
         using (var s = new Flow())
@@ -685,11 +882,11 @@ public sealed class CustomerEncounterTests
     {
         using (var s = new Flow())
         {
-            var progress = PrepareEncounterFlow(s, visitCount: 50);
+            var progress = PrepareEncounterFlow(s, visitCount: 100);
             MarkFirstAppearanceSeen(progress, "CUSTOMER01", "CUSTOMER02");
-            UserInfo.CustomerVisits(CustomerDataManager.Instance.GetCustomerData("CUSTOMER02"), 50);
+            UserInfo.CustomerVisits(CustomerDataManager.Instance.GetCustomerData("CUSTOMER02"), 100);
             progress.RecordCompletedVisit("CUSTOMER01", 24, 25);
-            progress.RecordCompletedVisit("CUSTOMER01", 49, 50);
+            progress.RecordCompletedVisit("CUSTOMER01", 99, 100);
             progress.RecordCompletedVisit("CUSTOMER02", 24, 25);
             var candidates = ObserveEncounterCandidates(s);
             var party = SpawnEncounterParty(s, companionId == null ? new[] { "CUSTOMER01" } : new[] { "CUSTOMER01", companionId });
@@ -718,7 +915,7 @@ public sealed class CustomerEncounterTests
             foreach (var seated in seating) seated();
             InvokeGuidedEntry(s.Use);
             Assert.That(candidates, Has.Count.EqualTo(1), "Confirming one card cannot drain another member or milestone in the same entry.");
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True);
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
             Assert.That(progress.IsPending("CUSTOMER02", CustomerEncounterEventKind.VisitMilestone, 25), Is.True);
         }
     }
@@ -728,16 +925,16 @@ public sealed class CustomerEncounterTests
     {
         using (var s = new Flow())
         {
-            var progress = PrepareEncounterFlow(s, visitCount: 50);
+            var progress = PrepareEncounterFlow(s, visitCount: 100);
             MarkFirstAppearanceSeen(progress, "CUSTOMER01", "CUSTOMER02");
-            progress.RecordCompletedVisit("CUSTOMER01", 49, 50);
+            progress.RecordCompletedVisit("CUSTOMER01", 99, 100);
             var candidates = ObserveEncounterCandidates(s);
             var otherVisit = SpawnEncounterParty(s, "CUSTOMER02");
             ArriveEncounterParty(otherVisit);
             CompleteEncounterEntry(s, otherVisit);
             Assert.That(candidates, Is.Empty);
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True);
-            Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.False);
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
+            Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.False);
         }
     }
 
@@ -746,9 +943,9 @@ public sealed class CustomerEncounterTests
     {
         using (var s = new Flow())
         {
-            var progress = PrepareEncounterFlow(s, visitCount: 50);
+            var progress = PrepareEncounterFlow(s, visitCount: 100);
             progress.RecordValidAppearance("CUSTOMER01", 0);
-            progress.RecordCompletedVisit("CUSTOMER01", 49, 50);
+            progress.RecordCompletedVisit("CUSTOMER01", 99, 100);
             var candidates = ObserveEncounterCandidates(s);
             var party = SpawnEncounterParty(s, "CUSTOMER01");
             ArriveEncounterParty(party);
@@ -759,9 +956,9 @@ public sealed class CustomerEncounterTests
             Assert.That(Get<bool>(party.Members[0], "_encounterEntryConsumed"), Is.False);
             CompleteEncounterEntry(s, party);
             Assert.That(candidates, Has.Count.EqualTo(2));
-            AssertMilestoneCandidate(candidates[1], "CUSTOMER01", 50);
+            AssertMilestoneCandidate(candidates[1], "CUSTOMER01", 100);
             Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.FirstAppearance, 0), Is.True);
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True);
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
         }
     }
 
@@ -769,7 +966,7 @@ public sealed class CustomerEncounterTests
     public void Entry_RegisteredMilestonesRespectEachCustomerCatalog()
     {
         foreach (string customerId in CustomerEncounterCatalog.CustomerIds)
-            foreach (int milestone in CustomerEncounterCatalog.GetCustomerVisitMilestones(customerId))
+            foreach (int milestone in CustomerEncounterCatalog.GetActiveCustomerVisitMilestones(customerId))
             {
                 var progress = CustomerEncounterProgressData.CreateEmpty();
                 Assert.That(progress.RecordCompletedVisit(customerId, milestone - 1, milestone), Is.True);
@@ -783,7 +980,7 @@ public sealed class CustomerEncounterTests
                 Assert.That(progress.TryGetPendingVisitMilestone(customerId, milestone + 2, out _, out _), Is.False);
             }
         var ulli = CustomerEncounterProgressData.CreateEmpty();
-        Assert.That(CustomerEncounterCatalog.GetCustomerVisitMilestones("CUSTOMER11"), Is.EqualTo(new[] { 25, 50, 100, 200 }));
+        Assert.That(CustomerEncounterCatalog.GetActiveCustomerVisitMilestones("CUSTOMER11"), Is.EqualTo(new[] { 25, 100 }));
         Assert.That(ulli.RecordCompletedVisit("CUSTOMER11", 299, 300), Is.False);
         Assert.That(ulli.TryGetPendingVisitMilestone("CUSTOMER11", 301, out _, out _), Is.False);
     }
@@ -797,9 +994,9 @@ public sealed class CustomerEncounterTests
     {
         using (var s = new Flow())
         {
-            var progress = PrepareEncounterFlow(s, visitCount: 50);
+            var progress = PrepareEncounterFlow(s, visitCount: 100);
             MarkFirstAppearanceSeen(progress, "CUSTOMER01");
-            progress.RecordCompletedVisit("CUSTOMER01", 49, 50);
+            progress.RecordCompletedVisit("CUSTOMER01", 99, 100);
             var candidates = ObserveEncounterCandidates(s);
             bool pair = failure == "second-member-path-failed" || failure == "cancelled-pair";
             var party = SpawnEncounterParty(s, pair ? new[] { "CUSTOMER01", "CUSTOMER01" } : new[] { "CUSTOMER01" });
@@ -846,8 +1043,8 @@ public sealed class CustomerEncounterTests
             }
             Assert.That(candidates, Is.Empty, "Only a successful actual entry can prepare a milestone candidate.");
             Assert.That(party.Members.All(member => !Get<bool>(member, "_encounterEntryConsumed")), Is.True);
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True);
-            Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.False);
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
+            Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.False);
         }
     }
 
@@ -856,9 +1053,9 @@ public sealed class CustomerEncounterTests
     {
         using (var s = new Flow())
         {
-            var progress = PrepareEncounterFlow(s, visitCount: 50);
+            var progress = PrepareEncounterFlow(s, visitCount: 100);
             MarkFirstAppearanceSeen(progress, "CUSTOMER01");
-            progress.RecordCompletedVisit("CUSTOMER01", 49, 50);
+            progress.RecordCompletedVisit("CUSTOMER01", 99, 100);
             var candidates = ObserveEncounterCandidates(s);
             var party = SpawnEncounterParty(s, "CUSTOMER01");
             ArriveEncounterParty(party);
@@ -870,7 +1067,7 @@ public sealed class CustomerEncounterTests
             InvokeGuidedEntry(s.Use);
             Assert.That(candidates, Is.Empty);
             Assert.That(Get<bool>(party.Members[0], "_encounterEntryConsumed"), Is.False);
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True);
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
         }
     }
 
@@ -879,9 +1076,9 @@ public sealed class CustomerEncounterTests
     {
         using (var s = new Flow())
         {
-            var progress = PrepareEncounterFlow(s, visitCount: 50);
+            var progress = PrepareEncounterFlow(s, visitCount: 100);
             MarkFirstAppearanceSeen(progress, "CUSTOMER01");
-            progress.RecordCompletedVisit("CUSTOMER01", 49, 50);
+            progress.RecordCompletedVisit("CUSTOMER01", 99, 100);
             var candidates = ObserveEncounterCandidates(s);
             var oldParty = SpawnEncounterParty(s, "CUSTOMER01");
             ArriveEncounterParty(oldParty);
@@ -901,7 +1098,7 @@ public sealed class CustomerEncounterTests
             ArriveEncounterParty(nextParty);
             CompleteEncounterEntry(s, nextParty);
             Assert.That(candidates, Has.Count.EqualTo(1));
-            AssertMilestoneCandidate(candidates[0], "CUSTOMER01", 50);
+            AssertMilestoneCandidate(candidates[0], "CUSTOMER01", 100);
         }
     }
 
@@ -913,7 +1110,7 @@ public sealed class CustomerEncounterTests
     {
         using (var s = new Flow())
         {
-            var progress = PrepareEncounterFlow(s, visitCount: 49);
+            var progress = PrepareEncounterFlow(s, visitCount: 99);
             MarkFirstAppearanceSeen(progress, "CUSTOMER01");
             var candidates = ObserveEncounterCandidates(s);
             var scene = s.Create<MainScene>();
@@ -949,16 +1146,16 @@ public sealed class CustomerEncounterTests
             view.gameObject.SetActive(true);
             Assert.That(allowed(), Is.False);
             UserInfo.CustomerVisits(s.Data);
-            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(50));
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True);
+            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(100));
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
             Assert.That(candidates, Is.Empty, "Completion cannot prepare a candidate while another view is open.");
             var blockedVisit = SpawnEncounterParty(s, "CUSTOMER01");
             ArriveEncounterParty(blockedVisit);
             Action repeatEntry = CompleteEncounterEntry(s, blockedVisit);
             Assert.That(candidates, Has.Count.EqualTo(1), "The production entry prepares one candidate before the UI eligibility gate.");
-            AssertMilestoneCandidate(candidates[0], "CUSTOMER01", 50);
+            AssertMilestoneCandidate(candidates[0], "CUSTOMER01", 100);
             Assert.That(allowed(), Is.False);
-            Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.False);
+            Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.False);
 
             if (allPop) nav.AllPop();
             else nav.Pop("BlockingView");
@@ -971,14 +1168,14 @@ public sealed class CustomerEncounterTests
             view.VisibleState = VisibleState.Disappeared;
             view.gameObject.SetActive(false);
             Assert.That(allowed(), Is.True);
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True,
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True,
                 "Returning to play does not consume the Pending card.");
             Assert.That(candidates, Has.Count.EqualTo(1), "Closing the view alone cannot prepare a new candidate.");
             repeatEntry();
             InvokeGuidedEntry(s.Use);
             Assert.That(candidates, Has.Count.EqualTo(1), "The blocked entry cannot retry after navigation settles.");
             UserInfo.CustomerVisits(s.Data);
-            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(51));
+            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(101));
             Assert.That(candidates, Has.Count.EqualTo(1), "Completing a later visit still cannot present an older Pending.");
             s.Manager.AngerExitCustomer(s.Table);
             var nextVisit = SpawnEncounterParty(s, "CUSTOMER01");
@@ -986,8 +1183,8 @@ public sealed class CustomerEncounterTests
             Assert.That(candidates, Has.Count.EqualTo(1));
             CompleteEncounterEntry(s, nextVisit);
             Assert.That(candidates, Has.Count.EqualTo(2));
-            AssertMilestoneCandidate(candidates[1], "CUSTOMER01", 50);
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True);
+            AssertMilestoneCandidate(candidates[1], "CUSTOMER01", 100);
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
         }
     }
 
@@ -996,9 +1193,9 @@ public sealed class CustomerEncounterTests
     {
         using (var s = new Flow())
         {
-            var progress = PrepareEncounterFlow(s, visitCount: 50);
+            var progress = PrepareEncounterFlow(s, visitCount: 100);
             MarkFirstAppearanceSeen(progress, "CUSTOMER01");
-            progress.RecordCompletedVisit("CUSTOMER01", 49, 50);
+            progress.RecordCompletedVisit("CUSTOMER01", 99, 100);
             var candidates = ObserveEncounterCandidates(s);
             bool shopOpenOrOpening = true;
             Func<bool> allowed = () => CustomerEncounterPresentation.IsDisplayContextAllowed(true, false, true,
@@ -1008,10 +1205,10 @@ public sealed class CustomerEncounterTests
             ArriveEncounterParty(blockedVisit);
             Action repeatEntry = CompleteEncounterEntry(s, blockedVisit);
             Assert.That(candidates, Has.Count.EqualTo(1), "This observer counts prepared candidates, not visible popups.");
-            AssertMilestoneCandidate(candidates[0], "CUSTOMER01", 50);
+            AssertMilestoneCandidate(candidates[0], "CUSTOMER01", 100);
             Assert.That(Get<bool>(blockedVisit.Members[0], "_encounterEntryConsumed"), Is.True);
-            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.True);
-            Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 50), Is.False);
+            Assert.That(progress.IsPending("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.True);
+            Assert.That(progress.IsSeen("CUSTOMER01", CustomerEncounterEventKind.VisitMilestone, 100), Is.False);
 
             shopOpenOrOpening = false;
             Assert.That(allowed(), Is.True);
@@ -1026,8 +1223,8 @@ public sealed class CustomerEncounterTests
             Assert.That(candidates, Has.Count.EqualTo(1));
             CompleteEncounterEntry(s, laterVisit);
             Assert.That(candidates, Has.Count.EqualTo(2));
-            AssertMilestoneCandidate(candidates[1], "CUSTOMER01", 50);
-            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(51));
+            AssertMilestoneCandidate(candidates[1], "CUSTOMER01", 100);
+            Assert.That(UserInfo.GetVisitedCustomerCount("CUSTOMER01"), Is.EqualTo(101));
         }
     }
 
@@ -1200,6 +1397,73 @@ public sealed class CustomerEncounterTests
         Assert.That(progress.RecordValidAppearance("CUSTOMER01", 0), Is.True);
         string recordsJson = JsonMapper.ToJson(progress.ToSaveRecords());
         return "[{\"CustomerEncounterStateVersion\":1,\"CustomerEncounterStateList\":" + recordsJson + "}]";
+    }
+
+    private static DateTime PrepareMemoryAccountRestore(Flow flow)
+    {
+        // The real loader replaces account collections and invokes events. Restore every
+        // static field through Flow's existing teardown, and isolate those event handlers.
+        foreach (var field in typeof(UserInfo).GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic))
+        {
+            if (field.IsLiteral || field.IsInitOnly) continue;
+            flow.Swap(typeof(UserInfo), field.Name,
+                typeof(Delegate).IsAssignableFrom(field.FieldType) ? null : field.GetValue(null));
+        }
+        DateTime now = new DateTime(2026, 10, 22, 12, 0, 0, DateTimeKind.Utc);
+        var backend = flow.Create<BackendManager>(); // Remains inactive: no SDK Awake/startup.
+        Set(backend, "_editorOfflineOwner", true);
+        Set(backend, "_editorOfflineUtcClock", (Func<DateTime>)(() => now)); // Existing offline clock cannot fall through to the SDK.
+        flow.Swap(typeof(BackendManager), "_instance", backend);
+        Assert.That(BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin, Is.False);
+        return now;
+    }
+
+    private static List<CustomerEncounterSaveData> CreateRetiredRecords(CustomerEncounterEventState state)
+    {
+        var result = new List<CustomerEncounterSaveData>();
+        for (int customer = 1; customer <= 11; customer++)
+        {
+            foreach (int milestone in customer == 11 ? new[] { 50, 200 } : new[] { 50, 200, 400 })
+                result.Add(new CustomerEncounterSaveData("CUSTOMER" + customer.ToString("D2"),
+                    CustomerEncounterEventKind.VisitMilestone, milestone, state));
+        }
+        return result;
+    }
+
+    private static JObject CreateMemoryAccountPayload(DateTime now, List<CustomerEncounterSaveData> records)
+    {
+        JObject payload = JObject.Parse(LoadUserData.CreateInitialGameData(now).GetJson());
+        payload["LastAccessTime"] = now.AddHours(9).ToString();
+        payload["LastAttendanceTime"] = now.AddHours(9).ToString();
+        payload["EnabledCustomerDataList"] = JArray.FromObject(new[] { new SaveCustomerData("CUSTOMER01", string.Empty, 501) });
+        payload[CustomerEncounterCatalog.StateVersionField] = 1;
+        payload[CustomerEncounterCatalog.StateListField] = JArray.FromObject(records);
+        return payload;
+    }
+
+    private static string EncounterRecordKey(CustomerEncounterSaveData record) =>
+        record.CustomerId + "/" + record.EventKind + "/" + record.VisitMilestone + "/" + record.State;
+
+    private static BackEnd.BackendReturnObject EncounterMemoryResponse(JObject values)
+    {
+        // Encode only the existing SDK response envelope, not the encounter validation logic.
+        var row = new JObject(values.Properties().Select(property =>
+            new JProperty(property.Name, EncounterMemoryAttribute(property.Value))));
+        return StaffGachaOfflineSession.Response("200", new JObject
+        {
+            ["rows"] = new JArray(row), ["firstKey"] = JValue.CreateNull()
+        }.ToString(Newtonsoft.Json.Formatting.None));
+    }
+
+    private static JObject EncounterMemoryAttribute(JToken value)
+    {
+        if (value is JObject obj)
+            return new JObject { ["M"] = new JObject(obj.Properties().Select(property => new JProperty(property.Name, EncounterMemoryAttribute(property.Value)))) };
+        if (value is JArray array) return new JObject { ["L"] = new JArray(array.Select(EncounterMemoryAttribute)) };
+        if (value.Type == JTokenType.String) return new JObject { ["S"] = value };
+        if (value.Type == JTokenType.Boolean) return new JObject { ["BOOL"] = value };
+        if (value.Type == JTokenType.Null) return new JObject { ["NULL"] = true };
+        return new JObject { ["N"] = value.ToString(Newtonsoft.Json.Formatting.None) };
     }
 
     private static string ReplaceFirstRecordValue(string payload, string field, int originalValue, int replacementValue)
