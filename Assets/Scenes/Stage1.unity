@@ -249360,6 +249360,7 @@ RectTransform:
   - {fileID: 1109239252}
   - {fileID: 197542102}
   - {fileID: 2120558711}
+  - {fileID: 922100101}
   m_Father: {fileID: 1519436191}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -249425,6 +249426,8 @@ MonoBehaviour:
     UIView: {fileID: 2120558715}
   - Name: UIMailbox
     UIView: {fileID: 197542103}
+  - Name: UIPopupStore
+    UIView: {fileID: 922100103}
 --- !u!114 &853526497
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -601811,6 +601814,8 @@ MonoBehaviour:
   - {fileID: 249587578}
   - {fileID: 1916826318}
   - {fileID: 1892912205}
+  _popupStoreButton: {fileID: 4792971}
+  _popupStoreView: {fileID: 922100103}
   _animeUI: {fileID: 1955411251}
   _showDuration: 0.3
   _showTweenMode: 23
@@ -635944,3 +635949,41 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 1385201905}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &922100100
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 853526495}
+    m_Modifications:
+    - target: {fileID: 200001, guid: 69564d8d8e0f49b9926f5b26a59c3a51, type: 3}
+      propertyPath: m_Name
+      value: Popup Store
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 69564d8d8e0f49b9926f5b26a59c3a51, type: 3}
+--- !u!224 &922100101 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 200002, guid: 69564d8d8e0f49b9926f5b26a59c3a51, type: 3}
+  m_PrefabInstance: {fileID: 922100100}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &922100102 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 200001, guid: 69564d8d8e0f49b9926f5b26a59c3a51, type: 3}
+  m_PrefabInstance: {fileID: 922100100}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &922100103 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 200188, guid: 69564d8d8e0f49b9926f5b26a59c3a51, type: 3}
+  m_PrefabInstance: {fileID: 922100100}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 922100102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 870d7d0e4773434184f2cc07b2d246ef, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:

@@ -9,6 +9,10 @@ public class UIFloor3 : MobileUIView
     [SerializeField] private GameObject _dontTouchArea;
     [SerializeField] private Button[] _buttons;
 
+    [Header("Popup store")]
+    [SerializeField] private Button _popupStoreButton;
+    [SerializeField] private UIPopupStore _popupStoreView;
+
     [Space]
     [Header("Animations")]
     [SerializeField] private GameObject _animeUI;
@@ -19,15 +23,33 @@ public class UIFloor3 : MobileUIView
     [SerializeField] private float _hideDuration;
     [SerializeField] private Ease _hideTweenMode;
 
-     public override void Init()
+    public override void Init()
     {
         gameObject.SetActive(false);
 
+        if (_buttons == null) return;
         for(int i = 0; i < _buttons.Length; i++)
         {
-            int index = i;
-            _buttons[i].onClick.AddListener(OnButtonClicked);
+            var button = _buttons[i];
+            if (button == null) continue;
+            button.onClick.RemoveListener(OnButtonClicked);
+            button.onClick.RemoveListener(OnPopupStoreClicked);
+            if (button == _popupStoreButton && _popupStoreView != null)
+                button.onClick.AddListener(OnPopupStoreClicked);
+            else
+                button.onClick.AddListener(OnButtonClicked);
         }
+    }
+
+    private void OnPopupStoreClicked()
+    {
+        if (_popupStoreButton == null || _popupStoreView == null || _uiNav == null
+            || !_popupStoreView.IsBoundTo(_uiNav) || _uiNav.IsViewsInactive
+            || _uiNav.FirstView != this || VisibleState != VisibleState.Appeared
+            || !_uiNav.ViewsVisibleStateCheck() || PopupManager.IsCustomerEncounterPresentationBlocked
+            || _uiNav.CheckActiveView(UIPopupStore.ViewName)) return;
+
+        _uiNav.Push(UIPopupStore.ViewName);
     }
 
     public override void Show()
