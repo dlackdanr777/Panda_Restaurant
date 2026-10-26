@@ -45,6 +45,8 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
     private PopupStoreOrder[] _displayedOrders = Array.Empty<PopupStoreOrder>();
     private string[] _displayedOrderIds = Array.Empty<string>();
     private bool _packingLocked;
+    // Preserve the recipient that actually belonged to the committed order, including across harmless refreshes.
+    [NonSerialized] private readonly PackedDeliveryTarget[] _packedDeliveryTargets = new PackedDeliveryTarget[3];
 
     public bool IsReady { get; private set; }
     public int DisplayedCount { get; private set; }
@@ -67,6 +69,50 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
 
     public bool IsOrderPacked(int slotIndex)
         => IsReady && slotIndex >= 0 && slotIndex < _displayedOrders.Length && _displayedOrders[slotIndex].IsPacked;
+
+    /// <summary>Reads the original packed recipient; never rematches, fulfils or changes an order.</summary>
+    public bool TryGetPackedDeliveryTarget(PopupStorePackingReceipt receipt, out RectTransform target, out string reason)
+    {
+        target = null;
+        reason = null;
+        var popup = GetComponent<UIPopupStore>();
+        if (!isActiveAndEnabled || !IsReady || popup == null || !popup.isActiveAndEnabled)
+        { reason = "The order display and its popup must be active and ready."; return false; }
+        if (receipt == null || !receipt.Success || string.IsNullOrEmpty(receipt.ReceiptId)
+            || string.IsNullOrEmpty(receipt.OrderId) || string.IsNullOrEmpty(receipt.CustomerId))
+        { reason = "A successful receipt with its original order and customer identity is required."; return false; }
+
+        int slot = receipt.SlotIndex;
+        if (slot < 0 || slot >= DisplayedCount || slot >= _packedDeliveryTargets.Length
+            || _sampleOrders == null || slot >= _sampleOrders.Length
+            || slot >= _displayedOrders.Length || slot >= _displayedOrderIds.Length || slot >= _displayedCustomerIds.Length
+            || _slots == null || slot >= _slots.Length || _lastViews == null || slot >= _lastViews.Length)
+        { reason = "The receipt slot is not a currently displayed order slot."; return false; }
+
+        var binding = _packedDeliveryTargets[slot];
+        var order = _displayedOrders[slot];
+        if (binding == null || order == null || !ReferenceEquals(_sampleOrders[slot], order)
+            || !ReferenceEquals(binding.Order, order))
+        { reason = "The original packed order has been replaced or is no longer bound to this slot."; return false; }
+        if (!string.Equals(receipt.CustomerId, order.CustomerId, StringComparison.Ordinal)
+            || !string.Equals(receipt.CustomerId, _displayedCustomerIds[slot], StringComparison.Ordinal)
+            || !string.Equals(receipt.OrderId, order.RuntimeId, StringComparison.Ordinal)
+            || !string.Equals(receipt.OrderId, _displayedOrderIds[slot], StringComparison.Ordinal))
+        { reason = "The receipt customer or order identity no longer matches the displayed slot."; return false; }
+        if (!order.IsPacked || !ReferenceEquals(order.PackingReceipt, receipt) || !ReferenceEquals(binding.Receipt, receipt))
+        { reason = "The receipt is not the exact successful packing result bound to this order."; return false; }
+
+        var image = binding.Customer;
+        if (image == null || _slots[slot] == null || _lastViews[slot] == null
+            || _slots[slot].CustomerImage != image || _lastViews[slot].Customer != image)
+        { reason = "The packed customer's original image binding has changed."; return false; }
+        if (!image.isActiveAndEnabled || image.sprite == null || !Owned(image)
+            || image.GetComponentInParent<UIPopupStore>(true) != popup)
+        { reason = "The packed customer's image is inactive, missing its sprite or outside this popup."; return false; }
+
+        target = image.rectTransform;
+        return true;
+    }
 
     /// <summary>Reads the displayed order snapshot without selecting a recipient or changing either side.</summary>
     public PopupStoreExactMatchResult QueryExactMatches(PopupStoreSalesCounter counter)
@@ -122,6 +168,7 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         // No events, layout changes or callbacks between these two state changes.
         if (!counter.ConsumePackingMaterialsSilently()) return false;
         order.CommitPacking(prepared);
+        _packedDeliveryTargets[slot] = new PackedDeliveryTarget(order, prepared, _lastViews[slot].Customer);
         receipt = prepared;
         return true;
     }
@@ -396,6 +443,20 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         _displayedOrders = Array.Empty<PopupStoreOrder>();
         _displayedOrderIds = Array.Empty<string>();
         Refreshed?.Invoke();
+    }
+
+    private sealed class PackedDeliveryTarget
+    {
+        internal readonly PopupStoreOrder Order;
+        internal readonly PopupStorePackingReceipt Receipt;
+        internal readonly Image Customer;
+
+        internal PackedDeliveryTarget(PopupStoreOrder order, PopupStorePackingReceipt receipt, Image customer)
+        {
+            Order = order;
+            Receipt = receipt;
+            Customer = customer;
+        }
     }
 
     private sealed class SlotView

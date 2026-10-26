@@ -16,7 +16,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Explicit request-only bridge for the seven synchronous, memory-only popup store fixtures.
+/// Explicit request-only bridge for the nine synchronous, memory-only popup store fixtures.
 /// Never launches Play, creates a scene, saves assets, restores a workspace or starts another Editor.
 /// </summary>
 [InitializeOnLoad]
@@ -28,7 +28,7 @@ public static class PopupStoreVerificationRunner
     {
         "PopupStoreNavigationTests", "PopupStoreMaterialTests", "PopupStoreSalesCounterTests",
         "PopupStoreOrderTests", "PopupStoreOrderMatchTests", "PopupStoreExactOrderMatchTests",
-        "PopupStorePackingTests"
+        "PopupStorePackingTests", "PopupStorePackingPresentationTests", "PopupStoreDeliveryTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -47,10 +47,17 @@ public static class PopupStoreVerificationRunner
     {
         public string setup, activeScene, dirty, selection, startScene, undo, roots;
     }
+    [Serializable] private sealed class Inspection
+    {
+        public string capturedUtc, error;
+        public bool playing, compiling, updating, sdkInitialized, isLogin;
+        public int[] gameManagerIds, challengeManagerIds;
+        public Workspace workspace;
+    }
     [Serializable] private sealed class Report
     {
         public string startedUtc, finishedUtc, error;
-        public string scope = "Seven popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
+        public string scope = "Nine popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
         public bool success, compiling, updating, scriptCompilationFailed, workspaceUnchanged;
         public int discovered, total, passed, failed, skipped, inconclusive;
         public Workspace before, after;
@@ -63,7 +70,7 @@ public static class PopupStoreVerificationRunner
     private static void Tick()
     {
         if (_running || EditorApplication.isCompiling || EditorApplication.isUpdating
-            || EditorApplication.isPlayingOrWillChangePlaymode || GachaReviewTestRunner.IsRunning) return;
+            || GachaReviewTestRunner.IsRunning) return;
         if (EditorApplication.timeSinceStartup < _nextPoll) return;
         _nextPoll = EditorApplication.timeSinceStartup + .5;
         if (!File.Exists(RequestPath)) return;
@@ -71,10 +78,31 @@ public static class PopupStoreVerificationRunner
         try
         {
             request = File.ReadAllText(RequestPath).Trim();
+            if (request != "inspect" && EditorApplication.isPlayingOrWillChangePlaymode) return;
             File.Delete(RequestPath); // Consume only this explicit request; never retry a failed run automatically.
         }
         catch (IOException) { return; } // A writer may still own the request file.
-        Run(request);
+        if (request == "inspect") InspectWorkspace();
+        else Run(request);
+    }
+
+    private static void InspectWorkspace()
+    {
+        var inspection = new Inspection { capturedUtc = DateTime.UtcNow.ToString("O"),
+            playing = EditorApplication.isPlaying, compiling = EditorApplication.isCompiling, updating = EditorApplication.isUpdating };
+        try
+        {
+            inspection.sdkInitialized = BackEnd.Backend.IsInitialized;
+            inspection.isLogin = BackEnd.Backend.IsLogin;
+            inspection.gameManagerIds = Resources.FindObjectsOfTypeAll<GameManager>()
+                .Where(manager => manager.gameObject.scene.IsValid()).Select(manager => manager.GetInstanceID()).OrderBy(id => id).ToArray();
+            inspection.challengeManagerIds = Resources.FindObjectsOfTypeAll<ChallengeManager>()
+                .Where(manager => manager.gameObject.scene.IsValid()).Select(manager => manager.GetInstanceID()).OrderBy(id => id).ToArray();
+            inspection.workspace = ReadWorkspace();
+        }
+        catch (Exception error) { inspection.error = Unwrap(error).ToString(); }
+        Directory.CreateDirectory(DirectoryPath);
+        File.WriteAllText(DirectoryPath + "/inspection.json", JsonUtility.ToJson(inspection, true));
     }
 
     private static void Run(string request)
