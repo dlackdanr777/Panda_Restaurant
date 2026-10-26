@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 700001}
   - component: {fileID: 800001}
   - component: {fileID: 900001}
+  - component: {fileID: 1000001}
   m_Layer: 5
   m_Name: Popup Store
   m_TagString: Untagged
@@ -7996,3 +7997,21 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!114 &1000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 85c0e3c0e91040c8ae1bb822c23651e2, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _initialSeconds: 90
+  _entryCutoffSeconds: 10
+  _timeText: {fileID: 200025}
+  _timeFormat: "\ub0a8\uc740 \uc2dc\uac04 {0:00}:{1:00}"
+  _notStartedText: "\ub0a8\uc740 \uc2dc\uac04  \u2014"
+  _autoStartForEditorReview: 1

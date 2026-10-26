@@ -401,6 +401,9 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
             || !order.TryResolve(_catalog, out var liveMaterials, out _)
             || !PopupStoreExactOrderMatch.IsExact(_catalog, liveMaterials, counter.Materials)) return false;
 
+        // Sample the deadline again after validation, immediately before creating or consuming anything.
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        if (clock == null || !clock.isActiveAndEnabled || !clock.CanCommitPacking) return false;
         var prepared = new PopupStorePackingReceipt(selected.OrderId, slot, selected.CustomerId, counter.Materials);
         // No events, layout changes or callbacks between these two state changes.
         if (!counter.ConsumePackingMaterialsSilently()) return false;

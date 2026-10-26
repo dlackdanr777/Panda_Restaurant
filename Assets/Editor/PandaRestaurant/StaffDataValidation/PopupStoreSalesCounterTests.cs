@@ -395,6 +395,8 @@ public sealed class PopupStoreSalesCounterTests
                 Assert.That(Counter, Is.Not.Null);
                 View.Init();
                 View.Show();
+                // Explicit session start keeps these regression fixtures on the real runtime clock path.
+                Assert.That(Root.GetComponent<PopupStoreBusinessClock>().TryStartSession(), Is.True);
                 Assert.That(Counter.Refresh(), Is.True);
                 foreach (var list in Lists) Assert.That(list.Refresh(), Is.True);
                 Canvas.ForceUpdateCanvases();

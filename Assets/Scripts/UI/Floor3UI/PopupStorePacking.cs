@@ -77,6 +77,7 @@ public sealed class PopupStorePacking : MonoBehaviour
     private readonly Queue<PopupStorePackingReceipt> _receipts = new Queue<PopupStorePackingReceipt>();
     private PopupStoreSalesCounter _boundCounter;
     private PopupStoreOrderDisplay _boundOrders;
+    private PopupStoreBusinessClock _boundClock;
     private Button _boundPackButton;
     private bool _busy;
     private string _lastError;
@@ -103,9 +104,11 @@ public sealed class PopupStorePacking : MonoBehaviour
         IsReady = true;
         _boundCounter = _counter;
         _boundOrders = _orders;
+        _boundClock = GetComponentInParent<UIPopupStore>(true).GetComponent<PopupStoreBusinessClock>();
         _boundPackButton = _packButton;
         _boundCounter.Changed += OnCounterChanged;
         _boundOrders.Refreshed += UpdateButtonState;
+        _boundClock.StateChanged += UpdateButtonState;
         _boundPackButton.onClick.AddListener(OnPackClicked);
         UpdateButtonState();
         return true;
@@ -171,7 +174,8 @@ public sealed class PopupStorePacking : MonoBehaviour
 
     private bool CanPack()
         => isActiveAndEnabled && IsReady && _counter != null && _counter.isActiveAndEnabled && _counter.IsReady
-            && _orders != null && _orders.isActiveAndEnabled && _orders.IsReady;
+            && _orders != null && _orders.isActiveAndEnabled && _orders.IsReady
+            && _boundClock != null && _boundClock.isActiveAndEnabled && _boundClock.CanCommitPacking;
 
     private bool ValidateReferences(out string error)
     {
@@ -181,6 +185,8 @@ public sealed class PopupStorePacking : MonoBehaviour
             || _counter.GetComponentInParent<UIPopupStore>(true) != popup
             || _orders.GetComponentInParent<UIPopupStore>(true) != popup)
             error = "The counter, order display and pack button must belong to this popup.";
+        else if (popup.GetComponent<PopupStoreBusinessClock>() == null)
+            error = "This popup requires its local business clock before packing can be enabled.";
         return error == null;
     }
 
@@ -194,7 +200,11 @@ public sealed class PopupStorePacking : MonoBehaviour
 
     private void UpdateButtonState()
     {
-        if (_boundPackButton != null) _boundPackButton.interactable = !_busy && CanPack();
+        var button = _boundPackButton;
+        if (button == null) return;
+        bool allowed = !_busy && CanPack();
+        // Synchronizing the clock can publish Ended; a listener may close and unbind this view.
+        if (button != null && button == _boundPackButton) button.interactable = allowed;
     }
 
     private void OnPackClicked()
@@ -219,9 +229,11 @@ public sealed class PopupStorePacking : MonoBehaviour
     {
         if (_boundCounter != null) _boundCounter.Changed -= OnCounterChanged;
         if (_boundOrders != null) _boundOrders.Refreshed -= UpdateButtonState;
+        if (_boundClock != null) _boundClock.StateChanged -= UpdateButtonState;
         if (_boundPackButton != null) _boundPackButton.onClick.RemoveListener(OnPackClicked);
         _boundCounter = null;
         _boundOrders = null;
+        _boundClock = null;
         _boundPackButton = null;
     }
 

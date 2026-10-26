@@ -376,6 +376,8 @@ public sealed class PopupStoreExactOrderMatchTests
                 AuthoredOrders = ((PopupStoreOrder[])Read(Display, "_sampleOrders")).ToArray();
                 View.Init();
                 View.Show();
+                // Explicit session start keeps these regression fixtures on the real runtime clock path.
+                Assert.That(Root.GetComponent<PopupStoreBusinessClock>().TryStartSession(), Is.True);
                 // Dispatch existing initialization explicitly for these non-ExecuteAlways EditMode objects.
                 Assert.That(Counter.Refresh(), Is.True);
                 foreach (var list in Lists) Assert.That(list.Refresh(), Is.True);

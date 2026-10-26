@@ -220,7 +220,8 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
                 continue;
             }
             if (slot.Order.IsPacked) continue;
-            if (!_supplyMode && slot.State == PopupStoreCustomerState.Empty && _visibleElapsed >= i * _entryInterval)
+            if (!_supplyMode && slot.State == PopupStoreCustomerState.Empty && _visibleElapsed >= i * _entryInterval
+                && CanStartEntry())
             {
                 slot.State = PopupStoreCustomerState.Entering;
                 slot.StartTime = i * _entryInterval;
@@ -290,7 +291,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     private void TryStartNextSupply()
     {
         if (!isActiveAndEnabled || !_running || !IsReady || _orders == null || !_orders.IsReady
-            || _runtimeTestOrders == null || SupplyEnded
+            || !CanStartEntry() || _runtimeTestOrders == null || SupplyEnded
             || (_suppliedOrders.Count > 0 && _visibleElapsed - _lastEntryStartedAt < _entryInterval)) return;
         int next = _suppliedOrders.Count;
         int index = -1;
@@ -335,6 +336,12 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             Debug.Log("POPUP_STORE_CUSTOMER_SUPPLIED number=" + SuppliedOrderCount + "; total=" + TotalTestOrderCount + "; slot=" + index
                 + "; customer=" + slot.CustomerId + "; order=" + slot.OrderId, this);
 #endif
+    }
+
+    private bool CanStartEntry()
+    {
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        return clock != null && clock.isActiveAndEnabled && clock.CanStartCustomerEntry;
     }
 
     private bool CanReuse(int index, Slot slot)

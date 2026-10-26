@@ -560,6 +560,8 @@ public sealed class PopupStoreOrderSupplyTests
                 Assert.That((bool)Read(Entrance, "_fixedTestSupply"), Is.True, "The real game prefab enables the authored twenty-order mode.");
                 View.Init();
                 View.Show();
+                // Explicit session start keeps these regression fixtures on the real runtime clock path.
+                Assert.That(Root.GetComponent<PopupStoreBusinessClock>().TryStartSession(), Is.True);
                 RefreshExisting();
                 Counter.Changed += OnCounterChanged;
                 Progress.FeedbackTriggered += OnFeedback;

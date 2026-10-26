@@ -447,6 +447,8 @@ public sealed class PopupStoreOrderMatchTests
                 Progress.FeedbackTriggered += OnFeedback;
                 View.Init();
                 View.Show();
+                // Explicit session start keeps these regression fixtures on the real runtime clock path.
+                Assert.That(Root.GetComponent<PopupStoreBusinessClock>().TryStartSession(), Is.True);
                 Assert.That(Counter.Refresh(), Is.True);
                 foreach (var list in Lists) Assert.That(list.Refresh(), Is.True);
                 Assert.That(Display.Refresh(), Is.True);

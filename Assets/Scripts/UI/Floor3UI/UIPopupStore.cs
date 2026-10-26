@@ -28,6 +28,7 @@ public sealed class UIPopupStore : MobileUIView
             foreach (var button in _displayOnlyButtons)
                 if (button != null && button != _closeButton) button.interactable = false;
         VisibleState = VisibleState.Disappeared;
+        GetComponent<PopupStoreBusinessClock>()?.SetViewVisible(false);
         gameObject.SetActive(false);
     }
 
@@ -37,12 +38,14 @@ public sealed class UIPopupStore : MobileUIView
             throw new InvalidOperationException("UIPopupStore requires its authored close button.");
         gameObject.SetActive(true);
         VisibleState = VisibleState.Appeared;
+        GetComponent<PopupStoreBusinessClock>()?.SetViewVisible(true);
         GetComponent<PopupStorePacking>()?.Refresh();
     }
 
     public override void Hide()
     {
         VisibleState = VisibleState.Disappeared;
+        GetComponent<PopupStoreBusinessClock>()?.SetViewVisible(false);
         gameObject.SetActive(false);
     }
 
