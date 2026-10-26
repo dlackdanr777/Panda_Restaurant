@@ -22,6 +22,19 @@ public sealed class PopupStoreOrder
     public bool IsPacked => _packingReceipt != null;
     public PopupStorePackingReceipt PackingReceipt => _packingReceipt;
 
+    public PopupStoreOrder CreateRuntimeCopy()
+    {
+        var copy = new PopupStoreOrder
+        {
+            _customerId = _customerId,
+            _plushIds = _plushIds == null ? null : (string[])_plushIds.Clone(),
+            _boxId = _boxId,
+            _ribbonId = _ribbonId
+        };
+        copy.EnsureRuntimeId();
+        return copy;
+    }
+
     internal string EnsureRuntimeId()
         => _runtimeId ?? (_runtimeId = Guid.NewGuid().ToString("N"));
 

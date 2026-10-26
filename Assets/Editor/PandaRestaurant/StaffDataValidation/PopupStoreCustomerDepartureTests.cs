@@ -509,6 +509,8 @@ public sealed class PopupStoreCustomerDepartureTests
                 Root.GetComponent<RectTransform>().sizeDelta = new Vector2(1920, 1080);
                 View = Root.GetComponent<UIPopupStore>();
                 Entrance = Root.GetComponent<PopupStoreCustomerEntrance>();
+                // Preserve the original three-order lifecycle contract; fixed supply has its own fixture.
+                Write(Entrance, "_fixedTestSupply", false);
                 Counter = Root.GetComponentInChildren<PopupStoreSalesCounter>(true);
                 Orders = Root.GetComponent<PopupStoreOrderDisplay>();
                 Progress = Root.GetComponent<PopupStoreOrderProgress>();

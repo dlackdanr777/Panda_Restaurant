@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public enum PopupStoreCustomerState { Empty, Entering, Waiting, Packed, Leaving }
 
-/// <summary>Three authored customers, local to this popup instance. No restaurant AI, order generation or account storage.</summary>
+/// <summary>Three reusable customer slots, local to this popup instance. No restaurant AI or account storage.</summary>
 [DisallowMultipleComponent]
 public sealed class PopupStoreCustomerEntrance : MonoBehaviour
 {
@@ -27,6 +27,10 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     [SerializeField] private Vector2 _exitOffset = new Vector2(64, 0);
     [SerializeField, Min(0)] private float _exitDuration = 1.2f;
     [SerializeField] private AnimationCurve _exitCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    [Header("Fixed review orders, including the first three")]
+    [Tooltip("Choose before the session. Supplies the authored twenty orders without changing completed orders.")]
+    [SerializeField] private bool _fixedTestSupply;
+    [SerializeField] private PopupStoreOrder[] _testOrders = Array.Empty<PopupStoreOrder>();
 
     private readonly Slot[] _slots = new Slot[3];
     private readonly Vector3[] _corners = new Vector3[4];
@@ -35,15 +39,48 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     private string _lastError;
     private PopupStorePackingPresentation _boundPresentation;
     private readonly HashSet<string> _handledVisuals = new HashSet<string>(StringComparer.Ordinal);
+    private bool _modeLatched, _supplyMode;
+    private PopupStoreOrder[] _runtimeTestOrders;
+    private readonly List<PopupStoreOrder> _suppliedOrders = new List<PopupStoreOrder>();
+    private IReadOnlyList<PopupStoreOrder> _suppliedView;
+    private float _lastEntryStartedAt = -1;
 
     // The inspection mode is chosen before the session; changing it cannot resurrect released orders.
-    public bool ControlsOrders => _initialized || (_automaticEntry && (Application.isPlaying || _started));
+    public bool ControlsOrders => _modeLatched || _initialized || (_automaticEntry && (Application.isPlaying || _started));
     public bool IsReady { get; private set; }
     public bool IsRunning => _running;
     public int StartedEntranceCount { get; private set; }
     public int ArrivedCount { get; private set; }
     public int StartedDepartureCount { get; private set; }
     public int ReleasedCount { get; private set; }
+    public int TotalTestOrderCount => (_modeLatched ? _supplyMode : _fixedTestSupply)
+        ? (_runtimeTestOrders != null ? _runtimeTestOrders.Length : _testOrders?.Length ?? 0) : 0;
+    public int SuppliedOrderCount => _suppliedOrders.Count;
+    public int RemainingOrderCount => Mathf.Max(0, TotalTestOrderCount - SuppliedOrderCount);
+    public int OccupiedSlotCount
+    {
+        get
+        {
+            int count = 0;
+            foreach (var slot in _slots)
+                if (slot != null && !slot.Released && !slot.Blocked
+                    && (slot.State != PopupStoreCustomerState.Empty || slot.Order.IsPacked)) count++;
+            return count;
+        }
+    }
+    public int CompletedOrderCount
+    {
+        get
+        {
+            int count = 0;
+            foreach (var order in _suppliedOrders) if (order.IsPacked) count++;
+            return count;
+        }
+    }
+    public bool SupplyEnded => _supplyMode && _runtimeTestOrders != null && RemainingOrderCount == 0;
+    public float LastEntryStartedAt => _lastEntryStartedAt;
+    public IReadOnlyList<PopupStoreOrder> SuppliedOrders
+        => _suppliedView ?? (_suppliedView = _suppliedOrders.AsReadOnly());
 
     public PopupStoreCustomerState GetState(int slotIndex)
     {
@@ -98,6 +135,9 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
         _running = false;
         if (!isActiveAndEnabled || _orders == null || !_orders.IsReady) return;
         if (!Validate(out string error)) { Report(error); return; }
+        if (!_modeLatched) { _supplyMode = _fixedTestSupply; _modeLatched = true; }
+        if (_supplyMode && _runtimeTestOrders == null && !InitializeSupply(out error))
+        { Report(error); return; }
         BindPresentation();
         if (!_initialized)
         {
@@ -150,17 +190,18 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
         bool changed = false;
         for (int i = 0; i < _slots.Length; i++)
         {
+            if (_supplyMode && (!isActiveAndEnabled || !_running || !IsReady || !_orders.IsReady)) break;
             var slot = _slots[i];
             if (slot == null || slot.Blocked) continue;
             if (!BindingMatches(i, slot))
-            { Cancel(i, slot, "The original customer/order/image binding changed."); changed = true; continue; }
+            { Cancel(i, slot, "The original customer/order/image binding changed."); NotifySlotChanged(i, ref changed); continue; }
             if (slot.Released) continue;
             if (slot.State == PopupStoreCustomerState.Leaving)
             {
                 slot.ExitElapsed += unscaledDelta;
                 slot.ExitProgress = _exitDuration > 0 ? Mathf.Clamp01(slot.ExitElapsed / _exitDuration) : 1;
                 if (!PositionDeparture(slot, out error))
-                { Cancel(i, slot, error); changed = true; continue; }
+                { Cancel(i, slot, error); NotifySlotChanged(i, ref changed); continue; }
                 if (slot.ExitProgress >= 1)
                 {
                     slot.Released = true;
@@ -169,7 +210,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
                     // Hide before resetting the reusable transform. Completed order history remains intact.
                     slot.Image.gameObject.SetActive(false);
                     RestoreHome(slot);
-                    changed = true;
+                    NotifySlotChanged(i, ref changed);
 #if UNITY_EDITOR
                     if (Application.isPlaying)
                         Debug.Log("POPUP_STORE_CUSTOMER_RELEASED receipt=" + slot.DepartureReceiptId
@@ -179,7 +220,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
                 continue;
             }
             if (slot.Order.IsPacked) continue;
-            if (slot.State == PopupStoreCustomerState.Empty && _visibleElapsed >= i * _entryInterval)
+            if (!_supplyMode && slot.State == PopupStoreCustomerState.Empty && _visibleElapsed >= i * _entryInterval)
             {
                 slot.State = PopupStoreCustomerState.Entering;
                 slot.StartTime = i * _entryInterval;
@@ -190,12 +231,12 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             {
                 slot.Progress = _entryDuration > 0 ? Mathf.Clamp01((_visibleElapsed - slot.StartTime) / _entryDuration) : 1;
                 if (!Position(slot, out error))
-                { Cancel(i, slot, error); changed = true; continue; }
+                { Cancel(i, slot, error); NotifySlotChanged(i, ref changed); continue; }
                 if (slot.Progress >= 1)
                 {
                     slot.State = PopupStoreCustomerState.Waiting;
                     ArrivedCount++;
-                    changed = true;
+                    NotifySlotChanged(i, ref changed);
 #if UNITY_EDITOR
                     if (Application.isPlaying)
                         Debug.Log("POPUP_STORE_CUSTOMER_ARRIVED slot=" + i + "; customer=" + slot.CustomerId + "; order=" + slot.OrderId, this);
@@ -203,8 +244,109 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
                 }
             }
         }
+        if (_supplyMode) TryStartNextSupply();
         // Existing progress refreshes without feedback. Arrival never calls TryPack or mutates the counter.
         if (changed) _orders.ApplyCustomerEntryState();
+    }
+
+    private void NotifySlotChanged(int index, ref bool anyChanged)
+    {
+        if (_supplyMode) _orders.ApplyCustomerEntrySlot(index);
+        else anyChanged = true;
+    }
+
+    private bool InitializeSupply(out string error)
+    {
+        error = null;
+        if (_testOrders == null || _testOrders.Length != 20)
+        { error = "Fixed test supply requires exactly twenty authored orders, including the first three."; return false; }
+        var counts = new int[3];
+        for (int i = 0; i < _testOrders.Length; i++)
+        {
+            var order = _testOrders[i];
+            if (!_orders.TryValidateSupplyOrder(order, out error)) return false;
+            counts[order.PlushIds.Count - 1]++;
+            for (int j = 0; j < i; j++)
+                if (SameMaterials(order, _testOrders[j]))
+                { error = "Fixed test orders require distinct exact material sequences to avoid simultaneous matches."; return false; }
+        }
+        if (counts[0] != 8 || counts[1] != 8 || counts[2] != 4)
+        { error = "Fixed test supply requires eight one-plush, eight two-plush and four three-plush orders."; return false; }
+        var runtime = new PopupStoreOrder[_testOrders.Length];
+        for (int i = 0; i < runtime.Length; i++) runtime[i] = _testOrders[i].CreateRuntimeCopy();
+        if (!_orders.TryInitializeSupply(new[] { runtime[0], runtime[1], runtime[2] }, out error)) return false;
+        _runtimeTestOrders = runtime;
+        return true;
+    }
+
+    private static bool SameMaterials(PopupStoreOrder left, PopupStoreOrder right)
+    {
+        if (left.PlushIds.Count != right.PlushIds.Count || left.BoxId != right.BoxId || left.RibbonId != right.RibbonId) return false;
+        for (int i = 0; i < left.PlushIds.Count; i++)
+            if (!string.Equals(left.PlushIds[i], right.PlushIds[i], StringComparison.Ordinal)) return false;
+        return true;
+    }
+
+    private void TryStartNextSupply()
+    {
+        if (!isActiveAndEnabled || !_running || !IsReady || _orders == null || !_orders.IsReady
+            || _runtimeTestOrders == null || SupplyEnded
+            || (_suppliedOrders.Count > 0 && _visibleElapsed - _lastEntryStartedAt < _entryInterval)) return;
+        int next = _suppliedOrders.Count;
+        int index = -1;
+        if (next < _slots.Length)
+        {
+            var reserved = _slots[next];
+            if (reserved == null || reserved.Blocked || reserved.Released
+                || reserved.State != PopupStoreCustomerState.Empty || !BindingMatches(next, reserved)
+                || !ReferenceEquals(reserved.Order, _runtimeTestOrders[next])) return;
+            index = next;
+        }
+        else
+        {
+            for (int i = 0; i < _slots.Length; i++)
+                if (CanReuse(i, _slots[i])) { index = i; break; }
+            if (index < 0) return;
+            var previous = _slots[index];
+            var replacement = _runtimeTestOrders[next];
+            if (!_orders.TryReplaceOrderForEntry(index, previous.Order, replacement, out string error))
+            { Report(error); return; }
+            if (!_orders.TryGetEntryBinding(index, out var bound, out var image)
+                || !ReferenceEquals(bound, replacement) || image != previous.Image)
+            { Report("A supplied order must retain its original customer image slot."); PauseVisibleSession(); return; }
+            _slots[index] = new Slot(replacement, image);
+        }
+        var slot = _slots[index];
+        slot.State = PopupStoreCustomerState.Entering;
+        slot.Progress = 0;
+        slot.StartTime = _visibleElapsed;
+        if (!Position(slot, out string positionError))
+        {
+            Cancel(index, slot, positionError);
+            _orders.ApplyCustomerEntrySlot(index);
+            return;
+        }
+        _lastEntryStartedAt = _visibleElapsed;
+        _suppliedOrders.Add(slot.Order);
+        StartedEntranceCount++;
+        _orders.ApplyCustomerEntrySlot(index);
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            Debug.Log("POPUP_STORE_CUSTOMER_SUPPLIED number=" + SuppliedOrderCount + "; total=" + TotalTestOrderCount + "; slot=" + index
+                + "; customer=" + slot.CustomerId + "; order=" + slot.OrderId, this);
+#endif
+    }
+
+    private bool CanReuse(int index, Slot slot)
+    {
+        if (slot == null || !slot.Released || slot.Blocked || slot.State != PopupStoreCustomerState.Empty
+            || !BindingMatches(index, slot) || slot.Image.gameObject.activeSelf || !slot.Order.IsPacked
+            || string.IsNullOrEmpty(slot.DepartureReceiptId) || !_handledVisuals.Contains(slot.DepartureReceiptId)
+            || (slot.Image.rectTransform.anchoredPosition3D - slot.Home).sqrMagnitude > .0001f) return false;
+        foreach (var outcome in _presentation.VisualOutcomes)
+            if (ReferenceEquals(outcome.Receipt, slot.Order.PackingReceipt)
+                && outcome.Receipt.ReceiptId == slot.DepartureReceiptId && outcome.Target == slot.Image.rectTransform) return true;
+        return false;
     }
 
     private bool BindingMatches(int index, Slot slot)
@@ -275,7 +417,11 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     {
         // Closing can run after other components' OnDisable. Recover cancellations only on rebind.
         if (outcome == null || outcome.Kind != PopupStoreVisualOutcomeKind.VisualCompleted) return;
-        if (TryStartDeparture(outcome)) _orders.ApplyCustomerEntryState();
+        if (TryStartDeparture(outcome))
+        {
+            if (_supplyMode) _orders.ApplyCustomerEntrySlot(outcome.Receipt.SlotIndex);
+            else _orders.ApplyCustomerEntryState();
+        }
     }
 
     private bool TryStartDeparture(PopupStoreVisualOutcome outcome)
@@ -364,6 +510,19 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
         Debug.LogError("PopupStoreCustomerEntrance: " + error, this);
     }
     private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+#if UNITY_EDITOR
+    [ContextMenu("Inspect Fixed Test Supply")]
+    private void InspectFixedTestSupply()
+    {
+        var assigned = new List<string>();
+        for (int i = 0; i < _slots.Length; i++)
+            if (_slots[i] != null) assigned.Add(i + ":" + _slots[i].OrderId + ":" + GetState(i));
+        Debug.Log("POPUP_STORE_SUPPLY total=" + TotalTestOrderCount + "; supplied=" + SuppliedOrderCount
+            + "; remaining=" + RemainingOrderCount + "; occupied=" + OccupiedSlotCount
+            + "; completed=" + CompletedOrderCount + "; ended=" + SupplyEnded
+            + "; assigned=[" + string.Join(",", assigned) + "]", this);
+    }
+#endif
     private void OnEnable() { if (Application.isPlaying) BeginVisibleSession(); }
     private void OnDisable() => PauseVisibleSession();
     private void OnDestroy() => UnbindPresentation();

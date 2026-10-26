@@ -57,6 +57,7 @@ public sealed class PopupStoreOrderProgress : MonoBehaviour
         _boundOrders = _orders;
         _boundCounter.Changed += OnCounterChanged;
         _boundOrders.Refreshed += OnOrdersRefreshed;
+        _boundOrders.SlotChanged += OnOrderSlotChanged;
         IsReady = true;
         _lastError = null;
         Evaluate(false);
@@ -120,32 +121,47 @@ public sealed class PopupStoreOrderProgress : MonoBehaviour
         Refresh();
     }
 
+    private void OnOrderSlotChanged(int slotIndex)
+    {
+        if (!IsReady || slotIndex < 0 || slotIndex >= _matched.Length) return;
+        // Other slots may be pulsing or sounding from a real material addition; leave them untouched.
+        EvaluateSlot(slotIndex, IsEvaluationAvailable(), false);
+    }
+
     private void Evaluate(bool allowFeedback)
     {
         if (!IsReady) return;
-        bool available = isActiveAndEnabled && _boundCounter != null && _boundCounter.IsReady
-            && _boundCounter.isActiveAndEnabled && _boundOrders != null && _boundOrders.IsReady
-            && _boundOrders.isActiveAndEnabled;
+        bool available = IsEvaluationAvailable();
         bool increased = false;
         for (int i = 0; i < 3; i++)
+            increased |= EvaluateSlot(i, available, allowFeedback);
+        if (allowFeedback && increased) PlayFeedback();
+    }
+
+    private bool IsEvaluationAvailable()
+        => isActiveAndEnabled && _boundCounter != null && _boundCounter.IsReady
+            && _boundCounter.isActiveAndEnabled && _boundOrders != null && _boundOrders.IsReady
+            && _boundOrders.isActiveAndEnabled;
+
+    private bool EvaluateSlot(int slotIndex, bool available, bool allowFeedback)
+    {
+        int previous = _matched[slotIndex];
+        int next = available ? PopupStoreOrderMatch.CountPrefix(_boundOrders.GetDisplayedMaterials(slotIndex), _boundCounter.Materials) : 0;
+        _matched[slotIndex] = next;
+        bool increased = false;
+        for (int j = 0; j < 5; j++)
         {
-            int previous = _matched[i];
-            int next = available ? PopupStoreOrderMatch.CountPrefix(_boundOrders.GetDisplayedMaterials(i), _boundCounter.Materials) : 0;
-            _matched[i] = next;
-            for (int j = 0; j < 5; j++)
+            var circle = _views[slotIndex][j];
+            ResetPulse(circle);
+            circle.Image.raycastTarget = false;
+            circle.Image.gameObject.SetActive(j < next);
+            if (allowFeedback && j >= previous && j < next)
             {
-                var circle = _views[i][j];
-                ResetPulse(circle);
-                circle.Image.raycastTarget = false;
-                circle.Image.gameObject.SetActive(j < next);
-                if (allowFeedback && j >= previous && j < next)
-                {
-                    increased = true;
-                    Pulse(circle);
-                }
+                increased = true;
+                Pulse(circle);
             }
         }
-        if (allowFeedback && increased) PlayFeedback();
+        return increased;
     }
 
     private void Pulse(CircleView view)
@@ -205,7 +221,11 @@ public sealed class PopupStoreOrderProgress : MonoBehaviour
     private void Unbind()
     {
         if (_boundCounter != null) _boundCounter.Changed -= OnCounterChanged;
-        if (_boundOrders != null) _boundOrders.Refreshed -= OnOrdersRefreshed;
+        if (_boundOrders != null)
+        {
+            _boundOrders.Refreshed -= OnOrdersRefreshed;
+            _boundOrders.SlotChanged -= OnOrderSlotChanged;
+        }
         _boundCounter = null;
         _boundOrders = null;
     }

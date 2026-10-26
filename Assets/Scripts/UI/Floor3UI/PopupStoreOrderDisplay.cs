@@ -45,12 +45,14 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
     private PopupStoreOrder[] _displayedOrders = Array.Empty<PopupStoreOrder>();
     private string[] _displayedOrderIds = Array.Empty<string>();
     private bool _packingLocked;
+    private bool _supplyInitialized;
     // Preserve the recipient that actually belonged to the committed order, including across harmless refreshes.
     [NonSerialized] private readonly PackedDeliveryTarget[] _packedDeliveryTargets = new PackedDeliveryTarget[3];
 
     public bool IsReady { get; private set; }
     public int DisplayedCount { get; private set; }
     public event Action Refreshed;
+    public event Action<int> SlotChanged;
     public IReadOnlyList<PopupStoreOrderSlot> Slots => _slots == null
         ? (IReadOnlyList<PopupStoreOrderSlot>)Array.Empty<PopupStoreOrderSlot>()
         : Array.AsReadOnly(_slots);
@@ -106,26 +108,172 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
     public void ApplyCustomerEntryState(bool notify = true)
     {
         var entrance = GetComponent<PopupStoreCustomerEntrance>();
-        bool controlled = entrance != null && entrance.ControlsOrders;
         if (_lastViews != null)
             for (int i = 0; i < _lastViews.Length; i++)
-            {
-                var view = _lastViews[i];
-                if (view == null) continue;
-                bool bound = TryGetEntryBinding(i, out var order, out _);
-                bool packed = bound && order.IsPacked;
-                var state = !bound ? PopupStoreCustomerState.Empty
-                    : controlled ? entrance.GetState(i)
-                    : packed ? PopupStoreCustomerState.Packed : PopupStoreCustomerState.Waiting;
-                if (Owned(view.Customer))
-                    view.Customer.gameObject.SetActive(state == PopupStoreCustomerState.Entering
-                        || state == PopupStoreCustomerState.Waiting || state == PopupStoreCustomerState.Packed
-                        || state == PopupStoreCustomerState.Leaving);
-                if (Owned(view.Frame))
-                    view.Frame.gameObject.SetActive(state == PopupStoreCustomerState.Waiting && !packed);
-                if (packed) HideCompletedOrder(view);
-            }
+                ApplyCustomerEntrySlotVisibility(i, entrance);
         if (notify) Refreshed?.Invoke();
+    }
+
+    public void ApplyCustomerEntrySlot(int slotIndex)
+    {
+        if (_lastViews == null || slotIndex < 0 || slotIndex >= _lastViews.Length) return;
+        ApplyCustomerEntrySlotVisibility(slotIndex, GetComponent<PopupStoreCustomerEntrance>());
+        SlotChanged?.Invoke(slotIndex);
+    }
+
+    private void ApplyCustomerEntrySlotVisibility(int slotIndex, PopupStoreCustomerEntrance entrance)
+    {
+        var view = _lastViews[slotIndex];
+        if (view == null) return;
+        bool bound = TryGetEntryBinding(slotIndex, out var order, out _);
+        bool packed = bound && order.IsPacked;
+        var state = !bound ? PopupStoreCustomerState.Empty
+            : entrance != null && entrance.ControlsOrders ? entrance.GetState(slotIndex)
+            : packed ? PopupStoreCustomerState.Packed : PopupStoreCustomerState.Waiting;
+        if (Owned(view.Customer))
+            view.Customer.gameObject.SetActive(state == PopupStoreCustomerState.Entering
+                || state == PopupStoreCustomerState.Waiting || state == PopupStoreCustomerState.Packed
+                || state == PopupStoreCustomerState.Leaving);
+        if (Owned(view.Frame)) view.Frame.gameObject.SetActive(state == PopupStoreCustomerState.Waiting && !packed);
+        if (packed) HideCompletedOrder(view);
+    }
+
+    internal bool TryValidateSupplyOrder(PopupStoreOrder order, out string error)
+        => TryResolveSupplyOrder(order, out _, out _, out error);
+
+    internal bool TryInitializeSupply(IReadOnlyList<PopupStoreOrder> firstThreeFreshOrders, out string error)
+    {
+        if (!CanChangeSupply(out error)) return false;
+        if (_supplyInitialized || firstThreeFreshOrders == null || firstThreeFreshOrders.Count != 3)
+        { error = "Supply initialization requires three fresh orders and can run only once."; return false; }
+        if (!CurrentOrdersMatchSnapshot())
+        { error = "The original order snapshot has changed before supply initialization."; return false; }
+        foreach (var current in _displayedOrders)
+            if (current.IsPacked)
+            { error = "Supply initialization cannot replace a packed order."; return false; }
+        foreach (var binding in _packedDeliveryTargets)
+            if (binding != null)
+            { error = "Supply initialization cannot discard an existing committed binding."; return false; }
+
+        var views = CaptureViews(out error);
+        if (error != null) return false;
+        for (int i = 0; i < views.Length; i++)
+            if (!SameView(views[i], _lastViews != null && i < _lastViews.Length ? _lastViews[i] : null))
+            { error = "Supply initialization cannot replace authored image bindings."; return false; }
+        var orders = new PopupStoreOrder[3];
+        var materials = new IReadOnlyList<PopupStoreMaterialEntry>[3];
+        var portraits = new Sprite[3];
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        for (int i = 0; i < orders.Length; i++)
+        {
+            var order = firstThreeFreshOrders[i];
+            if (!IsFreshSupplyOrder(order, out error) || !ids.Add(order.RuntimeId))
+            { if (error == null) error = "Supply orders require distinct runtime identities."; return false; }
+            if (!TryResolveSupplyOrder(order, out var resolved, out portraits[i], out error)) return false;
+            orders[i] = order;
+            materials[i] = Array.AsReadOnly(resolved);
+        }
+
+        // All validation completes before any source, snapshot or authored image is changed.
+        _sampleOrders = orders;
+        _displayedOrders = (PopupStoreOrder[])orders.Clone();
+        _displayedMaterials = materials;
+        _displayedCustomerIds = new string[3];
+        _displayedOrderIds = new string[3];
+        for (int i = 0; i < orders.Length; i++)
+        {
+            _displayedCustomerIds[i] = orders[i].CustomerId;
+            _displayedOrderIds[i] = orders[i].RuntimeId;
+            PrepareEntryView(_lastViews[i], portraits[i], materials[i]);
+        }
+        DisplayedCount = 3;
+        _supplyInitialized = true;
+        return true;
+    }
+
+    internal bool TryReplaceOrderForEntry(int slotIndex, PopupStoreOrder expectedOld,
+        PopupStoreOrder freshReplacement, out string error)
+    {
+        if (!CanChangeSupply(out error)) return false;
+        if (!TryGetEntryBinding(slotIndex, out var current, out _)
+            || !ReferenceEquals(current, expectedOld))
+        { error = "The released order no longer matches the source and displayed slot."; return false; }
+        if (!TryCapture(_slots[slotIndex], out var view) || !SameView(view, _lastViews[slotIndex]))
+        { error = "The authored image bindings changed before slot reuse."; return false; }
+        if (!IsFreshSupplyOrder(freshReplacement, out error)
+            || !TryResolveSupplyOrder(freshReplacement, out var materials, out var portrait, out error)) return false;
+        var snapshot = Array.AsReadOnly(materials);
+
+        // The entrance controller verifies Released/terminal cleanup and binds its new Slot before notification.
+        _sampleOrders[slotIndex] = freshReplacement;
+        _displayedOrders[slotIndex] = freshReplacement;
+        _displayedMaterials[slotIndex] = snapshot;
+        _displayedCustomerIds[slotIndex] = freshReplacement.CustomerId;
+        _displayedOrderIds[slotIndex] = freshReplacement.RuntimeId;
+        _packedDeliveryTargets[slotIndex] = null;
+        PrepareEntryView(_lastViews[slotIndex], portrait, snapshot);
+        return true;
+    }
+
+    private bool CanChangeSupply(out string error)
+    {
+        error = null;
+        var popup = GetComponent<UIPopupStore>();
+        if (_packingLocked || !IsReady || !isActiveAndEnabled || popup == null || !popup.isActiveAndEnabled)
+        { error = "Order supply requires an active, ready, unlocked popup."; return false; }
+        return true;
+    }
+
+    private bool IsFreshSupplyOrder(PopupStoreOrder order, out string error)
+    {
+        error = null;
+        if (order == null || order.IsPacked || string.IsNullOrEmpty(order.RuntimeId))
+        { error = "A supplied order requires a fresh runtime identity and no packing result."; return false; }
+        foreach (var current in _displayedOrders)
+            if (ReferenceEquals(current, order) || string.Equals(current.RuntimeId, order.RuntimeId, StringComparison.Ordinal))
+            { error = "A supplied order cannot reuse a current order instance or runtime identity."; return false; }
+        return true;
+    }
+
+    private bool TryResolveSupplyOrder(PopupStoreOrder order, out PopupStoreMaterialEntry[] materials,
+        out Sprite portrait, out string error)
+    {
+        materials = Array.Empty<PopupStoreMaterialEntry>();
+        portrait = null;
+        error = null;
+        if (order == null) { error = "A supply order cannot be null."; return false; }
+        if (!order.TryResolve(_catalog, out materials, out error)) return false;
+        if (_customerVisuals == null || _customerVisuals.Length == 0)
+        { error = "Authored customer visuals are required."; return false; }
+        var customers = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var visual in _customerVisuals)
+        {
+            if (visual == null || string.IsNullOrWhiteSpace(visual.CustomerId) || visual.Sprite == null
+                || !customers.Add(visual.CustomerId))
+            { error = "Customer visuals require distinct IDs and non-null sprites."; return false; }
+            if (string.Equals(visual.CustomerId, order.CustomerId, StringComparison.Ordinal)) portrait = visual.Sprite;
+        }
+        if (portrait == null) { error = "Missing authored customer visual: " + order.CustomerId; return false; }
+        return true;
+    }
+
+    private static bool SameView(SlotView current, SlotView previous)
+    {
+        if (current == null || previous == null || current.Customer != previous.Customer
+            || current.Frame != previous.Frame || current.Icons.Length != previous.Icons.Length) return false;
+        for (int i = 0; i < current.Icons.Length; i++)
+            if (current.Icons[i] != previous.Icons[i]) return false;
+        return true;
+    }
+
+    private void PrepareEntryView(SlotView view, Sprite portrait, IReadOnlyList<PopupStoreMaterialEntry> materials)
+    {
+        HideViews(new[] { view });
+        var resolved = new PopupStoreMaterialEntry[materials.Count];
+        for (int i = 0; i < resolved.Length; i++) resolved[i] = materials[i];
+        ShowOrder(view, portrait, resolved);
+        view.Customer.gameObject.SetActive(false);
+        view.Frame.gameObject.SetActive(false);
     }
 
     /// <summary>Reads the committed identity even while the popup is hidden and its display snapshot is cleared.</summary>

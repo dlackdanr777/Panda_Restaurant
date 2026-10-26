@@ -7821,6 +7821,124 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   _automaticEntry: 1
+  _fixedTestSupply: 1
+  _testOrders:
+  - _customerId: CUSTOMER01
+    _plushIds:
+    - STAFF01
+    _boxId: BOX_PINK
+    _ribbonId: RIBBON_YELLOW
+  - _customerId: CUSTOMER04
+    _plushIds:
+    - STAFF01
+    - STAFF01
+    _boxId: BOX_BLUE
+    _ribbonId: RIBBON_PINK
+  - _customerId: CUSTOMER11
+    _plushIds:
+    - STAFF03
+    - STAFF05
+    - STAFF02
+    _boxId: BOX_MINT
+    _ribbonId: RIBBON_MINT
+  - _customerId: CUSTOMER01
+    _plushIds:
+    - STAFF02
+    _boxId: BOX_PINK
+    _ribbonId: RIBBON_YELLOW
+  - _customerId: CUSTOMER04
+    _plushIds:
+    - STAFF03
+    _boxId: BOX_BLUE
+    _ribbonId: RIBBON_PINK
+  - _customerId: CUSTOMER11
+    _plushIds:
+    - STAFF04
+    _boxId: BOX_MINT
+    _ribbonId: RIBBON_MINT
+  - _customerId: CUSTOMER01
+    _plushIds:
+    - STAFF05
+    _boxId: BOX_PINK
+    _ribbonId: RIBBON_YELLOW
+  - _customerId: CUSTOMER04
+    _plushIds:
+    - STAFF06
+    _boxId: BOX_BLUE
+    _ribbonId: RIBBON_PINK
+  - _customerId: CUSTOMER11
+    _plushIds:
+    - STAFF07
+    _boxId: BOX_MINT
+    _ribbonId: RIBBON_MINT
+  - _customerId: CUSTOMER01
+    _plushIds:
+    - STAFF08
+    _boxId: BOX_PINK
+    _ribbonId: RIBBON_YELLOW
+  - _customerId: CUSTOMER04
+    _plushIds:
+    - STAFF09
+    - STAFF09
+    _boxId: BOX_BLUE
+    _ribbonId: RIBBON_MINT
+  - _customerId: CUSTOMER11
+    _plushIds:
+    - STAFF10
+    - STAFF11
+    _boxId: BOX_MINT
+    _ribbonId: RIBBON_YELLOW
+  - _customerId: CUSTOMER01
+    _plushIds:
+    - STAFF11
+    - STAFF11
+    _boxId: BOX_PINK
+    _ribbonId: RIBBON_PINK
+  - _customerId: CUSTOMER04
+    _plushIds:
+    - STAFF12
+    - STAFF13
+    _boxId: BOX_BLUE
+    _ribbonId: RIBBON_MINT
+  - _customerId: CUSTOMER11
+    _plushIds:
+    - STAFF13
+    - STAFF13
+    _boxId: BOX_MINT
+    _ribbonId: RIBBON_YELLOW
+  - _customerId: CUSTOMER01
+    _plushIds:
+    - STAFF14
+    - STAFF15
+    _boxId: BOX_PINK
+    _ribbonId: RIBBON_PINK
+  - _customerId: CUSTOMER04
+    _plushIds:
+    - STAFF15
+    - STAFF15
+    _boxId: BOX_BLUE
+    _ribbonId: RIBBON_MINT
+  - _customerId: CUSTOMER01
+    _plushIds:
+    - STAFF20
+    - STAFF25
+    - STAFF28
+    _boxId: BOX_PINK
+    _ribbonId: RIBBON_PINK
+  - _customerId: CUSTOMER04
+    _plushIds:
+    - STAFF21
+    - STAFF26
+    - STAFF29
+    _boxId: BOX_BLUE
+    _ribbonId: RIBBON_MINT
+  - _customerId: CUSTOMER11
+    _plushIds:
+    - STAFF22
+    - STAFF27
+    - STAFF30
+    _boxId: BOX_MINT
+    _ribbonId: RIBBON_YELLOW
   _orders: {fileID: 500001}
   _entryBoundary: {fileID: 200002}
   _startOffset: {x: 64, y: 0}
