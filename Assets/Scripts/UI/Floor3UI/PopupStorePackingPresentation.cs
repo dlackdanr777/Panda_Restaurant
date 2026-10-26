@@ -16,6 +16,26 @@ public sealed class PopupStoreFinishedBox
     public Sprite Sprite => _sprite;
 }
 
+public enum PopupStoreVisualOutcomeKind { VisualCompleted, Cancelled }
+
+/// <summary>One terminal presentation outcome. The committed transaction and original target are retained.</summary>
+public sealed class PopupStoreVisualOutcome
+{
+    public PopupStorePackingReceipt Receipt { get; }
+    public RectTransform Target { get; }
+    public PopupStoreVisualOutcomeKind Kind { get; }
+    public string Reason { get; }
+
+    internal PopupStoreVisualOutcome(PopupStorePackingReceipt receipt, RectTransform target,
+        PopupStoreVisualOutcomeKind kind, string reason)
+    {
+        Receipt = receipt;
+        Target = target;
+        Kind = kind;
+        Reason = reason;
+    }
+}
+
 /// <summary>One local receipt consumer. Presentation cancellation never changes a committed order.</summary>
 [DisallowMultipleComponent]
 public sealed class PopupStorePackingPresentation : MonoBehaviour
@@ -50,7 +70,10 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
     private readonly List<PopupStorePackingReceipt> _receivedReceipts = new List<PopupStorePackingReceipt>();
     private readonly HashSet<string> _receivedIds = new HashSet<string>(StringComparer.Ordinal);
     private readonly HashSet<string> _deliveredIds = new HashSet<string>(StringComparer.Ordinal);
+    private readonly List<PopupStoreVisualOutcome> _visualOutcomes = new List<PopupStoreVisualOutcome>();
+    private readonly HashSet<string> _terminalIds = new HashSet<string>(StringComparer.Ordinal);
     private ReadOnlyCollection<PopupStorePackingReceipt> _readOnlyReceipts;
+    private ReadOnlyCollection<PopupStoreVisualOutcome> _readOnlyOutcomes;
     private PopupStorePacking _sessionPacking;
     private PopupStoreOrderDisplay _sessionOrders;
     private Animator _sessionBoom;
@@ -64,6 +87,8 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
     private Color _boomColor;
     private float _elapsed;
     private bool _sessionActive;
+    private bool _endingSession;
+    private bool _publishingOutcome;
     private string _lastError;
 
     public bool IsReady { get; private set; }
@@ -78,9 +103,13 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
     // Kept after completion/cancellation for the future delivery stage; entries are immutable receipt objects.
     public IReadOnlyList<PopupStorePackingReceipt> ReceivedReceipts
         => _readOnlyReceipts ?? (_readOnlyReceipts = _receivedReceipts.AsReadOnly());
+    public IReadOnlyList<PopupStoreVisualOutcome> VisualOutcomes
+        => _readOnlyOutcomes ?? (_readOnlyOutcomes = _visualOutcomes.AsReadOnly());
+    public event Action<PopupStoreVisualOutcome> VisualEnded;
 
     public bool BeginVisibleSession()
     {
+        if (_endingSession) return false;
         if (_sessionActive) return IsReady;
         EndVisibleSession();
         if (!isActiveAndEnabled) return false;
@@ -104,42 +133,54 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         _boomAnimator.transform.SetSiblingIndex(_boomSiblingIndex);
         _resultImage.transform.SetSiblingIndex(_resultSiblingIndex);
         _boomColor = _sessionBoomImage.color;
-        ArchiveOutstanding(_sessionPacking);
         HideVisuals();
         _sessionActive = true;
         IsReady = true;
         _lastError = null;
         LastCancellationReason = null;
-        return true;
+        ArchiveOutstanding(_sessionPacking, _sessionOrders, "Receipt was pending before this visible presentation session.");
+        return IsReady;
     }
 
     public void EndVisibleSession()
     {
-        // Only drain our own popup's queue, including receipts committed just before a close.
-        var source = Owned(_sessionPacking) ? _sessionPacking : Owned(_packing) ? _packing : null;
-        ArchiveOutstanding(source);
-        if (CurrentReceipt != null) RecordCancellation("Popup presentation closed or disabled.");
-        HideVisuals();
-        if (Owned(_sessionBoom)) _sessionBoom.transform.SetSiblingIndex(_originalBoomSibling);
-        if (Owned(_sessionResult) && _sessionResult.transform.parent == _resultParent)
-            _sessionResult.transform.SetSiblingIndex(_originalResultSibling);
-        CurrentReceipt = null;
-        CurrentTarget = null;
-        CurrentPhase = Phase.Idle;
-        _elapsed = 0;
-        IsReady = false;
-        _sessionActive = false;
-        _sessionPacking = null;
-        _sessionOrders = null;
-        _sessionBoom = null;
-        _sessionBoomImage = null;
-        _sessionResult = null;
-        _resultParent = null;
+        if (_endingSession) return;
+        _endingSession = true;
+        try
+        {
+            // Capture identities before OnDisable ordering or observers can change display availability.
+            var source = Owned(_sessionPacking) ? _sessionPacking : Owned(_packing) ? _packing : null;
+            var orders = Owned(_sessionOrders) ? _sessionOrders : Owned(_orders) ? _orders : null;
+            var receipt = CurrentReceipt;
+            var target = CurrentTarget != null ? CurrentTarget : CommittedTarget(orders, receipt);
+            const string reason = "Popup presentation closed or disabled.";
+            if (receipt != null) RecordCancellation(reason);
+            HideVisuals();
+            if (Owned(_sessionBoom)) _sessionBoom.transform.SetSiblingIndex(_originalBoomSibling);
+            if (Owned(_sessionResult) && _sessionResult.transform.parent == _resultParent)
+                _sessionResult.transform.SetSiblingIndex(_originalResultSibling);
+            CurrentReceipt = null;
+            CurrentTarget = null;
+            CurrentPhase = Phase.Idle;
+            _elapsed = 0;
+            IsReady = false;
+            _sessionActive = false;
+            _sessionPacking = null;
+            _sessionOrders = null;
+            _sessionBoom = null;
+            _sessionBoomImage = null;
+            _sessionResult = null;
+            _resultParent = null;
+            if (receipt != null) RecordOutcome(receipt, target, PopupStoreVisualOutcomeKind.Cancelled, reason);
+            // Only drain our own popup's queue, including receipts committed just before a close.
+            ArchiveOutstanding(source, orders, reason);
+        }
+        finally { _endingSession = false; }
     }
 
     public void TickPresentation(float unscaledDelta)
     {
-        if (!_sessionActive) return;
+        if (!_sessionActive || _publishingOutcome) return;
         if (!isActiveAndEnabled || !Owned(_sessionPacking) || !_sessionPacking.isActiveAndEnabled
             || !Owned(_sessionBoom) || !Owned(_sessionResult) || !Owned(_sessionOrders))
         { EndVisibleSession(); return; }
@@ -181,9 +222,9 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         while (_sessionPacking.TryTakeReceipt(out var receipt))
         {
             if (!Archive(receipt)) continue;
+            CurrentReceipt = receipt;
             if (!receipt.Success || !TryResolveSprite(receipt.BoxId, receipt.RibbonId, out var sprite))
             { Fail("A successful receipt requires a registered finished-box combination."); return false; }
-            CurrentReceipt = receipt;
             if (!_sessionOrders.TryGetPackedDeliveryTarget(receipt, out var target, out string reason))
             { CancelCurrent(reason); return false; }
             CurrentTarget = target;
@@ -277,10 +318,13 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
                 CurrentPhase = Phase.Fade;
                 break;
             case Phase.Fade:
+                var completedReceipt = CurrentReceipt;
+                var completedTarget = CurrentTarget;
                 HideVisuals();
                 CurrentReceipt = null;
                 CurrentTarget = null;
                 CurrentPhase = Phase.Idle;
+                RecordOutcome(completedReceipt, completedTarget, PopupStoreVisualOutcomeKind.VisualCompleted, null);
                 break;
         }
     }
@@ -324,10 +368,41 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         return true;
     }
 
-    private void ArchiveOutstanding(PopupStorePacking source)
+    private void ArchiveOutstanding(PopupStorePacking source, PopupStoreOrderDisplay orders, string reason)
     {
         if (source == null) return;
-        while (source.TryTakeReceipt(out var receipt)) Archive(receipt);
+        while (source.TryTakeReceipt(out var receipt))
+        {
+            if (!Archive(receipt)) continue;
+            RecordOutcome(receipt, CommittedTarget(orders, receipt), PopupStoreVisualOutcomeKind.Cancelled, reason);
+        }
+    }
+
+    private static RectTransform CommittedTarget(PopupStoreOrderDisplay orders, PopupStorePackingReceipt receipt)
+        => orders != null && orders.TryGetCommittedCustomerBinding(receipt, out var target, out _) ? target : null;
+
+    private void RecordOutcome(PopupStorePackingReceipt receipt, RectTransform target,
+        PopupStoreVisualOutcomeKind kind, string reason)
+    {
+        if (receipt == null || string.IsNullOrEmpty(receipt.ReceiptId) || !_terminalIds.Add(receipt.ReceiptId)) return;
+        var outcome = new PopupStoreVisualOutcome(receipt, target, kind, reason);
+        _visualOutcomes.Add(outcome);
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            Debug.Log("POPUP_STORE_VISUAL_ENDED receipt=" + receipt.ReceiptId + "; slot=" + receipt.SlotIndex
+                + "; customer=" + receipt.CustomerId + "; kind=" + kind, this);
+#endif
+        var handlers = VisualEnded;
+        if (handlers == null) return;
+        bool alreadyPublishing = _publishingOutcome;
+        _publishingOutcome = true;
+        try
+        {
+            foreach (Action<PopupStoreVisualOutcome> handler in handlers.GetInvocationList())
+                try { handler(outcome); }
+                catch (Exception exception) { Debug.LogException(exception, this); }
+        }
+        finally { _publishingOutcome = alreadyPublishing; }
     }
 
     private bool Archive(PopupStorePackingReceipt receipt)
@@ -442,12 +517,15 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
 
     private void CancelCurrent(string reason)
     {
+        var receipt = CurrentReceipt;
+        var target = CurrentTarget != null ? CurrentTarget : CommittedTarget(_sessionOrders, receipt);
         RecordCancellation(reason);
         HideVisuals();
         CurrentReceipt = null;
         CurrentTarget = null;
         CurrentPhase = Phase.Idle;
         _elapsed = 0;
+        RecordOutcome(receipt, target, PopupStoreVisualOutcomeKind.Cancelled, reason);
     }
 
     private void RecordCancellation(string reason)

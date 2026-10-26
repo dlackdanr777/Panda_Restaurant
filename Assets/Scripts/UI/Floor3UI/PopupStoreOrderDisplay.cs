@@ -56,8 +56,13 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         : Array.AsReadOnly(_slots);
 
     public IReadOnlyList<PopupStoreMaterialEntry> GetDisplayedMaterials(int slotIndex)
-        => IsReady && slotIndex >= 0 && slotIndex < _displayedMaterials.Length && !IsOrderPacked(slotIndex)
-            ? _displayedMaterials[slotIndex] : Array.Empty<PopupStoreMaterialEntry>();
+    {
+        if (!IsReady || slotIndex < 0 || slotIndex >= _displayedMaterials.Length || IsOrderPacked(slotIndex))
+            return Array.Empty<PopupStoreMaterialEntry>();
+        var entrance = GetComponent<PopupStoreCustomerEntrance>();
+        return entrance != null && entrance.ControlsOrders && !entrance.IsWaiting(slotIndex)
+            ? Array.Empty<PopupStoreMaterialEntry>() : _displayedMaterials[slotIndex];
+    }
 
     public string GetDisplayedCustomerId(int slotIndex)
         => IsReady && slotIndex >= 0 && slotIndex < _displayedCustomerIds.Length
@@ -69,6 +74,90 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
 
     public bool IsOrderPacked(int slotIndex)
         => IsReady && slotIndex >= 0 && slotIndex < _displayedOrders.Length && _displayedOrders[slotIndex].IsPacked;
+
+    /// <summary>Reads the validated order/image binding without requiring an entering portrait to be visible.</summary>
+    public bool TryGetEntryBinding(int slotIndex, out PopupStoreOrder order, out Image image)
+    {
+        order = null;
+        image = null;
+        if (!IsReady || slotIndex < 0 || slotIndex >= DisplayedCount
+            || _sampleOrders == null || slotIndex >= _sampleOrders.Length
+            || slotIndex >= _displayedOrders.Length || slotIndex >= _displayedOrderIds.Length
+            || slotIndex >= _displayedCustomerIds.Length || _slots == null || slotIndex >= _slots.Length
+            || _lastViews == null || slotIndex >= _lastViews.Length) return false;
+
+        var current = _displayedOrders[slotIndex];
+        var view = _lastViews[slotIndex];
+        var popup = GetComponent<UIPopupStore>();
+        if (current == null || !ReferenceEquals(_sampleOrders[slotIndex], current)
+            || !string.Equals(current.CustomerId, _displayedCustomerIds[slotIndex], StringComparison.Ordinal)
+            || !string.Equals(current.RuntimeId, _displayedOrderIds[slotIndex], StringComparison.Ordinal)
+            || view == null || _slots[slotIndex] == null || view.Customer == null
+            || _slots[slotIndex].CustomerImage != view.Customer || !Owned(view.Customer)
+            || view.Customer.sprite == null || popup == null
+            || view.Customer.GetComponentInParent<UIPopupStore>(true) != popup) return false;
+
+        order = current;
+        image = view.Customer;
+        return true;
+    }
+
+    /// <summary>Applies entrance visibility only; order definitions and packing state remain unchanged.</summary>
+    public void ApplyCustomerEntryState(bool notify = true)
+    {
+        var entrance = GetComponent<PopupStoreCustomerEntrance>();
+        bool controlled = entrance != null && entrance.ControlsOrders;
+        if (_lastViews != null)
+            for (int i = 0; i < _lastViews.Length; i++)
+            {
+                var view = _lastViews[i];
+                if (view == null) continue;
+                bool bound = TryGetEntryBinding(i, out var order, out _);
+                bool packed = bound && order.IsPacked;
+                var state = !bound ? PopupStoreCustomerState.Empty
+                    : controlled ? entrance.GetState(i)
+                    : packed ? PopupStoreCustomerState.Packed : PopupStoreCustomerState.Waiting;
+                if (Owned(view.Customer))
+                    view.Customer.gameObject.SetActive(state == PopupStoreCustomerState.Entering
+                        || state == PopupStoreCustomerState.Waiting || state == PopupStoreCustomerState.Packed
+                        || state == PopupStoreCustomerState.Leaving);
+                if (Owned(view.Frame))
+                    view.Frame.gameObject.SetActive(state == PopupStoreCustomerState.Waiting && !packed);
+                if (packed) HideCompletedOrder(view);
+            }
+        if (notify) Refreshed?.Invoke();
+    }
+
+    /// <summary>Reads the committed identity even while the popup is hidden and its display snapshot is cleared.</summary>
+    public bool TryGetCommittedCustomerBinding(PopupStorePackingReceipt receipt, out RectTransform target, out string reason)
+    {
+        target = null;
+        reason = null;
+        if (receipt == null || !receipt.Success || string.IsNullOrEmpty(receipt.ReceiptId)
+            || string.IsNullOrEmpty(receipt.OrderId) || string.IsNullOrEmpty(receipt.CustomerId))
+        { reason = "A successful receipt with its original order and customer identity is required."; return false; }
+        int slot = receipt.SlotIndex;
+        if (slot < 0 || slot >= _packedDeliveryTargets.Length
+            || _sampleOrders == null || slot >= _sampleOrders.Length || _slots == null || slot >= _slots.Length)
+        { reason = "The committed receipt slot is no longer available."; return false; }
+
+        var binding = _packedDeliveryTargets[slot];
+        var order = _sampleOrders[slot];
+        if (binding == null || order == null || !ReferenceEquals(order, binding.Order)
+            || !string.Equals(receipt.CustomerId, order.CustomerId, StringComparison.Ordinal)
+            || !string.Equals(receipt.OrderId, order.RuntimeId, StringComparison.Ordinal)
+            || !order.IsPacked || !ReferenceEquals(order.PackingReceipt, receipt)
+            || !ReferenceEquals(binding.Receipt, receipt))
+        { reason = "The original committed order or receipt identity has changed."; return false; }
+
+        var image = binding.Customer;
+        var popup = GetComponent<UIPopupStore>();
+        if (image == null || _slots[slot] == null || _slots[slot].CustomerImage != image
+            || !Owned(image) || popup == null || image.GetComponentInParent<UIPopupStore>(true) != popup)
+        { reason = "The original committed customer image has changed or left this popup."; return false; }
+        target = image.rectTransform;
+        return true;
+    }
 
     /// <summary>Reads the original packed recipient; never rematches, fulfils or changes an order.</summary>
     public bool TryGetPackedDeliveryTarget(PopupStorePackingReceipt receipt, out RectTransform target, out string reason)
@@ -232,6 +321,8 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         DisplayedCount = resolved.Length;
         IsReady = true;
         _lastError = null;
+        GetComponent<PopupStoreCustomerEntrance>()?.SynchronizeOrders();
+        ApplyCustomerEntryState(false);
         Refreshed?.Invoke();
         return true;
     }
