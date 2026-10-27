@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 900001}
   - component: {fileID: 1000001}
   - component: {fileID: 1100001}
+  - component: {fileID: 1300001}
   m_Layer: 5
   m_Name: Popup Store
   m_TagString: Untagged
@@ -495,7 +496,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\uc810\uc218  \u2014"
+  m_text: "\uc810\uc218 0"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 0cbc05084ee1e444389450df4c0062e1, type: 2}
   m_sharedMaterial: {fileID: 8635327179134459558, guid: 0cbc05084ee1e444389450df4c0062e1, type: 2}
@@ -9263,3 +9264,18 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &1300001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 686970f8a1474517b0bb578ad6f75bee, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _packing: {fileID: 700001}
+  _scoreText: {fileID: 200021}
+  _format: "\uc810\uc218 {0}"

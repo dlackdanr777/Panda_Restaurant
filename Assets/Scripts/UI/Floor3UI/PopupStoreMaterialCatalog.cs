@@ -65,7 +65,7 @@ public sealed class PopupStoreMaterialCatalog : ScriptableObject
         return true;
     }
 
-    private static bool IsKnownId(string id, PopupStoreMaterialKind kind)
+    internal static bool IsKnownId(string id, PopupStoreMaterialKind kind)
     {
         if (string.IsNullOrEmpty(id)) return false;
         switch (kind)

@@ -16,7 +16,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Explicit request-only bridge for the fifteen synchronous, memory-only popup store fixtures.
+/// Explicit request-only bridge for the sixteen synchronous, memory-only popup store fixtures.
 /// Never launches Play, creates a scene, saves assets, restores a workspace or starts another Editor.
 /// </summary>
 [InitializeOnLoad]
@@ -29,7 +29,8 @@ public static class PopupStoreVerificationRunner
         "PopupStoreNavigationTests", "PopupStoreMaterialTests", "PopupStoreSalesCounterTests",
         "PopupStoreOrderTests", "PopupStoreOrderMatchTests", "PopupStoreExactOrderMatchTests",
         "PopupStorePackingTests", "PopupStorePackingPresentationTests", "PopupStoreDeliveryTests", "PopupStoreCustomerEntranceTests",
-        "PopupStoreCustomerDepartureTests", "PopupStoreOrderSupplyTests", "PopupStoreBusinessClockTests", "PopupStoreCustomerPatienceTests", "PopupStoreComplaintTests"
+        "PopupStoreCustomerDepartureTests", "PopupStoreOrderSupplyTests", "PopupStoreBusinessClockTests", "PopupStoreCustomerPatienceTests", "PopupStoreComplaintTests",
+        "PopupStoreScoreTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -58,7 +59,7 @@ public static class PopupStoreVerificationRunner
     [Serializable] private sealed class Report
     {
         public string startedUtc, finishedUtc, error;
-        public string scope = "Fifteen popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
+        public string scope = "Sixteen popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
         public bool success, compiling, updating, scriptCompilationFailed, workspaceUnchanged;
         public int discovered, total, passed, failed, skipped, inconclusive;
         public Workspace before, after;

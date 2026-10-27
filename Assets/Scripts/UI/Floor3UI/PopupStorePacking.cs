@@ -75,6 +75,9 @@ public sealed class PopupStorePacking : MonoBehaviour
     [SerializeField] private Button _packButton;
 
     private readonly Queue<PopupStorePackingReceipt> _receipts = new Queue<PopupStorePackingReceipt>();
+    // Non-consuming history for local observers; the delivery queue retains its original ownership.
+    private readonly List<PopupStorePackingReceipt> _committedReceipts = new List<PopupStorePackingReceipt>();
+    private IReadOnlyList<PopupStorePackingReceipt> _committedView;
     private PopupStoreSalesCounter _boundCounter;
     private PopupStoreOrderDisplay _boundOrders;
     private PopupStoreBusinessClock _boundClock;
@@ -87,6 +90,18 @@ public sealed class PopupStorePacking : MonoBehaviour
         = new PopupStorePackingResult(PopupStorePackingStatus.Unavailable);
     public PopupStorePackingReceipt LastReceipt { get; private set; }
     public int SuccessfulPackCount { get; private set; }
+    public IReadOnlyList<PopupStorePackingReceipt> CommittedReceipts
+        => _committedView ?? (_committedView = _committedReceipts.AsReadOnly());
+    public event Action<PopupStorePackingReceipt> SucceededCommitted;
+
+    public bool IsCommittedReceipt(PopupStorePackingReceipt receipt)
+    {
+        if (receipt == null || string.IsNullOrEmpty(receipt.ReceiptId)) return false;
+        foreach (var committed in _committedReceipts)
+            if (ReferenceEquals(committed, receipt)
+                && string.Equals(committed.ReceiptId, receipt.ReceiptId, StringComparison.Ordinal)) return true;
+        return false;
+    }
 
     public bool Refresh()
     {
@@ -143,6 +158,8 @@ public sealed class PopupStorePacking : MonoBehaviour
             _receipts.Enqueue(receipt);
             SuccessfulPackCount++;
             LastResult = new PopupStorePackingResult(PopupStorePackingStatus.Succeeded, matches, receipt);
+            _committedReceipts.Add(receipt);
+            PublishSucceeded(receipt);
             try { _counter.PublishPackingConsumed(); }
             catch (Exception exception) { Debug.LogException(exception, this); }
             try { _orders.PublishPackingCompleted(); }
@@ -167,6 +184,18 @@ public sealed class PopupStorePacking : MonoBehaviour
     {
         receipt = _receipts.Count > 0 ? _receipts.Dequeue() : null;
         return receipt != null;
+    }
+
+    private void PublishSucceeded(PopupStorePackingReceipt receipt)
+    {
+        var observers = SucceededCommitted;
+        if (observers == null) return;
+        // An optional HUD observer must never prevent the transaction's existing notifications.
+        foreach (Action<PopupStorePackingReceipt> observer in observers.GetInvocationList())
+        {
+            try { observer(receipt); }
+            catch (Exception exception) { Debug.LogException(exception, this); }
+        }
     }
 
     private PopupStorePackingResult Remember(PopupStorePackingStatus status, PopupStoreExactMatchResult matches = null)
