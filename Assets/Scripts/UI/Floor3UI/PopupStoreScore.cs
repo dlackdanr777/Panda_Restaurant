@@ -45,6 +45,7 @@ public sealed class PopupStoreScore : MonoBehaviour
     private string _lastHudError;
 
     public int TotalScore { get; private set; }
+    public event Action Changed;
     public int SuccessfulOrderCount => _entries.Count;
     public IReadOnlyCollection<string> ProcessedReceiptIds => _byReceipt.Keys;
     public IReadOnlyList<PopupStoreScoreEntry> Entries
@@ -57,6 +58,38 @@ public sealed class PopupStoreScore : MonoBehaviour
     {
         entry = null;
         return receiptId != null && _byReceipt.TryGetValue(receiptId, out entry);
+    }
+
+    /// <summary>Pure verification of the already observed ledger. Does not recover, consume or award receipts.</summary>
+    public bool TryReadCompleteSnapshot(out int score, out int successfulOrders, out string error)
+    {
+        score = 0;
+        successfulOrders = 0;
+        error = null;
+        var popup = GetComponentInParent<UIPopupStore>(true);
+        if (popup == null || _owner == null || _owner != _packing
+            || _owner.GetComponentInParent<UIPopupStore>(true) != popup)
+        { error = "Score must be bound to its original local packing source."; return false; }
+        var history = _owner.CommittedReceipts;
+        if (history.Count != _entries.Count || history.Count != _byReceipt.Count)
+        { error = "The score ledger does not contain every committed receipt."; return false; }
+        long sum = 0;
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var receipt in history)
+        {
+            if (!_owner.IsCommittedReceipt(receipt)
+                || !TryCalculate(receipt, out int plushCount, out int points, out _)
+                || !ids.Add(receipt.ReceiptId) || !_byReceipt.TryGetValue(receipt.ReceiptId, out var entry)
+                || entry.Points != points || entry.PlushCount != plushCount || entry.OrderId != receipt.OrderId
+                || entry.CustomerId != receipt.CustomerId || entry.SlotIndex != receipt.SlotIndex)
+            { error = "A committed receipt does not match its score record."; return false; }
+            sum += points;
+        }
+        if (sum != TotalScore)
+        { error = "The score total does not match its committed receipt records."; return false; }
+        score = TotalScore;
+        successfulOrders = history.Count;
+        return true;
     }
 
     public bool Refresh()
@@ -87,6 +120,11 @@ public sealed class PopupStoreScore : MonoBehaviour
         _entries.Add(entry);
         _successfulByLength[plushCount]++;
         TotalScore += points;
+        var observers = Changed;
+        if (observers != null)
+            foreach (Action observer in observers.GetInvocationList())
+                try { observer(); }
+                catch (Exception exception) { Debug.LogException(exception, this); }
         RefreshHud();
 #if UNITY_EDITOR
         Debug.Log("POPUP_STORE_SCORE receipt=" + entry.ReceiptId + " order=" + entry.OrderId
