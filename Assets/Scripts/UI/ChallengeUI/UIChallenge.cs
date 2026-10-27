@@ -59,6 +59,7 @@ public class UIChallenge : MobileUIView
         _subscribedChallengeManager.OnDailyChallengeUpdateHandler += OnDailyUpdateUI;
         _subscribedChallengeManager.OnAllTimeChallengeUpdateHandler += OnAllTimeUpdateUI;
         _subscribedChallengeManager.OnWeeklyChallengeUpdateHandler += OnWeeklyUpdateUI;
+        _subscribedChallengeManager.OnAddChallengeHandler += OnChallengesAdded;
 
         gameObject.SetActive(false);
     }
@@ -106,44 +107,48 @@ public class UIChallenge : MobileUIView
 
     private void OnDailyButtonClicked()
     {
+        _uiAllTime.SetAsFirstSibling();
+        _uiWeekly.SetAsFirstSibling();
         _uiDaily.SetAsLastSibling();
     }
 
 
     private void OnAllTimeButtonClicked()
     {
+        _uiDaily.SetAsFirstSibling();
+        _uiWeekly.SetAsFirstSibling();
         _uiAllTime.SetAsLastSibling();
     }
 
     private void OnWeeklyButtonClicked()
     {
+        _uiDaily.SetAsFirstSibling();
+        _uiAllTime.SetAsFirstSibling();
         _uiWeekly.SetAsLastSibling();
     }
 
 
     private void OnDailyUpdateUI()
     {
-        if (!gameObject.activeInHierarchy)
-            return;
-
         _uiDailyAlarm.SetActive(_uiDaily.UpdateUI());
     }
 
 
     private void OnAllTimeUpdateUI()
     {
-        if (!gameObject.activeInHierarchy)
-            return;
-
         _uiAllTimeAlarm.SetActive(_uiAllTime.UpdateUI());
     }
 
     private void OnWeeklyUpdateUI()
     {
-        if (!gameObject.activeInHierarchy)
-            return;
-
         _uiWeeklyAlarm.SetActive(_uiWeekly.UpdateUI());
+    }
+
+    private void OnChallengesAdded()
+    {
+        OnDailyUpdateUI();
+        OnAllTimeUpdateUI();
+        OnWeeklyUpdateUI();
     }
 
     public void StartCoinAnime(long money, Vector3 coinPos)
@@ -238,6 +243,7 @@ public class UIChallenge : MobileUIView
             _subscribedChallengeManager.OnDailyChallengeUpdateHandler -= OnDailyUpdateUI;
             _subscribedChallengeManager.OnAllTimeChallengeUpdateHandler -= OnAllTimeUpdateUI;
             _subscribedChallengeManager.OnWeeklyChallengeUpdateHandler -= OnWeeklyUpdateUI;
+            _subscribedChallengeManager.OnAddChallengeHandler -= OnChallengesAdded;
         }
         _subscribedChallengeManager = null;
     }

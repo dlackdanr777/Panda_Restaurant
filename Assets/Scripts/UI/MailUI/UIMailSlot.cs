@@ -90,11 +90,9 @@ public class UIMailSlot : MonoBehaviour
         // ── 아이템 아이콘 & 텍스트 ───────────────────────────────────────────
         if (_data.Items.Count > 0)
         {
-            System.Text.StringBuilder names  = new System.Text.StringBuilder();
             System.Text.StringBuilder counts = new System.Text.StringBuilder();
             foreach (var item in _data.Items)
             {
-                names.AppendLine(item.ItemName);
                 counts.AppendLine($"x{Utility.ConvertToMoney(item.ItemCount)}");
             }
             if (_item != null)
@@ -135,7 +133,6 @@ public class UIMailSlot : MonoBehaviour
         // }
 
         bool isReceived = MailManager.Instance.IsReceiveDisplayComplete(_data);
-        bool isExpired  = _data.IsExpired;
         bool hasItem    = _data.Items != null && _data.Items.Count > 0;
 
         // 아이템 있는 미수령: 받기 버튼 / 아이템 없는 미수령: 읽기 버튼

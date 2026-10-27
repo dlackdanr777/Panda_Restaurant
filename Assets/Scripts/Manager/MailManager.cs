@@ -30,6 +30,8 @@ public class MailManager : MonoBehaviour
 
     /// <summary>硫붿씪 紐⑸줉??媛깆떊?????몄텧?⑸땲??/summary>
     public event Action OnMailListRefreshed;
+    public event Action OnMailListLoadCompleted;
+    public bool IsMailListLoading { get; private set; }
 
     /// <summary>誘몄닔??硫붿씪 議댁옱 ?щ?媛 諛붾????몄텧?⑸땲??(true = ?뚮엺 ?덉쓬)</summary>
     public event Action<bool> OnAlarmChanged;
@@ -163,7 +165,8 @@ public class MailManager : MonoBehaviour
         GameDataRestoreQuery query = ReadReceiveQuery();
         int serial = ++_mailListLoadSerial;
         Func<bool> current = () => serial == _mailListLoadSerial && IsReceiveCurrent(query);
-        if (!current()) { onFail?.Invoke(); return; }
+        if (!current()) { CompleteMailListLoad(serial); onFail?.Invoke(); return; }
+        IsMailListLoading = true;
         _mailList.Clear();
         _historyOrigInDates.Clear();
         _hiddenOrigInDates.Clear();
@@ -174,7 +177,9 @@ public class MailManager : MonoBehaviour
             LoadByTypeAsync(PostType.Coupon, query, current, () =>
             {
                 LoadReceivedHistoryAsync(query, current, () =>
-                {                    SaveNewMailsToHistory();                    RemoveHiddenMailsFromList();                    onSuccess?.Invoke();
+                {                    SaveNewMailsToHistory();                    RemoveHiddenMailsFromList();
+                    CompleteMailListLoad(serial);
+                    onSuccess?.Invoke();
                     InvokeRefreshed();
                     Debug.Log($"[MailManager] ?꾩껜 硫붿씪 {_mailList.Count}嫄?濡쒕뱶 ?꾨즺 (誘몄닔?? {UnreceivedCount}嫄?");
                 });
@@ -186,11 +191,23 @@ public class MailManager : MonoBehaviour
                 {
                     SaveNewMailsToHistory();
                     RemoveHiddenMailsFromList();
+                    CompleteMailListLoad(serial);
                     onSuccess?.Invoke();
                     InvokeRefreshed();
                 });
             });
-        }, onFail);
+        }, () =>
+        {
+            CompleteMailListLoad(serial);
+            onFail?.Invoke();
+        });
+    }
+
+    private void CompleteMailListLoad(int serial)
+    {
+        if (serial != _mailListLoadSerial) return;
+        IsMailListLoading = false;
+        OnMailListLoadCompleted?.Invoke();
     }
 
     private void LoadReceivedHistoryAsync(GameDataRestoreQuery query, Func<bool> current, Action onDone)
@@ -962,5 +979,4 @@ public class MailManager : MonoBehaviour
 
     #endregion
 }
-
 

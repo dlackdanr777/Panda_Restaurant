@@ -38,7 +38,6 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
         _shortCutButton.onClick.AddListener(OnShortcutButtonClicked);
         _doneButton.onClick.AddListener(OnDoneButtonClicked);
 
-        ChallengeManager.Instance.OnChallengePercentUpdateHandler += UpdatePercent;
     }
 
     public void SetUIChellenge(UIChallenge uiChallenge)
@@ -117,7 +116,7 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
     }
 
 
-    private void UpdatePercent(ChallengeType type)
+    public void UpdatePercent(ChallengeType type)
     {
         if (_data == null)
             return;
@@ -129,6 +128,7 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             return;
 
         _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(_data);
+        _countText.SetText(ChallengeManager.Instance.GetChallengeCountStr(_data));
     }
 
 

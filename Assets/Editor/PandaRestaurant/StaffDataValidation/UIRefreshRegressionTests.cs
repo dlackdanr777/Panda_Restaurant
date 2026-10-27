@@ -484,6 +484,338 @@ public sealed class UIRefreshRegressionTests
     }
 }
 
+public sealed class UIDeferredRefreshRegressionTests
+{
+    private sealed class Views : IDisposable
+    {
+        internal readonly Flow S = new Flow();
+        internal readonly StaffGachaOfflineFonts Fonts = new StaffGachaOfflineFonts();
+        internal readonly Scene Scene;
+        internal readonly MailManager Mail;
+        internal readonly ChallengeManager Challenges;
+        internal readonly UIMailbox Mailbox;
+        internal readonly UIChallenge Challenge;
+        internal readonly List<ChallengeData> Daily = new List<ChallengeData>();
+        internal readonly List<ChallengeData> Weekly = new List<ChallengeData>();
+        internal readonly List<ChallengeData> AllTime = new List<ChallengeData>();
+
+        internal Views()
+        {
+            try
+            {
+                Mail = S.Create<MailManager>();
+                S.Swap(typeof(MailManager), "_instance", Mail);
+                Set(Mail, "_isReceiveExpired", (Func<MailData, bool>)(_ => false));
+                Challenges = S.Create<ChallengeManager>();
+                S.Swap(typeof(ChallengeManager), "_instance", Challenges);
+                Set(Challenges, "_dailyChallengeList", Daily);
+                Set(Challenges, "_weeklyChallengeList", Weekly);
+                Set(Challenges, "_allTimeChallengeList", AllTime);
+                Set(Challenges, "_challengeDataDic", new Dictionary<string, ChallengeData>());
+                foreach (string period in new[] { "Daily", "Weekly", "AllTime" })
+                {
+                    S.Swap(typeof(UserInfo), "_done" + period + "ChallengeSet", new HashSet<string>());
+                    S.Swap(typeof(UserInfo), "_clear" + period + "ChallengeSet", new HashSet<string>());
+                }
+                S.Swap(typeof(UserInfo), "_totalAddMoney", 0L);
+                S.Swap(typeof(UserInfo), "_totalCumulativeCustomerCount", 0);
+                Scene = EditorSceneManager.OpenPreviewScene("Assets/Scenes/Stage1.unity");
+                Mailbox = Find<UIMailbox>();
+                Challenge = Find<UIChallenge>();
+                Mailbox.gameObject.SetActive(false);
+                Challenge.gameObject.SetActive(false);
+                Fonts.BindBeforeActivation(Mailbox.gameObject, Challenge.gameObject);
+                Mailbox.Init();
+                Challenge.Init();
+                ActivateParents(Mailbox.transform);
+                ActivateParents(Challenge.transform);
+            }
+            catch { Dispose(); throw; }
+        }
+
+        private T Find<T>() where T : Component => Scene.GetRootGameObjects()
+            .SelectMany(root => root.GetComponentsInChildren<T>(true)).Single();
+
+        private static void ActivateParents(Transform child)
+        {
+            for (var parent = child.parent; parent != null; parent = parent.parent)
+                parent.gameObject.SetActive(true);
+        }
+
+        internal UIChallengeTab Tab(string name) => Get<UIChallengeTab>(Challenge, "_ui" + name);
+        internal List<UIChallengeTabSlot> Slots(string name) => Get<List<UIChallengeTabSlot>>(Tab(name), "_uiChallengeTabSlotList");
+        internal List<UIMailSlot> MailSlots => Get<List<UIMailSlot>>(Mailbox, "_slotPool");
+        internal List<MailData> Mails => Get<List<MailData>>(Mail, "_mailList");
+        internal bool Alarm(string name) => Get<GameObject>(Challenge, "_ui" + name + "Alarm").activeSelf;
+
+        internal ChallengeData Add(string id, Challenges period, bool customers = false)
+        {
+            ChallengeData data = customers
+                ? (ChallengeData)new Type09ChallengeData(period, ChallengeType.TYPE09, id, id, 100, MoneyType.Gold, 0, 0, null)
+                : new Type11ChallengeData(period, ChallengeType.TYPE11, id, id, 100, MoneyType.Gold, 0, 0, null);
+            (period == global::Challenges.Daily ? Daily : period == global::Challenges.Weekly ? Weekly : AllTime).Add(data);
+            Get<Dictionary<string, ChallengeData>>(Challenges, "_challengeDataDic").Add(id, data);
+            return data;
+        }
+
+        internal void OpenMailWithoutNetwork()
+        {
+            // Exercise the rendering boundary without issuing LoadMailListAsync/account requests.
+            Mailbox.gameObject.SetActive(true);
+            Set(Mailbox, "_isShown", true);
+            Invoke(Mailbox, "RefreshUI");
+            Invoke(Mailbox, "LateUpdate");
+        }
+
+        internal void ReleaseSubscriptions()
+        {
+            if (Mailbox != null) Invoke(Mailbox, "OnDestroy");
+            if (Challenge != null)
+            {
+                Invoke(Challenge, "OnDestroy");
+                foreach (string name in new[] { "Daily", "Weekly", "AllTime" })
+                    Invoke(Tab(name), "OnDestroy");
+            }
+        }
+
+        public void Dispose()
+        {
+            ReleaseSubscriptions();
+            if (Scene.IsValid()) EditorSceneManager.ClosePreviewScene(Scene);
+            Fonts.Dispose();
+            S.Dispose();
+        }
+    }
+
+    private static MailData Mail(string date, bool received = false) => new MailData(BackEnd.PostType.Admin,
+        LitJson.JsonMapper.ToObject("{\"inDate\":\"" + date +
+            "\",\"title\":\"Test mail\",\"content\":\"Preview\",\"author\":\"Test\",\"items\":[],\"isRead\":\"" +
+            (received ? "1" : "0") + "\"}"));
+
+    private static FieldInfo EventField(object owner, string name) => owner.GetType()
+        .GetField(name, BindingFlags.Instance | BindingFlags.NonPublic);
+
+    private static void Raise(object owner, string name, params object[] args)
+        => (EventField(owner, name).GetValue(owner) as Delegate)?.DynamicInvoke(args);
+
+    private static int Subscribers(object owner, string name)
+        => (EventField(owner, name).GetValue(owner) as Delegate)?.GetInvocationList().Length ?? 0;
+
+    [Test]
+    public void Mail_HiddenChangesCoalesce_SortAndPoolOrderRemainStable()
+    {
+        using (var v = new Views())
+        {
+            var old = Mail("2026-10-01");
+            var newest = Mail("2026-10-03", true);
+            var equal = Mail("2026-10-03");
+            v.Mails.AddRange(new[] { old, newest, equal });
+            for (int i = 0; i < 3; i++) Raise(v.Mail, "OnMailListRefreshed");
+            Invoke(v.Mailbox, "LateUpdate");
+            Assert.That(v.MailSlots, Is.Empty);
+            v.OpenMailWithoutNetwork();
+            CollectionAssert.AreEqual(new[] { newest, equal, old }, v.MailSlots.Select(slot => Get<MailData>(slot, "_data")));
+            Assert.That(Get<TextMeshProUGUI>(v.Mailbox, "_mailCountText").text, Is.EqualTo("3/100"));
+            Assert.That(Get<Button>(v.Mailbox, "_deleteReadButton").gameObject.activeSelf, Is.True);
+            var first = v.MailSlots[0];
+            var text = Get<TextMeshProUGUI>(first, "_contentText");
+            int disables = 0;
+            first.gameObject.AddComponent<UIRefreshActivationProbe>().OnDeactivated = () => disables++;
+            text.text = "unbound";
+            for (int i = 0; i < 3; i++) Raise(v.Mail, "OnMailListRefreshed");
+            Assert.That(text.text, Is.EqualTo("unbound"));
+            Invoke(v.Mailbox, "LateUpdate");
+            Assert.That(text.text, Is.Not.EqualTo("unbound"));
+            text.text = "one bind only";
+            Invoke(v.Mailbox, "LateUpdate");
+            Assert.That(text.text, Is.EqualTo("one bind only"));
+            Assert.That(disables, Is.Zero, "Existing active slots must not be toggled off for a refresh.");
+            Invoke(v.Mailbox, "OnSortToggled");
+            Invoke(v.Mailbox, "LateUpdate");
+            CollectionAssert.AreEqual(new[] { old, newest, equal }, v.MailSlots.Select(slot => Get<MailData>(slot, "_data")));
+            Get<Button>(v.MailSlots[1], "_slotButton").onClick.Invoke();
+            var popup = Get<UIMailDetailPopup>(v.Mailbox, "_detailPopup");
+            Assert.That(popup.gameObject.activeSelf, Is.True);
+            Assert.That(Get<MailData>(popup, "_currentMail"), Is.SameAs(newest));
+            Get<Button>(popup, "_overlayButton").onClick.Invoke();
+            Assert.That(popup.gameObject.activeSelf, Is.False);
+            v.Mailbox.Hide();
+            v.Mailbox.gameObject.SetActive(false);
+            v.Mails.Remove(newest);
+            Raise(v.Mail, "OnMailListRefreshed");
+            Invoke(v.Mailbox, "LateUpdate");
+            Assert.That(Get<TextMeshProUGUI>(v.Mailbox, "_mailCountText").text, Is.EqualTo("3/100"));
+            v.OpenMailWithoutNetwork();
+            Assert.That(Get<TextMeshProUGUI>(v.Mailbox, "_mailCountText").text, Is.EqualTo("2/100"));
+            Assert.That(v.MailSlots[2].gameObject.activeSelf, Is.False);
+            Assert.That(Get<Button>(v.Mailbox, "_deleteReadButton").gameObject.activeSelf, Is.False);
+        }
+    }
+
+    [Test]
+    public void Mail_OldLoadCompletionCannotReleaseNewLoad_AndBindingReadsLatestManagerList()
+    {
+        using (var v = new Views())
+        {
+            v.OpenMailWithoutNetwork();
+            Set(v.Mailbox, "_loadVersion", 2);
+            Set(v.Mail, "<IsMailListLoading>k__BackingField", true);
+            Invoke(v.Mailbox, "SetLoading", true);
+            v.Mails.Add(Mail("2026-10-01"));
+            Raise(v.Mail, "OnMailListRefreshed");
+            Invoke(v.Mailbox, "CompleteMailLoad", 1);
+            Invoke(v.Mailbox, "LateUpdate");
+            Assert.That(v.MailSlots, Is.Empty, "A partially loaded list must not be bound.");
+            Assert.That(v.Mail.IsMailListLoading, Is.True);
+            var latest = Mail("2026-10-04", true);
+            v.Mails.Clear(); v.Mails.Add(latest);
+            Set(v.Mail, "_mailListLoadSerial", 2);
+            Invoke(v.Mail, "CompleteMailListLoad", 2);
+            Invoke(v.Mailbox, "CompleteMailLoad", 2);
+            Raise(v.Mail, "OnMailListRefreshed");
+            Invoke(v.Mailbox, "LateUpdate");
+            Assert.That(Get<MailData>(v.MailSlots.Single(), "_data"), Is.SameAs(latest));
+            Assert.That(Get<bool>(v.Mailbox, "_isDirty"), Is.False);
+            Set(v.Mail, "<IsMailListLoading>k__BackingField", true);
+            Set(v.Mail, "_mailListLoadSerial", 4);
+            v.Mails.Clear();
+            Raise(v.Mail, "OnMailListRefreshed");
+            Invoke(v.Mail, "CompleteMailListLoad", 3);
+            Invoke(v.Mailbox, "LateUpdate");
+            Assert.That(v.Mail.IsMailListLoading, Is.True);
+            Assert.That(v.MailSlots.Single().gameObject.activeSelf, Is.True);
+            v.Mails.Add(latest);
+            Invoke(v.Mail, "CompleteMailListLoad", 4);
+            Invoke(v.Mailbox, "LateUpdate");
+            Assert.That(v.Mail.IsMailListLoading, Is.False, "A superseding alarm load releases the window too.");
+            Assert.That(Get<bool>(v.Mailbox, "_isLoading"), Is.False);
+            Set(v.Mail, "_readReceiveQuery", (Func<Muks.BackEnd.GameDataRestoreQuery>)(() => null));
+            int failures = 0;
+            v.Mail.LoadMailListAsync(onFail: () => failures++);
+            Assert.That(failures, Is.EqualTo(1));
+            Assert.That(v.Mail.IsMailListLoading, Is.False);
+            Assert.That(v.Mails.Single(), Is.SameAs(latest));
+            latest.SetReceived();
+            Raise(v.Mail, "OnMailListRefreshed");
+            v.Mailbox.Hide();
+            Invoke(v.Mailbox, "LateUpdate");
+            Assert.That(Get<bool>(v.Mailbox, "_isDirty"), Is.True);
+            v.OpenMailWithoutNetwork();
+            Assert.That(Get<bool>(v.Mailbox, "_isDirty"), Is.False);
+        }
+    }
+
+    [Test]
+    public void Challenge_HiddenCompletionAndAddMaintainBadges_OnlySelectedTabBinds()
+    {
+        using (var v = new Views())
+        {
+            var progress = v.Add("DailyProgress", global::Challenges.Daily);
+            var done = v.Add("DailyDone", global::Challenges.Daily);
+            var claimed = v.Add("DailyClaimed", global::Challenges.Daily);
+            var repeat = v.Add("DailyRepeat", global::Challenges.Daily);
+            var weekly = v.Add("WeeklyDone", global::Challenges.Weekly);
+            UserInfo.DoneChallenge(done); UserInfo.DoneChallenge(claimed); UserInfo.ClearChallenge(claimed);
+            UserInfo.DoneChallenge(repeat); UserInfo.ClearChallenge(repeat);
+            UserInfo.DoneChallenge(weekly);
+            Raise(v.Challenges, "OnAddChallengeHandler");
+            Assert.That(v.Alarm("Daily"), Is.True);
+            Assert.That(v.Alarm("Weekly"), Is.True);
+            foreach (string name in new[] { "Daily", "Weekly", "AllTime" })
+            {
+                Invoke(v.Tab(name), "LateUpdate");
+                Assert.That(v.Slots(name), Is.Empty);
+            }
+            v.Challenge.Show();
+            CollectionAssert.AreEqual(new[] { done, progress, claimed }, v.Slots("Daily").Select(slot => slot.Data));
+            Assert.That(v.Slots("Weekly"), Is.Empty);
+            Invoke(v.Challenge, "OnWeeklyButtonClicked");
+            Assert.That(v.Slots("Weekly").Single().Data, Is.SameAs(weekly));
+            Assert.That(Get<RectTransform>(v.Tab("Daily"), "_contentRect").gameObject.activeSelf, Is.False);
+            UserInfo.ClearChallenge(weekly);
+            var weeklyText = Get<TextMeshProUGUI>(v.Slots("Weekly")[0], "_descriptionText");
+            weeklyText.text = "pending bind";
+            v.Challenges.UpdateChallengeByChallenges(global::Challenges.Weekly);
+            v.Challenges.UpdateChallengeByChallenges(global::Challenges.Weekly);
+            Assert.That(weeklyText.text, Is.EqualTo("pending bind"));
+            Invoke(v.Tab("Weekly"), "LateUpdate");
+            Assert.That(weeklyText.text, Is.EqualTo(weekly.Description));
+            weeklyText.text = "one bind only";
+            Invoke(v.Tab("Weekly"), "LateUpdate");
+            Assert.That(weeklyText.text, Is.EqualTo("one bind only"));
+            Assert.That(v.Alarm("Weekly"), Is.False);
+            Assert.That(Get<Button>(v.Slots("Weekly")[0], "_clearButton").gameObject.activeSelf, Is.True);
+            v.Challenge.Hide(); v.Challenge.gameObject.SetActive(false);
+            UserInfo.ClearChallenge(done);
+            Assert.That(v.Alarm("Daily"), Is.False);
+            var added = v.Add("DailyNew", global::Challenges.Daily);
+            UserInfo.DoneChallenge(added);
+            Raise(v.Challenges, "OnAddChallengeHandler");
+            Assert.That(v.Alarm("Daily"), Is.True);
+            Assert.That(v.Slots("Daily").Count, Is.EqualTo(3));
+            v.Challenge.Show();
+            CollectionAssert.AreEqual(new[] { added, progress, done, claimed }, v.Slots("Daily").Select(slot => slot.Data));
+        }
+    }
+
+    [Test]
+    public void Challenge_ProgressTargetsOnlyEventType_HiddenAndInactiveSlotsDoNoWork()
+    {
+        using (var v = new Views())
+        {
+            v.Add("DailyMoney", global::Challenges.Daily);
+            v.Add("DailyCustomers", global::Challenges.Daily, true);
+            v.Add("WeeklyMoney", global::Challenges.Weekly);
+            v.Challenge.Show();
+            var money = v.Slots("Daily")[0];
+            var other = v.Slots("Daily")[1];
+            var otherText = Get<TextMeshProUGUI>(other, "_countText");
+            otherText.text = "unchanged type";
+            v.S.Swap(typeof(UserInfo), "_totalAddMoney", 50L);
+            Raise(v.Challenges, "OnChallengePercentUpdateHandler", ChallengeType.TYPE11);
+            Assert.That(Get<Image>(money, "_percentBar").fillAmount, Is.EqualTo(.5f));
+            Assert.That(Get<TextMeshProUGUI>(money, "_countText").text, Is.EqualTo("50 / 100"));
+            Assert.That(otherText.text, Is.EqualTo("unchanged type"));
+            Assert.That(Subscribers(v.Challenges, "OnChallengePercentUpdateHandler"), Is.EqualTo(3),
+                "Only tabs subscribe, never individual pooled slots.");
+            Invoke(v.Challenge, "OnWeeklyButtonClicked");
+            v.S.Swap(typeof(UserInfo), "_totalAddMoney", 75L);
+            Raise(v.Challenges, "OnChallengePercentUpdateHandler", ChallengeType.TYPE11);
+            Assert.That(Get<Image>(money, "_percentBar").fillAmount, Is.EqualTo(.5f));
+            Invoke(v.Challenge, "OnDailyButtonClicked");
+            Assert.That(Get<Image>(money, "_percentBar").fillAmount, Is.EqualTo(.75f));
+            v.Daily.RemoveAt(1);
+            Raise(v.Challenges, "OnAddChallengeHandler");
+            Invoke(v.Tab("Daily"), "LateUpdate");
+            Assert.That(other.gameObject.activeSelf, Is.False);
+            otherText.text = "inactive";
+            Raise(v.Challenges, "OnChallengePercentUpdateHandler", ChallengeType.TYPE09);
+            Assert.That(otherText.text, Is.EqualTo("inactive"));
+        }
+    }
+
+    [TestCase(0)]
+    [TestCase(1)]
+    public void Subscriptions_SceneReentryReleasesMailAndTabEvents(int iteration)
+    {
+        using (var v = new Views())
+        {
+            v.Add("DailyMoney", global::Challenges.Daily);
+            v.Challenge.Show();
+            Assert.That(Subscribers(v.Mail, "OnMailListRefreshed"), Is.EqualTo(1));
+            Assert.That(Subscribers(v.Challenges, "OnAddChallengeHandler"), Is.EqualTo(1));
+            v.ReleaseSubscriptions();
+            Assert.That(Subscribers(v.Mail, "OnMailListRefreshed"), Is.Zero);
+            Assert.That(Subscribers(v.Mail, "OnMailListLoadCompleted"), Is.Zero);
+            Assert.That(Subscribers(v.Challenges, "OnAddChallengeHandler"), Is.Zero);
+            Assert.That(Subscribers(v.Challenges, "OnChallengePercentUpdateHandler"), Is.Zero);
+            Raise(v.Mail, "OnMailListRefreshed");
+            Raise(v.Challenges, "OnAddChallengeHandler");
+            Raise(v.Challenges, "OnChallengePercentUpdateHandler", ChallengeType.TYPE11);
+        }
+    }
+}
+
 [ExecuteAlways]
 public sealed class UIRefreshActivationProbe : MonoBehaviour
 {

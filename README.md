@@ -32,6 +32,40 @@ scenes or verification Scene/Prefab assets. Results are written to
 `PANDA_CUSTOMER_USE_EVIDENCE_DIR` when set). These are functional regressions,
 not CPU/GC allocation or device benchmarks.
 
+## Mailbox and challenge UI refresh
+
+- Mailbox list events only mark the view dirty while hidden. While visible, events
+  and receive/load callbacks merge into one LateUpdate bind of the current manager
+  list. A pending list load defers binding until completion; older window-load
+  completions cannot release a newer load. Manager load-state/completion signals
+  also cover a newer alarm-poll load superseding the window's own request, without
+  changing request, receive, deletion or persistence policy. Stable InDate sorting (including ties),
+  slot order, count and read/delete visibility are retained without deactivating
+  every pooled slot or searching the pool for each mail.
+- Mail receive identity includes account, PostType and InDate, but display state
+  also depends on the global receive operation, current query and mutable items.
+  There is no complete per-mail presentation revision, so this change deliberately
+  uses coalesced full binding rather than an identity-only incremental cache.
+- Challenge state/add events maintain badges even while hidden. Only the selected
+  visible tab binds slots; sorting buffers are reused, with unclaimed-complete,
+  in-progress and claimed ordering and claimed Repeat exclusions unchanged.
+  Percent events identify a ChallengeType, not a single ID: only visible slots of
+  that type update their bar/count. Hidden tabs retain dirty state. Tabs own the
+  subscriptions until destruction; inactive pooled slots have no subscriptions.
+- Attendance polling is intentionally unchanged. Ad closed can precede rewarded,
+  and the no-reward timeout clears the active ad session without another button
+  event. AttendanceChanged also does not announce the noon game-day boundary or
+  every save-availability change. Removing polling could miss unlock/date changes.
+
+The same SDK-free Editor bridge accepts `ui-deferred-refresh` at the request path
+above. It runs focused mailbox/challenge UI regressions and existing MailReceive
+and Attendance tests with memory-only boundaries. Mailbox rendering tests simulate
+load completions, never request live mail. Results are written to
+`%TEMP%\CustomerTableUseReview\related-ui-deferred-refresh-tests.json`.
+Neither these tests nor the source review replace PlayerLoop animation/ad callback
+checks or CPU/GC profiling on a target device. No forced canvas/layout rebuild is
+used.
+
 ## Party movement failure handling
 
 - A two-person team's waiting-line path failure or completion short of the target

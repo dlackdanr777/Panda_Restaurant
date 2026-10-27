@@ -249,7 +249,7 @@ public static class GachaReviewTestRunner
                 _customerUse = true;
                 Begin(command);
             }
-            else if (command == "ui-refresh")
+            else if (command == "ui-refresh" || command == "ui-deferred-refresh")
             {
                 _customerUse = true;
                 Begin(command);
@@ -257,7 +257,7 @@ public static class GachaReviewTestRunner
             else if (command == "known-fever") CheckKnownFeverAssertion();
             else if (command == "run") Begin("all");
             else if (command == "economy" || command == "fairy" || command == "ui") Begin(command);
-            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, run, staff-ai, party-movement, ui-refresh, or known-fever for the related review tests.");
+            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, run, staff-ai, party-movement, ui-refresh, ui-deferred-refresh, or known-fever for the related review tests.");
         }
         catch (Exception error)
         {
@@ -345,6 +345,7 @@ public static class GachaReviewTestRunner
             "CustomerPartyServingTests", "CustomerTableUseRegressionTests", "CustomerVisitPartyTests",
             "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffAiLifecycleTests" };
         if (_group == "ui-refresh") fixtures = new[] { "UIRefreshRegressionTests", "StaffStageMigrationCollectionTests", "StaffAiShutdownTests" };
+        if (_group == "ui-deferred-refresh") fixtures = new[] { "UIDeferredRefreshRegressionTests", "StaffStageMigrationCollectionTests" };
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;
@@ -380,7 +381,10 @@ public static class GachaReviewTestRunner
                 if (_group == "ui-refresh" && name == "StaffStageMigrationCollectionTests"
                     && !method.Name.StartsWith("IntegrationNavigation_", StringComparison.Ordinal)
                     && !method.Name.StartsWith("QuestStaffShell_", StringComparison.Ordinal)) continue;
-                if (_customerUse && _group != "ui-refresh" && name == "StaffStageMigrationCollectionTests" && !new[] { "AllStages_", "RawEnvelope", "CatalogAndRaw", "RawLevelSix", "ExistingCommonStaff_", "NewCollectionRounds_", "GameDataRequery", "Legacy",
+                if (_group == "ui-deferred-refresh" && name == "StaffStageMigrationCollectionTests"
+                    && !method.Name.StartsWith("MailReceive_", StringComparison.Ordinal)
+                    && !method.Name.StartsWith("Attendance_", StringComparison.Ordinal)) continue;
+                if (_customerUse && _group != "ui-refresh" && _group != "ui-deferred-refresh" && name == "StaffStageMigrationCollectionTests" && !new[] { "AllStages_", "RawEnvelope", "CatalogAndRaw", "RawLevelSix", "ExistingCommonStaff_", "NewCollectionRounds_", "GameDataRequery", "Legacy",
                     "FirstTutorial_ConfirmedSignup", "FirstTutorial_StageBootstrap", "FirstTutorial_UnknownInitial", "FirstTutorial_OrdinaryStageWrite" }.Any(prefix => method.Name.StartsWith(prefix, StringComparison.Ordinal))) continue;
                 if (!_customerUse && name == "StaffStageMigrationCollectionTests" && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
                     && !(_phase3 && method.Name.StartsWith("Attendance_", StringComparison.Ordinal)) && !(_phase4 && method.Name.StartsWith("Phase4Gacha_", StringComparison.Ordinal))) continue;

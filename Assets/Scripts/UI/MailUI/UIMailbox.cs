@@ -35,6 +35,9 @@ public class UIMailbox : MobileUIView
     private List<UIMailSlot> _slotPool = new List<UIMailSlot>();
     private bool _sortNewest = true;
     private bool _isLoading;
+    private bool _isShown;
+    private bool _isDirty = true;
+    private int _loadVersion;
     private MailManager _subscribedMailManager;
 
     public override void Init()
@@ -45,6 +48,7 @@ public class UIMailbox : MobileUIView
 
         _subscribedMailManager = MailManager.Instance;
         _subscribedMailManager.OnMailListRefreshed += RefreshUI;
+        _subscribedMailManager.OnMailListLoadCompleted += OnMailListLoadCompleted;
 
         gameObject.SetActive(false);
         _detailPopup.Init();
@@ -56,6 +60,7 @@ public class UIMailbox : MobileUIView
         _detailPopup.gameObject.SetActive(false);
         _animeUI.TweenStop();
         VisibleState = VisibleState.Appearing;
+        _isShown = true;
         gameObject.SetActive(true);
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
@@ -75,6 +80,7 @@ public class UIMailbox : MobileUIView
 
     public override void Hide()
     {
+        _isShown = false;
         _detailPopup.gameObject.SetActive(false);
         _animeUI.TweenStop();
         VisibleState = VisibleState.Disappearing;
@@ -93,17 +99,39 @@ public class UIMailbox : MobileUIView
 
     private void LoadMailList()
     {
+        int version = ++_loadVersion;
         SetLoading(true);
         MailManager.Instance.LoadMailListAsync(
-            onSuccess: () => SetLoading(false),
-            onFail: () => SetLoading(false)
+            onSuccess: () => CompleteMailLoad(version),
+            onFail: () => CompleteMailLoad(version)
         );
+    }
+
+    private void CompleteMailLoad(int version)
+    {
+        if (version != _loadVersion) return;
+        SetLoading(false);
+    }
+
+    private void OnMailListLoadCompleted()
+    {
+        SetLoading(false);
     }
 
     private void RefreshUI()
     {
-        ClearSlots();
+        _isDirty = true;
+    }
 
+    private void LateUpdate()
+    {
+        if (!_isDirty || !_isShown || MailManager.Instance.IsMailListLoading || !isActiveAndEnabled) return;
+        _isDirty = false;
+        BindMailList();
+    }
+
+    private void BindMailList()
+    {
         var mailList = MailManager.Instance.MailList;
 
         // 정렬: 최신순 = InDate 내림차순, 오래된순 = 오름차순
@@ -112,34 +140,41 @@ public class UIMailbox : MobileUIView
             : mailList.OrderBy(m => m.InDate);
 
         int shown = 0;
+        bool hasRead = false;
+        bool hasUnreceived = false;
         foreach (var mail in sorted)
         {
-            UIMailSlot slot = GetOrCreateSlot();
+            UIMailSlot slot = GetOrCreateSlot(shown);
             slot.SetData(mail);
             slot.gameObject.SetActive(true);
+            hasRead |= mail.IsReceived;
+            hasUnreceived |= MailManager.Instance.CanReceive(mail);
             shown++;
         }
+
+        for (int i = shown; i < _slotPool.Count; i++)
+            _slotPool[i].gameObject.SetActive(false);
 
         if (_mailCountText != null)
             _mailCountText.text = $"{shown}/100";
 
-        _receiveAllButton.interactable = !_isLoading && MailManager.Instance.UnreceivedCount > 0;
+        _receiveAllButton.interactable = !_isLoading && hasUnreceived;
 
         // 읽은 편지가 있을 때만 삭제 버튼 표시
         if (_deleteReadButton != null)
         {
-            bool hasRead = MailManager.Instance.MailList.Any(m => m.IsReceived);
             _deleteReadButton.gameObject.SetActive(hasRead);
         }
     }
 
     private void SetLoading(bool isLoading)
     {
-        _isLoading = isLoading;
+        _isLoading = isLoading || MailManager.Instance.IsMailListLoading;
         if (_loadingIndicator != null)
-            _loadingIndicator.SetActive(isLoading);
+            _loadingIndicator.SetActive(_isLoading);
 
-        _receiveAllButton.interactable = !isLoading && MailManager.Instance.UnreceivedCount > 0;
+        if (_isLoading) _receiveAllButton.interactable = false;
+        RefreshUI();
     }
 
     #endregion
@@ -243,10 +278,9 @@ public class UIMailbox : MobileUIView
     // ─────────────────────────────────────────────────────
     #region 슬롯 풀링
 
-    private UIMailSlot GetOrCreateSlot()
+    private UIMailSlot GetOrCreateSlot(int index)
     {
-        foreach (var s in _slotPool)
-            if (!s.gameObject.activeSelf) return s;
+        if (index < _slotPool.Count) return _slotPool[index];
 
         UIMailSlot newSlot = Instantiate(_slotPrefab, _slotParent);
         newSlot.Init(OnSlotReceive, OnSlotClicked);
@@ -254,10 +288,10 @@ public class UIMailbox : MobileUIView
         return newSlot;
     }
 
-    private void ClearSlots()
+    private void OnDisable()
     {
-        foreach (var slot in _slotPool)
-            slot.gameObject.SetActive(false);
+        _isShown = false;
+        _isDirty = true;
     }
 
     #endregion
@@ -280,7 +314,10 @@ public class UIMailbox : MobileUIView
     private void OnDestroy()
     {
         if (_subscribedMailManager != null)
+        {
             _subscribedMailManager.OnMailListRefreshed -= RefreshUI;
+            _subscribedMailManager.OnMailListLoadCompleted -= OnMailListLoadCompleted;
+        }
         _subscribedMailManager = null;
     }
 }
