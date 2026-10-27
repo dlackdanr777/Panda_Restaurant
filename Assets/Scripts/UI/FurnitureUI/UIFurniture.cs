@@ -56,6 +56,20 @@ public class UIFurniture : MobileUIView
     private List<UIRestaurantAdminFoodTypeSlot>[] _slots = new List<UIRestaurantAdminFoodTypeSlot>[(int)FurnitureType.Length];
     private List<FurnitureData> _currentTypeDataList;
 
+    private SlotState[][] _slotStates = new SlotState[(int)FurnitureType.Length][];
+    private bool _entryPrepared;
+    private DirtyFlags _dirtyFlags;
+
+    [Flags]
+    private enum DirtyFlags
+    {
+        None = 0,
+        Money = 1,
+        Dia = 2,
+        Score = 4,
+        Ownership = 8
+    }
+
     private bool _isInitialized = false;
     private Vector3 _tmpScale;
 
@@ -87,9 +101,6 @@ public class UIFurniture : MobileUIView
         // 이벤트 구독
         SubscribeEvents();
 
-        // 초기 설정
-        SetFurnitureDataOptimized(FurnitureType.Table1);
-
         _isInitialized = true;
         _tmpScale = _animeUI.transform.localScale;
         gameObject.SetActive(false);
@@ -110,12 +121,15 @@ public class UIFurniture : MobileUIView
             }
 
             _slots[i] = new List<UIRestaurantAdminFoodTypeSlot>(maxSlotCount);
+            _slotStates[i] = new SlotState[maxSlotCount];
 
             // 최대 개수만큼 슬롯 생성
             for (int j = 0; j < maxSlotCount; j++)
             {
+                int typeIndex = i;
+                int slotIndex = j;
                 UIRestaurantAdminFoodTypeSlot slot = Instantiate(_slotPrefab, _slotParnet);
-                slot.Init(() => { }); // 클릭 이벤트는 UpdateUI에서 동적으로 설정
+                slot.Init(() => OnSlotClicked(typeIndex, slotIndex));
                 _slots[i].Add(slot);
                 slot.gameObject.SetActive(false);
             }
@@ -125,8 +139,9 @@ public class UIFurniture : MobileUIView
     private void SubscribeEvents()
     {
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
-        UserInfo.OnGiveFurnitureHandler += UpdateUIOptimized;
-        UserInfo.OnChangeMoneyHandler += UpdateUIOptimized;
+        UserInfo.OnGiveFurnitureHandler += OnGiveEvent;
+        UserInfo.OnChangeMoneyHandler += OnChangeMoneyEvent;
+        UserInfo.OnChangeDiaHandler += OnChangeDiaEvent;
         UserInfo.OnChangeScoreHandler += UpdateUIOptimized;
         _subscribedGameManager = GameManager.Instance;
         _subscribedGameManager.OnChangeScoreHandler += UpdateUIOptimized;
@@ -135,13 +150,12 @@ public class UIFurniture : MobileUIView
     public override void Show()
     {
         VisibleState = VisibleState.Appearing;
+        if (!_entryPrepared)
+            SetFurnitureDataOptimized(FurnitureType.Table1);
         gameObject.SetActive(true);
         _canvasGroup.blocksRaycasts = false;
         _animeUI.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
         transform.SetAsLastSibling();
-
-        // 데이터 설정과 UI 업데이트를 한 번에 처리
-        SetFurnitureDataOptimized(FurnitureType.Table1);
 
         TweenData tween = _animeUI.TweenScale(_tmpScale, _showDuration, _showTweenMode);
         tween.OnComplete(() =>
@@ -173,10 +187,15 @@ public class UIFurniture : MobileUIView
     {
         _uiRestaurantAdmin.MainUISetActive(false);
         _uiRestaurantAdmin.ShowFurnitureTab();
-        if (!_uiNav.CheckActiveView("UIFurniture")) _uiNav.Push("UIFurniture");
         _currentFloorType = floorType;
         UpdateFloorUI();
         SetFurnitureDataOptimized(type);
+        if (_uiNav.CheckActiveView("UIFurniture")) return;
+
+        // Floor, type and selection are already bound, so Show() must not bind the default type again.
+        _entryPrepared = true;
+        try { _uiNav.Push("UIFurniture"); }
+        finally { _entryPrepared = false; }
     }
 
     private void UpdateFloorUI()
@@ -204,74 +223,121 @@ public class UIFurniture : MobileUIView
     // 최적화된 데이터 설정 메서드
     private void SetFurnitureDataOptimized(FurnitureType type)
     {
-        // 이전 타입의 슬롯들 비활성화 (배치 최적화)
         if (_currentType != type && _slots[(int)_currentType] != null)
         {
             var currentSlots = _slots[(int)_currentType];
             for (int i = 0; i < currentSlots.Count; i++)
-            {
                 currentSlots[i].gameObject.SetActive(false);
-            }
         }
 
         _currentType = type;
-        // 현재 층의 가구 데이터만 가져오기
         _currentTypeDataList = FurnitureDataManager.Instance.GetSortFurnitureDataList(type, _currentFloorType);
-        _typeText.text = Utility.FurnitureTypeStringConverter(type);
+        string typeLabel = Utility.FurnitureTypeStringConverter(type);
+        if (_typeText.text != typeLabel)
+            _typeText.text = typeLabel;
 
-        // 프리뷰와 UI 업데이트를 함께 처리
-        SetFurniturePreviewOptimized();
-        UpdateUIOptimized();
+        SetPreviewOptimized();
+        RefreshSlots();
+        _dirtyFlags = DirtyFlags.None;
     }
 
-    private void SetFurniturePreviewOptimized()
+    private void SetPreviewOptimized()
     {
         FurnitureData equipData = UserInfo.GetEquipFurniture(UserInfo.CurrentStage, _currentFloorType, _currentType);
         FurnitureData previewData = equipData ?? (_currentTypeDataList.Count > 0 ? _currentTypeDataList[0] : null);
         _uiFurniturePreview.SetData(_currentFloorType, previewData);
     }
 
-    // 대폭 최적화된 UpdateUI (정렬 없이 기존 순서대로)
-    private void UpdateUIOptimized()
+    private readonly struct SlotState : IEquatable<SlotState>
     {
-        if (!gameObject.activeInHierarchy || _currentTypeDataList == null || _currentTypeDataList.Count == 0)
-            return;
+        public readonly FurnitureData Data;
+        public readonly int State;
+        public readonly int A;
+        public readonly int B;
 
-        _uiFurniturePreview.UpdateUI();
+        public SlotState(FurnitureData data, int state, int a, int b)
+        {
+            Data = data;
+            State = state;
+            A = a;
+            B = b;
+        }
+
+        public bool Equals(SlotState other)
+            => ReferenceEquals(Data, other.Data) && State == other.State && A == other.A && B == other.B;
+    }
+
+    private const int StateUse = 1;
+    private const int StateOperate = 2;
+    private const int StateLock = 3;
+    private const int StateLowScore = 4;
+    private const int StateBuyable = 5;
+    private const int StateNoGold = 6;
+    private const int StateNoDia = 7;
+
+    private SlotState ComputeSlotState(FurnitureData data)
+    {
+        EStage stage = UserInfo.CurrentStage;
+        if (UserInfo.IsGiveFurniture(stage, data))
+        {
+            ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(stage, data);
+            return floorType <= ERestaurantFloorType.Floor3
+                ? new SlotState(data, StateUse, (int)floorType, 0)
+                : new SlotState(data, StateOperate, 0, 0);
+        }
+
+        if (!UnlockConditionManager.GetConditionEnabled(data.UnlockData))
+            return new SlotState(data, StateLock, 0, 0);
+
+        if (!UserInfo.IsScoreValid(data))
+            return new SlotState(data, StateLowScore, data.BuyScore, 0);
+
+        int price = data.BuyPrice;
+        int moneyType = (int)data.MoneyType;
+        if (data.MoneyType == MoneyType.Gold && !UserInfo.IsMoneyValid(data))
+            return new SlotState(data, StateNoGold, price, moneyType);
+        if (data.MoneyType == MoneyType.Dia && !UserInfo.IsDiaValid(data))
+            return new SlotState(data, StateNoDia, price, moneyType);
+        return new SlotState(data, StateBuyable, price, moneyType);
+    }
+
+    // Layout, food type and per-slot state are applied only when they differ from what the slot already shows.
+    private void RefreshSlots()
+    {
+        if (_currentTypeDataList == null)
+            return;
 
         int slotsIndex = (int)_currentType;
         var currentSlots = _slots[slotsIndex];
-        int dataCount = _currentTypeDataList.Count;
+        var states = _slotStates[slotsIndex];
+        int dataCount = Mathf.Min(_currentTypeDataList.Count, currentSlots.Count);
 
-        // 기존 리스트 순서대로 슬롯 처리
         for (int i = 0; i < dataCount; i++)
         {
             var data = _currentTypeDataList[i];
             var slot = currentSlots[i];
 
-            // 슬롯 클릭 이벤트 재설정 (층이 변경될 수 있으므로)
-            slot.Init(() => OnSlotClicked(data));
-
-            slot.gameObject.SetActive(true);
+            if (slot.transform.GetSiblingIndex() != i)
+                slot.transform.SetSiblingIndex(i);
+            if (!slot.gameObject.activeSelf)
+                slot.gameObject.SetActive(true);
             slot.SetFoodType(data.FoodType);
-            slot.transform.SetSiblingIndex(i);
 
-            bool isGiven = UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data);
+            SlotState state = ComputeSlotState(data);
+            if (states[i].Equals(state))
+                continue;
 
-            if (isGiven)
-            {
+            states[i] = state;
+            if (UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data))
                 ProcessEquippedSlot(data, slot);
-            }
             else
-            {
                 ProcessUnequippedSlot(data, slot);
-            }
         }
 
-        // 사용하지 않는 슬롯 비활성화
         for (int i = dataCount; i < currentSlots.Count; i++)
         {
-            currentSlots[i].gameObject.SetActive(false);
+            if (currentSlots[i].gameObject.activeSelf)
+                currentSlots[i].gameObject.SetActive(false);
         }
     }
 
@@ -355,7 +421,8 @@ public class UIFurniture : MobileUIView
         }
 
         // 전체 재설정 대신 업데이트만
-        UpdateUIOptimized();
+        MarkDirty(DirtyFlags.Ownership);
+        FlushDirty();
     }
 
     private bool _buyInProgress;
@@ -410,6 +477,7 @@ public class UIFurniture : MobileUIView
         }
 
         UserInfo.GiveFurniture(stage, data);
+        FlushDirty();
         CompletePurchasePresentation();
     }
 
@@ -421,12 +489,19 @@ public class UIFurniture : MobileUIView
         OnBuyEvent?.Invoke();
     }
 
-    private void OnChangeFurnitureEvent(ERestaurantFloorType floor, FurnitureType type)
-    {
-        if (!gameObject.activeInHierarchy)
-            return;
+    private void OnGiveEvent() => MarkDirty(DirtyFlags.Ownership);
 
-        UpdateUIOptimized();
+    private void OnChangeMoneyEvent() => MarkDirty(DirtyFlags.Money);
+
+    private void OnChangeDiaEvent() => MarkDirty(DirtyFlags.Dia);
+
+    // Score is raised by both UserInfo and GameManager; they collapse into one refresh.
+    private void UpdateUIOptimized() => MarkDirty(DirtyFlags.Score);
+
+    private void OnChangeFurnitureEvent(ERestaurantFloorType floorType, FurnitureType type)
+    {
+        // Other floors' placement changes alter this list's "in use" labels, so no floor filtering.
+        MarkDirty(DirtyFlags.Ownership);
     }
 
     private void OnSlotClicked(FurnitureData data)
@@ -434,12 +509,67 @@ public class UIFurniture : MobileUIView
         _uiFurniturePreview.SetData(_currentFloorType, data);
     }
 
+    // Slots read the data currently bound to their index, so pooled slots never click stale data.
+    private void OnSlotClicked(int typeIndex, int slotIndex)
+    {
+        if (typeIndex != (int)_currentType || _currentTypeDataList == null
+            || slotIndex < 0 || slotIndex >= _currentTypeDataList.Count)
+            return;
 
+        OnSlotClicked(_currentTypeDataList[slotIndex]);
+    }
+
+    private void MarkDirty(DirtyFlags flags)
+    {
+        if (!gameObject.activeInHierarchy || _currentTypeDataList == null)
+            return;
+
+        _dirtyFlags |= flags;
+    }
+
+    private void LateUpdate()
+    {
+        if (_dirtyFlags != DirtyFlags.None)
+            FlushDirty();
+    }
+
+    private void FlushDirty()
+    {
+        DirtyFlags flags = _dirtyFlags;
+        _dirtyFlags = DirtyFlags.None;
+        if (flags == DirtyFlags.None || !gameObject.activeInHierarchy || _currentTypeDataList == null)
+            return;
+
+        RefreshSlots();
+        if (NeedsPreviewRefresh(flags))
+            _uiFurniturePreview.UpdateUI();
+    }
+
+    // Gold/diamond affect only unowned items priced in that currency; score affects only the score gate.
+    // Unlock conditions depend on floor/item/recipe/furniture/kitchen ownership, never on gold, dia or score.
+    private bool NeedsPreviewRefresh(DirtyFlags flags)
+    {
+        FurnitureData selected = SelectedData;
+        if (selected == null)
+            return false;
+        if ((flags & DirtyFlags.Ownership) != 0)
+            return true;
+        if (UserInfo.IsGiveFurniture(UserInfo.CurrentStage, selected))
+            return false;
+        if ((flags & DirtyFlags.Score) != 0)
+            return true;
+        if (selected.MoneyType == MoneyType.Gold)
+            return (flags & DirtyFlags.Money) != 0;
+        if (selected.MoneyType == MoneyType.Dia)
+            return (flags & DirtyFlags.Dia) != 0;
+        return false;
+    }
     private void OnDestroy()
     {
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEvent;
-        UserInfo.OnGiveFurnitureHandler -= UpdateUIOptimized;
-        UserInfo.OnChangeMoneyHandler -= UpdateUIOptimized;
+        UserInfo.OnGiveFurnitureHandler -= OnGiveEvent;
+        UserInfo.OnChangeMoneyHandler -= OnChangeMoneyEvent;
+        UserInfo.OnChangeDiaHandler -= OnChangeDiaEvent;
         UserInfo.OnChangeScoreHandler -= UpdateUIOptimized;
         if (_subscribedGameManager != null)
             _subscribedGameManager.OnChangeScoreHandler -= UpdateUIOptimized;

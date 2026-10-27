@@ -28,6 +28,11 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
     [SerializeField] private Color _doneColor;
 
     private ChallengeData _data;
+    private ChallengeData _fixedData;
+    private string _fixedDescription;
+    private long _fixedRewardMoney;
+    private long _fixedRewardScore;
+    private MoneyType _fixedMoneyType;
     public ChallengeData Data => _data;
 
 
@@ -56,34 +61,11 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
 
         _data = data;
         gameObject.SetActive(true);
-        if (data.MoneyType == MoneyType.Gold)
-        {
-            _moneyImage.gameObject.SetActive(true);
-            _diaImage.gameObject.SetActive(false);
-        }
-        else if(data.MoneyType == MoneyType.Dia)
-        {
-            _diaImage.gameObject.SetActive(true);
-            _moneyImage.gameObject.SetActive(false);
-        }
+        if (!IsFixedDisplayCurrent(data))
+            BindFixedDisplay(data);
 
         _percentBar.fillAmount = ChallengeManager.Instance.GetChallengePercent(data);
-        _descriptionText.text = data.Description;
-        _rewardText.text = Utility.ConvertToMoney(data.RewardMoney);
         _countText.SetText(ChallengeManager.Instance.GetChallengeCountStr(data));
-
-        if (data.RewardScore <= 0)
-        {
-            _scoreTextGroup.gameObject.SetActive(false);
-            _andImage.SetActive(false);
-        }
-        else
-        {
-            _scoreTextGroup.gameObject.SetActive(true);
-            _andImage.SetActive(true);
-            _scoreTextGroup.SetText1(Utility.ConvertToMoney(data.RewardScore));
-        }
-        
         if (UserInfo.GetIsClearChallenge(_data.Id))
             {
                 _clearButton.gameObject.SetActive(true);
@@ -115,6 +97,52 @@ public class UIChallengeTabSlot : RecyclableScrollSlot<ChallengeData>
             }
     }
 
+
+    // Id, description, reward and score never change for a data object, so they are rebuilt only when the slot
+    // is bound to a different challenge (or its fixed values differ); progress and state are refreshed every time.
+    private bool IsFixedDisplayCurrent(ChallengeData data)
+    {
+        return ReferenceEquals(_fixedData, data)
+            && _fixedMoneyType == data.MoneyType
+            && _fixedRewardMoney == data.RewardMoney
+            && _fixedRewardScore == data.RewardScore
+            && string.Equals(_fixedDescription, data.Description, StringComparison.Ordinal);
+    }
+
+    private void BindFixedDisplay(ChallengeData data)
+    {
+        _fixedData = data;
+        _fixedMoneyType = data.MoneyType;
+        _fixedRewardMoney = data.RewardMoney;
+        _fixedRewardScore = data.RewardScore;
+        _fixedDescription = data.Description;
+
+        if (data.MoneyType == MoneyType.Gold)
+        {
+            _moneyImage.gameObject.SetActive(true);
+            _diaImage.gameObject.SetActive(false);
+        }
+        else if (data.MoneyType == MoneyType.Dia)
+        {
+            _diaImage.gameObject.SetActive(true);
+            _moneyImage.gameObject.SetActive(false);
+        }
+
+        _descriptionText.text = data.Description;
+        _rewardText.text = Utility.ConvertToMoney(data.RewardMoney);
+
+        if (data.RewardScore <= 0)
+        {
+            _scoreTextGroup.gameObject.SetActive(false);
+            _andImage.SetActive(false);
+        }
+        else
+        {
+            _scoreTextGroup.gameObject.SetActive(true);
+            _andImage.SetActive(true);
+            _scoreTextGroup.SetText1(Utility.ConvertToMoney(data.RewardScore));
+        }
+    }
 
     public void UpdatePercent(ChallengeType type)
     {
