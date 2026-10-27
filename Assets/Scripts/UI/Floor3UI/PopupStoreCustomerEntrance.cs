@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public enum PopupStoreCustomerState { Empty, Entering, Waiting, Packed, Leaving }
+public enum PopupStoreCustomerState { Empty, Entering, Waiting, Packed, Leaving, Expired }
+public enum PopupStoreDepartureReason { None, Packed, PatienceExpired }
 
 /// <summary>Three reusable customer slots, local to this popup instance. No restaurant AI or account storage.</summary>
 [DisallowMultipleComponent]
@@ -27,6 +28,13 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     [SerializeField] private Vector2 _exitOffset = new Vector2(64, 0);
     [SerializeField, Min(0)] private float _exitDuration = 1.2f;
     [SerializeField] private AnimationCurve _exitCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
+    [Header("Complaint before departure")]
+    [Tooltip("Original anger icons, each parented to its own customer portrait. Position and size are authored on their RectTransforms.")]
+    [SerializeField] private Image[] _complaintIcons = new Image[3];
+    [SerializeField] private bool _showComplaintIcon = true;
+    [SerializeField, Min(0)] private float _complaintDuration = .6f;
+    [SerializeField, Min(0)] private float _complaintPulseDuration = .15f;
+    [SerializeField, Min(1)] private float _complaintPulseScale = 1.08f;
     [Header("Fixed review orders, including the first three")]
     [Tooltip("Choose before the session. Supplies the authored twenty orders without changing completed orders.")]
     [SerializeField] private bool _fixedTestSupply;
@@ -52,6 +60,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     public int StartedEntranceCount { get; private set; }
     public int ArrivedCount { get; private set; }
     public int StartedDepartureCount { get; private set; }
+    public int StartedComplaintCount { get; private set; }
     public int ReleasedCount { get; private set; }
     public int TotalTestOrderCount => (_modeLatched ? _supplyMode : _fixedTestSupply)
         ? (_runtimeTestOrders != null ? _runtimeTestOrders.Length : _testOrders?.Length ?? 0) : 0;
@@ -99,6 +108,39 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     public bool IsWaiting(int slotIndex)
         => _running && GetState(slotIndex) == PopupStoreCustomerState.Waiting;
 
+    public PopupStoreDepartureReason GetDepartureReason(int slotIndex)
+        => slotIndex >= 0 && slotIndex < _slots.Length && BindingMatches(slotIndex, _slots[slotIndex])
+            ? _slots[slotIndex].DepartureReason : PopupStoreDepartureReason.None;
+
+    /// <summary>Starts only the visual departure of an already committed expiration; never creates a receipt or applies a penalty.</summary>
+    public bool TryStartComplaint(PopupStorePatienceTimer timer, bool notify = true)
+    {
+        if (!ControlsOrders || !IsReady || !_running || !isActiveAndEnabled || timer == null
+            || !timer.IsExpired || !timer.IdentityMatches || timer.Owner == null
+            || timer.Owner != GetComponent<PopupStoreCustomerPatience>() || !timer.Owner.IsCurrent(timer)
+            || timer.Clock != GetComponent<PopupStoreBusinessClock>()) return false;
+        int index = timer.SlotIndex;
+        var slot = index >= 0 && index < _slots.Length ? _slots[index] : null;
+        if (!BindingMatches(index, slot) || slot.Released || slot.State != PopupStoreCustomerState.Waiting
+            || slot.DepartureReason != PopupStoreDepartureReason.None || !slot.Order.IsExpired || slot.Order.IsPacked
+            || !ReferenceEquals(slot.Order, timer.Order) || slot.OrderId != timer.OrderId
+            || slot.CustomerId != timer.CustomerId) return false;
+        slot.ComplaintTimer = timer;
+        slot.DepartureReason = PopupStoreDepartureReason.PatienceExpired;
+        slot.State = PopupStoreCustomerState.Expired;
+        slot.ComplaintElapsed = 0;
+        slot.ExitElapsed = slot.ExitProgress = 0;
+        StartedComplaintCount++;
+        UpdateComplaintIcon(index, slot);
+        if (notify) _orders.ApplyCustomerEntrySlot(index);
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            Debug.Log("POPUP_STORE_CUSTOMER_COMPLAINT order=" + slot.OrderId + "; slot=" + index
+                + "; customer=" + slot.CustomerId, this);
+#endif
+        return true;
+    }
+
     public bool BeginVisibleSession()
     {
         if (!isActiveAndEnabled) return false;
@@ -113,6 +155,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
         _running = false;
         IsReady = false;
         UnbindPresentation();
+        HideComplaintIcons();
         // Keep elapsed time, original destinations, identities and Packed data on this instance.
         if (_orders != null && _orders.IsReady) _orders.ApplyCustomerEntryState();
     }
@@ -127,6 +170,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             _running = false;
             IsReady = false;
             _appliedAutomatic = false;
+            HideComplaintIcons();
             return;
         }
         _started = true;
@@ -161,6 +205,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             if (slot == null || slot.Blocked) continue;
             if (!BindingMatches(i, slot)) { Cancel(i, slot, "The original customer/order/image binding changed."); continue; }
             if (!Position(slot, out error)) Cancel(i, slot, error);
+            UpdateComplaintIcon(i, slot);
         }
         // Includes closed/cancelled receipts. This is a visual cleanup, never a second delivery or sale.
         foreach (var outcome in _presentation.VisualOutcomes) TryStartDeparture(outcome);
@@ -196,9 +241,34 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             if (!BindingMatches(i, slot))
             { Cancel(i, slot, "The original customer/order/image binding changed."); NotifySlotChanged(i, ref changed); continue; }
             if (slot.Released) continue;
+            float departureDelta = unscaledDelta;
+            if (slot.DepartureReason == PopupStoreDepartureReason.PatienceExpired)
+            {
+                if (!ComplaintIdentityMatches(i, slot))
+                { Cancel(i, slot, "The expired order identity changed before complaint departure completed."); NotifySlotChanged(i, ref changed); continue; }
+                // Closing/background pause freezes this animation. A committed complaint still finishes after closing time.
+                if (!CanAdvanceComplaint()) { UpdateComplaintIcon(i, slot); continue; }
+                float previous = slot.ComplaintElapsed;
+                slot.ComplaintElapsed += unscaledDelta;
+                if (slot.State == PopupStoreCustomerState.Expired)
+                {
+                    if (slot.ComplaintElapsed < _complaintDuration) { UpdateComplaintIcon(i, slot); continue; }
+                    departureDelta = Mathf.Max(0, unscaledDelta - Mathf.Max(0, _complaintDuration - previous));
+                    slot.State = PopupStoreCustomerState.Leaving;
+                    StartedDepartureCount++;
+                    NotifySlotChanged(i, ref changed);
+#if UNITY_EDITOR
+                    if (Application.isPlaying)
+                        Debug.Log("POPUP_STORE_CUSTOMER_LEAVING reason=PatienceExpired; order=" + slot.OrderId
+                            + "; slot=" + i + "; customer=" + slot.CustomerId, this);
+#endif
+                    if (!isActiveAndEnabled || !_running || !IsReady || !_orders.IsReady) break;
+                }
+                UpdateComplaintIcon(i, slot);
+            }
             if (slot.State == PopupStoreCustomerState.Leaving)
             {
-                slot.ExitElapsed += unscaledDelta;
+                slot.ExitElapsed += departureDelta;
                 slot.ExitProgress = _exitDuration > 0 ? Mathf.Clamp01(slot.ExitElapsed / _exitDuration) : 1;
                 if (!PositionDeparture(slot, out error))
                 { Cancel(i, slot, error); NotifySlotChanged(i, ref changed); continue; }
@@ -207,6 +277,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
                     slot.Released = true;
                     slot.State = PopupStoreCustomerState.Empty;
                     ReleasedCount++;
+                    HideComplaintIcon(i, slot);
                     // Hide before resetting the reusable transform. Completed order history remains intact.
                     slot.Image.gameObject.SetActive(false);
                     RestoreHome(slot);
@@ -214,7 +285,8 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
 #if UNITY_EDITOR
                     if (Application.isPlaying)
                         Debug.Log("POPUP_STORE_CUSTOMER_RELEASED receipt=" + slot.DepartureReceiptId
-                            + "; slot=" + i + "; customer=" + slot.CustomerId, this);
+                            + "; slot=" + i + "; customer=" + slot.CustomerId + "; order=" + slot.OrderId
+                            + "; reason=" + slot.DepartureReason, this);
 #endif
                 }
                 continue;
@@ -318,6 +390,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             _slots[index] = new Slot(replacement, image);
         }
         var slot = _slots[index];
+        HideComplaintIcon(index, slot);
         slot.State = PopupStoreCustomerState.Entering;
         slot.Progress = 0;
         slot.StartTime = _visibleElapsed;
@@ -347,9 +420,14 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     private bool CanReuse(int index, Slot slot)
     {
         if (slot == null || !slot.Released || slot.Blocked || slot.State != PopupStoreCustomerState.Empty
-            || !BindingMatches(index, slot) || slot.Image.gameObject.activeSelf || !slot.Order.IsPacked
-            || string.IsNullOrEmpty(slot.DepartureReceiptId) || !_handledVisuals.Contains(slot.DepartureReceiptId)
+            || !BindingMatches(index, slot) || slot.Image.gameObject.activeSelf
             || (slot.Image.rectTransform.anchoredPosition3D - slot.Home).sqrMagnitude > .0001f) return false;
+        if (slot.DepartureReason == PopupStoreDepartureReason.PatienceExpired)
+            // Empty notification intentionally clears Patience's live slot. This retained timer was
+            // authenticated when the complaint began and must still identify this released order.
+            return ComplaintIdentityMatches(index, slot, false) && string.IsNullOrEmpty(slot.DepartureReceiptId);
+        if (slot.DepartureReason != PopupStoreDepartureReason.Packed || !slot.Order.IsPacked
+            || string.IsNullOrEmpty(slot.DepartureReceiptId) || !_handledVisuals.Contains(slot.DepartureReceiptId)) return false;
         foreach (var outcome in _presentation.VisualOutcomes)
             if (ReferenceEquals(outcome.Receipt, slot.Order.PackingReceipt)
                 && outcome.Receipt.ReceiptId == slot.DepartureReceiptId && outcome.Target == slot.Image.rectTransform) return true;
@@ -365,13 +443,76 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             && image.enabled && image.sprite == slot.Sprite && image.transform.parent == slot.Parent;
     }
 
+    private bool ComplaintIdentityMatches(int index, Slot slot, bool requireCurrentTimer = true)
+    {
+        var timer = slot?.ComplaintTimer;
+        return timer != null && slot.DepartureReason == PopupStoreDepartureReason.PatienceExpired
+            && slot.Order.IsExpired && !slot.Order.IsPacked && timer.IsExpired && timer.IdentityMatches
+            && timer.SlotIndex == index && ReferenceEquals(timer.Order, slot.Order)
+            && timer.OrderId == slot.OrderId && timer.CustomerId == slot.CustomerId
+            && timer.Owner != null && timer.Owner == GetComponent<PopupStoreCustomerPatience>()
+            && (requireCurrentTimer ? timer.Owner.IsCurrent(timer) : slot.Released && slot.State == PopupStoreCustomerState.Empty)
+            && timer.Clock == GetComponent<PopupStoreBusinessClock>();
+    }
+
+    private bool CanAdvanceComplaint()
+    {
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        return clock != null && clock.isActiveAndEnabled && clock.CanAdvanceVisuals
+            && (clock.State == PopupStoreBusinessState.Running || clock.State == PopupStoreBusinessState.Ended);
+    }
+
+    private Image OwnedComplaintIcon(int index, Slot slot)
+    {
+        if (_complaintIcons == null || index < 0 || index >= _complaintIcons.Length) return null;
+        var icon = _complaintIcons[index];
+        var portrait = slot?.Image;
+        if (portrait == null && _orders != null && index < _orders.Slots.Count)
+            portrait = _orders.Slots[index]?.CustomerImage;
+        return icon != null && portrait != null && icon != portrait
+            && icon.transform.parent == portrait.transform
+            && icon.GetComponentInParent<UIPopupStore>(true) == GetComponent<UIPopupStore>() ? icon : null;
+    }
+
+    private void UpdateComplaintIcon(int index, Slot slot)
+    {
+        var icon = OwnedComplaintIcon(index, slot);
+        if (icon == null) return;
+        bool visible = _showComplaintIcon && isActiveAndEnabled && _running && IsReady
+            && slot != null && !slot.Blocked && !slot.Released && ComplaintIdentityMatches(index, slot)
+            && (slot.State == PopupStoreCustomerState.Expired || slot.State == PopupStoreCustomerState.Leaving);
+        if (!visible) { HideComplaintIcon(index, slot); return; }
+        if (slot.ComplaintIcon != icon)
+        {
+            slot.ComplaintIcon = icon;
+            slot.ComplaintIconScale = icon.rectTransform.localScale;
+        }
+        float phase = _complaintPulseDuration > 0 ? Mathf.Clamp01(slot.ComplaintElapsed / _complaintPulseDuration) : 1;
+        float scale = Mathf.Lerp(1, _complaintPulseScale, Mathf.Sin(phase * Mathf.PI));
+        icon.rectTransform.localScale = slot.ComplaintIconScale * scale;
+        icon.gameObject.SetActive(true);
+    }
+
+    private void HideComplaintIcon(int index, Slot slot)
+    {
+        var icon = OwnedComplaintIcon(index, slot);
+        if (icon == null) return;
+        icon.gameObject.SetActive(false);
+        if (slot != null && slot.ComplaintIcon == icon) icon.rectTransform.localScale = slot.ComplaintIconScale;
+    }
+
+    private void HideComplaintIcons()
+    {
+        for (int i = 0; i < _slots.Length; i++) HideComplaintIcon(i, _slots[i]);
+    }
+
     private bool Position(Slot slot, out string error)
     {
         error = null;
         var rect = slot.Image.rectTransform;
         if (slot.Released) { RestoreHome(slot); return true; }
         if (slot.State == PopupStoreCustomerState.Leaving) return PositionDeparture(slot, out error);
-        if (slot.Order.IsPacked || slot.State == PopupStoreCustomerState.Waiting)
+        if (slot.Order.IsPacked || slot.State == PopupStoreCustomerState.Waiting || slot.State == PopupStoreCustomerState.Expired)
         { rect.anchoredPosition3D = slot.Home; return true; }
         // Resolve the authored anchored destination again after layout/CanvasScaler changes.
         rect.anchoredPosition3D = slot.Home;
@@ -458,6 +599,8 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             return false;
         }
         slot.DepartureReceiptId = receipt.ReceiptId;
+        slot.DepartureReason = PopupStoreDepartureReason.Packed;
+        HideComplaintIcon(index, slot);
         slot.State = PopupStoreCustomerState.Leaving;
         slot.ExitElapsed = 0;
         slot.ExitProgress = 0;
@@ -485,7 +628,10 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             || _moveCurve == null || _moveCurve.length == 0
             || !Finite(_exitDuration) || _exitDuration < 0 || !Finite(_exitOffset.x) || _exitOffset.x < 0
             || !Finite(_exitOffset.y) || !Finite(_exitBoundary.rect.width) || _exitBoundary.rect.width <= 0
-            || _exitCurve == null || _exitCurve.length == 0)
+            || _exitCurve == null || _exitCurve.length == 0
+            || !Finite(_complaintDuration) || _complaintDuration < 0
+            || !Finite(_complaintPulseDuration) || _complaintPulseDuration < 0
+            || !Finite(_complaintPulseScale) || _complaintPulseScale < 1)
             error = "Entrance requires a positive boundary width and finite duration, interval, offset and curve.";
         else foreach (var key in _moveCurve.keys)
             if (!Finite(key.time) || !Finite(key.value)) { error = "Entrance curve keys must be finite."; break; }
@@ -499,6 +645,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
         if (slot.Blocked) return;
         slot.Blocked = true;
         slot.State = PopupStoreCustomerState.Empty;
+        HideComplaintIcon(index, slot);
         RestoreHome(slot);
         Debug.LogWarning("POPUP_STORE_ENTRY_CANCELLED slot=" + index + "; reason=" + reason, this);
     }
@@ -549,6 +696,11 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
         internal bool Released;
         internal float ExitElapsed, ExitProgress;
         internal string DepartureReceiptId;
+        internal PopupStoreDepartureReason DepartureReason;
+        internal PopupStorePatienceTimer ComplaintTimer;
+        internal float ComplaintElapsed;
+        internal Image ComplaintIcon;
+        internal Vector3 ComplaintIconScale;
         internal Slot(PopupStoreOrder order, Image image)
         {
             Order = order; OrderId = order.RuntimeId; CustomerId = order.CustomerId;

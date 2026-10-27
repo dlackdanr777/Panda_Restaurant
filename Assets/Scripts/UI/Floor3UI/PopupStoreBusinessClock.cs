@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using TMPro;
 using UnityEngine;
@@ -29,12 +30,19 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     private string _lastError;
     // Tests may supply a read-only monotonic source. EditMode otherwise advances only through AdvanceTime.
     private Func<double> _timeSource;
+    private readonly HashSet<string> _penalizedOrders = new HashSet<string>(StringComparer.Ordinal);
 #if UNITY_EDITOR
     private bool _cutoffLogged;
 #endif
 
     public PopupStoreBusinessState State => _state;
     public double RemainingSeconds => _remainingSeconds;
+    /// <summary>Accepted Running time only, capped at the business deadline. Never advances while paused.</summary>
+    public double ElapsedSeconds { get; private set; }
+    public event Action<double> TimeAdvanced;
+    public int ComplaintPenaltyCount => _penalizedOrders.Count;
+    public double ComplaintPenaltySeconds { get; private set; }
+    public bool CanAdvanceVisuals => IsContextAvailable();
     public int EndedCount { get; private set; }
     public event Action StateChanged;
     public event Action Ended;
@@ -198,7 +206,9 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     private void ConsumeElapsed(double elapsed)
     {
         if (_state != PopupStoreBusinessState.Running) return;
+        double consumed = Math.Min(_remainingSeconds, elapsed);
         _remainingSeconds = Math.Max(0d, _remainingSeconds - elapsed);
+        ElapsedSeconds += consumed;
         bool ended = _remainingSeconds == 0d;
         if (ended)
         {
@@ -209,10 +219,66 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         }
         UpdateHud();
         LogCutoff();
+        // Publish the committed absolute position before terminal notifications. Repeated or nested
+        // observers cannot charge this interval twice, including the final partial frame at zero.
+        double position = ElapsedSeconds;
+        if (consumed > 0d && TimeAdvanced != null)
+            foreach (Action<double> handler in TimeAdvanced.GetInvocationList())
+                try { handler(position); }
+                catch (Exception exception) { Debug.LogException(exception, this); }
         if (!ended) return;
         LogState();
         Publish(StateChanged);
         Publish(Ended);
+    }
+
+    internal bool CanAcceptComplaintBatch(int count, double seconds)
+        => count > 0 && count <= 3 && CanUseRunningClock() && Finite(seconds) && seconds >= 0
+            && Finite(seconds * count) && Finite(ComplaintPenaltySeconds + seconds * count);
+
+    /// <summary>One atomic batch at an already-settled Running instant. Penalties are not elapsed time.</summary>
+    internal int ApplyComplaintPenalties(IReadOnlyList<PopupStorePatienceTimer> expired, double seconds)
+    {
+        if (!CanUseRunningClock() || expired == null || !Finite(seconds) || seconds < 0) return 0;
+        var patience = GetComponent<PopupStoreCustomerPatience>();
+        if (patience == null || !patience.isActiveAndEnabled) return 0;
+        var accepted = new List<PopupStorePatienceTimer>();
+        var identities = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var timer in expired)
+            if (timer != null && timer.Owner == patience && timer.Clock == this && timer.IsExpired
+                && patience.IsCurrent(timer) && timer.Order.IsExpired && !timer.Order.IsPacked
+                && !string.IsNullOrEmpty(timer.OrderId) && !_penalizedOrders.Contains(timer.OrderId)
+                && identities.Add(timer.OrderId)) accepted.Add(timer);
+        if (!CanAcceptComplaintBatch(accepted.Count, seconds)) return 0;
+        double total = seconds * accepted.Count;
+        if (!Finite(total) || !Finite(ComplaintPenaltySeconds + total)) return 0;
+        // Consume every identity before any state/UI callback can re-enter, even if the batch reaches zero.
+        foreach (var timer in accepted) _penalizedOrders.Add(timer.OrderId);
+        double before = _remainingSeconds;
+        ComplaintPenaltySeconds += total;
+        _remainingSeconds = Math.Max(0, _remainingSeconds - total);
+        bool ended = _remainingSeconds == 0;
+        if (ended)
+        {
+            _state = PopupStoreBusinessState.Ended;
+            _hasTimeSample = false;
+            EndedCount++;
+        }
+        UpdateHud();
+        LogCutoff();
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+            foreach (var timer in accepted)
+                Debug.Log("POPUP_STORE_COMPLAINT_PENALTY order=" + timer.OrderId + "; customer=" + timer.CustomerId
+                    + "; slot=" + timer.SlotIndex + "; seconds=" + seconds.ToString(CultureInfo.InvariantCulture)
+                    + "; batch=" + accepted.Count + "; before=" + before.ToString("0.###", CultureInfo.InvariantCulture)
+                    + "; after=" + _remainingSeconds.ToString("0.###", CultureInfo.InvariantCulture), this);
+#endif
+        // No ElapsedSeconds or TimeAdvanced update: other customers pay only actual elapsed time.
+        if (ended) LogState();
+        Publish(StateChanged);
+        if (ended) Publish(Ended);
+        return accepted.Count;
     }
 
     private bool IsContextAvailable()

@@ -59,7 +59,8 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
 
     public IReadOnlyList<PopupStoreMaterialEntry> GetDisplayedMaterials(int slotIndex)
     {
-        if (!IsReady || slotIndex < 0 || slotIndex >= _displayedMaterials.Length || IsOrderPacked(slotIndex))
+        if (!IsReady || slotIndex < 0 || slotIndex >= _displayedMaterials.Length
+            || IsOrderPacked(slotIndex) || IsOrderExpired(slotIndex))
             return Array.Empty<PopupStoreMaterialEntry>();
         var entrance = GetComponent<PopupStoreCustomerEntrance>();
         return entrance != null && entrance.ControlsOrders && !entrance.IsWaiting(slotIndex)
@@ -76,6 +77,9 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
 
     public bool IsOrderPacked(int slotIndex)
         => IsReady && slotIndex >= 0 && slotIndex < _displayedOrders.Length && _displayedOrders[slotIndex].IsPacked;
+
+    public bool IsOrderExpired(int slotIndex)
+        => IsReady && slotIndex >= 0 && slotIndex < _displayedOrders.Length && _displayedOrders[slotIndex].IsExpired;
 
     /// <summary>Reads the validated order/image binding without requiring an entering portrait to be visible.</summary>
     public bool TryGetEntryBinding(int slotIndex, out PopupStoreOrder order, out Image image)
@@ -127,15 +131,17 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         if (view == null) return;
         bool bound = TryGetEntryBinding(slotIndex, out var order, out _);
         bool packed = bound && order.IsPacked;
+        bool expired = bound && order.IsExpired;
         var state = !bound ? PopupStoreCustomerState.Empty
             : entrance != null && entrance.ControlsOrders ? entrance.GetState(slotIndex)
-            : packed ? PopupStoreCustomerState.Packed : PopupStoreCustomerState.Waiting;
+            : packed ? PopupStoreCustomerState.Packed
+            : expired ? PopupStoreCustomerState.Expired : PopupStoreCustomerState.Waiting;
         if (Owned(view.Customer))
             view.Customer.gameObject.SetActive(state == PopupStoreCustomerState.Entering
                 || state == PopupStoreCustomerState.Waiting || state == PopupStoreCustomerState.Packed
-                || state == PopupStoreCustomerState.Leaving);
-        if (Owned(view.Frame)) view.Frame.gameObject.SetActive(state == PopupStoreCustomerState.Waiting && !packed);
-        if (packed) HideCompletedOrder(view);
+                || state == PopupStoreCustomerState.Expired || state == PopupStoreCustomerState.Leaving);
+        if (Owned(view.Frame)) view.Frame.gameObject.SetActive(state == PopupStoreCustomerState.Waiting && !packed && !expired);
+        if (packed || expired) HideCompletedOrder(view);
     }
 
     internal bool TryValidateSupplyOrder(PopupStoreOrder order, out string error)
@@ -149,8 +155,8 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         if (!CurrentOrdersMatchSnapshot())
         { error = "The original order snapshot has changed before supply initialization."; return false; }
         foreach (var current in _displayedOrders)
-            if (current.IsPacked)
-            { error = "Supply initialization cannot replace a packed order."; return false; }
+            if (current.IsPacked || current.IsExpired)
+            { error = "Supply initialization cannot replace a terminal order."; return false; }
         foreach (var binding in _packedDeliveryTargets)
             if (binding != null)
             { error = "Supply initialization cannot discard an existing committed binding."; return false; }
@@ -227,8 +233,8 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
     private bool IsFreshSupplyOrder(PopupStoreOrder order, out string error)
     {
         error = null;
-        if (order == null || order.IsPacked || string.IsNullOrEmpty(order.RuntimeId))
-        { error = "A supplied order requires a fresh runtime identity and no packing result."; return false; }
+        if (order == null || order.IsPacked || order.IsExpired || string.IsNullOrEmpty(order.RuntimeId))
+        { error = "A supplied order requires a fresh runtime identity and no terminal result."; return false; }
         foreach (var current in _displayedOrders)
             if (ReferenceEquals(current, order) || string.Equals(current.RuntimeId, order.RuntimeId, StringComparison.Ordinal))
             { error = "A supplied order cannot reuse a current order instance or runtime identity."; return false; }
@@ -370,6 +376,23 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         return new PopupStoreExactMatchResult(candidates);
     }
 
+    /// <summary>Only blocks a combination whose matching orders have expired; it does not change other packing UX.</summary>
+    public bool HasExpiredExactMatch(PopupStoreSalesCounter counter)
+    {
+        var popup = GetComponent<UIPopupStore>();
+        if (!isActiveAndEnabled || !IsReady || popup == null || !popup.isActiveAndEnabled
+            || counter == null || !counter.isActiveAndEnabled || !counter.IsReady
+            || counter.GetComponentInParent<UIPopupStore>(true) != popup
+            || QueryExactMatches(counter).Kind != PopupStoreExactMatchKind.None) return false;
+
+        for (int i = 0; i < _displayedOrders.Length; i++)
+            if (TryGetEntryBinding(i, out var order, out _) && order.IsExpired && !order.IsPacked
+                && order.TryResolve(_catalog, out var liveMaterials, out _)
+                && PopupStoreExactOrderMatch.IsExact(_catalog, _displayedMaterials[i], liveMaterials)
+                && PopupStoreExactOrderMatch.IsExact(_catalog, liveMaterials, counter.Materials)) return true;
+        return false;
+    }
+
     internal bool BeginPackingLock()
     {
         if (_packingLocked || !isActiveAndEnabled || !IsReady) return false;
@@ -397,13 +420,25 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
             || !ReferenceEquals(_sampleOrders[slot], _displayedOrders[slot])) return false;
         var order = _displayedOrders[slot];
         // An Inspector/data edit that has not reached the displayed snapshot must not fulfil an old order.
-        if (order.IsPacked || order.RuntimeId != selected.OrderId || order.CustomerId != selected.CustomerId
+        if (order.IsPacked || order.IsExpired || order.RuntimeId != selected.OrderId || order.CustomerId != selected.CustomerId
             || !order.TryResolve(_catalog, out var liveMaterials, out _)
             || !PopupStoreExactOrderMatch.IsExact(_catalog, liveMaterials, counter.Materials)) return false;
 
         // Sample the deadline again after validation, immediately before creating or consuming anything.
         var clock = GetComponent<PopupStoreBusinessClock>();
         if (clock == null || !clock.isActiveAndEnabled || !clock.CanCommitPacking) return false;
+
+        // That clock read can synchronously expire an order or close/rebind this popup. Recheck the
+        // exact transaction after settlement, before either a receipt or material consumption exists.
+        if (!_packingLocked || !isActiveAndEnabled || !IsReady || !CurrentOrdersMatchSnapshot()
+            || !TryGetEntryBinding(slot, out var settledOrder, out _) || !ReferenceEquals(settledOrder, order)
+            || order.IsPacked || order.IsExpired || order.RuntimeId != selected.OrderId
+            || order.CustomerId != selected.CustomerId || HasExpiredPatience(slot, order)) return false;
+        var settledMatches = QueryExactMatches(counter);
+        if (settledMatches.Kind != PopupStoreExactMatchKind.Single
+            || settledMatches.Candidates[0].SlotIndex != selected.SlotIndex
+            || settledMatches.Candidates[0].OrderId != selected.OrderId
+            || settledMatches.Candidates[0].CustomerId != selected.CustomerId) return false;
         var prepared = new PopupStorePackingReceipt(selected.OrderId, slot, selected.CustomerId, counter.Materials);
         // No events, layout changes or callbacks between these two state changes.
         if (!counter.ConsumePackingMaterialsSilently()) return false;
@@ -411,6 +446,15 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         _packedDeliveryTargets[slot] = new PackedDeliveryTarget(order, prepared, _lastViews[slot].Customer);
         receipt = prepared;
         return true;
+    }
+
+    private bool HasExpiredPatience(int slotIndex, PopupStoreOrder order)
+    {
+        var patience = GetComponent<PopupStoreCustomerPatience>();
+        var timer = patience != null ? patience.GetTimer(slotIndex) : null;
+        return timer != null && timer.IsExpired && ReferenceEquals(timer.Order, order)
+            && timer.OrderId == order.RuntimeId && timer.CustomerId == order.CustomerId
+            && timer.SlotIndex == slotIndex && patience.IsCurrent(timer);
     }
 
     private bool CurrentOrdersMatchSnapshot()
@@ -431,7 +475,7 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
     {
         if (IsReady && isActiveAndEnabled)
             for (int i = 0; i < _displayedOrders.Length; i++)
-                if (_displayedOrders[i].IsPacked) HideCompletedOrder(_lastViews[i]);
+                if (_displayedOrders[i].IsPacked || _displayedOrders[i].IsExpired) HideCompletedOrder(_lastViews[i]);
         // State is already committed. One observer failure cannot prevent the remaining UI updates.
         var handlers = Refreshed;
         if (handlers == null) return;
@@ -467,7 +511,7 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
             _displayedCustomerIds[i] = _sampleOrders[i].CustomerId;
             _displayedOrders[i] = _sampleOrders[i];
             _displayedOrderIds[i] = _sampleOrders[i].EnsureRuntimeId();
-            if (_sampleOrders[i].IsPacked) HideCompletedOrder(views[i]);
+            if (_sampleOrders[i].IsPacked || _sampleOrders[i].IsExpired) HideCompletedOrder(views[i]);
         }
         DisplayedCount = resolved.Length;
         IsReady = true;

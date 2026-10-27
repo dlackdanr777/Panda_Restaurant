@@ -13,6 +13,7 @@ public sealed class PopupStoreOrder
     // Popup-instance memory only. Rebinding the same order never recreates a completed order.
     [NonSerialized] private string _runtimeId;
     [NonSerialized] private PopupStorePackingReceipt _packingReceipt;
+    [NonSerialized] private bool _expired;
 
     public string CustomerId => _customerId;
     public IReadOnlyList<string> PlushIds => _plushIds;
@@ -20,6 +21,7 @@ public sealed class PopupStoreOrder
     public string RibbonId => _ribbonId;
     public string RuntimeId => _runtimeId ?? string.Empty;
     public bool IsPacked => _packingReceipt != null;
+    public bool IsExpired => _expired;
     public PopupStorePackingReceipt PackingReceipt => _packingReceipt;
 
     public PopupStoreOrder CreateRuntimeCopy()
@@ -38,7 +40,18 @@ public sealed class PopupStoreOrder
     internal string EnsureRuntimeId()
         => _runtimeId ?? (_runtimeId = Guid.NewGuid().ToString("N"));
 
-    internal void CommitPacking(PopupStorePackingReceipt receipt) => _packingReceipt = receipt;
+    internal bool TryCommitExpiration()
+    {
+        if (IsPacked || _expired) return false;
+        _expired = true;
+        return true;
+    }
+
+    internal void CommitPacking(PopupStorePackingReceipt receipt)
+    {
+        if (_expired) throw new InvalidOperationException("An expired order cannot receive a packing receipt.");
+        _packingReceipt = receipt;
+    }
 
     public bool TryResolve(PopupStoreMaterialCatalog catalog, out PopupStoreMaterialEntry[] materials, out string error)
     {

@@ -202,7 +202,7 @@ public sealed class PopupStorePacking : MonoBehaviour
     {
         var button = _boundPackButton;
         if (button == null) return;
-        bool allowed = !_busy && CanPack();
+        bool allowed = !_busy && CanPack() && !_orders.HasExpiredExactMatch(_counter);
         // Synchronizing the clock can publish Ended; a listener may close and unbind this view.
         if (button != null && button == _boundPackButton) button.interactable = allowed;
     }
