@@ -49,12 +49,16 @@ public sealed class UIPopupStore : MobileUIView
         gameObject.SetActive(false);
     }
 
-    private void Close()
+    /// <summary>Shared guarded close path for the authored close button and the local result panel.</summary>
+    public bool TryClose()
     {
         if (_uiNav == null || _uiNav.IsViewsInactive || _uiNav.FirstView != this
-            || VisibleState != VisibleState.Appeared || !_uiNav.ViewsVisibleStateCheck()) return;
+            || !PopEnabled || VisibleState != VisibleState.Appeared || !_uiNav.ViewsVisibleStateCheck()) return false;
         _uiNav.Pop(ViewName);
+        return VisibleState == VisibleState.Disappeared && !gameObject.activeSelf;
     }
+
+    private void Close() => TryClose();
 
     private void OnDestroy()
     {

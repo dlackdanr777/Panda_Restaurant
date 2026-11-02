@@ -16,21 +16,23 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Explicit request-only bridge for the seventeen synchronous, memory-only popup store fixtures.
-/// Never launches Play, creates a scene, saves assets, restores a workspace or starts another Editor.
+/// Explicit request-only bridge for the eighteen synchronous, memory-only popup store fixtures.
+/// Tests never launch Play. An explicit result-review request may use the existing original memory-Play starter.
+/// Never creates a scene, saves assets, restores a workspace or starts another Editor.
 /// </summary>
 [InitializeOnLoad]
 public static class PopupStoreVerificationRunner
 {
     private const string DirectoryPath = "Temp/PopupStoreVerification";
     private const string RequestPath = DirectoryPath + "/request.txt";
+    private const string ResultReviewKey = "Panda.PopupStore.ResultReviewOnce";
     private static readonly string[] Fixtures =
     {
         "PopupStoreNavigationTests", "PopupStoreMaterialTests", "PopupStoreSalesCounterTests",
         "PopupStoreOrderTests", "PopupStoreOrderMatchTests", "PopupStoreExactOrderMatchTests",
         "PopupStorePackingTests", "PopupStorePackingPresentationTests", "PopupStoreDeliveryTests", "PopupStoreCustomerEntranceTests",
         "PopupStoreCustomerDepartureTests", "PopupStoreOrderSupplyTests", "PopupStoreBusinessClockTests", "PopupStoreCustomerPatienceTests", "PopupStoreComplaintTests",
-        "PopupStoreScoreTests", "PopupStoreGradeTests"
+        "PopupStoreScoreTests", "PopupStoreGradeTests", "PopupStoreResultTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -59,7 +61,7 @@ public static class PopupStoreVerificationRunner
     [Serializable] private sealed class Report
     {
         public string startedUtc, finishedUtc, error;
-        public string scope = "Seventeen popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
+        public string scope = "Eighteen popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
         public bool success, compiling, updating, scriptCompilationFailed, workspaceUnchanged;
         public int discovered, total, passed, failed, skipped, inconclusive;
         public Workspace before, after;
@@ -67,7 +69,14 @@ public static class PopupStoreVerificationRunner
         public LogRecord[] logs;
     }
 
-    static PopupStoreVerificationRunner() => EditorApplication.update += Tick;
+    static PopupStoreVerificationRunner()
+    {
+        EditorApplication.update += Tick;
+        EditorApplication.playModeStateChanged += state =>
+        {
+            if (state == PlayModeStateChange.EnteredEditMode) SessionState.EraseBool(ResultReviewKey);
+        };
+    }
 
     private static void Tick()
     {
@@ -75,6 +84,7 @@ public static class PopupStoreVerificationRunner
             || GachaReviewTestRunner.IsRunning) return;
         if (EditorApplication.timeSinceStartup < _nextPoll) return;
         _nextPoll = EditorApplication.timeSinceStartup + .5;
+        ApplyResultReviewOnce();
         if (!File.Exists(RequestPath)) return;
         string request;
         try
@@ -85,7 +95,82 @@ public static class PopupStoreVerificationRunner
         }
         catch (IOException) { return; } // A writer may still own the request file.
         if (request == "inspect") InspectWorkspace();
+        else if (request == "arm-result-review") ArmResultReview();
+        else if (request == "start-result-review") StartResultReview();
         else Run(request);
+    }
+
+    private static void StartResultReview()
+    {
+        if (!CustomerPartyStage1Preview.CanStart(out string reason)
+            || PrefabStageUtility.GetCurrentPrefabStage() != null
+            || Enumerable.Range(0, SceneManager.sceneCount).Any(i => SceneManager.GetSceneAt(i).isDirty))
+        { Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED start: " + reason); return; }
+        var flags = BindingFlags.Static | BindingFlags.NonPublic;
+        var staff = typeof(CustomerPartyStage1Preview).GetField("staffAi", flags);
+        var natural = typeof(CustomerPartyStage1Preview).GetField("naturalAi", flags);
+        if (staff == null || natural == null) { Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED missing original review options"); return; }
+        var previousStaff = staff.GetValue(null); var previousNatural = natural.GetValue(null);
+        try
+        {
+            staff.SetValue(null, true); natural.SetValue(null, false);
+            ArmResultReview();
+            // The same starter used by Manual Play (Original) owns its existing fence and restoration.
+            CustomerPartyStage1Preview.StartManual(ERestaurantFloorType.Floor1, false, false, null, 0);
+        }
+        finally { staff.SetValue(null, previousStaff); natural.SetValue(null, previousNatural); }
+    }
+
+    // Explicit review request only. Does not start Play or change authored assets, scenes, selection or Undo.
+    private static void ArmResultReview()
+    {
+        if (!CustomerPartyStage1Preview.CanStart(out string reason))
+        { Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED " + reason); return; }
+        SessionState.SetBool(ResultReviewKey, true);
+        Debug.Log("POPUP_STORE_RESULT_REVIEW_ARMED next original memory Play only; business=30; delivery=30");
+    }
+
+    private static void ApplyResultReviewOnce()
+    {
+        if (!EditorApplication.isPlaying || !SessionState.GetBool(ResultReviewKey, false)) return;
+        if (!SessionState.GetBool(CustomerPartyManualPlayBootstrap.SessionKey, false)
+            || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin)
+        { SessionState.EraseBool(ResultReviewKey); Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED memory-session fence"); return; }
+        if (!CustomerPartyManualPlayBootstrap.Active
+            || !SceneManager.GetSceneByPath(CustomerPartyStage1Preview.ScenePath).isLoaded) return;
+        // Manual Play intentionally installs an offline BackendManager. Accept only that exact memory owner,
+        // never a live singleton (nor merely any object with an offline-looking name).
+        var memory = typeof(CustomerPartyStage1Preview).GetField("memory", BindingFlags.Static | BindingFlags.NonPublic)
+            ?.GetValue(null) as CustomerPartyOwnedMemory;
+        var owner = Muks.BackEnd.BackendManager.ExistingInstance;
+        if (memory == null || !memory.LoggedIn || owner == null || !owner.IsEditorOfflineOwner
+            || !ReferenceEquals(owner, memory.Owner))
+        { SessionState.EraseBool(ResultReviewKey); Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED unowned memory backend"); return; }
+        var views = Resources.FindObjectsOfTypeAll<UIPopupStore>()
+            .Where(view => !EditorUtility.IsPersistent(view) && view.gameObject.scene.IsValid()).ToArray();
+        if (views.Length == 0) return; // Stage1 is still loading; do not create anything.
+        SessionState.EraseBool(ResultReviewKey); // One attempt; never overwrite a started/reentered session.
+        if (views.Length != 1) { Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED ambiguous popup"); return; }
+        var popup = views[0];
+        var clock = popup.GetComponent<PopupStoreBusinessClock>();
+        var presentation = popup.GetComponent<PopupStorePackingPresentation>();
+        var packing = popup.GetComponent<PopupStorePacking>();
+        var grade = popup.GetComponent<PopupStoreGradeSession>();
+        var score = popup.GetComponent<PopupStoreScore>();
+        if (popup.gameObject.activeInHierarchy || clock == null || presentation == null || packing == null
+            || grade == null || score == null || clock.State != PopupStoreBusinessState.NotStarted
+            || packing.CommittedReceipts.Count != 0 || grade.IsFinalized || score.TotalScore != 0)
+        { Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED popup already active or started"); return; }
+        var duration = typeof(PopupStoreBusinessClock).GetField("_initialSeconds", BindingFlags.Instance | BindingFlags.NonPublic);
+        var move = typeof(PopupStorePackingPresentation).GetField("_moveDuration", BindingFlags.Instance | BindingFlags.NonPublic);
+        if (duration == null || move == null) { Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED missing fields"); return; }
+        var previousDuration = duration.GetValue(clock);
+        var previousMove = move.GetValue(presentation);
+        // Only two fields on this disposable Play instance. No time advancement, skipped patience or persistent write.
+        duration.SetValue(clock, 30d);
+        move.SetValue(presentation, 30f);
+        Debug.Log("POPUP_STORE_RESULT_REVIEW_APPLIED popup=" + popup.GetInstanceID()
+            + "; business=30; delivery=30; originalBusiness=" + previousDuration + "; originalDelivery=" + previousMove, popup);
     }
 
     private static void InspectWorkspace()
@@ -284,7 +369,9 @@ public static class PopupStoreVerificationRunner
         method.Invoke(null, arguments);
         return new Workspace
         {
-            setup = string.Join("\n", EditorSceneManager.GetSceneManagerSetup().Select(scene => scene.path + "|" + scene.isLoaded + "|" + scene.isActive)),
+            setup = EditorApplication.isPlaying
+                ? string.Join("\n", scenes.Select(scene => scene.path + "|" + scene.isLoaded + "|" + (scene == SceneManager.GetActiveScene())))
+                : string.Join("\n", EditorSceneManager.GetSceneManagerSetup().Select(scene => scene.path + "|" + scene.isLoaded + "|" + scene.isActive)),
             activeScene = SceneManager.GetActiveScene().handle + "|" + SceneManager.GetActiveScene().path,
             dirty = string.Join("\n", scenes.Select(scene => scene.handle + "|" + scene.path + "|" + scene.isDirty)),
             roots = string.Join("\n", scenes.Select(scene => scene.handle + "|" + (scene.isLoaded

@@ -107,6 +107,30 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         => _readOnlyOutcomes ?? (_readOnlyOutcomes = _visualOutcomes.AsReadOnly());
     public event Action<PopupStoreVisualOutcome> VisualEnded;
 
+    /// <summary>Reads unfinished visual work without consuming receipts or advancing presentation.</summary>
+    public bool HasPendingVisualWork
+    {
+        get
+        {
+            // A terminal observer may not yet have started the original customer's departure.
+            if (_publishingOutcome || _endingSession) return true;
+            if (!isActiveAndEnabled || !IsReady || !_sessionActive || !Owned(_sessionPacking)) return false;
+            if (CurrentReceipt != null || CurrentPhase != Phase.Idle) return true;
+            if (!_sessionPacking.IsReady) return false;
+
+            // A committed receipt can still be queued before the first presentation tick.
+            // Compare retained identities; the delivery consumer remains the queue's only reader.
+            foreach (var receipt in _sessionPacking.CommittedReceipts)
+            {
+                bool terminal = false;
+                foreach (var outcome in _visualOutcomes)
+                    if (ReferenceEquals(outcome.Receipt, receipt)) { terminal = true; break; }
+                if (!terminal) return true;
+            }
+            return false;
+        }
+    }
+
     public bool BeginVisibleSession()
     {
         if (_endingSession) return false;
