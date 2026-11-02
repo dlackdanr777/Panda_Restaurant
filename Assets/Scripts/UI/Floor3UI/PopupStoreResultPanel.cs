@@ -54,6 +54,9 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
     public PopupStoreGradeResult ShownResult { get; private set; }
     public bool IsVisible => _shown && _shownOverlay != null && _shownOverlay.gameObject.activeInHierarchy;
     public bool IsAppearing => IsVisible && _appearing;
+    internal bool CanRevealPreview => _ready && isActiveAndEnabled && IsVisible && !_appearing && !_confirming
+        && _view != null && _view.VisibleState == VisibleState.Appeared
+        && _shownOverlay.interactable && _shownOverlay.alpha >= 1f && _confirmButton.interactable;
     public int PresentationCount { get; private set; }
     public int AppearanceCount { get; private set; }
     public int ConfirmationCount { get; private set; }
@@ -108,6 +111,7 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
         if (!_appearing)
         {
             if (_rewardBox != null && _rewardBox.gameObject == gameObject) _rewardBox.TickPresentation(unscaledDelta);
+            GetComponent<PopupStoreRewardRevealPreview>()?.TickPreview(unscaledDelta);
             return;
         }
         _elapsed = Mathf.Min(_showDuration, _elapsed + unscaledDelta);
@@ -154,7 +158,7 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
         _oldRaycasts = _lockedGroup.blocksRaycasts;
         _lockedGroup.interactable = false;
         _lockedGroup.blocksRaycasts = false;
-        // This authored child ignores the parent's input group, leaving only its confirm button interactive.
+        // This authored child ignores the parent's input group. Its optional Editor preview stays inside it.
         _shownOverlay = _overlay;
         _overlay.transform.SetAsLastSibling();
         _overlay.gameObject.SetActive(true);
@@ -191,6 +195,7 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
         _panel.localScale = _baseScale;
         _confirmButton.interactable = true;
         if (_rewardBox != null && _rewardBox.gameObject == gameObject) _rewardBox.Present(ShownResult);
+        GetComponent<PopupStoreRewardRevealPreview>()?.Refresh();
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(_confirmButton.gameObject);
     }
 
@@ -241,6 +246,13 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
     internal bool ContainsResultGraphic(Image image) => _confirmButton != null && InPanel(image) && image != _frame
         && !_confirmButton.transform.IsChildOf(image.transform) && !image.transform.IsChildOf(_confirmButton.transform)
         && image.GetComponent<TMP_Text>() == null;
+    internal bool ContainsPreviewText(TMP_Text text) => InPanel(text) && _confirmButton != null
+        && text != _titleText && text != _scoreText && text != _gradeText && text != _countText && text != _confirmText
+        && !text.transform.IsChildOf(_confirmButton.transform) && !_confirmButton.transform.IsChildOf(text.transform)
+        && !ContainsControl(text, _titleText) && !ContainsControl(text, _scoreText) && !ContainsControl(text, _gradeText)
+        && !ContainsControl(text, _countText) && !ContainsControl(text, _confirmText)
+        && text.gameObject != _panel.gameObject && text.GetComponent<Image>() == null;
+    private static bool ContainsControl(Component parent, Component child) => child != null && child.transform.IsChildOf(parent.transform);
     private bool InPanel(Component component) => component != null && _panel != null && component.transform.IsChildOf(_panel);
     private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
     private void OnConfirmClicked() => TryConfirm();
@@ -252,6 +264,7 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
     }
     private void HidePanel()
     {
+        GetComponent<PopupStoreRewardRevealPreview>()?.HidePreview();
         if (_rewardBox != null && _rewardBox.gameObject == gameObject) _rewardBox.HidePresentation();
         _appearing = false; _shown = false; _elapsed = 0;
         if (_lockedGroup != null)
