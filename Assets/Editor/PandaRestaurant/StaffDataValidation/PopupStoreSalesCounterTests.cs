@@ -39,7 +39,7 @@ public sealed class PopupStoreSalesCounterTests
         Assert.That(clear.interactable, Is.True);
         Assert.That(clear.onClick.GetPersistentEventCount(), Is.Zero);
         var displayOnly = (Button[])Read(prefab.GetComponent<UIPopupStore>(), "_displayOnlyButtons");
-        Assert.That(displayOnly, Has.Length.EqualTo(1));
+        Assert.That(displayOnly, Is.Empty);
         Assert.That(displayOnly.Contains(clear), Is.False);
         foreach (var button in displayOnly) Assert.That(button.interactable, Is.False);
         foreach (var list in prefab.GetComponentsInChildren<PopupStoreMaterialList>(true))
@@ -269,7 +269,7 @@ public sealed class PopupStoreSalesCounterTests
     }
 
     [Test]
-    public void DisabledPackAndPauseControlsCannotChangeCounterOrAccountState()
+    public void PauseControlCannotChangeCounterOrAccountState()
     {
         long money = UserInfo.Money;
         int dia = UserInfo.Dia;
@@ -282,14 +282,14 @@ public sealed class PopupStoreSalesCounterTests
         {
             host.Click("STAFF28");
             host.Click("BOX_PINK");
-            var disabled = (Button[])Read(host.View, "_displayOnlyButtons");
-            Assert.That(disabled, Has.Length.EqualTo(1));
-            foreach (var button in disabled)
-            {
-                Assert.That(button.interactable, Is.False);
-                button.onClick.Invoke();
-                AssertRendered(host.Counter, "STAFF28", "BOX_PINK");
-            }
+            var pause = host.View.GetComponent<PopupStorePauseController>();
+            Assert.That(pause.Refresh(), Is.True);
+            var button = (Button)Read(pause, "_pauseButton");
+            Assert.That(button.interactable, Is.True);
+            button.onClick.Invoke();
+            Assert.That(host.View.GetComponent<PopupStoreBusinessClock>().State, Is.EqualTo(PopupStoreBusinessState.Paused));
+            host.Counter.Clear();
+            AssertRendered(host.Counter, "STAFF28", "BOX_PINK");
         }
         Assert.That(UserInfo.Money, Is.EqualTo(money));
         Assert.That(UserInfo.Dia, Is.EqualTo(dia));

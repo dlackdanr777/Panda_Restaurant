@@ -10,7 +10,7 @@ public sealed class UIPopupStore : MobileUIView
     public const string ViewName = "UIPopupStore";
 
     [SerializeField] private Button _closeButton;
-    [Tooltip("Presentation-only controls such as the not-yet-implemented pause button.")]
+    [Tooltip("Presentation-only controls. Functional pause, packing and clearing controls are bound separately.")]
     [SerializeField] private Button[] _displayOnlyButtons;
 
     internal bool IsBoundTo(UINavigation navigation) => _uiNav == navigation;
@@ -40,6 +40,7 @@ public sealed class UIPopupStore : MobileUIView
         VisibleState = VisibleState.Appeared;
         GetComponent<PopupStoreBusinessClock>()?.SetViewVisible(true);
         GetComponent<PopupStorePacking>()?.Refresh();
+        GetComponent<PopupStorePauseController>()?.Refresh();
     }
 
     public override void Hide()

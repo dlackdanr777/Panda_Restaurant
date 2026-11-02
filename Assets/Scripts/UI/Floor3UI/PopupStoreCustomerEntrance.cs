@@ -44,6 +44,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     private readonly Vector3[] _corners = new Vector3[4];
     private bool _started, _initialized, _running, _appliedAutomatic;
     private float _visibleElapsed;
+    private uint _visualResumeVersion;
     private string _lastError;
     private PopupStorePackingPresentation _boundPresentation;
     private readonly HashSet<string> _handledVisuals = new HashSet<string>(StringComparer.Ordinal);
@@ -229,12 +230,17 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             PauseVisibleSession();
             return;
         }
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        // Preserve the whole movement timeline while the popup context is paused. Ended is
+        // deliberately allowed: previously committed deliveries and departures must finish.
+        if (clock == null || !clock.CanAdvanceVisuals) return;
         _visibleElapsed += unscaledDelta;
         if (!Finite(_visibleElapsed))
         { Report("Entrance elapsed time must remain finite."); PauseVisibleSession(); return; }
         bool changed = false;
         for (int i = 0; i < _slots.Length; i++)
         {
+            if (!clock.CanAdvanceVisuals) break;
             if (_supplyMode && (!isActiveAndEnabled || !_running || !IsReady || !_orders.IsReady)) break;
             var slot = _slots[i];
             if (slot == null || slot.Blocked) continue;
@@ -680,7 +686,13 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     private void OnEnable() { if (Application.isPlaying) BeginVisibleSession(); }
     private void OnDisable() => PauseVisibleSession();
     private void OnDestroy() => UnbindPresentation();
-    private void Update() { if (Application.isPlaying) TickEntrance(Time.unscaledDeltaTime); }
+    private void Update()
+    {
+        if (!Application.isPlaying) return;
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        if (clock != null)
+            TickEntrance(clock.FilterAutomaticVisualDelta(Time.unscaledDeltaTime, ref _visualResumeVersion));
+    }
 
     private sealed class Slot
     {

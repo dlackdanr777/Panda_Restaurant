@@ -16,7 +16,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Explicit request-only bridge for the twenty-four synchronous, memory-only popup store fixtures.
+/// Explicit request-only bridge for the twenty-five synchronous, memory-only popup store fixtures.
 /// Tests never launch Play. An explicit result-review request may use the existing original memory-Play starter.
 /// Never creates a scene, saves assets, restores a workspace or starts another Editor.
 /// </summary>
@@ -27,6 +27,10 @@ public static class PopupStoreVerificationRunner
     private const string RequestPath = DirectoryPath + "/request.txt";
     private const string ResultReviewKey = "Panda.PopupStore.ResultReviewOnce";
     private const string ReviewModeKey = "Panda.PopupStore.ResultReviewMode";
+    private const string PausePlayKey = "Panda.PopupStore.PausePlayReview";
+    private const string PausePlayReportKey = "Panda.PopupStore.PausePlayReport";
+    private static PausePlayReport _pausePlayReport;
+    private static PausePlayContext _pausePlay;
     private enum ReviewMode { Result, RewardC, RewardS }
     private static readonly string[] Fixtures =
     {
@@ -36,7 +40,7 @@ public static class PopupStoreVerificationRunner
         "PopupStoreCustomerDepartureTests", "PopupStoreOrderSupplyTests", "PopupStoreBusinessClockTests", "PopupStoreCustomerPatienceTests", "PopupStoreComplaintTests",
         "PopupStoreScoreTests", "PopupStoreGradeTests", "PopupStoreResultTests", "PopupStoreRewardBoxTests", "PopupStoreRewardTableTests",
         "PopupStoreRewardDecisionTests", "PopupStoreRewardTransactionTests", "PopupStoreBusinessStartTests",
-        "PopupStoreRewardRevealPreviewTests"
+        "PopupStoreRewardRevealPreviewTests", "PopupStorePauseTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -65,7 +69,7 @@ public static class PopupStoreVerificationRunner
     [Serializable] private sealed class Report
     {
         public string startedUtc, finishedUtc, error;
-        public string scope = "Twenty-four popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
+        public string scope = "Twenty-five popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
         public bool success, compiling, updating, scriptCompilationFailed, workspaceUnchanged;
         public int discovered, total, passed, failed, skipped, inconclusive;
         public Workspace before, after;
@@ -76,9 +80,22 @@ public static class PopupStoreVerificationRunner
     static PopupStoreVerificationRunner()
     {
         EditorApplication.update += Tick;
+        Application.logMessageReceived += CapturePausePlayLog;
         EditorApplication.playModeStateChanged += state =>
         {
             if (state == PlayModeStateChange.EnteredEditMode) ClearReviewRequest();
+            if (state == PlayModeStateChange.ExitingPlayMode && SessionState.GetBool(PausePlayKey, false))
+            {
+                if (_pausePlayReport == null)
+                    _pausePlayReport = JsonUtility.FromJson<PausePlayReport>(SessionState.GetString(PausePlayReportKey, ""));
+                if (_pausePlayReport != null && !_pausePlayReport.stopping)
+                {
+                    _pausePlayReport.error = "Play was stopped before the probe completed.";
+                    _pausePlayReport.stopping = true;
+                    _pausePlayReport.finishedUtc = DateTime.UtcNow.ToString("O");
+                    SessionState.SetString(PausePlayReportKey, JsonUtility.ToJson(_pausePlayReport));
+                }
+            }
         };
     }
 
@@ -86,6 +103,7 @@ public static class PopupStoreVerificationRunner
     {
         if (_running || EditorApplication.isCompiling || EditorApplication.isUpdating
             || GachaReviewTestRunner.IsRunning) return;
+        TickPausePlayReview();
         if (EditorApplication.timeSinceStartup < _nextPoll) return;
         _nextPoll = EditorApplication.timeSinceStartup + .5;
         ApplyResultReviewOnce();
@@ -94,6 +112,7 @@ public static class PopupStoreVerificationRunner
         try
         {
             request = File.ReadAllText(RequestPath).Trim();
+            if (SessionState.GetBool(PausePlayKey, false) && request != "inspect") return;
             if (request != "inspect" && EditorApplication.isPlayingOrWillChangePlaymode) return;
             File.Delete(RequestPath); // Consume only this explicit request; never retry a failed run automatically.
         }
@@ -103,6 +122,7 @@ public static class PopupStoreVerificationRunner
         else if (request == "start-result-review") StartResultReview();
         else if (request == "start-reward-review-c") StartResultReview(ReviewMode.RewardC);
         else if (request == "start-reward-review-s") StartResultReview(ReviewMode.RewardS);
+        else if (request == "run-pause-play-review") StartPausePlayReview();
         else Run(request);
     }
 
@@ -151,6 +171,218 @@ public static class PopupStoreVerificationRunner
     {
         SessionState.EraseBool(ResultReviewKey);
         SessionState.EraseInt(ReviewModeKey);
+    }
+
+    [Serializable] private sealed class PausePlayReport
+    {
+        public string startedUtc, finishedUtc, error, receiptId, orderId, customerId;
+        public int slotIndex, observedFrames, ownerId;
+        public bool waitingFrozen, deliveryFrozen, inputsBlocked, deliveredAndReleased, releasedIdentity, stopping, success, workspaceUnchanged;
+        public Workspace before, after;
+    }
+    private sealed class PausePlayContext
+    {
+        internal int step, frame;
+        internal double since;
+        internal string frozen;
+        internal CameraController camera;
+        internal UIMainCanvas main;
+        internal Muks.MobileUI.MobileUINavigation nav;
+        internal UIPopupStore popup;
+        internal PopupStorePackingReceipt receipt;
+    }
+    private static void StartPausePlayReview()
+    {
+        if (!CustomerPartyStage1Preview.CanStart(out string reason) || EditorUtility.scriptCompilationFailed
+            || SessionState.GetBool(ResultReviewKey, false)
+            || PrefabStageUtility.GetCurrentPrefabStage() != null
+            || Enumerable.Range(0, SceneManager.sceneCount).Any(i => SceneManager.GetSceneAt(i).isDirty))
+        { Debug.LogWarning("POPUP_STORE_PAUSE_PLAY_REFUSED " + reason); return; }
+        _pausePlayReport = new PausePlayReport { startedUtc = DateTime.UtcNow.ToString("O"), before = ReadWorkspace() };
+        SessionState.SetString(PausePlayReportKey, JsonUtility.ToJson(_pausePlayReport));
+        SessionState.SetBool(PausePlayKey, true);
+        var flags = BindingFlags.Static | BindingFlags.NonPublic;
+        var staff = typeof(CustomerPartyStage1Preview).GetField("staffAi", flags);
+        var natural = typeof(CustomerPartyStage1Preview).GetField("naturalAi", flags);
+        object previousStaff = staff.GetValue(null), previousNatural = natural.GetValue(null);
+        try
+        {
+            staff.SetValue(null, true); natural.SetValue(null, false);
+            CustomerPartyStage1Preview.StartManual(ERestaurantFloorType.Floor1, false, false, null, 0);
+        }
+        catch (Exception error) { FinishPausePlayReview(Unwrap(error).Message); }
+        finally { staff.SetValue(null, previousStaff); natural.SetValue(null, previousNatural); }
+    }
+    private static object PauseField(object value, string name)
+        => value.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(value);
+    private static T OriginalStageComponent<T>() where T : Component
+        => SceneManager.GetSceneByPath(CustomerPartyStage1Preview.ScenePath).GetRootGameObjects()
+            .SelectMany(root => root.GetComponentsInChildren<T>(true)).Single();
+    private static void CapturePausePlayLog(string message, string stack, LogType type)
+    {
+        if (!SessionState.GetBool(PausePlayKey, false) || _pausePlayReport == null || _pausePlayReport.stopping) return;
+        if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert)
+            _pausePlayReport.error = (_pausePlayReport.error ?? "") + "\n" + message;
+        if (!string.IsNullOrEmpty(_pausePlayReport.receiptId)
+            && message.StartsWith("POPUP_STORE_CUSTOMER_RELEASED receipt=" + _pausePlayReport.receiptId + "; slot=" + _pausePlayReport.slotIndex
+                + "; customer=" + _pausePlayReport.customerId + "; order=" + _pausePlayReport.orderId + "; reason=Packed", StringComparison.Ordinal))
+            _pausePlayReport.releasedIdentity = true;
+    }
+    // Explicit, bounded original Stage1 PlayerLoop probe. No authored setting, clock delta, focus state or account is assigned.
+    private static void TickPausePlayReview()
+    {
+        if (!SessionState.GetBool(PausePlayKey, false)) return;
+        if (_pausePlayReport == null)
+            _pausePlayReport = JsonUtility.FromJson<PausePlayReport>(SessionState.GetString(PausePlayReportKey, ""));
+        if (_pausePlayReport == null) { SessionState.EraseBool(PausePlayKey); return; }
+        if (!EditorApplication.isPlaying)
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (_pausePlayReport.stopping && !string.IsNullOrEmpty(_pausePlayReport.finishedUtc)
+                && (DateTime.UtcNow - DateTime.Parse(_pausePlayReport.finishedUtc).ToUniversalTime()).TotalSeconds < 2) return;
+            if (!_pausePlayReport.stopping)
+            {
+                if ((DateTime.UtcNow - DateTime.Parse(_pausePlayReport.startedUtc).ToUniversalTime()).TotalSeconds < 10) return;
+                _pausePlayReport.error = "Play stopped before the automatic probe completed.";
+            }
+            _pausePlayReport.after = ReadWorkspace();
+            _pausePlayReport.workspaceUnchanged = Same(_pausePlayReport.before, _pausePlayReport.after);
+            _pausePlayReport.success = string.IsNullOrEmpty(_pausePlayReport.error) && _pausePlayReport.waitingFrozen
+                && _pausePlayReport.deliveryFrozen && _pausePlayReport.inputsBlocked && _pausePlayReport.deliveredAndReleased
+                && _pausePlayReport.workspaceUnchanged && !BackEnd.Backend.IsInitialized && !BackEnd.Backend.IsLogin;
+            _pausePlayReport.finishedUtc = DateTime.UtcNow.ToString("O");
+            Directory.CreateDirectory(DirectoryPath);
+            File.WriteAllText(DirectoryPath + "/pause-play-result.json", JsonUtility.ToJson(_pausePlayReport, true));
+            SessionState.EraseBool(PausePlayKey); SessionState.EraseString(PausePlayReportKey); _pausePlay = null;
+            Debug.Log("POPUP_STORE_PAUSE_PLAY_FINISHED success=" + _pausePlayReport.success + "; error=" + _pausePlayReport.error);
+            return;
+        }
+        if (_pausePlayReport.stopping) return;
+        try
+        {
+            if (!string.IsNullOrEmpty(_pausePlayReport.error)) throw new InvalidOperationException(_pausePlayReport.error);
+            RequireRewardReview((DateTime.UtcNow - DateTime.Parse(_pausePlayReport.startedUtc).ToUniversalTime()).TotalSeconds < 65,
+                "Original Play probe timed out (focus/visible game context must remain available).");
+            if (!HasOriginalMemoryOwner()) return;
+            int ownerId = Muks.BackEnd.BackendManager.ExistingInstance.GetInstanceID();
+            if (_pausePlayReport.ownerId == 0) _pausePlayReport.ownerId = ownerId;
+            RequireRewardReview(_pausePlayReport.ownerId == ownerId, "The probe's original memory owner was replaced.");
+            if (!(bool)typeof(CustomerPartyStage1Preview).GetField("ready", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null)) return;
+            if (_pausePlay == null) _pausePlay = new PausePlayContext();
+            var c = _pausePlay;
+            _pausePlayReport.observedFrames++;
+            if (c.step == 0)
+            {
+                c.camera = OriginalStageComponent<CameraController>(); c.main = OriginalStageComponent<UIMainCanvas>();
+                c.nav = c.main.GetComponent<Muks.MobileUI.MobileUINavigation>();
+                c.camera.MoveCamera(ERestaurantFloorType.Floor3, RestaurantType.Hall); c.step++; return;
+            }
+            if (c.step == 1)
+            { if (c.camera.IsCameraMoving) return; c.main.OnShowFloor3UI(); c.step++; return; }
+            if (c.step == 2)
+            {
+                var floor = c.nav.FirstView as UIFloor3;
+                if (floor == null || floor.VisibleState != VisibleState.Appeared || !c.nav.ViewsVisibleStateCheck()) return;
+                ((UnityEngine.UI.Button)PauseField(floor, "_popupStoreButton")).onClick.Invoke(); c.step++; return;
+            }
+            if (c.step == 9)
+            {
+                if (c.nav.FirstView is UIFloor3 && c.nav.ViewsVisibleStateCheck())
+                { c.nav.Pop("UIFloor3"); FinishPausePlayReview(null); }
+                return;
+            }
+            if (c.popup == null) c.popup = c.nav.FirstView as UIPopupStore;
+            if (c.popup == null || c.popup.VisibleState != VisibleState.Appeared) return;
+            var clock = c.popup.GetComponent<PopupStoreBusinessClock>();
+            var pause = c.popup.GetComponent<PopupStorePauseController>();
+            var entrance = c.popup.GetComponent<PopupStoreCustomerEntrance>();
+            var packing = c.popup.GetComponent<PopupStorePacking>();
+            var visual = c.popup.GetComponent<PopupStorePackingPresentation>();
+            var counter = c.popup.GetComponentInChildren<PopupStoreSalesCounter>(true);
+            if (c.step == 3)
+            {
+                if (clock.State != PopupStoreBusinessState.Running || !entrance.IsWaiting(0)) return;
+                var orders = c.popup.GetComponent<PopupStoreOrderDisplay>();
+                RequireRewardReview(orders.TryGetEntryBinding(0, out var order, out _), "Waiting binding missing.");
+                RequireRewardReview(order.TryResolve((PopupStoreMaterialCatalog)PauseField(orders, "_catalog"), out var materials, out var error), error);
+                foreach (var item in materials) RequireRewardReview(counter.TryAdd(item), "Prepared material rejected.");
+                RequireRewardReview(pause.TryTogglePause(), "Waiting pause rejected.");
+                RequireRewardReview(!counter.TryAdd(materials[0]), "Paused material API accepted input.");
+                counter.Clear();
+                RequireRewardReview(counter.Count == materials.Length && !packing.TryPack().Success, "Paused clear/packing modified sale.");
+                _pausePlayReport.inputsBlocked = true;
+                c.frozen = PausePlaySnapshot(c.popup); c.since = EditorApplication.timeSinceStartup; c.frame = Time.frameCount; c.step++; return;
+            }
+            if (c.step == 4 || c.step == 7)
+            {
+                RequireRewardReview(c.frozen == PausePlaySnapshot(c.popup), "Paused PlayerLoop changed clock, patience, material, motion or receipt state.");
+                if (Time.frameCount == c.frame || EditorApplication.timeSinceStartup - c.since < 1.2) return;
+                if (c.step == 4) _pausePlayReport.waitingFrozen = true; else _pausePlayReport.deliveryFrozen = true;
+                RequireRewardReview(pause.TryTogglePause(), "Resume rejected."); c.step++; return;
+            }
+            if (c.step == 5)
+            {
+                if (clock.State != PopupStoreBusinessState.Running) return;
+                var sale = packing.TryPack(); RequireRewardReview(sale.Success, "Prepared order did not pack after resume."); c.receipt = sale.Receipt;
+                _pausePlayReport.receiptId = c.receipt.ReceiptId; _pausePlayReport.orderId = c.receipt.OrderId;
+                _pausePlayReport.customerId = c.receipt.CustomerId; _pausePlayReport.slotIndex = c.receipt.SlotIndex; c.step++; return;
+            }
+            if (c.step == 6)
+            {
+                if (visual.CurrentPhase != PopupStorePackingPresentation.Phase.Move) return;
+                RequireRewardReview(ReferenceEquals(visual.CurrentReceipt, c.receipt) && pause.TryTogglePause(), "Delivery pause identity rejected.");
+                c.frozen = PausePlaySnapshot(c.popup); c.since = EditorApplication.timeSinceStartup; c.frame = Time.frameCount; c.step++; return;
+            }
+            if (c.step == 8)
+            {
+                if (!ReferenceEquals(visual.LastDeliveredReceipt, c.receipt) || !_pausePlayReport.releasedIdentity) return;
+                RequireRewardReview(visual.VisualOutcomes.Count == 1 && visual.VisualOutcomes[0].Kind == PopupStoreVisualOutcomeKind.VisualCompleted
+                    && ReferenceEquals(visual.VisualOutcomes[0].Receipt, c.receipt)
+                    && packing.SuccessfulPackCount == 1 && clock.ComplaintPenaltyCount == 0
+                    && c.popup.GetComponent<PopupStoreScore>().TotalScore == 100, "Delivery/departure duplicated or normal sale received a penalty.");
+                _pausePlayReport.deliveredAndReleased = true;
+                RequireRewardReview(c.popup.TryClose(), "Popup close rejected."); c.step++; return;
+            }
+        }
+        catch (Exception error) { FinishPausePlayReview(Unwrap(error).Message); }
+    }
+    private static string PausePlaySnapshot(UIPopupStore popup)
+    {
+        var clock = popup.GetComponent<PopupStoreBusinessClock>(); var entrance = popup.GetComponent<PopupStoreCustomerEntrance>();
+        var visual = popup.GetComponent<PopupStorePackingPresentation>(); var patience = popup.GetComponent<PopupStoreCustomerPatience>();
+        var packing = popup.GetComponent<PopupStorePacking>(); var orders = popup.GetComponent<PopupStoreOrderDisplay>();
+        var image = (UnityEngine.UI.Image)PauseField(visual, "_resultImage");
+        var values = new List<string> { clock.RemainingSeconds.ToString("R"), clock.ElapsedSeconds.ToString("R"), clock.State.ToString(),
+            entrance.SuppliedOrderCount.ToString(), entrance.ReleasedCount.ToString(), PauseField(entrance, "_visibleElapsed").ToString(),
+            visual.CurrentPhase.ToString(), PauseField(visual, "_elapsed").ToString(), visual.CurrentReceipt?.ReceiptId ?? "",
+            JsonUtility.ToJson(image.rectTransform.anchoredPosition3D), JsonUtility.ToJson(image.rectTransform.localScale),
+            popup.GetComponent<PopupStoreScore>().TotalScore.ToString(), clock.ComplaintPenaltyCount.ToString(),
+            string.Join(",", packing.CommittedReceipts.Select(r => r.ReceiptId)),
+            string.Join(",", popup.GetComponentInChildren<PopupStoreSalesCounter>(true).Materials.Select(m => m.Id)) };
+        for (int i = 0; i < 3; i++)
+        {
+            values.Add(entrance.GetState(i).ToString()); values.Add(patience.GetTimer(i)?.RemainingPatience.ToString("R") ?? "");
+            if (orders.TryGetEntryBinding(i, out var order, out var customer))
+            { values.Add(order.RuntimeId); values.Add(JsonUtility.ToJson(customer.rectTransform.anchoredPosition3D)); }
+        }
+        return string.Join("|", values);
+    }
+    private static void FinishPausePlayReview(string error)
+    {
+        if (_pausePlayReport == null || _pausePlayReport.stopping) return;
+        _pausePlayReport.error = error ?? _pausePlayReport.error; _pausePlayReport.stopping = true; _pausePlayReport.finishedUtc = DateTime.UtcNow.ToString("O");
+        SessionState.SetString(PausePlayReportKey, JsonUtility.ToJson(_pausePlayReport));
+        // Stop only the explicitly owned original memory session. Its starter alone restores user workspace.
+        if (HasOriginalMemoryOwner() && _pausePlayReport.ownerId != 0
+            && Muks.BackEnd.BackendManager.ExistingInstance.GetInstanceID() == _pausePlayReport.ownerId)
+            CustomerPartyStage1Preview.StopManual();
+        else if (EditorApplication.isPlaying)
+        {
+            _pausePlayReport.error = (_pausePlayReport.error ?? "") + " Original memory owner is no longer provable; no other Play session was stopped.";
+            Directory.CreateDirectory(DirectoryPath);
+            File.WriteAllText(DirectoryPath + "/pause-play-result.json", JsonUtility.ToJson(_pausePlayReport, true));
+            SessionState.EraseBool(PausePlayKey); SessionState.EraseString(PausePlayReportKey);
+        }
     }
 
     private static bool HasOriginalMemoryOwner()

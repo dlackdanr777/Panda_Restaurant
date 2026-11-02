@@ -21,12 +21,25 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
     private readonly List<PopupStoreMaterialEntry> _materials = new List<PopupStoreMaterialEntry>(Capacity);
     private ReadOnlyCollection<PopupStoreMaterialEntry> _readOnlyMaterials;
     private Button _boundClearButton;
+    private PopupStoreBusinessClock _boundClock;
     private string _lastError;
     private bool _packingLocked;
     private bool _packingConsumedPending;
 
     public bool IsReady { get; private set; }
     public int Count => _materials.Count;
+    public bool CanAcceptInput
+    {
+        get
+        {
+            var popup = GetComponentInParent<UIPopupStore>(true);
+            var clock = popup != null ? popup.GetComponent<PopupStoreBusinessClock>() : null;
+            clock?.SynchronizeNow();
+            // Preserve existing pre-session preparation and post-deadline display editing. A live pause blocks mutation.
+            return clock == null || clock.State == PopupStoreBusinessState.NotStarted
+                || (clock.State != PopupStoreBusinessState.Paused && clock.CanAdvanceVisuals);
+        }
+    }
     public IReadOnlyList<PopupStoreMaterialEntry> Materials
         => _readOnlyMaterials ?? (_readOnlyMaterials = _materials.AsReadOnly());
 
@@ -48,13 +61,16 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
         Render();
         _boundClearButton = _clearButton;
         _boundClearButton.onClick.AddListener(Clear);
-        _boundClearButton.interactable = true;
+        _boundClock = GetComponentInParent<UIPopupStore>(true).GetComponent<PopupStoreBusinessClock>();
+        if (_boundClock != null) { _boundClock.StateChanged += UpdateInputState; _boundClock.ContextChanged += UpdateInputState; }
+        UpdateInputState();
         NotifyChanged(ChangeReason.Refreshed);
         return true;
     }
 
     public bool TryAdd(PopupStoreMaterialEntry material)
     {
+        if (!CanAcceptInput) return false;
         if (_packingLocked || !isActiveAndEnabled || !IsReady || material == null || _materials.Count >= Capacity)
             return false;
         if (!_catalog.TryGetMaterials(material.Kind, out var approved, out _)) return false;
@@ -71,6 +87,7 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
 
     public void Clear()
     {
+        if (!CanAcceptInput) return;
         if (_packingLocked || !isActiveAndEnabled || !IsReady) return;
         _materials.Clear();
         Render();
@@ -163,8 +180,17 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
 
     private void Unbind()
     {
+        if (_boundClock != null) { _boundClock.StateChanged -= UpdateInputState; _boundClock.ContextChanged -= UpdateInputState; }
+        _boundClock = null;
         if (_boundClearButton != null) _boundClearButton.onClick.RemoveListener(Clear);
         _boundClearButton = null;
+    }
+
+    private void UpdateInputState()
+    {
+        var button = _boundClearButton;
+        bool allowed = isActiveAndEnabled && IsReady && CanAcceptInput;
+        if (button != null && button == _boundClearButton) button.interactable = allowed;
     }
 
     private void OnEnable() => Refresh();

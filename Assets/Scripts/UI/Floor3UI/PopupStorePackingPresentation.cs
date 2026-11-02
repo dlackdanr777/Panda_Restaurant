@@ -76,7 +76,14 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
     private ReadOnlyCollection<PopupStoreVisualOutcome> _readOnlyOutcomes;
     private PopupStorePacking _sessionPacking;
     private PopupStoreOrderDisplay _sessionOrders;
+    private PopupStoreBusinessClock _sessionClock;
     private Animator _sessionBoom;
+    private Animator _pausedBoom;
+    private float _boomSpeedBeforePause;
+    private int _nativeResumeFrame = -1;
+    // Supplying a frame source lets EditMode checks exercise the native Animator resume boundary.
+    private Func<int> _nativeFrameSource;
+    private uint _visualResumeVersion;
     private Image _sessionBoomImage;
     private Image _sessionResult;
     private Vector3 _baseScale;
@@ -160,6 +167,13 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         HideVisuals();
         _sessionActive = true;
         IsReady = true;
+        _sessionClock = GetComponent<PopupStoreBusinessClock>();
+        if (_sessionClock != null)
+        {
+            _sessionClock.StateChanged += SynchronizeAnimatorPause;
+            _sessionClock.ContextChanged += SynchronizeAnimatorPause;
+        }
+        SynchronizeAnimatorPause();
         _lastError = null;
         LastCancellationReason = null;
         ArchiveOutstanding(_sessionPacking, _sessionOrders, "Receipt was pending before this visible presentation session.");
@@ -172,6 +186,13 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         _endingSession = true;
         try
         {
+            if (_sessionClock != null)
+            {
+                _sessionClock.StateChanged -= SynchronizeAnimatorPause;
+                _sessionClock.ContextChanged -= SynchronizeAnimatorPause;
+            }
+            RestorePausedAnimator();
+            _sessionClock = null;
             // Capture identities before OnDisable ordering or observers can change display availability.
             var source = Owned(_sessionPacking) ? _sessionPacking : Owned(_packing) ? _packing : null;
             var orders = Owned(_sessionOrders) ? _sessionOrders : Owned(_orders) ? _orders : null;
@@ -210,6 +231,10 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         { EndVisibleSession(); return; }
         if (!NonNegative(unscaledDelta))
         { Fail("Presentation delta must be finite and non-negative."); return; }
+        SynchronizeAnimatorPause();
+        // Pause before dequeuing a receipt or touching a phase. Ended remains eligible when
+        // its popup context is visible and focused, so already committed work can settle.
+        if (_sessionClock == null || !_sessionClock.CanAdvanceVisuals) return;
         if (CurrentPhase == Phase.Idle && (!_sessionPacking.IsReady || !TryStartNext())) return;
         if (!ValidateCurrentTarget(out string targetError))
         { CancelCurrent(targetError); return; }
@@ -218,6 +243,7 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         // At most this receipt's six phases; another receipt always starts on a later tick.
         for (int transitions = 0; transitions < 6 && CurrentPhase != Phase.Idle; transitions++)
         {
+            if (_sessionClock == null || !_sessionClock.CanAdvanceVisuals) { SynchronizeAnimatorPause(); return; }
             float duration = PhaseDuration();
             if (!NonNegative(duration)) { Fail("Presentation duration must be finite and non-negative."); return; }
             float step = Mathf.Min(remaining, Mathf.Max(0, duration - _elapsed));
@@ -446,6 +472,45 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
         if (Owned(_sessionBoomImage)) _sessionBoomImage.color = _boomColor;
     }
 
+    private void SynchronizeAnimatorPause()
+    {
+        if (!_sessionActive || !Owned(_sessionBoom) || _sessionClock == null)
+        { RestorePausedAnimator(); return; }
+        if (_sessionClock.CanAdvanceVisuals)
+        {
+            if (_pausedBoom != null && (Application.isPlaying || _nativeFrameSource != null))
+            {
+                int frame;
+                try { frame = _nativeFrameSource != null ? _nativeFrameSource() : Time.frameCount; }
+                catch { return; }
+                if (frame < 0) return;
+                if (_nativeResumeFrame < 0) _nativeResumeFrame = frame;
+                // Native UnscaledTime animation also receives the first foreground frame's
+                // delta. Hold speed at zero through that frame, independently of custom ticks.
+                if (frame <= _nativeResumeFrame) return;
+            }
+            RestorePausedAnimator();
+            return;
+        }
+        _nativeResumeFrame = -1;
+        if (_pausedBoom != _sessionBoom)
+        {
+            RestorePausedAnimator();
+            _pausedBoom = _sessionBoom;
+            _boomSpeedBeforePause = _pausedBoom.speed;
+        }
+        // The original Boom Animator uses UnscaledTime and advances independently of our
+        // phase tick. Keep its exact state/frame; resuming must not Rebind or Play again.
+        _pausedBoom.speed = 0f;
+    }
+
+    private void RestorePausedAnimator()
+    {
+        if (_pausedBoom != null) _pausedBoom.speed = _boomSpeedBeforePause;
+        _pausedBoom = null;
+        _nativeResumeFrame = -1;
+    }
+
     private void HideVisuals()
     {
         HideBoom();
@@ -586,7 +651,13 @@ public sealed class PopupStorePackingPresentation : MonoBehaviour
     }
 
     private void OnEnable() { if (Application.isPlaying) BeginVisibleSession(); }
-    private void Update() { if (Application.isPlaying) TickPresentation(Time.unscaledDeltaTime); }
+    private void Update()
+    {
+        if (!Application.isPlaying) return;
+        var clock = _sessionClock != null ? _sessionClock : GetComponent<PopupStoreBusinessClock>();
+        if (clock != null)
+            TickPresentation(clock.FilterAutomaticVisualDelta(Time.unscaledDeltaTime, ref _visualResumeVersion));
+    }
     private void OnDisable() => EndVisibleSession();
     private void OnDestroy() => EndVisibleSession();
 }

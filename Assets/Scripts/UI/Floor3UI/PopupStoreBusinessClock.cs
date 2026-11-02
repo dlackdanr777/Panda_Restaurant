@@ -36,6 +36,8 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
 #endif
 
     public PopupStoreBusinessState State => _state;
+    public bool IsManualPaused => _manualPaused;
+    public uint VisualResumeVersion { get; private set; }
     public double RemainingSeconds => _remainingSeconds;
     /// <summary>Accepted Running time only, capped at the business deadline. Never advances while paused.</summary>
     public double ElapsedSeconds { get; private set; }
@@ -45,6 +47,8 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     public bool CanAdvanceVisuals => IsContextAvailable();
     public int EndedCount { get; private set; }
     public event Action StateChanged;
+    // Presentation/input context can change while the business state stays Paused or Ended.
+    public event Action ContextChanged;
     public event Action Ended;
 
     public bool CanStartCustomerEntry
@@ -161,23 +165,39 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         if (focused) TryEditorReviewStart();
     }
 
-    public void SetManualPaused(bool paused) => SetCondition(ref _manualPaused, paused);
+    public void SetManualPaused(bool paused) => SetCondition(ref _manualPaused, paused, true);
 
-    private void SetCondition(ref bool condition, bool value)
+    private void SetCondition(ref bool condition, bool value, bool activeSessionOnly = false)
     {
         if (condition == value) { UpdateHud(); return; }
+        if (activeSessionOnly && (_state == PopupStoreBusinessState.NotStarted || _state == PopupStoreBusinessState.Ended)) return;
         SynchronizeNow();
+        // The last foreground sample may finalize business. Never strand committed delivery behind a terminal manual pause.
+        if (activeSessionOnly && (_state == PopupStoreBusinessState.NotStarted || _state == PopupStoreBusinessState.Ended)) return;
+        bool wasAvailable = IsContextAvailable();
         condition = value;
+        bool available = IsContextAvailable();
+        if (!wasAvailable && available) unchecked { VisualResumeVersion++; }
         if (_state == PopupStoreBusinessState.NotStarted || _state == PopupStoreBusinessState.Ended)
-        { _hasTimeSample = false; UpdateHud(); return; }
-        var next = IsContextAvailable() ? PopupStoreBusinessState.Running : PopupStoreBusinessState.Paused;
-        if (next == _state) return;
+        { _hasTimeSample = false; UpdateHud(); Publish(ContextChanged); return; }
+        var next = available ? PopupStoreBusinessState.Running : PopupStoreBusinessState.Paused;
+        // Observers also need context changes while another pause reason still holds the same enum state.
+        if (next == _state) { Publish(ContextChanged); return; }
         _hasTimeSample = false;
         if (next == PopupStoreBusinessState.Running) ResetTimeAnchor();
         _state = next;
         UpdateHud();
         LogState();
         Publish(StateChanged);
+    }
+
+    /// <summary>Each visual consumer skips its first automatic update after resuming. Explicit test ticks keep their supplied delta.</summary>
+    public float FilterAutomaticVisualDelta(float delta, ref uint observedResumeVersion)
+    {
+        if (!CanAdvanceVisuals) return 0f;
+        if (observedResumeVersion != VisualResumeVersion)
+        { observedResumeVersion = VisualResumeVersion; return 0f; }
+        return delta;
     }
 
     private void ResetTimeAnchor()

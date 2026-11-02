@@ -24,6 +24,7 @@ public sealed class PopupStoreMaterialList : MonoBehaviour, IBeginDragHandler, I
     private readonly List<Image> _slots = new List<Image>();
     private ScrollRect _boundScrollRect;
     private Button _boundPrevious, _boundNext;
+    private PopupStoreBusinessClock _boundClock;
     private Image _builtTemplate;
     private RectTransform _builtContent;
     private float _savedPosition;
@@ -186,10 +187,14 @@ public sealed class PopupStoreMaterialList : MonoBehaviour, IBeginDragHandler, I
         _boundScrollRect.onValueChanged.AddListener(OnScrolled);
         _boundPrevious.onClick.AddListener(PreviousPage);
         _boundNext.onClick.AddListener(NextPage);
+        _boundClock = GetComponentInParent<UIPopupStore>(true).GetComponent<PopupStoreBusinessClock>();
+        if (_boundClock != null) { _boundClock.StateChanged += CancelPendingClick; _boundClock.ContextChanged += CancelPendingClick; }
     }
 
     private void Unbind()
     {
+        if (_boundClock != null) { _boundClock.StateChanged -= CancelPendingClick; _boundClock.ContextChanged -= CancelPendingClick; }
+        _boundClock = null;
         if (_boundScrollRect != null)
         {
             _savedPosition = Mathf.Clamp01(_boundScrollRect.horizontalNormalizedPosition);

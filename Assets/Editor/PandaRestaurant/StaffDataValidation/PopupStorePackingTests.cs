@@ -18,7 +18,7 @@ public sealed class PopupStorePackingTests
     private const string CatalogPath = "Assets/Resources/UI/PopupStore/PopupStoreMaterials.asset";
 
     [Test]
-    public void AuthoredPackingUsesTheExistingButtonAndOnlyPauseRemainsDisplayOnly()
+    public void AuthoredPackingUsesTheExistingButtonSeparateFromPauseController()
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
         var packing = prefab.GetComponent<PopupStorePacking>();
@@ -32,9 +32,13 @@ public sealed class PopupStorePackingTests
         Assert.That(button.onClick.GetPersistentEventCount(), Is.Zero);
         Assert.That(AssetDatabase.GetAssetPath(((Image)button.targetGraphic).sprite), Is.EqualTo("Assets/Sprites/PopupStore/UI_Pack.png"));
         var displayOnly = (Button[])Read(prefab.GetComponent<UIPopupStore>(), "_displayOnlyButtons");
-        Assert.That(displayOnly, Has.Length.EqualTo(1));
+        Assert.That(displayOnly, Is.Empty);
         Assert.That(displayOnly.Contains(button), Is.False);
-        Assert.That(displayOnly[0].interactable, Is.False);
+        var pause = prefab.GetComponent<PopupStorePauseController>();
+        Assert.That(pause, Is.Not.Null);
+        var pauseButton = (Button)Read(pause, "_pauseButton");
+        Assert.That(pauseButton, Is.Not.SameAs(button));
+        Assert.That(pauseButton.interactable, Is.False, "Enable only after a session starts.");
     }
 
     [TestCase("STAFF01", "BOX_PINK", "RIBBON_YELLOW")]

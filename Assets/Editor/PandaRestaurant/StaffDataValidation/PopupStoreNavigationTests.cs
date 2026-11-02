@@ -37,8 +37,9 @@ public sealed class PopupStoreNavigationTests
         Assert.That(closeImage.sprite, Is.Not.Null);
 
         var displayOnly = (Button[])Read(typeof(UIPopupStore), view, "_displayOnlyButtons");
-        // DEV-03C-2 connects packing; pausing remains display-only.
-        Assert.That(displayOnly, Has.Length.EqualTo(1));
+        // DEV-05D-2 gives the existing pause button its own guarded controller.
+        Assert.That(displayOnly, Is.Empty);
+        Assert.That(prefab.GetComponent<PopupStorePauseController>(), Is.Not.Null);
         CollectionAssert.AllItemsAreUnique(displayOnly);
         foreach (var button in displayOnly)
         {
