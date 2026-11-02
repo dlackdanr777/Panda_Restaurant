@@ -20,7 +20,7 @@ public sealed class PopupStoreResultTests
     private const string PrefabPath = "Assets/Resources/UI/PopupStore/UIPopupStore.prefab";
 
     [Test]
-    public void AuthoredResultIsOneEditableLocalPanelWithApprovedTypographyAndNoRewardBox()
+    public void AuthoredResultIsOneEditableLocalPanelWithApprovedTypographyAndOneApprovedRewardImage()
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
         var result = prefab.GetComponent<PopupStoreResultPanel>();
@@ -47,10 +47,17 @@ public sealed class PopupStoreResultTests
         Assert.That(button.transform.IsChildOf(panel), Is.True);
         Assert.That(button.targetGraphic as Image, Is.Not.Null);
         Assert.That(((Image)button.targetGraphic).sprite, Is.Not.Null);
-        // Result artwork is restricted to the authored frame and confirmation control.
-        // An unapproved grade-specific reward image cannot quietly become visible here.
+        var reward = prefab.GetComponent<PopupStoreRewardBox>();
+        Assert.That(reward, Is.Not.Null);
+        Assert.That(prefab.GetComponentsInChildren<PopupStoreRewardBox>(true), Has.Length.EqualTo(1));
+        Assert.That(reward.BoxImage, Is.Not.Null);
+        Assert.That(reward.BoxImage.transform.IsChildOf(panel), Is.True);
+        Assert.That(reward.BoxImage.raycastTarget, Is.False);
+        Assert.That(reward.ValidateMapping(out string rewardError), Is.True, rewardError);
+        Assert.That(panel.GetComponentsInChildren<Image>(true).Count(image => image == reward.BoxImage), Is.EqualTo(1));
+        // DEV-04C-2 adds exactly the approved reward image; other artwork remains forbidden.
         foreach (var image in panel.GetComponentsInChildren<Image>(true))
-            Assert.That(image == frame || image.transform.IsChildOf(button.transform), Is.True, image.name);
+            Assert.That(image == frame || image == reward.BoxImage || image.transform.IsChildOf(button.transform), Is.True, image.name);
     }
 
     [TestCase(PopupStoreGradeTier.None)]

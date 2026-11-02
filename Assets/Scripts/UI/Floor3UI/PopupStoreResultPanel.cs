@@ -25,6 +25,7 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
     [SerializeField] private TMP_Text _countText;
     [SerializeField] private TMP_Text _confirmText;
     [SerializeField] private Button _confirmButton;
+    [SerializeField] private PopupStoreRewardBox _rewardBox;
     [SerializeField, Min(0)] private float _showDuration = .2f;
     [SerializeField, Range(.01f, 1f)] private float _startScale = .92f;
     [SerializeField] private AnimationCurve _showCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
@@ -104,7 +105,11 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
             if (_presentation.HasPendingVisualWork || HasActiveDeparture()) return;
             if (!Open(result)) return;
         }
-        if (!_appearing) return;
+        if (!_appearing)
+        {
+            if (_rewardBox != null && _rewardBox.gameObject == gameObject) _rewardBox.TickPresentation(unscaledDelta);
+            return;
+        }
         _elapsed = Mathf.Min(_showDuration, _elapsed + unscaledDelta);
         float t = _showDuration > 0 ? Mathf.Clamp01(_elapsed / _showDuration) : 1f;
         float eased = _showCurve.Evaluate(t);
@@ -185,6 +190,7 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
         _overlay.alpha = 1;
         _panel.localScale = _baseScale;
         _confirmButton.interactable = true;
+        if (_rewardBox != null && _rewardBox.gameObject == gameObject) _rewardBox.Present(ShownResult);
         if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(_confirmButton.gameObject);
     }
 
@@ -231,6 +237,10 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
     }
 
     private bool LocalRoot(Component component) => component != null && component.gameObject == gameObject;
+    // A reward is an optional dedicated graphic, never a substitute for existing result controls.
+    internal bool ContainsResultGraphic(Image image) => _confirmButton != null && InPanel(image) && image != _frame
+        && !_confirmButton.transform.IsChildOf(image.transform) && !image.transform.IsChildOf(_confirmButton.transform)
+        && image.GetComponent<TMP_Text>() == null;
     private bool InPanel(Component component) => component != null && _panel != null && component.transform.IsChildOf(_panel);
     private static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
     private void OnConfirmClicked() => TryConfirm();
@@ -242,6 +252,7 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
     }
     private void HidePanel()
     {
+        if (_rewardBox != null && _rewardBox.gameObject == gameObject) _rewardBox.HidePresentation();
         _appearing = false; _shown = false; _elapsed = 0;
         if (_lockedGroup != null)
         {
