@@ -482,7 +482,7 @@ public sealed class PopupStoreResultTests
     }
 
     [Test]
-    public void ClosingAnUnfinishedBusinessDoesNotCreateAnEndedResultOrRestartOnReentry()
+    public void ForcedCleanupOfUnfinishedBusinessDoesNotCreateAnEndedResultOrRestartOnReentry()
     {
         using (var host = new Host())
         {
@@ -702,7 +702,11 @@ public sealed class PopupStoreResultTests
         internal void Close()
         {
             if (Presentation.CurrentReceipt != null) LogAssert.Expect(LogType.Warning, new Regex("^POPUP_STORE_DELIVERY_CANCELLED"));
-            Assert.That(View.TryClose(), Is.True);
+            // These older lifecycle cases intentionally exercise forced view cleanup, not a user exit request.
+            // DEV-05D-3B user close/Escape and its cancellation are covered by PopupStoreExitConfirmationTests.
+            Assert.That(Navigation.FirstView, Is.SameAs(View));
+            Navigation.Pop();
+            Assert.That(Navigation.FirstView, Is.SameAs(Floor));
             DisableObservers();
         }
         internal void DisableObservers()

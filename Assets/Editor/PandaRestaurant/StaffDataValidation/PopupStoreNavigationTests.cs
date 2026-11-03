@@ -37,9 +37,13 @@ public sealed class PopupStoreNavigationTests
         Assert.That(closeImage.sprite, Is.Not.Null);
 
         var displayOnly = (Button[])Read(typeof(UIPopupStore), view, "_displayOnlyButtons");
-        // DEV-05D-2 gives the existing pause button its own guarded controller.
+        // DEV-05D-3B retains the old authored art but permanently disables manual pause input.
         Assert.That(displayOnly, Is.Empty);
-        Assert.That(prefab.GetComponent<PopupStorePauseController>(), Is.Not.Null);
+        var legacyPause = prefab.GetComponent<PopupStorePauseController>();
+        Assert.That(legacyPause, Is.Not.Null);
+        var pauseButton = (Button)Read(typeof(PopupStorePauseController), legacyPause, "_pauseButton");
+        Assert.That(pauseButton, Is.Not.Null); Assert.That(pauseButton.gameObject.activeSelf, Is.False);
+        Assert.That(pauseButton.interactable, Is.False);
         CollectionAssert.AllItemsAreUnique(displayOnly);
         foreach (var button in displayOnly)
         {

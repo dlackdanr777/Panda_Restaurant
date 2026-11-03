@@ -18,7 +18,7 @@ public sealed class PopupStorePackingTests
     private const string CatalogPath = "Assets/Resources/UI/PopupStore/PopupStoreMaterials.asset";
 
     [Test]
-    public void AuthoredPackingUsesTheExistingButtonSeparateFromPauseController()
+    public void AuthoredPackingUsesTheExistingButtonSeparateFromRemovedManualPauseInput()
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
         var packing = prefab.GetComponent<PopupStorePacking>();
@@ -38,7 +38,8 @@ public sealed class PopupStorePackingTests
         Assert.That(pause, Is.Not.Null);
         var pauseButton = (Button)Read(pause, "_pauseButton");
         Assert.That(pauseButton, Is.Not.SameAs(button));
-        Assert.That(pauseButton.interactable, Is.False, "Enable only after a session starts.");
+        Assert.That(pauseButton.interactable, Is.False, "Manual pause input remains disabled for all business states.");
+        Assert.That(pauseButton.gameObject.activeSelf, Is.False);
     }
 
     [TestCase("STAFF01", "BOX_PINK", "RIBBON_YELLOW")]

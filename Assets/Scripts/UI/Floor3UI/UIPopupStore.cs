@@ -10,7 +10,7 @@ public sealed class UIPopupStore : MobileUIView
     public const string ViewName = "UIPopupStore";
 
     [SerializeField] private Button _closeButton;
-    [Tooltip("Presentation-only controls. Functional pause, packing and clearing controls are bound separately.")]
+    [Tooltip("Presentation-only controls. Packing and clearing controls are bound separately.")]
     [SerializeField] private Button[] _displayOnlyButtons;
 
     internal bool IsBoundTo(UINavigation navigation) => _uiNav == navigation;
@@ -41,20 +41,47 @@ public sealed class UIPopupStore : MobileUIView
         GetComponent<PopupStoreBusinessClock>()?.SetViewVisible(true);
         GetComponent<PopupStorePacking>()?.Refresh();
         GetComponent<PopupStorePauseController>()?.Refresh();
+        GetComponent<PopupStoreExitConfirmation>()?.Refresh();
     }
 
     public override void Hide()
     {
         VisibleState = VisibleState.Disappeared;
         GetComponent<PopupStoreBusinessClock>()?.SetViewVisible(false);
+        GetComponent<PopupStoreExitConfirmation>()?.DismissForForcedHide();
         gameObject.SetActive(false);
     }
 
-    /// <summary>Shared guarded close path for the authored close button and the local result panel.</summary>
+    /// <summary>User close request. A running business stays on the stack while confirmation is shown.</summary>
+    public bool TryRequestExit()
+    {
+        if (!CanRequestExit) return false;
+        var confirmation = GetComponent<PopupStoreExitConfirmation>();
+        if (confirmation != null) return confirmation.TryRequestExit();
+        // A missing authored guard must never silently close an active business.
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        clock?.SynchronizeNow();
+        return (clock == null || clock.State == PopupStoreBusinessState.NotStarted
+            || clock.State == PopupStoreBusinessState.Ended) && CloseWithoutConfirmation();
+    }
+
+    internal bool CanRequestExit => _uiNav != null && !_uiNav.IsViewsInactive && _uiNav.FirstView == this
+        && VisibleState == VisibleState.Appeared && _uiNav.ViewsVisibleStateCheck();
+
+    /// <summary>Compatibility for result confirmation: true only when this view actually closed.</summary>
     public bool TryClose()
     {
-        if (_uiNav == null || _uiNav.IsViewsInactive || _uiNav.FirstView != this
-            || !PopEnabled || VisibleState != VisibleState.Appeared || !_uiNav.ViewsVisibleStateCheck()) return false;
+        if (!TryRequestExit()) return false;
+        return VisibleState == VisibleState.Disappeared && !gameObject.activeSelf;
+    }
+
+    internal bool CloseWithoutConfirmation()
+    {
+        if (!CanRequestExit || !PopEnabled) return false;
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        clock?.SynchronizeNow();
+        if (clock != null && clock.State != PopupStoreBusinessState.NotStarted
+            && clock.State != PopupStoreBusinessState.Ended) return false;
         _uiNav.Pop(ViewName);
         return VisibleState == VisibleState.Disappeared && !gameObject.activeSelf;
     }

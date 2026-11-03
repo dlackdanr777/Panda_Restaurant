@@ -16,7 +16,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Explicit request-only bridge for the twenty-five synchronous, memory-only popup store fixtures.
+/// Explicit request-only bridge for the twenty-six synchronous, memory-only popup store fixtures.
 /// Tests never launch Play. An explicit result-review request may use the existing original memory-Play starter.
 /// Never creates a scene, saves assets, restores a workspace or starts another Editor.
 /// </summary>
@@ -40,7 +40,7 @@ public static class PopupStoreVerificationRunner
         "PopupStoreCustomerDepartureTests", "PopupStoreOrderSupplyTests", "PopupStoreBusinessClockTests", "PopupStoreCustomerPatienceTests", "PopupStoreComplaintTests",
         "PopupStoreScoreTests", "PopupStoreGradeTests", "PopupStoreResultTests", "PopupStoreRewardBoxTests", "PopupStoreRewardTableTests",
         "PopupStoreRewardDecisionTests", "PopupStoreRewardTransactionTests", "PopupStoreBusinessStartTests",
-        "PopupStoreRewardRevealPreviewTests", "PopupStorePauseTests"
+        "PopupStoreRewardRevealPreviewTests", "PopupStorePauseTests", "PopupStoreExitConfirmationTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -69,7 +69,7 @@ public static class PopupStoreVerificationRunner
     [Serializable] private sealed class Report
     {
         public string startedUtc, finishedUtc, error;
-        public string scope = "Twenty-five popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
+        public string scope = "Twenty-six popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
         public bool success, compiling, updating, scriptCompilationFailed, workspaceUnchanged;
         public int discovered, total, passed, failed, skipped, inconclusive;
         public Workspace before, after;
@@ -122,7 +122,7 @@ public static class PopupStoreVerificationRunner
         else if (request == "start-result-review") StartResultReview();
         else if (request == "start-reward-review-c") StartResultReview(ReviewMode.RewardC);
         else if (request == "start-reward-review-s") StartResultReview(ReviewMode.RewardS);
-        else if (request == "run-pause-play-review") StartPausePlayReview();
+        else if (request == "run-exit-play-review" || request == "run-pause-play-review") StartPausePlayReview();
         else Run(request);
     }
 
@@ -294,7 +294,7 @@ public static class PopupStoreVerificationRunner
             if (c.popup == null) c.popup = c.nav.FirstView as UIPopupStore;
             if (c.popup == null || c.popup.VisibleState != VisibleState.Appeared) return;
             var clock = c.popup.GetComponent<PopupStoreBusinessClock>();
-            var pause = c.popup.GetComponent<PopupStorePauseController>();
+            var exit = c.popup.GetComponent<PopupStoreExitConfirmation>();
             var entrance = c.popup.GetComponent<PopupStoreCustomerEntrance>();
             var packing = c.popup.GetComponent<PopupStorePacking>();
             var visual = c.popup.GetComponent<PopupStorePackingPresentation>();
@@ -306,7 +306,7 @@ public static class PopupStoreVerificationRunner
                 RequireRewardReview(orders.TryGetEntryBinding(0, out var order, out _), "Waiting binding missing.");
                 RequireRewardReview(order.TryResolve((PopupStoreMaterialCatalog)PauseField(orders, "_catalog"), out var materials, out var error), error);
                 foreach (var item in materials) RequireRewardReview(counter.TryAdd(item), "Prepared material rejected.");
-                RequireRewardReview(pause.TryTogglePause(), "Waiting pause rejected.");
+                RequireRewardReview(c.popup.TryRequestExit() && exit.IsVisible, "Waiting exit confirmation rejected.");
                 RequireRewardReview(!counter.TryAdd(materials[0]), "Paused material API accepted input.");
                 counter.Clear();
                 RequireRewardReview(counter.Count == materials.Length && !packing.TryPack().Success, "Paused clear/packing modified sale.");
@@ -318,7 +318,7 @@ public static class PopupStoreVerificationRunner
                 RequireRewardReview(c.frozen == PausePlaySnapshot(c.popup), "Paused PlayerLoop changed clock, patience, material, motion or receipt state.");
                 if (Time.frameCount == c.frame || EditorApplication.timeSinceStartup - c.since < 1.2) return;
                 if (c.step == 4) _pausePlayReport.waitingFrozen = true; else _pausePlayReport.deliveryFrozen = true;
-                RequireRewardReview(pause.TryTogglePause(), "Resume rejected."); c.step++; return;
+                RequireRewardReview(exit.TryContinue(), "Continue rejected."); c.step++; return;
             }
             if (c.step == 5)
             {
@@ -330,7 +330,7 @@ public static class PopupStoreVerificationRunner
             if (c.step == 6)
             {
                 if (visual.CurrentPhase != PopupStorePackingPresentation.Phase.Move) return;
-                RequireRewardReview(ReferenceEquals(visual.CurrentReceipt, c.receipt) && pause.TryTogglePause(), "Delivery pause identity rejected.");
+                RequireRewardReview(ReferenceEquals(visual.CurrentReceipt, c.receipt) && c.popup.TryRequestExit() && exit.IsVisible, "Delivery confirmation identity rejected.");
                 c.frozen = PausePlaySnapshot(c.popup); c.since = EditorApplication.timeSinceStartup; c.frame = Time.frameCount; c.step++; return;
             }
             if (c.step == 8)
@@ -341,7 +341,8 @@ public static class PopupStoreVerificationRunner
                     && packing.SuccessfulPackCount == 1 && clock.ComplaintPenaltyCount == 0
                     && c.popup.GetComponent<PopupStoreScore>().TotalScore == 100, "Delivery/departure duplicated or normal sale received a penalty.");
                 _pausePlayReport.deliveredAndReleased = true;
-                RequireRewardReview(c.popup.TryClose(), "Popup close rejected."); c.step++; return;
+                // Explicit probe cleanup, not a user abandonment action. No business result is fabricated.
+                c.nav.PopNoAnime(UIPopupStore.ViewName); c.step++; return;
             }
         }
         catch (Exception error) { FinishPausePlayReview(Unwrap(error).Message); }

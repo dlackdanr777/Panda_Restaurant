@@ -57,33 +57,34 @@ public sealed class PopupStorePauseTests
     }
 
     [Test]
-    public void ActualPrefabUsesItsExistingPauseButtonAndApprovedFontWithoutEnablingDisplayOnlyControls()
+    public void ActualPrefabRetainsApprovedPauseArtButHidesAndDisablesItsManualControl()
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath); var pause = prefab.GetComponent<PopupStorePauseController>();
         Assert.That(pause, Is.Not.Null); Assert.That(prefab.GetComponentsInChildren<PopupStorePauseController>(true), Has.Length.EqualTo(1));
         Assert.That(Read(pause, "_clock"), Is.SameAs(prefab.GetComponent<PopupStoreBusinessClock>()));
-        var button = (Button)Read(pause, "_pauseButton"); var label = (TMP_Text)Read(pause, "_label");
+        var button = (Button)Read(pause, "_pauseButton"); var label = button.GetComponentInChildren<TMP_Text>(true);
         Assert.That(button.name, Is.EqualTo("Pause Button")); Assert.That(button.GetComponent<Image>().sprite, Is.Not.Null);
+        Assert.That(button.gameObject.activeSelf, Is.False); Assert.That(button.interactable, Is.False);
         Assert.That(label.font, Is.SameAs(((TMP_Text)Read(prefab.GetComponent<PopupStoreBusinessClock>(), "_timeText")).font));
         Assert.That(label.raycastTarget, Is.False); Assert.That(label.transform.IsChildOf(prefab.transform), Is.True);
         using (var host = new Host())
         {
-            host.Start(); Assert.That(host.Button.IsInteractable(), Is.True);
+            host.Start(); Assert.That(host.Button.gameObject.activeSelf, Is.False); Assert.That(host.Button.IsInteractable(), Is.False);
             foreach (var other in (Button[])Read(host.View, "_displayOnlyButtons"))
                 if (other != null && other != host.Button) Assert.That(other.interactable, Is.False, other.name);
         }
     }
 
     [Test]
-    public void RunningButtonPausesAndTheSameButtonResumesWithoutResettingBusiness()
+    public void HiddenManualButtonAndDirectLegacyInputCannotPauseOrResetRunningBusiness()
     {
         using (var host = new Host())
         {
             host.StartThree(); host.Clock.AdvanceTime(2); var before = new Frozen(host);
-            host.Click(); Assert.That(host.Clock.State, Is.EqualTo(PopupStoreBusinessState.Paused)); Assert.That(host.Clock.IsManualPaused, Is.True);
-            Assert.That(host.Label.text, Does.Contain("계속하기")); Assert.That(host.Button.IsInteractable(), Is.True);
-            host.Click(); Assert.That(host.Clock.State, Is.EqualTo(PopupStoreBusinessState.Running)); Assert.That(host.Clock.IsManualPaused, Is.False);
-            Assert.That(host.Label.text, Does.Contain("일시정지")); Assert.That(host.Pause.ToggleCount, Is.EqualTo(2)); before.AssertUnchanged(host);
+            host.Click(); host.Click(); Assert.That(host.Pause.TryTogglePause(), Is.False);
+            Assert.That(host.Clock.State, Is.EqualTo(PopupStoreBusinessState.Running)); Assert.That(host.Clock.IsManualPaused, Is.False);
+            Assert.That(host.Button.gameObject.activeSelf, Is.False); Assert.That(host.Button.IsInteractable(), Is.False);
+            Assert.That(host.Pause.ToggleCount, Is.Zero); before.AssertUnchanged(host);
         }
     }
 
@@ -102,30 +103,33 @@ public sealed class PopupStorePauseTests
     }
 
     [Test]
-    public void RepeatedRefreshKeepsOneClockSubscriptionAndSameFrameButtonSpamTogglesOnce()
+    public void RepeatedRefreshAndLegacyButtonSpamCannotRestoreTheRemovedManualInput()
     {
         using (var host = new Host())
         {
-            host.Start(); for (int i = 0; i < 20; i++) Assert.That(host.Pause.Refresh(), Is.True);
-            var listeners = (Action)Read(host.Clock, "StateChanged");
-            Assert.That(listeners.GetInvocationList().Count(d => ReferenceEquals(d.Target, host.Pause)), Is.EqualTo(1));
-            host.NextFrame(); for (int i = 0; i < 20; i++) host.Button.onClick.Invoke();
-            Assert.That(host.Clock.IsManualPaused, Is.True); Assert.That(host.Pause.ToggleCount, Is.EqualTo(1));
-            host.Click(); Assert.That(host.Clock.IsManualPaused, Is.False); Assert.That(host.Pause.ToggleCount, Is.EqualTo(2));
+            host.Start(); var before = new Frozen(host);
+            for (int i = 0; i < 20; i++)
+            {
+                host.Button.gameObject.SetActive(true); host.Button.interactable = true;
+                Assert.That(host.Pause.Refresh(), Is.True);
+                Assert.That(host.Button.gameObject.activeSelf, Is.False); Assert.That(host.Button.IsInteractable(), Is.False);
+                host.Button.onClick.Invoke(); Assert.That(host.Pause.TryTogglePause(), Is.False);
+            }
+            Assert.That(host.Clock.IsManualPaused, Is.False); Assert.That(host.Pause.ToggleCount, Is.Zero); before.AssertUnchanged(host);
         }
     }
 
     [Test]
-    public void ReentrantStateObserverCannotToggleTheClockBackDuringTheFirstClick()
+    public void LegacyManualInputCannotReenterAnInternalClockStateNotification()
     {
         using (var host = new Host())
         {
             host.Start(); int calls = 0; bool nested = true;
-            Action observer = () => { calls++; host.NextFrame(); nested = host.Pause.TryTogglePause(); };
+            Action observer = () => { calls++; nested = host.Pause.TryTogglePause(); host.Button.onClick.Invoke(); };
             host.Clock.StateChanged += observer;
             try { host.Toggle(); } finally { host.Clock.StateChanged -= observer; }
             Assert.That(calls, Is.EqualTo(1)); Assert.That(nested, Is.False); Assert.That(host.Clock.IsManualPaused, Is.True);
-            Assert.That(host.Pause.ToggleCount, Is.EqualTo(1));
+            Assert.That(host.Pause.ToggleCount, Is.Zero); Assert.That(host.Button.gameObject.activeSelf, Is.False);
         }
     }
 
@@ -193,7 +197,7 @@ public sealed class PopupStorePauseTests
     }
 
     [Test]
-    public void ManualPauseAndWaitingOrdersSurviveNormalCloseAndSameInstanceReentry()
+    public void InternalPauseAndWaitingOrdersSurviveForcedCleanupAndSameInstanceReentry()
     {
         using (var host = new Host())
         {
@@ -201,7 +205,7 @@ public sealed class PopupStorePauseTests
             var orders = host.SourceOrders.ToArray(); host.Close(); host.Clock.SetApplicationFocused(false); host.Clock.SetApplicationFocused(true); host.Reopen();
             Assert.That(host.Clock.IsManualPaused, Is.True); Assert.That(host.Clock.State, Is.EqualTo(PopupStoreBusinessState.Paused));
             CollectionAssert.AreEqual(orders, host.SourceOrders); frozen.AssertUnchanged(host);
-            Assert.That(host.Button.IsInteractable(), Is.True); host.Toggle(); Assert.That(host.Packing.TryPack().Success, Is.True);
+            Assert.That(host.Button.gameObject.activeSelf, Is.False); Assert.That(host.Button.IsInteractable(), Is.False); host.Toggle(); Assert.That(host.Packing.TryPack().Success, Is.True);
             host.CompleteDeliveryAndDeparture(); Assert.That(host.Presentation.CompletedDeliveryCount, Is.EqualTo(1));
         }
     }
@@ -223,13 +227,13 @@ public sealed class PopupStorePauseTests
     }
 
     [Test]
-    public void DeadlineWonDuringPauseClickCannotLatchManualPauseOrBlockCommittedDelivery()
+    public void DeadlineWonDuringInternalPauseCannotLatchPauseOrBlockCommittedDelivery()
     {
         using (var host = new Host())
         {
             double now = 0; Write(host.Clock, "_timeSource", new Func<double>(() => now)); host.StartThree();
             host.Fill(0); var receipt = host.Packing.TryPack().Receipt; host.ToPhase("Move");
-            now = 100; host.NextFrame(); Assert.That(host.Pause.TryTogglePause(), Is.False);
+            now = 100; host.Clock.SetManualPaused(true); Assert.That(host.Pause.TryTogglePause(), Is.False);
             Assert.That(host.Clock.State, Is.EqualTo(PopupStoreBusinessState.Ended)); Assert.That(host.Clock.IsManualPaused, Is.False);
             Assert.That(host.Clock.CanAdvanceVisuals, Is.True); Assert.That(host.Clock.EndedCount, Is.EqualTo(1));
             host.CompleteDeliveryAndDeparture(); Assert.That(host.Presentation.LastDeliveredReceipt, Is.SameAs(receipt));
@@ -462,7 +466,7 @@ public sealed class PopupStorePauseTests
         {
             host.StartThree(); host.Fill(0); var frozen = new Frozen(host);
             for (int i = 0; i < 10; i++) { host.Toggle(); host.TickAll(500); host.Toggle(); }
-            frozen.AssertUnchanged(host); Assert.That(host.Pause.ToggleCount, Is.EqualTo(20)); Assert.That(host.Clock.EndedCount, Is.Zero);
+            frozen.AssertUnchanged(host); Assert.That(host.Pause.ToggleCount, Is.Zero); Assert.That(host.Clock.IsManualPaused, Is.False); Assert.That(host.Clock.EndedCount, Is.Zero);
         }
     }
 
@@ -502,25 +506,46 @@ public sealed class PopupStorePauseTests
 
     [TestCase("_clock")]
     [TestCase("_pauseButton")]
-    [TestCase("_label")]
-    public void MissingPauseReferencesCannotMutateTheClockOrBlockTheNormalClosePath(string field)
+    [TestCase("foreign-button")]
+    public void MissingLegacyPauseReferencesCannotMutateTheClockOrBlockForcedCleanup(string field)
     {
         using (var host = new Host())
         {
-            host.StartThree(); var before = new Frozen(host); object original = Read(host.Pause, field); Write(host.Pause, field, null);
-            try { Assert.That(host.Pause.Refresh(), Is.False); Assert.That(host.Pause.TryTogglePause(), Is.False); before.AssertUnchanged(host); }
-            finally { Write(host.Pause, field, original); host.Pause.Refresh(); }
+            host.StartThree(); var before = new Frozen(host);
+            string targetField = field == "foreign-button" ? "_pauseButton" : field;
+            object original = Read(host.Pause, targetField); GameObject foreign = null;
+            try
+            {
+                if (field == "foreign-button")
+                {
+                    foreign = new GameObject("unrelated-pause-button", typeof(RectTransform), typeof(Button));
+                    Write(host.Pause, targetField, foreign.GetComponent<Button>());
+                }
+                else Write(host.Pause, targetField, null);
+                Assert.That(host.Pause.Refresh(), Is.False); Assert.That(host.Pause.TryTogglePause(), Is.False); before.AssertUnchanged(host);
+                if (foreign != null) Assert.That(foreign.activeSelf, Is.True, "A foreign control must not be hidden by this popup.");
+            }
+            finally
+            {
+                Write(host.Pause, targetField, original); host.Pause.Refresh();
+                if (foreign != null) UnityEngine.Object.DestroyImmediate(foreign);
+            }
             host.Close(); Assert.That(host.Get<MobileUINavigation>("Navigation").FirstView, Is.SameAs(host.Get<UIFloor3>("Floor")));
         }
     }
 
     [Test]
-    public void PauseInputIsAPlayerCapablePathAndAutomaticVisualUpdatesUseTheResumeDeltaGate()
+    public void PlayerRetainsOnlyInertLegacyPauseInputAndVisualsKeepTheirResumeDeltaGate()
     {
         string controller = File.ReadAllText("Assets/Scripts/UI/Floor3UI/PopupStorePauseController.cs");
         string playerSource = Regex.Replace(controller, @"#if UNITY_EDITOR[\s\S]*?#endif", string.Empty);
         Assert.That(playerSource, Does.Contain("public bool TryTogglePause()"));
-        Assert.That(playerSource, Does.Contain("_clock.SetManualPaused(!before)"), "Only diagnostics may be Editor-only; the pause input remains in Player source.");
+        Assert.That(playerSource, Does.Not.Contain(".SetManualPaused("), "The retained compatibility component cannot re-enable Player manual pause.");
+        using (var host = new Host())
+        {
+            host.Start(); Assert.That(host.Pause.TryTogglePause(), Is.False);
+            Assert.That(host.Button.gameObject.activeSelf, Is.False); Assert.That(host.Clock.IsManualPaused, Is.False);
+        }
         foreach (string name in new[] { "PopupStoreCustomerEntrance.cs", "PopupStorePackingPresentation.cs" })
             Assert.That(File.ReadAllText("Assets/Scripts/UI/Floor3UI/" + name), Does.Contain("FilterAutomaticVisualDelta"), name);
         Assert.That(controller, Does.Not.Contain("Time.timeScale").And.Not.Contain("UserInfo.").And.Not.Contain("Backend."));
@@ -531,12 +556,11 @@ public sealed class PopupStorePauseTests
     private sealed class Host : IDisposable
     {
         private readonly object _inner;
-        private int _frame = 100;
         internal Host()
         {
             var type = typeof(PopupStoreResultTests).GetNestedType("Host", BindingFlags.NonPublic);
             _inner = Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { null }, CultureInfo.InvariantCulture);
-            try { Assert.That(Pause, Is.Not.Null); Write(Pause, "_frameSource", new Func<int>(() => _frame)); Assert.That(Pause.Refresh(), Is.True); }
+            try { Assert.That(Pause, Is.Not.Null); Assert.That(Pause.Refresh(), Is.True); }
             catch { Dispose(); throw; }
         }
         internal GameObject Root => Get<GameObject>("Root");
@@ -556,16 +580,19 @@ public sealed class PopupStorePauseTests
         internal PopupStoreOrder[] SourceOrders => (PopupStoreOrder[])Read(Orders, "_sampleOrders");
         internal Queue<PopupStorePackingReceipt> Queue => (Queue<PopupStorePackingReceipt>)Read(Packing, "_receipts");
         internal Button Button => (Button)Read(Pause, "_pauseButton");
-        internal TMP_Text Label => (TMP_Text)Read(Pause, "_label");
         internal Button ClearButton => (Button)Read(Counter, "_clearButton");
         internal Button PackButton => (Button)Read(Packing, "_packButton");
         internal T Get<T>(string name) => (T)Read(_inner, name);
         internal object Call(string name, params object[] args) => CallMethod(_inner, name, args);
         internal void Start() { Call("Start", 90d); Pause.Refresh(); }
         internal void StartThree() { Call("StartCustomers", 3, 90d); Pause.Refresh(); }
-        internal void NextFrame() { _frame++; }
-        internal void Click() { NextFrame(); Button.onClick.Invoke(); }
-        internal void Toggle() { NextFrame(); Assert.That(Pause.TryTogglePause(), Is.True); }
+        internal void Click() => Button.onClick.Invoke();
+        // Internal pause protection remains covered without restoring a user-facing pause input.
+        internal void Toggle()
+        {
+            bool before = Clock.IsManualPaused; Clock.SetManualPaused(!before);
+            Assert.That(Clock.IsManualPaused, Is.EqualTo(!before));
+        }
         internal void Fill(int slot)
         {
             Assert.That(SourceOrders[slot].TryResolve((PopupStoreMaterialCatalog)Read(Orders, "_catalog"), out var materials, out var error), Is.True, error);
@@ -577,11 +604,11 @@ public sealed class PopupStorePauseTests
         internal void ToPhase(string phase) => Call("AdvanceVisualTo", phase);
         internal void CompleteDeliveryAndDeparture() { Call("CompleteVisual", true); Call("FinishDepartures"); }
         internal void ShowResult() { Call("ShowResult"); Result.TickResult(1); }
-        internal void Close() { Call("Close"); CallMethod(Pause, "OnDisable"); }
+        internal void Close() => Call("Close");
         internal void Reopen() { Call("Reopen"); Assert.That(Pause.Refresh(), Is.True); }
         internal void Confirm()
         {
-            Assert.That(Result.TryConfirm(), Is.True); Call("DisableObservers"); CallMethod(Pause, "OnDisable");
+            Assert.That(Result.TryConfirm(), Is.True); Call("DisableObservers");
             Assert.That(Get<MobileUINavigation>("Navigation").FirstView, Is.SameAs(Get<UIFloor3>("Floor")));
         }
         public void Dispose() => ((IDisposable)_inner).Dispose();

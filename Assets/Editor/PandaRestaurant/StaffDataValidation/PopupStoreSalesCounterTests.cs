@@ -269,7 +269,7 @@ public sealed class PopupStoreSalesCounterTests
     }
 
     [Test]
-    public void PauseControlCannotChangeCounterOrAccountState()
+    public void RemovedPauseControlCannotChangeCounterAndInternalPauseStillBlocksMutations()
     {
         long money = UserInfo.Money;
         int dia = UserInfo.Dia;
@@ -285,9 +285,13 @@ public sealed class PopupStoreSalesCounterTests
             var pause = host.View.GetComponent<PopupStorePauseController>();
             Assert.That(pause.Refresh(), Is.True);
             var button = (Button)Read(pause, "_pauseButton");
-            Assert.That(button.interactable, Is.True);
+            Assert.That(button.interactable, Is.False); Assert.That(button.gameObject.activeSelf, Is.False);
             button.onClick.Invoke();
-            Assert.That(host.View.GetComponent<PopupStoreBusinessClock>().State, Is.EqualTo(PopupStoreBusinessState.Paused));
+            var clock = host.View.GetComponent<PopupStoreBusinessClock>();
+            Assert.That(clock.State, Is.EqualTo(PopupStoreBusinessState.Running));
+            Assert.That(pause.TryTogglePause(), Is.False); AssertRendered(host.Counter, "STAFF28", "BOX_PINK");
+            clock.SetManualPaused(true);
+            Assert.That(clock.State, Is.EqualTo(PopupStoreBusinessState.Paused));
             host.Counter.Clear();
             AssertRendered(host.Counter, "STAFF28", "BOX_PINK");
         }

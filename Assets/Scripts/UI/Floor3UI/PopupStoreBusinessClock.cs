@@ -22,7 +22,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
 
     private PopupStoreBusinessState _state;
     private double _remainingSeconds;
-    private bool _viewVisible, _applicationPaused, _manualPaused;
+    private bool _viewVisible, _applicationPaused, _manualPaused, _exitConfirmationPaused;
     private bool _applicationFocused = true;
     private bool _synchronizing, _starting, _hasTimeSample;
     private bool _sourceHealthy = true;
@@ -37,6 +37,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
 
     public PopupStoreBusinessState State => _state;
     public bool IsManualPaused => _manualPaused;
+    public bool IsExitConfirmationPaused => _exitConfirmationPaused;
     public uint VisualResumeVersion { get; private set; }
     public double RemainingSeconds => _remainingSeconds;
     /// <summary>Accepted Running time only, capped at the business deadline. Never advances while paused.</summary>
@@ -123,7 +124,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         {
             // SetViewVisible(false) can settle the final foreground interval during OnDisable.
             if (_state != PopupStoreBusinessState.Running || !_viewVisible || _applicationPaused
-                || !_applicationFocused || _manualPaused)
+                || !_applicationFocused || _manualPaused || _exitConfirmationPaused)
             { _hasTimeSample = false; return; }
             if (!ValidateConfiguration(out _)) return;
             if (!TryReadTime(out double now, out bool available, out string error))
@@ -166,6 +167,9 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     }
 
     public void SetManualPaused(bool paused) => SetCondition(ref _manualPaused, paused, true);
+
+    // Owned by the local exit overlay, independently of app/focus and legacy manual pause.
+    internal void SetExitConfirmationPaused(bool paused) => SetCondition(ref _exitConfirmationPaused, paused);
 
     private void SetCondition(ref bool condition, bool value, bool activeSessionOnly = false)
     {
@@ -302,7 +306,8 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     }
 
     private bool IsContextAvailable()
-        => isActiveAndEnabled && _viewVisible && !_applicationPaused && _applicationFocused && !_manualPaused;
+        => isActiveAndEnabled && _viewVisible && !_applicationPaused && _applicationFocused
+            && !_manualPaused && !_exitConfirmationPaused;
 
     private bool CanUseRunningClock()
         => _sourceHealthy && _state == PopupStoreBusinessState.Running && IsContextAvailable()
