@@ -181,15 +181,15 @@ public sealed class PopupStoreRewardRevealPreviewTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public void ConfirmDuringOrAfterRevealReturnsOnceAndReentryRestoresTheSameTextWithoutAnimation(bool finishAnimation)
+    public void ForcedHideDuringOrAfterRevealRestoresTheSameUnconfirmedPreviewWithoutAnimation(bool finishAnimation)
     {
         using (var host = new Host(85))
         {
             host.Ready(PopupStoreGradeTier.S); var snapshot = new Transactions(host); Assert.That(host.Preview.TryReveal(), Is.True);
-            host.Preview.TickPreview(finishAnimation ? 1f : .1f); host.Confirm();
+            host.Preview.TickPreview(finishAnimation ? 1f : .1f); host.ForceHide();
             Assert.That(host.Preview.IsAnimating, Is.False); Assert.That(host.Preview.IsPreviewVisible, Is.False);
             for (int i = 0; i < 5; i++) { Assert.That(host.Result.TryConfirm(), Is.False); Assert.That(host.Preview.TryReveal(), Is.False); }
-            Assert.That(host.Result.ConfirmationCount, Is.EqualTo(1));
+            Assert.That(host.Result.ConfirmationCount, Is.Zero, "Forced cleanup does not acknowledge the result.");
             host.Reopen();
             Assert.That(host.Preview.IsPreviewVisible, Is.True); Assert.That(host.Preview.IsAnimating, Is.False);
             Assert.That(host.Preview.RevealCount, Is.EqualTo(1)); Assert.That(host.Value.text, Is.EqualTo("R0 테스트 보상 +6D"));
@@ -199,19 +199,20 @@ public sealed class PopupStoreRewardRevealPreviewTests
     }
 
     [Test]
-    public void ClosingAnUnopenedResultDoesNotSpendItsFirstPreview()
+    public void ForcedHideOfAnUnconfirmedResultDoesNotSpendItsFirstPreview()
     {
         using (var host = new Host())
         {
-            host.Ready(PopupStoreGradeTier.C); host.Confirm(); host.Reopen();
+            host.Ready(PopupStoreGradeTier.C); host.ForceHide(); host.Reopen();
             Assert.That(host.Preview.IsRevealed, Is.False); Assert.That(host.Preview.RevealCount, Is.Zero);
             Assert.That(host.Preview.TryReveal(), Is.True); Assert.That(host.Preview.RevealCount, Is.EqualTo(1));
+            host.Confirm(); Assert.That(host.Result.ConfirmationCount, Is.EqualTo(1));
         }
     }
 
     [TestCase(false)]
     [TestCase(true)]
-    public void EitherDisableOrderRestoresNonDefaultBoxScaleAndColorIdempotently(bool boxFirst)
+    public void EitherDisableOrderAndForcedHideRestoreUnconfirmedBoxScaleAndColorIdempotently(bool boxFirst)
     {
         using (var host = new Host())
         {
@@ -221,10 +222,11 @@ public sealed class PopupStoreRewardRevealPreviewTests
             if (boxFirst) { host.Box.HidePresentation(); host.Preview.HidePreview(); }
             else { host.Preview.HidePreview(); host.Box.HidePresentation(); }
             host.Preview.HidePreview(); host.Box.HidePresentation();
-            host.Confirm(); host.Reopen();
+            host.ForceHide(); host.Reopen();
             Assert.That(host.Box.BoxImage.rectTransform.localScale, Is.EqualTo(baseline)); Assert.That(host.Box.BoxImage.color, Is.EqualTo(color));
             Assert.That(host.Preview.IsPreviewVisible, Is.True); Assert.That(host.Preview.IsAnimating, Is.False);
             Assert.That(host.Preview.RevealCount, Is.EqualTo(1));
+            host.Confirm(); Assert.That(host.Result.ConfirmationCount, Is.EqualTo(1));
         }
     }
 
@@ -563,6 +565,12 @@ public sealed class PopupStoreRewardRevealPreviewTests
             if (Preview != null) CallMethod(Preview, "OnDisable");
             Assert.That(Get<MobileUINavigation>("Navigation").FirstView, Is.SameAs(Get<UIFloor3>("Floor")));
             Assert.That(Get<MobileUINavigation>("Navigation").Count, Is.EqualTo(1));
+        }
+        internal void ForceHide()
+        {
+            // DEV-05D-3C: only unconfirmed forced cleanup retains this instance; normal confirmation retires it.
+            Call("Close");
+            if (Preview != null) CallMethod(Preview, "OnDisable");
         }
         internal void Reopen()
         {

@@ -177,18 +177,28 @@ public sealed class PopupStoreExitConfirmationTests
     }
 
     [Test]
-    public void UnsupportedAbandonCannotHideCompleteExpireOrSpendAnything()
+    public void ConfirmedAbandonClosesOnceWithoutCompletingExpiringOrSpendingAnything()
     {
         using (var h = new Host())
         {
-            h.StartThree(); h.Fill(0); h.Request(); var frozen = new Snapshot(h);
-            Assert.That(h.Exit.CanConfirmAbandon, Is.False); Assert.That(h.AbandonButton.interactable, Is.False);
+            h.StartThree(); h.Fill(0); h.Request();
+            double remaining = h.Clock.RemainingSeconds;
+            var materials = h.Counter.Materials.ToArray();
+            Assert.That(h.Exit.CanConfirmAbandon, Is.True); Assert.That(h.AbandonButton.interactable, Is.True);
+            h.AbandonButton.onClick.Invoke();
+            Assert.That(h.Clock.State, Is.EqualTo(PopupStoreBusinessState.Abandoned));
+            Assert.That(h.Clock.EndReason, Is.EqualTo(PopupStoreBusinessEndReason.DirectExit));
             for (int i = 0; i < 6; i++) { h.AbandonButton.onClick.Invoke(); Assert.That(h.Exit.TryConfirmAbandon(), Is.False); }
-            frozen.AssertSame(h); Assert.That(h.Clock.State, Is.EqualTo(PopupStoreBusinessState.Paused));
-            Assert.That(h.Exit.IsVisible, Is.True); Assert.That(h.Grade.FinalResult, Is.Null);
+            Assert.That(h.Exit.TryContinue(), Is.False); h.TickAll(200);
+            Assert.That(h.Clock.AbandonCount, Is.EqualTo(1)); Assert.That(h.Clock.EndedCount, Is.Zero);
+            Assert.That(h.Clock.RemainingSeconds, Is.EqualTo(remaining)); Assert.That(remaining, Is.GreaterThan(0));
+            CollectionAssert.AreEqual(materials, h.Counter.Materials);
+            Assert.That(h.Exit.IsVisible, Is.False); Assert.That(h.Grade.FinalResult, Is.Null);
+            Assert.That(h.Grade.FinalizationCount, Is.Zero); Assert.That(h.Score.TotalScore, Is.Zero);
             Assert.That(h.Root.GetComponent<PopupStoreRewardSession>().Result, Is.Null);
-            Assert.That(h.Navigation.FirstView, Is.SameAs(h.View)); Assert.That(h.Packing.CommittedReceipts, Is.Empty);
-            Assert.That(((GameObject)Read(h.Exit, "_reviewHint")).activeSelf, Is.True);
+            Assert.That(h.Navigation.FirstView, Is.SameAs(h.Floor)); Assert.That(h.Packing.CommittedReceipts, Is.Empty);
+            Assert.That(h.Root.activeSelf, Is.False); Assert.That(h.Root.GetComponent<PopupStoreSessionLifetime>().IsRetired, Is.True);
+            Assert.That(((GameObject)Read(h.Exit, "_reviewHint")).activeSelf, Is.False);
         }
     }
 
@@ -424,7 +434,7 @@ public sealed class PopupStoreExitConfirmationTests
     }
 
     [Test]
-    public void DeadlineSettledByExitRequestWinsOverConfirmationAndRemainsFinalized()
+    public void DeadlineSettledByExitRequestCompletesOnceAndNextEntryUsesAFreshBusiness()
     {
         using (var h = new Host())
         {
@@ -433,13 +443,15 @@ public sealed class PopupStoreExitConfirmationTests
             Assert.That(h.Clock.State, Is.EqualTo(PopupStoreBusinessState.Ended)); Assert.That(h.Clock.EndedCount, Is.EqualTo(1));
             Assert.That(h.Exit.IsVisible, Is.False); Assert.That(h.Exit.ShowCount, Is.Zero); Assert.That(h.Clock.IsExitConfirmationPaused, Is.False);
             Assert.That(h.Grade.FinalizationCount, Is.EqualTo(1)); var final = h.Grade.FinalResult;
-            h.Reopen(); h.ShowResult(); Assert.That(h.Result.ShownResult, Is.SameAs(final)); Assert.That(h.Grade.FinalizationCount, Is.EqualTo(1)); h.ConfirmResult();
+            Assert.That(final, Is.Not.Null); Assert.That(h.Clock.EndReason, Is.EqualTo(PopupStoreBusinessEndReason.Completed));
+            Assert.That(h.Clock.AbandonCount, Is.Zero); Assert.That(h.Navigation.FirstView, Is.SameAs(h.Floor));
+            AssertFreshEntryAfterTerminalClose(h, final.SessionId);
         }
     }
 
     [TestCase(PopupStoreGradeTier.C)]
     [TestCase(PopupStoreGradeTier.S)]
-    public void EndedResultConfirmationPreservesApprovedBoxRevealAndExistingMapReturn(PopupStoreGradeTier tier)
+    public void EndedResultConfirmationPreservesHistoryAndMapReturnThenPreparesAFreshBusiness(PopupStoreGradeTier tier)
     {
         using (var h = new Host())
         {
@@ -449,12 +461,13 @@ public sealed class PopupStoreExitConfirmationTests
             var final = h.Grade.FinalResult; var decision = rewards.Result;
             var box = h.Root.GetComponent<PopupStoreRewardBox>(); var reveal = h.Root.GetComponent<PopupStoreRewardRevealPreview>();
             Assert.That(box.DisplayedSprite.name, Is.EqualTo("PopupRewardBox_" + tier + "_APPROVED"));
-            Assert.That(reveal.TryReveal(), Is.True); reveal.TickPreview(1); h.ConfirmResult(); h.Reopen(); h.ShowResult(); reveal.Refresh();
+            Assert.That(reveal.TryReveal(), Is.True); reveal.TickPreview(1); h.ConfirmResult();
             Assert.That(h.Exit.IsVisible, Is.False); Assert.That(h.Grade.FinalResult, Is.SameAs(final));
             Assert.That(h.Grade.FinalizationCount, Is.EqualTo(1)); Assert.That(rewards.Result, Is.SameAs(decision));
             Assert.That(rewards.DecisionCount, Is.EqualTo(1)); Assert.That(rewards.RandomDrawCount, Is.EqualTo(1));
             Assert.That(random.Calls, Is.EqualTo(1));
-            Assert.That(reveal.RevealCount, Is.EqualTo(1)); Assert.That(reveal.IsAnimating, Is.False); h.ConfirmResult();
+            Assert.That(reveal.RevealCount, Is.EqualTo(1)); Assert.That(reveal.IsAnimating, Is.False);
+            AssertFreshEntryAfterTerminalClose(h, final.SessionId);
         }
     }
 
@@ -516,6 +529,28 @@ public sealed class PopupStoreExitConfirmationTests
 
     private sealed class FixedRewardSource : IPopupStoreRewardRandomSource
     { internal int Calls; public int NextPercent() { Calls++; return 85; } }
+
+    private static void AssertFreshEntryAfterTerminalClose(Host h, string previousSession)
+    {
+        // DEV-05D-3C: acknowledgement retires a completed business. Forced Hide cases retain
+        // their original graph elsewhere; the existing map prepares a distinct next business here.
+        var navigation = h.Navigation; var floor = h.Floor;
+        var lifetime = h.Root.GetComponent<PopupStoreSessionLifetime>();
+        Assert.That(lifetime.IsRetired, Is.True);
+        Assert.That(lifetime.TryPrepareForEntry(out var fresh), Is.True, lifetime.LastError);
+        Assert.That(fresh, Is.Not.Null);
+        var grade = fresh.GetComponent<PopupStoreGradeSession>();
+        Assert.That(grade.SessionId, Is.Not.EqualTo(previousSession)); Assert.That(grade.FinalResult, Is.Null);
+        Assert.That(grade.FinalizationCount, Is.Zero); Assert.That(fresh.GetComponent<PopupStoreScore>().TotalScore, Is.Zero);
+        Assert.That(fresh.GetComponent<PopupStorePacking>().CommittedReceipts, Is.Empty);
+        Assert.That(fresh.GetComponent<PopupStoreRewardSession>().Result, Is.Null);
+        Assert.That(fresh.GetComponent<PopupStoreRewardSession>().RandomDrawCount, Is.Zero);
+        Assert.That(fresh.GetComponent<PopupStoreRewardRevealPreview>().RevealCount, Is.Zero);
+        navigation.Push(UIPopupStore.ViewName);
+        Assert.That(navigation.FirstView, Is.SameAs(fresh));
+        Assert.That(fresh.GetComponent<PopupStoreBusinessClock>().State, Is.EqualTo(PopupStoreBusinessState.NotStarted));
+        Assert.That(fresh.TryClose(), Is.True); Assert.That(navigation.FirstView, Is.SameAs(floor));
+    }
 
     private sealed class Host : IDisposable
     {

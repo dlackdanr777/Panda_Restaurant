@@ -12,6 +12,7 @@ public class UIFloor3 : MobileUIView
     [Header("Popup store")]
     [SerializeField] private Button _popupStoreButton;
     [SerializeField] private UIPopupStore _popupStoreView;
+    private bool _openingPopupStore;
 
     [Space]
     [Header("Animations")]
@@ -43,13 +44,24 @@ public class UIFloor3 : MobileUIView
 
     private void OnPopupStoreClicked()
     {
-        if (_popupStoreButton == null || _popupStoreView == null || _uiNav == null
+        if (_openingPopupStore || _popupStoreButton == null || _popupStoreView == null || _uiNav == null
             || !_popupStoreView.IsBoundTo(_uiNav) || _uiNav.IsViewsInactive
             || _uiNav.FirstView != this || VisibleState != VisibleState.Appeared
             || !_uiNav.ViewsVisibleStateCheck() || PopupManager.IsCustomerEncounterPresentationBlocked
             || _uiNav.CheckActiveView(UIPopupStore.ViewName)) return;
 
-        _uiNav.Push(UIPopupStore.ViewName);
+        _openingPopupStore = true;
+        try
+        {
+            var ready = _popupStoreView;
+            var lifetime = ready.GetComponent<PopupStoreSessionLifetime>();
+            if (lifetime != null && !lifetime.TryPrepareForEntry(out ready)) return;
+            // Keep the map's runtime reference paired with the replacement registration.
+            _popupStoreView = ready;
+            if (_popupStoreView == null || !_popupStoreView.IsBoundTo(_uiNav)) return;
+            _uiNav.Push(UIPopupStore.ViewName);
+        }
+        finally { _openingPopupStore = false; }
     }
 
     public override void Show()

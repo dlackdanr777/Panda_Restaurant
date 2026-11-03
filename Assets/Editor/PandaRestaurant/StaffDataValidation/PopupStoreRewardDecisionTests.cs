@@ -184,7 +184,7 @@ public sealed class PopupStoreRewardDecisionTests
     }
 
     [Test]
-    public void DuplicateFinalEventsQueriesLifecycleAndReturnToFloor3PreserveTheOriginalDecision()
+    public void DuplicateFinalEventsAndForcedHidePreserveTheUnconfirmedDecisionUntilAcknowledged()
     {
         var witness = GachaCollectionPreviewSceneWitness.Capture(); var source = new Source(85);
         using (var host = new Host(source))
@@ -198,13 +198,15 @@ public sealed class PopupStoreRewardDecisionTests
                 Assert.That(host.Session.Refresh(), Is.True); Assert.That(host.Box.Present(host.Grade.FinalResult), Is.True);
                 Assert.That(host.Session.Result, Is.SameAs(decision));
             }
-            host.Confirm(); host.Reopen(); host.Show();
+            // Forced lifecycle cleanup preserves the unacknowledged business. Normal confirmation prepares a new one.
+            host.Close(); host.Reopen(); host.Show();
             Assert.That(host.Session.Result, Is.SameAs(decision)); AssertOneDecision(host, source); snapshot.AssertUnchanged(host);
             Assert.That(UnityEngine.Random.state, Is.EqualTo(random)); host.Account.AssertUnchanged();
             Assert.That(host.Session.TrySetRandomSource(new Source(99)), Is.False);
             Debug.Log("POPUP_STORE_REWARD_DECISION_TEST_EVIDENCE session=" + decision.SessionId + " decision=" + decision.DecisionId
                 + " grade=" + decision.Grade + " kind=" + decision.Kind + " diamonds=" + decision.Diamonds
                 + " draws=" + source.Calls + " decisions=" + host.Session.DecisionCount + " reentrySame=True accountUnchanged=True localOnly=True");
+            host.Confirm(); Assert.That(host.Result.ConfirmationCount, Is.EqualTo(1));
         }
         witness.AssertUnchanged("popup-store reward decision lifecycle");
     }

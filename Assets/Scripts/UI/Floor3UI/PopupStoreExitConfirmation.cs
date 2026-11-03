@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-/// <summary>Local user-exit interception only. No abandonment, new session, reward or account operation.</summary>
+/// <summary>Local user exit: pause to confirm, continue the same session, or retire it without a normal result.</summary>
 [DisallowMultipleComponent]
 public sealed class PopupStoreExitConfirmation : MonoBehaviour
 {
@@ -16,12 +16,17 @@ public sealed class PopupStoreExitConfirmation : MonoBehaviour
 
     private UIPopupStore _view;
     private Button _boundContinue;
+    private Button _boundAbandon;
     private GameObject _previousSelection;
     private bool _shown, _changing, _oldPopEnabled, _oldInteractable, _oldRaycasts;
     public bool IsVisible => _shown && _overlay != null && _overlay.activeInHierarchy;
     public int ShowCount { get; private set; }
     public int ContinueCount { get; private set; }
-    public bool CanConfirmAbandon => false;
+    public bool CanConfirmAbandon => !_changing && isActiveAndEnabled && IsVisible
+        && _view != null && !_view.IsClosing && _view.CanRequestExit
+        && _clock != null && (_clock.State == PopupStoreBusinessState.Running || _clock.State == PopupStoreBusinessState.Paused)
+        && GetComponent<PopupStoreSessionLifetime>() != null && !GetComponent<PopupStoreSessionLifetime>().IsRetired;
+    public int AbandonCount => _clock != null ? _clock.AbandonCount : 0;
     public string LastError { get; private set; }
 
     public bool Refresh()
@@ -29,19 +34,16 @@ public sealed class PopupStoreExitConfirmation : MonoBehaviour
         _view = GetComponent<UIPopupStore>();
         if (!Validate())
         { LastError = "Exit confirmation requires its own clock, input group and authored modal controls."; return false; }
-        if (_boundContinue != _continueButton)
+        if (_boundContinue != _continueButton || _boundAbandon != _abandonButton)
         {
             Unbind();
             _boundContinue = _continueButton;
             _boundContinue.onClick.AddListener(OnContinueClicked);
+            _boundAbandon = _abandonButton;
+            _boundAbandon.onClick.AddListener(OnAbandonClicked);
         }
-        _abandonButton.interactable = false;
-        _continueButton.interactable = true;
-#if UNITY_EDITOR
-        if (_reviewHint != null) _reviewHint.SetActive(true);
-#else
         if (_reviewHint != null) _reviewHint.SetActive(false);
-#endif
+        UpdateButtons();
         if (!_shown) _overlay.SetActive(false);
         LastError = null;
         return true;
@@ -52,6 +54,7 @@ public sealed class PopupStoreExitConfirmation : MonoBehaviour
     {
         if (_changing || !isActiveAndEnabled || !Refresh() || !_view.CanRequestExit) return false;
         _clock.SynchronizeNow();
+        if (_clock.State == PopupStoreBusinessState.Abandoned) return false;
         if (_clock.State == PopupStoreBusinessState.NotStarted || _clock.State == PopupStoreBusinessState.Ended)
         {
             if (_shown) DismissForForcedHide();
@@ -87,12 +90,14 @@ public sealed class PopupStoreExitConfirmation : MonoBehaviour
             Log("SHOWN");
             return true;
         }
-        finally { _changing = false; }
+        finally { _changing = false; UpdateButtons(); }
     }
 
     public bool TryContinue()
     {
-        if (_changing || !isActiveAndEnabled || !IsVisible || _view == null || !_view.CanRequestExit) return false;
+        if (_changing || !isActiveAndEnabled || !IsVisible || _view == null || !_view.CanRequestExit
+            || _clock == null || (_clock.State != PopupStoreBusinessState.Running
+                && _clock.State != PopupStoreBusinessState.Paused)) return false;
         _changing = true;
         try
         {
@@ -101,11 +106,17 @@ public sealed class PopupStoreExitConfirmation : MonoBehaviour
             Log("CONTINUED");
             return true;
         }
-        finally { _changing = false; }
+        finally { _changing = false; UpdateButtons(); }
     }
 
-    /// <summary>Reserved action boundary. DEV-05D-3C must implement a terminal transaction before enabling this.</summary>
-    public bool TryConfirmAbandon() => false;
+    public bool TryConfirmAbandon()
+    {
+        if (!CanConfirmAbandon) return false;
+        _changing = true;
+        UpdateButtons();
+        try { return _view.TryAbandonAndClose(); }
+        finally { _changing = false; UpdateButtons(); }
+    }
 
     internal void DismissForForcedHide()
     {
@@ -124,6 +135,7 @@ public sealed class PopupStoreExitConfirmation : MonoBehaviour
         if (_overlay != null) _overlay.SetActive(false);
         // The caller hides the business first for forced cleanup. Never clears app/focus pause reasons.
         if (_clock != null) _clock.SetExitConfirmationPaused(false);
+        UpdateButtons();
     }
 
     private bool Validate()
@@ -147,12 +159,23 @@ public sealed class PopupStoreExitConfirmation : MonoBehaviour
         if (Application.isPlaying)
             Debug.Log("POPUP_STORE_EXIT_CONFIRMATION " + action + "; state=" + _clock.State
                 + "; remaining=" + _clock.RemainingSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)
-                + "; shown=" + ShowCount + "; continued=" + ContinueCount + "; abandonEnabled=false", this);
+                + "; shown=" + ShowCount + "; continued=" + ContinueCount + "; abandonEnabled=" + CanConfirmAbandon, this);
 #endif
     }
     private void OnContinueClicked() => TryContinue();
+    private void OnAbandonClicked() => TryConfirmAbandon();
+    private void UpdateButtons()
+    {
+        if (_abandonButton != null) _abandonButton.interactable = CanConfirmAbandon;
+        if (_continueButton != null) _continueButton.interactable = !_changing
+            && _clock != null && _clock.State != PopupStoreBusinessState.Abandoned;
+    }
     private void Unbind()
-    { if (_boundContinue != null) _boundContinue.onClick.RemoveListener(OnContinueClicked); _boundContinue = null; }
+    {
+        if (_boundContinue != null) _boundContinue.onClick.RemoveListener(OnContinueClicked);
+        if (_boundAbandon != null) _boundAbandon.onClick.RemoveListener(OnAbandonClicked);
+        _boundContinue = null; _boundAbandon = null;
+    }
     private void OnEnable() => Refresh();
     private void OnDisable() { DismissForForcedHide(); Unbind(); }
     private void OnDestroy() { DismissForForcedHide(); Unbind(); }

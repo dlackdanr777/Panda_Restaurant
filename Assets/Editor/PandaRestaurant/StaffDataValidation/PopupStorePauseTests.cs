@@ -485,7 +485,7 @@ public sealed class PopupStorePauseTests
 
     [TestCase(PopupStoreGradeTier.C)]
     [TestCase(PopupStoreGradeTier.S)]
-    public void PauseDoesNotChangeFinalGradeApprovedBoxReadOnlyRewardRevealOrExistingFloor3Return(PopupStoreGradeTier grade)
+    public void InternalPauseAndForcedHidePreserveUnconfirmedGradeBoxAndReadOnlyPreviewUntilReturn(PopupStoreGradeTier grade)
     {
         using (var host = new Host())
         {
@@ -496,7 +496,8 @@ public sealed class PopupStorePauseTests
             Assert.That(host.Button.IsInteractable(), Is.False); Assert.That(host.Pause.TryTogglePause(), Is.False);
             Assert.That(reveal.TryReveal(), Is.True); reveal.TickPreview(1); Assert.That(reveal.ShownDecision, Is.SameAs(decision));
             var box = host.Root.GetComponent<PopupStoreRewardBox>(); Assert.That(box.DisplayedSprite.name, Is.EqualTo("PopupRewardBox_" + grade + "_APPROVED"));
-            host.Confirm(); host.Reopen(); host.Result.TickResult(0); reveal.Refresh();
+            // A forced hide may resume the same unacknowledged result; an actual confirmation retires the session.
+            host.Close(); host.Reopen(); host.Result.TickResult(0); reveal.Refresh();
             Assert.That(reveal.IsPreviewVisible, Is.True); Assert.That(reveal.IsAnimating, Is.False); Assert.That(reveal.RevealCount, Is.EqualTo(1));
             Assert.That(host.Grade.FinalResult, Is.SameAs(final)); Assert.That(host.Grade.FinalizationCount, Is.EqualTo(1));
             Assert.That(reward.Result, Is.SameAs(decision)); Assert.That(reward.DecisionCount, Is.EqualTo(1));

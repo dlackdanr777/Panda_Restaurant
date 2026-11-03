@@ -13,6 +13,10 @@ public sealed class UIPopupStore : MobileUIView
     [Tooltip("Presentation-only controls. Packing and clearing controls are bound separately.")]
     [SerializeField] private Button[] _displayOnlyButtons;
 
+    private bool _closing;
+    internal UINavigation Navigation => _uiNav;
+    internal bool IsClosing => _closing;
+
     internal bool IsBoundTo(UINavigation navigation) => _uiNav == navigation;
 
     public override void Init()
@@ -34,6 +38,8 @@ public sealed class UIPopupStore : MobileUIView
 
     public override void Show()
     {
+        if (GetComponent<PopupStoreSessionLifetime>()?.IsRetired == true)
+            throw new InvalidOperationException("A retired popup session must be replaced before entry.");
         if (_closeButton == null)
             throw new InvalidOperationException("UIPopupStore requires its authored close button.");
         gameObject.SetActive(true);
@@ -77,13 +83,48 @@ public sealed class UIPopupStore : MobileUIView
 
     internal bool CloseWithoutConfirmation()
     {
-        if (!CanRequestExit || !PopEnabled) return false;
+        if (_closing || !CanRequestExit || !PopEnabled) return false;
         var clock = GetComponent<PopupStoreBusinessClock>();
         clock?.SynchronizeNow();
         if (clock != null && clock.State != PopupStoreBusinessState.NotStarted
             && clock.State != PopupStoreBusinessState.Ended) return false;
-        _uiNav.Pop(ViewName);
-        return VisibleState == VisibleState.Disappeared && !gameObject.activeSelf;
+        var lifetime = GetComponent<PopupStoreSessionLifetime>();
+        bool completed = clock != null && clock.State == PopupStoreBusinessState.Ended;
+        if (completed && (lifetime == null || !lifetime.MarkCompletedForClose())) return false;
+        _closing = true;
+        try
+        {
+            _uiNav.Pop(ViewName);
+            bool closed = VisibleState == VisibleState.Disappeared && !gameObject.activeSelf;
+            if (!closed && completed) lifetime.UndoCompletedClose();
+            return closed;
+        }
+        finally { _closing = false; }
+    }
+
+    internal bool TryAbandonAndClose()
+    {
+        var confirmation = GetComponent<PopupStoreExitConfirmation>();
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        var lifetime = GetComponent<PopupStoreSessionLifetime>();
+        if (_closing || !CanRequestExit || confirmation == null || !confirmation.IsVisible
+            || clock == null || lifetime == null || lifetime.IsRetired) return false;
+        _closing = true;
+        try
+        {
+            if (!clock.TryAbandonSession()) return false;
+            // Terminal first, then release only the modal's input lock. Focus cannot resume this session.
+            confirmation.DismissForForcedHide();
+            _uiNav.Pop(ViewName);
+#if UNITY_EDITOR
+            if (Application.isPlaying)
+                Debug.Log("POPUP_STORE_SESSION_ABANDONED session=" + lifetime.SessionId
+                    + "; reason=" + clock.EndReason + "; abandoned=" + clock.AbandonCount
+                    + "; remaining=" + clock.RemainingSeconds.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture), this);
+#endif
+            return VisibleState == VisibleState.Disappeared && !gameObject.activeSelf;
+        }
+        finally { _closing = false; }
     }
 
     private void Close() => TryClose();

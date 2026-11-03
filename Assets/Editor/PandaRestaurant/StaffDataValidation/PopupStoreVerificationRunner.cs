@@ -16,7 +16,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Explicit request-only bridge for the twenty-six synchronous, memory-only popup store fixtures.
+/// Explicit request-only bridge for the twenty-seven synchronous, memory-only popup store fixtures.
 /// Tests never launch Play. An explicit result-review request may use the existing original memory-Play starter.
 /// Never creates a scene, saves assets, restores a workspace or starts another Editor.
 /// </summary>
@@ -29,9 +29,11 @@ public static class PopupStoreVerificationRunner
     private const string ReviewModeKey = "Panda.PopupStore.ResultReviewMode";
     private const string PausePlayKey = "Panda.PopupStore.PausePlayReview";
     private const string PausePlayReportKey = "Panda.PopupStore.PausePlayReport";
+    private const string SessionReviewFirstKey = "Panda.PopupStore.SessionReviewFirst";
+    private const string SessionReviewAbandonedKey = "Panda.PopupStore.SessionReviewAbandoned";
     private static PausePlayReport _pausePlayReport;
     private static PausePlayContext _pausePlay;
-    private enum ReviewMode { Result, RewardC, RewardS }
+    private enum ReviewMode { Result, RewardC, RewardS, Session }
     private static readonly string[] Fixtures =
     {
         "PopupStoreNavigationTests", "PopupStoreMaterialTests", "PopupStoreSalesCounterTests",
@@ -40,7 +42,7 @@ public static class PopupStoreVerificationRunner
         "PopupStoreCustomerDepartureTests", "PopupStoreOrderSupplyTests", "PopupStoreBusinessClockTests", "PopupStoreCustomerPatienceTests", "PopupStoreComplaintTests",
         "PopupStoreScoreTests", "PopupStoreGradeTests", "PopupStoreResultTests", "PopupStoreRewardBoxTests", "PopupStoreRewardTableTests",
         "PopupStoreRewardDecisionTests", "PopupStoreRewardTransactionTests", "PopupStoreBusinessStartTests",
-        "PopupStoreRewardRevealPreviewTests", "PopupStorePauseTests", "PopupStoreExitConfirmationTests"
+        "PopupStoreRewardRevealPreviewTests", "PopupStorePauseTests", "PopupStoreExitConfirmationTests", "PopupStoreSessionLifetimeTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -69,7 +71,7 @@ public static class PopupStoreVerificationRunner
     [Serializable] private sealed class Report
     {
         public string startedUtc, finishedUtc, error;
-        public string scope = "Twenty-six popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
+        public string scope = "Twenty-seven popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
         public bool success, compiling, updating, scriptCompilationFailed, workspaceUnchanged;
         public int discovered, total, passed, failed, skipped, inconclusive;
         public Workspace before, after;
@@ -81,6 +83,7 @@ public static class PopupStoreVerificationRunner
     {
         EditorApplication.update += Tick;
         Application.logMessageReceived += CapturePausePlayLog;
+        Application.logMessageReceived += CaptureSessionReviewLog;
         EditorApplication.playModeStateChanged += state =>
         {
             if (state == PlayModeStateChange.EnteredEditMode) ClearReviewRequest();
@@ -122,7 +125,9 @@ public static class PopupStoreVerificationRunner
         else if (request == "start-result-review") StartResultReview();
         else if (request == "start-reward-review-c") StartResultReview(ReviewMode.RewardC);
         else if (request == "start-reward-review-s") StartResultReview(ReviewMode.RewardS);
+        else if (request == "start-session-review") StartResultReview(ReviewMode.Session);
         else if (request == "run-exit-play-review" || request == "run-pause-play-review") StartPausePlayReview();
+        else if (request == "run-session-play-review") StartPausePlayReview(true);
         else Run(request);
     }
 
@@ -159,11 +164,13 @@ public static class PopupStoreVerificationRunner
         if (!CustomerPartyStage1Preview.CanStart(out string reason))
         { Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED " + reason); return false; }
         SessionState.SetInt(ReviewModeKey, (int)mode);
+        SessionState.EraseString(SessionReviewFirstKey); SessionState.EraseBool(SessionReviewAbandonedKey);
         SessionState.SetBool(ResultReviewKey, true);
         Debug.Log("POPUP_STORE_RESULT_REVIEW_ARMED next original memory Play only; mode=" + mode
             + (mode == ReviewMode.Result ? "; business=30; delivery=30"
                 : mode == ReviewMode.RewardC ? "; business=30; delivery=authored"
-                : "; actual local orders will prepare S only after this popup opens; delivery=authored"));
+                : mode == ReviewMode.RewardS ? "; actual local orders will prepare S only after this popup opens; delivery=authored"
+                : "; authored 90 seconds; after user abandons and packs one fresh-session order, shorten that memory clock to 15 seconds once"));
         return true;
     }
 
@@ -171,6 +178,7 @@ public static class PopupStoreVerificationRunner
     {
         SessionState.EraseBool(ResultReviewKey);
         SessionState.EraseInt(ReviewModeKey);
+        SessionState.EraseString(SessionReviewFirstKey); SessionState.EraseBool(SessionReviewAbandonedKey);
     }
 
     [Serializable] private sealed class PausePlayReport
@@ -178,6 +186,10 @@ public static class PopupStoreVerificationRunner
         public string startedUtc, finishedUtc, error, receiptId, orderId, customerId;
         public int slotIndex, observedFrames, ownerId;
         public bool waitingFrozen, deliveryFrozen, inputsBlocked, deliveredAndReleased, releasedIdentity, stopping, success, workspaceUnchanged;
+        public bool sessionLifetime, abandonedWithoutResult, freshAfterAbandon, completedDeliveryReleased, completedFresh;
+        public string abandonedSessionId, firstFreshSessionId, completedSessionId, nextFreshSessionId;
+        public string completedReceiptId, completedOrderId, completedCustomerId;
+        public int completedSlotIndex, abandonedScore, abandonedReceiptCount, completedScore, completedOrders, completedFinalizations;
         public Workspace before, after;
     }
     private sealed class PausePlayContext
@@ -191,14 +203,14 @@ public static class PopupStoreVerificationRunner
         internal UIPopupStore popup;
         internal PopupStorePackingReceipt receipt;
     }
-    private static void StartPausePlayReview()
+    private static void StartPausePlayReview(bool sessionLifetime = false)
     {
         if (!CustomerPartyStage1Preview.CanStart(out string reason) || EditorUtility.scriptCompilationFailed
             || SessionState.GetBool(ResultReviewKey, false)
             || PrefabStageUtility.GetCurrentPrefabStage() != null
             || Enumerable.Range(0, SceneManager.sceneCount).Any(i => SceneManager.GetSceneAt(i).isDirty))
         { Debug.LogWarning("POPUP_STORE_PAUSE_PLAY_REFUSED " + reason); return; }
-        _pausePlayReport = new PausePlayReport { startedUtc = DateTime.UtcNow.ToString("O"), before = ReadWorkspace() };
+        _pausePlayReport = new PausePlayReport { startedUtc = DateTime.UtcNow.ToString("O"), before = ReadWorkspace(), sessionLifetime = sessionLifetime };
         SessionState.SetString(PausePlayReportKey, JsonUtility.ToJson(_pausePlayReport));
         SessionState.SetBool(PausePlayKey, true);
         var flags = BindingFlags.Static | BindingFlags.NonPublic;
@@ -227,8 +239,13 @@ public static class PopupStoreVerificationRunner
             && message.StartsWith("POPUP_STORE_CUSTOMER_RELEASED receipt=" + _pausePlayReport.receiptId + "; slot=" + _pausePlayReport.slotIndex
                 + "; customer=" + _pausePlayReport.customerId + "; order=" + _pausePlayReport.orderId + "; reason=Packed", StringComparison.Ordinal))
             _pausePlayReport.releasedIdentity = true;
+        if (!string.IsNullOrEmpty(_pausePlayReport.completedReceiptId)
+            && message.StartsWith("POPUP_STORE_CUSTOMER_RELEASED receipt=" + _pausePlayReport.completedReceiptId + "; slot=" + _pausePlayReport.completedSlotIndex
+                + "; customer=" + _pausePlayReport.completedCustomerId + "; order=" + _pausePlayReport.completedOrderId + "; reason=Packed", StringComparison.Ordinal))
+            _pausePlayReport.completedDeliveryReleased = true;
     }
-    // Explicit, bounded original Stage1 PlayerLoop probe. No authored setting, clock delta, focus state or account is assigned.
+    // Explicit, bounded original Stage1 PlayerLoop probe. No authored setting, focus state or account is assigned.
+    // The session-lifetime mode alone shortens its owned memory clock after normal delivery to inspect completed re-entry.
     private static void TickPausePlayReview()
     {
         if (!SessionState.GetBool(PausePlayKey, false)) return;
@@ -249,10 +266,12 @@ public static class PopupStoreVerificationRunner
             _pausePlayReport.workspaceUnchanged = Same(_pausePlayReport.before, _pausePlayReport.after);
             _pausePlayReport.success = string.IsNullOrEmpty(_pausePlayReport.error) && _pausePlayReport.waitingFrozen
                 && _pausePlayReport.deliveryFrozen && _pausePlayReport.inputsBlocked && _pausePlayReport.deliveredAndReleased
+                && (!_pausePlayReport.sessionLifetime || (_pausePlayReport.abandonedWithoutResult && _pausePlayReport.freshAfterAbandon
+                    && _pausePlayReport.completedDeliveryReleased && _pausePlayReport.completedFresh))
                 && _pausePlayReport.workspaceUnchanged && !BackEnd.Backend.IsInitialized && !BackEnd.Backend.IsLogin;
             _pausePlayReport.finishedUtc = DateTime.UtcNow.ToString("O");
             Directory.CreateDirectory(DirectoryPath);
-            File.WriteAllText(DirectoryPath + "/pause-play-result.json", JsonUtility.ToJson(_pausePlayReport, true));
+            File.WriteAllText(DirectoryPath + (_pausePlayReport.sessionLifetime ? "/session-play-result.json" : "/pause-play-result.json"), JsonUtility.ToJson(_pausePlayReport, true));
             SessionState.EraseBool(PausePlayKey); SessionState.EraseString(PausePlayReportKey); _pausePlay = null;
             Debug.Log("POPUP_STORE_PAUSE_PLAY_FINISHED success=" + _pausePlayReport.success + "; error=" + _pausePlayReport.error);
             return;
@@ -290,6 +309,13 @@ public static class PopupStoreVerificationRunner
                 if (c.nav.FirstView is UIFloor3 && c.nav.ViewsVisibleStateCheck())
                 { c.nav.Pop("UIFloor3"); FinishPausePlayReview(null); }
                 return;
+            }
+            if (c.step == 10 || c.step == 15)
+            {
+                var floor = c.nav.FirstView as UIFloor3;
+                if (floor == null || floor.VisibleState != VisibleState.Appeared || !c.nav.ViewsVisibleStateCheck()) return;
+                ((UnityEngine.UI.Button)PauseField(floor, "_popupStoreButton")).onClick.Invoke();
+                c.popup = null; c.step++; return;
             }
             if (c.popup == null) c.popup = c.nav.FirstView as UIPopupStore;
             if (c.popup == null || c.popup.VisibleState != VisibleState.Appeared) return;
@@ -341,8 +367,79 @@ public static class PopupStoreVerificationRunner
                     && packing.SuccessfulPackCount == 1 && clock.ComplaintPenaltyCount == 0
                     && c.popup.GetComponent<PopupStoreScore>().TotalScore == 100, "Delivery/departure duplicated or normal sale received a penalty.");
                 _pausePlayReport.deliveredAndReleased = true;
+                if (_pausePlayReport.sessionLifetime)
+                {
+                    var grade = c.popup.GetComponent<PopupStoreGradeSession>();
+                    var reward = c.popup.GetComponent<PopupStoreRewardSession>();
+                    _pausePlayReport.abandonedSessionId = grade.SessionId;
+                    RequireRewardReview(c.popup.TryRequestExit() && exit.IsVisible && exit.TryConfirmAbandon(), "Local abandonment was rejected.");
+                    RequireRewardReview(clock.State == PopupStoreBusinessState.Abandoned && clock.EndReason == PopupStoreBusinessEndReason.DirectExit
+                        && clock.AbandonCount == 1 && clock.RemainingSeconds > 0 && grade.FinalResult == null && grade.FinalizationCount == 0
+                        && reward.Result == null && reward.RandomDrawCount == 0 && packing.CommittedReceipts.Count == 1
+                        && c.popup.GetComponent<PopupStoreScore>().TotalScore == 100, "Abandonment finalized a result, lost history or changed score.");
+                    _pausePlayReport.abandonedWithoutResult = true;
+                    _pausePlayReport.abandonedScore = c.popup.GetComponent<PopupStoreScore>().TotalScore;
+                    _pausePlayReport.abandonedReceiptCount = packing.CommittedReceipts.Count;
+                    c.step = 10; return;
+                }
                 // Explicit probe cleanup, not a user abandonment action. No business result is fabricated.
                 c.nav.PopNoAnime(UIPopupStore.ViewName); c.step++; return;
+            }
+            if (c.step == 11 || c.step == 16)
+            {
+                if (clock.State != PopupStoreBusinessState.Running) return;
+                var grade = c.popup.GetComponent<PopupStoreGradeSession>();
+                string previous = c.step == 11 ? _pausePlayReport.abandonedSessionId : _pausePlayReport.completedSessionId;
+                RequireRewardReview(grade.SessionId != previous && !string.IsNullOrEmpty(grade.SessionId)
+                    && grade.FinalResult == null && grade.FinalizationCount == 0 && clock.RemainingSeconds > 85 && clock.RemainingSeconds <= 90
+                    && clock.AbandonCount == 0 && counter.Count == 0 && packing.SuccessfulPackCount == 0 && packing.CommittedReceipts.Count == 0
+                    && c.popup.GetComponent<PopupStoreScore>().TotalScore == 0 && c.popup.GetComponent<PopupStoreRewardSession>().Result == null
+                    && c.popup.GetComponent<PopupStoreRewardSession>().RandomDrawCount == 0, "A terminal business leaked state into the next map entry.");
+                if (c.step == 11)
+                { _pausePlayReport.firstFreshSessionId = grade.SessionId; _pausePlayReport.freshAfterAbandon = true; c.step = 12; }
+                else
+                {
+                    _pausePlayReport.nextFreshSessionId = grade.SessionId; _pausePlayReport.completedFresh = true;
+                    c.nav.PopNoAnime(UIPopupStore.ViewName); c.step = 9;
+                }
+                return;
+            }
+            if (c.step == 12)
+            {
+                if (!entrance.IsWaiting(0) || clock.State != PopupStoreBusinessState.Running) return;
+                var orders = c.popup.GetComponent<PopupStoreOrderDisplay>();
+                RequireRewardReview(orders.TryGetEntryBinding(0, out var order, out _), "Fresh waiting order missing.");
+                RequireRewardReview(order.TryResolve((PopupStoreMaterialCatalog)PauseField(orders, "_catalog"), out var materials, out var error), error);
+                foreach (var item in materials) RequireRewardReview(counter.TryAdd(item), "Fresh material rejected.");
+                var sale = packing.TryPack(); RequireRewardReview(sale.Success, "Fresh business could not pack its first order.");
+                c.receipt = sale.Receipt;
+                _pausePlayReport.completedReceiptId = c.receipt.ReceiptId; _pausePlayReport.completedOrderId = c.receipt.OrderId;
+                _pausePlayReport.completedCustomerId = c.receipt.CustomerId; _pausePlayReport.completedSlotIndex = c.receipt.SlotIndex;
+                c.step = 13; return;
+            }
+            if (c.step == 13)
+            {
+                if (!ReferenceEquals(visual.LastDeliveredReceipt, c.receipt) || !_pausePlayReport.completedDeliveryReleased) return;
+                RequireRewardReview(visual.CurrentPhase == PopupStorePackingPresentation.Phase.Idle && visual.VisualOutcomes.Count == 1
+                    && visual.VisualOutcomes[0].Kind == PopupStoreVisualOutcomeKind.VisualCompleted && packing.SuccessfulPackCount == 1
+                    && c.popup.GetComponent<PopupStoreScore>().TotalScore == 100 && clock.ComplaintPenaltyCount == 0,
+                    "Fresh business normal delivery did not finish exactly once.");
+                // Editor memory owner was checked above. Complete only this clock, after its real PlayerLoop delivery.
+                RequireRewardReview(clock.AdvanceTime(clock.RemainingSeconds), "Owned memory deadline could not be shortened.");
+                c.step = 14; return;
+            }
+            if (c.step == 14)
+            {
+                var result = c.popup.GetComponent<PopupStoreResultPanel>();
+                if (!result.IsVisible || result.IsAppearing) return;
+                var grade = c.popup.GetComponent<PopupStoreGradeSession>(); var final = grade.FinalResult;
+                RequireRewardReview(final != null && final.Score == 100 && final.SuccessfulOrders == 1
+                    && final.Grade == PopupStoreGradeTier.C && grade.FinalizationCount == 1 && clock.EndReason == PopupStoreBusinessEndReason.Completed,
+                    "Normal memory business result changed before acknowledgement.");
+                _pausePlayReport.completedSessionId = final.SessionId; _pausePlayReport.completedScore = final.Score;
+                _pausePlayReport.completedOrders = final.SuccessfulOrders; _pausePlayReport.completedFinalizations = grade.FinalizationCount;
+                RequireRewardReview(result.TryConfirm(), "Completed result acknowledgement did not return to the map.");
+                c.step = 15; return;
             }
         }
         catch (Exception error) { FinishPausePlayReview(Unwrap(error).Message); }
@@ -381,7 +478,7 @@ public static class PopupStoreVerificationRunner
         {
             _pausePlayReport.error = (_pausePlayReport.error ?? "") + " Original memory owner is no longer provable; no other Play session was stopped.";
             Directory.CreateDirectory(DirectoryPath);
-            File.WriteAllText(DirectoryPath + "/pause-play-result.json", JsonUtility.ToJson(_pausePlayReport, true));
+            File.WriteAllText(DirectoryPath + (_pausePlayReport.sessionLifetime ? "/session-play-result.json" : "/pause-play-result.json"), JsonUtility.ToJson(_pausePlayReport, true));
             SessionState.EraseBool(PausePlayKey); SessionState.EraseString(PausePlayReportKey);
         }
     }
@@ -411,11 +508,12 @@ public static class PopupStoreVerificationRunner
         // never a live singleton (nor merely any object with an offline-looking name).
         if (!HasOriginalMemoryOwner())
         { ClearReviewRequest(); Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED unowned memory backend"); return; }
+        var mode = (ReviewMode)SessionState.GetInt(ReviewModeKey, (int)ReviewMode.Result);
+        if (mode == ReviewMode.Session) { ApplySessionReviewOnce(); return; }
         var views = Resources.FindObjectsOfTypeAll<UIPopupStore>()
             .Where(view => !EditorUtility.IsPersistent(view) && view.gameObject.scene.IsValid()).ToArray();
         if (views.Length == 0) return; // Stage1 is still loading; do not create anything.
         if (views.Length != 1) { ClearReviewRequest(); Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED ambiguous popup"); return; }
-        var mode = (ReviewMode)SessionState.GetInt(ReviewModeKey, (int)ReviewMode.Result);
         var popup = views[0];
         if (mode == ReviewMode.RewardS)
         {
@@ -454,6 +552,49 @@ public static class PopupStoreVerificationRunner
         Debug.Log("POPUP_STORE_RESULT_REVIEW_APPLIED popup=" + popup.GetInstanceID()
             + "; mode=" + mode + "; business=30; delivery=" + (mode == ReviewMode.Result ? "30" : "authored")
             + "; originalBusiness=" + previousDuration + "; originalDelivery=" + previousMove, popup);
+    }
+
+    private static void CaptureSessionReviewLog(string message, string stack, LogType type)
+    {
+        if (!SessionState.GetBool(ResultReviewKey, false)
+            || (ReviewMode)SessionState.GetInt(ReviewModeKey, -1) != ReviewMode.Session || !HasOriginalMemoryOwner()) return;
+        string first = SessionState.GetString(SessionReviewFirstKey, "");
+        if (!string.IsNullOrEmpty(first)
+            && message.StartsWith("POPUP_STORE_SESSION_ABANDONED session=" + first + ";", StringComparison.Ordinal))
+            SessionState.SetBool(SessionReviewAbandonedKey, true);
+    }
+
+    private static void ApplySessionReviewOnce()
+    {
+        // Passive user A/B preparation. Never selects materials, packs, abandons, starts a session,
+        // changes serialized settings, or operates a live account. Only one real second-session sale enables shortening.
+        var views = Resources.FindObjectsOfTypeAll<UIPopupStore>()
+            .Where(view => !EditorUtility.IsPersistent(view) && view.gameObject.scene.IsValid()
+                && view.gameObject.activeInHierarchy && view.VisibleState == VisibleState.Appeared).ToArray();
+        if (views.Length != 1) return;
+        var popup = views[0]; var grade = popup.GetComponent<PopupStoreGradeSession>();
+        if (grade == null || string.IsNullOrEmpty(grade.SessionId)) return;
+        string first = SessionState.GetString(SessionReviewFirstKey, "");
+        if (string.IsNullOrEmpty(first))
+        {
+            SessionState.SetString(SessionReviewFirstKey, grade.SessionId);
+            Debug.Log("POPUP_STORE_SESSION_REVIEW_OBSERVING first=" + grade.SessionId + "; authored duration unchanged", popup);
+            return;
+        }
+        if (grade.SessionId == first || !SessionState.GetBool(SessionReviewAbandonedKey, false)) return;
+        var clock = popup.GetComponent<PopupStoreBusinessClock>(); var packing = popup.GetComponent<PopupStorePacking>();
+        var score = popup.GetComponent<PopupStoreScore>();
+        if (clock == null || packing == null || score == null || clock.State != PopupStoreBusinessState.Running
+            || packing.CommittedReceipts.Count != 1 || packing.SuccessfulPackCount != 1 || score.SuccessfulOrderCount != 1
+            || grade.IsFinalized || score.TotalScore != 100) return;
+        string next = grade.SessionId;
+        ClearReviewRequest(); // Exactly one preparation, including a refused attempt. Later businesses remain authored 90 seconds.
+        double before = clock.RemainingSeconds;
+        if (!HasOriginalMemoryOwner() || !clock.AdvanceTime(Math.Max(0d, before - 15d)))
+        { Debug.LogWarning("POPUP_STORE_SESSION_REVIEW_REFUSED second-session clock shortening", popup); return; }
+        Debug.Log("POPUP_STORE_SESSION_REVIEW_SHORTENED first=" + first + "; next=" + next
+            + "; receipt=" + packing.CommittedReceipts[0].ReceiptId + "; before=" + before
+            + "; remaining=" + clock.RemainingSeconds + "; serialized settings unchanged", popup);
     }
 
     private static void PrepareRewardS(UIPopupStore popup)

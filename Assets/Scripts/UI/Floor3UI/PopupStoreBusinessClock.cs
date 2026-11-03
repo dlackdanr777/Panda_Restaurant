@@ -4,7 +4,7 @@ using System.Globalization;
 using TMPro;
 using UnityEngine;
 
-public enum PopupStoreBusinessState { NotStarted, Running, Paused, Ended }
+public enum PopupStoreBusinessState { NotStarted, Running, Paused, Ended, Abandoned }
 
 /// <summary>A popup-instance review clock. No daily limits, rewards, account storage or global time-scale changes.</summary>
 [DisallowMultipleComponent]
@@ -47,6 +47,10 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     public double ComplaintPenaltySeconds { get; private set; }
     public bool CanAdvanceVisuals => IsContextAvailable();
     public int EndedCount { get; private set; }
+    public int AbandonCount { get; private set; }
+    public PopupStoreBusinessEndReason? EndReason => _state == PopupStoreBusinessState.Ended
+        ? PopupStoreBusinessEndReason.Completed : _state == PopupStoreBusinessState.Abandoned
+        ? PopupStoreBusinessEndReason.DirectExit : (PopupStoreBusinessEndReason?)null;
     public event Action StateChanged;
     // Presentation/input context can change while the business state stays Paused or Ended.
     public event Action ContextChanged;
@@ -115,6 +119,24 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         return true;
     }
 
+    /// <summary>Irreversible local direct exit. Keeps committed history and remaining time; never publishes Ended.</summary>
+    internal bool TryAbandonSession()
+    {
+        if (_starting) return false;
+        SynchronizeNow();
+        if (!_sourceHealthy || (_state != PopupStoreBusinessState.Running
+            && _state != PopupStoreBusinessState.Paused)) return false;
+        // Commit before observers can attempt packing, resume, or another exit.
+        _state = PopupStoreBusinessState.Abandoned;
+        _hasTimeSample = false;
+        AbandonCount++;
+        UpdateHud();
+        LogState();
+        Publish(StateChanged);
+        Publish(ContextChanged);
+        return true;
+    }
+
     /// <summary>Samples once before transaction gates as well as Update; repeated reads cannot consume a delta twice.</summary>
     public void SynchronizeNow()
     {
@@ -174,15 +196,15 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     private void SetCondition(ref bool condition, bool value, bool activeSessionOnly = false)
     {
         if (condition == value) { UpdateHud(); return; }
-        if (activeSessionOnly && (_state == PopupStoreBusinessState.NotStarted || _state == PopupStoreBusinessState.Ended)) return;
+        if (activeSessionOnly && (_state == PopupStoreBusinessState.NotStarted || IsTerminal)) return;
         SynchronizeNow();
         // The last foreground sample may finalize business. Never strand committed delivery behind a terminal manual pause.
-        if (activeSessionOnly && (_state == PopupStoreBusinessState.NotStarted || _state == PopupStoreBusinessState.Ended)) return;
+        if (activeSessionOnly && (_state == PopupStoreBusinessState.NotStarted || IsTerminal)) return;
         bool wasAvailable = IsContextAvailable();
         condition = value;
         bool available = IsContextAvailable();
         if (!wasAvailable && available) unchecked { VisualResumeVersion++; }
-        if (_state == PopupStoreBusinessState.NotStarted || _state == PopupStoreBusinessState.Ended)
+        if (_state == PopupStoreBusinessState.NotStarted || IsTerminal)
         { _hasTimeSample = false; UpdateHud(); Publish(ContextChanged); return; }
         var next = available ? PopupStoreBusinessState.Running : PopupStoreBusinessState.Paused;
         // Observers also need context changes while another pause reason still holds the same enum state.
@@ -305,8 +327,10 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         return accepted.Count;
     }
 
+    private bool IsTerminal => _state == PopupStoreBusinessState.Ended || _state == PopupStoreBusinessState.Abandoned;
+
     private bool IsContextAvailable()
-        => isActiveAndEnabled && _viewVisible && !_applicationPaused && _applicationFocused
+        => _state != PopupStoreBusinessState.Abandoned && isActiveAndEnabled && _viewVisible && !_applicationPaused && _applicationFocused
             && !_manualPaused && !_exitConfirmationPaused;
 
     private bool CanUseRunningClock()
