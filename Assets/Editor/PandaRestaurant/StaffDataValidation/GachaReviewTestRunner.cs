@@ -27,7 +27,7 @@ using Object = UnityEngine.Object;
 [InitializeOnLoad]
 public static class GachaReviewTestRunner
 {
-    private static string OutputDirectory => _customerUse ? CustomerUseOutputDirectory : _fairyBirthInput ? FairyBirthInputOutputDirectory : _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
+    private static string OutputDirectory => _group.StartsWith("ui-sprite", StringComparison.Ordinal) ? "Logs/UiSpriteOptimization" : _customerUse ? CustomerUseOutputDirectory : _fairyBirthInput ? FairyBirthInputOutputDirectory : _exchangeInspector ? ExchangeInspectorOutputDirectory : _phase5 ? "Logs/Phase5Sound_20261002" : _fireworks ? "Logs/Phase4Fireworks_20261002" : _phase4 ? "Logs/Phase4_20261002" : _textStamp ? "Logs/GachaUiTextStamp20261002" : _exchangeFinal ? "Logs/GachaExchangeFinal20261002" : _polish ? "Logs/GachaUiPolish20261002" : _phase3 ? "Logs/GachaUiPhase3" : _phase2 ? "Logs/FairyStage1Phase2" : _batch || _group == "phase1" ? "Logs/FairyStage1Phase1" : "Logs/GachaReview20260917-2213";
     private static bool _customerUse;
     private static bool _manualPartyChecks;
     private static bool _staffAiChecks;
@@ -249,7 +249,10 @@ public static class GachaReviewTestRunner
                 _customerUse = true;
                 Begin(command);
             }
-            else if (command == "ui-refresh" || command == "ui-deferred-refresh")
+            else if (command == "ui-sprite-audit") UiSpriteOptimizationAudit.Capture();
+            else if (command == "ui-sprite-consolidate") UiSpriteOptimizationAudit.ConsolidateVerifiedWallpapers();
+            else if (command == "ui-refresh" || command == "ui-deferred-refresh"
+                || command == "ui-sprite-baseline" || command == "ui-sprite")
             {
                 _customerUse = true;
                 Begin(command);
@@ -345,6 +348,8 @@ public static class GachaReviewTestRunner
             "CustomerPartyServingTests", "CustomerTableUseRegressionTests", "CustomerVisitPartyTests",
             "ManagerFloorGuideTests", "FirstTutorialCustomerFloorTests", "StaffAiLifecycleTests" };
         if (_group == "ui-refresh") fixtures = new[] { "UIRefreshRegressionTests", "StaffStageMigrationCollectionTests", "StaffAiShutdownTests" };
+        if (_group == "ui-sprite-baseline") fixtures = new[] { "UIRefreshRegressionTests", "QuestShortcutRoutingTests", "DiamondConsumerRegressionTests" };
+        if (_group == "ui-sprite") fixtures = new[] { "FurnitureKitchenRefreshTests", "UIRefreshRegressionTests", "QuestShortcutRoutingTests", "DiamondConsumerRegressionTests" };
         if (_group == "ui-deferred-refresh") fixtures = new[] { "UIDeferredRefreshRegressionTests", "StaffStageMigrationCollectionTests" };
         foreach (string name in fixtures)
         {

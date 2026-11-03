@@ -53,10 +53,10 @@ public class UIFurniture : MobileUIView
 
     private FurnitureType _currentType;
     private ERestaurantFloorType _currentFloorType;
-    private List<UIRestaurantAdminFoodTypeSlot>[] _slots = new List<UIRestaurantAdminFoodTypeSlot>[(int)FurnitureType.Length];
+    private List<UIRestaurantAdminFoodTypeSlot> _slots;
     private List<FurnitureData> _currentTypeDataList;
 
-    private SlotState[][] _slotStates = new SlotState[(int)FurnitureType.Length][];
+    private SlotState[] _slotStates;
     private bool _entryPrepared;
     private DirtyFlags _dirtyFlags;
 
@@ -67,7 +67,9 @@ public class UIFurniture : MobileUIView
         Money = 1,
         Dia = 2,
         Score = 4,
-        Ownership = 8
+        Ownership = 8,
+        Unlock = 16,
+        Placement = 32
     }
 
     private bool _isInitialized = false;
@@ -108,31 +110,26 @@ public class UIFurniture : MobileUIView
 
     private void InitializeSlots()
     {
-        // 층별로 가구 수가 다를 수 있으므로, 각 타입마다 충분한 슬롯 풀을 생성
-        for (int i = 0; i < (int)FurnitureType.Length; i++)
+        int maxSlotCount = 0;
+        for (int type = 0; type < (int)FurnitureType.Length; type++)
         {
-            // 모든 층의 가구를 합쳐서 최대 슬롯 수 계산
-            int maxSlotCount = 0;
             for (int floor = 0; floor < (int)ERestaurantFloorType.Length; floor++)
             {
-                List<FurnitureData> floorDataList = FurnitureDataManager.Instance.GetFurnitureDataList((FurnitureType)i, (ERestaurantFloorType)floor);
-                if (floorDataList.Count > maxSlotCount)
-                    maxSlotCount = floorDataList.Count;
+                int count = FurnitureDataManager.Instance.GetFurnitureDataList((FurnitureType)type, (ERestaurantFloorType)floor).Count;
+                maxSlotCount = Mathf.Max(maxSlotCount, count);
             }
+        }
 
-            _slots[i] = new List<UIRestaurantAdminFoodTypeSlot>(maxSlotCount);
-            _slotStates[i] = new SlotState[maxSlotCount];
-
-            // 최대 개수만큼 슬롯 생성
-            for (int j = 0; j < maxSlotCount; j++)
-            {
-                int typeIndex = i;
-                int slotIndex = j;
-                UIRestaurantAdminFoodTypeSlot slot = Instantiate(_slotPrefab, _slotParnet);
-                slot.Init(() => OnSlotClicked(typeIndex, slotIndex));
-                _slots[i].Add(slot);
-                slot.gameObject.SetActive(false);
-            }
+        // All categories use the same prefab. Prewarm the largest list before any tab opens.
+        _slots = new List<UIRestaurantAdminFoodTypeSlot>(maxSlotCount);
+        _slotStates = new SlotState[maxSlotCount];
+        for (int i = 0; i < maxSlotCount; i++)
+        {
+            int slotIndex = i;
+            UIRestaurantAdminFoodTypeSlot slot = Instantiate(_slotPrefab, _slotParnet);
+            slot.Init(() => OnSlotClicked(slotIndex));
+            _slots.Add(slot);
+            slot.gameObject.SetActive(false);
         }
     }
 
@@ -140,6 +137,10 @@ public class UIFurniture : MobileUIView
     {
         UserInfo.OnChangeFurnitureHandler += OnChangeFurnitureEvent;
         UserInfo.OnGiveFurnitureHandler += OnGiveEvent;
+        UserInfo.OnGiveKitchenUtensilHandler += OnUnlockEvent;
+        UserInfo.OnGiveRecipeHandler += OnUnlockEvent;
+        UserInfo.OnGiveGachaItemHandler += OnUnlockEvent;
+        UserInfo.OnChangeFloorHandler += OnUnlockEvent;
         UserInfo.OnChangeMoneyHandler += OnChangeMoneyEvent;
         UserInfo.OnChangeDiaHandler += OnChangeDiaEvent;
         UserInfo.OnChangeScoreHandler += UpdateUIOptimized;
@@ -223,12 +224,6 @@ public class UIFurniture : MobileUIView
     // 최적화된 데이터 설정 메서드
     private void SetFurnitureDataOptimized(FurnitureType type)
     {
-        if (_currentType != type && _slots[(int)_currentType] != null)
-        {
-            var currentSlots = _slots[(int)_currentType];
-            for (int i = 0; i < currentSlots.Count; i++)
-                currentSlots[i].gameObject.SetActive(false);
-        }
 
         _currentType = type;
         _currentTypeDataList = FurnitureDataManager.Instance.GetSortFurnitureDataList(type, _currentFloorType);
@@ -275,6 +270,24 @@ public class UIFurniture : MobileUIView
     private const int StateNoGold = 6;
     private const int StateNoDia = 7;
 
+    private static bool ShouldRefreshSlot(FurnitureData data, SlotState previous, DirtyFlags flags)
+    {
+        if (!ReferenceEquals(data, previous.Data) || (flags & DirtyFlags.Ownership) != 0)
+            return true;
+
+        bool owned = previous.State == StateUse || previous.State == StateOperate;
+        if (owned)
+            return (flags & DirtyFlags.Placement) != 0;
+        if ((flags & DirtyFlags.Unlock) != 0)
+            return true;
+        if ((flags & DirtyFlags.Score) != 0 && previous.State != StateLock)
+            return true;
+
+        bool priced = previous.State == StateBuyable || previous.State == StateNoGold || previous.State == StateNoDia;
+        return priced && ((data.MoneyType == MoneyType.Gold && (flags & DirtyFlags.Money) != 0)
+            || (data.MoneyType == MoneyType.Dia && (flags & DirtyFlags.Dia) != 0));
+    }
+
     private SlotState ComputeSlotState(FurnitureData data)
     {
         EStage stage = UserInfo.CurrentStage;
@@ -302,39 +315,44 @@ public class UIFurniture : MobileUIView
     }
 
     // Layout, food type and per-slot state are applied only when they differ from what the slot already shows.
-    private void RefreshSlots()
+    private void RefreshSlots(DirtyFlags flags = DirtyFlags.None)
     {
         if (_currentTypeDataList == null)
             return;
 
-        int slotsIndex = (int)_currentType;
-        var currentSlots = _slots[slotsIndex];
-        var states = _slotStates[slotsIndex];
+        var currentSlots = _slots;
+        var states = _slotStates;
         int dataCount = Mathf.Min(_currentTypeDataList.Count, currentSlots.Count);
 
         for (int i = 0; i < dataCount; i++)
         {
             var data = _currentTypeDataList[i];
             var slot = currentSlots[i];
+            bool bindLayout = flags == DirtyFlags.None;
+            if (!bindLayout && !ShouldRefreshSlot(data, states[i], flags))
+                continue;
 
-            if (slot.transform.GetSiblingIndex() != i)
-                slot.transform.SetSiblingIndex(i);
-            if (!slot.gameObject.activeSelf)
-                slot.gameObject.SetActive(true);
-            slot.SetFoodType(data.FoodType);
+            if (bindLayout)
+            {
+                if (slot.transform.GetSiblingIndex() != i)
+                    slot.transform.SetSiblingIndex(i);
+                if (!slot.gameObject.activeSelf)
+                    slot.gameObject.SetActive(true);
+                slot.SetFoodType(data.FoodType);
+            }
 
             SlotState state = ComputeSlotState(data);
             if (states[i].Equals(state))
                 continue;
 
             states[i] = state;
-            if (UserInfo.IsGiveFurniture(UserInfo.CurrentStage, data))
-                ProcessEquippedSlot(data, slot);
+            if (state.State == StateUse || state.State == StateOperate)
+                ProcessEquippedSlot(data, slot, state);
             else
-                ProcessUnequippedSlot(data, slot);
+                ProcessUnequippedSlot(data, slot, state);
         }
 
-        for (int i = dataCount; i < currentSlots.Count; i++)
+        for (int i = dataCount; flags == DirtyFlags.None && i < currentSlots.Count; i++)
         {
             if (currentSlots[i].gameObject.activeSelf)
                 currentSlots[i].gameObject.SetActive(false);
@@ -342,9 +360,9 @@ public class UIFurniture : MobileUIView
     }
 
     // 간소화된 ProcessEquippedSlot
-    private void ProcessEquippedSlot(FurnitureData data, UIRestaurantAdminFoodTypeSlot slot)
+    private void ProcessEquippedSlot(FurnitureData data, UIRestaurantAdminFoodTypeSlot slot, SlotState state)
     {
-        ERestaurantFloorType floorType = UserInfo.GetEquipFurnitureFloorType(UserInfo.CurrentStage, data);
+        ERestaurantFloorType floorType = state.State == StateUse ? (ERestaurantFloorType)state.A : ERestaurantFloorType.Error;
 
         string statusText = floorType switch
         {
@@ -362,15 +380,15 @@ public class UIFurniture : MobileUIView
         }
     }
 
-    private void ProcessUnequippedSlot(FurnitureData data, UIRestaurantAdminFoodTypeSlot slot)
+    private void ProcessUnequippedSlot(FurnitureData data, UIRestaurantAdminFoodTypeSlot slot, SlotState state)
     {
-        if (!UnlockConditionManager.GetConditionEnabled(data.UnlockData))
+        if (state.State == StateLock)
         {
             slot.SetLock(data.ThumbnailSprite, data.Name);
             return;
         }
 
-        if (!UserInfo.IsScoreValid(data))
+        if (state.State == StateLowScore)
         {
             slot.SetLowReputation(data.ThumbnailSprite, data.Name, data.BuyScore.ToString());
             return;
@@ -380,14 +398,14 @@ public class UIFurniture : MobileUIView
 
         if (data.MoneyType == MoneyType.Gold)
         {
-            if (UserInfo.IsMoneyValid(data))
+            if (state.State == StateBuyable)
                 slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, priceText, data.MoneyType);
             else
                 slot.SetNotEnoughMoneyPrice(data.ThumbnailSprite, data.Name, priceText);
         }
         else if (data.MoneyType == MoneyType.Dia)
         {
-            if (UserInfo.IsDiaValid(data))
+            if (state.State == StateBuyable)
                 slot.SetEnoughPrice(data.ThumbnailSprite, data.Name, priceText, data.MoneyType);
             else
                 slot.SetNotEnoughDiaPrice(data.ThumbnailSprite, data.Name, priceText);
@@ -421,7 +439,7 @@ public class UIFurniture : MobileUIView
         }
 
         // 전체 재설정 대신 업데이트만
-        MarkDirty(DirtyFlags.Ownership);
+        MarkDirty(DirtyFlags.Placement);
         FlushDirty();
     }
 
@@ -491,6 +509,8 @@ public class UIFurniture : MobileUIView
 
     private void OnGiveEvent() => MarkDirty(DirtyFlags.Ownership);
 
+    private void OnUnlockEvent() => MarkDirty(DirtyFlags.Unlock);
+
     private void OnChangeMoneyEvent() => MarkDirty(DirtyFlags.Money);
 
     private void OnChangeDiaEvent() => MarkDirty(DirtyFlags.Dia);
@@ -500,20 +520,19 @@ public class UIFurniture : MobileUIView
 
     private void OnChangeFurnitureEvent(ERestaurantFloorType floorType, FurnitureType type)
     {
-        // Other floors' placement changes alter this list's "in use" labels, so no floor filtering.
-        MarkDirty(DirtyFlags.Ownership);
+        // Placement on any floor can change this category's in-use labels.
+        if (type == _currentType)
+            MarkDirty(DirtyFlags.Placement);
     }
-
     private void OnSlotClicked(FurnitureData data)
     {
         _uiFurniturePreview.SetData(_currentFloorType, data);
     }
 
     // Slots read the data currently bound to their index, so pooled slots never click stale data.
-    private void OnSlotClicked(int typeIndex, int slotIndex)
+    private void OnSlotClicked(int slotIndex)
     {
-        if (typeIndex != (int)_currentType || _currentTypeDataList == null
-            || slotIndex < 0 || slotIndex >= _currentTypeDataList.Count)
+        if (_currentTypeDataList == null || slotIndex < 0 || slotIndex >= _currentTypeDataList.Count)
             return;
 
         OnSlotClicked(_currentTypeDataList[slotIndex]);
@@ -540,7 +559,7 @@ public class UIFurniture : MobileUIView
         if (flags == DirtyFlags.None || !gameObject.activeInHierarchy || _currentTypeDataList == null)
             return;
 
-        RefreshSlots();
+        RefreshSlots(flags);
         if (NeedsPreviewRefresh(flags))
             _uiFurniturePreview.UpdateUI();
     }
@@ -552,7 +571,7 @@ public class UIFurniture : MobileUIView
         FurnitureData selected = SelectedData;
         if (selected == null)
             return false;
-        if ((flags & DirtyFlags.Ownership) != 0)
+        if ((flags & (DirtyFlags.Ownership | DirtyFlags.Unlock | DirtyFlags.Placement)) != 0)
             return true;
         if (UserInfo.IsGiveFurniture(UserInfo.CurrentStage, selected))
             return false;
@@ -568,6 +587,10 @@ public class UIFurniture : MobileUIView
     {
         UserInfo.OnChangeFurnitureHandler -= OnChangeFurnitureEvent;
         UserInfo.OnGiveFurnitureHandler -= OnGiveEvent;
+        UserInfo.OnGiveKitchenUtensilHandler -= OnUnlockEvent;
+        UserInfo.OnGiveRecipeHandler -= OnUnlockEvent;
+        UserInfo.OnGiveGachaItemHandler -= OnUnlockEvent;
+        UserInfo.OnChangeFloorHandler -= OnUnlockEvent;
         UserInfo.OnChangeMoneyHandler -= OnChangeMoneyEvent;
         UserInfo.OnChangeDiaHandler -= OnChangeDiaEvent;
         UserInfo.OnChangeScoreHandler -= UpdateUIOptimized;

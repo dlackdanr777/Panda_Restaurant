@@ -19,7 +19,7 @@ public class SequentialCommandManager : MonoBehaviour
 
             return _instance;
         }
-    }
+    } 
 
     private static SequentialCommandManager _instance;
 
