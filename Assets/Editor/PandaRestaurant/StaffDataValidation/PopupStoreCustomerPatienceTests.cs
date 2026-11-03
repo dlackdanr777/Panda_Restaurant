@@ -904,7 +904,7 @@ public sealed class PopupStoreCustomerPatienceTests
         internal void Start(double seconds = 90)
         {
             Write(Clock, "_initialSeconds", seconds);
-            Assert.That(Clock.TryStartSession(), Is.True);
+            Assert.That(PopupStoreApprovedTestSession.Start(Root), Is.True);
         }
         internal void StartThree()
         {

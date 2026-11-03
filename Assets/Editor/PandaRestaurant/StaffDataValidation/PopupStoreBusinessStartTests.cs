@@ -588,15 +588,32 @@ public sealed class PopupStoreBusinessStartTests
     [Test]
     public void RuntimePolicyContractsHaveNoSdkPlayerPrefsDeviceClockOrRewardExecutionCalls()
     {
-        foreach (string name in new[] { "PopupStoreBusinessAccessPolicy", "PopupStoreDailyUsage", "PopupStoreBusinessStartTransaction" })
+        foreach (string name in new[] { "PopupStoreBusinessAccessPolicy", "PopupStoreDailyUsage", "PopupStoreBusinessStartTransaction",
+            "PopupStoreAdmissionHost", "PopupStoreStartController" })
         {
             string source = File.ReadAllText(Folder + name + ".cs");
             foreach (string forbidden in new[] { "UserInfo.", "Backend.", "PlayerPrefs.", "DateTime.Now", "DateTime.UtcNow", "DateTimeOffset.Now", "DateTimeOffset.UtcNow",
                 "UnityEngine.Random.", "new PopupStoreRewardTransaction", "new PopupStoreRewardRandomSource", "File.Write", "Directory.Create" })
                 Assert.That(source, Does.Not.Contain(forbidden), name + " has forbidden execution dependency.");
         }
-        Assert.That(typeof(IPopupStoreBusinessStartPersistence).Assembly.GetTypes().Where(t => !t.IsAbstract && !t.IsInterface
-            && typeof(IPopupStoreBusinessStartPersistence).IsAssignableFrom(t)), Is.Empty, "No live start adapter is authorized.");
+        // DEV-05E-1 adds one private callback-observation proxy, not a live authority or default adapter.
+        var proxy = typeof(PopupStoreAdmissionHost).GetNestedType("ObservedPersistence", BindingFlags.NonPublic);
+        Assert.That(proxy, Is.Not.Null);
+        Assert.That(proxy.IsNestedPrivate && proxy.IsSealed, Is.True);
+        var adapters = typeof(IPopupStoreBusinessStartPersistence).Assembly.GetTypes().Where(t => !t.IsAbstract && !t.IsInterface
+            && typeof(IPopupStoreBusinessStartPersistence).IsAssignableFrom(t)).ToArray();
+        CollectionAssert.AreEquivalent(new[] { proxy }, adapters, "Only the injected authority forwarding proxy is permitted.");
+        var fields = proxy.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly);
+        Assert.That(fields, Has.Length.EqualTo(1));
+        Assert.That(fields[0].FieldType, Is.EqualTo(typeof(PopupStoreAdmissionHost)));
+        Assert.That(fields[0].IsInitOnly, Is.True);
+        Assert.That(typeof(PopupStoreAdmissionHost).GetConstructor(Type.EmptyTypes), Is.Null,
+            "The runtime host must receive its authority; it cannot construct a default adapter.");
+        string hostSource = File.ReadAllText(Folder + "PopupStoreAdmissionHost.cs");
+        Assert.That(hostSource, Does.Contain("_owner._persistence.Submit("));
+        Assert.That(hostSource, Does.Contain("_owner._persistence.Query("));
+        foreach (string forbidden in new[] { "System.IO", "System.Net", "Resources.Load", "PopupStoreBusinessStartFake", "new Backend" })
+            Assert.That(hostSource, Does.Not.Contain(forbidden), "The observer proxy cannot supply storage, network or fake authority.");
     }
 
     private sealed class Harness

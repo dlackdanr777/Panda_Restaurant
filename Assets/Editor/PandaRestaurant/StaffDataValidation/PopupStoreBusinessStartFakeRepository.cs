@@ -13,6 +13,7 @@ internal sealed class PopupStoreBusinessStartFakeStore
         internal readonly Dictionary<string, PopupStoreBusinessStartRecord> Starts = new Dictionary<string, PopupStoreBusinessStartRecord>(StringComparer.Ordinal);
         internal readonly Dictionary<string, PopupStoreBusinessStartRequest> Fingerprints = new Dictionary<string, PopupStoreBusinessStartRequest>(StringComparer.Ordinal);
         internal readonly Dictionary<string, PopupStoreBusinessStartResponse> LimitRefusals = new Dictionary<string, PopupStoreBusinessStartResponse>(StringComparer.Ordinal);
+        internal DateTimeOffset? LatestObservedUtc;
     }
     internal readonly struct Snapshot
     {
@@ -26,14 +27,81 @@ internal sealed class PopupStoreBusinessStartFakeStore
     private readonly Dictionary<string, long> _noEffectFences = new Dictionary<string, long>(StringComparer.Ordinal);
     private long _attemptSequence, _businessSequence;
     private PopupStoreBusinessAccessPolicy _policy;
+    private PopupStoreBusinessAccessSchedule _schedule;
+    private long _configurationRevision;
     private bool _readingClock;
     internal Func<DateTimeOffset?> Clock;
     internal Action<long> BeforeSubmitLock;
 
     internal PopupStoreBusinessStartFakeStore(Func<DateTimeOffset?> clock, PopupStoreBusinessAccessPolicy policy = null)
     { Clock = clock; _policy = policy ?? new PopupStoreBusinessAccessPolicy(); }
+    internal PopupStoreBusinessStartFakeStore(PopupStoreBusinessAccessSchedule schedule, Func<DateTimeOffset?> clock)
+    { _schedule = schedule ?? throw new ArgumentNullException(nameof(schedule)); Clock = clock; }
     internal void UsePolicy(PopupStoreBusinessAccessPolicy policy)
-    { if (policy == null) throw new ArgumentNullException(nameof(policy)); lock (_gate) _policy = policy; }
+    {
+        if (policy == null) throw new ArgumentNullException(nameof(policy));
+        lock (_gate)
+        {
+            if (_schedule != null) throw new InvalidOperationException("Scheduled review policies may change only on a future game date.");
+            _policy = policy; _configurationRevision++;
+        }
+    }
+    internal bool TryScheduleFuture(PopupStoreRewardAccountSession session, PopupStoreBusinessAccessSetting next, out string error)
+    {
+        lock (_gate)
+        {
+            if (_schedule == null) { error = "This isolated store has no authored schedule."; return false; }
+            if (!TryReadAccess(session, false, out _, out string day, out _, out error)) return false;
+            if (!_schedule.TryWithFuture(next, day, out var schedule, out error)) return false;
+            _schedule = schedule; _configurationRevision++; return true;
+        }
+    }
+    internal PopupStoreBusinessAccessSnapshot ReadAccess(PopupStoreRewardAccountSession session)
+    {
+        lock (_gate)
+        {
+            if (!TryReadAccess(session, false, out var instant, out string day, out var policy, out string error))
+                return PopupStoreBusinessAccessSnapshot.Failure(session, error);
+            var account = _accounts[session.AccountId];
+            int used = account.Usage.TryGetValue(day, out int value) ? value : 0;
+            return new PopupStoreBusinessAccessSnapshot(session, day, policy.Version, policy.RewardedDailyLimit, used, instant);
+        }
+    }
+
+    // Called under the authority lock. Read-side time metadata prevents an injected clock rewind
+    // from recovering an earlier day's entitlement. Accepted request replay bypasses this method.
+    private bool TryReadAccess(PopupStoreRewardAccountSession session, bool allowUndatedPractice,
+        out DateTimeOffset? instant, out string day, out PopupStoreBusinessAccessPolicy policy, out string error)
+    {
+        instant = null; day = null; policy = null; error = null;
+        if (session == null || !_sessions.Contains(session) || !_accounts.TryGetValue(session.AccountId, out var account))
+        { error = "Fake authentication/account mismatch."; return false; }
+        if (_readingClock) { error = "A reentrant authority clock read is not available."; return false; }
+        long revision = _configurationRevision;
+        _readingClock = true;
+        try { instant = Clock?.Invoke(); } catch { instant = null; }
+        finally { _readingClock = false; }
+        if (!_sessions.Contains(session)) { error = "Fake session changed during clock read."; return false; }
+        if (revision != _configurationRevision) { error = "Policy changed during clock read."; return false; }
+        bool hasDay = instant.HasValue && PopupStoreDailyUsage.TryGetDayKey(instant.Value, out day);
+        if (!hasDay)
+        {
+            instant = null;
+            if (_schedule == null && allowUndatedPractice && _policy.PracticeClockFailure == PopupStorePracticeClockFailure.AllowWithoutDayKey)
+            { policy = _policy; return true; }
+            error = "Authoritative day unavailable."; return false;
+        }
+        instant = instant.Value.ToUniversalTime();
+        if (account.LatestObservedUtc.HasValue && instant.Value < account.LatestObservedUtc.Value)
+        { error = "Authoritative time moved backwards; access remains blocked."; return false; }
+        if (_schedule != null)
+        {
+            if (!_schedule.TryResolve(day, out policy, out error)) return false;
+        }
+        else policy = _policy;
+        account.LatestObservedUtc = instant;
+        return true;
+    }
     internal void RegisterAccount(string id)
     {
         if (string.IsNullOrWhiteSpace(id)) throw new ArgumentException("Fake account required.");
@@ -118,15 +186,10 @@ internal sealed class PopupStoreBusinessStartFakeStore
                 return Reply(request, PopupStoreBusinessStartResponseKind.RejectedBeforeSend, "Older attempt was fenced before mutation.");
             if (account.LimitRefusals.TryGetValue(request.StartRequestId, out var refusal)) return refusal;
             if (!account.Fingerprints.ContainsKey(request.StartRequestId)) account.Fingerprints.Add(request.StartRequestId, request);
-            if (!string.Equals(request.PolicyVersion, _policy.Version, StringComparison.Ordinal))
+            if (_schedule == null && !string.Equals(request.PolicyVersion, _policy.Version, StringComparison.Ordinal))
                 return Reply(request, PopupStoreBusinessStartResponseKind.RejectedBeforeSend, "New starts require the current registered test policy.");
-            DateTimeOffset? instant = null;
-            if (!_readingClock)
-            {
-                _readingClock = true;
-                try { instant = Clock?.Invoke(); } catch { instant = null; }
-                finally { _readingClock = false; }
-            }
+            bool hasAccess = TryReadAccess(session, request.Mode == PopupStoreBusinessMode.Practice,
+                out var instant, out string day, out var policy, out string accessError);
             // The injected clock is test code and can re-enter or revoke credentials. Never commit
             // using the authentication/policy/record snapshot from before invoking it.
             if (!_sessions.Contains(session))
@@ -134,18 +197,13 @@ internal sealed class PopupStoreBusinessStartFakeStore
             if (account.Starts.TryGetValue(request.StartRequestId, out existing))
                 return existing.Matches(request) ? new PopupStoreBusinessStartResponse(request, PopupStoreBusinessStartResponseKind.Started, existing)
                     : Reply(request, PopupStoreBusinessStartResponseKind.Conflict, "Start changed during clock read.");
-            if (!string.Equals(request.PolicyVersion, _policy.Version, StringComparison.Ordinal))
-                return Reply(request, PopupStoreBusinessStartResponseKind.RejectedBeforeSend, "Policy changed during clock read.");
+            if (!hasAccess) return Reply(request, PopupStoreBusinessStartResponseKind.RejectedBeforeSend, accessError);
+            if (!string.Equals(request.PolicyVersion, policy.Version, StringComparison.Ordinal))
+                return Reply(request, PopupStoreBusinessStartResponseKind.RejectedBeforeSend, "New starts require the policy for the authority's approval game date.");
             if (_noEffectFences.TryGetValue(key, out fence) && attempt <= fence)
                 return Reply(request, PopupStoreBusinessStartResponseKind.RejectedBeforeSend, "Attempt fenced during clock read.");
-            string day = null;
-            bool hasDay = instant.HasValue && PopupStoreDailyUsage.TryGetDayKey(instant.Value, out day);
-            if (!hasDay && (request.Mode == PopupStoreBusinessMode.Rewarded
-                || _policy.PracticeClockFailure != PopupStorePracticeClockFailure.AllowWithoutDayKey))
-                return Reply(request, PopupStoreBusinessStartResponseKind.RejectedBeforeSend, "Authoritative day unavailable.");
-            if (!hasDay) instant = null;
             int used = day != null && account.Usage.TryGetValue(day, out int prior) ? prior : 0;
-            if (request.Mode == PopupStoreBusinessMode.Rewarded && used >= _policy.RewardedDailyLimit)
+            if (request.Mode == PopupStoreBusinessMode.Rewarded && used >= policy.RewardedDailyLimit)
             {
                 refusal = Reply(request, PopupStoreBusinessStartResponseKind.RejectedBeforeSend, "Daily rewarded start limit reached.");
                 account.LimitRefusals[request.StartRequestId] = refusal;
@@ -170,8 +228,9 @@ internal sealed class PopupStoreBusinessStartFakeStore
 
 public enum PopupStoreFakeStartFault { None, RejectBeforeSend, CommitThenIndeterminate, CommitThenDrop, CommitThenDefer, UnknownWithoutCommit, ThrowAfterCommit }
 public enum PopupStoreFakeStartQueryFault { None, NotFound, Indeterminate, ConfirmNotApplied, Defer, Throw }
+public enum PopupStoreFakeAccessFault { None, Fail, Defer, Drop, Throw }
 
-internal sealed class PopupStoreBusinessStartFakeRepository : IPopupStoreBusinessStartPersistence
+internal sealed class PopupStoreBusinessStartFakeRepository : IPopupStoreBusinessStartPersistence, IPopupStoreBusinessAccessInformation
 {
     internal readonly PopupStoreBusinessStartFakeStore Store;
     internal PopupStoreFakeStartFault NextSubmitFault;
@@ -179,9 +238,27 @@ internal sealed class PopupStoreBusinessStartFakeRepository : IPopupStoreBusines
     internal Func<PopupStoreBusinessStartResponse, PopupStoreBusinessStartResponse> TransformNextReply;
     internal bool ThrowAfterNextDelivery;
     internal int SubmitCalls, QueryCalls;
+    internal int AccessQueryCalls;
+    internal PopupStoreFakeAccessFault NextAccessFault;
+    internal Func<PopupStoreBusinessAccessSnapshot, PopupStoreBusinessAccessSnapshot> TransformNextAccessReply;
     private readonly Queue<Action> _deferred = new Queue<Action>();
     private Action _lastDelivery;
+    private Action _lastAccessDelivery;
     internal PopupStoreBusinessStartFakeRepository(PopupStoreBusinessStartFakeStore store) { Store = store; }
+    public void QueryAccess(PopupStoreRewardAccountSession session, Action<PopupStoreBusinessAccessSnapshot> completed)
+    {
+        AccessQueryCalls++;
+        var fault = NextAccessFault; NextAccessFault = PopupStoreFakeAccessFault.None;
+        if (fault == PopupStoreFakeAccessFault.Throw) throw new InvalidOperationException("Injected access information failure.");
+        var response = fault == PopupStoreFakeAccessFault.Fail
+            ? PopupStoreBusinessAccessSnapshot.Failure(session, "Injected access information failure.") : Store.ReadAccess(session);
+        var transform = TransformNextAccessReply; TransformNextAccessReply = null;
+        if (transform != null) response = transform(response);
+        _lastAccessDelivery = () => completed(response);
+        if (fault == PopupStoreFakeAccessFault.Defer) _deferred.Enqueue(_lastAccessDelivery);
+        else if (fault != PopupStoreFakeAccessFault.Drop) _lastAccessDelivery();
+    }
+    internal void ReplayLastAccess() { _lastAccessDelivery?.Invoke(); }
     public void Submit(PopupStoreRewardAccountSession session, PopupStoreBusinessStartRequest request, Action<PopupStoreBusinessStartResponse> completed)
     {
         SubmitCalls++;

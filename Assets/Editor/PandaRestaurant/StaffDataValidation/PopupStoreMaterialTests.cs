@@ -11,7 +11,7 @@ using UnityEngine.TestTools;
 using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
-/// <summary>Authored assets and memory-only instances. No scene loading, account setup or SDK calls.</summary>
+/// <summary>Authored assets and explicitly admitted memory-only instances. No scene loading, live accounts or SDK calls.</summary>
 public sealed class PopupStoreMaterialTests
 {
     private const string CatalogPath = "Assets/Resources/UI/PopupStore/PopupStoreMaterials.asset";
@@ -363,6 +363,10 @@ public sealed class PopupStoreMaterialTests
                 Lists = Root.GetComponentsInChildren<PopupStoreMaterialList>(true);
                 Assert.That(Lists, Has.Length.EqualTo(3));
                 Root.SetActive(true);
+                var view = Root.GetComponent<UIPopupStore>();
+                view.Init();
+                view.Show();
+                Assert.That(PopupStoreApprovedTestSession.Start(Root), Is.True);
                 foreach (var list in Lists) Assert.That(list.Refresh(), Is.True, list.name);
                 Layout();
             }

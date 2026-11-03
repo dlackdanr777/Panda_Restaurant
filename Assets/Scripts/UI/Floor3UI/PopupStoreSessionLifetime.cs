@@ -57,14 +57,26 @@ public sealed class PopupStoreSessionLifetime : MonoBehaviour
             candidateRoot.name = gameObject.name;
             var candidate = candidateRoot.GetComponent<UIPopupStore>();
             var lifetime = candidateRoot.GetComponent<PopupStoreSessionLifetime>();
+            var admission = GetComponent<PopupStoreStartController>()?.Host;
             if (candidateRoot.activeSelf || !lifetime.ValidateFreshGraph()
                 || string.Equals(SessionId, lifetime.SessionId, StringComparison.Ordinal))
                 return Reject("The replacement popup did not contain a fresh validated business graph.");
+            var start = candidateRoot.GetComponent<PopupStoreStartController>();
+            if (admission != null && !admission.CanAttach(start))
+                return Reject("The existing admission owner cannot bind the replacement popup.");
             if (!navigation.TryReplaceInactiveView(UIPopupStore.ViewName, owner, candidate))
                 return Reject("The inactive popup registration changed before replacement.");
 
+            // The registry is already committed. Later adapter/UI failures must not destroy its live entry.
             replaced = true;
             ready = candidate;
+
+            // Preserve the scene/review owner's usage and pending-request context across View replacement.
+            // No authority exists in Player until an explicit adapter is injected.
+            if (admission != null)
+                if (!start.BindHost(admission))
+                    throw new InvalidOperationException("Admission attachment failed; the new view remains safely blocked.");
+
             LastError = null;
 #if UNITY_EDITOR
             if (Application.isPlaying)
@@ -112,7 +124,9 @@ public sealed class PopupStoreSessionLifetime : MonoBehaviour
             || GetComponent<PopupStoreCustomerEntrance>() == null || GetComponent<PopupStoreCustomerPatience>() == null
             || GetComponent<PopupStorePackingPresentation>() == null || GetComponent<PopupStoreOrderProgress>() == null
             || GetComponent<PopupStoreResultPanel>() == null || GetComponent<PopupStoreRewardBox>() == null
-            || GetComponent<PopupStoreRewardRevealPreview>() == null || GetComponent<PopupStorePauseController>() == null)
+            || GetComponent<PopupStoreRewardRevealPreview>() == null || GetComponent<PopupStorePauseController>() == null
+            || GetComponent<PopupStoreStartController>() == null || GetComponent<PopupStoreStartPanel>() == null
+            || !GetComponent<PopupStoreStartPanel>().Refresh())
             return false;
         // These existing validators bind only the inactive candidate. They cannot start a clock or commit a sale.
         if (!counter.Refresh() || !orders.Refresh() || !packing.Refresh() || !score.Refresh()

@@ -35,9 +35,10 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
             var popup = GetComponentInParent<UIPopupStore>(true);
             var clock = popup != null ? popup.GetComponent<PopupStoreBusinessClock>() : null;
             clock?.SynchronizeNow();
-            // Preserve existing pre-session preparation and post-deadline display editing. A live pause blocks mutation.
-            return clock == null || clock.State == PopupStoreBusinessState.NotStarted
-                || (clock.State != PopupStoreBusinessState.Paused && clock.CanAdvanceVisuals);
+            // Preparation is allowed after admission, including before a customer's arrival.
+            // Missing approval is an API boundary, not merely a start-screen raycast blocker.
+            return clock != null && clock.HasStartApproval && clock.State != PopupStoreBusinessState.NotStarted
+                && clock.State != PopupStoreBusinessState.Paused && clock.CanAdvanceVisuals;
         }
     }
     public IReadOnlyList<PopupStoreMaterialEntry> Materials

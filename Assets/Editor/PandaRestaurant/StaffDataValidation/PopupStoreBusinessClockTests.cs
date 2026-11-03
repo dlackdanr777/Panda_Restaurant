@@ -54,7 +54,7 @@ public sealed class PopupStoreBusinessClockTests
     }
 
     [Test]
-    public void AnUnstartedSessionCannotSupplyOrPackThroughTheRealPrefab()
+    public void AnUnapprovedSessionCannotSelectSupplyOrPackThroughTheRealPrefab()
     {
         using (var host = new Host())
         {
@@ -63,7 +63,9 @@ public sealed class PopupStoreBusinessClockTests
             Assert.That(host.Clock.CanCommitPacking, Is.False);
             host.BeginCustomers();
             host.Entrance.TickEntrance(100);
-            host.Fill(0);
+            // DEV-05E-1: pre-arrival preparation remains available after admission, not before starting.
+            foreach (var material in host.Resolve(host.SourceOrders[0])) Assert.That(host.Counter.TryAdd(material), Is.False);
+            host.Counter.Clear(); Assert.That(host.Counter.Count, Is.Zero);
             var materials = host.Counter.Materials.ToArray();
             Assert.That(host.Entrance.SuppliedOrderCount, Is.Zero);
             Assert.That(host.Packing.TryPack().Status, Is.EqualTo(PopupStorePackingStatus.Unavailable));
@@ -75,13 +77,20 @@ public sealed class PopupStoreBusinessClockTests
     [TestCase(double.NaN)]
     [TestCase(double.PositiveInfinity)]
     [TestCase(double.NegativeInfinity)]
-    public void InvalidInitialTimeCannotStartASession(double initial)
+    public void InvalidInitialTimeCannotRequestAdmissionOrStartASession(double initial)
     {
         using (var host = new Host())
         {
             Write(host.Clock, "_initialSeconds", initial);
-            LogAssert.Expect(LogType.Error, new Regex("^PopupStoreBusinessClock: "));
-            Assert.That(host.Clock.TryStartSession(), Is.False);
+            var admission = PopupStoreApprovedTestSession.Attach(host.Root);
+            // DEV-05E-1 preflight rejects invalid local settings before quota is consumed.
+            Assert.That(PopupStoreApprovedTestSession.Start(host.Root), Is.False);
+            Assert.That(host.Root.GetComponent<PopupStoreStartController>().IsApproved, Is.False);
+            Assert.That(admission.Transaction, Is.Null);
+            Assert.That(admission.BindingCount, Is.Zero);
+            Assert.That(admission.LocalStartCount, Is.Zero);
+            Assert.That(admission.Access.Used, Is.Zero);
+            Assert.That(admission.Access.Remaining, Is.EqualTo(3));
             Assert.That(host.Clock.State, Is.EqualTo(PopupStoreBusinessState.NotStarted));
             Assert.That(host.Clock.RemainingSeconds, Is.Zero);
             Assert.That(host.Clock.EndedCount, Is.Zero);
@@ -574,7 +583,7 @@ public sealed class PopupStoreBusinessClockTests
         internal void Start(double seconds = 90)
         {
             Write(Clock, "_initialSeconds", seconds);
-            Assert.That(Clock.TryStartSession(), Is.True);
+            Assert.That(PopupStoreApprovedTestSession.Start(Root), Is.True);
         }
         internal void BeginCustomers()
         {

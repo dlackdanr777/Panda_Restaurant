@@ -183,7 +183,13 @@ public sealed class PopupStoreScoreTests
         using (var host = new Host(orders: orders))
         {
             if (reason != "NotStarted") host.StartCustomers(orders.Length);
-            if (reason != "None") host.Fill(0);
+            if (reason != "None" && reason != "NotStarted") host.Fill(0);
+            if (reason == "NotStarted")
+            {
+                // DEV-05E-1: rejected pre-start packing cannot first insert unapproved materials.
+                foreach (var material in host.Resolve(host.SourceOrders[0])) Assert.That(host.Counter.TryAdd(material), Is.False);
+                Assert.That(host.Counter.Count, Is.Zero);
+            }
             if (reason == "Stale") Write(host.SourceOrders[0], "_plushIds", new[] { "STAFF02" });
             if (reason == "Paused") host.Clock.SetManualPaused(true);
             if (reason == "Ended") host.Clock.AdvanceTime(90);
@@ -717,7 +723,7 @@ public sealed class PopupStoreScoreTests
         internal void Start(double seconds = 90)
         {
             Write(Clock, "_initialSeconds", seconds);
-            Assert.That(Clock.TryStartSession(), Is.True);
+            Assert.That(PopupStoreApprovedTestSession.Start(Root), Is.True);
         }
         internal void StartCustomers(int count = 3)
         {

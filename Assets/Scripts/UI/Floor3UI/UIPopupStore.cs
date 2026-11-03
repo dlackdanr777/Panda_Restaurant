@@ -48,6 +48,7 @@ public sealed class UIPopupStore : MobileUIView
         GetComponent<PopupStorePacking>()?.Refresh();
         GetComponent<PopupStorePauseController>()?.Refresh();
         GetComponent<PopupStoreExitConfirmation>()?.Refresh();
+        GetComponent<PopupStoreStartController>()?.OnViewShown();
     }
 
     public override void Hide()

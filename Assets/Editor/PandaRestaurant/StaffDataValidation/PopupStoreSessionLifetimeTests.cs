@@ -650,7 +650,7 @@ public sealed class PopupStoreSessionLifetimeTests
             Invoke(Clock, "OnDisable"); Entrance.PauseVisibleSession(); Presentation.EndVisibleSession();
             foreach (var c in new Component[] { Patience, Packing, Root.GetComponent<PopupStoreOrderProgress>(), Counter, Orders, Score, Grade, Result, Exit }) Invoke(c, "OnDisable");
         }
-        internal void Start() { Assert.That(Clock.TryStartSession(), Is.True); }
+        internal void Start() { Assert.That(PopupStoreApprovedTestSession.Start(Root), Is.True); }
         internal void StartThree()
         {
             Start(); Entrance.TickEntrance(0); Entrance.TickEntrance(4); Entrance.TickEntrance(4);

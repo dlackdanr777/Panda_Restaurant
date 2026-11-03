@@ -17,7 +17,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     [SerializeField] private string _notStartedText = "남은 시간 —";
 #if UNITY_EDITOR
     [Tooltip("Temporary PC review only. Player builds require an explicit session start.")]
-    [SerializeField] private bool _autoStartForEditorReview = true;
+    [SerializeField] private bool _autoStartForEditorReview = false;
 #endif
 
     private PopupStoreBusinessState _state;
@@ -45,7 +45,10 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     public event Action<double> TimeAdvanced;
     public int ComplaintPenaltyCount => _penalizedOrders.Count;
     public double ComplaintPenaltySeconds { get; private set; }
-    public bool CanAdvanceVisuals => IsContextAvailable();
+    public bool CanAdvanceVisuals => _state != PopupStoreBusinessState.NotStarted && IsContextAvailable();
+    public bool HasStartApproval => GetComponent<PopupStoreStartController>()?.IsApproved == true;
+    internal bool CanPrepareForAdmission => _state == PopupStoreBusinessState.NotStarted && IsViewContextAvailable()
+        && ValidateConfiguration(out _) && _timeText.isActiveAndEnabled;
     public int EndedCount { get; private set; }
     public int AbandonCount { get; private set; }
     public PopupStoreBusinessEndReason? EndReason => _state == PopupStoreBusinessState.Ended
@@ -85,6 +88,9 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         {
             if (!TryReadTime(out double now, out bool available, out error))
             { _sourceHealthy = false; Report(error); return false; }
+            // An injected time source can invoke callbacks. Recheck admission, focus and visibility at commit.
+            if (_state != PopupStoreBusinessState.NotStarted || !IsContextAvailable()
+                || !ValidateConfiguration(out _) || !_timeText.isActiveAndEnabled) return false;
             _sourceHealthy = true;
             _hasTimeSample = available;
             _lastTimeSample = now;
@@ -145,7 +151,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         try
         {
             // SetViewVisible(false) can settle the final foreground interval during OnDisable.
-            if (_state != PopupStoreBusinessState.Running || !_viewVisible || _applicationPaused
+            if (!HasStartApproval || _state != PopupStoreBusinessState.Running || !_viewVisible || _applicationPaused
                 || !_applicationFocused || _manualPaused || _exitConfirmationPaused)
             { _hasTimeSample = false; return; }
             if (!ValidateConfiguration(out _)) return;
@@ -330,6 +336,9 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     private bool IsTerminal => _state == PopupStoreBusinessState.Ended || _state == PopupStoreBusinessState.Abandoned;
 
     private bool IsContextAvailable()
+        => HasStartApproval && IsViewContextAvailable();
+
+    private bool IsViewContextAvailable()
         => _state != PopupStoreBusinessState.Abandoned && isActiveAndEnabled && _viewVisible && !_applicationPaused && _applicationFocused
             && !_manualPaused && !_exitConfirmationPaused;
 

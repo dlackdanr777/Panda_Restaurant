@@ -307,6 +307,8 @@ public sealed class PopupStoreResultTests
         using (var host = new Host())
         using (var other = new Host())
         {
+            // DEV-05E-1: test isolation against an admitted, interactive peer, not its locked start screen.
+            other.Start();
             object original = Read(host.Result, field);
             Write(host.Result, field, Read(other.Result, field));
             try
@@ -384,8 +386,10 @@ public sealed class PopupStoreResultTests
     {
         using (var host = new Host())
         {
+            // Establish the caller's flags after admission releases the start overlay's own input lock.
+            host.Start();
             host.Input.interactable = interactable; host.Input.blocksRaycasts = raycasts;
-            host.Start(0); host.ShowResult();
+            host.End(); host.ShowResult();
             Assert.That(host.Input.interactable, Is.False);
             Assert.That(host.Input.blocksRaycasts, Is.False);
             var clear = (Button)Read(host.Counter, "_clearButton");
@@ -655,7 +659,7 @@ public sealed class PopupStoreResultTests
             Assert.That(Patience.Refresh(), Is.True); Assert.That(Score.Refresh(), Is.True); Assert.That(Grade.Refresh(), Is.True);
             Assert.That(Result.Refresh(), Is.True);
         }
-        internal void Start(double seconds = 90) { Write(Clock, "_initialSeconds", seconds); Assert.That(Clock.TryStartSession(), Is.True); }
+        internal void Start(double seconds = 90) { Write(Clock, "_initialSeconds", seconds); Assert.That(PopupStoreApprovedTestSession.Start(Root), Is.True); }
         internal void StartCustomers(int count = 3, double seconds = 90)
         {
             Start(seconds); Entrance.TickEntrance(0);
