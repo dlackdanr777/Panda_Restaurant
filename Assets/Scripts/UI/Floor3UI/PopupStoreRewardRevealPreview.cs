@@ -124,6 +124,8 @@ public sealed class PopupStoreRewardRevealPreview : MonoBehaviour
             || _reward.Result.Grade <= PopupStoreGradeTier.None || _reward.Result.Grade > PopupStoreGradeTier.SSS
             || _panel.ShownResult.SuccessfulOrders <= 0 || !_reward.Result.IsLocalPreview
             || _reward.Result.Diamonds < 0 || string.IsNullOrEmpty(_reward.Result.DecisionId)
+            || (_reward.Result.PolicyId != PopupStoreRewardTable.LegacyPolicyId
+                && _reward.Result.PolicyId != PopupStoreRewardTable.R1PolicyId)
             || !Enum.IsDefined(typeof(PopupStoreRewardKind), _reward.Result.Kind)
             || (_observedResult != null && (!ReferenceEquals(_observedResult, _panel.ShownResult)
                 || !ReferenceEquals(ShownDecision, _reward.Result))))
@@ -150,7 +152,8 @@ public sealed class PopupStoreRewardRevealPreview : MonoBehaviour
     private void ShowText()
     {
         if (_textShown) return;
-        _valueText.text = "R0 테스트 보상 +" + ShownDecision.Diamonds.ToString(System.Globalization.CultureInfo.InvariantCulture) + "D";
+        string label = ShownDecision.PolicyId == PopupStoreRewardTable.R1PolicyId ? "R1 검수 보상 +" : "R0 테스트 보상 +";
+        _valueText.text = label + ShownDecision.Diamonds.ToString(System.Globalization.CultureInfo.InvariantCulture) + "D";
         _noticeText.text = "미지급 · 실제 계정에 반영되지 않음";
         _shownValueText = _valueText; _shownNoticeText = _noticeText;
         _valueText.gameObject.SetActive(true); _noticeText.gameObject.SetActive(true);
@@ -178,13 +181,27 @@ public sealed class PopupStoreRewardRevealPreview : MonoBehaviour
         }
         _boundButton = null;
     }
-    private void Reject(string error) { HidePreview(); LastError = error; }
+    private void Reject(string error)
+    {
+        HidePreview(); LastError = error;
+        // A malformed policy must be visible without presenting a reward or touching result confirmation.
+        if (!Local(_panel) || !Local(_grade) || !Local(_reward) || !OwnTexts()
+            || !_panel.CanRevealPreview || !_grade.IsFinalized || _panel.ShownResult == null
+            || !ReferenceEquals(_panel.ShownResult, _grade.FinalResult)
+            || _panel.ShownResult.SuccessfulOrders <= 0 || _reward.Result != null
+            || string.IsNullOrEmpty(_reward.LastError)) return;
+        _valueText.text = "보상 정보 오류 · 미결정";
+        _noticeText.text = "미지급 · 실제 계정에 반영되지 않음";
+        _shownValueText = _valueText; _shownNoticeText = _noticeText;
+        _valueText.gameObject.SetActive(true); _noticeText.gameObject.SetActive(true);
+    }
     private void OnClicked() => TryReveal();
     private void Log(string action)
     {
         if (Application.isPlaying && ShownDecision != null)
             Debug.Log("POPUP_STORE_REWARD_REVEAL_" + action + " session=" + ShownDecision.SessionId
                 + " decision=" + ShownDecision.DecisionId + " grade=" + ShownDecision.Grade
+                + " policy=" + ShownDecision.PolicyId
                 + " diamonds=" + ShownDecision.Diamonds + " reveals=" + RevealCount
                 + " finalizations=" + _grade.FinalizationCount + " decisions=" + _reward.DecisionCount
                 + " draws=" + _reward.RandomDrawCount + " score=" + OpenedResult.Score

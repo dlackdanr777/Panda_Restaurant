@@ -16,7 +16,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Explicit request-only bridge for the twenty-nine synchronous, memory-only popup store fixtures.
+/// Explicit request-only bridge for the synchronous, memory-only popup store fixtures.
 /// Tests never launch Play. An explicit result-review request may use the existing original memory-Play starter.
 /// Never creates a scene, saves assets, restores a workspace or starts another Editor.
 /// </summary>
@@ -35,7 +35,9 @@ public static class PopupStoreVerificationRunner
     private static PausePlayReport _pausePlayReport;
     private static PausePlayContext _pausePlay;
     private static PopupStoreAccessReviewOwner _accessReviewOwner;
-    private enum ReviewMode { Result, RewardC, RewardS, Session, AccessA, AccessB }
+    private static PopupStoreRewardSession _r1ReviewReward;
+    private static FixedR1ReviewRandom _r1ReviewRandom;
+    private enum ReviewMode { Result, RewardC, RewardS, Session, AccessA, AccessB, R1C, R1SSS }
     private static readonly string[] Fixtures =
     {
         "PopupStoreNavigationTests", "PopupStoreMaterialTests", "PopupStoreSalesCounterTests",
@@ -45,7 +47,8 @@ public static class PopupStoreVerificationRunner
         "PopupStoreScoreTests", "PopupStoreGradeTests", "PopupStoreResultTests", "PopupStoreRewardBoxTests", "PopupStoreRewardTableTests",
         "PopupStoreRewardDecisionTests", "PopupStoreRewardTransactionTests", "PopupStoreBusinessStartTests",
         "PopupStoreRewardRevealPreviewTests", "PopupStorePauseTests", "PopupStoreExitConfirmationTests", "PopupStoreSessionLifetimeTests",
-        "PopupStoreBusinessAccessSettingsTests", "PopupStoreAdmissionTests"
+        "PopupStoreBusinessAccessSettingsTests", "PopupStoreAdmissionTests",
+        "PopupStoreRewardR1TableTests", "PopupStoreRewardR1SessionTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -74,7 +77,7 @@ public static class PopupStoreVerificationRunner
     [Serializable] private sealed class Report
     {
         public string startedUtc, finishedUtc, error;
-        public string scope = "Twenty-nine popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
+        public string scope = "Popup-store fixtures, synchronous NUnit on the existing Editor main thread. Memory objects only; no scene creation/replacement/save, Play transition or account operation. A workspace difference stops further cases without automatic rollback.";
         public bool success, compiling, updating, scriptCompilationFailed, workspaceUnchanged;
         public int discovered, total, passed, failed, skipped, inconclusive;
         public Workspace before, after;
@@ -90,7 +93,11 @@ public static class PopupStoreVerificationRunner
         EditorApplication.playModeStateChanged += state =>
         {
             if (state == PlayModeStateChange.EnteredEditMode)
-            { ClearReviewRequest(); _accessReviewOwner?.Dispose(); _accessReviewOwner = null; SessionState.EraseBool(AccessReviewCreatedKey); }
+            {
+                ClearReviewRequest(); _accessReviewOwner?.Dispose(); _accessReviewOwner = null;
+                _r1ReviewReward = null; _r1ReviewRandom = null;
+                SessionState.EraseBool(AccessReviewCreatedKey);
+            }
             if (state == PlayModeStateChange.ExitingPlayMode && SessionState.GetBool(PausePlayKey, false))
             {
                 if (_pausePlayReport == null)
@@ -132,6 +139,8 @@ public static class PopupStoreVerificationRunner
         else if (request == "start-session-review") StartResultReview(ReviewMode.Session);
         else if (request == "start-access-review-a") StartResultReview(ReviewMode.AccessA);
         else if (request == "start-access-review-b") StartResultReview(ReviewMode.AccessB);
+        else if (request == "start-r1-review-a") StartResultReview(ReviewMode.R1C);
+        else if (request == "start-r1-review-b") StartResultReview(ReviewMode.R1SSS);
         else if (request == "run-exit-play-review" || request == "run-pause-play-review") StartPausePlayReview();
         else if (request == "run-session-play-review") StartPausePlayReview(true);
         else Run(request);
@@ -171,6 +180,7 @@ public static class PopupStoreVerificationRunner
         { Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED " + reason); return false; }
         SessionState.SetInt(ReviewModeKey, (int)mode);
         _accessReviewOwner?.Dispose(); _accessReviewOwner = null; SessionState.EraseBool(AccessReviewCreatedKey);
+        _r1ReviewReward = null; _r1ReviewRandom = null;
         SessionState.EraseString(SessionReviewFirstKey); SessionState.EraseBool(SessionReviewAbandonedKey);
         SessionState.SetBool(ResultReviewKey, true);
         Debug.Log("POPUP_STORE_RESULT_REVIEW_ARMED next original memory Play only; mode=" + mode
@@ -179,6 +189,8 @@ public static class PopupStoreVerificationRunner
                 : mode == ReviewMode.RewardS ? "; actual local orders will prepare S only after explicit admission; delivery=authored"
                 : mode == ReviewMode.AccessA ? "; isolated access A; authored 90 seconds; user start approval required"
                 : mode == ReviewMode.AccessB ? "; isolated access B; first memory business=30; user start approval required"
+                : mode == ReviewMode.R1C ? "; R1 fixed roll=0; isolated one-use account; business=30; user start approval required"
+                : mode == ReviewMode.R1SSS ? "; R1 fixed roll=997; isolated one-use account; real twenty-order preparation after user start approval"
                 : "; authored 90 seconds; after user abandons and packs one fresh-session order, shorten that memory clock to 15 seconds once"));
         return true;
     }
@@ -553,13 +565,15 @@ public static class PopupStoreVerificationRunner
         try
         {
             EnsureReviewAdmission(popup, mode.ToString());
-            if (mode == ReviewMode.AccessA || mode == ReviewMode.AccessB)
+            if (mode == ReviewMode.AccessA || mode == ReviewMode.AccessB || mode == ReviewMode.R1C || mode == ReviewMode.R1SSS)
                 RequireRewardReview(_accessReviewOwner.DailyLimit == 1, "A/B review requires the approved one-use settings snapshot.");
+            if (mode == ReviewMode.R1C || mode == ReviewMode.R1SSS)
+                EnsureFixedR1ReviewSource(popup, mode == ReviewMode.R1C ? 0 : 997);
         }
         catch (Exception error) { ClearReviewRequest(); Debug.LogWarning("POPUP_STORE_ACCESS_REVIEW_REFUSED " + Unwrap(error).Message); return; }
         if (mode == ReviewMode.AccessA)
         { ClearReviewRequest(); Debug.Log("POPUP_STORE_ACCESS_REVIEW_READY mode=A; userStartRequired=True; business=90", popup); return; }
-        if (mode == ReviewMode.RewardS)
+        if (mode == ReviewMode.RewardS || mode == ReviewMode.R1SSS)
         {
             var pendingClock = popup.GetComponent<PopupStoreBusinessClock>();
             if (pendingClock != null && pendingClock.State != PopupStoreBusinessState.Ended
@@ -567,12 +581,12 @@ public static class PopupStoreVerificationRunner
                     || pendingClock.State == PopupStoreBusinessState.NotStarted
                     || pendingClock.State == PopupStoreBusinessState.Paused)) return;
             ClearReviewRequest(); // One bounded preparation attempt, never a retry of a partial sale sequence.
-            try { PrepareRewardS(popup); }
-            catch (Exception error) { Debug.LogWarning("POPUP_STORE_REWARD_REVIEW_REFUSED S: " + Unwrap(error).Message, popup); }
+            try { PrepareRewardS(popup, mode == ReviewMode.R1SSS); }
+            catch (Exception error) { Debug.LogWarning("POPUP_STORE_REWARD_REVIEW_REFUSED " + mode + ": " + Unwrap(error).Message, popup); }
             return;
         }
         ClearReviewRequest(); // One attempt; never overwrite a started/reentered session.
-        if (mode != ReviewMode.Result && mode != ReviewMode.RewardC && mode != ReviewMode.AccessB)
+        if (mode != ReviewMode.Result && mode != ReviewMode.RewardC && mode != ReviewMode.AccessB && mode != ReviewMode.R1C)
         { Debug.LogWarning("POPUP_STORE_RESULT_REVIEW_REFUSED unknown review mode"); return; }
         var clock = popup.GetComponent<PopupStoreBusinessClock>();
         var presentation = popup.GetComponent<PopupStorePackingPresentation>();
@@ -642,8 +656,52 @@ public static class PopupStoreVerificationRunner
             + "; remaining=" + clock.RemainingSeconds + "; serialized settings unchanged", popup);
     }
 
-    private static void PrepareRewardS(UIPopupStore popup)
+    private sealed class FixedR1ReviewRandom : IPopupStoreRewardRandomSource
     {
+        internal readonly int Roll;
+        internal int Calls { get; private set; }
+        internal FixedR1ReviewRandom(int roll) { Roll = roll; }
+        public int NextInt(int exclusiveUpperBound)
+        {
+            if (exclusiveUpperBound != 1000 || (Roll != 0 && Roll != 997) || Calls != 0)
+                throw new InvalidOperationException("The explicitly armed R1 review permits one fixed 1000-unit draw.");
+            Calls++;
+            Debug.Log("POPUP_STORE_R1_FIXED_DRAW roll=" + Roll + "; upper=" + exclusiveUpperBound + "; calls=" + Calls
+                + "; editorReview=True; actualRandomWin=False; unpaid=True");
+            return Roll;
+        }
+    }
+
+    private static void EnsureFixedR1ReviewSource(UIPopupStore popup, int roll)
+    {
+        RequireRewardReview(HasOriginalMemoryOwner() && popup != null && !EditorUtility.IsPersistent(popup)
+            && _accessReviewOwner != null && _accessReviewOwner.DailyLimit == 1,
+            "Fixed R1 review needs the original isolated one-use memory owner.");
+        var reward = popup.GetComponent<PopupStoreRewardSession>();
+        var table = reward != null ? PauseField(reward, "_table") as PopupStoreRewardTable : null;
+        string error = null;
+        RequireRewardReview(table != null && table.PolicyId == PopupStoreRewardTable.R1PolicyId
+            && table.Schema == PopupStoreRewardSchema.R1Permille && table.Denominator == 1000 && table.TryValidate(out error),
+            "The authored active R1 reward policy is required: " + error);
+        if (_r1ReviewReward != null)
+        {
+            RequireRewardReview(ReferenceEquals(_r1ReviewReward, reward) && _r1ReviewRandom != null && _r1ReviewRandom.Roll == roll,
+                "An armed review cannot transfer its fixed draw to another popup or policy.");
+            return;
+        }
+        RequireRewardReview(reward != null && !reward.IsResolved && reward.Result == null && reward.RandomDrawCount == 0,
+            "Fixed review randomness must be supplied before any terminal reward decision.");
+        var source = new FixedR1ReviewRandom(roll);
+        RequireRewardReview(reward.TrySetRandomSource(source), "The fixed R1 review source could not be installed.");
+        _r1ReviewReward = reward; _r1ReviewRandom = source;
+        Debug.Log("POPUP_STORE_R1_REVIEW_INJECTED popup=" + popup.GetInstanceID() + "; policy=" + table.PolicyId
+            + "; roll=" + roll + "; isolatedAccount=" + _accessReviewOwner.AccountId
+            + "; editorOnly=True; permanentSettingsChanged=False; actualRandomWin=False", popup);
+    }
+
+    private static void PrepareRewardS(UIPopupStore popup, bool allTwentyForR1 = false)
+    {
+        var targetGrade = allTwentyForR1 ? PopupStoreGradeTier.SSS : PopupStoreGradeTier.S;
         RequireRewardReview(HasOriginalMemoryOwner() && popup != null && popup.gameObject.activeInHierarchy
             && popup.VisibleState == VisibleState.Appeared, "Original visible memory popup is required.");
         var clock = popup.GetComponent<PopupStoreBusinessClock>();
@@ -662,7 +720,18 @@ public static class PopupStoreVerificationRunner
             && counter.IsReady && counter.Count == 0 && score.TotalScore == 0 && score.SuccessfulOrderCount == 0
             && packing.CommittedReceipts.Count == 0 && !presentation.HasPendingVisualWork && !grade.IsFinalized
             && entrance.StartedComplaintCount == 0 && entrance.StartedDepartureCount == 0 && entrance.SuppliedOrderCount <= 3,
-            "S review requires a fresh Running popup with an empty counter and no sales or departures.");
+            "The review requires a fresh Running popup with an empty counter and no sales or departures.");
+        if (allTwentyForR1)
+        {
+            RequireRewardReview(clock.HasStartApproval && _r1ReviewReward != null && _r1ReviewReward.HasPolicySnapshot
+                && _r1ReviewReward.PolicySnapshot.PolicyId == PopupStoreRewardTable.R1PolicyId
+                && _r1ReviewReward.PolicySnapshot.Denominator == 1000 && _r1ReviewReward.RandomDrawCount == 0
+                && _r1ReviewReward.Result == null && _accessReviewOwner.Host.LocalStartCount == 1
+                && _accessReviewOwner.Host.BindingCount == 1 && _accessReviewOwner.Store.IssuedBusinessCount == 1,
+                "SSS review requires one explicit approved start and its unchanged, undrawn R1 policy snapshot.");
+            Debug.Log("POPUP_STORE_R1_REVIEW_APPROVED session=" + grade.SessionId
+                + "; policy=" + _r1ReviewReward.PolicySnapshot.PolicyId + "; units=1000; starts=1; issued=1; draws=0", popup);
+        }
         var catalog = typeof(PopupStoreOrderDisplay).GetField("_catalog", BindingFlags.Instance | BindingFlags.NonPublic)
             ?.GetValue(orders) as PopupStoreMaterialCatalog;
         RequireRewardReview(catalog != null, "The existing approved material catalog is required.");
@@ -680,7 +749,8 @@ public static class PopupStoreVerificationRunner
             bool leaving = Enumerable.Range(0, 3).Any(index => entrance.GetState(index) == PopupStoreCustomerState.Leaving
                 || entrance.GetState(index) == PopupStoreCustomerState.Expired);
             if (presentation.HasPendingVisualWork || leaving) continue;
-            if (score.TotalScore >= 1700) { settled = true; break; }
+            if (allTwentyForR1 ? score.SuccessfulOrderCount == 20 : score.TotalScore >= 1700)
+            { settled = true; break; }
             int slot = Enumerable.Range(0, 3).Where(entrance.IsWaiting).DefaultIfEmpty(-1).First();
             if (slot < 0) continue;
             RequireRewardReview(counter.Count == 0, "The review cannot replace existing counter materials.");
@@ -693,27 +763,37 @@ public static class PopupStoreVerificationRunner
                 && packed.Receipt.OrderId == order.RuntimeId && packed.Receipt.CustomerId == order.CustomerId
                 && packed.Receipt.SlotIndex == slot, "The actual order could not be packed uniquely.");
         }
-        RequireRewardReview(settled && score.TotalScore >= 1700 && score.TotalScore < 2100
-            && grade.Current.Grade == PopupStoreGradeTier.S && !grade.IsFinalized && counter.Count == 0
+        RequireRewardReview(settled && (allTwentyForR1 ? score.TotalScore == 2640 && score.SuccessfulOrderCount == 20
+                : score.TotalScore >= 1700 && score.TotalScore < 2100)
+            && grade.Current.Grade == targetGrade && !grade.IsFinalized && counter.Count == 0
             && presentation.VisualOutcomes.Count == packing.CommittedReceipts.Count
             && presentation.VisualOutcomes.All(outcome => outcome.Kind == PopupStoreVisualOutcomeKind.VisualCompleted)
             && presentation.CompletedDeliveryCount == packing.CommittedReceipts.Count
             && entrance.ReleasedCount == packing.CommittedReceipts.Count,
-            "S preparation did not settle all actual successful deliveries and departures within its bound.");
+            "The review did not settle all actual successful deliveries and departures within its bound.");
         RequireRewardReview(HasOriginalMemoryOwner() && ReferenceEquals(owner, Muks.BackEnd.BackendManager.ExistingInstance)
             && UserInfo.Money == money && UserInfo.Dia == diamonds && UserInfo.TotalCumulativeCustomerCount == visits,
             "The isolated account or memory owner changed during preparation.");
         RequireRewardReview(clock.State == PopupStoreBusinessState.Running && clock.AdvanceTime(clock.RemainingSeconds),
             "Only a Running review clock can reach the normal closing boundary.");
         RequireRewardReview(clock.State == PopupStoreBusinessState.Ended && grade.FinalResult != null
-            && grade.FinalResult.Grade == PopupStoreGradeTier.S && grade.FinalizationCount == 1
+            && grade.FinalResult.Grade == targetGrade && grade.FinalizationCount == 1
             && grade.FinalResult.Score == score.TotalScore && grade.FinalResult.SuccessfulOrders == score.SuccessfulOrderCount,
-            "The normal closing boundary did not produce one unchanged S result.");
+            "The normal closing boundary did not produce one unchanged target-grade result.");
+        if (allTwentyForR1)
+        {
+            var decision = _r1ReviewReward != null ? _r1ReviewReward.Result : null;
+            RequireRewardReview(decision != null && decision.Grade == PopupStoreGradeTier.SSS
+                && decision.Kind == PopupStoreRewardKind.Jackpot && decision.Diamonds == 300
+                && decision.PolicyId == PopupStoreRewardTable.R1PolicyId && _r1ReviewRandom.Calls == 1
+                && _r1ReviewReward.RandomDrawCount == 1 && _r1ReviewReward.DecisionCount == 1,
+                "The normal finalization did not produce exactly one fixed R1 300D local preview.");
+        }
         RequireRewardReview(HasOriginalMemoryOwner() && ReferenceEquals(owner, Muks.BackEnd.BackendManager.ExistingInstance)
             && UserInfo.Money == money && UserInfo.Dia == diamonds && UserInfo.TotalCumulativeCustomerCount == visits,
             "The closing boundary changed the isolated account or memory owner.");
         // ResultPanel is deliberately not ticked here: its next normal LateUpdate owns the visible animation.
-        Debug.Log("POPUP_STORE_REWARD_REVIEW_PREPARED mode=S; popup=" + popup.GetInstanceID()
+        Debug.Log("POPUP_STORE_REWARD_REVIEW_PREPARED mode=" + targetGrade + "; popup=" + popup.GetInstanceID()
             + "; session=" + grade.SessionId + "; score=" + score.TotalScore + "; receipts=" + packing.CommittedReceipts.Count
             + "; delivered=" + presentation.CompletedDeliveryCount + "; released=" + entrance.ReleasedCount, popup);
     }

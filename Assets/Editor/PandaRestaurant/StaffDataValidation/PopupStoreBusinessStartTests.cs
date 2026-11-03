@@ -667,7 +667,7 @@ public sealed class PopupStoreBusinessStartTests
             Assert.That(snapshot.Balance, Is.EqualTo(100)); Assert.That(snapshot.Grants, Is.Zero); Assert.That(snapshot.Version, Is.Zero);
         }
     }
-    private sealed class FixedRandom : IPopupStoreRewardRandomSource { public int NextPercent() => 99; }
+    private sealed class FixedRandom : IPopupStoreRewardRandomSource { public int NextInt(int exclusiveUpperBound) => 99; }
     private static PopupStoreBusinessStartRequest Request(string id, PopupStoreBusinessMode mode = PopupStoreBusinessMode.Rewarded, string expected = null)
         => new PopupStoreBusinessStartRequest("A", id, mode, "v1.3-test", expected);
     private static DateTimeOffset Instant(string value) => DateTimeOffset.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.None);

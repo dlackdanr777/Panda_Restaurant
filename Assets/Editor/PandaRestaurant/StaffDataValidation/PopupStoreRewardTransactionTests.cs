@@ -536,7 +536,7 @@ public sealed class PopupStoreRewardTransactionTests
         AssertStore(h, 300, 20, 20);
     }
 
-    private sealed class FixedRandom : IPopupStoreRewardRandomSource { public int NextPercent() => 99; }
+    private sealed class FixedRandom : IPopupStoreRewardRandomSource { public int NextInt(int exclusiveUpperBound) => 99; }
     private sealed class Harness
     {
         internal readonly PopupStoreRewardFakeStore Store = new PopupStoreRewardFakeStore();

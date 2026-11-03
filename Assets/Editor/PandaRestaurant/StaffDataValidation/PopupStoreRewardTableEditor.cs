@@ -10,7 +10,7 @@ public sealed class PopupStoreRewardTableEditor : Editor
 {
     public override void OnInspectorGUI()
     {
-        EditorGUILayout.HelpBox("R0 테스트 보상표입니다. 확률 구간은 합산 지급하지 않습니다. 실제 추첨·지급 기능은 없습니다.", MessageType.Info);
+        EditorGUILayout.HelpBox("로컬 검수 보상표입니다. 세 확률 구간 중 하나만 선택하며 실제 지급 권한은 없습니다.", MessageType.Info);
         DrawDefaultInspector();
         string report = BuildReport(target as PopupStoreRewardTable, out bool valid);
         EditorGUILayout.HelpBox(report, valid ? MessageType.Info : MessageType.Error);
@@ -21,18 +21,23 @@ public sealed class PopupStoreRewardTableEditor : Editor
     public static string BuildReport(PopupStoreRewardTable table, out bool valid)
     {
         valid = false;
-        if (table == null) return "R0 보상표 없음";
-        if (!table.TryGetEntries(out var entries, out string error)) return "R0 보상표 INVALID: " + error;
-        var report = new StringBuilder("R0 보상표 VALID — 지급 없이 이론적 기대값만 계산\n");
+        if (table == null) return "보상표 없음";
+        string label = table.Schema == PopupStoreRewardSchema.R1Permille ? "R1"
+            : table.Schema == PopupStoreRewardSchema.LegacyR0Percent ? "R0" : "알 수 없는";
+        if (!table.TryGetEntries(out var entries, out string error)) return label + " 보상표 INVALID: " + error;
+        var report = new StringBuilder(label + " 보상표 VALID — 지급 없이 이론적 기대값만 계산\n");
+        report.Append("정책 ").Append(table.PolicyId).Append(" / 정수 단위 ").Append(table.Denominator).Append('\n');
         foreach (var entry in entries)
         {
-            if (!PopupStoreRewardCalculator.TryCalculateExpectedDiamonds(entry, out decimal expected, out error))
-                return "R0 보상표 INVALID: " + error;
+            if (!PopupStoreRewardCalculator.TryCalculateExpectedDiamonds(entry, table.Denominator, out decimal expected, out error))
+                return label + " 보상표 INVALID: " + error;
             report.AppendFormat(CultureInfo.InvariantCulture,
-                "{0}: 기본 {1}D({4}%) / 추가 {2}D({5}%) / 대박 {3}D({6}%) | 합계 {7}% | 기대값 {8:0.00}D\n",
+                "{0}: 기본 {1}D({4:0.#}%) / 추가 {2}D({5:0.#}%) / 대박 {3}D({6:0.#}%) | 합계 {7:0.#}% | 기대값 {8}D\n",
                 entry.Grade, entry.BasicDiamonds, entry.BonusDiamonds, entry.JackpotDiamonds,
-                entry.BasicWeight, entry.BonusWeight, entry.JackpotWeight,
-                (long)entry.BasicWeight + entry.BonusWeight + entry.JackpotWeight, expected);
+                100m * entry.BasicWeight / table.Denominator, 100m * entry.BonusWeight / table.Denominator,
+                100m * entry.JackpotWeight / table.Denominator,
+                100m * ((long)entry.BasicWeight + entry.BonusWeight + entry.JackpotWeight) / table.Denominator,
+                expected.ToString(table.Schema == PopupStoreRewardSchema.R1Permille ? "0.000" : "0.00", CultureInfo.InvariantCulture));
         }
         valid = true;
         return report.ToString().TrimEnd();

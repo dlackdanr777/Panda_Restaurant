@@ -91,6 +91,9 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
             // An injected time source can invoke callbacks. Recheck admission, focus and visibility at commit.
             if (_state != PopupStoreBusinessState.NotStarted || !IsContextAvailable()
                 || !ValidateConfiguration(out _) || !_timeText.isActiveAndEnabled) return false;
+            // Freeze this approved business's reward policy before any start/terminal observer runs.
+            // Preparation never draws, pays, or changes admission; an invalid policy remains a reward error.
+            GetComponent<PopupStoreRewardSession>()?.PreparePolicyForApprovedStart();
             _sourceHealthy = true;
             _hasTimeSample = available;
             _lastTimeSample = now;

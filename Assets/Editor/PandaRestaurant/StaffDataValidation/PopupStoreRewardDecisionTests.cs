@@ -136,7 +136,7 @@ public sealed class PopupStoreRewardDecisionTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public void MissingOrInvalidTableConsumesNoRandomAndCanBeCorrectedWithoutBreakingTheResult(bool missing)
+    public void MissingOrInvalidStartPolicyConsumesNoRandomAndCannotBeReplacedAfterApproval(bool missing)
     {
         var source = new Source(85);
         using (var table = new TableScope())
@@ -148,8 +148,11 @@ public sealed class PopupStoreRewardDecisionTests
             Assert.That(host.Session.Result, Is.Null); Assert.That(source.Calls, Is.Zero); Assert.That(host.Session.RandomDrawCount, Is.Zero);
             host.Show(); Assert.That(host.Result.IsVisible, Is.True); Assert.That(host.Box.DisplayedSprite, Is.SameAs(Approved(PopupStoreGradeTier.C)));
             var snapshot = new Transactions(host);
-            Write(host.Session, "_table", Authored()); Assert.That(host.Session.TryDecide(), Is.True);
-            AssertOneDecision(host, source); Assert.That(host.Session.Result.Diamonds, Is.EqualTo(2));
+            // E2 freezes the policy at approved start, including a failed snapshot. Fixing the asset
+            // cannot mint a reward for this already started business, but result confirmation survives.
+            Write(host.Session, "_table", Authored()); Assert.That(host.Session.TryDecide(), Is.False);
+            Assert.That(host.Session.Result, Is.Null); Assert.That(source.Calls, Is.Zero);
+            Assert.That(host.Session.DecisionCount, Is.Zero);
             snapshot.AssertUnchanged(host); host.Confirm();
         }
     }
@@ -255,7 +258,9 @@ public sealed class PopupStoreRewardDecisionTests
         using (var host = new Host(source))
         using (var other = new Host(new Source(0)))
         {
-            Write(host.Session, "_table", null); ExpectError(); host.Finish(PopupStoreGradeTier.C); other.Finish(PopupStoreGradeTier.C);
+            host.Call("Start", 90d); host.Call("SellUntil", PopupStoreGradeTier.C);
+            Invoke(host.Session, "OnDestroy"); // Delay only the final observer; keep the valid approved-start policy.
+            host.Call("End"); other.Finish(PopupStoreGradeTier.C);
             var original = host.Grade.FinalResult;
             try
             {
@@ -265,7 +270,7 @@ public sealed class PopupStoreRewardDecisionTests
                 Assert.That(source.Calls, Is.Zero); Assert.That(host.Session.Result, Is.Null);
             }
             finally { Write(host.Grade, "<FinalResult>k__BackingField", original); }
-            Write(host.Session, "_table", Authored()); Assert.That(host.Session.TryDecide(), Is.True); AssertOneDecision(host, source);
+            Assert.That(host.Session.TryDecide(), Is.True); AssertOneDecision(host, source);
         }
     }
 
@@ -370,14 +375,14 @@ public sealed class PopupStoreRewardDecisionTests
         var source = new Source(() => { Object.DestroyImmediate(active.Get<UIPopupStore>("View")); return 0; });
         using (var host = new Host(source))
         {
-            active = host; Write(host.Session, "_table", null);
-            ExpectError(); host.Finish(PopupStoreGradeTier.C);
+            active = host; host.Call("Start", 90d); host.Call("SellUntil", PopupStoreGradeTier.C);
+            Invoke(host.Session, "OnDestroy"); // Defer the final callback until the view has safely hidden.
+            host.Call("End");
             var final = host.Grade.FinalResult;
             Assert.That(source.Calls, Is.Zero); Assert.That(host.Session.RandomDrawCount, Is.Zero);
             // Close through real navigation while its view exists, so ordinary EditMode observers are unbound before disposal.
             host.Close(); Assert.That(host.Root.activeSelf, Is.False); Assert.That(host.Grade.FinalResult, Is.SameAs(final));
             // The hidden observer still owns this final result; remove only its popup during the actual provider call.
-            Write(host.Session, "_table", Authored());
             ExpectError(); Assert.That(host.Session.TryDecide(final), Is.False);
             Assert.That(host.Grade.FinalResult, Is.SameAs(final));
             Assert.That(host.Root.GetComponent<UIPopupStore>(), Is.Null);
@@ -450,18 +455,19 @@ public sealed class PopupStoreRewardDecisionTests
     {
         var account = new AccountSnapshot(); var random = UnityEngine.Random.state;
         var source = new PopupStoreRewardRandomSource();
-        for (int i = 0; i < 128; i++) Assert.That(source.NextPercent(), Is.InRange(0, 99));
+        for (int i = 0; i < 128; i++) Assert.That(source.NextInt(100), Is.InRange(0, 99));
         Assert.That(UnityEngine.Random.state, Is.EqualTo(random)); account.AssertUnchanged();
     }
 
     [Test]
-    public void ActualPrefabBindsOneDecisionObserverToItsExistingGradeAndR0Asset()
+    public void ActualPrefabBindsOneDecisionObserverToItsExistingGradeAndActiveR1Asset()
     {
         var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
         var session = prefab.GetComponent<PopupStoreRewardSession>(); Assert.That(session, Is.Not.Null);
         Assert.That(prefab.GetComponentsInChildren<PopupStoreRewardSession>(true), Has.Length.EqualTo(1));
         Assert.That(Read(session, "_grade"), Is.SameAs(prefab.GetComponent<PopupStoreGradeSession>()));
-        Assert.That(Read(session, "_table"), Is.SameAs(Authored()));
+        Assert.That(Read(session, "_table"), Is.SameAs(AssetDatabase.LoadAssetAtPath<PopupStoreRewardTable>(
+            "Assets/Resources/UI/PopupStore/PopupStoreRewardTable_R1.asset")));
         Assert.That(prefab.GetComponentsInChildren<PopupStoreRewardBox>(true), Has.Length.EqualTo(1));
         Assert.That(prefab.GetComponentsInChildren<PopupStoreResultPanel>(true), Has.Length.EqualTo(1));
     }
@@ -498,7 +504,7 @@ public sealed class PopupStoreRewardDecisionTests
         internal int Calls { get; private set; }
         internal Source(int value) : this(() => value) { }
         internal Source(Func<int> next) { _next = next; }
-        public int NextPercent() { Calls++; return _next(); }
+        public int NextInt(int exclusiveUpperBound) { Calls++; return _next(); }
     }
     private sealed class TableScope : IDisposable
     {
@@ -519,7 +525,10 @@ public sealed class PopupStoreRewardDecisionTests
             _inner = Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { null }, CultureInfo.InvariantCulture);
             try
             {
-                Assert.That(Session, Is.Not.Null); Assert.That(Session.TrySetRandomSource(source), Is.True);
+                Assert.That(Session, Is.Not.Null);
+                // These original decision cases explicitly retain historical R0 amounts and boundaries.
+                Write(Session, "_table", Authored());
+                Assert.That(Session.TrySetRandomSource(source), Is.True);
                 Assert.That(Session.Refresh(), Is.True); // New ordinary MonoBehaviour lifecycle is explicit in this synchronous EditMode host.
             }
             catch { Dispose(); throw; }

@@ -479,7 +479,7 @@ public sealed class PopupStoreRewardRevealPreviewTests
         Assert.That(playerBranch, Does.Contain("Refresh() { DisablePreviewForPlayer(); return false; }"));
         Assert.That(playerBranch, Does.Contain("TryReveal() { DisablePreviewForPlayer(); return false; }"));
         Assert.That(playerBranch, Does.Contain("TickPreview(float unscaledDelta) => DisablePreviewForPlayer()"));
-        Assert.That(playerBranch, Does.Not.Contain("R0 테스트 보상").And.Not.Contain("TryDecide").And.Not.Contain("NextPercent"));
+        Assert.That(playerBranch, Does.Not.Contain("R0 테스트 보상").And.Not.Contain("TryDecide").And.Not.Contain("NextInt"));
     }
 
     [Test]
@@ -523,7 +523,7 @@ public sealed class PopupStoreRewardRevealPreviewTests
     {
         private readonly int _value; internal int Calls { get; private set; }
         internal Source(int value) { _value = value; }
-        public int NextPercent() { Calls++; return _value; }
+        public int NextInt(int exclusiveUpperBound) { Calls++; return _value; }
     }
 
     private sealed class Host : IDisposable
@@ -535,7 +535,13 @@ public sealed class PopupStoreRewardRevealPreviewTests
             var type = typeof(PopupStoreResultTests).GetNestedType("Host", BindingFlags.NonPublic);
             _inner = Activator.CreateInstance(type, BindingFlags.Instance | BindingFlags.NonPublic, null, new object[] { null }, CultureInfo.InvariantCulture);
             Source = new Source(roll);
-            try { Assert.That(Preview, Is.Not.Null); Assert.That(Session.TrySetRandomSource(Source), Is.True); Assert.That(Session.Refresh(), Is.True); }
+            try
+            {
+                // Historical R0 preview labels/amounts are intentionally covered independently of active R1.
+                Write(Session, "_table", AssetDatabase.LoadAssetAtPath<PopupStoreRewardTable>(
+                    "Assets/Resources/UI/PopupStore/PopupStoreRewardTable_R0.asset"));
+                Assert.That(Preview, Is.Not.Null); Assert.That(Session.TrySetRandomSource(Source), Is.True); Assert.That(Session.Refresh(), Is.True);
+            }
             catch { Dispose(); throw; }
         }
         internal GameObject Root => Get<GameObject>("Root");

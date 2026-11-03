@@ -14,6 +14,12 @@ public sealed class PopupStoreRewardSession : MonoBehaviour
     private IPopupStoreRewardRandomSource _random;
     private bool _deciding, _randomAttempted;
     private string _randomError;
+    private bool _policyPrepared;
+    private string _policySessionId;
+
+    public PopupStoreRewardPolicySnapshot PolicySnapshot { get; private set; }
+    public bool HasPolicySnapshot => PolicySnapshot != null;
+    public string PolicyError { get; private set; }
 
     public PopupStoreRewardDecision Result { get; private set; }
     public bool IsResolved { get; private set; }
@@ -21,6 +27,21 @@ public sealed class PopupStoreRewardSession : MonoBehaviour
     public int DecisionCount { get; private set; }
     public int RandomDrawCount { get; private set; }
     public string LastError { get; private set; }
+
+    /// <summary>Called only at the existing approved clock-start commit boundary. No random call or result.
+    /// Invalid data is latched too: repairing/swapping an asset cannot change an already started business.</summary>
+    internal void PreparePolicyForApprovedStart()
+    {
+        if (_policyPrepared) return;
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        if (clock == null || clock.State != PopupStoreBusinessState.NotStarted || !clock.HasStartApproval
+            || _grade == null || _grade.gameObject != gameObject) return;
+        _policyPrepared = true;
+        _policySessionId = _grade.SessionId;
+        if (_table == null) PolicyError = "The approved-start reward table is missing.";
+        else if (!_table.TryCreateSnapshot(out var snapshot, out string error)) PolicyError = error;
+        else { PolicySnapshot = snapshot; PolicyError = null; }
+    }
 
     /// <summary>Dependency injection is allowed only before any terminal decision or random attempt.</summary>
     public bool TrySetRandomSource(IPopupStoreRewardRandomSource source)
@@ -61,35 +82,37 @@ public sealed class PopupStoreRewardSession : MonoBehaviour
                 Resolve(finalResult);
                 return true;
             }
-            if (_table == null) return Reject("The local R0 reward table is missing.");
-            // Value snapshot: later Inspector edits cannot alter this decision or its probabilities.
-            if (!_table.TryGetReward(finalResult.Grade, out var entry, out error)) return Reject(error);
+            if (!_policyPrepared || !string.Equals(_policySessionId, finalResult.SessionId, StringComparison.Ordinal))
+                return Reject("This business has no approved-start reward policy snapshot.");
+            if (PolicySnapshot == null) return Reject(PolicyError ?? "The approved-start reward policy is invalid.");
+            if (!PolicySnapshot.TryGetReward(finalResult.Grade, out var entry, out error)) return Reject(error);
             _randomAttempted = true;
             int roll;
             try
             {
                 if (_random == null) _random = new PopupStoreRewardRandomSource();
                 RandomDrawCount++;
-                roll = _random.NextPercent();
+                roll = _random.NextInt(PolicySnapshot.Denominator);
             }
             catch (Exception exception)
             {
                 _randomError = "Reward random source failed: " + exception.Message;
                 return Reject(_randomError);
             }
-            if (!PopupStoreRewardSelector.TrySelect(entry, roll, out var kind, out int diamonds, out error))
+            if (!PopupStoreRewardSelector.TrySelect(entry, roll, PolicySnapshot.Denominator, out var kind, out int diamonds, out error))
             { _randomError = error; return Reject(error); }
             if (!Bind(out error) || !ValidateFinal(finalResult, out error))
             {
                 _randomError = "The final-result source changed during selection.";
                 return Reject(_randomError);
             }
-            Result = new PopupStoreRewardDecision(finalResult.SessionId, finalResult.Grade, kind, diamonds);
+            Result = new PopupStoreRewardDecision(finalResult.SessionId, finalResult.Grade, kind, diamonds, PolicySnapshot.PolicyId);
             DecisionCount++;
             Resolve(finalResult);
 #if UNITY_EDITOR
             Debug.Log("POPUP_STORE_REWARD_DECIDED session=" + Result.SessionId + " grade=" + Result.Grade
                 + " kind=" + Result.Kind + " diamonds=" + Result.Diamonds + " decision=" + Result.DecisionId
+                + " policy=" + Result.PolicyId + " denominator=" + PolicySnapshot.Denominator
                 + " draws=" + RandomDrawCount + " localOnly=True", this);
 #endif
             return true;
@@ -100,7 +123,11 @@ public sealed class PopupStoreRewardSession : MonoBehaviour
     private bool ValidateFinal(PopupStoreGradeResult result, out string error)
     {
         error = null;
-        if (_ownerGrade == null || !_ownerGrade.IsFinalized || result == null || !result.IsFinalized
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        if (clock == null || !clock.HasStartApproval || clock.State != PopupStoreBusinessState.Ended
+            || clock.EndReason != PopupStoreBusinessEndReason.Completed)
+            error = "Reward selection requires an approved, normally completed business.";
+        else if (_ownerGrade == null || !_ownerGrade.IsFinalized || result == null || !result.IsFinalized
             || !ReferenceEquals(result, _ownerGrade.FinalResult) || string.IsNullOrEmpty(result.SessionId)
             || !string.Equals(result.SessionId, _ownerGrade.SessionId, StringComparison.Ordinal))
             error = "Reward selection requires this session's original finalized result.";
@@ -161,6 +188,7 @@ public sealed class PopupStoreRewardSession : MonoBehaviour
             + " grade=" + (Result != null ? Result.Grade.ToString() : "none")
             + " kind=" + (Result != null ? Result.Kind.ToString() : "none")
             + " diamonds=" + (Result != null ? Result.Diamonds : 0) + " draws=" + RandomDrawCount
+            + " policy=" + (Result != null ? Result.PolicyId : PolicySnapshot?.PolicyId ?? "none")
             + " decisions=" + DecisionCount + " localOnly=True error=" + LastError, this);
     }
 #endif

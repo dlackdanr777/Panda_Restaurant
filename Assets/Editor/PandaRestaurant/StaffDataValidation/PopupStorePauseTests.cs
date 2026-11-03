@@ -553,7 +553,7 @@ public sealed class PopupStorePauseTests
     }
 
     private sealed class Source : IPopupStoreRewardRandomSource
-    { internal int Calls; public int NextPercent() { Calls++; return 85; } }
+    { internal int Calls; public int NextInt(int exclusiveUpperBound) { Calls++; return 85; } }
     private sealed class Host : IDisposable
     {
         private readonly object _inner;

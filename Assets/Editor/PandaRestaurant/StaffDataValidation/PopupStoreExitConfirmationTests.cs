@@ -528,7 +528,7 @@ public sealed class PopupStoreExitConfirmationTests
     }
 
     private sealed class FixedRewardSource : IPopupStoreRewardRandomSource
-    { internal int Calls; public int NextPercent() { Calls++; return 85; } }
+    { internal int Calls; public int NextInt(int exclusiveUpperBound) { Calls++; return 85; } }
 
     private static void AssertFreshEntryAfterTerminalClose(Host h, string previousSession)
     {

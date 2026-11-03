@@ -40,7 +40,11 @@ public sealed class PopupStoreStartController : MonoBehaviour
 
     internal bool TryStartApprovedClock()
     {
-        if (!isActiveAndEnabled || !IsApproved || Clock == null) return false;
+        if (!IsApproved || Clock == null) return false;
+        // Approval may already have consumed a use while focus delays local startup.
+        // Freeze its policy now; resuming that same approval must not adopt later asset edits.
+        GetComponent<PopupStoreRewardSession>()?.PreparePolicyForApprovedStart();
+        if (!isActiveAndEnabled) return false;
         if (Clock.State == PopupStoreBusinessState.NotStarted) return Clock.TryStartSession();
         return Clock.State == PopupStoreBusinessState.Running || Clock.State == PopupStoreBusinessState.Paused
             || Clock.State == PopupStoreBusinessState.Ended;
