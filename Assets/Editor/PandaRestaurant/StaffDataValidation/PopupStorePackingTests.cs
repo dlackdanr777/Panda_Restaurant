@@ -30,7 +30,9 @@ public sealed class PopupStorePackingTests
         Assert.That(button, Is.Not.Null);
         Assert.That(button.GetComponentInParent<UIPopupStore>(true), Is.SameAs(prefab.GetComponent<UIPopupStore>()));
         Assert.That(button.onClick.GetPersistentEventCount(), Is.Zero);
-        Assert.That(AssetDatabase.GetAssetPath(((Image)button.targetGraphic).sprite), Is.EqualTo("Assets/Sprites/PopupStore/UI_Pack.png"));
+        // DEV-UI-01 changes only the approved button skin; the same packing control and transaction wiring remain.
+        Assert.That(AssetDatabase.GetAssetPath(((Image)button.targetGraphic).sprite),
+            Is.EqualTo("Assets/Sprites/PopupStore/UIApproved_v1_20261104/UI_Button_Pack_WithIcon.png"));
         var displayOnly = (Button[])Read(prefab.GetComponent<UIPopupStore>(), "_displayOnlyButtons");
         Assert.That(displayOnly, Is.Empty);
         Assert.That(displayOnly.Contains(button), Is.False);

@@ -18,7 +18,8 @@ using UnityEngine.SceneManagement;
 /// <summary>
 /// Explicit request-only bridge for the synchronous, memory-only popup store fixtures.
 /// Tests never launch Play. An explicit result-review request may use the existing original memory-Play starter.
-/// Never creates a scene, saves assets, restores a workspace or starts another Editor.
+/// UI integration is a separate explicit command that saves only its approved popup prefab/importers.
+/// Never creates a scene, saves user scenes, restores a workspace or starts another Editor.
 /// </summary>
 [InitializeOnLoad]
 public static class PopupStoreVerificationRunner
@@ -48,7 +49,8 @@ public static class PopupStoreVerificationRunner
         "PopupStoreRewardDecisionTests", "PopupStoreRewardTransactionTests", "PopupStoreBusinessStartTests",
         "PopupStoreRewardRevealPreviewTests", "PopupStorePauseTests", "PopupStoreExitConfirmationTests", "PopupStoreSessionLifetimeTests",
         "PopupStoreBusinessAccessSettingsTests", "PopupStoreAdmissionTests",
-        "PopupStoreRewardR1TableTests", "PopupStoreRewardR1SessionTests"
+        "PopupStoreRewardR1TableTests", "PopupStoreRewardR1SessionTests",
+        "PopupStoreCurrentGradeHudTests", "PopupStoreApprovedUiTests", "PopupStorePatienceSkinTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -127,11 +129,22 @@ public static class PopupStoreVerificationRunner
         {
             request = File.ReadAllText(RequestPath).Trim();
             if (SessionState.GetBool(PausePlayKey, false) && request != "inspect") return;
-            if (request != "inspect" && EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (request != "inspect" && !request.StartsWith("ui-capture-", StringComparison.Ordinal)
+                && !request.StartsWith("ui-gameview-", StringComparison.Ordinal)
+                && EditorApplication.isPlayingOrWillChangePlaymode) return;
             File.Delete(RequestPath); // Consume only this explicit request; never retry a failed run automatically.
         }
         catch (IOException) { return; } // A writer may still own the request file.
         if (request == "inspect") InspectWorkspace();
+        else if (request == "ui-apply") RunApprovedUiOperation("PopupStoreApprovedUiIntegration", "Apply", null);
+        else if (request == "ui-evidence-before" || request == "ui-evidence-after")
+            RunApprovedUiOperation("PopupStoreApprovedUiEvidence", "Run", new object[] { request.Substring("ui-evidence-".Length) });
+        else if (request.StartsWith("ui-capture-", StringComparison.Ordinal)) CaptureApprovedUiGameView(request);
+        else if (request.StartsWith("ui-gameview-", StringComparison.Ordinal))
+        {
+            try { PopupStoreGameViewCapture.Begin(request.Substring("ui-gameview-".Length)); }
+            catch (Exception exception) { Debug.LogWarning("POPUP_STORE_GAMEVIEW_CAPTURE_REFUSED " + Unwrap(exception).Message); }
+        }
         else if (request == "arm-result-review") ArmResultReview();
         else if (request == "start-result-review") StartResultReview();
         else if (request == "start-reward-review-c") StartResultReview(ReviewMode.RewardC);
@@ -144,6 +157,42 @@ public static class PopupStoreVerificationRunner
         else if (request == "run-exit-play-review" || request == "run-pause-play-review") StartPausePlayReview();
         else if (request == "run-session-play-review") StartPausePlayReview(true);
         else Run(request);
+    }
+
+    private static void RunApprovedUiOperation(string typeName, string method, object[] arguments)
+    {
+        var before = ReadWorkspace();
+        string error = null;
+        try
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode || EditorUtility.scriptCompilationFailed
+                || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin
+                || Muks.BackEnd.BackendManager.ExistingInstance != null
+                || PrefabStageUtility.GetCurrentPrefabStage() != null
+                || Enumerable.Range(0, SceneManager.sceneCount).Any(i => SceneManager.GetSceneAt(i).isDirty))
+                throw new InvalidOperationException("Approved UI operation requires clean idle Edit Mode without a live account.");
+            var type = typeof(PopupStoreVerificationRunner).Assembly.GetType(typeName, true);
+            type.GetMethod(method, BindingFlags.Public | BindingFlags.Static).Invoke(null, arguments);
+        }
+        catch (Exception exception) { error = Unwrap(exception).ToString(); Debug.LogError(error); }
+        var after = ReadWorkspace();
+        Directory.CreateDirectory(DirectoryPath);
+        File.WriteAllText(DirectoryPath + "/ui-operation.json", JsonUtility.ToJson(new Report {
+            finishedUtc = DateTime.UtcNow.ToString("O"), error = error, before = before, after = after,
+            workspaceUnchanged = Same(before, after), success = error == null && Same(before, after)
+        }, true));
+    }
+
+    private static void CaptureApprovedUiGameView(string request)
+    {
+        // Screenshots only: no navigation, score injection, automatic packing or GameView resizing.
+        string label = request.Substring("ui-capture-".Length);
+        if (!EditorApplication.isPlaying || !SessionState.GetBool(CustomerPartyManualPlayBootstrap.SessionKey, false)
+            || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin
+            || (label != "start" && label != "play" && label != "result" && label != "before")) return;
+        string folder = DirectoryPath + "/UIEvidence";
+        Directory.CreateDirectory(folder);
+        ScreenCapture.CaptureScreenshot(folder + "/game-" + label + "-" + DateTime.UtcNow.ToString("yyyyMMdd-HHmmss") + ".png");
     }
 
     private static void StartResultReview(ReviewMode mode = ReviewMode.Result)

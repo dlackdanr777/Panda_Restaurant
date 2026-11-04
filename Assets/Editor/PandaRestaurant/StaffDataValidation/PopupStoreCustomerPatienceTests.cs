@@ -642,6 +642,11 @@ public sealed class PopupStoreCustomerPatienceTests
     {
         using (var host = new Host())
         {
+            // Preserve the original color-fallback contract; approved texture thresholds have their
+            // own PopupStorePatienceSkinTests and intentionally render with a white image tint.
+            Write(host.Patience, "_normalSprite", null);
+            Write(host.Patience, "_cautionSprite", null);
+            Write(host.Patience, "_urgentSprite", null);
             host.StartThree();
             var timer = host.Timer(0);
             Assert.That(host.FillImage(0).color, Is.EqualTo((Color)Read(host.Patience, "_normalColor")));

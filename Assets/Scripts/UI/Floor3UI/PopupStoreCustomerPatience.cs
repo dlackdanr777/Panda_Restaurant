@@ -65,6 +65,10 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
     [SerializeField] private Color _normalColor = new Color(.45f, .70f, .49f);
     [SerializeField] private Color _cautionColor = new Color(.92f, .69f, .31f);
     [SerializeField] private Color _urgentColor = new Color(.84f, .40f, .36f);
+    [Header("Optional gauge artwork (display only)")]
+    [SerializeField] private Sprite _normalSprite;
+    [SerializeField] private Sprite _cautionSprite;
+    [SerializeField] private Sprite _urgentSprite;
     [SerializeField, Range(0, 1)] private float _cautionThreshold = .5f, _urgentThreshold = .2f;
 
     private readonly PopupStorePatienceTimer[] _timers = new PopupStorePatienceTimer[3];
@@ -288,7 +292,14 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
             if (!visible) continue;
             float ratio = timer.InitialPatience > 0 ? (float)(timer.RemainingPatience / timer.InitialPatience) : 0;
             view.Fill.fillAmount = Mathf.Clamp01(ratio);
-            view.Fill.color = ratio <= _urgentThreshold ? _urgentColor : ratio <= _cautionThreshold ? _cautionColor : _normalColor;
+            // Use the same established thresholds; choosing artwork never settles a timer.
+            Sprite artwork = ratio <= _urgentThreshold ? _urgentSprite : ratio <= _cautionThreshold ? _cautionSprite : _normalSprite;
+            if (artwork != null)
+            {
+                view.Fill.sprite = artwork;
+                view.Fill.color = Color.white;
+            }
+            else view.Fill.color = ratio <= _urgentThreshold ? _urgentColor : ratio <= _cautionThreshold ? _cautionColor : _normalColor;
             string text = string.Format(CultureInfo.InvariantCulture, _timeFormat, Math.Ceiling(timer.RemainingPatience));
             if (view.TimeText.text != text) view.TimeText.text = text;
         }

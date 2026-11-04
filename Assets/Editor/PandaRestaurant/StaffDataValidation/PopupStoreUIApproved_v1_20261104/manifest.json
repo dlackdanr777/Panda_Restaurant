@@ -1,0 +1,1579 @@
+{
+  "package": "PopupStore_UI_Sprites_Extract_v1",
+  "created_kst": "2026-11-04T10:51:17+09:00",
+  "state": "EXTRACTION_REVIEW_ONLY_NOT_UNITY_APPLIED",
+  "source_files": [
+    {
+      "name": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "size": [
+        1536,
+        1024
+      ],
+      "sha256": "75ea432f764dbe18f8394531061b9c547c28c6de6c959593e35ff83fc3fd9947"
+    },
+    {
+      "name": "a_cute_colorful_2d_cartoon_craft_shop_popup_st.png",
+      "role": "layout_and_style_reference_only",
+      "sha256": "606cf7497506ac9686239b1bbfb119081ab4f60f181423e3beba1a4aa7345dbf"
+    },
+    {
+      "name": "모두의_레스토랑_봉제인형_팝업스토어.png",
+      "role": "approved_layout_reference",
+      "sha256": "31554a79182dcf8d9eaaeb7aaf25fe0fbfc11fefd3d6f81fcd13c50b7e0bac30"
+    }
+  ],
+  "asset_count": 30,
+  "assets": [
+    {
+      "id": "UI_HUD_ScoreFrame",
+      "label_ko": "점수판 빈 프레임",
+      "file": "sprites/UI_HUD_ScoreFrame.png",
+      "category": "hud",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        42,
+        0,
+        1025,
+        109
+      ],
+      "method": "source_strip_reassembly",
+      "pixels_wh": [
+        991,
+        117
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 시트의 빈 갈색 띠를 재조립했습니다. 별·왕관·게이지 제거. 기존 승인 보상 상자와 TMP 점수·등급·진행도를 별도 연결해야 합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          40,
+          22,
+          40,
+          22
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "상단 중앙",
+      "sha256": "02efab976e15cdb78f56d35522853961d11799f43ba65ff9fafae8cda0713b89",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 20735,
+        "opaque_pixels": 88758
+      },
+      "reassembly_source_strip_x": [
+        157,
+        435
+      ]
+    },
+    {
+      "id": "UI_HUD_TimerFrame",
+      "label_ko": "남은 시간 빈 프레임",
+      "file": "sprites/UI_HUD_TimerFrame.png",
+      "category": "hud",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1036,
+        0,
+        1344,
+        110
+      ],
+      "method": "source_strip_reassembly",
+      "pixels_wh": [
+        316,
+        118
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "시트의 원래 시계는 분리하고 빈 크림색 영역으로 재조립했습니다. 시계 아이콘과 TMP 시간을 별도 배치합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          35,
+          24,
+          35,
+          24
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "상단 오른쪽",
+      "sha256": "26e5761eecbeee1867d0fa4e34c5f01ff362407adb23a0bca51c875a9bef61e8",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 8986,
+        "opaque_pixels": 26323
+      }
+    },
+    {
+      "id": "UI_Icon_ClockPink",
+      "label_ko": "분홍 시계 아이콘",
+      "file": "sprites/UI_Icon_ClockPink.png",
+      "category": "icons",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        986,
+        831,
+        1060,
+        909
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        82,
+        86
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "기존 시트의 독립 아이콘 직접 추출. 숫자/시간 문구는 포함하지 않습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "6b019f7ac6e512cfada9909fe055ec5bd0242197554caccaad873c4ead7f9288",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 3349,
+        "opaque_pixels": 2980
+      }
+    },
+    {
+      "id": "UI_Icon_ClockBlue",
+      "label_ko": "파랑 시계 아이콘",
+      "file": "sprites/UI_Icon_ClockBlue.png",
+      "category": "icons",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1065,
+        829,
+        1136,
+        911
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        79,
+        90
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "기존 시트의 독립 아이콘 직접 추출. 숫자/시간 문구는 포함하지 않습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "9479a543ab085ec870d115bdbe22719595dcf367b9a48a6ed7f9e19df744fad7",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 3889,
+        "opaque_pixels": 2659
+      }
+    },
+    {
+      "id": "UI_OrderBubble_01",
+      "label_ko": "주문 말풍선 01",
+      "file": "sprites/UI_OrderBubble_01.png",
+      "category": "orders",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        45,
+        106,
+        420,
+        266
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        383,
+        168
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 느낌표 장식 포함. 주문 재료와 + 표시는 별도 UI입니다. 꼬리·장식이 포함되어 단순 9-slice 확대는 미검증입니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "손님 머리 위",
+      "sha256": "25f0affa9f9864ee6b111b9bca7c22eb80ae92cba1c4f3c3cab26b22a5c55c20",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 26291,
+        "opaque_pixels": 36470
+      }
+    },
+    {
+      "id": "UI_OrderBubble_02",
+      "label_ko": "주문 말풍선 02",
+      "file": "sprites/UI_OrderBubble_02.png",
+      "category": "orders",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        422,
+        106,
+        803,
+        266
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        389,
+        168
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 느낌표 장식 포함. 주문 재료와 + 표시는 별도 UI입니다. 꼬리·장식이 포함되어 단순 9-slice 확대는 미검증입니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "손님 머리 위",
+      "sha256": "966b1de5fa51c7072c9493e039fbeb881d83cc1d29dcd494689a31e253a9c101",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 26507,
+        "opaque_pixels": 37073
+      }
+    },
+    {
+      "id": "UI_OrderBubble_03",
+      "label_ko": "주문 말풍선 03",
+      "file": "sprites/UI_OrderBubble_03.png",
+      "category": "orders",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        803,
+        106,
+        1185,
+        266
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        390,
+        168
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 느낌표 장식 포함. 주문 재료와 + 표시는 별도 UI입니다. 꼬리·장식이 포함되어 단순 9-slice 확대는 미검증입니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "손님 머리 위",
+      "sha256": "c4bad56d9ff4e3ce518449dcec6842b8276965049f8463fe4777dad25f275c1b",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 26652,
+        "opaque_pixels": 37050
+      }
+    },
+    {
+      "id": "UI_Button_Clear_WithIcon",
+      "label_ko": "판매대 비우기 버튼·아이콘 일체",
+      "file": "sprites/UI_Button_Clear_WithIcon.png",
+      "category": "buttons",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        34,
+        315,
+        311,
+        448
+      ],
+      "method": "silhouette_mask",
+      "pixels_wh": [
+        285,
+        141
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "문자는 없는 원본 버튼입니다. 장식 아이콘은 이미 포함되어 있으므로 같은 아이콘을 중복 배치하지 않습니다. 주변 카운터만 마스킹했습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "판매대 왼쪽",
+      "sha256": "36c139837f1f1d6822a655ccf05024d8e2b866e6983a62755d03453ae6f883ab",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 7868,
+        "opaque_pixels": 29534
+      }
+    },
+    {
+      "id": "UI_Button_Clear_Blank",
+      "label_ko": "판매대 비우기 빈 버튼",
+      "file": "sprites/UI_Button_Clear_Blank.png",
+      "category": "buttons",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        34,
+        315,
+        311,
+        448
+      ],
+      "method": "source_strip_reassembly",
+      "pixels_wh": [
+        285,
+        141
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 빈 영역을 재조립한 아이콘 없는 버튼 후보. TMP 문구와 필요시 별도 원본 아이콘을 올립니다. WithIcon과 둘 중 하나만 사용합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          38,
+          32,
+          38,
+          32
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "판매대 왼쪽",
+      "sha256": "76cbd85bcc7f92f83e0a13b2f51f283a5394e761d59212902fe630f4406960e0",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 7868,
+        "opaque_pixels": 29534
+      }
+    },
+    {
+      "id": "UI_Button_Pack_WithIcon",
+      "label_ko": "포장하기 버튼·아이콘 일체",
+      "file": "sprites/UI_Button_Pack_WithIcon.png",
+      "category": "buttons",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1216,
+        313,
+        1506,
+        448
+      ],
+      "method": "silhouette_mask",
+      "pixels_wh": [
+        298,
+        143
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "문자는 없는 원본 버튼입니다. 장식 아이콘은 이미 포함되어 있으므로 같은 아이콘을 중복 배치하지 않습니다. 주변 카운터만 마스킹했습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "판매대 오른쪽",
+      "sha256": "ffd2d4fcbcd46e1ca9b84dc997d962969b47256b40748915277718ee5236b53e",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 9168,
+        "opaque_pixels": 30826
+      }
+    },
+    {
+      "id": "UI_Button_Pack_Blank",
+      "label_ko": "포장하기 빈 버튼",
+      "file": "sprites/UI_Button_Pack_Blank.png",
+      "category": "buttons",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1216,
+        313,
+        1506,
+        448
+      ],
+      "method": "source_strip_reassembly",
+      "pixels_wh": [
+        298,
+        143
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 빈 영역을 재조립한 아이콘 없는 버튼 후보. TMP 문구와 필요시 별도 원본 아이콘을 올립니다. WithIcon과 둘 중 하나만 사용합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          38,
+          32,
+          38,
+          32
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "판매대 오른쪽",
+      "sha256": "69a5201afaf14483d0180079d8bf4d343bce79050a5b4019533a7aff83fbce12",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 9168,
+        "opaque_pixels": 30826
+      }
+    },
+    {
+      "id": "UI_Tray_FiveEmptySlots",
+      "label_ko": "빈 판매대·5칸",
+      "file": "sprites/UI_Tray_FiveEmptySlots.png",
+      "category": "tray",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        306,
+        264,
+        1222,
+        451
+      ],
+      "method": "silhouette_mask",
+      "pixels_wh": [
+        924,
+        195
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "5칸이 인쇄된 정적 프레임입니다. 재료·텍스트 없음. 가로만 늘리지 말고 원비율 사용. 재료 5칸의 로컬 위치를 manifest에 기재했습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "중앙 판매대",
+      "sha256": "de5763703785729c3acd810607317c2d46db30c3caaf35870d92dc60381f0a7e",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 19722,
+        "opaque_pixels": 153985
+      },
+      "baked_empty_slots_xyxy_unpadded": [
+        [
+          59,
+          35,
+          201,
+          150
+        ],
+        [
+          220,
+          35,
+          364,
+          150
+        ],
+        [
+          384,
+          35,
+          528,
+          150
+        ],
+        [
+          547,
+          35,
+          691,
+          150
+        ],
+        [
+          712,
+          35,
+          867,
+          150
+        ]
+      ]
+    },
+    {
+      "id": "UI_Panel_Materials_Box",
+      "label_ko": "상자 목록 빈 프레임",
+      "file": "sprites/UI_Panel_Materials_Box.png",
+      "category": "list_chrome",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        545,
+        450,
+        998,
+        658
+      ],
+      "method": "source_swatch_reassembly",
+      "pixels_wh": [
+        461,
+        216
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "목록 테두리·카테고리 탭만 교체하는 후보입니다. 시트에 합쳐진 슬롯·화살표·페이지 도트를 원본 빈 배경 패치로 재조립했습니다. 기존 재료 이미지/목록 데이터/ScrollRect 기능은 변경하지 않습니다. 탭 아이콘은 원본 그대로 포함됩니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          190,
+          27,
+          28,
+          59
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "하단 왼쪽",
+      "sha256": "68fc318bc647623b76f3f809778c1d11b9dee4fd41558353c1b7ab2942e67e62",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 11051,
+        "opaque_pixels": 85366
+      },
+      "reassembly_clear_swatch_xyxy": [
+        837,
+        605,
+        903,
+        633
+      ],
+      "replace_only_background_chrome": true
+    },
+    {
+      "id": "UI_Panel_Materials_Plush",
+      "label_ko": "봉제인형 목록 빈 프레임",
+      "file": "sprites/UI_Panel_Materials_Plush.png",
+      "category": "list_chrome",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        15,
+        450,
+        545,
+        658
+      ],
+      "method": "source_swatch_reassembly",
+      "pixels_wh": [
+        538,
+        216
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "목록 테두리·카테고리 탭만 교체하는 후보입니다. 시트에 합쳐진 슬롯·화살표·페이지 도트를 원본 빈 배경 패치로 재조립했습니다. 기존 재료 이미지/목록 데이터/ScrollRect 기능은 변경하지 않습니다. 탭 아이콘은 원본 그대로 포함됩니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          213,
+          27,
+          28,
+          59
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "하단 가운데·넓게",
+      "sha256": "b9f6e546dbee122a11519e927e60fb4fa8563ef5a9b7ff8bf3cf85403add4da6",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 12257,
+        "opaque_pixels": 100136
+      },
+      "reassembly_clear_swatch_xyxy": [
+        159,
+        605,
+        210,
+        633
+      ],
+      "replace_only_background_chrome": true
+    },
+    {
+      "id": "UI_Panel_Materials_Ribbon",
+      "label_ko": "리본 목록 빈 프레임",
+      "file": "sprites/UI_Panel_Materials_Ribbon.png",
+      "category": "list_chrome",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        999,
+        450,
+        1520,
+        658
+      ],
+      "method": "source_swatch_reassembly",
+      "pixels_wh": [
+        529,
+        216
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "목록 테두리·카테고리 탭만 교체하는 후보입니다. 시트에 합쳐진 슬롯·화살표·페이지 도트를 원본 빈 배경 패치로 재조립했습니다. 기존 재료 이미지/목록 데이터/ScrollRect 기능은 변경하지 않습니다. 탭 아이콘은 원본 그대로 포함됩니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          206,
+          27,
+          28,
+          59
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": "하단 오른쪽",
+      "sha256": "341f90b473b6c3f4c8222676aa3d278a19eed803c4f0628b787b243a4ea2f58e",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 11980,
+        "opaque_pixels": 97991
+      },
+      "reassembly_clear_swatch_xyxy": [
+        1327,
+        605,
+        1400,
+        633
+      ],
+      "replace_only_background_chrome": true
+    },
+    {
+      "id": "UI_Arrow_Left",
+      "label_ko": "목록 왼쪽 화살표",
+      "file": "sprites/UI_Arrow_Left.png",
+      "category": "navigation",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1119,
+        923,
+        1162,
+        978
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        51,
+        63
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "시트의 독립 원본 화살표. 필요한 기존 목록 버튼에만 연결하며 새 스크롤 기능을 만들지 않습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "a1e544a10e6aff602df982f704bd1a8910d3ae566977961a2e44ebd5800768cb",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 2108,
+        "opaque_pixels": 821
+      }
+    },
+    {
+      "id": "UI_Arrow_Right",
+      "label_ko": "목록 오른쪽 화살표",
+      "file": "sprites/UI_Arrow_Right.png",
+      "category": "navigation",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1173,
+        923,
+        1216,
+        978
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        51,
+        63
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "시트의 독립 원본 화살표. 필요한 기존 목록 버튼에만 연결하며 새 스크롤 기능을 만들지 않습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "ccb5f9178e8aa2a965b107db12a7d236a8f756edc44fb3ad8533359ed8fbd9bf",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 2132,
+        "opaque_pixels": 787
+      }
+    },
+    {
+      "id": "UI_PageDot_Pink",
+      "label_ko": "분홍 활성 도트",
+      "file": "sprites/UI_PageDot_Pink.png",
+      "category": "navigation",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        837,
+        926,
+        871,
+        961
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        42,
+        43
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "독립 원본 도트 직접 추출. 페이지 개수는 실제 목록 길이에 맞춰 동적으로 표시해야 합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "22bbe7639a73995b372f7e43c7b2a8a2c5182875d59950a14feb16e915485aa5",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 1205,
+        "opaque_pixels": 287
+      }
+    },
+    {
+      "id": "UI_PageDot_Blue",
+      "label_ko": "파랑 활성 도트",
+      "file": "sprites/UI_PageDot_Blue.png",
+      "category": "navigation",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        940,
+        926,
+        974,
+        961
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        42,
+        43
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "독립 원본 도트 직접 추출. 페이지 개수는 실제 목록 길이에 맞춰 동적으로 표시해야 합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "1c46e4a80a41113b0781e8e6cc5841fea0223ef805bc42df5f4e3be9b3b26d41",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 1197,
+        "opaque_pixels": 300
+      }
+    },
+    {
+      "id": "UI_PageDot_Orange",
+      "label_ko": "주황 활성 도트",
+      "file": "sprites/UI_PageDot_Orange.png",
+      "category": "navigation",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1017,
+        926,
+        1050,
+        961
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        41,
+        43
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "독립 원본 도트 직접 추출. 페이지 개수는 실제 목록 길이에 맞춰 동적으로 표시해야 합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "c14e7d71f60c7bcdbeadf3e852eaa7bd4a05d677b32fa7a62db23b54d7556d6c",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 1185,
+        "opaque_pixels": 314
+      }
+    },
+    {
+      "id": "UI_PageDot_Inactive",
+      "label_ko": "비활성 도트",
+      "file": "sprites/UI_PageDot_Inactive.png",
+      "category": "navigation",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        868,
+        927,
+        898,
+        960
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        38,
+        41
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "독립 원본 도트 직접 추출. 페이지 개수는 실제 목록 길이에 맞춰 동적으로 표시해야 합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "8e09c22e899d4b00939ce929d36d5835e24d82935c5d340de6ed4b0240587420",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 1059,
+        "opaque_pixels": 246
+      }
+    },
+    {
+      "id": "UI_Bar_Grade_Track",
+      "label_ko": "등급 게이지 빈 트랙",
+      "file": "sprites/UI_Bar_Grade_Track.png",
+      "category": "gauges",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        789,
+        51,
+        993,
+        89
+      ],
+      "method": "visible_cap_reassembly",
+      "pixels_wh": [
+        450,
+        46
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 점수 게이지의 비어 있는 오른쪽 트랙·끝단을 재조립. 채움색 없음. 좌우 끝단은 원본 오른쪽 끝을 대칭 사용했습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          28,
+          15,
+          28,
+          15
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "cad2dc54a2f8932bfac89bc4fcb09a59d219d8bfac5f41307dd688059ce3f469",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 5156,
+        "opaque_pixels": 12382
+      }
+    },
+    {
+      "id": "UI_Bar_Grade_Fill",
+      "label_ko": "등급 게이지 노랑 채움",
+      "file": "sprites/UI_Bar_Grade_Fill.png",
+      "category": "gauges",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        556,
+        56,
+        772,
+        83
+      ],
+      "method": "visible_cap_reassembly",
+      "pixels_wh": [
+        433,
+        33
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "기존 노랑 채움의 보이는 왼쪽 둥근 끝단·중앙을 재조립한 후보. 원본 흰 하이라이트 포함. 트랙 없이 별도 Image로 사용합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          16,
+          7,
+          16,
+          7
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "40af6418e86836ae7ae7e551b072f3f41fa42f32e3c1d3e34c83dc9c8e891c63",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 4658,
+        "opaque_pixels": 6612
+      }
+    },
+    {
+      "id": "UI_Bar_Patience_Track",
+      "label_ko": "손님 대기 게이지 빈 트랙",
+      "file": "sprites/UI_Bar_Patience_Track.png",
+      "category": "gauges",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1412,
+        126,
+        1488,
+        173
+      ],
+      "method": "visible_cap_reassembly",
+      "pixels_wh": [
+        235,
+        55
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "초록 막대 오른쪽의 빈 트랙만 사용해 재조립. 시계/채움은 별도 Sprite. 세 손님 모두 동일 트랙을 재사용합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          31,
+          18,
+          31,
+          18
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "56e618b6269c32d72c921b4a4962b8c5b74d9a7b224e5e9adb4228aa43a021ca",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 3680,
+        "opaque_pixels": 8446
+      }
+    },
+    {
+      "id": "UI_Bar_Patience_Fill_Green",
+      "label_ko": "손님 대기 게이지 초록 채움",
+      "file": "sprites/UI_Bar_Patience_Fill_Green.png",
+      "category": "gauges",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1300,
+        137,
+        1411,
+        163
+      ],
+      "method": "visible_cap_reassembly",
+      "pixels_wh": [
+        216,
+        33
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 채움의 보이는 오른쪽 끝단과 중앙을 재조립. 시계와 트랙이 없는 독립 채움. 새 그라데이션/색상을 만들지 않았습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          21,
+          7,
+          21,
+          7
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "9bca86588ea5106b720ed49435c8df1492f387146d31e5c2889d745a44142345",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 2518,
+        "opaque_pixels": 3132
+      }
+    },
+    {
+      "id": "UI_Bar_Patience_Fill_Yellow",
+      "label_ko": "손님 대기 게이지 노랑 채움",
+      "file": "sprites/UI_Bar_Patience_Fill_Yellow.png",
+      "category": "gauges",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1300,
+        202,
+        1411,
+        228
+      ],
+      "method": "visible_cap_reassembly",
+      "pixels_wh": [
+        216,
+        33
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 채움의 보이는 오른쪽 끝단과 중앙을 재조립. 시계와 트랙이 없는 독립 채움. 새 그라데이션/색상을 만들지 않았습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          21,
+          7,
+          21,
+          7
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "dabc7fc62f05b38e4c0f354d73f77e520594f799f28ddeb3281985c684637813",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 2486,
+        "opaque_pixels": 3156
+      }
+    },
+    {
+      "id": "UI_Bar_Patience_Fill_Red",
+      "label_ko": "손님 대기 게이지 빨강 채움",
+      "file": "sprites/UI_Bar_Patience_Fill_Red.png",
+      "category": "gauges",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        1300,
+        267,
+        1411,
+        293
+      ],
+      "method": "visible_cap_reassembly",
+      "pixels_wh": [
+        216,
+        32
+      ],
+      "padding_px": 4,
+      "status": "SOURCE_DERIVED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 채움의 보이는 오른쪽 끝단과 중앙을 재조립. 시계와 트랙이 없는 독립 채움. 새 그라데이션/색상을 만들지 않았습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": [
+          21,
+          7,
+          21,
+          7
+        ],
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "4b9080e93be1a8179fd9a245320d257b4e67ac55811e1a4b1cf3ee29a3ae093b",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 2472,
+        "opaque_pixels": 3142
+      }
+    },
+    {
+      "id": "UI_Sign_HangingBlank",
+      "label_ko": "빈 걸이 간판",
+      "file": "sprites/UI_Sign_HangingBlank.png",
+      "category": "auxiliary",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        646,
+        827,
+        819,
+        1007
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        181,
+        188
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "원본 줄/프레임 포함. 문구는 TMP로 별도 배치합니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "554ea40f8b3a4923bdebaa3ca3f5fa4787163fde7e9de3fcd09da1b5986852f1",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 13091,
+        "opaque_pixels": 19036
+      }
+    },
+    {
+      "id": "UI_Panel_FloralBrown",
+      "label_ko": "갈색 꽃장식 빈 패널",
+      "file": "sprites/UI_Panel_FloralBrown.png",
+      "category": "auxiliary",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        22,
+        839,
+        443,
+        1001
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        429,
+        170
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "시트의 원본 빈 패널. 공통 팝업 후보이며 실제 시작/포기/결과창 적용은 별도 배치 검수 대상입니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "4e630ac1eeab2552c1e57953c8649a1fcfc831b10b35941e2ea5a7d7c0d77cd8",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 18516,
+        "opaque_pixels": 51839
+      }
+    },
+    {
+      "id": "UI_Panel_FloralCream",
+      "label_ko": "크림색 꽃장식 빈 패널",
+      "file": "sprites/UI_Panel_FloralCream.png",
+      "category": "auxiliary",
+      "source": "카페 테마 귀여운 UI 스프라이트 시트(1).png",
+      "source_rect_xyxy": [
+        445,
+        835,
+        644,
+        1001
+      ],
+      "method": "crop_alpha_cleanup",
+      "pixels_wh": [
+        207,
+        174
+      ],
+      "padding_px": 4,
+      "status": "EXTRACTED_CANDIDATE",
+      "review_required": true,
+      "notes_ko": "시트의 원본 빈 패널. 꽃이 가장자리에 걸쳐 있으므로 비균등 확대하지 않습니다.",
+      "unity": {
+        "texture_type": "Sprite (2D and UI)",
+        "sprite_mode": "Single",
+        "alpha_is_transparency": true,
+        "mipmaps": false,
+        "wrap_mode": "Clamp",
+        "mesh_type": "FullRect",
+        "filter_mode": "Bilinear",
+        "compression": "None during review",
+        "preserve_aspect": true,
+        "nine_slice_border_lbrt_candidate_px": null,
+        "pivot": [
+          0.5,
+          0.5
+        ]
+      },
+      "placement_ko": null,
+      "sha256": "50c8e981754f1e35c4f1b1b3b49e3efb15718d69a89a117bb4913ba8c142f7d3",
+      "alpha_qa": {
+        "min": 0,
+        "max": 255,
+        "transparent_pixels": 11052,
+        "opaque_pixels": 23121
+      }
+    }
+  ],
+  "global_alpha_cleanup": {
+    "rgb_repaint_for_extracted_assets": false,
+    "background": "alpha=0, not painted black/white/checkerboard",
+    "alpha_rule": "remove alpha<32 halo; normalize source alpha 32..246 to 0..255; retain significant components >=96 plus 1px fringe",
+    "padding_px": 4
+  },
+  "excluded_and_reuse": [
+    {
+      "item": "approved_reward_boxes_C_B_A_S_SS_SSS",
+      "action": "REUSE_EXISTING_PROJECT_ASSETS_NOT_REGENERATED",
+      "path_pattern": "Assets/Sprites/PopupStore/RewardBoxes/PopupRewardBox_{GRADE}_APPROVED.png",
+      "binding_note": "점수 왼쪽 Image는 기존 승인 6종 Sprite에 연결. 표시 전용이며 보상 확정/추첨 기능과 분리."
+    },
+    {
+      "item": "close_button_X",
+      "action": "REUSE_EXISTING_PREFAB_SPRITE_NOT_REGENERATED",
+      "binding_note": "UIPopupStore._closeButton의 기존 X Sprite 및 종료 확인 로직 유지. 빨간 글자형 나가기/일시정지 버튼은 사용하지 않음."
+    },
+    {
+      "item": "plush_materials_boxes_ribbons",
+      "action": "DO_NOT_REPLACE_EXISTING_IMAGES_LIST_DATA_OR_SCROLL_LOGIC",
+      "binding_note": "새 파츠는 chrome만. 기존 32+3+3 재료 이미지·목록 기능은 변경하지 않음."
+    },
+    {
+      "item": "customers_and_background",
+      "action": "NOT_EXTRACTED_OR_REDRAWN"
+    },
+    {
+      "item": "generated_gold_A_chest_red_exit_pause_star_crown",
+      "action": "EXCLUDED_FROM_DELIVERY"
+    }
+  ],
+  "not_reconstructed": [
+    "카운터 전체 배경: 시트에서 버튼/트레이가 겹쳐 가려진 부분은 원본 픽셀을 복원하지 않았음.",
+    "기존 승인 보상 상자와 X 버튼의 실제 PNG는 현재 첨부에 없어 본 패키지에 중복 복제하지 않음.",
+    "버튼 눌림/비활성용 신규 이미지 미생성. 기존 Unity 색상/스케일 상태 유지 후 별도 검수.",
+    "시안의 점수/남은 점수/시간 예시는 하드코딩하지 않고 실제 게임 데이터로 연결.",
+    "리본/상자/봉제인형은 첨부 예시 그림을 새 재료로 추출하지 않음."
+  ],
+  "unity_import_applied": false,
+  "google_drive_uploaded": false,
+  "codex_prompt_created": false,
+  "review_gate": "사용자 추출물 확인 후 부족분 제작/최종 컨펌, 그 다음 Drive 업로드 및 Codex 지시문.",
+  "counts": {
+    "total_png": 30,
+    "cropped_or_masked": 17,
+    "source_reassembled": 13
+  },
+  "extraction_complete_kst": "2026-11-04 10:53:41 KST"
+}

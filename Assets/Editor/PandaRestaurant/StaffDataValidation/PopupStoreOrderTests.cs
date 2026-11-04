@@ -101,6 +101,7 @@ public sealed class PopupStoreOrderTests
         CollectionAssert.AllItemsAreUnique(slots.Select(slot => slot.OrderFrame.GetInstanceID()).ToArray());
         CollectionAssert.AllItemsAreUnique(slots.SelectMany(slot => slot.MaterialIcons).Select(icon => icon.GetInstanceID()).ToArray());
         float previous = float.NegativeInfinity;
+        int slotIndex = 0;
         foreach (var slot in slots)
         {
             Assert.That(slot.CustomerImage.transform.parent, Is.SameAs(slot.OrderFrame.transform.parent));
@@ -108,7 +109,9 @@ public sealed class PopupStoreOrderTests
             Assert.That(slot.CustomerImage.raycastTarget, Is.False);
             Assert.That(slot.CustomerImage.preserveAspect, Is.True);
             Assert.That(slot.OrderFrame.raycastTarget, Is.False);
-            Assert.That(AssetDatabase.GetAssetPath(slot.OrderFrame.sprite), Is.EqualTo("Assets/Sprites/UI/UIMiniGame/UI_프레임_제작완료.png"));
+            // DEV-UI-01 approves one exterior bubble per existing slot; order icons and bindings stay unchanged.
+            Assert.That(AssetDatabase.GetAssetPath(slot.OrderFrame.sprite), Is.EqualTo(
+                "Assets/Sprites/PopupStore/UIApproved_v1_20261104/UI_OrderBubble_" + (++slotIndex).ToString("00") + ".png"));
             foreach (var icon in slot.MaterialIcons)
             {
                 Assert.That(icon, Is.Not.Null);

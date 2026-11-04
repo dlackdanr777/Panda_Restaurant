@@ -1,0 +1,305 @@
+{
+  "source_rgb_policy": "직접 추출은 원본 RGB 유지. 재조립은 원본 패치 리샘플링으로 명시.",
+  "checks": [
+    {
+      "id": "UI_HUD_ScoreFrame",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        991,
+        117
+      ]
+    },
+    {
+      "id": "UI_HUD_TimerFrame",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        316,
+        118
+      ]
+    },
+    {
+      "id": "UI_Icon_ClockPink",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        82,
+        86
+      ]
+    },
+    {
+      "id": "UI_Icon_ClockBlue",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        79,
+        90
+      ]
+    },
+    {
+      "id": "UI_OrderBubble_01",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        383,
+        168
+      ]
+    },
+    {
+      "id": "UI_OrderBubble_02",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        389,
+        168
+      ]
+    },
+    {
+      "id": "UI_OrderBubble_03",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        390,
+        168
+      ]
+    },
+    {
+      "id": "UI_Button_Clear_WithIcon",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        285,
+        141
+      ]
+    },
+    {
+      "id": "UI_Button_Clear_Blank",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        285,
+        141
+      ]
+    },
+    {
+      "id": "UI_Button_Pack_WithIcon",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        298,
+        143
+      ]
+    },
+    {
+      "id": "UI_Button_Pack_Blank",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        298,
+        143
+      ]
+    },
+    {
+      "id": "UI_Tray_FiveEmptySlots",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        924,
+        195
+      ]
+    },
+    {
+      "id": "UI_Panel_Materials_Box",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        461,
+        216
+      ]
+    },
+    {
+      "id": "UI_Panel_Materials_Plush",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        538,
+        216
+      ]
+    },
+    {
+      "id": "UI_Panel_Materials_Ribbon",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        529,
+        216
+      ]
+    },
+    {
+      "id": "UI_Arrow_Left",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        51,
+        63
+      ]
+    },
+    {
+      "id": "UI_Arrow_Right",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        51,
+        63
+      ]
+    },
+    {
+      "id": "UI_PageDot_Pink",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        42,
+        43
+      ]
+    },
+    {
+      "id": "UI_PageDot_Blue",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        42,
+        43
+      ]
+    },
+    {
+      "id": "UI_PageDot_Orange",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        41,
+        43
+      ]
+    },
+    {
+      "id": "UI_PageDot_Inactive",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        38,
+        41
+      ]
+    },
+    {
+      "id": "UI_Bar_Grade_Track",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        450,
+        46
+      ]
+    },
+    {
+      "id": "UI_Bar_Grade_Fill",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        433,
+        33
+      ]
+    },
+    {
+      "id": "UI_Bar_Patience_Track",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        235,
+        55
+      ]
+    },
+    {
+      "id": "UI_Bar_Patience_Fill_Green",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        216,
+        33
+      ]
+    },
+    {
+      "id": "UI_Bar_Patience_Fill_Yellow",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        216,
+        33
+      ]
+    },
+    {
+      "id": "UI_Bar_Patience_Fill_Red",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        216,
+        32
+      ]
+    },
+    {
+      "id": "UI_Sign_HangingBlank",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        181,
+        188
+      ]
+    },
+    {
+      "id": "UI_Panel_FloralBrown",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        429,
+        170
+      ]
+    },
+    {
+      "id": "UI_Panel_FloralCream",
+      "rgba": true,
+      "transparent_border": true,
+      "has_opaque_foreground": true,
+      "size": [
+        207,
+        174
+      ]
+    }
+  ]
+}

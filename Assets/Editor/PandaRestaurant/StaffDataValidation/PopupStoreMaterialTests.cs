@@ -163,7 +163,8 @@ public sealed class PopupStoreMaterialTests
         CollectionAssert.AllItemsAreUnique(contents.Select(content => content.GetInstanceID()).ToArray());
         CollectionAssert.AllItemsAreUnique(lists.SelectMany(list => new[] { Button(list, false), Button(list, true) }).ToArray());
         var ordered = lists.OrderBy(list => list.transform.localPosition.x).Select(Kind).ToArray();
-        CollectionAssert.AreEqual(new[] { PopupStoreMaterialKind.Plush, PopupStoreMaterialKind.Box, PopupStoreMaterialKind.Ribbon }, ordered);
+        // DEV-UI-01 changes only the approved outer panel arrangement; all three independent lists remain intact.
+        CollectionAssert.AreEqual(new[] { PopupStoreMaterialKind.Box, PopupStoreMaterialKind.Plush, PopupStoreMaterialKind.Ribbon }, ordered);
 
         foreach (var list in lists)
         {
