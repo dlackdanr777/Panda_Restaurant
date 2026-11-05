@@ -52,7 +52,8 @@ public static partial class PopupStoreVerificationRunner
         "PopupStoreRewardR1TableTests", "PopupStoreRewardR1SessionTests",
         "PopupStoreCurrentGradeHudTests", "PopupStoreApprovedUiTests", "PopupStorePatienceSkinTests",
         "PopupStoreManualTestMenuTests", "PopupStoreMainVisualTests", "PopupStoreFinalGuideTests", "PopupStoreCleanPartsTests",
-        "PopupStoreUnorderedPackingTests"
+        "PopupStoreUnorderedPackingTests",
+        "PopupStorePhaseProfileTests", "PopupStorePhaseSessionTests", "PopupStorePhaseBoundaryTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -69,7 +70,7 @@ public static partial class PopupStoreVerificationRunner
     }
     [Serializable] private sealed class Workspace
     {
-        public string setup, activeScene, dirty, selection, startScene, undo, roots;
+        public string setup, activeScene, dirty, selection, startScene, undo, roots, gameViews;
     }
     [Serializable] private sealed class Inspection
     {
@@ -1076,8 +1077,32 @@ public static partial class PopupStoreVerificationRunner
                 ? string.Join(",", scene.GetRootGameObjects().Select(root => root.GetInstanceID()).OrderBy(id => id)) : "unloaded"))),
             selection = string.Join(",", Selection.instanceIDs) + "|" + Selection.activeInstanceID + "|" + (Selection.activeContext == null ? 0 : Selection.activeContext.GetInstanceID()),
             startScene = AssetDatabase.GetAssetPath(EditorSceneManager.playModeStartScene),
-            undo = arguments[1] + "|" + string.Join("\n", records)
+            undo = arguments[1] + "|" + string.Join("\n", records),
+            gameViews = ReadGameViewSettings()
         };
+    }
+    // Observation only: no window creation/focus, size selection, serialized writes or Undo operations.
+    private static string ReadGameViewSettings()
+    {
+        var gameType = typeof(EditorWindow).Assembly.GetType("UnityEditor.GameView", true);
+        var flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        return string.Join("\n", Resources.FindObjectsOfTypeAll(gameType).OfType<EditorWindow>()
+            .OrderBy(view => view.GetInstanceID()).Select(view =>
+            {
+                var zoom = gameType.GetField("m_ZoomArea", flags)?.GetValue(view);
+                var selectedProperty = gameType.GetProperty("selectedSizeIndex", flags);
+                var lowResolutionProperty = gameType.GetProperty("lowResolutionForAspectRatios", flags);
+                var scaleProperty = zoom?.GetType().GetProperty("scale", flags);
+                var translationProperty = zoom?.GetType().GetProperty("translation", flags);
+                if (selectedProperty == null || lowResolutionProperty == null || scaleProperty == null || translationProperty == null)
+                    throw new NotSupportedException("GameView observation is unavailable; preservation cannot be asserted.");
+                var selected = selectedProperty.GetValue(view);
+                var lowResolution = lowResolutionProperty.GetValue(view);
+                return view.GetInstanceID() + "|" + selected + "|" + lowResolution + "|"
+                    + view.position.ToString("R") + "|" + view.maximized + "|"
+                    + ((Vector2)scaleProperty.GetValue(zoom)).ToString("R") + "|"
+                    + ((Vector2)translationProperty.GetValue(zoom)).ToString("R");
+            }));
     }
     private static bool Same(Workspace first, Workspace second) => JsonUtility.ToJson(first) == JsonUtility.ToJson(second);
     private static void CaptureLog(string message, string stackTrace, LogType type)
