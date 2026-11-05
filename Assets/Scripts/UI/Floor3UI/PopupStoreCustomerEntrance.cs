@@ -189,6 +189,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             for (int i = 0; i < _slots.Length; i++)
             {
                 if (!_orders.TryGetEntryBinding(i, out var order, out var image)) continue;
+                PopupStoreCustomerVisualClip.Prepare(image);
                 var slot = new Slot(order, image);
                 _slots[i] = slot;
                 for (int j = 0; j < i; j++)
@@ -393,6 +394,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             if (!_orders.TryGetEntryBinding(index, out var bound, out var image)
                 || !ReferenceEquals(bound, replacement) || image != previous.Image)
             { Report("A supplied order must retain its original customer image slot."); PauseVisibleSession(); return; }
+            PopupStoreCustomerVisualClip.Prepare(image);
             _slots[index] = new Slot(replacement, image);
         }
         var slot = _slots[index];

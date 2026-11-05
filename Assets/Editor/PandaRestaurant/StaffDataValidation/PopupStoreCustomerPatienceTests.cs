@@ -489,7 +489,7 @@ public sealed class PopupStoreCustomerPatienceTests
     [TestCase("Multiple")]
     [TestCase("Busy")]
     [TestCase("Stale")]
-    public void RejectedPackingDoesNotStopOrResetAnUncommittedOrder(string status)
+    public void RejectedPackingKeepsTimersAndMultipleCandidatesStopOnlyTheRecipient(string status)
     {
         var orders = status == "Multiple"
             ? new[] { MakeOrder("CUSTOMER01"), MakeOrder("CUSTOMER04") }
@@ -504,6 +504,20 @@ public sealed class PopupStoreCustomerPatienceTests
             if (status == "Stale") Write(host.SourceOrders[0], "_plushIds", new[] { "STAFF02" });
             var materials = host.Counter.Materials.ToArray();
             var result = host.Packing.TryPack();
+            if (status == "Multiple")
+            {
+                Assert.That(result.Success, Is.True);
+                Assert.That(result.Receipt.SlotIndex, Is.Zero);
+                host.Clock.AdvanceTime(1);
+                Assert.That(timer.RemainingPatience, Is.EqualTo(16d));
+                Assert.That(timer.IsRunning, Is.False);
+                Assert.That(host.Timer(1).RemainingPatience, Is.EqualTo(15d));
+                Assert.That(host.Timer(1).IsRunning, Is.True);
+                Assert.That(host.SourceOrders.Count(order => order.IsPacked), Is.EqualTo(1));
+                Assert.That(host.Packing.SuccessfulPackCount, Is.EqualTo(1));
+                Assert.That(host.Counter.Count, Is.Zero);
+                return;
+            }
             Assert.That(result.Status.ToString(), Is.EqualTo(status));
             if (status == "Busy") Write(host.Packing, "_busy", false);
             if (status == "Stale") Write(host.SourceOrders[0], "_plushIds", new[] { "STAFF01" });

@@ -116,7 +116,7 @@ public sealed class PopupStoreGradeTests
             Assert.That(host.GradeText.raycastTarget, Is.False);
             Assert.That(host.GradeText.text, Is.EqualTo("등급 —"));
             Assert.That(host.ProgressImage.fillAmount, Is.Zero);
-            Assert.That(host.ScoreText.text, Is.EqualTo("점수 0"));
+            Assert.That(host.ScoreText.text, Is.EqualTo("0"));
             Assert.That(host.ScoreText.font, Is.SameAs(scoreText.font));
             Assert.That(host.ScoreText.rectTransform.anchoredPosition, Is.EqualTo(scoreText.rectTransform.anchoredPosition));
             Assert.That(host.ScoreText.rectTransform.sizeDelta, Is.EqualTo(scoreText.rectTransform.sizeDelta));
@@ -139,7 +139,7 @@ public sealed class PopupStoreGradeTests
             int feedback = host.FeedbackCount;
             var result = host.Packing.TryPack();
             Assert.That(result.Success, Is.True);
-            Assert.That(host.ScoreText.text, Is.EqualTo("점수 100"));
+            Assert.That(host.ScoreText.text, Is.EqualTo("100"));
             Assert.That(host.GradeText.text, Is.EqualTo("등급 C"));
             Assert.That(host.Grade.Current.Score, Is.EqualTo(100));
             Assert.That(host.Grade.Current.SuccessfulOrders, Is.EqualTo(1));
@@ -639,7 +639,7 @@ public sealed class PopupStoreGradeTests
             LogAssert.Expect(LogType.Error, new Regex("^PopupStoreGradeSession: HUD update failed; result data is preserved\\."));
             var receipt = host.Packing.TryPack().Receipt;
             Assert.That(receipt, Is.Not.Null);
-            Assert.That(host.ScoreText.text, Is.EqualTo("점수 100"));
+            Assert.That(host.ScoreText.text, Is.EqualTo("100"));
             host.Clock.AdvanceTime(90);
             AssertFinal(host, 100, 1, PopupStoreGradeTier.C);
             host.CompleteVisual();

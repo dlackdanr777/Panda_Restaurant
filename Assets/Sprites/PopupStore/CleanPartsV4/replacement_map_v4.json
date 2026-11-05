@@ -1,0 +1,798 @@
+{
+  "schema": "popup-cleanparts-v4-integration",
+  "date": "2026-11-05",
+  "status": "PARTS_PREPARED__UNITY_APPLY_PENDING",
+  "source_sheet_is_not_layout": true,
+  "layout_base": "approved final guide and latest local DEV-UI-03; do not use collage positions",
+  "guide_canvas": [
+    1672,
+    941
+  ],
+  "replacements": [
+    {
+      "old_id": "FG_HUD_ScoreFrame",
+      "old_package_file": "01_Sprites/FG_HUD_ScoreFrame.png",
+      "old_sha256": "6ee5293cdee4c7bcd018a9256a7482a807a2f2a09c25e13476f23ddcccf5a201",
+      "replacement_id": "V4_HUD_ScoreFrame_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_HUD_ScoreFrame_EMPTY.png",
+      "replacement_sha256": "dfed1faa0acd7b7221cbe06bdcfa2a176828d75f59711efa7b2dbd1f1865de4e",
+      "target_guide_rect_xywh": [
+        194,
+        8,
+        874,
+        109
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_HUD_TimerFrame",
+      "old_package_file": "01_Sprites/FG_HUD_TimerFrame.png",
+      "old_sha256": "6417ed003fb416cac9e5fc26bab90eed9f283a5cb469414103cc23b9cf481574",
+      "replacement_id": "V4_HUD_TimerFrame_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_HUD_TimerFrame_EMPTY.png",
+      "replacement_sha256": "19c01b35e0206b9c3c3ecd0365e1a11bb0688cd2496726c8d4ca3876b34cb0ee",
+      "target_guide_rect_xywh": [
+        1130,
+        10,
+        329,
+        106
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Grade_Track",
+      "old_package_file": "01_Sprites/FG_Grade_Track.png",
+      "old_sha256": "28b36d19edd7313eeefdbf0147f1de64b46c3be87c59ea4270b23f1bc556a48f",
+      "replacement_id": "V4_Grade_Track",
+      "replacement_file": "01_Replacement_Sprites/V4_Grade_Track.png",
+      "replacement_sha256": "c68c0fc358a12a0bde12285e1f1c61155a6869d5e8abb7390bb6d1a78cc65752",
+      "target_guide_rect_xywh": [
+        562,
+        66,
+        448,
+        32
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_OrderBubble_01",
+      "old_package_file": "01_Sprites/FG_OrderBubble_01.png",
+      "old_sha256": "18819c848e861d4089841c42c377aa7ce484dde47c03c9b8f3ccaea8149e769e",
+      "replacement_id": "V4_OrderBubble_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_OrderBubble_EMPTY.png",
+      "replacement_sha256": "e0ed1d39171bd432cd9e7f41412b870368a87bae61aa6ec1971672d5f1de2938",
+      "target_guide_rect_xywh": [
+        237,
+        168,
+        357,
+        140
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_OrderBubble_02",
+      "old_package_file": "01_Sprites/FG_OrderBubble_02.png",
+      "old_sha256": "53a64642f0e27263df126c898e6f07d733362c849b72544eea57b9ac055dd41f",
+      "replacement_id": "V4_OrderBubble_Wide_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_OrderBubble_Wide_EMPTY.png",
+      "replacement_sha256": "e750263f0373758ba6f2276317aab5aa3880cc1d6c11c8bacc50e3c9528a4e92",
+      "target_guide_rect_xywh": [
+        659,
+        168,
+        372,
+        140
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_OrderBubble_03",
+      "old_package_file": "01_Sprites/FG_OrderBubble_03.png",
+      "old_sha256": "76ce6cd2a19ea0037d778437b405ce87a42e4f1f71fc4c4eff9acf96e3a1de13",
+      "replacement_id": "V4_OrderBubble_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_OrderBubble_EMPTY.png",
+      "replacement_sha256": "e0ed1d39171bd432cd9e7f41412b870368a87bae61aa6ec1971672d5f1de2938",
+      "target_guide_rect_xywh": [
+        1095,
+        168,
+        356,
+        140
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_OrderAlert_01",
+      "old_package_file": "01_Sprites/FG_OrderAlert_01.png",
+      "old_sha256": "be6590f8fc535223312e322e8af0413603c1a880dc7d296270111b0df0d52882",
+      "replacement_id": "V4_OrderAlert",
+      "replacement_file": "01_Replacement_Sprites/V4_OrderAlert.png",
+      "replacement_sha256": "d99a9f9c0198b169eb8b70ed95bf20b91f760d57c1d4d9e83404430e48b3a21d",
+      "target_guide_rect_xywh": [
+        223,
+        135,
+        80,
+        63
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_OrderAlert_02",
+      "old_package_file": "01_Sprites/FG_OrderAlert_02.png",
+      "old_sha256": "be6590f8fc535223312e322e8af0413603c1a880dc7d296270111b0df0d52882",
+      "replacement_id": "V4_OrderAlert",
+      "replacement_file": "01_Replacement_Sprites/V4_OrderAlert.png",
+      "replacement_sha256": "d99a9f9c0198b169eb8b70ed95bf20b91f760d57c1d4d9e83404430e48b3a21d",
+      "target_guide_rect_xywh": [
+        650,
+        135,
+        80,
+        63
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_OrderAlert_03",
+      "old_package_file": "01_Sprites/FG_OrderAlert_03.png",
+      "old_sha256": "be6590f8fc535223312e322e8af0413603c1a880dc7d296270111b0df0d52882",
+      "replacement_id": "V4_OrderAlert",
+      "replacement_file": "01_Replacement_Sprites/V4_OrderAlert.png",
+      "replacement_sha256": "d99a9f9c0198b169eb8b70ed95bf20b91f760d57c1d4d9e83404430e48b3a21d",
+      "target_guide_rect_xywh": [
+        1085,
+        135,
+        80,
+        63
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Panel_Box",
+      "old_package_file": "01_Sprites/FG_Panel_Box.png",
+      "old_sha256": "b0b515ed83badea7fdb1297a246d75945a0607b236fb88a219ab04e826727236",
+      "replacement_id": "V4_Panel_Box_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_Panel_Box_EMPTY.png",
+      "replacement_sha256": "ffe0476c575268411d07c68bd90f6e790296798bae27cb848d405aaf8508bfbc",
+      "target_guide_rect_xywh": [
+        23,
+        708,
+        443,
+        214
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Panel_Plush",
+      "old_package_file": "01_Sprites/FG_Panel_Plush.png",
+      "old_sha256": "d46dd207f55d963a62c0b5f63fff60277a4fa7f0b1b7c5877409f9d7508a340c",
+      "replacement_id": "V4_Panel_Plush_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_Panel_Plush_EMPTY.png",
+      "replacement_sha256": "4d8a0ded22a0bc963ee744fbd2f9c32cc9a34258b931e2be468f639cbc77883f",
+      "target_guide_rect_xywh": [
+        481,
+        708,
+        710,
+        214
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Panel_Ribbon",
+      "old_package_file": "01_Sprites/FG_Panel_Ribbon.png",
+      "old_sha256": "96326ea6beac40b753c9cccf6e516905bd7eccf142985db5e5d3013f80d99087",
+      "replacement_id": "V4_Panel_Ribbon_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_Panel_Ribbon_EMPTY.png",
+      "replacement_sha256": "2d11b109f46d03c7eba3086f1adb67db87ef2aa3aee0a9cc4aafecc0dbfa1956",
+      "target_guide_rect_xywh": [
+        1209,
+        708,
+        441,
+        214
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Tab_Box_Blank",
+      "old_package_file": "01_Sprites/FG_Tab_Box_Blank.png",
+      "old_sha256": "6d840565c7cf38ba035fa09f6b1b4967de2604b969dd403cc2d46d601f3fbd18",
+      "replacement_id": "V4_Tab_Box_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_Tab_Box_EMPTY.png",
+      "replacement_sha256": "ca696ee8919bd54c8ae2d5bf9267db32dfd4fd91a59cc8eab23459c7aab6b635",
+      "target_guide_rect_xywh": [
+        57,
+        704,
+        186,
+        53
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Tab_Plush_Blank",
+      "old_package_file": "01_Sprites/FG_Tab_Plush_Blank.png",
+      "old_sha256": "107c3b757ecf0dd1651eadf0c31e09941113f0b609ce4db4c38a6ce1946ccd35",
+      "replacement_id": "V4_Tab_Plush_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_Tab_Plush_EMPTY.png",
+      "replacement_sha256": "b269e984ec68201cc9d3eb56558adde98bd39d50ca5fa0b3b72fabc805e600a7",
+      "target_guide_rect_xywh": [
+        517,
+        704,
+        230,
+        53
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Tab_Ribbon_Blank",
+      "old_package_file": "01_Sprites/FG_Tab_Ribbon_Blank.png",
+      "old_sha256": "2755cd7af71fa9035de1a5a399ccf298902578a64633a167c677f33832781cf4",
+      "replacement_id": "V4_Tab_Ribbon_EMPTY",
+      "replacement_file": "01_Replacement_Sprites/V4_Tab_Ribbon_EMPTY.png",
+      "replacement_sha256": "2c4ffa4f546971f75915244694f2328f207528ba74956b9105e432e0975196c5",
+      "target_guide_rect_xywh": [
+        1238,
+        704,
+        185,
+        53
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Icon_ClockPink",
+      "old_package_file": "01_Sprites/FG_Icon_ClockPink.png",
+      "old_sha256": "c254e863f777dfac1d09d296bb4e14d9357285a4496edb085e5e464aafad31a2",
+      "replacement_id": "V4_Clock_Pink",
+      "replacement_file": "01_Replacement_Sprites/V4_Clock_Pink.png",
+      "replacement_sha256": "e5f84ac310e9125a1d1f1c323ab89ad750df3f41f5a4d9bfefb9ea1726151cd7",
+      "target_guide_rect_xywh": [
+        1155,
+        19,
+        80,
+        88
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Icon_ClockBlue",
+      "old_package_file": "01_Sprites/FG_Icon_ClockBlue.png",
+      "old_sha256": "2e81b7002d96a1c6f023e20dc4212fdae946cdb68b35883e5fb9007aea3e097f",
+      "replacement_id": "V4_Clock_Blue",
+      "replacement_file": "01_Replacement_Sprites/V4_Clock_Blue.png",
+      "replacement_sha256": "a018aed4e83fa89b4382f8cc9c7b813eacf5dae94c2a6a11a604e597ce86492c",
+      "target_guide_rect_xywh": [
+        303,
+        470,
+        53,
+        56
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Patience_Track",
+      "old_package_file": "01_Sprites/FG_Patience_Track.png",
+      "old_sha256": "aa5dbf4c4cc2799129f0ca051b9dc20724acae7df6c263625ecbd3cc5cb654e4",
+      "replacement_id": "V4_Patience_Track",
+      "replacement_file": "01_Replacement_Sprites/V4_Patience_Track.png",
+      "replacement_sha256": "e39c0e3f58b4d683254d1f691ec3e92bb2ca397fed8ff447dbd08ba51bf8fe45",
+      "target_guide_rect_xywh": [
+        330,
+        485,
+        189,
+        37
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Patience_Fill_Green",
+      "old_package_file": "01_Sprites/FG_Patience_Fill_Green.png",
+      "old_sha256": "1e5c3387c2bb5239c90c835ff1a0258df51baec50c11e4e74730ada0e229650d",
+      "replacement_id": "V4_Patience_Fill_Green",
+      "replacement_file": "01_Replacement_Sprites/V4_Patience_Fill_Green.png",
+      "replacement_sha256": "fd5ff22212a54d0ad41b86310c68cf6c6ac0b69a3971e457e74507160f6052a7",
+      "target_guide_rect_xywh": [
+        348,
+        493,
+        165,
+        21
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use 165x21 visible fill inside the 189x37 track; keep all states same bounds; clip to inner channel, not frame.",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Patience_Fill_Yellow",
+      "old_package_file": "01_Sprites/FG_Patience_Fill_Yellow.png",
+      "old_sha256": "f02ae8641aab4f9567003e88dd150c9bde7f923af2523b5bf49b82e99fbad53c",
+      "replacement_id": "V4_Patience_Fill_Yellow",
+      "replacement_file": "01_Replacement_Sprites/V4_Patience_Fill_Yellow.png",
+      "replacement_sha256": "e3cf4c807410abc6300b6f625a79ad2190c88dd34f931d80123f5b763bfefe53",
+      "target_guide_rect_xywh": [
+        765,
+        493,
+        165,
+        21
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use 165x21 visible fill inside the 189x37 track; keep all states same bounds; clip to inner channel, not frame.",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Patience_Fill_Red",
+      "old_package_file": "01_Sprites/FG_Patience_Fill_Red.png",
+      "old_sha256": "3511f8c8274405282ed0eea527d1abe50f2157fe982d9f1e2b64626855843c18",
+      "replacement_id": "V4_Patience_Fill_Red",
+      "replacement_file": "01_Replacement_Sprites/V4_Patience_Fill_Red.png",
+      "replacement_sha256": "84dbee8293404baf1e6a523d7ee7757f1207955d34fd7586369666daffdae53e",
+      "target_guide_rect_xywh": [
+        1183,
+        493,
+        165,
+        21
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use 165x21 visible fill inside the 189x37 track; keep all states same bounds; clip to inner channel, not frame.",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Grade_Fill_Gold_DERIVED",
+      "old_package_file": "01_Sprites/FG_Grade_Fill_Gold_DERIVED.png",
+      "old_sha256": "bdaad112b7416a62a01bc0466eb8a6c76b7ef415ad94b0515d712215d063e476",
+      "replacement_id": "V4_Grade_Fill_Gold",
+      "replacement_file": "01_Replacement_Sprites/V4_Grade_Fill_Gold.png",
+      "replacement_sha256": "e3cf4c807410abc6300b6f625a79ad2190c88dd34f931d80123f5b763bfefe53",
+      "target_guide_rect_xywh": [
+        569,
+        72,
+        434,
+        21
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Dot_Pink_Active",
+      "old_package_file": "01_Sprites/FG_Dot_Pink_Active.png",
+      "old_sha256": "3fb9c08eec8d2074da2d5d61d5206cc3047ead4081781a42dfe7aaff42160d67",
+      "replacement_id": "V4_Dot_Pink_Active",
+      "replacement_file": "01_Replacement_Sprites/V4_Dot_Pink_Active.png",
+      "replacement_sha256": "3fbb714e284da00dc280da3623c414a5070d2938c52f688b53ebf0aabfbe7075",
+      "target_guide_rect_xywh": [
+        784,
+        874,
+        31,
+        30
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Dot_Pink_Inactive",
+      "old_package_file": "01_Sprites/FG_Dot_Pink_Inactive.png",
+      "old_sha256": "da20483a0987d05333f80d5200ca58a674002099e91f20029730490a33e0e122",
+      "replacement_id": "V4_Dot_Inactive",
+      "replacement_file": "01_Replacement_Sprites/V4_Dot_Inactive.png",
+      "replacement_sha256": "1b15826d126338747b4c5a21de2b4ecdd10f0d075531460d5806098eed18425e",
+      "target_guide_rect_xywh": [
+        822,
+        874,
+        30,
+        30
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Dot_Blue_Inactive",
+      "old_package_file": "01_Sprites/FG_Dot_Blue_Inactive.png",
+      "old_sha256": "56109023e0c83c62eff7d83e5dafd24c2d8ca9a42783db106c1adc3fdf39c854",
+      "replacement_id": "V4_Dot_Inactive",
+      "replacement_file": "01_Replacement_Sprites/V4_Dot_Inactive.png",
+      "replacement_sha256": "1b15826d126338747b4c5a21de2b4ecdd10f0d075531460d5806098eed18425e",
+      "target_guide_rect_xywh": [
+        230,
+        874,
+        29,
+        29
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Dot_Orange_Inactive",
+      "old_package_file": "01_Sprites/FG_Dot_Orange_Inactive.png",
+      "old_sha256": "7002187f1d2fcd50c65d84b5f250e7b56c586df47675d6224e9af1feeb35e4e4",
+      "replacement_id": "V4_Dot_Inactive",
+      "replacement_file": "01_Replacement_Sprites/V4_Dot_Inactive.png",
+      "replacement_sha256": "1b15826d126338747b4c5a21de2b4ecdd10f0d075531460d5806098eed18425e",
+      "target_guide_rect_xywh": [
+        1415,
+        874,
+        30,
+        30
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Arrow_Box_Left",
+      "old_package_file": "01_Sprites/FG_Arrow_Box_Left.png",
+      "old_sha256": "e790171616325786e211a4b4e80b3bff59a48f5f7061eba64248285722437234",
+      "replacement_id": "V4_Arrow_Left",
+      "replacement_file": "01_Replacement_Sprites/V4_Arrow_Left.png",
+      "replacement_sha256": "70650a475a3312c30806c9a4441878a7d80fa305bdc89e50b76926b881f968a0",
+      "target_guide_rect_xywh": [
+        35,
+        796,
+        32,
+        45
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Arrow_Box_Right",
+      "old_package_file": "01_Sprites/FG_Arrow_Box_Right.png",
+      "old_sha256": "e1bcddc3c7c74cf861c414ebe028ad6a7801fb5a7070924319d05b60983d76b2",
+      "replacement_id": "V4_Arrow_Right",
+      "replacement_file": "01_Replacement_Sprites/V4_Arrow_Right.png",
+      "replacement_sha256": "dba6427bc5db9c06ae6ab2500555b868d0d61f56a6807f04612041cc98e2cde4",
+      "target_guide_rect_xywh": [
+        420,
+        796,
+        32,
+        45
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Arrow_Plush_Left",
+      "old_package_file": "01_Sprites/FG_Arrow_Plush_Left.png",
+      "old_sha256": "f62ea9391f3d610956431c8172c933d6aa9d8e1782dc632a8fa1890a469fe4b4",
+      "replacement_id": "V4_Arrow_Left",
+      "replacement_file": "01_Replacement_Sprites/V4_Arrow_Left.png",
+      "replacement_sha256": "70650a475a3312c30806c9a4441878a7d80fa305bdc89e50b76926b881f968a0",
+      "target_guide_rect_xywh": [
+        495,
+        796,
+        33,
+        45
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Arrow_Plush_Right",
+      "old_package_file": "01_Sprites/FG_Arrow_Plush_Right.png",
+      "old_sha256": "f1fe0a2ca14881e82361e73cb89c7e74007b651616ba0294b6d1ed5c992a6e3a",
+      "replacement_id": "V4_Arrow_Right",
+      "replacement_file": "01_Replacement_Sprites/V4_Arrow_Right.png",
+      "replacement_sha256": "dba6427bc5db9c06ae6ab2500555b868d0d61f56a6807f04612041cc98e2cde4",
+      "target_guide_rect_xywh": [
+        1146,
+        796,
+        32,
+        45
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Arrow_Ribbon_Left",
+      "old_package_file": "01_Sprites/FG_Arrow_Ribbon_Left.png",
+      "old_sha256": "93815f47e6bd5ce6555cc177dfb2a3b19c3af34bc5965d8dd07471e2242173a4",
+      "replacement_id": "V4_Arrow_Left",
+      "replacement_file": "01_Replacement_Sprites/V4_Arrow_Left.png",
+      "replacement_sha256": "70650a475a3312c30806c9a4441878a7d80fa305bdc89e50b76926b881f968a0",
+      "target_guide_rect_xywh": [
+        1221,
+        796,
+        32,
+        45
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    },
+    {
+      "old_id": "FG_Arrow_Ribbon_Right",
+      "old_package_file": "01_Sprites/FG_Arrow_Ribbon_Right.png",
+      "old_sha256": "3a58f9d68fe116eee2afbd5c6560f62b6819e46aeddce05008e17a2efa0833db",
+      "replacement_id": "V4_Arrow_Right",
+      "replacement_file": "01_Replacement_Sprites/V4_Arrow_Right.png",
+      "replacement_sha256": "dba6427bc5db9c06ae6ab2500555b868d0d61f56a6807f04612041cc98e2cde4",
+      "target_guide_rect_xywh": [
+        1607,
+        796,
+        32,
+        45
+      ],
+      "guide_canvas": [
+        1672,
+        941
+      ],
+      "new_padding_px": 6,
+      "placement": "Use guide rect for CONTENT, with separate pad compensation; do not use source-sheet crop coordinates",
+      "delete_rule": "remove old Image/reference after new binding; remove old png+meta only if project-wide references and dynamic keys are proved unused"
+    }
+  ],
+  "new_overlay": {
+    "new_id": "V4_Sign_RopesLeaves_EMPTY",
+    "target_guide_rect_xywh": [
+      1,
+      0,
+      237,
+      241
+    ],
+    "order": "above background, below main HUD; no second old sign",
+    "reason": "기존 배경에 합쳐진 간판·밧줄만 비우고 별도 새 간판으로 대체"
+  },
+  "background": {
+    "original_sha256": "ab3a83e125c47b375ae3b2f41360d80b9b12178e9e7e210d5620beb753c8f6dc",
+    "replacement_file": "02_Background/V4_Background_NoOldSign.png",
+    "replacement_sha256": "c14f16e8aee392ca70b6101eeabd6629c9488e801eb021ba789353dd78d719d3",
+    "size": [
+      1672,
+      941
+    ],
+    "modified_pixels": 24414,
+    "modified_fraction": 0.01551718877911618,
+    "changes_outside_mask": 0,
+    "sign_placement": {
+      "new_id": "V4_Sign_RopesLeaves_EMPTY",
+      "target_guide_rect_xywh": [
+        1,
+        0,
+        237,
+        241
+      ],
+      "order": "above background, below main HUD; no second old sign",
+      "reason": "기존 배경에 합쳐진 간판·밧줄만 비우고 별도 새 간판으로 대체"
+    },
+    "method": "Local inpainting of former baked sign and ropes. Reconstructed hidden pixels are covered by new isolated sign. Remaining background and counter pixels are byte-identical at pixel level."
+  },
+  "unchanged_v3": [
+    {
+      "id": "FG_Button_Clear_Frame",
+      "file": "01_Sprites/FG_Button_Clear_Frame.png",
+      "sha256": "a64e5c6ebdb9b084f975a64be729fcd4d1e9fe0678dc8f1204960b82ea9156ff",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Button_Clear_Frame.png"
+    },
+    {
+      "id": "FG_Button_Pack_Frame",
+      "file": "01_Sprites/FG_Button_Pack_Frame.png",
+      "sha256": "acc854ec5099efef743bfc95aea80815b793587f0fb3b1649f3b6a3a8f35c304",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Button_Pack_Frame.png"
+    },
+    {
+      "id": "FG_Icon_PackGift",
+      "file": "01_Sprites/FG_Icon_PackGift.png",
+      "sha256": "cb79783f67576a870b01ef6ee173a74be80a37d98705ee5a75cd69993cb2f9cf",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Icon_PackGift.png"
+    },
+    {
+      "id": "FG_Tray_FiveEmptySlots",
+      "file": "01_Sprites/FG_Tray_FiveEmptySlots.png",
+      "sha256": "b95ec822a0b4efc5a67a84fd3bd686f33ea1ca5e1b8e97e7970ad71d5ea448a1",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Tray_FiveEmptySlots.png"
+    },
+    {
+      "id": "FG_Icon_Category_Box",
+      "file": "01_Sprites/FG_Icon_Category_Box.png",
+      "sha256": "38a0d91b782caf3e4c2dd7d9712c0d158ccc0cf32d898492792c372357a27937",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Icon_Category_Box.png"
+    },
+    {
+      "id": "FG_Icon_Category_Plush",
+      "file": "01_Sprites/FG_Icon_Category_Plush.png",
+      "sha256": "446f01bb811df872e097f4b2bf9771e82cec51882d1c84e41015efd4a6735a2c",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Icon_Category_Plush.png"
+    },
+    {
+      "id": "FG_Icon_Category_Ribbon",
+      "file": "01_Sprites/FG_Icon_Category_Ribbon.png",
+      "sha256": "ff1443cb768c12dad23d2331b0f708d2e030d6e3b3ff4e51881495f61b7c8416",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Icon_Category_Ribbon.png"
+    },
+    {
+      "id": "FG_Dot_Blue_Active",
+      "file": "01_Sprites/FG_Dot_Blue_Active.png",
+      "sha256": "c65df5250276cee47755e0c1c58eeb715d8022c05c3a6c79a5b13068d06a5cc5",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Dot_Blue_Active.png"
+    },
+    {
+      "id": "FG_Dot_Orange_Active",
+      "file": "01_Sprites/FG_Dot_Orange_Active.png",
+      "sha256": "2d523c4adb019539760226457ff4f5517e36ad91a25fc437f7afe998dc3fdeda",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Dot_Orange_Active.png"
+    },
+    {
+      "id": "FG_Icon_Broom",
+      "file": "01_Sprites/FG_Icon_Broom.png",
+      "sha256": "365ea8b7a94ef1bd623771baef5680623441f21f23072cc702b090a143ff5ac8",
+      "reason": "v3 유지; 이번 패치에 교체 원본 없음",
+      "local_backup_file": "06_Retained_V3/FG_Icon_Broom.png"
+    }
+  ],
+  "new_sprite_count": 24,
+  "old_sprite_bindings_replaced": 32,
+  "new_unique_active_sprites": 24,
+  "unused_optional_part": "V4_OrderBubble_Wide_EMPTY is used only where needed; do not widen HUD or change gameplay rules",
+  "repo_remote_observed_head": "b34d8b7dac4f3ae0c8a7348fd3d5113a25d5bff0",
+  "local_baseline_report": "DEV-UI-03 1472/1472 (user-supplied report; not rerun here)"
+}

@@ -30,9 +30,9 @@ public sealed class PopupStorePackingTests
         Assert.That(button, Is.Not.Null);
         Assert.That(button.GetComponentInParent<UIPopupStore>(true), Is.SameAs(prefab.GetComponent<UIPopupStore>()));
         Assert.That(button.onClick.GetPersistentEventCount(), Is.Zero);
-        // DEV-UI-01 changes only the approved button skin; the same packing control and transaction wiring remain.
+        // DEV-UI-03 replaces the approved exterior frame only; the original transaction control is retained.
         Assert.That(AssetDatabase.GetAssetPath(((Image)button.targetGraphic).sprite),
-            Is.EqualTo("Assets/Sprites/PopupStore/UIApproved_v1_20261104/UI_Button_Pack_WithIcon.png"));
+            Is.EqualTo("Assets/Sprites/PopupStore/FinalGuideV3/FG_Button_Pack_Frame.png"));
         var displayOnly = (Button[])Read(prefab.GetComponent<UIPopupStore>(), "_displayOnlyButtons");
         Assert.That(displayOnly, Is.Empty);
         Assert.That(displayOnly.Contains(button), Is.False);
@@ -92,7 +92,7 @@ public sealed class PopupStorePackingTests
     [TestCase("order")]
     [TestCase("first-material")]
     [TestCase("no-customers")]
-    public void NoneFromActualPackClickPreservesMaterialsOrdersRingsAndAccount(string defect)
+    public void ActualPackClickRejectsWrongContentButAcceptsReorderedExactMaterials(string defect)
     {
         var account = new AccountSnapshot();
         using (var host = new Host())
@@ -113,6 +113,15 @@ public sealed class PopupStorePackingTests
             host.Fill(ids);
             var before = new StateSnapshot(host);
             var result = host.ClickPack();
+            if (defect == "order")
+            {
+                Assert.That(result.Success, Is.True, "DEV-GAME-01 allows the player's input order.");
+                CollectionAssert.AreEqual(ids, result.Receipt.Materials.Select(item => item.Id));
+                Assert.That(host.Counter.Count, Is.Zero);
+                Assert.That(host.Packing.SuccessfulPackCount, Is.EqualTo(1));
+                account.AssertUnchanged();
+                return;
+            }
             Assert.That(result.Status, Is.EqualTo(PopupStorePackingStatus.None));
             Assert.That(result.Success, Is.False);
             Assert.That(result.Receipt, Is.Null);
@@ -124,7 +133,7 @@ public sealed class PopupStorePackingTests
 
     [TestCase(false)]
     [TestCase(true)]
-    public void MultipleCandidatesNeverChooseTheFirstSlotOrConsumeMaterials(bool sameCustomer)
+    public void MultipleCandidatesChooseOneLeftmostPureModelRecipientAndConsumeOnce(bool sameCustomer)
     {
         using (var host = new Host())
         {
@@ -132,15 +141,17 @@ public sealed class PopupStorePackingTests
             host.SetOrders(MakeOrder("CUSTOMER01", "STAFF01", "BOX_PINK", "RIBBON_YELLOW"),
                 MakeOrder(second, "STAFF01", "BOX_PINK", "RIBBON_YELLOW"));
             host.Fill("STAFF01", "BOX_PINK", "RIBBON_YELLOW");
-            var before = new StateSnapshot(host);
             var result = host.ClickPack();
-            Assert.That(result.Status, Is.EqualTo(PopupStorePackingStatus.Multiple));
-            Assert.That(result.Success, Is.False);
-            Assert.That(result.Receipt, Is.Null);
+            Assert.That(result.Status, Is.EqualTo(PopupStorePackingStatus.Succeeded));
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Receipt.SlotIndex, Is.Zero);
             CollectionAssert.AreEqual(new[] { 0, 1 }, result.Matches.Candidates.Select(candidate => candidate.SlotIndex).ToArray());
             CollectionAssert.AreEqual(new[] { "CUSTOMER01", second }, result.Matches.Candidates.Select(candidate => candidate.CustomerId).ToArray());
             CollectionAssert.AreEqual(host.Orders.Select(order => order.RuntimeId).ToArray(), result.Matches.Candidates.Select(candidate => candidate.OrderId).ToArray());
-            before.AssertUnchanged(host);
+            Assert.That(host.Counter.Count, Is.Zero);
+            Assert.That(host.Orders[0].IsPacked, Is.True);
+            Assert.That(host.Orders[1].IsPacked, Is.False);
+            Assert.That(host.Packing.SuccessfulPackCount, Is.EqualTo(1));
         }
     }
 

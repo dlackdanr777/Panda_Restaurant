@@ -154,7 +154,7 @@ public sealed class PopupStoreOrderMatchTests
     }
 
     [Test]
-    public void ActualWrongMiddleClickAllowsLaterMaterialsButNeverMarksOrSoundsThem()
+    public void ActualWrongMiddleClickStillMarksLaterRequiredMaterialsByQuantity()
     {
         using (var host = new Host())
         {
@@ -163,8 +163,12 @@ public sealed class PopupStoreOrderMatchTests
             host.Click("STAFF03");
             host.Click("BOX_PINK");
             host.Click("RIBBON_YELLOW");
-            AssertProgress(host, 1, 0, 0);
-            Assert.That(host.FeedbackCount, Is.EqualTo(1));
+            Assert.That(host.Progress.GetMatchedCount(0), Is.EqualTo(3));
+            CollectionAssert.AreEqual(new[] { true, false, true, true, false },
+                Circles(host.Progress)[0].Select(circle => circle.gameObject.activeSelf).ToArray());
+            Assert.That(host.Progress.GetMatchedCount(1), Is.Zero);
+            Assert.That(host.Progress.GetMatchedCount(2), Is.Zero);
+            Assert.That(host.FeedbackCount, Is.EqualTo(3));
             AssertCounter(host, "STAFF01", "STAFF03", "BOX_PINK", "RIBBON_YELLOW");
         }
     }

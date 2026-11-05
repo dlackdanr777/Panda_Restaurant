@@ -32,8 +32,12 @@ public sealed class PopupStoreBusinessClockTests
             host.Start();
             Assert.That(host.Clock.State, Is.EqualTo(PopupStoreBusinessState.Running));
             Assert.That(host.Clock.RemainingSeconds, Is.EqualTo(90d));
-            // DEV-UI-01 uses the approved narrow timer frame with the same label and value on two lines.
-            Assert.That(text.text, Is.EqualTo("남은 시간\n01:30"));
+            // V3 separates the existing live value from its independently positioned TMP title.
+            var title = host.Root.transform.Find("HUD/Time Label").GetComponent<TMP_Text>();
+            Assert.That(title.text, Is.EqualTo("남은 시간"));
+            Assert.That(title.font, Is.SameAs(font));
+            Assert.That(title.raycastTarget, Is.False);
+            Assert.That(text.text, Is.EqualTo("01:30"));
             Assert.That(host.PackButton.IsInteractable(), Is.True, "Starting must update the existing button without a material click.");
             host.Clock.SetManualPaused(true);
             Assert.That(host.PackButton.IsInteractable(), Is.False);
@@ -41,12 +45,12 @@ public sealed class PopupStoreBusinessClockTests
             Assert.That(host.PackButton.IsInteractable(), Is.True);
             Assert.That(host.Clock.AdvanceTime(60), Is.True);
             Assert.That(host.Clock.RemainingSeconds, Is.EqualTo(30d));
-            Assert.That(text.text, Is.EqualTo("남은 시간\n00:30"));
+            Assert.That(text.text, Is.EqualTo("00:30"));
             Assert.That(host.Clock.AdvanceTime(29.9), Is.True);
             Assert.That(host.Clock.RemainingSeconds, Is.EqualTo(.1d).Within(.000000001d));
-            Assert.That(text.text, Is.EqualTo("남은 시간\n00:01"));
+            Assert.That(text.text, Is.EqualTo("00:01"));
             Assert.That(host.Clock.AdvanceTime(1), Is.True);
-            Assert.That(text.text, Is.EqualTo("남은 시간\n00:00"));
+            Assert.That(text.text, Is.EqualTo("00:00"));
             Assert.That(host.PackButton.IsInteractable(), Is.False);
             Assert.That(text.font, Is.SameAs(font));
             Assert.That(text.rectTransform.anchoredPosition, Is.EqualTo(position));

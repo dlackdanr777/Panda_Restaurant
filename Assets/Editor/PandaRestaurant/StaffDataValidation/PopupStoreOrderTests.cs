@@ -104,14 +104,18 @@ public sealed class PopupStoreOrderTests
         int slotIndex = 0;
         foreach (var slot in slots)
         {
-            Assert.That(slot.CustomerImage.transform.parent, Is.SameAs(slot.OrderFrame.transform.parent));
+            // V3 masks only the portrait. Its dedicated clip is owned by the same original slot,
+            // while the order balloon and patience controls remain outside the clip.
+            var clip = slot.CustomerImage.transform.parent;
+            Assert.That(clip.GetComponent<RectMask2D>(), Is.Not.Null);
+            Assert.That(clip.parent, Is.SameAs(slot.OrderFrame.transform.parent));
             Assert.That(slot.MaterialIcons.Count, Is.EqualTo(5));
             Assert.That(slot.CustomerImage.raycastTarget, Is.False);
             Assert.That(slot.CustomerImage.preserveAspect, Is.True);
             Assert.That(slot.OrderFrame.raycastTarget, Is.False);
-            // DEV-UI-01 approves one exterior bubble per existing slot; order icons and bindings stay unchanged.
+            // DEV-UI-03 approves one exterior bubble per existing slot; order identities stay unchanged.
             Assert.That(AssetDatabase.GetAssetPath(slot.OrderFrame.sprite), Is.EqualTo(
-                "Assets/Sprites/PopupStore/UIApproved_v1_20261104/UI_OrderBubble_" + (++slotIndex).ToString("00") + ".png"));
+                "Assets/Sprites/PopupStore/CleanPartsV4/" + (++slotIndex == 2 ? "V4_OrderBubble_Wide_EMPTY.png" : "V4_OrderBubble_EMPTY.png")));
             foreach (var icon in slot.MaterialIcons)
             {
                 Assert.That(icon, Is.Not.Null);

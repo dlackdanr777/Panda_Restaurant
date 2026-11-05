@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
@@ -28,10 +29,15 @@ public sealed class PopupStoreScoreTests
         var text = (TMP_Text)Read(authored, "_scoreText");
         Assert.That(text.name, Is.EqualTo("Score"));
         Assert.That(text.GetComponentInParent<UIPopupStore>(true), Is.SameAs(prefab.GetComponent<UIPopupStore>()));
-        Assert.That(Read(authored, "_format"), Is.EqualTo("점수 {0}"));
+        // V3 separates the label from the live formatted value without changing score accounting.
+        Assert.That(Read(authored, "_format"), Is.EqualTo("{0:N0}"));
+        var title = prefab.transform.Find("HUD/Score Label").GetComponent<TMP_Text>();
+        Assert.That(title.text, Is.EqualTo("점수"));
+        Assert.That(title.font, Is.SameAs(text.font));
+        Assert.That(title.raycastTarget, Is.False);
         using (var host = new Host())
         {
-            Assert.That(host.Hud.text, Is.EqualTo("점수 0"));
+            Assert.That(host.Hud.text, Is.EqualTo("0"));
             Assert.That(host.Hud.font, Is.SameAs(text.font));
             Assert.That(host.Hud.rectTransform.sizeDelta, Is.EqualTo(text.rectTransform.sizeDelta));
             Assert.That(host.Hud.rectTransform.anchoredPosition, Is.EqualTo(text.rectTransform.anchoredPosition));
@@ -58,7 +64,7 @@ public sealed class PopupStoreScoreTests
             Assert.That(host.SourceOrders[0].IsPacked, Is.True);
             Assert.That(host.FeedbackCount, Is.EqualTo(feedback));
             AssertAward(host, result.Receipt, plush.Split(',').Length, points);
-            Assert.That(host.Hud.text, Is.EqualTo("점수 " + points));
+            Assert.That(host.Hud.text, Is.EqualTo(points.ToString("N0", CultureInfo.InvariantCulture)));
             Assert.That(host.Packing.TryTakeReceipt(out var queued), Is.True, "Score must not consume delivery's receipt.");
             Assert.That(queued, Is.SameAs(result.Receipt));
             Assert.That(host.Packing.TryTakeReceipt(out _), Is.False);
@@ -99,7 +105,7 @@ public sealed class PopupStoreScoreTests
     [TestCase("unknown-ribbon")]
     [TestCase("box-contradiction")]
     [TestCase("ribbon-contradiction")]
-    public void CalculationRejectsMalformedReceiptIdentityShapeAndMaterialMapping(string defect)
+    public void CalculationRejectsMalformedReceiptButAcceptsApprovedUnorderedSequence(string defect)
     {
         var materials = new List<PopupStoreMaterialEntry> { Entry("STAFF01"), Entry("BOX_PINK"), Entry("RIBBON_YELLOW") };
         string order = "calculation-only", customer = "CUSTOMER01";
@@ -119,7 +125,16 @@ public sealed class PopupStoreScoreTests
         if (defect == "receipt-id") Write(receipt, "<ReceiptId>k__BackingField", "");
         if (defect == "box-contradiction") Write(receipt, "<BoxId>k__BackingField", "BOX_BLUE");
         if (defect == "ribbon-contradiction") Write(receipt, "<RibbonId>k__BackingField", "RIBBON_MINT");
-        Assert.That(PopupStoreScore.TryCalculate(receipt, out int count, out int points, out var error), Is.False);
+        bool valid = PopupStoreScore.TryCalculate(receipt, out int count, out int points, out var error);
+        if (defect == "wrong-sequence")
+        {
+            Assert.That(valid, Is.True, "DEV-GAME-01 Receipt preserves the player's unordered input.");
+            Assert.That(count, Is.EqualTo(1));
+            Assert.That(points, Is.EqualTo(100));
+            Assert.That(error, Is.Null);
+            return;
+        }
+        Assert.That(valid, Is.False);
         Assert.That(count, Is.Zero);
         Assert.That(points, Is.Zero);
         Assert.That(error, Is.Not.Null.And.Not.Empty);
@@ -175,7 +190,7 @@ public sealed class PopupStoreScoreTests
     [TestCase("NotStarted")]
     [TestCase("Paused")]
     [TestCase("Ended")]
-    public void RealRejectedPackingNeverCreatesScoreOrCommittedHistory(string reason)
+    public void RejectedPackingDoesNotScoreAndMultipleCandidatesCommitOneSale(string reason)
     {
         var orders = reason == "Multiple"
             ? new[] { Order("CUSTOMER01", "STAFF01"), Order("CUSTOMER04", "STAFF01") }
@@ -195,8 +210,16 @@ public sealed class PopupStoreScoreTests
             if (reason == "Ended") host.Clock.AdvanceTime(90);
             var before = host.Counter.Materials.ToArray();
             var result = host.Packing.TryPack();
+            if (reason == "Multiple")
+            {
+                Assert.That(result.Success, Is.True);
+                Assert.That(result.Receipt.SlotIndex, Is.Zero);
+                AssertAward(host, result.Receipt, 1, 100);
+                Assert.That(host.SourceOrders.Count(order => order.IsPacked), Is.EqualTo(1));
+                Assert.That(host.Counter.Count, Is.Zero);
+                return;
+            }
             var expected = reason == "None" ? PopupStorePackingStatus.None
-                : reason == "Multiple" ? PopupStorePackingStatus.Multiple
                 : reason == "Stale" ? PopupStorePackingStatus.Stale : PopupStorePackingStatus.Unavailable;
             Assert.That(result.Status, Is.EqualTo(expected));
             Assert.That(result.Receipt, Is.Null);
@@ -480,7 +503,7 @@ public sealed class PopupStoreScoreTests
             other.AssertNoScore();
             Write(host.Score, "_scoreText", ownHud);
             host.Score.RefreshHud();
-            Assert.That(ownHud.text, Is.EqualTo("점수 100"));
+            Assert.That(ownHud.text, Is.EqualTo("100"));
         }
     }
 
@@ -621,7 +644,7 @@ public sealed class PopupStoreScoreTests
             Assert.That(host.Entrance.ReleasedCount, Is.EqualTo(20));
             Assert.That(host.Entrance.RemainingOrderCount, Is.Zero);
             Assert.That(host.Score.TotalScore, Is.EqualTo(2640));
-            Assert.That(host.Hud.text, Is.EqualTo("점수 2640"));
+            Assert.That(host.Hud.text, Is.EqualTo("2,640"));
             Assert.That(host.Score.SuccessfulOrderCount, Is.EqualTo(20));
             CollectionAssert.AreEqual(new[] { 8, 8, 4 }, Enumerable.Range(1, 3).Select(host.Score.GetSuccessfulCount));
             Assert.That(host.Score.Entries.Sum(value => value.Points), Is.EqualTo(2640));

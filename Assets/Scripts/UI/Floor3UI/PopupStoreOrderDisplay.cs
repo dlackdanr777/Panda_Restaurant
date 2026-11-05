@@ -45,6 +45,9 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
     private PopupStoreOrder[] _displayedOrders = Array.Empty<PopupStoreOrder>();
     private string[] _displayedOrderIds = Array.Empty<string>();
     private bool _packingLocked;
+    private bool _packingSelectionMade;
+    private PopupStoreExactOrderCandidate _packingSelection;
+    private PopupStorePatienceTimer _packingSelectionTimer;
     private bool _supplyInitialized;
     // Preserve the recipient that actually belonged to the committed order, including across harmless refreshes.
     [NonSerialized] private readonly PackedDeliveryTarget[] _packedDeliveryTargets = new PackedDeliveryTarget[3];
@@ -357,7 +360,7 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         return true;
     }
 
-    /// <summary>Reads the displayed order snapshot without selecting a recipient or changing either side.</summary>
+    /// <summary>Compares the displayed snapshot as material counts without selecting a recipient or changing either side.</summary>
     public PopupStoreExactMatchResult QueryExactMatches(PopupStoreSalesCounter counter)
     {
         var popup = GetComponent<UIPopupStore>();
@@ -368,7 +371,7 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
 
         var available = new IReadOnlyList<PopupStoreMaterialEntry>[_displayedMaterials.Length];
         for (int i = 0; i < available.Length; i++) available[i] = GetDisplayedMaterials(i);
-        var slots = PopupStoreExactOrderMatch.FindExactSlots(_catalog, available, counter.Materials);
+        var slots = PopupStoreUnorderedOrderMatch.FindExactSlots(_catalog, available, counter.Materials);
         if (slots.Count == 0) return PopupStoreExactMatchResult.Empty;
         var candidates = new PopupStoreExactOrderCandidate[slots.Count];
         for (int i = 0; i < slots.Count; i++)
@@ -389,7 +392,7 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
             if (TryGetEntryBinding(i, out var order, out _) && order.IsExpired && !order.IsPacked
                 && order.TryResolve(_catalog, out var liveMaterials, out _)
                 && PopupStoreExactOrderMatch.IsExact(_catalog, _displayedMaterials[i], liveMaterials)
-                && PopupStoreExactOrderMatch.IsExact(_catalog, liveMaterials, counter.Materials)) return true;
+                && PopupStoreUnorderedOrderMatch.IsExact(_catalog, liveMaterials, counter.Materials)) return true;
         return false;
     }
 
@@ -397,13 +400,62 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
     {
         if (_packingLocked || !isActiveAndEnabled || !IsReady) return false;
         _packingLocked = true;
+        _packingSelectionMade = false;
+        _packingSelectionTimer = null;
         return true;
     }
 
     internal void EndPackingLock()
     {
         _packingLocked = false;
+        _packingSelectionMade = false;
+        _packingSelectionTimer = null;
         if (isActiveAndEnabled && !IsReady) Refresh();
+    }
+
+    /// <summary>Selects once from the settled local candidates; ties use the authored left-to-right slot order.</summary>
+    internal bool TrySelectPackingCandidate(PopupStoreExactMatchResult matches,
+        out PopupStoreExactOrderCandidate candidate)
+    {
+        candidate = default;
+        if (!_packingLocked || !isActiveAndEnabled || !IsReady || matches == null) return false;
+        if (_packingSelectionMade)
+        {
+            candidate = _packingSelection;
+            return ContainsCandidate(matches, candidate);
+        }
+        // This also protects callers of the internal commit boundary, which may not have passed
+        // through Packing.CanPack. Settle once, then read every candidate at that same clock point.
+        var clock = GetComponent<PopupStoreBusinessClock>();
+        if (clock == null || !clock.isActiveAndEnabled || !clock.CanCommitPacking
+            || !_packingLocked || !isActiveAndEnabled || !IsReady) return false;
+        if (_packingSelectionMade)
+        {
+            candidate = _packingSelection;
+            return ContainsCandidate(matches, candidate);
+        }
+        bool found = false;
+        double shortest = double.PositiveInfinity;
+        foreach (var possible in matches.Candidates)
+        {
+            if (!TryGetEntryBinding(possible.SlotIndex, out var order, out _)
+                || order.IsPacked || order.IsExpired || order.RuntimeId != possible.OrderId
+                || order.CustomerId != possible.CustomerId || GetDisplayedMaterials(possible.SlotIndex).Count == 0
+                || !TryReadPackingPatience(possible.SlotIndex, order, out double remaining)) continue;
+            if (!found || remaining < shortest || (remaining == shortest && possible.SlotIndex < candidate.SlotIndex))
+            {
+                found = true;
+                shortest = remaining;
+                candidate = possible;
+            }
+        }
+        if (found)
+        {
+            _packingSelection = candidate;
+            _packingSelectionMade = true;
+            _packingSelectionTimer = GetComponent<PopupStoreCustomerPatience>()?.GetTimer(candidate.SlotIndex);
+        }
+        return found;
     }
 
     internal bool TryCommitPacking(PopupStoreSalesCounter counter, PopupStoreExactOrderCandidate candidate,
@@ -412,17 +464,20 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         receipt = null;
         if (!_packingLocked || !CurrentOrdersMatchSnapshot()) return false;
         var current = QueryExactMatches(counter);
-        if (current.Kind != PopupStoreExactMatchKind.Single) return false;
-        var selected = current.Candidates[0];
+        // The internal commit boundary applies the same priority even when invoked directly.
+        // Once a recipient is selected, no retry inside this lock may select a different one.
+        if (!TrySelectPackingCandidate(current, out var lockedCandidate)
+            || !SameCandidate(lockedCandidate, candidate) || !ContainsCandidate(current, candidate)) return false;
+        var selected = candidate;
         int slot = selected.SlotIndex;
-        if (slot != candidate.SlotIndex || selected.OrderId != candidate.OrderId || selected.CustomerId != candidate.CustomerId
-            || _sampleOrders == null || slot >= _sampleOrders.Length
+        if (_sampleOrders == null || slot < 0 || slot >= _sampleOrders.Length
             || !ReferenceEquals(_sampleOrders[slot], _displayedOrders[slot])) return false;
         var order = _displayedOrders[slot];
         // An Inspector/data edit that has not reached the displayed snapshot must not fulfil an old order.
         if (order.IsPacked || order.IsExpired || order.RuntimeId != selected.OrderId || order.CustomerId != selected.CustomerId
             || !order.TryResolve(_catalog, out var liveMaterials, out _)
-            || !PopupStoreExactOrderMatch.IsExact(_catalog, liveMaterials, counter.Materials)) return false;
+            || !PopupStoreUnorderedOrderMatch.IsExact(_catalog, liveMaterials, counter.Materials)
+            || !SelectedPatienceIsCurrent(slot, order)) return false;
 
         // Sample the deadline again after validation, immediately before creating or consuming anything.
         var clock = GetComponent<PopupStoreBusinessClock>();
@@ -433,12 +488,9 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         if (!_packingLocked || !isActiveAndEnabled || !IsReady || !CurrentOrdersMatchSnapshot()
             || !TryGetEntryBinding(slot, out var settledOrder, out _) || !ReferenceEquals(settledOrder, order)
             || order.IsPacked || order.IsExpired || order.RuntimeId != selected.OrderId
-            || order.CustomerId != selected.CustomerId || HasExpiredPatience(slot, order)) return false;
+            || order.CustomerId != selected.CustomerId || !SelectedPatienceIsCurrent(slot, order)) return false;
         var settledMatches = QueryExactMatches(counter);
-        if (settledMatches.Kind != PopupStoreExactMatchKind.Single
-            || settledMatches.Candidates[0].SlotIndex != selected.SlotIndex
-            || settledMatches.Candidates[0].OrderId != selected.OrderId
-            || settledMatches.Candidates[0].CustomerId != selected.CustomerId) return false;
+        if (!ContainsCandidate(settledMatches, selected)) return false;
         var prepared = new PopupStorePackingReceipt(selected.OrderId, slot, selected.CustomerId, counter.Materials);
         // No events, layout changes or callbacks between these two state changes.
         if (!counter.ConsumePackingMaterialsSilently()) return false;
@@ -448,13 +500,42 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         return true;
     }
 
-    private bool HasExpiredPatience(int slotIndex, PopupStoreOrder order)
+    private static bool ContainsCandidate(PopupStoreExactMatchResult matches, PopupStoreExactOrderCandidate candidate)
     {
+        foreach (var current in matches.Candidates)
+            if (SameCandidate(current, candidate)) return true;
+        return false;
+    }
+
+    private static bool SameCandidate(PopupStoreExactOrderCandidate left, PopupStoreExactOrderCandidate right)
+        => left.SlotIndex == right.SlotIndex && left.OrderId == right.OrderId && left.CustomerId == right.CustomerId;
+
+    private bool SelectedPatienceIsCurrent(int slotIndex, PopupStoreOrder order)
+        => ReferenceEquals(GetComponent<PopupStoreCustomerPatience>()?.GetTimer(slotIndex), _packingSelectionTimer)
+            && TryReadPackingPatience(slotIndex, order, out _);
+
+    private bool TryReadPackingPatience(int slotIndex, PopupStoreOrder order, out double remaining)
+    {
+        remaining = double.PositiveInfinity;
         var patience = GetComponent<PopupStoreCustomerPatience>();
         var timer = patience != null ? patience.GetTimer(slotIndex) : null;
-        return timer != null && timer.IsExpired && ReferenceEquals(timer.Order, order)
-            && timer.OrderId == order.RuntimeId && timer.CustomerId == order.CustomerId
-            && timer.SlotIndex == slotIndex && patience.IsCurrent(timer);
+        // Pure EditMode fixtures predate patience. Their absent timers have an explicit slot-only
+        // tie policy; actual Play always requires a current, active timer from this popup.
+        if (timer == null)
+        {
+            if (Application.isPlaying) return false;
+            // A missing timer among other active timers is broken state, not a pure model fixture.
+            if (patience != null)
+                for (int i = 0; i < 3; i++) if (patience.GetTimer(i) != null) return false;
+            return true;
+        }
+        if (patience == null || !patience.isActiveAndEnabled || !patience.IsReady || !timer.IsRunning || timer.IsExpired
+            || !ReferenceEquals(timer.Order, order) || timer.OrderId != order.RuntimeId
+            || timer.CustomerId != order.CustomerId || timer.SlotIndex != slotIndex || !patience.IsCurrent(timer)
+            || double.IsNaN(timer.RemainingPatience) || double.IsInfinity(timer.RemainingPatience)
+            || timer.RemainingPatience <= 0) return false;
+        remaining = timer.RemainingPatience;
+        return true;
     }
 
     private bool CurrentOrdersMatchSnapshot()
@@ -598,7 +679,7 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         view = null;
         if (slot == null || !Owned(slot.CustomerImage) || !Owned(slot.OrderFrame)
             || slot.CustomerImage == slot.OrderFrame || slot.CustomerImage.transform.parent == null
-            || slot.CustomerImage.transform.parent != slot.OrderFrame.transform.parent
+            || !CustomerBelongsToPlace(slot.CustomerImage, slot.OrderFrame.transform.parent)
             || slot.OrderFrame.transform.parent.parent != transform
             || slot.MaterialIcons == null || slot.MaterialIcons.Count != 5) return false;
         var icons = new Image[5];
@@ -610,6 +691,14 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         }
         view = new SlotView { Customer = slot.CustomerImage, Frame = slot.OrderFrame, Icons = icons };
         return true;
+    }
+
+    private static bool CustomerBelongsToPlace(Image portrait, Transform place)
+    {
+        if (portrait == null || place == null || portrait.transform.parent == null) return false;
+        if (portrait.transform.parent == place) return true;
+        var clip = portrait.transform.parent.GetComponent<PopupStoreCustomerVisualClip>();
+        return clip != null && clip.Owns(portrait, place);
     }
 
     private bool TryResolveOrders(out PopupStoreMaterialEntry[][] resolved, out Sprite[] portraits, out string error)
@@ -654,6 +743,8 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
         view.Customer.preserveAspect = true;
         view.Customer.raycastTarget = false;
         view.Customer.gameObject.SetActive(true);
+        var entrance = GetComponent<PopupStoreCustomerEntrance>();
+        if (entrance == null || !entrance.ControlsOrders) PopupStoreCustomerVisualClip.Prepare(view.Customer);
         view.Frame.raycastTarget = false;
         view.Frame.gameObject.SetActive(true);
 
@@ -676,6 +767,7 @@ public sealed class PopupStoreOrderDisplay : MonoBehaviour
             icon.raycastTarget = false;
             icon.gameObject.SetActive(true);
         }
+        view.Frame.GetComponent<PopupStoreOrderVisualLayout>()?.Apply(view.Icons, _padding);
     }
 
     private bool Reject(string error, SlotView[] views)

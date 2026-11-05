@@ -139,7 +139,7 @@ public sealed class PopupStorePackingPresentationTests
     [TestCase("None")]
     [TestCase("Multiple")]
     [TestCase("Stale")]
-    public void UnsuccessfulActualPackingDoesNotStartOrConsumeAPresentation(string status)
+    public void RejectedPackingDoesNotPresentAndMultipleCandidatesDeliverOnlyOneReceipt(string status)
     {
         using (var host = new Host())
         {
@@ -149,7 +149,21 @@ public sealed class PopupStorePackingPresentationTests
             if (status == "Multiple") host.SetOrders(MakeOrder("CUSTOMER01", "BOX_PINK", "RIBBON_YELLOW"), MakeOrder("CUSTOMER04", "BOX_PINK", "RIBBON_YELLOW"));
             if (status == "Stale") Write(host.SourceOrders[0], "_ribbonId", "RIBBON_MINT");
             var before = new TransactionSnapshot(host);
-            Assert.That(host.Packing.TryPack().Status.ToString(), Is.EqualTo(status));
+            var result = host.Packing.TryPack();
+            if (status == "Multiple")
+            {
+                Assert.That(result.Success, Is.True);
+                Assert.That(result.Receipt.SlotIndex, Is.Zero);
+                host.Presentation.TickPresentation(0);
+                host.FinishCurrent();
+                host.Presentation.TickPresentation(1);
+                Assert.That(host.Presentation.StartedPresentationCount, Is.EqualTo(1));
+                Assert.That(host.Presentation.ReceivedReceipts.Single(), Is.SameAs(result.Receipt));
+                Assert.That(host.SourceOrders.Count(order => order.IsPacked), Is.EqualTo(1));
+                Assert.That(host.Packing.SuccessfulPackCount, Is.EqualTo(1));
+                return;
+            }
+            Assert.That(result.Status.ToString(), Is.EqualTo(status));
             host.Presentation.TickPresentation(10);
             Assert.That(host.Presentation.StartedPresentationCount, Is.Zero);
             Assert.That(host.Presentation.ReceivedReceipts, Is.Empty);

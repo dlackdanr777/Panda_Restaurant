@@ -1,0 +1,2121 @@
+{
+  "schema": "popup-ui-final-apply-v3",
+  "created_at_kst": "2026-11-05T10:19:46.464412+09:00",
+  "scope": "User-approved art integration package; no Unity edits/build/test execution",
+  "approval_status": "ART_APPROVED__IMPLEMENTATION_PENDING",
+  "guide": {
+    "file": "02_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+    "size": [
+      1672,
+      941
+    ],
+    "sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed"
+  },
+  "background": {
+    "file": "00_Background/FG_Background_CafeCounter_APPROVED.png",
+    "size": [
+      1672,
+      941
+    ],
+    "sha256": "ab3a83e125c47b375ae3b2f41360d80b9b12178e9e7e210d5620beb753c8f6dc",
+    "bytes": 1659975,
+    "drive_id": "1t0QzinRVe5KXZbJ88Av7E6Vr38Di60TW",
+    "drive_url": "https://drive.google.com/file/d/1t0QzinRVe5KXZbJ88Av7E6Vr38Di60TW/view?usp=drivesdk",
+    "source": "User-approved new background; bytes unchanged"
+  },
+  "active_ui_sprite_count": 42,
+  "active_runtime_png_count_including_background": 43,
+  "sprites": [
+    {
+      "id": "FG_HUD_ScoreFrame",
+      "file": "01_Sprites/FG_HUD_ScoreFrame.png",
+      "group": "HUD",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "별/왕관/점수/숫자/보상문구/게이지를 제거. 안쪽 갈색 바탕은 원본 빈 영역으로 복원. 기존 보상 상자 및 TMP 연결.",
+      "guide_rect_xywh": [
+        194,
+        8,
+        874,
+        109
+      ],
+      "png_size": [
+        882,
+        117
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        190,
+        4
+      ],
+      "normalized_guide_rect": [
+        0.11602871,
+        0.00850159,
+        0.52272727,
+        0.11583422
+      ],
+      "sha256": "6ee5293cdee4c7bcd018a9256a7482a807a2f2a09c25e13476f23ddcccf5a201",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        42,
+        27,
+        42,
+        27
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        223.167,
+        9.182,
+        1003.103,
+        125.101
+      ],
+      "source_v2_file": "01_Sprites/FG_HUD_ScoreFrame.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_HUD_TimerFrame",
+      "file": "01_Sprites/FG_HUD_TimerFrame.png",
+      "group": "HUD",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "시계/문구/숫자를 제거한 독립 시간 프레임.",
+      "guide_rect_xywh": [
+        1130,
+        10,
+        329,
+        106
+      ],
+      "png_size": [
+        337,
+        114
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1126,
+        6
+      ],
+      "normalized_guide_rect": [
+        0.67583732,
+        0.01062699,
+        0.19677033,
+        0.11264612
+      ],
+      "sha256": "6417ed003fb416cac9e5fc26bab90eed9f283a5cb469414103cc23b9cf481574",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        30,
+        22,
+        30,
+        22
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1297.428,
+        11.477,
+        377.598,
+        121.658
+      ],
+      "source_v2_file": "01_Sprites/FG_HUD_TimerFrame.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Grade_Track",
+      "file": "01_Sprites/FG_Grade_Track.png",
+      "group": "Bars",
+      "method": "direct_masked_crop",
+      "note_ko": "최종 가이드에 채움이 없는 원본 게이지. 프레임+빈 트랙이며 별도 채움은 가이드에 보이지 않음.",
+      "guide_rect_xywh": [
+        562,
+        66,
+        448,
+        32
+      ],
+      "png_size": [
+        456,
+        40
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        558,
+        62
+      ],
+      "normalized_guide_rect": [
+        0.3361244,
+        0.07013815,
+        0.26794258,
+        0.03400638
+      ],
+      "sha256": "28b36d19edd7313eeefdbf0147f1de64b46c3be87c59ea4270b23f1bc556a48f",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        16,
+        8,
+        16,
+        8
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        645.526,
+        75.749,
+        514.176,
+        36.727
+      ],
+      "source_v2_file": "01_Sprites/FG_Grade_Track.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Icon_ClockPink",
+      "file": "01_Sprites/FG_Icon_ClockPink.png",
+      "group": "Icons",
+      "method": "foreground_segmented_crop",
+      "note_ko": "분홍 시계 아이콘. 시간판과 별도 배치.",
+      "guide_rect_xywh": [
+        1155,
+        19,
+        80,
+        88
+      ],
+      "png_size": [
+        88,
+        96
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1151,
+        15
+      ],
+      "normalized_guide_rect": [
+        0.69078947,
+        0.02019129,
+        0.04784689,
+        0.09351753
+      ],
+      "sha256": "c254e863f777dfac1d09d296bb4e14d9357285a4496edb085e5e464aafad31a2",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1326.121,
+        21.807,
+        91.817,
+        100.999
+      ],
+      "source_v2_file": "01_Sprites/FG_Icon_ClockPink.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_OrderBubble_01",
+      "file": "01_Sprites/FG_OrderBubble_01.png",
+      "group": "Orders",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "주문 아이템과 +를 제거. 꼬리/외곽은 원본 형태 기준. 주문 UI로 내용 재배치. 강조선에 가렸던 좌상단 테두리는 우상단의 원본 곡선으로 보완.",
+      "guide_rect_xywh": [
+        237,
+        168,
+        357,
+        140
+      ],
+      "png_size": [
+        365,
+        148
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        233,
+        164
+      ],
+      "normalized_guide_rect": [
+        0.14174641,
+        0.17853348,
+        0.21351675,
+        0.1487779
+      ],
+      "sha256": "18819c848e861d4089841c42c377aa7ce484dde47c03c9b8f3ccaea8149e769e",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        272.519,
+        192.816,
+        409.734,
+        160.68
+      ],
+      "source_v2_file": "01_Sprites/FG_OrderBubble_01.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_OrderBubble_02",
+      "file": "01_Sprites/FG_OrderBubble_02.png",
+      "group": "Orders",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "주문 아이템과 +를 제거. 꼬리/외곽은 원본 형태 기준. 주문 UI로 내용 재배치. 강조선에 가렸던 좌상단 테두리는 우상단의 원본 곡선으로 보완.",
+      "guide_rect_xywh": [
+        659,
+        168,
+        372,
+        140
+      ],
+      "png_size": [
+        380,
+        148
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        655,
+        164
+      ],
+      "normalized_guide_rect": [
+        0.39413876,
+        0.17853348,
+        0.22248804,
+        0.1487779
+      ],
+      "sha256": "53a64642f0e27263df126c898e6f07d733362c849b72544eea57b9ac055dd41f",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        756.854,
+        192.816,
+        426.95,
+        160.68
+      ],
+      "source_v2_file": "01_Sprites/FG_OrderBubble_02.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_OrderBubble_03",
+      "file": "01_Sprites/FG_OrderBubble_03.png",
+      "group": "Orders",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "주문 아이템과 +를 제거. 꼬리/외곽은 원본 형태 기준. 주문 UI로 내용 재배치. 강조선에 가렸던 좌상단 테두리는 우상단의 원본 곡선으로 보완.",
+      "guide_rect_xywh": [
+        1095,
+        168,
+        356,
+        140
+      ],
+      "png_size": [
+        364,
+        148
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1091,
+        164
+      ],
+      "normalized_guide_rect": [
+        0.65490431,
+        0.17853348,
+        0.21291866,
+        0.1487779
+      ],
+      "sha256": "76ce6cd2a19ea0037d778437b405ce87a42e4f1f71fc4c4eff9acf96e3a1de13",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1257.258,
+        192.816,
+        408.587,
+        160.68
+      ],
+      "source_v2_file": "01_Sprites/FG_OrderBubble_03.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_OrderAlert_01",
+      "file": "01_Sprites/FG_OrderAlert_01.png",
+      "group": "Orders",
+      "method": "foreground_segmented_crop",
+      "note_ko": "주문 말풍선 좌상단 3개 강조선. 말풍선 바탕과 독립.",
+      "guide_rect_xywh": [
+        223,
+        135,
+        80,
+        63
+      ],
+      "png_size": [
+        88,
+        71
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        219,
+        131
+      ],
+      "normalized_guide_rect": [
+        0.13337321,
+        0.1434644,
+        0.04784689,
+        0.06695005
+      ],
+      "sha256": "be6590f8fc535223312e322e8af0413603c1a880dc7d296270111b0df0d52882",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        256.451,
+        154.942,
+        91.817,
+        72.306
+      ],
+      "source_v2_file": "01_Sprites/FG_OrderAlert_01.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_OrderAlert_02",
+      "file": "01_Sprites/FG_OrderAlert_02.png",
+      "group": "Orders",
+      "method": "same_guide_reused_part",
+      "note_ko": "좌측 원본 강조선을 공용 파츠로 재사용. 각각의 말풍선 좌상단 배치만 다름.",
+      "guide_rect_xywh": [
+        650,
+        135,
+        80,
+        63
+      ],
+      "png_size": [
+        88,
+        71
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        646,
+        131
+      ],
+      "normalized_guide_rect": [
+        0.38875598,
+        0.1434644,
+        0.04784689,
+        0.06695005
+      ],
+      "sha256": "be6590f8fc535223312e322e8af0413603c1a880dc7d296270111b0df0d52882",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        746.525,
+        154.942,
+        91.817,
+        72.306
+      ],
+      "source_v2_file": "01_Sprites/FG_OrderAlert_02.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_OrderAlert_03",
+      "file": "01_Sprites/FG_OrderAlert_03.png",
+      "group": "Orders",
+      "method": "same_guide_reused_part",
+      "note_ko": "좌측 원본 강조선을 공용 파츠로 재사용. 각각의 말풍선 좌상단 배치만 다름.",
+      "guide_rect_xywh": [
+        1085,
+        135,
+        80,
+        63
+      ],
+      "png_size": [
+        88,
+        71
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1081,
+        131
+      ],
+      "normalized_guide_rect": [
+        0.64892344,
+        0.1434644,
+        0.04784689,
+        0.06695005
+      ],
+      "sha256": "be6590f8fc535223312e322e8af0413603c1a880dc7d296270111b0df0d52882",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1245.781,
+        154.942,
+        91.817,
+        72.306
+      ],
+      "source_v2_file": "01_Sprites/FG_OrderAlert_03.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Button_Clear_Frame",
+      "file": "01_Sprites/FG_Button_Clear_Frame.png",
+      "group": "Buttons",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "원본 테두리·그림자 보존. 문구와 빗자루는 분리.",
+      "guide_rect_xywh": [
+        54,
+        547,
+        311,
+        119
+      ],
+      "png_size": [
+        319,
+        127
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        50,
+        543
+      ],
+      "normalized_guide_rect": [
+        0.03229665,
+        0.58129649,
+        0.18600478,
+        0.12646121
+      ],
+      "sha256": "a64e5c6ebdb9b084f975a64be729fcd4d1e9fe0678dc8f1204960b82ea9156ff",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        35,
+        30,
+        35,
+        30
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        62.487,
+        627.8,
+        356.939,
+        136.578
+      ],
+      "source_v2_file": "01_Sprites/FG_Button_Clear_Frame.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Button_Pack_Frame",
+      "file": "01_Sprites/FG_Button_Pack_Frame.png",
+      "group": "Buttons",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "원본 분홍 버튼 테두리·그림자 보존. 문구와 선물 아이콘 분리.",
+      "guide_rect_xywh": [
+        1309,
+        546,
+        315,
+        120
+      ],
+      "png_size": [
+        323,
+        128
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1305,
+        542
+      ],
+      "normalized_guide_rect": [
+        0.78289474,
+        0.58023379,
+        0.18839713,
+        0.12752391
+      ],
+      "sha256": "acc854ec5099efef743bfc95aea80815b793587f0fb3b1649f3b6a3a8f35c304",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        33,
+        29,
+        33,
+        29
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1502.869,
+        626.652,
+        361.53,
+        137.726
+      ],
+      "source_v2_file": "01_Sprites/FG_Button_Pack_Frame.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Icon_PackGift",
+      "file": "01_Sprites/FG_Icon_PackGift.png",
+      "group": "Icons",
+      "method": "foreground_segmented_crop",
+      "note_ko": "포장 버튼 전용 선물 아이콘. 재료 상자/보상 상자 대체 금지.",
+      "guide_rect_xywh": [
+        1339,
+        561,
+        79,
+        79
+      ],
+      "png_size": [
+        87,
+        87
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1335,
+        557
+      ],
+      "normalized_guide_rect": [
+        0.80083732,
+        0.59617428,
+        0.0472488,
+        0.08395324
+      ],
+      "sha256": "cb79783f67576a870b01ef6ee173a74be80a37d98705ee5a75cd69993cb2f9cf",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1537.301,
+        643.868,
+        90.67,
+        90.67
+      ],
+      "source_v2_file": "01_Sprites/FG_Icon_PackGift.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Tray_FiveEmptySlots",
+      "file": "01_Sprites/FG_Tray_FiveEmptySlots.png",
+      "group": "Tray",
+      "method": "direct_masked_crop",
+      "note_ko": "최종 가이드의 빈 5칸 트레이 직접 마스킹. 다섯 슬롯은 그림 안에 있음. 같은 자리의 별도 슬롯 프레임 중첩 금지.",
+      "guide_rect_xywh": [
+        386,
+        530,
+        902,
+        167
+      ],
+      "png_size": [
+        910,
+        175
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        382,
+        526
+      ],
+      "normalized_guide_rect": [
+        0.23086124,
+        0.56323061,
+        0.53947368,
+        0.17747078
+      ],
+      "sha256": "b95ec822a0b4efc5a67a84fd3bd686f33ea1ca5e1b8e97e7970ad71d5ea448a1",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        443.528,
+        608.289,
+        1035.239,
+        191.668
+      ],
+      "source_v2_file": "01_Sprites/FG_Tray_FiveEmptySlots.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Panel_Box",
+      "file": "01_Sprites/FG_Panel_Box.png",
+      "group": "Panels",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "최종 가이드의 빈 목록 바탕. 예시 재료/화살표/도트/탭 제거. 탭에 가려졌던 상단 테두리는 같은 프레임의 노출된 테두리로 보완. 화살표가 겹친 부분은 국소 복원.",
+      "guide_rect_xywh": [
+        23,
+        708,
+        443,
+        214
+      ],
+      "png_size": [
+        451,
+        222
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        19,
+        704
+      ],
+      "normalized_guide_rect": [
+        0.01375598,
+        0.75239107,
+        0.26495215,
+        0.22741764
+      ],
+      "sha256": "b0b515ed83badea7fdb1297a246d75945a0607b236fb88a219ab04e826727236",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        39,
+        35,
+        39,
+        35
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        26.908,
+        812.582,
+        508.438,
+        245.611
+      ],
+      "source_v2_file": "01_Sprites/FG_Panel_Box.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Tab_Box_Blank",
+      "file": "01_Sprites/FG_Tab_Box_Blank.png",
+      "group": "Tabs",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "카테고리 제목/아이콘을 제거한 독립 탭. 문구는 기존 TMP; 탭 배경에 글자 굽기 금지.",
+      "guide_rect_xywh": [
+        57,
+        704,
+        186,
+        53
+      ],
+      "png_size": [
+        194,
+        61
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        53,
+        700
+      ],
+      "normalized_guide_rect": [
+        0.03409091,
+        0.74814028,
+        0.11124402,
+        0.05632306
+      ],
+      "sha256": "6d840565c7cf38ba035fa09f6b1b4967de2604b969dd403cc2d46d601f3fbd18",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        22,
+        14,
+        22,
+        14
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        65.93,
+        807.991,
+        213.475,
+        60.829
+      ],
+      "source_v2_file": "01_Sprites/FG_Tab_Box_Blank.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Panel_Plush",
+      "file": "01_Sprites/FG_Panel_Plush.png",
+      "group": "Panels",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "최종 가이드의 빈 목록 바탕. 예시 재료/화살표/도트/탭 제거. 탭에 가려졌던 상단 테두리는 같은 프레임의 노출된 테두리로 보완. 화살표가 겹친 부분은 국소 복원.",
+      "guide_rect_xywh": [
+        481,
+        708,
+        710,
+        214
+      ],
+      "png_size": [
+        718,
+        222
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        477,
+        704
+      ],
+      "normalized_guide_rect": [
+        0.28767943,
+        0.75239107,
+        0.42464115,
+        0.22741764
+      ],
+      "sha256": "d46dd207f55d963a62c0b5f63fff60277a4fa7f0b1b7c5877409f9d7508a340c",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        39,
+        35,
+        39,
+        35
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        552.561,
+        812.582,
+        814.878,
+        245.611
+      ],
+      "source_v2_file": "01_Sprites/FG_Panel_Plush.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Tab_Plush_Blank",
+      "file": "01_Sprites/FG_Tab_Plush_Blank.png",
+      "group": "Tabs",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "카테고리 제목/아이콘을 제거한 독립 탭. 문구는 기존 TMP; 탭 배경에 글자 굽기 금지.",
+      "guide_rect_xywh": [
+        517,
+        704,
+        230,
+        53
+      ],
+      "png_size": [
+        238,
+        61
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        513,
+        700
+      ],
+      "normalized_guide_rect": [
+        0.30921053,
+        0.74814028,
+        0.13755981,
+        0.05632306
+      ],
+      "sha256": "107c3b757ecf0dd1651eadf0c31e09941113f0b609ce4db4c38a6ce1946ccd35",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        22,
+        14,
+        22,
+        14
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        593.879,
+        807.991,
+        263.974,
+        60.829
+      ],
+      "source_v2_file": "01_Sprites/FG_Tab_Plush_Blank.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Panel_Ribbon",
+      "file": "01_Sprites/FG_Panel_Ribbon.png",
+      "group": "Panels",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "최종 가이드의 빈 목록 바탕. 예시 재료/화살표/도트/탭 제거. 탭에 가려졌던 상단 테두리는 같은 프레임의 노출된 테두리로 보완. 화살표가 겹친 부분은 국소 복원.",
+      "guide_rect_xywh": [
+        1209,
+        708,
+        441,
+        214
+      ],
+      "png_size": [
+        449,
+        222
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1205,
+        704
+      ],
+      "normalized_guide_rect": [
+        0.72308612,
+        0.75239107,
+        0.26375598,
+        0.22741764
+      ],
+      "sha256": "96326ea6beac40b753c9cccf6e516905bd7eccf142985db5e5d3013f80d99087",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        39,
+        35,
+        39,
+        35
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1388.098,
+        812.582,
+        506.142,
+        245.611
+      ],
+      "source_v2_file": "01_Sprites/FG_Panel_Ribbon.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Tab_Ribbon_Blank",
+      "file": "01_Sprites/FG_Tab_Ribbon_Blank.png",
+      "group": "Tabs",
+      "method": "source_border_background_reconstruction",
+      "note_ko": "카테고리 제목/아이콘을 제거한 독립 탭. 문구는 기존 TMP; 탭 배경에 글자 굽기 금지.",
+      "guide_rect_xywh": [
+        1238,
+        704,
+        185,
+        53
+      ],
+      "png_size": [
+        193,
+        61
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1234,
+        700
+      ],
+      "normalized_guide_rect": [
+        0.74043062,
+        0.74814028,
+        0.11064593,
+        0.05632306
+      ],
+      "sha256": "2755cd7af71fa9035de1a5a399ccf298902578a64633a167c677f33832781cf4",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        22,
+        14,
+        22,
+        14
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1421.382,
+        807.991,
+        212.327,
+        60.829
+      ],
+      "source_v2_file": "01_Sprites/FG_Tab_Ribbon_Blank.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Icon_Category_Box",
+      "file": "01_Sprites/FG_Icon_Category_Box.png",
+      "group": "Icons",
+      "method": "foreground_segmented_crop",
+      "note_ko": "상자 카테고리 탭의 흰 선물 기호. 재료 이미지 아님.",
+      "guide_rect_xywh": [
+        81,
+        706,
+        49,
+        50
+      ],
+      "png_size": [
+        57,
+        58
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        77,
+        702
+      ],
+      "normalized_guide_rect": [
+        0.04844498,
+        0.75026567,
+        0.02930622,
+        0.05313496
+      ],
+      "sha256": "38a0d91b782caf3e4c2dd7d9712c0d158ccc0cf32d898492792c372357a27937",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        93.475,
+        810.287,
+        56.238,
+        57.386
+      ],
+      "source_v2_file": "01_Sprites/FG_Icon_Category_Box.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Icon_Category_Plush",
+      "file": "01_Sprites/FG_Icon_Category_Plush.png",
+      "group": "Icons",
+      "method": "foreground_segmented_crop",
+      "note_ko": "봉제인형 탭의 곰 얼굴 기호.",
+      "guide_rect_xywh": [
+        538,
+        704,
+        55,
+        52
+      ],
+      "png_size": [
+        63,
+        60
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        534,
+        700
+      ],
+      "normalized_guide_rect": [
+        0.32177033,
+        0.74814028,
+        0.03289474,
+        0.05526036
+      ],
+      "sha256": "446f01bb811df872e097f4b2bf9771e82cec51882d1c84e41015efd4a6735a2c",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        617.981,
+        807.991,
+        63.124,
+        59.681
+      ],
+      "source_v2_file": "01_Sprites/FG_Icon_Category_Plush.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Icon_Category_Ribbon",
+      "file": "01_Sprites/FG_Icon_Category_Ribbon.png",
+      "group": "Icons",
+      "method": "foreground_segmented_crop",
+      "note_ko": "리본 카테고리 탭 기호. 재료 이미지 아님.",
+      "guide_rect_xywh": [
+        1255,
+        708,
+        61,
+        47
+      ],
+      "png_size": [
+        69,
+        55
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1251,
+        704
+      ],
+      "normalized_guide_rect": [
+        0.75059809,
+        0.75239107,
+        0.03648325,
+        0.04994687
+      ],
+      "sha256": "ff1443cb768c12dad23d2331b0f708d2e030d6e3b3ff4e51881495f61b7c8416",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1440.893,
+        812.582,
+        70.011,
+        53.943
+      ],
+      "source_v2_file": "01_Sprites/FG_Icon_Category_Ribbon.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Arrow_Box_Left",
+      "file": "01_Sprites/FG_Arrow_Box_Left.png",
+      "group": "Navigation",
+      "method": "source_outline_contour_crop",
+      "note_ko": "빈 바탕을 제거하고 원본 갈색 테두리와 크림색 내부를 유지한 화살표.",
+      "guide_rect_xywh": [
+        35,
+        796,
+        32,
+        45
+      ],
+      "png_size": [
+        40,
+        53
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        31,
+        792
+      ],
+      "normalized_guide_rect": [
+        0.02093301,
+        0.84590861,
+        0.01913876,
+        0.04782147
+      ],
+      "sha256": "e790171616325786e211a4b4e80b3bff59a48f5f7061eba64248285722437234",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        40.68,
+        913.581,
+        36.727,
+        51.647
+      ],
+      "source_v2_file": "01_Sprites/FG_Arrow_Box_Left.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Arrow_Box_Right",
+      "file": "01_Sprites/FG_Arrow_Box_Right.png",
+      "group": "Navigation",
+      "method": "source_outline_contour_crop",
+      "note_ko": "빈 바탕을 제거하고 원본 갈색 테두리와 크림색 내부를 유지한 화살표.",
+      "guide_rect_xywh": [
+        420,
+        796,
+        32,
+        45
+      ],
+      "png_size": [
+        40,
+        53
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        416,
+        792
+      ],
+      "normalized_guide_rect": [
+        0.25119617,
+        0.84590861,
+        0.01913876,
+        0.04782147
+      ],
+      "sha256": "e1bcddc3c7c74cf861c414ebe028ad6a7801fb5a7070924319d05b60983d76b2",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        482.55,
+        913.581,
+        36.727,
+        51.647
+      ],
+      "source_v2_file": "01_Sprites/FG_Arrow_Box_Right.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Arrow_Plush_Left",
+      "file": "01_Sprites/FG_Arrow_Plush_Left.png",
+      "group": "Navigation",
+      "method": "source_outline_contour_crop",
+      "note_ko": "빈 바탕을 제거하고 원본 갈색 테두리와 크림색 내부를 유지한 화살표.",
+      "guide_rect_xywh": [
+        495,
+        796,
+        33,
+        45
+      ],
+      "png_size": [
+        41,
+        53
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        491,
+        792
+      ],
+      "normalized_guide_rect": [
+        0.29605263,
+        0.84590861,
+        0.01973684,
+        0.04782147
+      ],
+      "sha256": "f62ea9391f3d610956431c8172c933d6aa9d8e1782dc632a8fa1890a469fe4b4",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        568.629,
+        913.581,
+        37.875,
+        51.647
+      ],
+      "source_v2_file": "01_Sprites/FG_Arrow_Plush_Left.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Arrow_Plush_Right",
+      "file": "01_Sprites/FG_Arrow_Plush_Right.png",
+      "group": "Navigation",
+      "method": "source_outline_contour_crop",
+      "note_ko": "빈 바탕을 제거하고 원본 갈색 테두리와 크림색 내부를 유지한 화살표.",
+      "guide_rect_xywh": [
+        1146,
+        796,
+        32,
+        45
+      ],
+      "png_size": [
+        40,
+        53
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1142,
+        792
+      ],
+      "normalized_guide_rect": [
+        0.6854067,
+        0.84590861,
+        0.01913876,
+        0.04782147
+      ],
+      "sha256": "f1fe0a2ca14881e82361e73cb89c7e74007b651616ba0294b6d1ed5c992a6e3a",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1315.792,
+        913.581,
+        36.727,
+        51.647
+      ],
+      "source_v2_file": "01_Sprites/FG_Arrow_Plush_Right.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Arrow_Ribbon_Left",
+      "file": "01_Sprites/FG_Arrow_Ribbon_Left.png",
+      "group": "Navigation",
+      "method": "source_outline_contour_crop",
+      "note_ko": "빈 바탕을 제거하고 원본 갈색 테두리와 크림색 내부를 유지한 화살표.",
+      "guide_rect_xywh": [
+        1221,
+        796,
+        32,
+        45
+      ],
+      "png_size": [
+        40,
+        53
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1217,
+        792
+      ],
+      "normalized_guide_rect": [
+        0.73026316,
+        0.84590861,
+        0.01913876,
+        0.04782147
+      ],
+      "sha256": "93815f47e6bd5ce6555cc177dfb2a3b19c3af34bc5965d8dd07471e2242173a4",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1401.87,
+        913.581,
+        36.727,
+        51.647
+      ],
+      "source_v2_file": "01_Sprites/FG_Arrow_Ribbon_Left.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Arrow_Ribbon_Right",
+      "file": "01_Sprites/FG_Arrow_Ribbon_Right.png",
+      "group": "Navigation",
+      "method": "source_outline_contour_crop",
+      "note_ko": "빈 바탕을 제거하고 원본 갈색 테두리와 크림색 내부를 유지한 화살표.",
+      "guide_rect_xywh": [
+        1607,
+        796,
+        32,
+        45
+      ],
+      "png_size": [
+        40,
+        53
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1603,
+        792
+      ],
+      "normalized_guide_rect": [
+        0.9611244,
+        0.84590861,
+        0.01913876,
+        0.04782147
+      ],
+      "sha256": "3a58f9d68fe116eee2afbd5c6560f62b6819e46aeddce05008e17a2efa0833db",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1844.888,
+        913.581,
+        36.727,
+        51.647
+      ],
+      "source_v2_file": "01_Sprites/FG_Arrow_Ribbon_Right.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Dot_Blue_Active",
+      "file": "01_Sprites/FG_Dot_Blue_Active.png",
+      "group": "Navigation",
+      "method": "direct_masked_crop",
+      "note_ko": "완성 가이드의 개별 도트. 표시 개수와 활성 상태는 실제 목록 상태를 사용.",
+      "guide_rect_xywh": [
+        193,
+        874,
+        30,
+        30
+      ],
+      "png_size": [
+        38,
+        38
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        189,
+        870
+      ],
+      "normalized_guide_rect": [
+        0.11543062,
+        0.92879915,
+        0.01794258,
+        0.03188098
+      ],
+      "sha256": "c65df5250276cee47755e0c1c58eeb715d8022c05c3a6c79a5b13068d06a5cc5",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        222.019,
+        1003.103,
+        34.431,
+        34.431
+      ],
+      "source_v2_file": "01_Sprites/FG_Dot_Blue_Active.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Dot_Blue_Inactive",
+      "file": "01_Sprites/FG_Dot_Blue_Inactive.png",
+      "group": "Navigation",
+      "method": "direct_masked_crop",
+      "note_ko": "완성 가이드의 개별 도트. 표시 개수와 활성 상태는 실제 목록 상태를 사용.",
+      "guide_rect_xywh": [
+        230,
+        874,
+        29,
+        29
+      ],
+      "png_size": [
+        37,
+        37
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        226,
+        870
+      ],
+      "normalized_guide_rect": [
+        0.13755981,
+        0.92879915,
+        0.0173445,
+        0.03081828
+      ],
+      "sha256": "56109023e0c83c62eff7d83e5dafd24c2d8ca9a42783db106c1adc3fdf39c854",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        264.485,
+        1003.103,
+        33.284,
+        33.284
+      ],
+      "source_v2_file": "01_Sprites/FG_Dot_Blue_Inactive.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Dot_Pink_Active",
+      "file": "01_Sprites/FG_Dot_Pink_Active.png",
+      "group": "Navigation",
+      "method": "direct_masked_crop",
+      "note_ko": "완성 가이드의 개별 도트. 표시 개수와 활성 상태는 실제 목록 상태를 사용.",
+      "guide_rect_xywh": [
+        784,
+        874,
+        31,
+        30
+      ],
+      "png_size": [
+        39,
+        38
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        780,
+        870
+      ],
+      "normalized_guide_rect": [
+        0.46889952,
+        0.92879915,
+        0.01854067,
+        0.03188098
+      ],
+      "sha256": "3fb9c08eec8d2074da2d5d61d5206cc3047ead4081781a42dfe7aaff42160d67",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        900.319,
+        1003.103,
+        35.579,
+        34.431
+      ],
+      "source_v2_file": "01_Sprites/FG_Dot_Pink_Active.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Dot_Pink_Inactive",
+      "file": "01_Sprites/FG_Dot_Pink_Inactive.png",
+      "group": "Navigation",
+      "method": "direct_masked_crop",
+      "note_ko": "완성 가이드의 개별 도트. 표시 개수와 활성 상태는 실제 목록 상태를 사용.",
+      "guide_rect_xywh": [
+        822,
+        874,
+        30,
+        30
+      ],
+      "png_size": [
+        38,
+        38
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        818,
+        870
+      ],
+      "normalized_guide_rect": [
+        0.49162679,
+        0.92879915,
+        0.01794258,
+        0.03188098
+      ],
+      "sha256": "da20483a0987d05333f80d5200ca58a674002099e91f20029730490a33e0e122",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        943.932,
+        1003.103,
+        34.431,
+        34.431
+      ],
+      "source_v2_file": "01_Sprites/FG_Dot_Pink_Inactive.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Dot_Orange_Active",
+      "file": "01_Sprites/FG_Dot_Orange_Active.png",
+      "group": "Navigation",
+      "method": "direct_masked_crop",
+      "note_ko": "완성 가이드의 개별 도트. 표시 개수와 활성 상태는 실제 목록 상태를 사용.",
+      "guide_rect_xywh": [
+        1378,
+        874,
+        30,
+        30
+      ],
+      "png_size": [
+        38,
+        38
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1374,
+        870
+      ],
+      "normalized_guide_rect": [
+        0.82416268,
+        0.92879915,
+        0.01794258,
+        0.03188098
+      ],
+      "sha256": "2d523c4adb019539760226457ff4f5517e36ad91a25fc437f7afe998dc3fdeda",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1582.062,
+        1003.103,
+        34.431,
+        34.431
+      ],
+      "source_v2_file": "01_Sprites/FG_Dot_Orange_Active.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Dot_Orange_Inactive",
+      "file": "01_Sprites/FG_Dot_Orange_Inactive.png",
+      "group": "Navigation",
+      "method": "direct_masked_crop",
+      "note_ko": "완성 가이드의 개별 도트. 표시 개수와 활성 상태는 실제 목록 상태를 사용.",
+      "guide_rect_xywh": [
+        1415,
+        874,
+        30,
+        30
+      ],
+      "png_size": [
+        38,
+        38
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1411,
+        870
+      ],
+      "normalized_guide_rect": [
+        0.84629187,
+        0.92879915,
+        0.01794258,
+        0.03188098
+      ],
+      "sha256": "7002187f1d2fcd50c65d84b5f250e7b56c586df47675d6224e9af1feeb35e4e4",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1624.527,
+        1003.103,
+        34.431,
+        34.431
+      ],
+      "source_v2_file": "01_Sprites/FG_Dot_Orange_Inactive.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Icon_Broom",
+      "file": "01_Sprites/FG_Icon_Broom.png",
+      "group": "Icons",
+      "method": "foreground_segmented_crop",
+      "note_ko": "원본 빗자루의 밝은 본체 및 갈색 윤곽을 보존한 마스킹.",
+      "guide_rect_xywh": [
+        77,
+        561,
+        72,
+        81
+      ],
+      "png_size": [
+        80,
+        89
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        73,
+        557
+      ],
+      "normalized_guide_rect": [
+        0.04605263,
+        0.59617428,
+        0.0430622,
+        0.08607864
+      ],
+      "sha256": "365ea8b7a94ef1bd623771baef5680623441f21f23072cc702b090a143ff5ac8",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        88.884,
+        643.868,
+        82.635,
+        92.965
+      ],
+      "source_v2_file": "01_Sprites/FG_Icon_Broom.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Patience_Track",
+      "file": "01_Sprites/FG_Patience_Track.png",
+      "group": "Bars",
+      "method": "source_cap_and_strip_reconstruction",
+      "note_ko": "빈 오른쪽 트랙 단면과 우측 끝단으로 복원. 시계에 가려진 좌측 끝은 우측 끝단 대칭 복원.",
+      "guide_rect_xywh": [
+        330,
+        485,
+        189,
+        37
+      ],
+      "png_size": [
+        197,
+        45
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        326,
+        481
+      ],
+      "normalized_guide_rect": [
+        0.19736842,
+        0.51540914,
+        0.11303828,
+        0.03931987
+      ],
+      "sha256": "aa5dbf4c4cc2799129f0ca051b9dc20724acae7df6c263625ecbd3cc5cb654e4",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        18,
+        8,
+        18,
+        8
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        379.256,
+        556.642,
+        216.918,
+        42.465
+      ],
+      "source_v2_file": "01_Sprites/FG_Patience_Track.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Icon_ClockBlue",
+      "file": "01_Sprites/FG_Icon_ClockBlue.png",
+      "group": "Icons",
+      "method": "foreground_segmented_crop",
+      "note_ko": "인내심 바의 파란 시계. 바와 분리 배치.",
+      "guide_rect_xywh": [
+        303,
+        470,
+        53,
+        56
+      ],
+      "png_size": [
+        61,
+        64
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        299,
+        466
+      ],
+      "normalized_guide_rect": [
+        0.1812201,
+        0.49946865,
+        0.03169856,
+        0.05951116
+      ],
+      "sha256": "2e81b7002d96a1c6f023e20dc4212fdae946cdb68b35883e5fb9007aea3e097f",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": null,
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        348.268,
+        539.426,
+        60.829,
+        64.272
+      ],
+      "source_v2_file": "01_Sprites/FG_Icon_ClockBlue.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Patience_Fill_Green",
+      "file": "01_Sprites/FG_Patience_Fill_Green.png",
+      "group": "Bars",
+      "method": "source_cap_and_strip_reconstruction",
+      "note_ko": "해당 색상 원본 채움의 수직 단면과 둥근 끝으로 동일 174px 길이 정리. 현재 가이드의 부분 채움 길이 자체를 시간 규칙으로 쓰지 않음.",
+      "guide_rect_xywh": [
+        348,
+        493,
+        174,
+        21
+      ],
+      "png_size": [
+        182,
+        29
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        344,
+        489
+      ],
+      "normalized_guide_rect": [
+        0.20813397,
+        0.52391073,
+        0.10406699,
+        0.02231668
+      ],
+      "sha256": "1e5c3387c2bb5239c90c835ff1a0258df51baec50c11e4e74730ada0e229650d",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        11,
+        4,
+        11,
+        4
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        399.915,
+        565.824,
+        199.702,
+        24.102
+      ],
+      "source_v2_file": "01_Sprites/FG_Patience_Fill_Green.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Patience_Fill_Yellow",
+      "file": "01_Sprites/FG_Patience_Fill_Yellow.png",
+      "group": "Bars",
+      "method": "source_cap_and_strip_reconstruction",
+      "note_ko": "해당 색상 원본 채움의 수직 단면과 둥근 끝으로 동일 174px 길이 정리. 현재 가이드의 부분 채움 길이 자체를 시간 규칙으로 쓰지 않음.",
+      "guide_rect_xywh": [
+        765,
+        493,
+        174,
+        21
+      ],
+      "png_size": [
+        182,
+        29
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        761,
+        489
+      ],
+      "normalized_guide_rect": [
+        0.45753589,
+        0.52391073,
+        0.10406699,
+        0.02231668
+      ],
+      "sha256": "f02ae8641aab4f9567003e88dd150c9bde7f923af2523b5bf49b82e99fbad53c",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        11,
+        4,
+        11,
+        4
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        878.512,
+        565.824,
+        199.702,
+        24.102
+      ],
+      "source_v2_file": "01_Sprites/FG_Patience_Fill_Yellow.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Patience_Fill_Red",
+      "file": "01_Sprites/FG_Patience_Fill_Red.png",
+      "group": "Bars",
+      "method": "source_cap_and_strip_reconstruction",
+      "note_ko": "해당 색상 원본 채움의 수직 단면과 둥근 끝으로 동일 174px 길이 정리. 현재 가이드의 부분 채움 길이 자체를 시간 규칙으로 쓰지 않음.",
+      "guide_rect_xywh": [
+        1183,
+        493,
+        174,
+        21
+      ],
+      "png_size": [
+        182,
+        29
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        1179,
+        489
+      ],
+      "normalized_guide_rect": [
+        0.70753589,
+        0.52391073,
+        0.10406699,
+        0.02231668
+      ],
+      "sha256": "3511f8c8274405282ed0eea527d1abe50f2157fe982d9f1e2b64626855843c18",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        11,
+        4,
+        11,
+        4
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        1358.257,
+        565.824,
+        199.702,
+        24.102
+      ],
+      "source_v2_file": "01_Sprites/FG_Patience_Fill_Red.png",
+      "active_v3": true
+    },
+    {
+      "id": "FG_Grade_Fill_Gold_DERIVED",
+      "file": "01_Sprites/FG_Grade_Fill_Gold_DERIVED.png",
+      "group": "Bars",
+      "method": "same_guide_derivative_requires_review",
+      "note_ko": "0점 가이드에는 등급 Fill이 보이지 않음. 같은 가이드의 노란 인내심 Fill을 활용한 별도 후보. 원본에서 그대로 추출한 등급 Fill 아님.",
+      "guide_rect_xywh": [
+        569,
+        72,
+        434,
+        21
+      ],
+      "png_size": [
+        442,
+        29
+      ],
+      "padding_px": 4,
+      "place_png_top_left_guide": [
+        565,
+        68
+      ],
+      "normalized_guide_rect": [
+        0.340311,
+        0.07651435,
+        0.25956938,
+        0.02231668
+      ],
+      "sha256": "bdaad112b7416a62a01bc0466eb8a6c76b7ef415ad94b0515d712215d063e476",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "nine_slice_borders_lbrt_proposal": [
+        11,
+        4,
+        11,
+        4
+      ],
+      "import_note": "RGBA Sprite; preserve aspect. No source enlargement. Do not bake text. Review at target size.",
+      "status": "USER_APPROVED_PARTS__UNITY_INTEGRATION_PENDING",
+      "source_file": "03_Reference/APPROVED_FINAL_GUIDE_UNCHANGED.png",
+      "source_sha256": "e4d38176158449737d334950ec479ebb0dd1de3ce6315202f670e47884b419ed",
+      "production_approval": "User approved the extracted parts in this conversation. No new pixel edit in v3. Unity visual/functional acceptance remains pending.",
+      "target_1920x1080_contain_rect_xywh": [
+        653.56,
+        82.635,
+        498.108,
+        24.102
+      ],
+      "source_v2_file": "02_Reconstruction_Review/FG_Grade_Fill_Gold_DERIVED.png",
+      "active_v3": true
+    }
+  ],
+  "excluded_old_v2_assets": [
+    {
+      "id": "FG_Sign_Blank",
+      "reason": "Hanging sign already painted into final approved background; no double board or chains."
+    },
+    {
+      "id": "FG_Counter_Wood_CLEAN_RECONSTRUCTED",
+      "reason": "Counter already painted into final approved background; do not double-layer a different counter."
+    },
+    {
+      "id": "FG_Background_VISIBLE_SOURCE_ONLY",
+      "reason": "Historical partial pixels, not active background."
+    },
+    {
+      "id": "FG_Background_OCCLUSION_MASK",
+      "reason": "Historical reconstruction helper, not gameplay mask or active texture."
+    }
+  ],
+  "protected_project_assets": [
+    "Existing 32 plush materials + 3 boxes + 3 ribbons",
+    "Existing customer sprites and animation sources",
+    "Existing 6 C/B/A/S/SS/SSS reward box sprites",
+    "Existing X close button sprite",
+    "Existing TMP font and related source assets"
+  ],
+  "remote_repo_reference": {
+    "repo": "dlackdanr777/Panda_Restaurant",
+    "branch": "26/10/22_MiniGame_3rdFloor",
+    "head": "b34d8b7dac4f3ae0c8a7348fd3d5113a25d5bff0",
+    "observed_commit": "DEV-UI-01",
+    "qa_menu_status": "DEV-QA-POPUP-01 + 1432 tests is user-reported local state; preserve uncommitted files, do not reset to remote."
+  },
+  "links": {
+    "drive_root": "https://drive.google.com/drive/folders/1HnQdrSMJXu7TLo6EOXTKEevFzWQ_pgnA",
+    "drive_v3": "https://drive.google.com/drive/folders/1Bt9SdSQqaCwufqjNJarvRH2mnfp9j8rw",
+    "drive_v2_parts": "https://drive.google.com/drive/folders/1IvYDpw4qiY36mv8LvDBR5QruBe69XZuT"
+  }
+}

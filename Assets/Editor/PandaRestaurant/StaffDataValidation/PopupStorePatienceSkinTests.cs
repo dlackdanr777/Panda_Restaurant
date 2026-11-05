@@ -13,14 +13,15 @@ using UnityEngine.UI;
 public sealed class PopupStorePatienceSkinTests
 {
     private const string PrefabPath = "Assets/Resources/UI/PopupStore/UIPopupStore.prefab";
-    private const string ArtPath = "Assets/Sprites/PopupStore/UIApproved_v1_20261104/";
+    private const string ArtPath = "Assets/Sprites/PopupStore/CleanPartsV4/";
 
     [Test]
     public void AuthoredPatienceSkinUsesTheThreeApprovedDistinctFillSpritesAndExistingThresholds()
     {
         var patience = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath).GetComponent<PopupStoreCustomerPatience>();
         string[] fields = { "_normalSprite", "_cautionSprite", "_urgentSprite" };
-        string[] files = { "UI_Bar_Patience_Fill_Green.png", "UI_Bar_Patience_Fill_Yellow.png", "UI_Bar_Patience_Fill_Red.png" };
+        // The v4 approval changes artwork, never timer policy or its colour thresholds.
+        string[] files = { "V4_Patience_Fill_Green.png", "V4_Patience_Fill_Yellow.png", "V4_Patience_Fill_Red.png" };
         var ids = fields.Select(name => (Sprite)Read(patience, name)).ToArray();
         Assert.That(ids.All(sprite => sprite != null), Is.True);
         CollectionAssert.AllItemsAreUnique(ids.Select(sprite => sprite.GetInstanceID()).ToArray());

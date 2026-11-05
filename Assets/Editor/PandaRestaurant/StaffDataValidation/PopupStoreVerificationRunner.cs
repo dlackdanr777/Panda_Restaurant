@@ -22,7 +22,7 @@ using UnityEngine.SceneManagement;
 /// Never creates a scene, saves user scenes, restores a workspace or starts another Editor.
 /// </summary>
 [InitializeOnLoad]
-public static class PopupStoreVerificationRunner
+public static partial class PopupStoreVerificationRunner
 {
     private const string DirectoryPath = "Temp/PopupStoreVerification";
     private const string RequestPath = DirectoryPath + "/request.txt";
@@ -50,7 +50,9 @@ public static class PopupStoreVerificationRunner
         "PopupStoreRewardRevealPreviewTests", "PopupStorePauseTests", "PopupStoreExitConfirmationTests", "PopupStoreSessionLifetimeTests",
         "PopupStoreBusinessAccessSettingsTests", "PopupStoreAdmissionTests",
         "PopupStoreRewardR1TableTests", "PopupStoreRewardR1SessionTests",
-        "PopupStoreCurrentGradeHudTests", "PopupStoreApprovedUiTests", "PopupStorePatienceSkinTests"
+        "PopupStoreCurrentGradeHudTests", "PopupStoreApprovedUiTests", "PopupStorePatienceSkinTests",
+        "PopupStoreManualTestMenuTests", "PopupStoreMainVisualTests", "PopupStoreFinalGuideTests", "PopupStoreCleanPartsTests",
+        "PopupStoreUnorderedPackingTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -94,6 +96,7 @@ public static class PopupStoreVerificationRunner
         Application.logMessageReceived += CaptureSessionReviewLog;
         EditorApplication.playModeStateChanged += state =>
         {
+            PlannerReviewPlayStateChanged(state);
             if (state == PlayModeStateChange.EnteredEditMode)
             {
                 ClearReviewRequest(); _accessReviewOwner?.Dispose(); _accessReviewOwner = null;
@@ -123,6 +126,7 @@ public static class PopupStoreVerificationRunner
         if (EditorApplication.timeSinceStartup < _nextPoll) return;
         _nextPoll = EditorApplication.timeSinceStartup + .5;
         ApplyResultReviewOnce();
+        ObservePlannerReview();
         if (!File.Exists(RequestPath)) return;
         string request;
         try
@@ -136,7 +140,22 @@ public static class PopupStoreVerificationRunner
         }
         catch (IOException) { return; } // A writer may still own the request file.
         if (request == "inspect") InspectWorkspace();
+        else if (request == "refresh-scripts")
+        {
+            // Explicit incremental refresh only. No forced reimport, scene save, focus change or Play transition.
+            if (EditorApplication.isPlayingOrWillChangePlaymode || BackEnd.Backend.IsInitialized || BackEnd.Backend.IsLogin
+                || PrefabStageUtility.GetCurrentPrefabStage() != null
+                || Enumerable.Range(0, SceneManager.sceneCount).Any(i => SceneManager.GetSceneAt(i).isDirty))
+                Debug.LogWarning("POPUP_STORE_REFRESH_REFUSED: requires clean idle EditMode without a live account.");
+            else AssetDatabase.Refresh();
+        }
         else if (request == "ui-apply") RunApprovedUiOperation("PopupStoreApprovedUiIntegration", "Apply", null);
+        else if (request == "ui03-evidence") RunApprovedUiOperation("PopupStoreFinalGuideEvidence", "Run", null);
+        else if (request == "ui04-apply") RunApprovedUiOperation("PopupStoreCleanPartsIntegration", "Apply", null);
+        else if (request == "ui04-audit") RunApprovedUiOperation("PopupStoreCleanPartsIntegration", "AuditDependencies", null);
+        else if (request == "ui04-evidence") RunApprovedUiOperation("PopupStoreFinalGuideEvidence", "Run", null);
+        else if (request == "ui03-apply") RunApprovedUiOperation("PopupStoreFinalGuideIntegration", "Apply", null);
+        else if (request == "ui02-apply") RunApprovedUiOperation("PopupStoreMainVisualIntegration", "Apply", null);
         else if (request == "ui-evidence-before" || request == "ui-evidence-after")
             RunApprovedUiOperation("PopupStoreApprovedUiEvidence", "Run", new object[] { request.Substring("ui-evidence-".Length) });
         else if (request.StartsWith("ui-capture-", StringComparison.Ordinal)) CaptureApprovedUiGameView(request);

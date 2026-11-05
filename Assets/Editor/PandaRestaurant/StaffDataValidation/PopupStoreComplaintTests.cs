@@ -245,7 +245,7 @@ public sealed class PopupStoreComplaintTests
             host.Entrance.TickEntrance(host.EntryDuration + .01f);
             host.Fill(0);
             Assert.That(host.Orders.QueryExactMatches(host.Counter).Kind, Is.EqualTo(PopupStoreExactMatchKind.Multiple));
-            Assert.That(host.Packing.TryPack().Status, Is.EqualTo(PopupStorePackingStatus.Multiple));
+            Assert.That(host.Packing.SuccessfulPackCount, Is.Zero, "Observe candidates without consuming the shorter-lived order before the expiry under test.");
             Assert.That(host.Counter.Count, Is.EqualTo(3));
             host.Clock.AdvanceTime(.4);
             Assert.That(host.SourceOrders[0].IsExpired, Is.True);

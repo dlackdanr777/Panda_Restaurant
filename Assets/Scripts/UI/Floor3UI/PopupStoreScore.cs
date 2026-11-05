@@ -147,17 +147,25 @@ public sealed class PopupStoreScore : MonoBehaviour
             || receipt.SlotIndex < 0 || receipt.SlotIndex >= 3 || receipt.Materials == null
             || receipt.Materials.Count < 3 || receipt.Materials.Count > 5)
         { error = "Missing identity or invalid order length."; return false; }
-        int count = receipt.Materials.Count - 2;
+        int count = 0, boxCount = 0, ribbonCount = 0;
+        string boxId = null, ribbonId = null;
         for (int i = 0; i < receipt.Materials.Count; i++)
         {
             var material = receipt.Materials[i];
-            var expected = i < count ? PopupStoreMaterialKind.Plush
-                : i == count ? PopupStoreMaterialKind.Box : PopupStoreMaterialKind.Ribbon;
-            if (material.Kind != expected || !PopupStoreMaterialCatalog.IsKnownId(material.Id, expected))
-            { error = "Invalid material kind, ID or sequence at " + i + "."; return false; }
+            if (!PopupStoreMaterialCatalog.IsKnownId(material.Id, material.Kind))
+            { error = "Invalid material kind or ID at " + i + "."; return false; }
+            switch (material.Kind)
+            {
+                case PopupStoreMaterialKind.Plush: count++; break;
+                case PopupStoreMaterialKind.Box: boxCount++; boxId = material.Id; break;
+                case PopupStoreMaterialKind.Ribbon: ribbonCount++; ribbonId = material.Id; break;
+                default: error = "Unknown material kind at " + i + "."; return false;
+            }
         }
-        if (!string.Equals(receipt.BoxId, receipt.Materials[count].Id, StringComparison.Ordinal)
-            || !string.Equals(receipt.RibbonId, receipt.Materials[count + 1].Id, StringComparison.Ordinal))
+        if (count < 1 || count > 3 || boxCount != 1 || ribbonCount != 1)
+        { error = "A receipt requires one to three plushes, one box and one ribbon."; return false; }
+        if (!string.Equals(receipt.BoxId, boxId, StringComparison.Ordinal)
+            || !string.Equals(receipt.RibbonId, ribbonId, StringComparison.Ordinal))
         { error = "Box or ribbon identity contradicts the receipt materials."; return false; }
         plushCount = count;
         points = 100 + (count - 1) * 40;

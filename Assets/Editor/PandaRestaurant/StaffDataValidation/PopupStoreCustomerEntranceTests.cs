@@ -243,7 +243,7 @@ public sealed class PopupStoreCustomerEntranceTests
     }
 
     [Test]
-    public void IdenticalWaitingOrdersRemainMultipleWithoutChoosingOrPackingACustomer()
+    public void IdenticalWaitingOrdersRemainMultipleInQueryButPackingChoosesOnlyOne()
     {
         using (var host = new Host())
         {
@@ -256,9 +256,12 @@ public sealed class PopupStoreCustomerEntranceTests
             Assert.That(host.SourceOrders[0].RuntimeId, Is.Not.EqualTo(host.SourceOrders[1].RuntimeId));
             var materials = host.Counter.Materials.ToArray();
             Assert.That(host.Orders.QueryExactMatches(host.Counter).Kind, Is.EqualTo(PopupStoreExactMatchKind.Multiple));
-            Assert.That(host.ClickPack().Status, Is.EqualTo(PopupStorePackingStatus.Multiple));
-            CollectionAssert.AreEqual(materials, host.Counter.Materials.ToArray());
-            Assert.That(host.SourceOrders.Any(order => order.IsPacked), Is.False);
+            var result = host.ClickPack();
+            Assert.That(result.Success, Is.True);
+            Assert.That(result.Receipt.SlotIndex, Is.Zero);
+            CollectionAssert.AreEqual(materials.Select(item => item.Id), result.Receipt.Materials.Select(item => item.Id));
+            Assert.That(host.Counter.Count, Is.Zero);
+            Assert.That(host.SourceOrders.Count(order => order.IsPacked), Is.EqualTo(1));
         }
     }
 

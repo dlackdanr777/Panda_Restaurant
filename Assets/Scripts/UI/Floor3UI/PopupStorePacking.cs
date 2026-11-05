@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public enum PopupStorePackingStatus { Unavailable, Busy, None, Multiple, Stale, Succeeded }
 
-/// <summary>Receipt value; deliberately holds no live catalog or sprite reference.</summary>
+/// <summary>Receipt value in the player's insertion order; holds no live catalog or sprite reference.</summary>
 public readonly struct PopupStorePackedMaterial
 {
     public PopupStoreMaterialKind Kind { get; }
@@ -144,13 +144,14 @@ public sealed class PopupStorePacking : MonoBehaviour
             var matches = _orders.QueryExactMatches(_counter);
             if (matches.Kind == PopupStoreExactMatchKind.None)
                 return Remember(PopupStorePackingStatus.None, matches);
-            if (matches.Kind == PopupStoreExactMatchKind.Multiple)
-                return Remember(PopupStorePackingStatus.Multiple, matches);
-
             counterLocked = _counter.BeginPackingLock();
             if (counterLocked) ordersLocked = _orders.BeginPackingLock();
             if (!counterLocked || !ordersLocked) return Remember(PopupStorePackingStatus.Busy, matches);
-            if (!_orders.TryCommitPacking(_counter, matches.Candidates[0], out var receipt))
+            // Pick one current recipient under both transaction locks. A later invalidation may
+            // reject this transaction, but must never silently redirect it to another customer.
+            matches = _orders.QueryExactMatches(_counter);
+            if (!_orders.TrySelectPackingCandidate(matches, out var candidate)
+                || !_orders.TryCommitPacking(_counter, candidate, out var receipt))
                 return Remember(PopupStorePackingStatus.Stale, matches);
 
             // All local success data is visible before the first event or visual update.

@@ -11,7 +11,7 @@ public sealed class PopupStoreOrderProgressSlot
     public IReadOnlyList<Image> Circles => _circles;
 }
 
-/// <summary>Leading-match guidance only. Never selects a customer, fulfils an order or consumes materials.</summary>
+/// <summary>Counted material guidance only. Never selects a customer, fulfils an order or consumes materials.</summary>
 [DisallowMultipleComponent]
 public sealed class PopupStoreOrderProgress : MonoBehaviour
 {
@@ -28,12 +28,13 @@ public sealed class PopupStoreOrderProgress : MonoBehaviour
     private PopupStoreOrderDisplay _boundOrders;
     private CircleView[][] _views;
     private readonly int[] _matched = new int[3];
+    private readonly bool[,] _matchedIcons = new bool[3, 5];
     private SoundManager _playingSoundManager;
     private float _soundStopAt;
     private string _lastError;
 
     public bool IsReady { get; private set; }
-    // One notification per newly extended prefix batch. EditMode does not play native audio/tweens.
+    // One notification per addition that matches any new icon. EditMode does not play native audio/tweens.
     public event Action FeedbackTriggered;
     public int GetMatchedCount(int slotIndex)
         => IsReady && slotIndex >= 0 && slotIndex < _matched.Length ? _matched[slotIndex] : 0;
@@ -44,6 +45,7 @@ public sealed class PopupStoreOrderProgress : MonoBehaviour
         StopSound();
         HideCircles(_views);
         Array.Clear(_matched, 0, _matched.Length);
+        Array.Clear(_matchedIcons, 0, _matchedIcons.Length);
         IsReady = false;
         if (!TryCapture(out var views, out string error))
         {
@@ -115,6 +117,7 @@ public sealed class PopupStoreOrderProgress : MonoBehaviour
         {
             HideCircles(_views);
             Array.Clear(_matched, 0, _matched.Length);
+            Array.Clear(_matchedIcons, 0, _matchedIcons.Length);
             return;
         }
         // Recapture only the circle bindings; order icon references may have changed in the Inspector.
@@ -145,17 +148,21 @@ public sealed class PopupStoreOrderProgress : MonoBehaviour
 
     private bool EvaluateSlot(int slotIndex, bool available, bool allowFeedback)
     {
-        int previous = _matched[slotIndex];
-        int next = available ? PopupStoreOrderMatch.CountPrefix(_boundOrders.GetDisplayedMaterials(slotIndex), _boundCounter.Materials) : 0;
-        _matched[slotIndex] = next;
+        var mask = available ? PopupStoreUnorderedOrderMatch.MatchMask(
+            _boundOrders.GetDisplayedMaterials(slotIndex), _boundCounter.Materials) : Array.Empty<bool>();
+        _matched[slotIndex] = 0;
         bool increased = false;
         for (int j = 0; j < 5; j++)
         {
+            bool previous = _matchedIcons[slotIndex, j];
+            bool next = j < mask.Length && mask[j];
+            _matchedIcons[slotIndex, j] = next;
+            if (next) _matched[slotIndex]++;
             var circle = _views[slotIndex][j];
             ResetPulse(circle);
             circle.Image.raycastTarget = false;
-            circle.Image.gameObject.SetActive(j < next);
-            if (allowFeedback && j >= previous && j < next)
+            circle.Image.gameObject.SetActive(next);
+            if (allowFeedback && !previous && next)
             {
                 increased = true;
                 Pulse(circle);
@@ -241,6 +248,7 @@ public sealed class PopupStoreOrderProgress : MonoBehaviour
         StopSound();
         HideCircles(_views);
         Array.Clear(_matched, 0, _matched.Length);
+        Array.Clear(_matchedIcons, 0, _matchedIcons.Length);
         IsReady = false;
     }
     private void OnDestroy() { Unbind(); StopSound(); }

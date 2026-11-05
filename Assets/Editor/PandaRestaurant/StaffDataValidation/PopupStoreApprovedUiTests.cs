@@ -107,7 +107,12 @@ public sealed class PopupStoreApprovedUiTests
     public void ApprovedDecorationsDoNotStealMaterialScrollOrButtonRaycasts()
     {
         var prefab = Prefab();
-        foreach (var image in prefab.GetComponentsInChildren<Image>(true).Where(i => AssetDatabase.GetAssetPath(i.sprite).StartsWith(SpriteFolder, StringComparison.Ordinal)))
+        var decorations = prefab.GetComponentsInChildren<Image>(true).Where(i =>
+            AssetDatabase.GetAssetPath(i.sprite).StartsWith(SpriteFolder, StringComparison.Ordinal)
+            || AssetDatabase.GetAssetPath(i.sprite).StartsWith("Assets/Sprites/PopupStore/FinalGuideV3/", StringComparison.Ordinal)
+            || AssetDatabase.GetAssetPath(i.sprite).StartsWith(PopupStoreCleanPartsTests.Art, StringComparison.Ordinal)).ToArray();
+        Assert.That(decorations.Length, Is.GreaterThan(20), "The new skin must not turn this raycast check into an empty pass.");
+        foreach (var image in decorations)
         {
             var button = image.GetComponent<Button>();
             Assert.That(image.raycastTarget, Is.EqualTo(button != null), image.name + " only an actual button may intercept input");
@@ -220,8 +225,15 @@ public sealed class PopupStoreApprovedUiTests
                 var portrait = VisibleSpriteBounds(display.Slots[slot].CustomerImage, host.Rect);
                 var bubble = VisibleSpriteBounds(display.Slots[slot].OrderFrame, host.Rect);
                 var patience = VisibleGaugeBounds(patienceSlots[slot], host.Rect);
-                Assert.That(patience.Overlaps(portrait), Is.False, "Patience gauge must not obscure customer " + slot
-                    + "; gauge=" + patience + "; visiblePortrait=" + portrait);
+                // The newly approved v3 clock sits across the customer's foot line (guide y470..486).
+                // Permit only that authored lower strip; it must never obscure the body or face.
+                if (patience.Overlaps(portrait))
+                {
+                    float scale = Mathf.Min(host.Rect.rect.width / 1672f, host.Rect.rect.height / 941f);
+                    float overlapHeight = Mathf.Min(patience.yMax, portrait.yMax) - Mathf.Max(patience.yMin, portrait.yMin);
+                    Assert.That(overlapHeight, Is.LessThanOrEqualTo(18 * scale + .1f), "Only the approved foot-clock overlap is allowed; customer " + slot);
+                    Assert.That(patience.yMax, Is.LessThanOrEqualTo(portrait.yMin + 18 * scale + .1f), "A gauge must not cover a customer's torso or face.");
+                }
                 Assert.That(patience.Overlaps(bubble), Is.False, "Patience gauge must remain clear of order " + slot
                     + "; gauge=" + patience + "; visibleBubble=" + bubble);
             }
@@ -242,7 +254,8 @@ public sealed class PopupStoreApprovedUiTests
             Assert.That(host.Counter.TryAdd(plush[5]), Is.False);
             var slots = Read<Image[]>(host.Counter, "_slotIcons");
             Assert.That(slots, Has.Length.EqualTo(5));
-            var tray = host.Root.GetComponentsInChildren<Image>(true).Single(i => AssetDatabase.GetAssetPath(i.sprite) == SpriteFolder + "UI_Tray_FiveEmptySlots.png");
+            var tray = host.Root.GetComponentsInChildren<Image>(true).Single(i => AssetDatabase.GetAssetPath(i.sprite)
+                == "Assets/Sprites/PopupStore/FinalGuideV3/FG_Tray_FiveEmptySlots.png");
             Assert.That(tray.preserveAspect, Is.True);
             Assert.That(tray.rectTransform.rect.width / tray.rectTransform.rect.height, Is.EqualTo(tray.sprite.rect.width / tray.sprite.rect.height).Within(.02f));
             for (int i = 0; i < slots.Length; i++)
@@ -364,6 +377,11 @@ public sealed class PopupStoreApprovedUiTests
         }
         private void Layout()
         {
+            // V3 owns one popup-local contain transform; exercise it after the fixture changes
+            // logical resolution, without changing the shared CanvasScaler or user GameView.
+            var guide = Root.GetComponent("PopupStoreFinalGuideLayout");
+            Assert.That(guide, Is.Not.Null);
+            Assert.That(guide.GetType().GetMethod("ApplyLayout").Invoke(guide, null), Is.EqualTo(true));
             Canvas.ForceUpdateCanvases();
             foreach (var list in Lists) Scroll(list).Rebuild(CanvasUpdate.PostLayout);
         }
@@ -400,6 +418,8 @@ public sealed class PopupStoreApprovedUiTests
                 {
                     typeof(Image).GetMethod("OnPopulateMesh", BindingFlags.Instance | BindingFlags.NonPublic,
                         null, new[] { typeof(VertexHelper) }, null).Invoke(image, new object[] { mesh });
+                    foreach (var effect in image.GetComponents<BaseMeshEffect>())
+                        if (effect.IsActive()) effect.ModifyMesh(mesh);
                     if (mesh.currentVertCount > 0) visible.Add(TransformBounds(MeshBounds(mesh), image.rectTransform, root));
                 }
             }
@@ -428,7 +448,8 @@ public sealed class PopupStoreApprovedUiTests
     private static Rect VisibleSpriteBounds(Image image, RectTransform root)
     {
         Assert.That(image.sprite, Is.Not.Null, image.name);
-        Assert.That(image.type, Is.EqualTo(Image.Type.Simple), "Alpha visibility requires the authored simple image geometry.");
+        Assert.That(image.type == Image.Type.Simple || image.type == Image.Type.Sliced, Is.True,
+            "Alpha visibility supports the authored Simple images and v4 fixed-border Sliced frames.");
         string path = AssetDatabase.GetAssetPath(image.sprite);
         Texture2D source = null;
         try
@@ -449,8 +470,8 @@ public sealed class PopupStoreApprovedUiTests
                     if (pixels[y * source.width + x].a != 0)
                     { left = Math.Min(left, x); bottom = Math.Min(bottom, y); right = Math.Max(right, x); top = Math.Max(top, y); }
             Assert.That(right, Is.GreaterThanOrEqualTo(left), path + " visible artwork pixels");
-            Rect drawing = image.rectTransform.rect;
-            if (image.preserveAspect)
+            Rect drawing = image.GetPixelAdjustedRect();
+            if (image.type == Image.Type.Simple && image.preserveAspect)
             {
                 float aspect = image.sprite.rect.width / image.sprite.rect.height;
                 if (drawing.width / drawing.height > aspect)
@@ -466,12 +487,52 @@ public sealed class PopupStoreApprovedUiTests
                     drawing.height = newHeight;
                 }
             }
-            return TransformBounds(Rect.MinMaxRect(drawing.x + drawing.width * left / source.width,
-                drawing.y + drawing.height * bottom / source.height,
-                drawing.x + drawing.width * (right + 1) / source.width,
-                drawing.y + drawing.height * (top + 1) / source.height), image.rectTransform, root);
+            Rect alphaRect;
+            if (image.type == Image.Type.Sliced && image.sprite.border != Vector4.zero)
+            {
+                // Transparent padding lies inside each fixed border, not in the stretched
+                // centre. Map the source alpha extrema through the same three segments per
+                // axis that Unity uses for Sliced Images, including narrow-rect border fitting.
+                Vector4 border = image.sprite.border;
+                float unitsPerPixel = 1 / (image.pixelsPerUnit * image.pixelsPerUnitMultiplier);
+                alphaRect = Rect.MinMaxRect(
+                    SlicedAlphaCoordinate(left, source.width, image.sprite.rect.width, border.x, border.z, unitsPerPixel, drawing.xMin, drawing.width),
+                    SlicedAlphaCoordinate(bottom, source.height, image.sprite.rect.height, border.y, border.w, unitsPerPixel, drawing.yMin, drawing.height),
+                    SlicedAlphaCoordinate(right + 1, source.width, image.sprite.rect.width, border.x, border.z, unitsPerPixel, drawing.xMin, drawing.width),
+                    SlicedAlphaCoordinate(top + 1, source.height, image.sprite.rect.height, border.y, border.w, unitsPerPixel, drawing.yMin, drawing.height));
+            }
+            else
+                alphaRect = Rect.MinMaxRect(drawing.x + drawing.width * left / source.width,
+                    drawing.y + drawing.height * bottom / source.height,
+                    drawing.x + drawing.width * (right + 1) / source.width,
+                    drawing.y + drawing.height * (top + 1) / source.height);
+            var visible = TransformBounds(alphaRect, image.rectTransform, root);
+            // V3 deliberately clips the lower customer body at the integrated counter. Compare what
+            // actually survives each enabled clip, not hidden source pixels below that counter.
+            foreach (var mask in image.GetComponentsInParent<RectMask2D>(true))
+            {
+                if (!mask.enabled) continue;
+                var clip = Bounds(mask.rectTransform, root);
+                visible = Rect.MinMaxRect(Mathf.Max(visible.xMin, clip.xMin), Mathf.Max(visible.yMin, clip.yMin),
+                    Mathf.Min(visible.xMax, clip.xMax), Mathf.Min(visible.yMax, clip.yMax));
+            }
+            return visible;
         }
         finally { if (source != null) Object.DestroyImmediate(source); }
+    }
+    private static float SlicedAlphaCoordinate(float sourcePixel, float sourceSize, float spriteSize,
+        float firstBorder, float lastBorder, float unitsPerPixel, float minimum, float length)
+    {
+        float pixel = sourcePixel * spriteSize / sourceSize;
+        float first = firstBorder * unitsPerPixel, last = lastBorder * unitsPerPixel;
+        float total = first + last;
+        if (total > length && total > 0) { float fit = length / total; first *= fit; last *= fit; }
+        if (pixel <= firstBorder && firstBorder > 0) return minimum + first * pixel / firstBorder;
+        if (pixel >= spriteSize - lastBorder && lastBorder > 0)
+            return minimum + length - last * (spriteSize - pixel) / lastBorder;
+        float middle = spriteSize - firstBorder - lastBorder;
+        Assert.That(middle, Is.GreaterThan(0), "Sliced source must retain an interior region.");
+        return minimum + first + (length - first - last) * (pixel - firstBorder) / middle;
     }
     private static bool Contains(Rect outer, Rect inner) => inner.xMin >= outer.xMin - .1f && inner.xMax <= outer.xMax + .1f && inner.yMin >= outer.yMin - .1f && inner.yMax <= outer.yMax + .1f;
     private static void AssertInside(Rect inner, Rect outer, string message) => Assert.That(Contains(outer, inner), Is.True, message + " inner=" + inner + " outer=" + outer);

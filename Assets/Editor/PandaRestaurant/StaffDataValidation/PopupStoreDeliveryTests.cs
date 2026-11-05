@@ -130,6 +130,13 @@ public sealed class PopupStoreDeliveryTests
                     var replacement = Object.Instantiate(originalTarget.gameObject, originalTarget.transform.parent).GetComponent<Image>();
                     replacement.name = "replacement-customer-in-memory";
                     Write(host.Orders.Slots[0], "_customerImage", replacement);
+                    // V3's portrait-only clip has an explicit ownership binding. Replace that
+                    // authored binding too so this remains a valid rebind rather than a malformed
+                    // hierarchy test. The receipt must still retain and reject its original target.
+                    var clip = replacement.transform.parent.GetComponent<PopupStoreCustomerVisualClip>();
+                    Assert.That(clip, Is.Not.Null);
+                    Write(clip, "_portrait", replacement);
+                    Assert.That(clip.Owns(replacement, host.Orders.Slots[0].OrderFrame.transform.parent), Is.True);
                     // Even a valid new displayed binding must not replace the image captured by the transaction.
                     Assert.That(host.Orders.Refresh(), Is.True);
                     break;
