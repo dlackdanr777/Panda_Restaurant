@@ -1,5 +1,58 @@
 # Panda_Restaurant
 
+## Android APK: kitchen duplicate textures
+
+Starting from main `ab2243095e814aa896deddb9eb00503949f47b24`, the original
+Unity 6000.0.16f1 Editor session produced these signed Android Release clean APKs.
+Both preserve ARMv7, ARM64 and the previous `CompressWithLz4` build option.
+Sizes below are actual APK file lengths, not unpacked BuildReport totals.
+
+| Stage | Asset files changed | APK bytes | Reduction from preceding build | Bytes above 200,000,000 |
+| --- | ---: | ---: | ---: | ---: |
+| Unchanged main | 0 | 294,520,506 | - | 94,520,506 |
+| Kitchen duplicates removed | 680 | 275,374,330 | 19,146,176 | 75,374,330 |
+| Shelf resolution trial: ineligible, skipped | 0 | No additional APK | - | 75,374,330 |
+
+- Removed 340 unused category-folder PNGs and their 340 metas under
+  `Assets/Resources/KitchenUtensilData/Sprites`. Each decoded RGBA image and its
+  dimensions matched its numbered-folder counterpart exactly; mirrored artwork
+  was not treated as identical. The deleted imports were Default textures with
+  no Sprite subassets, not interchangeable imported Sprites.
+- Each candidate's pivot, PPU, slicing, border and Android settings were recorded.
+  Import settings differed, but no GUID/fileID, asset dependency, explicit
+  Resources path or atlas packable referenced a deleted texture. The binary
+  dependency check covered 5,293 assets; text/meta checks covered 6,842 files.
+  No reference rewrites were necessary. The numbered-folder Sprite GUIDs,
+  fileIDs, names, source PNGs and import settings remain unchanged.
+- Production `KitchenUtensilDataManager` still loads numbered folders 01..48
+  and derives keys from `sprite.name`. The unique category-folder `SINK00` and
+  `COOKER00` Default textures were preserved because they had no exact duplicate.
+- All 26 application shelves import at 2048x937 with Android Max Size 2048.
+  The original Stage1 camera and three floor placements project their full image
+  at about 1536x703 pixels at 1920x1080, 2048x937 at 2560x1440, and 3072x1405 at
+  the current 3840x2160 Game View. None is oversized at the largest measured
+  display size, so no Android Max Size was lowered and no resolution-trial APK
+  was built. None is atlas-packed. Shop list/preview use separate thumbnails;
+  those settings were not changed. Refrigerators, furniture and UI resolution
+  settings were not changed.
+
+Run **Tools > Panda Restaurant > Kitchen Assets > Run Sprite Regression Checks**
+in SDK-free Edit Mode. The two NUnit checks exercise the retained 340 Sprites,
+production CSV parsing, actual shop portrait/preview methods and all 26 shelves
+on three in-memory Stage1 floor placements. Results go to
+`Logs/KitchenApkOptimization/related-kitchen-apk-tests.json` and the matching
+NUnit XML. The existing request bridge also accepts `kitchen-apk`. No user Scene
+is saved/replaced and no account data, ads or payments are accessed.
+
+Device image quality and animated floor transitions still require manual
+acceptance. The configured first build Scene is `FirstLoadingScene`; after the
+normal game entry, use the shop button (`UIShop Button`), **주방**, then
+**주방 선반**. Check list portraits, selected preview and existing shelf placement
+on floors 1, 2 and 3, including switching floors and returning to the list.
+Compare missing images, anchors, scale and thin outlines against the baseline
+APK at the same device resolution. Do not purchase or change account equipment
+solely for these checks. The APK remains above the 200,000,000-byte target.
+
 ## Staff and pictorial book UI refresh
 
 - `UIStaff.ShowUIStaff` prepares the requested floor, role, selection and slots
