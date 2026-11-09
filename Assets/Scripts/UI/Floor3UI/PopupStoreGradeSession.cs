@@ -122,7 +122,9 @@ public sealed class PopupStoreGradeSession : MonoBehaviour
             if (!PopupStoreGradeCalculator.TryEvaluate(score, count, out var evaluation, out error)) return Reject(error);
             _lastDataError = null;
             _current = evaluation;
-            if (_ownerClock.State == PopupStoreBusinessState.Ended)
+            if (_ownerClock.State == PopupStoreBusinessState.Ended
+                && !_ownerClock.IsPhasePreview
+                )
             {
                 // Freeze the complete result before any HUD, log or external completion observer runs.
                 FinalResult = new PopupStoreGradeResult(_sessionId, evaluation);
@@ -147,6 +149,7 @@ public sealed class PopupStoreGradeSession : MonoBehaviour
 
     public void RefreshHud()
     {
+        if (_clock != null && _clock.IsPhasePreview) return;
         try
         {
             var popup = GetComponentInParent<UIPopupStore>(true);
@@ -172,6 +175,22 @@ public sealed class PopupStoreGradeSession : MonoBehaviour
                 Debug.LogError("PopupStoreGradeSession: HUD update failed; result data is preserved. " + exception.Message, this);
             _lastHudError = exception.Message;
         }
+    }
+
+    /// <summary>Presentation only: no grade evaluation/finalization or reward activity.</summary>
+    internal bool EditorRenderPhaseHud(string label, float progress)
+    {
+        if (_clock == null || !_clock.IsPhasePreview || _gradeText == null || _progressImage == null
+            || _progressFrame == null || _gradeText.GetComponentInParent<UIPopupStore>(true) != GetComponent<UIPopupStore>()
+            || _progressImage.GetComponentInParent<UIPopupStore>(true) != GetComponent<UIPopupStore>()
+            || _progressFrame.GetComponentInParent<UIPopupStore>(true) != GetComponent<UIPopupStore>()
+            || float.IsNaN(progress) || float.IsInfinity(progress)) return false;
+        _gradeText.enabled = _showHud;
+        _gradeText.text = label ?? string.Empty;
+        _progressFrame.enabled = _showHud && _showProgress;
+        _progressImage.enabled = _showHud && _showProgress;
+        _progressImage.fillAmount = Mathf.Clamp01(progress);
+        return true;
     }
 
     private bool BindSources(out string error)

@@ -29,6 +29,19 @@ public sealed class PopupStoreExitConfirmation : MonoBehaviour
     public int AbandonCount => _clock != null ? _clock.AbandonCount : 0;
     public string LastError { get; private set; }
 
+    internal bool BindPhasePolish(PopupStorePhasePreview phase, PopupStorePhasePreviewPolish polish)
+    {
+        var panel = _overlay != null ? _overlay.transform.Find("Exit Confirmation Panel") as RectTransform : null;
+        TMPro.TMP_Text title = null, body = null;
+        if (panel != null) foreach (var text in panel.GetComponentsInChildren<TMPro.TMP_Text>(true))
+        {
+            if (text.name == "Exit Confirmation Title") title = text;
+            if (text.name == "Exit Confirmation Explanation") body = text;
+        }
+        return phase != null && phase.gameObject == gameObject && polish != null && _clock != null
+            && polish.Bind(phase, _clock.PhaseTimeText, title, body, _continueButton, _abandonButton, panel);
+    }
+
     public bool Refresh()
     {
         _view = GetComponent<UIPopupStore>();

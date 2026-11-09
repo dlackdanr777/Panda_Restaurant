@@ -596,13 +596,21 @@ public sealed class PopupStoreBusinessStartTests
                 "UnityEngine.Random.", "new PopupStoreRewardTransaction", "new PopupStoreRewardRandomSource", "File.Write", "Directory.Create" })
                 Assert.That(source, Does.Not.Contain(forbidden), name + " has forbidden execution dependency.");
         }
-        // DEV-05E-1 adds one private callback-observation proxy, not a live authority or default adapter.
+        // The private proxy and DEV-SERVER-01 adapter are preserved. DEV-SERVER-01E adds
+        // only the explicit existing-GameData bridge, without a default constructor/View lifecycle.
         var proxy = typeof(PopupStoreAdmissionHost).GetNestedType("ObservedPersistence", BindingFlags.NonPublic);
         Assert.That(proxy, Is.Not.Null);
         Assert.That(proxy.IsNestedPrivate && proxy.IsSealed, Is.True);
         var adapters = typeof(IPopupStoreBusinessStartPersistence).Assembly.GetTypes().Where(t => !t.IsAbstract && !t.IsInterface
             && typeof(IPopupStoreBusinessStartPersistence).IsAssignableFrom(t)).ToArray();
-        CollectionAssert.AreEquivalent(new[] { proxy }, adapters, "Only the injected authority forwarding proxy is permitted.");
+        CollectionAssert.AreEquivalent(new[] { proxy, typeof(PopupStoreBackendPersistence), typeof(PopupStoreGameDataAccountBridge) }, adapters,
+            "Only the existing proxy and the two explicitly authorized account adapters are permitted.");
+        Assert.That(typeof(PopupStoreBackendPersistence).IsSealed, Is.True);
+        Assert.That(typeof(PopupStoreBackendPersistence).GetConstructor(Type.EmptyTypes), Is.Null);
+        Assert.That(typeof(PopupStoreBackendPersistence).IsSubclassOf(typeof(MonoBehaviour)), Is.False);
+        Assert.That(typeof(PopupStoreGameDataAccountBridge).IsSealed, Is.True);
+        Assert.That(typeof(PopupStoreGameDataAccountBridge).GetConstructor(Type.EmptyTypes), Is.Null);
+        Assert.That(typeof(PopupStoreGameDataAccountBridge).IsSubclassOf(typeof(MonoBehaviour)), Is.False);
         var fields = proxy.GetFields(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.DeclaredOnly);
         Assert.That(fields, Has.Length.EqualTo(1));
         Assert.That(fields[0].FieldType, Is.EqualTo(typeof(PopupStoreAdmissionHost)));

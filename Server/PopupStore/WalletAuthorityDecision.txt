@@ -1,0 +1,143 @@
+DEV-SERVER-01C — 다이아 단일 권한 결정 / 이전 준비 모델
+조사 기준: 2026-11-09 KST, 현재 원본 로컬 소스. Git 명령과 서버 호출은 사용하지 않았다.
+
+1. 결정
+권고안 B: 신규 BACKND Database 지갑 하나를 향후 유일한 다이아 원장으로 사용한다.
+현재 운영 경로에 적용한 결정은 아니다. 기존 GameData.Dia/모든 일반 게임 경제 경로는 이번에 수정하지 않았다.
+실제 migration host, 서버 쓰기 차단, 기존 모든 경제 경로 이전, 개발 서버 검증이 없으므로 실지급은 BLOCKED다.
+현재 지급 비활성 기본값과 LegacyPopupStoreServerWalletBoundary는 그대로 유지한다.
+
+2. A/B 비교
+항목                         A: 기존 GameData.Dia 유지                  B: 신규 Database 단일 지갑
+중복/손실 위험               현재 절대값 저장과 지급 경합              모든 쓰기를 새 원장으로 옮기기 전 활성 금지
+기존 잔액 보존               잔액 위치는 그대로                        서버 읽기 + 전역 fence + 1회 import/영수증 필요
+가챠/상점 변경량             서버 지급만 추가해서는 안전하지 않음       모든 소비/획득/로딩/저장 경로의 단계적 이전 필요
+원자성                      GameData 내부 거래는 별도 API가 있음        동일 Database의 지갑/지급기록/요청 원자화 가능
+두 기기/오래된 클라이언트    프로세스 로컬 lease로는 막지 못함          서버 권한 차단 + 버전 조건 + 고유키 필요
+이전 난도                   저장소 이동은 작지만 원장 계약 재작성 큼    1회 잔액 이전과 모든 상품 거래 연결의 난도 큼
+유지보수                    신규 Database와 이중 거래 금지 필요         동일 지갑 버전/고유 거래 정책으로 통일 가능
+
+A가 원천적으로 불가능하다는 뜻은 아니다. 공식 GameData.TransactionWriteV2는 GameData 안의 최대 10개
+작업을 모두 성공/실패로 처리한다. 그러나 현재 신규 Database 보상 기록과 GameData.Dia를 그 호출로 함께
+원자화하는 근거는 없으며, 기존 UpdateV2 절대값 저장의 차단도 해결해야 한다. A를 선택하려면 지급 원장도
+GameData로 옮겨 별도 서버 권한/고유키/동시성 계약을 다시 검증해야 한다. 현재 검증된 서버 코어 및 신규
+Database 분할 저장 방향과 맞는 B를 권고한다. B 또한 기존 다른 상품의 재화·상품 동시 지급을 자동 해결하지 않는다.
+
+3. 실제 소스에서 확인한 다이아 진입점
+다음은 정적 코드 진입점 전수 검색 결과다. 모든 UI 분기가 현재 운영에서 실행 중이라고 단정하지 않는다.
+아래 모든 경로를 이전/차단 목록에 포함해야 한다.
+
+저장/복원:
+- Assets/Scripts/UserData/UserInfo.cs:101-106 _dia와 process-local DiamondWallet
+- UserInfo.cs:394/411 GetSaveUserData의 Dia 절대값 포함
+- UserInfo.cs:687/707 기존 GameData 로딩에서 _dia 대입
+- Assets/Scripts/Server/BackendManager.cs:264/266 GameData Insert/UpdateV2
+- BackendManager.cs:267-270 최신 자동 저장 팩토리, 1910 RequestGameDataAutosave
+- Assets/Scripts/Server/GameDataSingleUpdate.cs:140 이후 실제 명시 행 UpdateV2 전달
+- Assets/Scripts/Server/GameDataSaveCoordinator.cs:83 부근: 보호 범위는 같은 프로세스의 현재 저장 대상
+- Assets/Scripts/Save/LoadUserData.cs 및 Server/GameDataRestoreContext.cs:363 이후 Dia 복원 파싱
+
+핵심 소비/획득:
+- UserInfo.cs:1122 AddDia -> DiamondWallet.TryAddReward 또는 TrySpendDia
+- UserInfo.cs:1136 TrySpendDia -> DiamondWallet.TrySpend
+- UserInfo.cs:1474-1485 직원 업그레이드 비용 소비
+- Assets/Scripts/UserData/StaffPurchaseDiamondWallet.cs:7-18: 로컬 예약, 서버 예약 아님
+- Assets/Scripts/Server/BackendGachaEconomy.cs:130 비용 예약, 155 Dia 절대값 거래 저장
+- Assets/Scripts/Server/StaffGachaPurchaseExecution.cs:119 Plan.DiamondsAfter 저장
+- Assets/Scripts/UserData/UserInfoGachaEconomy.cs:17 로컬 다이아 포함 경제 스냅샷
+
+획득 호출자:
+- Assets/Scripts/Server/BackendAttendance.cs:34/96 출석 Dia 절대값 저장
+- Assets/Scripts/UserData/UserAttendanceState.cs:24 출석 확정 AddDia
+- Assets/Scripts/Manager/MailManager.cs:886 우편 확정 AddDia
+- Assets/Scripts/UI/PaymentUI/UIPayment.cs:149-151 구매 결과 AddDia
+- Assets/Scripts/UI/PaymentUI/UIPaymentSlot.cs:57 구매 결과 전달
+- Assets/Scripts/UI/PaymentUI/UIPaymentAdSlot.cs:81 광고 보상 AddDia
+- Assets/Scripts/UI/AttendanceUI/UIAttendanceSlot.cs:131 출석 UI AddDia 분기
+- Assets/Scripts/MiniGame/MiniGameFever.cs:306 미니게임 보상 AddDia
+- Assets/Scripts/UI/ChallengeUI/UIMainChallenge.cs:177 및 UIChallengeTabSlot.cs:158 도전 보상
+- UserInfo.cs:874 첫 안내 보상, Scenes/MainScene.cs:102/123 및 UI/SettingUI/UISetting.cs:160 디버그/설정 보상
+- Assets/Scripts/Manager/IAPManager.cs는 검증 성공 전달의 상위 진입점이므로 함께 이전 대상
+
+소비 호출자:
+- Assets/Scripts/UI/Kitchen/UIKitchen.cs:377
+- Assets/Scripts/UI/FurnitureUI/UIFurniture.cs:405
+- Assets/Scripts/UI/RecipeUI/UIRecipeTab.cs:291
+- Assets/Scripts/UI/PaymentUI/UIPayment.cs:124
+- Assets/Scripts/UI/Ad/UIAdPopup.cs:575
+- Assets/Scripts/UI/GachaUI/UISkinGacha.cs:375 및 UIItemGacha.cs:743
+- 직원/가챠 소비는 위 보호 거래 경로도 사용한다.
+
+4. 이번 구현과 구현하지 않은 것
+추가 소스: Assets/Scripts/Server/PopupStoreWalletCutover.cs
+추가 검사: Assets/Editor/PandaRestaurant/StaffDataValidation/PopupStoreWalletCutoverTests.cs
+두 파일의 .meta도 신규다. 다른 경제/게임/UI 파일 수정 없음.
+
+구현한 순수 서버 이전 계획:
+- 인증된 계정별 단일 journal: Frozen -> ImportPending -> DatabaseOnly
+- 전송 결과 불명: RecoveryRequired. 재접속 후 동일 ImportKey 조회로만 복구
+- 최초 freeze는 계정 고유 Insert, 이후 상태는 ExpectedRevision 조건부 Update가 필수
+- 서버에서 읽은 동결 원본 행 ID, SHA-256 digest, 잔액을 고정. 클라이언트 UserInfo 잔액을 import하지 않음
+- 임시 로컬 저장 잠금이 아니라 서버 전체 legacy write fence + 진행 중 요청 drain + 12개 경로 이전 증거 요구
+- 원본이 바뀌면 잔액을 재기준화하거나 새 요청으로 대체하지 않고 차단
+- import는 같은 Database의 신규 지갑/고유 이전 영수증을 원자적으로 삽입해야 함
+- 활성화는 정확히 같은 계정/지갑/이전ID/ImportKey/원본/초기버전0/거래ID가 있는 영수증 조회 후만 가능
+- 기존 활성 상태 재확인은 무변경. 오래된 이전 영수증 잔액을 최신 잔액에 다시 적용하지 않음
+- 전환 후 서버 fence/경로 증거가 취소되면 신규 원장도 잠금. 이전 GameData writer를 되살리는 자동 rollback 없음
+- 모든 상태가 legacy Dia 쓰기를 거절하는 정책 제공. 실제 기존 호출자 연결은 이번에 하지 않음
+
+중요한 제한:
+IWalletCutoverHostProofs의 실제 구현은 제공하지 않았다. 기본 null은 모두 차단한다.
+테스트 fake의 true 값은 서버 권한/원자성/구버전 차단이 현실에서 완료됐다는 증거가 아니다.
+WalletCutoverTransition은 순수 계획이다. 실제 영속 저장 성공 전 After 상태를 활성 상태로 사용하면 안 된다.
+WalletCutoverRecord.CanUseDatabaseWallet은 상태/ID 확인만 한다. 실제 host는 coordinator의 같은 이름 메서드로
+현재 서버 증거까지 확인하고, 그 후 기존 claim guard/fresh QUERY/인증 epoch 검증을 계속 사용해야 한다.
+구버전 모든 writer 차단, 각 상품의 결제·지급 동시 거래, 원본 export, 데이터 이전 자체는 NOT RUN이다.
+단순 AddDia + AsyncSave 동기화, 양쪽 잔액 중 큰 값 선택, 중복 import 금지.
+
+5. 기존 코드 재사용 / 로컬 검사 범위
+- 기존 PopupStoreServerWalletGuard: fresh QUERY correlation, 동일 wallet version 불일치 거절,
+  오래된 잔액 거절, 계정 A->B->A epoch 차단, pending lease 유지
+- 기존 PopupStoreServerClaimCoordinator: CLAIM의 역사 잔액 대신 별도 최신 지갑 QUERY 후 반영
+- 기존 137개 중 wallet 20개/claim 17개: 지급 뒤 가챠 소비 최신 잔액 보존, 응답 유실/중복/재진입 등
+- 신규 cutover fixture: 48개 Test/TestCase 준비. 최종 실행 결과는 루트 검수 보고서에 기록한다.
+- 두 기기/중복 삽입 모델은 test journal의 요구 CAS 계약을 검증한다. 실제 BACKND CAS 성공을 뜻하지 않는다.
+- 실제 계정 로딩/UserInfo 반영/서버 권한 검증은 해당 production adapter 구현 후 별도 통합검증 대상.
+
+6. 안전한 후속 이전 순서 (이번 차수에 실행하지 않음)
+1) 별도 개발 프로젝트 + 테스트 계정 2개와 2기기. 운영 계정/키를 복사하지 않는다.
+2) B 지갑 계약/모든 writer 목록을 승인한다. 소비는 비용뿐 아니라 상품 지급도 같은 권한 거래로 옮긴다.
+   가챠·상점 상품이 GameData에 남으면 cross-store 원자성 문제가 그대로이므로 상품 원장 이전 또는
+   서버 예약/정산 프로토콜을 먼저 완성하고, 두 저장소 간 원자성으로 부르지 않는다.
+3) 구버전은 서버에서 차단하거나 새 서버 경로만 사용하는 검증된 호환 gateway 제공. 클라이언트 버전 if문만 금지.
+   GameData 전체 행에 Dia와 다른 데이터가 섞여 있으므로 Dia만 필드 권한으로 차단된다고 가정하지 않는다.
+   서버 함수 gateway로 모든 해당 행 write를 이동하거나 검증된 서버 권한 정책 없으면 cutover 중단.
+4) 대상 계정의 모든 옛 요청 drain 및 durable fence를 검증한 뒤 서버 원본 export/digest/잔액 대조.
+   export 범위, 접근 권한, 암호화 보관·보유기간·복구 책임자는 운영 승인 필요. 이번에 임의 백업 안 함.
+5) 고유 migration journal 기록 -> import intent 영속화 -> 신규 wallet + unique receipt 원자 Insert.
+   기존 wallet이 있으면 덮어쓰지 않는다. 다른 migration/wallet/source면 조사 후 수동 처리.
+6) 응답 유실은 같은 ImportKey 조회. 불명/없음 응답만으로 새 import를 허용하지 않는다.
+7) 모든 경로/원본/영수증 재확인 후 DatabaseOnly. GameData.Dia는 읽기 전용 역사자료로 남긴다.
+8) 클라이언트 로딩/자동저장에서 Dia 쓰기를 제거하고 서버 최신 version 조회로만 화면을 동기화한다.
+   역사 claim/import 금액을 더하거나 과거 스냅샷으로 덮어쓰지 않는다.
+9) 재접속·두 기기·계정 A/B/A·동시 가챠/지급·광고/IAP/우편 지연·원장 장애·구버전 요청 검증.
+10) 운영 전 승인: 환경 확인, 잔액 검증 보고, 모든 writer 제거, 키/권한/최소버전, 사고 복구 절차,
+    실제 SDK 빌드/개발서버 거래 결과. 운영으로 이동하려면 별도 배포 승인 필요.
+
+복구/rollback:
+- DatabaseOnly 뒤에는 GameData.Dia를 다시 권한으로 활성화하지 않는다.
+- 장애 시 양쪽 쓰기를 동결하고, 원래 import receipt와 이후 Database 거래원장을 대조한다.
+- 손상/복구 판단은 서버 관리자 승인 후 보상 거래로 수행한다. 원장 삭제·잔액 두 번 import 금지.
+- 클라이언트 캐시는 폐기 가능한 화면 자료다. 서버 미확정 거래는 durable journal로 먼저 복구한다.
+
+7. 공식 근거 (2026-11-09 열람)
+https://docs.backnd.com/sdk-docs/function/backnd-features/database/
+  배포 Function은 client table write권한과 별개로 접근. UserTable은 OfCurrentUser 및 인증 gamerId 기준.
+  추가 조건 실패/대상 행 없음/중복 PK는 전체 rollback, 동일 행 두 번 수정 금지. 실제 서버 미검증.
+https://docs.backnd.com/sdk-docs/database/transaction/
+  최대 10개 쓰기, 읽기는 밖에서 수행, Success/OperationCount/TotalAffectedRows 결과 확인.
+https://docs.backnd.com/sdk-docs/backend/base/game-information/transaction/write-v2/
+  GameData 내부 TransactionWriteV2 원자 처리. 신규 Database와 cross-store 원자성 근거는 아님.
+
+최종 상태: B 선택 및 순수 이전 준비 모델 작성. 실제 지갑 이전/서버 권한 차단은 BLOCKED.
+실제 서버·재화·계정 변경 0건. Git 작업 0건.

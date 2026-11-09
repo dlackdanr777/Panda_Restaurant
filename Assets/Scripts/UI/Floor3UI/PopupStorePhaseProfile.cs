@@ -8,6 +8,7 @@ public sealed class PopupStorePhaseProfile
 {
     public string ProfileId { get; set; }
     public int Version { get; set; }
+    public PopupStorePhaseGoalMetric GoalMetric { get; set; }
     public PopupStorePhaseDefinition[] Phases { get; set; }
 
     public bool TryCreateSnapshot(PopupStoreMaterialCatalog catalog,
@@ -18,9 +19,12 @@ public sealed class PopupStorePhaseProfile
         // Copy editable data before validation; only this private copy may become executable data.
         string id = ProfileId;
         int version = Version;
+        var goalMetric = GoalMetric;
         var source = Phases;
         if (string.IsNullOrWhiteSpace(id)) return Reject("ProfileId must be nonblank.", out error);
         if (version <= 0) return Reject("Version must be positive.", out error);
+        if (!Enum.IsDefined(typeof(PopupStorePhaseGoalMetric), goalMetric))
+            return Reject("GoalMetric must be an explicit supported criterion.", out error);
         if (source == null || source.Length != 6)
             return Reject("Phases must contain exactly six definitions in C/B/A/S/SS/SSS order.", out error);
         var phases = new PopupStorePhaseDefinition[6];
@@ -32,6 +36,7 @@ public sealed class PopupStorePhaseProfile
         foreach (var plush in plushes) registered.Add(plush.Id);
         HashSet<string> previous = null;
         double previousPatience = double.PositiveInfinity;
+        int previousTargetScore = 0;
         for (int i = 0; i < phases.Length; i++)
         {
             var phase = phases[i];
@@ -42,7 +47,11 @@ public sealed class PopupStorePhaseProfile
             if (phase.Grade != (PopupStoreGradeTier)(i + (int)PopupStoreGradeTier.C))
                 return Reject(prefix + "Grade must follow C/B/A/S/SS/SSS order.", out error);
             if (!Positive(phase.TimeLimitSeconds)) return Reject(prefix + "TimeLimitSeconds must be finite and positive.", out error);
-            if (phase.TargetSuccessfulOrders <= 0) return Reject(prefix + "TargetSuccessfulOrders must be positive.", out error);
+            if (phase.TargetSuccessfulOrders < 0
+                || (goalMetric == PopupStorePhaseGoalMetric.SuccessfulOrders && phase.TargetSuccessfulOrders == 0))
+                return Reject(prefix + "TargetSuccessfulOrders must be positive for the legacy count criterion and nonnegative otherwise.", out error);
+            if (phase.TargetScore < 0 || (goalMetric == PopupStorePhaseGoalMetric.CumulativeScore && phase.TargetScore <= previousTargetScore))
+                return Reject(prefix + "TargetScore must be nonnegative; cumulative-score targets must be positive and strictly increasing.", out error);
             if (!Positive(phase.CustomerPatienceSeconds)) return Reject(prefix + "CustomerPatienceSeconds must be finite and positive.", out error);
             if (!Positive(phase.EntryIntervalSeconds)) return Reject(prefix + "EntryIntervalSeconds must be finite and positive.", out error);
             if (!Finite(phase.StageClearNoticeSeconds) || phase.StageClearNoticeSeconds < 0)
@@ -66,8 +75,9 @@ public sealed class PopupStorePhaseProfile
                 return Reject(prefix + "AllowedPlushIds must include every previously unlocked ID.", out error);
             previous = allowed;
             previousPatience = phase.CustomerPatienceSeconds;
+            previousTargetScore = phase.TargetScore;
         }
-        snapshot = new PopupStorePhaseProfileSnapshot(id, version, phases);
+        snapshot = new PopupStorePhaseProfileSnapshot(id, version, phases, goalMetric);
         return true;
     }
 
@@ -82,12 +92,15 @@ public sealed class PopupStorePhaseProfileSnapshot
     private readonly ReadOnlyCollection<PopupStorePhaseSnapshot> _phases;
     public string ProfileId { get; }
     public int Version { get; }
+    public PopupStorePhaseGoalMetric GoalMetric { get; }
     public IReadOnlyList<PopupStorePhaseSnapshot> Phases => _phases;
 
-    internal PopupStorePhaseProfileSnapshot(string profileId, int version, PopupStorePhaseDefinition[] definitions)
+    internal PopupStorePhaseProfileSnapshot(string profileId, int version, PopupStorePhaseDefinition[] definitions,
+        PopupStorePhaseGoalMetric goalMetric = PopupStorePhaseGoalMetric.SuccessfulOrders)
     {
         ProfileId = profileId;
         Version = version;
+        GoalMetric = goalMetric;
         var phases = new PopupStorePhaseSnapshot[definitions.Length];
         for (int i = 0; i < phases.Length; i++) phases[i] = new PopupStorePhaseSnapshot(definitions[i]);
         _phases = Array.AsReadOnly(phases);

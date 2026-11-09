@@ -53,6 +53,199 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
     private readonly List<PopupStoreOrder> _suppliedOrders = new List<PopupStoreOrder>();
     private IReadOnlyList<PopupStoreOrder> _suppliedView;
     private float _lastEntryStartedAt = -1;
+    private IPopupStorePhasePreviewSupply _editorPhaseSupply;
+    private bool _editorPhasePrepared, _editorPhaseClean, _editorPhaseFaulted;
+    private int _editorSuppliedInPhase;
+    private readonly List<PopupStorePackingReceipt> _editorReleasedReceipts = new List<PopupStorePackingReceipt>();
+    private IReadOnlyList<PopupStorePackingReceipt> _editorReleasedView;
+    internal IReadOnlyList<PopupStorePackingReceipt> EditorReleasedReceipts
+        => _editorReleasedView ?? (_editorReleasedView = _editorReleasedReceipts.AsReadOnly());
+    internal bool EditorPhaseSupplyBound => _editorPhaseSupply != null;
+    internal bool EditorPhaseSupplyFaulted => _editorPhaseFaulted;
+
+    internal bool BindEditorPhaseSupply(IPopupStorePhasePreviewSupply supply, out string error)
+    {
+        error = null;
+        if (supply == null || supply.Popup != GetComponent<UIPopupStore>() || _editorPhaseSupply != null
+            || !isActiveAndEnabled || !IsReady || !_running || StartedEntranceCount != 0
+            || _suppliedOrders.Count != 0 || _presentation == null || _presentation.HasPendingVisualWork)
+        { error = "Preview supply must bind once to an untouched, ready local popup."; return false; }
+        for (int i = 0; i < _slots.Length; i++)
+        {
+            var slot = _slots[i];
+            if (!BindingMatches(i, slot) || slot.State != PopupStoreCustomerState.Empty || slot.Released
+                || slot.Order.IsPacked || slot.Order.IsExpired)
+            { error = "Preview supply cannot replace an entered, terminal or changed original slot."; return false; }
+        }
+        _editorPhaseSupply = supply;
+        // Latch a distinct dynamic path. The authored twenty-order array and its runtime copy stay intact.
+        _supplyMode = true;
+        _editorPhaseClean = true;
+        if (TryBeginEditorPhase(supply, out error)) return true;
+        _editorPhaseFaulted = true;
+        return false;
+    }
+
+    internal bool TryBeginEditorPhase(IPopupStorePhasePreviewSupply supply, out string error)
+    {
+        error = null;
+        if (!EditorSupplyOwner(supply) || !_editorPhaseClean || _editorPhasePrepared || _editorPhaseFaulted
+            || !isActiveAndEnabled || !IsReady || !_running || _orders == null || !_orders.IsReady
+            || !Finite(supply.EntryInterval) || supply.EntryInterval < 0)
+        { error = "A preview phase requires the original owner and completed local cleanup."; return false; }
+        var fresh = new PopupStoreOrder[3];
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        for (int i = 0; i < fresh.Length; i++)
+        {
+            if (!BindingMatches(i, _slots[i]) || !supply.TryCreateOrder(i, out fresh[i])
+                || fresh[i] == null || !supply.OwnsOrder(fresh[i]) || fresh[i].IsPacked || fresh[i].IsExpired
+                || string.IsNullOrEmpty(fresh[i].RuntimeId) || !ids.Add(fresh[i].RuntimeId)
+                || !_orders.TryValidateSupplyOrder(fresh[i], out error))
+            { error = error ?? "A preview phase requires three valid, distinct fresh order identities."; return false; }
+            foreach (var previous in _suppliedOrders)
+                if (ReferenceEquals(previous, fresh[i]) || previous.RuntimeId == fresh[i].RuntimeId)
+                { error = "A previous preview order identity cannot enter another phase."; return false; }
+        }
+        // Validate all three definitions first. No event or time advancement occurs between replacements.
+        for (int i = 0; i < fresh.Length; i++)
+        {
+            var old = _slots[i];
+            RestoreHome(old);
+            if (!_orders.TryReplaceOrderForEntry(i, old.Order, fresh[i], out error)
+                || !_orders.TryGetEntryBinding(i, out var bound, out var image)
+                || !ReferenceEquals(bound, fresh[i]) || image != old.Image)
+            {
+                _editorPhaseFaulted = true;
+                _running = false;
+                error = error ?? "Preview replacement failed; the partial phase remains unavailable.";
+                return false;
+            }
+            PopupStoreCustomerVisualClip.Prepare(image);
+            _slots[i] = new Slot(fresh[i], image);
+            HideComplaintIcon(i, _slots[i]);
+        }
+        _visibleElapsed = 0;
+        _lastEntryStartedAt = -1;
+        _editorSuppliedInPhase = 0;
+        _editorPhaseClean = false;
+        _editorPhasePrepared = true;
+        _orders.ApplyCustomerEntryState();
+        return true;
+    }
+
+    internal bool TryCleanupEditorPhase(IPopupStorePhasePreviewSupply supply, out string error)
+    {
+        error = null;
+        if (!EditorSupplyOwner(supply) || !supply.CanCleanup || _editorPhaseFaulted
+            || !isActiveAndEnabled || !IsReady || !_running || _orders == null || !_orders.IsReady)
+        { error = "Preview cleanup requires its active owner in the cleanup state."; return false; }
+        if (_editorPhaseClean) return true;
+        if (!_editorPhasePrepared || _presentation == null || _presentation.HasPendingVisualWork)
+        { error = "Preview cleanup is waiting for committed presentation work."; return false; }
+        foreach (var order in _suppliedOrders)
+            if (order.IsPacked && !EditorHasReleasedReceipt(order.PackingReceipt))
+            { error = "Preview cleanup is waiting for exact delivered, completed and released receipt evidence."; return false; }
+        for (int i = 0; i < _slots.Length; i++)
+        {
+            var slot = _slots[i];
+            if (!BindingMatches(i, slot) || !supply.OwnsOrder(slot.Order))
+            { _editorPhaseFaulted = true; error = "Preview cleanup found an order or customer identity outside the current phase."; return false; }
+            if (slot.State == PopupStoreCustomerState.Leaving || slot.State == PopupStoreCustomerState.Expired)
+            { error = "Preview cleanup is waiting for an existing customer departure."; return false; }
+            if (slot.Order.IsPacked && (!slot.Released || !EditorHasReleasedReceipt(slot.Order.PackingReceipt)))
+            { error = "A packed customer cannot be cleared before its actual release."; return false; }
+        }
+        // Unfinished orders are only hidden and detached from eligibility. No expiration, receipt or penalty is created.
+        for (int i = 0; i < _slots.Length; i++)
+        {
+            var slot = _slots[i];
+            HideComplaintIcon(i, slot);
+            slot.State = PopupStoreCustomerState.Empty;
+            slot.Released = true;
+            slot.Image.gameObject.SetActive(false);
+            RestoreHome(slot);
+        }
+        _editorPhasePrepared = false;
+        _editorPhaseClean = true;
+        _orders.ApplyCustomerEntryState();
+        return true;
+    }
+
+    private bool EditorSupplyOwner(IPopupStorePhasePreviewSupply supply)
+        => supply != null && ReferenceEquals(supply, _editorPhaseSupply)
+            && supply.Popup != null && supply.Popup == GetComponent<UIPopupStore>();
+
+    private bool EditorHasReleasedReceipt(PopupStorePackingReceipt receipt)
+    {
+        foreach (var released in _editorReleasedReceipts) if (ReferenceEquals(released, receipt)) return true;
+        return false;
+    }
+
+    private void RecordEditorRelease(int index, Slot slot)
+    {
+        if (_editorPhaseSupply == null || slot.DepartureReason != PopupStoreDepartureReason.Packed) return;
+        var receipt = slot.Order.PackingReceipt;
+        var packing = GetComponent<PopupStorePacking>();
+        bool completed = false;
+        if (receipt != null && _presentation != null)
+            foreach (var outcome in _presentation.VisualOutcomes)
+                if (ReferenceEquals(outcome.Receipt, receipt) && outcome.Kind == PopupStoreVisualOutcomeKind.VisualCompleted
+                    && outcome.Target == slot.Image.rectTransform) { completed = true; break; }
+        if (!slot.Released || slot.State != PopupStoreCustomerState.Empty || !BindingMatches(index, slot)
+            || receipt == null || packing == null || !packing.IsCommittedReceipt(receipt)
+            || receipt.SlotIndex != index || receipt.OrderId != slot.OrderId || receipt.CustomerId != slot.CustomerId
+            || receipt.ReceiptId != slot.DepartureReceiptId || !completed
+            || !_presentation.IsDeliveryCompleted(receipt.ReceiptId))
+        { _editorPhaseFaulted = true; return; }
+        if (!EditorHasReleasedReceipt(receipt)) _editorReleasedReceipts.Add(receipt);
+    }
+
+    private void TryStartEditorSupply()
+    {
+        var supply = _editorPhaseSupply;
+        if (!EditorSupplyOwner(supply) || _editorPhaseFaulted || !_editorPhasePrepared || !supply.CanSupply
+            || !isActiveAndEnabled || !_running || !IsReady || _orders == null || !_orders.IsReady
+            || !CanStartEntry() || !Finite(supply.EntryInterval) || supply.EntryInterval < 0
+            || (_editorSuppliedInPhase > 0 && _visibleElapsed - _lastEntryStartedAt < supply.EntryInterval)) return;
+        int index = -1;
+        if (_editorSuppliedInPhase < _slots.Length)
+        {
+            index = _editorSuppliedInPhase;
+            var reserved = _slots[index];
+            if (!BindingMatches(index, reserved) || reserved.Released || reserved.State != PopupStoreCustomerState.Empty
+                || !supply.OwnsOrder(reserved.Order)) { _editorPhaseFaulted = true; return; }
+        }
+        else
+        {
+            for (int i = 0; i < _slots.Length; i++)
+                if (CanReuse(i, _slots[i])) { index = i; break; }
+            if (index < 0) return;
+            var previous = _slots[index];
+            if (!supply.TryCreateOrder(index, out var replacement) || replacement == null
+                || !supply.OwnsOrder(replacement) || !_orders.TryValidateSupplyOrder(replacement, out _))
+            { _editorPhaseFaulted = true; return; }
+            foreach (var order in _suppliedOrders)
+                if (ReferenceEquals(order, replacement) || order.RuntimeId == replacement.RuntimeId)
+                { _editorPhaseFaulted = true; return; }
+            if (!_orders.TryReplaceOrderForEntry(index, previous.Order, replacement, out _)
+                || !_orders.TryGetEntryBinding(index, out var bound, out var image)
+                || !ReferenceEquals(bound, replacement) || image != previous.Image)
+            { _editorPhaseFaulted = true; return; }
+            PopupStoreCustomerVisualClip.Prepare(image);
+            _slots[index] = new Slot(replacement, image);
+        }
+        var slot = _slots[index];
+        HideComplaintIcon(index, slot);
+        slot.State = PopupStoreCustomerState.Entering;
+        slot.Progress = 0;
+        slot.StartTime = _visibleElapsed;
+        if (!Position(slot, out _)) { _editorPhaseFaulted = true; return; }
+        _lastEntryStartedAt = _visibleElapsed;
+        _suppliedOrders.Add(slot.Order);
+        _editorSuppliedInPhase++;
+        StartedEntranceCount++;
+        _orders.ApplyCustomerEntrySlot(index);
+    }
 
     // The inspection mode is chosen before the session; changing it cannot resurrect released orders.
     public bool ControlsOrders => _modeLatched || _initialized || (_automaticEntry && (Application.isPlaying || _started));
@@ -284,6 +477,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
                     slot.Released = true;
                     slot.State = PopupStoreCustomerState.Empty;
                     ReleasedCount++;
+                    RecordEditorRelease(i, slot);
                     HideComplaintIcon(i, slot);
                     // Hide before resetting the reusable transform. Completed order history remains intact.
                     slot.Image.gameObject.SetActive(false);
@@ -369,6 +563,7 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
 
     private void TryStartNextSupply()
     {
+        if (_editorPhaseSupply != null) { TryStartEditorSupply(); return; }
         if (!isActiveAndEnabled || !_running || !IsReady || _orders == null || !_orders.IsReady
             || !CanStartEntry() || _runtimeTestOrders == null || SupplyEnded
             || (_suppliedOrders.Count > 0 && _visibleElapsed - _lastEntryStartedAt < _entryInterval)) return;
@@ -421,6 +616,8 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
 
     private bool CanStartEntry()
     {
+        if (_editorPhaseSupply != null && (_editorPhaseFaulted || !_editorPhasePrepared
+            || !EditorSupplyOwner(_editorPhaseSupply) || !_editorPhaseSupply.CanSupply)) return false;
         var clock = GetComponent<PopupStoreBusinessClock>();
         return clock != null && clock.isActiveAndEnabled && clock.CanStartCustomerEntry;
     }
@@ -602,6 +799,12 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
             reason = "The delivered customer rectangle is not the original slot image.";
         if (reason != null)
         {
+            // Only a current owned transaction can fault this preview. Old outcomes remain harmless.
+            if (_editorPhaseSupply != null && slot != null
+                && _editorPhaseSupply.OwnsOrder(slot.Order)
+                && ReferenceEquals(slot.Order.PackingReceipt, receipt)
+                && GetComponent<PopupStorePacking>()?.IsCommittedReceipt(receipt) == true)
+                _editorPhaseFaulted = true;
             Debug.LogWarning("POPUP_STORE_DEPARTURE_REJECTED receipt=" + receipt.ReceiptId
                 + "; slot=" + index + "; reason=" + reason, this);
             return false;
@@ -650,6 +853,8 @@ public sealed class PopupStoreCustomerEntrance : MonoBehaviour
 
     private void Cancel(int index, Slot slot, string reason)
     {
+        // A rejected active preview binding is a fault, not an empty reusable slot or unfinished cleanup.
+        if (_editorPhaseSupply != null) _editorPhaseFaulted = true;
         if (slot.Blocked) return;
         slot.Blocked = true;
         slot.State = PopupStoreCustomerState.Empty;

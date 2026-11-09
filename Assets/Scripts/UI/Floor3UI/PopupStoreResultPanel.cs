@@ -8,7 +8,7 @@ using UnityEngine.UI;
 
 /// <summary>Reads one immutable local result after existing visuals settle. Never owns transactions or time.</summary>
 [DisallowMultipleComponent]
-public sealed class PopupStoreResultPanel : MonoBehaviour
+public sealed partial class PopupStoreResultPanel : MonoBehaviour
 {
     [SerializeField] private PopupStoreGradeSession _grade;
     [SerializeField] private PopupStoreBusinessClock _clock;
@@ -90,6 +90,8 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
     /// <summary>Called after the existing Update-driven delivery and customer motions, never from their events.</summary>
     public void TickResult(float unscaledDelta)
     {
+        if (TickAccountRecovery(unscaledDelta)) return;
+        if (EditorTickPhasePreview(unscaledDelta)) return;
         if (!isActiveAndEnabled) return;
         if (!Finite(unscaledDelta) || unscaledDelta < 0) { Fail("Result delta must be finite and non-negative."); return; }
         if (!_ready && !Refresh()) return;
@@ -201,6 +203,11 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
 
     public bool TryConfirm()
     {
+        if (_accountRecovery != null) return _accountRecovery.TryReceive();
+        var phasePreview = GetComponent<PopupStorePhasePreview>();
+        if (phasePreview != null && phasePreview.IsInitialized)
+            return IsVisible && !_appearing && !_confirming && ReferenceEquals(EditorShownPhaseResult, phasePreview.Session.FinalResult)
+                && phasePreview.TryReceiveResult();
         if (!_ready || !isActiveAndEnabled || !IsVisible || _appearing || _confirming
             || _view == null || _clock == null || _clock.State != PopupStoreBusinessState.Ended
             || _grade == null || !ReferenceEquals(ShownResult, _grade.FinalResult)
@@ -264,6 +271,8 @@ public sealed class PopupStoreResultPanel : MonoBehaviour
     }
     private void HidePanel()
     {
+        _accountRecovery?.Reward?.HidePresentation();
+        EditorHidePhaseReward();
         GetComponent<PopupStoreRewardRevealPreview>()?.HidePreview();
         if (_rewardBox != null && _rewardBox.gameObject == gameObject) _rewardBox.HidePresentation();
         _appearing = false; _shown = false; _elapsed = 0;

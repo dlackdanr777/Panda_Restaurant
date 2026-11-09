@@ -19,7 +19,7 @@ public sealed class PopupStorePatienceTimer
     public bool IsRunning => Eligible && !IsExpired && IdentityMatches && !Order.IsPacked
         && Owner != null && Owner.isActiveAndEnabled && Owner.IsReady && Owner.IsCurrent(this)
         && Clock != null && Clock.isActiveAndEnabled
-        && Clock.State == PopupStoreBusinessState.Running;
+        && Clock.CanAdvancePatience;
 
     internal readonly PopupStoreCustomerPatience Owner;
     internal readonly PopupStoreBusinessClock Clock;
@@ -146,6 +146,8 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
                 {
                     double duration = order.PlushIds.Count == 1 ? _onePlushSeconds
                         : order.PlushIds.Count == 2 ? _twoPlushSeconds : _threePlushSeconds;
+                    if (_clock.IsPhasePreview)
+                        duration = _clock.PhasePreviewAuthority.OnePlushPatienceSeconds + 4d * (order.PlushIds.Count - 1);
                     timer = new PopupStorePatienceTimer(this, _clock, order, i, duration);
                     _history.Add(timer.OrderId, timer);
                     LogTimer("STARTED", timer);
@@ -196,6 +198,14 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
     private void Settle(double elapsed)
     {
         if (!Finite(elapsed) || elapsed < 0) return;
+        if (_clock != null && _clock.IsPhasePreview && !_clock.CanAdvancePatience)
+        {
+            // Stage cleanup and countdown never advance or expire retained waiting customers.
+            // Keep the absolute anchor current so a later binding cannot charge a deferred interval.
+            foreach (var timer in _timers)
+                if (timer != null && elapsed >= timer.LastElapsed) timer.LastElapsed = elapsed;
+            return;
+        }
         List<PopupStorePatienceTimer> expired = null;
         foreach (var timer in _timers)
         {
@@ -235,7 +245,7 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
         // A natural deadline already committed by the clock wins a simultaneous timeout boundary.
         // Do not resample time here: this batch belongs to one already-settled clock instant.
         if (!isActiveAndEnabled || !IsReady || _clock == null || !_clock.isActiveAndEnabled
-            || _clock.State != PopupStoreBusinessState.Running || expired == null
+            || !_clock.CanAdvancePatience || expired == null
             || !NonNegative(_complaintPenaltySeconds) || !Finite(_complaintPenaltySeconds * 3)) return 0;
         var accepted = new List<PopupStorePatienceTimer>();
         var ids = new HashSet<string>(StringComparer.Ordinal);
@@ -318,6 +328,9 @@ public sealed class PopupStoreCustomerPatience : MonoBehaviour
             error = "Durations must be finite and non-negative; color thresholds must be ordered in 0-1.";
         else if (_slots == null || _slots.Length != 3 || _orders.Slots.Count != 3)
             error = "Three independent patience views are required.";
+        else if (_clock.IsPhasePreview && (!NonNegative(_clock.PhasePreviewAuthority.OnePlushPatienceSeconds)
+            || !Finite(_clock.PhasePreviewAuthority.OnePlushPatienceSeconds + 8d)))
+            error = "The Editor phase patience duration must be finite and non-negative.";
         else
         {
             var roots = new HashSet<GameObject>();

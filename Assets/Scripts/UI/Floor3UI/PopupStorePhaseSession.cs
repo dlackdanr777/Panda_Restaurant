@@ -5,6 +5,7 @@ using System.Globalization;
 public enum PopupStorePhaseState { Ready, Playing, Clearing, ClearNotice, Countdown, Completed, TimedOut, Abandoned, Faulted }
 public enum PopupStorePhasePauseReason { ApplicationBackground, FocusLost, ViewHidden, ExitConfirmation }
 public enum PopupStorePhaseCleanupStatus { Completed, Failed, Cancelled }
+public enum PopupStorePhaseCompletionPolicy { ImmediateTarget, Deadline }
 
 /// <summary>
 /// An adapter assertion, not proof of an authorized sale. The future adapter must verify
@@ -16,8 +17,11 @@ public sealed class PopupStorePhasePackingEvidence
     public string PhaseRunId { get; }
     public string OrderId { get; }
     public string ReceiptId { get; }
+    public int Points { get; }
     public PopupStorePhasePackingEvidence(string businessSessionId, string phaseRunId, string orderId, string receiptId)
-    { BusinessSessionId = businessSessionId; PhaseRunId = phaseRunId; OrderId = orderId; ReceiptId = receiptId; }
+        : this(businessSessionId, phaseRunId, orderId, receiptId, 0) { }
+    public PopupStorePhasePackingEvidence(string businessSessionId, string phaseRunId, string orderId, string receiptId, int points)
+    { BusinessSessionId = businessSessionId; PhaseRunId = phaseRunId; OrderId = orderId; ReceiptId = receiptId; Points = points; }
 }
 
 /// <summary>The external presentation owner acknowledges this specific phase, never a phase number alone.</summary>
@@ -51,6 +55,7 @@ public sealed class PopupStorePhaseSession
 
     public string BusinessSessionId { get; }
     public PopupStorePhaseProfileSnapshot Profile { get; }
+    public PopupStorePhaseCompletionPolicy CompletionPolicy { get; }
     public PopupStorePhaseState State { get; private set; } = PopupStorePhaseState.Ready;
     public PopupStorePhaseSnapshot CurrentPhase => Profile.Phases[_phaseIndex];
     public string PhaseRunId { get; private set; } = string.Empty;
@@ -60,6 +65,8 @@ public sealed class PopupStorePhaseSession
     public int CountdownValue { get; private set; }
     public int PhaseSuccessfulOrders { get; private set; }
     public long TotalSuccessfulOrders { get; private set; }
+    public int TotalScore { get; private set; }
+    public int PhaseScore { get; private set; }
     public PopupStoreGradeTier HighestClearedGrade { get; private set; } = PopupStoreGradeTier.None;
     public IReadOnlyList<int> ClearedPhases => _clearedView;
     public PopupStorePhaseResult FinalResult { get; private set; }
@@ -84,18 +91,30 @@ public sealed class PopupStorePhaseSession
         }
     }
 
-    private PopupStorePhaseSession(string businessSessionId, PopupStorePhaseProfileSnapshot profile)
-    { BusinessSessionId = businessSessionId; Profile = profile; _clearedView = _cleared.AsReadOnly(); }
+    private PopupStorePhaseSession(string businessSessionId, PopupStorePhaseProfileSnapshot profile,
+        PopupStorePhaseCompletionPolicy completionPolicy)
+    { BusinessSessionId = businessSessionId; Profile = profile; CompletionPolicy = completionPolicy; _clearedView = _cleared.AsReadOnly(); }
 
     public static bool TryCreate(string businessSessionId, PopupStorePhaseProfileSnapshot profile,
         out PopupStorePhaseSession session, out string error)
+        => TryCreate(businessSessionId, profile, profile != null && profile.GoalMetric == PopupStorePhaseGoalMetric.CumulativeScore
+            ? PopupStorePhaseCompletionPolicy.Deadline : PopupStorePhaseCompletionPolicy.ImmediateTarget, out session, out error);
+
+    /// <summary>The explicit owner freezes its completion policy once; existing callers retain immediate target completion.</summary>
+    public static bool TryCreate(string businessSessionId, PopupStorePhaseProfileSnapshot profile,
+        PopupStorePhaseCompletionPolicy completionPolicy, out PopupStorePhaseSession session, out string error)
     {
         session = null; error = null;
         if (string.IsNullOrWhiteSpace(businessSessionId)) error = "A business session ID is required.";
         else if (profile == null || profile.Phases.Count != 6)
             error = "A validated six-phase profile snapshot is required.";
+        else if (!Enum.IsDefined(typeof(PopupStorePhaseCompletionPolicy), completionPolicy))
+            error = "An explicit valid phase completion policy is required.";
+        else if (profile.GoalMetric == PopupStorePhaseGoalMetric.CumulativeScore
+            && completionPolicy != PopupStorePhaseCompletionPolicy.Deadline)
+            error = "Cumulative-score phases are evaluated only at their deadline.";
         if (error != null) return false;
-        session = new PopupStorePhaseSession(businessSessionId, profile);
+        session = new PopupStorePhaseSession(businessSessionId, profile, completionPolicy);
         return true;
     }
 
@@ -111,18 +130,19 @@ public sealed class PopupStorePhaseSession
         if (!CanAcceptPacking || evidence == null || !IdentityMatches(evidence.BusinessSessionId, evidence.PhaseRunId)
             || string.IsNullOrWhiteSpace(evidence.OrderId) || string.IsNullOrWhiteSpace(evidence.ReceiptId)
             || _receiptIds.Contains(evidence.ReceiptId) || _orderIds.Contains(evidence.OrderId)) return false;
+        // Validate both score and count arithmetic before reserving either identity. Rejected evidence
+        // must leave the original order available for a later authenticated, valid receipt.
+        if (evidence.Points < 0 || (Profile.GoalMetric == PopupStorePhaseGoalMetric.CumulativeScore && evidence.Points == 0)
+            || (long)TotalScore + evidence.Points > int.MaxValue || (long)PhaseScore + evidence.Points > int.MaxValue
+            || PhaseSuccessfulOrders == int.MaxValue || TotalSuccessfulOrders == long.MaxValue) return false;
         _receiptIds.Add(evidence.ReceiptId);
         _orderIds.Add(evidence.OrderId);
         PhaseSuccessfulOrders++;
         TotalSuccessfulOrders++;
-        if (PhaseSuccessfulOrders == CurrentPhase.TargetSuccessfulOrders)
-        {
-            _currentCleared = true;
-            _cleared.Add(CurrentPhase.PhaseNumber);
-            HighestClearedGrade = CurrentPhase.Grade;
-            _cleanupDestination = CleanupDestination.NextPhase;
-            ChangeState(PopupStorePhaseState.Clearing);
-        }
+        TotalScore += evidence.Points;
+        PhaseScore += evidence.Points;
+        if (CompletionPolicy == PopupStorePhaseCompletionPolicy.ImmediateTarget
+            && PhaseSuccessfulOrders == CurrentPhase.TargetSuccessfulOrders) CommitClearedPhase();
         return true;
     }
 
@@ -162,8 +182,13 @@ public sealed class PopupStorePhaseSession
                 RemainingSeconds = Math.Max(0, RemainingSeconds - elapsedSeconds);
                 if (RemainingSeconds == 0)
                 {
-                    _cleanupDestination = CleanupDestination.TimedOut;
-                    ChangeState(PopupStorePhaseState.Clearing);
+                    if (CompletionPolicy == PopupStorePhaseCompletionPolicy.Deadline
+                        && HasReachedTarget()) CommitClearedPhase();
+                    else
+                    {
+                        _cleanupDestination = CleanupDestination.TimedOut;
+                        ChangeState(PopupStorePhaseState.Clearing);
+                    }
                 }
                 return true;
             case PopupStorePhaseState.ClearNotice:
@@ -228,11 +253,26 @@ public sealed class PopupStorePhaseSession
         => string.Equals(BusinessSessionId, businessSessionId, StringComparison.Ordinal)
             && !string.IsNullOrEmpty(PhaseRunId) && string.Equals(PhaseRunId, runId, StringComparison.Ordinal);
 
+    private bool HasReachedTarget()
+        => Profile.GoalMetric == PopupStorePhaseGoalMetric.CumulativeScore
+            ? TotalScore >= CurrentPhase.TargetScore
+            : PhaseSuccessfulOrders >= CurrentPhase.TargetSuccessfulOrders;
+
+    private void CommitClearedPhase()
+    {
+        _currentCleared = true;
+        _cleared.Add(CurrentPhase.PhaseNumber);
+        HighestClearedGrade = CurrentPhase.Grade;
+        _cleanupDestination = CleanupDestination.NextPhase;
+        ChangeState(PopupStorePhaseState.Clearing);
+    }
+
     private void BeginPhase()
     {
         PhaseGeneration++;
         PhaseRunId = _instanceId + ":" + PhaseGeneration.ToString(CultureInfo.InvariantCulture);
         PhaseSuccessfulOrders = 0;
+        PhaseScore = 0;
         RemainingSeconds = CurrentPhase.TimeLimitSeconds;
         TransitionRemainingSeconds = 0;
         CountdownValue = 0;
@@ -242,7 +282,7 @@ public sealed class PopupStorePhaseSession
 
     private PopupStorePhaseProgressSummary CurrentSummary()
         => new PopupStorePhaseProgressSummary(CurrentPhase.PhaseNumber, PhaseRunId, CurrentPhase.Grade,
-            PhaseSuccessfulOrders, CurrentPhase.TimeLimitSeconds - RemainingSeconds, _currentCleared);
+            PhaseSuccessfulOrders, CurrentPhase.TimeLimitSeconds - RemainingSeconds, _currentCleared, PhaseScore, TotalScore);
 
     private void Finalize(PopupStorePhaseEndReason reason)
     {
@@ -250,7 +290,7 @@ public sealed class PopupStorePhaseSession
         var summaries = new List<PopupStorePhaseProgressSummary>(_finishedSummaries);
         if (PhaseGeneration > 0) summaries.Add(CurrentSummary());
         FinalResult = new PopupStorePhaseResult(BusinessSessionId, Profile, reason,
-            PhaseGeneration == 0 ? 0 : CurrentPhase.PhaseNumber, HighestClearedGrade, TotalSuccessfulOrders, _cleared, summaries);
+            PhaseGeneration == 0 ? 0 : CurrentPhase.PhaseNumber, HighestClearedGrade, TotalSuccessfulOrders, _cleared, summaries, TotalScore);
         FinalizationCount++;
         TransitionRemainingSeconds = 0;
         CountdownValue = 0;

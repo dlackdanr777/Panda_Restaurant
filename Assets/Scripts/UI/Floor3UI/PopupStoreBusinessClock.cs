@@ -23,6 +23,8 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     private PopupStoreBusinessState _state;
     private double _remainingSeconds;
     private bool _viewVisible, _applicationPaused, _manualPaused, _exitConfirmationPaused;
+    private bool _accountAccessSuspended;
+    private PopupStoreAccountRecoveryPresentation _accountRecovery;
     private bool _applicationFocused = true;
     private bool _synchronizing, _starting, _hasTimeSample;
     private bool _sourceHealthy = true;
@@ -31,9 +33,56 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     // Tests may supply a read-only monotonic source. EditMode otherwise advances only through AdvanceTime.
     private Func<double> _timeSource;
     private readonly HashSet<string> _penalizedOrders = new HashSet<string>(StringComparer.Ordinal);
-#if UNITY_EDITOR
     private bool _cutoffLogged;
-#endif
+    private IPopupStorePhasePreviewClock _phasePreview;
+    private bool _previewAdvancing;
+    public bool IsPhasePreview => _phasePreview != null;
+    public IPopupStorePhasePreviewClock PhasePreviewAuthority => _phasePreview;
+
+    /// <summary>A fresh Editor instance opts in explicitly; an existing business can never be rebound.</summary>
+    public bool TryBindPhasePreview(IPopupStorePhasePreviewClock authority)
+    {
+        if (authority == null || _state != PopupStoreBusinessState.NotStarted || _starting
+            || GetComponent<UIPopupStore>() == null || (_phasePreview != null && !ReferenceEquals(_phasePreview, authority)))
+            return false;
+        _phasePreview = authority;
+        SynchronizePreviewContext();
+        return true;
+    }
+
+    /// <summary>Mirrors an adapter command such as packing/cleanup without reading or consuming time.</summary>
+    public bool RefreshPhasePreview()
+    {
+        if (_phasePreview == null || _starting || _previewAdvancing) return false;
+        double remaining = _phasePreview.RemainingSeconds;
+        if (!Finite(remaining) || remaining < 0d)
+        { _sourceHealthy = false; Report("The Editor phase preview returned an invalid remaining time."); return false; }
+        // StateChanged consumers read CanCommitPacking. Their nested read must observe this
+        // command's state, not start another time sample during a packing/cleanup callback.
+        bool wasSynchronizing = _synchronizing;
+        _synchronizing = true;
+        try
+        {
+            _remainingSeconds = remaining;
+            UpdateHud();
+            Publish(StateChanged);
+            return true;
+        }
+        finally { _synchronizing = wasSynchronizing; }
+    }
+
+    private void SynchronizePreviewContext()
+        => _phasePreview?.SetContext(_viewVisible, _applicationPaused, _applicationFocused,
+            _exitConfirmationPaused || _manualPaused);
+
+    internal bool CanAdvancePatience
+    {
+        get
+        {
+            if (_phasePreview != null && !_phasePreview.CanPlay) return false;
+            return _state == PopupStoreBusinessState.Running;
+        }
+    }
 
     public PopupStoreBusinessState State => _state;
     public bool IsManualPaused => _manualPaused;
@@ -45,9 +94,11 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     public event Action<double> TimeAdvanced;
     public int ComplaintPenaltyCount => _penalizedOrders.Count;
     public double ComplaintPenaltySeconds { get; private set; }
-    public bool CanAdvanceVisuals => _state != PopupStoreBusinessState.NotStarted && IsContextAvailable();
+    public bool CanAdvanceVisuals => _accountRecovery != null
+        ? _accountRecovery.IsCurrent && IsViewContextAvailable()
+        : _state != PopupStoreBusinessState.NotStarted && IsContextAvailable();
     public bool HasStartApproval => GetComponent<PopupStoreStartController>()?.IsApproved == true;
-    internal bool CanPrepareForAdmission => _state == PopupStoreBusinessState.NotStarted && IsViewContextAvailable()
+    internal bool CanPrepareForAdmission => _accountRecovery == null && _state == PopupStoreBusinessState.NotStarted && IsViewContextAvailable()
         && ValidateConfiguration(out _) && _timeText.isActiveAndEnabled;
     public int EndedCount { get; private set; }
     public int AbandonCount { get; private set; }
@@ -64,6 +115,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         get
         {
             SynchronizeNow();
+            if (_phasePreview != null && !_phasePreview.CanEnter) return false;
             return CanUseRunningClock() && _remainingSeconds > _entryCutoffSeconds;
         }
     }
@@ -73,6 +125,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         get
         {
             SynchronizeNow();
+            if (_phasePreview != null && !_phasePreview.CanPlay) return false;
             return CanUseRunningClock() && _remainingSeconds > 0d;
         }
     }
@@ -94,10 +147,17 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
             // Freeze this approved business's reward policy before any start/terminal observer runs.
             // Preparation never draws, pays, or changes admission; an invalid policy remains a reward error.
             GetComponent<PopupStoreRewardSession>()?.PreparePolicyForApprovedStart();
+            if (_phasePreview != null)
+            {
+                SynchronizePreviewContext();
+                if (!_phasePreview.TryStart() || !Finite(_phasePreview.RemainingSeconds)
+                    || _phasePreview.RemainingSeconds <= 0d) return false;
+            }
             _sourceHealthy = true;
             _hasTimeSample = available;
             _lastTimeSample = now;
             _remainingSeconds = _initialSeconds;
+            if (_phasePreview != null) _remainingSeconds = _phasePreview.RemainingSeconds;
             _lastError = null;
             bool endedAtStart = _remainingSeconds == 0d;
             if (endedAtStart)
@@ -201,6 +261,16 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
 
     // Owned by the local exit overlay, independently of app/focus and legacy manual pause.
     internal void SetExitConfirmationPaused(bool paused) => SetCondition(ref _exitConfirmationPaused, paused);
+    internal void SetAccountAccessSuspended(bool suspended) => SetCondition(ref _accountAccessSuspended, suspended);
+    internal TMP_Text PhaseTimeText => _timeText;
+    internal void UsePhaseTimePlaceholder() { _notStartedText = "—"; UpdateHud(); }
+    internal bool BindAccountRecovery(PopupStoreAccountRecoveryPresentation owner)
+    {
+        if (owner == null || owner.gameObject != gameObject || _accountRecovery != null || IsPhasePreview
+            || _state != PopupStoreBusinessState.NotStarted) return false;
+        _accountRecovery = owner;
+        return true;
+    }
 
     private void SetCondition(ref bool condition, bool value, bool activeSessionOnly = false)
     {
@@ -211,6 +281,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         if (activeSessionOnly && (_state == PopupStoreBusinessState.NotStarted || IsTerminal)) return;
         bool wasAvailable = IsContextAvailable();
         condition = value;
+        SynchronizePreviewContext();
         bool available = IsContextAvailable();
         if (!wasAvailable && available) unchecked { VisualResumeVersion++; }
         if (_state == PopupStoreBusinessState.NotStarted || IsTerminal)
@@ -261,6 +332,11 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
     private void ConsumeElapsed(double elapsed)
     {
         if (_state != PopupStoreBusinessState.Running) return;
+        if (_phasePreview != null)
+        {
+            ConsumePreviewElapsed(elapsed);
+            return;
+        }
         double consumed = Math.Min(_remainingSeconds, elapsed);
         _remainingSeconds = Math.Max(0d, _remainingSeconds - elapsed);
         ElapsedSeconds += consumed;
@@ -289,6 +365,7 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
 
     internal bool CanAcceptComplaintBatch(int count, double seconds)
         => count > 0 && count <= 3 && CanUseRunningClock() && Finite(seconds) && seconds >= 0
+            && (_phasePreview == null || _phasePreview.CanPlay)
             && Finite(seconds * count) && Finite(ComplaintPenaltySeconds + seconds * count);
 
     /// <summary>One atomic batch at an already-settled Running instant. Penalties are not elapsed time.</summary>
@@ -310,6 +387,19 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
         // Consume every identity before any state/UI callback can re-enter, even if the batch reaches zero.
         foreach (var timer in accepted) _penalizedOrders.Add(timer.OrderId);
         double before = _remainingSeconds;
+        if (_phasePreview != null)
+        {
+            // Reservations above precede reentrant observers. Only the phase owner deducts this batch;
+            // no TimeAdvanced notification means the other customers lose no extra patience.
+            if (!_phasePreview.TryPenalty(total))
+            { _sourceHealthy = false; Report("The Editor phase preview rejected a committed complaint batch."); return 0; }
+            ComplaintPenaltySeconds += total;
+            _remainingSeconds = _phasePreview.RemainingSeconds;
+            UpdateHud();
+            LogCutoff();
+            Publish(StateChanged);
+            return accepted.Count;
+        }
         ComplaintPenaltySeconds += total;
         _remainingSeconds = Math.Max(0, _remainingSeconds - total);
         bool ended = _remainingSeconds == 0;
@@ -338,8 +428,56 @@ public sealed class PopupStoreBusinessClock : MonoBehaviour
 
     private bool IsTerminal => _state == PopupStoreBusinessState.Ended || _state == PopupStoreBusinessState.Abandoned;
 
+    private void ConsumePreviewElapsed(double elapsed)
+    {
+        if (_previewAdvancing) return;
+        _previewAdvancing = true;
+        try
+        {
+            SynchronizePreviewContext();
+            bool playing = _phasePreview.CanPlay;
+            double before = _phasePreview.RemainingSeconds;
+            bool entering = _phasePreview.CanEnter && before > _entryCutoffSeconds;
+            if (!Finite(before) || before < 0d)
+            { _sourceHealthy = false; Report("The Editor phase preview returned an invalid remaining time."); return; }
+            // Exactly one sample is forwarded. No transition loops or carried-over countdown deltas.
+            _phasePreview.Advance(elapsed);
+            double remaining = _phasePreview.RemainingSeconds;
+            if (!Finite(remaining) || remaining < 0d)
+            { _sourceHealthy = false; Report("The Editor phase preview returned an invalid remaining time."); return; }
+            _remainingSeconds = remaining;
+            double consumed = playing ? Math.Min(before, elapsed) : 0d;
+            ElapsedSeconds += consumed;
+            UpdateHud();
+            LogCutoff();
+            // The phase state is settled before customer observers. A phase deadline blocks new
+            // expiration/packing commits, while already committed delivery remains free to finish.
+            double position = ElapsedSeconds;
+            if (consumed > 0d && TimeAdvanced != null)
+                foreach (Action<double> handler in TimeAdvanced.GetInvocationList())
+                    try { handler(position); }
+                    catch (Exception exception) { Debug.LogException(exception, this); }
+            // Preview phases do not change the ordinary Running enum. Notify existing button
+            // consumers when their phase gates change, after patience settles this same sample.
+            if (playing != _phasePreview.CanPlay
+                || entering != (_phasePreview.CanEnter && _phasePreview.RemainingSeconds > _entryCutoffSeconds))
+            {
+                bool wasSynchronizing = _synchronizing;
+                _synchronizing = true;
+                try { Publish(StateChanged); }
+                finally { _synchronizing = wasSynchronizing; }
+            }
+        }
+        catch (Exception exception)
+        {
+            _sourceHealthy = false;
+            Report("The Editor phase preview failed: " + exception.GetType().Name);
+        }
+        finally { _previewAdvancing = false; }
+    }
+
     private bool IsContextAvailable()
-        => HasStartApproval && IsViewContextAvailable();
+        => HasStartApproval && !_accountAccessSuspended && IsViewContextAvailable();
 
     private bool IsViewContextAvailable()
         => _state != PopupStoreBusinessState.Abandoned && isActiveAndEnabled && _viewVisible && !_applicationPaused && _applicationFocused

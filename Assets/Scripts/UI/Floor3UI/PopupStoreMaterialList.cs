@@ -31,6 +31,37 @@ public sealed class PopupStoreMaterialList : MonoBehaviour, IBeginDragHandler, I
     private bool _layingOut;
     private string _lastError;
     private uint _inputVersion;
+    internal PopupStoreMaterialKind Kind => _kind;
+    private Component _editorFilterOwner;
+    private HashSet<string> _editorAllowedPlushIds;
+    private bool _editorFilterBound;
+
+    internal bool TrySetEditorPlushFilter(Component owner, IReadOnlyList<string> ids, out string error)
+    {
+        error = null;
+        var popup = GetComponentInParent<UIPopupStore>(true);
+        if (_kind != PopupStoreMaterialKind.Plush || owner == null || popup == null
+            || owner.GetComponentInParent<UIPopupStore>(true) != popup
+            || (_editorFilterBound && owner != _editorFilterOwner) || ids == null || ids.Count == 0)
+        { error = "An Editor plush filter requires its original local owner and a nonempty ID snapshot."; return false; }
+        if (_catalog == null || !_catalog.TryGetMaterials(_kind, out var approved, out error)) return false;
+        var allowed = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var id in ids)
+        {
+            bool found = false;
+            foreach (var material in approved) if (material.Id == id) { found = true; break; }
+            if (!found || !allowed.Add(id))
+            { error = "The Editor plush filter contains an unknown or duplicate ID."; return false; }
+        }
+        _editorFilterOwner = owner;
+        _editorAllowedPlushIds = allowed;
+        _editorFilterBound = true;
+        return Refresh();
+    }
+
+    private bool EditorMaterialAllowed(PopupStoreMaterialEntry material)
+        => !_editorFilterBound || (_editorFilterOwner != null && material != null
+            && material.Kind == PopupStoreMaterialKind.Plush && _editorAllowedPlushIds.Contains(material.Id));
 
     public bool IsReady { get; private set; }
     public int MaterialCount { get; private set; }
@@ -44,6 +75,13 @@ public sealed class PopupStoreMaterialList : MonoBehaviour, IBeginDragHandler, I
         MaterialCount = 0;
         if (!ValidateReferences(out string error)) return Reject(error);
         if (!_catalog.TryGetMaterials(_kind, out var materials, out error)) return Reject(error);
+        if (_editorFilterBound)
+        {
+            if (_editorFilterOwner == null) return Reject("The Editor plush filter owner is no longer available.");
+            var filtered = new List<PopupStoreMaterialEntry>();
+            foreach (var material in materials) if (EditorMaterialAllowed(material)) filtered.Add(material);
+            materials = filtered.ToArray(); // Preserve the approved catalog's display order; never mutate it.
+        }
 
         if (_builtTemplate != _itemTemplate || _builtContent != _content)
         {
@@ -225,6 +263,7 @@ public sealed class PopupStoreMaterialList : MonoBehaviour, IBeginDragHandler, I
             || item == null || item.Owner != this || !item.isActiveAndEnabled
             || item.Material == null || item.Material.Kind != _kind
             || !_slots.Contains(item.GetComponent<Image>()) || _counter == null) return false;
+        if (!EditorMaterialAllowed(item.Material)) return false;
         return _counter.TryAdd(item.Material);
     }
 

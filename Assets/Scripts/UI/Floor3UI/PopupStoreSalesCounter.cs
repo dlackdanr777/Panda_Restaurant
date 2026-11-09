@@ -25,6 +25,34 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
     private string _lastError;
     private bool _packingLocked;
     private bool _packingConsumedPending;
+    private Component _editorInputOwner;
+    private Func<bool> _editorCanInput, _editorCanCleanup;
+    private Predicate<PopupStoreMaterialEntry> _editorMaterialAllowed;
+    private bool _editorInputBound;
+
+    internal bool BindEditorPhaseInput(Component owner, Func<bool> canInput,
+        Predicate<PopupStoreMaterialEntry> materialAllowed, Func<bool> canCleanup)
+    {
+        var popup = GetComponentInParent<UIPopupStore>(true);
+        if (owner == null || popup == null || owner.GetComponentInParent<UIPopupStore>(true) != popup
+            || (_editorInputBound && owner != _editorInputOwner) || canInput == null
+            || materialAllowed == null || canCleanup == null || _packingLocked) return false;
+        _editorInputOwner = owner; _editorCanInput = canInput;
+        _editorMaterialAllowed = materialAllowed; _editorCanCleanup = canCleanup;
+        _editorInputBound = true;
+        UpdateInputState();
+        return true;
+    }
+
+    internal bool EditorClearForPhaseCleanup(Component owner)
+    {
+        if (!_editorInputBound || owner == null || owner != _editorInputOwner || !_editorCanCleanup()
+            || _packingLocked || !isActiveAndEnabled || !IsReady) return false;
+        _materials.Clear();
+        Render();
+        NotifyChanged(ChangeReason.Cleared);
+        return true;
+    }
 
     public bool IsReady { get; private set; }
     public int Count => _materials.Count;
@@ -35,6 +63,7 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
             var popup = GetComponentInParent<UIPopupStore>(true);
             var clock = popup != null ? popup.GetComponent<PopupStoreBusinessClock>() : null;
             clock?.SynchronizeNow();
+            if (_editorInputBound && (_editorInputOwner == null || !_editorCanInput())) return false;
             // Preparation is allowed after admission, including before a customer's arrival.
             // Missing approval is an API boundary, not merely a start-screen raycast blocker.
             return clock != null && clock.HasStartApproval && clock.State != PopupStoreBusinessState.NotStarted
@@ -72,6 +101,7 @@ public sealed class PopupStoreSalesCounter : MonoBehaviour
     public bool TryAdd(PopupStoreMaterialEntry material)
     {
         if (!CanAcceptInput) return false;
+        if (_editorInputBound && (material == null || !_editorMaterialAllowed(material))) return false;
         if (_packingLocked || !isActiveAndEnabled || !IsReady || material == null || _materials.Count >= Capacity)
             return false;
         if (!_catalog.TryGetMaterials(material.Kind, out var approved, out _)) return false;

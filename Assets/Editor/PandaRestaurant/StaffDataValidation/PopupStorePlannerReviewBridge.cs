@@ -40,7 +40,7 @@ public static partial class PopupStoreVerificationRunner
             PrefabStage = PrefabStageUtility.GetCurrentPrefabStage() != null,
             ReloadDisabled = EditorSettings.enterPlayModeOptionsEnabled && EditorSettings.enterPlayModeOptions != EnterPlayModeOptions.None,
             PendingRequest = File.Exists(RequestPath),
-            OtherReview = SessionState.GetBool(PausePlayKey, false)
+            OtherReview = PhasePreviewReviewActive || SessionState.GetBool(PausePlayKey, false)
                 || (manual && !ownedActive)
                 || (armed && (!ownedActive || (ReviewMode)SessionState.GetInt(ReviewModeKey, -1) != ReviewMode.AccessA))
                 || (_accessReviewOwner != null && (!ownedActive || (recordedAccount.Length > 0 && recordedAccount != _accessReviewOwner.AccountId))),

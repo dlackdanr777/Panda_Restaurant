@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
+public enum PopupStorePhaseGoalMetric { SuccessfulOrders, CumulativeScore }
+
 /// <summary>Editable configuration data only. No balance defaults and no live scene bindings.</summary>
 [Serializable]
 public sealed class PopupStorePhaseDefinition
@@ -10,6 +12,7 @@ public sealed class PopupStorePhaseDefinition
     public PopupStoreGradeTier Grade { get; set; }
     public double TimeLimitSeconds { get; set; }
     public int TargetSuccessfulOrders { get; set; }
+    public int TargetScore { get; set; }
     public string[] AllowedPlushIds { get; set; }
     public double CustomerPatienceSeconds { get; set; }
     public double EntryIntervalSeconds { get; set; }
@@ -23,6 +26,7 @@ public sealed class PopupStorePhaseDefinition
             Grade = Grade,
             TimeLimitSeconds = TimeLimitSeconds,
             TargetSuccessfulOrders = TargetSuccessfulOrders,
+            TargetScore = TargetScore,
             AllowedPlushIds = AllowedPlushIds == null ? null : (string[])AllowedPlushIds.Clone(),
             CustomerPatienceSeconds = CustomerPatienceSeconds,
             EntryIntervalSeconds = EntryIntervalSeconds,
@@ -40,6 +44,7 @@ public sealed class PopupStorePhaseSnapshot
     public PopupStoreGradeTier Grade { get; }
     public double TimeLimitSeconds { get; }
     public int TargetSuccessfulOrders { get; }
+    public int TargetScore { get; }
     public IReadOnlyList<string> AllowedPlushIds => _allowedPlushIds;
     public double CustomerPatienceSeconds { get; }
     public double EntryIntervalSeconds { get; }
@@ -52,6 +57,7 @@ public sealed class PopupStorePhaseSnapshot
         Grade = definition.Grade;
         TimeLimitSeconds = definition.TimeLimitSeconds;
         TargetSuccessfulOrders = definition.TargetSuccessfulOrders;
+        TargetScore = definition.TargetScore;
         CustomerPatienceSeconds = definition.CustomerPatienceSeconds;
         EntryIntervalSeconds = definition.EntryIntervalSeconds;
         StageClearNoticeSeconds = definition.StageClearNoticeSeconds;

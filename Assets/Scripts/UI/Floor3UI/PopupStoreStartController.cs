@@ -12,7 +12,28 @@ public sealed class PopupStoreStartController : MonoBehaviour
     public bool IsRetired => GetComponent<PopupStoreSessionLifetime>()?.IsRetired == true;
     private PopupStoreBusinessClock Clock => GetComponent<PopupStoreBusinessClock>();
     private PopupStoreStartPanel Panel => _panel != null ? _panel : (_panel = GetComponent<PopupStoreStartPanel>());
+#if UNITY_EDITOR
+    // Bound by the existing Editor review owner before the popup's first OnEnable/Show.
+    // No fake admission or runtime fallback is introduced into the Player build.
+    public static System.Func<bool> EditorPhasePreviewEntryPending { get; set; }
+    private bool WaitingForEditorPhaseView
+    {
+        get
+        {
+            bool pending;
+            try { pending = EditorPhasePreviewEntryPending?.Invoke() == true; }
+            catch { return true; } // A broken review owner must not expose ordinary admission.
+            if (!pending) return false;
+            var preview = GetComponent<PopupStorePhasePreview>();
+            return preview == null || !preview.IsInitialized || preview.TutorialView == null;
+        }
+    }
+#else
+    private bool WaitingForEditorPhaseView => false;
+#endif
     internal bool CanRequestApproval => isActiveAndEnabled && !IsRetired && !string.IsNullOrEmpty(LocalSessionId)
+        && !WaitingForEditorPhaseView
+        && (GetComponent<PopupStorePhasePreview>()?.CanRequestTutorialAdmission ?? true)
         && Clock != null && Clock.CanPrepareForAdmission
         && (GetComponent<UIPopupStore>()?.Navigation == null || GetComponent<UIPopupStore>().CanRequestExit);
 
@@ -75,10 +96,13 @@ public sealed class PopupStoreStartController : MonoBehaviour
     private void RefreshPresentation()
     {
         if (Panel == null || Clock == null) return;
+        if (GetComponent<PopupStoreAccountRecoveryPresentation>()?.IsBound == true)
+        { Panel.Render(false, false, false, 0, 1, string.Empty, false); return; }
         bool show = Clock.State == PopupStoreBusinessState.NotStarted;
         var access = Host?.Access;
         var tx = Host?.Transaction;
         bool canStart = Host != null && !Host.IsQuerying;
+        bool confirmedTicketExhaustion = false;
         string status;
         if (Host == null) { status = "현재 영업권 서비스를 이용할 수 없습니다."; canStart = false; }
         else if (Host.IsQuerying) status = "오늘의 영업권을 조회하고 있습니다.";
@@ -92,11 +116,35 @@ public sealed class PopupStoreStartController : MonoBehaviour
         else if (tx != null && (tx.State == PopupStoreBusinessStartState.Conflict || tx.State == PopupStoreBusinessStartState.Invalidated))
         { status = tx.LastError ?? "기존 시작 요청의 복구가 필요합니다."; canStart = false; }
         else if (access == null) status = Host.LastError ?? "영업권을 다시 조회해 주세요.";
-        else if (access.Remaining <= 0) { status = "오늘의 영업권을 모두 사용했습니다."; canStart = false; }
+        else if (access.Remaining <= 0)
+        {
+            status = "오늘의 영업권을 모두 사용했습니다."; canStart = false;
+            confirmedTicketExhaustion = string.IsNullOrEmpty(Host.LastError);
+        }
         else if (!string.IsNullOrEmpty(Host.LastError)) status = Host.LastError;
         else if (tx != null && tx.State == PopupStoreBusinessStartState.RejectedBeforeSend)
             status = "시작이 승인되지 않았습니다. 영업권 정보를 다시 확인해 주세요.";
         else status = "영업을 시작할 준비가 됐습니다.";
+        var preview = GetComponent<PopupStorePhasePreview>();
+        if (WaitingForEditorPhaseView)
+        {
+            // The preview bridge binds on the Editor update after Stage1 first shows this view.
+            // Hide the ordinary explanation immediately; the old start control cannot consume a use.
+            Panel.Render(false, false, false, access?.Remaining ?? -1, access?.DailyLimit ?? -1,
+                string.Empty, true);
+            return;
+        }
+        if (preview != null && preview.TutorialView != null)
+        {
+            // Release the ordinary modal's input ownership before showing the authored preview tutorial.
+            Panel.Render(false, false, false, access?.Remaining ?? -1, access?.DailyLimit ?? -1,
+                string.Empty, true);
+            bool pending = tx != null && (tx.State == PopupStoreBusinessStartState.Submitting
+                || tx.State == PopupStoreBusinessStartState.ReconciliationRequired);
+            preview.RenderStart(show, canStart, access?.Remaining ?? -1, access?.DailyLimit ?? -1,
+                canStart ? null : status, pending, confirmedTicketExhaustion);
+            return;
+        }
         Panel.Render(show, canStart, true, access?.Remaining ?? -1, access?.DailyLimit ?? -1,
             status, Host?.IsEditorReview == true);
     }

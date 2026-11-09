@@ -355,8 +355,19 @@ public sealed class PopupStoreBusinessAccessSettingsTests
         foreach (string forbidden in new[] { "UserInfo.", "Backend.", "PlayerPrefs.", "DateTime.Now", "DateTime.UtcNow", "DateTimeOffset.Now",
             "DateTimeOffset.UtcNow", "UnityEngine.Random.", "File.Write", "new PopupStoreRewardTransaction" })
             Assert.That(source, Does.Not.Contain(forbidden));
-        Assert.That(typeof(IPopupStoreBusinessAccessInformation).Assembly.GetTypes().Where(t => !t.IsAbstract && !t.IsInterface
-            && typeof(IPopupStoreBusinessAccessInformation).IsAssignableFrom(t)), Is.Empty);
+        // DEV-SERVER-01E adds only the explicit existing-GameData bridge. Pure settings stay
+        // account-free; the separate account bootstrap is disabled in its authored configuration.
+        CollectionAssert.AreEquivalent(new[] { typeof(PopupStoreBackendPersistence), typeof(PopupStoreGameDataAccountBridge) },
+            typeof(IPopupStoreBusinessAccessInformation).Assembly.GetTypes().Where(t => !t.IsAbstract && !t.IsInterface
+                && typeof(IPopupStoreBusinessAccessInformation).IsAssignableFrom(t)));
+        Assert.That(typeof(PopupStoreBackendPersistence).IsSealed, Is.True);
+        Assert.That(typeof(PopupStoreBackendPersistence).GetConstructor(Type.EmptyTypes), Is.Null);
+        Assert.That(typeof(PopupStoreBackendPersistence).IsSubclassOf(typeof(MonoBehaviour)), Is.False);
+        Assert.That(typeof(PopupStoreGameDataAccountBridge).IsSealed, Is.True);
+        Assert.That(typeof(PopupStoreGameDataAccountBridge).GetConstructor(Type.EmptyTypes), Is.Null);
+        Assert.That(typeof(PopupStoreGameDataAccountBridge).IsSubclassOf(typeof(MonoBehaviour)), Is.False);
+        Assert.That(Resources.Load<PopupStoreAccountPhaseConfiguration>(PopupStoreAccountPhaseBootstrap.ConfigurationResource)
+            .EnableAccountMode, Is.False);
     }
 
     private sealed class Harness

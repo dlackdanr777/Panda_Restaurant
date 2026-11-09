@@ -30,6 +30,8 @@ public sealed class StaffPurchaseDiamondWallet : IStaffPurchaseWallet
     private long _rewardDelta;
     private long _generation;
     private bool _committed;
+    private bool _rewardReservation;
+    private int _committedReward;
     private bool _notified;
     private int _notificationDepth;
 
@@ -47,11 +49,19 @@ public sealed class StaffPurchaseDiamondWallet : IStaffPurchaseWallet
     public string LastNotificationError { get; private set; }
 
     public bool TryReserve(object owner, int cost, int expectedBalance, out string error)
+        => TryReserveCore(owner, cost, expectedBalance, false, out error);
+
+    /// <summary>A reward save protects the same wallet without inventing a purchase cost.
+    /// It blocks consumption while preserving independently arriving positive rewards.</summary>
+    public bool TryReserveReward(object owner, int expectedBalance, out string error)
+        => TryReserveCore(owner, 0, expectedBalance, true, out error);
+
+    private bool TryReserveCore(object owner, int cost, int expectedBalance, bool reward, out string error)
     {
         error = null;
         long generation = _readGeneration();
         int current = Diamonds;
-        if (owner == null || _owner != null || _notificationDepth != 0 || cost <= 0 || expectedBalance < 0
+        if (owner == null || _owner != null || _notificationDepth != 0 || (!reward && cost <= 0) || expectedBalance < 0
             || current != expectedBalance || current < cost || generation != _readGeneration())
         {
             error = "다이아 사용 준비 상태를 확인할 수 없습니다.";
@@ -63,6 +73,8 @@ public sealed class StaffPurchaseDiamondWallet : IStaffPurchaseWallet
         _rewardDelta = 0;
         _generation = generation;
         _committed = false;
+        _rewardReservation = reward;
+        _committedReward = 0;
         _notified = false;
         return true;
     }
@@ -89,13 +101,16 @@ public sealed class StaffPurchaseDiamondWallet : IStaffPurchaseWallet
         int initial = _initialBalance, cost = _cost;
         long rewards = _rewardDelta;
         bool committed = _committed;
+        bool reward = _rewardReservation;
+        int committedReward = _committedReward;
         long beforeRead = _readGeneration();
         current = Diamonds;
         long afterRead = _readGeneration();
-        long expected = (long)initial + rewards - (committed ? cost : 0);
+        long expected = (long)initial + rewards + (committed ? (reward ? committedReward : -cost) : 0);
         if (owner == null || !ReferenceEquals(_owner, owner) || generation != beforeRead
             || generation != afterRead || generation != _generation || initial != _initialBalance
             || cost != _cost || rewards != _rewardDelta || committed != _committed
+            || reward != _rewardReservation || committedReward != _committedReward
             || expected < 0 || expected > int.MaxValue || current != expected
             || (!committed && expected < cost))
         {
@@ -107,6 +122,8 @@ public sealed class StaffPurchaseDiamondWallet : IStaffPurchaseWallet
 
     public bool TryCommitReservedCost(object owner, out string error)
     {
+        if (_rewardReservation)
+        { error = "보상 저장 보호를 구매 비용으로 반영할 수 없습니다."; return false; }
         if (!TryReadReservation(owner, out int current, out error)) return false;
         if (_committed)
         {
@@ -116,6 +133,21 @@ public sealed class StaffPurchaseDiamondWallet : IStaffPurchaseWallet
         // Never assign the old purchase plan's DiamondsAfter: rewards received while waiting survive.
         int updated = checked(current - _cost);
         _write(updated);
+        _committed = true;
+        return true;
+    }
+
+    /// <summary>Called only after the owning save is confirmed. Publishes no observers and adds
+    /// exactly one reward delta to the current balance, rather than assigning an old saved balance.</summary>
+    public bool TryCommitReservedReward(object owner, int amount, out string error)
+    {
+        if (!_rewardReservation || amount <= 0)
+        { error = "확정할 보상 저장 보호 또는 수량이 올바르지 않습니다."; return false; }
+        if (!TryReadReservation(owner, out int current, out error)) return false;
+        if (_committed || (long)current + amount > int.MaxValue)
+        { error = "이미 반영된 보상이거나 다이아 허용 범위를 벗어났습니다."; return false; }
+        _write(checked(current + amount));
+        _committedReward = amount;
         _committed = true;
         return true;
     }
@@ -132,6 +164,11 @@ public sealed class StaffPurchaseDiamondWallet : IStaffPurchaseWallet
         if (!_committed || _notified) return;
         _notified = true;
         NotifyCommittedChange();
+    }
+
+    public void NotifyCommittedReward()
+    {
+        if (_rewardReservation) NotifyCommittedCost();
     }
 
     public bool CanSpend(int cost)

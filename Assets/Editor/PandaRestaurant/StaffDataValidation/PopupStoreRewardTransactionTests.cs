@@ -472,8 +472,15 @@ public sealed class PopupStoreRewardTransactionTests
                 Assert.That(source, Does.Not.Contain(call), name + " contains forbidden dependency " + call);
         }
         Assert.That(typeof(PopupStoreRewardTransaction).IsSubclassOf(typeof(MonoBehaviour)), Is.False);
-        Assert.That(typeof(IPopupStoreRewardPersistence).Assembly.GetTypes().Where(t => !t.IsAbstract && !t.IsInterface
-            && typeof(IPopupStoreRewardPersistence).IsAssignableFrom(t)), Is.Empty, "No runtime authority adapter is authorized in DEV-05C-1.");
+        // DEV-SERVER-01 authorizes this adapter, but not a default/live payout binding.
+        // Its default wallet gate and latest-wallet-before-Granted behavior are exercised
+        // by PopupStoreServerClaimCoordinatorTests with isolated transports.
+        CollectionAssert.AreEquivalent(new[] { typeof(PopupStoreBackendPersistence) },
+            typeof(IPopupStoreRewardPersistence).Assembly.GetTypes().Where(t => !t.IsAbstract && !t.IsInterface
+                && typeof(IPopupStoreRewardPersistence).IsAssignableFrom(t)));
+        Assert.That(typeof(PopupStoreBackendPersistence).IsSealed, Is.True);
+        Assert.That(typeof(PopupStoreBackendPersistence).GetConstructor(Type.EmptyTypes), Is.Null);
+        Assert.That(typeof(PopupStoreBackendPersistence).IsSubclassOf(typeof(MonoBehaviour)), Is.False);
     }
 
     [Test]

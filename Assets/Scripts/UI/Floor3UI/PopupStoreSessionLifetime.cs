@@ -31,6 +31,21 @@ public sealed class PopupStoreSessionLifetime : MonoBehaviour
 
     internal void UndoCompletedClose() => _completedForClose = false;
 
+    internal bool MarkAccountPhaseClosed(PopupStorePhasePreview owner)
+    {
+        if (owner == null || owner.gameObject != gameObject || !owner.IsAccountMode
+            || !owner.AccountClaimConfirmed || owner.Session?.IsTerminal != true) return false;
+        _completedForClose = true;
+        return true;
+    }
+
+    internal bool MarkAccountRecoveryClosed(PopupStoreAccountRecoveryPresentation owner)
+    {
+        if (owner == null || owner.gameObject != gameObject || !owner.IsConfirmed) return false;
+        _completedForClose = true;
+        return true;
+    }
+
     /// <summary>Called by the existing map before Push. A continuing view is unchanged; a retired one is replaced once.</summary>
     public bool TryPrepareForEntry(out UIPopupStore ready)
     {

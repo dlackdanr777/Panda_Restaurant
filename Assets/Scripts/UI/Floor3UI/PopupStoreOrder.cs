@@ -24,6 +24,18 @@ public sealed class PopupStoreOrder
     public bool IsExpired => _expired;
     public PopupStorePackingReceipt PackingReceipt => _packingReceipt;
 
+    // Only the isolated Editor supplier creates these definitions. Resolution retains the
+    // canonical plush/box/ribbon snapshot; fulfilment does not reorder this array.
+    internal static bool TryCreateEditorOrder(string customerId, string[] plushIds, string boxId,
+        string ribbonId, PopupStoreMaterialCatalog catalog, out PopupStoreOrder order)
+    {
+        order = new PopupStoreOrder { _customerId = customerId,
+            _plushIds = plushIds == null ? null : (string[])plushIds.Clone(), _boxId = boxId, _ribbonId = ribbonId };
+        if (!order.TryResolve(catalog, out _, out _)) { order = null; return false; }
+        order.EnsureRuntimeId();
+        return true;
+    }
+
     public PopupStoreOrder CreateRuntimeCopy()
     {
         var copy = new PopupStoreOrder

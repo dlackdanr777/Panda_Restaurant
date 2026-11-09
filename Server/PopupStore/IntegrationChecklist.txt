@@ -1,0 +1,92 @@
+DEV-SERVER-01C: 로컬 구현과 실제 서버 연결의 경계 (2026-11-09)
+
+이번 소스 준비 현황
+- Function111Readiness.txt: 실제 SDK/CLI 환경, 미실행 빌드 및 콘솔 준비 절차.
+- PopupStoreSources.props: 원본 서버 소스 링크. 공식 csproj/SDK를 대체하지 않는다.
+- DatabaseAccountStore: v2 분리 기록 저장 후보. 신규 Database만 한 원자 영역이다.
+- PopupStoreWalletCutover: 기존 Dia writer 전체 차단/이전 증명이 필요한 순수 전환 모델.
+- Function의 AuthenticatedAccountIdentityVerified 기본 false: 멀티 캐릭터 gamerId를
+  계정 전체 식별자로 간주하지 않으며 실제 프로젝트의 인증 범위 검증을 요구한다.
+- 기존 UI 연결, 실제 Function 빌드, 개발 배포, 지갑 운영 이전은 아직 미실행이다.
+
+현재 상태
+- 기본 생성자는 서버 호출과 실지급을 차단한다. 현재 UI/Prefab에는 새 어댑터를 연결하지 않았다.
+- 개발용 뒤끝 프로젝트, 테스트 계정, Function SDK 프로젝트가 제공되지 않았다.
+- 실제 서버 DB 생성/수정, 로그인, 배포, 영업권 소비, 다이아 지급은 수행하지 않는다.
+- Function.cs와 DatabaseAccountStore.cs는 서버 SDK 빌드/통합 검증 전 소스 후보이다.
+  Unity에서 컴파일되는 도메인/클라이언트와 서버 전용 소스의 검증 상태를 구분한다.
+
+구현한 로컬 연결
+1. PopupStoreServerAuthority
+   인증된 principal, 원자적 계정 저장소, 검증된 gameplay clock/lifecycle,
+   암호학적 난수만 주입받는다. Command에는 계정/점수/등급/다이아 입력이 없다.
+   ACCESS / START / QUERY / ISSUE ORDER / PACK / SETTLE / CLAIM / ABANDON을 처리한다.
+   시작 시 정책 사본을 고정한다. 서버 주문의 정확한 수량/종류와 만료를 확인하고
+   동일 조합은 최단 인내심, 동률은 왼쪽 손님을 먼저 처리한다.
+   요청 ID/명령 해시와 Receipt/Order/Business ID를 각각 확인한다.
+   일일 사용, 시작 세션, 정산, 지급, 잔액/버전은 원자적 계정 변경 계약에 속한다.
+2. PopupStoreBackendFunctionTransport
+   기존 SDK 로그인/복원 세대를 읽고, 지정된 개발 Function에만 요청할 수 있다.
+   초기화/자동 로그인 기능은 없다. 이름/플래그만으로 안전한 개발 환경이 증명되지는 않는다.
+   환경 검증 함수와 현재 인증 세대를 호출마다 확인한다. UI 콜백은 생성 시 잡은
+   메인 스레드에 전달한다. 무응답/서버 예외는 성공도 실패 확정도 아닌 미확정이다.
+3. PopupStoreServerClient / PopupStoreServerFileJournal
+   첫 변경 전에 서버 복구 조회가 필요하다. 전송 전 명령과 요청 ID를 기록한다.
+   파일 손상/잠금/쓰기 실패 시 변경 요청을 보내지 않는다. 모호한 결과는 동일 요청을
+   조회하며 자동으로 새 시작/지급 ID를 만들지 않는다. 명시적 재전송도 같은 명령만 쓴다.
+   파일 체크섬은 손상 탐지이며 권한 증명이 아니다. 파일 삭제/재설치 후에도 서버가 권한이다.
+   토큰/비밀번호/키를 저장하지 않는다. 호스트가 플랫폼에 맞는 저장 경로를 명시해야 한다.
+4. PopupStoreBackendPersistence
+   기존 IPopupStoreBusinessStartPersistence / IPopupStoreBusinessAccessInformation /
+   IPopupStoreRewardPersistence 어댑터다. 현재 게임에 자동 등록하지 않는다.
+5. PopupStoreServerClaimCoordinator / PopupStoreServerWalletGuard
+   전체 지갑 쓰기 경로의 이전/차단이 검증된 boundary가 없으면 CLAIM을 보내지 않는다.
+   지급 기록 확인 후 별도 최신 QUERY를 하고, 그 QUERY에 연결된 지갑 ID/버전/잔액을
+   검증한 뒤에만 Granted를 알린다. 과거 Grant.BalanceAfter로 최신 잔액을 덮지 않는다.
+   로컬 AddDia/AsyncSaveGameData 방식은 사용하지 않는다. 불명확한 결과는 잠금을 유지한다.
+   기존 인터페이스에 전달하는 Grant의 잔액은 역사 기록일 뿐이며 다시 더하는 지시가 아니다.
+
+응답/복구 계약
+- Protocol: popup-store.dev-server-01.v1. JSON 필드명은 PascalCase이다.
+- Access: 서버 날짜/시간과 다음 KST 정오의 UTC 시각, 정책 버전,
+  일일 허용량/사용량/잔여량, 쓰기 활성 여부.
+- Business: 인증 계정의 영업 ID, 시작 요청/날짜, 고정 정책/시계 버전,
+  단계/최고 통과/누적점수/성공건수, 서버 주문, 종료 사유, 확정 결과/지급 기록.
+- AppliedRequestId / AppliedOperation / AppliedCommandHash는 요청이 저장됐다는 상관 증거다.
+  QUERY LookupRequestId의 원래 결과와 일치해야 로컬 미확정 기록을 완료 처리한다.
+- Wallet은 새로운 ACCESS/QUERY에서만 반환하는 최신 값이다. 역사 CLAIM 응답에 붙이지 않는다.
+- QUERY에서 미발견이어도 이전 전송이 절대 적용되지 않았다고 단정하지 않는다.
+- 최초 송신 전 거절과 송신 후 불명확한 결과를 구분한다. 새 난수 추첨/추가 지급으로 해결하지 않는다.
+- 요청/응답 객체와 저장소 사본은 서버 권한을 대체하지 않는다. 단위검사 메모리 저장소는 운영 DB가 아니다.
+
+기존 UI를 아직 서버에 연결하지 않은 이유
+현재 승인된 단계형 진행과 프리뷰 View는 Editor 전용이다. 일반 플레이는 별도 90초 경로다.
+새 admission 어댑터만 붙이면 승인된 단계형 게임 대신 일반 플레이가 시작될 수 있다.
+튜토리얼의 시작 잠금/실패 해제와 보상 View의 동기 bool API도 비동기 서버 계약과 다르다.
+따라서 기존 화면/문구/시간을 임의 바꾸거나 검수용 미지급 표시를 획득 완료로 바꾸지 않았다.
+정식 Runtime 단계 호스트와 비동기 승인/복구 UI 연결 및 실화면 확인이 별도로 필요하다.
+
+실제 연결 전에 필요한 구체적 작업
+1. 운영과 분리된 개발 프로젝트/계정/콘솔 권한을 준비한다. 인증정보를 소스/보고서에 넣지 않는다.
+2. 공식 Function 1.1.1 / net8 / Database SDK의 정확한 템플릿과 DLL로 서버 소스를 빌드한다.
+3. dev_ 접두사의 Function 이름과 프로토콜, 서버 gamerId 식별을 실제 요청으로 검증한다.
+4. README의 서버 전용 DB 쓰기 권한/PK/트랜잭션 조건을 개발 콘솔에 적용하고 경쟁 요청을 검증한다.
+5. v2 DatabaseAccountStore의 분리 기록/전체 거래를 실제 SDK로 빌드하고 개발 서버에서 검증한다.
+   이전 전체 계정 단일 JSON 대신 일자/영업/요청/Receipt/Grant를 독립 기록으로 저장한다.
+   원래 응답을 삭제하거나 축약하지 않는다. 기록별 크기와 전체 조회 상한을 넘으면 차단한다.
+   장기 보존/색인/조회 지연과 실제 콘솔 스키마 검증 전에는 활성화하지 않는다.
+6. 기존 GameData Dia와 새 Database 간 원자성을 가정하지 않는다. 자동 저장·가챠·상점·우편·
+   기타 모든 다이아 쓰기를 동일 서버 지갑 권한으로 옮기거나 확실히 차단하는 이행이 필요하다.
+   현재 legacy boundary는 이 조건을 충족하지 않아 지급을 거절한다.
+7. 자동 정지·포커스 상실·앱 종료·재접속·배송/퇴장 대기를 포함하는 서버 시계와 주문 lifecycle
+   증명 경로를 구현/검증한다. 클라이언트 bool/시각만 보내는 방식으로 증명을 대신하지 않는다.
+   초기 카운트다운과 단계 안내/카운트다운 중에는 유효한 정지 시각만 반환해서는 안 된다.
+   서버 clock이 gameplay 샘플을 거절해야 연출 중 신규 주문을 승인하지 않는다.
+   단계 경계에서는 모든 이전 주문의 해제 증명을 기다리며, 다음 단계가 시작되지 않은 동안
+   경과 시간이 그 단계로 넘어가서는 안 된다. 이 증명 경로는 현재 미구현이므로 운영을 차단한다.
+8. 서버 정책과 승인된 Runtime 표시/Inspector 설정의 일치 여부를 실제 호스트에서 확인한다.
+9. 두 기기·중복 요청·정오·지연 커밋·중간 종료·다른 계정 로그인·UI 표시 실패를 개발 서버에서 검증한다.
+10. Player/Android 빌드, 정상/포기/보상 없음/미확정 UI와 실제 두 해상도 화면을 확인한다.
+11. 개발 통합 검증 결과와 전 재화 경로의 이전을 승인받은 뒤 운영 쓰기 활성화를 별도로 판단한다.
+
+서버 호출, 지급 활성화 또는 운영 머지 준비 완료를 로컬 검사 PASS와 혼동하지 않는다.

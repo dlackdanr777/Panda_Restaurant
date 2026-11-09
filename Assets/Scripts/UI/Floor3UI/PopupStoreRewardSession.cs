@@ -34,6 +34,7 @@ public sealed class PopupStoreRewardSession : MonoBehaviour
     {
         if (_policyPrepared) return;
         var clock = GetComponent<PopupStoreBusinessClock>();
+        if (clock != null && clock.IsPhasePreview) return;
         if (clock == null || clock.State != PopupStoreBusinessState.NotStarted || !clock.HasStartApproval
             || _grade == null || _grade.gameObject != gameObject) return;
         _policyPrepared = true;
@@ -61,6 +62,8 @@ public sealed class PopupStoreRewardSession : MonoBehaviour
 
     public bool TryDecide(PopupStoreGradeResult finalResult)
     {
+        // Phase mode owns its separate result/reward authority; the ordinary observer must not draw again.
+        if (GetComponent<PopupStoreBusinessClock>()?.IsPhasePreview == true) return false;
         // Reserve the entry before invoking an injectable provider or an external log observer.
         if (_deciding) return false;
         _deciding = true;

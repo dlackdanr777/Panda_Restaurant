@@ -43,6 +43,25 @@ public sealed class PopupStoreScore : MonoBehaviour
     private PopupStorePacking _subscribed;
     private string _lastSourceError;
     private string _lastHudError;
+    private PopupStoreScorePolicySnapshot _policy = PopupStoreScorePolicySnapshot.Ordinary;
+    private PopupStorePhasePreview _editorPolicyOwner;
+    /// <summary>Fresh isolated preview only. Never changes the ordinary play policy or an existing ledger.</summary>
+    internal bool TryBindEditorPhasePolicy(PopupStorePhasePreview preview,
+        PopupStoreScorePolicySnapshot policy, out string error)
+    {
+        error = null;
+        var start = GetComponent<PopupStoreStartController>();
+        if (preview == null || preview.gameObject != gameObject || _editorPolicyOwner != null
+            || policy == null || start == null || start.IsApproved
+            || (start.Host?.IsEditorReview != true && !preview.AccountAuthorityReady)
+            || preview.Session == null || preview.Session.State != PopupStorePhaseState.Ready
+            || !BindOwner() || _entries.Count != 0 || TotalScore != 0 || _owner.CommittedReceipts.Count != 0)
+        { error = "Score policy requires one fresh isolated preview owner before admission."; return false; }
+        _editorPolicyOwner = preview;
+        _policy = policy;
+        return true;
+    }
+    public PopupStoreScorePolicySnapshot Policy => _policy;
 
     public int TotalScore { get; private set; }
     public event Action Changed;
@@ -78,7 +97,7 @@ public sealed class PopupStoreScore : MonoBehaviour
         foreach (var receipt in history)
         {
             if (!_owner.IsCommittedReceipt(receipt)
-                || !TryCalculate(receipt, out int plushCount, out int points, out _)
+                || !TryCalculate(receipt, _policy, out int plushCount, out int points, out _)
                 || !ids.Add(receipt.ReceiptId) || !_byReceipt.TryGetValue(receipt.ReceiptId, out var entry)
                 || entry.Points != points || entry.PlushCount != plushCount || entry.OrderId != receipt.OrderId
                 || entry.CustomerId != receipt.CustomerId || entry.SlotIndex != receipt.SlotIndex)
@@ -106,7 +125,9 @@ public sealed class PopupStoreScore : MonoBehaviour
     {
         if (!BindOwner() || !_owner.IsCommittedReceipt(receipt)) return false;
         if (_byReceipt.ContainsKey(receipt.ReceiptId)) return false;
-        if (!TryCalculate(receipt, out int plushCount, out int points, out string error))
+        bool calculated = TryCalculate(receipt, _policy, out int plushCount, out int points, out string error);
+        if (calculated && (long)TotalScore + points > int.MaxValue) error = "The score total exceeds its supported range.";
+        if (!calculated || error != null)
         {
             if (_reportedInvalidReceipts.Add(receipt.ReceiptId))
                 Debug.LogError("PopupStoreScore: committed receipt was not scored; receipt="
@@ -138,11 +159,15 @@ public sealed class PopupStoreScore : MonoBehaviour
     /// <summary>Calculation alone is not authorization: TryRecordReceipt also checks the local commit history.</summary>
     public static bool TryCalculate(PopupStorePackingReceipt receipt,
         out int plushCount, out int points, out string error)
+        => TryCalculate(receipt, PopupStoreScorePolicySnapshot.Ordinary, out plushCount, out points, out error);
+
+    public static bool TryCalculate(PopupStorePackingReceipt receipt, PopupStoreScorePolicySnapshot policy,
+        out int plushCount, out int points, out string error)
     {
         plushCount = 0;
         points = 0;
         error = null;
-        if (receipt == null || !receipt.Success || string.IsNullOrWhiteSpace(receipt.ReceiptId)
+        if (policy == null || receipt == null || !receipt.Success || string.IsNullOrWhiteSpace(receipt.ReceiptId)
             || string.IsNullOrWhiteSpace(receipt.OrderId) || string.IsNullOrWhiteSpace(receipt.CustomerId)
             || receipt.SlotIndex < 0 || receipt.SlotIndex >= 3 || receipt.Materials == null
             || receipt.Materials.Count < 3 || receipt.Materials.Count > 5)
@@ -168,7 +193,8 @@ public sealed class PopupStoreScore : MonoBehaviour
             || !string.Equals(receipt.RibbonId, ribbonId, StringComparison.Ordinal))
         { error = "Box or ribbon identity contradicts the receipt materials."; return false; }
         plushCount = count;
-        points = 100 + (count - 1) * 40;
+        if (!policy.TryGetPoints(receipt.Materials.Count, out points))
+        { error = "The frozen points policy does not support this receipt length."; return false; }
         return true;
     }
 

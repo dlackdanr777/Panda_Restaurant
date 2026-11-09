@@ -53,7 +53,44 @@ public static partial class PopupStoreVerificationRunner
         "PopupStoreCurrentGradeHudTests", "PopupStoreApprovedUiTests", "PopupStorePatienceSkinTests",
         "PopupStoreManualTestMenuTests", "PopupStoreMainVisualTests", "PopupStoreFinalGuideTests", "PopupStoreCleanPartsTests",
         "PopupStoreUnorderedPackingTests",
-        "PopupStorePhaseProfileTests", "PopupStorePhaseSessionTests", "PopupStorePhaseBoundaryTests"
+        "PopupStorePhaseProfileTests", "PopupStorePhaseSessionTests", "PopupStorePhaseBoundaryTests",
+        "PopupStorePhasePreviewSettingsTests", "PopupStorePhasePreviewClockTests", "PopupStorePhasePreviewSupplyTests",
+        "PopupStorePhasePreviewIntegrationTests", "PopupStorePhasePreviewTypographyTests",
+        "PopupStorePhasePreviewNavigationTests", "PopupStorePhaseDeadlineTests",
+        "PopupStorePhasePresentationTests", "PopupStorePhaseTutorialTests", "PopupStorePhaseTutorialNavigationTests",
+        "PopupStorePhaseEntryGateTests", "PopupStorePhaseRewardRollTests", "PopupStorePhaseRewardPresentationTests",
+        "PopupStorePhasePolishTests", "PopupStorePhaseRewardIntegrationTests",
+        "PopupStorePhaseScoreCoreTests", "PopupStorePhaseResultLayoutTests", "PopupStorePhasePreviewSettingsScoreTests",
+        "PopupStorePhaseScoreIntegrationTests"
+    };
+    // Separate explicit groups retain the original popup regression count and never
+    // initialize the SDK. These fixtures inject isolated transports/wallets only.
+    private static readonly string[] ServerFixtures =
+    {
+        "PopupStoreServerAuthorityTests", "PopupStoreServerWalletTests",
+        "PopupStoreBackendFunctionTransportTests", "PopupStoreServerJournalTests",
+        "PopupStoreServerClientTests", "PopupStoreServerClaimCoordinatorTests"
+    };
+    private static readonly string[] ServerEconomyRegressionFixtures =
+    {
+        "StaffPurchaseDiamondWalletTests", "GameDataSaveCoordinatorTests",
+        "GachaEconomyTests", "StaffStageMigrationCollectionTests"
+    };
+    private const string ServerFairyRegression = "EconomyBackend_Stage1FairyAppearsOnlyAfterProductionCommitAndNeverDuplicates";
+    private static readonly string[] Server01BBoundaryFixtures =
+    {
+        "PopupStoreServerHostContractTests", "StaffStageMigrationCollectionTests"
+    };
+    private static readonly string[] Server01CFixtures =
+    {
+        "PopupStoreServerCommandCodecTests", "PopupStoreServerPartitionStoreTests",
+        "PopupStoreWalletCutoverTests"
+    };
+    private static readonly string[] Server01EFixtures =
+    {
+        "PopupStoreGameDataRecordTests", "PopupStoreGameDataOperationTests",
+        "PopupStoreAccountJournalTests", "PopupStoreAccountPhaseConnectionTests",
+        "StaffStageMigrationCollectionTests"
     };
     private static bool _running, _abort;
     private static double _nextPoll;
@@ -92,12 +129,16 @@ public static partial class PopupStoreVerificationRunner
 
     static PopupStoreVerificationRunner()
     {
+        PopupStoreStartController.EditorPhasePreviewEntryPending = () =>
+            SessionState.GetString(PhasePreviewStateKey, string.Empty) == "starting";
         EditorApplication.update += Tick;
         Application.logMessageReceived += CapturePausePlayLog;
         Application.logMessageReceived += CaptureSessionReviewLog;
+        Application.logMessageReceived += CapturePhasePreviewPlayProbeLog;
         EditorApplication.playModeStateChanged += state =>
         {
             PlannerReviewPlayStateChanged(state);
+            PhasePreviewPlayStateChanged(state);
             if (state == PlayModeStateChange.EnteredEditMode)
             {
                 ClearReviewRequest(); _accessReviewOwner?.Dispose(); _accessReviewOwner = null;
@@ -124,10 +165,12 @@ public static partial class PopupStoreVerificationRunner
         if (_running || EditorApplication.isCompiling || EditorApplication.isUpdating
             || GachaReviewTestRunner.IsRunning) return;
         TickPausePlayReview();
+        TickPhasePreviewPlayProbe();
         if (EditorApplication.timeSinceStartup < _nextPoll) return;
         _nextPoll = EditorApplication.timeSinceStartup + .5;
         ApplyResultReviewOnce();
         ObservePlannerReview();
+        TickPhasePreviewReview();
         if (!File.Exists(RequestPath)) return;
         string request;
         try
@@ -141,6 +184,16 @@ public static partial class PopupStoreVerificationRunner
         }
         catch (IOException) { return; } // A writer may still own the request file.
         if (request == "inspect") InspectWorkspace();
+        else if (request == "phase-tutorial-build")
+            RunApprovedUiOperation("PopupStorePhasePreviewViewBuilder", "Build", new object[] { PopupStorePhasePreviewViewBuilder.GameplayPath });
+        else if (request == "phase-reward-build")
+            RunApprovedUiOperation("PopupStorePhaseRewardViewBuilder", "Build", null);
+        else if (request == "phase-tutorial-evidence")
+            RunApprovedUiOperation("PopupStorePhaseTutorialEvidence", "Run", null);
+        else if (request == "phase-gameplay-evidence")
+            RunApprovedUiOperation("PopupStorePhaseTutorialEvidence", "CaptureCurrentGameplay", null);
+        else if (request == "phase-preview-probe") StartPhasePreviewPlayProbe();
+        else if (request.StartsWith("phase-preview-", StringComparison.Ordinal)) ExecutePhasePreviewCommand(request);
         else if (request == "refresh-scripts")
         {
             // Explicit incremental refresh only. No forced reimport, scene save, focus change or Play transition.
@@ -903,7 +956,11 @@ public static partial class PopupStoreVerificationRunner
         Application.logMessageReceived += CaptureLog;
         try
         {
-            if (request != "run") throw new InvalidOperationException("Only the explicit request 'run' is supported.");
+            if (request != "run" && request != "run-server" && request != "run-server-economy"
+                && request != "run-server-fairy" && request != "run-server-all" && request != "run-server01b"
+                && request != "run-server01c" && request != "run-server01c-all"
+                && request != "run-server01e" && request != "run-server01e-all")
+                throw new InvalidOperationException("Only explicit popup/server regression requests are supported.");
             if (_report.compiling || _report.updating || _report.scriptCompilationFailed)
                 throw new InvalidOperationException("Compilation must finish successfully before popup-store verification.");
             var activeRunMethod = typeof(UnityEditor.TestTools.TestRunner.Api.TestRunnerApi).GetMethod("IsRunActive",
@@ -919,7 +976,15 @@ public static partial class PopupStoreVerificationRunner
             if (scenes.Length == 0 || scenes.Any(scene => scene.isDirty))
                 throw new InvalidOperationException("A loaded, unmodified edit scene is required. User scenes will not be saved or discarded.");
             _report.before = ReadWorkspace();
-            ExecuteFixtures();
+            _report.scope += " Group=" + request + ".";
+            if (request == "run-server-economy" || request == "run-server-fairy"
+                || request == "run-server-all" || request == "run-server01b" || request == "run-server01c-all"
+                || request == "run-server01e" || request == "run-server01e-all")
+                _report.scope = "Synchronous EditMode on the original Editor; isolated account/transport doubles. "
+                    + "Fairy cases use the existing in-memory Stage1 PreviewScene host, without creating/saving scene files. "
+                    + "No Play, SDK initialization, login, backend request, real purchase or account persistence. "
+                    + "Workspace differences stop subsequent cases; no automatic rollback. Group=" + request + ".";
+            ExecuteFixtures(request);
         }
         catch (Exception error) { _report.error = Unwrap(error).ToString(); }
         finally
@@ -953,16 +1018,50 @@ public static partial class PopupStoreVerificationRunner
         }
     }
 
-    private static void ExecuteFixtures()
+    private static void ExecuteFixtures(string request)
     {
         var assembly = typeof(PopupStoreVerificationRunner).Assembly;
         var names = new List<string>();
-        foreach (string fixtureName in Fixtures)
+        var selected = request == "run-server" ? ServerFixtures
+            : request == "run-server-economy" ? ServerEconomyRegressionFixtures
+            : request == "run-server-fairy" ? new[] { "StaffStageMigrationCollectionTests" }
+            : request == "run-server-all" ? Fixtures.Concat(ServerFixtures).Concat(ServerEconomyRegressionFixtures).Distinct().ToArray()
+            : request == "run-server01b" ? Server01BBoundaryFixtures
+            : request == "run-server01c" ? Server01CFixtures
+            : request == "run-server01e" ? Server01EFixtures
+            : request == "run-server01e-all" ? Fixtures.Concat(ServerFixtures).Concat(ServerEconomyRegressionFixtures)
+                .Concat(Server01BBoundaryFixtures).Concat(Server01CFixtures).Concat(Server01EFixtures)
+                .Concat(new[] { "GameDataRestoreContextTests" }).Distinct().ToArray()
+            : request == "run-server01c-all" ? Fixtures.Concat(ServerFixtures).Concat(ServerEconomyRegressionFixtures)
+                .Concat(Server01BBoundaryFixtures).Concat(Server01CFixtures).Distinct().ToArray() : Fixtures;
+        foreach (string fixtureName in selected)
         {
             Type fixture = assembly.GetType(fixtureName, true);
             int beforeCount = names.Count;
             foreach (var method in fixture.GetMethods(BindingFlags.Instance | BindingFlags.Public))
             {
+                // This partial fixture also contains unrelated scene/content migrations.
+                // Select its existing memory-only mail and backend-economy contracts here.
+                if (fixtureName == "StaffStageMigrationCollectionTests")
+                {
+                    if (request == "run-server01e" && !method.Name.StartsWith("PopupEconomy_", StringComparison.Ordinal)) continue;
+                    if (request == "run-server01e-all"
+                        && !method.Name.StartsWith("MailReceive_", StringComparison.Ordinal)
+                        && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
+                        && !method.Name.StartsWith("Server01B_Fairy", StringComparison.Ordinal)
+                        && !method.Name.StartsWith("Attendance_", StringComparison.Ordinal)
+                        && !method.Name.StartsWith("PurchaseExecution_", StringComparison.Ordinal)
+                        && !method.Name.StartsWith("PopupEconomy_", StringComparison.Ordinal)) continue;
+                    if (request == "run-server-fairy" && method.Name != ServerFairyRegression) continue;
+                    if (request == "run-server01b" && !method.Name.StartsWith("Server01B_Fairy", StringComparison.Ordinal)) continue;
+                    if ((request == "run-server-economy" || request == "run-server-all")
+                        && !method.Name.StartsWith("MailReceive_", StringComparison.Ordinal)
+                        && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)) continue;
+                    if (request == "run-server01c-all"
+                        && !method.Name.StartsWith("MailReceive_", StringComparison.Ordinal)
+                        && !method.Name.StartsWith("EconomyBackend_", StringComparison.Ordinal)
+                        && !method.Name.StartsWith("Server01B_Fairy", StringComparison.Ordinal)) continue;
+                }
                 string[] attributes = method.GetCustomAttributes(false).Select(attribute => attribute.GetType().Name).ToArray();
                 if (attributes.Contains("UnityTestAttribute"))
                     throw new NotSupportedException("Coroutine tests are outside this synchronous memory-only bridge: " + method.Name);

@@ -16,6 +16,7 @@ public sealed class UIPopupStore : MobileUIView
     private bool _closing;
     internal UINavigation Navigation => _uiNav;
     internal bool IsClosing => _closing;
+    internal Button PhaseCloseButton => _closeButton;
 
     internal bool IsBoundTo(UINavigation navigation) => _uiNav == navigation;
 
@@ -48,6 +49,7 @@ public sealed class UIPopupStore : MobileUIView
         GetComponent<PopupStorePacking>()?.Refresh();
         GetComponent<PopupStorePauseController>()?.Refresh();
         GetComponent<PopupStoreExitConfirmation>()?.Refresh();
+        PopupStoreAccountPhaseBootstrap.TryPrepare(this, out _);
         GetComponent<PopupStoreStartController>()?.OnViewShown();
     }
 
@@ -63,6 +65,9 @@ public sealed class UIPopupStore : MobileUIView
     public bool TryRequestExit()
     {
         if (!CanRequestExit) return false;
+        if (GetComponent<PopupStoreAccountRecoveryPresentation>()?.IsBound == true) return false;
+        var preview = GetComponent<PopupStorePhasePreview>();
+        if (preview != null && preview.Session?.IsTerminal == true) return preview.TryConfirmResult();
         var confirmation = GetComponent<PopupStoreExitConfirmation>();
         if (confirmation != null) return confirmation.TryRequestExit();
         // A missing authored guard must never silently close an active business.
@@ -110,6 +115,8 @@ public sealed class UIPopupStore : MobileUIView
         var lifetime = GetComponent<PopupStoreSessionLifetime>();
         if (_closing || !CanRequestExit || confirmation == null || !confirmation.IsVisible
             || clock == null || lifetime == null || lifetime.IsRetired) return false;
+        var preview = GetComponent<PopupStorePhasePreview>();
+        if (preview != null && preview.IsInitialized) return preview.RequestAbandon();
         _closing = true;
         try
         {
@@ -129,6 +136,25 @@ public sealed class UIPopupStore : MobileUIView
     }
 
     private void Close() => TryClose();
+
+    // Preview termination is not normal score-grade completion. Re-entry can only show the
+    // same terminal local result; a new run needs a new isolated Editor owner.
+    internal bool ClosePhasePreviewResult(PopupStorePhasePreview owner)
+    {
+        if (_closing || owner == null || owner.gameObject != gameObject || !owner.IsInitialized
+            || owner.Session?.IsTerminal != true || !CanRequestExit || !PopEnabled) return false;
+        _closing = true;
+        try
+        {
+            var lifetime = GetComponent<PopupStoreSessionLifetime>();
+            if (owner.IsAccountMode && (lifetime == null || !lifetime.MarkAccountPhaseClosed(owner))) return false;
+            _uiNav.Pop(ViewName);
+            bool closed = VisibleState == VisibleState.Disappeared && !gameObject.activeSelf;
+            if (!closed && owner.IsAccountMode) lifetime.UndoCompletedClose();
+            return closed;
+        }
+        finally { _closing = false; }
+    }
 
     private void OnDestroy()
     {
