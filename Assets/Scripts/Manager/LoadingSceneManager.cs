@@ -26,6 +26,9 @@ public class LoadingSceneManager : MonoBehaviour
 
     public static void LoadScene(string sceneName)
     {
+#if UNITY_EDITOR
+        if (!EditorAccountSafety.AllowSceneEntry(sceneName)) return;
+#endif
         _nextScene = sceneName;
         OnLoadSceneHandler?.Invoke();
         FadeManager.Instance.FadeIn( onComplete: () =>
@@ -68,6 +71,9 @@ public class LoadingSceneManager : MonoBehaviour
                     FadeManager.Instance.FadeSetActive(false);
                     Tween.Wait(0.5f, () => FadeManager.Instance.FadeIn(onComplete: () => 
                     {
+#if UNITY_EDITOR
+                        if (!EditorAccountSafety.AllowSceneEntry(_nextScene)) return;
+#endif
                         op.allowSceneActivation = true;
                         FadeManager.Instance.FadeSetActive(true);
                         Tween.Wait(0.1f, () =>

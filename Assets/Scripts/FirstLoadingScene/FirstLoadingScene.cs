@@ -10,6 +10,9 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void Start()
     {
+#if UNITY_EDITOR
+        if (!EditorAccountSafety.RequireFreshAuthentication()) return;
+#endif
         _uiFirstLoadingScene.Init();
 
 #if UNITY_ANDROID
@@ -77,6 +80,9 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void StartLoginFlow()
     {
+#if UNITY_EDITOR
+        if (!EditorAccountSafety.RequireFreshAuthentication()) return;
+#endif
         BackendManager.Instance.InvalidateGameDataRestore();
 #if UNITY_ANDROID
         var pref = GoogleLoginManager.GetLoginPreference();
@@ -140,6 +146,13 @@ public class FirstLoadingScene : MonoBehaviour
             void ContinueAfterPaymentLoad()
             {
                 if (!IsCurrent()) return;
+#if UNITY_EDITOR
+                if (EditorAccountSafety.IsArmed && !EditorAccountSafety.IsReady(out _))
+                {
+                    StartCoroutine(EditorAccountSafety.WaitForReady(IsCurrent, ContinueAfterPaymentLoad));
+                    return;
+                }
+#endif
                 AssignRandomNicknameIfNeeded(IsCurrent, () =>
                 {
                     if (!IsCurrent()) return;
