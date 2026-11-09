@@ -81,6 +81,11 @@ public class FirstLoadingScene : MonoBehaviour
     private void StartLoginFlow()
     {
 #if UNITY_EDITOR
+        if (EditorAccountCloseReview.Active)
+        {
+            EditorAccountCloseReview.BeginLogin(BackendManager.Instance, OnLoginCompleted);
+            return;
+        }
         if (!EditorAccountSafety.RequireFreshAuthentication()) return;
 #endif
         BackendManager.Instance.InvalidateGameDataRestore();
@@ -120,6 +125,9 @@ public class FirstLoadingScene : MonoBehaviour
 
     private void OnLoginCompleted()
     {
+#if UNITY_EDITOR
+        if (EditorAccountCloseReview.Active && !EditorAccountCloseReview.ConsumeRestorationPermission()) return;
+#endif
         using (new VersionManagement())
         {
             if (!new VersionManagement().UpdateCheck())

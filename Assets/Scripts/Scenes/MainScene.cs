@@ -117,6 +117,7 @@ public class MainScene : MonoBehaviour
     {
 #if UNITY_EDITOR
         if (!EditorAccountSafety.RequireReady()) { enabled = false; return; }
+        if (EditorAccountCloseReview.Active) EditorAccountCloseReview.ObserveMainSceneStart();
 #endif
         PlayMainMusic();
         OnUIEvent();
