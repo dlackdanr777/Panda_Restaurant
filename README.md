@@ -141,4 +141,28 @@ scenes or writing verification Scene/Prefab assets. Results are written to
 `%TEMP%\CustomerTableUseReview\related-party-movement-tests.json` (or
 `PANDA_CUSTOMER_USE_EVIDENCE_DIR` when set). These synchronous command/AStar/callback
 checks do not replace real-time PlayerLoop or device playtesting.
+
+## PERF-MAIN-02: customer unlock events
+
+Customer unlock checks depend only on score, required recipe and required item.
+Coin changes no longer trigger the full customer scan. The direct check after
+catalog initialization and the score/recipe/item subscriptions are retained.
+`UserInfo.TryLoadGameData` restores ownership and enabled-customer records before
+publishing recipe/item events, so new and existing account restores still check
+eligibility without relying on the money event. Unlock rules, visit counts,
+encounters, single/two-person spawning and pictorial book behavior are unchanged.
+
+The existing SDK-free Editor bridge accepts `customer-unlock` through
+`Temp/GachaReview20260917-2213/tests-request.txt`. It runs focused production
+initialization, coin callback count, score/recipe/item and memory account-restore
+tests, plus existing natural-party, single-customer, encounter and customer book
+regressions. Results are written to
+`%TEMP%\CustomerTableUseReview\related-customer-unlock-tests.json` (or
+`PANDA_CUSTOMER_USE_EVIDENCE_DIR` when set), with the matching NUnit XML.
+The existing blank-ID diagnostic at the end of each customer CSV is explicitly
+expected by the initialization fixture; the parser and CSVs are not changed.
+No user Scene is saved/replaced, no verification Scene/Prefab assets are created,
+and no real login, server save, ads or payments are executed. These tests count
+the real coin-event unlock callback but do not measure Main Thread time, GC
+allocation or Android performance.
  

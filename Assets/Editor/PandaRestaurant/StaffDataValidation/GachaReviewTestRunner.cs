@@ -258,7 +258,7 @@ public static class GachaReviewTestRunner
             }
             else if (command == "staff-ai") RunStaffAiChecks();
             else if (command == "kitchen-apk") RunKitchenSpriteChecks();
-            else if (command == "party-movement")
+            else if (command == "party-movement" || command == "customer-unlock")
             {
                 _customerUse = true;
                 Begin(command);
@@ -274,7 +274,7 @@ public static class GachaReviewTestRunner
             else if (command == "known-fever") CheckKnownFeverAssertion();
             else if (command == "run") Begin("all");
             else if (command == "economy" || command == "fairy" || command == "ui") Begin(command);
-            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, run, staff-ai, party-movement, ui-refresh, ui-deferred-refresh, kitchen-apk, or known-fever for the related review tests.");
+            else throw new InvalidOperationException("Use inspect, economy, fairy, ui, run, staff-ai, party-movement, customer-unlock, ui-refresh, ui-deferred-refresh, kitchen-apk, or known-fever for the related review tests.");
         }
         catch (Exception error)
         {
@@ -366,6 +366,8 @@ public static class GachaReviewTestRunner
         if (_group == "ui-sprite") fixtures = new[] { "FurnitureKitchenRefreshTests", "UIRefreshRegressionTests", "QuestShortcutRoutingTests", "DiamondConsumerRegressionTests" };
         if (_group == "kitchen-apk") fixtures = new[] { "KitchenSpriteAssetTests" };
         if (_group == "ui-deferred-refresh") fixtures = new[] { "UIDeferredRefreshRegressionTests", "StaffStageMigrationCollectionTests" };
+        if (_group == "customer-unlock") fixtures = new[] { "CustomerUnlockRegressionTests", "CustomerNaturalPartyTests",
+            "CustomerTableUseRegressionTests", "CustomerEncounterTests", "UIRefreshRegressionTests" };
         foreach (string name in fixtures)
         {
             if (selectedFixture != null && name != selectedFixture) continue;
@@ -383,10 +385,13 @@ public static class GachaReviewTestRunner
                 // verification Scene/Prefab copies and disk copies of test settings.
                 // Exclude these asset-roundtrip cases from Staff AI and movement checks;
                 // their assertions and the existing Manual Play filter stay intact.
-                if ((_staffAiChecks || _group == "party-movement") && ((name == "CustomerPartyServingTests" && method.Name == "CounterInspectorSpacing_SurvivesSavedReloadAndFoodRefresh")
+                if ((_staffAiChecks || _group == "party-movement" || _group == "customer-unlock") && ((name == "CustomerPartyServingTests" && method.Name == "CounterInspectorSpacing_SurvivesSavedReloadAndFoodRefresh")
                     || (name == "CustomerPartyOrderTests" && method.Name == "AuthoredBubbleSizeAndOffsets_PersistThroughTemporaryPrefabReloadAndFurnitureRefresh")
                     || (name == "CustomerNaturalPartyTests" && method.Name == "TempSettingsAsset_ReloadAffectsNewSpawnOnly_AndNeverChangesDelivery"))) continue;
                 if (selectedMethod != null && method.Name != selectedMethod) continue;
+                if (_group == "customer-unlock" && name == "UIRefreshRegressionTests"
+                    && !method.Name.StartsWith("Customer", StringComparison.Ordinal)
+                    && !method.Name.StartsWith("BookReopen_", StringComparison.Ordinal)) continue;
                 if (_fairyBirthInput && (method.Name == "Stage1_ElevenConfirmedBirthsProduceTheFireworksEvidence"
                     || method.Name == "Stage1_ProductionBirthUsesVisibleWallPuffJumpAndThenFreeBehaviour"
                     || method.Name == "Stage1_ProductionRestoreHallKitchenFloorReturnAndReentryPreserveObjects")) continue;
@@ -627,6 +632,7 @@ public static class GachaReviewTestRunner
         if (_group == "staff-ai") report.scope = "Selected Staff AI lifecycle and directly related customer NUnit regressions on the main Editor thread, NumberOfTestWorkers=0, using the existing disposable in-memory PreviewScene and scene/dirty/Selection/Undo witness. No scene save, scene replacement, Play transition, SDK/login or production backend call. The saved-asset roundtrip methods CounterInspectorSpacing_SurvivesSavedReloadAndFoodRefresh, AuthoredBubbleSizeAndOffsets_PersistThroughTemporaryPrefabReloadAndFurnitureRefresh and TempSettingsAsset_ReloadAffectsNewSpawnOnly_AndNeverChangesDelivery are excluded because this review permits memory instances only. Direct decision and callback tests do not establish real PlayerLoop or OS input behavior. Known Fever assertion #52 is checked separately and is not included in these totals.";
         if (_group == "party-movement") report.scope = "Party movement failure regressions and existing party, single-customer and staff guide tests on the main Editor thread in a disposable in-memory PreviewScene. Actual AStar jobs, game commands and captured movement callbacks are advanced explicitly. No user scene save/replacement, saved verification Scene/Prefab copies, Play transition, SDK/login or production backend calls. Asset-roundtrip tests are excluded. This does not verify real-time PlayerLoop movement or device input.";
         if (_group == "ui-refresh") report.scope = "Staff and pictorial book UI commands, selection, dirty-state coalescing, activation and subscription lifetime regressions plus existing staff shop/quest navigation and teardown tests. Original Stage1 UI is read in disposable in-memory PreviewScenes; isolated event/data fixtures restore their original state. No user scene save/replacement, saved verification Scene/Prefab copies, real SDK/login, production backend, ads or payments. These are functional regressions, not CPU/GC or device benchmarks.";
+        if (_group == "customer-unlock") report.scope = "Customer unlock initialization, coin/score/recipe/item events and actual UserInfo restoration from a memory SDK envelope, plus existing single/natural-pair, encounter, visit-count and customer book regressions. SDK-free Edit Mode with isolated data/events and the existing in-memory PreviewScene witness. Asset-roundtrip tests are excluded. No user scene save/replacement, saved Scene/Prefab copies, real login, server save, ads or payments. Event subscription counts are not Main Thread/GC or Android profiling.";
         if (_group == "kitchen-apk") report.scope = "Kitchen Resources Sprite identity, production CSV catalog, shop portrait/preview binding and shelf SetData on all three original Stage1 floor placements. Static catalog and ownership/equipment fixtures are memory-only and restored. User Scene/dirty/Selection/Undo witnesses must match. No Scene save/replacement, Play Mode, account load/save, SDK/login, ads or payments. This does not verify device image quality or animated floor transitions.";
         report.success = string.IsNullOrEmpty(_error) && report.total > 0 && report.failed == 0 && report.skipped == 0 && report.inconclusive == 0;
         File.WriteAllText(Path.Combine(OutputDirectory, OutputPrefix + "-tests.json"), JsonUtility.ToJson(report, true));

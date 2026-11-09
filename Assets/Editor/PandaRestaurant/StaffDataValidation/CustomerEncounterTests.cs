@@ -1399,7 +1399,7 @@ public sealed class CustomerEncounterTests
         return "[{\"CustomerEncounterStateVersion\":1,\"CustomerEncounterStateList\":" + recordsJson + "}]";
     }
 
-    private static DateTime PrepareMemoryAccountRestore(Flow flow)
+    internal static DateTime PrepareMemoryAccountRestore(Flow flow)
     {
         // The real loader replaces account collections and invokes events. Restore every
         // static field through Flow's existing teardown, and isolate those event handlers.
@@ -1444,7 +1444,7 @@ public sealed class CustomerEncounterTests
     private static string EncounterRecordKey(CustomerEncounterSaveData record) =>
         record.CustomerId + "/" + record.EventKind + "/" + record.VisitMilestone + "/" + record.State;
 
-    private static BackEnd.BackendReturnObject EncounterMemoryResponse(JObject values)
+    internal static BackEnd.BackendReturnObject EncounterMemoryResponse(JObject values)
     {
         // Encode only the existing SDK response envelope, not the encounter validation logic.
         var row = new JObject(values.Properties().Select(property =>

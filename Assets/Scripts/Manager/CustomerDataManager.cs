@@ -200,7 +200,6 @@ public class CustomerDataManager : MonoBehaviour
         SpecialCustomerDataParse("CustomerData/CSVData/SpecialCustomerData");
         GatecrasherCustomerDataParse("CustomerData/CSVData/GatecrasherCustomerData");
 
-        UserInfo.OnChangeMoneyHandler += CheckEnableCustomer;
         UserInfo.OnGiveGachaItemHandler += CheckEnableCustomer;
         UserInfo.OnGiveRecipeHandler += CheckEnableCustomer;
         GameManager.Instance.OnChangeScoreHandler += CheckEnableCustomer;
@@ -620,7 +619,6 @@ public class CustomerDataManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        UserInfo.OnChangeMoneyHandler -= CheckEnableCustomer;
         UserInfo.OnGiveGachaItemHandler -= CheckEnableCustomer;
         UserInfo.OnGiveRecipeHandler -= CheckEnableCustomer;
 
